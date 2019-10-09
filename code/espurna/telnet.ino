@@ -51,6 +51,7 @@ AsyncBufferedClient based on ESPAsyncTCPbuffer, distributed with the ESPAsyncTCP
         void flush();
         size_t available();
 
+        bool connect(const char *host, uint16_t port);
         void close(bool now = false);
         bool connected();
 
@@ -100,16 +101,18 @@ void _telnetReverse(const char * host, uint16_t port) {
     for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
         if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
             #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-                _telnetClients[i] = std::make_unique<WiFiClient>();
+                _telnetClients[i] = std::make_unique<TTelnetClient>();
             #else // TELNET_SERVER == TELNET_SERVER_ASYNC
-                _telnetClients[i] = std::make_unique<AsyncBufferedClient>(new AsyncClient());
+                _telnetSetupClient(i, new AsyncClient());
             #endif
 
             if (_telnetClients[i]->connect(host, port)) {
-                return _telnetNotifyConnected(i);
+                _telnetNotifyConnected(i);
+                return;
             } else {
                 DEBUG_MSG_P(PSTR("[TELNET] Error connecting reverse telnet\n"));
-                return _telnetDisconnect(i);
+                _telnetDisconnect(i);
+                return;
             }
         }
     }
@@ -249,6 +252,10 @@ size_t AsyncBufferedClient::available() {
     return _client->space();
 }
 
+bool AsyncBufferedClient::connect(const char *host, uint16_t port) {
+    return _client->connect(host, port);
+}
+
 void AsyncBufferedClient::close(bool now) {
     _client->close(now);
 }
@@ -337,28 +344,6 @@ void _telnetNotifyConnected(unsigned char i) {
 
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
-    #if TELNET_SERVER == TELNET_SERVER_ASYNC
-        _telnetClients[i]->onAck([i](void *s, AsyncClient *c, size_t len, uint32_t time) {
-        }, 0);
-
-        _telnetClients[i]->onData([i](void *s, AsyncClient *c, void *data, size_t len) {
-            _telnetData(i, data, len);
-        }, 0);
-
-        _telnetClients[i]->onDisconnect([i](void *s, AsyncClient *c) {
-            _telnetDisconnect(i);
-        }, 0);
-
-        _telnetClients[i]->onError([i](void *s, AsyncClient *c, int8_t error) {
-            DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), c->errorToString(error), error, i);
-        }, 0);
-
-        _telnetClients[i]->onTimeout([i](void *s, AsyncClient *c, uint32_t time) {
-            DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%u at %lu\n"), i, time);
-            c->close();
-        }, 0);
-    #endif
-
     // If there is no terminal support automatically dump info and crash data
     #if TERMINAL_SUPPORT == 0
         info();
@@ -445,6 +430,27 @@ void _telnetLoop() {
 
 #elif TELNET_SERVER == TELNET_SERVER_ASYNC
 
+void _telnetSetupClient(unsigned char i, AsyncClient *client) {
+
+    client->onError([i](void *s, AsyncClient *client, int8_t error) {
+        DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), client->errorToString(error), error, i);
+    });
+    client->onData([i](void*, AsyncClient*, void *data, size_t len){
+        _telnetData(i, reinterpret_cast<char*>(data), len);
+    });
+    client->onDisconnect([i](void*, AsyncClient*) {
+        _telnetCleanUp();
+    });
+
+    // XXX: AsyncClient does not have copy ctor
+    #if TELNET_SERVER_ASYNC_BUFFERED
+        _telnetClients[i] = std::make_unique<TTelnetClient>(client);
+    #else
+        _telnetClients[i] = std::unique_ptr<TTelnetClient>(client);
+    #endif // TELNET_SERVER_ASYNC_BUFFERED
+
+}
+
 void _telnetNewClient(AsyncClient* client) {
     if (client->localIP() != WiFi.softAPIP()) {
         // Telnet is always available for the ESPurna Core image
@@ -467,26 +473,8 @@ void _telnetNewClient(AsyncClient* client) {
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
 
         if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
-
-            client->onError([i](void *s, AsyncClient *client, int8_t error) {
-                DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), client->errorToString(error), error, i);
-            });
-            client->onData([i](void*, AsyncClient*, void *data, size_t len){
-                _telnetData(i, reinterpret_cast<char*>(data), len);
-            });
-            client->onDisconnect([i](void*, AsyncClient*) {
-                _telnetCleanUp();
-            });
-
-            // XXX: AsyncClient does not have copy ctor
-            #if TELNET_SERVER_ASYNC_BUFFERED
-                _telnetClients[i] = std::make_unique<TTelnetClient>(client);
-            #else
-                _telnetClients[i] = std::unique_ptr<TTelnetClient>(client);
-            #endif // TELNET_SERVER_ASYNC_BUFFERED
-
+            _telnetSetupClient(i, client);
             _telnetNotifyConnected(i);
-
             return;
         }
 
