@@ -3,7 +3,6 @@
 #include <functional>
 #include <vector>
 #include <memory>
-#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -31,6 +30,12 @@ extern "C" {
   #include <lwip/ip_addr.h> // ip4/ip6 helpers
   #include <lwip/init.h> // LWIP_VERSION_MAJOR
 }
+
+// ref: https://github.com/me-no-dev/ESPAsyncTCP/pull/115/files#diff-e2e636049095cc1ff920c1bfabf6dcacR8
+// This is missing with Core 2.3.0 and is sometimes missing from the build flags. Assume HIGH_BANDWIDTH version.
+#ifndef TCP_MSS
+#define TCP_MSS (1460)
+#endif
 
 uint32_t systemResetReason();
 uint8_t systemStabilityCounter();

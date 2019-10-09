@@ -19,6 +19,8 @@
 
 */
 
+#include <core_version.h>
+
 #ifdef USE_CUSTOM_H
 #include "custom.h"
 #endif

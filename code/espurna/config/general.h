@@ -130,6 +130,11 @@
 #define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
 #endif
 
+#ifndef TELNET_SERVER_ASYNC_BUFFERED
+#define TELNET_SERVER_ASYNC_BUFFERED         0  // Enable buffered output for telnet server (+1Kb)
+                                                // Helps to avoid lost data with lwip2 TCP_MSS=536 option
+#endif
+
 // Enable this flag to add support for reverse telnet (+800 bytes)
 // This is useful to telnet to a device behind a NAT or firewall
 // To use this feature, start a listen server on a publicly reachable host with e.g. "ncat -vlp <port>" and use the MQTT reverse telnet command to connect
