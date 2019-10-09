@@ -131,8 +131,15 @@
 #endif
 
 #ifndef TELNET_SERVER_ASYNC_BUFFERED
-#define TELNET_SERVER_ASYNC_BUFFERED         0  // Enable buffered output for telnet server (+1.4Kb)
+#define TELNET_SERVER_ASYNC_BUFFERED         0  // Enable buffered output for telnet server (+1Kb)
                                                 // Helps to avoid lost data with lwip2 TCP_MSS=536 option
+#endif
+
+// Enable this flag to add support for reverse telnet (+800 bytes)
+// This is useful to telnet to a device behind a NAT or firewall
+// To use this feature, start a listen server on a publicly reachable host with e.g. "ncat -vlp <port>" and use the MQTT reverse telnet command to connect
+#ifndef TELNET_REVERSE_SUPPORT
+#define TELNET_REVERSE_SUPPORT  0
 #endif
 
 //------------------------------------------------------------------------------
@@ -1073,6 +1080,7 @@
 #define MQTT_TOPIC_IRIN             "irin"
 #define MQTT_TOPIC_IROUT            "irout"
 #define MQTT_TOPIC_OTA              "ota"
+#define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"

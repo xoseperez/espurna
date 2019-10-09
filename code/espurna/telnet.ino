@@ -91,6 +91,62 @@ void _telnetWebSocketOnConnected(JsonObject& root) {
 
 #endif
 
+#if TELNET_REVERSE_SUPPORT
+
+void _telnetReverse(const char * host, uint16_t port) {
+    DEBUG_MSG_P(PSTR("[TELNET] Connecting to reverse telnet on %s:%d\n"), host, port);
+
+    unsigned char i;
+    for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
+        if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
+            #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+                _telnetClients[i] = std::make_unique<WiFiClient>();
+            #else // TELNET_SERVER == TELNET_SERVER_ASYNC
+                _telnetClients[i] = std::make_unique<AsyncBufferedClient>(new AsyncClient());
+            #endif
+
+            if (_telnetClients[i]->connect(host, port)) {
+                return _telnetNotifyConnected(i);
+            } else {
+                DEBUG_MSG_P(PSTR("[TELNET] Error connecting reverse telnet\n"));
+                return _telnetDisconnect(i);
+            }
+        }
+    }
+
+    //no free/disconnected spot so reject
+    if (i == TELNET_MAX_CLIENTS) {
+        DEBUG_MSG_P(PSTR("[TELNET] Failed too connect - too many clients connected\n"));
+    }
+}
+
+#if MQTT_SUPPORT
+
+void _telnetReverseMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_TELNET_REVERSE);
+    } else if (type == MQTT_MESSAGE_EVENT) {
+        String t = mqttMagnitude((char *) topic);
+
+        if (t.equals(MQTT_TOPIC_TELNET_REVERSE)) {
+            String pl = String(payload);
+            int col = pl.indexOf(':');
+            if (col != -1) {
+                String host = pl.substring(0, col);
+                uint16_t port = pl.substring(col + 1).toInt();
+
+                _telnetReverse(host.c_str(), port);
+            } else {
+                DEBUG_MSG_P(PSTR("[TELNET] Incorrect reverse telnet value given, use the form \"host:ip\""));
+            }
+        }
+    }
+}
+
+#endif // MQTT_SUPPORT
+
+#endif // TELNET_REVERSE_SUPPORT
+
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
 
 void _telnetDisconnect(unsigned char clientId) {
@@ -281,6 +337,28 @@ void _telnetNotifyConnected(unsigned char i) {
 
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
+    #if TELNET_SERVER == TELNET_SERVER_ASYNC
+        _telnetClients[i]->onAck([i](void *s, AsyncClient *c, size_t len, uint32_t time) {
+        }, 0);
+
+        _telnetClients[i]->onData([i](void *s, AsyncClient *c, void *data, size_t len) {
+            _telnetData(i, data, len);
+        }, 0);
+
+        _telnetClients[i]->onDisconnect([i](void *s, AsyncClient *c) {
+            _telnetDisconnect(i);
+        }, 0);
+
+        _telnetClients[i]->onError([i](void *s, AsyncClient *c, int8_t error) {
+            DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), c->errorToString(error), error, i);
+        }, 0);
+
+        _telnetClients[i]->onTimeout([i](void *s, AsyncClient *c, uint32_t time) {
+            DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%u at %lu\n"), i, time);
+            c->close();
+        }, 0);
+    #endif
+
     // If there is no terminal support automatically dump info and crash data
     #if TERMINAL_SUPPORT == 0
         info();
@@ -356,8 +434,8 @@ void _telnetLoop() {
                 while (_telnetClients[i] && _telnetClients[i]->available()) {
                     char data[TERMINAL_BUFFER_SIZE];
                     size_t len = _telnetClients[i]->available();
-                    unsigned int r = _telnetClients[i]->readBytes(data, std::min(sizeof(data), len));
-                    
+                    unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
+
                     _telnetData(i, data, r);
                 }
             }
@@ -460,6 +538,27 @@ void telnetSetup() {
             .onVisible([](JsonObject& root) { root["telnetVisible"] = 1; })
             .onConnected(_telnetWebSocketOnConnected)
             .onKeyCheck(_telnetWebSocketOnKeyCheck);
+    #endif
+
+    #if TELNET_REVERSE_SUPPORT
+        #if MQTT_SUPPORT
+            mqttRegister(_telnetReverseMQTTCallback);
+        #endif
+
+        #if TERMINAL_SUPPORT
+            terminalRegisterCommand(F("TELNET.REVERSE"), [](Embedis* e) {
+                if (e->argc < 3) {
+                    terminalError(F("Wrong arguments. Usage: TELNET.REVERSE <host> <port>"));
+                    return;
+                }
+
+                String host = String(e->argv[1]);
+                uint16_t port = String(e->argv[2]).toInt();
+
+                terminalOK();
+                _telnetReverse(host.c_str(), port);
+            });
+        #endif
     #endif
 
     espurnaRegisterReload(_telnetConfigure);
