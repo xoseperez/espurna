@@ -1339,6 +1339,16 @@ void migrate() {
             setSetting("relayGPIO", 0, 12);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(TECKIN_SP21)
+
+            setSetting("board", 100);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

@@ -2917,6 +2917,30 @@
     #define DEBUG_SERIAL_SUPPORT        0
 
 // -----------------------------------------------------------------------------
+// Teckin SP21
+// -----------------------------------------------------------------------------
+
+#elif defined(TECKIN_SP21)
+
+    // Info
+    #define MANUFACTURER                "TECKIN"
+    #define DEVICE                      "SP21"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+
+
+// -----------------------------------------------------------------------------
 // Teckin SP22 v1.4 - v1.6
 // -----------------------------------------------------------------------------
 
