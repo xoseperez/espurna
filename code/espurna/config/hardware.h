@@ -3966,6 +3966,49 @@
     #define DEBUG_SERIAL_SUPPORT    0
 
 // -----------------------------------------------------------------------------
+// TFLAG NX-SM100 & NX-SM200
+// -----------------------------------------------------------------------------
+
+#elif defined(TFLAG_NX_SMX00)
+
+    // Info
+    #define MANUFACTURER                "TFLAG"
+    #define DEVICE                      "NX_SMX00"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  12
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_FOLLOW_INVERSE
+    #define LED1_RELAY                  1
+    #define LED2_PIN                    15
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_WIFI
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             16
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       632
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3711185
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
