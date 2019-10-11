@@ -30,6 +30,10 @@ void _arduinoOtaOnStart() {
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
     eepromRotate(false);
 
+    // Avoid triggering wdt on write operations, allow implicit yield() calls
+    // (async mode could be enabled when using ota_base methods, currently used by web and asynctcp ota)
+    Update.runAsync(false);
+
     // Because ArduinoOTA is synchronous, force backup right now instead of waiting for the next loop()
     eepromBackup(0);
 
@@ -55,7 +59,7 @@ void _arduinoOtaOnEnd() {
 void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
 
     // Removed to avoid websocket ping back during upgrade (see #1574)
-    // TODO: implement as separate from debugging message
+    // TODO: implement as percentage progress message, separate from debug log?
     #if WEB_SUPPORT
         if (wsConnected()) return;
     #endif

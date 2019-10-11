@@ -30,6 +30,8 @@ void URL::init(String url) {
     if (index > 0) {
         this->protocol = url.substring(0, index);
         url.remove(0, (index + 3));
+    } else {
+        this->protocol = "http";
     }
 
     if (this->protocol == "http") {

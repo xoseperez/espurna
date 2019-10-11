@@ -42,6 +42,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/server.key.h"
 #endif // SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 
+#include "ota_base.h"
+
 // -----------------------------------------------------------------------------
 
 AsyncWebServer * _server;
@@ -319,41 +321,28 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     }
 
     if (!index) {
-
-        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
-        eepromRotate(false);
-
-        DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
-        Update.runAsync(true);
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
+        if (!otaBegin()) {
+            DEBUG_MSG_P(PSTR("[OTA] Start: %s\n"), filename.c_str());
+            request->send(500);
+            return;
         }
-
     }
 
-    if (!Update.hasError()) {
-        if (Update.write(data, len) != len) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-        }
+    if (!otaWrite(data, len)) {
+        request->send(500);
+        return;
     }
 
     if (final) {
-        if (Update.end(true)){
-            DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
-        } else {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
+        if (!otaEnd(index + len)) {
+            request->send(500);
+            return;
         }
     } else {
         // Removed to avoid websocket ping back during upgrade (see #1574)
-        // TODO: implement as separate from debugging message
+        // TODO: implement as percentage progress message, separate from debug log?
         if (wsConnected()) return;
-        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        otaDebugProgress(index + len);
     }
 }
 
