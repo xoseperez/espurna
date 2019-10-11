@@ -27,7 +27,7 @@
         },
         data() {
             return {
-                currentPanel: 0
+                currentPanel: this.tabs[0].k
             }
         }
 
