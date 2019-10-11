@@ -106,7 +106,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "rfb",
         components: {
             Inpt
         }

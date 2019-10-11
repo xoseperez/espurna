@@ -170,20 +170,6 @@
             </fieldset>
         </div>
 
-        <div id="lightActionTemplate" class="template">
-            <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
-            <div class="pure-u-1 pure-u-lg-1-5">
-                <Inpt class="pure-u-2-3"
-                      name="schAction"
-                      type="number"
-                      min="0"
-                      step="1"
-                      max="255"
-                      value="0"/>
-            </div>
-            <Inpt class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" :options="lightOptions"></Inpt>
-            <Inpt type="hidden" name="schType" value="2"/>
-        </div>
     </section>
 </template>
 
@@ -191,7 +177,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "color",
         components: {
             Inpt
         }

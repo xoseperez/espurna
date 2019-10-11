@@ -211,8 +211,12 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "admin",
-        components: {Inpt}
+        components: {Inpt},
+        data() {
+            return {
+                status: {}
+            }
+        }
     }
 </script>
 <style>

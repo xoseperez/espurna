@@ -62,7 +62,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "ha",
         components: {
             Inpt
         }

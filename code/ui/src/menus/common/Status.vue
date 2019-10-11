@@ -225,7 +225,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "status",
         components: {
             Inpt
         },

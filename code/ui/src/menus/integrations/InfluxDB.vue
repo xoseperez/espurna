@@ -63,7 +63,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "idb",
         components: {
             Inpt
         }

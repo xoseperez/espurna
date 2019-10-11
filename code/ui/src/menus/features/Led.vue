@@ -92,7 +92,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "led",
         components: {
             Inpt
         }

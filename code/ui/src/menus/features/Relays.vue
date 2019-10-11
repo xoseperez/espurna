@@ -105,7 +105,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "relays",
         components: {
             Inpt
         }

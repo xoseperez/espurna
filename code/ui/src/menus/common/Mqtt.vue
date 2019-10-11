@@ -191,7 +191,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "mqtt",
         components: {
             Inpt
         }

@@ -17,6 +17,7 @@
     "@vue/cli-service": "^3.11.0",
     "@vue/eslint-config-standard": "^4.0.0",
     "babel-eslint": "^10.0.1",
+    "compression-webpack-plugin": "^3.0.0",
     "eslint": "^5.16.0",
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-vue": "^5.0.0",
@@ -26,7 +27,7 @@
     "lint-staged": "^8.1.5",
     "purgecss-webpack-plugin": "^1.6.0",
     "vue-template-compiler": "^2.6.10",
-    "compression-webpack-plugin": "^3.0.0"
+    "webpack-conditional-loader": "^1.0.12"
   },
   "eslintConfig": {
     "root": true,

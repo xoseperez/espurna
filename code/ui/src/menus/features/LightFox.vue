@@ -48,7 +48,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "lightfox",
         components: {
             Inpt
         }

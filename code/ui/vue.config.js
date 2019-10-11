@@ -1,4 +1,4 @@
-var PurgecssPlugin = require('purgecss-webpack-plugin');
+const PurgecssPlugin = require('purgecss-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const glob = require('glob-all');
 const path = require('path');
@@ -29,6 +29,9 @@ module.exports = {
                 options.compilerOptions.whitespace = 'condense';
                 return options
             });
+
+
+        config.module.rule('vue').use('webpack-conditional-loader').loader('webpack-conditional-loader');
 
         config.plugin('preload')
             .tap(args => {

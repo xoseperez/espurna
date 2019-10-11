@@ -19,7 +19,6 @@
 
 <script>
     export default {
-        name: "menu",
         props: {
             tabs: {
                 type: [Array],

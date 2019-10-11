@@ -259,7 +259,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "sensor",
         components: {
             Inpt
         }

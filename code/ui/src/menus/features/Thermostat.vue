@@ -185,7 +185,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "thermostat",
         components: {
             Inpt
         }

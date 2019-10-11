@@ -1,7 +1,5 @@
 <template>
-    <form>
-        <slot></slot>
-    </form>
+    <a rel="noopener" target="_blank"><slot></slot></a>
 </template>
 
 <script>
@@ -9,6 +7,6 @@
     }
 </script>
 
-<style scoped>
+<style>
 
 </style>

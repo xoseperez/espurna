@@ -32,7 +32,6 @@
     import Inpt from './../../components/Input';
 
     export default {
-        name: "nofuss",
         components: {
             Inpt
         }
