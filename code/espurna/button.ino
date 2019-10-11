@@ -38,6 +38,16 @@ void buttonMQTT(unsigned char id, uint8_t event) {
 
 #if WEB_SUPPORT
 
+unsigned char _buttonCount() {
+    return _buttons.size();
+}
+
+void _buttonWebSocketOnVisible(JsonObject& root) {
+    if (_buttonCount() > 0) {
+        root["btnVisible"] = 1;
+    }
+}
+
 bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "btn", 3) == 0);
 }
@@ -245,7 +255,9 @@ void buttonSetup() {
 
     // Websocket Callbacks
     #if WEB_SUPPORT
-        wsRegister().onKeyCheck(_buttonWebSocketOnKeyCheck);
+        wsRegister()
+            .onVisible(_buttonWebSocketOnVisible)
+            .onKeyCheck(_buttonWebSocketOnKeyCheck);
     #endif
 
     // Register loop
