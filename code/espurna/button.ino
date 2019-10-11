@@ -126,7 +126,11 @@ void buttonEvent(unsigned int id, unsigned char event) {
     }
     
     if (BUTTON_MODE_AP == action) {
-        wifiStartAP();
+        if (wifiState() & WIFI_STATE_AP) {
+            wifiStartSTA();
+        } else {
+            wifiStartAP();
+        }
     }
     
     if (BUTTON_MODE_RESET == action) {
