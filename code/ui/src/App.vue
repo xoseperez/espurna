@@ -2990,7 +2990,6 @@
     input:checked + .toggle .toggle__handler {
         width: 50%;
         background: #00c000;
-        -webkit-transform: translateX(65px);
         transform: translateX(65px);
         border-color: #000;
         border-radius: 0 4px 4px 0;
@@ -3009,7 +3008,7 @@
        -------------------------------------------------------------------------- */
 
     .loading {
-        background-image: url('images/loading.gif');
+        background-image: url('~@/assets/loading.gif');
         display: none;
         height: 20px;
         margin: 8px 0 0 10px;
