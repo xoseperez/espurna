@@ -1,15 +1,15 @@
 <template>
     <div>
-        <div id="password" class="webmode">
+        <div id="password" class="webmode" style="display: none">
             <div class="content">
-                <form id="formPassword" class="pure-form" autocomplete="off">
+                <Form id="formPassword" class="pure-form" autocomplete="off">
                     <div id="panel-password" class="panel block">
                         <div class="header">
                             <h1>SECURITY</h1>
                             <h2>
                                 Before using this device you have to change the default password for the user <strong>admin</strong>.
                                 This password will be used for the <strong>AP mode hotspot</strong>, the <strong>web
-                                interface</strong> (where you are now) and the <strong>over-the-air updates</strong>.
+                                    interface</strong> (where you are now) and the <strong>over-the-air updates</strong>.
                             </h2>
                         </div>
 
@@ -49,7 +49,7 @@
                                     Password must be <strong>8..63 characters</strong> (numbers and letters and any of
                                     these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least
                                     <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one
-                                    number</strong>.
+                                        number</strong>.
                                 </div>
                             </div>
 
@@ -69,219 +69,213 @@
                             </div>
                         </div>
                     </div>
-                </form>
+                </Form>
             </div> <!-- content -->
         </div>
 
-        <div id="layout" class="webmode">
-            <a id="menuLink" class="menu-link">
-                <span></span>
-            </a>
+        <Form>
+            <Menu id="layout" :tabs="tabs" class="webmode">
+                <template #header>
+                    <span class="pure-menu-heading hostname">{{hostname}}</span>
+                    <span class="pure-menu-heading small title">ESPurna {{version}}</span>
+                    <span class="pure-menu-heading small desc">{{description}}</span>
+                </template>
 
-            <Form>
-                <Menu :tabs="tabs">
-                    <template #header>
-                        <span class="pure-menu-heading hostname">{{hostname}}</span>
-                        <span class="pure-menu-heading small title">ESPurna {{version}}</span>
-                        <span class="pure-menu-heading small desc">{{description}}</span>
-                    </template>
+                <template #footer>
+                    <div class="main-buttons">
+                        <button class="pure-button button-update" @click="save">Save</button>
+                        <button class="pure-button button-reconnect" @click="reconnect">Reconnect</button>
+                        <button class="pure-button button-reboot" @click="reboot">Reboot</button>
+                    </div>
 
-                    <template #footer>
-                        <div class="main-buttons">
-                            <button class="pure-button button-update" @click="save">Save</button>
-                            <button class="pure-button button-reconnect" @click="reconnect">Reconnect</button>
-                            <button class="pure-button button-reboot" @click="reboot">Reboot</button>
-                        </div>
+                    <div class="footer">
+                        &copy; 2016-2019<br>
+                        Xose Pérez<br>
+                        <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
+                        <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
+                        <A href="https://github.com/xoseperez/espurna">ESPurna @
+                            GitHub</A><br>
+                        UI by <A href="https://github.com/tofandel">Tofandel</A><br>
+                        GPLv3 license<br>
+                    </div>
+                </template>
 
-                        <div class="footer">
-                            &copy; 2016-2019<br>
-                            Xose Pérez<br>
-                            <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
-                            <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
-                            <A href="https://github.com/xoseperez/espurna">ESPurna @
-                                GitHub</A><br>
-                            UI by <A href="https://github.com/tofandel">Tofandel</A>
-                            GPLv3 license<br>
-                        </div>
-                    </template>
+                <template #status>
+                    <Status/>
+                </template>
 
-                    <template #status>
-                        <Status/>
-                    </template>
+                <template #general>
+                    <General/>
+                </template>
 
-                    <template #general>
-                        <General/>
-                    </template>
+                <template #admin>
+                    <Admin/>
+                </template>
 
-                    <template #admin>
-                        <Admin/>
-                    </template>
+                <template #mqtt>
+                    <Mqtt/>
+                </template>
 
-                    <template #mqtt>
-                        <Mqtt/>
-                    </template>
+                <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
+                <template #thermostat>
+                    <Tstat/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
-                    <template #thermostat>
-                        <Tstat/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_LED === 'true' -->
+                <template #led>
+                    <Led/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_LED === 'true' -->
-                    <template #led>
-                        <Led/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
+                <template #color>
+                    <Color/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
-                    <template #color>
-                        <Color/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
+                <template #rfm69>
+                    <Rfm69/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
-                    <template #rfm69>
-                        <Rfm69/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
+                <template #rfb>
+                    <Rfb/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
-                    <template #rfb>
-                        <Rfb/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+                <template #sns>
+                    <Sns/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
-                    <template #sns>
-                        <Sns/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
+                <template #relays>
+                    <Relays/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
-                    <template #relays>
-                        <Relays/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
+                <template #lightfox>
+                    <Lfox/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
-                    <template #lightfox>
-                        <Lfox/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_DCZ === 'true' -->
+                <template #dcz>
+                    <Dcz/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_DCZ === 'true' -->
-                    <template #dcz>
-                        <Dcz/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_HA === 'true' -->
+                <template #ha>
+                    <Ha/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_HA === 'true' -->
-                    <template #ha>
-                        <Ha/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
+                <template #thingspeak>
+                    <Tspk/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
-                    <template #thingspeak>
-                        <Tspk/>
-                    </template>
-                    <!-- #endif -->
+                <!-- #if process.env.VUE_APP_IDB === 'true' -->
+                <template #idb>
+                    <Idb/>
+                </template>
+                <!-- #endif -->
 
-                    <!-- #if process.env.VUE_APP_IDB === 'true' -->
-                    <template #idb>
-                        <Idb/>
-                    </template>
-                    <!-- #endif -->
-
-                    <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
-                    <template #nofuss>
-                        <Nfss/>
-                    </template>
-                    <!-- #endif -->
-                </Menu>
-            </Form>
+                <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
+                <template #nofuss>
+                    <Nfss/>
+                </template>
+                <!-- #endif -->
+            </Menu>
+        </Form>
 
 
-            <div id="lightActionTemplate" class="template">
-                <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
-                <div class="pure-u-1 pure-u-lg-1-5">
+        <div id="lightActionTemplate" class="template">
+            <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
+            <div class="pure-u-1 pure-u-lg-1-5">
+                <Inpt class="pure-u-2-3"
+                      name="schAction"
+                      type="number"
+                      min="0"
+                      step="1"
+                      max="255"
+                      value="0"/>
+            </div>
+            <Inpt class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" :options="lightOptions"/>
+            <Inpt type="hidden" name="schType" value="2"/>
+        </div>
+
+
+        <div id="switchActionTemplate" class="template">
+            <label class="pure-u-1 pure-u-lg-1-4">Action</label>
+            <div class="pure-u-1 pure-u-lg-1-5">
+                <Inpt class="pure-u-1 pure-u-lg-23-24" name="schAction"
+                      :options="['Turn Off', 'Turn On', 'Toggle']"/>
+            </div>
+            <Inpt class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch" :options="relayOptions"/>
+            <Inpt type="hidden" name="schType" value="1"/>
+        </div>
+
+
+        <div id="scheduleTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
+                <div class="pure-u-1-4 pure-u-lg-1-5">
                     <Inpt class="pure-u-2-3"
-                          name="schAction"
+                          name="schHour"
                           type="number"
                           min="0"
                           step="1"
-                          max="255"
+                          max="23"
                           value="0"/>
+                    <div class="pure-u-1-4 hint center">&nbsp;h</div>
                 </div>
-                <Inpt class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" :options="lightOptions"/>
-                <Inpt type="hidden" name="schType" value="2"/>
-            </div>
-
-
-            <div id="switchActionTemplate" class="template">
-                <label class="pure-u-1 pure-u-lg-1-4">Action</label>
-                <div class="pure-u-1 pure-u-lg-1-5">
-                    <Inpt class="pure-u-1 pure-u-lg-23-24" name="schAction"
-                          :options="['Turn Off', 'Turn On', 'Toggle']"/>
+                <div class="pure-u-1-4 pure-u-lg-1-5">
+                    <Inpt class="pure-u-2-3"
+                          name="schMinute"
+                          type="number"
+                          min="0"
+                          step="1"
+                          max="59"
+                          value="0"/>
+                    <div class="pure-u-1-4 hint center">&nbsp;m</div>
                 </div>
-                <Inpt class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch" :options="relayOptions"/>
-                <Inpt type="hidden" name="schType" value="1"/>
-            </div>
+                <div class="pure-u-0 pure-u-lg-1-3"></div>
 
-
-            <div id="scheduleTemplate" class="template">
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
-                    <div class="pure-u-1-4 pure-u-lg-1-5">
-                        <Inpt class="pure-u-2-3"
-                              name="schHour"
-                              type="number"
-                              min="0"
-                              step="1"
-                              max="23"
-                              value="0"/>
-                        <div class="pure-u-1-4 hint center">&nbsp;h</div>
-                    </div>
-                    <div class="pure-u-1-4 pure-u-lg-1-5">
-                        <Inpt class="pure-u-2-3"
-                              name="schMinute"
-                              type="number"
-                              min="0"
-                              step="1"
-                              max="59"
-                              value="0"/>
-                        <div class="pure-u-1-4 hint center">&nbsp;m</div>
-                    </div>
-                    <div class="pure-u-0 pure-u-lg-1-3"></div>
-
-                    <label class="pure-u-1 pure-u-lg-1-4">Use UTC time</label>
-                    <div class="pure-u-1 pure-u-lg-3-4">
-                        <Inpt type="checkbox" name="schUTC"/>
-                    </div>
-
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                    <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
-                    <div class="pure-u-2-5 pure-u-lg-1-5">
-                        <Inpt class="pure-u-23-24 pure-u-lg-23-24"
-                              name="schWDs"
-                              type="text"
-                              maxlength="15"
-                              tabindex="0"
-                              value="1,2,3,4,5,6,7"/>
-                    </div>
-                    <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday...</div>
-
-                    <div id="schActionDiv" class="pure-u-1">
-                    </div>
-
-                    <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
-                    <div class="pure-u-1 pure-u-lg-3-4">
-                        <Inpt type="checkbox" name="schEnabled"/>
-                    </div>
-
-                    <div class="pure-u-1 pure-u-lg-1-2"></div>
-                    <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
+                <label class="pure-u-1 pure-u-lg-1-4">Use UTC time</label>
+                <div class="pure-u-1 pure-u-lg-3-4">
+                    <Inpt type="checkbox" name="schUTC"/>
                 </div>
+
+                <div class="pure-u-0 pure-u-lg-1-2"></div>
+                <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
+                <div class="pure-u-2-5 pure-u-lg-1-5">
+                    <Inpt class="pure-u-23-24 pure-u-lg-23-24"
+                          name="schWDs"
+                          type="text"
+                          maxlength="15"
+                          tabindex="0"
+                          value="1,2,3,4,5,6,7"/>
+                </div>
+                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday...</div>
+
+                <div id="schActionDiv" class="pure-u-1">
+                </div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
+                <div class="pure-u-1 pure-u-lg-3-4">
+                    <Inpt type="checkbox" name="schEnabled"/>
+                </div>
+
+                <div class="pure-u-1 pure-u-lg-1-2"></div>
+                <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
             </div>
 
             <iframe id="downloader"></iframe>
@@ -476,7 +470,7 @@
     General
    -------------------------------------------------------------------------- */
 
-    #menu .pure-menu-heading {
+    .menu .pure-menu-heading {
         font-size: 100%;
         padding: .5em .5em;
         white-space: normal;
@@ -836,18 +830,18 @@
         Menu
        -------------------------------------------------------------------------- */
 
-    #menu .small {
+    .menu .small {
         font-size: 60%;
         padding-left: 9px;
     }
 
-    #menu div.footer {
+    .menu div.footer {
         color: #999;
         font-size: 80%;
         padding: 10px;
     }
 
-    #menu div.footer a {
+    .menu div.footer a {
         padding: 0;
         text-decoration: none;
     }
@@ -1001,12 +995,8 @@
     Add transition to containers so they can push in and out.
     */
     #layout,
-    #menu,
+    .menu,
     .menu-link {
-        -webkit-transition: all 0.2s ease-out;
-        -moz-transition: all 0.2s ease-out;
-        -ms-transition: all 0.2s ease-out;
-        -o-transition: all 0.2s ease-out;
         transition: all 0.2s ease-out;
     }
 
@@ -1019,7 +1009,7 @@
         padding-left: 0;
     }
 
-    #layout.active #menu {
+    #layout.active .menu {
         left: 160px;
         width: 160px;
     }
@@ -1032,10 +1022,9 @@
     The content `<div>` is where all your content goes.
     */
     .content {
-        margin: 0 auto;
         padding: 0 2em;
         max-width: 800px;
-        margin-bottom: 50px;
+        margin: 0 auto 50px;
         line-height: 1.6em;
     }
 
@@ -1067,187 +1056,9 @@
     }
 
 
-    /*
-    The `#menu` `<div>` is the parent `<div>` that contains the `.pure-menu` that
-    appears on the left side of the page.
-    */
-
-    #menu {
-        margin-left: -160px; /* "#menu" width */
-        width: 160px;
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        z-index: 1000; /* so the menu or its navicon stays above all content */
-        background: #191818;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /*
-    All anchors inside the menu should be styled like this.
-    */
-    #menu a {
-        color: #999;
-        border: none;
-        padding: 0.6em 0 0.6em 0.6em;
-    }
-
-    /*
-    Remove all background/borders, since we are applying them to #menu.
-    */
-    #menu .pure-menu,
-    #menu .pure-menu ul {
-        border: none;
-        background: transparent;
-    }
-
-    /*
-    Add that light border to separate items into groups.
-    */
-    #menu .pure-menu ul,
-    #menu .pure-menu .menu-item-divided {
-        border-top: 1px solid #333;
-    }
-
-    /*
-    Change color of the anchor links on hover/focus.
-    */
-    #menu .pure-menu li a:hover,
-    #menu .pure-menu li a:focus {
-        background: #333;
-    }
-
-    /*
-    This styles the selected menu item `<li>`.
-    */
-    #menu .pure-menu-selected,
-    #menu .pure-menu-heading {
-        background: #1f8dd6;
-    }
-
-    /*
-    This styles a link within a selected menu item `<li>`.
-    */
-    #menu .pure-menu-selected a {
-        color: #fff;
-    }
-
-    /*
-    This styles the menu heading.
-    */
-    #menu .pure-menu-heading {
-        font-size: 110%;
-        color: #fff;
-        margin: 0;
-    }
-
-    /* -- Dynamic Button For Responsive Menu -------------------------------------*/
-
-    /*
-    The button to open/close the Menu is custom-made and not part of Pure. Here's
-    how it works:
-    */
-
-    /*
-    `.menu-link` represents the responsive menu toggle that shows/hides on
-    small screens.
-    */
-    .menu-link {
-        position: fixed;
-        display: block; /* show this only on small screens */
-        top: 0;
-        left: 0; /* "#menu width" */
-        background: #000;
-        background: rgba(0, 0, 0, 0.7);
-        font-size: 10px; /* change this value to increase/decrease button size */
-        z-index: 10;
-        width: 2em;
-        height: auto;
-        padding: 2.1em 1.6em;
-    }
-
-    .menu-link:hover,
-    .menu-link:focus {
-        background: #000;
-    }
-
-    .menu-link span {
-        position: relative;
-        display: block;
-    }
-
-    .menu-link span,
-    .menu-link span:before,
-    .menu-link span:after {
-        background-color: #fff;
-        width: 100%;
-        height: 0.2em;
-    }
-
-    .menu-link span:before,
-    .menu-link span:after {
-        position: absolute;
-        margin-top: -0.6em;
-        content: " ";
-    }
-
-    .menu-link span:after {
-        margin-top: 0.6em;
-    }
-
-
-    /* -- Responsive Styles (Media Queries) ------------------------------------- */
-
-    /*
-    Hides the menu at `48em`, but modify this based on your app's needs.
-    */
-    @media (min-width: 48em) {
-
-        .header,
-        .content {
-            padding-left: 2em;
-            padding-right: 2em;
-        }
-
-        #layout {
-            padding-left: 160px; /* left col width "#menu" */
-            left: 0;
-        }
-
-        #menu {
-            left: 160px;
-        }
-
-        .menu-link {
-            position: fixed;
-            left: 160px;
-            display: none;
-        }
-
-        #layout.active .menu-link {
-            left: 160px;
-        }
-    }
-
-    @media (max-width: 48em) {
-        /* Only apply this when the window is small. Otherwise, the following
-        case results in extra padding on the left:
-            * Make the window small.
-            * Tap the menu to trigger the active state.
-            * Make the window large again.
-        */
-        #layout.active {
-            position: relative;
-            left: 160px;
-        }
-    }
-
     //Pure
     html {
         font-family: sans-serif;
-        -ms-text-size-adjust: 100%;
         -webkit-text-size-adjust: 100%
     }
 
@@ -1443,28 +1254,9 @@
         letter-spacing: -.31em;
         text-rendering: optimizespeed;
         font-family: FreeSans, Arimo, "Droid Sans", Helvetica, Arial, sans-serif;
-        display: -webkit-box;
-        display: -webkit-flex;
-        display: -ms-flexbox;
         display: flex;
-        -webkit-box-orient: horizontal;
-        -webkit-box-direction: normal;
-        -webkit-flex-flow: row wrap;
-        -ms-flex-flow: row wrap;
         flex-flow: row wrap;
-        -webkit-align-content: flex-start;
-        -ms-flex-line-pack: start;
         align-content: flex-start
-    }
-
-    @media all and (-ms-high-contrast: none),(-ms-high-contrast: active) {
-        table .pure-g {
-            display: block
-        }
-    }
-
-    .opera-only :-o-prefocus, .pure-g {
-        word-spacing: -.43em
     }
 
     .pure-u {
@@ -1609,12 +1401,7 @@
         vertical-align: middle;
         text-align: center;
         cursor: pointer;
-        -webkit-user-drag: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
         user-select: none;
-        -webkit-box-sizing: border-box;
         box-sizing: border-box
     }
 
@@ -2057,7 +1844,6 @@
         white-space: nowrap;
         overflow-y: hidden;
         overflow-x: auto;
-        -ms-overflow-style: none;
         -webkit-overflow-scrolling: touch;
         padding: .5em 0
     }

@@ -1,5 +1,6 @@
 const PurgecssPlugin = require("purgecss-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
+const TerserPlugin = require('terser-webpack-plugin');
 const glob = require("glob-all");
 const path = require("path");
 
@@ -19,6 +20,20 @@ module.exports = {
             }),
         ],
         devtool: false,
+        optimization: {
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        ecma: 6,
+                        compress: true,
+                        output: {
+                            comments: false,
+                            beautify: false
+                        }
+                    }
+                })
+            ]
+        }
     },
     chainWebpack(config) {
         config.module
