@@ -1,8 +1,6 @@
 language: python
 python:
 - '2.7'
-sudo: false
-conditions: v1
 cache:
   directories:
   - "~/.npm"
@@ -18,7 +16,7 @@ env:
   - ESPURNA_PIO_PATCH_ISSUE_1610=y
   - ESPURNA_PIO_SHARED_LIBRARIES=y
 script:
-- cd code && ./build.sh -p &&  cd ..
+- ./travis_script.sh
 stages:
 - name: Test
 - name: Release
@@ -26,10 +24,9 @@ stages:
 jobs:
   include:
   - stage: Test
-    script: cd code && ./build.sh travis01
-  - script: cd code && ./build.sh travis02
-  - script: cd code && ./build.sh travis03
-  - script: cd code && ./build.sh travis04
+    env: BUILDER_ENV=travis-2_3_0
+  - env: BUILDER_ENV=travis-latest
+  - env: BUILDER_ENV=travis-git BUILDER_EXTRA=cfg_secureclient
   - stage: Release
     env: BUILDER_THREAD=0
   - env: BUILDER_THREAD=1
