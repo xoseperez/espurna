@@ -15,7 +15,9 @@ DEFAULT_CONFIGURATIONS=(
     nondefault
 )
 
-for cfg in ${DEFAULT_CONFIGURATIONS} ${EXTRA_CONFIGURATIONS} ; do
+trap 'rm -f espurna/config/custom.h' EXIT
+
+for cfg in ${DEFAULT_CONFIGURATIONS[@]} ${EXTRA_CONFIGURATIONS} ; do
     echo travis_fold:start:build_${cfg}
     echo "- building ${cfg}"
 
