@@ -26,7 +26,7 @@ jobs:
   - stage: Test
     env: BUILDER_ENV=travis-2_3_0
   - env: BUILDER_ENV=travis-latest
-  - env: BUILDER_ENV=travis-git BUILDER_EXTRA=cfg_secureclient
+  - env: BUILDER_ENV=travis-git BUILDER_EXTRA=secure_client
   - stage: Release
     env: BUILDER_THREAD=0
   - env: BUILDER_THREAD=1
