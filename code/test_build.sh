@@ -2,6 +2,7 @@
 
 set -eu -o pipefail
 
+CUSTOM_HEADER="espurna/config/custom.h"
 TARGET_ENVIRONMENT=${1:?"pio env name"}
 shift 1
 
@@ -15,15 +16,15 @@ DEFAULT_CONFIGURATIONS=(
     nondefault
 )
 
-trap 'rm -f espurna/config/custom.h' EXIT
+trap 'rm -f ${CUSTOM_HEADER}' EXIT
 
 for cfg in ${DEFAULT_CONFIGURATIONS[@]} ${EXTRA_CONFIGURATIONS} ; do
     echo travis_fold:start:build_${cfg}
     echo "- building ${cfg}"
 
-    printf "#define MANUFACTURER \"TEST_BUILD\"\n" | tee espurna/config/custom.h
-    printf "#define DEVICE \"${cfg^^}\"\n" | tee --append espurna/config/custom.h
-    cat test/build/${cfg}.h | tee --append espurna/config/custom.h
+    printf "#define MANUFACTURER \"TEST_BUILD\"\n" | tee ${CUSTOM_HEADER}
+    printf "#define DEVICE \"${cfg^^}\"\n" | tee --append ${CUSTOM_HEADER}
+    cat test/build/${cfg}.h | tee --append ${CUSTOM_HEADER}
 
     export PLATFORMIO_SRC_BUILD_FLAGS="-DUSE_CUSTOM_H"
     export PLATFORMIO_BUILD_CACHE_DIR="test/pio_cache"
