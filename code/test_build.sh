@@ -6,8 +6,7 @@ CUSTOM_HEADER="espurna/config/custom.h"
 TARGET_ENVIRONMENT=${1:?"pio env name"}
 shift 1
 
-EXTRA_CONFIGURATIONS=("$@")
-DEFAULT_CONFIGURATIONS=(
+CONFIGURATIONS=(
     basic
     sensor
     emon
@@ -16,9 +15,13 @@ DEFAULT_CONFIGURATIONS=(
     nondefault
 )
 
+if [ $# > 0 ] ; then
+    CONFIGURATIONS=("${CONFIGURATIONS[@]}" "$@")
+fi
+
 trap 'rm -f ${CUSTOM_HEADER}' EXIT
 
-for cfg in "${DEFAULT_CONFIGURATIONS[@]}" "${EXTRA_CONFIGURATIONS[@]}" ; do
+for cfg in "${CONFIGURATIONS[@]}" ; do
     echo "travis_fold:start:build_${cfg}"
     echo "- building ${cfg}"
 
