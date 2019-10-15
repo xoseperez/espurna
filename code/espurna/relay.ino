@@ -34,6 +34,7 @@ typedef struct {
     unsigned long change_time;  // Scheduled time to change
     bool report;                // Whether to report to own topic
     bool group_report;          // Whether to report to group topic
+    unsigned char restore_last_schedule;  // Boolean, Restore to last schedule or not
 
     // Helping objects
 
@@ -656,6 +657,7 @@ void _relayConfigure() {
             //set to high to block short opening of relay
             digitalWrite(_relays[i].pin, HIGH);
         }
+        _relays[i].restore_last_schedule = getSetting("relayLastschedule", i, 1).toInt();
     }
 
     #if MQTT_SUPPORT
@@ -731,6 +733,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     JsonArray& boot = relays.createNestedArray("boot");
     JsonArray& pulse = relays.createNestedArray("pulse");
     JsonArray& pulse_time = relays.createNestedArray("pulse_time");
+    JsonArray& restore_last_schedule = relays.createNestedArray("restore_last_schedule");
 
     #if MQTT_SUPPORT
         JsonArray& group = relays.createNestedArray("group");
@@ -747,6 +750,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
         pulse.add(_relays[i].pulse);
         pulse_time.add(_relays[i].pulse_ms / 1000.0);
+        restore_last_schedule.add(_relays[i].restore_last_schedule);
 
         #if MQTT_SUPPORT
             group.add(getSetting("mqttGroup", i, ""));

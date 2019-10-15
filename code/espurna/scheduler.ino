@@ -11,6 +11,8 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <TimeLib.h>
 
+int RestoredLastSchedules = 0;
+
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
@@ -114,6 +116,57 @@ void _schConfigure() {
 
 }
 
+void RestoreLastScheduleState(int relay, int daybefore)
+{
+    time_t local_time = now();
+    time_t utc_time = ntpLocal2UTC(local_time);
+    int minimum_restore_time = -1440;
+    int saved_action = -1;
+
+    for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++)
+    {
+        int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
+        if (sch_switch == 0xFF)
+            break;
+
+        // Skip disabled schedules
+        if (getSetting("schEnabled", i, 1).toInt() == 0)
+            continue;
+
+        // Get the datetime used for the calculation
+        bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
+        time_t t = sch_utc ? utc_time : local_time;
+
+        if (daybefore > 0) {
+          unsigned char now_hour = hour(t);
+          unsigned char now_minute = minute(t);
+          unsigned char now_sec = second(t);
+          t = t - ((now_hour * 3600) + ((now_minute + 1) * 60) + now_sec + (daybefore * 86400));
+        }
+
+        String sch_weekdays = getSetting("schWDs", i, "");
+
+        if (_schIsThisWeekday(t, sch_weekdays)) {
+            int sch_hour = getSetting("schHour", i, 0).toInt();
+            int sch_minute = getSetting("schMinute", i, 0).toInt();
+            int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
+            int sch_action = getSetting("schAction", i, 0).toInt();
+            if (sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+                minimum_restore_time = minutes_to_trigger;
+                saved_action = sch_action;
+            }
+        }
+    }
+
+    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -1440 && saved_action == -1) {
+      RestoreLastScheduleState(relay, ++daybefore);
+      return;
+    }
+
+    if (minimum_restore_time != -1440 && saved_action != -1)
+      relayStatus(relay, saved_action);
+}
+
 bool _schIsThisWeekday(time_t t, String weekdays){
 
     // Convert from Sunday to Monday as day 1
@@ -214,6 +267,14 @@ void _schLoop() {
 
     // Check time has been sync'ed
     if (!ntpSynced()) return;
+
+    if (RestoredLastSchedules == 0) {
+        for (int i = 0; i < _relays.size(); i++){
+          if (getSetting("relayLastschedule", i, 1).toInt() == 1)
+                RestoreLastScheduleState(i, 0);
+        }
+        RestoredLastSchedules = 1;
+    }
 
     // Check schedules every minute at hh:mm:00
     static unsigned long last_minute = 60;

@@ -250,7 +250,7 @@ function addValue(data, name, value) {
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime",
+        "relayBoot", "relayPulse", "relayTime", "relayLastschedule",
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
@@ -1025,6 +1025,10 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
+        $("input[name='relayLastschedule']", line).prop('checked', data.restore_last_schedule[i]);
+        $("input[name='relayLastschedule']", line).attr("id", "relayLastschedule" + i);
+        $("input[name='relayLastschedule']", line).attr("name", "relayLastschedule" + i);
+        $("input[name='relayLastschedule" + i + "']", line).next().attr("for","relayLastschedule" + (i));
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
@@ -1459,7 +1463,7 @@ function processData(data) {
 				});
 			}
 			return;
-		}
+        }
 
         <!-- endRemoveIf(!rfm69)-->
 
