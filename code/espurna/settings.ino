@@ -263,9 +263,9 @@ void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t 
 void settingsSetup() {
 
     Embedis::dictionary( F("EEPROM"),
-        (SPI_FLASH_SEC_SIZE - crashUsedSpace()),
-        [](size_t pos) -> char { return EEPROMr.read(pos + crashUsedSpace()); },
-        [](size_t pos, char value) { EEPROMr.write(pos + crashUsedSpace(), value); },
+        SPI_FLASH_SEC_SIZE,
+        [](size_t pos) -> char { return EEPROMr.read(pos); },
+        [](size_t pos, char value) { EEPROMr.write(pos, value); },
         #if SETTINGS_AUTOSAVE
             []() { eepromCommit(); }
         #else
