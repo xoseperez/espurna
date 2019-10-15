@@ -37,23 +37,36 @@ String getAdminPass() {
     return getSetting("adminPass", ADMIN_PASS);
 }
 
-String getCoreVersion() {
-    String version = ESP.getCoreVersion();
-    #ifdef ARDUINO_ESP8266_RELEASE
-        if (version.equals("00000000")) {
-            version = String(ARDUINO_ESP8266_RELEASE);
-        }
-    #endif
-    version.replace("_", ".");
+const String& getCoreVersion() {
+    static String version;
+    if (!version.length()) {
+        #ifdef ARDUINO_ESP8266_RELEASE
+            version = ESP.getCoreVersion();
+            if (version.equals("00000000")) {
+                version = String(ARDUINO_ESP8266_RELEASE);
+            }
+            version.replace("_", ".");
+        #else
+            #define _GET_COREVERSION_STR(X) #X
+            #define GET_COREVERSION_STR(X) _GET_COREVERSION_STR(X)
+            version = GET_COREVERSION_STR(ARDUINO_ESP8266_GIT_DESC);
+            #undef _GET_COREVERSION_STR
+            #undef GET_COREVERSION_STR
+        #endif
+    }
     return version;
 }
 
-String getCoreRevision() {
-    #ifdef ARDUINO_ESP8266_GIT_VER
-        return String(ARDUINO_ESP8266_GIT_VER, 16);
-    #else
-        return String("");
-    #endif
+const String& getCoreRevision() {
+    static String revision;
+    if (!revision.length()) {
+        #ifdef ARDUINO_ESP8266_GIT_VER
+            revision = String(ARDUINO_ESP8266_GIT_VER, 16);
+        #else
+            revision = "";
+        #endif
+    }
+    return revision;
 }
 
 unsigned char getHeartbeatMode() {
