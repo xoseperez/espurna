@@ -5,6 +5,7 @@ from espurna_utils import (
     remove_float_support,
     ldscripts_inject_libpath,
     lwip_inject_patcher,
+    app_inject_revision,
     dummy_ets_printf
 )
 
@@ -32,3 +33,6 @@ if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
 # patch lwip1 sources conditionally:
 # https://github.com/xoseperez/espurna/issues/1610
 lwip_inject_patcher(env)
+
+# when using git, add -DAPP_REVISION=(git-commit-hash)
+app_inject_revision(projenv)
