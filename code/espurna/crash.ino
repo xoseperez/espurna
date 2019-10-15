@@ -195,7 +195,7 @@ void crashSetup() {
     );
 
     if (trace_max != _save_crash_stack_trace_max) {
-        setSetting("sysScTraceMax", trace_max);
+        setSetting("sysTraceMax", trace_max);
     }
     _save_crash_stack_trace_max = trace_max;
 
