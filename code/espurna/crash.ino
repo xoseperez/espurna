@@ -159,9 +159,9 @@ void crashDump() {
 
     DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
 
-    for (int16_t i = 0; i < stack_size; i += 0x10) {
-        DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
-        for (byte j = 0; j < 4; j++) {
+    for (uint16_t offset = 0; offset < stack_size; offset += 0x10) {
+        DEBUG_MSG_P(PSTR("%08x: "), stack_start + offset);
+        for (byte b = 0; b < 4; b++) {
             EEPROMr.get(current_address, stack_trace);
             DEBUG_MSG_P(PSTR("%08x "), stack_trace);
             current_address += 4;
