@@ -22,13 +22,15 @@ for cfg in "${DEFAULT_CONFIGURATIONS[@]}" "${EXTRA_CONFIGURATIONS[@]}" ; do
     echo "travis_fold:start:build_${cfg}"
     echo "- building ${cfg}"
 
-    printf "#define MANUFACTURER \"%\"\n" "TEST_BUILD" | tee ${CUSTOM_HEADER}
-    printf "#define DEVICE \"%s\"\n" "${cfg^^}" | tee --append ${CUSTOM_HEADER}
+    printf "#define MANUFACTURER \"%s\"\n" "TEST_BUILD" \
+        | tee ${CUSTOM_HEADER}
+    printf "#define DEVICE \"%s\"\n" "${cfg^^}" \
+        | tee --append ${CUSTOM_HEADER}
     tee --append ${CUSTOM_HEADER} < "test/build/${cfg}.h"
 
     export PLATFORMIO_SRC_BUILD_FLAGS="-DUSE_CUSTOM_H"
     export PLATFORMIO_BUILD_CACHE_DIR="test/pio_cache"
     
-    time pio run -e "$TARGET_ENVIRONMENT"
+    time pio run -s -e "$TARGET_ENVIRONMENT"
     echo "travis_fold:end:build_${cfg}"
 done
