@@ -152,14 +152,15 @@ void crashDump() {
 
     DEBUG_MSG_P(PSTR("sp=0x%08x end=0x%08x saved=0x%04x\n\n"), stack_start, stack_end, stack_size);
     if (0xFFFF == stack_size) return;
+    stack_size = constrain(stack_size, 0, _save_crash_stack_trace_max);
 
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
-
     uint32_t stack_trace;
 
     DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
 
-    for (uint16_t offset = 0; offset < stack_size; offset += 0x10) {
+    uint16_t offset = 0;
+    do {
         DEBUG_MSG_P(PSTR("%08x: "), stack_start + offset);
         for (byte b = 0; b < 4; b++) {
             EEPROMr.get(current_address, stack_trace);
@@ -167,7 +168,7 @@ void crashDump() {
             current_address += 4;
         }
         DEBUG_MSG_P(PSTR("\n[DEBUG] "));
-    }
+    } while ((offset < stack_size) && (offset += 0x10));
     DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 
 }
