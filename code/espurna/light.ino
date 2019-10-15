@@ -1012,8 +1012,11 @@ void _lightWebSocketStatus(JsonObject& root) {
         }
     }
     if (_light_use_cct) {
+        JsonObject& mireds = root.createNestedObject("mireds");
+        mireds["value"] = _light_mireds;
+        mireds["cold"] = _light_mireds_cold;
+        mireds["warm"] = _light_mireds_warm;
         root["useCCT"] = _light_use_cct;
-        root["mireds"] = _light_mireds;
     }
     JsonArray& channels = root.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channel.size(); id++) {
