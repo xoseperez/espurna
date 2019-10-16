@@ -3374,6 +3374,10 @@
     #define LIGHT_CH2_PIN       4   // cold white
     #define LIGHT_CH2_INVERSE   0
 
+    // https://www.xiaomitoday.com/xiaomi-mijia-mjtd01yl-led-desk-lamp-review/
+    #define LIGHT_COLDWHITE_MIRED 153
+    #define LIGHT_WARMWHITE_MIRED 370
+
     // Encoder
     // If mode is ENCODER_MODE_RATIO, the value ratio between both channels is changed
     // when the button is not pressed, and the overall brightness when pressed
