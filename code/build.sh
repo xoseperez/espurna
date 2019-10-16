@@ -61,9 +61,6 @@ list_envs() {
 travis=$(list_envs | grep travis | sort)
 available=$(list_envs | grep -Ev -- '-ota$|-ssl$|^travis' | sort)
 
-# Build tools settings
-export PLATFORMIO_BUILD_FLAGS="${PLATFORMIO_BUILD_FLAGS} -DAPP_REVISION='\"$git_revision\"'"
-
 # Functions
 print_available() {
     echo "--------------------------------------------------------------"
