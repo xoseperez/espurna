@@ -160,7 +160,7 @@ void _mqttSetupAsyncClient(bool secure = false) {
 
 WiFiClient& _mqttGetClient(bool secure) {
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        return (secure ? _mqtt_client_secure->get() : _mqtt_client)
+        return (secure ? _mqtt_client_secure->get() : _mqtt_client);
     #else
         return _mqtt_client;
     #endif

@@ -56,7 +56,16 @@ unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 bool _light_dirty = false;
 bool _light_state = false;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
-unsigned int _light_mireds = lround((Light::MIREDS_COLDWHITE + Light::MIREDS_WARMWHITE) / 2);
+
+// Default to the Philips Hue value that HA also use.
+// https://developers.meethue.com/documentation/core-concepts
+long _light_cold_mireds = LIGHT_COLDWHITE_MIRED;
+long _light_warm_mireds = LIGHT_WARMWHITE_MIRED;
+
+long _light_cold_kelvin = (1000000L / _light_cold_mireds);
+long _light_warm_kelvin = (1000000L / _light_warm_mireds);
+
+long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
 
 using light_brightness_func_t = void();
 light_brightness_func_t* _light_brightness_func = nullptr;
@@ -154,7 +163,7 @@ void _lightApplyBrightnessColor() {
     if (_light_use_cct) {
 
         // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-        double miredFactor = ((double) _light_mireds - (double) Light::MIREDS_COLDWHITE)/((double) Light::MIREDS_WARMWHITE - (double) Light::MIREDS_COLDWHITE);
+        double miredFactor = ((double) _light_mireds - (double) _light_cold_mireds)/((double) _light_warm_mireds - (double) _light_cold_mireds);
 
         // set cold white
         _light_channel[3].inputValue = 0;
@@ -320,11 +329,11 @@ void _fromHSV(const char * hsv) {
 // https://github.com/stelgenhof/AiLight
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
 long _toKelvin(const long mireds) {
-    return constrain(static_cast<long>(1000000L / mireds), Light::KELVIN_WARMWHITE, Light::KELVIN_COLDWHITE);
+    return constrain(static_cast<long>(1000000L / mireds), _light_warm_kelvin, _light_cold_kelvin);
 }
 
 long _toMireds(const long kelvin) {
-    return constrain(static_cast<long>(lround(1000000L / kelvin)), Light::MIREDS_COLDWHITE, Light::MIREDS_WARMWHITE);
+    return constrain(static_cast<long>(lround(1000000L / kelvin)), _light_cold_mireds, _light_warm_mireds);
 }
 
 void _lightMireds(const long kelvin) {
@@ -335,7 +344,7 @@ void _lightMiredsCCT(const long kelvin) {
     _lightMireds(kelvin);
 
     // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-    const double factor = ((double) _light_mireds - (double) Light::MIREDS_COLDWHITE)/((double) Light::MIREDS_WARMWHITE - (double) Light::MIREDS_COLDWHITE);
+    const double factor = ((double) _light_mireds - (double) _light_cold_mireds)/((double) _light_warm_mireds - (double) _light_cold_mireds);
     _setCCTInputValue(
         lround(factor * Light::VALUE_MAX),
         lround(((double) 1.0 - factor) * Light::VALUE_MAX)
@@ -1003,8 +1012,11 @@ void _lightWebSocketStatus(JsonObject& root) {
         }
     }
     if (_light_use_cct) {
+        JsonObject& mireds = root.createNestedObject("mireds");
+        mireds["value"] = _light_mireds;
+        mireds["cold"] = _light_cold_mireds;
+        mireds["warm"] = _light_warm_mireds;
         root["useCCT"] = _light_use_cct;
-        root["mireds"] = _light_mireds;
     }
     JsonArray& channels = root.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channel.size(); id++) {
@@ -1268,6 +1280,13 @@ void _lightConfigure() {
     if (_light_use_cct && (((_light_channel.size() < 5) && (_light_channel.size() != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);
+    }
+
+    if (_light_use_cct) {
+        _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED).toInt();
+        _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED).toInt();
+        _light_cold_kelvin = (1000000L / _light_cold_mireds);
+        _light_warm_kelvin = (1000000L / _light_warm_mireds);
     }
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;

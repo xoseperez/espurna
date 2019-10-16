@@ -1220,14 +1220,6 @@
 #define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 #endif
 
-#ifndef LIGHT_COLDWHITE_KELVIN
-#define LIGHT_COLDWHITE_KELVIN  6536
-#endif
-
-#ifndef LIGHT_WARMWHITE_KELVIN
-#define LIGHT_WARMWHITE_KELVIN  2000
-#endif
-
 #ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
 #endif
