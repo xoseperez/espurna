@@ -158,14 +158,13 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
-
         PMSX003Sensor(): BaseSensor() {
             _count = pms_specs[_type].slot_count;
             _sensor_id = SENSOR_PMSX003_ID;
         }
 
         ~PMSX003Sensor() {
-            if (_serial) delete _serial;
+            removeSerial();
         }
 
         void setRX(unsigned char pin_rx) {
@@ -216,7 +215,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
             if (!_dirty) return;
 
             if (_soft) {
-                if (_serial) delete _serial;
+                if (_serial) removeSerial();
                 _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
                 static_cast<SoftwareSerial*>(_serial)->enableIntTx(false);
             }
@@ -356,6 +355,13 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         // Current value for slot # index
         double value(unsigned char index) {
             return _slot_values[index];
+        }
+
+    private:
+        void removeSerial() {
+            if (_serial && _soft) {
+                delete static_cast<SoftwareSerial*>(_serial);
+            }
         }
 
     protected:
