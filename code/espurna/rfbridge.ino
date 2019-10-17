@@ -104,12 +104,14 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 }
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
-    root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
-    root["rfbCount"] = relayCount();
+    JsonObject& rfb = root.createNestedObject("rfb");
+
+    rfb["repeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
+    rfb["count"] = relayCount();
     #if RFB_DIRECT
-        root["rfbdirectVisible"] = 1;
-        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
-        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
+        rfb["directVisible"] = 1;
+        rfb["RX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
+        rfb["TX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
     #endif
 }
 

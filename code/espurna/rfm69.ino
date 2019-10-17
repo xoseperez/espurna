@@ -36,12 +36,13 @@ unsigned long _rfm69_packet_count;
 #if WEB_SUPPORT
 
 void _rfm69WebSocketOnConnected(JsonObject& root) {
+    JsonObject& rfm69 = root.createNestedObject("rfm69");
 
-    root["rfm69Visible"] = 1;
-    root["rfm69Topic"] = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
-    root["packetCount"] = _rfm69_packet_count;
-    root["nodeCount"] = _rfm69_node_count;
-    JsonArray& mappings = root.createNestedArray("mapping");
+    rfm69["visible"] = 1;
+    rfm69["topic"] = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
+    rfm69["packetCount"] = _rfm69_packet_count;
+    rfm69["nodeCount"] = _rfm69_node_count;
+    JsonArray& mappings = rfm69.createNestedArray("mapping");
     for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
         unsigned char node = getSetting("node", i, 0).toInt();
         if (0 == node) break;

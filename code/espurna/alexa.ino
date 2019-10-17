@@ -28,8 +28,9 @@ bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _alexaWebSocketOnConnected(JsonObject& root) {
-    root["alexaEnabled"] = alexaEnabled();
-    root["alexaName"] = getSetting("alexaName");
+    JsonObject& alexa = root.createNestedObject("alexa");
+    alexa["enabled"] = alexaEnabled();
+    alexa["name"] = getSetting("alexaName");
 }
 
 void _alexaConfigure() {

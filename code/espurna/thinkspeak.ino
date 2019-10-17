@@ -72,18 +72,19 @@ void _tspkWebSocketOnVisible(JsonObject& root) {
 }
 
 void _tspkWebSocketOnConnected(JsonObject& root) {
+    JsonObject& tspk = root.createNestedObject("tspk");
 
-    root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
-    root["tspkKey"] = getSetting("tspkKey");
-    root["tspkClear"] = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
+    tspk["enabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
+    tspk["key"] = getSetting("tspkKey");
+    tspk["clear"] = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
 
-    JsonArray& relays = root.createNestedArray("tspkRelays");
+    JsonArray& relays = tspk.createNestedArray("relays");
     for (byte i=0; i<relayCount(); i++) {
         relays.add(getSetting("tspkRelay", i, 0).toInt());
     }
 
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(root, "tspk");
+        _sensorWebSocketMagnitudes(tpsk);
     #endif
 
 }

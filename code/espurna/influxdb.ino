@@ -26,12 +26,14 @@ void _idbWebSocketOnVisible(JsonObject& root) {
 }
 
 void _idbWebSocketOnConnected(JsonObject& root) {
-    root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
-    root["idbHost"] = getSetting("idbHost", INFLUXDB_HOST);
-    root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
-    root["idbDatabase"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
-    root["idbUsername"] = getSetting("idbUsername", INFLUXDB_USERNAME);
-    root["idbPassword"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
+    JsonObject& idb = root.createNestedObject("idb");
+
+    idb["enabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
+    idb["host"] = getSetting("idbHost", INFLUXDB_HOST);
+    idb["port"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
+    idb["database"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
+    idb["username"] = getSetting("idbUsername", INFLUXDB_USERNAME);
+    idb["password"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
 }
 
 void _idbConfigure() {

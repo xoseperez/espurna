@@ -176,7 +176,7 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
-    JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
+    JsonObject& magnitudes = root.createNestedArray("magnitudes");
     uint8_t size = 0;
 
     JsonArray& index = magnitudes.createNestedArray("index");
@@ -185,26 +185,23 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
     JsonArray& description = magnitudes.createNestedArray("description");
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
+        JsonObject& magni = root.createNestedObject();
 
         sensor_magnitude_t magnitude = _magnitudes[i];
         if (magnitude.type == MAGNITUDE_EVENT) continue;
         ++size;
 
-        index.add<uint8_t>(magnitude.global);
-        type.add<uint8_t>(magnitude.type);
-        units.add(magnitudeUnits(magnitude.type));
+        magni["index"] = magnitude.global;
+        magni["type"] = magnitude.type;
+        magni["unit"] = magnitudeUnit(magnitude.type));
 
         if (magnitude.type == MAGNITUDE_ENERGY) {
             if (_sensor_energy_reset_ts.length() == 0) _sensorResetTS();
-            description.add(magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")"));
+            magni["description"] = magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")"));
         } else {
-            description.add(magnitude.sensor->slot(magnitude.local));
+            magni["description"] = magnitude.sensor->slot(magnitude.local));
         }
-
     }
-
-    magnitudes["size"] = size;
-
 }
 
 void _sensorWebSocketSendData(JsonObject& root) {
@@ -234,73 +231,79 @@ void _sensorWebSocketSendData(JsonObject& root) {
 }
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
+    JsonArray& sensors = root.createNestedArray("sensors");
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
-        BaseSensor * sensor = _sensors[i];
+        BaseSensor * sns = _sensors[i];
+
+        JsonObject& sensor =sensors.createNestedObject()
 
         #if EMON_ANALOG_SUPPORT
-            if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["emonVisible"] = 1;
-                root["pwrVisible"] = 1;
-                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
+            if (sns->getID() == SENSOR_EMON_ANALOG_ID) {
+                sensor["emonVisible"] = 1;
+                sensor["pwrVisible"] = 1;
+                sensor["pwrVoltage"] = ((EmonAnalogSensor *) sns)->getVoltage();
             }
         #endif
 
         #if HLW8012_SUPPORT
-            if (sensor->getID() == SENSOR_HLW8012_ID) {
-                root["hlwVisible"] = 1;
-                root["pwrVisible"] = 1;
+            if (sns->getID() == SENSOR_HLW8012_ID) {
+                sensor["hlwVisible"] = 1;
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if CSE7766_SUPPORT
-            if (sensor->getID() == SENSOR_CSE7766_ID) {
-                root["cseVisible"] = 1;
-                root["pwrVisible"] = 1;
+            if (sns->getID() == SENSOR_CSE7766_ID) {
+                sensor["cseVisible"] = 1;
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if V9261F_SUPPORT
-            if (sensor->getID() == SENSOR_V9261F_ID) {
-                root["pwrVisible"] = 1;
+            if (sns->getID() == SENSOR_V9261F_ID) {
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if ECH1560_SUPPORT
-            if (sensor->getID() == SENSOR_ECH1560_ID) {
-                root["pwrVisible"] = 1;
+            if (sns->getID() == SENSOR_ECH1560_ID) {
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if PZEM004T_SUPPORT
-            if (sensor->getID() == SENSOR_PZEM004T_ID) {
-                root["pzemVisible"] = 1;
-                root["pwrVisible"] = 1;
+            if (sns->getID() == SENSOR_PZEM004T_ID) {
+                sensor["pzemVisible"] = 1;
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if PULSEMETER_SUPPORT
-            if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                root["pmVisible"] = 1;
-                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
+            if (sns->getID() == SENSOR_PULSEMETER_ID) {
+                sensor["pmVisible"] = 1;
+                sensor["pwrRatioE"] = ((PulseMeterSensor *) sns)->getEnergyRatio();
             }
         #endif
 
     }
 
-    if (magnitudeCount()) {
-        //root["apiRealTime"] = _sensor_realtime;
-        root["pwrUnits"] = _sensor_power_units;
-        root["eneUnits"] = _sensor_energy_units;
-        root["tmpUnits"] = _sensor_temperature_units;
-        root["tmpCorrection"] = _sensor_temperature_correction;
-        root["humCorrection"] = _sensor_humidity_correction;
-        root["snsRead"] = _sensor_read_interval / 1000;
-        root["snsReport"] = _sensor_report_every;
-        root["snsSave"] = _sensor_save_every;
-        _sensorWebSocketMagnitudesConfig(root);
-    }
+
+    JsonObject& sensor = root.createNestedObject("sensor");
+
+    _sensorWebSocketMagnitudesConfig(sensor);
+        
+    //TODO why is this not nested?
+    sensor["pwrUnits"] = _sensor_power_units;
+    sensor["eneUnits"] = _sensor_energy_units;
+    sensor["tmpUnits"] = _sensor_temperature_units;
+    sensor["tmpCorrection"] = _sensor_temperature_correction;
+    sensor["humCorrection"] = _sensor_humidity_correction;
+    sensor["snsRead"] = _sensor_read_interval / 1000;
+    sensor["snsReport"] = _sensor_report_every;
+    sensor["snsSave"] = _sensor_save_every;
+
 
     /*
     // Sensors manifest
@@ -1641,7 +1644,7 @@ String magnitudeTopicIndex(unsigned char index) {
 }
 
 
-String magnitudeUnits(unsigned char type) {
+String magnitudeUnit(unsigned char type) {
     char buffer[8] = {0};
     if (type < MAGNITUDE_MAX) {
         if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
@@ -1801,7 +1804,7 @@ void sensorLoop() {
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
                         buffer,
-                        magnitudeUnits(magnitude.type).c_str()
+                        magnitudeUnit(magnitude.type).c_str()
                     );
                 }
                 #endif // SENSOR_DEBUG

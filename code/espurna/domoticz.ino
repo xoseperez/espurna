@@ -188,7 +188,6 @@ void _domoticzWebSocketOnVisible(JsonObject& root) {
 }
 
 void _domoticzWebSocketOnConnected(JsonObject& root) {
-    JsonObject& module = root.createNestedObject("module");
     JsonObject& dcz = root.createNestedObject("dcz");
 
     dcz["enabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;

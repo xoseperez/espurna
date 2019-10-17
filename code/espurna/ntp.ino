@@ -39,10 +39,12 @@ void _ntpWebSocketOnData(JsonObject& root) {
 }
 
 void _ntpWebSocketOnConnected(JsonObject& root) {
-    root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
-    root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-    root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    JsonObject& ntp = root.createNestedObject("ntp");
+
+    ntp["server"] = getSetting("ntpServer", NTP_SERVER);
+    ntp["offset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    ntp["DST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+    ntp["region"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
 }
 
 #endif

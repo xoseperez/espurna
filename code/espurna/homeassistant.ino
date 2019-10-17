@@ -96,7 +96,7 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     unsigned char type = magnitudeType(i);
     config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = magnitudeUnits(type);
+    config["unit_of_measurement"] = magnitudeUnit(type);
 }
 
 void _haSendMagnitudes(ha_config_t& config) {
@@ -328,8 +328,10 @@ void _haWebSocketOnVisible(JsonObject& root) {
 }
 
 void _haWebSocketOnConnected(JsonObject& root) {
-    root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    JsonObject& ha = root.createNestedObject("ha");
+
+    ha["enabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    ha["prefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
 }
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {

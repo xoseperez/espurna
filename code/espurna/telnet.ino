@@ -37,8 +37,10 @@ bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _telnetWebSocketOnConnected(JsonObject& root) {
-    root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
-    root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+    JsonObject& telnet = root.createNestedObject("telnet");
+    
+    telnet["STA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+    telnet["auth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
 
 #endif

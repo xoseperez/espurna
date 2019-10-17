@@ -719,39 +719,23 @@ String _relayFriendlyName(unsigned char i) {
     return res;
 }
 
+
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& relays = root.createNestedArray("relays");
-
-
-    JsonArray& gpio = relays.createNestedArray("gpio");
-    JsonArray& type = relays.createNestedArray("type");
-    JsonArray& reset = relays.createNestedArray("reset");
-    JsonArray& boot = relays.createNestedArray("boot");
-    JsonArray& pulse = relays.createNestedArray("pulse");
-    JsonArray& pulse_time = relays.createNestedArray("pulse_time");
-
-    #if MQTT_SUPPORT
-        JsonArray& group = relays.createNestedArray("group");
-        JsonArray& group_sync = relays.createNestedArray("group_sync");
-        JsonArray& on_disconnect = relays.createNestedArray("on_disc");
-    #endif
+    JsonArray& relays = root.createNestedArray("relays");
 
     for (unsigned char i=0; i<relayCount(); i++) {
-        JsonObject& relay =
-        gpio.add(_relayFriendlyName(i));
-
-
-        type.add(_relays[i].type);
-        reset.add(_relays[i].reset_pin);
-        boot.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt());
-
-        pulse.add(_relays[i].pulse);
-        pulse_time.add(_relays[i].pulse_ms / 1000.0);
+        JsonObject& relay = relays.createNestedObject()
+        relay["gpio"] = _relayFriendlyName(i);
+        relay["type"] = _relays[i].type;
+        relay["reset"] = _relays[i].reset_pin;
+        relay["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+        relay["pulse"] = _relays[i].pulse;
+        relay["pulse_time"] = _relays[i].pulse_ms / 1000.0;
 
         #if MQTT_SUPPORT
-            group.add(getSetting("mqttGroup", i, ""));
-            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
-            on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
+            relay["group"] = getSetting("mqttGroup", i, "");
+            relay["group_sync"] = getSetting("mqttGroupSync", i, 0).toInt();
+            relay["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
         #endif
     }
 }

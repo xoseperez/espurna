@@ -438,21 +438,23 @@ void _mqttWebSocketOnData(JsonObject& root) {
 }
 
 void _mqttWebSocketOnConnected(JsonObject& root) {
-    root["mqttEnabled"] = mqttEnabled();
-    root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
-    root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
-    root["mqttUser"] = getSetting("mqttUser", MQTT_USER);
-    root["mqttClientID"] = getSetting("mqttClientID");
-    root["mqttPassword"] = getSetting("mqttPassword", MQTT_PASS);
-    root["mqttKeep"] = _mqtt_keepalive;
-    root["mqttRetain"] = _mqtt_retain;
-    root["mqttQoS"] = _mqtt_qos;
+    JsonObject& mqtt = root.createNestedObject("mqtt");
+
+    mqtt["enabled"] = mqttEnabled();
+    mqtt["server"] = getSetting("mqttServer", MQTT_SERVER);
+    mqtt["port"] = getSetting("mqttPort", MQTT_PORT);
+    mqtt["user"] = getSetting("mqttUser", MQTT_USER);
+    mqtt["clientID"] = getSetting("mqttClientID");
+    mqtt["password"] = getSetting("mqttPassword", MQTT_PASS);
+    mqtt["keep"] = _mqtt_keepalive;
+    mqtt["retain"] = _mqtt_retain;
+    mqtt["qoS"] = _mqtt_qos;
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
-        root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
+        mqtt["useSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        mqtt["FP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
-    root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
-    root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    mqtt["topic"] = getSetting("mqttTopic", MQTT_TOPIC);
+    mqtt["useJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 }
 
 #endif

@@ -27,10 +27,11 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _apiWebSocketOnConnected(JsonObject& root) {
-    root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
-    root["apiKey"] = getSetting("apiKey");
-    root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    root["apiRestFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
+    JsonObject& api = root.createNestedObject("api");
+    api["enabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
+    api["key"] = getSetting("apiKey");
+    api["realTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    api["restFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
 }
 
 void _apiConfigure() {

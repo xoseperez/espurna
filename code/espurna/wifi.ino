@@ -484,12 +484,15 @@ bool _wifiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _wifiWebSocketOnConnected(JsonObject& root) {
-    root["maxNetworks"] = WIFI_MAX_NETWORKS;
-    root["wifiScan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
-    JsonArray& wifi = root.createNestedArray("wifi");
+    JsonObject& wifi = root.createNestedObject("wifi");
+    
+    wifi["maxNetworks"] = WIFI_MAX_NETWORKS;
+    wifi["scan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
+    
+    JsonArray& networks = wifi.createNestedArray("networks");
     for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
         if (!hasSetting("ssid", i)) break;
-        JsonObject& network = wifi.createNestedObject();
+        JsonObject& network = networks.createNestedObject();
         network["ssid"] = getSetting("ssid", i, "");
         network["pass"] = getSetting("pass", i, "");
         network["ip"] = getSetting("ip", i, "");

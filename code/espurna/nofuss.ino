@@ -29,8 +29,10 @@ void _nofussWebSocketOnVisible(JsonObject& root) {
 }
 
 void _nofussWebSocketOnConnected(JsonObject& root) {
-    root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
-    root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
+    JsonObject& nofuss = root.createNestedObject("nofuss");
+
+    nofuss["enabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+    nofuss["server"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
 
 #endif

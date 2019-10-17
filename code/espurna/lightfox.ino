@@ -28,7 +28,7 @@ void lightfoxLearn() {
     Serial.write(LIGHTFOX_CODE_STOP);
     Serial.println();
     Serial.flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Learn comman sent\n"));
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Learn command sent\n"));
 }
 
 void lightfoxClear() {
@@ -38,7 +38,7 @@ void lightfoxClear() {
     Serial.write(LIGHTFOX_CODE_STOP);
     Serial.println();
     Serial.flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Clear comman sent\n"));
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Clear command sent\n"));
 }
 
 // -----------------------------------------------------------------------------
@@ -48,10 +48,12 @@ void lightfoxClear() {
 #if WEB_SUPPORT
 
 void _lightfoxWebSocketOnConnected(JsonObject& root) {
-    root["lightfoxVisible"] = 1;
+    JsonObject& lightfox = root.createNestedObject("lightfox");
+
+    lightfox["enabled"] = 1;
+
     uint8_t buttonsCount = _buttons.size();
-    root["lightfoxRelayCount"] = relayCount();
-    JsonArray& rfb = root.createNestedArray("lightfoxButtons");
+    JsonArray& rfb = root.createNestedArray("buttons");
     for (byte id=0; id<buttonsCount; id++) {
         JsonObject& node = rfb.createNestedObject();
         node["id"] = id;

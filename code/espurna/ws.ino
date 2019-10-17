@@ -548,7 +548,7 @@ void _wsOnConnected(JsonObject& root) {
     wifi["bssid"] = WiFi.BSSIDstr();
     wifi["channel"] = WiFi.channel();
     wifi["name"] = getNetwork();
-    wifi["device_ip"] = getIP();
+    wifi["ip"] = getIP();
 
     root["hostname"] = getSetting("hostname");
     root["desc"] = getSetting("desc");

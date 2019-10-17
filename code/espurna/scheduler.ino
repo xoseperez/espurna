@@ -25,41 +25,30 @@ void _schWebSocketOnVisible(JsonObject& root) {
 }
 
 void _schWebSocketOnConnected(JsonObject &root){
-
     if (!relayCount()) return;
+
+    JsonArray& schedules = root.createNestedArray("schedules");
 
     root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
 
-    JsonObject &schedules = root.createNestedObject("schedules");
     uint8_t size = 0;
 
-    JsonArray& enabled = schedules.createNestedArray("schEnabled");
-    JsonArray& switch_ = schedules.createNestedArray("schSwitch");
-    JsonArray& action = schedules.createNestedArray("schAction");
-    JsonArray& type = schedules.createNestedArray("schType");
-    JsonArray& hour = schedules.createNestedArray("schHour");
-    JsonArray& minute = schedules.createNestedArray("schMinute");
-    JsonArray& utc = schedules.createNestedArray("schUTC");
-    JsonArray& weekdays = schedules.createNestedArray("schWDs");
 
     for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!hasSetting("schSwitch", i)) break;
         ++size;
+        
+        JsonObject& schedule = schedules.createNestedObject();
 
-        enabled.add<uint8_t>(getSetting("schEnabled", i, 1).toInt() == 1);
-        utc.add<uint8_t>(getSetting("schUTC", i, 0).toInt() == 1);
-
-        switch_.add(getSetting("schSwitch", i, 0).toInt());
-        action.add(getSetting("schAction", i, 0).toInt());
-        type.add(getSetting("schType", i, 0).toInt());
-        hour.add(getSetting("schHour", i, 0).toInt());
-        minute.add(getSetting("schMinute", i, 0).toInt());
-        weekdays.add(getSetting("schWDs", i, ""));
+        schedule["enabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
+        schedule["UTC"] = getSetting("schUTC", i, 0).toInt() == 1;
+        schedule["switch"] = getSetting("schSwitch", i, 0).toInt();
+        schedule["action"] = getSetting("schAction", i, 0).toInt();
+        schedule["type"] = getSetting("schType", i, 0).toInt();
+        schedule["hour"] = getSetting("schHour", i, 0).toInt();
+        schedule["minute"] = getSetting("schMinute", i, 0).toInt();
+        schedule["weekdays"] = getSetting("schWDs", i, "");
     }
-
-    schedules["size"] = size;
-    schedules["start"] = 0;
-
 }
 
 #endif // WEB_SUPPORT
