@@ -703,6 +703,7 @@ void wifiReconnectCheck() {
     #if TELNET_SUPPORT
         if (telnetConnected()) connected = true;
     #endif
+    jw.enableSTA(true);
     jw.setReconnectTimeout(connected ? 0 : WIFI_RECONNECT_INTERVAL);
 }
 

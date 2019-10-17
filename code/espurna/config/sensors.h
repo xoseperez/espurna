@@ -1198,10 +1198,12 @@
     EMON_ADS1X15_SUPPORT || \
     EMON_ANALOG_SUPPORT || \
     EVENTS_SUPPORT || \
+    EZOPH_SUPPORT || \
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
     HLW8012_SUPPORT || \
     LDR_SUPPORT || \
+    MAX6675_SUPPORT || \
     MICS2710_SUPPORT || \
     MICS5525_SUPPORT || \
     MHZ19_SUPPORT || \
@@ -1218,8 +1220,7 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
-    MAX6675_SUPPORT || \
-    EZOPH_SUPPORT \
+    ADE7953_SUPPORT \
 )
 #endif
 
@@ -1354,16 +1355,16 @@
     #include "../sensors/MAX6675Sensor.h"
 #endif 
 
-#if MHZ19_SUPPORT
-    #include "../sensors/MHZ19Sensor.h"
-#endif
-
 #if MICS2710_SUPPORT
     #include "../sensors/MICS2710Sensor.h"
 #endif
 
 #if MICS5525_SUPPORT
     #include "../sensors/MICS5525Sensor.h"
+#endif
+
+#if MHZ19_SUPPORT
+    #include "../sensors/MHZ19Sensor.h"
 #endif
 
 #if NTC_SUPPORT
@@ -1390,12 +1391,12 @@
     #include "../sensors/PZEM004TSensor.h"
 #endif
 
-#if SI7021_SUPPORT
-    #include "../sensors/SI7021Sensor.h"
-#endif
-
 #if SHT3X_I2C_SUPPORT
     #include "../sensors/SHT3XI2CSensor.h"
+#endif
+
+#if SI7021_SUPPORT
+    #include "../sensors/SI7021Sensor.h"
 #endif
 
 #if SONAR_SUPPORT

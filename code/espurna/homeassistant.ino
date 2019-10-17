@@ -214,6 +214,7 @@ void _haSwitchYaml(unsigned char index, JsonObject& root) {
     output.reserve(HA_YAML_BUFFER_SIZE);
 
     JsonObject& config = root.createNestedObject("config");
+    config["platform"] = "mqtt";
     _haSendSwitch(index, config);
 
     if (index == 0) output += "\n\n" + switchType + ":";
@@ -250,6 +251,7 @@ void _haSensorYaml(unsigned char index, JsonObject& root) {
     output.reserve(HA_YAML_BUFFER_SIZE);
 
     JsonObject& config = root.createNestedObject("config");
+    config["platform"] = "mqtt";
     _haSendMagnitude(index, config);
 
     if (index == 0) output += "\n\nsensor:";
