@@ -35,21 +35,23 @@
         cursor: pointer;
         user-select: none;
         box-sizing: border-box;
-        border: none;
         text-decoration: none;
+        text-transform: uppercase;
         border-radius: 4px;
         color: white;
         letter-spacing: 0;
         margin-bottom: 10px;
         text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-        padding: 8px 8px;
+        padding: 10px 8px;
+        border: none;
+        background-image: linear-gradient(transparent, rgba(0, 0, 0, .05) 40%, rgba(0, 0, 0, .2));
 
         &:focus, &:hover {
             outline: 0;
-            background-image: linear-gradient(transparent, rgba(0, 0, 0, .05) 40%, rgba(0, 0, 0, .1))
+            background-image: linear-gradient(transparent, rgba(0, 0, 0, .1) 40%, rgba(0, 0, 0, .4))
         }
         &:active {
-            box-shadow: 0 0 0 1px rgba(0, 0, 0, .15) inset, 0 0 6px rgba(0, 0, 0, .2) inset
+            background-image: linear-gradient(transparent, rgba(255, 255, 255, .05) 40%, rgba(255, 255, 255, .2))
         }
         &[disabled] {
             border: none;
@@ -73,7 +75,7 @@
     }
 
     .main-buttons button {
-        width: 100px;
+        width: 130px;
     }
 
     .btn-del-schedule {
@@ -81,11 +83,13 @@
     }
 
     .btn-danger {
-        background: #C03420; /* redish */
+        background-color: #db3a22; /* redish */
+        /*border-color: #671c11;*/
     }
 
     .btn-success {
-        background: #58C04E;
+        background-color: #51cc36;
+        /*border-color: #225317;*/
     }
 
     /*
@@ -130,11 +134,13 @@
     }
 
     .btn-accent {
-        background: #FF8000;
+        background-color: #ff952f;
+        /*border-color: #844d18;*/
     }
 
     .btn-info {
-        background: #42B8DD;
+        background-color: #42B8DD;
+        /*border-color: #1e5263;*/
     }
 
     /*

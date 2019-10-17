@@ -9,15 +9,13 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Settings</label>
                     <div class="pure-u-1-3 pure-u-lg-1-4">
-                        <button type="button" class="btn btn-settings-backup pure-u-23-24"> Backup</button>
+                        <Btn name="settings-backup" class="pure-u-23-24">Backup</Btn>
                     </div>
                     <div class="pure-u-1-3 pure-u-lg-1-4">
-                        <button type="button" class="btn btn-settings-restore pure-u-23-24"> Restore</button>
+                        <Btn name="settings-restore" color="accent" class="pure-u-23-24">Restore</Btn>
                     </div>
                     <div class="pure-u-1-3 pure-u-lg-1-4">
-                        <button type="button" class="btn btn-settings-factory pure-u-1">
-                            Factory Reset
-                        </button>
+                        <Btn name="settings-factory" color="danger" class="pure-u-1">Factory Reset</Btn>
                     </div>
                 </div>
                 <div class="pure-g">
@@ -42,7 +40,7 @@
                         firmware over-the-air (OTA).<br> It must be <strong>8..63 characters</strong> (numbers and
                         letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at
                         least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one
-                        number</strong>.
+                            number</strong>.
                     </div>
                 </div>
                 <div class="pure-g">
@@ -97,7 +95,7 @@
                     <label class="pure-u-1 pure-u-lg-1-4">HTTP API Key</label>
                     <Inpt name="apiKey" class="pure-u-3-4 pure-u-lg-1-2" type="text" tabindex="14"/>
                     <div class="pure-u-1-4 pure-u-lg-1-4">
-                        <button type="button" class="btn btn-apikey pure-u-23-24">Auto</button>
+                        <Btn name="apikey" color="accent" class="pure-u-23-24">Auto</Btn>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -130,12 +128,13 @@
                 </div>
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
-                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" tabindex="15">
-                        <option value="0">Disabled</option>
-                        <option value="1">On device startup</option>
-                        <option value="2">Repeat after defined interval</option>
-                        <option value="3">Repeat only device status</option>
-                    </select>
+                    <Inpt type="select" class="pure-u-1 pure-u-lg-3-4" name="hbMode"
+                          tabindex="15" :options="[
+                              'Disabled',
+                              'On device startup',
+                              'Repeat after defined interval',
+                              'Repeat only device status'
+                          ]"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4 hint"> Define when heartbeat message will be sent.</div>
                 </div>
@@ -151,19 +150,17 @@
                 </div>
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
-                    <Inpt class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly/>
+                    <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" :value="filename">
                     <div class="pure-u-1-4 pure-u-lg-1-8">
-                        <button type="button" class="btn btn-upgrade-browse pure-u-23-24"> Browse</button>
+                        <Btn name="upgrade-browse" class="pure-u-23-24">Browse</Btn>
                     </div>
                     <div class="pure-u-1-4 pure-u-lg-1-8">
-                        <button type="button" class="btn btn-upgrade pure-u-23-24"> Upgrade</button>
+                        <Btn name="upgrade" color="danger" class="pure-u-23-24">Upgrade</Btn>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                         The device has {{status.free_size}} bytes available for
-                        OTA updates. If your image is larger than this consider doing a <a
-                            href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" rel="noopener"
-                            target="_blank"><strong>two-step update</strong></a>.
+                        OTA updates. If your image is larger than this consider doing a <A href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates"><strong>two-step update</strong></A>.
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4">
@@ -188,7 +185,9 @@
                 </div>
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
-                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
+                    <Inpt type="select" class="pure-u-1 pure-u-lg-1-4" name="ntpOffset"
+                          :options="ntpOffsets"
+                          tabindex="42"/>
                 </div>
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
@@ -198,10 +197,7 @@
                 </div>
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">DST Region</label>
-                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpRegion">
-                        <option value="0">Europe</option>
-                        <option value="1">USA</option>
-                    </select>
+                    <Inpt type="select" class="pure-u-1 pure-u-lg-1-4" name="ntpRegion" :options="['Europe', 'USA']"/>
                 </div>
             </fieldset>
         </div>
@@ -209,12 +205,36 @@
 </template>
 <script>
     import Inpt from './../../components/Input';
+    import Btn from './../../components/Button';
+    import A from './../../components/ExtLink';
 
     export default {
-        components: {Inpt},
+        components: {Inpt, Btn, A},
         data() {
             return {
                 status: {}
+            }
+        },
+        computed: {
+            ntpOffsets() {
+                const tz = [
+                    -720, -660, -600, -570, -540,
+                    -480, -420, -360, -300, -240,
+                    -210, -180, -120, -60, 0,
+                    60, 120, 180, 210, 240,
+                    270, 300, 330, 345, 360,
+                    390, 420, 480, 510, 525,
+                    540, 570, 600, 630, 660,
+                    720, 765, 780, 840
+                ];
+                let offsets = [];
+
+                tz.forEach((v) => {
+                    const text = "GMT" + (v >= 0 ? "+" : "-") + new Date((1440 + Math.abs(v)) * 60000).toISOString().substr(11, 5);
+                    offsets.push({k: v, l: text})
+                });
+
+                return offsets;
             }
         }
     }

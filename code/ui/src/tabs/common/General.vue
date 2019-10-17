@@ -91,9 +91,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Scan networks</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
-                              name="wifiScan"
-                              tabindex="1"/>
+                        <Inpt type="switch" name="wifiScan"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -105,7 +103,7 @@
                         (or router) or to a <strong>hidden SSID</strong>.
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <button class="btn btn-wifi-scan" type="button">Scan now</button>
+                    <Btn name="wifi-scan" color="accent" @click="wifiScan">Scan now</Btn>
                     <div v-if="scanLoading" class="pure-u-0 pure-u-lg-1-4 scan loading"></div>
                 </div>
 
@@ -225,6 +223,13 @@
             return {
                 scanResult: [],
                 scanLoading: false
+            }
+        },
+        methods: {
+            wifiScan() {
+                this.scanLoading = true;
+                this.scanResult = [];
+                this.$emit("action", "scan");
             }
         }
     }

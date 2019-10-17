@@ -136,7 +136,7 @@
 
         .current,
         .heading {
-            background: #1f8dd6;
+            background: #479fd6;
         }
 
     }

@@ -1,12 +1,12 @@
 <template>
-    <select v-if="type === 'select'" :value="value" @input="onInput">
+    <select v-if="type === 'select'" v-model="value">
         <option v-for="(l, k) in options" :key="key(k,l)" :value="key(k,l)">{{label(k,l)}}</option>
     </select>
     <span v-else-if="type === 'switch'" class="switch">
-        <input type="checkbox" @input="onInput">
-        <label><i class="on">{{on}}</i><i class="off">{{off}}</i></label>
+        <input :id="'switch-'+_uid" type="checkbox" v-model="value">
+        <label :for="'switch-'+_uid"><i class="on">{{on}}</i><i class="off">{{off}}</i></label>
     </span>
-    <input v-else :type="type" :value="value" @input="onInput">
+    <input v-else :type="type" v-model="value">
 </template>
 
 <script>
@@ -30,21 +30,27 @@
             },
             options: {
                 type: Array
+            },
+            default: {
+                type: undefined,
+                default: null
             }
         },
         inject: {$form: {name: '$form', default: false}},
         computed: {
-            value() {
-                return this.form && this.form.values ? this.form.values[this.name] : null;
+            value: {
+                get() {
+                    return this.form && this.form.values ? this.form.values[this.name] : this.default;
+                },
+                set(v) {
+                    this.$set(this.form.values, this.name, v);
+                }
             },
             form() {
                 return this.$form ? this.$form() : false;
             }
         },
         methods: {
-            onInput(ev) {
-                this.$set(this.form.values, this.name, ev.target.value);
-            },
             key(k, l) {
                 return typeof l === 'object' ? l.k : k
             },
@@ -79,8 +85,7 @@
             cursor: pointer;
             font-weight: 500;
             text-align: left;
-            margin: 16px;
-            padding: 16px 0 16px 44px;
+            padding: 4px 0 4px 44px;
 
 
             &:before, &:after {
@@ -131,10 +136,12 @@
         }
 
         input[disabled] + label {
-            background-color: #666;
+            &:before {
+                background-color: #666;
+            }
 
             &:after {
-                background-color: #aaa;
+                background-color: #bbb;
             }
         }
     }

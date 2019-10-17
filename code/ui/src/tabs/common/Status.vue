@@ -21,24 +21,24 @@
                     <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
                     <div class="pure-g color">
                         <label class="pure-u-1 pure-u-lg-1-4">Color</label>
-                        <span class="pure-u-lg-1-4">{{modules.light.color}}</span>
+                        <span class="pure-u-lg-1-4">{{light.color}}</span>
                     </div>
                     <div class="pure-g mireds">
                         <label class="pure-u-1 pure-u-lg-1-4">Mireds (Cold &harr; Warm)</label>
                         <input type="range" min="153" max="500"
-                               class="slider pure-u-lg-1-4" :value="modules.light.mired"
+                               class="slider pure-u-lg-1-4" :value="light.mired"
                                readonly>
-                        <span class="slider pure-u-lg-1-4">{{modules.light.mired}}</span>
+                        <span class="slider pure-u-lg-1-4">{{light.mired}}</span>
                     </div>
                     <div class="pure-g">
                         <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
                         <input type="range" min="0" max="255"
-                               class="slider pure-u-lg-1-4" :value="modules.light.brightness"
+                               class="slider pure-u-lg-1-4" :value="light.brightness"
                                readonly>
-                        <span class="slider brightness pure-u-lg-1-4">{{modules.light.brightness}}</span>
+                        <span class="slider brightness pure-u-lg-1-4">{{light.brightness}}</span>
                     </div>
 
-                    <div v-for="(channel, id) in channels" :key="id" class="pure-g">
+                    <div v-for="(channel, id) in light.channels" :key="id" class="pure-g">
                         <label class="pure-u-1 pure-u-lg-1-4">Channel #{{id}}</label>
                         <input type="range" min="0" max="255"
                                :value="channel" class="slider channels pure-u-lg-1-4"
@@ -66,12 +66,12 @@
                     <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
                     <div class="pure-g module module-rfm69">
                         <div class="pure-u-1-2">Packet count</div>
-                        <div class="pure-u-11-24"><span class="right">{{modules.rfm69.packet_count}}</span></div>
+                        <div class="pure-u-11-24"><span class="right">{{rfm69.packet_count}}</span></div>
                     </div>
 
                     <div class="pure-g module module-rfm69">
                         <div class="pure-u-1-2">Node count</div>
-                        <div class="pure-u-11-24"><span class="right">{{modules.rfm69.node_count}}</span></div>
+                        <div class="pure-u-11-24"><span class="right">{{rfm69.node_count}}</span></div>
                     </div>
                     <!-- #endif -->
 
@@ -156,12 +156,12 @@
 
                         <div class="pure-u-1-2 module module-mqtt">MQTT Status</div>
                         <div class="pure-u-11-24 module module-mqtt">
-                            <span class="right">{{modules.mqtt.status ? 'CONNECTED' : 'NOT CONNECTED'}}</span>
+                            <span class="right">{{mqtt.status ? 'CONNECTED' : 'NOT CONNECTED'}}</span>
                         </div>
 
                         <div class="pure-u-1-2 module module-ntp">NTP Status</div>
                         <div class="pure-u-11-24 module module-ntp">
-                            <span class="right">{{modules.ntp.status ? 'SYNCED' : 'NOT SYNCED'}}</span>
+                            <span class="right">{{ntp.status ? 'SYNCED' : 'NOT SYNCED'}}</span>
                         </div>
 
                         <div class="pure-u-1-2 module module-ntp">Current time</div>
@@ -187,8 +187,7 @@
 
                 <div class="pure-g module module-cmd">
                     <div class="pure-u-1 hint">
-                        Write a command and click send to execute it on the device. The output will be
-                        shown
+                        Write a command and click send to execute it on the device. The output will be shown
                         in the debug text area below.
                     </div>
                     <Inpt name="dbgcmd" class="pure-u-3-4" type="text" tabindex="2"/>
@@ -218,10 +217,12 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Btn from './../../components/Button'
 
     export default {
         components: {
-            Inpt
+            Inpt,
+            Btn
         },
         props: {
             version: {
@@ -254,30 +255,33 @@
                 type: Number,
                 default: 0
             },
-            modules: {
+            light: {
                 type: Object,
                 default() {
-                    return {
-                        rfm69: {
-
-                        },
-                        light: {
-
-                        },
-                        mqtt: {
-
-                        },
-                        ntp: {
-
-                        }
-                    }
+                    return {channels: []}
+                }
+            },
+            rfm69: {
+                type: Object,
+                default() {
+                    return {}
+                }
+            },
+            mqtt: {
+                type: Object,
+                default() {
+                    return {}
+                }
+            },
+            ntp: {
+                type: Object,
+                default() {
+                    return {}
                 }
             }
         },
         data() {
-            return {
-                channels: [],
-            }
+            return {}
         },
         methods: {
             date(d) {
@@ -291,8 +295,8 @@
                 }
             },
             toggleRelay(id, val) {
-                sendAction("relay", {id: id, status: value ? 1 : 0 });
-                this.$set(relays, relay,!val)
+                sendAction("relay", {id: id, status: value ? 1 : 0});
+                this.$set(relays, id, !val)
             }
         }
     }

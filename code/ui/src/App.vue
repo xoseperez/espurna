@@ -14,9 +14,9 @@
 
                 <template #footer>
                     <div class="main-buttons">
-                        <button class="btn btn-update" @click="save">Save</button>
-                        <button class="btn btn-reconnect" @click="reconnect">Reconnect</button>
-                        <button class="btn btn-reboot" @click="reboot">Reboot</button>
+                        <Btn name="update" @click="save">Save</Btn>
+                        <Btn name="reconnect" color="accent" @click="reconnect">Reconnect</Btn>
+                        <Btn name="reboot" color="danger" @click="reboot">Reboot</Btn>
                     </div>
 
                     <div class="footer">
@@ -357,32 +357,34 @@
             return {
                 webmode: true,
                 ws: new Socket,
-                data: {},
-                relays: [],
-                numberOfChannels: 0,
+                data: {
+                    version: {},
+                    relays: {},
+                    wifi: {},
+                    device: {},
+                },
                 tabs: tabs
             }
         },
         computed: {
             relayOptions() {
                 let options = [];
-                for (let i = 0; i < this.relays.length; ++i) {
-                    options.push("Switch #" + i);
+                if ("relays" in this.data) {
+                    for (let i = 0; i < this.data.relays.length; ++i) {
+                        options.push("Switch #" + i);
+                    }
                 }
                 return options;
             },
             lightOptions() {
                 let options = [];
-                for (let i = 0; i < this.numberOfChannels; ++i) {
-                    options.push("Channel #" + i);
+                if ("light" in this.data) {
+                    for (let i = 0; i < this.data.light.num_channel; ++i) {
+                        options.push("Channel #" + i);
+                    }
                 }
                 return options;
             },
-            status() {
-                return {
-                    now: 1,
-                }
-            }
         },
         mounted() {
             setInterval(() => {
