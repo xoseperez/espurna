@@ -3,7 +3,6 @@
 #include <functional>
 #include <vector>
 #include <memory>
-#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -31,6 +30,12 @@ extern "C" {
   #include <lwip/ip_addr.h> // ip4/ip6 helpers
   #include <lwip/init.h> // LWIP_VERSION_MAJOR
 }
+
+// ref: https://github.com/me-no-dev/ESPAsyncTCP/pull/115/files#diff-e2e636049095cc1ff920c1bfabf6dcacR8
+// This is missing with Core 2.3.0 and is sometimes missing from the build flags. Assume HIGH_BANDWIDTH version.
+#ifndef TCP_MSS
+#define TCP_MSS (1460)
+#endif
 
 uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
@@ -176,24 +181,6 @@ uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg);
 int16_t i2c_read_int16(uint8_t address, uint8_t reg);
 int16_t i2c_read_int16_le(uint8_t address, uint8_t reg);
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
-
-// -----------------------------------------------------------------------------
-// Lights
-// -----------------------------------------------------------------------------
-
-unsigned char lightChannels();
-
-void lightState(unsigned char i, bool state);
-bool lightState(unsigned char i);
-
-void lightState(bool state);
-bool lightState();
-
-void lightBrightness(unsigned int brightness);
-unsigned int lightBrightness();
-
-unsigned int lightChannel(unsigned char id);
-void lightChannel(unsigned char id, unsigned char value);
 
 // -----------------------------------------------------------------------------
 // MQTT

@@ -124,11 +124,13 @@ void _ntpReport() {
 
     _ntp_report = false;
 
+    #if DEBUG_SUPPORT
     if (ntpSynced()) {
         time_t t = now();
         DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), ntpDateTime(ntpLocal2UTC(t)).c_str());
         DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), ntpDateTime(t).c_str());
     }
+    #endif
 
 }
 

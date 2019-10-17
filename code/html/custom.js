@@ -1499,8 +1499,10 @@ function processData(data) {
         }
 
         if ("mireds" === key) {
-            $("#mireds").val(value);
-            $("span.mireds").html(value);
+            $("#mireds").attr("min", value["cold"]);
+            $("#mireds").attr("max", value["warm"]);
+            $("#mireds").val(value["value"]);
+            $("span.mireds").html(value["value"]);
             return;
         }
 
