@@ -9,13 +9,13 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Settings</label>
                     <div class="pure-u-1-3 pure-u-lg-1-4">
-                        <button type="button" class="pure-button button-settings-backup pure-u-23-24"> Backup</button>
+                        <button type="button" class="btn btn-settings-backup pure-u-23-24"> Backup</button>
                     </div>
                     <div class="pure-u-1-3 pure-u-lg-1-4">
-                        <button type="button" class="pure-button button-settings-restore pure-u-23-24"> Restore</button>
+                        <button type="button" class="btn btn-settings-restore pure-u-23-24"> Restore</button>
                     </div>
                     <div class="pure-u-1-3 pure-u-lg-1-4">
-                        <button type="button" class="pure-button button-settings-factory pure-u-1">
+                        <button type="button" class="btn btn-settings-factory pure-u-1">
                             Factory Reset
                         </button>
                     </div>
@@ -59,19 +59,19 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable WS Auth</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="wsAuth"/>
+                        <Inpt type="switch" name="wsAuth"/>
                     </div>
                 </div>
                 <div class="pure-g module module-api">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable HTTP API</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="apiEnabled"/>
+                        <Inpt type="switch" name="apiEnabled"/>
                     </div>
                 </div>
                 <div class="pure-g module module-api">
                     <label class="pure-u-1 pure-u-lg-1-4">Restful API</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="apiRestFul"/>
+                        <Inpt type="switch" name="apiRestFul"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -83,7 +83,7 @@
                 <div class="pure-g module module-api">
                     <label class="pure-u-1 pure-u-lg-1-4">Real time API</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="apiRealTime"/>
+                        <Inpt type="switch" name="apiRealTime"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -97,7 +97,7 @@
                     <label class="pure-u-1 pure-u-lg-1-4">HTTP API Key</label>
                     <Inpt name="apiKey" class="pure-u-3-4 pure-u-lg-1-2" type="text" tabindex="14"/>
                     <div class="pure-u-1-4 pure-u-lg-1-4">
-                        <button type="button" class="pure-button button-apikey pure-u-23-24">Auto</button>
+                        <button type="button" class="btn btn-apikey pure-u-23-24">Auto</button>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -110,7 +110,7 @@
                 <div class="pure-g module module-telnet">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable TELNET</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="telnetSTA"/>
+                        <Inpt type="switch" name="telnetSTA"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -122,7 +122,7 @@
                 <div class="pure-g module module-telnet">
                     <label class="pure-u-1 pure-u-lg-1-4">TELNET Password</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="telnetAuth"/>
+                        <Inpt type="switch" name="telnetAuth"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -153,10 +153,10 @@
                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                     <Inpt class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly/>
                     <div class="pure-u-1-4 pure-u-lg-1-8">
-                        <button type="button" class="pure-button button-upgrade-browse pure-u-23-24"> Browse</button>
+                        <button type="button" class="btn btn-upgrade-browse pure-u-23-24"> Browse</button>
                     </div>
                     <div class="pure-u-1-4 pure-u-lg-1-8">
-                        <button type="button" class="pure-button button-upgrade pure-u-23-24"> Upgrade</button>
+                        <button type="button" class="btn btn-upgrade pure-u-23-24"> Upgrade</button>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -193,7 +193,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="ntpDST"/>
+                        <Inpt type="switch" name="ntpDST"/>
                     </div>
                 </div>
                 <div class="pure-g">
@@ -220,5 +220,16 @@
     }
 </script>
 <style>
+    #upgrade-progress {
+        display: none;
+        height: 20px;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    #uploader,
+    #downloader {
+        display: none;
+    }
 
 </style>

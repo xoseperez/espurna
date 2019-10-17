@@ -188,18 +188,20 @@ void _domoticzWebSocketOnVisible(JsonObject& root) {
 }
 
 void _domoticzWebSocketOnConnected(JsonObject& root) {
+    JsonObject& module = root.createNestedObject("module");
+    JsonObject& dcz = root.createNestedObject("dcz");
 
-    root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
-    root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
-    root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+    dcz["enabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    dcz["topicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
+    dcz["topicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
-    JsonArray& relays = root.createNestedArray("dczRelays");
+    JsonArray& relays = dcz.createNestedArray("relays");
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
 
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(root, "dcz");
+        _sensorWebSocketMagnitudes(dcz);
     #endif
 
 }

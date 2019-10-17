@@ -58,32 +58,32 @@
                     </ul>
                 </div>
 
-                <div id="ledConfig"></div>
+                <div class="pure-g">
+                    <label class="pure-u-1 pure-u-lg-1-4">LED #<span class="id"></span> mode</label>
+                    <Inpt type="select" name="ledMode" class="pure-u-1-4">
+                        <option value="1">WiFi status</option>
+                        <option value="2">Follow switch #</option>
+                        <option value="3">Inverse switch #</option>
+                        <option value="4">Find me</option>
+                        <option value="5">Find me &amp; WiFi</option>
+                        <option value="8">Switches status</option>
+                        <option value="9">Switches &amp; WiFi</option>
+                        <option value="0">MQTT managed</option>
+                        <option value="6">Always ON</option>
+                        <option value="7">Always OFF</option>
+                    </Inpt>
+                    &nbsp;
+                    <div class="pure-u-1-4">
+                        <Inpt class="pure-u-23-24" name="ledRelay" type="number" min="0" data="0"/>
+                    </div>
+                </div>
             </fieldset>
         </div>
 
         <!-- Templates -->
 
         <div id="ledConfigTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">LED #<span class="id"></span> mode</label>
-                <select name="ledMode" class="pure-u-1-4">
-                    <option value="1">WiFi status</option>
-                    <option value="2">Follow switch #</option>
-                    <option value="3">Inverse switch #</option>
-                    <option value="4">Find me</option>
-                    <option value="5">Find me &amp; WiFi</option>
-                    <option value="8">Switches status</option>
-                    <option value="9">Switches &amp; WiFi</option>
-                    <option value="0">MQTT managed</option>
-                    <option value="6">Always ON</option>
-                    <option value="7">Always OFF</option>
-                </select>
-                &nbsp;
-                <div class="pure-u-1-4">
-                    <Inpt class="pure-u-23-24" name="ledRelay" type="number" min="0" data="0"/>
-                </div>
-            </div>
+
         </div>
     </section>
 </template>
@@ -94,10 +94,18 @@
     export default {
         components: {
             Inpt
+        },
+        props: {
+            leds: {
+                type: Array,
+                default() {
+                    return []
+                }
+            }
         }
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

@@ -20,40 +20,51 @@
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">RF Actions</label>
                 <div class="pure-u-1-2 pure-u-lg-3-8">
-                    <button type="button" class="pure-button button-lightfox-learn pure-u-23-24">
+                    <Btn name="lightfox-learn" class="pure-u-23-24">
                         Learn
-                    </button>
+                    </Btn>
                 </div>
                 <div class="pure-u-1-2 pure-u-lg-3-8">
-                    <button type="button" class="pure-button button-lightfox-clear pure-u-1">
+                    <Btn name="lightfox-clear" color="danger" class="pure-u-1">
                         Clear
-                    </button>
+                    </Btn>
                 </div>
             </div>
 
-            <fieldset id="lightfoxNodes"></fieldset>
-        </div>
-
-
-        <div id="lightfoxNodeTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Button #<span></span></label>
-                <select class="pure-u-1 pure-u-lg-3-4" name="btnRelay" action="reboot"></select>
-            </div>
+            <fieldset id="lightfoxNodes">
+                <div v-for="b in buttons" :key="b.id" class="pure-g">
+                    <label class="pure-u-1 pure-u-lg-1-4">Button #{{b.id}}</label>
+                    <Inpt type="select" class="pure-u-1 pure-u-lg-3-4" :name="'btnRelay'+b.id" :options="relayOptions" @change="$emit('reboot')"/>
+                </div>
+            </fieldset>
         </div>
     </section>
 </template>
 
 <script>
     import Inpt from './../../components/Input';
+    import Btn from "../../components/Button";
 
     export default {
         components: {
+            Btn,
             Inpt
+        },
+        inheritAttrs: false,
+        props: {
+            buttons: {
+                type: Array,
+                default() {
+                    return []
+                }
+            },
+            relayOptions: {
+                type: Array
+            }
         }
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

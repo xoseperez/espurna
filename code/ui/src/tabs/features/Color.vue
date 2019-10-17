@@ -10,10 +10,10 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Use color</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="useColor"
                               action="reload"
-                              tabindex="8"/>
+                              tabindex="1"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -29,10 +29,10 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Use RGB picker</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="useRGB"
                               action="reload"
-                              tabindex="11"/>
+                              tabindex="2"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -45,10 +45,10 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Use white channel</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="useWhite"
                               action="reload"
-                              tabindex="9"/>
+                              tabindex="3"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -66,10 +66,10 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Use white color temperature</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="useCCT"
                               action="reload"
-                              tabindex="10"/>
+                              tabindex="4"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -90,9 +90,9 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Use gamma correction</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="useGamma"
-                              tabindex="11"/>
+                              tabindex="5"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -105,7 +105,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Use CSS style</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="useCSS" tabindex="12"/>
+                        <Inpt type="switch" name="useCSS" tabindex="12"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -118,9 +118,9 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="useTransitions"
-                              tabindex="13"/>
+                              tabindex="6"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -137,12 +137,12 @@
                               name="lightTime"
                               min="10"
                               max="5000"
-                              tabindex="14"/>
+                              tabindex="7"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                        Time in millisecons to transition from one
+                        Time in milliseconds to transition from one
                         color to another.
                     </div>
                 </div>
@@ -152,7 +152,7 @@
                     <div class="pure-u-1 pure-u-lg-3-4">
                         <Inpt name="mqttGroupColor"
                               class="pure-u-1"
-                              tabindex="15"
+                              tabindex="8"
                               action="reconnect"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -162,27 +162,32 @@
             <fieldset>
                 <legend>SCHEDULE</legend>
                 <h2>Turn switches ON and OFF based on the current time.</h2>
-                <div id="color-schedules"></div>
-
-                <button type="button" class="pure-button button-add-light-schedule module module-color">
-                    Add channel schedule
-                </button>
+                <Repeater id="color-schedules" name="">
+                    <template #btnAdd="tpl">
+                        <Btn name="add-light-schedule" class="module module-color" @click="tpl.click">
+                            Add channel schedule
+                        </Btn>
+                    </template>
+                </Repeater>
             </fieldset>
         </div>
-
     </section>
 </template>
 
 <script>
     import Inpt from './../../components/Input';
+    import Btn from "../../components/Button";
+    import Repeater from "../../components/Repeater";
 
     export default {
         components: {
+            Repeater,
+            Btn,
             Inpt
         }
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

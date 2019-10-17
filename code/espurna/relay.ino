@@ -720,10 +720,8 @@ String _relayFriendlyName(unsigned char i) {
 }
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& relays = root.createNestedObject("relayConfig");
+    JsonObject& relays = root.createNestedArray("relays");
 
-    relays["size"] = relayCount();
-    relays["start"] = 0;
 
     JsonArray& gpio = relays.createNestedArray("gpio");
     JsonArray& type = relays.createNestedArray("type");
@@ -739,7 +737,9 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     #endif
 
     for (unsigned char i=0; i<relayCount(); i++) {
+        JsonObject& relay =
         gpio.add(_relayFriendlyName(i));
+
 
         type.add(_relays[i].type);
         reset.add(_relays[i].reset_pin);

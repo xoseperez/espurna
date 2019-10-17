@@ -18,8 +18,10 @@
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Thermostat Mode</label>
                 <div class="pure-u-1 pure-u-lg-1-4">
-                    <Inpt type="checkbox"
+                    <Inpt type="switch"
                           name="thermostatMode"
+                          off="Heater"
+                          on="Cooler"
                           tabindex="30"/>
                 </div>
             </div>
@@ -171,7 +173,7 @@
                 </div>
 
                 <div class="pure-g">
-                    <button type="button" class="pure-button button-thermostat-reset-counters">
+                    <button type="button" class="btn btn-thermostat-reset-counters">
                         Reset
                         counters
                     </button>
@@ -191,6 +193,6 @@
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

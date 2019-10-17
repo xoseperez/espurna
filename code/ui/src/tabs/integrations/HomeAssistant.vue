@@ -35,7 +35,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Configuration</label>
                     <div class="pure-u-1-4 pure-u-lg-3-4">
-                        <button type="button" class="pure-button button-ha-config pure-u-1-3">
+                        <button type="button" class="btn btn-ha-config pure-u-1-3">
                             Show
                         </button>
                     </div>
@@ -68,6 +68,6 @@
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

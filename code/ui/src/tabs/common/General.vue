@@ -58,15 +58,15 @@
                         faster the device will respond to button clicks but the harder it will be to get a double click.
                         Increase this number if you are having trouble to double click the button. Set this value to 0
                         to disable double click. You won't be able to set the device in AP mode manually but your device
-                        will respond immediately to button clicks.<br> You will have to <strong>reboot the
-                        device</strong> after updating for this setting to apply.
+                        will respond immediately to button clicks.<br> You will have to
+                        <strong>reboot the device</strong> after updating for this setting to apply.
                     </div>
                 </div>
 
                 <div class="pure-g module module-alexa">
                     <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="alexaEnabled"/>
+                        <Inpt type="switch" name="alexaEnabled"/>
                     </div>
                 </div>
 
@@ -105,19 +105,23 @@
                         (or router) or to a <strong>hidden SSID</strong>.
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <button class="pure-button button-wifi-scan" type="button">Scan now</button>
-                    <div class="pure-u-0 pure-u-lg-1-4 scan loading"></div>
+                    <button class="btn btn-wifi-scan" type="button">Scan now</button>
+                    <div v-if="scanLoading" class="pure-u-0 pure-u-lg-1-4 scan loading"></div>
                 </div>
 
-                <div class="pure-g">
-                    <span id="scanResult" class="pure-u-1 terminal" name="scanResult"></span>
+                <div v-if="scanResult.length" class="pure-g">
+                    <div class="pure-u-1 terminal">
+                        <p v-for="res in scanResult">
+                            {{res}}
+                        </p>
+                    </div>
                 </div>
 
                 <legend>Networks</legend>
 
                 <div id="networks"></div>
 
-                <button type="button" class="pure-button button-add-network">Add network</button>
+                <button type="button" class="btn btn-add-network">Add network</button>
             </fieldset>
         </div>
 
@@ -137,7 +141,7 @@
                           autocomplete="false"/>
                 </div>
                 <div class="pure-u-1-6 pure-u-lg-1-12">
-                    <button type="button" class="pure-button button-more-network pure-u-1">...</button>
+                    <button type="button" class="btn btn-more-network pure-u-1">...</button>
                 </div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Password</label>
@@ -180,7 +184,7 @@
                       name="mask"
                       type="text"
                       action="reconnect"
-                      value="255.255.255.0"
+                      placeholder="255.255.255.0"
                       maxlength="15"
                       tabindex="0"
                       autocomplete="false"/>
@@ -202,7 +206,7 @@
                 </div>
 
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
-                <button class="pure-button button-del-network more" type="button">Delete network</button>
+                <Btn name="del-network" color="danger">Delete network</Btn>
             </div>
         </div>
     </section>
@@ -210,14 +214,22 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Btn from "../../components/Button";
 
     export default {
         components: {
+            Btn,
             Inpt
+        },
+        data() {
+            return {
+                scanResult: [],
+                scanLoading: false
+            }
         }
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

@@ -524,26 +524,34 @@ void _wsOnConnected(JsonObject& root) {
 
     root["webMode"] = WEB_MODE_NORMAL;
 
-    root["app_name"] = APP_NAME;
-    root["app_version"] = APP_VERSION;
-    root["app_build"] = buildTime();
+    JsonObject& version = root.createNestedObject("version");
+    JsonObject& device = root.createNestedObject("device");
+    JsonObject& wifi = root.createNestedObject("wifi");
+
+    version["app_name"] = APP_NAME;
+    version["app_version"] = APP_VERSION;
+    version["app_build"] = buildTime();
+    version["sketch_size"] = ESP.getSketchSize();
+    version["sdk"] = ESP.getSdkVersion();
+    version["core"] = getCoreVersion();
+    
     #if defined(APP_REVISION)
-        root["app_revision"] = APP_REVISION;
+        version["app_revision"] = APP_REVISION;
     #endif
-    root["manufacturer"] = MANUFACTURER;
-    root["chipid"] = String(chipid);
-    root["mac"] = WiFi.macAddress();
-    root["bssid"] = WiFi.BSSIDstr();
-    root["channel"] = WiFi.channel();
-    root["device"] = DEVICE;
+
+    device["manufacturer"] = MANUFACTURER;
+    device["chip_id"] = String(chipid);
+    device["name"] = DEVICE;
+    device["free_size"] = ESP.getFreeSketchSpace();
+    
+    wifi["mac"] = WiFi.macAddress();
+    wifi["bssid"] = WiFi.BSSIDstr();
+    wifi["channel"] = WiFi.channel();
+    wifi["name"] = getNetwork();
+    wifi["device_ip"] = getIP();
+
     root["hostname"] = getSetting("hostname");
     root["desc"] = getSetting("desc");
-    root["network"] = getNetwork();
-    root["deviceip"] = getIP();
-    root["sketch_size"] = ESP.getSketchSize();
-    root["free_size"] = ESP.getFreeSketchSpace();
-    root["sdk"] = ESP.getSdkVersion();
-    root["core"] = getCoreVersion();
 
     root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
     root["webPort"] = getSetting("webPort", WEB_PORT).toInt();

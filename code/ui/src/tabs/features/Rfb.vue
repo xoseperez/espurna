@@ -71,13 +71,13 @@
                   data-id="1"
                   data-status="1"/>
             <div class="pure-u-1-3 pure-u-lg-1-8">
-                <button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button>
+                <button type="button" class="pure-u-23-24 btn btn-rfb-learn">LEARN</button>
             </div>
             <div class="pure-u-1-3 pure-u-lg-1-8">
-                <button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button>
+                <button type="button" class="pure-u-23-24 btn btn-rfb-send">SAVE</button>
             </div>
             <div class="pure-u-1-3 pure-u-lg-1-8">
-                <button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button>
+                <button type="button" class="pure-u-23-24 btn btn-rfb-forget">FORGET</button>
             </div>
         </div>
 
@@ -90,13 +90,13 @@
                   data-id="1"
                   data-status="0"/>
             <div class="pure-u-1-3 pure-u-lg-1-8">
-                <button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button>
+                <Btn name="rfb-learn" class="pure-u-23-24">LEARN</Btn>
             </div>
             <div class="pure-u-1-3 pure-u-lg-1-8">
-                <button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button>
+                <Btn name="rfb-send" class="pure-u-23-24">SAVE</Btn>
             </div>
             <div class="pure-u-1-3 pure-u-lg-1-8">
-                <button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button>
+                <button type="button" class="pure-u-23-24 btn btn-rfb-forget">FORGET</button>
             </div>
         </div>
     </div>
@@ -104,14 +104,52 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Btn from "../../components/Button";
 
     export default {
         components: {
+            Btn,
             Inpt
         }
     }
 </script>
 
-<style scoped>
+<style>
+    /* -----------------------------------------------------------------------------
+        RF Bridge panel
+       -------------------------------------------------------------------------- */
+
+    #panel-rfb fieldset {
+        margin: 10px 2px;
+        padding: 20px;
+    }
+
+    #panel-rfb input {
+        margin-right: 5px;
+    }
+
+    #panel-rfb label {
+        padding-top: 5px;
+    }
+
+    #panel-rfb input {
+        text-align: center;
+    }
+
+    /* -----------------------------------------------------------------------------
+        Table
+       -------------------------------------------------------------------------- */
+
+    .right {
+        text-align: right;
+    }
+
+    table.dataTable.display tbody td {
+        text-align: center;
+    }
+
+    .filtered {
+        color: rgb(202, 60, 60);
+    }
 
 </style>

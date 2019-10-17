@@ -5,34 +5,47 @@ const glob = require("glob-all");
 const path = require("path");
 
 module.exports = {
+    publicPath: '',
     //runtimeCompiler: true,
-    configureWebpack: {
-        plugins: [
-            new PurgecssPlugin({
-                paths: glob.sync([
-                    path.join(__dirname, "./src/index.html"),
-                    path.join(__dirname, "./**/*.vue"),
-                    path.join(__dirname, "./src/**/*.js")
-                ])
-            }),
-            new CompressionPlugin({
-                test: /index\.html?$/i,
-            }),
-        ],
-        devtool: false,
-        optimization: {
-            minimizer: [
-                new TerserPlugin({
-                    terserOptions: {
-                        ecma: 6,
-                        compress: true,
-                        output: {
-                            comments: false,
-                            beautify: false
+    configureWebpack() {
+        return process.env.NODE_ENV === 'production' ? {
+            plugins: [
+                new PurgecssPlugin({
+                    paths: glob.sync([
+                        path.join(__dirname, "./src/index.html"),
+                        path.join(__dirname, "./**/*.vue"),
+                        path.join(__dirname, "./src/**/*.js")
+                    ])
+                }),
+                new CompressionPlugin({
+                    test: /index\.html?$/i,
+                }),
+            ],
+            devtool: false,
+            optimization: {
+                minimizer: [
+                    new TerserPlugin({
+                        terserOptions: {
+                            ecma: 6,
+                            compress: true,
+                            output: {
+                                comments: false,
+                                beautify: false
+                            }
                         }
-                    }
-                })
-            ]
+                    })
+                ]
+            }
+        } : {
+            plugins: [
+                new PurgecssPlugin({
+                    paths: glob.sync([
+                        path.join(__dirname, "./src/index.html"),
+                        path.join(__dirname, "./**/*.vue"),
+                        path.join(__dirname, "./src/**/*.js")
+                    ])
+                }),
+            ],
         }
     },
     chainWebpack(config) {
@@ -48,20 +61,22 @@ module.exports = {
 
         config.module.rule("vue").use("webpack-conditional-loader").loader("webpack-conditional-loader");
 
-        config.plugin("preload")
-            .tap(args => {
-                args[0].fileBlacklist.push(/\.css/, /\.js/);
-                return args
-            });
+        if (process.env.NODE_ENV === 'production') {
+            config.plugin("preload")
+                .tap(args => {
+                    args[0].fileBlacklist.push(/\.css/, /\.js/);
+                    return args
+                });
 
-        config.plugin("inline-source")
-            .use(require("html-webpack-inline-source-plugin"));
+            config.plugin("inline-source")
+                .use(require("html-webpack-inline-source-plugin"));
 
-        config.plugin("html")
-            .tap(args => {
-                args[0].inlineSource = ".(js|css)$"; // embed all javascript and css inline
-                args.minify = true;
-                return args;
-            })
+            config.plugin("html")
+                .tap(args => {
+                    args[0].inlineSource = ".(js|css)$"; // embed all javascript and css inline
+                    args.minify = true;
+                    return args;
+                })
+        }
     },
 };

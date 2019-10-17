@@ -1,9 +1,9 @@
 <template>
     <section>
         <div class="header">
-            <h1>THINGSPEAK</h1>
+            <h1>DOMOTICZ</h1>
             <h2>
-                Send your sensors data to Thingspeak.
+                Configure the connection to your Domoticz server.
             </h2>
         </div>
 
@@ -12,53 +12,45 @@
                 <legend>General</legend>
 
                 <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Enable Thingspeak</label>
+                    <label class="pure-u-1 pure-u-lg-1-4">Enable Domoticz</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
                         <Inpt type="checkbox"
-                              name="tspkEnabled"
+                              name="dczEnabled"
                               tabindex="30"/>
                     </div>
                 </div>
 
                 <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Clear cache</label>
-                    <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
-                              name="tspkClear"
-                              tabindex="31"/>
-                    </div>
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                        With every POST to thinkspeak.com only enqueued fields are sent. If you select to clear the
-                        cache after every sending this will result in only those fields that have changed will be
-                        posted. If you want all fields to be sent with every POST do not clear the cache.
-                    </div>
+                    <label class="pure-u-1 pure-u-lg-1-4">Domoticz IN Topic</label>
+                    <Inpt class="pure-u-1 pure-u-lg-3-4" name="dczTopicIn" type="text" tabindex="31"/>
                 </div>
 
                 <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                    <Inpt class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32"/>
+                    <label class="pure-u-1 pure-u-lg-1-4">Domoticz OUT Topic</label>
+                    <Inpt class="pure-u-1 pure-u-lg-3-4"
+                          name="dczTopicOut"
+                          type="text"
+                          action="reconnect"
+                          tabindex="32"/>
                 </div>
 
                 <legend>Sensors &amp; actuators</legend>
 
                 <div class="pure-g">
                     <div class="pure-u-1 hint">
-                        Enter the field number to send each data to, 0 disable notifications from that component.
+                        Set IDX to 0 to disable notifications from that component.
                     </div>
                 </div>
 
-                <div id="tspkRelays"></div>
-                <div id="tspkRelayTemplate" class="template">
+                <div id="dczRelays"></div>
+                <div id="dczRelayTemplate" class="template">
                     <div class="pure-g">
                         <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
                         <div class="pure-u-1 pure-u-lg-1-4">
-                            <Inpt class="pure-u-1 pure-u-lg-23-24"
-                                  name="tspkRelay"
+                            <Inpt class="pure-u-1 pure-u-lg-23-24 dczRelayIdx"
+                                  name="dczRelayIdx"
                                   type="number"
                                   min="0"
-                                  max="8"
                                   tabindex="0"
                                   data="0"/>
                         </div>
@@ -66,16 +58,15 @@
                 </div>
 
                 <!-- removeIf(!sensor) -->
-                <div id="tspkMagnitudes"></div>
-                <div id="tspkMagnitudeTemplate" class="template">
+                <div id="dczMagnitudes"></div>
+                <div id="dczMagnitudeTemplate" class="template">
                     <div class="pure-g">
                         <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
                         <div class="pure-u-1 pure-u-lg-1-4">
                             <Inpt class="pure-u-1 pure-u-lg-23-24 center"
-                                  name="tspkMagnitude"
+                                  name="dczMagnitude"
                                   type="number"
                                   min="0"
-                                  max="8"
                                   tabindex="0"
                                   data="0"/>
                         </div>
@@ -98,6 +89,6 @@
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

@@ -78,24 +78,25 @@
                     </div>
                     <div class="pure-g module module-mqtt">
                         <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                        <select class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc">
-                            <option value="0">Don't change</option>
-                            <option value="1">Turn the switch OFF</option>
-                            <option value="2">Turn the switch ON</option>
-                        </select>
+                        <Inpt type="select" class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc"
+                              :options="[
+                                  'Don\'t change',
+                                  'Turn the switch OFF',
+                                  'Turn the switch ON'
+                              ]"/>
                     </div>
                 </div>
-
             </fieldset>
             <fieldset>
                 <legend>SCHEDULE</legend>
                 <h2>Turn switches ON and OFF based on the current time.</h2>
-                <div id="schedules"></div>
-
-                <button type="button"
-                        class="pure-button button-add-switch-schedule module module-relay">
-                    Add switch schedule
-                </button>
+                <Repeater>
+                    <template #btnAdd="tpl">
+                        <Btn name="add-switch-schedule" class="module module-relay" @click="tpl.click">
+                            Add switch schedule
+                        </Btn>
+                    </template>
+                </Repeater>
             </fieldset>
         </div>
     </section>
@@ -103,14 +104,16 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Repeater from "../../components/Repeater";
 
     export default {
         components: {
+            Repeater,
             Inpt
         }
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

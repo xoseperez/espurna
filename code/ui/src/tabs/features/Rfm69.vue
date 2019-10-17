@@ -59,13 +59,13 @@
                                   placeholder="MQTT Topic"/>
                         </div>
                         <div class="pure-u-md-1-6 pure-u-1-4">
-                            <button type="button" class="pure-button button-del-mapping pure-u-5-6 pure-u-md-5-6">Del
+                            <button type="button" class="btn btn-del-mapping pure-u-5-6 pure-u-md-5-6">Del
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <button type="button" class="pure-button button-add-mapping">Add</button>
+                <button type="button" class="btn btn-add-mapping">Add</button>
             </fieldset>
             <fieldset>
                 <legend>Messages</legend>
@@ -97,9 +97,9 @@
                     </tbody>
                 </table>
 
-                <button type="button" class="pure-button button-clear-filters">Clear filters</button>
-                <button type="button" class="pure-button button-clear-messages">Clear messages</button>
-                <button type="button" class="pure-button button-clear-counts">Clear counts</button>
+                <button type="button" class="btn btn-clear-filters">Clear filters</button>
+                <button type="button" class="btn btn-clear-messages">Clear messages</button>
+                <button type="button" class="btn btn-clear-counts">Clear counts</button>
             </fieldset>
         </div>
     </section>
@@ -115,6 +115,6 @@
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>

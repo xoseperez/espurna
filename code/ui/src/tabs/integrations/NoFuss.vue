@@ -13,7 +13,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox" name="nofussEnabled"/>
+                        <Inpt type="switch" name="nofussEnabled"/>
                     </div>
                 </div>
 
@@ -38,6 +38,6 @@
     }
 </script>
 
-<style scoped>
+<style lang="less">
 
 </style>
