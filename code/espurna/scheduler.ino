@@ -116,57 +116,6 @@ void _schConfigure() {
 
 }
 
-void RestoreLastScheduleState(int relay, int daybefore)
-{
-    time_t local_time = now();
-    time_t utc_time = ntpLocal2UTC(local_time);
-    int minimum_restore_time = -1440;
-    int saved_action = -1;
-
-    for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++)
-    {
-        int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
-        if (sch_switch == 0xFF)
-            break;
-
-        // Skip disabled schedules
-        if (getSetting("schEnabled", i, 1).toInt() == 0)
-            continue;
-
-        // Get the datetime used for the calculation
-        bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
-        time_t t = sch_utc ? utc_time : local_time;
-
-        if (daybefore > 0) {
-          unsigned char now_hour = hour(t);
-          unsigned char now_minute = minute(t);
-          unsigned char now_sec = second(t);
-          t = t - ((now_hour * 3600) + ((now_minute + 1) * 60) + now_sec + (daybefore * 86400));
-        }
-
-        String sch_weekdays = getSetting("schWDs", i, "");
-
-        if (_schIsThisWeekday(t, sch_weekdays)) {
-            int sch_hour = getSetting("schHour", i, 0).toInt();
-            int sch_minute = getSetting("schMinute", i, 0).toInt();
-            int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
-            int sch_action = getSetting("schAction", i, 0).toInt();
-            if (sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
-                minimum_restore_time = minutes_to_trigger;
-                saved_action = sch_action;
-            }
-        }
-    }
-
-    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -1440 && saved_action == -1) {
-      RestoreLastScheduleState(relay, ++daybefore);
-      return;
-    }
-
-    if (minimum_restore_time != -1440 && saved_action != -1)
-      relayStatus(relay, saved_action);
-}
-
 bool _schIsThisWeekday(time_t t, String weekdays){
 
     // Convert from Sunday to Monday as day 1
@@ -189,10 +138,13 @@ int _schMinutesLeft(time_t t, unsigned char schedule_hour, unsigned char schedul
     return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
 }
 
-void _schCheck() {
+// if passed values are -1,-1 than its a regular check
+void _schCheck(int relay, int daybefore) {
 
     time_t local_time = now();
     time_t utc_time = ntpLocal2UTC(local_time);
+    int minimum_restore_time = -1440;
+    int saved_action = -1;
 
     // Check schedules
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
@@ -207,14 +159,27 @@ void _schCheck() {
         bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
         time_t t = sch_utc ? utc_time : local_time;
 
+        if (daybefore > 0) {
+          unsigned char now_hour = hour(t);
+          unsigned char now_minute = minute(t);
+          unsigned char now_sec = second(t);
+          t = t - ((now_hour * 3600) + ((now_minute + 1) * 60) + now_sec + (daybefore * 86400));
+        }
+
         String sch_weekdays = getSetting("schWDs", i, "");
         if (_schIsThisWeekday(t, sch_weekdays)) {
 
             int sch_hour = getSetting("schHour", i, 0).toInt();
             int sch_minute = getSetting("schMinute", i, 0).toInt();
             int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
+            int sch_action = getSetting("schAction", i, 0).toInt();
 
-            if (minutes_to_trigger == 0) {
+            if (sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+                minimum_restore_time = minutes_to_trigger;
+                saved_action = sch_action;
+            }
+
+            if (minutes_to_trigger == 0 && relay == -1) {
 
                 unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
 
@@ -244,7 +209,7 @@ void _schCheck() {
             // This only works for schedules on this same day.
             // For instance, if your scheduler is set for 00:01 you will only
             // get one notification before the trigger (at 00:00)
-            } else if (minutes_to_trigger > 0) {
+            } else if (minutes_to_trigger > 0 && relay == -1) {
 
                 #if DEBUG_SUPPORT
                     if ((minutes_to_trigger % 15 == 0) || (minutes_to_trigger < 15)) {
@@ -261,6 +226,14 @@ void _schCheck() {
 
     }
 
+    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -1440 && saved_action == -1) {
+      _schCheck(relay, ++daybefore);
+      return;
+    }
+
+    if (minimum_restore_time != -1440 && saved_action != -1)
+      relayStatus(relay, saved_action);
+
 }
 
 void _schLoop() {
@@ -271,7 +244,7 @@ void _schLoop() {
     if (RestoredLastSchedules == 0) {
         for (int i = 0; i < _relays.size(); i++){
           if (getSetting("relayLastschedule", i, 1).toInt() == 1)
-                RestoreLastScheduleState(i, 0);
+                _schCheck(i, 0);
         }
         RestoredLastSchedules = 1;
     }
@@ -281,7 +254,7 @@ void _schLoop() {
     unsigned char current_minute = minute();
     if (current_minute != last_minute) {
         last_minute = current_minute;
-        _schCheck();
+        _schCheck(-1, -1);
     }
 
 }
