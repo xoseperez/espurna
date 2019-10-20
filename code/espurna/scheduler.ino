@@ -11,7 +11,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <TimeLib.h>
 
-int RestoredLastSchedules = 0;
+int _sch_restore = 0;
 
 // -----------------------------------------------------------------------------
 
@@ -246,12 +246,12 @@ void _schLoop() {
     // Check time has been sync'ed
     if (!ntpSynced()) return;
 
-    if (RestoredLastSchedules == 0) {
+    if (_sch_restore == 0) {
         for (int i = 0; i < _relays.size(); i++){
-          if (getSetting("relayLastschedule", i, 1).toInt() == 1)
+            if (getSetting("relayLastSchedule", i, 0).toInt() == 1)
                 _schCheck(i, 0);
         }
-        RestoredLastSchedules = 1;
+        _sch_restore = 1;
     }
 
     // Check schedules every minute at hh:mm:00
