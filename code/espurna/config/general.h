@@ -1403,6 +1403,10 @@
 #define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
 #endif
 
+#ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
+#define SCHEDULER_RESTORE_LAST_SCHEDULE      0  // Restore the last schedule state on the device boot
+#endif
+
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
