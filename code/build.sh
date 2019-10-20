@@ -21,6 +21,8 @@ stat_bytes() {
 destination=../firmware
 version_file=espurna/config/version.h
 version=$(grep -E '^#define APP_VERSION' $version_file | awk '{print $3}' | sed 's/"//g')
+script_build_environments=false
+script_build_webui=false
 
 if ${TRAVIS:-false}; then
     git_revision=${TRAVIS_COMMIT::7}
@@ -133,8 +135,14 @@ build_environments() {
 }
 
 # Parameters
-while getopts "lpd:" opt; do
+while getopts "wblpd:" opt; do
   case $opt in
+    w)
+        script_build_webui=true
+        ;;
+    b)
+        script_build_environments=true
+        ;;
     l)
         print_available
         exit
@@ -158,13 +166,18 @@ echo "Building for version ${version}" ${git_revision:+($git_revision)}
 # Environments to build
 environments=$@
 
-if [ $# -eq 0 ]; then
-    set_default_environments
+if $script_build_webui ; then
+    build_webui
 fi
 
-if ${CI:-false}; then
-    print_environments
-fi
+if $script_build_environments ; then
+    if [ $# -eq 0 ]; then
+        set_default_environments
+    fi
 
-build_webui
-build_environments
+    if ${CI:-false}; then
+        print_environments
+    fi
+
+    build_environments
+fi
