@@ -6,6 +6,10 @@
         <input :id="'switch-'+_uid" v-model="value" type="checkbox">
         <label :for="'switch-'+_uid"><i class="on">{{on}}</i><i class="off">{{off}}</i></label>
     </span>
+    <span v-else-if="type === 'password'" class="password">
+        <input v-model="value" :type="passType">
+        <span class="no-select password-reveal" @click="togglePass">👁</span>
+    </span>
     <input v-else v-model="value" :type="type">
 </template>
 
@@ -36,6 +40,11 @@
                 default: null
             }
         },
+        data() {
+            return {
+                passType: this.type
+            }
+        },
         inject: {$form: {name: '$form', default: false}},
         computed: {
             value: {
@@ -56,6 +65,10 @@
             },
             label(k, l) {
                 return typeof l === 'object' ? l.l : l
+            },
+            togglePass() {
+                console.log('reveal clicked');
+                this.passType = (this.passType === 'text' ? 'password' : 'text');
             }
         },
     };
@@ -71,6 +84,7 @@
         padding: 0;
         border-radius: 4px;
         box-shadow: inset 1px 1px #CCC;*/
+
         input {
             opacity: 0;
             position: absolute;
@@ -156,6 +170,7 @@
         vertical-align: middle;
         box-sizing: border-box;
         margin-bottom: 10px;
+        width: 100%;
 
         @media only screen and (max-width: 480px) {
             margin-bottom: .3em;
@@ -165,16 +180,19 @@
         &:focus {
             outline: 0;
             border-color: #129fea;
+
             &:invalid {
                 color: #b94a48;
                 border-color: #e9322d
             }
         }
+
         &[disabled] {
             cursor: not-allowed;
             background-color: #eaeded;
             color: #777777;
         }
+
         &[readonly] {
             background-color: #eee;
             color: #777;
@@ -188,10 +206,12 @@
 
     input[type=checkbox]:focus, input[type=file]:focus, input[type=radio]:focus {
         outline: 1px auto #129fea;
+
         &:invalid {
             outline-color: #e9322d
         }
     }
+
     input {
         margin-bottom: 10px;
     }
@@ -200,10 +220,63 @@
         height: 2.25em;
         border: 1px solid #ccc;
         background-color: #fff;
+
         &[multiple] {
             height: auto
         }
     }
 
+    .password-reveal {
+        font-family: EmojiSymbols, Segoe UI Symbol;
+        display: inline-block;
+        float: right;
+        z-index: 50;
+        margin-top: 6px;
+        margin-right: 10px;
+        margin-left: -30px;
+        vertical-align: middle;
+        font-size: 1.2em;
+        height: 100%;
+        user-select: none;
+        cursor: pointer;
+        color: #ccc;
+        position: relative;
+        &:after {
+            content: "";
+            display: block;
+            height: 2px;
+            width: 100%;
+            background: #ccc;
+            transform: rotate(45deg);
+            top: 46%;
+            position: absolute;
+        }
+    }
 
+    input[type="text"] + .password-reveal {
+        color: rgba(66, 184, 221, 0.8);
+        &:after {
+            display: none;
+        }
+    }
+
+
+    /* -----------------------------------------------------------------------------
+        Password input controls
+       -------------------------------------------------------------------------- */
+
+    input::-ms-clear,
+    input::-ms-reveal {
+        display: none;
+    }
+
+    /* css minifier must not combine these.
+     * style will not apply otherwise */
+    input::-ms-input-placeholder {
+        color: #ccd;
+    }
+
+    input::placeholder {
+        color: #ccc;
+    }
 </style>

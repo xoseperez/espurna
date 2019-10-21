@@ -219,7 +219,7 @@
 
     import Socket from './common/websocket';
 
-    import PwdChange from './components/PassChange';
+    import PwdChange from './tabs/common/PassChange';
     import Inpt from './components/Input';
     import Menu from './components/Menu';
     import Form from './components/Form';
@@ -363,9 +363,7 @@
                     wifi: {},
                     device: {},
                 },
-                settings: {
-
-                },
+                settings: {},
                 tabs: tabs
             }
         },
@@ -394,7 +392,7 @@
                 this.data.now++;
                 this.data.ago++;
                 this.data.uptime++
-            }, 999);
+            }, 1000);
 
             // Check host param in query string
             var search = new URLSearchParams(window.location.search),
@@ -552,12 +550,12 @@
         text-align: right;
     }
 
-    .terminal {
+    textarea.terminal, div.terminal, pre.terminal {
         font-family: 'Courier New', monospace;
         font-size: 80%;
         line-height: 100%;
-        background-color: #000;
-        color: #0F0;
+        background-color: #333;
+        color: #52ff5f;
     }
 
 
@@ -592,64 +590,6 @@
         Menu
        -------------------------------------------------------------------------- */
 
-    .menu .small {
-        font-size: 60%;
-        padding-left: 9px;
-    }
-
-    .menu .footer {
-        color: #999;
-        font-size: 80%;
-        padding: 10px;
-    }
-
-
-    /* -----------------------------------------------------------------------------
-        Password input controls
-       -------------------------------------------------------------------------- */
-    .password-reveal {
-        font-family: EmojiSymbols, Segoe UI Symbol;
-        background: rgba(0, 0, 0, 0);
-        display: inline-block;
-        float: right;
-        z-index: 50;
-        margin-top: 6px;
-        margin-left: -30px;
-        vertical-align: middle;
-        font-size: 1.2em;
-        height: 100%;
-    }
-
-    .password-reveal:after {
-        content: "👁";
-    }
-
-    input[type="password"] + .password-reveal {
-        color: rgba(205, 205, 205, 0.3);
-    }
-
-    input[type="text"] + .password-reveal {
-        color: rgba(66, 184, 221, 0.8);
-    }
-
-    .no-select {
-        user-select: none;
-    }
-
-    input::-ms-clear,
-    input::-ms-reveal {
-        display: none;
-    }
-
-    /* css minifier must not combine these.
-     * style will not apply otherwise */
-    input::-ms-input-placeholder {
-        color: #ccd;
-    }
-
-    input::placeholder {
-        color: #ccc;
-    }
 
     // Side menu.css
     body {
@@ -662,38 +602,20 @@
     }
 
     /*
-    Add transition to containers so they can push in and out.
-    */
-    #layout,
-    .menu,
-    .menu-link {
-        transition: all 0.2s ease-out;
-    }
-
-    /*
     This is the parent `<div>` that contains the menu and the content area.
     */
     #layout {
         position: relative;
-        left: 0;
-        padding-left: 0;
     }
 
     /*
     The content `<div>` is where all your content goes.
     */
-    #content {
-        padding: 0 2em;
-        max-width: 800px;
-        margin: 0;
-        line-height: 1.6em;
-    }
-
     .header {
         margin: 0;
         color: #333;
-        text-align: center;
-        padding: 2.5em 2em 0;
+        text-align: left;
+        padding: 2em 0 1em;
         border-bottom: 1px solid #eee;
     }
 
@@ -805,294 +727,11 @@
         display: none !important
     }
 
-    .pure-img {
-        max-width: 100%;
-        height: auto;
-        display: block
-    }
 
-    .pure-g {
-        letter-spacing: -.31em;
-        text-rendering: optimizespeed;
-        font-family: FreeSans, Arimo, "Droid Sans", Helvetica, Arial, sans-serif;
-        display: flex;
-        flex-flow: row wrap;
-        align-content: flex-start
-    }
-
-    .pure-u {
-        display: inline-block;
-        zoom: 1;
-        letter-spacing: normal;
-        word-spacing: normal;
-        vertical-align: top;
-        text-rendering: auto
-    }
-
-    .pure-g [class*=pure-u] {
-        font-family: sans-serif
-    }
-
-    .pure-u-1, .pure-u-1-1, .pure-u-1-12, .pure-u-1-2, .pure-u-1-24, .pure-u-1-3, .pure-u-1-4, .pure-u-1-5, .pure-u-1-6, .pure-u-1-8, .pure-u-10-24, .pure-u-11-12, .pure-u-11-24, .pure-u-12-24, .pure-u-13-24, .pure-u-14-24, .pure-u-15-24, .pure-u-16-24, .pure-u-17-24, .pure-u-18-24, .pure-u-19-24, .pure-u-2-24, .pure-u-2-3, .pure-u-2-5, .pure-u-20-24, .pure-u-21-24, .pure-u-22-24, .pure-u-23-24, .pure-u-24-24, .pure-u-3-24, .pure-u-3-4, .pure-u-3-5, .pure-u-3-8, .pure-u-4-24, .pure-u-4-5, .pure-u-5-12, .pure-u-5-24, .pure-u-5-5, .pure-u-5-6, .pure-u-5-8, .pure-u-6-24, .pure-u-7-12, .pure-u-7-24, .pure-u-7-8, .pure-u-8-24, .pure-u-9-24 {
-        display: inline-block;
-        zoom: 1;
-        letter-spacing: normal;
-        word-spacing: normal;
-        vertical-align: top;
-        text-rendering: auto
-    }
-
-    .pure-u-1-24 {
-        width: 4.1667%
-    }
-
-    .pure-u-1-12, .pure-u-2-24 {
-        width: 8.3333%
-    }
-
-    .pure-u-1-8, .pure-u-3-24 {
-        width: 12.5%
-    }
-
-    .pure-u-1-6, .pure-u-4-24 {
-        width: 16.6667%
-    }
-
-    .pure-u-1-5 {
-        width: 20%
-    }
-
-    .pure-u-5-24 {
-        width: 20.8333%
-    }
-
-    .pure-u-1-4, .pure-u-6-24 {
-        width: 25%
-    }
-
-    .pure-u-7-24 {
-        width: 29.1667%
-    }
-
-    .pure-u-1-3, .pure-u-8-24 {
-        width: 33.3333%
-    }
-
-    .pure-u-3-8, .pure-u-9-24 {
-        width: 37.5%
-    }
-
-    .pure-u-2-5 {
-        width: 40%
-    }
-
-    .pure-u-10-24, .pure-u-5-12 {
-        width: 41.6667%
-    }
-
-    .pure-u-11-24 {
-        width: 45.8333%
-    }
-
-    .pure-u-1-2, .pure-u-12-24 {
-        width: 50%
-    }
-
-    .pure-u-13-24 {
-        width: 54.1667%
-    }
-
-    .pure-u-14-24, .pure-u-7-12 {
-        width: 58.3333%
-    }
-
-    .pure-u-3-5 {
-        width: 60%
-    }
-
-    .pure-u-15-24, .pure-u-5-8 {
-        width: 62.5%
-    }
-
-    .pure-u-16-24, .pure-u-2-3 {
-        width: 66.6667%
-    }
-
-    .pure-u-17-24 {
-        width: 70.8333%
-    }
-
-    .pure-u-18-24, .pure-u-3-4 {
-        width: 75%
-    }
-
-    .pure-u-19-24 {
-        width: 79.1667%
-    }
-
-    .pure-u-4-5 {
-        width: 80%
-    }
-
-    .pure-u-20-24, .pure-u-5-6 {
-        width: 83.3333%
-    }
-
-    .pure-u-21-24, .pure-u-7-8 {
-        width: 87.5%
-    }
-
-    .pure-u-11-12, .pure-u-22-24 {
-        width: 91.6667%
-    }
-
-    .pure-u-23-24 {
-        width: 95.8333%
-    }
-
-    .pure-u-1, .pure-u-1-1, .pure-u-24-24, .pure-u-5-5 {
-        width: 100%
-    }
-
-    //Pure grids
-    @media screen and (min-width: 64em) {
-        .pure-u-lg-1, .pure-u-lg-1-1, .pure-u-lg-1-12, .pure-u-lg-1-2, .pure-u-lg-1-24, .pure-u-lg-1-3, .pure-u-lg-1-4, .pure-u-lg-1-5, .pure-u-lg-1-6, .pure-u-lg-1-8, .pure-u-lg-10-24, .pure-u-lg-11-12, .pure-u-lg-11-24, .pure-u-lg-12-24, .pure-u-lg-13-24, .pure-u-lg-14-24, .pure-u-lg-15-24, .pure-u-lg-16-24, .pure-u-lg-17-24, .pure-u-lg-18-24, .pure-u-lg-19-24, .pure-u-lg-2-24, .pure-u-lg-2-3, .pure-u-lg-2-5, .pure-u-lg-20-24, .pure-u-lg-21-24, .pure-u-lg-22-24, .pure-u-lg-23-24, .pure-u-lg-24-24, .pure-u-lg-3-24, .pure-u-lg-3-4, .pure-u-lg-3-5, .pure-u-lg-3-8, .pure-u-lg-4-24, .pure-u-lg-4-5, .pure-u-lg-5-12, .pure-u-lg-5-24, .pure-u-lg-5-5, .pure-u-lg-5-6, .pure-u-lg-5-8, .pure-u-lg-6-24, .pure-u-lg-7-12, .pure-u-lg-7-24, .pure-u-lg-7-8, .pure-u-lg-8-24, .pure-u-lg-9-24 {
-            display: inline-block;
-            zoom: 1;
-            letter-spacing: normal;
-            word-spacing: normal;
-            vertical-align: top;
-            text-rendering: auto
-        }
-
-        .pure-u-lg-1-24 {
-            width: 4.1667%
-        }
-
-        .pure-u-lg-1-12, .pure-u-lg-2-24 {
-            width: 8.3333%
-        }
-
-        .pure-u-lg-1-8, .pure-u-lg-3-24 {
-            width: 12.5%
-        }
-
-        .pure-u-lg-1-6, .pure-u-lg-4-24 {
-            width: 16.6667%
-        }
-
-        .pure-u-lg-1-5 {
-            width: 20%
-        }
-
-        .pure-u-lg-5-24 {
-            width: 20.8333%
-        }
-
-        .pure-u-lg-1-4, .pure-u-lg-6-24 {
-            width: 25%
-        }
-
-        .pure-u-lg-7-24 {
-            width: 29.1667%
-        }
-
-        .pure-u-lg-1-3, .pure-u-lg-8-24 {
-            width: 33.3333%
-        }
-
-        .pure-u-lg-3-8, .pure-u-lg-9-24 {
-            width: 37.5%
-        }
-
-        .pure-u-lg-2-5 {
-            width: 40%
-        }
-
-        .pure-u-lg-10-24, .pure-u-lg-5-12 {
-            width: 41.6667%
-        }
-
-        .pure-u-lg-11-24 {
-            width: 45.8333%
-        }
-
-        .pure-u-lg-1-2, .pure-u-lg-12-24 {
-            width: 50%
-        }
-
-        .pure-u-lg-13-24 {
-            width: 54.1667%
-        }
-
-        .pure-u-lg-14-24, .pure-u-lg-7-12 {
-            width: 58.3333%
-        }
-
-        .pure-u-lg-3-5 {
-            width: 60%
-        }
-
-        .pure-u-lg-15-24, .pure-u-lg-5-8 {
-            width: 62.5%
-        }
-
-        .pure-u-lg-16-24, .pure-u-lg-2-3 {
-            width: 66.6667%
-        }
-
-        .pure-u-lg-17-24 {
-            width: 70.8333%
-        }
-
-        .pure-u-lg-18-24, .pure-u-lg-3-4 {
-            width: 75%
-        }
-
-        .pure-u-lg-19-24 {
-            width: 79.1667%
-        }
-
-        .pure-u-lg-4-5 {
-            width: 80%
-        }
-
-        .pure-u-lg-20-24, .pure-u-lg-5-6 {
-            width: 83.3333%
-        }
-
-        .pure-u-lg-21-24, .pure-u-lg-7-8 {
-            width: 87.5%
-        }
-
-        .pure-u-lg-11-12, .pure-u-lg-22-24 {
-            width: 91.6667%
-        }
-
-        .pure-u-lg-23-24 {
-            width: 95.8333%
-        }
-
-        .pure-u-lg-1, .pure-u-lg-1-1, .pure-u-lg-24-24, .pure-u-lg-5-5 {
-            width: 100%
-        }
-    }
-
-    @media (min-width: 48em) {
-        /* Only apply this when the window is small. Otherwise, the following
-        case results in extra padding on the left:
-            * Make the window small.
-            * Tap the menu to trigger the active state.
-            * Make the window large again.
-        */
-        #layout {
-            padding-left: 160px;
-        }
-    }
-
-    @media (max-width: 48em) {
-        #layout {
-            left: 160px;
+    @media screen and (max-width: 48em) {
+        .header {
+            text-align: center;
+            padding: 2.5em 2em 0;
         }
     }
 </style>

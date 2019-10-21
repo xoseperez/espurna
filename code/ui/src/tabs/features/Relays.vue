@@ -104,12 +104,14 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Btn from "../../components/Button";
     import Repeater from "../../components/Repeater";
 
     export default {
         components: {
             Repeater,
-            Inpt
+            Inpt,
+            Btn
         }
     }
 </script>

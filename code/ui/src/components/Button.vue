@@ -42,7 +42,7 @@
         letter-spacing: 0;
         margin-bottom: 10px;
         text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-        padding: 10px 8px;
+        padding: 10px 14px;
         border: none;
         background-image: linear-gradient(transparent, rgba(0, 0, 0, .05) 40%, rgba(0, 0, 0, .2));
 
@@ -67,15 +67,6 @@
     .pure-btn-primary {
         background-color: #0078e7;
         color: #fff
-    }
-
-    .main-buttons {
-        margin: 20px auto;
-        text-align: center;
-    }
-
-    .main-buttons button {
-        width: 130px;
     }
 
     .btn-del-schedule {

@@ -185,31 +185,33 @@
                     Shows debug messages from the device
                 </h2>
 
-                <div class="pure-g module module-cmd">
-                    <div class="pure-u-1 hint">
-                        Write a command and click send to execute it on the device. The output will be shown
-                        in the debug text area below.
-                    </div>
-                    <Inpt name="dbgcmd" class="pure-u-3-4" type="text" tabindex="2"/>
-                    <div class="pure-u-1-4 pure-u-lg-1-4">
-                        <Btn name="dbgcmd" class="pure-u-23-24">
+                <Row ref="cmd">
+                    <C :size="12">
+                        <div class="hint">
+                            Write a command and click send to execute it on the device. The output will be shown
+                            in the debug text area below.
+                        </div>
+                    </C>
+                    <C>
+                        <Inpt name="dbgcmd" type="text" tabindex="2"/>
+                    </C>
+                    <C>
+                        <Btn name="dbgcmd">
                             Send
                         </Btn>
-                    </div>
-                </div>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
+                <Row>
                     <textarea id="weblog"
-                              class="pure-u-1 terminal"
+                              class="terminal"
                               name="weblog"
                               wrap="soft"
-                              readonly></textarea>
-                    <div class="pure-u-1-4 pure-u-lg-1-4">
-                        <Btn name="dbg-clear" color="danger" class="pure-u-23-24">
-                            Clear
-                        </Btn>
-                    </div>
-                </div>
+                              readonly spellcheck="false"></textarea>
+                    <Btn name="dbg-clear" color="danger">
+                        Clear
+                    </Btn>
+                </Row>
             </fieldset>
         </div>
     </section>
@@ -218,9 +220,13 @@
 <script>
     import Inpt from './../../components/Input';
     import Btn from './../../components/Button'
+    import Row from "../../layout/Row";
+    import C from "../../layout/Col";
 
     export default {
         components: {
+            C,
+            Row,
             Inpt,
             Btn
         },

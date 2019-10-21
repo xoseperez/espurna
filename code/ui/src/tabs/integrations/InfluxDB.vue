@@ -52,7 +52,6 @@
                           tabindex="45"
                           autocomplete="new-password"
                           spellcheck="false"/>
-                    <span class="no-select password-reveal"></span>
                 </div>
             </fieldset>
         </div>

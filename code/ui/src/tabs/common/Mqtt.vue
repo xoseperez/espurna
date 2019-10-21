@@ -61,7 +61,6 @@
                           placeholder="Leave blank if no pass"
                           autocomplete="mqtt-new-password"
                           spellcheck="false"/>
-                    <span class="no-select password-reveal"></span>
                 </div>
 
                 <div class="pure-g">

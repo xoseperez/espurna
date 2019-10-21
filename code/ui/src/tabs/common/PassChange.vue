@@ -25,7 +25,6 @@
                                       autocomplete="false"
                                       spellcheck="false"
                                       required/>
-                                <span class="no-select password-reveal"></span>
                             </div>
 
                             <div class="pure-g">
@@ -39,7 +38,6 @@
                                       autocomplete="false"
                                       spellcheck="false"
                                       required/>
-                                <span class="no-select password-reveal"></span>
                             </div>
                         </fieldset>
 
@@ -72,8 +70,8 @@
 </template>
 
 <script>
-    import Btn from "./Button";
-    import Inpt from "./Input";
+    import Btn from "../../components/Button";
+    import Inpt from "../../components/Input";
 
     export default {
         components: {Btn, Inpt}

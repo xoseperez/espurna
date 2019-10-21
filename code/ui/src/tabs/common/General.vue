@@ -151,7 +151,6 @@
                       tabindex="0"
                       autocomplete="new-password"
                       spellcheck="false"/>
-                <span class="no-select password-reveal more"></span>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Static IP</label>
                 <Inpt class="pure-u-1 pure-u-lg-3-4 more"

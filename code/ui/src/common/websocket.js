@@ -8,7 +8,7 @@ Ws.prototype = {
         }, time);
     },
     connect(host, cb) {
-        if (host.startsWith("file:")) {
+        if (!host || host.match('localhost')) {
             return;
         }
 
