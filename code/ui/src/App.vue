@@ -663,7 +663,7 @@
     #content {
         padding: 0 2em;
         max-width: 800px;
-        margin: 0 auto 50px;
+        margin: 0;
         line-height: 1.6em;
     }
 

@@ -3,10 +3,10 @@
         <option v-for="(l, k) in options" :key="key(k,l)" :value="key(k,l)">{{label(k,l)}}</option>
     </select>
     <span v-else-if="type === 'switch'" class="switch">
-        <input :id="'switch-'+_uid" type="checkbox" v-model="value">
+        <input :id="'switch-'+_uid" v-model="value" type="checkbox">
         <label :for="'switch-'+_uid"><i class="on">{{on}}</i><i class="off">{{off}}</i></label>
     </span>
-    <input v-else :type="type" v-model="value">
+    <input v-else v-model="value" :type="type">
 </template>
 
 <script>
