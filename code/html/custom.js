@@ -265,6 +265,11 @@ function addValue(data, name, value) {
         name = "adminPass";
     }
 
+    // join both relayLastschedule values
+    if (name.startsWith("relayLastschedule")) {
+        name = "relayLastschedule";
+    }
+
     if (name in data) {
         if (!Array.isArray(data[name])) {
             data[name] = [data[name]];
