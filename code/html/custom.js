@@ -1025,7 +1025,7 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
-        $("input[name='relayLastschedule']", line).prop('checked', data.restore_last_schedule[i]);
+        $("input[name='relayLastschedule']", line).prop('checked', data.relayLastschedule[i]);
         $("input[name='relayLastschedule']", line).attr("id", "relayLastschedule" + i);
         $("input[name='relayLastschedule']", line).attr("name", "relayLastschedule" + i);
         $("input[name='relayLastschedule" + i + "']", line).next().attr("for","relayLastschedule" + (i));
