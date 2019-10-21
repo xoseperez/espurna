@@ -196,12 +196,21 @@ void _schCheck(int relay, int daybefore) {
             int sch_minute = getSetting("schMinute", i, 0).toInt();
             int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
             int sch_action = getSetting("schAction", i, 0).toInt();
+            unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
 
-            if (sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+            if (sch_type == SCHEDULER_TYPE_SWITCH && sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
                 minimum_restore_time = minutes_to_trigger;
                 saved_action = sch_action;
                 saved_sch = i;
             }
+
+            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+                if (SCHEDULER_TYPE_DIM == sch_type && sch_switch == relay && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+                    minimum_restore_time = minutes_to_trigger;
+                    saved_action = sch_action;
+                    saved_sch = i;
+                }
+            #endif
 
             if (minutes_to_trigger == 0 && relay == -1) {
 
