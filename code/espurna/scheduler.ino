@@ -11,7 +11,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <TimeLib.h>
 
-int RestoredLastSchedules = 0;
+int _sch_restore = 0;
 
 // -----------------------------------------------------------------------------
 
@@ -138,13 +138,36 @@ int _schMinutesLeft(time_t t, unsigned char schedule_hour, unsigned char schedul
     return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
 }
 
-// if passed values are -1,-1 than its a regular check
+void _schAction(int sch_id, int sch_action, int sch_switch) {
+    unsigned char sch_type = getSetting("schType", sch_id, SCHEDULER_TYPE_SWITCH).toInt();
+
+    if (SCHEDULER_TYPE_SWITCH == sch_type) {
+        DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
+        if (sch_action == 2) {
+            relayToggle(sch_switch);
+        } else {
+            relayStatus(sch_switch, sch_action);
+        }
+    }
+
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        if (SCHEDULER_TYPE_DIM == sch_type) {
+            DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
+            lightChannel(sch_switch, sch_action);
+            lightUpdate(true, true);
+        }
+    #endif
+}
+
+// If daybefore and relay is -1, check with current timestamp
+// Otherwise, modify it by moving 'daybefore' days back and only use the 'relay' id
 void _schCheck(int relay, int daybefore) {
 
     time_t local_time = now();
     time_t utc_time = ntpLocal2UTC(local_time);
     int minimum_restore_time = -1440;
     int saved_action = -1;
+    int saved_sch = -1;
 
     // Check schedules
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
@@ -177,31 +200,12 @@ void _schCheck(int relay, int daybefore) {
             if (sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
                 minimum_restore_time = minutes_to_trigger;
                 saved_action = sch_action;
+                saved_sch = i;
             }
 
             if (minutes_to_trigger == 0 && relay == -1) {
 
-                unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
-
-                if (SCHEDULER_TYPE_SWITCH == sch_type) {
-                    int sch_action = getSetting("schAction", i, 0).toInt();
-                    DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
-                    if (sch_action == 2) {
-                        relayToggle(sch_switch);
-                    } else {
-                        relayStatus(sch_switch, sch_action);
-                    }
-                }
-
-                #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                    if (SCHEDULER_TYPE_DIM == sch_type) {
-                        int sch_brightness = getSetting("schAction", i, -1).toInt();
-                        DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_brightness);
-                        lightChannel(sch_switch, sch_brightness);
-                        lightUpdate(true, true);
-                    }
-                #endif
-
+                _schAction(i, sch_action, sch_switch);
                 DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), i);
 
             // Show minutes to trigger every 15 minutes
@@ -231,8 +235,9 @@ void _schCheck(int relay, int daybefore) {
       return;
     }
 
-    if (minimum_restore_time != -1440 && saved_action != -1)
-      relayStatus(relay, saved_action);
+    if (minimum_restore_time != -1440 && saved_action != -1 && saved_sch != -1) {
+        _schAction(saved_sch, saved_action, relay);
+    }
 
 }
 
@@ -241,12 +246,12 @@ void _schLoop() {
     // Check time has been sync'ed
     if (!ntpSynced()) return;
 
-    if (RestoredLastSchedules == 0) {
+    if (_sch_restore == 0) {
         for (int i = 0; i < _relays.size(); i++){
-          if (getSetting("relayLastschedule", i, 1).toInt() == 1)
+            if (getSetting("relayLastSchedule", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt() == 1)
                 _schCheck(i, 0);
         }
-        RestoredLastSchedules = 1;
+        _sch_restore = 1;
     }
 
     // Check schedules every minute at hh:mm:00
