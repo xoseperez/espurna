@@ -7,6 +7,11 @@ describe('Form', () => {
     let cmp;
     beforeEach(() => {
         cmp = mount(Form, {
+            propsData: {
+                value: {
+                    test1: "foo"
+                }
+            },
             slots: {
                 default: {
                     render: (h) => {
@@ -22,12 +27,20 @@ describe('Form', () => {
             }
         });
     });
+
     it('renders the inputs', () => {
         const form = cmp.find(Form);
         expect(form.findAll(Input).length).toBe(3)
     });
 
-    it('updates its values', () => {
+
+    it('should uses the initial value', () => {
+        const form = cmp.find(Form);
+
+        expect(form.vm.values).toMatchObject({test1: "foo"});
+    });
+
+    it('should updates its values when input changes', () => {
         const form = cmp.find(Form);
         const inputs = form.findAll(Input);
 
@@ -45,5 +58,19 @@ describe('Form', () => {
         in3.setChecked(false);
 
         expect(form.vm.values).toMatchObject({test1: "Hello world", test2: 1, test3: false});
-    })
+    });
+
+
+
+    it('should emit input when its values are changed', () => {
+        const form = cmp.find(Form);
+
+        const in1 = form.find('input');
+        in1.setValue("Hello world");
+
+        form.vm.$emit('input');
+
+        expect(cmp.emitted().input).toBeTruthy();
+        expect(cmp.emitted().input[0]).toStrictEqual([{test1: "Hello world"}])
+    });
 });

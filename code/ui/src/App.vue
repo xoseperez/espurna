@@ -363,6 +363,9 @@
                     wifi: {},
                     device: {},
                 },
+                settings: {
+
+                },
                 tabs: tabs
             }
         },
@@ -439,6 +442,28 @@
                 } catch (e) {
                     console.log('Invalid data received', evt.data);
                 }
+            },
+            prepareData(data) {
+                Object.keys(data).forEach((k) => {
+                    let val = data[k];
+                    if (typeof val === "object") {
+                        if (Array.isArray(val.list) && "schema" in val) {
+                            let objs = [];
+                            val.list.forEach((v) => {
+                                if (Array.isArray(v)) {
+                                    let i = 0;
+                                    let obj = {};
+                                    v.forEach((prop) => {
+                                        obj[val.schema[i++]] = prop;
+                                    });
+                                    objs.push(obj);
+                                }
+                            });
+                            val.list = objs;
+                        }
+                    }
+                });
+
             }
         },
         provide() {
@@ -535,9 +560,6 @@
         color: #0F0;
     }
 
-    /* -----------------------------------------------------------------------------
-        Buttons
-       -
 
     /* -----------------------------------------------------------------------------
         Sliders

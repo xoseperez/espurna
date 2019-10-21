@@ -723,7 +723,7 @@ String _relayFriendlyName(unsigned char i) {
 void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& module = root.createNestedObject("relay");
 
-    JsonArray& schema = module.createNestedArray("sch");
+    JsonArray& schema = module.createNestedArray("schema");
     schema.add("gpio");
     schema.add("type");
     schema.add("reset");
@@ -739,7 +739,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
     module["start"] = 0;
 
-    JsonArray& relays = module.createNestedArray("relays");
+    JsonArray& relays = module.createNestedArray("list");
 
     for (unsigned char i=0; i<relayCount(); i++) {
         JsonArray& relay = relays.createNestedArray()

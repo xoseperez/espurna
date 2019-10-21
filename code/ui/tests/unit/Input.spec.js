@@ -21,7 +21,7 @@ describe('Input', () => {
                 type: "text", name: "test1"
             }
         });
-        expect(input.is('input')).toBe(true);
+        expect(input.exists()).toBeTruthy();
         expect(input.element.type).toBe("text");
     });
 

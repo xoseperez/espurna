@@ -6,14 +6,25 @@
 
 <script>
     export default {
+        props: {
+            value: {
+                type: Object,
+                default() {
+                    return {};
+                }
+            }
+        },
         data() {
             return {
-                values: {}
+                values: this.value
             }
         },
         watch: {
-            values(newVal, oldVal) {
-                //console.log(newVal);
+            values: {
+                deep: true,
+                handler(newVal) {
+                    this.$emit('input', newVal);
+                }
             }
         },
         provide() {
