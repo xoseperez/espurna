@@ -111,9 +111,9 @@ void _otaClientFromHttps(const String& url) {
     }
 
     if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-        String fp_string = getSetting("otafp", OTA_FINGERPRINT);
+        String fp_string = getSetting("otaFP", OTA_FINGERPRINT);
         if (!fp_string.length()) {
-            DEBUG_MSG_P(PSTR("[OTA] Requested fingerprint auth, but 'otafp' is not set\n"));
+            DEBUG_MSG_P(PSTR("[OTA] Requested fingerprint auth, but 'otaFP' is not set\n"));
             return;
         }
 
@@ -166,7 +166,7 @@ void _otaClientFromHttps(const String& url) {
 
     String fp_string;
     if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-        fp_string = getSetting("otafp", OTA_FINGERPRINT);
+        fp_string = getSetting("otaFP", OTA_FINGERPRINT);
         if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
             DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint\n"));
             return;
@@ -249,6 +249,9 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
 // -----------------------------------------------------------------------------
 
 void otaClientSetup() {
+
+    // Backwards compatibility
+    moveSetting("otafp", "otaFP");
 
     #if TERMINAL_SUPPORT
         _otaClientInitCommands();
