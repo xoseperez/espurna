@@ -721,21 +721,37 @@ String _relayFriendlyName(unsigned char i) {
 
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonArray& relays = root.createNestedArray("relays");
+    JsonObject& module = root.createNestedObject("relay");
+
+    JsonArray& schema = module.createNestedArray("sch");
+    schema.add("gpio");
+    schema.add("type");
+    schema.add("reset");
+    schema.add("boot");
+    schema.add("pulse");
+    schema.add("pulse_time");
+
+    #if MQTT_SUPPORT
+        schema.add("group");
+        schema.add("group_sync");
+        schema.add("on_disc");
+    #endif
+
+    JsonArray& relays = module.createNestedArray("relays");
 
     for (unsigned char i=0; i<relayCount(); i++) {
-        JsonObject& relay = relays.createNestedObject()
-        relay["gpio"] = _relayFriendlyName(i);
-        relay["type"] = _relays[i].type;
-        relay["reset"] = _relays[i].reset_pin;
-        relay["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-        relay["pulse"] = _relays[i].pulse;
-        relay["pulse_time"] = _relays[i].pulse_ms / 1000.0;
+        JsonArray& relay = relays.createNestedArray()
+        relay.add(_relayFriendlyName(i));                               //gpio
+        relay.add(_relays[i].type);                                     //type
+        relay.add(_relays[i].reset_pin);                                //reset
+        relay.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt()); //boot
+        relay.add(_relays[i].pulse);                                    //pulse
+        relay.add(_relays[i].pulse_ms / 1000.0);                        //pulse_time
 
         #if MQTT_SUPPORT
-            relay["group"] = getSetting("mqttGroup", i, "");
-            relay["group_sync"] = getSetting("mqttGroupSync", i, 0).toInt();
-            relay["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
+            relay.add(getSetting("mqttGroup", i, ""));                  //group
+            relay.add(getSetting("mqttGroupSync", i, 0).toInt());       //group_sync
+            relay.add(getSetting("relayOnDisc", i, 0).toInt());         //on_disc
         #endif
     }
 }
