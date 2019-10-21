@@ -1709,6 +1709,11 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
+            if (module == "sch") {
+                $("li.module-" + module).css("display", "inherit");
+                $("div.module-" + module).css("display", "flex");
+                return;
+            }
             $(".module-" + module).css("display", "inherit");
             return;
         }
