@@ -40,7 +40,7 @@
         computed: {
             value: {
                 get() {
-                    return this.form && this.form.values ? this.form.values[this.name] : this.default;
+                    return this.form && this.form.values && this.name in this.form.values ? this.form.values[this.name] : this.default;
                 },
                 set(v) {
                     this.$set(this.form.values, this.name, v);

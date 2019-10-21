@@ -13,7 +13,7 @@
         },
         watch: {
             values(newVal, oldVal) {
-                console.log(newVal);
+                //console.log(newVal);
             }
         },
         provide() {

@@ -32,19 +32,17 @@ describe('Form', () => {
         const inputs = form.findAll(Input);
 
         const in1 = inputs.at(0).find('input');
-        in1.element.value = "Hello world";
-        in1.trigger('input');
+        in1.setValue("Hello world");
 
         const in2 = inputs.at(1).find('select');
-        in2.element.value = 1;
-        in2.trigger('change');
+        in2.setValue(1);
 
-        const in3 = inputs.at(2).find('label');
-        in3.trigger('click');
+        const in3 = inputs.at(2).find('input');
+        in3.setChecked(true);
 
         expect(form.vm.values).toMatchObject({test1: "Hello world", test2: 1, test3: true});
 
-        in3.trigger('click');
+        in3.setChecked(false);
 
         expect(form.vm.values).toMatchObject({test1: "Hello world", test2: 1, test3: false});
     })
