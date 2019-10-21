@@ -257,7 +257,7 @@ void _schLoop() {
 
     if (_sch_restore == 0) {
         for (int i = 0; i < _relays.size(); i++){
-            if (getSetting("relayLastschedule", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt() == 1)
+            if (getSetting("relayLastSch", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt() == 1)
                 _schCheck(i, 0);
         }
         _sch_restore = 1;

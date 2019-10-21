@@ -733,7 +733,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     JsonArray& pulse_time = relays.createNestedArray("pulse_time");
 
     #if SCHEDULER_SUPPORT
-        JsonArray& relayLastschedule = relays.createNestedArray("relayLastschedule");
+        JsonArray& sch_last = relays.createNestedArray("relayLastSch");
     #endif
 
     #if MQTT_SUPPORT
@@ -753,7 +753,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         pulse_time.add(_relays[i].pulse_ms / 1000.0);
 
         #if SCHEDULER_SUPPORT
-            relayLastschedule.add(getSetting("relayLastschedule", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt());
+            sch_last.add(getSetting("relayLastSch", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt());
         #endif
 
         #if MQTT_SUPPORT

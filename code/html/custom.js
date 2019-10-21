@@ -250,7 +250,7 @@ function addValue(data, name, value) {
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime", "relayLastschedule",
+        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
@@ -265,9 +265,9 @@ function addValue(data, name, value) {
         name = "adminPass";
     }
 
-    // join both relayLastschedule values
-    if (name.startsWith("relayLastschedule")) {
-        name = "relayLastschedule";
+    // join all relayLastSch values
+    if (name.startsWith("relayLastSch")) {
+        name = "relayLastSch";
     }
 
     if (name in data) {
@@ -1030,10 +1030,10 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
-        $("input[name='relayLastschedule']", line).prop('checked', data.relayLastschedule[i]);
-        $("input[name='relayLastschedule']", line).attr("id", "relayLastschedule" + i);
-        $("input[name='relayLastschedule']", line).attr("name", "relayLastschedule" + i);
-        $("input[name='relayLastschedule" + i + "']", line).next().attr("for","relayLastschedule" + (i));
+        $("input[name='relayLastSch']", line).prop('checked', data.sch_last[i]);
+        $("input[name='relayLastSch']", line).attr("id", "relayLastSch" + i);
+        $("input[name='relayLastSch']", line).attr("name", "relayLastSch" + i);
+        $("input[name='relayLastSch" + i + "']", line).next().attr("for","relayLastSch" + (i));
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
