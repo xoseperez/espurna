@@ -737,6 +737,8 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         schema.add("on_disc");
     #endif
 
+    module["start"] = 0;
+
     JsonArray& relays = module.createNestedArray("relays");
 
     for (unsigned char i=0; i<relayCount(); i++) {
