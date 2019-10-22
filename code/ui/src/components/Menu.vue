@@ -15,7 +15,7 @@
                 <slot name="footer"></slot>
             </div>
         </div>
-        <div id="content">
+        <div class="content">
             <slot :id="'panel-'+currentPanel" :name="currentPanel"></slot>
         </div>
     </div>
@@ -44,17 +44,26 @@
 </script>
 
 <style lang="less">
+    @import "../assets/Colors";
 
-    .menu-fixed {
-        position: fixed;
-        left: 0;
-        top: 0;
-        z-index: 3
+    @menu-width: 190px;
+    @menu-toggle-size: 44px;
+
+    @padded-menu-width: (@menu-width + @menu-toggle-size);
+
+
+    /*
+    This is the parent `<div>` that contains the menu and the content area.
+    */
+    #layout {
+        position: relative;
+        min-height: 100%;
+        display: flex;
     }
 
     .main-buttons, .footer, .separator {
         margin: 0;
-        padding: 20px 10px;
+        padding: 20px 12px;
         border-top: 1px solid #555;
     }
 
@@ -65,30 +74,24 @@
     }
 
 
-    #content {
-        padding: 0 2em;
-        max-width: 1000px;
-        margin: 0 0 0 180px;
+    .content {
+        padding: 0 40px 40px;
+        max-width: 1400px;
+        margin: 0 0 0 -10px;
         line-height: 1.6em;
         width: 100%;
-        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .menu {
-        box-sizing: border-box;
-        /*margin-left: -160px;
-        width: 160px;*/
-        position: absolute;
-        top: 0;
-        width: 230px;
-        padding-right: 44px;
-        bottom: 0;
+        width: @padded-menu-width;
+        padding-right: 10px; //For the shadow to be visible
         z-index: 99; /* so the menu or its navicon stays above all content */
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
 
         .inner {
-            background: #191818;
+            background: #222;
             height: 100%;
             box-shadow: 1px 0 6px rgba(0, 0, 0, .5);
         }
@@ -105,14 +108,20 @@
             text-align: right;
 
             &:focus, &:hover {
-                background-color: #333
+                background-color: lighten(@secondary, 10%);
+                color: #fff;
             }
         }
 
         .current {
             a, a:focus, a:hover {
                 color: #fff;
-                background: transparent;
+                background: @secondary;
+                margin-right: -4px;
+                border-radius: 0 3px 3px 0;
+                box-shadow: 1px 0 6px rgba(0,0,0,.5);
+                position: relative;
+                z-index: 1;
             }
         }
 
@@ -136,12 +145,12 @@
         .heading {
             display: block;
             text-decoration: none;
-            border-bottom: 4px solid #c76f19;
+            border-bottom: 4px solid darken(@primary, 15%);
             padding: .5em .5em;
             font-size: 1.2em;
             color: #fff;
             margin: 0;
-            background: #ff952f;
+            background: @primary;
         }
 
         /*
@@ -150,9 +159,9 @@
 
         .footer {
             font-size: .9em;
-
+            padding-bottom: 30px;
             a {
-                color: #ff952f;
+                color: @primary;
             }
         }
 
@@ -166,14 +175,10 @@
             padding: 0;
         }
 
-        .current {
-            background: #479fd6;
-        }
-
     }
 
     .menu,
-    .menu-link, #content, .list a, .inner {
+    .menu-link, .content, .list a, .inner {
         transition: all .3s ease-out;
     }
 
@@ -182,11 +187,13 @@
         display: none; /* show this only on small screens */
         top: 0;
         right: 0;
+        margin-left: 190px;
+        margin-bottom: -44px;
         background: rgba(0, 0, 0, 0.7);
         font-size: 10px; /* change this value to increase/decrease button size */
         z-index: 10;
-        width: 2em;
-        height: auto;
+        width: @menu-toggle-size;
+        height: @menu-toggle-size;
         padding: 2.1em 1.2em;
 
         &:hover,
@@ -216,47 +223,62 @@
         }
     }
 
-    .content {
-        padding-left: 2em;
-        padding-right: 2em;
-    }
-
     /* -- Responsive Styles (Media Queries) ------------------------------------- */
 
     /*
     Hides the menu at `48em`, but modify this based on your app's needs.
     */
     @media (max-width: 48em) {
+        .content {
+            margin: 0;
+        }
+        .content > section {
+            padding: 0 10px;
+        }
+
         .menu {
             position: fixed;
+            padding-right: @menu-toggle-size;
+
             &:not(.open) {
                 overflow: hidden;
-                transform: translateX(calc(44px - 100%));
+                transform: translateX(-@menu-width);
 
-                + #content {
-                    margin: 0;
+                + .content {
+                    padding: 0;
+                }
+
+                .current {
+                    a, a:focus, a:hover {
+                        margin: 0;
+                        box-shadow: none;
+                    }
                 }
 
                 .inner {
                     box-shadow: none;
                 }
             }
-            &.open + #content {
-                margin: 0;
-                transform: translateX(190px);
+
+            &.open + .content {
+                padding: 0;
+                transform: translateX(@menu-width);
+
                 &:before {
                     opacity: 1;
                     pointer-events: all;
                 }
             }
-            + #content:before {
+
+            + .content:before {
                 content: "";
-                width: 150%;
+                z-index: 9;
+                width: 100%;
                 height: 100%;
                 background: #0000003b;
                 position: absolute;
                 pointer-events: none;
-                margin-left: -50%;
+                margin-left: 0;
                 opacity: 0;
                 transition: opacity .3s ease-out;
             }

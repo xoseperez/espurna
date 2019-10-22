@@ -21,7 +21,7 @@
                     <label class="pure-u-1 pure-u-lg-1-4">Server</label>
                     <Inpt name="nofussServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">Address of the NoFUSS server</div>
+                    <Hint>Address of the NoFUSS server</Hint>
                 </div>
             </fieldset>
         </div>
@@ -30,9 +30,11 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Inpt
         }
     }

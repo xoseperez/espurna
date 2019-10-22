@@ -9,53 +9,55 @@
             <fieldset>
                 <div class="pure-g module module-led">
                     <div class="pure-u-0 pure-u-lg-1-4">Modes</div>
-                    <ul class="pure-u-1 pure-u-lg-3-4 hint">
-                        <li>
-                            <strong>WiFi status</strong> will blink at 1Hz when trying to connect. If
-                            successfully connected it will briefly blink every 5 seconds if in STA mode
-                            or
-                            every second if in AP mode.
-                        </li>
-                        <li>
-                            <strong>Follow switch</strong> will force the LED to follow the status of a
-                            given switch (you must define which switch to follow in the side field).
-                        </li>
-                        <li>
-                            <strong>Inverse switch</strong> will force the LED to not-follow the status
-                            of a
-                            given switch (you must define which switch to follow in the side field).
-                        </li>
-                        <li>
-                            <strong>Find me</strong> will turn the LED ON when all switches are OFF.
-                            This is
-                            meant to locate switches at night.
-                        </li>
-                        <li>
-                            <strong>Find me &amp; WiFi</strong> will follow the WiFi status but will
-                            stay
-                            mostly on when switches are OFF, and mostly OFF when any of them is ON.
-                        </li>
-                        <li>
-                            <strong>Switches status</strong> will turn the LED ON whenever any switch is
-                            ON,
-                            and OFF otherwise. This is global status notification.
-                        </li>
-                        <li>
-                            <strong>Switches status &amp; WiFi</strong> will follow the WiFi status but
-                            will
-                            stay mostly off when switches are OFF, and mostly ON when any of them is ON.
-                        </li>
-                        <li>
-                            <strong>MQTT managed</strong> will let you manage the LED status via MQTT by
-                            sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1
-                            or 2
-                            (to toggle it).
-                        </li>
-                        <li>
-                            <strong>Always ON</strong> and <strong>Always OFF</strong> modes are
-                            self-explanatory.
-                        </li>
-                    </ul>
+                    <Hint visible>
+                        <ul>
+                            <li>
+                                <strong>WiFi status</strong> will blink at 1Hz when trying to connect. If
+                                successfully connected it will briefly blink every 5 seconds if in STA mode
+                                or
+                                every second if in AP mode.
+                            </li>
+                            <li>
+                                <strong>Follow switch</strong> will force the LED to follow the status of a
+                                given switch (you must define which switch to follow in the side field).
+                            </li>
+                            <li>
+                                <strong>Inverse switch</strong> will force the LED to not-follow the status
+                                of a
+                                given switch (you must define which switch to follow in the side field).
+                            </li>
+                            <li>
+                                <strong>Find me</strong> will turn the LED ON when all switches are OFF.
+                                This is
+                                meant to locate switches at night.
+                            </li>
+                            <li>
+                                <strong>Find me &amp; WiFi</strong> will follow the WiFi status but will
+                                stay
+                                mostly on when switches are OFF, and mostly OFF when any of them is ON.
+                            </li>
+                            <li>
+                                <strong>Switches status</strong> will turn the LED ON whenever any switch is
+                                ON,
+                                and OFF otherwise. This is global status notification.
+                            </li>
+                            <li>
+                                <strong>Switches status &amp; WiFi</strong> will follow the WiFi status but
+                                will
+                                stay mostly off when switches are OFF, and mostly ON when any of them is ON.
+                            </li>
+                            <li>
+                                <strong>MQTT managed</strong> will let you manage the LED status via MQTT by
+                                sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1
+                                or 2
+                                (to toggle it).
+                            </li>
+                            <li>
+                                <strong>Always ON</strong> and <strong>Always OFF</strong> modes are
+                                self-explanatory.
+                            </li>
+                        </ul>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">

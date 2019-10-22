@@ -20,9 +20,9 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -40,11 +40,11 @@
                         </button>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         These are the settings you should copy to your Home Assistant "configuration.yaml" file. If any
                         of the sections below (switch, light, sensor) already exists, do not duplicate it, simply copy
                         the contents of the section below the ones already present.
-                    </div>
+                    </Hint>
                 </div>
                 <div class="pure-g">
                     <textarea id="haConfig"
@@ -60,9 +60,11 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Inpt
         }
     }

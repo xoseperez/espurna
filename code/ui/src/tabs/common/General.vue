@@ -62,28 +62,6 @@
                         <strong>reboot the device</strong> after updating for this setting to apply.
                     </div>
                 </div>
-
-                <div class="pure-g module module-alexa">
-                    <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
-                    <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="switch" name="alexaEnabled"/>
-                    </div>
-                </div>
-
-                <div class="pure-g module module-alexa">
-                    <label class="pure-u-1 pure-u-lg-1-4">Alexa device name</label>
-                    <Inpt name="alexaName"
-                          class="pure-u-1 pure-u-lg-1-4"
-                          maxlength="31"
-                          type="text"
-                          action="reboot"
-                          tabindex="7"/>
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                        This name will be used in Alexa integration.<br>
-                    </div>
-                </div>
             </fieldset>
             <fieldset>
                 <legend>Wifi</legend>
@@ -103,7 +81,7 @@
                         (or router) or to a <strong>hidden SSID</strong>.
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <Btn name="wifi-scan" color="accent" @click="wifiScan">Scan now</Btn>
+                    <Btn name="wifi-scan" color="primary" @click="wifiScan">Scan now</Btn>
                     <div v-if="scanLoading" class="pure-u-0 pure-u-lg-1-4 scan loading"></div>
                 </div>
 
@@ -139,7 +117,7 @@
                           autocomplete="false"/>
                 </div>
                 <div class="pure-u-1-6 pure-u-lg-1-12">
-                    <button type="button" class="btn btn-more-network pure-u-1">...</button>
+                    <Btn name="more-network">...</Btn>
                 </div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Password</label>

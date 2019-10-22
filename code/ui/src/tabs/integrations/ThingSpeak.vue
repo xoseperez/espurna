@@ -29,11 +29,11 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         With every POST to thinkspeak.com only enqueued fields are sent. If you select to clear the
                         cache after every sending this will result in only those fields that have changed will be
                         posted. If you want all fields to be sent with every POST do not clear the cache.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -44,9 +44,9 @@
                 <legend>Sensors &amp; actuators</legend>
 
                 <div class="pure-g">
-                    <div class="pure-u-1 hint">
+                    <Hint>
                         Enter the field number to send each data to, 0 disable notifications from that component.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div id="tspkRelays"></div>
@@ -90,9 +90,11 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Inpt
         }
     }

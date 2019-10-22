@@ -42,17 +42,17 @@
                         </fieldset>
 
                         <div class="pure-g">
-                            <div class="pure-u-1 pure-u-lg-1 hint">
+                            <Hint>
                                 Password must be <strong>8..63 characters</strong> (numbers and letters and any of
                                 these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least
                                 <strong>one lowercase</strong> and <strong>one uppercase</strong> or
                                 <strong>one number</strong>.
-                            </div>
+                            </Hint>
                         </div>
 
 
                         <div class="pure-g">
-                            <Btn name="generate-pwd" color="info" class="pure-u-11-24 pure-u-lg-1-4"
+                            <Btn name="generate-pwd" color="secondary" class="pure-u-11-24 pure-u-lg-1-4"
                                  title="Generate password based on password policy">
                                 Generate
                             </Btn>
@@ -72,9 +72,10 @@
 <script>
     import Btn from "../../components/Button";
     import Inpt from "../../components/Input";
+    import Hint from "../../components/Hint";
 
     export default {
-        components: {Btn, Inpt}
+        components: {Hint, Btn, Inpt}
     }
 </script>
 

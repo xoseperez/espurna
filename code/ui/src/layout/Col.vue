@@ -20,7 +20,11 @@
 </script>
 
 <style lang="less">
+    .col:nth-of-type(2) {
+        width: 150%;
+    }
+
     .col {
-        flex: 1 0;
+        width: 50%;
     }
 </style>

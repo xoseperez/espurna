@@ -12,11 +12,7 @@
                     </C>
                     <C>
                         <Btn name="settings-backup">Backup</Btn>
-                    </C>
-                    <C>
-                        <Btn name="settings-restore" color="accent">Restore</Btn>
-                    </C>
-                    <C>
+                        <Btn name="settings-restore" color="primary">Restore</Btn>
                         <Btn name="settings-factory" color="danger">Factory Reset</Btn>
                     </C>
                 </Row>
@@ -39,26 +35,26 @@
                                   spellcheck="false"/>
                             <span class="password-reveal"></span>
                         </div>
-                        <div class="hint">
+                        <Hint>
                             The administrator password is used to access this web interface (user 'admin'), but also to
                             connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br> It
                             must be <strong>8..63 characters</strong> (numbers and letters and any of these special
                             characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least
                             <strong>one lowercase</strong> and <strong>one uppercase</strong> or
                             <strong>one number</strong>.
-                        </div>
+                        </Hint>
                     </C>
                 </Row>
                 <Row>
                     <C><label>HTTP port</label></C>
                     <C>
                         <Inpt name="webPort" type="text" action="reboot" tabindex="13"/>
-                        <div class="hint">
+                        <Hint>
                             This is the port for the web interface and API requests.
                             If different than 80 (standard HTTP port) you will have to add it explicitly to your
                             requests:
                             http://myip:myport/
-                        </div>
+                        </Hint>
                     </C>
                 </Row>
                 <Row>
@@ -77,53 +73,51 @@
                     <C><label>Restful API</label></C>
                     <C>
                         <Inpt type="switch" name="apiRestFul"/>
-                        <div class="hint">
+                        <Hint>
                             If enabled, API requests to change a status (like a relay)
                             must be done using PUT. If disabled you can issue them as GET requests (easier from a
                             browser).
-                        </div>
+                        </Hint>
                     </C>
                 </Row>
                 <Row ref="api">
                     <C><label>Real time API</label></C>
                     <C>
                         <Inpt type="switch" name="apiRealTime"/>
-                        <div class="hint">
-                            By default, some magnitudes are being preprocessed and
-                            filtered to avoid spurious values. If you want to get real-time values (not preprocessed) in
-                            the
-                            API turn on this setting.
-                        </div>
+                        <Hint>
+                            By default, some magnitudes are being preprocessed and filtered to avoid spurious values. If
+                            you want to get real-time values (not preprocessed) in the API turn on this setting.
+                        </Hint>
                     </C>
                 </Row>
                 <Row ref="api">
                     <C><label>HTTP API Key</label></C>
                     <C>
                         <Inpt name="apiKey" type="text" tabindex="14"/>
-                        <Btn name="apikey" color="accent">Auto</Btn>
-                        <div class="hint">
+                        <Btn name="apikey" color="primary">Auto</Btn>
+                        <Hint>
                             This is the key you will have to pass with every HTTP
                             request to the API, either to get or write values. All API calls must contain the
                             <strong>apikey</strong> parameter with the value above. To know what APIs are enabled do a
                             call to <strong>/apis</strong>.
-                        </div>
+                        </Hint>
                     </C>
                 </Row>
                 <Row ref="telnet">
                     <C><label>Enable TELNET</label></C>
                     <C>
                         <Inpt type="switch" name="telnetSTA"/>
-                        <div class="hint">
+                        <Hint>
                             Turn ON to be able to telnet to your device while
                             connected to your home router.<br>TELNET is always enabled in AP mode.
-                        </div>
+                        </Hint>
                     </C>
                 </Row>
                 <Row ref="telnet">
                     <C><label>TELNET Password</label></C>
                     <C>
                         <Inpt type="switch" name="telnetAuth"/>
-                        <div class="hint">Request password when starting telnet session</div>
+                        <Hint>Request password when starting telnet session</Hint>
                     </C>
                 </Row>
                 <Row>
@@ -136,17 +130,17 @@
                                   'Repeat after defined interval',
                                   'Repeat only device status'
                               ]"/>
-                        <div class="hint">Define when heartbeat message will be sent.</div>
+                        <Hint>Define when heartbeat message will be sent.</Hint>
                     </C>
                 </Row>
                 <Row>
                     <C><label>Heartbeat interval</label></C>
                     <C>
                         <Inpt name="hbInterval" type="number" tabindex="16"/>
-                        <div class="hint">
+                        <Hint>
                             This is the interval in <strong>seconds</strong> how often
                             to send the heartbeat message.
-                        </div>
+                        </Hint>
                     </C>
                 </Row>
                 <Row>
@@ -155,12 +149,12 @@
                         <input name="filename" type="text" :value="filename" readonly>
                         <Btn name="upgrade-browse">Browse</Btn>
                         <Btn name="upgrade" color="danger">Upgrade</Btn>
-                        <div class="hint">
+                        <Hint>
                             The device has {{status.free_size}} bytes available for
                             OTA updates. If your image is larger than this consider doing a
                             <A href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates"><strong>two-step
                                 update</strong></A>.
-                        </div>
+                        </Hint>
                         <div>
                             <progress id="upgrade-progress"></progress>
                         </div>
@@ -217,9 +211,10 @@
     import A from './../../components/ExtLink';
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
+    import Hint from "../../components/Hint";
 
     export default {
-        components: {C, Row, Inpt, Btn, A},
+        components: {Hint, C, Row, Inpt, Btn, A},
         data() {
             return {
                 status: {}

@@ -4,7 +4,7 @@
     </select>
     <span v-else-if="type === 'switch'" class="switch">
         <input :id="'switch-'+_uid" v-model="value" type="checkbox">
-        <label :for="'switch-'+_uid"><i class="on">{{on}}</i><i class="off">{{off}}</i></label>
+        <label :for="'switch-'+_uid"><span class="on">{{on}}</span><span class="off">{{off}}</span></label>
     </span>
     <span v-else-if="type === 'password'" class="password">
         <input v-model="value" :type="passType">
@@ -101,7 +101,6 @@
             text-align: left;
             padding: 4px 0 4px 44px;
 
-
             &:before, &:after {
                 content: "";
                 position: absolute;
@@ -168,7 +167,6 @@
         box-shadow: inset 0 1px 3px #ddd;
         border-radius: 4px;
         vertical-align: middle;
-        box-sizing: border-box;
         margin-bottom: 10px;
         width: 100%;
 

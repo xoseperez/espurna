@@ -4,16 +4,19 @@
             <h1>LIGHTFOX RF</h1>
             <h2>
                 LightFox RF configuration<br><br>
-                This page allows you to control LightFox RF receiver options.<br><br>
-                To learn a new code click <strong>LEARN</strong>, wait for 3 seconds then press a button
-                on
-                the remote, one of the relays will toggle. If no device relay toggles the code has not
-                been
-                properly learnt. Keep trying.<br><br>
-                Delete all the codes by clicking the <strong>CLEAR</strong> button and wait for 10
-                seconds.<br><br>
-                You can also specify which RF button controls which relay using controls below.
             </h2>
+        </div>
+
+        <div>
+            This page allows you to control LightFox RF receiver options.<br><br>
+            To learn a new code click <strong>LEARN</strong>, wait for 3 seconds then press a button
+            on
+            the remote, one of the relays will toggle. If no device relay toggles the code has not
+            been
+            properly learnt. Keep trying.<br><br>
+            Delete all the codes by clicking the <strong>CLEAR</strong> button and wait for 10
+            seconds.<br><br>
+            You can also specify which RF button controls which relay using controls below.
         </div>
 
         <div class="page">

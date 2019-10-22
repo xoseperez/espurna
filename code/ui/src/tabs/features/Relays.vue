@@ -19,10 +19,10 @@
                         <option value="4">Switch #0 controls other switches</option>
                     </select>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Define how the different switches should be
                         synchronized.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div id="relayConfig"></div>
@@ -106,9 +106,11 @@
     import Inpt from './../../components/Input';
     import Btn from "../../components/Button";
     import Repeater from "../../components/Repeater";
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Repeater,
             Inpt,
             Btn

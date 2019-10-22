@@ -26,6 +26,8 @@
 </script>
 
 <style lang="less">
+    @import "../assets/Colors";
+
     .btn {
         display: inline-block;
         line-height: normal;
@@ -34,7 +36,6 @@
         text-align: center;
         cursor: pointer;
         user-select: none;
-        box-sizing: border-box;
         text-decoration: none;
         text-transform: uppercase;
         border-radius: 4px;
@@ -62,24 +63,22 @@
             pointer-events: none
         }
     }
-
-
-    .pure-btn-primary {
-        background-color: #0078e7;
-        color: #fff
+    .content .btn {
+        margin-right: 8px;
     }
+
 
     .btn-del-schedule {
         margin-top: 15px;
     }
 
     .btn-danger {
-        background-color: #db3a22; /* redish */
+        background-color: @error; /* redish */
         /*border-color: #671c11;*/
     }
 
     .btn-success {
-        background-color: #51cc36;
+        background-color: @success;
         /*border-color: #225317;*/
     }
 
@@ -124,13 +123,13 @@
         display: none;
     }
 
-    .btn-accent {
-        background-color: #ff952f;
+    .btn-primary {
+        background-color: @primary;
         /*border-color: #844d18;*/
     }
 
-    .btn-info {
-        background-color: #42B8DD;
+    .btn-secondary {
+        background-color: @secondary;
         /*border-color: #1e5263;*/
     }
 

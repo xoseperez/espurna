@@ -28,14 +28,11 @@
                     </select>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                        Select the interval between readings. These will be filtered and averaged for
-                        the
-                        report.
-                        Please mind some sensors do not have fast refresh intervals. Check the sensor
-                        datasheet to know the minimum read interval.
-                        The default and recommended value is 6 seconds.
-                    </div>
+                    <Hint>
+                        Select the interval between readings. These will be filtered and averaged for the report.
+                        Please mind some sensors do not have fast refresh intervals. Check the sensor datasheet to know
+                        the minimum read interval. The default and recommended value is 6 seconds.
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -50,9 +47,9 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Select the number of readings to average and report
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-pwr">
@@ -67,13 +64,12 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                        Save aggregated data to EEPROM after these many reports. At the moment this only
-                        applies to total energy readings.
+                    <Hint>
+                        Save aggregated data to EEPROM after these many reports. At the moment this only applies to
+                        total energy readings.
                         Please mind: saving data to EEPROM too often will wear out the flash memory
-                        quickly.
-                        Set it to 0 to disable this feature (default value).
-                    </div>
+                        quickly. Set it to 0 to disable this feature (default value).
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-pwr">
@@ -112,11 +108,11 @@
                           tabindex="18"/>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Temperature correction value is added to the measured value which may be
                         inaccurate
                         due to many factors. The value can be negative.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-humidity">
@@ -131,11 +127,11 @@
                           tabindex="18"/>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Humidity correction value is added to the measured value which may be inaccurate
                         due
                         to many factors. The value can be negative.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-mics">
@@ -147,11 +143,11 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Move this switch to ON and press "Save" to
                         reset gas sensor calibration. Check the sensor datasheet for calibration
                         conditions.
-                    </div>
+                    </Hint>
                 </div>
 
                 <legend class="module module-hlw module-cse module-emon">Energy monitor</legend>
@@ -160,7 +156,7 @@
                     <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
                     <Inpt class="pure-u-1 pure-u-lg-3-4" name="pwrVoltage" type="text" tabindex="51"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">Mains voltage in your system (in V).</div>
+                    <Hint>Mains voltage in your system (in V).</Hint>
                 </div>
 
                 <div class="pure-g module module-hlw module-cse">
@@ -171,14 +167,11 @@
                           tabindex="52"
                           placeholder="0"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                        In Amperes (A). If you are using a pure
-                        resistive load like a bulb, this will be the ratio between the two previous
-                        values,
-                        i.e. power / voltage. You can also use a current clamp around one of the power
-                        wires
-                        to get this value.
-                    </div>
+                    <Hint>
+                        In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio
+                        between the two previous values, i.e. power / voltage. You can also use a current clamp around
+                        one of the power wires to get this value.
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-hlw module-cse">
@@ -189,10 +182,10 @@
                           tabindex="53"
                           placeholder="0"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         In Volts (V). Enter your the nominal AC voltage
                         for your household or facility, or use multimeter to get this value.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-hlw module-cse module-emon">
@@ -203,11 +196,11 @@
                           tabindex="54"
                           placeholder="0"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         In Watts (W). Calibrate your sensor connecting
                         a pure resistive load (like a bulb) and enter here its nominal power or use a
                         multimeter.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g module module-pm">
@@ -218,7 +211,7 @@
                           tabindex="55"
                           placeholder="0"/>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">Energy ratio in pulses/kWh.</div>
+                    <Hint>Energy ratio in pulses/kWh.</Hint>
                 </div>
 
                 <div class="pure-g module module-hlw module-cse module-emon">
@@ -257,9 +250,11 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Inpt
         }
     }

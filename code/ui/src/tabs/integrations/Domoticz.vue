@@ -37,9 +37,9 @@
                 <legend>Sensors &amp; actuators</legend>
 
                 <div class="pure-g">
-                    <div class="pure-u-1 hint">
+                    <Hint>
                         Set IDX to 0 to disable notifications from that component.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div id="dczRelays"></div>
@@ -81,9 +81,11 @@
 
 <script>
     import Inpt from './../../components/Input';
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Inpt
         }
     }

@@ -17,13 +17,13 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Use the first three channels as RGB channels.
                         This will also enable the color picker in the web UI. Will only work if the
                         device
                         has at least 3 dimmable channels.<br>Reload the page to update the web
                         interface.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -36,10 +36,10 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Use RGB color picker if enabled (plus
                         brightness), otherwise use HSV (hue-saturation-value) style
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -52,7 +52,7 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         For 2 channels warm white and cold white lights
                         or color lights to use forth dimmable channel as (cold) white light calculated
                         out
@@ -60,7 +60,7 @@
                         channels.<br>Enabling this will render useless the "Channel 4" slider in the
                         status
                         page.<br>Reload the page to update the web interface.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -73,7 +73,7 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Use a dimmable channel as warm white light and
                         another dimmable channel as cold white light.<br>On devices with two dimmable
                         channels the first use used for warm white light and the second for cold white
@@ -84,7 +84,7 @@
                         this will render useless the "Channel 5" slider in the status page.<br>Reload
                         the
                         page to update the web interface.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -96,10 +96,10 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Use gamma correction for RGB channels.<br>Will
                         only work if "use colorpicker" above is also ON.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -109,10 +109,10 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Use CSS style to report colors to MQTT and REST
                         API. <br>Red will be reported as "#FF0000" if ON, otherwise "255,0,0"
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -124,9 +124,9 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         If enabled color changes will be smoothed.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -141,10 +141,10 @@
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                    <Hint>
                         Time in milliseconds to transition from one
                         color to another.
-                    </div>
+                    </Hint>
                 </div>
 
                 <div class="pure-g">
@@ -156,7 +156,7 @@
                               action="reconnect"/>
                     </div>
                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <div class="pure-u-1 pure-u-lg-3-4 hint">Sync color between different lights.</div>
+                    <Hint>Sync color between different lights.</Hint>
                 </div>
             </fieldset>
             <fieldset>
@@ -178,9 +178,11 @@
     import Inpt from './../../components/Input';
     import Btn from "../../components/Button";
     import Repeater from "../../components/Repeater";
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             Repeater,
             Btn,
             Inpt

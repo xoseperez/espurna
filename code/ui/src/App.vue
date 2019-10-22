@@ -1,131 +1,135 @@
 <template>
-    <div>
-        <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
-        <PwdChange v-if="!webmode"/>
-        <Form v-else ref="formSettings">
-            <Menu id="layout" :tabs="tabs" class="webmode">
-                <template #header>
-                    <div class="heading">
-                        <span class="hostname">{{data.hostname}}</span>
-                        <span class="small title">ESPurna {{data.version.app_version}}</span>
-                        <span class="small desc">{{data.desc}}</span>
-                    </div>
-                </template>
+    <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
+    <PwdChange v-if="!webmode"/>
+    <Form v-else ref="formSettings">
+        <Menu id="layout" :tabs="tabs" class="webmode">
+            <template #header>
+                <div class="heading">
+                    <span class="hostname">{{data.hostname}}</span>
+                    <span class="small title">ESPurna {{data.version.app_version}}</span>
+                    <span class="small desc">{{data.desc}}</span>
+                </div>
+            </template>
 
-                <template #footer>
-                    <div class="main-buttons">
-                        <Btn name="update" @click="save">Save</Btn>
-                        <Btn name="reconnect" color="accent" @click="reconnect">Reconnect</Btn>
-                        <Btn name="reboot" color="danger" @click="reboot">Reboot</Btn>
-                    </div>
+            <template #footer>
+                <div class="main-buttons">
+                    <Btn name="update" @click="save">Save</Btn>
+                    <Btn name="reconnect" color="primary" @click="reconnect">Reconnect</Btn>
+                    <Btn name="reboot" color="danger" @click="reboot">Reboot</Btn>
+                </div>
 
-                    <div class="footer">
-                        &copy; 2016-2019<br>
-                        Xose Pérez<br>
-                        <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
-                        <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
-                        <A href="https://github.com/xoseperez/espurna">ESPurna @
-                            GitHub</A><br>
-                        UI by <A href="https://github.com/tofandel">Tofandel</A><br>
-                        GPLv3 license<br>
-                    </div>
-                </template>
+                <div class="footer">
+                    &copy; 2016-2019<br>
+                    Xose Pérez<br>
+                    <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
+                    <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
+                    <A href="https://github.com/xoseperez/espurna">ESPurna @
+                        GitHub</A><br>
+                    UI by <A href="https://github.com/tofandel">Tofandel</A><br>
+                    GPLv3 license<br>
+                </div>
+            </template>
 
-                <template #status>
-                    <Status :status="status"/>
-                </template>
+            <template #status>
+                <Status :status="status"/>
+            </template>
 
-                <template #general>
-                    <General/>
-                </template>
+            <template #general>
+                <General/>
+            </template>
 
-                <template #admin>
-                    <Admin/>
-                </template>
+            <template #admin>
+                <Admin/>
+            </template>
 
-                <template #mqtt>
-                    <Mqtt/>
-                </template>
+            <template #mqtt>
+                <Mqtt/>
+            </template>
 
-                <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
-                <template #thermostat>
-                    <Tstat/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
+            <template #thermostat>
+                <Tstat/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_LED === 'true' -->
-                <template #led>
-                    <Led :leds="{}"/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_LED === 'true' -->
+            <template #led>
+                <Led :leds="{}"/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
-                <template #color>
-                    <Color/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
+            <template #color>
+                <Color/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
-                <template #rfm69>
-                    <Rfm69/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
+            <template #rfm69>
+                <Rfm69/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
-                <template #rfb>
-                    <Rfb/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
+            <template #rfb>
+                <Rfb/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
-                <template #sns>
-                    <Sns/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+            <template #sns>
+                <Sns/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
-                <template #relays>
-                    <Relays/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
+            <template #relays>
+                <Relays/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
-                <template #lightfox>
-                    <Lfox :buttons="{}" :relay-options="relayOptions"/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
+            <template #lightfox>
+                <Lfox :buttons="{}" :relay-options="relayOptions"/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_DCZ === 'true' -->
-                <template #dcz>
-                    <Dcz/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_DCZ === 'true' -->
+            <template #dcz>
+                <Dcz/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_HA === 'true' -->
-                <template #ha>
-                    <Ha/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_HA === 'true' -->
+            <template #ha>
+                <Ha/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
-                <template #thingspeak>
-                    <Tspk/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_ALEXA === 'true' -->
+            <template #alexa>
+                <Alexa/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_IDB === 'true' -->
-                <template #idb>
-                    <Idb/>
-                </template>
-                <!-- #endif -->
+            <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
+            <template #thingspeak>
+                <Tspk/>
+            </template>
+            <!-- #endif -->
 
-                <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
-                <template #nofuss>
-                    <Nfss/>
-                </template>
-                <!-- #endif -->
-            </Menu>
-        </Form>
+            <!-- #if process.env.VUE_APP_IDB === 'true' -->
+            <template #idb>
+                <Idb/>
+            </template>
+            <!-- #endif -->
+
+            <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
+            <template #nofuss>
+                <Nfss/>
+            </template>
+            <!-- #endif -->
+        </Menu>
 
 
         <div id="lightActionTemplate" class="template">
@@ -212,7 +216,7 @@
             <iframe id="downloader"></iframe>
             <input id="uploader" type="file"/>
         </div>
-    </div>
+    </Form>
 </template>
 
 <script>
@@ -301,6 +305,13 @@
 
     components.Ha = Ha;
     tabs.push({k: "ha", l: "Home Assistant"});
+    // #endif
+
+    // #if process.env.VUE_APP_ALEXA === 'true'
+    import Alexa from "./tabs/integrations/Alexa";
+
+    components.Alexa = Alexa;
+    tabs.push({k: "alexa", l: "Alexa"});
     // #endif
 
     // #if process.env.VUE_APP_LIGHTFOX === 'true'
@@ -476,6 +487,8 @@
 </script>
 
 <style lang="less">
+    @import "assets/Colors";
+
     /* -----------------------------------------------------------------------------
     General
    -------------------------------------------------------------------------- */
@@ -505,6 +518,7 @@
         color: #ccc;
         font-size: 80%;
         margin: -10px 0 10px 0;
+        display: none;
     }
 
     .hint a {
@@ -602,21 +616,18 @@
     }
 
     /*
-    This is the parent `<div>` that contains the menu and the content area.
-    */
-    #layout {
-        position: relative;
-    }
-
-    /*
     The content `<div>` is where all your content goes.
     */
     .header {
-        margin: 0;
         color: #333;
         text-align: left;
-        padding: 2em 0 1em;
+        /*position: sticky;*/
         border-bottom: 1px solid #eee;
+        /*top: 0;*/
+        //background: desaturate(@secondary, 50%);
+        width: 100%;
+        padding: 2em 0 1em;
+        z-index: 79;
     }
 
     .header h1 {
@@ -638,11 +649,18 @@
         color: #888;
     }
 
-
-    //Pure
     html {
         font-family: sans-serif;
         -webkit-text-size-adjust: 100%
+    }
+
+    body, html, body, body > form {
+        width: 100%;
+        height: 100%;
+    }
+
+    body * {
+        box-sizing: border-box;
     }
 
     body {
@@ -695,7 +713,6 @@
     }
 
     input[type=checkbox], input[type=radio] {
-        box-sizing: border-box;
         padding: 0
     }
 
