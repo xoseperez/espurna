@@ -56,7 +56,7 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
     * Support for **delayed ON/OFF**
     * Support for **latched relays**
 * **MQTT** enabled
-    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64))
+    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64) and [#1465](https://github.com/xoseperez/espurna/issues/1465))
     * Switch on/off and toggle relays, group topics (sync relays between different devices)
     * Report button event notifications
     * Enable/disable pulse mode
