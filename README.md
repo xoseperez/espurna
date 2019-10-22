@@ -8,6 +8,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+<br />
+[![latest master build](https://img.shields.io/github/release/xoseperez/espurna/all.svg?label=latest%20master%20build)](https://github.com/mcspr/espurna-nightly-builder/releases)
+[![latest dev build](https://img.shields.io/github/release/mcspr/espurna-nightly-builder/all.svg?label=latest%20dev%20build)](https://github.com/mcspr/espurna-nightly-builder/releases)
 [![downloads](https://img.shields.io/github/downloads/xoseperez/espurna/total.svg)](https://github.com/xoseperez/espurna/releases)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
@@ -18,11 +21,11 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Collaborators
 
-Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collaborator of the project. 
+Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a collaborator of the project. 
 
 ## Contributors
 
-**Without your help this project would not be possible**. I (@xoseperez) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
+**Without your help this project would not be possible**. I (**@xoseperez**) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
 
 **Thank you all very much**.
 
@@ -31,6 +34,8 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
 > Ladies and gentlemen in the embedded world, use [PlatformIO](https://platformio.org/). If I could offer you only one tip for the future, [PlatformIO](https://platformio.org/) would be it.
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
+
+> If you want to try out latest **dev** builds without building them, please visit [**espurna-nightly-builder** releases page](https://github.com/mcspr/espurna-nightly-builder/releases). If you have any issues running development binaries, please report them [here](https://github.com/xoseperez/espurna/issues)
 
 ## Features
 
@@ -103,13 +108,18 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
         * **Geiger counter** by RH Electronics
         * **HC-SR04**, **SRF05**, **SRF06**, **DYP-ME007**, **JSN-SR04T** & **Parallax PING)))™** distance sensors
         * **VL53L1X** distance sensor
+        * **MAX6675** K-thermocouple-to-digital converter
+        * **NTC** thermistor
+        * **LDR** light-dependent resistor sensor
     * Power monitoring
         * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
         * **CSE7766** and **CSE7759B** power monitor chips
         * **HJL-01** and **BL0937** power monitor chips
-        * Non-invasive **current sensor** using **internal ADC** or **ADC712** or **ADC121** or **ADS1115**
+        * Non-invasive **current sensor** using **internal ADC** or **ADC712** or **ADC121** or **ADS1015** / **ADS1115**
         * **V9261F** power monitor chip
         * **PZEM0004T**  power monitor board
+        * **ECH1560** power monitor chip
+        * **ADE7953** power monitor chip
     * Raw **analog** and **digital** sensors
     * Simple **pulse counter** with **event triggering** option
     * Support for (almost) any UART based sensor via the **UART-to-MQTT module**
@@ -166,7 +176,7 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
     * Long click (>1 second) to reboot device (only main button)
     * Extra long click (>10 seconds) to go back to factory settings (only main button)
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
-* Configuration stored in different sectors to prevent data loosing and corruption
+* Configuration stored in different flash sectors to prevent data loss and corruption
 
 ## Notices
 
