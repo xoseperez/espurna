@@ -1,10 +1,11 @@
 from __future__ import print_function
 
+import os
 import sys
-import click
 
 
 class Color(object):
+    BOLD = "\x1b[1;1m"
     BLACK = "\x1b[1;30m"
     RED = "\x1b[1;31m"
     GREEN = "\x1b[1;32m"
@@ -31,8 +32,13 @@ def print_warning(message, color=Color.LIGHT_YELLOW):
     print(clr(color, message), file=sys.stderr)
 
 
-def print_filler(fill, color=Color.WHITE, err=False):
-    width, _ = click.get_terminal_size()
+def print_filler(fill, color=Color.WHITE, err=False, width_default=80):
+    width = width_default
+    try:
+        width = int(os.environ["COLUMNS"])
+    except (KeyError, ValueError):
+        pass
+
     if len(fill) > 1:
         fill = fill[0]
 

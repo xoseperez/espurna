@@ -1172,6 +1172,10 @@ void _lightAPISetup() {
 
 #if TERMINAL_SUPPORT
 
+void _lightChannelDebug(unsigned char id) {
+    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
+}
+
 void _lightInitCommands() {
 
     terminalRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
@@ -1184,14 +1188,17 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
-        if (e->argc < 2) {
-            terminalError(F("CHANNEL <ID> [<VALUE>]"));
-            return;
+        if (!lightChannels()) return;
+
+        auto id = -1;
+        if (e->argc > 1) {
+            id = String(e->argv[1]).toInt();
         }
 
-        const int id = String(e->argv[1]).toInt();
-        if (id < 0 || id >= lightChannels()) {
-            terminalError(F("Channel value out of range"));
+        if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
+            for (unsigned char index = 0; index < lightChannels(); ++index) {
+                _lightChannelDebug(index);
+            }
             return;
         }
 
@@ -1200,7 +1207,8 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
 
-        DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
+        _lightChannelDebug(id);
+
         terminalOK();
     });
 
