@@ -35,7 +35,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
-> If you want to try out latest **dev** builds without building them, please visit [**espurna-nightly-builder** releases page](https://github.com/mcspr/espurna-nightly-builder/releases). If you have any issues running development binaries, please report them [here](https://github.com/xoseperez/espurna/issues)
+> If you want to try out latest **dev** builds without [compiling them yourself](https://github.com/xoseperez/espurna/wiki/Build-and-update-from-Visual-Studio-Code-using-PlatformIO), please visit [**espurna-nightly-builder** releases page](https://github.com/mcspr/espurna-nightly-builder/releases). If you have any issues running development binaries, please report them [here](https://github.com/xoseperez/espurna/issues)
 
 ## Features
 
