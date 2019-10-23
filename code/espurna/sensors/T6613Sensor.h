@@ -2,6 +2,7 @@
 // T6613 CO2 sensor
 // https://www.amphenol-sensors.com/en/telaire/co2/525-co2-sensor-modules/321-t6613
 // Uses SoftwareSerial library
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && T6613_SUPPORT
