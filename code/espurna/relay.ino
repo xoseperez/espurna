@@ -761,12 +761,13 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
+    JsonObject& modules = root.get('modules');
     if (relayCount() > 1) {
-        root["multirelayVisible"] = 1;
-        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
+        modules["multirelay"] = 1;
+        modules["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 
-    root["relayVisible"] = 1;
+    modules["relay"] = 1;
 }
 
 void _relayWebSocketOnConnected(JsonObject& root) {

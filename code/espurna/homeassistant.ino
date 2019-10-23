@@ -326,7 +326,8 @@ bool _haWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _haWebSocketOnVisible(JsonObject& root) {
-    root["haVisible"] = 1;
+    JsonObject& modules = root.get('modules');
+    modules["ha"] = 1;
 }
 
 void _haWebSocketOnConnected(JsonObject& root) {

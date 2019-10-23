@@ -1026,7 +1026,8 @@ void _lightWebSocketStatus(JsonObject& root) {
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
-    root["colorVisible"] = 1;
+    JsonObject& modules = root.get('modules');
+    modules["color"] = 1;
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {

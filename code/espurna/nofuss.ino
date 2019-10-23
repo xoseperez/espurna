@@ -25,7 +25,8 @@ bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _nofussWebSocketOnVisible(JsonObject& root) {
-    root["nofussVisible"] = 1;
+    JsonObject& modules = root.get('modules');
+    modules["nofuss"] = 1;
 }
 
 void _nofussWebSocketOnConnected(JsonObject& root) {

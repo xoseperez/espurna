@@ -485,15 +485,19 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 }
 
 void _wsUpdate(JsonObject& root) {
-    root["heap"] = getFreeHeap();
-    root["uptime"] = getUptime();
-    root["rssi"] = WiFi.RSSI();
-    root["loadaverage"] = systemLoadAverage();
+    JsonObject& device = root.createNestedObject("device");
+    JsonObject& wifi = root.createNestedObject("wifi");
+
+    wifi["rssi"] = WiFi.RSSI();
+
+    device["uptime"] = getUptime();
+    device["heap"] = getFreeHeap();
+    device["loadaverage"] = systemLoadAverage();
     #if ADC_MODE_VALUE == ADC_VCC
-        root["vcc"] = ESP.getVcc();
+        device["vcc"] = ESP.getVcc();
     #endif
     #if NTP_SUPPORT
-        if (ntpSynced()) root["now"] = now();
+        if (ntpSynced()) device["now"] = now();
     #endif
 }
 
@@ -516,6 +520,10 @@ bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "desc", 4) == 0) return true;
     if (strncmp(key, "webPort", 7) == 0) return true;
     return false;
+}
+
+void _wsOnVisible(JsonObject& root) {
+    JsonObject& modules = root.createNestedObject("modules");
 }
 
 void _wsOnConnected(JsonObject& root) {
@@ -543,21 +551,22 @@ void _wsOnConnected(JsonObject& root) {
     device["chip_id"] = String(chipid);
     device["name"] = DEVICE;
     device["free_size"] = ESP.getFreeSketchSpace();
-    
+    device["hostname"] = getSetting("hostname");
+    device["desc"] = getSetting("desc");
+    device["webPort"] = getSetting("webPort", WEB_PORT).toInt();
+    device["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
+    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
+    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+
+    wifi["rssi"] = WiFi.RSSI();
     wifi["mac"] = WiFi.macAddress();
     wifi["bssid"] = WiFi.BSSIDstr();
     wifi["channel"] = WiFi.channel();
     wifi["name"] = getNetwork();
     wifi["ip"] = getIP();
 
-    root["hostname"] = getSetting("hostname");
-    root["desc"] = getSetting("desc");
 
     root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-    root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-    root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
 }
 
 void wsSend(JsonObject& root) {
@@ -812,6 +821,7 @@ void wsSetup() {
     webServer()->on("/auth", HTTP_GET, _onAuth);
 
     wsRegister()
+        .onVisible(_wsOnVisible)
         .onConnected(_wsOnConnected)
         .onKeyCheck(_wsOnKeyCheck);
 

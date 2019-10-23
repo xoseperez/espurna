@@ -166,15 +166,15 @@
 
                         <div class="pure-u-1-2 module module-ntp">Current time</div>
                         <div class="pure-u-11-24 module module-ntp">
-                            <span class="right">{{date(now)}}</span>
+                            <span class="right">{{date(device.now)}}</span>
                         </div>
 
                         <div class="pure-u-1-2">Uptime</div>
-                        <div class="pure-u-11-24"><span class="right">{{elapsed(uptime)}}</span></div>
+                        <div class="pure-u-11-24"><span class="right">{{elapsed(device.uptime)}}</span></div>
 
                         <div class="pure-u-1-2">Last update</div>
                         <div class="pure-u-11-24">
-                            <span class="right">{{lastUpdate}}</span><span> seconds ago</span>
+                            <span class="right">{{device.lastUpdate}}</span><span> seconds ago</span>
                         </div>
                     </div>
                 </fieldset>
@@ -233,33 +233,15 @@
         props: {
             version: {
                 type: Object,
-                default() {
-                    return {};
-                }
             },
             device: {
                 type: Object,
-                default() {
-                    return {};
-                }
             },
             wifi: {
                 type: Object,
                 default() {
                     return {};
                 }
-            },
-            now: {
-                type: Number,
-                default: 0
-            },
-            lastUpdate: {
-                type: Number,
-                default: 0
-            },
-            uptime: {
-                type: Number,
-                default: 0
             },
             light: {
                 type: Object,
@@ -309,6 +291,16 @@
 </script>
 
 <style>
+    .state {
+        border-top: 1px solid #eee;
+        margin-top: 20px;
+        padding-top: 30px;
+        font-size: 80%;
+    }
+
+    .state span {
+        font-weight: bold;
+    }
 
     /* -----------------------------------------------------------------------------
         Logs

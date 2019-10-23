@@ -436,9 +436,10 @@ bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _mqttWebSocketOnVisible(JsonObject& root) {
-    root["mqttVisible"] = 1;
+    JsonObject& modules = root.get('modules');
+    modules["mqtt"] = 1;
     #if ASYNC_TCP_SSL_ENABLED
-        root["mqttsslVisible"] = 1;
+        modules["mqttSSL"] = 1;
     #endif
 }
 

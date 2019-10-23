@@ -26,6 +26,11 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "api", 3) == 0);
 }
 
+void _apiWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root.get('modules');
+    modules["api"] = 1;
+}
+
 void _apiWebSocketOnConnected(JsonObject& root) {
     JsonObject& api = root.createNestedObject("api");
     api["enabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
@@ -247,7 +252,7 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 void apiSetup() {
     _apiConfigure();
     wsRegister()
-        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
+        .onVisible(_apiWebSocketOnVisible)
         .onConnected(_apiWebSocketOnConnected)
         .onKeyCheck(_apiWebSocketOnKeyCheck);
     webRequestRegister(_apiRequestCallback);

@@ -90,6 +90,12 @@ void debugSendImpl(const char * message) {
 
 #if DEBUG_WEB_SUPPORT
 
+void _debugWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root.get('modules');
+
+    modules["dbg"] = 1;
+}
+
 void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
         #if TERMINAL_SUPPORT
@@ -108,7 +114,7 @@ void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void debugWebSetup() {
 
     wsRegister()
-        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
+        .onVisible(_debugWebSocketOnVisible)
         .onAction(_debugWebSocketOnAction);
 
     #if DEBUG_UDP_SUPPORT

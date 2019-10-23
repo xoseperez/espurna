@@ -10,7 +10,7 @@
                     <C>
                         <label>Settings</label>
                     </C>
-                    <C>
+                    <C stretch>
                         <Btn name="settings-backup">Backup</Btn>
                         <Btn name="settings-restore" color="primary">Restore</Btn>
                         <Btn name="settings-factory" color="danger">Factory Reset</Btn>
@@ -19,22 +19,20 @@
                 <Row>
                     <C><label>Admin password</label></C>
                     <C>
-                        <div>
+                        <Row>
                             <Inpt name="adminPass1" placeholder="New password"
                                   minlength="8"
                                   maxlength="63" type="password" action="reboot"
                                   tabindex="11" autocomplete="false"
                                   spellcheck="false"/>
-                            <span class="password-reveal"></span>
-                        </div>
-                        <div>
+                        </Row>
+                        <Row>
                             <Inpt name="adminPass2" placeholder="Repeat password"
                                   minlength="8"
                                   maxlength="63" type="password" action="reboot"
                                   tabindex="12" autocomplete="false"
                                   spellcheck="false"/>
-                            <span class="password-reveal"></span>
-                        </div>
+                        </Row>
                         <Hint>
                             The administrator password is used to access this web interface (user 'admin'), but also to
                             connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br> It
@@ -93,8 +91,10 @@
                 <Row ref="api">
                     <C><label>HTTP API Key</label></C>
                     <C>
-                        <Inpt name="apiKey" type="text" tabindex="14"/>
-                        <Btn name="apikey" color="primary">Auto</Btn>
+                        <Row>
+                            <Inpt name="apiKey" type="text" tabindex="14"/>
+                            <Btn name="apikey" color="primary">Auto</Btn>
+                        </Row>
                         <Hint>
                             This is the key you will have to pass with every HTTP
                             request to the API, either to get or write values. All API calls must contain the
@@ -146,19 +146,24 @@
                 <Row>
                     <C><label>Upgrade</label></C>
                     <C>
-                        <input name="filename" type="text" :value="filename" readonly>
-                        <Btn name="upgrade-browse">Browse</Btn>
-                        <Btn name="upgrade" color="danger">Upgrade</Btn>
+                        <Row>
+                            <input name="filename" type="text" :value="filename"
+                                   @click="() => $refs.upgradeFile.$el.click()" readonly>
+                            <Btn ref="browse" name="upgrade-browse" @click="() => $refs.upgradeFile.$el.click()">
+                                Browse
+                            </Btn>
+                            <Btn name="upgrade" color="danger">Upgrade</Btn>
+                        </Row>
                         <Hint>
                             The device has {{status.free_size}} bytes available for
                             OTA updates. If your image is larger than this consider doing a
                             <A href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates"><strong>two-step
                                 update</strong></A>.
                         </Hint>
-                        <div>
+                        <Row>
                             <progress id="upgrade-progress"></progress>
-                        </div>
-                        <Inpt name="upgrade" type="file" tabindex="17"/>
+                        </Row>
+                        <Inpt ref="upgradeFile" name="upgrade" type="file" tabindex="17" @change="fileSelected"/>
                     </C>
                 </Row>
             </fieldset>
@@ -217,7 +222,8 @@
         components: {Hint, C, Row, Inpt, Btn, A},
         data() {
             return {
-                status: {}
+                status: {},
+                filename: ""
             }
         },
         computed: {
@@ -240,6 +246,11 @@
                 });
 
                 return offsets;
+            }
+        },
+        methods: {
+            fileSelected(file) {
+                this.filename = file.name;
             }
         }
     }

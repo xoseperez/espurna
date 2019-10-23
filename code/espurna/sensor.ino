@@ -161,14 +161,15 @@ bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root.get('modules');
 
-    root["snsVisible"] = 1;
+    modules["sns"] = 1;
 
     for (auto& magnitude : _magnitudes) {
-        if (magnitude.type == MAGNITUDE_TEMPERATURE) root["temperatureVisible"] = 1;
-        if (magnitude.type == MAGNITUDE_HUMIDITY) root["humidityVisible"] = 1;
+        if (magnitude.type == MAGNITUDE_TEMPERATURE) modules["temperature"] = 1;
+        if (magnitude.type == MAGNITUDE_HUMIDITY) modules["humidity"] = 1;
         #if MICS2710_SUPPORT || MICS5525_SUPPORT
-            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) root["micsVisible"] = 1;
+            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) modules["mics"] = 1;
         #endif
     }
 

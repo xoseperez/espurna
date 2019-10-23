@@ -1,20 +1,23 @@
 <template>
-    <select v-if="type === 'select'" v-model="value">
+    <select v-if="type === 'select'" v-model="value" v-bind="$attrs">
         <option v-for="(l, k) in options" :key="key(k,l)" :value="key(k,l)">{{label(k,l)}}</option>
     </select>
     <span v-else-if="type === 'switch'" class="switch">
-        <input :id="'switch-'+_uid" v-model="value" type="checkbox">
+        <input :id="'switch-'+_uid" v-model="value" type="checkbox" v-bind="$attrs">
         <label :for="'switch-'+_uid"><span class="on">{{on}}</span><span class="off">{{off}}</span></label>
     </span>
     <span v-else-if="type === 'password'" class="password">
-        <input v-model="value" :type="passType">
+        <input v-model="value" :type="passType" v-bind="$attrs">
         <span class="no-select password-reveal" @click="togglePass">👁</span>
     </span>
-    <input v-else v-model="value" :type="type">
+    <input v-else-if="type === 'file'" :type="type"
+           v-bind="$attrs" @change="(evt) => $emit('change', $attrs.multiple ? evt.target.files : evt.target.files[0])">
+    <input v-else v-model="value" :type="type" v-bind="$attrs" @change="() => $emit('change')">
 </template>
 
 <script>
     export default {
+        inheritAttrs: false,
         props: {
             type: {
                 type: String,
@@ -159,8 +162,13 @@
         }
     }
 
+    input[type=file] {
+        opacity: 0;
+        position: absolute;
+    }
 
-    input:not([type=checkbox]):not([type=file]):not([type=radio]), select, textarea {
+
+    input:not([type=checkbox]):not([type=radio]), select, textarea {
         padding: .5em .6em;
         display: inline-block;
         border: 1px solid #ccc;
@@ -202,7 +210,7 @@
         padding: .2em .5em
     }
 
-    input[type=checkbox]:focus, input[type=file]:focus, input[type=radio]:focus {
+    input[type=checkbox]:focus, input[type=radio]:focus {
         outline: 1px auto #129fea;
 
         &:invalid {
@@ -224,6 +232,10 @@
         }
     }
 
+    span.password {
+        width: 100%;
+    }
+
     .password-reveal {
         font-family: EmojiSymbols, Segoe UI Symbol;
         display: inline-block;
@@ -239,6 +251,7 @@
         cursor: pointer;
         color: #ccc;
         position: relative;
+
         &:after {
             content: "";
             display: block;
@@ -253,6 +266,7 @@
 
     input[type="text"] + .password-reveal {
         color: rgba(66, 184, 221, 0.8);
+
         &:after {
             display: none;
         }

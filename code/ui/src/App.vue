@@ -5,9 +5,8 @@
         <Menu id="layout" :tabs="tabs" class="webmode">
             <template #header>
                 <div class="heading">
-                    <span class="hostname">{{data.hostname}}</span>
-                    <span class="small title">ESPurna {{data.version.app_version}}</span>
-                    <span class="small desc">{{data.desc}}</span>
+                    <h1 class="hostname">{{data.device.hostname}}</h1>
+                    <h2 class="desc">{{data.device.desc}}</h2>
                 </div>
             </template>
 
@@ -26,12 +25,13 @@
                     <A href="https://github.com/xoseperez/espurna">ESPurna @
                         GitHub</A><br>
                     UI by <A href="https://github.com/tofandel">Tofandel</A><br>
-                    GPLv3 license<br>
+                    GPLv3 license<br><br>
+                    Version: {{data.version.app_version}}
                 </div>
             </template>
 
             <template #status>
-                <Status :status="status"/>
+                <Status v-bind="data"/>
             </template>
 
             <template #general>
@@ -344,6 +344,7 @@
 
     // #if process.env.VUE_APP_IDB === 'true'
     import Idb from "./tabs/integrations/InfluxDB";
+    import {mergeDeep} from "./common/merge-deep";
 
     components.Idb = Idb;
     tabs.push({k: "idb", l: "InfluxDB"});
@@ -369,10 +370,16 @@
                 webmode: true,
                 ws: new Socket,
                 data: {
-                    version: {},
-                    relays: {},
-                    wifi: {},
-                    device: {},
+                    version: {
+                        app_version: process.env.VUE_APP_VERSION
+                    },
+                    device: {
+                        hostname: 'ESPURNA',
+                        desc: '',
+                        now: Math.floor(Date.now() / 1000),
+                        uptime: 0,
+                        lastUpdate: 0
+                    },
                 },
                 settings: {},
                 tabs: tabs
@@ -400,9 +407,9 @@
         },
         mounted() {
             setInterval(() => {
-                this.data.now++;
-                this.data.ago++;
-                this.data.uptime++
+                this.data.device.now++;
+                this.data.device.lastUpdate++;
+                this.data.device.uptime++
             }, 1000);
 
             // Check host param in query string
@@ -443,13 +450,17 @@
                 this.doReload(5000);
             },
             receiveMessage(evt) {
-                try {
-                    let data = JSON.parse(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-                    if (data) {
-                        this.data = {...this.data, ...data};
+                let data = evt.data;
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+                    } catch (e) {
+                        console.log('Invalid data received', evt.data);
                     }
-                } catch (e) {
-                    console.log('Invalid data received', evt.data);
+                }
+                if (typeof data === 'object') {
+                    this.data = mergeDeep(this.data, data);
+                    this.$set(this.device, "lastUpdate", 0);
                 }
             },
             prepareData(data) {
@@ -479,6 +490,7 @@
             return {
                 $app: {
                     ws: this.ws,
+                    node: this
                 }
             }
         }
@@ -494,11 +506,6 @@
    -------------------------------------------------------------------------- */
 
 
-    .pure-g {
-        margin-bottom: 0;
-    }
-
-
     @media screen and (max-width: 32em) {
         .header > h1 {
             line-height: 100%;
@@ -506,8 +513,13 @@
         }
     }
 
-    h2 {
+    .hostname {
         font-size: 1em;
+    }
+
+    .desc {
+        font-size: .8em;
+        font-weight: normal;
     }
 
     .page {
@@ -529,10 +541,6 @@
         display: none;
     }
 
-    input[name=upgrade] {
-        display: none;
-    }
-
     input.center {
         margin-bottom: 0;
     }
@@ -543,21 +551,6 @@
 
     #password .content {
         margin: 0 auto;
-    }
-
-    div.state {
-        border-top: 1px solid #eee;
-        margin-top: 20px;
-        padding-top: 30px;
-    }
-
-    .state div {
-        font-size: 80%;
-    }
-
-    .state span {
-        font-size: 80%;
-        font-weight: bold;
     }
 
     .right {
@@ -608,11 +601,6 @@
     // Side menu.css
     body {
         color: #777;
-    }
-
-    .pure-img-responsive {
-        max-width: 100%;
-        height: auto;
     }
 
     /*

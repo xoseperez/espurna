@@ -1,5 +1,5 @@
 <template>
-    <div class="col">
+    <div :class="['col', {stretch}]">
         <slot></slot>
     </div>
 </template>
@@ -7,24 +7,35 @@
 <script>
     export default {
         props: {
-            size: {
+            /*size: {
                 type: Number,
                 default: 6
             },
             offset: {
                 type: Number,
                 default: 0
-            }
+            },*/
+            stretch: {
+                type: Boolean,
+                default: false
+            },
         }
     }
 </script>
 
 <style lang="less">
-    .col:nth-of-type(2) {
+    .row .col:nth-of-type(2) {
         width: 150%;
     }
 
-    .col {
+    .row .col {
         width: 50%;
+    }
+
+    .col.stretch {
+        display: flex;
+        > * {
+            width: 100%;
+        }
     }
 </style>

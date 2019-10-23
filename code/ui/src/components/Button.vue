@@ -63,10 +63,10 @@
             pointer-events: none
         }
     }
-    .content .btn {
-        margin-right: 8px;
-    }
 
+    .content .btn:not(:first-child) {
+        margin-left: 8px;
+    }
 
     .btn-del-schedule {
         margin-top: 15px;
@@ -118,11 +118,6 @@
             background: rgb(0, 192, 0);
         }*/
 
-    .btn-add-switch-schedule,
-    .btn-add-light-schedule {
-        display: none;
-    }
-
     .btn-primary {
         background-color: @primary;
         /*border-color: #844d18;*/
@@ -146,14 +141,4 @@
             background: rgb(66, 184, 221);
         }*/
 
-    .btn-upgrade-browse,
-    .btn-clear-filters,
-    .btn-clear-messages,
-    .btn-clear-counts,
-    .btn-dbgcmd,
-    .btn-ha-add,
-    .btn-apikey,
-    .btn-upgrade {
-        margin-left: 5px;
-    }
 </style>

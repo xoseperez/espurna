@@ -6,7 +6,9 @@
 
 <script>
     export default {
-        name: 'row'
+        name: 'row',
+        props: {
+        }
     }
 </script>
 

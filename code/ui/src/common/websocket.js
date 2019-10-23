@@ -1,3 +1,7 @@
+// #if process.env.NODE_ENV = 'dev'
+import mockServer from './mock-websocket';
+// #endif
+
 let Ws = function () {
 };
 Ws.prototype = {
@@ -8,9 +12,14 @@ Ws.prototype = {
         }, time);
     },
     connect(host, cb) {
+        // #if process.env.NODE_ENV = 'dev'
         if (!host || host.match('localhost')) {
+            //Start mocking
+            this.ws = mockServer();
+            this.ws.onmessage = cb;
             return;
         }
+        // #endif
 
         if (!host.startsWith("http:") && !host.startsWith("https:")) {
             host = "http://" + host;
@@ -26,6 +35,7 @@ Ws.prototype = {
             'cors': true,
             'credentials': 'same-origin'
         }).then((response) => {
+            console.log(response);
             // Failed, retry
             if (response.status !== 200) {
                 return this.retry(5000, args);

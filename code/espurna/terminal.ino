@@ -397,6 +397,11 @@ void terminalError(const String& error) {
     DEBUG_MSG_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
+void _terminalWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root.get('modules');
+    modules["cmd"] = 1;
+}
+
 void terminalSetup() {
 
     _serial.callback([](uint8_t ch) {
@@ -410,7 +415,7 @@ void terminalSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
+            .onVisible(_terminalWebSocketOnVisible);
     #endif
 
     _terminalInitCommand();

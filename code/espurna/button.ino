@@ -44,7 +44,8 @@ unsigned char _buttonCount() {
 
 void _buttonWebSocketOnVisible(JsonObject& root) {
     if (_buttonCount() > 0) {
-        root["btnVisible"] = 1;
+        JsonObject& modules = root.get('modules');
+        modules["btn"] = 1;
     }
 }
 
