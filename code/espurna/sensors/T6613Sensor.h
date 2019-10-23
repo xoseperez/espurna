@@ -93,7 +93,7 @@ class T6613Sensor : public BaseSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            char buffer[6];
+            char buffer[8];
             snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
             return String(buffer);
         }
