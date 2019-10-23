@@ -99,8 +99,10 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config["unit_of_measurement"] = magnitudeUnits(type);
 }
 
-void _haSendMagnitudes(ha_config_t& config) {
+void _haSendMagnitudes() {
 
+    ha_config_t config;
+    
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
@@ -178,7 +180,9 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendSwitches(ha_config_t& config) {
+void _haSendSwitches() {
+
+    ha_config_t config;
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
@@ -300,12 +304,11 @@ void _haSend() {
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
     // Get common device config
-    ha_config_t config;
 
     // Send messages
-    _haSendSwitches(config);
+    _haSendSwitches();
     #if SENSOR_SUPPORT
-        _haSendMagnitudes(config);
+        _haSendMagnitudes();
     #endif
     
     _haSendFlag = false;
