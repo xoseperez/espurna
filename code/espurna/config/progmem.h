@@ -264,6 +264,9 @@ PROGMEM const char espurna_sensors[] =
     #if SONAR_SUPPORT
         "SONAR "
     #endif
+    #if T6613_SUPPORT
+        "T6613 "
+    #endif
     #if TMP3X_SUPPORT
         "TMP3X "
     #endif
