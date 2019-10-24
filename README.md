@@ -9,7 +9,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 <br />
-[![latest master build](https://img.shields.io/github/release/xoseperez/espurna/all.svg?label=latest%20master%20build)](https://github.com/mcspr/espurna-nightly-builder/releases)
+[![latest master build](https://img.shields.io/github/release/xoseperez/espurna/all.svg?label=latest%20master%20build)](https://github.com/xoseperez/espurna/releases/latest)
 [![latest dev build](https://img.shields.io/github/release/mcspr/espurna-nightly-builder/all.svg?label=latest%20dev%20build)](https://github.com/mcspr/espurna-nightly-builder/releases)
 [![downloads](https://img.shields.io/github/downloads/xoseperez/espurna/total.svg)](https://github.com/xoseperez/espurna/releases)
 <br />
@@ -35,7 +35,12 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
-> If you want to try out latest **dev** builds without [compiling them yourself](https://github.com/xoseperez/espurna/wiki/Build-and-update-from-Visual-Studio-Code-using-PlatformIO), please visit [**espurna-nightly-builder** releases page](https://github.com/mcspr/espurna-nightly-builder/releases). If you have any issues running development binaries, please report them [here](https://github.com/xoseperez/espurna/issues)
+> Process of building ESPurna from source is documented in the Wiki:
+[Using PlatformIO IDE for VSCode](https://github.com/xoseperez/espurna/wiki/Build-and-update-from-Visual-Studio-Code-using-PlatformIO)  
+[Using PlatformIO CLI](https://github.com/xoseperez/espurna/wiki/PlatformIO)  
+[Using Arduino IDE](https://github.com/xoseperez/espurna/wiki/ArduinoIDE)  
+
+> If you want to try out latest changes from **dev** branch without building the firmware yourself or if you are having problems with the stable release, please visit [**espurna-nightly-builder** releases page](https://github.com/mcspr/espurna-nightly-builder/releases).
 
 ## Features
 
