@@ -63,7 +63,7 @@
     ]
   },
   "browserslist": [
-    "> 10%"
+    "> 20%"
   ],
   "gitHooks": {
     "pre-commit": "lint-staged"

@@ -42,90 +42,90 @@
                 <Admin/>
             </template>
 
-            <template #mqtt>
+            <template v-if="data.modules.mqtt" #mqtt>
                 <Mqtt/>
             </template>
 
             <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
-            <template #thermostat>
+            <template v-if="data.modules.thermostat" #thermostat>
                 <Tstat/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LED === 'true' -->
-            <template #led>
+            <template v-if="data.modules.led" #led>
                 <Led :leds="{}"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
-            <template #color>
+            <template v-if="data.modules.light" #color>
                 <Color/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
-            <template #rfm69>
+            <template v-if="data.modules.rfm69" #rfm69>
                 <Rfm69/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
-            <template #rfb>
+            <template v-if="data.modules.rfb" #rfb>
                 <Rfb/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
-            <template #sns>
+            <template v-if="data.modules.sns" #sns>
                 <Sns/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
-            <template #relays>
+            <template v-if="data.modules.relay" #relays>
                 <Relays/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
-            <template #lightfox>
+            <template v-if="data.modules.lightfox" #lightfox>
                 <Lfox :buttons="{}" :relay-options="relayOptions"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_DCZ === 'true' -->
-            <template #dcz>
+            <template v-if="data.modules.dcz" #dcz>
                 <Dcz/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_HA === 'true' -->
-            <template #ha>
+            <template v-if="data.modules.ha" #ha>
                 <Ha/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_ALEXA === 'true' -->
-            <template #alexa>
+            <template v-if="data.modules.alexa" #alexa>
                 <Alexa/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
-            <template #thingspeak>
+            <template v-if="data.modules.tspk" #thingspeak>
                 <Tspk/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_IDB === 'true' -->
-            <template #idb>
+            <template v-if="data.modules.idb" #idb>
                 <Idb/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
-            <template #nofuss>
+            <template v-if="data.modules.nofuss" #nofuss>
                 <Nfss/>
             </template>
             <!-- #endif -->
@@ -344,7 +344,6 @@
 
     // #if process.env.VUE_APP_IDB === 'true'
     import Idb from "./tabs/integrations/InfluxDB";
-    import {mergeDeep} from "./common/merge-deep";
 
     components.Idb = Idb;
     tabs.push({k: "idb", l: "InfluxDB"});
@@ -362,6 +361,9 @@
         "Session expired, please reload page..."
     ];
 
+    function isObject(item) {
+        return (item && typeof item === 'object' && !Array.isArray(item));
+    }
 
     export default {
         components,
@@ -370,6 +372,7 @@
                 webmode: true,
                 ws: new Socket,
                 data: {
+                    modules: {},
                     version: {
                         app_version: process.env.VUE_APP_VERSION
                     },
@@ -458,17 +461,23 @@
                         console.log('Invalid data received', evt.data);
                     }
                 }
-                if (typeof data === 'object') {
-                    this.data = mergeDeep(this.data, data);
-                    this.$set(this.device, "lastUpdate", 0);
+                if (data && typeof data === 'object') {
+                    this.prepareData(this.data, data);
+                    this.data.device.lastUpdate = 0;
                 }
             },
-            prepareData(data) {
-                Object.keys(data).forEach((k) => {
-                    let val = data[k];
-                    if (typeof val === "object") {
-                        if (Array.isArray(val.list) && "schema" in val) {
+            prepareData(target, source) {
+                Object.keys(source).forEach((k) => {
+                    let val = source[k];
+
+                    if (isObject(val)) {
+                        if (!target[k]) {
+                            this.$set(target, k, {});
+                        }
+
+                        if (val.schema && Array.isArray(val.list)) {
                             let objs = [];
+
                             val.list.forEach((v) => {
                                 if (Array.isArray(v)) {
                                     let i = 0;
@@ -479,11 +488,20 @@
                                     objs.push(obj);
                                 }
                             });
-                            val.list = objs;
+
+                            if (val.start) {
+                                val.list = [...target.list];
+                                val.list.splice(val.start, objs.length, ...objs);
+                            } else {
+                                val.list = objs;
+                            }
                         }
+
+                        this.prepareData( target[k], val);
+                    } else {
+                        this.$set(target, k, val);
                     }
                 });
-
             }
         },
         provide() {
@@ -608,19 +626,21 @@
     */
     .header {
         color: #333;
-        text-align: left;
-        /*position: sticky;*/
         border-bottom: 1px solid #eee;
-        /*top: 0;*/
-        //background: desaturate(@secondary, 50%);
         width: 100%;
         padding: 2em 0 1em;
         z-index: 79;
+        text-align: center;
+    }
+
+    .page + .header {
+        margin-top: 40px;
+        border-top: 1px solid #eee;
     }
 
     .header h1 {
         margin: 0.2em 0;
-        font-size: 3em;
+        font-size: 2.6em;
         font-weight: 300;
     }
 
@@ -685,15 +705,6 @@
     button, input, select, textarea {
         color: inherit;
         font: inherit;
-        margin: 0
-    }
-
-    button {
-        overflow: visible
-    }
-
-    button, select {
-        text-transform: none
     }
 
     input {
@@ -716,7 +727,9 @@
     }
 
     textarea {
-        overflow: auto
+        overflow: auto;
+        width: 100% !important;
+        height: 300px;
     }
 
     table {

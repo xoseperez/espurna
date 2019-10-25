@@ -1,10 +1,10 @@
 <template>
-    <section>
+    <section class="admin">
         <div class="header">
             <h1>ADMINISTRATION</h1>
             <h2>Device administration and security settings</h2>
         </div>
-        <div class="page">
+        <div class="page form">
             <fieldset>
                 <Row>
                     <C>
@@ -167,46 +167,51 @@
                     </C>
                 </Row>
             </fieldset>
-            <fieldset>
-                <legend>NTP</legend>
+
+            <div class="header">
+                <h1>NTP</h1>
                 <h2>
                     Configure your NTP (Network Time Protocol) servers and local configuration to keep your device time
                     up to the second for your location.
                 </h2>
-                <Row>
-                    <C><label>Device Current Time</label></C>
-                    <C>
-                        <Inpt name="now" type="text" readonly/>
-                    </C>
-                </Row>
-                <Row>
-                    <C><label>NTP Server</label></C>
-                    <C>
-                        <Inpt name="ntpServer" type="text" tabindex="41"/>
-                    </C>
-                </Row>
-                <Row>
-                    <C><label>Time Zone</label></C>
-                    <C>
-                        <Inpt type="select" name="ntpOffset"
-                              :options="ntpOffsets"
-                              tabindex="42"/>
-                    </C>
-                </Row>
-                <Row>
-                    <C><label>Enable DST</label></C>
-                    <C>
-                        <Inpt type="switch" name="ntpDST"/>
-                    </C>
-                </Row>
-                <Row>
-                    <C><label>DST Region</label></C>
-                    <C>
-                        <Inpt type="select" name="ntpRegion"
-                              :options="['Europe', 'USA']"/>
-                    </C>
-                </Row>
-            </fieldset>
+            </div>
+            <div class="page form">
+                <fieldset>
+                    <Row>
+                        <C><label>Device Current Time</label></C>
+                        <C>
+                            <Inpt name="now" type="text" readonly/>
+                        </C>
+                    </Row>
+                    <Row>
+                        <C><label>NTP Server</label></C>
+                        <C>
+                            <Inpt name="ntpServer" type="text" tabindex="41"/>
+                        </C>
+                    </Row>
+                    <Row>
+                        <C><label>Time Zone</label></C>
+                        <C>
+                            <Inpt type="select" name="ntpOffset"
+                                  :options="ntpOffsets"
+                                  tabindex="42"/>
+                        </C>
+                    </Row>
+                    <Row>
+                        <C><label>Enable DST</label></C>
+                        <C>
+                            <Inpt type="switch" name="ntpDST"/>
+                        </C>
+                    </Row>
+                    <Row>
+                        <C><label>DST Region</label></C>
+                        <C>
+                            <Inpt type="select" name="ntpRegion"
+                                  :options="['Europe', 'USA']"/>
+                        </C>
+                    </Row>
+                </fieldset>
+            </div>
         </div>
     </section>
 </template>
@@ -220,6 +225,7 @@
 
     export default {
         components: {Hint, C, Row, Inpt, Btn, A},
+        inheritAttrs: false,
         data() {
             return {
                 status: {},

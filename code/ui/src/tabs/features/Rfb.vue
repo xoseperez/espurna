@@ -117,7 +117,8 @@
             Hint,
             Btn,
             Inpt
-        }
+        },
+        inheritAttrs: false,
     }
 </script>
 

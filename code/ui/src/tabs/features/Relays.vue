@@ -92,7 +92,7 @@
                 <h2>Turn switches ON and OFF based on the current time.</h2>
                 <Repeater>
                     <template #btnAdd="tpl">
-                        <Btn name="add-switch-schedule" class="module module-relay" @click="tpl.click">
+                        <Btn name="add-switch-schedule" @click="tpl.click">
                             Add switch schedule
                         </Btn>
                     </template>
@@ -114,7 +114,8 @@
             Repeater,
             Inpt,
             Btn
-        }
+        },
+        inheritAttrs: false,
     }
 </script>
 

@@ -1,213 +1,211 @@
 <template>
-    <section>
+    <section class="status">
         <div class="header">
             <h1>STATUS</h1>
             <h2>Current configuration</h2>
         </div>
 
         <div class="page">
-            <form class="pure-form pure-form-aligned">
-                <fieldset>
-                    <div v-for="(val, relay) in relays" :key="relay" class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Switch #{{relay}}</label>
-                        <div>
-                            <Inpt :value="val" type="switch" name="relay"
-                                  on="ON"
-                                  off="OFF"
-                                  @input="() => {}"/>
-                        </div>
-                    </div>
-
-                    <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
-                    <div class="pure-g color">
-                        <label class="pure-u-1 pure-u-lg-1-4">Color</label>
-                        <span class="pure-u-lg-1-4">{{light.color}}</span>
-                    </div>
-                    <div class="pure-g mireds">
-                        <label class="pure-u-1 pure-u-lg-1-4">Mireds (Cold &harr; Warm)</label>
-                        <input type="range" min="153" max="500"
-                               class="slider pure-u-lg-1-4" :value="light.mired"
-                               readonly>
-                        <span class="slider pure-u-lg-1-4">{{light.mired}}</span>
-                    </div>
-                    <div class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
-                        <input type="range" min="0" max="255"
-                               class="slider pure-u-lg-1-4" :value="light.brightness"
-                               readonly>
-                        <span class="slider brightness pure-u-lg-1-4">{{light.brightness}}</span>
-                    </div>
-
-                    <div v-for="(channel, id) in light.channels" :key="id" class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Channel #{{id}}</label>
-                        <input type="range" min="0" max="255"
-                               :value="channel" class="slider channels pure-u-lg-1-4"
-                               readonly>
-                        <span class="slider pure-u-lg-1-4"></span>
-                    </div>
-                    <!-- #endif -->
-
-                    <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
-                    <div id="magnitudes">TODO</div>
-
-                    <div id="magnitudeTemplate" class="template">
-                        <div class="pure-g">
-                            <label class="pure-u-1 pure-u-lg-1-4"></label>
-                            <div class="pure-u-1 pure-u-lg-1-4">
-                                <Inpt class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude"
-                                      data="256"
-                                      readonly/>
-                            </div>
-                            <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
-                        </div>
-                    </div>
-                    <!-- #endif -->
-
-                    <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
-                    <div class="pure-g module module-rfm69">
-                        <div class="pure-u-1-2">Packet count</div>
-                        <div class="pure-u-11-24"><span class="right">{{rfm69.packet_count}}</span></div>
-                    </div>
-
-                    <div class="pure-g module module-rfm69">
-                        <div class="pure-u-1-2">Node count</div>
-                        <div class="pure-u-11-24"><span class="right">{{rfm69.node_count}}</span></div>
-                    </div>
-                    <!-- #endif -->
-
-                    <div class="pure-u-1 pure-u-lg-1-2 state">
-                        <div class="pure-u-1-2">Manufacturer</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{device.manufacturer}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2">Device</div>
-                        <div class="pure-u-11-24"><span class="right">{{device.name}}</span></div>
-
-                        <div class="pure-u-1-2">Chip ID</div>
-                        <div class="pure-u-11-24"><span class="right">{{device.chip_id}}</span></div>
-
-                        <div class="pure-u-1-2">SDK version</div>
-                        <div class="pure-u-11-24"><span class="right">{{version.sdk}}</span></div>
-
-                        <div class="pure-u-1-2">Core version</div>
-                        <div class="pure-u-11-24"><span class="right">{{version.core}}</span></div>
-
-                        <div class="pure-u-1-2">Firmware name</div>
-                        <div class="pure-u-11-24"><span class="right">{{version.app_name}}</span></div>
-
-                        <div class="pure-u-1-2">Firmware version</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{version.app_version}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2">Firmware revision</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{version.app_revision}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2">Firmware build date</div>
-                        <div class="pure-u-11-24"><span class="right">{{version.app_build}}</span></div>
-
-                        <div class="pure-u-1-2">Firmware size</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{version.sketch_size}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2">Free space</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{device.free_size}} bytes</span>
-                        </div>
-                        <div class="pure-u-1-2">Free heap</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{device.heap}} bytes</span>
-                        </div>
-
-                        <div class="pure-u-1-2">Load average</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{device.load_average}}%</span>
-                        </div>
-
-                        <div class="pure-u-1-2">VCC</div>
-                        <div class="pure-u-11-24"><span class="right">{{device.vcc}} mV</span></div>
-                    </div>
-
-                    <div class="pure-u-1 pure-u-lg-11-24 state">
-                        <div class="pure-u-1-2">Network</div>
-                        <div class="pure-u-11-24"><span class="right">{{wifi.name}}</span></div>
-
-                        <div class="pure-u-1-2">Wifi MAC</div>
-                        <div class="pure-u-11-24"><span class="right">{{wifi.mac}}</span></div>
-
-                        <div class="pure-u-1-2">BSSID</div>
-                        <div class="pure-u-11-24"><span class="right">{{wifi.bssid}}</span></div>
-
-                        <div class="pure-u-1-2">Channel</div>
-                        <div class="pure-u-11-24"><span class="right">{{wifi.channel}}</span></div>
-
-                        <div class="pure-u-1-2">RSSI</div>
-                        <div class="pure-u-11-24"><span class="right">{{wifi.rssi}}</span></div>
-
-                        <div class="pure-u-1-2">IP</div>
-                        <div class="pure-u-11-24">
-                            <a :href="'//'+wifi.ip" class="right">{{wifi.ip}}</a>
-                            (<a :href="'telnet://'+wifi.ip" class="right">telnet</a>)
-                        </div>
-
-                        <div class="pure-u-1-2 module module-mqtt">MQTT Status</div>
-                        <div class="pure-u-11-24 module module-mqtt">
-                            <span class="right">{{mqtt.status ? 'CONNECTED' : 'NOT CONNECTED'}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2 module module-ntp">NTP Status</div>
-                        <div class="pure-u-11-24 module module-ntp">
-                            <span class="right">{{ntp.status ? 'SYNCED' : 'NOT SYNCED'}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2 module module-ntp">Current time</div>
-                        <div class="pure-u-11-24 module module-ntp">
-                            <span class="right">{{date(device.now)}}</span>
-                        </div>
-
-                        <div class="pure-u-1-2">Uptime</div>
-                        <div class="pure-u-11-24"><span class="right">{{elapsed(device.uptime)}}</span></div>
-
-                        <div class="pure-u-1-2">Last update</div>
-                        <div class="pure-u-11-24">
-                            <span class="right">{{device.lastUpdate}}</span><span> seconds ago</span>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
             <fieldset>
-                <legend>DEBUG LOG</legend>
-                <h2>
-                    Shows debug messages from the device
-                </h2>
+                <Row v-for="(val, relay) in relays.list" :key="relay">
+                    <C><label>Switch #{{relay}}</label></C>
+                    <C>
+                        <Inpt :value="val" type="switch" name="relay"
+                              on="ON"
+                              off="OFF"
+                              @input="() => {}"/>
+                    </C>
+                </Row>
 
-                <Row ref="cmd">
-                    <C :size="12">
-                        <div class="hint">
-                            Write a command and click send to execute it on the device. The output will be shown
-                            in the debug text area below.
-                        </div>
-                    </C>
+                <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
+                <template v-if="modules.light">
+                    <Row>
+                        <C><label>Color</label></C>
+                        <C><span>{{light.color}}</span></C>
+                    </Row>
+
+                    <Row>
+                        <C><label>Mireds (Cold &harr; Warm)</label></C>
+                        <C>
+                            <Inpt type="range" name="mireds" min="153" max="500" :value="light.mired"/>
+                            {{light.mired}}
+                        </C>
+                    </Row>
+
+                    <Row>
+                        <C><label>Brightness</label></C>
+                        <C>
+                            <input type="range" min="0" max="255"
+                                   :value="light.brightness"
+                                   readonly>
+                            {{light.brightness}}
+                        </C>
+                    </Row>
+
+                    <Row v-for="(channel, id) in light.channels" :key="id">
+                        <C><label>Channel #{{id}}</label></C>
+                        <C>
+                            <input type="range" min="0" max="255"
+                                   :value="channel"
+                                   readonly>
+                        </C>
+                    </Row>
+                </template>
+                <!-- #endif -->
+
+                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+                <template v-if="modules.sns">
+                    <Row v-for="(magnitude, i) in magnitudes.list" :key="magnitude.index">
+                        <C><label>{{magnitudeType(magnitude.type)}} #{{magnitude.index}},</label></C>
+                        <C>
+                            <Inpt class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude"
+                                  :value="i"/>
+                            <Hint>{{magnitude.description}}</Hint>
+                        </C>
+                    </Row>
+                </template>
+                <!-- #endif -->
+
+                <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
+                <template v-if="rfm69">
+                    <Row>
+                        <C><label>Packet count</label></C>
+                        <C>{{rfm69.packet_count}}</C>
+                    </Row>
+
+                    <Row>
+                        <C><label>Node count</label></C>
+                        <C>{{rfm69.node_count}}</C>
+                    </Row>
+                </template>
+                <!-- #endif -->
+
+                <Row class="state">
                     <C>
+                        <Row>
+                            <C><label>Manufacturer</label></C>
+                            <C>{{device.manufacturer}}</C>
+
+                            <C><label>Device</label></C>
+                            <C>{{device.name}}</C>
+
+                            <C>Chip ID</C>
+                            <C>{{device.chip_id}}</C>
+
+                            <C>SDK version</C>
+                            <C>{{version.sdk}}</C>
+
+                            <C>Core version</C>
+                            <C>{{version.core}}</C>
+
+                            <C>Firmware name</C>
+                            <C>{{version.app_name}}</C>
+
+                            <C>Firmware version</C>
+                            <C>{{version.app_version}}</C>
+
+                            <template v-if="version.app_revision">
+                                <C>Firmware revision</C>
+                                <C>{{version.app_revision}}</C>
+                            </template>
+
+                            <C>Firmware build date</C>
+                            <C>{{version.app_build}}</C>
+
+                            <C>Firmware size</C>
+                            <C>{{version.sketch_size}}</C>
+
+                            <C>Free space</C>
+                            <C>{{device.free_size}} bytes</C>
+
+                            <C>Free heap</C>
+                            <C>{{device.heap}} bytes</C>
+
+                            <C>Load average</C>
+                            <C>{{device.load_average}}%</C>
+
+                            <C>VCC</C>
+                            <C>{{device.vcc}} mV</C>
+                        </Row>
+                    </C>
+
+                    <C>
+                        <Row>
+                            <C>Network</C>
+                            <C>{{wifi.name}}</C>
+
+                            <C>Wifi MAC</C>
+                            <C>{{wifi.mac}}</C>
+
+                            <C>BSSID</C>
+                            <C>{{wifi.bssid}}</C>
+
+                            <C>Channel</C>
+                            <C>{{wifi.channel}}</C>
+
+                            <C>RSSI</C>
+                            <C>{{wifi.rssi}}</C>
+
+                            <C>IP</C>
+                            <C>
+                                <a :href="'//'+wifi.ip">{{wifi.ip}}</a>
+                                (<a :href="'telnet://'+wifi.ip">telnet</a>)
+                            </C>
+
+                            <template v-if="modules.mqtt">
+                                <C>MQTT Status</C>
+                                <C>{{mqtt.status ? 'CONNECTED' : 'NOT CONNECTED'}}</C>
+                            </template>
+
+                            <template v-if="modules.ntp">
+                                <C>NTP Status</C>
+                                <C>{{ntp.status ? 'SYNCED' : 'NOT SYNCED'}}</C>
+                                <C>Current time</C>
+                                <C>{{date(device.now)}}</C>
+                            </template>
+
+                            <C>Uptime</C>
+                            <C>{{elapsed(device.uptime)}}</C>
+
+                            <C>Last update</C>
+                            <C>{{device.lastUpdate}} seconds ago</C>
+                        </Row>
+                    </C>
+                </Row>
+            </fieldset>
+        </div>
+
+        <div class="header">
+            <h1>DEBUG LOG</h1>
+            <h2>
+                Shows debug messages from the device
+            </h2>
+        </div>
+
+        <div class="page">
+            <fieldset>
+                <Row v-if="modules.cmd">
+                    <C :size="2"><label>Command</label></C>
+                    <C :size="8" no-wrap>
                         <Inpt name="dbgcmd" type="text" tabindex="2"/>
-                    </C>
-                    <C>
                         <Btn name="dbgcmd">
                             Send
                         </Btn>
+                        <Hint>
+                            Write a command and click send to execute it on the device. The output will be shown
+                            in the debug text area below.
+                        </Hint>
                     </C>
                 </Row>
 
                 <Row>
-                    <textarea id="weblog"
+                    <textarea v-model="logs"
                               class="terminal"
-                              name="weblog"
                               wrap="soft"
-                              readonly spellcheck="false"></textarea>
+                              readonly spellcheck="false">
+                    </textarea>
+                </Row>
+                <Row>
                     <Btn name="dbg-clear" color="danger">
                         Clear
                     </Btn>
@@ -222,54 +220,73 @@
     import Btn from './../../components/Button'
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
+    import Hint from "../../components/Hint";
 
     export default {
         components: {
+            Hint,
             C,
             Row,
             Inpt,
             Btn
         },
+        inheritAttrs: false,
         props: {
             version: {
                 type: Object,
+            },
+            relays: {
+                type: Object,
+                default: () => ({})
+            },
+            modules: {
+                type: Object,
+                default: () => ({})
+            },
+            magnitudes: {
+                type: Object,
+                default: () => ({})
             },
             device: {
                 type: Object,
             },
             wifi: {
                 type: Object,
-                default() {
-                    return {};
-                }
+                default: () => ({})
             },
             light: {
                 type: Object,
-                default() {
-                    return {channels: []}
-                }
+                default: () => ({channels: []})
             },
             rfm69: {
                 type: Object,
-                default() {
-                    return {}
-                }
+                default: () => ({})
             },
             mqtt: {
                 type: Object,
-                default() {
-                    return {}
-                }
+                default: () => ({})
             },
             ntp: {
                 type: Object,
-                default() {
-                    return {}
-                }
+                default: () => ({})
+            },
+            weblog: {
+                type: Object,
+                default: () => ({})
             }
         },
         data() {
             return {}
+        },
+        computed: {
+            logs() {
+                let str = "";
+                if (this.weblog.msg)
+                    this.weblog.msg.forEach((v, i) => {
+                        str += this.weblog.pre[i] + v + "\n";
+                    });
+                return str;
+            }
         },
         methods: {
             date(d) {
@@ -285,6 +302,22 @@
             toggleRelay(id, val) {
                 sendAction("relay", {id: id, status: value ? 1 : 0});
                 this.$set(relays, id, !val)
+            },
+
+            magnitudeType(type) {
+                const types = [
+                    "Temperature", "Humidity", "Pressure",
+                    "Current", "Voltage", "Active Power", "Apparent Power",
+                    "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
+                    "Analog", "Digital", "Event",
+                    "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance", "HCHO",
+                    "Local Dose Rate", "Local Dose Rate",
+                    "Count", "NO2", "CO", "Resistance", "pH"
+                ];
+                if (1 <= type && type <= types.length) {
+                    return types[type - 1];
+                }
+                return null;
             }
         }
     }
@@ -298,8 +331,15 @@
         font-size: 80%;
     }
 
-    .state span {
+
+    .state .row .col:nth-child(odd) {
+        text-align: right;
+        padding-right: 20px;
+    }
+
+    .state .row .col:nth-child(even) {
         font-weight: bold;
+        text-align: left;
     }
 
     /* -----------------------------------------------------------------------------

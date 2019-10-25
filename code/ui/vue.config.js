@@ -37,6 +37,9 @@ module.exports = {
                 ]
             }
         } : {
+            node: {
+                setImmediate: true
+            },
             plugins: [
                 new PurgecssPlugin({
                     paths: glob.sync([
@@ -60,6 +63,7 @@ module.exports = {
 
 
         config.module.rule("vue").use("webpack-conditional-loader").loader("webpack-conditional-loader");
+        config.module.rule("js").use("webpack-conditional-loader").loader("webpack-conditional-loader");
 
         if (process.env.NODE_ENV === 'production') {
             config.plugin("preload")

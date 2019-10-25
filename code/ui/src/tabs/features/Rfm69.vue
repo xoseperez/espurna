@@ -111,7 +111,8 @@
     export default {
         components: {
             Inpt
-        }
+        },
+        inheritAttrs: false,
     }
 </script>
 

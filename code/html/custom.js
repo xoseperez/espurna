@@ -1321,7 +1321,6 @@ function initLightfox(data, relayCount) {
                 $(this).append($("<option >").attr("value", j).text("Switch #" + j));
             }
             $(this).val(data[i]["relay"]);
-            status = !status;
         });
         $line.appendTo("#lightfoxNodes");
     }
@@ -1821,6 +1820,7 @@ function hasChanged() {
             $(this).attr("hasChanged", true);
         }
     } else {
+        //Value is back to the same as before
         if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }

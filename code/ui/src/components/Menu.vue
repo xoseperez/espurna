@@ -7,7 +7,10 @@
             <div class="inner">
                 <slot name="header"></slot>
                 <ul class="list">
-                    <li v-for="(v, i) in tabs" :key="i" :class="{current: currentPanel === v.k}">
+                    <!-- eslint-disable vue/no-use-v-if-with-v-for || because this is one of the only valid use case -->
+                    <li v-for="(v, i) in tabs" v-if="v.k === 'separator' || $scopedSlots[v.k]" :key="i"
+                        :class="{current: currentPanel === v.k}">
+                        <!-- eslint-enable -->
                         <a v-if="v.k !== 'separator'" href="#" @click="currentPanel = v.k">{{v.l}}</a>
                         <span v-else class="separator"></span>
                     </li>
@@ -119,7 +122,7 @@
                 background: @secondary;
                 margin-right: -4px;
                 border-radius: 0 3px 3px 0;
-                box-shadow: 1px 0 6px rgba(0,0,0,.5);
+                box-shadow: 1px 0 6px rgba(0, 0, 0, .5);
                 position: relative;
                 z-index: 1;
             }
@@ -160,6 +163,7 @@
         .footer {
             font-size: .9em;
             padding-bottom: 30px;
+
             a {
                 color: @primary;
             }
@@ -232,6 +236,7 @@
         .content {
             margin: 0;
         }
+
         .content > section {
             padding: 0 10px;
         }

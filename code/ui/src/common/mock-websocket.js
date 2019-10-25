@@ -1,4 +1,4 @@
-import 'setimmediate';
+//import 'setimmediate';
 import {WebSocket, Server} from "mock-websocket";
 
 export default function () {
@@ -38,7 +38,7 @@ export default function () {
 
             {
                 "weblog": {
-                    "msg": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\\n"],
+                    "msg": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
                     "pre": ["[842843] "]
                 }
             }, {
@@ -46,14 +46,24 @@ export default function () {
                     "rssi": -86,
                     "maxNetworks": 5,
                     "scan": true,
-                    "networks": [{
-                        "ssid": "TestWifi",
-                        "pass": "testpassword",
-                        "ip": "192.168.1.3",
-                        "gw": "192.168.1.1",
-                        "mask": "255.255.255.0",
-                        "dns": ""
-                    }]
+                    "schema": [
+                        "ssid",
+                        "pass",
+                        "ip",
+                        "gw",
+                        "mask",
+                        "dns",
+                    ],
+                    "list": [
+                        [
+                            "TestWifi",
+                            "testpassword",
+                            "192.168.1.3",
+                            "192.168.1.1",
+                            "255.255.255.0",
+                            ""
+                        ]
+                    ]
                 }
             }, {
                 "telnet": {
@@ -73,7 +83,7 @@ export default function () {
                 "device": {
                     "name": "SONOFF_SV",
                     "manufacturer": "ITEAD",
-                    "chipid": "209458",
+                    "chip_id": "209458",
                     "hostname": "ESPURNA",
                     "desc": "An espurna enabled device",
                     "free_size": 532480,
@@ -93,6 +103,34 @@ export default function () {
             },
             {
                 "api": {"enabled": false, "key": "123456789ABCDEF", "realTime": false, "restFul": true}
+            }, {
+                "relays": {
+                    "start": 0,
+                    "schema": [
+                        "gpio",
+                        "type",
+                        "reset",
+                        "boot",
+                        "pulse",
+                        "pulse_time",
+                        "group",
+                        "group_sync",
+                        "on_disc",
+                    ],
+                    "list": [
+                        [
+                            "GPIO12",
+                            0,
+                            153,
+                            0,
+                            1,
+                            1,
+                            "",
+                            0,
+                            0
+                        ]
+                    ],
+                }
             }
         ];
 

@@ -186,7 +186,8 @@
             Repeater,
             Btn,
             Inpt
-        }
+        },
+        inheritAttrs: false,
     }
 </script>
 

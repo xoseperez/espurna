@@ -1,5 +1,5 @@
 <template>
-    <div class="row">
+    <div :class="['row', {noWrap}]">
         <slot></slot>
     </div>
 </template>
@@ -8,6 +8,10 @@
     export default {
         name: 'row',
         props: {
+            noWrap: {
+                type: Boolean,
+                default: false
+            }
         }
     }
 </script>
@@ -16,7 +20,11 @@
     .row {
         display: flex;
         flex-direction: row;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         position: relative;
+    }
+
+    .row.noWrap {
+        flex-wrap: nowrap;
     }
 </style>

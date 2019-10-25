@@ -57,9 +57,7 @@
         props: {
             buttons: {
                 type: Array,
-                default() {
-                    return []
-                }
+                default: () => ([])
             },
             relayOptions: {
                 type: Array

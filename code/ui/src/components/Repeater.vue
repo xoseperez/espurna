@@ -6,16 +6,12 @@
                          :value="row.value"
                          :row="row.key"
                          @input="(val) => onInput(i, val)">
-                <template #default="props">
-                    <slot name="default" :value="row.value" :row="row"></slot>
-                </template>
-                <template #append="props">
-                    <slot name="btnRemove" :click="() => onRemove(row.key)">
-                        <Btn color="danger" @click="() => onRemove(row.key)">
-                            Remove
-                        </Btn>
-                    </slot>
-                </template>
+                <slot name="default" :value="row.value" :row="row" :on-remove="onRemove"></slot>
+                <slot name="btnRemove" :click="() => onRemove(row.key)">
+                    <Btn color="danger" @click="() => onRemove(row.key)">
+                        Remove
+                    </Btn>
+                </slot>
             </RepeaterRow>
         </transition-group>
         <slot name="btnAdd" :click="onAdd">

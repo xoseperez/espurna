@@ -87,7 +87,8 @@
         components: {
             Hint,
             Inpt
-        }
+        },
+        inheritAttrs: false,
     }
 </script>
 

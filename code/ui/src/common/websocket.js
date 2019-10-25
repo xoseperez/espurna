@@ -1,6 +1,8 @@
-// #if process.env.NODE_ENV = 'dev'
+// #if process.env.NODE_ENV === 'development'
 import mockServer from './mock-websocket';
 // #endif
+
+console.log(process.env.NODE_ENV);
 
 let Ws = function () {
 };
@@ -12,7 +14,7 @@ Ws.prototype = {
         }, time);
     },
     connect(host, cb) {
-        // #if process.env.NODE_ENV = 'dev'
+        // #if process.env.NODE_ENV === 'development'
         if (!host || host.match('localhost')) {
             //Start mocking
             this.ws = mockServer();

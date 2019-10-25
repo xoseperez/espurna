@@ -97,12 +97,11 @@
         components: {
             Inpt
         },
+        inheritAttrs: false,
         props: {
             leds: {
                 type: Array,
-                default() {
-                    return []
-                }
+                default: () => ([])
             }
         }
     }

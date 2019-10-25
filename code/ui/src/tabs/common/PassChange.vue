@@ -75,7 +75,8 @@
     import Hint from "../../components/Hint";
 
     export default {
-        components: {Hint, Btn, Inpt}
+        components: {Hint, Btn, Inpt},
+        inheritAttrs: false,
     }
 </script>
 

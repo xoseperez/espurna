@@ -50,7 +50,8 @@
             Row,
             Hint,
             Inpt
-        }
+        },
+        inheritAttrs: false,
     }
 </script>
 
