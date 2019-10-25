@@ -147,7 +147,6 @@ class SI7021Sensor : public I2CSensor {
             // When not using clock stretching (*_NOHOLD commands) delay here
             // is needed to wait for the measurement.
             // According to datasheet the max. conversion time is ~22ms
-            unsigned long start = millis();
             nice_delay(50);
 
             // Clear the last to bits of LSB to 00.

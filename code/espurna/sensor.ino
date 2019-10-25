@@ -1382,17 +1382,17 @@ void _sensorConfigure() {
                 double value;
                 HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                if ((value = getSetting("pwrExpectedC", 0).toFloat())) {
                     sensor->expectedCurrent(value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio());
                 }
 
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedV", 0).toInt())) {
                     sensor->expectedVoltage(value);
                     setSetting("pwrRatioV", sensor->getVoltageRatio());
                 }
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
                 }

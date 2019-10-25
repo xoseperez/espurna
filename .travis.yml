@@ -6,10 +6,7 @@ cache:
   - "~/.npm"
   - "~/.platformio"
 install:
-- pip install -U platformio
-- pio platform update -p
-- npm install -g npm@latest
-- cd code && npm ci && cd ..
+- ./travis_install.sh
 env:
   global:
   - BUILDER_TOTAL_THREADS=4
@@ -23,10 +20,11 @@ stages:
   if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
-  - stage: Test
-    env: BUILDER_ENV=travis-2_3_0
-  - env: BUILDER_ENV=travis-latest
-  - env: BUILDER_ENV=travis-git BUILDER_EXTRA=secure_client
+  - stage: Test WebUI
+  - stage: Test PlatformIO Build
+    env: TEST_ENV=travis-2_3_0
+  - env: TEST_ENV=travis-latest
+  - env: TEST_ENV=travis-git TEST_EXTRA_ARGS="-a test/build/extra/secure_client.h"
   - stage: Release
     env: BUILDER_THREAD=0
   - env: BUILDER_THREAD=1

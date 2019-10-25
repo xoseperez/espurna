@@ -101,7 +101,7 @@ void _otaClientOnConnect(void *arg, AsyncClient *client) {
         int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
         if ((check == SECURE_CLIENT_CHECK_FINGERPRINT) && (443 == _ota_url->port)) {
             uint8_t fp[20] = {0};
-            sslFingerPrintArray(getSetting("otafp", OTA_FINGERPRINT).c_str(), fp);
+            sslFingerPrintArray(getSetting("otaFP", OTA_FINGERPRINT).c_str(), fp);
             SSL * ssl = _ota_client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
                 DEBUG_MSG_P(PSTR("[OTA] Warning: certificate fingerpint doesn't match\n"));
@@ -213,6 +213,9 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
 // -----------------------------------------------------------------------------
 
 void otaClientSetup() {
+
+    // Backwards compatibility
+    moveSetting("otafp", "otaFP");
 
     #if TERMINAL_SUPPORT
         _otaClientInitCommands();

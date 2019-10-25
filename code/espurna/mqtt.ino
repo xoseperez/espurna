@@ -102,7 +102,7 @@ SecureClientConfig _mqtt_sc_config {
         return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK).toInt();
     },
     []() -> String {
-        return getSetting("mqttfp", MQTT_SSL_FINGERPRINT);
+        return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     },
     true
 };
@@ -118,7 +118,7 @@ SecureClientConfig _mqtt_sc_config {
         return _mqtt_client_trusted_root_ca;
     },
     []() -> String {
-        return getSetting("mqttfp", MQTT_SSL_FINGERPRINT);
+        return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     },
     []() -> uint16_t {
         return getSetting("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN).toInt();
