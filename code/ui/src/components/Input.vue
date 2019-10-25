@@ -4,6 +4,7 @@
     </select>
     <span v-else-if="type === 'switch'" class="switch">
         <input :id="'switch-'+_uid" v-model="value" type="checkbox" v-bind="$attrs">
+        <span class="layer"></span>
         <label :for="'switch-'+_uid"><span class="on">{{on}}</span><span class="off">{{off}}</span></label>
     </span>
     <span v-else-if="type === 'password'" class="password">
@@ -78,88 +79,93 @@
 </script>
 
 <style lang="less">
+    @import "../assets/Colors";
+
     .switch {
-        /*
+        vertical-align: middle;
+        display: inline-block;
+        position: relative;
+        width: 74px;
+        height: 37px;
         overflow: hidden;
-        width: auto;
-        height: 30px;
-        margin: 0 0 10px 0;
-        padding: 0;
         border-radius: 4px;
-        box-shadow: inset 1px 1px #CCC;*/
+        margin: 5px 0;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 1px #ccc;
+        box-sizing: content-box;
+
+        label, .layer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
 
         input {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
             opacity: 0;
-            position: absolute;
-            margin-top: 26px;
-            z-index: -9;
+            cursor: pointer;
+            z-index: 3;
+
+            &:active ~ label {
+                width: 56px;
+            }
+
+            &:checked:active ~ label {
+                margin-left: -21px;
+            }
+
+            &:checked ~ label {
+                left: 35px;
+                background-color: @secondary;
+                .off {
+                    display: none;
+                }
+                .on {
+                    display: inline;
+                }
+            }
+
+            &:checked + .layer {
+                background-color: lighten(@secondary, 40%);
+                box-shadow: inset 0 0 2px 0 @secondary;
+            }
+        }
+
+        .layer {
+            width: 100%;
+            background-color: lighten(@error, 40%);
+            transition: all .3s ease;
+            box-shadow: inset 0 0 2px 0 @error;
         }
 
         label {
-            position: relative;
-            display: inline-block;
-            min-width: 112px;
-            cursor: pointer;
-            font-weight: 500;
-            text-align: left;
-            padding: 4px 0 4px 44px;
+            font-family: Arial, Helvetica, sans-serif;
+            position: absolute;
+            top: -3px;
+            left: 4px;
+            width: 35px;
+            height: 29px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 18px;
+            padding: 6px 3px;
+            background-color: @error;
+            border-radius: 2px;
+            transition: all .3s ease, left .3s cubic-bezier(0.18, 0.89, 0.35, 1.15);
 
-            &:before, &:after {
-                content: "";
-                position: absolute;
-                margin: 0;
-                outline: 0;
-                top: 50%;
-                transform: translate(0, -50%);
-                transition: all 0.3s ease;
-            }
-
-            &:before {
-                left: 1px;
-                width: 34px;
-                height: 14px;
-                background-color: #999;
-                border-radius: 8px;
-            }
-
-            &:after {
-                left: 0;
-                width: 20px;
-                height: 20px;
-                background-color: #FAFAFA;
-                border-radius: 50%;
-                box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.14), 0 2px 2px 0 rgba(0, 0, 0, 0.098), 0 1px 5px 0 rgba(0, 0, 0, 0.084);
+            .on {
+                display: none;
             }
         }
 
-        label .on,
-        input:checked + label .off {
-            display: none;
-        }
-
-        label .off,
-        input:checked + label .on {
-            display: inline-block;
-        }
-
-        input:checked + label:before {
-            background-color: #5bc0de;
-        }
-
-        input:checked + label:after {
-            background-color: #31b0d5;
-            transform: translate(80%, -50%);
-        }
-
-        input[disabled] + label {
-            &:before {
-                background-color: #666;
-            }
-
-            &:after {
-                background-color: #bbb;
-            }
-        }
     }
 
     input[type=file] {
@@ -175,7 +181,7 @@
         box-shadow: inset 0 1px 3px #ddd;
         border-radius: 4px;
         vertical-align: middle;
-        margin-bottom: 10px;
+        margin: 5px 0;
         width: 100%;
 
         @media only screen and (max-width: 480px) {
@@ -216,10 +222,6 @@
         &:invalid {
             outline-color: #e9322d
         }
-    }
-
-    input {
-        margin-bottom: 10px;
     }
 
     select {

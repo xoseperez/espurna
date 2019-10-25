@@ -5,7 +5,7 @@
             <h2>General configuration values</h2>
         </div>
 
-        <div class="page">
+        <div class="page form">
             <fieldset>
                 <Row>
                     <C><label>Hostname</label></C>
@@ -92,22 +92,20 @@
 
                 <legend>Networks</legend>
                 <Repeater v-model="wifi.list">
-                    <template #default="row">
+                    <template #default="tpl">
                         <Row>
-                            <C size="3"><label :for="'ssid-'+row.key">Network SSID</label></C>
-                            <C size="5">
-                                <Inpt :id="'ssid-'+row.key" name="ssid"
+                            <C><label :for="'ssid-'+tpl.row.key">Network SSID</label></C>
+                            <C no-wrap>
+                                <Inpt :id="'ssid-'+tpl.row.key" name="ssid"
                                       type="text"
                                       action="reconnect"
                                       tabindex="0"
                                       placeholder="Network SSID"
                                       required
                                       autocomplete="network-ssid"/>
+                                <Btn @click="() => {log(tpl.row); $set(tpl.row, 'more', !tpl.row.more) }">...</Btn>
                             </C>
-                            <C size="2">
-                                <Btn @click="() => row.more = !row.more">...</Btn>
-                            </C>
-                            <template v-if="row.more">
+                            <template v-if="tpl.row.more">
                                 <C><label>Password</label></C>
                                 <C>
                                     <Inpt name="pass"
@@ -167,10 +165,10 @@
                                     </Hint>
                                 </C>
                             </template>
-                            <template #btnRemove="tpl">
-                                <Btn name="del-network" color="danger" @click="tpl.click">Delete network</Btn>
-                            </template>
                         </Row>
+                    </template>
+                    <template #btnRemove="tpl">
+                        <Btn name="del-network" color="danger" @click="tpl.click">Delete network</Btn>
                     </template>
                     <template #btnAdd="tpl">
                         <Btn name="add-network" @click="tpl.click">Add network</Btn>
@@ -215,6 +213,9 @@
                 this.scanLoading = true;
                 this.scanResult = [];
                 this.$emit("action", "scan");
+            },
+            log(v) {
+                console.log(v);
             }
         }
     }

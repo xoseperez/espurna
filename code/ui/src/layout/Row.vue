@@ -22,6 +22,7 @@
         flex-direction: row;
         flex-wrap: wrap;
         position: relative;
+        align-items: center;
     }
 
     .row.noWrap {

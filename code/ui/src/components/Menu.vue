@@ -152,7 +152,8 @@
             padding: .5em .5em;
             font-size: 1.2em;
             color: #fff;
-            margin: 0;
+            margin: 0 -4px 0 0;
+            border-radius: 0 0 10px;
             background: @primary;
         }
 
@@ -191,11 +192,9 @@
         display: none; /* show this only on small screens */
         top: 0;
         right: 0;
-        margin-left: 190px;
-        margin-bottom: -44px;
         background: rgba(0, 0, 0, 0.7);
         font-size: 10px; /* change this value to increase/decrease button size */
-        z-index: 10;
+        z-index: -1;
         width: @menu-toggle-size;
         height: @menu-toggle-size;
         padding: 2.1em 1.2em;
@@ -243,11 +242,16 @@
 
         .menu {
             position: fixed;
+            height: 100%;
             padding-right: @menu-toggle-size;
 
             &:not(.open) {
                 overflow: hidden;
                 transform: translateX(-@menu-width);
+
+                .heading {
+                    margin: 0;
+                }
 
                 + .content {
                     padding: 0;

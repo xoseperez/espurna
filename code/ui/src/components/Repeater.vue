@@ -5,13 +5,15 @@
                          :key="row.key"
                          :value="row.value"
                          :row="row.key"
-                         @input="(val) => onInput(i, val)">
-                <slot name="default" :value="row.value" :row="row" :on-remove="onRemove"></slot>
-                <slot name="btnRemove" :click="() => onRemove(row.key)">
-                    <Btn color="danger" @click="() => onRemove(row.key)">
-                        Remove
-                    </Btn>
-                </slot>
+                         @input="(val) => $emit('input', [...values].splice(i,1,val))">
+                <slot name="default" :value="row.value" :row="row" :remove="() => onRemove(row.key)"></slot>
+                <template #append>
+                    <slot name="btnRemove" :click="() => onRemove(row.key)" :row="row">
+                        <Btn color="danger" @click="() => onRemove(row.key)">
+                            Remove
+                        </Btn>
+                    </slot>
+                </template>
             </RepeaterRow>
         </transition-group>
         <slot name="btnAdd" :click="onAdd">

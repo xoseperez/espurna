@@ -41,7 +41,7 @@
         border-radius: 4px;
         color: white;
         letter-spacing: 0;
-        margin-bottom: 10px;
+        margin: 5px 0;
         text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
         padding: 10px 14px;
         border: none;

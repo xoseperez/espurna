@@ -7,15 +7,17 @@
 
         <div class="page">
             <fieldset>
-                <Row v-for="(val, relay) in relays.list" :key="relay">
-                    <C><label>Switch #{{relay}}</label></C>
-                    <C>
-                        <Inpt :value="val" type="switch" name="relay"
-                              on="ON"
-                              off="OFF"
-                              @input="() => {}"/>
-                    </C>
-                </Row>
+                <div class="relays">
+                    <Row v-for="(val, relay) in relays.list" :key="relay">
+                        <C :size="2"><label>Switch #{{relay}}</label></C>
+                        <C :size="8">
+                            <Inpt :value="val" type="switch" name="relay"
+                                  on="ON"
+                                  off="OFF"
+                                  @input="() => {}"/>
+                        </C>
+                    </Row>
+                </div>
 
                 <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
                 <template v-if="modules.light">
@@ -67,7 +69,7 @@
                 <!-- #endif -->
 
                 <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
-                <template v-if="rfm69">
+                <template v-if="modules.rfm69">
                     <Row>
                         <C><label>Packet count</label></C>
                         <C>{{rfm69.packet_count}}</C>
@@ -80,7 +82,7 @@
                 </template>
                 <!-- #endif -->
 
-                <Row class="state">
+                <Row class="state responsive">
                     <C>
                         <Row>
                             <C><label>Manufacturer</label></C>
@@ -184,7 +186,7 @@
 
         <div class="page">
             <fieldset>
-                <Row v-if="modules.cmd">
+                <Row v-if="modules.cmd" class="responsive">
                     <C :size="2"><label>Command</label></C>
                     <C :size="8" no-wrap>
                         <Inpt name="dbgcmd" type="text" tabindex="2"/>
@@ -340,6 +342,12 @@
     .state .row .col:nth-child(even) {
         font-weight: bold;
         text-align: left;
+    }
+
+    .relays .col > label {
+        font-size: 1.3em;
+        float: right;
+        margin: .4em 15px;
     }
 
     /* -----------------------------------------------------------------------------

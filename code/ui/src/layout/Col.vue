@@ -1,5 +1,5 @@
 <template>
-    <div :class="['col', {stretch}, {noWrap}]" :style="style">
+    <div :class="['col', {stretch}, {noWrap}, {responsive}]" :style="style">
         <slot></slot>
     </div>
 </template>
@@ -23,6 +23,10 @@
                 type: Boolean,
                 default: false
             },
+            responsive: {
+                type: Boolean,
+                default: false
+            },
         },
         computed: {
             style() {
@@ -41,6 +45,7 @@
 <style lang="less">
     .col {
         width: 50%;
+        flex-grow: 1;
     }
 
     .form .row .col:nth-of-type(odd) {
@@ -58,5 +63,11 @@
 
     .col.stretch > * {
         width: 100%;
+    }
+
+    @media screen and (max-width: 48em){
+        .responsive > .col, .col.responsive {
+            width: 100% !important;
+        }
     }
 </style>
