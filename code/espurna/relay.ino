@@ -31,7 +31,8 @@ typedef struct {
     unsigned char lock;         // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
     unsigned long fw_start;     // Flood window start time
     unsigned char fw_count;     // Number of changes within the current flood window
-    unsigned long change_time;  // Scheduled time to change
+    unsigned long change_start;      // Time when relay was scheduled to change
+    unsigned long change_delay;      // Delay until the next change
     bool report;                // Whether to report to own topic
     bool group_report;          // Whether to report to group topic
 
@@ -42,6 +43,7 @@ typedef struct {
 } relay_t;
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
+unsigned int _relay_flood_window = RELAY_FLOOD_WINDOW;
 Ticker _relaySaveTicker;
 
 #if MQTT_SUPPORT
@@ -201,8 +203,6 @@ void _relayProviderStatus(unsigned char id, bool status) {
  */
 void _relayProcess(bool mode) {
 
-    unsigned long current_time = millis();
-
     for (unsigned char id = 0; id < _relays.size(); id++) {
 
         bool target = _relays[id].target_status;
@@ -230,8 +230,8 @@ void _relayProcess(bool mode) {
                 break;
         }
 
-        // Only process if the change_time has arrived
-        if (current_time < _relays[id].change_time) continue;
+        // Only process if the change delay has expired
+        if (millis() - _relays[id].change_start < _relays[id].change_delay) continue;
 
         DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
 
@@ -360,14 +360,13 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
     } else {
 
         unsigned long current_time = millis();
-        unsigned long fw_end = _relays[id].fw_start + 1000 * RELAY_FLOOD_WINDOW;
-        unsigned long delay = status ? _relays[id].delay_on : _relays[id].delay_off;
 
         _relays[id].fw_count++;
-        _relays[id].change_time = current_time + delay;
+        _relays[id].change_start = current_time;
+        _relays[id].change_delay = status ? _relays[id].delay_on : _relays[id].delay_off;
 
         // If current_time is off-limits the floodWindow...
-        if (current_time < _relays[id].fw_start || fw_end <= current_time) {
+        if (millis() - _relays[id].fw_start > _relay_flood_window) {
 
             // We reset the floodWindow
             _relays[id].fw_start = current_time;
@@ -378,9 +377,10 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
             // We schedule the changes to the end of the floodWindow
             // unless it's already delayed beyond that point
-            if (fw_end - delay > current_time) {
-                _relays[id].change_time = fw_end;
-            }
+            _relays[id].change_delay = _relay_flood_window;
+
+            // Another option is to always move it forward, starting from current time
+            //_relays[id].fw_start = current_time;
 
         }
 
@@ -391,8 +391,8 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
         relaySync(id);
 
         DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled %s in %u ms\n"),
-                id, status ? "ON" : "OFF",
-                (_relays[id].change_time - current_time));
+            id, status ? "ON" : "OFF", _relays[id].change_delay
+        );
 
         changed = true;
 
@@ -448,7 +448,16 @@ void relaySync(unsigned char id) {
     } else if (status) {
         if (relaySync != RELAY_SYNC_ANY) {
             for (unsigned short i=0; i<_relays.size(); i++) {
-                if (i != id) relayStatus(i, false);
+                if (i != id) {
+                    relayStatus(i, false);
+                    // https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
+                    // completely reset timing on the other relay to sync with this one
+                    if (relayStatus(i)) {
+                        _relays[i].fw_start = _relays[id].change_time;
+                        _relays[i].fw_count = 1;
+                        _relays[id].change_delay += _relays[i].change_delay;
+                    }
+                }
             }
         }
 
@@ -620,9 +629,12 @@ void _relayBoot() {
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
-            _relays[i].change_time = millis() + 3000 + 1000 * i;
+            // XXX hack for correctly restoring relay state on boot
+            // because of broken stm relay firmware
+            _relays[i].change_start = millis();
+            _relays[i].change_delay = 3000 + 1000 * i;
         #else
-            _relays[i].change_time = millis();
+            _relays[i].change_start = millis();
         #endif
 
         _relays[i].lock = lock;
@@ -641,10 +653,39 @@ void _relayBoot() {
 
 }
 
+constexpr const unsigned long _relayDelayOn(unsigned char index) {
+    return (
+        (index == 0) ? RELAY1_DELAY_ON :
+        (index == 1) ? RELAY2_DELAY_ON :
+        (index == 2) ? RELAY3_DELAY_ON :
+        (index == 3) ? RELAY4_DELAY_ON :
+        (index == 4) ? RELAY5_DELAY_ON :
+        (index == 5) ? RELAY6_DELAY_ON :
+        (index == 6) ? RELAY7_DELAY_ON :
+        (index == 7) ? RELAY8_DELAY_ON : 0
+    );
+}
+
+constexpr const unsigned long _relayDelayOff(unsigned char index) {
+    return (
+        (index == 0) ? RELAY1_DELAY_OFF :
+        (index == 1) ? RELAY2_DELAY_OFF :
+        (index == 2) ? RELAY3_DELAY_OFF :
+        (index == 3) ? RELAY4_DELAY_OFF :
+        (index == 4) ? RELAY5_DELAY_OFF :
+        (index == 5) ? RELAY6_DELAY_OFF :
+        (index == 6) ? RELAY7_DELAY_OFF :
+        (index == 7) ? RELAY8_DELAY_OFF : 0
+    );
+}
+
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
         _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+
+        _relays[i].delay_on = getSetting("relayDelayOn", i, _relayDelayOn(i)).toInt();
+        _relays[i].delay_off = getSetting("relayDelayOff", i, _relayDelayOff(i)).toInt();
 
         if (GPIO_NONE == _relays[i].pin) continue;
 
@@ -657,6 +698,8 @@ void _relayConfigure() {
             digitalWrite(_relays[i].pin, HIGH);
         }
     }
+
+    _relay_flood_window = getSetting("relayFlood", RELAY_FLOOD_WINDOW).toInt();
 
     #if MQTT_SUPPORT
         settingsProcessConfig({
@@ -1133,6 +1176,18 @@ void _relayInitCommands() {
         terminalOK();
     });
 
+    terminalRegisterCommand(F("RELAY.INSPECT"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("pin type reset  delay_on   delay_off  pulse  pulse_ms\n"
+                         "--- ---- ----- ---------- ----------- ----- ----------\n"));
+        for (const auto &relay : _relays) {
+            DEBUG_MSG_P(PSTR("%u,%-4u,%u,%-10u,%-10u,%u,%-10u\n"),
+                relay.pin, relay.type, relay.reset_pin,
+                relay.delay_on, relay.delay_off,
+                relay.pulse, relay.pulse_ms
+            );
+        }
+    });
+
 }
 
 #endif // TERMINAL_SUPPORT
@@ -1150,35 +1205,35 @@ void relaySetup() {
 
     // Ad-hoc relays
     #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN });
     #endif
     #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN });
     #endif
     #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN });
     #endif
     #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN });
     #endif
     #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN });
     #endif
     #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN });
     #endif
     #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN });
     #endif
     #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN });
     #endif
 
     // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
     // No delay_on or off for these devices to easily allow having more than
     // 8 channels. This behaviour will be recovered with v2.
     for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+        _relays.push_back((relay_t) { GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE });
     }
 
     _relayBackwards();
