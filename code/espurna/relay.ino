@@ -453,7 +453,7 @@ void relaySync(unsigned char id) {
                     // https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
                     // completely reset timing on the other relay to sync with this one
                     if (relayStatus(i)) {
-                        _relays[i].fw_start = _relays[id].change_time;
+                        _relays[i].fw_start = _relays[id].change_start;
                         _relays[i].fw_count = 1;
                         _relays[id].change_delay += _relays[i].change_delay;
                     }
