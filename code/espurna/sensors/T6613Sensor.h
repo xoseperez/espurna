@@ -163,7 +163,7 @@ class T6613Sensor : public BaseSensor {
                 && (buffer[2] == 0x02)) {
 
                 unsigned int value = buffer[3] * 256 + buffer[4];
-                if (0 <= value && value <= 2000) {
+                if (0 <= value && value <= 5000) {
                     _co2 = value;
                     _error = SENSOR_ERROR_OK;
                 } else {
