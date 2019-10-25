@@ -1,8 +1,10 @@
 <template>
     <span v-if="type === 'select'" class="select">
-        <select v-model="value" v-bind="$attrs">
-            <option v-for="(l, k) in options" :key="key(k,l)" :value="key(k,l)">{{label(k,l)}}</option>
+        <select v-if="!multiple" v-model="value" v-bind="$attrs">
+            <option v-for="{l, k} in _options" :key="k" :value="k">{{l}}</option>
         </select>
+        <MultiSelect v-else v-model="value" v-bind="$attrs"
+                     :options="_options"/>
         &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
     </span>
     <span v-else-if="type === 'switch'" class="switch">
@@ -17,7 +19,8 @@
     <span v-else-if="type === 'file'" class="file">
         <input :type="type"
                v-bind="$attrs"
-               @change="(evt) => $emit('change', $attrs.multiple ? evt.target.files : evt.target.files[0])">
+               :multiple="multiple"
+               @change="(evt) => $emit('change', multiple ? evt.target.files : evt.target.files[0])">
     </span>
     <span v-else :class="'input input-'+type">
         <input v-model="value" :type="type" v-bind="$attrs" @change="() => $emit('change')">
@@ -26,7 +29,12 @@
 </template>
 
 <script>
+    import MultiSelect from "./MultiSelect";
+
     export default {
+        components: {
+            MultiSelect
+        },
         inheritAttrs: false,
         props: {
             type: {
@@ -55,6 +63,10 @@
             unit: {
                 type: String,
                 required: false
+            },
+            multiple: {
+                type: Boolean,
+                default: false
             }
         },
         data() {
@@ -73,8 +85,42 @@
             },
             form() {
                 return this.$form ? this.$form() : false;
+            },
+            _options() {
+                let options = [];
+
+                this.options.forEach((v, k) => {
+                    options.push({k: this.key(k, v), l: this.label(k, v)})
+                });
+
+                return options;
+            },/*
+            multiSelectValue: {
+                get() {
+                    let val = [];
+                    if (this.value) {
+                        this.value.forEach((v) => {
+                            val.push(this._options.find((el) => {
+                                return el.k === v
+                            }));
+                        });
+                    }
+                    return val;
+                },
+                set(val) {
+                    this.value = val.map((v) => {
+                        return v.k;
+                    })
+                }
+            }*/
+        },/*
+        watch: {
+            multiSelectValue(val) {
+                this.value = val.map((v) => {
+                    return v.k;
+                })
             }
-        },
+        },*/
         mounted() {
             if (this.default !== null) {
                 this.value = this.default;

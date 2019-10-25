@@ -195,10 +195,11 @@
             daysOfWeek() {
                 let days = [];
 
-                let d = new Date();
-                for (let i = 0; i < 7; i++) {
-                    d.setDate(i);
+                let d = new Date(0);
+                for (let i = 0; i < 7; ++i) {
+                    d.setDate(i+5);
                     let s = d.toLocaleString(navigator.language, {weekday: 'long'});
+                    s = s.charAt(0).toUpperCase() + s.slice(1);
                     days.push({k: i + 1, l: s});
                 }
 
