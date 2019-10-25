@@ -492,7 +492,7 @@ void _wsUpdate(JsonObject& root) {
 
     device["uptime"] = getUptime();
     device["heap"] = getFreeHeap();
-    device["loadaverage"] = systemLoadAverage();
+    device["load_average"] = systemLoadAverage();
     #if ADC_MODE_VALUE == ADC_VCC
         device["vcc"] = ESP.getVcc();
     #endif

@@ -678,15 +678,24 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    JsonObject& state = root.createNestedObject("relayState");
+    JsonObject& module = root.createNestedObject("relay");
+    JsonObject& state = module.createNestedObject("state");
+
+    JsonArray& schema state.createNestedArray["schema"];
+    JsonArray& list state.createNestedArray["list"];
+
+    schema.add("status");
+    schema.add("lock");
+
     state["size"] = relayCount();
 
     JsonArray& status = state.createNestedArray("status");
     JsonArray& lock = state.createNestedArray("lock");
 
     for (unsigned char i=0; i<relayCount(); i++) {
-        status.add<uint8_t>(_relays[i].target_status);
-        lock.add(_relays[i].lock);
+        JsonArray& relay = list.createNestedArray();
+        relay.add<uint8_t>(_relays[i].target_status);
+        relay.add(_relays[i].lock);
     }
 }
 
@@ -722,8 +731,9 @@ String _relayFriendlyName(unsigned char i) {
 
 void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& module = root.createNestedObject("relay");
+    JsonObject& config = module.createNestedArray("config");
 
-    JsonArray& schema = module.createNestedArray("schema");
+    JsonArray& schema = config.createNestedArray("schema");
     schema.add("gpio");
     schema.add("type");
     schema.add("reset");
@@ -737,9 +747,9 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         schema.add("on_disc");
     #endif
 
-    module["start"] = 0;
+    config["start"] = 0;
 
-    JsonArray& relays = module.createNestedArray("list");
+    JsonArray& relays = config.createNestedArray("list");
 
     for (unsigned char i=0; i<relayCount(); i++) {
         JsonArray& relay = relays.createNestedArray()

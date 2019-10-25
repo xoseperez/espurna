@@ -14,7 +14,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable Thingspeak</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="tspkEnabled"
                               tabindex="30"/>
                     </div>
@@ -23,7 +23,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Clear cache</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="tspkClear"
                               tabindex="31"/>
                     </div>

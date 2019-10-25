@@ -1,7 +1,10 @@
 <template>
-    <select v-if="type === 'select'" v-model="value" v-bind="$attrs">
-        <option v-for="(l, k) in options" :key="key(k,l)" :value="key(k,l)">{{label(k,l)}}</option>
-    </select>
+    <span v-if="type === 'select'" class="select">
+        <select v-model="value" v-bind="$attrs">
+            <option v-for="(l, k) in options" :key="key(k,l)" :value="key(k,l)">{{label(k,l)}}</option>
+        </select>
+        &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
+    </span>
     <span v-else-if="type === 'switch'" class="switch">
         <input :id="'switch-'+_uid" v-model="value" type="checkbox" v-bind="$attrs">
         <span class="layer"></span>
@@ -11,9 +14,15 @@
         <input v-model="value" :type="passType" v-bind="$attrs">
         <span class="no-select password-reveal" @click="togglePass">👁</span>
     </span>
-    <input v-else-if="type === 'file'" :type="type"
-           v-bind="$attrs" @change="(evt) => $emit('change', $attrs.multiple ? evt.target.files : evt.target.files[0])">
-    <input v-else v-model="value" :type="type" v-bind="$attrs" @change="() => $emit('change')">
+    <span v-else-if="type === 'file'" class="file">
+        <input :type="type"
+               v-bind="$attrs"
+               @change="(evt) => $emit('change', $attrs.multiple ? evt.target.files : evt.target.files[0])">
+    </span>
+    <span v-else :class="'input input-'+type">
+        <input v-model="value" :type="type" v-bind="$attrs" @change="() => $emit('change')">
+        &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
+    </span>
 </template>
 
 <script>
@@ -42,6 +51,10 @@
             default: {
                 type: undefined,
                 default: null
+            },
+            unit: {
+                type: String,
+                required: false
             }
         },
         data() {
@@ -49,7 +62,6 @@
                 passType: this.type
             }
         },
-        inject: {$form: {name: '$form', default: false}},
         computed: {
             value: {
                 get() {
@@ -63,6 +75,12 @@
                 return this.$form ? this.$form() : false;
             }
         },
+        mounted() {
+            if (this.default !== null) {
+                this.value = this.default;
+            }
+        },
+        inject: {$form: {name: '$form', default: false}},
         methods: {
             key(k, l) {
                 return typeof l === 'object' ? l.k : k
@@ -80,6 +98,22 @@
 
 <style lang="less">
     @import "../assets/Colors";
+
+    .unit {
+        position: absolute;
+        top: 10px;
+        color: #aaa;
+        right: 10px;
+        font-size: 1.1em;
+    }
+
+    .input {
+        position: relative;
+    }
+
+    .input-number .unit {
+        right: 30px;
+    }
 
     .switch {
         vertical-align: middle;
@@ -123,9 +157,11 @@
             &:checked ~ label {
                 left: 35px;
                 background-color: @secondary;
+
                 .off {
                     display: none;
                 }
+
                 .on {
                     display: inline;
                 }
@@ -135,7 +171,28 @@
                 background-color: lighten(@secondary, 40%);
                 box-shadow: inset 0 0 2px 0 @secondary;
             }
+
+            &[disabled] {
+                cursor: not-allowed;
+
+                ~ label {
+                    background-color: desaturate(@error, 60%);
+                }
+
+                &:checked ~ label {
+                    background-color: desaturate(@secondary, 60%);
+                }
+
+                + .layer {
+                    background-color: desaturate(lighten(@error, 30%), 100%);
+                }
+
+                &:checked + .layer {
+                    background-color: desaturate(lighten(@secondary, 30%), 100%);
+                }
+            }
         }
+
 
         .layer {
             width: 100%;

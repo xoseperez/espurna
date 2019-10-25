@@ -7,17 +7,20 @@
 
         <div class="page">
             <fieldset>
-                <div class="relays">
-                    <Row v-for="(val, relay) in relays.list" :key="relay">
-                        <C :size="2"><label>Switch #{{relay}}</label></C>
-                        <C :size="8">
-                            <Inpt :value="val" type="switch" name="relay"
-                                  on="ON"
-                                  off="OFF"
-                                  @input="() => {}"/>
-                        </C>
-                    </Row>
-                </div>
+                <Repeater v-if="relay.state" v-model="relay.state.list" class="relays" locked>
+                    <template #default="tpl">
+                        <Row>
+                            <C :size="2"><label>Switch #{{tpl.k}}</label></C>
+                            <C :size="8">
+                                <Inpt type="switch" name="status"
+                                      on="ON"
+                                      off="OFF"
+                                      :disabled="tpl.value.lock < 2"
+                                      @input="() => {}"/>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
 
                 <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
                 <template v-if="modules.light">
@@ -223,9 +226,11 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";
+    import Repeater from "../../components/Repeater";
 
     export default {
         components: {
+            Repeater,
             Hint,
             C,
             Row,
@@ -237,7 +242,7 @@
             version: {
                 type: Object,
             },
-            relays: {
+            relay: {
                 type: Object,
                 default: () => ({})
             },

@@ -9,7 +9,7 @@ export default function () {
             "device": {
                 "heap": 18536,
                 "uptime": 291842,
-                "loadaverage": 1,
+                "load_average": 1,
                 "vcc": 3058,
                 "now": 1571866442
             },
@@ -104,32 +104,100 @@ export default function () {
             {
                 "api": {"enabled": false, "key": "123456789ABCDEF", "realTime": false, "restFul": true}
             }, {
-                "relays": {
-                    "start": 0,
-                    "schema": [
-                        "gpio",
-                        "type",
-                        "reset",
-                        "boot",
-                        "pulse",
-                        "pulse_time",
-                        "group",
-                        "group_sync",
-                        "on_disc",
-                    ],
-                    "list": [
-                        [
-                            "GPIO12",
-                            0,
-                            153,
-                            0,
-                            1,
-                            1,
-                            "",
-                            0,
-                            0
+                "relay": {
+                    "config": {
+                        "start": 0,
+                        "schema": [
+                            "gpio",
+                            "type",
+                            "reset",
+                            "boot",
+                            "pulse",
+                            "pulse_time",
+                            "group",
+                            "group_sync",
+                            "on_disc",
+                        ],
+                        "list": [
+                            [
+                                "GPIO12",
+                                0,
+                                153,
+                                0,
+                                1,
+                                1,
+                                "",
+                                0,
+                                0
+                            ],
+                            [
+                                "GPIO13",
+                                0,
+                                153,
+                                0,
+                                1,
+                                1,
+                                "",
+                                0,
+                                0
+                            ],
+                            [
+                                "GPIO14",
+                                0,
+                                153,
+                                0,
+                                1,
+                                1,
+                                "",
+                                0,
+                                0
+                            ],
+                            [
+                                "GPIO15",
+                                0,
+                                153,
+                                0,
+                                1,
+                                1,
+                                "",
+                                0,
+                                0
+                            ]
+                        ],
+                    }
+                }
+            },
+            {
+                "relay": {
+                    "state": {
+                        "start": 0,
+                        "schema": [
+                            "status",
+                            "lock"
+                        ],
+                        "list": [
+                            [0, 2],
+                            [1, 2],
+                            [0, 1],
+                            [1, 1],
                         ]
+                    }
+                }
+            },
+            {
+                "schedule": {
+                    "max": 10,
+                    "schema": [
+                        "enabled",
+                        "UTC",
+                        "switch",
+                        "action",
+                        "type",
+                        "hour",
+                        "minute",
+                        "weekdays"
                     ],
+                    "list": []
                 }
             }
         ];

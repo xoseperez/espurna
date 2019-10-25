@@ -137,7 +137,7 @@
                 <div class="pure-g module module-mics">
                     <label class="pure-u-1 pure-u-lg-1-4">Calibrate gas sensor</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="snsResetCalibration"
                               tabindex="55"/>
                     </div>
@@ -217,7 +217,7 @@
                 <div class="pure-g module module-hlw module-cse module-emon">
                     <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="pwrResetCalibration"
                               tabindex="56"/>
                     </div>
@@ -232,7 +232,7 @@
                 <div class="pure-g module module-hlw module-cse module-emon module-pm">
                     <label class="pure-u-1 pure-u-lg-1-4">Reset energy</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="pwrResetE"
                               tabindex="57"/>
                     </div>

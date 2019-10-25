@@ -13,7 +13,7 @@
                 <div class="pure-g">
                     <label class="pure-u-1 pure-u-lg-1-4">Enable InfluxDB</label>
                     <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt type="checkbox"
+                        <Inpt type="switch"
                               name="idbEnabled"
                               tabindex="40"/>
                     </div>

@@ -6,8 +6,8 @@
                          :value="row.value"
                          :row="row.key"
                          @input="(val) => $emit('input', [...values].splice(i,1,val))">
-                <slot name="default" :value="row.value" :row="row" :remove="() => onRemove(row.key)"></slot>
-                <template #append>
+                <slot name="default" :value="row.value" :k="i" :row="row" :remove="() => onRemove(row.key)"></slot>
+                <template v-if="!locked" #append>
                     <slot name="btnRemove" :click="() => onRemove(row.key)" :row="row">
                         <Btn color="danger" @click="() => onRemove(row.key)">
                             Remove
@@ -16,7 +16,7 @@
                 </template>
             </RepeaterRow>
         </transition-group>
-        <slot name="btnAdd" :click="onAdd">
+        <slot v-if="!locked" name="btnAdd" :click="onAdd">
             <Btn @click="onAdd">
                 Add
             </Btn>
@@ -52,12 +52,22 @@
                 default: 8
             },
             name: {
-                type: String
-            }
+                type: String,
+                required: false
+            },
+            locked: {
+                type: Boolean,
+                default: false
+            },
+            value: {
+                type: Array,
+                required: false
+            },
         },
         data() {
             return {
-                key: 0
+                key: 0,
+                values: []
             }
         },
         computed: {
@@ -65,38 +75,53 @@
                 return this.$form ? this.$form() : false;
             },
             canAdd() {
-                return (!this.max || this.values.length < this.max)
+                return !this.locked && (!this.max || this.values.length < this.max)
             },
-            values: {
-                get() {
-                    return this.form.values[this.name];
-                },
-                set(v) {
-                    this.$set(this.form.values, this.name, v);
-                }
-            }
         },
         mounted() {
-            if (!this.values)
-                this.values = [];
+            this.setValues();
         },
         inject: {$form: {name: '$form', default: false}},
         methods: {
+            setValues() {
+                let values = [];
+
+                if (this.value) {
+                    this.value.forEach((v) => {
+                        /* eslint-disable-next-line vue/no-side-effects-in-computed-properties */
+                        let row = {key: this.key++, value: v};
+                        this.$emit('created', {row});
+                        values.push(row);
+                    })
+                } else if (this.name && this.form.values[this.name]) {
+                    this.form.values[this.name].forEach((v) => {
+                        /* eslint-disable-next-line vue/no-side-effects-in-computed-properties */
+                        let row = {key: this.key++, value: v};
+                        this.$emit('created', {row});
+                        values.push(row);
+                    })
+                }
+                this.values = values;
+            },
             onAdd(val) {
                 if (this.canAdd) {
-                    this.values.push({
+                    let row = {
                         key: this.key++,
                         value: typeof val !== 'undefined' ? val : {}
-                    });
+                    };
+                    this.$emit('created', {row});
+                    this.values.push(row);
                 }
             },
             onRemove(key) {
-                this.values = filterMap(this.values, (val) => {
-                    if (val.key === key) {
-                        return undefined;
-                    }
-                    return val;
-                });
+                if (!this.locked) {
+                    this.values = filterMap(this.values, (val) => {
+                        if (val.key === key) {
+                            return undefined;
+                        }
+                        return val;
+                    });
+                }
             }
         },
 

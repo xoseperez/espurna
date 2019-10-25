@@ -61,6 +61,10 @@
         flex-wrap: nowrap;
     }
 
+    .col.noWrap > * {
+        margin-right: 5px;
+    }
+
     .col.stretch > * {
         width: 100%;
     }

@@ -22,27 +22,39 @@ bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 void _schWebSocketOnConnected(JsonObject &root){
     if (!relayCount()) return;
 
-    JsonArray& schedules = root.createNestedArray("schedules");
+    JsonObject& module = root.createNestedObject("schedule");
 
-    root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
+    module["max"] = SCHEDULER_MAX_SCHEDULES;
 
     uint8_t size = 0;
+
+    JsonArray& schema = module.createNestedArray("schema");
+    JsonArray& list = module.createNestedArray("list");
+
+    schema.add("enabled");
+    schema.add("UTC");
+    schema.add("switch");
+    schema.add("action");
+    schema.add("type");
+    schema.add("hour");
+    schema.add("minute");
+    schema.add("weekdays");
 
 
     for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!hasSetting("schSwitch", i)) break;
         ++size;
         
-        JsonObject& schedule = schedules.createNestedObject();
+        JsonArray& schedule = list.createNestedArray();
 
-        schedule["enabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
-        schedule["UTC"] = getSetting("schUTC", i, 0).toInt() == 1;
-        schedule["switch"] = getSetting("schSwitch", i, 0).toInt();
-        schedule["action"] = getSetting("schAction", i, 0).toInt();
-        schedule["type"] = getSetting("schType", i, 0).toInt();
-        schedule["hour"] = getSetting("schHour", i, 0).toInt();
-        schedule["minute"] = getSetting("schMinute", i, 0).toInt();
-        schedule["weekdays"] = getSetting("schWDs", i, "");
+        schedule.add(getSetting("schEnabled", i, 1).toInt() == 1); //enabled
+        schedule.add(getSetting("schUTC", i, 0).toInt() == 1); //UTC
+        schedule.add(getSetting("schSwitch", i, 0).toInt()); //switch
+        schedule.add(getSetting("schAction", i, 0).toInt()); //action
+        schedule.add(getSetting("schType", i, 0).toInt()); //type
+        schedule.add(getSetting("schHour", i, 0).toInt()); //hour
+        schedule.add(getSetting("schMinute", i, 0).toInt()); //minute
+        schedule.add(getSetting("schWDs", i, "")); //weekdays
     }
 }
 

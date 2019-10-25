@@ -35,98 +35,98 @@
             </template>
 
             <template #general>
-                <General/>
+                <General v-bind="data"/>
             </template>
 
             <template #admin>
-                <Admin/>
+                <Admin v-bind="data"/>
             </template>
 
             <template v-if="data.modules.mqtt" #mqtt>
-                <Mqtt/>
+                <Mqtt v-bind="data"/>
             </template>
 
             <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
             <template v-if="data.modules.thermostat" #thermostat>
-                <Tstat/>
+                <Tstat v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LED === 'true' -->
             <template v-if="data.modules.led" #led>
-                <Led :leds="{}"/>
+                <Led v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
             <template v-if="data.modules.light" #color>
-                <Color/>
+                <Color v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
             <template v-if="data.modules.rfm69" #rfm69>
-                <Rfm69/>
+                <Rfm69 v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
             <template v-if="data.modules.rfb" #rfb>
-                <Rfb/>
+                <Rfb v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
             <template v-if="data.modules.sns" #sns>
-                <Sns/>
+                <Sns v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
             <template v-if="data.modules.relay" #relays>
-                <Relays/>
+                <Relays v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
             <template v-if="data.modules.lightfox" #lightfox>
-                <Lfox :buttons="{}" :relay-options="relayOptions"/>
+                <Lfox v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_DCZ === 'true' -->
             <template v-if="data.modules.dcz" #dcz>
-                <Dcz/>
+                <Dcz v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_HA === 'true' -->
             <template v-if="data.modules.ha" #ha>
-                <Ha/>
+                <Ha v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_ALEXA === 'true' -->
             <template v-if="data.modules.alexa" #alexa>
-                <Alexa/>
+                <Alexa v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
             <template v-if="data.modules.tspk" #thingspeak>
-                <Tspk/>
+                <Tspk v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_IDB === 'true' -->
             <template v-if="data.modules.idb" #idb>
-                <Idb/>
+                <Idb v-bind="data"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
             <template v-if="data.modules.nofuss" #nofuss>
-                <Nfss/>
+                <Nfss v-bind="data"/>
             </template>
             <!-- #endif -->
         </Menu>
@@ -148,74 +148,8 @@
         </div>
 
 
-        <div id="switchActionTemplate" class="template">
-            <label class="pure-u-1 pure-u-lg-1-4">Action</label>
-            <div class="pure-u-1 pure-u-lg-1-5">
-                <Inpt class="pure-u-1 pure-u-lg-23-24" name="schAction"
-                      :options="['Turn Off', 'Turn On', 'Toggle']"/>
-            </div>
-            <Inpt class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch" :options="relayOptions"/>
-            <Inpt type="hidden" name="schType" value="1"/>
-        </div>
-
-
-        <div id="scheduleTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
-                <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <Inpt class="pure-u-2-3"
-                          name="schHour"
-                          type="number"
-                          min="0"
-                          step="1"
-                          max="23"
-                          value="0"/>
-                    <div class="pure-u-1-4 hint center">&nbsp;h</div>
-                </div>
-                <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <Inpt class="pure-u-2-3"
-                          name="schMinute"
-                          type="number"
-                          min="0"
-                          step="1"
-                          max="59"
-                          value="0"/>
-                    <div class="pure-u-1-4 hint center">&nbsp;m</div>
-                </div>
-                <div class="pure-u-0 pure-u-lg-1-3"></div>
-
-                <label class="pure-u-1 pure-u-lg-1-4">Use UTC time</label>
-                <div class="pure-u-1 pure-u-lg-3-4">
-                    <Inpt type="switch" name="schUTC"/>
-                </div>
-
-                <div class="pure-u-0 pure-u-lg-1-2"></div>
-                <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
-                <div class="pure-u-2-5 pure-u-lg-1-5">
-                    <Inpt class="pure-u-23-24 pure-u-lg-23-24"
-                          name="schWDs"
-                          type="text"
-                          maxlength="15"
-                          tabindex="0"
-                          value="1,2,3,4,5,6,7"/>
-                </div>
-                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday...</div>
-
-                <div id="schActionDiv" class="pure-u-1">
-                </div>
-
-                <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
-                <div class="pure-u-1 pure-u-lg-3-4">
-                    <Inpt type="switch" name="schEnabled"/>
-                </div>
-
-                <div class="pure-u-1 pure-u-lg-1-2"></div>
-                <Btn name="del-schedule" color="danger">Delete schedule</Btn>
-            </div>
-
-            <iframe id="downloader"></iframe>
-            <input id="uploader" type="file"/>
-        </div>
+        <iframe id="downloader"></iframe>
+        <input id="uploader" type="file"/>
     </Form>
 </template>
 
@@ -389,15 +323,6 @@
             }
         },
         computed: {
-            relayOptions() {
-                let options = [];
-                if ("relays" in this.data) {
-                    for (let i = 0; i < this.data.relays.length; ++i) {
-                        options.push("Switch #" + i);
-                    }
-                }
-                return options;
-            },
             lightOptions() {
                 let options = [];
                 if ("light" in this.data) {
@@ -497,7 +422,7 @@
                             }
                         }
 
-                        this.prepareData( target[k], val);
+                        this.prepareData(target[k], val);
                     } else {
                         this.$set(target, k, val);
                     }
@@ -729,7 +654,7 @@
     textarea {
         overflow: auto;
         width: 100% !important;
-        height: 300px;
+        height: 200px;
     }
 
     table {
