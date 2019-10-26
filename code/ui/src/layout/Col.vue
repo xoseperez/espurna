@@ -15,6 +15,10 @@
                 type: Number,
                 default: 0
             },
+            outset: {
+                type: Number,
+                default: 0
+            },
             stretch: {
                 type: Boolean,
                 default: false
@@ -35,6 +39,8 @@
                     style += 'width:' + this.size * 10 + '%;';
                 if (this.offset)
                     style += 'margin-left:' + this.offset * 10 + '%;';
+                if (this.outset)
+                    style += 'margin-right:' + this.outset * 10 + '%;';
 
                 return style;
             }
@@ -46,10 +52,12 @@
     .col {
         width: 50%;
         flex-grow: 1;
+        padding: 0 5px;
     }
 
     .form .row .col:nth-of-type(odd) {
         width: 25% !important;
+        text-align: right;
     }
 
     .form .row .col:nth-of-type(even) {

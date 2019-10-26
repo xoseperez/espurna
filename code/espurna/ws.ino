@@ -814,9 +814,8 @@ void wsSetup() {
     // CORS
     const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", webDomain);
-    if (!webDomain.equals("*")) {
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
-    }
+    DefaultHeaders::Instance().addHeader("Powered-by", "espurna," + APP_VERSION);
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
 
     webServer()->on("/auth", HTTP_GET, _onAuth);
 

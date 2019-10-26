@@ -341,7 +341,6 @@
 
     .state .row .col:nth-child(odd) {
         text-align: right;
-        padding-right: 20px;
     }
 
     .state .row .col:nth-child(even) {

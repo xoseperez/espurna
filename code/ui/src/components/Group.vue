@@ -1,12 +1,5 @@
 <template>
-    <div class="repeater-row">
-        <div class="repeater-row-inner">
-            <slot name="default"></slot>
-        </div>
-        <div class="append-wrapper">
-            <slot name="append"></slot>
-        </div>
-    </div>
+    <div class="group"><slot></slot></div>
 </template>
 
 <script>
@@ -26,7 +19,3 @@
         }
     }
 </script>
-
-<style lang="less">
-
-</style>

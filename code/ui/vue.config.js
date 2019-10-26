@@ -6,6 +6,9 @@ const path = require("path");
 
 module.exports = {
     publicPath: '',
+    pwa: {
+        serviceWorker: process.env.NODE_ENV !== 'production',
+    },
     //runtimeCompiler: true,
     configureWebpack() {
         return process.env.NODE_ENV === 'production' ? {
@@ -61,11 +64,15 @@ module.exports = {
                 return options
             });
 
+        config.module.rule('ico').test(/\.ico$/).use("url-loader").loader("url-loader");
 
         config.module.rule("vue").use("webpack-conditional-loader").loader("webpack-conditional-loader");
         config.module.rule("js").use("webpack-conditional-loader").loader("webpack-conditional-loader");
 
         if (process.env.NODE_ENV === 'production') {
+
+            config.plugins.delete('pwa');
+
             config.plugin("preload")
                 .tap(args => {
                     args[0].fileBlacklist.push(/\.css/, /\.js/);

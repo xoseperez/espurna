@@ -773,7 +773,6 @@ void _relayWebSocketOnVisible(JsonObject& root) {
 
     JsonObject& modules = root.get('modules');
     if (relayCount() > 1) {
-        modules["multirelay"] = 1;
         modules["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 

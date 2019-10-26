@@ -4,7 +4,7 @@
             <h1>ADMINISTRATION</h1>
             <h2>Device administration and security settings</h2>
         </div>
-        <div class="page form">
+        <Group v-model="device" class="page form">
             <fieldset>
                 <Row>
                     <C>
@@ -12,7 +12,10 @@
                     </C>
                     <C stretch>
                         <Btn name="settings-backup">Backup</Btn>
-                        <Btn name="settings-restore" color="primary">Restore</Btn>
+                        <Btn name="settings-restore" color="primary" @click="() => $refs.restoreFile.el.click()">
+                            Restore
+                        </Btn>
+                        <Inpt ref="restoreFile" name="restore" type="file" @change="(file) => { restoreFile = file }"/>
                         <Btn name="settings-factory" color="danger">Factory Reset</Btn>
                     </C>
                 </Row>
@@ -90,11 +93,9 @@
                 </Row>
                 <Row ref="api">
                     <C><label>HTTP API Key</label></C>
-                    <C>
-                        <Row>
-                            <Inpt name="apiKey" type="text" tabindex="14"/>
-                            <Btn name="apikey" color="primary">Auto</Btn>
-                        </Row>
+                    <C no-wrap>
+                        <Inpt name="apiKey" type="text" tabindex="14"/>
+                        <Btn name="apikey" color="primary">Auto</Btn>
                         <Hint>
                             This is the key you will have to pass with every HTTP
                             request to the API, either to get or write values. All API calls must contain the
@@ -147,8 +148,8 @@
                     <C><label>Upgrade</label></C>
                     <C>
                         <Row>
-                            <input name="filename" type="text" :value="filename"
-                                   @click="() => $refs.upgradeFile.$el.click()" readonly>
+                            <input type="text" :value="upgradeFile.name"
+                                   readonly @click="() => $refs.upgradeFile.$el.click()">
                             <Btn ref="browse" name="upgrade-browse" @click="() => $refs.upgradeFile.$el.click()">
                                 Browse
                             </Btn>
@@ -163,7 +164,9 @@
                         <Row>
                             <progress id="upgrade-progress"></progress>
                         </Row>
-                        <Inpt ref="upgradeFile" name="upgrade" type="file" tabindex="17" @change="fileSelected"/>
+                        <Inpt ref="upgradeFile" name="upgrade" type="file"
+                              tabindex="17"
+                              @change="(file) => {upgradeFile = file}"/>
                     </C>
                 </Row>
             </fieldset>
@@ -212,7 +215,7 @@
                     </Row>
                 </fieldset>
             </div>
-        </div>
+        </Group>
     </section>
 </template>
 <script>
@@ -222,14 +225,16 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";
+    import Group from "../../components/Group";
 
     export default {
-        components: {Hint, C, Row, Inpt, Btn, A},
+        components: {Group, Hint, C, Row, Inpt, Btn, A},
         inheritAttrs: false,
         data() {
             return {
                 status: {},
-                filename: ""
+                upgradeFile: {},
+                restoreFile: {},
             }
         },
         computed: {
@@ -254,11 +259,7 @@
                 return offsets;
             }
         },
-        methods: {
-            fileSelected(file) {
-                this.filename = file.name;
-            }
-        }
+        methods: {}
     }
 </script>
 <style>

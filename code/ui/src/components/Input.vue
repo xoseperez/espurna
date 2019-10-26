@@ -1,29 +1,30 @@
 <template>
     <span v-if="type === 'select'" class="select">
-        <select v-if="!multiple" v-model="value" v-bind="$attrs">
+        <select v-if="!multiple" ref="input" v-model="val" v-bind="$attrs">
+            <option v-if="$attrs.placeholder" value="" disabled :selected="!val">{{$attrs.placeholder}}</option>
             <option v-for="{l, k} in _options" :key="k" :value="k">{{l}}</option>
         </select>
-        <MultiSelect v-else v-model="value" v-bind="$attrs"
-                     :options="_options"/>
+        <MultiSelect v-else v-model="val"
+                     v-bind="$attrs" :options="_options"/>
         &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
     </span>
     <span v-else-if="type === 'switch'" class="switch">
-        <input :id="'switch-'+_uid" v-model="value" type="checkbox" v-bind="$attrs">
+        <input ref="input" :id="'switch-'+_uid" v-model="val" type="checkbox" v-bind="$attrs">
         <span class="layer"></span>
         <label :for="'switch-'+_uid"><span class="on">{{on}}</span><span class="off">{{off}}</span></label>
     </span>
     <span v-else-if="type === 'password'" class="password">
-        <input v-model="value" :type="passType" v-bind="$attrs">
+        <input ref="input" v-model="val" :type="passType" v-bind="$attrs">
         <span class="no-select password-reveal" @click="togglePass">👁</span>
     </span>
     <span v-else-if="type === 'file'" class="file">
-        <input :type="type"
-               v-bind="$attrs"
+        <input ref="input"
+               :type="type" v-bind="$attrs"
                :multiple="multiple"
                @change="(evt) => $emit('change', multiple ? evt.target.files : evt.target.files[0])">
     </span>
     <span v-else :class="'input input-'+type">
-        <input v-model="value" :type="type" v-bind="$attrs" @change="() => $emit('change')">
+        <input ref="input" v-model="val" :type="type" v-bind="$attrs" @change="() => $emit('change')">
         &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
     </span>
 </template>
@@ -43,7 +44,11 @@
             },
             name: {
                 type: String,
-                required: true
+                required: false
+            },
+            value: {
+                type: [String, Number, Array],
+                required: false
             },
             on: {
                 type: String,
@@ -57,7 +62,7 @@
                 type: Array
             },
             default: {
-                type: undefined,
+                type: [String, Number, Array],
                 default: null
             },
             unit: {
@@ -75,12 +80,14 @@
             }
         },
         computed: {
-            value: {
+            val: {
                 get() {
-                    return this.form && this.form.values && this.name in this.form.values ? this.form.values[this.name] : this.default;
+                    return this.value ? this.value : (this.form && this.form.values && this.name in this.form.values ? this.form.values[this.name] : this.default);
                 },
                 set(v) {
-                    this.$set(this.form.values, this.name, v);
+                    if (this.name)
+                        this.$set(this.form.values, this.name, v);
+                    this.$emit('input', v);
                 }
             },
             form() {
@@ -94,36 +101,17 @@
                 });
 
                 return options;
-            },/*
-            multiSelectValue: {
-                get() {
-                    let val = [];
-                    if (this.value) {
-                        this.value.forEach((v) => {
-                            val.push(this._options.find((el) => {
-                                return el.k === v
-                            }));
-                        });
-                    }
-                    return val;
-                },
-                set(val) {
-                    this.value = val.map((v) => {
-                        return v.k;
-                    })
-                }
-            }*/
-        },/*
-        watch: {
-            multiSelectValue(val) {
-                this.value = val.map((v) => {
-                    return v.k;
-                })
-            }
-        },*/
+            },
+        },
         mounted() {
-            if (this.default !== null) {
-                this.value = this.default;
+            if (this.val === undefined || this.val === null) {
+                if (this.default !== null) {
+                    this.val = this.default;
+                } else if (this.type === 'select' && !this.placeholder) {
+                    this.val = 0;
+                } else if (this.type === 'number' && "min" in this.$attrs) {
+                    this.val = this.$attrs.min;
+                }
             }
         },
         inject: {$form: {name: '$form', default: false}},
@@ -135,8 +123,10 @@
                 return typeof l === 'object' ? l.l : l
             },
             togglePass() {
-                console.log('reveal clicked');
                 this.passType = (this.passType === 'text' ? 'password' : 'text');
+            },
+            setVisible() {
+                this.passType = 'text';
             }
         },
     };
@@ -147,17 +137,20 @@
 
     .unit {
         position: absolute;
-        top: 10px;
+        top: 0;
+        line-height: 1em;
         color: #aaa;
         right: 10px;
         font-size: 1.1em;
     }
 
-    .input {
-        position: relative;
-    }
 
-    .input-number .unit {
+    .input, .password {
+        position: relative;
+        width: 100%;
+    }
+    .input-number input:hover + .unit,
+    .input-number input:focus + .unit {
         right: 30px;
     }
 
@@ -271,7 +264,7 @@
 
     }
 
-    input[type=file] {
+    .file {
         opacity: 0;
         position: absolute;
     }
@@ -315,18 +308,6 @@
         }
     }
 
-    input[type=color] {
-        padding: .2em .5em
-    }
-
-    input[type=checkbox]:focus, input[type=radio]:focus {
-        outline: 1px auto #129fea;
-
-        &:invalid {
-            outline-color: #e9322d
-        }
-    }
-
     select {
         height: 2.25em;
         border: 1px solid #ccc;
@@ -337,25 +318,16 @@
         }
     }
 
-    span.password {
-        width: 100%;
-    }
-
     .password-reveal {
         font-family: EmojiSymbols, Segoe UI Symbol;
-        display: inline-block;
-        float: right;
-        z-index: 50;
-        margin-top: 6px;
-        margin-right: 10px;
-        margin-left: -30px;
-        vertical-align: middle;
+        top: 0;
+        line-height: 1em;
+        position: absolute;
+        right: 12px;
         font-size: 1.2em;
-        height: 100%;
         user-select: none;
         cursor: pointer;
         color: #ccc;
-        position: relative;
 
         &:after {
             content: "";
@@ -364,13 +336,13 @@
             width: 100%;
             background: #ccc;
             transform: rotate(45deg);
-            top: 46%;
+            top: 44%;
             position: absolute;
         }
     }
 
     input[type="text"] + .password-reveal {
-        color: rgba(66, 184, 221, 0.8);
+        color: @secondary;
 
         &:after {
             display: none;

@@ -84,11 +84,18 @@ void _ledWebSocketOnVisible(JsonObject& root) {
 
 void _ledWebSocketOnConnected(JsonObject& root) {
     if (_ledCount() == 0) return;
-    JsonArray& leds = root.createNestedArray("leds");
+    JsonObject& led = root.createNestedObject("led");
+
+    JsonArray& schema = led.createNestedArray("schema");
+
+    schema.add("mode");
+    schema.add("relay");
+
+    JsonArray& leds = root.createNestedArray("list");
     for (byte i=0; i<_ledCount(); i++) {
         JsonObject& led = leds.createNestedObject();
-        led["mode"] = getSetting("ledMode", i, "").toInt();
-        led["relay"] = getSetting("ledRelay", i, "").toInt();
+        led.add(getSetting("ledMode", i, "").toInt());
+        led.add(getSetting("ledRelay", i, "").toInt());
     }
 }
 

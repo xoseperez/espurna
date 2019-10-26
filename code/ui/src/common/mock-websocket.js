@@ -199,6 +199,19 @@ export default function () {
                     ],
                     "list": []
                 }
+            },
+            {
+                "led": {
+                    "schema": [
+                        "mode",
+                        "relay"
+                    ],
+                    "list": [
+                        [3, 1],
+                        [9, 0],
+                        [7, 0]
+                    ]
+                }
             }
         ];
 

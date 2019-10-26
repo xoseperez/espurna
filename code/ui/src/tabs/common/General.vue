@@ -41,27 +41,6 @@
                         </Hint>
                     </C>
                 </Row>
-
-                <Row>
-                    <C><label>Double click delay</label></C>
-                    <C>
-                        <Inpt name="btnDelay"
-                              type="number"
-                              action="reboot"
-                              min="0"
-                              step="100"
-                              max="1000"
-                              tabindex="6"/>
-                        <Hint>
-                            Delay in milliseconds to detect a double click (from 0 to 1000ms).<br> The lower this number
-                            the faster the device will respond to button clicks but the harder it will be to get a
-                            double click. Increase this number if you are having trouble to double click the button. Set
-                            this value to 0 to disable double click. You won't be able to set the device in AP mode
-                            manually but your device will respond immediately to button clicks.<br> You will have to
-                            <strong>reboot the device</strong> after updating for this setting to apply.
-                        </Hint>
-                    </C>
-                </Row>
             </fieldset>
             <fieldset>
                 <legend>Wifi</legend>
@@ -103,7 +82,7 @@
                                       placeholder="Network SSID"
                                       required
                                       autocomplete="network-ssid"/>
-                                <Btn @click="() => {log(tpl.row); $set(tpl.row, 'more', !tpl.row.more) }">...</Btn>
+                                <Btn @click="() => { $set(tpl.row, 'more', !tpl.row.more) }">...</Btn>
                             </C>
                             <template v-if="tpl.row.more">
                                 <C><label>Password</label></C>
@@ -196,6 +175,7 @@
             Btn,
             Inpt
         },
+        inheritAttrs: false,
         props: {
             wifi: {
                 type: Object,
@@ -214,9 +194,6 @@
                 this.scanResult = [];
                 this.$emit("action", "scan");
             },
-            log(v) {
-                console.log(v);
-            }
         }
     }
 </script>

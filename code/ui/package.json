@@ -7,15 +7,18 @@
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "build:dev": "vue-cli-service build --mode dev",
+    "build:pwa": "vue-cli-service build --mode pwa",
     "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
     "core-js": "^2.6.5",
+    "register-service-worker": "^1.6.2",
     "vue": "^2.6.10"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.11.0",
     "@vue/cli-plugin-eslint": "^3.11.0",
+    "@vue/cli-plugin-pwa": "^4.0.5",
     "@vue/cli-plugin-unit-jest": "^4.0.4",
     "@vue/cli-service": "^3.11.0",
     "@vue/eslint-config-standard": "^4.0.0",

@@ -5,88 +5,161 @@
             <h2>Switch / relay configuration</h2>
         </div>
 
-        <div class="page form">
+        <Group v-model="relay.config" class="page">
             <fieldset>
-                <legend class="module module-multirelay">General</legend>
+                <template v-if="relay.config.list.length > 1">
+                    <legend>General</legend>
 
-                <div class="pure-g module module-multirelay">
-                    <label class="pure-u-1 pure-u-lg-1-4">Switch sync mode</label>
-                    <select name="relaySync">
-                        <option value="0">No synchronisation</option>
-                        <option value="1">Zero or one switches active</option>
-                        <option value="2">One and just one switch active</option>
-                        <option value="3">All synchronised</option>
-                        <option value="4">Switch #0 controls other switches</option>
-                    </select>
-                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <Hint>
-                        Define how the different switches should be
-                        synchronized.
-                    </Hint>
-                </div>
+                    <Row>
+                        <C><label>Switch sync mode</label></C>
+                        <C>
+                            <Inpt type="select" name="sync" :options="[
+                                'No synchronisation',
+                                'Zero or one switches active',
+                                'One and just one switch active',
+                                'All synchronised',
+                                'Switch #0 controls all other switches'
+                            ]"/>
+                            <Hint>
+                                Define how the different switches should be
+                                synchronized.
+                            </Hint>
+                        </C>
+                    </Row>
+                </template>
 
-                <div id="relayConfig"></div>
-                <div id="relayConfigTemplate" class="template">
-                    <legend>Switch #<span class="id"></span> (<span class="gpio"></span>)</legend>
-                    <div class="pure-g">
-                        <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
-                        <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">
-                            <option value="0">Always OFF</option>
-                            <option value="1">Always ON</option>
-                            <option value="2">Same as before</option>
-                            <option value="3">Toggle before</option>
-                            <option value="4">Locked OFF</option>
-                            <option value="5">Locked ON</option>
-                        </select>
-                    </div>
-                    <div class="pure-g">
-                        <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse mode</label></div>
-                        <select class="pure-u-1 pure-u-lg-3-4" name="relayPulse">
-                            <option value="0">Don't pulse</option>
-                            <option value="1">Normally OFF</option>
-                            <option value="2">Normally ON</option>
-                        </select>
-                    </div>
-                    <div class="pure-g">
-                        <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse time (s)</label></div>
-                        <div class="pure-u-1 pure-u-lg-1-4">
-                            <Inpt name="relayTime"
-                                  class="pure-u-1"
-                                  type="number"
-                                  min="0"
-                                  step="0.1"
-                                  max="3600"/>
-                        </div>
-                    </div>
-                    <template v-if="modules.mqtt">
-                        <div class="pure-g module module-mqtt">
-                            <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
-                            <div class="pure-u-1 pure-u-lg-3-4">
-                                <Inpt name="mqttGroup"
-                                      class="pure-u-1"
-                                      data="0"
-                                      action="reconnect"/>
-                            </div>
-                        </div>
-                        <div class="pure-g module module-mqtt">
-                            <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group sync</label></div>
-                            <select class="pure-u-1 pure-u-lg-3-4" name="mqttGroupSync">
-                                <option value="0">Same</option>
-                                <option value="1">Inverse</option>
-                                <option value="2">Receive Only</option>
-                            </select>
-                        </div>
-                        <div class="pure-g module module-mqtt">
-                            <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                            <Inpt type="select" class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc"
-                                  :options="[
-                                      'Don\'t change',
-                                      'Turn the switch OFF',
-                                      'Turn the switch ON'
-                                  ]"/>
-                        </div>
+                <Repeater v-model="relay.config.list" locked class="switches">
+                    <template #default="tpl">
+                        <legend>Switch #{{tpl.k}} ({{tpl.value.gpio}})</legend>
+                        <Row>
+                            <C>
+                                <Row>
+                                    <C><label>Boot mode</label></C>
+                                    <C>
+                                        <Inpt type="select" name="boot"
+                                              :options="['Always OFF', 'Always ON', 'Same as before', 'Toggle before', 'Locked OFF', 'Locked ON']"/>
+                                    </C>
+                                </Row>
+                                <Row>
+                                    <C><label>Double click delay</label></C>
+                                    <C>
+                                        <Inpt name="dblDl"
+                                              type="number"
+                                              action="reboot"
+                                              min="0"
+                                              step="100"
+                                              max="1000"
+                                              tabindex="6"/>
+                                        <Hint>
+                                            Delay in milliseconds to detect a double click (from 0 to 1000ms).<br> The
+                                            lower
+                                            this number the faster the device will respond to button clicks but the
+                                            harder it
+                                            will be to get a double click. Increase this number if you are having
+                                            trouble to
+                                            double click the button. Set this value to 0 to disable double click. You
+                                            won't be
+                                            able to set the device in AP mode manually but your device will respond
+                                            immediately
+                                            to button clicks.
+                                        </Hint>
+                                    </C>
+                                </Row>
+                                <Row>
+                                    <C><label>Long click delay</label></C>
+                                    <C>
+                                        <Inpt name="lngDl"
+                                              type="number"
+                                              action="reboot"
+                                              min="0"
+                                              step="100"
+                                              max="1000"
+                                              tabindex="6" unit="ms"/>
+                                    </C>
+                                </Row>
+                            </C>
+                            <C>
+                                <Row>
+                                    <C><label>Pulse mode</label></C>
+                                    <C>
+                                        <Inpt type="select" name="pulse"
+                                              :options="['Don\'t pulse', 'Normally OFF', 'Normally ON']"/>
+                                    </C>
+                                </Row>
+                                <Row>
+                                    <C><label>Pulse time</label></C>
+                                    <C>
+                                        <Inpt name="pulse_time"
+                                              type="number"
+                                              min="0"
+                                              step="0.1"
+                                              max="3600" unit="s"/>
+                                    </C>
+                                </Row>
+
+                                <Row>
+                                    <C><label>Very long click delay</label></C>
+                                    <C>
+                                        <Inpt name="lngLngDl"
+                                              type="number"
+                                              action="reboot"
+                                              min="0"
+                                              step="100"
+                                              max="1000"
+                                              tabindex="6" unit="ms"/>
+                                    </C>
+                                </Row>
+                            </C>
+                        </Row>
+
+                        <template v-if="modules.mqtt">
+                            <Row>
+                                <C>
+                                    <Row>
+                                        <C><label>MQTT group</label></C>
+                                        <C>
+                                            <Inpt name="group"
+                                                  data="0"
+                                                  action="reconnect"/>
+                                        </C>
+                                    </Row>
+                                    <Row>
+                                        <C><label>Send all button events</label></C>
+                                        <C>
+                                            <Inpt type="switch"
+                                                  name="sendAllEvents"/>
+                                        </C>
+                                        <Hint>
+                                            If you need to receive double tap (code: 3) or long tap (code: 4) events,
+                                            enable
+                                            this
+                                        </Hint>
+                                    </Row>
+                                </C>
+                                <C>
+                                    <Row>
+                                        <C><label>MQTT group sync</label></C>
+                                        <C>
+                                            <Inpt type="select" name="group_sync"
+                                                  :options="['Same','Inverse', 'Receive Only']"/>
+                                        </C>
+                                    </Row>
+                                    <Row>
+                                        <C><label>On MQTT disconnect</label></C>
+                                        <C>
+                                            <Inpt type="select" name="on_disc"
+                                                  :options="[
+                                                      'Don\'t change',
+                                                      'Turn the switch OFF',
+                                                      'Turn the switch ON'
+                                                  ]"/>
+                                        </C>
+                                    </Row>
+                                </C>
+                            </Row>
+                        </template>
                     </template>
-                </div>
+                </Repeater>
             </fieldset>
             <fieldset v-if="modules.sch">
                 <legend>SCHEDULES</legend>
@@ -127,8 +200,9 @@
 
                             <C><label>Action</label></C>
                             <C no-wrap>
-                                <Inpt type="select" name="action" :options="['Turn OFF', 'Turn ON', 'Toggle']"/>
-                                <Inpt type="select" name="relay" :options="relayOptions"/>
+                                <Inpt type="select" name="action" :options="['Turn OFF', 'Turn ON', 'Toggle']"
+                                      placeholder="Select an action"/>
+                                <Inpt type="select" name="relay" :options="relayOptions" placeholder="Select a switch"/>
                                 <Inpt type="hidden" name="type" value="1"/>
                             </C>
 
@@ -146,7 +220,7 @@
                     </template>
                 </Repeater>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -157,9 +231,11 @@
     import Hint from "../../components/Hint";
     import C from "../../layout/Col";
     import Row from "../../layout/Row";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
             Row,
             C,
             Hint,
@@ -180,24 +256,18 @@
             schedule: {
                 type: Object,
                 default: () => ({})
+            },
+            relayOptions: {
+                type: Array
             }
         },
         computed: {
-            relayOptions() {
-                let options = [];
-                if (this.relay.config) {
-                    for (let i = 0; i < this.relay.config.list.length; ++i) {
-                        options.push("Switch #" + i);
-                    }
-                }
-                return options;
-            },
             daysOfWeek() {
                 let days = [];
 
                 let d = new Date(0);
                 for (let i = 0; i < 7; ++i) {
-                    d.setDate(i+5);
+                    d.setDate(i + 5);
                     let s = d.toLocaleString(navigator.language, {weekday: 'long'});
                     s = s.charAt(0).toUpperCase() + s.slice(1);
                     days.push({k: i + 1, l: s});
@@ -210,5 +280,7 @@
 </script>
 
 <style lang="less">
-
+    .switches .col .col:nth-of-type(odd) {
+        text-align: right;
+    }
 </style>

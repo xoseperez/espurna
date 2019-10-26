@@ -1,9 +1,9 @@
 <template>
     <div class="multiselect">
         <div class="values">
-            <span v-for="(v, i) in value" :key="v">{{find(v).l}}&nbsp;<i class="delete" @click="() => onDelete(i)">&times;</i></span>
+            <span v-for="(v, i) in value" :key="v">{{find(v).l}}<i class="delete" @click="() => onDelete(i)">&times;</i></span>
         </div>
-        <select v-bind="$attrs" @input="onSelect">
+        <select v-if="_options" v-bind="$attrs" @input="onSelect">
             <option value="" disabled selected>{{placeholder}}</option>
             <option v-for="{l, k} in _options" :key="k" :value="k">{{l}}</option>
         </select>
@@ -33,13 +33,14 @@
         computed: {
             _options() {
                 if (this.value.length === this.options.length)
-                    return this.options;
+                    return null;
 
                 let options = [...this.options];
 
                 this.value.forEach((v) => {
+                    v = v.toString();
                     options.splice(options.findIndex((el) => {
-                        return el.k === v
+                        return el.k.toString() === v
                     }), 1);
                 });
                 return options;
@@ -47,20 +48,23 @@
         },
         methods: {
             find(key) {
+                key = key.toString();
                 return this.options.find((el) => {
-                    return el.k === key
+                    return el.k.toString() === key
                 });
             },
             onSelect(ev) {
                 if (ev.target.value && this.find(ev.target.value)) {
-                    this.value.push(ev.target.value);
-                    this.$emit('input', this.value);
+                    let value = [...this.value];
+                    value.push(ev.target.value);
+                    this.$emit('input', value);
                     ev.target.value = ''
                 }
             },
             onDelete(i) {
-                this.$delete(this.value, i);
-                this.$emit('input', this.value);
+                let value = [...this.value];
+                value.splice(i, 1);
+                this.$emit('input', value);
             }
         }
     }
@@ -73,14 +77,15 @@
         .values span {
             background: desaturate(lighten(@secondary, 20%), 50%);
             border-radius: 4px;
-            padding: 5px;
+            padding: 5px 5px 5px 10px;
             margin-right: 5px;
             font-size: .8em;
+            color: white;
         }
 
         .delete {
             border-radius: 50%;
-            background: desaturate(darken(@secondary, 20%), 50%);
+            background: desaturate(darken(@secondary, 10%), 50%);
             display: inline-block;
             width: 18px;
             height: 18px;
@@ -88,6 +93,8 @@
             line-height: 16px;
             color: white;
             text-align: center;
+            cursor: pointer;
+            margin-left: 5px;
         }
     }
 </style>

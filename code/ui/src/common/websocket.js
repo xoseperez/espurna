@@ -2,8 +2,6 @@
 import mockServer from './mock-websocket';
 // #endif
 
-console.log(process.env.NODE_ENV);
-
 let Ws = function () {
 };
 Ws.prototype = {
@@ -37,7 +35,6 @@ Ws.prototype = {
             'cors': true,
             'credentials': 'same-origin'
         }).then((response) => {
-            console.log(response);
             // Failed, retry
             if (response.status !== 200) {
                 return this.retry(5000, args);

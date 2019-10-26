@@ -1,6 +1,6 @@
 <template>
     <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
-    <PwdChange v-if="!webmode"/>
+    <Setup v-if="!webmode"/>
     <Form v-else ref="formSettings">
         <Menu id="layout" :tabs="tabs" class="webmode">
             <template #header>
@@ -54,12 +54,12 @@
 
             <!-- #if process.env.VUE_APP_LED === 'true' -->
             <template v-if="data.modules.led" #led>
-                <Led v-bind="data"/>
+                <Led v-bind="data" :relay-options="relayOptions"/>
             </template>
             <!-- #endif -->
 
             <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
-            <template v-if="data.modules.light" #color>
+            <template v-if="data.modules.color" #color>
                 <Color v-bind="data"/>
             </template>
             <!-- #endif -->
@@ -84,7 +84,7 @@
 
             <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
             <template v-if="data.modules.relay" #relays>
-                <Relays v-bind="data"/>
+                <Relays v-bind="data" :relay-options="relayOptions"/>
             </template>
             <!-- #endif -->
 
@@ -149,7 +149,6 @@
 
 
         <iframe id="downloader"></iframe>
-        <input id="uploader" type="file"/>
     </Form>
 </template>
 
@@ -157,7 +156,7 @@
 
     import Socket from './common/websocket';
 
-    import PwdChange from './tabs/common/PassChange';
+    import Setup from './tabs/common/Setup';
     import Inpt from './components/Input';
     import Menu from './components/Menu';
     import Form from './components/Form';
@@ -178,7 +177,7 @@
         {k: "mqtt", l: "MQTT"},
         {k: "separator"}
     ];
-    let components = {A, Inpt, Menu, Form, Mqtt, Admin, General, Status, Btn, PwdChange};
+    let components = {A, Inpt, Menu, Form, Mqtt, Admin, General, Status, Btn, Setup};
 
     //Board Features
 
@@ -317,6 +316,7 @@
                         uptime: 0,
                         lastUpdate: 0
                     },
+                    relay: {}
                 },
                 settings: {},
                 tabs: tabs
@@ -327,7 +327,16 @@
                 let options = [];
                 if ("light" in this.data) {
                     for (let i = 0; i < this.data.light.num_channel; ++i) {
-                        options.push("Channel #" + i);
+                        options.push({k: i, l: "Channel #" + i});
+                    }
+                }
+                return options;
+            },
+            relayOptions() {
+                let options = [];
+                if (this.data.relay.config) {
+                    for (let i = 0; i < this.data.relay.config.list.length; ++i) {
+                        options.push({k: i, l: "Switch #" + i});
                     }
                 }
                 return options;
@@ -456,6 +465,31 @@
         }
     }
 
+    .right {
+        text-align: right;
+
+        &.pd {
+            padding-right: 5px;
+        }
+    }
+
+    .left {
+        text-align: left;
+
+        &.pd {
+            padding-left: 5px;
+        }
+    }
+
+    .center {
+        text-align: center;
+
+        &.pd {
+            padding-right: 5px;
+            padding-left: 5px;
+        }
+    }
+
     .hostname {
         font-size: 1em;
     }
@@ -490,10 +524,6 @@
 
     div.center {
         margin: .5em 0 1em;
-    }
-
-    #password .content {
-        margin: 0 auto;
     }
 
     .right {
