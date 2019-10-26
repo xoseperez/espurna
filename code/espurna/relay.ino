@@ -43,8 +43,10 @@ typedef struct {
 } relay_t;
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
-unsigned int _relay_flood_window = RELAY_FLOOD_WINDOW;
 Ticker _relaySaveTicker;
+
+unsigned long _relay_flood_window = RELAY_FLOOD_WINDOW;
+unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
 
 #if MQTT_SUPPORT
 
@@ -374,7 +376,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
             _relays[id].fw_count = 1;
 
         // If current_time is in the floodWindow and there have been too many requests...
-        } else if (_relays[id].fw_count >= RELAY_FLOOD_CHANGES) {
+        } else if (_relays[id].fw_count >= _relay_flood_changes) {
 
             // We schedule the changes to the end of the floodWindow
             // unless it's already delayed beyond that point
@@ -699,7 +701,8 @@ void _relayConfigure() {
         }
     }
 
-    _relay_flood_window = getSetting("relayFlood", RELAY_FLOOD_WINDOW).toInt();
+    _relay_flood_window = getSetting("relayFloodTime", RELAY_FLOOD_WINDOW).toInt();
+    _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES).toInt();
 
     #if MQTT_SUPPORT
         settingsProcessConfig({
