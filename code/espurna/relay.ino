@@ -380,7 +380,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
             // We schedule the changes to the end of the floodWindow
             // unless it's already delayed beyond that point
-            _relays[id].change_delay = std::max(change_delay, millis() - _relays[id].fw_start);
+            _relays[id].change_delay = std::max(change_delay, _relay_flood_window - (millis() - _relays[id].fw_start));
 
             // Another option is to always move it forward, starting from current time
             //_relays[id].fw_start = current_time;
