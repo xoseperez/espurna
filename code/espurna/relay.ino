@@ -360,10 +360,11 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
     } else {
 
         unsigned long current_time = millis();
+        unsigned long change_delay = status ? _relays[id].delay_on : _relays[id].delay_off;
 
         _relays[id].fw_count++;
         _relays[id].change_start = current_time;
-        _relays[id].change_delay = status ? _relays[id].delay_on : _relays[id].delay_off;
+        _relays[id].change_delay = change_delay;
 
         // If current_time is off-limits the floodWindow...
         if (millis() - _relays[id].fw_start > _relay_flood_window) {
@@ -377,7 +378,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
             // We schedule the changes to the end of the floodWindow
             // unless it's already delayed beyond that point
-            _relays[id].change_delay = _relay_flood_window;
+            _relays[id].change_delay = std::max(change_delay, millis() - _relays[id].fw_start);
 
             // Another option is to always move it forward, starting from current time
             //_relays[id].fw_start = current_time;
@@ -628,13 +629,12 @@ void _relayBoot() {
 
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
+        _relays[i].change_start = millis();
+
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
             // XXX hack for correctly restoring relay state on boot
             // because of broken stm relay firmware
-            _relays[i].change_start = millis();
             _relays[i].change_delay = 3000 + 1000 * i;
-        #else
-            _relays[i].change_start = millis();
         #endif
 
         _relays[i].lock = lock;
