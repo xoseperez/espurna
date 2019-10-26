@@ -45,7 +45,7 @@ std::vector<relay_t> _relays;
 bool _relayRecursive = false;
 Ticker _relaySaveTicker;
 
-unsigned long _relay_flood_window = RELAY_FLOOD_WINDOW;
+unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
 
 #if MQTT_SUPPORT
@@ -701,7 +701,7 @@ void _relayConfigure() {
         }
     }
 
-    _relay_flood_window = getSetting("relayFloodTime", RELAY_FLOOD_WINDOW).toInt();
+    _relay_flood_window = (1000 * getSetting("relayFloodTime", RELAY_FLOOD_WINDOW).toInt());
     _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES).toInt();
 
     #if MQTT_SUPPORT
@@ -1180,10 +1180,10 @@ void _relayInitCommands() {
     });
 
     terminalRegisterCommand(F("RELAY.INSPECT"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("pin type reset  delay_on   delay_off  pulse  pulse_ms\n"
-                         "--- ---- ----- ---------- ----------- ----- ----------\n"));
+        DEBUG_MSG_P(PSTR("pin type reset  delay_on   delay_off  pulse  pulse_ms\n"));
+        DEBUG_MSG_P(PSTR("--- ---- ----- ---------- ----------- ----- ----------\n"));
         for (const auto &relay : _relays) {
-            DEBUG_MSG_P(PSTR("%u,%-4u,%u,%-10u,%-10u,%u,%-10u\n"),
+            DEBUG_MSG_P(PSTR("%-3u %-4u %-5u %-10u %-10u %-5u %-10u\n"),
                 relay.pin, relay.type, relay.reset_pin,
                 relay.delay_on, relay.delay_off,
                 relay.pulse, relay.pulse_ms
