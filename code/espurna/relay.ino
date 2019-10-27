@@ -205,6 +205,8 @@ void _relayProviderStatus(unsigned char id, bool status) {
  */
 void _relayProcess(bool mode) {
 
+    const unsigned char relay_sync = getSetting("relaySync", RELAY_SYNC).toInt();
+
     for (unsigned char id = 0; id < _relays.size(); id++) {
 
         bool target = _relays[id].target_status;
@@ -249,6 +251,15 @@ void _relayProcess(bool mode) {
         #if MQTT_SUPPORT
             relayMQTT(id);
         #endif
+
+        // Count change delay for every other relay from this point of time
+        // TODO: queue relay processing instead of depending on explicit delays?
+        if ((relay_sync == RELAY_SYNC_ONE) || (relay_sync == RELAY_SYNC_NONE_OR_ONE)) {
+            const auto ts = millis();
+            for (auto& relay : _relays) {
+                relay.change_start = ts;
+            }
+        }
 
         if (!_relayRecursive) {
 
@@ -369,7 +380,8 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
         _relays[id].change_delay = change_delay;
 
         // If current_time is off-limits the floodWindow...
-        if (millis() - _relays[id].fw_start > _relay_flood_window) {
+        const auto fw_diff = current_time - _relays[id].fw_start;
+        if (fw_diff > _relay_flood_window) {
 
             // We reset the floodWindow
             _relays[id].fw_start = current_time;
@@ -380,7 +392,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
             // We schedule the changes to the end of the floodWindow
             // unless it's already delayed beyond that point
-            _relays[id].change_delay = std::max(change_delay, _relay_flood_window - (millis() - _relays[id].fw_start));
+            _relays[id].change_delay = std::max(change_delay, _relay_flood_window - fw_diff);
 
             // Another option is to always move it forward, starting from current time
             //_relays[id].fw_start = current_time;
