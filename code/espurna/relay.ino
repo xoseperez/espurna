@@ -462,15 +462,16 @@ void relaySync(unsigned char id) {
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
     } else if (status) {
         if (relaySync != RELAY_SYNC_ANY) {
-            for (unsigned short i=0; i<_relays.size(); i++) {
-                if (i != id) {
-                    relayStatus(i, false);
+            for (unsigned short other_id=0; other_id<_relays.size(); other_id++) {
+                if (other_id != id) {
+                    relayStatus(other_id, false);
                     // https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
                     // completely reset timing on the other relay to sync with this one
-                    if (relayStatus(i)) {
-                        _relays[i].fw_start = _relays[id].change_start;
-                        _relays[i].fw_count = 1;
-                        _relays[id].change_delay += _relays[i].change_delay;
+                    // ensure that this relay turns on only AFTER the other relay is turned off
+                    if (relayStatus(other_id)) {
+                        _relays[other_id].fw_start = _relays[id].change_start;
+                        _relays[other_id].fw_count = 1;
+                        _relays[id].change_delay = std::max(_relays[id].change_delay, _relays[other_id].change_delay);
                     }
                 }
             }
@@ -1191,11 +1192,15 @@ void _relayInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("RELAY.INSPECT"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("pin type reset  delay_on   delay_off  pulse  pulse_ms\n"));
-        DEBUG_MSG_P(PSTR("--- ---- ----- ---------- ----------- ----- ----------\n"));
-        for (const auto &relay : _relays) {
-            DEBUG_MSG_P(PSTR("%-3u %-4u %-5u %-10u %-10u %-5u %-10u\n"),
+    terminalRegisterCommand(F("RELAY.INFO"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("    cur tgt pin type reset  delay_on   delay_off  pulse  pulse_ms\n"));
+        DEBUG_MSG_P(PSTR("    --- --- --- ---- ----- ---------- ----------- ----- ----------\n"));
+        for (unsigned char index = 0; index < _relays.size(); ++index) {
+            const auto& relay = _relays.at(index);
+            DEBUG_MSG_P(PSTR("%3u %3s %3s %3u %4u %5u %10u %11u %5u %10u\n"),
+                index,
+                relay.current_status ? "ON" : "OFF",
+                relay.target_status ? "ON" : "OFF",
                 relay.pin, relay.type, relay.reset_pin,
                 relay.delay_on, relay.delay_off,
                 relay.pulse, relay.pulse_ms
