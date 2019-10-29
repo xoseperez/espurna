@@ -102,7 +102,7 @@ SecureClientConfig _mqtt_sc_config {
         return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK).toInt();
     },
     []() -> String {
-        return getSetting("mqttfp", MQTT_SSL_FINGERPRINT);
+        return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     },
     true
 };
@@ -118,7 +118,7 @@ SecureClientConfig _mqtt_sc_config {
         return _mqtt_client_trusted_root_ca;
     },
     []() -> String {
-        return getSetting("mqttfp", MQTT_SSL_FINGERPRINT);
+        return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     },
     []() -> uint16_t {
         return getSetting("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN).toInt();
@@ -157,6 +157,15 @@ void _mqttSetupAsyncClient(bool secure = false) {
 #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 #if (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
+
+WiFiClient& _mqttGetClient(bool secure) {
+    #if SECURE_CLIENT != SECURE_CLIENT_NONE
+        return (secure ? _mqtt_client_secure->get() : _mqtt_client);
+    #else
+        return _mqtt_client;
+    #endif
+}
+
 bool _mqttSetupSyncClient(bool secure = false) {
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
@@ -174,11 +183,11 @@ bool _mqttConnectSyncClient(bool secure = false) {
     bool result = false;
 
     #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-        _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, (secure ? _mqtt_client_secure->get() : _mqtt_client));
+        _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqttGetClient(secure));
         _mqtt.setWill(_mqtt_will.c_str(), _mqtt_payload_offline.c_str(), _mqtt_qos, _mqtt_retain);
         result = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str());
     #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
-        _mqtt.setClient(secure ? _mqtt_client_secure->get() : _mqtt_client);
+        _mqtt.setClient(_mqttGetClient(secure));
         _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
 
         if (_mqtt_user.length() && _mqtt_pass.length()) {

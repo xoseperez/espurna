@@ -15,3 +15,5 @@ custom.h
 .env
 .DS_Store
 .vscode
+_pycache_/
+*.py[cod]
