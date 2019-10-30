@@ -191,7 +191,7 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
         sensor_magnitude_t magnitude = _magnitudes[i];
         if (magnitude.type == MAGNITUDE_EVENT) continue;
 
-        JsonObject& magni = list.createNestedArray();
+        JsonArray& magni = list.createNestedArray();
 
         ++size;
 
