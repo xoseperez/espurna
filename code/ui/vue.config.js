@@ -3,55 +3,112 @@ const CompressionPlugin = require("compression-webpack-plugin");
 const TerserPlugin = require('terser-webpack-plugin');
 const glob = require("glob-all");
 const path = require("path");
+const {GenerateSW} = require('workbox-webpack-plugin');
 
 module.exports = {
     publicPath: '',
-    pwa: {
-        serviceWorker: process.env.NODE_ENV !== 'production',
-    },
     //runtimeCompiler: true,
     configureWebpack() {
-        return process.env.NODE_ENV === 'production' ? {
-            plugins: [
-                new PurgecssPlugin({
-                    paths: glob.sync([
-                        path.join(__dirname, "./src/index.html"),
-                        path.join(__dirname, "./**/*.vue"),
-                        path.join(__dirname, "./src/**/*.js")
-                    ])
-                }),
-                new CompressionPlugin({
-                    test: /index\.html?$/i,
-                }),
-            ],
-            devtool: false,
-            optimization: {
-                minimizer: [
-                    new TerserPlugin({
-                        terserOptions: {
-                            ecma: 6,
-                            compress: true,
-                            output: {
-                                comments: false,
-                                beautify: false
+        switch (process.env.NODE_ENV) {
+            case 'production':
+                return {
+                    plugins: [
+                        new PurgecssPlugin({
+                            paths: glob.sync([
+                                path.join(__dirname, "./src/index.html"),
+                                path.join(__dirname, "./**/*.vue"),
+                                path.join(__dirname, "./src/**/*.js")
+                            ])
+                        }),
+                        new CompressionPlugin({
+                            test: /index\.html?$/i,
+                        }),
+                    ],
+                    devtool: false,
+                    optimization: {
+                        minimizer: [
+                            new TerserPlugin({
+                                terserOptions: {
+                                    ecma: 6,
+                                    compress: true,
+                                    output: {
+                                        comments: false,
+                                        beautify: false
+                                    }
+                                }
+                            })
+                        ]
+                    }
+                };
+            case 'pwa':
+                return {
+                    mode: 'production',
+                    node: {
+                        setImmediate: true
+                    },
+                    devtool: false,
+                    optimization: {
+                        minimizer: [
+                            new TerserPlugin({
+                                terserOptions: {
+                                    ecma: 6,
+                                    compress: true,
+                                    output: {
+                                        comments: false,
+                                        beautify: false
+                                    }
+                                }
+                            })
+                        ]
+                    },
+                    plugins: [
+                        new GenerateSW(
+                            {
+                                exclude: [
+                                    /\.map$/,
+                                    /img\/icons\//,
+                                    /favicon\.ico$/,
+                                    /^manifest.*\.js?$/
+                                ],
+                                cacheId: 'ui'
                             }
-                        }
-                    })
-                ]
-            }
-        } : {
-            node: {
-                setImmediate: true
-            },
-            plugins: [
-                new PurgecssPlugin({
-                    paths: glob.sync([
-                        path.join(__dirname, "./src/index.html"),
-                        path.join(__dirname, "./**/*.vue"),
-                        path.join(__dirname, "./src/**/*.js")
-                    ])
-                }),
-            ],
+                        ),
+                        new PurgecssPlugin({
+                            paths: glob.sync([
+                                path.join(__dirname, "./src/index.html"),
+                                path.join(__dirname, "./**/*.vue"),
+                                path.join(__dirname, "./src/**/*.js")
+                            ])
+                        }),
+                    ],
+                };
+            default:
+            case 'development':
+                return {
+                    node: {
+                        setImmediate: true
+                    },
+                    plugins: [
+                        new GenerateSW(
+                            {
+                                exclude: [
+                                    /\.map$/,
+                                    /img\/icons\//,
+                                    /favicon\.ico$/,
+                                    /^manifest.*\.js?$/
+                                ],
+                                cacheId: 'ui'
+                            }
+                        ),
+                        new PurgecssPlugin({
+                            paths: glob.sync([
+                                path.join(__dirname, "./src/index.html"),
+                                path.join(__dirname, "./**/*.vue"),
+                                path.join(__dirname, "./src/**/*.js")
+                            ])
+                        }),
+                    ],
+                }
         }
     },
     chainWebpack(config) {
@@ -72,6 +129,7 @@ module.exports = {
         if (process.env.NODE_ENV === 'production') {
 
             config.plugins.delete('pwa');
+            config.plugins.delete('workbox');
 
             config.plugin("preload")
                 .tap(args => {
@@ -88,6 +146,7 @@ module.exports = {
                     args.minify = true;
                     return args;
                 })
+        } else {
         }
     },
 };

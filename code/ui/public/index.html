@@ -5,6 +5,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="${require('./favicon.ico')}" />
+    <% if (process.env.NODE_ENV !== 'production') { %><link rel="manifest" href="./manifest.json"><% } %>
 </head>
 <body>
 <div id="app"></div>
