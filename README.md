@@ -278,8 +278,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|![Itead Sonoff IFAN02](images/devices/itead-sonoff-ifan02.jpg)||
 |**Tonbux Mosquito Killer**|**Itead Sonoff IFAN02**|||
 
-**Other supported boards (beta):**
-KMC 4 Outlet, Gosund WS1, Smart Dual Plug, MakerFocus Intelligent Module LM33 for Lamps
+
 
 ## License
 
