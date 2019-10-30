@@ -91,7 +91,7 @@ void debugSendImpl(const char * message) {
 #if DEBUG_WEB_SUPPORT
 
 void _debugWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get("modules");
+    JsonObject& modules = root["modules"];
 
     modules["dbg"] = 1;
 }

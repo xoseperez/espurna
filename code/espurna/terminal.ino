@@ -398,7 +398,7 @@ void terminalError(const String& error) {
 }
 
 void _terminalWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get("modules");
+    JsonObject& modules = root["modules"];
     modules["cmd"] = 1;
 }
 

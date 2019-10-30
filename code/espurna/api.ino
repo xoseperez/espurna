@@ -27,7 +27,7 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _apiWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get("modules");
+    JsonObject& modules = root["modules"];
     modules["api"] = 1;
 }
 

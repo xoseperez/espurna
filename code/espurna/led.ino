@@ -77,7 +77,7 @@ bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ledWebSocketOnVisible(JsonObject& root) {
     if (_ledCount() > 0) {
-        JsonObject& modules = root.get("modules");
+        JsonObject& modules = root["modules"];
         modules["led"] = 1;
     }
 }

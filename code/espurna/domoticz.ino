@@ -184,7 +184,7 @@ bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _domoticzWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get("modules");
+    JsonObject& modules = root["modules"];
     modules["dcz"] = static_cast<unsigned char>(haveRelaysOrSensors());
 }
 
