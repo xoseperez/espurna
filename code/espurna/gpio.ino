@@ -46,10 +46,10 @@ void gpioSetup() {
     // https://github.com/espressif/ESP8266_RTOS_SDK/blob/3c055779e9793e5f082afff63a011d6615e73639/components/esp8266/include/esp8266/efuse_register.h#L20-L21
     // "define EFUSE_IS_ESP8285    (1 << 4)"
     const uint32_t efuse_blocks[4] {
-        READ_PERI_REG(0x3ff00050)
+        READ_PERI_REG(0x3ff00050),
         READ_PERI_REG(0x3ff00054),
         READ_PERI_REG(0x3ff00058),
-        READ_PERI_REG(0x3ff0005c),
+        READ_PERI_REG(0x3ff0005c)
     };
 
     const bool esp8285 = (
