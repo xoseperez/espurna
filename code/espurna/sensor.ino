@@ -112,27 +112,23 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 #if WEB_SUPPORT
 
 //void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
-template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root) {
+    JsonArray& schema = root.createNestedArray("schema");
+    JsonArray& list = root.createNestedArray("list");
 
-    // ws produces flat list <prefix>Magnitudes
-    const String ws_name = String(prefix) + "Magnitudes";
+    //root["size"] = magnitudeCount();
 
-    // config uses <prefix>Magnitude<index> (cut 's')
-    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
-
-    JsonObject& list = root.createNestedObject(ws_name);
-    list["size"] = magnitudeCount();
-
-    //JsonArray& name = list.createNestedArray("name");
-    JsonArray& type = list.createNestedArray("type");
-    JsonArray& index = list.createNestedArray("index");
-    JsonArray& idx = list.createNestedArray("idx");
+    schema.add("name");
+    schema.add("type");
+    schema.add("index");
+    schema.add("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        //name.add(magnitudeName(i));
-        type.add(magnitudeType(i));
-        index.add(magnitudeIndex(i));
-        idx.add(getSetting(conf_name, i, 0).toInt());
+        JsonObject& magnitude = list.createNestedArray();
+        magnitude.add(magnitudeName(i));
+        magnitude.add(magnitudeType(i));
+        magnitude.add(magnitudeIndex(i));
+        magnitude.add(getSetting(conf_name, i, 0).toInt());
     }
 }
 
@@ -177,30 +173,37 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
-    JsonObject& magnitudes = root.createNestedArray("magnitudes");
+    JsonObject& magnitudes = root.createNestedObject("magnitudes");
     uint8_t size = 0;
 
-    JsonArray& index = magnitudes.createNestedArray("index");
-    JsonArray& type = magnitudes.createNestedArray("type");
-    JsonArray& units = magnitudes.createNestedArray("units");
-    JsonArray& description = magnitudes.createNestedArray("description");
+    JsonArray& schema = magnitudes.createNestedArray("schema");
+    JsonArray& list = magnitudes.createNestedArray("list");
+
+    //root["size"] = magnitudeCount();
+
+    schema.add("index");
+    schema.add("type");
+    schema.add("unit");
+    schema.add("desc");
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
-        JsonObject& magni = root.createNestedObject();
 
         sensor_magnitude_t magnitude = _magnitudes[i];
         if (magnitude.type == MAGNITUDE_EVENT) continue;
+
+        JsonObject& magni = list.createNestedArray();
+
         ++size;
 
-        magni["index"] = magnitude.global;
-        magni["type"] = magnitude.type;
-        magni["unit"] = magnitudeUnit(magnitude.type));
+        magni.add(magnitude.global);
+        magni.add(magnitude.type);
+        magni.add(magnitudeUnit(magnitude.type));
 
         if (magnitude.type == MAGNITUDE_ENERGY) {
             if (_sensor_energy_reset_ts.length() == 0) _sensorResetTS();
-            magni["description"] = magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")"));
+            magni.add(magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")"));
         } else {
-            magni["description"] = magnitude.sensor->slot(magnitude.local));
+            magni.add(magnitude.sensor->slot(magnitude.local));
         }
     }
 }

@@ -85,7 +85,7 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     }
 
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(tpsk);
+        _sensorWebSocketMagnitudes(tspk);
     #endif
 
 }
