@@ -43,6 +43,8 @@ void gpioSetup() {
 
     // https://github.com/espressif/esptool/blob/f04d34bcab29ace798d2d3800ba87020cccbbfdd/esptool.py#L1060-L1070
     // "One or the other efuse bit is set for ESP8285"
+    // https://github.com/espressif/ESP8266_RTOS_SDK/blob/3c055779e9793e5f082afff63a011d6615e73639/components/esp8266/include/esp8266/efuse_register.h#L20-L21
+    // "define EFUSE_IS_ESP8285    (1 << 4)"
     const uint32_t efuse_blocks[4] {
         READ_PERI_REG(0x3ff0005c),
         READ_PERI_REG(0x3ff00058),
