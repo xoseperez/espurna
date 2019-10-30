@@ -681,8 +681,8 @@ void _relayWebSocketUpdate(JsonObject& root) {
     JsonObject& module = root.createNestedObject("relay");
     JsonObject& state = module.createNestedObject("state");
 
-    JsonArray& schema state.createNestedArray["schema"];
-    JsonArray& list state.createNestedArray["list"];
+    JsonArray& schema = state.createNestedArray["schema"];
+    JsonArray& list = state.createNestedArray["list"];
 
     schema.add("status");
     schema.add("lock");
@@ -752,7 +752,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     JsonArray& relays = config.createNestedArray("list");
 
     for (unsigned char i=0; i<relayCount(); i++) {
-        JsonArray& relay = relays.createNestedArray()
+        JsonArray& relay = relays.createNestedArray();
         relay.add(_relayFriendlyName(i));                               //gpio
         relay.add(_relays[i].type);                                     //type
         relay.add(_relays[i].reset_pin);                                //reset
@@ -771,7 +771,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
-    JsonObject& modules = root.get('modules');
+    JsonObject& modules = root.get("modules");
     if (relayCount() > 1) {
         modules["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }

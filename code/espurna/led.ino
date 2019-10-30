@@ -77,7 +77,7 @@ bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ledWebSocketOnVisible(JsonObject& root) {
     if (_ledCount() > 0) {
-        JsonObject& modules = root.get('modules');
+        JsonObject& modules = root.get("modules");
         modules["led"] = 1;
     }
 }
@@ -93,7 +93,7 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 
     JsonArray& leds = root.createNestedArray("list");
     for (byte i=0; i<_ledCount(); i++) {
-        JsonObject& led = leds.createNestedObject();
+        JsonArray& led = leds.createNestedArray();
         led.add(getSetting("ledMode", i, "").toInt());
         led.add(getSetting("ledRelay", i, "").toInt());
     }

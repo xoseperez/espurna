@@ -161,7 +161,7 @@ bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get('modules');
+    JsonObject& modules = root.get("modules");
 
     modules["sns"] = 1;
 

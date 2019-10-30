@@ -22,7 +22,7 @@ bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _idbWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get('modules');
+    JsonObject& modules = root.get("modules");
     modules["idb"] = 1;
 }
 

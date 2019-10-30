@@ -100,7 +100,7 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
 }
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root.get('modules');
+    JsonObject& modules = root.get("modules");
     modules["rfb"] = 1;
 }
 
