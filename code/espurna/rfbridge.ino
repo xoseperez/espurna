@@ -104,7 +104,7 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
     modules["rfb"] = 1;
 
     #if RFB_DIRECT
-        rfb["rfbDirect"] = 1;
+        modules["rfbDirect"] = 1;
     #endif
 }
 
