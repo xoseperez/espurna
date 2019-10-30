@@ -241,7 +241,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
         BaseSensor * sns = _sensors[i];
 
-        JsonObject& sensor =sensors.createNestedObject()
+        JsonObject& sensor = sensors.createNestedObject();
 
         #if EMON_ANALOG_SUPPORT
             if (sns->getID() == SENSOR_EMON_ANALOG_ID) {

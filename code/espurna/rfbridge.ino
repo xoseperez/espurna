@@ -102,6 +102,10 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
 void _rfbWebSocketOnVisible(JsonObject& root) {
     JsonObject& modules = root["modules"];
     modules["rfb"] = 1;
+
+    #if RFB_DIRECT
+        rfb["rfbDirect"] = 1;
+    #endif
 }
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
@@ -110,7 +114,6 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
     rfb["repeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
     rfb["count"] = relayCount();
     #if RFB_DIRECT
-        rfb["directVisible"] = 1;
         rfb["RX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
         rfb["TX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
     #endif
