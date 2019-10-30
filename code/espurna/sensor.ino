@@ -112,7 +112,7 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 #if WEB_SUPPORT
 
 //void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
-template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root) {
+/*template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root) {
     JsonArray& schema = root.createNestedArray("schema");
     JsonArray& list = root.createNestedArray("list");
 
@@ -124,13 +124,13 @@ template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root) {
     schema.add("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        JsonObject& magnitude = list.createNestedArray();
+        JsonArray& magnitude = list.createNestedArray();
         magnitude.add(magnitudeName(i));
         magnitude.add(magnitudeType(i));
         magnitude.add(magnitudeIndex(i));
         magnitude.add(getSetting(conf_name, i, 0).toInt());
     }
-}
+}*/
 
 /*
 template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
