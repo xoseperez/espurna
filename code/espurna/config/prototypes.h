@@ -204,8 +204,8 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
 
 String mqttMagnitude(char * topic);
 
-void mqttSendRaw(const char * topic, const char * message, bool retain);
-void mqttSendRaw(const char * topic, const char * message);
+bool mqttSendRaw(const char * topic, const char * message, bool retain);
+bool mqttSendRaw(const char * topic, const char * message);
 
 void mqttSend(const char * topic, const char * message, bool force, bool retain);
 void mqttSend(const char * topic, const char * message, bool force);
