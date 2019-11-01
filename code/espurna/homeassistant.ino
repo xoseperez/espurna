@@ -407,7 +407,7 @@ void _haSend() {
     // Are we still trying to send discovery messages?
     if (_ha_discovery) return;
 
-    DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
+    DEBUG_MSG_P(PSTR("[HA] Preparing MQTT discovery message(s)...\n"));
 
     // Get common device config / context object
     ha_config_t config;
