@@ -196,6 +196,7 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 #endif
 
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
+using mqtt_msg_t = std::pair<String, String>;
 
 void mqttRegister(mqtt_callback_f callback);
 
