@@ -97,13 +97,20 @@ struct ha_config_t {
 struct ha_discovery_t {
 
     constexpr static const unsigned long SEND_TIMEOUT = 1000;
+    constexpr static const unsigned char SEND_RETRY = 5;
 
-    ha_discovery_t() {
+    ha_discovery_t() :
+        _retry(SEND_RETRY)
+    {
         #if SENSOR_SUPPORT
             _messages.reserve(magnitudeCount() + relayCount());
         #else
             _messages.reserve(relayCount());
         #endif
+    }
+
+    ~ha_discovery_t() {
+        DEBUG_MSG_P(PSTR("[HA] Discovery %s\n"), empty() ? "OK" : "FAILED");
     }
 
     // TODO: is this expected behaviour?
@@ -125,6 +132,11 @@ struct ha_discovery_t {
         return !_messages.size();
     }
 
+    bool retry() {
+        if (!_retry) return false;
+        return --_retry;
+    }
+
     void prepareSwitches(ha_config_t& config);
     #if SENSOR_SUPPORT
         void prepareMagnitudes(ha_config_t& config);
@@ -132,6 +144,7 @@ struct ha_discovery_t {
 
     Ticker timer;
     std::vector<mqtt_msg_t> _messages;
+    unsigned char _retry;
 
 };
 
@@ -141,7 +154,12 @@ void _haSendDiscovery() {
 
     if (!_ha_discovery) return;
 
-    if (_ha_discovery->empty()) {
+    const bool connected = mqttConnected();
+    const bool retry = _ha_discovery->retry();
+    const bool empty = _ha_discovery->empty();
+
+    if (!connected || !retry || empty) {
+        _ha_discovery = nullptr;
         return;
     }
 
