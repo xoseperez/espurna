@@ -327,6 +327,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**Arilux AL-LC06 (RGBWWCW)**|
 |![Arilux AL-LC11 (RGBWWW) & RF](images/devices/arilux-al-lc11.jpg)|![MagicHome LED Controller (1.0 and 2.x)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801/802](images/devices/huacanxing-h801.jpg)|
 |**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x, also ZJ WFMN A/B11)**|**Huacanxing H801/802**|
+|![Muvit I/O MIOBULB001](images/devices/muvit-io-miobulb001.jpg)|
+|**Muvit I/O MIOBULB001**|
 
 ### Radio links / gateways
 
