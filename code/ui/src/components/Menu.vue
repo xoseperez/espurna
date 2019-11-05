@@ -78,12 +78,14 @@
 
 
     .content {
-        padding: 0 40px 40px;
         max-width: 1000px;
         margin: 0 0 0 -10px;
         line-height: 1.6em;
         width: 100%;
         overflow: hidden;
+        > section {
+            padding: 0 40px 40px;
+        }
     }
 
     .menu {
