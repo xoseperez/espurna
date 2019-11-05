@@ -1,9 +1,9 @@
 import Vue from "vue";
 import App from "./App.vue";
 
-// # if process.env.NODE_ENV !== 'production'
+// #if process.env.NODE_ENV !== 'production'
 import './registerServiceWorker'
-// # endif
+// #endif
 
 Vue.config.productionTip = false;
 
