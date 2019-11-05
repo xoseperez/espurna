@@ -11,12 +11,27 @@
     "build:pwa": "vue-cli-service build --mode pwa",
     "test:unit": "vue-cli-service test:unit"
   },
-  "license": "GPLv3",
+  "license": "GPL-3.0",
   "author": {
     "name": "Adrien Foulon",
-    "email": "b@rubble.com",
+    "email": "tofandel@tukan.hu",
     "url": "https://github.com/Tofandel"
   },
+  "contributors": [
+    {
+      "name": "Xose Pérez",
+      "url": "https://github.com/xoseperez/"
+    },
+    {
+      "name": "Max Prokhorov",
+      "url": "https://github.com/mcspr/"
+    },
+    {
+      "name": "Adrien Foulon",
+      "email": "tofandel@tukan.hu",
+      "url": "https://github.com/Tofandel"
+    }
+  ],
   "dependencies": {
     "core-js": "^2.6.5",
     "vue": "^2.6.10"
