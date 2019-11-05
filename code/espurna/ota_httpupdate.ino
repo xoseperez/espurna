@@ -13,6 +13,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
 
 #include <memory>
+#include <type_traits>
 
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
@@ -30,6 +31,30 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
+CREATE_CHECK(ESP8266HTTPUpdate, followRedirects, true); // Core 2.3+
+CREATE_CHECK(ESP8266HTTPUpdate, update, *(new WiFiClient), ""); // Core 2.5+
+
+template <typename T>
+void _followRedirects(std::true_type&, T& instance) {
+    instance.followRedirects(true);
+}
+
+template <typename T>
+void _followRedirects(std::false_type&, T& instance) { }
+
+template <typename T>
+t_httpUpdate_return _update(std::true_type&, T& instance, WiFiClient* client, const String& url) {
+    if (client == nullptr) {
+        client = std::make_unique<WiFiClient>().get();
+    }
+    return instance.update(*client, url);
+}
+
+template <typename T>
+t_httpUpdate_return _update(std::false_type&, T& instance, WiFiClient* client, const String& url) {
+    return instance.update(url);
+}
+
 
 void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& fp = "") {
 
@@ -45,6 +70,8 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
     // NOTE: ESPhttpUpdate.update(..., fp) will **always** fail with empty fingerprint
     // NOTE: It is possible to support BearSSL with 2.4.2 by using uint8_t[20] instead of String for fingerprint argument
 
+    _followRedirects(has_followRedirects::check, ESPhttpUpdate);
+
     ESPhttpUpdate.rebootOnUpdate(false);
     t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
 
@@ -55,10 +82,8 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
         } else {
             result = ESPhttpUpdate.update(url);
         }
-    #elif OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-        result = ESPhttpUpdate.update(url);
     #else
-        result = ESPhttpUpdate.update(*client, url);
+        result = _update(has_update::check, ESPhttpUpdate, client, url);
     #endif
 
     switch (result) {
@@ -78,16 +103,9 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
 }
 
-#if OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
 void _otaClientFromHttp(const String& url) {
     _otaClientRunUpdater(nullptr, url, "");
 }
-#else
-void _otaClientFromHttp(const String& url) {
-    auto client = std::make_unique<WiFiClient>();
-    _otaClientRunUpdater(client.get(), url, "");
-}
-#endif
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 

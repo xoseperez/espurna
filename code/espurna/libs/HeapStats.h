@@ -14,28 +14,7 @@ struct heap_stats_t {
     uint8_t frag_pct;
 };
 
-namespace EspClass_has_getHeapStats {
-    struct _detector {
-        template<typename T, typename = decltype(
-                std::declval<T>().getHeapStats(0,0,0))>
-          static std::true_type detect(int);
-
-        template<typename>
-          static std::false_type detect(...);
-    };
-
-    template <typename T>
-    struct detector : public _detector {
-        using result = decltype(
-                std::declval<detector>().template detect<T>(0));
-    };
-
-    template <typename T>
-    struct typed_check : public detector<T>::result {
-    };
-
-    typed_check<EspClass> check{};
-};
+CREATE_CHECK(EspClass, getHeapStats, 0, 0, 0);
 
 template <typename T>
 void _getHeapStats(std::true_type&, T& instance, heap_stats_t& stats) {
@@ -50,7 +29,7 @@ void _getHeapStats(std::false_type&, T& instance, heap_stats_t& stats) {
 }
 
 void getHeapStats(heap_stats_t& stats) {
-    _getHeapStats(EspClass_has_getHeapStats::check, ESP, stats);
+    _getHeapStats(has_getHeapStats::check, ESP, stats);
 }
 
 // WTF
@@ -106,7 +85,7 @@ void infoHeapStats(const char* name, const heap_stats_t& stats) {
 void infoHeapStats(bool show_frag_stats = true) {
     const auto stats = getHeapStats();
     infoMemory("Heap", stats);
-    if (show_frag_stats && EspClass_has_getHeapStats::check) {
+    if (show_frag_stats && has_getHeapStats::check) {
         infoHeapStats("Heap", stats);
     }
 }
