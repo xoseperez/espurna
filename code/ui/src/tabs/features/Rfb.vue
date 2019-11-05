@@ -18,7 +18,7 @@
             click SAVE on the last one to store the value.<br><br> Delete any code clicking the
             <strong>FORGET</strong> button. <br><br>You can also specify any RAW code. For reference see <a
                 rel="noopener" target="_blank" href="https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/Commands">possible
-            commands for Sonoff RF Bridge EFM8BB1</a> (original firmware supports codes from <strong>0xA0</strong>
+                commands for Sonoff RF Bridge EFM8BB1</a> (original firmware supports codes from <strong>0xA0</strong>
             to <strong>0xA5</strong>).
         </div>
 

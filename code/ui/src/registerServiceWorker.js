@@ -2,7 +2,6 @@
 
 import {register} from 'register-service-worker'
 
-console.log(process.env.BASE_URL);
 register(`${process.env.BASE_URL}service-worker.js`, {
     ready() {
         console.log(

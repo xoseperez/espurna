@@ -4,22 +4,77 @@ const TerserPlugin = require('terser-webpack-plugin');
 const glob = require("glob-all");
 const path = require("path");
 const {GenerateSW} = require('workbox-webpack-plugin');
+const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
+
+const purgecss = new PurgecssPlugin({
+    paths: glob.sync([
+        path.join(__dirname, "./src/index.html"),
+        path.join(__dirname, "./**/*.vue"),
+        path.join(__dirname, "./src/**/*.js")
+    ])
+});
+
+const faviconsPlugin = new FaviconsWebpackPlugin({
+    logo: "./public/icons/icon.svg",
+    prefix: 'icons/',
+    mode: 'webapp',
+    devMode: 'light',
+    favicons: {
+        start_url: '',
+        icons: {
+            coast: false,
+            yandex: false
+        }
+    }
+});
+
+const pwa = new GenerateSW(
+    {
+        exclude: [
+            /\.map$/,
+            /favicon\.ico$/,
+            /^manifest.*\.js?$/
+        ],
+        cacheId: 'ui'
+    }
+);
+
+const terser = new TerserPlugin({
+    terserOptions: {
+        ecma: 6,
+        compress: true,
+        output: {
+            comments: false,
+            beautify: false
+        }
+    }
+});
 
 module.exports = {
     publicPath: '',
+    pwa: {
+        themeColor: '#479fd6',
+        workboxPluginMode: 'InjectManifest',
+        workboxOptions: {
+            // swSrc is required in InjectManifest mode.
+            swSrc: 'public/service-worker.js',
+            // ...other Workbox options...
+        },
+        iconPaths: {
+            favicon32: 'icons/favicon32.png',
+            favicon16: 'icons/favicon16.png',
+            appleTouchIcon: 'icons/apple-touch-icon-152x152.png',
+            maskIcon: 'icons/icon.svg',
+            msTileImage: 'icons/mstile-144x144.png'
+        }
+    },
     //runtimeCompiler: true,
     configureWebpack() {
         switch (process.env.NODE_ENV) {
             case 'production':
                 return {
                     plugins: [
-                        new PurgecssPlugin({
-                            paths: glob.sync([
-                                path.join(__dirname, "./src/index.html"),
-                                path.join(__dirname, "./**/*.vue"),
-                                path.join(__dirname, "./src/**/*.js")
-                            ])
-                        }),
+                        purgecss,
                         new CompressionPlugin({
                             test: /index\.html?$/i,
                         }),
@@ -27,16 +82,7 @@ module.exports = {
                     devtool: false,
                     optimization: {
                         minimizer: [
-                            new TerserPlugin({
-                                terserOptions: {
-                                    ecma: 6,
-                                    compress: true,
-                                    output: {
-                                        comments: false,
-                                        beautify: false
-                                    }
-                                }
-                            })
+                            terser
                         ]
                     }
                 };
@@ -48,65 +94,24 @@ module.exports = {
                     },
                     devtool: false,
                     optimization: {
-                        minimizer: [
-                            new TerserPlugin({
-                                terserOptions: {
-                                    ecma: 6,
-                                    compress: true,
-                                    output: {
-                                        comments: false,
-                                        beautify: false
-                                    }
-                                }
-                            })
-                        ]
+                        minimizer: []
                     },
                     plugins: [
-                        new GenerateSW(
-                            {
-                                exclude: [
-                                    /\.map$/,
-                                    /img\/icons\//,
-                                    /favicon\.ico$/,
-                                    /^manifest.*\.js?$/
-                                ],
-                                cacheId: 'ui'
-                            }
-                        ),
-                        new PurgecssPlugin({
-                            paths: glob.sync([
-                                path.join(__dirname, "./src/index.html"),
-                                path.join(__dirname, "./**/*.vue"),
-                                path.join(__dirname, "./src/**/*.js")
-                            ])
-                        }),
+                        faviconsPlugin,
+                        pwa
                     ],
                 };
             default:
             case 'development':
                 return {
+                    mode: 'development',
                     node: {
                         setImmediate: true
                     },
                     plugins: [
-                        new GenerateSW(
-                            {
-                                exclude: [
-                                    /\.map$/,
-                                    /img\/icons\//,
-                                    /favicon\.ico$/,
-                                    /^manifest.*\.js?$/
-                                ],
-                                cacheId: 'ui'
-                            }
-                        ),
-                        new PurgecssPlugin({
-                            paths: glob.sync([
-                                path.join(__dirname, "./src/index.html"),
-                                path.join(__dirname, "./**/*.vue"),
-                                path.join(__dirname, "./src/**/*.js")
-                            ])
-                        }),
+                        faviconsPlugin,
+                        purgecss,
+                        pwa
                     ],
                 }
         }
@@ -120,6 +125,15 @@ module.exports = {
                 options.compilerOptions.whitespace = "condense";
                 return options
             });
+
+
+        const svgRule = config.module.rule('svg');
+
+        svgRule.uses.clear();
+
+        svgRule
+            .use('vue-svg-loader')
+            .loader('vue-svg-loader');
 
         config.module.rule('ico').test(/\.ico$/).use("url-loader").loader("url-loader");
 

@@ -9,7 +9,7 @@
         &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
     </span>
     <span v-else-if="type === 'switch'" class="switch">
-        <input ref="input" :id="'switch-'+_uid" v-model="val" type="checkbox" v-bind="$attrs">
+        <input :id="'switch-'+_uid" ref="input" v-model="val" type="checkbox" v-bind="$attrs">
         <span class="layer"></span>
         <label :for="'switch-'+_uid"><span class="on">{{on}}</span><span class="off">{{off}}</span></label>
     </span>

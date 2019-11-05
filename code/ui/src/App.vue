@@ -1,12 +1,14 @@
 <template>
     <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
     <Setup v-if="!webmode"/>
-    <Form v-else ref="formSettings">
+    <Form v-else ref="formSettings" v-model="data">
         <Menu id="layout" :tabs="tabs" class="webmode">
             <template #header>
                 <div class="heading">
+                    <Icon class="icon"/>
                     <h1 class="hostname">{{data.device.hostname}}</h1>
                     <h2 class="desc">{{data.device.desc}}</h2>
+                    <div class="clearfix"></div>
                 </div>
             </template>
 
@@ -155,6 +157,7 @@
 <script>
 
     import Socket from './common/websocket';
+    import Icon from '../public/icons/icon.svg';
 
     import Setup from './tabs/common/Setup';
     import Inpt from './components/Input';
@@ -177,7 +180,7 @@
         {k: "mqtt", l: "MQTT"},
         {k: "separator"}
     ];
-    let components = {A, Inpt, Menu, Form, Mqtt, Admin, General, Status, Btn, Setup};
+    let components = {A, Icon, Inpt, Menu, Form, Mqtt, Admin, General, Status, Btn, Setup};
 
     //Board Features
 
@@ -456,7 +459,19 @@
     /* -----------------------------------------------------------------------------
     General
    -------------------------------------------------------------------------- */
+    .icon {
+        width: 30px;
+        margin: 7px 10px 7px 0;
+        height: auto;
+        float: left;
+        path {
+            fill: #fff;
+        }
+    }
 
+    .clearfix {
+        clear: both;
+    }
 
     @media screen and (max-width: 32em) {
         .header > h1 {

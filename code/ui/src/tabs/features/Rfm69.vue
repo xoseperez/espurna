@@ -59,7 +59,8 @@
                                   placeholder="MQTT Topic"/>
                         </div>
                         <div class="pure-u-md-1-6 pure-u-1-4">
-                            <button type="button" class="btn btn-del-mapping pure-u-5-6 pure-u-md-5-6">Del
+                            <button type="button" class="btn btn-del-mapping pure-u-5-6 pure-u-md-5-6">
+                                Del
                             </button>
                         </div>
                     </div>

@@ -5,7 +5,7 @@
             <h2>General configuration values</h2>
         </div>
 
-        <div class="page form">
+        <Group v-model="device" class="page form">
             <fieldset>
                 <Row>
                     <C><label>Hostname</label></C>
@@ -154,7 +154,7 @@
                     </template>
                 </Repeater>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -165,9 +165,11 @@
     import Hint from "../../components/Hint";
     import Row from "../../layout/Row";
     import Repeater from "../../components/Repeater";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
             Repeater,
             Row,
             Hint,
@@ -178,6 +180,10 @@
         inheritAttrs: false,
         props: {
             wifi: {
+                type: Object,
+                default: () => ({})
+            },
+            device: {
                 type: Object,
                 default: () => ({})
             }

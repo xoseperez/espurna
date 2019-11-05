@@ -75,7 +75,6 @@
 
 <script>
     import Inpt from './../../components/Input';
-    import Hint from "../../components/Hint";
     import Repeater from "../../components/Repeater";
     import C from "../../layout/Col";
     import Row from "../../layout/Row";
@@ -85,7 +84,6 @@
             Row,
             C,
             Repeater,
-            Hint,
             Inpt
         },
         inheritAttrs: false,
