@@ -217,6 +217,7 @@
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1
+//#define T6613_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
 //#define VEML6075_SUPPORT       1

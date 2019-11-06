@@ -101,6 +101,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
         * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
+        * **T6613** CO2 sensor
         * **MICS2710** CO2 & NO2 sensor
         * **MICS5525** CO & CO2 sensor
         * **SenseAir S8** CO2 sensor

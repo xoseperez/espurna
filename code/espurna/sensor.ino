@@ -1028,6 +1028,15 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+	
+    #if T6613_SUPPORT
+    {
+        T6613Sensor * sensor = new T6613Sensor();
+        sensor->setRX(T6613_RX_PIN);
+        sensor->setTX(T6613_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
 
     #if TMP3X_SUPPORT
     {
