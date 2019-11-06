@@ -48,6 +48,8 @@ Ticker _relaySaveTicker;
 unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
 
+unsigned long _relay_delay_interlock;
+
 #if MQTT_SUPPORT
 
 String _relay_mqtt_payload_on;
@@ -84,6 +86,19 @@ RelayStatus _relayStatusTyped(unsigned char id) {
 
     const bool status = _relays[id].current_status;
     return (status) ? RelayStatus::ON : RelayStatus::OFF;
+}
+
+// https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
+// completely reset timing on the other relay to sync with this one
+// to ensure that they change state sequentially
+void _relaySyncRelaysDelay(unsigned char first, unsigned char second) {
+    _relays[second].fw_start = _relays[first].change_start;
+    _relays[second].fw_count = 1;
+    _relays[second].change_delay = std::max({
+        _relay_delay_interlock,
+        _relays[first].change_delay,
+        _relays[second].change_delay
+    });
 }
 
 // -----------------------------------------------------------------------------
@@ -236,6 +251,7 @@ void _relayProcess(bool mode) {
 
         // Only process if the change delay has expired
         if (millis() - _relays[id].change_start < _relays[id].change_delay) continue;
+        _relays[id].change_delay = 0;
 
         DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
 
@@ -377,7 +393,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
         _relays[id].fw_count++;
         _relays[id].change_start = current_time;
-        _relays[id].change_delay = change_delay;
+        _relays[id].change_delay = std::max(_relays[id].change_delay, change_delay);
 
         // If current_time is off-limits the floodWindow...
         const auto fw_diff = current_time - _relays[id].fw_start;
@@ -465,13 +481,8 @@ void relaySync(unsigned char id) {
             for (unsigned short other_id=0; other_id<_relays.size(); other_id++) {
                 if (other_id != id) {
                     relayStatus(other_id, false);
-                    // https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
-                    // completely reset timing on the other relay to sync with this one
-                    // ensure that this relay turns on only AFTER the other relay is turned off
                     if (relayStatus(other_id)) {
-                        _relays[other_id].fw_start = _relays[id].change_start;
-                        _relays[other_id].fw_count = 1;
-                        _relays[id].change_delay = std::max(_relays[id].change_delay, _relays[other_id].change_delay);
+                        _relaySyncRelaysDelay(other_id, id);
                     }
                 }
             }
@@ -480,8 +491,9 @@ void relaySync(unsigned char id) {
     // If ONLY_ONE and setting OFF we should set ON the other one
     } else {
         if (relaySync == RELAY_SYNC_ONE) {
-            unsigned char i = (id + 1) % _relays.size();
-            relayStatus(i, true);
+            unsigned char other_id = (id + 1) % _relays.size();
+            _relaySyncRelaysDelay(id, other_id);
+            relayStatus(other_id, true);
         }
     }
 
@@ -716,6 +728,8 @@ void _relayConfigure() {
 
     _relay_flood_window = (1000 * getSetting("relayFloodTime", RELAY_FLOOD_WINDOW).toInt());
     _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES).toInt();
+
+    _relay_delay_interlock = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK).toInt();
 
     #if MQTT_SUPPORT
         settingsProcessConfig({
