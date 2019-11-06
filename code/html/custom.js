@@ -250,7 +250,7 @@ function addValue(data, name, value) {
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime",
+        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
@@ -263,6 +263,11 @@ function addValue(data, name, value) {
     // join both adminPass 1 and 2
     if (name.startsWith("adminPass")) {
         name = "adminPass";
+    }
+
+    // join all relayLastSch values
+    if (name.startsWith("relayLastSch")) {
+        name = "relayLastSch";
     }
 
     if (name in data) {
@@ -1025,6 +1030,10 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
+        $("input[name='relayLastSch']", line).prop('checked', data.sch_last[i]);
+        $("input[name='relayLastSch']", line).attr("id", "relayLastSch" + i);
+        $("input[name='relayLastSch']", line).attr("name", "relayLastSch" + i);
+        $("input[name='relayLastSch" + i + "']", line).next().attr("for","relayLastSch" + (i));
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
@@ -1459,7 +1468,7 @@ function processData(data) {
 				});
 			}
 			return;
-		}
+        }
 
         <!-- endRemoveIf(!rfm69)-->
 
@@ -1702,6 +1711,11 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
+            if (module == "sch") {
+                $("li.module-" + module).css("display", "inherit");
+                $("div.module-" + module).css("display", "flex");
+                return;
+            }
             $(".module-" + module).css("display", "inherit");
             return;
         }
