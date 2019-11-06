@@ -74,6 +74,9 @@ void setup() {
         debugSetup();
     #endif
 
+    // Init GPIO functions
+    gpioSetup();
+
     // Init RTCMEM
     rtcmemSetup();
 
