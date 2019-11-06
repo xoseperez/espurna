@@ -105,7 +105,7 @@
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUS002S
-//#define MIOBULB001
+//#define MUVIT_OI_MIOBULB001
 //#define NEO_COOLCAM_NAS_WR01W
 //#define NEXETE_A19
 //#define NODEMCU_BASIC

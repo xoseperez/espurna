@@ -4013,10 +4013,10 @@
 
 
 // -----------------------------------------------------------------------------
-// MIOBULB001
+// MUVIT_IO_MIOBULB001
 // -----------------------------------------------------------------------------
 
-#elif defined(MIOBULB001)
+#elif defined(MUVIT_IO_MIOBULB001)
 
     // Info
     #define MANUFACTURER        "MUVIT_IO"
