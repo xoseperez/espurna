@@ -67,7 +67,7 @@
 #endif
 #endif
 
-#if THINKSPEAK_SUPPORT
+#if THINGSPEAK_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
