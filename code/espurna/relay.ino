@@ -8,7 +8,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <EEPROM_Rotate.h>
 #include <Ticker.h>
-#include <Schedule.h>
 #include <ArduinoJson.h>
 #include <vector>
 #include <functional>
@@ -50,6 +49,14 @@ unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
 
 unsigned long _relay_delay_interlock;
+unsigned char _relay_sync_mode = RELAY_SYNC_ANY;
+bool _relay_sync_locked = false;
+
+#if WEB_SUPPORT
+
+bool _relay_report_ws = false;
+
+#endif // WEB_SUPPORT
 
 #if MQTT_SUPPORT
 
@@ -90,30 +97,17 @@ RelayStatus _relayStatusTyped(unsigned char id) {
 }
 
 void _relayLockAll() {
-    //DEBUG_MSG_P(PSTR("+ locking all relays\n"));
     for (auto& relay : _relays) {
         relay.lock = relay.target_status;
     }
+    _relay_sync_locked = true;
 }
 
 void _relayUnlockAll() {
-    //DEBUG_MSG_P(PSTR("- unlocking all relays\n"));
     for (auto& relay : _relays) {
         relay.lock = RELAY_LOCK_DISABLED;
     }
-}
-
-// https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
-// completely reset timing on the other relay to sync with this one
-// to ensure that they change state sequentially
-void _relaySyncRelaysDelay(unsigned char first, unsigned char second) {
-    _relays[second].fw_start = _relays[first].change_start;
-    _relays[second].fw_count = 1;
-    _relays[second].change_delay = std::max({
-        _relay_delay_interlock,
-        _relays[first].change_delay,
-        _relays[second].change_delay
-    });
+    _relay_sync_locked = false;
 }
 
 bool _relayStatusLock(unsigned char id, bool status) {
@@ -129,15 +123,30 @@ bool _relayStatusLock(unsigned char id, bool status) {
     return true;
 }
 
-void _relayUnlockWhenDone() {
-    bool unlock = true;
-    for (const auto& relay : _relays) {
-        unlock = (relay.current_status == relay.target_status);
-        if (!unlock) break;
-    }
+// https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
+// completely reset timing on the other relay to sync with this one
+// to ensure that they change state sequentially
+void _relaySyncRelaysDelay(unsigned char first, unsigned char second) {
+    _relays[second].fw_start = _relays[first].change_start;
+    _relays[second].fw_count = 1;
+    _relays[second].change_delay = std::max({
+        _relay_delay_interlock,
+        _relays[first].change_delay,
+        _relays[second].change_delay
+    });
+}
+
+void _relaySyncUnlock(const bool mode) {
+    const bool unlock = std::all_of(
+        _relays.begin(), _relays.end(),
+        [](const relay_t& relay) -> bool {
+            return relay.current_status == relay.target_status;
+        }
+    );
 
     if (unlock) {
         _relayUnlockAll();
+        _relay_report_ws = true;
     }
 }
 
@@ -260,7 +269,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
  */
 void _relayProcess(bool mode) {
 
-    const unsigned char relay_sync = getSetting("relaySync", RELAY_SYNC).toInt();
+    bool changed = false;
 
     for (unsigned char id = 0; id < _relays.size(); id++) {
 
@@ -274,7 +283,10 @@ void _relayProcess(bool mode) {
 
         // Only process if the change delay has expired
         if (millis() - _relays[id].change_start < _relays[id].change_delay) continue;
+
+        // Purge existing delay in case of cancelation
         _relays[id].change_delay = 0;
+        changed = true;
 
         DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
 
@@ -291,15 +303,9 @@ void _relayProcess(bool mode) {
             relayMQTT(id);
         #endif
 
-        // Count change delay for every other relay from this point of time
-        // TODO: queue relay processing instead of depending on explicit delays?
-        if ((relay_sync == RELAY_SYNC_ONE) || (relay_sync == RELAY_SYNC_NONE_OR_ONE)) {
-            const auto ts = millis();
-            for (auto& relay : _relays) {
-                relay.change_start = ts;
-            }
-            schedule_function(_relayUnlockWhenDone);
-        }
+        #if WEB_SUPPORT
+            _relay_report_ws = true;
+        #endif
 
         if (!_relayRecursive) {
 
@@ -311,15 +317,17 @@ void _relayProcess(bool mode) {
             bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
-            #if WEB_SUPPORT
-                wsPost(_relayWebSocketUpdate);
-            #endif
-
         }
 
         _relays[id].report = false;
         _relays[id].group_report = false;
 
+    }
+
+    // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
+    const bool needs_unlock = ((_relay_sync_mode == RELAY_SYNC_ONE) || (_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE));
+    if (_relay_sync_locked && needs_unlock && changed) {
+        _relaySyncUnlock(mode);
     }
 
 }
@@ -490,17 +498,16 @@ void relaySync(unsigned char id) {
     // Flag sync mode
     _relayRecursive = true;
 
-    byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
     bool status = _relays[id].target_status;
 
     // If RELAY_SYNC_SAME all relays should have the same state
-    if (relaySync == RELAY_SYNC_SAME) {
+    if (_relay_sync_mode == RELAY_SYNC_SAME) {
         for (unsigned short i=0; i<_relays.size(); i++) {
             if (i != id) relayStatus(i, status);
         }
 
     // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
-    } else if (relaySync == RELAY_SYNC_FIRST) {
+    } else if (_relay_sync_mode == RELAY_SYNC_FIRST) {
         if (id == 0) {
             for (unsigned short i=1; i<_relays.size(); i++) {
                 relayStatus(i, status);
@@ -509,7 +516,7 @@ void relaySync(unsigned char id) {
 
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
     } else if (status) {
-        if (relaySync != RELAY_SYNC_ANY) {
+        if (_relay_sync_mode != RELAY_SYNC_ANY) {
             for (unsigned short other_id=0; other_id<_relays.size(); other_id++) {
                 if (other_id != id) {
                     relayStatus(other_id, false);
@@ -523,10 +530,12 @@ void relaySync(unsigned char id) {
 
     // If ONLY_ONE and setting OFF we should set ON the other one
     } else {
-        if (relaySync == RELAY_SYNC_ONE) {
+        if (_relay_sync_mode == RELAY_SYNC_ONE) {
             unsigned char other_id = (id + 1) % _relays.size();
             _relaySyncRelaysDelay(id, other_id);
             relayStatus(other_id, true);
+        } else if (_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) {
+            _relayLockAll();
         }
     }
 
@@ -763,6 +772,7 @@ void _relayConfigure() {
     _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES).toInt();
 
     _relay_delay_interlock = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK).toInt();
+    _relay_sync_mode = getSetting("relaySync", RELAY_SYNC).toInt();
 
     #if MQTT_SUPPORT
         settingsProcessConfig({
@@ -1239,21 +1249,24 @@ void _relayInitCommands() {
         terminalOK();
     });
 
+    #if 0
     terminalRegisterCommand(F("RELAY.INFO"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("    cur tgt pin type reset  delay_on   delay_off  pulse  pulse_ms\n"));
-        DEBUG_MSG_P(PSTR("    --- --- --- ---- ----- ---------- ----------- ----- ----------\n"));
+        DEBUG_MSG_P(PSTR("    cur tgt pin type reset lock  delay_on   delay_off  pulse  pulse_ms\n"));
+        DEBUG_MSG_P(PSTR("    --- --- --- ---- ----- ---- ---------- ----------- ----- ----------\n"));
         for (unsigned char index = 0; index < _relays.size(); ++index) {
             const auto& relay = _relays.at(index);
-            DEBUG_MSG_P(PSTR("%3u %3s %3s %3u %4u %5u %10u %11u %5u %10u\n"),
+            DEBUG_MSG_P(PSTR("%3u %3s %3s %3u %4u %5u %4u %10u %11u %5u %10u\n"),
                 index,
                 relay.current_status ? "ON" : "OFF",
                 relay.target_status ? "ON" : "OFF",
                 relay.pin, relay.type, relay.reset_pin,
+                relay.lock,
                 relay.delay_on, relay.delay_off,
                 relay.pulse, relay.pulse_ms
             );
         }
     });
+    #endif
 
 }
 
@@ -1266,6 +1279,12 @@ void _relayInitCommands() {
 void _relayLoop() {
     _relayProcess(false);
     _relayProcess(true);
+    #if WEB_SUPPORT
+        if (_relay_report_ws) {
+            wsPost(_relayWebSocketUpdate);
+            _relay_report_ws = false;
+        }
+    #endif
 }
 
 void relaySetup() {
