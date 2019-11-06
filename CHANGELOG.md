@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Security
 
 - Web OTA: check authentication result before accepting payload ([#1812](https://github.com/xoseperez/espurna/issues/1812))
-- Authenticate /reset endpoint ([#1858](https://github.com/xoseperez/espurna/issues/1858), thanks to [**@foxman69**](https://github.com/foxman69))
+- Authenticate /reset endpoint ([#1858](https://github.com/xoseperez/espurna/issues/1858), thanks to **[@foxman69](https://github.com/foxman69)**)
 
 #### General
 - Avoid crashes when using NTPClientLib ([#1642](https://github.com/xoseperez/espurna/pull/1642))
@@ -17,18 +17,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Patch lwip1 MTU bug in travis-ci releases ([#1723](https://github.com/xoseperez/espurna/issues/1723))
 - Store default LED settings exactly once ([#1719](https://github.com/xoseperez/espurna/issues/1719), [#1724](https://github.com/xoseperez/espurna/issues/1724))
 - Backup EEPROM before performing OTA ([#1808](https://github.com/xoseperez/espurna/issues/1808), [#1809](https://github.com/xoseperez/espurna/issues/1809), thanks to **[@arihantdaga](https://github.com/arihantdaga)**)
-- Properly handle telnet negotiation ([#1927](https://github.com/xoseperez/espurna/issues/1927), thanks to [**@Niek**](https://github.com/Niek))
-- Markdown Typo Fix ([#1926](https://github.com/xoseperez/espurna/issues/1926), thanks to [**@mx-web**](https://github.com/mx-web))
+- Properly handle telnet negotiation ([#1927](https://github.com/xoseperez/espurna/issues/1927), thanks to **[@Niek](https://github.com/Niek)**)
+- Markdown Typo Fix ([#1926](https://github.com/xoseperez/espurna/issues/1926), thanks to **[@mx-web](https://github.com/mx-web)**)
 - Port PROGMEM definition from Cores 2.5.0+ to fix flashstring use in classes ([#1374](https://github.com/xoseperez/espurna/issues/1374))
 #### Devices
-- Add config for push button of Arilux AL-LC06 ([#1794](https://github.com/xoseperez/espurna/issues/1794), thanks to [**@user890104**](https://github.com/user890104))
+- Add config for push button of Arilux AL-LC06 ([#1794](https://github.com/xoseperez/espurna/issues/1794), thanks to **[@user890104](https://github.com/user890104)**)
 #### WiFi
 - Don't change softAP configuration while user is still connected ([#1881](https://github.com/xoseperez/espurna/issues/1881))
 - Place WIFIN\_... strings in flash ([#1893](https://github.com/xoseperez/espurna/issues/1893))
 #### MQTT
 - Reset connection timer with PubSubClient / ArduinoMQTT ([#1702](https://github.com/xoseperez/espurna/issues/1702))
 - Remove 'connecting' flag when connected ([#1757](https://github.com/xoseperez/espurna/issues/1757))
-- Send brightness topic to HA regardless of color setting ([#1730](https://github.com/xoseperez/espurna/issues/1730), thanks to [**@copyrights**](https://github.com/copyrights))
+- Send brightness topic to HA regardless of color setting ([#1730](https://github.com/xoseperez/espurna/issues/1730), thanks to **[@copyrights](https://github.com/copyrights)**)
 #### Domoticz
 - Fix crashes with unknown idx values ([#1588](https://github.com/xoseperez/espurna/issues/1588))
 - Treat nvalue >= 1 as true ([#1606](https://github.com/xoseperez/espurna/issuess/1606))
@@ -46,10 +46,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Send debug messages in batches ([#1851](https://github.com/xoseperez/espurna/issues/1851))
 - Wait for data to be saved before rebooting ([#1863](https://github.com/xoseperez/espurna/issues/1863), thanks to **[@foxman69](https://github.com/foxman69)**)
 #### Sensors
-- Fix cse7766 magnitude count ([#1665](https://github.com/xoseperez/espurna/issues/1665), thanks to [**@lipoforall**](https://github.com/lipoforall))
-- Fix energy storage when units different from joules ([#1335](https://github.com/xoseperez/espurna/issues/1335), thanks to **[@eschava](https://github.com/eschava)**)
+- Fix cse7766 missing energy magnitude ([#1665](https://github.com/xoseperez/espurna/issues/1665), thanks to **[@lipoforall](https://github.com/lipoforall)**)
+- Fix stored energy values when using kWh ([#1334](https://github.com/xoseperez/espurna/issues/1334)
 - Remove pinMode(0, ...) from AnalogSensor ([#1777](https://github.com/xoseperez/espurna/issues/1777), [#1827](https://github.com/xoseperez/espurna/issues/1827))
-- Check value range for PMSX005 and SenseAir CO2 sensor ([#1865](https://github.com/xoseperez/espurna/issues/1865), thanks to [**@Yonsm**](https://github.com/Yonsm))
+- Check value range for PMSX005 and SenseAir CO2 sensor ([#1865](https://github.com/xoseperez/espurna/issues/1865), thanks to **[@Yonsm](https://github.com/Yonsm)**)
 #### Build
 - Fix Travis failing with INFLUXDB_SUPPORT ([#1565](https://github.com/xoseperez/espurna/issues/1565))
 - Build with platformio 4 ([#1805](https://github.com/xoseperez/espurna/issues/1805))
@@ -68,24 +68,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add UNUSED macro to prevent warnings
 - Log in travis-ci if WebUI files have changed
 - Terminal: heap fragmentation stat ([#1740](https://github.com/xoseperez/espurna/issues/1740))
-- Recommend using basic BearSSL ciphers with low memory boards ([#1810](https://github.com/xoseperez/espurna/issues/1810), thanks to [**@Niek**](https://github.com/Niek))
+- Recommend using basic BearSSL ciphers with low memory boards ([#1810](https://github.com/xoseperez/espurna/issues/1810), thanks to **[@Niek](https://github.com/Niek)**)
 - Add setting for WiFi TX power ([#1915](https://github.com/xoseperez/espurna/issues/1915))
 - New boot mode to lock relay status on boot ([#1705](https://github.com/xoseperez/espurna/issues/1705))
 - Add netstat and dns probing (Core 2.5.2+) ([#1907](https://github.com/xoseperez/espurna/issues/1907))
 - softAP button action will toggle back to STA mode ([#1942](https://github.com/xoseperez/espurna/pull/1942))
 #### MQTT
-- Add option to disable relay reporting ([#1645](https://github.com/xoseperez/espurna/issues/1645), thanks to [**@Niek**](https://github.com/Niek))
+- Add option to disable relay reporting ([#1645](https://github.com/xoseperez/espurna/issues/1645), thanks to **[@Niek](https://github.com/Niek)**)
 - Safer settings reload and change detection ([#1701](https://github.com/xoseperez/espurna/issues/1701))
 - `mqtt.info` command ([#1757](https://github.com/xoseperez/espurna/issues/1757))
-- MQTT rewrite with SSL fixes ([#1751](https://github.com/xoseperez/espurna/issues/1751), [#1829](https://github.com/xoseperez/espurna/issues/1829), thanks to [**@Niek**](https://github.com/Niek))
+- MQTT rewrite with SSL fixes ([#1751](https://github.com/xoseperez/espurna/issues/1751), [#1829](https://github.com/xoseperez/espurna/issues/1829), thanks to **[@Niek](https://github.com/Niek)**)
 - Generic secure client configuration ([#1873](https://github.com/xoseperez/espurna/issues/1873))
 - Custom relay status payloads ([#1885](https://github.com/xoseperez/espurna/issues/1885), [#1889](https://github.com/xoseperez/espurna/issues/1889))
 #### Devices
 
-* Add espurna-base for [tuya-convert](https://github.com/ct-Open-Source/tuya-convert, thanks to **[@xoseperez](https://github.com/xoseperez)**)
-* Add espurna-core-wps
-* Add espurna-core-smartconfig
-
+- Add espurna-base for [tuya-convert](https://github.com/ct-Open-Source/tuya-convert), thanks to **[@xoseperez](https://github.com/xoseperez)**
+- Add espurna-core-wps
+- Add espurna-core-smartconfig
 - LightFox dual support ([#1468](https://github.com/xoseperez/espurna/issues/1468), thanks to **[@foxel](https://github.com/foxel)**)
 - Support for Digoo/Oxaoxe NX-SP202 ([#1502](https://github.com/xoseperez/espurna/issues/1502), thanks to **[@kobuki](https://github.com/kobuki)**)
 - HAMA outlet model number 00176552 ([#1598](https://github.com/xoseperez/espurna/issues/1598), thanks to **[@markusrudolf](https://github.com/markusrudolf)**)
@@ -122,7 +121,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - PZEM004T: settings & dev board ([#1712](https://github.com/xoseperez/espurna/issues/1712))
 - Added LDR sensor (Thanks to Altan Altay)
 #### Lights
-- Allow to set relative brightness, channel value and color in mireds using +N and -N notation ([#1607](https://github.com/xoseperez/espurna/issues/1607), [#1938](https://github.com/xoseperez/espurna/pull/1938), thanks to [**@tsymbaliuk**](https://github.com/tsymbaliuk))
+- Allow to set relative brightness, channel value and color in mireds using +N and -N notation ([#1607](https://github.com/xoseperez/espurna/issues/1607), [#1938](https://github.com/xoseperez/espurna/pull/1938), thanks to **[@tsymbaliuk](https://github.com/tsymbaliuk)**)
 - Two channel CCT ([#1732](https://github.com/xoseperez/espurna/issues/1732), thanks to **[@copyrights](https://github.com/copyrights)**)
 - Send to mired topic if CCT is in use ([#1732](https://github.com/xoseperez/espurna/issues/1732), [#1742](https://github.com/xoseperez/espurna/issues/1742), thanks to **[@copyrights](https://github.com/copyrights)**)
 - Add description for each channel when using terminal commands ([#1826](https://github.com/xoseperez/espurna/issues/1826))
