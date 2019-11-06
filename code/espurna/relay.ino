@@ -8,6 +8,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <EEPROM_Rotate.h>
 #include <Ticker.h>
+#include <Schedule.h>
 #include <ArduinoJson.h>
 #include <vector>
 #include <functional>
@@ -88,6 +89,20 @@ RelayStatus _relayStatusTyped(unsigned char id) {
     return (status) ? RelayStatus::ON : RelayStatus::OFF;
 }
 
+void _relayLockAll() {
+    //DEBUG_MSG_P(PSTR("+ locking all relays\n"));
+    for (auto& relay : _relays) {
+        relay.lock = relay.target_status;
+    }
+}
+
+void _relayUnlockAll() {
+    //DEBUG_MSG_P(PSTR("- unlocking all relays\n"));
+    for (auto& relay : _relays) {
+        relay.lock = RELAY_LOCK_DISABLED;
+    }
+}
+
 // https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
 // completely reset timing on the other relay to sync with this one
 // to ensure that they change state sequentially
@@ -99,6 +114,31 @@ void _relaySyncRelaysDelay(unsigned char first, unsigned char second) {
         _relays[first].change_delay,
         _relays[second].change_delay
     });
+}
+
+bool _relayStatusLock(unsigned char id, bool status) {
+    if (_relays[id].lock != RELAY_LOCK_DISABLED) {
+        bool lock = _relays[id].lock == RELAY_LOCK_ON;
+        if ((lock != status) || (lock != _relays[id].target_status)) {
+            _relays[id].target_status = lock;
+            _relays[id].change_delay = 0;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void _relayUnlockWhenDone() {
+    bool unlock = true;
+    for (const auto& relay : _relays) {
+        unlock = (relay.current_status == relay.target_status);
+        if (!unlock) break;
+    }
+
+    if (unlock) {
+        _relayUnlockAll();
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -232,23 +272,6 @@ void _relayProcess(bool mode) {
         // Only process the relays we have to change to the requested mode
         if (target != mode) continue;
 
-        // Only process the relays that can be changed
-        switch (_relays[id].lock) {
-            case RELAY_LOCK_ON:
-            case RELAY_LOCK_OFF:
-                {
-                    bool lock = _relays[id].lock == 1;
-                    if (lock != _relays[id].target_status) {
-                        _relays[id].target_status = lock;
-                        continue;
-                    }
-                    break;
-                }
-            case RELAY_LOCK_DISABLED:
-            default:
-                break;
-        }
-
         // Only process if the change delay has expired
         if (millis() - _relays[id].change_start < _relays[id].change_delay) continue;
         _relays[id].change_delay = 0;
@@ -275,6 +298,7 @@ void _relayProcess(bool mode) {
             for (auto& relay : _relays) {
                 relay.change_start = ts;
             }
+            schedule_function(_relayUnlockWhenDone);
         }
 
         if (!_relayRecursive) {
@@ -366,6 +390,13 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
     if (id >= _relays.size()) return false;
 
+    if (!_relayStatusLock(id, status)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%d is locked to %s\n"), id, _relays[id].current_status ? "ON" : "OFF");
+        _relays[id].report = true;
+        _relays[id].group_report = true;
+        return false;
+    }
+
     bool changed = false;
 
     if (_relays[id].current_status == status) {
@@ -375,6 +406,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
             _relays[id].target_status = status;
             _relays[id].report = false;
             _relays[id].group_report = false;
+            _relays[id].change_delay = 0;
             changed = true;
         }
 
@@ -486,6 +518,7 @@ void relaySync(unsigned char id) {
                     }
                 }
             }
+            _relayLockAll();
         }
 
     // If ONLY_ONE and setting OFF we should set ON the other one
