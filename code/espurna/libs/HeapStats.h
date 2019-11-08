@@ -6,7 +6,7 @@ Show extended heap stats when EspClass::getHeapStats() is available
 
 #pragma once
 
-#include <type_traits>
+#include "TypeChecks.h"
 
 struct heap_stats_t {
     uint32_t available;
@@ -14,22 +14,28 @@ struct heap_stats_t {
     uint8_t frag_pct;
 };
 
-CREATE_CHECK(EspClass, getHeapStats, 0, 0, 0);
+namespace heap_stats {
+    template <typename T>
+    using has_getHeapStats_t = decltype(std::declval<T>().getHeapStats(0,0,0));
+
+    template <typename T>
+    using has_getHeapStats = is_detected<has_getHeapStats_t, T>;
+}
 
 template <typename T>
-void _getHeapStats(std::true_type&, T& instance, heap_stats_t& stats) {
+void _getHeapStats(const std::true_type&, T& instance, heap_stats_t& stats) {
     instance.getHeapStats(&stats.available, &stats.usable, &stats.frag_pct);
 }
 
 template <typename T>
-void _getHeapStats(std::false_type&, T& instance, heap_stats_t& stats) {
+void _getHeapStats(const std::false_type&, T& instance, heap_stats_t& stats) {
     stats.available = instance.getFreeHeap();
     stats.usable = 0;
     stats.frag_pct = 0;
 }
 
 void getHeapStats(heap_stats_t& stats) {
-    _getHeapStats(has_getHeapStats::check, ESP, stats);
+    _getHeapStats(heap_stats::has_getHeapStats<decltype(ESP)>{}, ESP, stats);
 }
 
 // WTF
@@ -85,7 +91,7 @@ void infoHeapStats(const char* name, const heap_stats_t& stats) {
 void infoHeapStats(bool show_frag_stats = true) {
     const auto stats = getHeapStats();
     infoMemory("Heap", stats);
-    if (show_frag_stats && has_getHeapStats::check) {
+    if (show_frag_stats && heap_stats::has_getHeapStats<decltype(ESP)>{}) {
         infoHeapStats("Heap", stats);
     }
 }
