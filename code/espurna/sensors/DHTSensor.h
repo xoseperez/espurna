@@ -137,13 +137,14 @@ class DHTSensor : public BaseSensor {
             unsigned char byteInx = 0;
             unsigned char bitInx = 7;
 
+            pinMode(_gpio, OUTPUT);
+
         	// Send start signal to DHT sensor
         	if (++_errors > DHT_MAX_ERRORS) {
                 _errors = 0;
                 digitalWrite(_gpio, HIGH);
                 nice_delay(250);
             }
-            pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
             if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
