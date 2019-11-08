@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.6--dev-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.14.0--dev-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
@@ -35,7 +35,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
-> Process of building ESPurna from source is documented in the Wiki:
+> Process of building ESPurna from source is documented in the Wiki:  
 [Using PlatformIO IDE for VSCode](https://github.com/xoseperez/espurna/wiki/Build-and-update-from-Visual-Studio-Code-using-PlatformIO)  
 [Using PlatformIO CLI](https://github.com/xoseperez/espurna/wiki/PlatformIO)  
 [Using Arduino IDE](https://github.com/xoseperez/espurna/wiki/ArduinoIDE)  
