@@ -13,12 +13,12 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
 
 #include <memory>
-#include <libs/TypeChecks.h>
 
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
 #include "libs/URL.h"
+#include "libs/TypeChecks.h"
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
 
