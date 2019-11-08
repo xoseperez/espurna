@@ -1372,7 +1372,7 @@ void migrate() {
             setSetting("hlwSelC", LOW);
             setSetting("hlwIntM", FALLING);
 
-        #elif defined(MUVI_IO_MIOBULB001)
+        #elif defined(MUVIT_IO_MIOBULB001)
 
             setSetting("board", 102);
             setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
