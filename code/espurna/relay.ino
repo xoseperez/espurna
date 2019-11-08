@@ -43,7 +43,6 @@ typedef struct {
 } relay_t;
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
-Ticker _relaySaveTicker;
 
 unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
@@ -51,6 +50,9 @@ unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
 unsigned long _relay_delay_interlock;
 unsigned char _relay_sync_mode = RELAY_SYNC_ANY;
 bool _relay_sync_locked = false;
+
+Ticker _relay_save_timer;
+Ticker _relay_sync_timer;
 
 #if WEB_SUPPORT
 
@@ -136,17 +138,26 @@ void _relaySyncRelaysDelay(unsigned char first, unsigned char second) {
     });
 }
 
-void _relaySyncUnlock(const bool mode) {
-    const bool unlock = std::all_of(
-        _relays.begin(), _relays.end(),
-        [](const relay_t& relay) -> bool {
-            return relay.current_status == relay.target_status;
-        }
-    );
+void _relaySyncUnlock() {
+    bool unlock = true;
+    bool all_off = true;
+    for (const auto& relay : _relays) {
+        unlock = unlock && (relay.current_status == relay.target_status);
+        if (!unlock) break;
+        all_off = all_off && !relay.current_status;
+    }
 
-    if (unlock) {
+    if (!unlock) return;
+
+    auto action = []() {
         _relayUnlockAll();
         _relay_report_ws = true;
+    };
+
+    if (all_off) {
+        _relay_sync_timer.once_ms(_relay_delay_interlock, action);
+    } else {
+        action();
     }
 }
 
@@ -315,7 +326,7 @@ void _relayProcess(bool mode) {
             // we care about current relay status on boot
             unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
             bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
-            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
+            _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
         }
 
@@ -325,9 +336,9 @@ void _relayProcess(bool mode) {
     }
 
     // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
-    const bool needs_unlock = ((_relay_sync_mode == RELAY_SYNC_ONE) || (_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE));
+    const bool needs_unlock = ((_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) || (_relay_sync_mode == RELAY_SYNC_ONE));
     if (_relay_sync_locked && needs_unlock && changed) {
-        _relaySyncUnlock(mode);
+        _relaySyncUnlock();
     }
 
 }
@@ -514,29 +525,28 @@ void relaySync(unsigned char id) {
             }
         }
 
-    // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
-    } else if (status) {
-        if (_relay_sync_mode != RELAY_SYNC_ANY) {
-            for (unsigned short other_id=0; other_id<_relays.size(); other_id++) {
-                if (other_id != id) {
-                    relayStatus(other_id, false);
-                    if (relayStatus(other_id)) {
-                        _relaySyncRelaysDelay(other_id, id);
+    } else if ((_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) || (_relay_sync_mode == RELAY_SYNC_ONE)) {
+        // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
+        if (status) {
+            if (_relay_sync_mode != RELAY_SYNC_ANY) {
+                for (unsigned short other_id=0; other_id<_relays.size(); other_id++) {
+                    if (other_id != id) {
+                        relayStatus(other_id, false);
+                        if (relayStatus(other_id)) {
+                            _relaySyncRelaysDelay(other_id, id);
+                        }
                     }
                 }
             }
-            _relayLockAll();
+        // If ONLY_ONE and setting OFF we should set ON the other one
+        } else {
+            if (_relay_sync_mode == RELAY_SYNC_ONE) {
+                unsigned char other_id = (id + 1) % _relays.size();
+                _relaySyncRelaysDelay(id, other_id);
+                relayStatus(other_id, true);
+            }
         }
-
-    // If ONLY_ONE and setting OFF we should set ON the other one
-    } else {
-        if (_relay_sync_mode == RELAY_SYNC_ONE) {
-            unsigned char other_id = (id + 1) % _relays.size();
-            _relaySyncRelaysDelay(id, other_id);
-            relayStatus(other_id, true);
-        } else if (_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) {
-            _relayLockAll();
-        }
+        _relayLockAll();
     }
 
     // Unflag sync mode
