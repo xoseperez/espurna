@@ -14,6 +14,8 @@ std::bitset<GPIO_PINS> _gpio_locked;
 std::bitset<GPIO_PINS> _gpio_available;
 
 bool gpioValid(unsigned char gpio) {
+    if (gpio >= GPIO_PINS) return false;
+
     return _gpio_available.test(gpio);
 }
 
