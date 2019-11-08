@@ -149,7 +149,7 @@ class DHTSensor : public BaseSensor {
             if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
                 nice_delay(20);
             } else {
-                delayMicroseconds(500);
+                delayMicroseconds(1100);
             }
             digitalWrite(_gpio, HIGH);
             delayMicroseconds(40);
