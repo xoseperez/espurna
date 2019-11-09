@@ -473,6 +473,10 @@
 #define RELAY8_DELAY_OFF      0
 #endif
 
+#ifndef RELAY_DELAY_INTERLOCK
+#define RELAY_DELAY_INTERLOCK       0
+#endif
+
 // -----------------------------------------------------------------------------
 // LEDs
 // -----------------------------------------------------------------------------
@@ -552,6 +556,31 @@
 #define LED8_RELAY          8
 #endif
 
+#ifndef LED1_PIN_INVERSE
+#define LED1_PIN_INVERSE            0
+#endif
+#ifndef LED2_PIN_INVERSE
+#define LED2_PIN_INVERSE            0
+#endif
+#ifndef LED3_PIN_INVERSE
+#define LED3_PIN_INVERSE            0
+#endif
+#ifndef LED4_PIN_INVERSE
+#define LED4_PIN_INVERSE            0
+#endif
+#ifndef LED5_PIN_INVERSE
+#define LED5_PIN_INVERSE            0
+#endif
+#ifndef LED6_PIN_INVERSE
+#define LED6_PIN_INVERSE            0
+#endif
+#ifndef LED7_PIN_INVERSE
+#define LED7_PIN_INVERSE            0
+#endif
+#ifndef LED8_PIN_INVERSE
+#define LED8_PIN_INVERSE            0
+#endif
+
 // -----------------------------------------------------------------------------
 // Digital Inputs
 // -----------------------------------------------------------------------------
@@ -608,6 +637,34 @@
 #endif
 #ifndef EVENTS8_PIN
 #define EVENTS8_PIN         GPIO_NONE
+#endif
+
+// -----------------------------------------------------------------------------
+// Lights
+// -----------------------------------------------------------------------------
+
+#ifndef LIGHT_CHANNELS
+#define LIGHT_CHANNELS      0
+#endif
+
+#ifndef LIGHT_CH1_INVERSE
+#define LIGHT_CH1_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH2_INVERSE
+#define LIGHT_CH2_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH3_INVERSE
+#define LIGHT_CH3_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH4_INVERSE
+#define LIGHT_CH4_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH5_INVERSE
+#define LIGHT_CH5_INVERSE   0
 #endif
 
 // -----------------------------------------------------------------------------

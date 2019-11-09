@@ -316,6 +316,7 @@
 #define SENSOR_MAX6675_ID           35
 #define SENSOR_LDR_ID               36
 #define SENSOR_ADE7953_ID           37
+#define SENSOR_T6613_ID             38
 
 //--------------------------------------------------------------------------------
 // Magnitudes

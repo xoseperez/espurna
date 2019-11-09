@@ -8,25 +8,25 @@
 #define TELNET_AUTHENTICATION TELNET_PASSWORD
 #endif
 
-// 1.13.6 combines RF_SUPPORT with RFB_DIRECT
+// 1.14.0 combines RF_SUPPORT with RFB_DIRECT
 #ifdef RF_PIN
 #warning RF_PIN is deprecated! Please use RFB_RX_PIN instead
 #define RFB_RX_PIN RF_PIN
 #endif
 
-// 1.13.6 allow multiple digitals
+// 1.14.0 allow multiple digitals
 #ifdef DIGITAL_PIN
 #warning DIGITAL_PIN is deprecated! Please use DIGITAL1_PIN instead
 #define DIGITAL1_PIN DIGITAL_PIN
 #endif
 
-// 1.13.6 allow multiple events
+// 1.14.0 allow multiple events
 #ifdef EVENTS_PIN
 #warning EVENTS_PIN is deprecated! Please use EVENTS1_PIN instead
 #define EVENTS1_PIN EVENTS_PIN
 #endif
 
-// 1.13.6 unifies mqtt payload options
+// 1.14.0 unifies mqtt payload options
 #ifdef HOMEASSISTANT_PAYLOAD_ON
 #warning HOMEASSISTANT_PAYLOAD_ON is deprecated! Global RELAY_MQTT_ON is used instead
 #endif

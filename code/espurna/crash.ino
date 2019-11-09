@@ -152,24 +152,29 @@ void crashDump() {
 
     DEBUG_MSG_P(PSTR("sp=0x%08x end=0x%08x saved=0x%04x\n\n"), stack_start, stack_end, stack_size);
     if (0xFFFF == stack_size) return;
+    stack_size = constrain(stack_size, 0, _save_crash_stack_trace_max);
 
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
-
     uint32_t stack_trace;
 
     DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
 
-    for (int16_t i = 0; i < stack_size; i += 0x10) {
-        DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
-        for (byte j = 0; j < 4; j++) {
+    uint16_t offset = 0;
+    do {
+        DEBUG_MSG_P(PSTR("%08x: "), stack_start + offset);
+        for (byte b = 0; b < 4; b++) {
             EEPROMr.get(current_address, stack_trace);
             DEBUG_MSG_P(PSTR("%08x "), stack_trace);
             current_address += 4;
         }
         DEBUG_MSG_P(PSTR("\n[DEBUG] "));
-    }
+    } while ((offset < stack_size) && (offset += 0x10));
     DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 
+}
+
+constexpr size_t crashUsedSpace() {
+    return (SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_SIZE + 2);
 }
 
 void crashSetup() {
@@ -183,9 +188,16 @@ void crashSetup() {
     #endif
 
     // Minumum of 16 and align for column formatter in crashDump()
-    _save_crash_stack_trace_max = getSetting("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX).toInt();
-    _save_crash_stack_trace_max = (_save_crash_stack_trace_max + 15) & -16;
-    setSetting("sysScTraceMax", _save_crash_stack_trace_max);
+    // Maximum of flash sector size minus reserved space at the beginning
+    const uint16_t trace_max = constrain(
+        abs((getSetting("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX).toInt() + 15) & -16),
+        0, (SPI_FLASH_SEC_SIZE - crashUsedSpace())
+    );
+
+    if (trace_max != _save_crash_stack_trace_max) {
+        setSetting("sysTraceMax", trace_max);
+    }
+    _save_crash_stack_trace_max = trace_max;
 
     _save_crash_enabled = getSetting("sysCrashSave", 1).toInt() == 1;
 

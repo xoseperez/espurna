@@ -71,11 +71,17 @@ def ensure_platform_updated():
             print("updating platform packages", file=sys.stderr)
             PIO_PLATFORM.update_packages()
     except Exception:
-        print("Warning: no connection, cannot check for outdated packages", file=sys.stderr)
+        print(
+            "Warning: no connection, cannot check for outdated packages",
+            file=sys.stderr,
+        )
+
 
 # latest toolchain is still optional with PIO (TODO: recheck after 2.6.0!)
 # also updates arduino core git to the latest master commit
-if TRAVIS and (env.GetProjectOption("platform") == CONFIG.get("common", "arduino_core_git")):
+if TRAVIS and (
+    env.GetProjectOption("platform") == CONFIG.get("common", "arduino_core_git")
+):
     ensure_platform_updated()
 
 # to speed-up build process, install libraries in either global or local shared storage

@@ -15,6 +15,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <DebounceEvent.h>
 #include <vector>
 
+#include "light.h"
+
 typedef struct {
     DebounceEvent * button;
     unsigned long actions;
@@ -35,6 +37,16 @@ void buttonMQTT(unsigned char id, uint8_t event) {
 #endif
 
 #if WEB_SUPPORT
+
+unsigned char _buttonCount() {
+    return _buttons.size();
+}
+
+void _buttonWebSocketOnVisible(JsonObject& root) {
+    if (_buttonCount() > 0) {
+        root["btnVisible"] = 1;
+    }
+}
 
 bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "btn", 3) == 0);
@@ -124,7 +136,11 @@ void buttonEvent(unsigned int id, unsigned char event) {
     }
     
     if (BUTTON_MODE_AP == action) {
-        wifiStartAP();
+        if (wifiState() & WIFI_STATE_AP) {
+            wifiStartSTA();
+        } else {
+            wifiStartAP();
+        }
     }
     
     if (BUTTON_MODE_RESET == action) {
@@ -243,7 +259,9 @@ void buttonSetup() {
 
     // Websocket Callbacks
     #if WEB_SUPPORT
-        wsRegister().onKeyCheck(_buttonWebSocketOnKeyCheck);
+        wsRegister()
+            .onVisible(_buttonWebSocketOnVisible)
+            .onKeyCheck(_buttonWebSocketOnKeyCheck);
     #endif
 
     // Register loop

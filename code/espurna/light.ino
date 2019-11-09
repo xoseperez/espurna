@@ -52,12 +52,20 @@ bool _light_provider_update = false;
 
 bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
-unsigned long _light_steps_left = 1;
 
 bool _light_dirty = false;
 bool _light_state = false;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
-unsigned int _light_mireds = lround((Light::MIREDS_COLDWHITE + Light::MIREDS_WARMWHITE) / 2);
+
+// Default to the Philips Hue value that HA also use.
+// https://developers.meethue.com/documentation/core-concepts
+long _light_cold_mireds = LIGHT_COLDWHITE_MIRED;
+long _light_warm_mireds = LIGHT_WARMWHITE_MIRED;
+
+long _light_cold_kelvin = (1000000L / _light_cold_mireds);
+long _light_warm_kelvin = (1000000L / _light_warm_mireds);
+
+long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
 
 using light_brightness_func_t = void();
 light_brightness_func_t* _light_brightness_func = nullptr;
@@ -128,7 +136,7 @@ void _setCCTInputValue(unsigned char warm, unsigned char cold) {
     _setInputValue(1, constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
-void _lightApplyBrightness(unsigned char channels = lightChannels()) {
+void _lightApplyBrightness(size_t channels = lightChannels()) {
 
     double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BRIGHTNESS_MAX);
 
@@ -155,7 +163,7 @@ void _lightApplyBrightnessColor() {
     if (_light_use_cct) {
 
         // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-        double miredFactor = ((double) _light_mireds - (double) Light::MIREDS_COLDWHITE)/((double) Light::MIREDS_WARMWHITE - (double) Light::MIREDS_COLDWHITE);
+        double miredFactor = ((double) _light_mireds - (double) _light_cold_mireds)/((double) _light_warm_mireds - (double) _light_cold_mireds);
 
         // set cold white
         _light_channel[3].inputValue = 0;
@@ -197,7 +205,7 @@ void _lightApplyBrightnessColor() {
 }
 
 String lightDesc(unsigned char id) {
-    if (id >= _light_channel.size()) return F("UNKNOWN");
+    if (id >= _light_channel.size()) return FPSTR(pstr_unknown);
 
     const char tag = pgm_read_byte(&_light_channel_desc[_light_channel.size() - 1][id]);
     switch (tag) {
@@ -209,7 +217,7 @@ String lightDesc(unsigned char id) {
         default: break;
     }
 
-    return F("UNKNOWN");
+    return FPSTR(pstr_unknown);
 }
 
 // -----------------------------------------------------------------------------
@@ -219,53 +227,39 @@ String lightDesc(unsigned char id) {
 void _fromLong(unsigned long value, bool brightness) {
     if (brightness) {
         _setRGBInputValue((value >> 24) & 0xFF, (value >> 16) & 0xFF, (value >> 8) & 0xFF);
-        _light_brightness = (value & 0xFF) * Light::BRIGHTNESS_MAX / 255;
+        lightBrightness((value & 0xFF) * Light::BRIGHTNESS_MAX / 255);
     } else {
         _setRGBInputValue((value >> 16) & 0xFF, (value >> 8) & 0xFF, (value) & 0xFF);
     }
 }
 
 void _fromRGB(const char * rgb) {
-    char * p = (char *) rgb;
-    if (strlen(p) == 0) return;
+    // 9 char #........ , 11 char ...,...,...
+    if (!_light_has_color) return;
+    if (!rgb || (strlen(rgb) == 0)) return;
 
-    switch (p[0]) {
-      case '#': // HEX Value
-        if (_light_has_color) {
-            ++p;
-            unsigned long value = strtoul(p, NULL, 16);
-            // RGBA values are interpreted like RGB + brightness
-            _fromLong(value, strlen(p) > 7);
-        }
-        break;
-      case 'M': // Mired Value
-          _fromMireds(atol(p + 1));
-        break;
-      case 'K': // Kelvin Value
-          _fromKelvin(atol(p + 1));
-        break;
-      default: // assume decimal values separated by commas
-        char * tok;
+    // HEX value is always prefixed, like CSS
+    // values are interpreted like RGB + optional brightness
+    if (rgb[0] == '#') {
+        _fromLong(strtoul(rgb + 1, nullptr, 16), strlen(rgb + 1) > 7);
+    // With comma separated string, assume decimal values
+    } else {
+        const auto channels = _light_channel.size();
         unsigned char count = 0;
-        unsigned char channels = _light_channel.size();
 
-        tok = strtok(p, ",");
+        char buf[16] = {0};
+        strncpy(buf, rgb, sizeof(buf) - 1);
+        char *tok = strtok(buf, ",");
         while (tok != NULL) {
             _setInputValue(count, atoi(tok));
             if (++count == channels) break;
             tok = strtok(NULL, ",");
         }
 
-        // RGB but less than 3 values received, assume it is 0
-        if (_light_has_color && (count < 3)) {
-            // check channel 1 and 2:
-            for (int i = 1; i <= 2; i++) {
-                if (count < (i+1)) {
-                    _setInputValue(i, 0);
-                }
-            }
-        }
-        break;
+        // If less than 3 values received, set the rest to 0
+        if (count < 2) _setInputValue(1, 0);
+        if (count < 3) _setInputValue(2, 0);
+        return;
     }
 }
 
@@ -274,16 +268,16 @@ void _fromRGB(const char * rgb) {
 //   0 <= S <= 100
 //   0 <= V <= 100
 void _fromHSV(const char * hsv) {
-
-    char * ptr = (char *) hsv;
-    if (strlen(ptr) == 0) return;
     if (!_light_has_color) return;
+    if (strlen(hsv) == 0) return;
 
-    char * tok;
+    char buf[16] = {0};
+    strncpy(buf, hsv, sizeof(buf) - 1);
+
     unsigned char count = 0;
     unsigned int value[3] = {0};
 
-    tok = strtok(ptr, ",");
+    char * tok = strtok(buf, ",");
     while (tok != NULL) {
         value[count] = atoi(tok);
         if (++count == 3) break;
@@ -297,14 +291,14 @@ void _fromHSV(const char * hsv) {
     //IS: [145,0,0]
     //SHOULD: [255,0,0]
 
-    double h = (value[0] == 360) ? 0 : (double) value[0] / 60.0;
-    double f = (h - floor(h));
-    double s = (double) value[1] / 100.0;
+    const double h = (value[0] == 360) ? 0 : (double) value[0] / 60.0;
+    const double f = (h - floor(h));
+    const double s = (double) value[1] / 100.0;
 
     _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BRIGHTNESS_MAX) / 100.0)); // (default 255/100)
-    unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
-    unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
-    unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
+    const unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
+    const unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
+    const unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
 
     switch (int(h)) {
         case 0:
@@ -333,25 +327,39 @@ void _fromHSV(const char * hsv) {
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
-void _fromKelvin(unsigned long kelvin) {
+// Color temperature is measured in mireds (kelvin = 1e6/mired)
+long _toKelvin(const long mireds) {
+    return constrain(static_cast<long>(1000000L / mireds), _light_warm_kelvin, _light_cold_kelvin);
+}
+
+long _toMireds(const long kelvin) {
+    return constrain(static_cast<long>(lround(1000000L / kelvin)), _light_cold_mireds, _light_warm_mireds);
+}
+
+void _lightMireds(const long kelvin) {
+    _light_mireds = _toMireds(kelvin);
+}
+
+void _lightMiredsCCT(const long kelvin) {
+    _lightMireds(kelvin);
+
+    // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
+    const double factor = ((double) _light_mireds - (double) _light_cold_mireds)/((double) _light_warm_mireds - (double) _light_cold_mireds);
+    _setCCTInputValue(
+        lround(factor * Light::VALUE_MAX),
+        lround(((double) 1.0 - factor) * Light::VALUE_MAX)
+    );
+}
+
+void _fromKelvin(long kelvin) {
 
     if (!_light_has_color) {
-
-      if(!_light_use_cct) return;
-
-      _light_mireds = constrain(static_cast<unsigned int>(lround(1000000UL / kelvin)), Light::MIREDS_COLDWHITE, Light::MIREDS_WARMWHITE);
-
-      // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-      double factor = ((double) _light_mireds - (double) Light::MIREDS_COLDWHITE)/((double) Light::MIREDS_WARMWHITE - (double) Light::MIREDS_COLDWHITE);
-      unsigned char warm = lround(factor * Light::VALUE_MAX);
-      unsigned char cold = lround(((double) 1.0 - factor) * Light::VALUE_MAX);
-
-      _setCCTInputValue(warm, cold);
-
-      return;
+        if (!_light_use_cct) return;
+        _lightMiredsCCT(kelvin);
+        return;
     }
 
-    _light_mireds = constrain(static_cast<unsigned int>(lround(1000000UL / kelvin)), Light::MIREDS_COLDWHITE, Light::MIREDS_WARMWHITE);
+    _lightMireds(kelvin);
 
     if (_light_use_cct) {
       _setRGBInputValue(Light::VALUE_MAX, Light::VALUE_MAX, Light::VALUE_MAX);
@@ -360,13 +368,13 @@ void _fromKelvin(unsigned long kelvin) {
 
     // Calculate colors
     kelvin /= 100;
-    unsigned int red = (kelvin <= 66)
+    const unsigned int red = (kelvin <= 66)
         ? Light::VALUE_MAX
         : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592);
-    unsigned int green = (kelvin <= 66)
+    const unsigned int green = (kelvin <= 66)
         ? 99.4708025861 * fs_log(kelvin) - 161.1195681661
         : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492);
-    unsigned int blue = (kelvin >= 66)
+    const unsigned int blue = (kelvin >= 66)
         ? Light::VALUE_MAX
         : ((kelvin <= 19)
             ? 0
@@ -376,10 +384,8 @@ void _fromKelvin(unsigned long kelvin) {
 
 }
 
-// Color temperature is measured in mireds (kelvin = 1e6/mired)
-void _fromMireds(unsigned long mireds) {
-    unsigned long kelvin = constrain(static_cast<unsigned int>(1000000UL / mireds), Light::KELVIN_WARMWHITE, Light::KELVIN_COLDWHITE);
-    _fromKelvin(kelvin);
+void _fromMireds(const long mireds) {
+    _fromKelvin(_toKelvin(mireds));
 }
 
 // -----------------------------------------------------------------------------
@@ -456,19 +462,18 @@ void _toLong(char * color, size_t len) {
     _toLong(color, len, false);
 }
 
-void _toCSV(char * buffer, size_t len, bool applyBrightness, bool target) {
-    char num[10];
-    float b = applyBrightness ? (float) _light_brightness / Light::BRIGHTNESS_MAX : 1;
-    for (unsigned char i=0; i<_light_channel.size(); i++) {
-        itoa((target ? _light_channel[i].target : _light_channel[i].inputValue) * b, num, 10);
-        if (i>0) strncat(buffer, ",", len--);
-        strncat(buffer, num, len);
-        len = len - strlen(num);
-    }
-}
+String _toCSV(bool target) {
+    const auto channels = lightChannels();
 
-void _toCSV(char * buffer, size_t len, bool applyBrightness) {
-    _toCSV(buffer, len, applyBrightness, false);
+    String result;
+    result.reserve(4 * channels);
+
+    for (auto& channel : _light_channel) {
+        if (result.length()) result += ',';
+        result += String(target ? channel.target : channel.inputValue);
+    }
+
+    return result;
 }
 
 // See cores/esp8266/WMath.cpp::map
@@ -479,6 +484,35 @@ template <typename T, typename Tin, typename Tout> T _lightMap(T x, Tin in_min, 
         return -1; //AVR returns -1, SAM returns 0
     }
     return (x - in_min) * (out_max - out_min) / divisor + out_min;
+}
+
+int _lightAdjustValue(const int& value, const String& operation) {
+    if (!operation.length()) return value;
+
+    // if prefixed with a sign, treat expression as numerical operation
+    // otherwise, use as the new value
+    int updated = operation.toInt();
+    if (operation[0] == '+' || operation[0] == '-') {
+        updated = value + updated;
+    }
+
+    return updated;
+}
+
+void _lightAdjustBrightness(const char *payload) {
+    lightBrightness(_lightAdjustValue(lightBrightness(), payload));
+}
+
+void _lightAdjustChannel(unsigned char id, const char *payload) {
+    lightChannel(id, _lightAdjustValue(lightChannel(id), payload));
+}
+
+void _lightAdjustKelvin(const char *payload) {
+    _fromKelvin(_lightAdjustValue(_toKelvin(_light_mireds), payload));
+}
+
+void _lightAdjustMireds(const char *payload) {
+    _fromMireds(_lightAdjustValue(_light_mireds, payload));
 }
 
 // -----------------------------------------------------------------------------
@@ -499,33 +533,25 @@ unsigned int _toPWM(unsigned char id) {
     return _toPWM(_light_channel[id].current, useGamma, _light_channel[id].reverse);
 }
 
-void _transition() {
+void _lightTransition(unsigned long step) {
 
-    // Update transition ticker
-    _light_steps_left--;
-    if (_light_steps_left == 0) _light_transition_ticker.detach();
-
-    // Transitions
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-
-        if (_light_steps_left == 0) {
-            _light_channel[i].current = _light_channel[i].target;
+    // Transitions based on current step. If step == 0, then it is the last transition
+    for (auto& channel : _light_channel) {
+        if (!step) {
+            channel.current = channel.target;
         } else {
-            double difference = (double) (_light_channel[i].target - _light_channel[i].current) / (_light_steps_left + 1);
-            _light_channel[i].current = _light_channel[i].current + difference;
+            channel.current += (double) (channel.target - channel.current) / (step + 1);
         }
-
     }
 
 }
 
-void _lightProviderUpdate() {
+void _lightProviderUpdate(unsigned long steps) {
 
     if (_light_provider_update) return;
-
     _light_provider_update = true;
 
-    _transition();
+    _lightTransition(--steps);
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -546,12 +572,15 @@ void _lightProviderUpdate() {
 
     #endif
 
+    // This is not the final value, update again
+    if (steps) _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+
     _light_provider_update = false;
 
 }
 
-void _lightProviderDoUpdate() {
-    schedule_function(_lightProviderUpdate);
+void _lightProviderScheduleUpdate(unsigned long steps) {
+    schedule_function(std::bind(_lightProviderUpdate, steps));
 }
 
 // -----------------------------------------------------------------------------
@@ -652,7 +681,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Group color
-        if ((mqtt_group_color.length() > 0) & (mqtt_group_color.equals(topic))) {
+        if ((mqtt_group_color.length() > 0) && (mqtt_group_color.equals(topic))) {
             lightColor(payload, true);
             lightUpdate(true, mqttForward(), false);
             return;
@@ -663,14 +692,14 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
         // Color temperature in mireds
         if (t.equals(MQTT_TOPIC_MIRED)) {
-            _fromMireds(atol(payload));
+            _lightAdjustMireds(payload);
             lightUpdate(true, mqttForward());
             return;
         }
 
         // Color temperature in kelvins
         if (t.equals(MQTT_TOPIC_KELVIN)) {
-            _fromKelvin(atol(payload));
+            _lightAdjustKelvin(payload);
             lightUpdate(true, mqttForward());
             return;
         }
@@ -689,7 +718,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
         // Brightness
         if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
-            lightBrightness(atoi(payload));
+            _lightAdjustBrightness(payload);
             lightUpdate(true, mqttForward());
             return;
         }
@@ -707,7 +736,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
                 DEBUG_MSG_P(PSTR("[LIGHT] Wrong channelID (%d)\n"), channelID);
                 return;
             }
-            lightChannel(channelID, atoi(payload));
+            _lightAdjustChannel(channelID, payload);
             lightUpdate(true, mqttForward());
             return;
         }
@@ -756,11 +785,9 @@ void lightMQTT() {
 }
 
 void lightMQTTGroup() {
-    String mqtt_group_color = getSetting("mqttGroupColor");
-    if (mqtt_group_color.length()>0) {
-        char buffer[20];
-        _toCSV(buffer, sizeof(buffer), true);
-        mqttSendRaw(mqtt_group_color.c_str(), buffer);
+    const String mqtt_group_color = getSetting("mqttGroupColor");
+    if (mqtt_group_color.length()) {
+        mqttSendRaw(mqtt_group_color.c_str(), _toCSV(false).c_str());
     }
 }
 
@@ -786,7 +813,7 @@ void lightBroker() {
 // API
 // -----------------------------------------------------------------------------
 
-unsigned char lightChannels() {
+size_t lightChannels() {
     return _light_channel.size();
 }
 
@@ -798,12 +825,12 @@ bool lightUseCCT() {
     return _light_use_cct;
 }
 
-void _lightComms(unsigned char mask) {
+void _lightComms(const unsigned char mask) {
 
-    // Report color & brightness to MQTT broker
+    // Report color and brightness to MQTT broker
     #if MQTT_SUPPORT
-        if (mask & 0x01) lightMQTT();
-        if (mask & 0x02) lightMQTTGroup();
+        if (mask & Light::COMMS_NORMAL) lightMQTT();
+        if (mask & Light::COMMS_GROUP) lightMQTTGroup();
     #endif
 
     // Report color to WS clients (using current brightness setting)
@@ -833,14 +860,15 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
         //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channel[i].target);
     }
 
-    // Configure color transition
-    _light_steps_left = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderDoUpdate);
+    // Channel transition will be handled by the provider function
+    // User can configure total transition time, step time is a fixed value
+    const unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
+    _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
 
     // Delay every communication 100ms to avoid jamming
-    unsigned char mask = 0;
-    if (forward) mask += 1;
-    if (group_forward) mask += 2;
+    const unsigned char mask =
+        ((forward) ? Light::COMMS_NORMAL : Light::COMMS_NONE) |
+        ((group_forward) ? Light::COMMS_GROUP : Light::COMMS_NONE);
     _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
 
     _lightSaveRtcmem();
@@ -915,33 +943,32 @@ String lightColor() {
     return lightColor(true);
 }
 
-unsigned int lightChannel(unsigned char id) {
+long lightChannel(unsigned char id) {
     if (id <= _light_channel.size()) {
         return _light_channel[id].inputValue;
     }
     return 0;
 }
 
-void lightChannel(unsigned char id, unsigned char value) {
-    if (id <= _light_channel.size()) {
-        _setInputValue(id, constrain(value, Light::VALUE_MIN, Light::VALUE_MAX));
-    }
+void lightChannel(unsigned char id, long value) {
+    if (id > _light_channel.size()) return;
+    _setInputValue(id, constrain(value, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
-void lightChannelStep(unsigned char id, int steps) {
-    lightChannel(id, lightChannel(id) + steps * LIGHT_STEP);
+void lightChannelStep(unsigned char id, long steps, long multiplier) {
+    lightChannel(id, static_cast<int>(lightChannel(id)) + (steps * multiplier));
 }
 
-unsigned int lightBrightness() {
+long lightBrightness() {
     return _light_brightness;
 }
 
-void lightBrightness(unsigned int brightness) {
+void lightBrightness(long brightness) {
     _light_brightness = constrain(brightness, Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX);
 }
 
-void lightBrightnessStep(int steps) {
-    lightBrightness(_light_brightness + steps * LIGHT_STEP);
+void lightBrightnessStep(long steps, long multiplier) {
+    lightBrightness(static_cast<int>(_light_brightness) + (steps * multiplier));
 }
 
 unsigned int lightTransitionTime() {
@@ -985,8 +1012,11 @@ void _lightWebSocketStatus(JsonObject& root) {
         }
     }
     if (_light_use_cct) {
+        JsonObject& mireds = root.createNestedObject("mireds");
+        mireds["value"] = _light_mireds;
+        mireds["cold"] = _light_cold_mireds;
+        mireds["warm"] = _light_warm_mireds;
         root["useCCT"] = _light_use_cct;
-        root["mireds"] = _light_mireds;
     }
     JsonArray& channels = root.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channel.size(); id++) {
@@ -1037,14 +1067,14 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
     if (strcmp(action, "channel") == 0) {
         if (data.containsKey("id") && data.containsKey("value")) {
-            lightChannel(data["id"], data["value"]);
+            lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
             lightUpdate(true, true);
         }
     }
 
     if (strcmp(action, "brightness") == 0) {
         if (data.containsKey("value")) {
-            lightBrightness(data["value"]);
+            lightBrightness(data["value"].as<int>());
             lightUpdate(true, true);
         }
     }
@@ -1086,7 +1116,7 @@ void _lightAPISetup() {
         apiRegister(MQTT_TOPIC_KELVIN,
             [](char * buffer, size_t len) {},
             [](const char * payload) {
-                _fromKelvin(atol(payload));
+                _lightAdjustKelvin(payload);
                 lightUpdate(true, true);
             }
         );
@@ -1094,7 +1124,7 @@ void _lightAPISetup() {
         apiRegister(MQTT_TOPIC_MIRED,
             [](char * buffer, size_t len) {},
             [](const char * payload) {
-                _fromMireds(atol(payload));
+                _lightAdjustMireds(payload);
                 lightUpdate(true, true);
             }
         );
@@ -1110,7 +1140,7 @@ void _lightAPISetup() {
                 snprintf_P(buffer, len, PSTR("%d"), _light_channel[id].target);
             },
             [id](const char * payload) {
-                lightChannel(id, atoi(payload));
+                _lightAdjustChannel(id, payload);
                 lightUpdate(true, true);
             }
         );
@@ -1131,7 +1161,7 @@ void _lightAPISetup() {
             snprintf_P(buffer, len, PSTR("%d"), _light_brightness);
         },
         [](const char * payload) {
-            lightBrightness(atoi(payload));
+            _lightAdjustBrightness(payload);
             lightUpdate(true, true);
         }
     );
@@ -1142,42 +1172,49 @@ void _lightAPISetup() {
 
 #if TERMINAL_SUPPORT
 
+void _lightChannelDebug(unsigned char id) {
+    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
+}
+
 void _lightInitCommands() {
 
     terminalRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
         if (e->argc > 1) {
-            const String value(e->argv[1]);
-            if( value.length() > 0 ) {
-                if( value[0] == '+' || value[0] == '-' ) {
-                    lightBrightness(lightBrightness()+String(e->argv[1]).toInt());
-                } else {
-                    lightBrightness(String(e->argv[1]).toInt());
-                }
-                lightUpdate(true, true);
-            }
+            _lightAdjustBrightness(e->argv[1]);
+            lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
+        DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
         terminalOK();
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
-        if (e->argc < 2) {
-            terminalError(F("Wrong arguments"));
+        if (!lightChannels()) return;
+
+        auto id = -1;
+        if (e->argc > 1) {
+            id = String(e->argv[1]).toInt();
         }
-        int id = String(e->argv[1]).toInt();
+
+        if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
+            for (unsigned char index = 0; index < lightChannels(); ++index) {
+                _lightChannelDebug(index);
+            }
+            return;
+        }
+
         if (e->argc > 2) {
-            int value = String(e->argv[2]).toInt();
-            lightChannel(id, value);
+            _lightAdjustChannel(id, e->argv[2]);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Channel #%d (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
+
+        _lightChannelDebug(id);
+
         terminalOK();
     });
 
     terminalRegisterCommand(F("COLOR"), [](Embedis* e) {
         if (e->argc > 1) {
-            String color = String(e->argv[1]);
-            lightColor(color.c_str());
+            lightColor(e->argv[1]);
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
@@ -1186,8 +1223,7 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("KELVIN"), [](Embedis* e) {
         if (e->argc > 1) {
-            String color = String("K") + String(e->argv[1]);
-            lightColor(color.c_str());
+            _lightAdjustKelvin(e->argv[1]);
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
@@ -1196,17 +1232,8 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
         if (e->argc > 1) {
-            const String value(e->argv[1]);
-            String color = String("M");
-            if( value.length() > 0 ) {
-                if( value[0] == '+' || value[0] == '-' ) {
-                    color += String(_light_mireds + String(e->argv[1]).toInt());
-                } else {
-                    color += String(e->argv[1]);
-                }
-                lightColor(color.c_str());
-                lightUpdate(true, true);
-            }
+            _lightAdjustMireds(e->argv[1]);
+            lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
@@ -1261,6 +1288,13 @@ void _lightConfigure() {
     if (_light_use_cct && (((_light_channel.size() < 5) && (_light_channel.size() != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);
+    }
+
+    if (_light_use_cct) {
+        _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED).toInt();
+        _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED).toInt();
+        _light_cold_kelvin = (1000000L / _light_cold_mireds);
+        _light_warm_kelvin = (1000000L / _light_warm_mireds);
     }
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;

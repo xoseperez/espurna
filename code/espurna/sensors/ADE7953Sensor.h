@@ -93,7 +93,6 @@ class ADE7953Sensor : public I2CSensor {
         void pre() {                        
             uint32_t active_power1 = 0;
             uint32_t active_power2 = 0;
-            uint32_t current_rms = 0;
             uint32_t current_rms1 = 0;
             uint32_t current_rms2 = 0;
             uint32_t voltage_rms = 0;            

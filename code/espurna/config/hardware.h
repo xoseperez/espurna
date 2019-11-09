@@ -39,7 +39,7 @@
     // https://github.com/xoseperez/espurna/wiki/TwoStepUpdates
 
     // Info
-    #define MANUFACTURER            "ESPRESSIF"
+    #define MANUFACTURER            "ESPURNA"
     #define DEVICE                  "ESPURNA_CORE"
 
     // Disable non-core modules
@@ -63,6 +63,39 @@
     // Extra light-weight image
     //#define BUTTON_SUPPORT          0
     //#define LED_SUPPORT             0
+    //#define MDNS_SERVER_SUPPORT     0
+    //#define TELNET_SUPPORT          0
+    //#define TERMINAL_SUPPORT        0
+
+#elif defined(ESPURNA_BASE)
+
+    // This is a special device with no specific hardware 
+    // with the basics to easily upgrade it to a device-specific image
+
+    // Info
+    #define MANUFACTURER            "ESPURNA"
+    #define DEVICE                  "ESPURNA_BASE"
+
+    // Disable non-core modules
+    #define ALEXA_SUPPORT           0
+    #define API_SUPPORT             0
+    #define BROKER_SUPPORT          0
+    #define DOMOTICZ_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
+    //#define DEBUG_TELNET_SUPPORT    0
+    //#define DEBUG_WEB_SUPPORT       0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define I2C_SUPPORT             0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define SCHEDULER_SUPPORT       0
+    #define SENSOR_SUPPORT          0
+    #define THINGSPEAK_SUPPORT      0
+    //#define WEB_SUPPORT             0
+
+    // Extra light-weight image
+    #define BUTTON_SUPPORT          0
+    #define LED_SUPPORT             0
     //#define MDNS_SERVER_SUPPORT     0
     //#define TELNET_SUPPORT          0
     //#define TERMINAL_SUPPORT        0
@@ -324,7 +357,7 @@
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
-    #define BUTTON2_PIN         14
+    #define BUTTON2_PIN         4
     #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       1
 
@@ -2839,6 +2872,7 @@
 // * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
 // * Gosund (http://www.gosund.com/?m=content&c=index&a=show&catid=6&id=5)
 // * Ablue (https://www.amazon.de/Intelligente-Steckdose-Ablue-Funktioniert-Assistant/dp/B076DRFRZC)
+// * DIY Tech Smart Home (https://www.amazon.es/gp/product/B07HHKXYS9)
 // -----------------------------------------------------------------------------
 
 #elif defined(BLITZWOLF_BWSHPX)
@@ -2923,6 +2957,30 @@
 
     // BUTTON1 and LED1 are using Serial pins
     #define DEBUG_SERIAL_SUPPORT        0
+
+// -----------------------------------------------------------------------------
+// Teckin SP21
+// -----------------------------------------------------------------------------
+
+#elif defined(TECKIN_SP21)
+
+    // Info
+    #define MANUFACTURER                "TECKIN"
+    #define DEVICE                      "SP21"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+
 
 // -----------------------------------------------------------------------------
 // Teckin SP22 v1.4 - v1.6
@@ -3323,6 +3381,10 @@
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_PIN       4   // cold white
     #define LIGHT_CH2_INVERSE   0
+
+    // https://www.xiaomitoday.com/xiaomi-mijia-mjtd01yl-led-desk-lamp-review/
+    #define LIGHT_COLDWHITE_MIRED 153
+    #define LIGHT_WARMWHITE_MIRED 370
 
     // Encoder
     // If mode is ENCODER_MODE_RATIO, the value ratio between both channels is changed
@@ -3884,210 +3946,106 @@
     #define HLW8012_INTERRUPT_ON        CHANGE
 
 // -----------------------------------------------------------------------------
-// TEST boards (do not use!!)
-// -----------------------------------------------------------------------------
+// FS UAP1
+// http://frank-schuetz.de/index.php/fhem/13-hoermann-torantrieb-mit-espeasy-in-fhem-einbinden
 
-#elif defined(TRAVIS01)
+#elif defined(FS_UAP1)
 
     // Info
-    #define MANUFACTURER            "TravisCI"
-    #define DEVICE                  "Virtual board 01"
+    #define MANUFACTURER            "FS"
+    #define DEVICE                  "UAP1"
 
-    // Some buttons - pin 0
-    #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
+    // Inputs
+    #define DIGITAL1_PIN            4
+    #define DIGITAL2_PIN            5
 
-    // Some relays - pin 1
-    #define RELAY1_PIN          1
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY2_PIN              13
+    #define RELAY3_PIN              14
+    #define RELAY4_PIN              15
 
-    // Some LEDs - pin 2
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
 
-    // A bit of I2C - pins 3,4
-    #define I2C_SDA_PIN         3
-    #define I2C_SCL_PIN         4
+    // LEDs
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        0
 
-    // And, as they say in "From Dusk till Dawn":
-    // This is a sensor blow out!
-    // Alright, we got white sensor, black sensor, spanish sensor, yellow sensor. We got hot sensor, cold sensor.
-    // We got wet sensor. We got smelly sensor. We got hairy sensor, bloody sensor. We got snapping sensor.
-    // We got silk sensor, velvet sensor, naugahyde sensor. We even got horse sensor, dog sensor, chicken sensor.
-    // C'mon, you want sensor, come on in sensor lovers!
-    // If we don’t got it, you don't want it!
-    #define AM2320_SUPPORT        1
-    #define BH1750_SUPPORT        1
-    #define BMP180_SUPPORT        1
-    #define BMX280_SUPPORT        1
-    #define SHT3X_I2C_SUPPORT     1
-    #define EMON_ADC121_SUPPORT   1
-    #define EMON_ADS1X15_SUPPORT  1
-    #define SHT3X_I2C_SUPPORT     1
-    #define SI7021_SUPPORT        1
-    #define PMSX003_SUPPORT       1
-    #define SENSEAIR_SUPPORT      1
-    #define VL53L1X_SUPPORT       1
-    #define MAX6675_SUPPORT       1
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
 
-    // A bit of lights - pin 5
+// -----------------------------------------------------------------------------
+// TFLAG NX-SM100 & NX-SM200
+// -----------------------------------------------------------------------------
+
+#elif defined(TFLAG_NX_SMX00)
+
+    // Info
+    #define MANUFACTURER                "TFLAG"
+    #define DEVICE                      "NX_SMX00"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  12
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_FOLLOW_INVERSE
+    #define LED1_RELAY                  1
+    #define LED2_PIN                    15
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_WIFI
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             16
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       632
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3711185
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+
+// -----------------------------------------------------------------------------
+// MUVIT_IO_MIOBULB001
+// -----------------------------------------------------------------------------
+
+#elif defined(MUVIT_IO_MIOBULB001)
+
+    // Info
+    #define MANUFACTURER        "MUVIT_IO"
+    #define DEVICE              "MIOBULB001"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
-    #define LIGHT_CHANNELS      1
-    #define LIGHT_CH1_PIN       5
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
     #define LIGHT_CH1_INVERSE   0
-    #define ENCODER_SUPPORT     1
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
-    // A bit of HLW8012 - pins 6,7,8
-    #ifndef HLW8012_SUPPORT
-    #define HLW8012_SUPPORT     1
-    #endif
-    #define HLW8012_SEL_PIN     6
-    #define HLW8012_CF1_PIN     7
-    #define HLW8012_CF_PIN      8
 
-    // A bit of Dallas - pin 9
-    #ifndef DALLAS_SUPPORT
-    #define DALLAS_SUPPORT      1
-    #endif
-    #define DALLAS_PIN          9
-
-    // A bit of ECH1560 - pins 10,11, 12
-    #ifndef ECH1560_SUPPORT
-    #define ECH1560_SUPPORT     1
-    #endif
-    #define ECH1560_CLK_PIN     10
-    #define ECH1560_MISO_PIN    11
-    #define ECH1560_INVERTED    12
-
-    // MICS-2710 & MICS-5525 test
-    #define MICS2710_SUPPORT    1
-    #define MICS5525_SUPPORT    1
-
-// MAX6675  14 11 10
-#ifndef MAX6675_SUPPORT
-#define MAX6675_SUPPORT 1
-#endif
-#define MAX6675_CS_PIN 	14
-#define MAX6675_SO_PIN	11
-#define MAX6675_SCK_PIN	10
-
-#elif defined(TRAVIS02)
-
-    // Relay provider dual
-    #define MANUFACTURER            "TravisCI"
-    #define DEVICE                  "Virtual board 02"
-
-    // Some buttons - pin 0
-    #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-    // A bit of CSE7766 - pin 1
-    #ifndef CSE7766_SUPPORT
-    #define CSE7766_SUPPORT     1
-    #endif
-    #define CSE7766_PIN         1
-
-    // Relay type dual  - pins 2,3
-    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
-    #define RELAY1_PIN          2
-    #define RELAY2_PIN          3
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
-
-    // IR - pin 4
-    #define IR_SUPPORT          1
-    #define IR_RX_PIN           4
-    #define IR_BUTTON_SET       1
-
-    // A bit of DHT - pin 5
-    #ifndef DHT_SUPPORT
-    #define DHT_SUPPORT         1
-    #endif
-    #define DHT_PIN             5
-
-    // A bit of TMP3X (analog)
-    #define TMP3X_SUPPORT       1
-
-    // A bit of EVENTS - pin 10
-    #define EVENTS_SUPPORT      1
-    #define EVENTS1_PIN          6
-
-    // Sonar
-    #define SONAR_SUPPORT       1
-    #define SONAR_TRIGGER       7
-    #define SONAR_ECHO          8
-
-    // MHZ19
-    #define MHZ19_SUPPORT       1
-    #define MHZ19_RX_PIN        9
-    #define MHZ19_TX_PIN        10
-
-    // PZEM004T
-    #define PZEM004T_SUPPORT    1
-    #define PZEM004T_RX_PIN     11
-    #define PZEM004T_TX_PIN     12
-
-    // V9261F
-    #define V9261F_SUPPORT      1
-    #define V9261F_PIN          13
-
-    // GUVAS12SD
-    #define GUVAS12SD_SUPPORT   1
-    #define GUVAS12SD_PIN       14
-
-    // Test non-default modules
-    #define MDNS_CLIENT_SUPPORT 1
-    #define NOFUSS_SUPPORT      1
-    #define UART_MQTT_SUPPORT   1
-    #define INFLUXDB_SUPPORT    1
-    #define IR_SUPPORT          1
-    #define RF_SUPPORT          1
-    #define OTA_MQTT_SUPPORT    1
-
-    #define RFB_DIRECT          1
-    #define RFB_RX_PIN          4
-
-#elif defined(TRAVIS03)
-
-    // Relay provider light/my92XX
-    #define MANUFACTURER            "TravisCI"
-    #define DEVICE                  "Virtual board 03"
-
-    // Some buttons - pin 0
-    #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-    // MY9231 Light - pins 1,2
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
-    #define LIGHT_CHANNELS      5
-    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
-    #define MY92XX_CHIPS        2
-    #define MY92XX_DI_PIN       1
-    #define MY92XX_DCKI_PIN     2
-    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      4, 3, 5, 0, 1
-
-    // A bit of analog, 
-    // will not work on real life since they all share GPIO
-    // but it's OK to test build
-    #define EMON_ANALOG_SUPPORT 1
-    #define NTC_SUPPORT         1
-    #define LDR_SUPPORT         1
-
-    #define PULSEMETER_SUPPORT  1
-
-    // Test non-default modules
-    #define LLMNR_SUPPORT       1
-    #define NETBIOS_SUPPORT     1
-    #define SSDP_SUPPORT        1
-    #define RF_SUPPORT          1
+// -----------------------------------------------------------------------------
 
 #else
 

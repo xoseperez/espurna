@@ -8,10 +8,12 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if HOMEASSISTANT_SUPPORT
 
+#include <Ticker.h>
+#include <Schedule.h>
 #include <ArduinoJson.h>
 
-bool _haEnabled = false;
-bool _haSendFlag = false;
+bool _ha_enabled = false;
+bool _ha_send_flag = false;
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -52,6 +54,10 @@ const String switchType("light");
 const String switchType("switch");
 #endif
 
+// -----------------------------------------------------------------------------
+// Shared context object to store entity and entity registry data
+// -----------------------------------------------------------------------------
+
 struct ha_config_t {
 
     static const size_t DEFAULT_BUFFER_SIZE = 2048;
@@ -84,6 +90,105 @@ struct ha_config_t {
     const String version;
 };
 
+// -----------------------------------------------------------------------------
+// MQTT discovery
+// -----------------------------------------------------------------------------
+
+struct ha_discovery_t {
+
+    constexpr static const unsigned long SEND_TIMEOUT = 1000;
+    constexpr static const unsigned char SEND_RETRY = 5;
+
+    ha_discovery_t() :
+        _retry(SEND_RETRY)
+    {
+        #if SENSOR_SUPPORT
+            _messages.reserve(magnitudeCount() + relayCount());
+        #else
+            _messages.reserve(relayCount());
+        #endif
+    }
+
+    ~ha_discovery_t() {
+        DEBUG_MSG_P(PSTR("[HA] Discovery %s\n"), empty() ? "OK" : "FAILED");
+    }
+
+    // TODO: is this expected behaviour?
+    void add(String& topic, String& message) {
+        _messages.emplace_back(std::move(topic), std::move(message));
+    }
+
+    // We don't particulary care about the order since names have indexes?
+    // If we ever do, use iterators to reference elems and pop the String contents instead
+    mqtt_msg_t& next() {
+        return _messages.back();
+    }
+
+    void pop() {
+        _messages.pop_back();
+    }
+
+    const bool empty() const {
+        return !_messages.size();
+    }
+
+    bool retry() {
+        if (!_retry) return false;
+        return --_retry;
+    }
+
+    void prepareSwitches(ha_config_t& config);
+    #if SENSOR_SUPPORT
+        void prepareMagnitudes(ha_config_t& config);
+    #endif
+
+    Ticker timer;
+    std::vector<mqtt_msg_t> _messages;
+    unsigned char _retry;
+
+};
+
+std::unique_ptr<ha_discovery_t> _ha_discovery = nullptr;
+
+void _haSendDiscovery() {
+
+    if (!_ha_discovery) return;
+
+    const bool connected = mqttConnected();
+    const bool retry = _ha_discovery->retry();
+    const bool empty = _ha_discovery->empty();
+
+    if (!connected || !retry || empty) {
+        _ha_discovery = nullptr;
+        return;
+    }
+
+    const unsigned long ts = millis();
+    do {
+        if (_ha_discovery->empty()) break;
+
+        auto& message = _ha_discovery->next();
+        if (!mqttSendRaw(message.first.c_str(), message.second.c_str())) {
+            break;
+        }
+        _ha_discovery->pop();
+    // XXX: should not reach this timeout, most common case is the break above
+    } while (millis() - ts < ha_discovery_t::SEND_TIMEOUT);
+
+    mqttSendStatus();
+
+    if (_ha_discovery->empty()) {
+        _ha_discovery = nullptr;
+    } else {
+        // 2.3.0: Ticker callback arguments are not preserved and once_ms_scheduled is missing
+        // We need to use global discovery object to reschedule it
+        // Otherwise, this would've been shared_ptr from _haSend
+        _ha_discovery->timer.once_ms(ha_discovery_t::SEND_TIMEOUT, []() {
+            schedule_function(_haSendDiscovery);
+        });
+    }
+
+}
 
 // -----------------------------------------------------------------------------
 // SENSORS
@@ -99,7 +204,10 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config["unit_of_measurement"] = magnitudeUnits(type);
 }
 
-void _haSendMagnitudes(ha_config_t& config) {
+void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
+
+    // Note: because none of the keys are erased, use a separate object to avoid accidentally sending switch data
+    JsonObject& root = config.jsonBuffer.createObject();
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
@@ -107,22 +215,20 @@ void _haSendMagnitudes(ha_config_t& config) {
             "/sensor/" +
             getSetting("hostname") + "_" + String(i) +
             "/config";
+        String message;
 
-        String output;
-        if (_haEnabled) {
-            _haSendMagnitude(i, config.root);
-            config.root["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
-            config.root["device"] = config.deviceConfig;
+        if (_ha_enabled) {
+            _haSendMagnitude(i, root);
+            root["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
+            root["device"] = config.deviceConfig;
             
-            output.reserve(config.root.measureLength());
-            config.root.printTo(output);
+            message.reserve(root.measureLength());
+            root.printTo(message);
         }
 
-        mqttSendRaw(topic.c_str(), output.c_str());
+        add(topic, message);
 
     }
-
-    mqttSendStatus();
 
 }
 
@@ -178,7 +284,10 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendSwitches(ha_config_t& config) {
+void ha_discovery_t::prepareSwitches(ha_config_t& config) {
+
+    // Note: because none of the keys are erased, use a separate object to avoid accidentally sending magnitude data
+    JsonObject& root = config.jsonBuffer.createObject();
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
@@ -186,21 +295,19 @@ void _haSendSwitches(ha_config_t& config) {
             "/" + switchType +
             "/" + getSetting("hostname") + "_" + String(i) +
             "/config";
+        String message;
 
-        String output;
-        if (_haEnabled) {
-            _haSendSwitch(i, config.root);
-            config.root["uniq_id"] = getIdentifier() + "_" + switchType + "_" + String(i);
-            config.root["device"] = config.deviceConfig;
+        if (_ha_enabled) {
+            _haSendSwitch(i, root);
+            root["uniq_id"] = getIdentifier() + "_" + switchType + "_" + String(i);
+            root["device"] = config.deviceConfig;
 
-            output.reserve(config.root.measureLength());
-            config.root.printTo(output);
+            message.reserve(root.measureLength());
+            root.printTo(message);
         }
 
-        mqttSendRaw(topic.c_str(), output.c_str());
+        add(topic, message);
     }
-
-    mqttSendStatus();
 
 }
 
@@ -214,6 +321,7 @@ void _haSwitchYaml(unsigned char index, JsonObject& root) {
     output.reserve(HA_YAML_BUFFER_SIZE);
 
     JsonObject& config = root.createNestedObject("config");
+    config["platform"] = "mqtt";
     _haSendSwitch(index, config);
 
     if (index == 0) output += "\n\n" + switchType + ":";
@@ -250,6 +358,7 @@ void _haSensorYaml(unsigned char index, JsonObject& root) {
     output.reserve(HA_YAML_BUFFER_SIZE);
 
     JsonObject& config = root.createNestedObject("config");
+    config["platform"] = "mqtt";
     _haSendMagnitude(index, config);
 
     if (index == 0) output += "\n\nsensor:";
@@ -290,30 +399,37 @@ void _haGetDeviceConfig(JsonObject& config) {
 void _haSend() {
 
     // Pending message to send?
-    if (!_haSendFlag) return;
+    if (!_ha_send_flag) return;
 
     // Are we connected?
     if (!mqttConnected()) return;
 
-    DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
+    // Are we still trying to send discovery messages?
+    if (_ha_discovery) return;
 
-    // Get common device config
+    DEBUG_MSG_P(PSTR("[HA] Preparing MQTT discovery message(s)...\n"));
+
+    // Get common device config / context object
     ha_config_t config;
 
-    // Send messages
-    _haSendSwitches(config);
+    // We expect only one instance, create now
+    _ha_discovery = std::make_unique<ha_discovery_t>();
+
+    // Prepare all of the messages and send them in the scheduled function later
+    _ha_discovery->prepareSwitches(config);
     #if SENSOR_SUPPORT
-        _haSendMagnitudes(config);
+        _ha_discovery->prepareMagnitudes(config);
     #endif
     
-    _haSendFlag = false;
+    _ha_send_flag = false;
+    schedule_function(_haSendDiscovery);
 
 }
 
 void _haConfigure() {
-    bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
-    _haSendFlag = (enabled != _haEnabled);
-    _haEnabled = enabled;
+    const bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    _ha_send_flag = (enabled != _ha_enabled);
+    _ha_enabled = enabled;
     _haSend();
 }
 
@@ -428,7 +544,7 @@ void haSetup() {
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
         if (type == MQTT_CONNECT_EVENT) _haSend();
-        if (type == MQTT_DISCONNECT_EVENT) _haSendFlag = false;
+        if (type == MQTT_DISCONNECT_EVENT) _ha_send_flag = _ha_enabled;
     });
 
     // Main callbacks

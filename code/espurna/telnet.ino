@@ -3,24 +3,74 @@
 TELNET MODULE
 
 Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
+
 Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 (https://github.com/sarfata/kbox-firmware/tree/master/src/esp)
+
+AsyncBufferedClient based on ESPAsyncTCPbuffer, distributed with the ESPAsyncTCP
+(https://github.com/me-no-dev/ESPAsyncTCP/blob/master/src/ESPAsyncTCPbuffer.cpp)
 
 */
 
 #if TELNET_SUPPORT
 
-#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-    #include <ESP8266WiFi.h>
-    WiFiServer _telnetServer = WiFiServer(TELNET_PORT);
-    std::unique_ptr<WiFiClient> _telnetClients[TELNET_MAX_CLIENTS];
-#else
-    #include <ESPAsyncTCP.h>
-    AsyncServer _telnetServer = AsyncServer(TELNET_PORT);
-    std::unique_ptr<AsyncClient> _telnetClients[TELNET_MAX_CLIENTS];
-#endif
+#define TELNET_IAC  0xFF
+#define TELNET_XEOF 0xEC
 
-bool _telnetFirst = true;
+#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+    using TTelnetServer = WiFiServer;
+    using TTelnetClient = WiFiClient;
+
+#elif TELNET_SERVER == TELNET_SERVER_ASYNC
+    #include <ESPAsyncTCP.h>
+    #include <Schedule.h>
+    using TTelnetServer = AsyncServer;
+
+#if TELNET_SERVER_ASYNC_BUFFERED
+    #include <list>
+
+    struct AsyncBufferedClient {
+        constexpr static const size_t BUFFERS_MAX = 5;
+        using buffer_t = std::vector<uint8_t>;
+
+        AsyncBufferedClient(AsyncClient* client) :
+            _client(client)
+        {
+            _client->onAck(_s_onAck, this);
+            _client->onPoll(_s_onPoll, this);
+        }
+
+        void _addBuffer();
+        static void _trySend(AsyncBufferedClient* client);
+        static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
+        static void _s_onPoll(void* client_ptr, AsyncClient* client);
+
+        size_t write(char c);
+        size_t write(const char* data, size_t size=0);
+
+        void flush();
+        size_t available();
+
+        bool connect(const char *host, uint16_t port);
+        void close(bool now = false);
+        bool connected();
+
+        std::unique_ptr<AsyncClient> _client;
+
+        std::list<buffer_t> _buffers;
+    };
+
+    using TTelnetClient = AsyncBufferedClient;
+
+#else
+    using TTelnetClient = AsyncClient;
+
+#endif // TELNET_SERVER_ASYNC_BUFFERED
+
+#endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
+TTelnetServer _telnetServer(TELNET_PORT);
+std::unique_ptr<TTelnetClient> _telnetClients[TELNET_MAX_CLIENTS];
 
 bool _telnetAuth = TELNET_AUTHENTICATION;
 bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
@@ -42,24 +92,190 @@ void _telnetWebSocketOnConnected(JsonObject& root) {
 
 #endif
 
+#if TELNET_REVERSE_SUPPORT
+
+void _telnetReverse(const char * host, uint16_t port) {
+    DEBUG_MSG_P(PSTR("[TELNET] Connecting to reverse telnet on %s:%d\n"), host, port);
+
+    unsigned char i;
+    for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
+        if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
+            #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+                _telnetClients[i] = std::make_unique<TTelnetClient>();
+            #else // TELNET_SERVER == TELNET_SERVER_ASYNC
+                _telnetSetupClient(i, new AsyncClient());
+            #endif
+
+            if (_telnetClients[i]->connect(host, port)) {
+                _telnetNotifyConnected(i);
+                return;
+            } else {
+                DEBUG_MSG_P(PSTR("[TELNET] Error connecting reverse telnet\n"));
+                _telnetDisconnect(i);
+                return;
+            }
+        }
+    }
+
+    //no free/disconnected spot so reject
+    if (i == TELNET_MAX_CLIENTS) {
+        DEBUG_MSG_P(PSTR("[TELNET] Failed too connect - too many clients connected\n"));
+    }
+}
+
+#if MQTT_SUPPORT
+
+void _telnetReverseMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_TELNET_REVERSE);
+    } else if (type == MQTT_MESSAGE_EVENT) {
+        String t = mqttMagnitude((char *) topic);
+
+        if (t.equals(MQTT_TOPIC_TELNET_REVERSE)) {
+            String pl = String(payload);
+            int col = pl.indexOf(':');
+            if (col != -1) {
+                String host = pl.substring(0, col);
+                uint16_t port = pl.substring(col + 1).toInt();
+
+                _telnetReverse(host.c_str(), port);
+            } else {
+                DEBUG_MSG_P(PSTR("[TELNET] Incorrect reverse telnet value given, use the form \"host:ip\""));
+            }
+        }
+    }
+}
+
+#endif // MQTT_SUPPORT
+
+#endif // TELNET_REVERSE_SUPPORT
+
+#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
 void _telnetDisconnect(unsigned char clientId) {
-    // ref: we are called from onDisconnect, async is already stopped
-    #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-        _telnetClients[clientId]->stop();
-    #endif
+    _telnetClients[clientId]->stop();
     _telnetClients[clientId] = nullptr;
     wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
 
-bool _telnetWrite(unsigned char clientId, const char *data, size_t len) {
-    if (_telnetClients[clientId] && _telnetClients[clientId]->connected()) {
-        return (_telnetClients[clientId]->write(data, len) > 0);
-    }
-    return false;
+#elif TELNET_SERVER == TELNET_SERVER_ASYNC
+
+void _telnetCleanUp() {
+    schedule_function([] () {
+        for (unsigned char clientId=0; clientId < TELNET_MAX_CLIENTS; ++clientId) {
+            if (!_telnetClients[clientId]->connected()) {
+                _telnetClients[clientId] = nullptr;
+                wifiReconnectCheck();
+                DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
+            }
+        }
+    });
 }
 
-unsigned char _telnetWrite(const char *data, size_t len) {
+// just close, clean-up method above will destroy the object later
+void _telnetDisconnect(unsigned char clientId) {
+    _telnetClients[clientId]->close(true);
+}
+
+#if TELNET_SERVER_ASYNC_BUFFERED
+
+void AsyncBufferedClient::_trySend(AsyncBufferedClient* client) {
+    while (!client->_buffers.empty()) {
+        auto& chunk = client->_buffers.front();
+        if (client->_client->space() >= chunk.size()) {
+            client->_client->write((const char*)chunk.data(), chunk.size());
+            client->_buffers.pop_front();
+            continue;
+        }
+        return;
+    }
+}
+
+void AsyncBufferedClient::_s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t) {
+    _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
+}
+
+void AsyncBufferedClient::_s_onPoll(void* client_ptr, AsyncClient* client) {
+    _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
+}
+
+void AsyncBufferedClient::_addBuffer() {
+    // Note: c++17 emplace returns created object reference
+    _buffers.emplace_back();
+    _buffers.back().reserve(TCP_MSS);
+}
+
+size_t AsyncBufferedClient::write(const char* data, size_t size) {
+
+    if (_buffers.size() > AsyncBufferedClient::BUFFERS_MAX) return 0;
+
+    size_t written = 0;
+    if (_buffers.empty()) {
+        written = _client->add(data, size);
+        if (written == size) return size;
+    }
+
+    const size_t full_size = size;
+    char* data_ptr = const_cast<char*>(data + written);
+    size -= written;
+
+    while (size) {
+        if (_buffers.empty()) _addBuffer();
+        auto& current = _buffers.back();
+        const auto have = current.capacity() - current.size();
+        if (have >= size) {
+            current.insert(current.end(), data_ptr, data_ptr + size);
+            size = 0;
+        } else {
+            current.insert(current.end(), data_ptr, data_ptr + have);
+            _addBuffer();
+            data_ptr += have;
+            size -= have;
+        }
+    }
+
+    return full_size;
+
+}
+
+size_t AsyncBufferedClient::write(char c) {
+    char _c[1] {c};
+    return write(_c, 1);
+}
+
+void AsyncBufferedClient::flush() {
+    _client->send();
+}
+
+size_t AsyncBufferedClient::available() {
+    return _client->space();
+}
+
+bool AsyncBufferedClient::connect(const char *host, uint16_t port) {
+    return _client->connect(host, port);
+}
+
+void AsyncBufferedClient::close(bool now) {
+    _client->close(now);
+}
+
+bool AsyncBufferedClient::connected() {
+    return _client->connected();
+}
+
+#endif // TELNET_SERVER_ASYNC_BUFFERED
+
+#endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
+size_t _telnetWrite(unsigned char clientId, const char *data, size_t len) {
+    if (_telnetClients[clientId] && _telnetClients[clientId]->connected()) {
+        return _telnetClients[clientId]->write(data, len);
+    }
+    return 0;
+}
+
+size_t _telnetWrite(const char *data, size_t len) {
     unsigned char count = 0;
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
         // Do not send broadcast messages to unauthenticated clients
@@ -72,34 +288,30 @@ unsigned char _telnetWrite(const char *data, size_t len) {
     return count;
 }
 
-unsigned char _telnetWrite(const char *data) {
+size_t _telnetWrite(const char *data) {
     return _telnetWrite(data, strlen(data));
 }
 
-bool _telnetWrite(unsigned char clientId, const char * message) {
+size_t _telnetWrite(unsigned char clientId, const char * message) {
     return _telnetWrite(clientId, message, strlen(message));
 }
 
-void _telnetData(unsigned char clientId, void *data, size_t len) {
-    // Skip first message since it's always garbage
-    if (_telnetFirst) {
-        _telnetFirst = false;
-        return;
-    }
+void _telnetData(unsigned char clientId, char * data, size_t len) {
 
-    // Capture close connection
-    char * p = (char *) data;
-
-    // C-d is sent as two bytes (sometimes repeating)
-    if (len >= 2) {
-        if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
+    if ((len >= 2) && (data[0] == TELNET_IAC)) {
+        // C-d is sent as two bytes (sometimes repeating)
+        if (data[1] == TELNET_XEOF) {
             _telnetDisconnect(clientId);
-            return;
         }
+        return; // Ignore telnet negotiation
     }
 
-    if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {
-        _telnetDisconnect(clientId);
+    if ((strncmp(data, "close", 5) == 0) || (strncmp(data, "quit", 4) == 0)) {
+        #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+            _telnetDisconnect(clientId);
+        #else
+            _telnetClients[clientId]->close();
+        #endif
         return;
     }
 
@@ -112,7 +324,7 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 
     if (_telnetAuth && !authenticated) {
         String password = getAdminPass();
-        if (strncmp(p, password.c_str(), password.length()) == 0) {
+        if (strncmp(data, password.c_str(), password.length()) == 0) {
             DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
             _telnetWrite(clientId, "Password correct, welcome!\n");
             _telnetClientsAuth[clientId] = true;
@@ -124,7 +336,7 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 
     // Inject command
     #if TERMINAL_SUPPORT
-        terminalInject(data, len);
+        terminalInject((void*)data, len);
     #endif
 }
 
@@ -153,7 +365,6 @@ void _telnetNotifyConnected(unsigned char i) {
         }
     #endif
 
-    _telnetFirst = true;
     wifiReconnectCheck();
 
 }
@@ -167,7 +378,7 @@ void _telnetLoop() {
         for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
             if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
 
-                _telnetClients[i] = std::unique_ptr<WiFiClient>(new WiFiClient(_telnetServer.available()));
+                _telnetClients[i] = std::make_unique<TTelnetClient>(_telnetServer.available());
 
                 if (_telnetClients[i]->localIP() != WiFi.softAPIP()) {
                     // Telnet is always available for the ESPurna Core image
@@ -209,7 +420,7 @@ void _telnetLoop() {
                     char data[TERMINAL_BUFFER_SIZE];
                     size_t len = _telnetClients[i]->available();
                     unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
-                    
+
                     _telnetData(i, data, r);
                 }
             }
@@ -217,7 +428,28 @@ void _telnetLoop() {
     }
 }
 
-#else // TELNET_SERVER_ASYNC
+#elif TELNET_SERVER == TELNET_SERVER_ASYNC
+
+void _telnetSetupClient(unsigned char i, AsyncClient *client) {
+
+    client->onError([i](void *s, AsyncClient *client, int8_t error) {
+        DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), client->errorToString(error), error, i);
+    });
+    client->onData([i](void*, AsyncClient*, void *data, size_t len){
+        _telnetData(i, reinterpret_cast<char*>(data), len);
+    });
+    client->onDisconnect([i](void*, AsyncClient*) {
+        _telnetCleanUp();
+    });
+
+    // XXX: AsyncClient does not have copy ctor
+    #if TELNET_SERVER_ASYNC_BUFFERED
+        _telnetClients[i] = std::make_unique<TTelnetClient>(client);
+    #else
+        _telnetClients[i] = std::unique_ptr<TTelnetClient>(client);
+    #endif // TELNET_SERVER_ASYNC_BUFFERED
+
+}
 
 void _telnetNewClient(AsyncClient* client) {
     if (client->localIP() != WiFi.softAPIP()) {
@@ -241,29 +473,7 @@ void _telnetNewClient(AsyncClient* client) {
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
 
         if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
-
-            _telnetClients[i] = std::unique_ptr<AsyncClient>(client);
-
-            _telnetClients[i]->onAck([i](void *s, AsyncClient *c, size_t len, uint32_t time) {
-            }, 0);
-
-            _telnetClients[i]->onData([i](void *s, AsyncClient *c, void *data, size_t len) {
-                _telnetData(i, data, len);
-            }, 0);
-
-            _telnetClients[i]->onDisconnect([i](void *s, AsyncClient *c) {
-                _telnetDisconnect(i);
-            }, 0);
-
-            _telnetClients[i]->onError([i](void *s, AsyncClient *c, int8_t error) {
-                DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), c->errorToString(error), error, i);
-            }, 0);
-
-            _telnetClients[i]->onTimeout([i](void *s, AsyncClient *c, uint32_t time) {
-                DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%u at %lu\n"), i, time);
-                c->close();
-            }, 0);
-
+            _telnetSetupClient(i, client);
             _telnetNotifyConnected(i);
             return;
         }
@@ -316,6 +526,27 @@ void telnetSetup() {
             .onVisible([](JsonObject& root) { root["telnetVisible"] = 1; })
             .onConnected(_telnetWebSocketOnConnected)
             .onKeyCheck(_telnetWebSocketOnKeyCheck);
+    #endif
+
+    #if TELNET_REVERSE_SUPPORT
+        #if MQTT_SUPPORT
+            mqttRegister(_telnetReverseMQTTCallback);
+        #endif
+
+        #if TERMINAL_SUPPORT
+            terminalRegisterCommand(F("TELNET.REVERSE"), [](Embedis* e) {
+                if (e->argc < 3) {
+                    terminalError(F("Wrong arguments. Usage: TELNET.REVERSE <host> <port>"));
+                    return;
+                }
+
+                String host = String(e->argv[1]);
+                uint16_t port = String(e->argv[2]).toInt();
+
+                terminalOK();
+                _telnetReverse(host.c_str(), port);
+            });
+        #endif
     #endif
 
     espurnaRegisterReload(_telnetConfigure);

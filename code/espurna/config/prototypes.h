@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <algorithm>
 #include <vector>
 #include <memory>
-#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -31,6 +31,12 @@ extern "C" {
   #include <lwip/ip_addr.h> // ip4/ip6 helpers
   #include <lwip/init.h> // LWIP_VERSION_MAJOR
 }
+
+// ref: https://github.com/me-no-dev/ESPAsyncTCP/pull/115/files#diff-e2e636049095cc1ff920c1bfabf6dcacR8
+// This is missing with Core 2.3.0 and is sometimes missing from the build flags. Assume HIGH_BANDWIDTH version.
+#ifndef TCP_MSS
+#define TCP_MSS (1460)
+#endif
 
 uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
@@ -178,24 +184,6 @@ int16_t i2c_read_int16_le(uint8_t address, uint8_t reg);
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 
 // -----------------------------------------------------------------------------
-// Lights
-// -----------------------------------------------------------------------------
-
-unsigned char lightChannels();
-
-void lightState(unsigned char i, bool state);
-bool lightState(unsigned char i);
-
-void lightState(bool state);
-bool lightState();
-
-void lightBrightness(unsigned int brightness);
-unsigned int lightBrightness();
-
-unsigned int lightChannel(unsigned char id);
-void lightChannel(unsigned char id, unsigned char value);
-
-// -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
 
@@ -209,6 +197,7 @@ void lightChannel(unsigned char id, unsigned char value);
 #endif
 
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
+using mqtt_msg_t = std::pair<String, String>;
 
 void mqttRegister(mqtt_callback_f callback);
 
@@ -217,8 +206,8 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
 
 String mqttMagnitude(char * topic);
 
-void mqttSendRaw(const char * topic, const char * message, bool retain);
-void mqttSendRaw(const char * topic, const char * message);
+bool mqttSendRaw(const char * topic, const char * message, bool retain);
+bool mqttSendRaw(const char * topic, const char * message);
 
 void mqttSend(const char * topic, const char * message, bool force, bool retain);
 void mqttSend(const char * topic, const char * message, bool force);
