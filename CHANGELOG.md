@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.13.6] Unreleased
+## [1.14.0] Unreleased
 ### Fixed
 
 #### Security
@@ -28,13 +28,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### MQTT
 - Reset connection timer with PubSubClient / ArduinoMQTT ([#1702](https://github.com/xoseperez/espurna/issues/1702))
 - Remove 'connecting' flag when connected ([#1757](https://github.com/xoseperez/espurna/issues/1757))
-- Send brightness topic to HA regardless of color setting ([#1730](https://github.com/xoseperez/espurna/issues/1730), thanks to **[@copyrights](https://github.com/copyrights)**)
+- Fix Arduino-MQTT setWill parameters order ([#1978](https://github.com/xoseperez/espurna/issues/1978), thanks to **[@Niek](https://github.com/Niek)**)
 #### Domoticz
 - Fix crashes with unknown idx values ([#1588](https://github.com/xoseperez/espurna/issues/1588))
 - Treat nvalue >= 1 as true ([#1606](https://github.com/xoseperez/espurna/issuess/1606))
 - Lights: handle cmode=2 ([#1880](https://github.com/xoseperez/espurna/issues/1880))
 #### Thingspeak
 - Several async client fixes to avoid crashes ([#1806](https://github.com/xoseperez/espurna/issues/1806))
+#### Home Assistant
+- Send brightness topic to HA regardless of color setting ([#1730](https://github.com/xoseperez/espurna/issues/1730), thanks to **[@copyrights](https://github.com/copyrights)**)
+- Rework discovery mechanism to prevent loosing messages ([#1969](https://github.com/xoseperez/espurna/issues/1969))
+- Send discovery messages after reconnecting ([#1637](https://github.com/xoseperez/espurna/issues/1637), [#1969](https://github.com/xoseperez/espurna/issues/1969))
 #### Lights
 - Fix relay provider setting of Xiaomi Smart Desk Lamp ([#1627](https://github.com/xoseperez/espurna/issues/1627), thanks to **[@Ctrl-F4](https://github.com/Ctrl-F4)**)
 - Prepare for .cpp migration ([#1874](https://github.com/xoseperez/espurna/issues/1874))
@@ -50,6 +54,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix stored energy values when using kWh ([#1334](https://github.com/xoseperez/espurna/issues/1334)
 - Remove pinMode(0, ...) from AnalogSensor ([#1777](https://github.com/xoseperez/espurna/issues/1777), [#1827](https://github.com/xoseperez/espurna/issues/1827))
 - Check value range for PMSX005 and SenseAir CO2 sensor ([#1865](https://github.com/xoseperez/espurna/issues/1865), thanks to **[@Yonsm](https://github.com/Yonsm)**)
+- DHT: Increase read delay per datasheet value ([#1918](https://github.com/xoseperez/espurna/issues/1918), [#1979](https://github.com/xoseperez/espurna/issues/1979), thanks to **[@JavierAder](https://github.com/JavierAder)** and **[@structuralB](https://github.com/structuralB)**)
+- DHT: Set pin mode before digitalWrite ([#1979](https://github.com/xoseperez/espurna/issues/1979))
+- DHT: Wait DHT_MIN_INTERVAL after initialization ([#1979](https://github.com/xoseperez/espurna/issues/1979))
 #### Build
 - Fix Travis failing with INFLUXDB_SUPPORT ([#1565](https://github.com/xoseperez/espurna/issues/1565))
 - Build with platformio 4 ([#1805](https://github.com/xoseperez/espurna/issues/1805))
@@ -69,10 +76,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Log in travis-ci if WebUI files have changed
 - Terminal: heap fragmentation stat ([#1740](https://github.com/xoseperez/espurna/issues/1740))
 - Recommend using basic BearSSL ciphers with low memory boards ([#1810](https://github.com/xoseperez/espurna/issues/1810), thanks to **[@Niek](https://github.com/Niek)**)
-- Add setting for WiFi TX power ([#1915](https://github.com/xoseperez/espurna/issues/1915))
-- New boot mode to lock relay status on boot ([#1705](https://github.com/xoseperez/espurna/issues/1705))
+- New boot mode to lock relay status on boot (`RELAY_BOOT_LOCKED_OFF` and `RELAY_BOOT_LOCKED_ON`) ([#1705](https://github.com/xoseperez/espurna/issues/1705))
 - Add netstat and dns probing (Core 2.5.2+) ([#1907](https://github.com/xoseperez/espurna/issues/1907))
-- softAP button action will toggle back to STA mode ([#1942](https://github.com/xoseperez/espurna/pull/1942))
+- Add setting for WiFi TX power (`wifiTxPwr`) ([#1915](https://github.com/xoseperez/espurna/issues/1915))
+- SoftAP button action will now toggle back to STA mode ([#1942](https://github.com/xoseperez/espurna/pull/1942))
+- Detect esp8285 chip to allow the use of GPIO9 and GPIO10 ([#1958](https://github.com/xoseperez/espurna/issues/1958), [#1964](https://github.com/xoseperez/espurna/pull/1964) and thanks to **[@Niek](https://github.com/Niek)** for bitset::test fix in [#1977](https://github.com/xoseperez/espurna/pull/1977))
+- Restore last schedule after reboot ([#1948](https://github.com/xoseperez/espurna/issues/1948), thanks to **[@foxman69](https://github.com/foxman69)**)
+- Add `relayDelayOnN`, `relayDelayOffN`, `relayFloodTime`, `relayFloodCount` as runtime settings ([#1594](https://github.com/xoseperez/espurna/issues/1594), [#1962](https://github.com/xoseperez/espurna/pull/1962))
+- Add experimental `relayDelayInterlock` to add a pause after turning relay off in SYNC\_ONE or SYNC\_NONE\_OR\_ONE modes ([#1510](https://github.com/xoseperez/espurna/issues/1510), [#1962](https://github.com/xoseperez/espurna/pull/1962))
 #### MQTT
 - Add option to disable relay reporting ([#1645](https://github.com/xoseperez/espurna/issues/1645), thanks to **[@Niek](https://github.com/Niek)**)
 - Safer settings reload and change detection ([#1701](https://github.com/xoseperez/espurna/issues/1701))
@@ -80,6 +91,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - MQTT rewrite with SSL fixes ([#1751](https://github.com/xoseperez/espurna/issues/1751), [#1829](https://github.com/xoseperez/espurna/issues/1829), thanks to **[@Niek](https://github.com/Niek)**)
 - Generic secure client configuration ([#1873](https://github.com/xoseperez/espurna/issues/1873))
 - Custom relay status payloads ([#1885](https://github.com/xoseperez/espurna/issues/1885), [#1889](https://github.com/xoseperez/espurna/issues/1889))
+- Log size instead of message itself when size is > 128 bytes ([#1969](https://github.com/xoseperez/espurna/issues/1969))
+#### Home Assistant
+- Add color_temp_state_topic ([#1891](https://github.com/xoseperez/espurna/issues/1891), thanks to **[@l3d00m](https://github.com/l3d00m)**)
 #### Devices
 
 - Add espurna-base for [tuya-convert](https://github.com/ct-Open-Source/tuya-convert), thanks to **[@xoseperez](https://github.com/xoseperez)**
@@ -120,12 +134,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `bmx280Number` and `bmx280Address` settings ([#1690](https://github.com/xoseperez/espurna/issues/1690))
 - PZEM004T: settings & dev board ([#1712](https://github.com/xoseperez/espurna/issues/1712))
 - Added LDR sensor (Thanks to Altan Altay)
+- ADE9753 Support ([#1827](https://github.com/xoseperez/espurna/issues/1827), thanks to **[@tonilopezmr](https://github.com/tonilopezmr)**)
+- Telaire T6613 Support ([#1956](https://github.com/xoseperez/espurna/issues/1956), thanks to **[@james-coder](https://github.com/james-coder)**)
 #### Lights
 - Allow to set relative brightness, channel value and color in mireds using +N and -N notation ([#1607](https://github.com/xoseperez/espurna/issues/1607), [#1938](https://github.com/xoseperez/espurna/pull/1938), thanks to **[@tsymbaliuk](https://github.com/tsymbaliuk)**)
 - Two channel CCT ([#1732](https://github.com/xoseperez/espurna/issues/1732), thanks to **[@copyrights](https://github.com/copyrights)**)
 - Send to mired topic if CCT is in use ([#1732](https://github.com/xoseperez/espurna/issues/1732), [#1742](https://github.com/xoseperez/espurna/issues/1742), thanks to **[@copyrights](https://github.com/copyrights)**)
 - Add description for each channel when using terminal commands ([#1826](https://github.com/xoseperez/espurna/issues/1826))
-- Add color_temp_state_topic for HA ([#1891](https://github.com/xoseperez/espurna/issues/1891), thanks to **[@l3d00m](https://github.com/l3d00m)**)
 - Channel value change detection to reduce light provider updates ([#1914](https://github.com/xoseperez/espurna/issues/1914))
 #### Build
 - special dummy printf to disable Serial using some boards ([#1664](https://github.com/xoseperez/espurna/issues/1664))
