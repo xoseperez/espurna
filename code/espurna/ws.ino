@@ -204,13 +204,7 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 #if DEBUG_WEB_SUPPORT
 
-struct ws_debug_msg_t {
-    ws_debug_msg_t(const char* prefix, const char* message) :
-        prefix(prefix), message(message)
-    {}
-    String prefix;
-    String message;
-};
+using ws_debug_msg_t = std::pair<String, String>;
 
 struct ws_debug_t {
 
@@ -257,8 +251,8 @@ struct ws_debug_t {
         JsonArray& pre = weblog.createNestedArray("pre");
 
         for (auto& message : messages) {
-            pre.add(message.prefix.c_str());
-            msg.add(message.message.c_str());
+            pre.add(message.first.c_str());
+            msg.add(message.second.c_str());
         }
 
         wsSend(root);
