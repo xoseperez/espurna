@@ -1,7 +1,7 @@
-// This code is part of the GNU ISO C++ Library distributed with GCC-9.2.0
-// Copyright (C) 2007-2019 Free Software Foundation, Inc.
-//
-// type_traits & experimental/type_traits modified to be distributed with ESPurna
+// -----------------------------------------------------------------------------
+// Detection idiom adapted from "Working Draft, C++ Extensions for Library Fundamentals, Version 3":
+// https://cplusplus.github.io/fundamentals-ts/v3.html#meta.detect
+// -----------------------------------------------------------------------------
 
 #pragma once
 
@@ -9,8 +9,9 @@
 
 // In case we do support c++17 just use the headers shipped with the GCC
 #if __cplusplus >= 201703L
+#include <type_traits>
 #include <experimental/type_traits>
-using std::is_detected;
+using std::experimental::is_detected;
 #else
 
 namespace experimental_type_traits {
@@ -53,6 +54,12 @@ namespace experimental_type_traits {
 
     template<template<typename...> class Op, typename... Args>
     using is_detected = typename implementation::detector<implementation::nonesuch, void, Op, Args...>::value_t;
+
+    template <template<class...> class Op, class... Args>
+    using detected_t = typename implementation::detector<implementation::nonesuch, void, Op, Args...>::type;
+
+    template <class Default, template<class...> class Op, class... Args>
+    using detected_or = implementation::detector<Default, void, Op, Args...>;
 
     // ...
     // implement the rest as needed. some things may not work though
