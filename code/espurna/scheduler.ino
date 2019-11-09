@@ -256,7 +256,7 @@ void _schLoop() {
     if (!ntpSynced()) return;
 
     if (_sch_restore == 0) {
-        for (int i = 0; i < _relays.size(); i++){
+        for (unsigned char i = 0; i < relayCount(); i++){
             if (getSetting("relayLastSch", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt() == 1)
                 _schCheck(i, 0);
         }

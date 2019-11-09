@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <algorithm>
 #include <vector>
 #include <memory>
 
