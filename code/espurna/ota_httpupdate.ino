@@ -55,7 +55,7 @@ t_httpUpdate_return _otaClientUpdate(const std::false_type&, T& instance, WiFiCl
 
 namespace ota {
     template <typename T>
-    using has_followRedirects_t = decltype(std::declval<T>().followRedirects(std::declval<bool>()), bool());
+    using has_followRedirects_t = decltype(std::declval<T>().followRedirects(std::declval<bool>()));
 
     template <typename T>
     using has_followRedirects = is_detected<has_followRedirects_t, T>;
