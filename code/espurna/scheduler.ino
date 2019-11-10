@@ -92,7 +92,7 @@ void _schConfigure() {
 
             #if DEBUG_SUPPORT
 
-                bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
+                bool sch_enabled = getSetting("schEnabled", i, 0).toInt() == 1;
                 int sch_action = getSetting("schAction", i, 0).toInt();
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
