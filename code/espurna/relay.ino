@@ -151,7 +151,9 @@ void _relaySyncUnlock() {
 
     auto action = []() {
         _relayUnlockAll();
-        _relay_report_ws = true;
+        #if WEB_SUPPORT
+            _relay_report_ws = true;
+        #endif
     };
 
     if (all_off) {
