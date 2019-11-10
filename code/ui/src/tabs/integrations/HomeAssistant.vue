@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <div class="page">
+        <Group v-model="ha" class="page form">
             <fieldset>
                 <legend>Discover</legend>
 
@@ -35,9 +35,9 @@
                 <Row>
                     <C><label>Configuration</label></C>
                     <C>
-                        <textarea class="terminal"
+                        <textarea :value="config" class="terminal"
                                   wrap="soft"
-                                  readonly>{{config}}</textarea>
+                                  readonly></textarea>
                         <Hint>
                             These are the settings you should copy to your Home Assistant "configuration.yaml" file. If
                             any of the sections below (switch, light, sensor) already exists, do not duplicate it,
@@ -46,7 +46,7 @@
                     </C>
                 </Row>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -55,15 +55,31 @@
     import Hint from "../../components/Hint";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
             C,
             Row,
             Hint,
             Inpt
         },
         inheritAttrs: false,
+        props: {
+            ha: {
+                type: Object,
+                default: () => ({})
+            },
+            relays: {
+                type: Object,
+                default: () => ({list: []})
+            },
+            sensors: {
+                type: Object,
+                default: () => ({})
+            },
+        },
         computed: {
             config() {
                 let s = '';

@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <div class="page">
+        <Group v-model="tspk" class="page form">
             <fieldset>
                 <legend>General</legend>
 
@@ -37,7 +37,7 @@
                 <Row>
                     <C><label>Thingspeak API Key</label></C>
                     <C>
-                        <Inpt name="tspkKey" type="text" tabindex="3"/>
+                        <Inpt name="key" type="text" tabindex="3"/>
                     </C>
                 </Row>
 
@@ -84,7 +84,7 @@
                 </Repeater>
                 <!-- #endif -->
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -94,9 +94,11 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Repeater from "../../components/Repeater";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
             Repeater,
             C,
             Row,
@@ -104,6 +106,20 @@
             Inpt
         },
         inheritAttrs: false,
+        props: {
+            tspk: {
+                type: Object,
+                default: () => ({})
+            },
+            relays: {
+                type: Object,
+                default: () => ({list: []})
+            },
+            sensors: {
+                type: Object,
+                default: () => ({})
+            },
+        }
     }
 </script>
 

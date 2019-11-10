@@ -7,21 +7,21 @@
             </h2>
         </div>
 
-        <div class="page">
+        <Group v-model="alexa" class="page form">
             <fieldset>
                 <Row>
                     <C>
                         <label>Alexa integration</label>
                     </C>
                     <C>
-                        <Inpt type="switch" name="alexaEnabled"
+                        <Inpt type="switch" name="enabled"
                               tabindex="1"/>
                     </C>
                 </Row>
                 <Row>
                     <C><label>Alexa device name</label></C>
                     <C>
-                        <Inpt name="alexaName"
+                        <Inpt name="name"
                               maxlength="31"
                               type="text"
                               action="reboot"
@@ -32,7 +32,7 @@
                     </C>
                 </Row>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -41,17 +41,25 @@
     import Hint from "../../components/Hint";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
+    import Group from "../../components/Group";
 
 
     //TODO alexa name by switch
     export default {
         components: {
+            Group,
             C,
             Row,
             Hint,
             Inpt
         },
         inheritAttrs: false,
+        props: {
+            alexa: {
+                type: Object,
+                default: () => ({})
+            }
+        }
     }
 </script>
 

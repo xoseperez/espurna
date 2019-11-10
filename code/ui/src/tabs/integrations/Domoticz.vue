@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <div class="page">
+        <Group v-model="dcz" class="page form">
             <fieldset>
                 <legend>General</legend>
 
@@ -79,7 +79,7 @@
                 </Repeater>
                 <!-- #endif -->
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -89,9 +89,11 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Repeater from "../../components/Repeater";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
             Repeater,
             C,
             Row,
@@ -99,6 +101,20 @@
             Inpt
         },
         inheritAttrs: false,
+        props: {
+            dcz: {
+                type: Object,
+                default: () => ({})
+            },
+            relays: {
+                type: Object,
+                default: () => ({list: []})
+            },
+            sensors: {
+                type: Object,
+                default: () => ({})
+            },
+        }
     }
 </script>
 
