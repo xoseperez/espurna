@@ -285,14 +285,19 @@ function addValue(data, name, value) {
 
 }
 
-function getData(form) {
+function getData(form, force) {
 
+    var force = (true === force);
     var data = {};
 
     // Populate data
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
         var value = getValue(this);
+        var hasChanged = ("true" === $(this).attr("hasChanged"));
+        if (!force && !hasChanged) {
+            return;
+        }
         if (null !== value) {
             addValue(data, name, value);
         }
@@ -336,7 +341,7 @@ function randomString(length, args) {
 
 function generateAPIKey() {
     var apikey = randomString(16, {hex: true});
-    $("input[name='apiKey']").val(apikey);
+    $("input[name='apiKey']").val(apikey).attr("original", apikey);
     return false;
 }
 
@@ -452,12 +457,22 @@ function sendConfig(data) {
     send(JSON.stringify({config: data}));
 }
 
-function setOriginalsFromValues(force) {
+function setOriginalsFromValues(force, elems) {
     var force = (true === force);
-    $("input,select").each(function() {
+    if (typeof elems == "undefined") {
+        elems = $("input,select");
+    }
+    elems.each(function() {
         var initial = (undefined === $(this).attr("original"));
+        var value;
         if (force || initial) {
-            $(this).attr("original", $(this).val());
+            if ($(this).attr("type") === "checkbox") {
+                value = $(this).prop("checked");
+            } else {
+                value = $(this).val();
+            }
+            $(this).attr("original", value);
+            hasChanged.call(this);
         }
     });
 }
@@ -564,7 +579,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateFormPasswords(form)) {
-        sendConfig(getData(form));
+        sendConfig(getData(form, true));
     }
     return false;
 }
@@ -646,7 +661,7 @@ function doUpdate() {
     if (validateForm(forms)) {
 
         // Get data
-        sendConfig(getData(forms));
+        sendConfig(getData(forms, false));
 
         // Empty special fields
         $(".pwrExpected").val(0);
@@ -837,6 +852,7 @@ function createRelayList(data, container, template_name) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
         $("input", line).attr("tabindex", 40 + i).val(data[i]);
+        setOriginalsFromValues(false, $("input", line));
         line.appendTo("#" + container);
     }
 
@@ -856,6 +872,7 @@ function createMagnitudeList(data, container, template_name) {
         $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
+        setOriginalsFromValues(false, $("input", line));
         line.appendTo("#" + container);
     }
 
@@ -874,6 +891,7 @@ function addRPNRule() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
+    setOriginalsFromValues(false, $("input", line));
     line.appendTo("#rpnRules");
 }
 
@@ -885,6 +903,7 @@ function addRPNTopic() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
+    setOriginalsFromValues(false, $("input", line));
     line.appendTo("#rpnTopics");
 }
 
@@ -902,6 +921,7 @@ function addMapping() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
+    setOriginalsFromValues(false, $("input", line));
     line.appendTo("#mapping");
 }
 
@@ -986,6 +1006,7 @@ function addSchedule(event) {
         .next().prop("for", "schUTC" + (numSchedules + 1));
     $(line).find("input[name='schEnabled']").prop("id", "schEnabled" + (numSchedules + 1))
         .next().prop("for", "schEnabled" + (numSchedules + 1));
+    setOriginalsFromValues(false, $("input,select", line));
     line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
 
@@ -1080,6 +1101,7 @@ function initRelayConfig(data) {
             $("select[name='relayOnDisc']", line).val(data.on_disc[i]);
         }
 
+        setOriginalsFromValues(false, $("input,select", line));
         line.appendTo("#relayConfig");
     }
 
@@ -1367,6 +1389,7 @@ function initLightfox(data, relayCount) {
             $(this).val(data[i]["relay"]);
             status = !status;
         });
+        setOriginalsFromValues(false, $("input,select", $line));
         $line.appendTo("#lightfoxNodes");
     }
 
@@ -1501,8 +1524,10 @@ function processData(data) {
 				var mapping = data.mapping[i];
 				Object.keys(mapping).forEach(function(key) {
 				    var id = "input[name=" + key + "]";
-				    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+				    if ($(id, line).length) $(id, line).val(mapping[key]);
 				});
+
+                setOriginalsFromValues(false, $("input", line));
 			}
 			return;
         }
@@ -1524,7 +1549,9 @@ function processData(data) {
 
 				// fill in the blanks
 				var rule = data.rpnRules[i];
-                $("input", line).val(rule).attr("original", rule);
+                $("input", line).val(rule);
+
+                setOriginalsFromValues(false, $("input", line));
 
             }
 			return;
@@ -1542,8 +1569,10 @@ function processData(data) {
 				// fill in the blanks
 				var topic = data.rpnTopics[i];
 				var name = data.rpnNames[i];
-                $("input[name='rpnTopic']", line).val(topic).attr("original", topic);
-                $("input[name='rpnName']", line).val(name).attr("original", name);
+                $("input[name='rpnTopic']", line).val(topic);
+                $("input[name='rpnName']", line).val(name);
+
+                setOriginalsFromValues(false, $("input", line));
 
             }
 			return;
@@ -1641,10 +1670,11 @@ function processData(data) {
         if ("wifi" === key) {
             for (i in value) {
                 var wifi = value[i];
-                var nwk_line = addNetwork();
+                var line = addNetwork();
                 Object.keys(wifi).forEach(function(key) {
-                    $("input[name='" + key + "']", nwk_line).val(wifi[key]);
+                    $("input[name='" + key + "']", line).val(wifi[key]);
                 });
+                setOriginalsFromValues(false, $("input,select", line));
             }
             return;
         }
@@ -1686,6 +1716,8 @@ function processData(data) {
                     $("select[name='" + key + "']", sch_line).prop("value", sch_value);
                     $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
                 });
+
+                setOriginalsFromValues(false, $("input,select", sch_line));
             }
             return;
         }
@@ -1713,8 +1745,11 @@ function processData(data) {
         if ("ledConfig" === key) {
             initLeds(value);
             for (var i=0; i<value.length; ++i) {
-                $("select[name='ledMode'][data='" + i + "']").val(value[i].mode);
-                $("input[name='ledRelay'][data='" + i + "']").val(value[i].relay);
+                var mode = $("select[name='ledMode'][data='" + i + "']");
+                var relay = $("select[name='ledRelay'][data='" + i + "']");
+                mode.val(value[i].mode);
+                relay.val(value[i].relay);
+                setOriginalsFromValues(false, $([mode,relay]));
             }
             return;
         }
@@ -1839,6 +1874,7 @@ function processData(data) {
         // ---------------------------------------------------------------------
         // Matching
         // ---------------------------------------------------------------------
+        var elems = [];
 
         var pre;
         var post;
@@ -1855,6 +1891,7 @@ function processData(data) {
                 post = input.attr("post") || "";
                 input.val(pre + value + post);
             }
+            elems.push(input);
         }
 
         // Look for SPANs
@@ -1864,11 +1901,13 @@ function processData(data) {
                 value.forEach(function(elem) {
                     span.append(elem);
                     span.append('</br>');
+                    elems.push(span);
                 });
             } else {
                 pre = span.attr("pre") || "";
                 post = span.attr("post") || "";
                 span.html(pre + value + post);
+                elems.push(span);
             }
         }
 
@@ -1876,7 +1915,10 @@ function processData(data) {
         var select = $("select[name='" + key + "']");
         if (select.length > 0) {
             select.val(value);
+            elems.push(select);
         }
+
+        setOriginalsFromValues(false, $(elems));
 
     });
 
@@ -1884,8 +1926,6 @@ function processData(data) {
     if ($("input[name='apiKey']").val() === "") {
         generateAPIKey();
     }
-
-    setOriginalsFromValues();
 
 }
 
@@ -2067,7 +2107,9 @@ $(function() {
     $("textarea").on("dblclick", function() { this.select(); });
 
     // don't autoconnect when opening from filesystem
-    if (window.location.protocol === "file:") { return; }
+    if (window.location.protocol === "file:") {
+        return;
+    }
 
     // Check host param in query string
     var search = new URLSearchParams(window.location.search),
