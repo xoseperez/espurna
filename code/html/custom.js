@@ -1988,13 +1988,6 @@ function connectToCurrentURL() {
     connectToURL(new URL(window.location));
 }
 
-function enableWSLogging() {
-    var processDataOrig = window.processData;
-    window.processData = function(data) { console.log(data); processDataOrig(data); }
-    var sendActionOrig = window.sendAction;
-    window.sendAction = function(action, data) { console.log(action,data); sendActionOrig(action, data);}
-}
-
 $(function() {
 
     initMessages();
