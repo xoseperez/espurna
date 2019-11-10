@@ -261,7 +261,6 @@ function addValue(data, name, value) {
         "rpnRule", "rpnTopic", "rpnName"
     ];
 
-
     // join both adminPass 1 and 2
     if (name.startsWith("adminPass")) {
         name = "adminPass";
@@ -285,30 +284,42 @@ function addValue(data, name, value) {
 
 }
 
-function getData(form, force) {
+function getData(form) {
 
-    var force = (true === force);
+    // Populate two sets of data, ones that had been changed and ones that stayed the same
     var data = {};
+    var changed_data = {};
 
-    // Populate data
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
+        if (name === "filename") { return; }
+        if (name === "rfbcode") { return; }
+
         var value = getValue(this);
-        var hasChanged = ("true" === $(this).attr("hasChanged"));
-        if (!force && !hasChanged) {
-            return;
-        }
         if (null !== value) {
+            if ("true" === $(this).attr("hasChanged")) {
+                addValue(changed_data, name, value);
+            }
             addValue(data, name, value);
         }
     });
 
-    // Post process
-    addValue(data, "schSwitch", 0xFF);
-    delete data["filename"];
-    delete data["rfbcode"];
+    // Finally, filter out only fields that had changed.
+    // Note: We need to preserve dynamic lists like schedules, wifi etc.
+    // so we don't accidentally break when user deletes entry in the middle
+    var resulting_data = {};
+    for (var value in data) {
+        if (value in changed_data) {
+            resulting_data[value] = data[value];
+        }
+    }
 
-    return data;
+    // Hack: clean-up leftover schedule configuration
+    if ("schSwitch" in resulting_data) {
+        addValue(resulting_data, "schSwitch", 0xFF);
+    }
+
+    return resulting_data;
 
 }
 
@@ -365,8 +376,10 @@ function toggleVisiblePassword() {
 }
 
 function doGeneratePassword() {
-    $("input", $("#formPassword"))
+    var elems = $("input", $("#formPassword"));
+    elems
         .val(generatePassword())
+        .attr("haschanged", "true")
         .each(function() {
             this.type = "text";
         });
@@ -579,7 +592,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateFormPasswords(form)) {
-        sendConfig(getData(form, true));
+        sendConfig(getData(form));
     }
     return false;
 }
@@ -661,7 +674,7 @@ function doUpdate() {
     if (validateForm(forms)) {
 
         // Get data
-        sendConfig(getData(forms, false));
+        sendConfig(getData(forms));
 
         // Empty special fields
         $(".pwrExpected").val(0);
@@ -994,6 +1007,9 @@ function addSchedule(event) {
 
     template = $("#" + type + "ActionTemplate").children();
     var actionLine = template.clone();
+    $("select", actionLine)
+        .attr("original", "")
+        .attr("haschanged", "true");
     $(line).find("#schActionDiv").append(actionLine);
 
     $(line).find("input").each(function() {
@@ -1006,7 +1022,6 @@ function addSchedule(event) {
         .next().prop("for", "schUTC" + (numSchedules + 1));
     $(line).find("input[name='schEnabled']").prop("id", "schEnabled" + (numSchedules + 1))
         .next().prop("for", "schEnabled" + (numSchedules + 1));
-    setOriginalsFromValues(false, $("input,select", line));
     line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
 
