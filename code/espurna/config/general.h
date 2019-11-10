@@ -1054,6 +1054,7 @@
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"
+#define MQTT_TOPIC_TIMESTAMP        "timestamp"
 #define MQTT_TOPIC_FREEHEAP         "freeheap"
 #define MQTT_TOPIC_VCC              "vcc"
 #ifndef MQTT_TOPIC_STATUS
@@ -1130,6 +1131,10 @@
 
 #ifndef BROKER_SUPPORT
 #define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
+#endif
+
+#ifndef BROKER_REAL_TIME
+#define BROKER_REAL_TIME        1           // Report real time data
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1388,15 +1393,27 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
+#define SCHEDULER_SUPPORT           1               // Enable scheduler (2.45Kb)
 #endif
 
 #ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10              // Max schedules alowed
 #endif
 
 #ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
 #define SCHEDULER_RESTORE_LAST_SCHEDULE      0  // Restore the last schedule state on the device boot
+#endif
+
+// -----------------------------------------------------------------------------
+// RPN RULES
+// -----------------------------------------------------------------------------
+
+#ifndef RPN_RULES_SUPPORT
+#define RPN_RULES_SUPPORT           0               // Enable RPN Rules (8.6Kb)
+#endif
+
+#ifndef RPN_DELAY
+#define RPN_DELAY                   100             // Execute rules after 100ms without messages
 #endif
 
 // -----------------------------------------------------------------------------

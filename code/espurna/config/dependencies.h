@@ -43,6 +43,11 @@
 #define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
 #endif
 
+#if RPN_RULES_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
+#endif
+
 #if INFLUXDB_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If InfluxDB enabled enable BROKER

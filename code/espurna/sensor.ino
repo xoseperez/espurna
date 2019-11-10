@@ -1541,7 +1541,9 @@ void _sensorReport(unsigned char index, double value) {
     dtostrf(value, 1, decimals, buffer);
 
     #if BROKER_SUPPORT
-        brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+    #if not BROKER_REAL_TIME
+        brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+    #endif
     #endif
 
     #if MQTT_SUPPORT
@@ -1798,6 +1800,13 @@ void sensorLoop() {
                 // -------------------------------------------------------------
 
                 value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
+                #if BROKER_REAL_TIME
+                {
+                    char buffer[64];
+                    dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
+                    brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+                }
+                #endif
 
                 // -------------------------------------------------------------
                 // Debug
