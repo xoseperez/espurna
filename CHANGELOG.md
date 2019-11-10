@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 #### General
+- [RPN Rules](https://github.com/xoseperez/espurna/wiki/RPN-Rules) - custom rules to execute actions (mostly changing relay and light statuses) based on different inputs ([#1984](https://github.com/xoseperez/espurna/issues/1984), thanks to **[@xoseperez](https://github.com/xoseperez)**)
 - Initial implementation of RTCMEM storage to preserve state (relay status, stability counter, energy etc.) between reboots ([#1420](https://github.com/xoseperez/espurna/issues/1420), [#1770](https://github.com/xoseperez/espurna/issues/1770))
 - Allow to configure all LEDs from UI ([#1429](https://github.com/xoseperez/espurna/issues/1429), thanks to **[@xoseperez](https://github.com/xoseperez)**)
 - SYNC_FIRST relay sync mode ([#1609](https://github.com/xoseperez/espurna/issues/1609), thanks to **[@foxel](https://github.com/foxel)**)
@@ -136,6 +137,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Added LDR sensor (Thanks to Altan Altay)
 - ADE9753 Support ([#1827](https://github.com/xoseperez/espurna/issues/1827), thanks to **[@tonilopezmr](https://github.com/tonilopezmr)**)
 - Telaire T6613 Support ([#1956](https://github.com/xoseperez/espurna/issues/1956), thanks to **[@james-coder](https://github.com/james-coder)**)
+- Adding support for miobulb001 ([#1973](https://github.com/xoseperez/espurna/issues/1973), thanks to **[@ealfaroc](https://github.com/ealfaroc)**)
 #### Lights
 - Allow to set relative brightness, channel value and color in mireds using +N and -N notation ([#1607](https://github.com/xoseperez/espurna/issues/1607), [#1938](https://github.com/xoseperez/espurna/pull/1938), thanks to **[@tsymbaliuk](https://github.com/tsymbaliuk)**)
 - Two channel CCT ([#1732](https://github.com/xoseperez/espurna/issues/1732), thanks to **[@copyrights](https://github.com/copyrights)**)
