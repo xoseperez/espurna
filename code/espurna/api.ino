@@ -43,21 +43,16 @@ void _apiConfigure() {
 
 bool _authAPI(AsyncWebServerRequest *request) {
 
-    if (getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
+    const String key = getSetting("apiKey");
+    if (!key.length() || getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;
     }
 
-    if (!request->hasParam("apikey", (request->method() == HTTP_PUT))) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Missing apikey parameter\n"));
-        request->send(403);
-        return false;
-    }
-
     AsyncWebParameter* p = request->getParam("apikey", (request->method() == HTTP_PUT));
-    if (!p->value().equals(getSetting("apiKey"))) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong apikey parameter\n"));
+    if (!p || !p->value().equals(key)) {
+        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
         request->send(403);
         return false;
     }

@@ -352,7 +352,10 @@ function randomString(length, args) {
 
 function generateAPIKey() {
     var apikey = randomString(16, {hex: true});
-    $("input[name='apiKey']").val(apikey).attr("original", apikey);
+    $("input[name='apiKey']")
+        .val(apikey)
+        .attr("original", "-".repeat(16))
+        .attr("haschanged", "true");
     return false;
 }
 
@@ -981,6 +984,7 @@ function addNetwork() {
 // -----------------------------------------------------------------------------
 // Relays scheduler
 // -----------------------------------------------------------------------------
+
 
 function delSchedule() {
     var parent = $(this).parents(".pure-g");
@@ -1806,6 +1810,17 @@ function processData(data) {
         <!-- endRemoveIf(!sensor)-->
 
         // ---------------------------------------------------------------------
+        // HTTP API
+        // ---------------------------------------------------------------------
+
+        // Auto generate an APIKey if none defined yet
+        if ("apiVisible" === key) {
+            if (data.apiKey === undefined || data.apiKey === "") {
+                generateAPIKey();
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // General
         // ---------------------------------------------------------------------
 
@@ -1936,11 +1951,6 @@ function processData(data) {
         setOriginalsFromValues(false, $(elems));
 
     });
-
-    // Auto generate an APIKey if none defined yet
-    if ($("input[name='apiKey']").val() === "") {
-        generateAPIKey();
-    }
 
 }
 
@@ -2088,6 +2098,7 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
+
     $(".button-add-switch-schedule").on("click", { schType: 1 }, addSchedule);
     <!-- removeIf(!light)-->
     $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
