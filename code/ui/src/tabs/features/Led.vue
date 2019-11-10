@@ -5,7 +5,7 @@
             <h2>Notification LED configuration</h2>
         </div>
 
-        <div class="page">
+        <Group v-model="led" class="page form">
             <fieldset>
                 <legend>Modes</legend>
                 <div>
@@ -30,7 +30,7 @@
                             This is meant to locate switches at night.
                         </li>
                         <li>
-                            <strong>Find me &amp; WiFi</strong> will follow the WiFi status but will
+                            <strong>Find me & WiFi</strong> will follow the WiFi status but will
                             stay mostly on when switches are OFF, and mostly OFF when any of them is ON.
                         </li>
                         <li>
@@ -38,7 +38,7 @@
                             ON, and OFF otherwise. This is global status notification.
                         </li>
                         <li>
-                            <strong>Switches status &amp; WiFi</strong> will follow the WiFi status but
+                            <strong>Switches status & WiFi</strong> will follow the WiFi status but
                             will stay mostly off when switches are OFF, and mostly ON when any of them is ON.
                         </li>
                         <li v-if="modules.mqtt">
@@ -69,7 +69,7 @@
                     </template>
                 </Repeater>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -78,9 +78,11 @@
     import Repeater from "../../components/Repeater";
     import C from "../../layout/Col";
     import Row from "../../layout/Row";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
             Row,
             C,
             Repeater,

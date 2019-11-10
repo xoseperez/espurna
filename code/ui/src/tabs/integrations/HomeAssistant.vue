@@ -84,7 +84,7 @@
             config() {
                 let s = '';
 
-                if (this.relays.list && this.relays.list.length) {
+                if (this.relay.config && this.relay.config.list.length) {
                     s += 'switch:\n';
                     this.relays.list.forEach((v) => {
                         s += '  - name: ' + v.name + '\n' +

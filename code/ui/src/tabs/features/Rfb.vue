@@ -16,10 +16,10 @@
             <strong>SAVE</strong> to store them in the device memory. If your controlled device uses the same code
             to switch ON and OFF, learn the code with the ON button and copy paste it to the OFF input box, then
             click SAVE on the last one to store the value.<br><br> Delete any code clicking the
-            <strong>FORGET</strong> button. <br><br>You can also specify any RAW code. For reference see <a
-                rel="noopener" target="_blank" href="https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/Commands">possible
-                commands for Sonoff RF Bridge EFM8BB1</a> (original firmware supports codes from <strong>0xA0</strong>
-            to <strong>0xA5</strong>).
+            <strong>FORGET</strong> button. <br><br>You can also specify any RAW code. For reference see
+            <A href="https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/Commands">possible commands for Sonoff RF Bridge
+                EFM8BB1</A>
+            (original firmware supports codes from <strong>0xA0</strong> to <strong>0xA5</strong>).
         </div>
 
         <div class="page">
@@ -29,37 +29,34 @@
                 <div id="rfbNodes"></div>
 
                 <legend>Settings</legend>
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Repeats</label>
-                    <div class="pure-u-1 pure-u-lg-1-4">
-                        <Inpt class="pure-u-1 pure-u-lg-23-24"
-                              name="rfbRepeat"
+                <Row>
+                    <C><label>Repeats</label></C>
+                    <C>
+                        <Inpt name="repeat"
                               type="number"
                               min="1"
-                              tabindex="0"/>
-                    </div>
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <Hint>
-                        Number of times to repeat transmission
-                    </Hint>
-                </div>
+                              tabindex="1"/>
+                        <Hint>
+                            Number of times to repeat transmission
+                        </Hint>
+                    </C>
+                </Row>
 
-                <legend>GPIO</legend>
-                <div class="pure-g module module-rfbdirect">
-                    <Hint>
-                        Pins used by the receiver (RX) and transmitter
-                        (TX). Set to <strong>NONE</strong> to disable
-                    </Hint>
+                <template v-if="modules.rfbdirect">
+                    <legend>GPIO</legend>
+                    <Row>
+                        <Hint>
+                            Pins used by the receiver (RX) and transmitter
+                            (TX). Set to <strong>NONE</strong> to disable
+                        </Hint>
 
-                    <label class="pure-u-1 pure-u-lg-1-4">RX Pin</label>
-                    <select class="pure-u-1 pure-u-lg-1-4 gpio-select" name="rfbRX"></select>
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                        <label>RX Pin</label>
+                        <Inpt type="select" name="RX" :options="gpios" tabindex="2"/>
 
-                    <label class="pure-u-1 pure-u-lg-1-4">TX Pin</label>
-                    <select class="pure-u-1 pure-u-lg-1-4 gpio-select" name="rfbTX"></select>
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                </div>
+                        <label>TX Pin</label>
+                        <Inpt type="select" name="TX" :options="gpios" tabindex="3"/>
+                    </Row>
+                </template>
             </fieldset>
         </div>
 
@@ -111,14 +108,45 @@
     import Inpt from "./../../components/Input";
     import Btn from "../../components/Button";
     import Hint from "../../components/Hint";
+    import Row from "../../layout/Row";
+    import C from "../../layout/Col";
+    import A from "../../components/ExtLink";
 
     export default {
         components: {
+            A,
+            C,
+            Row,
             Hint,
             Btn,
             Inpt
         },
         inheritAttrs: false,
+        props: {
+            modules: {
+                type: Object,
+                default: () => ({})
+            }
+        },
+        computed: {
+            gpios() {
+                // TODO: cross-check used GPIOs
+                // TODO: support 9 & 10 with esp8285 variant
+                return [
+                    [153, "NONE"],
+                    [0, "0"],
+                    [1, "1 (U0TXD)"],
+                    [2, "2 (U1TXD)"],
+                    [3, "3 (U0RXD)"],
+                    [4, "4"],
+                    [5, "5"],
+                    [12, "12 (MTDI)"],
+                    [13, "13 (MTCK)"],
+                    [14, "14 (MTMS)"],
+                    [15, "15 (MTDO)"],
+                ]
+            }
+        }
     }
 </script>
 

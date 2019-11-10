@@ -46,7 +46,7 @@
                 </Row>
 
                 <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
-                <Repeater v-model="relays.list" locked>
+                <Repeater v-model="relay.config.list" locked>
                     <template #default="tpl">
                         <Row>
                             <C><label>Switch</label></C>
@@ -106,7 +106,7 @@
                 type: Object,
                 default: () => ({})
             },
-            relays: {
+            relay: {
                 type: Object,
                 default: () => ({list: []})
             },

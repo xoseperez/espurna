@@ -54,5 +54,6 @@ module.exports = {
             "svg": "always",
             "math": "always"
         }],
+        "vue/require-default-prop": false
     }
 };
