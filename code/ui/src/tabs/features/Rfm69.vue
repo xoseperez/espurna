@@ -13,21 +13,21 @@
 
         <div class="page">
             <fieldset>
-                <legend>Default topic</legend>
-
-                <div class="pure-g">
-                    <Inpt name="rfm69Topic"
+                <Row>
+                    <C>    <label>Default topic</label>
+                    </C>
+                    <C><Inpt name="topic"
                           type="text"
-                          class="pure-u-23-24"
-                          value=""
                           size="8"
-                          tabindex="41"
+                          tabindex="1"
                           placeholder="Default MQTT Topic (use {nodeid} and {key} as placeholders)"/>
-                </div>
+                    </C></Row>
 
-                <legend>Specific topics</legend>
+                <Row>
+                    <C><label>Specific topics</label></C>
 
                 <div id="mapping"></div>
+                </Row>
                 <div id="nodeTemplate" class="template">
                     <div class="pure-g">
                         <div class="pure-u-md-1-6 pure-u-1-2">
@@ -80,7 +80,8 @@
                     Filtered colums have red headers.
                 </h2>
 
-                <table id="packets" class="display" cellspacing="0">
+                <DataTable v-model="packets" :columns="columns" unique-key="packetID"/>
+                <table id="packets">
                     <thead>
                         <tr>
                             <th>Timestamp</th>
@@ -108,12 +109,58 @@
 
 <script>
     import Inpt from "./../../components/Input";
+    import Row from "../../layout/Row";
+    import DataTable from "../../components/DataTable";
 
     export default {
         components: {
+            DataTable,
+            Row,
             Inpt
         },
         inheritAttrs: false,
+        data() {
+            return {
+                columns: [
+                    {
+                        key: 'packetID',
+                        title: 'Packet ID'
+                    },
+                    {
+                        key: 'senderID',
+                        title: 'Sender ID'
+                    },
+                    {
+                        key: 'targetID',
+                        title: 'Target ID'
+                    },
+                    {
+                        key: 'key',
+                        title: 'Key'
+                    },
+                    {
+                        key: 'value',
+                        title: 'Value'
+                    },
+                    {
+                        key: 'rssi',
+                        title: 'RSSI'
+                    },
+                    {
+                        key: 'duplicates',
+                        title: 'Duplicates'
+                    },
+                    {
+                        key: 'missing',
+                        title: 'Missing'
+                    },
+                    {
+                        key: 'time',
+                        title: 'Time'
+                    },
+                ]
+            }
+        }
     }
 </script>
 

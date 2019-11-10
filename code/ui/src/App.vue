@@ -280,6 +280,7 @@
 
     // #if process.env.VUE_APP_IDB === 'true'
     import Idb from "./tabs/integrations/InfluxDB";
+    import {detailedDiff} from "deep-object-diff";
 
     components.Idb = Idb;
     tabs.push({k: "idb", l: "InfluxDB"});
@@ -307,6 +308,7 @@
             return {
                 webmode: true,
                 ws: new Socket,
+                original: {},
                 data: {
                     modules: {},
                     version: {
@@ -361,8 +363,31 @@
         methods: {
             save() {
                 if (this.$refs.formSettings.reportValidity()) {
-                    this.sendConfig(this.$refs.formSettings.values);
+                    const diff = detailedDiff(this.original, this.data);
+
+                    let config = {};
+
+                    Object.keys(diff).forEach((k) => {
+                       Object.assign(config, this.flatten(diff[k]));
+                    });
+
+                    this.sendConfig(config);
                 }
+            },
+            flatten(obj, key, flat) {
+                flat = typeof flat === 'undefined' ? {} : flat;
+
+                key = key || '';
+
+                Object.keys(obj).forEach((k) => {
+                    const v = obj[k];
+                    if (typeof v === 'object') {
+                        this.flatten(v, key+k, flat);
+                    } else {
+                        flat[key+k] = v;
+                    }
+                });
+                return flat;
             },
             reconnect(ask) {
                 let question = (typeof ask === "undefined" || false === ask) ?
