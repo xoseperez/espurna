@@ -121,7 +121,7 @@ void _setValue(const unsigned char id, const unsigned int value) {
 void _setInputValue(const unsigned char id, const unsigned int value) {
     if (_light_channel[id].inputValue != value) {
         _light_channel[id].inputValue = value;
-        //_light_dirty = true;
+        _light_dirty = true;
     }
 }
 
