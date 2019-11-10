@@ -6,6 +6,7 @@
 
 <script>
     export default {
+        name: 'C',
         props: {
             size: {
                 type: Number,

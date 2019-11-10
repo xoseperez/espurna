@@ -37,7 +37,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Hint from "../../components/Hint";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";

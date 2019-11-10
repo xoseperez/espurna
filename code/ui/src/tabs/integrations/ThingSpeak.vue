@@ -3,7 +3,7 @@
         <div class="header">
             <h1>THINGSPEAK</h1>
             <h2>
-                Send your sensors data to Thingspeak.
+                Send your sensors data to <A href="https://thingspeak.com/">Thingspeak</A>.
             </h2>
         </div>
 
@@ -11,89 +11,95 @@
             <fieldset>
                 <legend>General</legend>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Enable Thingspeak</label>
-                    <div class="pure-u-1 pure-u-lg-1-4">
+                <Row>
+                    <C><label>Enable Thingspeak</label></C>
+                    <C>
                         <Inpt type="switch"
-                              name="tspkEnabled"
-                              tabindex="30"/>
-                    </div>
-                </div>
+                              name="enabled"
+                              tabindex="1"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Clear cache</label>
-                    <div class="pure-u-1 pure-u-lg-1-4">
+                <Row>
+                    <label>Clear cache</label>
+                    <C>
                         <Inpt type="switch"
-                              name="tspkClear"
-                              tabindex="31"/>
-                    </div>
-                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                    <Hint>
-                        With every POST to thinkspeak.com only enqueued fields are sent. If you select to clear the
-                        cache after every sending this will result in only those fields that have changed will be
-                        posted. If you want all fields to be sent with every POST do not clear the cache.
-                    </Hint>
-                </div>
+                              name="clear"
+                              tabindex="2"/>
+                        <Hint>
+                            With every POST to thingspeak.com only enqueued fields are sent. If you select to clear the
+                            cache after every sending this will result in only those fields that have changed will be
+                            posted. If you want all fields to be sent with every POST do not clear the cache.
+                        </Hint>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                    <Inpt class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32"/>
-                </div>
+                <Row>
+                    <C><label>Thingspeak API Key</label></C>
+                    <C>
+                        <Inpt name="tspkKey" type="text" tabindex="3"/>
+                    </C>
+                </Row>
 
-                <legend>Sensors &amp; actuators</legend>
+                <legend>Sensors & actuators</legend>
 
-                <div class="pure-g">
+                <Row>
                     <Hint>
                         Enter the field number to send each data to, 0 disable notifications from that component.
                     </Hint>
-                </div>
+                </Row>
 
-                <div id="tspkRelays"></div>
-                <div id="tspkRelayTemplate" class="template">
-                    <div class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
-                        <div class="pure-u-1 pure-u-lg-1-4">
-                            <Inpt class="pure-u-1 pure-u-lg-23-24"
-                                  name="tspkRelay"
-                                  type="number"
-                                  min="0"
-                                  max="8"
-                                  tabindex="0"
-                                  data="0"/>
-                        </div>
-                    </div>
-                </div>
+                <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
+                <Repeater v-model="relays.list" locked>
+                    <template #default="tpl">
+                        <Row>
+                            <C><label>Switch</label></C>
+                            <C>
+                                <Inpt name="relay"
+                                      type="number"
+                                      min="0"
+                                      max="8"/>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
+                <!-- #endif -->
 
-                <!-- removeIf(!sensor) -->
-                <div id="tspkMagnitudes"></div>
-                <div id="tspkMagnitudeTemplate" class="template">
-                    <div class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
-                        <div class="pure-u-1 pure-u-lg-1-4">
-                            <Inpt class="pure-u-1 pure-u-lg-23-24 center"
-                                  name="tspkMagnitude"
-                                  type="number"
-                                  min="0"
-                                  max="8"
-                                  tabindex="0"
-                                  data="0"/>
-                        </div>
-                        <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
-                    </div>
-                </div>
-                <!-- endRemoveIf(!sensor) -->
+                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+                <Repeater v-model="tspk.magnitudes.list" locked>
+                    <template #default="tpl">
+                        <Row>
+                            <C><label>Magnitude</label></C>
+                            <C>
+                                <Inpt name="magnitude"
+                                      type="number"
+                                      min="0"
+                                      max="8"
+                                      tabindex="0"
+                                      data="0"/>
+                                <Hint>{{tpl.row.description}}</Hint>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
+                <!-- #endif -->
             </fieldset>
         </div>
     </section>
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Hint from "../../components/Hint";
+    import Row from "../../layout/Row";
+    import C from "../../layout/Col";
+    import Repeater from "../../components/Repeater";
 
     export default {
         components: {
+            Repeater,
+            C,
+            Row,
             Hint,
             Inpt
         },

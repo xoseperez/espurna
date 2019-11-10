@@ -159,7 +159,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Btn from "../../components/Button";
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";

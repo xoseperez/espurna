@@ -45,7 +45,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Btn from "../../components/Button";
 
     export default {

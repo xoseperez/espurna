@@ -175,7 +175,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Btn from "../../components/Button";
     import Repeater from "../../components/Repeater";
     import Hint from "../../components/Hint";

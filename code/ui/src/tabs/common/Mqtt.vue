@@ -198,7 +198,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";

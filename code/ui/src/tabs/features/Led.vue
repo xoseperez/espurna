@@ -74,7 +74,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Repeater from "../../components/Repeater";
     import C from "../../layout/Col";
     import Row from "../../layout/Row";

@@ -11,80 +11,90 @@
             <fieldset>
                 <legend>General</legend>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Enable Domoticz</label>
-                    <div class="pure-u-1 pure-u-lg-1-4">
+                <Row>
+                    <C><label>Enable Domoticz</label></C>
+                    <C>
                         <Inpt type="switch"
-                              name="dczEnabled"
-                              tabindex="30"/>
-                    </div>
-                </div>
+                              name="enabled"
+                              tabindex="1"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Domoticz IN Topic</label>
-                    <Inpt class="pure-u-1 pure-u-lg-3-4" name="dczTopicIn" type="text" tabindex="31"/>
-                </div>
+                <Row>
+                    <C><label>Domoticz IN Topic</label></C>
+                    <C>
+                        <Inpt name="topicIn" type="text" tabindex="2"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Domoticz OUT Topic</label>
-                    <Inpt class="pure-u-1 pure-u-lg-3-4"
-                          name="dczTopicOut"
-                          type="text"
-                          action="reconnect"
-                          tabindex="32"/>
-                </div>
+                <Row>
+                    <C><label>Domoticz OUT Topic</label></C>
+                    <C>
+                        <Inpt name="topicOut"
+                              type="text"
+                              action="reconnect"
+                              tabindex="3"/>
+                    </C>
+                </Row>
 
-                <legend>Sensors &amp; actuators</legend>
+                <legend>Sensors & actuators</legend>
 
-                <div class="pure-g">
+                <Row>
                     <Hint>
                         Set IDX to 0 to disable notifications from that component.
                     </Hint>
-                </div>
+                </Row>
 
-                <div id="dczRelays"></div>
-                <div id="dczRelayTemplate" class="template">
-                    <div class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
-                        <div class="pure-u-1 pure-u-lg-1-4">
-                            <Inpt class="pure-u-1 pure-u-lg-23-24 dczRelayIdx"
-                                  name="dczRelayIdx"
-                                  type="number"
-                                  min="0"
-                                  tabindex="0"
-                                  data="0"/>
-                        </div>
-                    </div>
-                </div>
+                <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
+                <Repeater v-model="relays.list" locked>
+                    <template #default="tpl">
+                        <Row>
+                            <C><label>Switch</label></C>
+                            <C>
+                                <Inpt name="relayIdx"
+                                      type="number"
+                                      min="0"
+                                      data="0"/>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
+                <!-- #endif -->
 
-                <!-- removeIf(!sensor) -->
-                <div id="dczMagnitudes"></div>
-                <div id="dczMagnitudeTemplate" class="template">
-                    <div class="pure-g">
-                        <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
-                        <div class="pure-u-1 pure-u-lg-1-4">
-                            <Inpt class="pure-u-1 pure-u-lg-23-24 center"
-                                  name="dczMagnitude"
-                                  type="number"
-                                  min="0"
-                                  tabindex="0"
-                                  data="0"/>
-                        </div>
-                        <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
-                    </div>
-                </div>
-                <!-- endRemoveIf(!sensor) -->
+                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+                <Repeater v-model="dcz.magnitudes.list" locked>
+                    <template #default="tpl">
+                        <Row>
+                            <C><label>Magnitude</label></C>
+                            <C>
+                                <Inpt name="magnitude"
+                                      type="number"
+                                      min="0"
+                                      tabindex="0"
+                                      data="0"/>
+                                <Hint>{{tpl.row.description}}</Hint>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
+                <!-- #endif -->
             </fieldset>
         </div>
     </section>
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Hint from "../../components/Hint";
+    import Row from "../../layout/Row";
+    import C from "../../layout/Col";
+    import Repeater from "../../components/Repeater";
 
     export default {
         components: {
+            Repeater,
+            C,
+            Row,
             Hint,
             Inpt
         },

@@ -249,7 +249,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
     import Hint from "../../components/Hint";
 
     export default {

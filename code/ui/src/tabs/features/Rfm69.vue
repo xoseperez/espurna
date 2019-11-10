@@ -107,7 +107,7 @@
 </template>
 
 <script>
-    import Inpt from './../../components/Input';
+    import Inpt from "./../../components/Input";
 
     export default {
         components: {
