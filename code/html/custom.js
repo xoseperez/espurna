@@ -480,15 +480,14 @@ function sendConfig(data) {
     send(JSON.stringify({config: data}));
 }
 
-function setOriginalsFromValues(force, elems) {
-    var force = (true === force);
+function setOriginalsFromValues(elems) {
     if (typeof elems == "undefined") {
         elems = $("input,select");
     }
     elems.each(function() {
         var initial = (undefined === $(this).attr("original"));
-        var value;
-        if (force || initial) {
+        if (initial) {
+            var value;
             if ($(this).attr("type") === "checkbox") {
                 value = $(this).prop("checked");
             } else {
@@ -501,7 +500,7 @@ function setOriginalsFromValues(force, elems) {
 }
 
 function resetOriginals() {
-    setOriginalsFromValues(true);
+    setOriginalsFromValues();
     numReboot = numReconnect = numReload = 0;
     conf_saved = false;
 }
@@ -875,7 +874,7 @@ function createRelayList(data, container, template_name) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
         $("input", line).attr("tabindex", 40 + i).val(data[i]);
-        setOriginalsFromValues(false, $("input", line));
+        setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
 
@@ -895,7 +894,7 @@ function createMagnitudeList(data, container, template_name) {
         $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
-        setOriginalsFromValues(false, $("input", line));
+        setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
 
@@ -914,7 +913,7 @@ function addRPNRule() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
-    setOriginalsFromValues(false, $("input", line));
+    setOriginalsFromValues($("input", line));
     line.appendTo("#rpnRules");
 }
 
@@ -926,7 +925,7 @@ function addRPNTopic() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
-    setOriginalsFromValues(false, $("input", line));
+    setOriginalsFromValues($("input", line));
     line.appendTo("#rpnTopics");
 }
 
@@ -944,7 +943,7 @@ function addMapping() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
-    setOriginalsFromValues(false, $("input", line));
+    setOriginalsFromValues($("input", line));
     line.appendTo("#mapping");
 }
 
@@ -1029,12 +1028,20 @@ function addSchedule(event) {
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
-    $(line).find("input[name='schUTC']").prop("id", "schUTC" + (numSchedules + 1))
-        .next().prop("for", "schUTC" + (numSchedules + 1));
-    $(line).find("input[name='schEnabled']").prop("id", "schEnabled" + (numSchedules + 1))
-        .next().prop("for", "schEnabled" + (numSchedules + 1));
+
+    var schUTC_id = "schUTC" + (schedules + 1);
+    $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
+
+    var schEnabled_id = "schEnabled" + (schedules + 1);
+    $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
+
     line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
+
+    setOriginalsFromValues($("input,select", line));
+    $("select[name='schSwitch']", line)
+        .attr("original", "")
+        .attr("haschanged", "true");
 
     return line;
 
@@ -1127,7 +1134,7 @@ function initRelayConfig(data) {
             $("select[name='relayOnDisc']", line).val(data.on_disc[i]);
         }
 
-        setOriginalsFromValues(false, $("input,select", line));
+        setOriginalsFromValues($("input,select", line));
         line.appendTo("#relayConfig");
     }
 
@@ -1415,7 +1422,7 @@ function initLightfox(data, relayCount) {
             $(this).val(data[i]["relay"]);
             status = !status;
         });
-        setOriginalsFromValues(false, $("input,select", $line));
+        setOriginalsFromValues($("input,select", $line));
         $line.appendTo("#lightfoxNodes");
     }
 
@@ -1553,7 +1560,7 @@ function processData(data) {
 				    if ($(id, line).length) $(id, line).val(mapping[key]);
 				});
 
-                setOriginalsFromValues(false, $("input", line));
+                setOriginalsFromValues($("input", line));
 			}
 			return;
         }
@@ -1577,7 +1584,7 @@ function processData(data) {
 				var rule = data.rpnRules[i];
                 $("input", line).val(rule);
 
-                setOriginalsFromValues(false, $("input", line));
+                setOriginalsFromValues($("input", line));
 
             }
 			return;
@@ -1598,7 +1605,7 @@ function processData(data) {
                 $("input[name='rpnTopic']", line).val(topic);
                 $("input[name='rpnName']", line).val(name);
 
-                setOriginalsFromValues(false, $("input", line));
+                setOriginalsFromValues($("input", line));
 
             }
 			return;
@@ -1700,7 +1707,7 @@ function processData(data) {
                 Object.keys(wifi).forEach(function(key) {
                     $("input[name='" + key + "']", line).val(wifi[key]);
                 });
-                setOriginalsFromValues(false, $("input,select", line));
+                setOriginalsFromValues($("input,select", line));
             }
             return;
         }
@@ -1743,8 +1750,8 @@ function processData(data) {
                     $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
                 });
 
-                setOriginalsFromValues(false, $("input,select", sch_line));
             }
+            setOriginalsFromValues($("#schedules input,select"));
             return;
         }
 
@@ -1775,7 +1782,7 @@ function processData(data) {
                 var relay = $("select[name='ledRelay'][data='" + i + "']");
                 mode.val(value[i].mode);
                 relay.val(value[i].relay);
-                setOriginalsFromValues(false, $([mode,relay]));
+                setOriginalsFromValues($([mode,relay]));
             }
             return;
         }
@@ -1955,7 +1962,7 @@ function processData(data) {
             elems.push(select);
         }
 
-        setOriginalsFromValues(false, $(elems));
+        setOriginalsFromValues($(elems));
 
     });
 
@@ -2139,6 +2146,7 @@ $(function() {
 
     $("textarea").on("dblclick", function() { this.select(); });
 
+    resetOriginals();
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
         return;
