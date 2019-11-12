@@ -288,7 +288,7 @@ function getData(form) {
 
     // Populate two sets of data, ones that had been changed and ones that stayed the same
     var data = {};
-    var changed_data = {};
+    var changed_data = [];
 
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
@@ -297,9 +297,11 @@ function getData(form) {
 
         var value = getValue(this);
         if (null !== value) {
-            if ("true" === $(this).attr("hasChanged")) {
-                addValue(changed_data, name, value);
+            var changed = ("true" === $(this).attr("hasChanged"));
+            if (changed && !(changed_data.indexOf(name) >= 0)) {
+                changed_data.push(name);
             }
+
             addValue(data, name, value);
         }
     });
@@ -309,14 +311,19 @@ function getData(form) {
     // so we don't accidentally break when user deletes entry in the middle
     var resulting_data = {};
     for (var value in data) {
-        if (value in changed_data) {
+        if (changed_data.indexOf(value) >= 0) {
             resulting_data[value] = data[value];
         }
     }
 
-    // Hack: clean-up leftover schedule configuration
-    if ("schSwitch" in resulting_data) {
-        addValue(resulting_data, "schSwitch", 0xFF);
+    // Hack: clean-up leftover arrays.
+    // When empty, the receiving side will prune all keys greater than the current one.
+    if (!numSchedules()) {
+        resulting_data["schSwitch"] = [];
+    }
+
+    if (!numNetworks()) {
+        resulting_data["ssid"] = [];
     }
 
     return resulting_data;
