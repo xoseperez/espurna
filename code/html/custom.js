@@ -953,6 +953,10 @@ function addMapping() {
 // Wifi
 // -----------------------------------------------------------------------------
 
+function numNetworks() {
+    return $("#networks > div").length;
+}
+
 function delNetwork() {
     var parent = $(this).parents(".pure-g");
     $(parent).remove();
@@ -965,8 +969,8 @@ function moreNetwork() {
 
 function addNetwork() {
 
-    var numNetworks = $("#networks > div").length;
-    if (numNetworks >= maxNetworks) {
+    var number = numNetworks();
+    if (number >= maxNetworks) {
         alert("Max number of networks reached");
         return null;
     }
@@ -991,6 +995,9 @@ function addNetwork() {
 // Relays scheduler
 // -----------------------------------------------------------------------------
 
+function numSchedules() {
+    return $("#schedules > div").length;
+}
 
 function delSchedule() {
     var parent = $(this).parents(".pure-g");
@@ -1004,8 +1011,8 @@ function moreSchedule() {
 
 function addSchedule(event) {
 
-    var numSchedules = $("#schedules > div").length;
-    if (numSchedules >= maxSchedules) {
+    var schedules = numSchedules();
+    if (schedules >= maxSchedules) {
         alert("Max number of schedules reached");
         return null;
     }
@@ -1017,9 +1024,6 @@ function addSchedule(event) {
 
     template = $("#" + type + "ActionTemplate").children();
     var actionLine = template.clone();
-    $("select", actionLine)
-        .attr("original", "")
-        .attr("haschanged", "true");
     $(line).find("#schActionDiv").append(actionLine);
 
     $(line).find("input").each(function() {
@@ -1733,12 +1737,8 @@ function processData(data) {
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
-        if ("maxSchedules" === key) {
-            maxSchedules = parseInt(value, 10);
-            return;
-        }
-
         if ("schedules" === key) {
+            maxSchedules = value.max;
             for (var i=0; i<value.size; ++i) {
                 var sch_line = addSchedule({ data: {schType: value.schType[i] }});
 
