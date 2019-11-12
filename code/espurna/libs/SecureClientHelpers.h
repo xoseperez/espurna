@@ -9,7 +9,12 @@
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 #include <WiFiClientSecureBearSSL.h>
 #elif SECURE_CLIENT == SECURE_CLIENT_AXTLS
-#include <WiFiClientSecureAxTLS.h>
+    // No support for axTLS namespace in core < 2.4.2
+    #if defined(ARDUINO_ESP8266_RELEASE_2_3_0) || defined(ARDUINO_ESP8266_RELEASE_2_4_0) || defined(ARDUINO_ESP8266_RELEASE_2_4_1)
+        #include <WiFiClientSecure.h>
+    #else
+        #include <WiFiClientSecureAxTLS.h>
+    #endif
 #endif
 
 namespace SecureClientHelpers {
@@ -30,7 +35,12 @@ const char * _secureClientCheckAsString(int check) {
 }
 
 #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-using SecureClientClass = axTLS::WiFiClientSecure;
+    // No support for axTLS namespace in core < 2.4.2
+    #if defined(ARDUINO_ESP8266_RELEASE_2_3_0) || defined(ARDUINO_ESP8266_RELEASE_2_4_0) || defined(ARDUINO_ESP8266_RELEASE_2_4_1)
+        using SecureClientClass = WiFiClientSecure;
+    #else
+        using SecureClientClass = axTLS::WiFiClientSecure;
+    #endif
 
 struct SecureClientConfig {
     SecureClientConfig(const char* tag, host_callback_f host_cb, check_callback_f check_cb, fp_callback_f fp_cb, bool debug = false) :
