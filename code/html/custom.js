@@ -261,16 +261,6 @@ function addValue(data, name, value) {
         "rpnRule", "rpnTopic", "rpnName"
     ];
 
-    // join both adminPass 1 and 2
-    if (name.startsWith("adminPass")) {
-        name = "adminPass";
-    }
-
-    // join all relayLastSch values
-    if (name.startsWith("relayLastSch")) {
-        name = "relayLastSch";
-    }
-
     if (name in data) {
         if (!Array.isArray(data[name])) {
             data[name] = [data[name]];
@@ -294,6 +284,16 @@ function getData(form) {
         var name = $(this).attr("name");
         if (name === "filename") { return; }
         if (name === "rfbcode") { return; }
+
+        // join both adminPass 1 and 2
+        if (name.startsWith("adminPass")) {
+            name = "adminPass";
+        }
+
+        // join all relayLastSch values
+        if (name.startsWith("relayLastSch")) {
+            name = "relayLastSch";
+        }
 
         var value = getValue(this);
         if (null !== value) {
