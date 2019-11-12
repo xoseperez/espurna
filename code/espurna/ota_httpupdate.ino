@@ -42,9 +42,6 @@ void _otaFollowRedirects(const std::false_type&, T& instance) {
 
 template <typename T>
 t_httpUpdate_return _otaClientUpdate(const std::true_type&, T& instance, WiFiClient* client, const String& url) {
-    if (client == nullptr) {
-        client = std::make_unique<WiFiClient>().get();
-    }
     return instance.update(*client, url);
 }
 
@@ -115,7 +112,8 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 }
 
 void _otaClientFromHttp(const String& url) {
-    _otaClientRunUpdater(nullptr, url, "");
+    auto client = std::make_unique<WiFiClient>();
+    _otaClientRunUpdater(client.get(), url, "");
 }
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
