@@ -3,7 +3,6 @@
 #include <functional>
 #include <vector>
 #include <memory>
-#include <type_traits>
 
 extern "C" {
     #include "user_interface.h"
@@ -12,28 +11,6 @@ extern "C" {
 
 #define UNUSED(x) (void)(x)
 #define INLINE inline __attribute__((always_inline))
-
-#define CREATE_CHECK(CLASS, FUNCTION, PARAMS...)                                           \
-    namespace has_##FUNCTION                                                               \
-    {                                                                                      \
-        struct _detector                                                                   \
-        {                                                                                  \
-            template <typename T, typename = decltype(std::declval<T>().FUNCTION(PARAMS))> \
-            static std::true_type detect(int);                                             \
-            template <typename>                                                            \
-            static std::false_type detect(...);                                            \
-        };                                                                                 \
-        template <typename T>                                                              \
-        struct detector : public _detector                                                 \
-        {                                                                                  \
-            using result = decltype(std::declval<detector>().template detect<T>(0));       \
-        };                                                                                 \
-        template <typename T>                                                              \
-        struct typed_check : public detector<T>::result                                    \
-        {                                                                                  \
-        };                                                                                 \
-        typed_check<CLASS> check{};                                                        \
-    };
 
 // -----------------------------------------------------------------------------
 // System
