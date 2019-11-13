@@ -74,7 +74,7 @@ void _tspkWebSocketOnVisible(JsonObject& root) {
 void _tspkWebSocketOnConnected(JsonObject& root) {
 
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
-    root["tspkKey"] = getSetting("tspkKey");
+    root["tspkKey"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
     root["tspkClear"] = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
@@ -93,7 +93,7 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
 void _tspkConfigure() {
     _tspk_clear = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
     _tspk_enabled = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
-    if (_tspk_enabled && (getSetting("tspkKey").length() == 0)) {
+    if (_tspk_enabled && (getSetting("tspkKey", THINGSPEAK_APIKEY).length() == 0)) {
         _tspk_enabled = false;
         setSetting("tspkEnabled", 0);
     }
@@ -342,7 +342,7 @@ void _tspkFlush() {
     // POST data if any
     if (_tspk_data.length()) {
         _tspk_data.concat("&api_key=");
-        _tspk_data.concat(getSetting("tspkKey"));
+        _tspk_data.concat(getSetting("tspkKey", THINGSPEAK_APIKEY));
         --_tspk_tries;
         _tspkPost();
     }
