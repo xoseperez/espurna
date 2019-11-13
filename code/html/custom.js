@@ -274,11 +274,14 @@ function addValue(data, name, value) {
 
 }
 
-function getData(form) {
+function getData(form, only_available) {
 
     // Populate two sets of data, ones that had been changed and ones that stayed the same
     var data = {};
     var changed_data = [];
+    if (only_available === undefined) {
+        only_available = false;
+    }
 
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
@@ -318,12 +321,14 @@ function getData(form) {
 
     // Hack: clean-up leftover arrays.
     // When empty, the receiving side will prune all keys greater than the current one.
-    if (!numSchedules()) {
-        resulting_data["schSwitch"] = [];
-    }
+    if (!only_available) {
+        if (!numSchedules()) {
+            resulting_data["schSwitch"] = [];
+        }
 
-    if (!numNetworks()) {
-        resulting_data["ssid"] = [];
+        if (!numNetworks()) {
+            resulting_data["ssid"] = [];
+        }
     }
 
     return resulting_data;
@@ -601,7 +606,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateFormPasswords(form)) {
-        sendConfig(getData(form));
+        sendConfig(getData(form, true));
     }
     return false;
 }
@@ -2147,6 +2152,7 @@ $(function() {
     $("textarea").on("dblclick", function() { this.select(); });
 
     resetOriginals();
+
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
         return;
