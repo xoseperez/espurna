@@ -112,7 +112,10 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 }
 
 void _otaClientFromHttp(const String& url) {
-    auto client = std::make_unique<WiFiClient>();
+    std::unique_ptr<WiFiClient> client(nullptr);
+    if (ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}) {
+        client = std::make_unique<WiFiClient>();
+    }
     _otaClientRunUpdater(client.get(), url, "");
 }
 
