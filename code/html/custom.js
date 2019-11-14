@@ -2,7 +2,6 @@ var debug = false;
 var websock;
 var password = false;
 var maxNetworks;
-var maxSchedules;
 var messages = [];
 var free_size = 0;
 
@@ -47,7 +46,7 @@ function initMessages() {
 
 <!-- removeIf(!sensor)-->
 function sensorName(id) {
-    var names = [
+    const names = [
         "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
@@ -63,7 +62,7 @@ function sensorName(id) {
 }
 
 function magnitudeType(type) {
-    var types = [
+    const types = [
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
@@ -80,7 +79,7 @@ function magnitudeType(type) {
 }
 
 function magnitudeError(error) {
-    var errors = [
+    const errors = [
         "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
         "Data Error", "I2C Error", "GPIO Error", "Calibration error"
     ];
@@ -121,11 +120,7 @@ function keepTime() {
 }
 
 function zeroPad(number, positions) {
-    var zeros = "";
-    for (var i = 0; i < positions; i++) {
-        zeros += "0";
-    }
-    return (zeros + number).slice(-positions);
+    return toString(number).padStart(positions, "0");
 }
 
 function loadTimeZones() {
@@ -231,6 +226,54 @@ function validateForm(form) {
     return validateFormPasswords(form) && validateFormHostname(form);
 }
 
+// Observe all group settings to selectively update originals based on the current data
+const groupSettingsObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        // If any new elements are added, set "settings-target" element as changed to forcibly send the data
+        const targets = $(mutation.target).attr("data-settings-target");
+        if (targets !== undefined) {
+            mutation.addedNodes.forEach(function(node) {
+                var overrides = [];
+                targets.split(" ").forEach(function(target) {
+                    const elem = $("input[name='" + target + "']", node);
+                    if (!elem.length) return;
+                    if (getValue(elem) === elem[0].defaultValue) {
+                        overrides.push(elem);
+                    }
+                });
+                setOriginalsFromValues($("input,select", node));
+                overrides.forEach(function(elem) {
+                    elem.attr("hasChanged", "true");
+                });
+            });
+        }
+
+        // If anything was removed, forcibly send **all** of the group to avoid having any outdated keys
+        const changed = $(mutation.target).attr("hasChanged") === "true";
+        if (changed || mutation.removedNodes.length) {
+            $(mutation.target).attr("hasChanged", "true");
+            $("input,select", mutation.target.childNodes).attr("hasChanged", "true");
+        }
+    });
+});
+
+// These fields will always be a list of values
+function isGroupValue(value) {
+    const names = [
+        "ssid", "pass", "gw", "mask", "ip", "dns",
+        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
+        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
+        "mqttGroup", "mqttGroupSync", "relayOnDisc",
+        "dczRelayIdx", "dczMagnitude",
+        "tspkRelay", "tspkMagnitude",
+        "ledMode", "ledRelay",
+        "adminPass",
+        "node", "key", "topic",
+        "rpnRule", "rpnTopic", "rpnName"
+    ];
+    return names.indexOf(value) >= 0;
+}
+
 function getValue(element) {
 
     if ($(element).attr("type") === "checkbox") {
@@ -247,26 +290,12 @@ function getValue(element) {
 
 function addValue(data, name, value) {
 
-    // These fields will always be a list of values
-    var is_group = [
-        "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
-        "mqttGroup", "mqttGroupSync", "relayOnDisc",
-        "dczRelayIdx", "dczMagnitude",
-        "tspkRelay", "tspkMagnitude",
-        "ledMode", "ledRelay",
-        "adminPass",
-        "node", "key", "topic",
-        "rpnRule", "rpnTopic", "rpnName"
-    ];
-
     if (name in data) {
         if (!Array.isArray(data[name])) {
             data[name] = [data[name]];
         }
         data[name].push(value);
-    } else if (is_group.indexOf(name) >= 0) {
+    } else if (isGroupValue(name)) {
         data[name] = [value];
     } else {
         data[name] = value;
@@ -274,34 +303,67 @@ function addValue(data, name, value) {
 
 }
 
-function getData(form, only_available) {
+function findListParentNode(elem) {
+    while (elem !== null) {
+        const parentNode = elem.parentNode;
+        if (parentNode === undefined) {
+            elem = null;
+            break;
+        }
+        const classes = Array.from(parentNode.classList);
+        if (classes.indexOf("group-settings") >= 0) {
+            break;
+        }
+        elem = elem.parentNode;
+    }
+
+    return elem;
+}
+
+function findRelatedGroupNames(elem) {
+    const groupParent = findListParentNode(elem);
+    var result = [];
+    if (groupParent !== null) {
+        Array.from(groupParent.childNodes).forEach(function(node) {
+            if (result.indexOf(name) < 0) {
+                result.push(node.getAttribute("name"));
+            }
+        });
+    }
+    return result;
+}
+
+function getData(form, changed, cleanup) {
 
     // Populate two sets of data, ones that had been changed and ones that stayed the same
     var data = {};
     var changed_data = [];
-    if (only_available === undefined) {
-        only_available = false;
+    if (cleanup === undefined) {
+        cleanup = true;
+    }
+
+    if (changed === undefined) {
+        changed = true;
     }
 
     $("input,select", form).each(function() {
-        var name = $(this).attr("name");
-        if (name === "filename") { return; }
-        if (name === "rfbcode") { return; }
-
-        // join both adminPass 1 and 2
-        if (name.startsWith("adminPass")) {
-            name = "adminPass";
+        if ($(this).attr("data-settings-ignore") === "true") {
+            return;
         }
 
-        // join all relayLastSch values
-        if (name.startsWith("relayLastSch")) {
-            name = "relayLastSch";
+        var name = $(this).attr("name");
+
+        const real_name = $(this).attr("data-settings-real-name");
+        if (real_name !== undefined) {
+            name = real_name;
         }
 
         var value = getValue(this);
         if (null !== value) {
-            var changed = ("true" === $(this).attr("hasChanged"));
-            if (changed && !(changed_data.indexOf(name) >= 0)) {
+            const haschanged = ("true" === $(this).attr("hasChanged"));
+            const indexed = changed_data.indexOf(name) >= 0;
+
+            if ((haschanged || !changed) && !indexed) {
                 changed_data.push(name);
             }
 
@@ -321,7 +383,7 @@ function getData(form, only_available) {
 
     // Hack: clean-up leftover arrays.
     // When empty, the receiving side will prune all keys greater than the current one.
-    if (!only_available) {
+    if (cleanup) {
         if (!numSchedules()) {
             resulting_data["schSwitch"] = [];
         }
@@ -490,22 +552,20 @@ function setOriginalsFromValues(elems) {
         elems = $("input,select");
     }
     elems.each(function() {
-        var initial = (undefined === $(this).attr("original"));
-        if (initial) {
-            var value;
-            if ($(this).attr("type") === "checkbox") {
-                value = $(this).prop("checked");
-            } else {
-                value = $(this).val();
-            }
-            $(this).attr("original", value);
-            hasChanged.call(this);
+        var value;
+        if ($(this).attr("type") === "checkbox") {
+            value = $(this).prop("checked");
+        } else {
+            value = $(this).val();
         }
+        $(this).attr("original", value);
+        hasChanged.call(this);
     });
 }
 
 function resetOriginals() {
     setOriginalsFromValues();
+    $(".group-settings").attr("haschanged", "false")
     numReboot = numReconnect = numReload = 0;
     conf_saved = false;
 }
@@ -606,7 +666,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateFormPasswords(form)) {
-        sendConfig(getData(form, true));
+        sendConfig(getData(form, true, false));
     }
     return false;
 }
@@ -972,12 +1032,16 @@ function moreNetwork() {
     $(".more", parent).toggle();
 }
 
-function addNetwork() {
+function addNetwork(values) {
 
-    var number = numNetworks();
+    const number = numNetworks();
     if (number >= maxNetworks) {
         alert("Max number of networks reached");
         return null;
+    }
+
+    if (values === undefined) {
+        values = {};
     }
 
     var tabindex = 200 + numNetworks * 10;
@@ -990,6 +1054,11 @@ function addNetwork() {
     $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
+
+    Object.entries(values).forEach(function(kv) {
+        $("input[name='" + kv[0] + "']", line).val(kv[1]);
+    });
+
     line.appendTo("#networks");
 
     return line;
@@ -1004,6 +1073,11 @@ function numSchedules() {
     return $("#schedules > div").length;
 }
 
+function maxSchedules() {
+    const value = $("#schedules").attr("data-settings-max");
+    return parseInt(value === undefined ? 0 : value, 10);
+}
+
 function delSchedule() {
     var parent = $(this).parents(".pure-g");
     $(parent).remove();
@@ -1014,18 +1088,23 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function addSchedule(event) {
+function addSchedule(values) {
 
     var schedules = numSchedules();
-    if (schedules >= maxSchedules) {
+    if (schedules >= maxSchedules()) {
         alert("Max number of schedules reached");
         return null;
     }
+
+    if (values === undefined) {
+        values = {};
+    }
+
     var tabindex = 200 + numSchedules * 10;
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = (1 === event.data.schType) ? "switch" : "light";
+    var type = (1 === values.schType) ? "switch" : "light";
 
     template = $("#" + type + "ActionTemplate").children();
     var actionLine = template.clone();
@@ -1044,13 +1123,15 @@ function addSchedule(event) {
     var schEnabled_id = "schEnabled" + (schedules + 1);
     $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
 
-    line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
 
-    setOriginalsFromValues($("input,select", line));
-    $("select[name='schSwitch']", line)
-        .attr("original", "")
-        .attr("haschanged", "true");
+    Object.entries(values).forEach(function(kv) {
+        const key = kv[0], value = kv[1];
+        $("input[name='" + key + "']", line).val(value);
+        $("select[name='" + key + "']", line).prop("value", value);
+        $("input[type='checkbox'][name='" + key + "']", line).prop("checked", value);
+    });
+    line.appendTo("#schedules");
 
     return line;
 
@@ -1386,8 +1467,8 @@ function addRfbNode() {
     var status = true;
     $("span", line).html(numNodes);
     $(line).find("input").each(function() {
-        $(this).attr("data-id", numNodes);
-        $(this).attr("data-status", status ? 1 : 0);
+        $(this).data("id", numNodes);
+        $(this).attr("status", status ? 1 : 0);
         status = !status;
     });
     $(line).find(".button-rfb-learn").on("click", rfbLearn);
@@ -1710,14 +1791,7 @@ function processData(data) {
         }
 
         if ("wifi" === key) {
-            for (i in value) {
-                var wifi = value[i];
-                var line = addNetwork();
-                Object.keys(wifi).forEach(function(key) {
-                    $("input[name='" + key + "']", line).val(wifi[key]);
-                });
-                setOriginalsFromValues($("input,select", line));
-            }
+            value.forEach(addNetwork);
             return;
         }
 
@@ -1743,20 +1817,19 @@ function processData(data) {
         // -----------------------------------------------------------------------------
 
         if ("schedules" === key) {
-            maxSchedules = value.max;
+            $("#schedules").attr("data-settings-max", value.max);
             for (var i=0; i<value.size; ++i) {
-                var sch_line = addSchedule({ data: {schType: value.schType[i] }});
-
+                var sch_map = {};
                 Object.keys(value).forEach(function(key) {
                     if ("size" == key) return;
+                    if ("max" == key) return;
                     var sch_value = value[key][i];
-                    $("input[name='" + key + "']", sch_line).val(sch_value);
-                    $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
+                    sch_map[key] = value[key][i];
                 });
 
+                addSchedule(sch_map);
+
             }
-            setOriginalsFromValues($("#schedules input,select"));
             return;
         }
 
@@ -1995,16 +2068,16 @@ function hasChanged() {
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", true);
         }
+        $(this).attr("hasChanged", true);
     } else {
         if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", false);
         }
+        $(this).attr("hasChanged", false);
     }
 
 }
@@ -2118,9 +2191,13 @@ $(function() {
         $(".more", addNetwork()).toggle();
     });
 
-    $(".button-add-switch-schedule").on("click", { schType: 1 }, addSchedule);
+    $(".button-add-switch-schedule").on("click", function() {
+        addSchedule({schType: 1});
+    });
     <!-- removeIf(!light)-->
-    $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
+    $(".button-add-light-schedule").on("click", function() {
+        addSchedule({schType: 2});
+    });
     <!-- endRemoveIf(!light)-->
 
     $(".button-add-rpnrule").on('click', addRPNRule);
@@ -2152,6 +2229,10 @@ $(function() {
     $("textarea").on("dblclick", function() { this.select(); });
 
     resetOriginals();
+
+    $(".group-settings").each(function() {
+        groupSettingsObserver.observe(this, {childList: true});
+    });
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
