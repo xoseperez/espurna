@@ -235,20 +235,26 @@ const groupSettingsObserver = new MutationObserver(function(mutations) {
             mutation.addedNodes.forEach(function(node) {
                 var overrides = [];
                 targets.split(" ").forEach(function(target) {
-                    const elem = $("input[name='" + target + "']", node);
+                    const elem = $("[name='" + target + "']", node);
                     if (!elem.length) return;
-                    if (getValue(elem) === elem[0].defaultValue) {
+
+                    const value = getValue(elem);
+                    if ((value === null) || (value === elem[0].defaultValue)) {
                         overrides.push(elem);
                     }
                 });
                 setOriginalsFromValues($("input,select", node));
                 overrides.forEach(function(elem) {
                     elem.attr("hasChanged", "true");
+                    if (elem.prop("tagName") === "SELECT") {
+                        elem.prop("value", 0);
+                    }
                 });
             });
         }
 
         // If anything was removed, forcibly send **all** of the group to avoid having any outdated keys
+        // TODO: hide instead of remove?
         const changed = $(mutation.target).attr("hasChanged") === "true";
         if (changed || mutation.removedNodes.length) {
             $(mutation.target).attr("hasChanged", "true");
@@ -1162,10 +1168,6 @@ function initRelays(data) {
         $("label.toggle", line).prop("for", "relay" + i)
         line.appendTo("#relays");
 
-        // Populate the relay SELECTs
-        $("select.isrelay").append(
-            $("<option></option>").attr("value",i).text("Switch #" + i));
-
     }
 
 }
@@ -1209,10 +1211,11 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
-        $("input[name='relayLastSch']", line).prop('checked', data.sch_last[i]);
-        $("input[name='relayLastSch']", line).attr("id", "relayLastSch" + i);
-        $("input[name='relayLastSch']", line).attr("name", "relayLastSch" + i);
-        $("input[name='relayLastSch" + i + "']", line).next().attr("for","relayLastSch" + (i));
+        $("input[name='relayLastSch']", line)
+            .prop('checked', data.sch_last[i])
+            .attr("id", "relayLastSch" + i)
+            .attr("name", "relayLastSch" + i)
+            .next().attr("for","relayLastSch" + (i));
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
@@ -1226,6 +1229,11 @@ function initRelayConfig(data) {
 
         setOriginalsFromValues($("input,select", line));
         line.appendTo("#relayConfig");
+
+        // Populate the relay SELECTs
+        $("select.isrelay").append(
+            $("<option></option>").attr("value",i).text("Switch #" + i));
+
     }
 
 }
@@ -1819,16 +1827,14 @@ function processData(data) {
         if ("schedules" === key) {
             $("#schedules").attr("data-settings-max", value.max);
             for (var i=0; i<value.size; ++i) {
+                // XXX: no
                 var sch_map = {};
                 Object.keys(value).forEach(function(key) {
                     if ("size" == key) return;
                     if ("max" == key) return;
-                    var sch_value = value[key][i];
                     sch_map[key] = value[key][i];
                 });
-
                 addSchedule(sch_map);
-
             }
             return;
         }
@@ -2192,11 +2198,11 @@ $(function() {
     });
 
     $(".button-add-switch-schedule").on("click", function() {
-        addSchedule({schType: 1});
+        addSchedule({schType: 1, schSwitch: -1});
     });
     <!-- removeIf(!light)-->
     $(".button-add-light-schedule").on("click", function() {
-        addSchedule({schType: 2});
+        addSchedule({schType: 2, schSwitch: -1});
     });
     <!-- endRemoveIf(!light)-->
 
