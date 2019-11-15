@@ -104,7 +104,7 @@ export default function () {
             {
                 "api": {"enabled": false, "key": "123456789ABCDEF", "realTime": false, "restFul": true}
             }, {
-                "relay": {
+                "relays": {
                     "config": {
                         "start": 0,
                         "schema": [
@@ -168,7 +168,7 @@ export default function () {
                 }
             },
             {
-                "relay": {
+                "relays": {
                     "state": {
                         "start": 0,
                         "schema": [

@@ -50,10 +50,10 @@
                 </Row>
 
                 <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
-                <Repeater v-model="relay.config.list" locked>
+                <Repeater v-model="relays.config.list" locked>
                     <template #default="tpl">
                         <Row>
-                            <C><label>Switch</label></C>
+                            <C><label>Switch #{{tpl.i}}</label></C>
                             <C>
                                 <Inpt name="relay"
                                       type="number"
@@ -69,7 +69,7 @@
                 <Repeater v-model="tspk.magnitudes.list" locked>
                     <template #default="tpl">
                         <Row>
-                            <C><label>Magnitude</label></C>
+                            <C><label>Magnitude {{tpl.value.name}}</label></C>
                             <C>
                                 <Inpt name="magnitude"
                                       type="number"
@@ -77,7 +77,7 @@
                                       max="8"
                                       tabindex="0"
                                       data="0"/>
-                                <Hint>{{tpl.row.description}}</Hint>
+                                <Hint>{{tpl.value.description}}</Hint>
                             </C>
                         </Row>
                     </template>
@@ -109,11 +109,11 @@
         props: {
             tspk: {
                 type: Object,
-                default: () => ({})
+                default: () => ({magnitudes:{}})
             },
-            relay: {
+            relays: {
                 type: Object,
-                default: () => ({list: []})
+                default: () => ({config:{}})
             },
             sensors: {
                 type: Object,

@@ -3,70 +3,62 @@
         <div class="header">
             <h1>MAPPING</h1>
             <h2>
-                Configure the map between nodeID/key and MQTT topic. Messages from the given nodeID with
-                the
+                Configure the map between nodeID/key and MQTT topic. Messages from the given nodeID with the
                 given key will be forwarded to the specified topic.
-                You can also configure a default topic using {nodeid} and {key} as placeholders, if the
-                default topic is empty messages without defined map will be discarded.
+                You can also configure a default topic using {nodeid} and {key} as placeholders.
+                Messages without a defined mapping will be discarded.
             </h2>
         </div>
 
-        <div class="page">
+        <Group v-model="rfm69" class="page form">
             <fieldset>
                 <Row>
-                    <C>    <label>Default topic</label>
+                    <C>
+                        <label>Default topic</label>
                     </C>
-                    <C><Inpt name="topic"
-                          type="text"
-                          size="8"
-                          tabindex="1"
-                          placeholder="Default MQTT Topic (use {nodeid} and {key} as placeholders)"/>
-                    </C></Row>
+                    <C>
+                        <Inpt name="topic"
+                              type="text"
+                              size="8"
+                              tabindex="1"
+                              placeholder="Default MQTT Topic (use {nodeid} and {key} as placeholders)"/>
+                    </C>
+                </Row>
 
                 <Row>
                     <C><label>Specific topics</label></C>
-
-                <div id="mapping"></div>
+                    <Repeater>
+                        <template #default="tpl">
+                            <Row>
+                                <C :size="3">
+                                    <Inpt name="node"
+                                          type="text"
+                                          size="8"
+                                          placeholder="Node ID"
+                                          autocomplete="false"/>
+                                </C>
+                                <C :size="3">
+                                    <Inpt name="key"
+                                          type="text"
+                                          size="8"
+                                          placeholder="Key"/>
+                                </C>
+                                <C :size="4">
+                                    <Inpt name="topic"
+                                          type="text"
+                                          size="8"
+                                          placeholder="MQTT Topic"/>
+                                </C>
+                            </Row>
+                        </template>
+                        <template #btnRemove="tpl">
+                            <Btn name="del-mapping" @click="tpl.click">Del</Btn>
+                        </template>
+                        <template #btnAdd="tpl">
+                            <Btn name="add-mapping" @click="tpl.click">Add</Btn>
+                        </template>
+                    </Repeater>
                 </Row>
-                <div id="nodeTemplate" class="template">
-                    <div class="pure-g">
-                        <div class="pure-u-md-1-6 pure-u-1-2">
-                            <Inpt name="node"
-                                  type="text"
-                                  class="pure-u-11-12"
-                                  value=""
-                                  size="8"
-                                  tabindex="0"
-                                  placeholder="Node ID"
-                                  autocomplete="false"/>
-                        </div>
-                        <div class="pure-u-md-1-6 pure-u-1-2">
-                            <Inpt name="key"
-                                  type="text"
-                                  class="pure-u-11-12"
-                                  value=""
-                                  size="8"
-                                  tabindex="0"
-                                  placeholder="Key"/>
-                        </div>
-                        <div class="pure-u-md-1-2 pure-u-3-4">
-                            <Inpt name="topic"
-                                  type="text"
-                                  class="pure-md-11-12 pure-u-23-24"
-                                  value=""
-                                  size="8"
-                                  tabindex="0"
-                                  placeholder="MQTT Topic"/>
-                        </div>
-                        <div class="pure-u-md-1-6 pure-u-1-4">
-                            <button type="button" class="btn btn-del-mapping pure-u-5-6 pure-u-md-5-6">
-                                Del
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="button" class="btn btn-add-mapping">Add</button>
             </fieldset>
             <fieldset>
                 <legend>Messages</legend>
@@ -99,11 +91,11 @@
                     </tbody>
                 </table>
 
-                <button type="button" class="btn btn-clear-filters">Clear filters</button>
-                <button type="button" class="btn btn-clear-messages">Clear messages</button>
-                <button type="button" class="btn btn-clear-counts">Clear counts</button>
+                <Btn name="clear-filters">Clear filters</Btn>
+                <Btn name="clear-messages">Clear messages</Btn>
+                <Btn name="clear-counts">Clear counts</Btn>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -111,9 +103,17 @@
     import Inpt from "./../../components/Input";
     import Row from "../../layout/Row";
     import DataTable from "../../components/DataTable";
+    import C from "../../layout/Col";
+    import Btn from "../../components/Button";
+    import Repeater from "../../components/Repeater";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
+            Repeater,
+            Btn,
+            C,
             DataTable,
             Row,
             Inpt

@@ -16,7 +16,7 @@
             You can also specify which RF button controls which relay using controls below.
         </div>
 
-        <Group class="page form">
+        <Group v-model="lightfox" class="page form">
             <fieldset>
                 <Row>
                     <C><label>RF Actions</label></C>
@@ -32,13 +32,17 @@
                     </C>
                 </Row>
 
-                <Row v-for="b in lightfox.buttons" :key="b.id">
-                    <C><label>Button #{{b.id}}</label></C>
-                    <C>
-                        <Inpt type="select" :name="'btnRelay'+b.id" :options="relayOptions"
-                              @change="$emit('reboot')"/>
-                    </C>
-                </Row>
+                <Repeater name="buttons" locked>
+                    <template #default="tpl">
+                        <Row>
+                            <C><label>Button #{{tpl.value.id}}</label></C>
+                            <C>
+                                <Inpt type="select" name="relay" :options="relayOptions"
+                                      @change="$emit('reboot')"/>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
             </fieldset>
         </Group>
     </section>
@@ -50,9 +54,11 @@
     import Group from "../../components/Group";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
+    import Repeater from "../../components/Repeater";
 
     export default {
         components: {
+            Repeater,
             C,
             Row,
             Group,

@@ -7,7 +7,7 @@
 
         <div class="page">
             <fieldset>
-                <Repeater v-if="relay.state" v-model="relay.state.list" class="relays" locked>
+                <Repeater v-if="relays.state" v-model="relays.state.list" class="relays" locked>
                     <template #default="tpl">
                         <Row>
                             <C :size="2"><label>Switch #{{tpl.k}}</label></C>
@@ -63,7 +63,7 @@
                     <Row v-for="(magnitude, i) in magnitudes.list" :key="magnitude.index">
                         <C><label>{{magnitudeType(magnitude.type)}} #{{magnitude.index}},</label></C>
                         <C>
-                            <Inpt class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude"
+                            <Inpt class="center" type="text" name="magnitude"
                                   :value="i"/>
                             <Hint>{{magnitude.description}}</Hint>
                         </C>
@@ -242,7 +242,7 @@
             version: {
                 type: Object,
             },
-            relay: {
+            relays: {
                 type: Object,
                 default: () => ({})
             },

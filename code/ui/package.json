@@ -64,7 +64,6 @@
     "terser-webpack-plugin": "^2.1.3",
     "vue-svg-loader": "^0.12.0",
     "vue-template-compiler": "^2.6.10",
-    "vuetable-2": "^1.7.5",
     "webpack-conditional-loader": "^1.0.12"
   },
   "eslintConfig": {

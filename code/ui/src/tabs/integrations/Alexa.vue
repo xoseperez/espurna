@@ -19,7 +19,9 @@
                     </C>
                 </Row>
                 <Row>
-                    <C><label>Alexa device name</label></C>
+                    <C>
+                        <label>Alexa device name</label>
+                    </C>
                     <C>
                         <Inpt name="name"
                               maxlength="31"

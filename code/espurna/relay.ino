@@ -678,7 +678,7 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    JsonObject& module = root.createNestedObject("relay");
+    JsonObject& module = root.createNestedObject("relays");
     JsonObject& state = module.createNestedObject("state");
 
     JsonArray& schema = state.createNestedArray("schema");
@@ -730,7 +730,7 @@ String _relayFriendlyName(unsigned char i) {
 
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& module = root.createNestedObject("relay");
+    JsonObject& module = root.createNestedObject("relays");
     JsonObject& config = module.createNestedObject("config");
 
     JsonArray& schema = config.createNestedArray("schema");

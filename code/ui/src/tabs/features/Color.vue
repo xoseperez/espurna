@@ -123,8 +123,7 @@
                     <C><label>Transition time</label></C>
 
                     <C>
-                        <Inpt class="pure-u-1"
-                              type="number"
+                        <Inpt type="number"
                               name="lightTime"
                               min="10"
                               max="5000"
@@ -140,7 +139,6 @@
                     <C><label>MQTT group</label></C>
                     <C>
                         <Inpt name="mqttGroupColor"
-                              class="pure-u-1"
                               tabindex="8"
                               action="reconnect"/>
                         <Hint>Sync color between different lights.</Hint>

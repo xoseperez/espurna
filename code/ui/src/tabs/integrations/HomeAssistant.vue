@@ -32,18 +32,15 @@
 
                 <legend>Configuration</legend>
 
+                <p>
+                    These are the settings you should copy to your Home Assistant "configuration.yaml" file. If
+                    any of the sections below (switch, light, sensor) already exists, do not duplicate it,
+                    simply copy the contents of the section below the ones already present.
+                </p>
                 <Row>
-                    <C><label>Configuration</label></C>
-                    <C>
-                        <textarea :value="config" class="terminal"
-                                  wrap="soft"
-                                  readonly></textarea>
-                        <Hint>
-                            These are the settings you should copy to your Home Assistant "configuration.yaml" file. If
-                            any of the sections below (switch, light, sensor) already exists, do not duplicate it,
-                            simply copy the contents of the section below the ones already present.
-                        </Hint>
-                    </C>
+                    <textarea :value="config" class="terminal"
+                              wrap="soft"
+                              readonly></textarea>
                 </Row>
             </fieldset>
         </Group>
@@ -84,17 +81,19 @@
             config() {
                 let s = '';
 
-                if (this.relay.config && this.relay.config.list.length) {
+                if (this.relays.config && this.relays.config.list.length) {
                     s += 'switch:\n';
-                    this.relays.list.forEach((v) => {
+
+                    this.relays.config.list.forEach((v, i) => {
                         s += '  - name: ' + v.name + '\n' +
+                            '    platform: mqtt\n' +
                             '    state_topic: ' + this.topic + '/relay/' + i + '\n' +
                             '    command_topic: ' + this.topic + '/relay/' + i + '/set\n' +
                             '    payload_on: 1\n' +
                             '    payload_off: 0\n' +
                             '    availability_topic: ' + this.topic + '/status\n' +
                             '    payload_available: 1\n' +
-                            '    payload_not_available: 0\n';
+                            '    payload_not_available: 0\n\n';
                     });
                 }
 
@@ -102,8 +101,9 @@
                     s += 'sensor:\n';
                     this.sensors.magnitudes.list.forEach((v) => {
                         s += '  - name: ' + this.topic + v.name + '\n' +
+                            '    platform: mqtt\n' +
                             '    state_topic: ' + this.topic + '/' + v.name + '\n' +
-                            '    unit_of_measurement: ' + v.unit + '\n'
+                            '    unit_of_measurement: ' + v.unit + '\n\n'
                     });
 
                 }

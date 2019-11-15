@@ -6,7 +6,6 @@
 
 <script>
     export default {
-        name: 'C',
         props: {
             size: {
                 type: Number,
@@ -57,12 +56,12 @@
     }
 
     .form .row .col:nth-of-type(odd) {
-        width: 25% !important;
+        width: 25%;
         text-align: right;
     }
 
     .form .row .col:nth-of-type(even) {
-        width: 75% !important;
+        width: 75%;
     }
 
     .col.stretch, .col.noWrap {
@@ -70,8 +69,11 @@
         flex-wrap: nowrap;
     }
 
-    .col.noWrap > * {
+    .col.noWrap > *:not(.btn) {
         margin-right: 5px;
+    }
+    .col.noWrap > .btn {
+        margin-left: 0;
     }
 
     .col.stretch > * {

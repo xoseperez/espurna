@@ -5,192 +5,221 @@
             <h2>Thermostat configuration</h2>
         </div>
 
-        <div class="page">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Enable Thermostat</label>
-                <div class="pure-u-1 pure-u-lg-1-4">
-                    <Inpt type="switch"
-                          name="thermostatEnabled"
-                          tabindex="30"/>
-                </div>
-            </div>
+        <Group v-model="thermostat" class="page form">
+            <fieldset>
+                <Row>
+                    <C><label>Enable Thermostat</label></C>
+                    <C>
+                        <Inpt type="switch"
+                              name="enabled"
+                              tabindex="1"/>
+                    </C>
+                </Row>
 
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Thermostat Mode</label>
-                <div class="pure-u-1 pure-u-lg-1-4">
-                    <Inpt type="switch"
-                          name="thermostatMode"
-                          off="Heater"
-                          on="Cooler"
-                          tabindex="30"/>
-                </div>
-            </div>
+                <Row>
+                    <C><label>Thermostat Mode</label></C>
+                    <C>
+                        <Inpt type="switch"
+                              name="mode"
+                              off="Heater"
+                              on="Cooler"
+                              tabindex="2"/>
+                    </C>
+                </Row>
 
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4" for="thermostatOperationMode">Operation
-                    mode</label>
-                <Inpt class="pure-u-1 pure-u-lg-1-4" name="thermostatOperationMode" type="text"
-                      readonly/>
-            </div>
+                <Row>
+                    <C><label for="operationMode">Operation mode</label></C>
+                    <C>
+                        <Inpt id="operationMode" name="operationMode" type="text"
+                              readonly/>
+                    </C>
+                </Row>
+            </fieldset>
 
             <fieldset>
                 <legend>Temperature range</legend>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Max (<span class="tmpUnit"></span>)</label>
-                    <Inpt id="tempRangeMaxInput"
-                          class="pure-u-1 pure-u-lg-1-4"
-                          name="tempRangeMax"
-                          type="number"
-                          min="1"
-                          max="100"
-                          tabindex="32"
-                          data="20"
-                          onchange="checkTempRangeMax()"/>
-                </div>
+                <Row>
+                    <C><label for="tempRangeMax">Max</label></C>
+                    <C>
+                        <Inpt id="tempRangeMax"
+                              name="tempRangeMax"
+                              type="number"
+                              :unit="tempUnit"
+                              :min="thermostat.tempRangeMin + 1"
+                              max="100"
+                              :default="20"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4">Min (<span class="tmpUnit"></span>)</label>
-                    <Inpt id="tempRangeMinInput"
-                          class="pure-u-1 pure-u-lg-1-4"
-                          name="tempRangeMin"
-                          type="number"
-                          min="0"
-                          max="99"
-                          tabindex="31"
-                          data="10"
-                          onchange="checkTempRangeMin()"/>
-                </div>
+                <Row>
+                    <C><label for="tempRangeMin">Min</label></C>
+                    <C>
+                        <Inpt id="tempRangeMin"
+                              name="tempRangeMin"
+                              type="number"
+                              :unit="tempUnit"
+                              min="0"
+                              :max="thermostat.tempRangeMax - 1"
+                              :default="10"/>
+                    </C>
+                </Row>
             </fieldset>
 
             <fieldset>
                 <legend>Remote sensor</legend>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="remoteSensorName">Remote sensor
-                        name</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" name="remoteSensorName" type="text"/>
-                </div>
+                <Row>
+                    <C><label for="remoteSensorName">Remote sensor name</label></C>
+                    <C>
+                        <Inpt id="remoteSensorName" name="remoteSensorName" type="text"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="remoteTmp">Remote temperature (<span
-                        class="tmpUnit"></span>)</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" name="remoteTmp" type="text" readonly/>
-                </div>
+                <Row>
+                    <C><label for="remoteTmp">Remote temperature (<span class="tmpUnit"></span>)</label></C>
+                    <C>
+                        <Inpt id="remoteTmp" name="remoteTmp" type="text" readonly/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="remoteTempMaxWait">Remote temperature
-                        waiting
-                        (s)</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4"
-                          name="remoteTempMaxWait"
-                          type="number"
-                          min="0"
-                          max="1800"
-                          tabindex="33"
-                          data="120"/>
-                </div>
+                <Row>
+                    <C><label for="remoteTempMaxWait">Remote temperature waiting (s)</label></C>
+                    <C>
+                        <Inpt id="remoteTempMaxWait" name="remoteTempMaxWait"
+                              type="number"
+                              min="0"
+                              max="1800"
+                              data="120"/>
+                    </C>
+                </Row>
             </fieldset>
 
             <fieldset>
                 <legend>Operation mode</legend>
+                <Row>
+                    <C><label for="maxOnTime">Max heating time</label></C>
+                    <C>
+                        <Inpt id="maxOnTime" name="maxOnTime"
+                              type="number"
+                              unit="minutes"
+                              min="0"
+                              max="180"
+                              data="30"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="maxOnTime">Max heating time (m)</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4"
-                          name="maxOnTime"
-                          type="number"
-                          min="0"
-                          max="180"
-                          tabindex="34"
-                          data="30"/>
-                </div>
-
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="minOffTime">Min rest time (m)</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4"
-                          name="minOffTime"
-                          type="number"
-                          min="0"
-                          max="60"
-                          tabindex="35"
-                          data="10"/>
-                </div>
+                <Row>
+                    <C><label for="minOffTime">Min rest time</label></C>
+                    <C>
+                        <Inpt id="minOffTime"
+                              name="minOffTime"
+                              type="number"
+                              unit="minutes"
+                              min="0"
+                              max="60"
+                              data="10"/>
+                    </C>
+                </Row>
             </fieldset>
 
             <fieldset>
                 <legend>Autonomous mode</legend>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="aloneOnTime">Heating time (m)</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4"
-                          name="aloneOnTime"
-                          type="number"
-                          min="0"
-                          max="180"
-                          tabindex="36"
-                          data="5"/>
-                </div>
+                <Row>
+                    <C><label for="aloneOnTime">Heating time</label></C>
+                    <C>
+                        <Inpt id="aloneOnTime"
+                              name="aloneOnTime"
+                              type="number"
+                              unit="minutes"
+                              min="0"
+                              max="180"
+                              data="5"/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="aloneOffTime">Rest time (m)</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4"
-                          name="aloneOffTime"
-                          type="number"
-                          min="0"
-                          max="180"
-                          tabindex="37"
-                          data="55"/>
-                </div>
+                <Row>
+                    <C><label for="aloneOffTime">Rest time</label></C>
+                    <C>
+                        <Inpt id="aloneOffTime"
+                              name="aloneOffTime"
+                              type="number"
+                              unit="minutes"
+                              min="0"
+                              max="180"
+                              data="55"/>
+                    </C>
+                </Row>
             </fieldset>
 
             <fieldset>
                 <legend>Time worked</legend>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="burnToday">Today</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" type="text" name="burnToday" readonly/>
-                </div>
+                <Row>
+                    <C><label for="burnToday">Today</label></C>
+                    <C>
+                        <Inpt id="burnToday" type="text" name="burnToday" readonly/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="burnYesterday">Yesterday</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" type="text" name="burnYesterday" readonly/>
-                </div>
+                <Row>
+                    <C><label for="burnYesterday">Yesterday</label></C>
+                    <C>
+                        <Inpt id="burnYesterday" type="text" name="burnYesterday" readonly/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="burnThisMonth">Current month</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" type="text" name="burnThisMonth" readonly/>
-                </div>
+                <Row>
+                    <C><label for="burnThisMonth">Current month</label></C>
+                    <C>
+                        <Inpt id="burnThisMonth" type="text" name="burnThisMonth" readonly/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="burnPrevMonth">Previous month</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" type="text" name="burnPrevMonth" readonly/>
-                </div>
+                <Row>
+                    <C><label for="burnPrevMonth">Previous month</label></C>
+                    <C>
+                        <Inpt id="burnPrevMonth" type="text" name="burnPrevMonth" readonly/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <label class="pure-u-1 pure-u-lg-1-4" for="burnTotal">Total</label>
-                    <Inpt class="pure-u-1 pure-u-lg-1-4" type="text" name="burnTotal" readonly/>
-                </div>
+                <Row>
+                    <C><label for="burnTotal">Total</label></C>
+                    <C>
+                        <Inpt id="burnTotal" type="text" name="burnTotal" readonly/>
+                    </C>
+                </Row>
 
-                <div class="pure-g">
-                    <button type="button" class="btn btn-thermostat-reset-counters">
-                        Reset
-                        counters
-                    </button>
-                </div>
+                <Row>
+                    <Btn name="thermostat-reset-counters" color="danger">Reset counters</Btn>
+                </Row>
             </fieldset>
-        </div>
+        </Group>
     </section>
 </template>
 
 <script>
     import Inpt from "./../../components/Input";
+    import Group from "../../components/Group";
+    import Row from "../../layout/Row";
+    import C from "../../layout/Col";
+    import Btn from "../../components/Button";
 
     export default {
         components: {
+            Btn,
+            C,
+            Row,
+            Group,
             Inpt
         },
         inheritAttrs: false,
+        computed: {
+            tempUnit() {
+                return this.sensors.tmpUnits ? '°F' : '°C';
+            }
+        },
     }
 </script>
 

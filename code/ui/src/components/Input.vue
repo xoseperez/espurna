@@ -1,6 +1,6 @@
 <template>
     <span v-if="type === 'select'" class="select">
-        <select v-if="!multiple" ref="input" v-model="val" v-bind="$attrs">
+        <select v-if="!multiple" ref="input" v-model="val" v-bind="$attrs" @change="(evt) => $emit('change', evt.target.value)">
             <option v-if="$attrs.placeholder" value="" disabled :selected="!val">{{$attrs.placeholder}}</option>
             <option v-for="{l, k} in _options" :key="k" :value="k">{{l}}</option>
         </select>
@@ -9,12 +9,16 @@
         &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
     </span>
     <span v-else-if="type === 'switch'" class="switch">
-        <input :id="'switch-'+_uid" ref="input" v-model="val" type="checkbox" v-bind="$attrs">
+        <input :id="'switch-'+_uid" ref="input" v-model="val"
+               type="checkbox" v-bind="$attrs"
+               @change="(evt) => $emit('change', evt.target.value)">
         <span class="layer"></span>
         <label :for="'switch-'+_uid"><span class="on">{{on}}</span><span class="off">{{off}}</span></label>
     </span>
     <span v-else-if="type === 'password'" class="password">
-        <input ref="input" v-model="val" :type="passType" v-bind="$attrs">
+        <input ref="input" v-model="val" :type="passType"
+               v-bind="$attrs"
+               @change="(evt) => $emit('change', evt.target.value)">
         <span class="no-select password-reveal" @click="togglePass">👁</span>
     </span>
     <span v-else-if="type === 'file'" class="file">
@@ -24,7 +28,9 @@
                @change="(evt) => $emit('change', multiple ? evt.target.files : evt.target.files[0])">
     </span>
     <span v-else :class="'input input-'+type">
-        <input ref="input" v-model="val" :type="type" v-bind="$attrs" @change="() => $emit('change')">
+        <input ref="input" v-model="val" :type="type"
+               v-bind="$attrs"
+               @change="(evt) => $emit('change', evt.target.value)">
         &nbsp;<span v-if="unit" class="unit">{{unit}}</span>
     </span>
 </template>
@@ -137,11 +143,12 @@
 
     .unit {
         position: absolute;
-        top: 0;
+        top: 50%;
         line-height: 1em;
         color: #aaa;
         right: 10px;
         font-size: 1.1em;
+        transform: translateY(-50%);
     }
 
 
@@ -149,6 +156,7 @@
         position: relative;
         width: 100%;
     }
+
     .input-number input:hover + .unit,
     .input-number input:focus + .unit {
         right: 30px;
@@ -320,7 +328,8 @@
 
     .password-reveal {
         font-family: EmojiSymbols, Segoe UI Symbol;
-        top: 0;
+        top: 50%;
+        transform: translateY(-50%);
         line-height: 1em;
         position: absolute;
         right: 12px;

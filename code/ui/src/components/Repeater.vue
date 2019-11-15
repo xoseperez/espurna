@@ -1,21 +1,22 @@
 <template>
     <div>
-        <transition-group type="transition" name="flip-list">
-            <RepeaterRow v-for="(row, i) in values"
-                         :key="row.key"
-                         :value="row.value"
-                         :row="row.key"
-                         @input="(val) => $emit('input', [...values].splice(i,1,val))">
-                <slot name="default" :value="row.value" :k="i" :row="row" :remove="() => onRemove(row.key)"></slot>
-                <template v-if="!locked" #append>
-                    <slot name="btnRemove" :click="() => onRemove(row.key)" :row="row">
-                        <Btn color="danger" @click="() => onRemove(row.key)">
-                            Remove
-                        </Btn>
-                    </slot>
-                </template>
-            </RepeaterRow>
-        </transition-group>
+        <!--transition-group name="flip-list" tag="div"-->
+        <RepeaterRow v-for="(row, i) in values"
+                     :key="row.key"
+                     :value="row.value"
+                     :row="row"
+                     :i="i"
+                     @input="(val) => $emit('input', [...values].splice(i,1,val))">
+            <slot name="default" :value="row.value" :k="i" :row="row" :remove="() => onRemove(row.key)"></slot>
+            <template v-if="!locked" #append>
+                <slot name="btnRemove" :click="() => onRemove(row.key)" :row="row">
+                    <Btn color="danger" @click="() => onRemove(row.key)">
+                        Remove
+                    </Btn>
+                </slot>
+            </template>
+        </RepeaterRow>
+        <!--/transition-group-->
         <slot v-if="!locked" name="btnAdd" :click="onAdd">
             <Btn @click="onAdd">
                 Add
@@ -129,5 +130,7 @@
 </script>
 
 <style lang="less">
-
+    .append-wrapper {
+        text-align: right;
+    }
 </style>

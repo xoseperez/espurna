@@ -132,24 +132,6 @@
             </template>
             <!-- #endif -->
         </Menu>
-
-
-        <div id="lightActionTemplate" class="template">
-            <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
-            <div class="pure-u-1 pure-u-lg-1-5">
-                <Inpt class="pure-u-2-3"
-                      name="schAction"
-                      type="number"
-                      min="0"
-                      step="1"
-                      max="255"
-                      value="0"/>
-            </div>
-            <Inpt class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" :options="lightOptions"/>
-            <Inpt type="hidden" name="schType" value="2"/>
-        </div>
-
-
         <iframe id="downloader"></iframe>
     </Form>
 </template>
@@ -158,6 +140,7 @@
 
     import Socket from './common/websocket';
     import Icon from '../public/icons/icon.svg';
+    import capitalize from './common/capitalize';
 
     import Setup from './tabs/common/Setup';
     import Inpt from './components/Input';
@@ -321,7 +304,7 @@
                         uptime: 0,
                         lastUpdate: 0
                     },
-                    relay: {}
+                    relays: {}
                 },
                 settings: {},
                 tabs: tabs
@@ -339,8 +322,8 @@
             },
             relayOptions() {
                 let options = [];
-                if (this.data.relay.config) {
-                    for (let i = 0; i < this.data.relay.config.list.length; ++i) {
+                if (this.data.relays.config) {
+                    for (let i = 0; i < this.data.relays.config.list.length; ++i) {
                         options.push({k: i, l: "Switch #" + i});
                     }
                 }
@@ -381,6 +364,7 @@
 
                 Object.keys(obj).forEach((k) => {
                     const v = obj[k];
+                    k = capitalize(k);
                     if (typeof v === 'object') {
                         this.flatten(v, key+k, flat);
                     } else {

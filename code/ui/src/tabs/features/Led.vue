@@ -5,7 +5,7 @@
             <h2>Notification LED configuration</h2>
         </div>
 
-        <Group v-model="led" class="page form">
+        <Group v-model="led" class="page">
             <fieldset>
                 <legend>Modes</legend>
                 <div>

@@ -5,9 +5,9 @@
             <h2>Switch / relay configuration</h2>
         </div>
 
-        <Group v-model="relay.config" class="page">
+        <Group v-model="relays.config" class="page">
             <fieldset>
-                <template v-if="relay.config.list.length > 1">
+                <template v-if="relays.config.list.length > 1">
                     <legend>General</legend>
 
                     <Row>
@@ -28,7 +28,7 @@
                     </Row>
                 </template>
 
-                <Repeater v-model="relay.config.list" locked class="switches">
+                <Repeater v-model="relays.config.list" locked class="switches">
                     <template #default="tpl">
                         <legend>Switch #{{tpl.k}} ({{tpl.value.gpio}})</legend>
                         <Row>
@@ -232,6 +232,7 @@
     import C from "../../layout/Col";
     import Row from "../../layout/Row";
     import Group from "../../components/Group";
+    import capitalize from "../../common/capitalize";
 
     export default {
         components: {
@@ -245,7 +246,7 @@
         },
         inheritAttrs: false,
         props: {
-            relay: {
+            relays: {
                 type: Object,
                 default: () => ({})
             },
@@ -269,7 +270,7 @@
                 for (let i = 0; i < 7; ++i) {
                     d.setDate(i + 5);
                     let s = d.toLocaleString(navigator.language, {weekday: 'long'});
-                    s = s.charAt(0).toUpperCase() + s.slice(1);
+                    s = capitalize(s);
                     days.push({k: i + 1, l: s});
                 }
 

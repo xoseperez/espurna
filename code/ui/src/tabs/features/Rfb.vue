@@ -8,25 +8,68 @@
         </div>
 
         <div>
-            This page allows you to configure the RF codes
-            for the Sonoff RFBridge 433 and also for a basic RF receiver.<br><br> To learn a new code click <strong>LEARN</strong>
+            This page allows you to configure the RF codes for the Sonoff RFBridge 433 and also for a basic RF receiver.
+            <br><br>
+            To learn a new code click <strong>LEARN</strong>
             (the Sonoff RFBridge will beep) then press a button on the remote, the new code should show up (and the
             RFBridge will double beep). If the device double beeps but the code does not update it has not been
-            properly learnt. Keep trying.<br><br> Modify or create new codes manually and then click
+            properly learnt. Keep trying.
+            <br><br>
+            Modify or create new codes manually and then click
             <strong>SAVE</strong> to store them in the device memory. If your controlled device uses the same code
             to switch ON and OFF, learn the code with the ON button and copy paste it to the OFF input box, then
-            click SAVE on the last one to store the value.<br><br> Delete any code clicking the
-            <strong>FORGET</strong> button. <br><br>You can also specify any RAW code. For reference see
+            click SAVE on the last one to store the value.
+            <br><br>
+            Delete any code clicking the
+            <strong>FORGET</strong> button.
+            <br><br>
+            You can also specify any RAW code. For reference see
             <A href="https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/Commands">possible commands for Sonoff RF Bridge
                 EFM8BB1</A>
             (original firmware supports codes from <strong>0xA0</strong> to <strong>0xA5</strong>).
         </div>
 
-        <div class="page">
+        <Group v-model="rfb" class="page form">
             <fieldset>
                 <legend>RF Codes</legend>
+                <Repeater name="list">
+                    <template #default="tpl">
+                        <label>Switch #{{tpl.i}}</label>
+                        <Row>
+                            <C><label>Switch ON</label></C>
+                            <C>
+                                <Inpt type="text"
+                                      maxlength="116"
+                                      name="on"/>
+                            </C>
+                            <C>
+                                <Btn name="rfb-learn">LEARN</Btn>
+                            </C>
+                            <C>
+                                <Btn name="rfb-send">SAVE</Btn>
+                            </C>
+                            <C>
+                                <Btn name="rfb-forget">FORGET</Btn>
+                            </C>
+                        </Row>
 
-                <div id="rfbNodes"></div>
+                        <Row>
+                            <div><label>Switch OFF</label></div>
+                            <Inpt type="text"
+                                  maxlength="116"
+                                  name="off"/>
+                            <C>
+                                <Btn name="rfb-learn">LEARN</Btn>
+                            </C>
+                            <C>
+                                <Btn name="rfb-send">SAVE</Btn>
+                            </C>
+                            <C>
+                                <Btn name="rfb-forget">FORGET</Btn>
+                            </C>
+                        </Row>
+                    </template>
+                </Repeater>
 
                 <legend>Settings</legend>
                 <Row>
@@ -58,49 +101,7 @@
                     </Row>
                 </template>
             </fieldset>
-        </div>
-
-        <div id="rfbNodeTemplate" class="template">
-            <legend>Switch #<span></span></legend>
-
-            <div class="pure-g">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Switch ON</label></div>
-                <Inpt class="pure-u-1 pure-u-lg-1-3"
-                      type="text"
-                      maxlength="116"
-                      name="rfbcode"
-                      data-id="1"
-                      data-status="1"/>
-                <div class="pure-u-1-3 pure-u-lg-1-8">
-                    <button type="button" class="pure-u-23-24 btn btn-rfb-learn">LEARN</button>
-                </div>
-                <div class="pure-u-1-3 pure-u-lg-1-8">
-                    <button type="button" class="pure-u-23-24 btn btn-rfb-send">SAVE</button>
-                </div>
-                <div class="pure-u-1-3 pure-u-lg-1-8">
-                    <button type="button" class="pure-u-23-24 btn btn-rfb-forget">FORGET</button>
-                </div>
-            </div>
-
-            <div class="pure-g">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Switch OFF</label></div>
-                <Inpt class="pure-u-1 pure-u-lg-1-3"
-                      type="text"
-                      maxlength="116"
-                      name="rfbcode"
-                      data-id="1"
-                      data-status="0"/>
-                <div class="pure-u-1-3 pure-u-lg-1-8">
-                    <Btn name="rfb-learn" class="pure-u-23-24">LEARN</Btn>
-                </div>
-                <div class="pure-u-1-3 pure-u-lg-1-8">
-                    <Btn name="rfb-send" class="pure-u-23-24">SAVE</Btn>
-                </div>
-                <div class="pure-u-1-3 pure-u-lg-1-8">
-                    <button type="button" class="pure-u-23-24 btn btn-rfb-forget">FORGET</button>
-                </div>
-            </div>
-        </div>
+        </Group>
     </section>
 </template>
 
@@ -111,9 +112,13 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import A from "../../components/ExtLink";
+    import Repeater from "../../components/Repeater";
+    import Group from "../../components/Group";
 
     export default {
         components: {
+            Group,
+            Repeater,
             A,
             C,
             Row,
@@ -133,17 +138,17 @@
                 // TODO: cross-check used GPIOs
                 // TODO: support 9 & 10 with esp8285 variant
                 return [
-                    [153, "NONE"],
-                    [0, "0"],
-                    [1, "1 (U0TXD)"],
-                    [2, "2 (U1TXD)"],
-                    [3, "3 (U0RXD)"],
-                    [4, "4"],
-                    [5, "5"],
-                    [12, "12 (MTDI)"],
-                    [13, "13 (MTCK)"],
-                    [14, "14 (MTMS)"],
-                    [15, "15 (MTDO)"],
+                    {k: 153, l: "NONE"},
+                    {k: 0, l: "0"},
+                    {k: 1, l: "1 (U0TXD)"},
+                    {k: 2, l: "2 (U1TXD)"},
+                    {k: 3, l: "3 (U0RXD)"},
+                    {k: 4, l: "4"},
+                    {k: 5, l: "5"},
+                    {k: 12, l: "12 (MTDI)"},
+                    {k: 13, l: "13 (MTCK)"},
+                    {k: 14, l: "14 (MTMS)"},
+                    {k: 15, l: "15 (MTDO)"},
                 ]
             }
         }

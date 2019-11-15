@@ -6,7 +6,6 @@
 
 <script>
     export default {
-        name: 'row',
         props: {
             noWrap: {
                 type: Boolean,

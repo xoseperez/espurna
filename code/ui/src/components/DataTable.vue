@@ -59,7 +59,7 @@
             },
             value: {
                 type: Array,
-                required: true
+                default: () => ([])
             },
             search: {
                 type: String,

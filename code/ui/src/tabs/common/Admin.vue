@@ -147,7 +147,7 @@
                 <Row>
                     <C><label>Upgrade</label></C>
                     <C>
-                        <Row>
+                        <Row no-wrap>
                             <input type="text" :value="upgradeFile.name"
                                    readonly @click="() => $refs.upgradeFile.$el.click()">
                             <Btn ref="browse" name="upgrade-browse" @click="() => $refs.upgradeFile.$el.click()">
@@ -230,9 +230,18 @@
     export default {
         components: {Group, Hint, C, Row, Inpt, Btn, A},
         inheritAttrs: false,
+        props: {
+            device: {
+                type: Object,
+                default: () => ({})
+            },
+            status: {
+                type: Object,
+                default: () => ({})
+            }
+        },
         data() {
             return {
-                status: {},
                 upgradeFile: {},
                 restoreFile: {},
             }
