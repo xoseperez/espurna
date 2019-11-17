@@ -43,6 +43,8 @@ struct channel_t {
 };
 std::vector<channel_t> _light_channel;
 
+unsigned char _light_channels = LIGHT_CHANNELS
+
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
@@ -1303,12 +1305,13 @@ void _lightConfigure() {
 // Dummy channel setup for light providers without real GPIO
 void lightSetupChannels(unsigned char size) {
 
+    size = constrain(size, 0, Light::CHANNELS_MAX);
+    if (size == _light_channel.size()) return;
     _light_channels = size;
-    _light_channel.clear();
-
-    for (unsigned char i=0; i<_light_channels; ++i) {
-        _light_channel.push_back((channel_t) {GPIO_NONE, false, true, 0, 0, 0});
-    }
+    _light_channel.assign(size, {
+        GPIO_NONE, false, true,
+        0, 0, 0
+    });
 
 }
 

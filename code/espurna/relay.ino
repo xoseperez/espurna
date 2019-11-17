@@ -1320,14 +1320,13 @@ void _relayLoop() {
 // 8 channels. This behaviour will be recovered with v2.
 void relaySetupDummy(unsigned char size) {
 
-    _relayDummy = constrain(size, 0, 8);
-    if (!_relayDummy || (_relayDummy == _relays.size())) return;
+    size = constrain(size, 0, 8);
+    if (size == _relays.size()) return;
+    _relayDummy = size;
 
-    _relays.clear();
-
-    for (unsigned char i=0; i < _relayDummy; ++i) {
-        _relays.push_back((relay_t) { GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE });
-    }
+    _relays.assign(size, {
+        GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE
+    });
 
     #if BROKER_SUPPORT
         char msg[2] = {uint8_t(_relays.size()), 0};
