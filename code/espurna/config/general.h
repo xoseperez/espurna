@@ -792,10 +792,6 @@
                                                             // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
 #endif
 
-#ifndef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE    1   // Use old HTTPUpdate API by default
-#endif
-
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
 
 #ifndef OTA_FINGERPRINT

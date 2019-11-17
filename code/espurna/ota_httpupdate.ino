@@ -18,6 +18,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <ESP8266httpUpdate.h>
 
 #include "libs/URL.h"
+#include "libs/TypeChecks.h"
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
 
@@ -30,6 +31,38 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
+template <typename T>
+void _otaFollowRedirects(const std::true_type&, T& instance) {
+    instance.followRedirects(true);
+}
+
+template <typename T>
+void _otaFollowRedirects(const std::false_type&, T& instance) {
+}
+
+template <typename T>
+t_httpUpdate_return _otaClientUpdate(const std::true_type&, T& instance, WiFiClient* client, const String& url) {
+    return instance.update(*client, url);
+}
+
+template <typename T>
+t_httpUpdate_return _otaClientUpdate(const std::false_type&, T& instance, WiFiClient*, const String& url) {
+    return instance.update(url);
+}
+
+namespace ota {
+    template <typename T>
+    using has_followRedirects_t = decltype(std::declval<T>().followRedirects(std::declval<bool>()));
+
+    template <typename T>
+    using has_followRedirects = is_detected<has_followRedirects_t, T>;
+
+    template <typename T>
+    using has_WiFiClient_argument_t = decltype(std::declval<T>().update(std::declval<WiFiClient&>(), std::declval<const String&>()));
+
+    template <typename T>
+    using has_WiFiClient_argument = is_detected<has_WiFiClient_argument_t, T>;
+}
 
 void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& fp = "") {
 
@@ -45,6 +78,8 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
     // NOTE: ESPhttpUpdate.update(..., fp) will **always** fail with empty fingerprint
     // NOTE: It is possible to support BearSSL with 2.4.2 by using uint8_t[20] instead of String for fingerprint argument
 
+    _otaFollowRedirects(ota::has_followRedirects<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate);
+
     ESPhttpUpdate.rebootOnUpdate(false);
     t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
 
@@ -55,10 +90,8 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
         } else {
             result = ESPhttpUpdate.update(url);
         }
-    #elif OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-        result = ESPhttpUpdate.update(url);
     #else
-        result = ESPhttpUpdate.update(*client, url);
+        result = _otaClientUpdate(ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate, client, url);
     #endif
 
     switch (result) {
@@ -78,16 +111,13 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
 }
 
-#if OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
 void _otaClientFromHttp(const String& url) {
-    _otaClientRunUpdater(nullptr, url, "");
-}
-#else
-void _otaClientFromHttp(const String& url) {
-    auto client = std::make_unique<WiFiClient>();
+    std::unique_ptr<WiFiClient> client(nullptr);
+    if (ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}) {
+        client = std::make_unique<WiFiClient>();
+    }
     _otaClientRunUpdater(client.get(), url, "");
 }
-#endif
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 
