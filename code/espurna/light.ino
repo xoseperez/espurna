@@ -43,7 +43,7 @@ struct channel_t {
 };
 std::vector<channel_t> _light_channel;
 
-unsigned char _light_channels = LIGHT_CHANNELS
+unsigned char _light_channels = LIGHT_CHANNELS;
 
 bool _light_has_color = false;
 bool _light_use_white = false;
