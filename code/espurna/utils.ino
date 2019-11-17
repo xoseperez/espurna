@@ -136,6 +136,7 @@ bool haveRelaysOrSensors() {
 // Heartbeat helper
 // -----------------------------------------------------------------------------
 namespace Heartbeat {
+
     enum Report : uint32_t { 
         Status = 1 << 1,
         Ssid = 1 << 2,
@@ -201,7 +202,7 @@ namespace Heartbeat {
         // because we start shifting from 1, we could use the
         // first bit as a flag to enable all of the messages
         if (value == 1) {
-            return std::numeric_limits<decltype(defaultValue())>::max();
+            return std::numeric_limits<uint32_t>::max();
         }
 
         return value;
