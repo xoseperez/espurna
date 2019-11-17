@@ -299,16 +299,16 @@
 #define HEARTBEAT_REPORT_INTERVAL   0
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_RANGE
-#define HEARTBEAT_REPORT_RANGE      1
-#else
-#define HEARTBEAT_REPORT_RANGE      0
+#ifndef HEARTBEAT_REPORT_RANGE
+#define HEARTBEAT_REPORT_RANGE         THERMOSTAT_SUPPORT
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_REMOTE_TEMP
-#define HEARTBEAT_REPORT_REMOTE_TEMP 1
-#else
-#define HEARTBEAT_REPORT_REMOTE_TEMP 0
+#ifndef HEARTBEAT_REPORT_REMOTE_TEMP
+#define HEARTBEAT_REPORT_REMOTE_TEMP   THERMOSTAT_SUPPORT
+#endif
+
+#ifndef HEARTBEAT_REPORT_BSSID
+#define HEARTBEAT_REPORT_BSSID       0
 #endif
 
 //------------------------------------------------------------------------------
@@ -1051,6 +1051,7 @@
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
 #define MQTT_TOPIC_SSID             "ssid"
+#define MQTT_TOPIC_BSSID            "bssid"
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"

@@ -7,6 +7,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <Ticker.h>
+#include <limits>
 #include "libs/HeapStats.h"
 
 String getIdentifier() {
@@ -155,7 +156,8 @@ namespace Heartbeat {
         Interval = 1 << 17,
         Description = 1 << 18,
         Range = 1 << 19,
-        Remote_temp = 1 << 20
+        RemoteTemp = 1 << 20,
+        Bssid = 1 << 21
     };
 
     constexpr uint32_t defaultValue() {
@@ -178,14 +180,31 @@ namespace Heartbeat {
             (Loadavg * (HEARTBEAT_REPORT_LOADAVG)) | \
             (Interval * (HEARTBEAT_REPORT_INTERVAL)) | \
             (Range * (HEARTBEAT_REPORT_RANGE)) | \
-            (Remote_temp * (HEARTBEAT_REPORT_REMOTE_TEMP));
+            (RemoteTemp * (HEARTBEAT_REPORT_REMOTE_TEMP)) | \
+            (Bssid * (HEARTBEAT_REPORT_BSSID));
     }
 
     uint32_t currentValue() {
+        // use default without any setting / when it is empty
         const String cfg = getSetting("hbReport");
-        if (!cfg.length()) return defaultValue();
+        if (!cfg.length()) {
+            return defaultValue();
+        }
 
-        return strtoul(cfg.c_str(), NULL, 10);
+        // invalidate the whole string when invalid chars are detected
+        char *value_endptr = nullptr;
+        const auto value = strtoul(cfg.c_str(), &value_endptr, 10);
+        if (value_endptr) {
+            return defaultValue();
+        }
+
+        // because we start shifting from 1, we could use the
+        // first bit as a flag to enable all of the messages
+        if (value == 1) {
+            return std::numeric_limits<decltype(defaultValue())>::max();
+        }
+
+        return value;
     }
 
 }
@@ -252,6 +271,9 @@ void heartbeat() {
 
             if (hb_cfg & Heartbeat::Ssid)
                 mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
+
+            if (hb_cfg & Heartbeat::Bssid)
+                mqttSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
 
             if (hb_cfg & Heartbeat::Ip)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
