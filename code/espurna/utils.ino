@@ -37,23 +37,36 @@ String getAdminPass() {
     return getSetting("adminPass", ADMIN_PASS);
 }
 
-String getCoreVersion() {
-    String version = ESP.getCoreVersion();
-    #ifdef ARDUINO_ESP8266_RELEASE
-        if (version.equals("00000000")) {
-            version = String(ARDUINO_ESP8266_RELEASE);
-        }
-    #endif
-    version.replace("_", ".");
+const String& getCoreVersion() {
+    static String version;
+    if (!version.length()) {
+        #ifdef ARDUINO_ESP8266_RELEASE
+            version = ESP.getCoreVersion();
+            if (version.equals("00000000")) {
+                version = String(ARDUINO_ESP8266_RELEASE);
+            }
+            version.replace("_", ".");
+        #else
+            #define _GET_COREVERSION_STR(X) #X
+            #define GET_COREVERSION_STR(X) _GET_COREVERSION_STR(X)
+            version = GET_COREVERSION_STR(ARDUINO_ESP8266_GIT_DESC);
+            #undef _GET_COREVERSION_STR
+            #undef GET_COREVERSION_STR
+        #endif
+    }
     return version;
 }
 
-String getCoreRevision() {
-    #ifdef ARDUINO_ESP8266_GIT_VER
-        return String(ARDUINO_ESP8266_GIT_VER, 16);
-    #else
-        return String("");
-    #endif
+const String& getCoreRevision() {
+    static String revision;
+    if (!revision.length()) {
+        #ifdef ARDUINO_ESP8266_GIT_VER
+            revision = String(ARDUINO_ESP8266_GIT_VER, 16);
+        #else
+            revision = "";
+        #endif
+    }
+    return revision;
 }
 
 unsigned char getHeartbeatMode() {
@@ -66,6 +79,10 @@ unsigned char getHeartbeatInterval() {
 
 String getEspurnaModules() {
     return FPSTR(espurna_modules);
+}
+
+String getEspurnaOTAModules() {
+    return FPSTR(espurna_ota_modules);
 }
 
 #if SENSOR_SUPPORT
@@ -103,6 +120,15 @@ unsigned long getUptime() {
 
     return uptime_seconds;
 
+}
+
+bool haveRelaysOrSensors() {
+    bool result = false;
+    result = (relayCount() > 0);
+    #if SENSOR_SUPPORT
+        result = result || (magnitudeCount() > 0);
+    #endif
+    return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -259,7 +285,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
 
             if (hb_cfg & Heartbeat::Status)
-                mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+                mqttSendStatus();
 
             if (hb_cfg & Heartbeat::Loadavg)
                 mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
@@ -271,14 +297,14 @@ void heartbeat() {
                 }
 
                 if (hb_cfg & Heartbeat::Remote_temp) {
-                    char remote_temp[6];
-                    dtostrf(_remote_temp.temp, 1-sizeof(remote_temp), 1, remote_temp);
-                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, String(remote_temp).c_str());
+                    char remote_temp[16];
+                    dtostrf(_remote_temp.temp, 1, 1, remote_temp);
+                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, remote_temp);
                 }
             #endif
 
         } else if (!serial && _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
-            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            mqttSendStatus();
         }
 
     #endif
@@ -464,6 +490,7 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] OTA: %s\n"), getEspurnaOTAModules().c_str());
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
@@ -504,8 +531,6 @@ void info() {
 // SSL
 // -----------------------------------------------------------------------------
 
-#if ASYNC_TCP_SSL_ENABLED
-
 bool sslCheckFingerPrint(const char * fingerprint) {
     return (strlen(fingerprint) == 59);
 }
@@ -540,8 +565,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
     return true;
 
 }
-
-#endif
 
 // -----------------------------------------------------------------------------
 // Reset

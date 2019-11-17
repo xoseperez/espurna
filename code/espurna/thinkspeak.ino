@@ -63,13 +63,15 @@ void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned 
 
 #if WEB_SUPPORT
 
-bool _tspkWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _tspkWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "tspk", 4) == 0);
 }
 
-void _tspkWebSocketOnSend(JsonObject& root) {
+void _tspkWebSocketOnVisible(JsonObject& root) {
+    root["tspkVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
+}
 
-    unsigned char visible = 0;
+void _tspkWebSocketOnConnected(JsonObject& root) {
 
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
     root["tspkKey"] = getSetting("tspkKey");
@@ -79,14 +81,10 @@ void _tspkWebSocketOnSend(JsonObject& root) {
     for (byte i=0; i<relayCount(); i++) {
         relays.add(getSetting("tspkRelay", i, 0).toInt());
     }
-    if (relayCount() > 0) visible = 1;
 
     #if SENSOR_SUPPORT
         _sensorWebSocketMagnitudes(root, "tspk");
-        visible = visible || (magnitudeCount() > 0);
     #endif
-
-    root["tspkVisible"] = visible;
 
 }
 
@@ -231,7 +229,7 @@ void _tspkPost() {
 
     _tspk_client_ts = millis();
 
-    #if ASYNC_TCP_SSL_ENABLED
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
     #else
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
@@ -302,7 +300,7 @@ void _tspkPost() {
 
 #endif // THINGSPEAK_USE_ASYNC
 
-void _tspkEnqueue(unsigned char index, char * payload) {
+void _tspkEnqueue(unsigned char index, const char * payload) {
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%u with value %s\n"), index, payload);
     --index;
     if (_tspk_queue[index] != NULL) free(_tspk_queue[index]);
@@ -363,7 +361,7 @@ bool tspkEnqueueRelay(unsigned char index, char * payload) {
     return false;
 }
 
-bool tspkEnqueueMeasurement(unsigned char index, char * payload) {
+bool tspkEnqueueMeasurement(unsigned char index, const char * payload) {
     if (!_tspk_enabled) return true;
     unsigned char id = getSetting("tspkMagnitude", index, 0).toInt();
     if (id > 0) {
@@ -386,8 +384,10 @@ void tspkSetup() {
     _tspkConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_tspkWebSocketOnSend);
-        wsOnReceiveRegister(_tspkWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_tspkWebSocketOnVisible)
+            .onConnected(_tspkWebSocketOnConnected)
+            .onKeyCheck(_tspkWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT

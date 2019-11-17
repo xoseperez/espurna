@@ -12,7 +12,7 @@
         <link rel="stylesheet" href="vendor/pure-grids-responsive-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/side-menu.css" />
         <!-- removeIf(!light) -->
-        <link rel="stylesheet" href="vendor/jquery.wheelcolorpicker-3.0.3.css" />
+        <link rel="stylesheet" href="vendor/jquery.wheelcolorpicker-3.0.8.css" />
         <!-- endRemoveIf(!light) -->
         <!-- removeIf(!rfm69) -->
         <link rel="stylesheet" href="vendor/datatables-1.10.16.css" />
@@ -157,6 +157,10 @@
                             <a href="#" class="pure-menu-link" data="panel-rfb">RF</a>
                         </li>
                         <!-- endRemoveIf(!rfbridge) -->
+
+                        <li class="pure-menu-item module module-rpn">
+                            <a href="#" class="pure-menu-link" data="panel-rpn">RULES</a>
+                        </li>
 
                         <li class="pure-menu-item module module-sch">
                             <a href="#" class="pure-menu-link" data="panel-schedule">SCHEDULE</a>
@@ -369,7 +373,7 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-btn">
                                     <label class="pure-u-1 pure-u-lg-1-4">Double click delay</label>
                                     <input name="btnDelay" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
@@ -1407,6 +1411,60 @@
                     </div>
                 </form>
 
+                <form id="form-rpn" class="pure-form form-settings">
+                    <div class="panel" id="panel-rpn">
+
+                        <div class="header">
+                            <h1>RULES</h1>
+                            <h2>
+                                Here you can configure advanced rules based on RPN expressions. Check the <a href="https://github.com/xoseperez/espurna/wiki/RPN-Rules" target="_blank">wiki page about the RPN Rules module</a> to know how to use them.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <legend>Configuration</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Sticky variables</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="rpnSticky" tabindex="100" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Sticky variables are persistent, once defined the first time they will be always available until next reboot (they do not persist across reboots).
+                                        Non sticky variables are only available during the next rule execution, just after being defined, and then removed. This applies to status, sensor and MQTT variables equally.
+                                        Mind that calling a non-existing variable from a rule will make it silently fail.
+                                    </div>
+                                </div>
+    
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="rpnDelay">Execution delay (ms)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="rpnDelay" type="number" min="100" tabindex="101" />
+                                </div>
+
+                                <legend>Rules</legend>
+
+                                <div id="rpnRules"></div>
+                                <button type="button" class="pure-button button-add-rpnrule">Add</button>
+
+                                <legend>MQTT</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1-2">MQTT Topic</div>
+                                    <div class="pure-u-1-3">Variable Name</div>
+                                </div>
+
+                                <div id="rpnTopics"></div>
+                                <button type="button" class="pure-button button-add-rpntopic">Add</button>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+                </form>
+
                 <form id="form-dbg" class="pure-form">
                     <div class="panel" id="panel-dbg">
 
@@ -1874,6 +1932,8 @@
                     <option value="1">Always ON</option>
                     <option value="2">Same as before</option>
                     <option value="3">Toggle before</option>
+                    <option value="4">Locked OFF</option>
+                    <option value="5">Locked ON</option>
                 </select>
             </div>
             <div class="pure-g">
@@ -1887,6 +1947,10 @@
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse time (s)</label></div>
                 <div class="pure-u-1 pure-u-lg-1-4"><input name="relayTime" class="pure-u-1" type="number" min="0" step="0.1" max="3600" /></div>
+            </div>
+            <div class="pure-g module module-sch">
+                <div class="pure-u-1 pure-u-lg-1-4"><label>Restore last schedule</label></div>
+                <div><input name="relayLastSch" type="checkbox" /></div>
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
@@ -1996,10 +2060,25 @@
                 <div class="pure-u-md-1-6 pure-u-1-2"><input name="node" type="text" class="pure-u-11-12" value="" size="8" tabindex="0" placeholder="Node ID" autocomplete="false"></div>
                 <div class="pure-u-md-1-6 pure-u-1-2"><input name="key" type="text" class="pure-u-11-12" value="" size="8" tabindex="0" placeholder="Key"></div>
                 <div class="pure-u-md-1-2 pure-u-3-4"><input name="topic" type="text" class="pure-md-11-12 pure-u-23-24" value="" size="8" tabindex="0" placeholder="MQTT Topic"></div>
-                <div class="pure-u-md-1-6 pure-u-1-4"><button type="button" class="pure-button button-del-mapping pure-u-5-6 pure-u-md-5-6">Del</button></div>
+                <div class="pure-u-md-1-6 pure-u-1-4"><button type="button" class="pure-button button-del-parent pure-u-5-6 pure-u-md-5-6">Del</button></div>
             </div>
         </div>
         <!-- endRemoveIf(!rfm69) -->
+
+        <div id="rpnRuleTemplate" class="template">
+            <div class="pure-g">
+                <div class="pure-u-5-6"><input name="rpnRule" type="text" class="pure-u-23-24" value="" tabindex="0" autocomplete="false" /></div>
+                <div class="pure-u-1-6"><button type="button" class="pure-button button-del-parent pure-u-1">Del</button></div>
+            </div>
+        </div>
+
+        <div id="rpnTopicTemplate" class="template">
+            <div class="pure-g">
+                <div class="pure-u-1-2"><input name="rpnTopic" type="text" class="pure-u-23-24" value="" tabindex="0" autocomplete="false" /></div>
+                <div class="pure-u-1-3"><input name="rpnName" type="text" class="pure-u-23-24" value="" tabindex="0" autocomplete="false" /></div>
+                <div class="pure-u-1-6"><button type="button" class="pure-button button-del-parent pure-u-1">Del</button></div>
+            </div>
+        </div>
 
         <iframe id="downloader"></iframe>
         <input id="uploader" type="file" />
@@ -2007,10 +2086,10 @@
     </body>
 
     <!-- build:js script.js -->
-    <script src="vendor/jquery-3.2.1.min.js"></script>
+    <script src="vendor/jquery-3.4.1.slim.min.js"></script>
     <script src="custom.js"></script>
     <!-- removeIf(!light) -->
-    <script src="vendor/jquery.wheelcolorpicker-3.0.3.min.js"></script>
+    <script src="vendor/jquery.wheelcolorpicker-3.0.8.min.js"></script>
     <!-- endRemoveIf(!light) -->
     <!-- removeIf(!rfm69) -->
     <script src="vendor/datatables-1.10.16.min.js"></script>

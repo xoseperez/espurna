@@ -11,7 +11,7 @@ Copyright (C) 2018-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/Encoder.h"
 #include <vector>
 
-typedef struct {
+struct encoder_t {
     Encoder * encoder;
     unsigned char button_pin;
     unsigned char button_logic;
@@ -19,20 +19,27 @@ typedef struct {
     unsigned char mode;
     unsigned char channel1;             // default
     unsigned char channel2;             // only if button defined and pressed
-} encoder_t;
+};
 
 std::vector<encoder_t> _encoders;
 unsigned long _encoder_min_delta = 1;
 
 void _encoderConfigure() {
 
-    // Clean previous encoders
-    for (unsigned char i=0; i<_encoders.size(); i++) {
-        free(_encoders[i].encoder);
+    _encoder_min_delta = getSetting("encMinDelta", ENCODER_MINIMUM_DELTA).toInt();
+    if (!_encoder_min_delta) _encoder_min_delta = 1;
+
+    // no need to reload objects right now
+    if (_encoders.size()) return;
+
+    // Clean previous encoders and re-add them
+    for (auto& encoder : _encoders) {
+        delete encoder.encoder;
     }
     _encoders.clear();
 
-    // Load encoders
+    // TODO: encEnable
+    // TODO: implement reloading without re-allocating objects
     #if (ENCODER1_PIN1 != GPIO_NONE) && (ENCODER1_PIN2 != GPIO_NONE)
     {
         _encoders.push_back({
@@ -79,26 +86,21 @@ void _encoderConfigure() {
     }
     #endif
 
-    // Setup encoders
-    for (unsigned char i=0; i<_encoders.size(); i++) {
-        if (GPIO_NONE != _encoders[i].button_pin) {
-            pinMode(_encoders[i].button_pin, _encoders[i].button_mode);
+    // TODO: manage buttons through debounceevent?
+    for (auto& encoder : _encoders) {
+        if (GPIO_NONE != encoder.button_pin) {
+            pinMode(encoder.button_pin, encoder.button_mode);
         }
     }
-
-    _encoder_min_delta = getSetting("encMinDelta", ENCODER_MINIMUM_DELTA).toInt();
-    if (!_encoder_min_delta) _encoder_min_delta = 1;
 
 }
 
 void _encoderLoop() {
 
     // for each encoder, read delta (read()) and map button action
-    for (unsigned char i=0; i<_encoders.size(); i++) {
+    for (auto& encoder : _encoders) {
 
-        encoder_t encoder = _encoders[i];
-
-        long delta = encoder.encoder->read();
+        const auto delta = encoder.encoder->read();
         encoder.encoder->write(0);
         if ((0 == delta) || (_encoder_min_delta > abs(delta))) continue;
 

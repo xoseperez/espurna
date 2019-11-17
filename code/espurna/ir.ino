@@ -303,7 +303,8 @@ void _irProcess(unsigned char type, unsigned long code) {
                     }
 
                     if (button_mode == IR_BUTTON_MODE_RGB) {
-                        lightColor(button_value);
+                        lightColor((button_value >> 8) & 0xffffff);
+                        lightBrightness(button_value & 0xff);
                     }
 
                     /*

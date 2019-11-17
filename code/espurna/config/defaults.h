@@ -473,6 +473,10 @@
 #define RELAY8_DELAY_OFF      0
 #endif
 
+#ifndef RELAY_DELAY_INTERLOCK
+#define RELAY_DELAY_INTERLOCK       0
+#endif
+
 // -----------------------------------------------------------------------------
 // LEDs
 // -----------------------------------------------------------------------------
@@ -550,6 +554,117 @@
 #endif
 #ifndef LED8_RELAY
 #define LED8_RELAY          8
+#endif
+
+#ifndef LED1_PIN_INVERSE
+#define LED1_PIN_INVERSE            0
+#endif
+#ifndef LED2_PIN_INVERSE
+#define LED2_PIN_INVERSE            0
+#endif
+#ifndef LED3_PIN_INVERSE
+#define LED3_PIN_INVERSE            0
+#endif
+#ifndef LED4_PIN_INVERSE
+#define LED4_PIN_INVERSE            0
+#endif
+#ifndef LED5_PIN_INVERSE
+#define LED5_PIN_INVERSE            0
+#endif
+#ifndef LED6_PIN_INVERSE
+#define LED6_PIN_INVERSE            0
+#endif
+#ifndef LED7_PIN_INVERSE
+#define LED7_PIN_INVERSE            0
+#endif
+#ifndef LED8_PIN_INVERSE
+#define LED8_PIN_INVERSE            0
+#endif
+
+// -----------------------------------------------------------------------------
+// Digital Inputs
+// -----------------------------------------------------------------------------
+
+#ifndef DIGITAL1_PIN
+#define DIGITAL1_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL2_PIN
+#define DIGITAL2_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL3_PIN
+#define DIGITAL3_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL4_PIN
+#define DIGITAL4_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL5_PIN
+#define DIGITAL5_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL6_PIN
+#define DIGITAL6_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL7_PIN
+#define DIGITAL7_PIN         GPIO_NONE
+#endif
+#ifndef DIGITAL8_PIN
+#define DIGITAL8_PIN         GPIO_NONE
+#endif
+
+// -----------------------------------------------------------------------------
+// Events
+// -----------------------------------------------------------------------------
+
+#ifndef EVENTS1_PIN
+#define EVENTS1_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS2_PIN
+#define EVENTS2_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS3_PIN
+#define EVENTS3_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS4_PIN
+#define EVENTS4_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS5_PIN
+#define EVENTS5_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS6_PIN
+#define EVENTS6_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS7_PIN
+#define EVENTS7_PIN         GPIO_NONE
+#endif
+#ifndef EVENTS8_PIN
+#define EVENTS8_PIN         GPIO_NONE
+#endif
+
+// -----------------------------------------------------------------------------
+// Lights
+// -----------------------------------------------------------------------------
+
+#ifndef LIGHT_CHANNELS
+#define LIGHT_CHANNELS      0
+#endif
+
+#ifndef LIGHT_CH1_INVERSE
+#define LIGHT_CH1_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH2_INVERSE
+#define LIGHT_CH2_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH3_INVERSE
+#define LIGHT_CH3_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH4_INVERSE
+#define LIGHT_CH4_INVERSE   0
+#endif
+
+#ifndef LIGHT_CH5_INVERSE
+#define LIGHT_CH5_INVERSE   0
 #endif
 
 // -----------------------------------------------------------------------------

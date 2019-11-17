@@ -3,11 +3,14 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.6--dev-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.14.0--dev-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+<br />
+[![latest master build](https://img.shields.io/github/release/xoseperez/espurna/all.svg?label=latest%20master%20build)](https://github.com/xoseperez/espurna/releases/latest)
+[![latest dev build](https://img.shields.io/github/release/mcspr/espurna-nightly-builder/all.svg?label=latest%20dev%20build)](https://github.com/mcspr/espurna-nightly-builder/releases)
 [![downloads](https://img.shields.io/github/downloads/xoseperez/espurna/total.svg)](https://github.com/xoseperez/espurna/releases)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
@@ -18,11 +21,11 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Collaborators
 
-Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collaborator of the project. 
+Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a collaborator of the project. 
 
 ## Contributors
 
-**Without your help this project would not be possible**. I (@xoseperez) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
+**Without your help this project would not be possible**. I (**@xoseperez**) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
 
 **Thank you all very much**.
 
@@ -31,6 +34,13 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
 > Ladies and gentlemen in the embedded world, use [PlatformIO](https://platformio.org/). If I could offer you only one tip for the future, [PlatformIO](https://platformio.org/) would be it.
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
+
+> Process of building ESPurna from source is documented in the Wiki:  
+[Using PlatformIO IDE for VSCode](https://github.com/xoseperez/espurna/wiki/Build-and-update-from-Visual-Studio-Code-using-PlatformIO)  
+[Using PlatformIO CLI](https://github.com/xoseperez/espurna/wiki/PlatformIO)  
+[Using Arduino IDE](https://github.com/xoseperez/espurna/wiki/ArduinoIDE)  
+
+> If you want to try out latest changes from **dev** branch without building the firmware yourself or if you are having problems with the stable release, please visit [**espurna-nightly-builder** releases page](https://github.com/mcspr/espurna-nightly-builder/releases).
 
 ## Features
 
@@ -56,7 +66,7 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
     * Support for **delayed ON/OFF**
     * Support for **latched relays**
 * **MQTT** enabled
-    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64))
+    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64) and [#1465](https://github.com/xoseperez/espurna/issues/1465))
     * Switch on/off and toggle relays, group topics (sync relays between different devices)
     * Report button event notifications
     * Enable/disable pulse mode
@@ -91,6 +101,7 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
         * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
+        * **T6613** CO2 sensor
         * **MICS2710** CO2 & NO2 sensor
         * **MICS5525** CO & CO2 sensor
         * **SenseAir S8** CO2 sensor
@@ -103,13 +114,18 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
         * **Geiger counter** by RH Electronics
         * **HC-SR04**, **SRF05**, **SRF06**, **DYP-ME007**, **JSN-SR04T** & **Parallax PING)))™** distance sensors
         * **VL53L1X** distance sensor
+        * **MAX6675** K-thermocouple-to-digital converter
+        * **NTC** thermistor
+        * **LDR** light-dependent resistor sensor
     * Power monitoring
         * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
         * **CSE7766** and **CSE7759B** power monitor chips
         * **HJL-01** and **BL0937** power monitor chips
-        * Non-invasive **current sensor** using **internal ADC** or **ADC712** or **ADC121** or **ADS1115**
+        * Non-invasive **current sensor** using **internal ADC** or **ADC712** or **ADC121** or **ADS1015** / **ADS1115**
         * **V9261F** power monitor chip
         * **PZEM0004T**  power monitor board
+        * **ECH1560** power monitor chip
+        * **ADE7953** power monitor chip
     * Raw **analog** and **digital** sensors
     * Simple **pulse counter** with **event triggering** option
     * Support for (almost) any UART based sensor via the **UART-to-MQTT module**
@@ -166,7 +182,7 @@ Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collab
     * Long click (>1 second) to reboot device (only main button)
     * Extra long click (>10 seconds) to go back to factory settings (only main button)
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
-* Configuration stored in different sectors to prevent data loosing and corruption
+* Configuration stored in different flash sectors to prevent data loss and corruption
 
 ## Notices
 
@@ -312,6 +328,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**Arilux AL-LC06 (RGBWWCW)**|
 |![Arilux AL-LC11 (RGBWWW) & RF](images/devices/arilux-al-lc11.jpg)|![MagicHome LED Controller (1.0 and 2.x)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801/802](images/devices/huacanxing-h801.jpg)|
 |**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x, also ZJ WFMN A/B11)**|**Huacanxing H801/802**|
+|![Muvit I/O MIOBULB001](images/devices/muvit-io-miobulb001.jpg)|
+|**Muvit I/O MIOBULB001**|
 
 ### Radio links / gateways
 
@@ -338,7 +356,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-relayshield.jpg)|![Gizwits Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Gizwits Witty Cloud**|
 |![IKE ESPike](images/devices/ike-espike.jpg)|![Pilotak ESP DIN](images/devices/pilotak-esp-din.jpg)|![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
-|**IKE ESPike**|**Pilotak ESP DIN|**Arniex Swifitch**|
+|**IKE ESPike**|**Pilotak ESP DIN**|**Arniex Swifitch**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
 |![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)|![InterMitTech QuinLED 2.6](images/devices/intermittech-quinled-2.6.jpg)|

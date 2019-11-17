@@ -1,0 +1,3 @@
+# Ignore B404 "Avoid importing subprocess"
+# Ignore B603 "Subprocess without shell equals true"
+skips: ['B404', 'B603']

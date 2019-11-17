@@ -71,13 +71,18 @@ void _ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) 
 
 #if WEB_SUPPORT
 
-bool _ledWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "led", 3) == 0);
 }
 
-void _ledWebSocketOnSend(JsonObject& root) {
+void _ledWebSocketOnVisible(JsonObject& root) {
+    if (_ledCount() > 0) {
+        root["ledVisible"] = 1;
+    }
+}
+
+void _ledWebSocketOnConnected(JsonObject& root) {
     if (_ledCount() == 0) return;
-    root["ledVisible"] = 1;
     JsonArray& leds = root.createNestedArray("ledConfig");
     for (byte i=0; i<_ledCount(); i++) {
         JsonObject& led = leds.createNestedObject();
@@ -127,13 +132,13 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
         if (_ledMode(ledID) != LED_MODE_MQTT) return;
 
         // get value
-        unsigned char value = relayParsePayload(payload);
+        const auto value = relayParsePayload(payload);
 
         // Action to perform
-        if (value == 2) {
+        if (value == RelayStatus::TOGGLE) {
             _ledToggle(ledID);
         } else {
-            _ledStatus(ledID, value == 1);
+            _ledStatus(ledID, (value == RelayStatus::ON));
         }
 
     }
@@ -200,8 +205,10 @@ void ledSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_ledWebSocketOnSend);
-        wsOnReceiveRegister(_ledWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_ledWebSocketOnVisible)
+            .onConnected(_ledWebSocketOnConnected)
+            .onKeyCheck(_ledWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT
