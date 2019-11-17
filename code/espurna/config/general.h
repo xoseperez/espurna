@@ -674,6 +674,10 @@
 #define API_ENABLED                 0           // Do not enable API by default
 #endif
 
+#ifndef API_KEY
+#define API_KEY                     ""          // Do not enable API by default. WebUI will automatically generate the key
+#endif
+
 #ifndef API_RESTFUL
 #define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
                                                 // Setting this to 0 will allow using GET to change relays, for instance
@@ -1398,7 +1402,11 @@
 #endif
 
 #ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
-#define SCHEDULER_RESTORE_LAST_SCHEDULE      0  // Restore the last schedule state on the device boot
+#define SCHEDULER_RESTORE_LAST_SCHEDULE      0      // Restore the last schedule state on the device boot
+#endif
+
+#ifndef SCHEDULER_WEEKDAYS
+#define SCHEDULER_WEEKDAYS          "1,2,3,4,5,6,7" // (Default - Run the schedules every day)
 #endif
 
 // -----------------------------------------------------------------------------

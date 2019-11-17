@@ -48,7 +48,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         if (!hasSetting("schSwitch", i)) break;
         ++size;
 
-        enabled.add<uint8_t>(getSetting("schEnabled", i, 1).toInt() == 1);
+        enabled.add<uint8_t>(getSetting("schEnabled", i, 0).toInt() == 1);
         utc.add<uint8_t>(getSetting("schUTC", i, 0).toInt() == 1);
 
         switch_.add(getSetting("schSwitch", i, 0).toInt());
@@ -56,7 +56,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         type.add(getSetting("schType", i, 0).toInt());
         hour.add(getSetting("schHour", i, 0).toInt());
         minute.add(getSetting("schMinute", i, 0).toInt());
-        weekdays.add(getSetting("schWDs", i, ""));
+        weekdays.add(getSetting("schWDs", i, SCHEDULER_WEEKDAYS));
     }
 
     schedules["size"] = size;
@@ -92,12 +92,12 @@ void _schConfigure() {
 
             #if DEBUG_SUPPORT
 
-                bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
+                bool sch_enabled = getSetting("schEnabled", i, 0).toInt() == 1;
                 int sch_action = getSetting("schAction", i, 0).toInt();
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
                 bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
-                String sch_weekdays = getSetting("schWDs", i, "");
+                String sch_weekdays = getSetting("schWDs", i, SCHEDULER_WEEKDAYS);
                 unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
 
                 DEBUG_MSG_P(
@@ -176,7 +176,7 @@ void _schCheck(int relay, int daybefore) {
         if (sch_switch == 0xFF) break;
 
         // Skip disabled schedules
-        if (getSetting("schEnabled", i, 1).toInt() == 0) continue;
+        if (getSetting("schEnabled", i, 0).toInt() == 0) continue;
 
         // Get the datetime used for the calculation
         bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
@@ -189,7 +189,7 @@ void _schCheck(int relay, int daybefore) {
           t = t - ((now_hour * 3600) + ((now_minute + 1) * 60) + now_sec + (daybefore * 86400));
         }
 
-        String sch_weekdays = getSetting("schWDs", i, "");
+        String sch_weekdays = getSetting("schWDs", i, SCHEDULER_WEEKDAYS);
         if (_schIsThisWeekday(t, sch_weekdays)) {
 
             int sch_hour = getSetting("schHour", i, 0).toInt();
