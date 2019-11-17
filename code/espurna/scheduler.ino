@@ -48,7 +48,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         if (!hasSetting("schSwitch", i)) break;
         ++size;
 
-        enabled.add<uint8_t>(getSetting("schEnabled", i, 1).toInt() == 1);
+        enabled.add<uint8_t>(getSetting("schEnabled", i, 0).toInt() == 1);
         utc.add<uint8_t>(getSetting("schUTC", i, 0).toInt() == 1);
 
         switch_.add(getSetting("schSwitch", i, 0).toInt());
@@ -176,7 +176,7 @@ void _schCheck(int relay, int daybefore) {
         if (sch_switch == 0xFF) break;
 
         // Skip disabled schedules
-        if (getSetting("schEnabled", i, 1).toInt() == 0) continue;
+        if (getSetting("schEnabled", i, 0).toInt() == 0) continue;
 
         // Get the datetime used for the calculation
         bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
@@ -189,7 +189,7 @@ void _schCheck(int relay, int daybefore) {
           t = t - ((now_hour * 3600) + ((now_minute + 1) * 60) + now_sec + (daybefore * 86400));
         }
 
-        String sch_weekdays = getSetting("schWDs", i, "");
+        String sch_weekdays = getSetting("schWDs", i, SCHEDULER_WEEKDAYS);
         if (_schIsThisWeekday(t, sch_weekdays)) {
 
             int sch_hour = getSetting("schHour", i, 0).toInt();
