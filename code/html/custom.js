@@ -456,11 +456,18 @@ function sendConfig(data) {
 }
 
 function setOriginalsFromValues(force) {
-    var force = (true === force);
+    force = (true === force);
     $("input,select").each(function() {
         var initial = (undefined === $(this).attr("original"));
         if (force || initial) {
-            $(this).attr("original", $(this).val());
+            var value;
+            if ($(this).attr("type") === "checkbox") {
+                value = $(this).prop("checked");
+            } else {
+                value = $(this).val();
+            }
+            $(this).attr("original", value);
+            hasChanged.call(this);
         }
     });
 }
