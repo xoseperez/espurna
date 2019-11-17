@@ -336,7 +336,9 @@ function randomString(length, args) {
 
 function generateAPIKey() {
     var apikey = randomString(16, {hex: true});
-    $("input[name='apiKey']").val(apikey);
+    $("input[name='apiKey']")
+        .val(apikey)
+        .attr("haschanged", "true");
     return false;
 }
 
@@ -362,6 +364,7 @@ function toggleVisiblePassword() {
 function doGeneratePassword() {
     $("input", $("#formPassword"))
         .val(generatePassword())
+        .attr("haschanged", "true")
         .each(function() {
             this.type = "text";
         });
@@ -1756,6 +1759,17 @@ function processData(data) {
         <!-- endRemoveIf(!sensor)-->
 
         // ---------------------------------------------------------------------
+        // HTTP API
+        // ---------------------------------------------------------------------
+
+        // Auto generate an APIKey if none defined yet
+        if ("apiVisible" === key) {
+            if (data.apiKey === undefined || data.apiKey === "") {
+                generateAPIKey();
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // General
         // ---------------------------------------------------------------------
 
@@ -1879,11 +1893,6 @@ function processData(data) {
         }
 
     });
-
-    // Auto generate an APIKey if none defined yet
-    if ($("input[name='apiKey']").val() === "") {
-        generateAPIKey();
-    }
 
     setOriginalsFromValues();
 

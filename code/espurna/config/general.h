@@ -674,6 +674,10 @@
 #define API_ENABLED                 0           // Do not enable API by default
 #endif
 
+#ifndef API_KEY
+#define API_KEY                     ""          // Do not enable API by default. WebUI will automatically generate the key
+#endif
+
 #ifndef API_RESTFUL
 #define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
                                                 // Setting this to 0 will allow using GET to change relays, for instance
