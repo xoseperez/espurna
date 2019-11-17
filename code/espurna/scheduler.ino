@@ -56,7 +56,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         type.add(getSetting("schType", i, 0).toInt());
         hour.add(getSetting("schHour", i, 0).toInt());
         minute.add(getSetting("schMinute", i, 0).toInt());
-        weekdays.add(getSetting("schWDs", i, ""));
+        weekdays.add(getSetting("schWDs", i, SCHEDULER_WEEKDAYS));
     }
 
     schedules["size"] = size;
@@ -92,12 +92,12 @@ void _schConfigure() {
 
             #if DEBUG_SUPPORT
 
-                bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
+                bool sch_enabled = getSetting("schEnabled", i, 0).toInt() == 1;
                 int sch_action = getSetting("schAction", i, 0).toInt();
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
                 bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
-                String sch_weekdays = getSetting("schWDs", i, "");
+                String sch_weekdays = getSetting("schWDs", i, SCHEDULER_WEEKDAYS);
                 unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
 
                 DEBUG_MSG_P(

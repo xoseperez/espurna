@@ -1401,7 +1401,11 @@
 #endif
 
 #ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
-#define SCHEDULER_RESTORE_LAST_SCHEDULE      0  // Restore the last schedule state on the device boot
+#define SCHEDULER_RESTORE_LAST_SCHEDULE      0      // Restore the last schedule state on the device boot
+#endif
+
+#ifndef SCHEDULER_WEEKDAYS
+#define SCHEDULER_WEEKDAYS          "1,2,3,4,5,6,7" // (Default - Run the schedules every day)
 #endif
 
 // -----------------------------------------------------------------------------
