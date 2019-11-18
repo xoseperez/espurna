@@ -1236,6 +1236,9 @@ void relaySetupMQTT() {
 #endif
 
 void _relaySetupProvider() {
+    // TODO: implement something like `RelayProvider tuya_provider({.setup_cb = ..., .send_cb = ...})`?
+    //       note of the function call order! relay code is initialized before tuya's, and the easiest
+    //       way to accomplish that is to use ctor as a way to "register" callbacks even before setup() is called
     #if TUYA_SUPPORT
         tuyaSetupSwitch();
     #endif
@@ -1320,7 +1323,7 @@ void _relayLoop() {
 // 8 channels. This behaviour will be recovered with v2.
 void relaySetupDummy(unsigned char size) {
 
-    size = constrain(size, 0, 8);
+    size = constrain(size, 0, RELAY_SAVE_MASK_MAX);
     if (size == _relays.size()) return;
     _relayDummy = size;
 
@@ -1364,7 +1367,10 @@ void relaySetup() {
         _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN });
     #endif
 
-    relaySetupDummy(DUMMY_RELAY_COUNT);
+    {
+        const auto relays = getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt();
+        relaySetupDummy(constrain(relays, 0, RELAY_SAVE_MASK_MAX));
+    }
 
     _relaySetupProvider();
     _relayBackwards();

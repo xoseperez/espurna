@@ -588,17 +588,15 @@ void _lightProviderScheduleUpdate(unsigned long steps) {
 
 union light_rtcmem_t {
     struct {
-        uint8_t channels[5];
+        uint8_t channels[Light::CHANNELS_MAX];
         uint8_t brightness;
         uint16_t mired;
-    } packed;
+    } __attribute__((packed)) packed;
     uint64_t value;
 };
 
-#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(light_rtcmem_t().packed.channels)
-
 void _lightSaveRtcmem() {
-    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+    if (lightChannels() > Light::CHANNELS_MAX) return;
 
     light_rtcmem_t light;
 
@@ -613,7 +611,7 @@ void _lightSaveRtcmem() {
 }
 
 void _lightRestoreRtcmem() {
-    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+    if (lightChannels() > Light::CHANNELS_MAX) return;
 
     light_rtcmem_t light;
     light.value = Rtcmem->light;
