@@ -1,3 +1,11 @@
+/*
+
+TUYA MODULE
+
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 // ref: https://docs.tuya.com/en/mcu/mcu-protocol.html
 
 #if TUYA_SUPPORT
@@ -14,15 +22,15 @@
 
 namespace Tuya {
 
-    constexpr const size_t SERIAL_SPEED = 9600;
+    constexpr const size_t SERIAL_SPEED { 9600u };
 
-    constexpr const unsigned char SWITCH_MAX {8u};
-    constexpr const unsigned char DIMMER_MAX {5u};
+    constexpr const unsigned char SWITCH_MAX { 8u };
+    constexpr const unsigned char DIMMER_MAX { 5u };
 
-    constexpr const uint32_t DISCOVERY_TIMEOUT = 1500;
+    constexpr const uint32_t DISCOVERY_TIMEOUT { 1500u };
 
-    constexpr const uint32_t HEARTBEAT_SLOW = 9000;
-    constexpr const uint32_t HEARTBEAT_FAST = 3000;
+    constexpr const uint32_t HEARTBEAT_SLOW { 9000u };
+    constexpr const uint32_t HEARTBEAT_FAST { 3000u };
 
     // --------------------------------------------
 
@@ -37,7 +45,6 @@ namespace Tuya {
             return constrain(value, NONE, ALL);
         }
     };
-
 
     size_t getHeartbeatInterval(Heartbeat hb) {
         switch (hb) {
@@ -117,7 +124,7 @@ namespace Tuya {
 
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
-            outputFrames.emplace(DataFrame{Command::Heartbeat});
+            outputFrames.emplace(Command::Heartbeat);
             last = millis();
         }
 
@@ -125,9 +132,9 @@ namespace Tuya {
 
     void sendWiFiStatus() {
         if (!reportWiFi) return;
-        outputFrames.emplace(DataFrame{
-            Command::WiFiStatus, {getWiFiState()}
-        });
+        outputFrames.emplace(
+            Command::WiFiStatus, std::initializer_list<uint8_t> { getWiFiState() }
+        );
     }
 
     void pushOrUpdateState(const Type type, const DataFrame& frame) {
@@ -189,7 +196,7 @@ namespace Tuya {
 
     void processFrame(State& state, const Transport& buffer) {
 
-        const DataFrame frame = fromTransport(buffer);
+        const DataFrame frame(buffer);
 
         dataframeDebugSend("<=", frame);
 
@@ -233,14 +240,14 @@ namespace Tuya {
 
         if (frame.commandEquals(Command::WiFiResetCfg) && !frame.length) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
-            outputFrames.emplace(DataFrame{Command::WiFiResetCfg});
+            outputFrames.emplace(Command::WiFiResetCfg);
             return;
         }
 
         if (frame.commandEquals(Command::WiFiResetSelect) && (frame.length == 1)) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
                 (frame[0] == 0) ? "Smart Config" : "AP");
-            outputFrames.emplace(DataFrame{Command::WiFiResetSelect});
+            outputFrames.emplace(Command::WiFiResetSelect);
             return;
         }
 
@@ -277,9 +284,9 @@ namespace Tuya {
 
     void tuyaSendSwitch(unsigned char id) {
         if (id >= switchStates.size()) return;
-        outputFrames.emplace(DataFrame{
+        outputFrames.emplace(
             Command::SetDP, DataProtocol<bool>(switchStates[id].dp, switchStates[id].value).serialize()
-        });
+        );
     }
 
     void tuyaSendSwitch(unsigned char id, bool value) {
@@ -292,9 +299,9 @@ namespace Tuya {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
         void tuyaSendChannel(unsigned char id) {
             if (id >= channelStates.size()) return;
-            outputFrames.emplace(DataFrame{
+            outputFrames.emplace(
                 Command::SetDP, DataProtocol<uint32_t>(channelStates[id].dp, channelStates[id].value).serialize()
-            });
+            );
         }
 
         void tuyaSendChannel(unsigned char id, unsigned int value) {
@@ -370,7 +377,7 @@ namespace Tuya {
             // general info about the device (which we don't care about)
             case State::QUERY_PRODUCT:
             {
-                outputFrames.emplace(DataFrame{Command::QueryProduct});
+                outputFrames.emplace(Command::QueryProduct);
                 state = State::IDLE;
                 break;
             }
@@ -378,7 +385,7 @@ namespace Tuya {
             // TODO: make updatePins() do something!
             case State::QUERY_MODE:
             {
-                outputFrames.emplace(DataFrame{Command::QueryMode});
+                outputFrames.emplace(Command::QueryMode);
                 state = State::IDLE;
                 break;
             }
@@ -386,7 +393,7 @@ namespace Tuya {
             case State::QUERY_DP:
             {
                 DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
-                outputFrames.emplace(DataFrame{Command::QueryDP});
+                outputFrames.emplace(Command::QueryDP);
                 discoveryTimeout.feed();
                 state = State::DISCOVERY;
                 break;

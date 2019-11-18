@@ -1,6 +1,14 @@
+/*
+
+TUYA MODULE
+
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 #pragma once
 
-#include <memory>
+#include <vector>
 
 #include "tuya_types.h"
 #include "tuya_transport.h"
@@ -50,17 +58,29 @@ namespace Tuya {
         DataFrame(Command command, std::initializer_list<uint8_t> data) :
             command(static_cast<uint8_t>(command)),
             length(data.size()),
-            _data(new container(data)),
-            _begin(_data->cbegin()),
-            _end(_data->cend())
+            _data(data),
+            _begin(_data.cbegin()),
+            _end(_data.cend())
         {}
 
         DataFrame(Command command, std::vector<uint8_t>&& data) :
             command(static_cast<uint8_t>(command)),
             length(data.size()),
-            _data(new container(std::forward<container>(data))),
-            _begin(_data->cbegin()),
-            _end(_data->cend())
+            _data(std::move(data)),
+            _begin(_data.cbegin()),
+            _end(_data.cend())
+        {}
+
+        DataFrame(const_iterator iter) :
+            version(static_cast<uint8_t>(iter[2])),
+            command(static_cast<uint8_t>(iter[3])),
+            length((iter[4] << 8) + iter[5]),
+            _begin(iter + 6),
+            _end(iter + length)
+        {}
+
+        DataFrame(const Transport& input) :
+            DataFrame(input.cbegin())
         {}
 
         bool commandEquals(Command command) const {
@@ -103,23 +123,11 @@ namespace Tuya {
 
     protected:
 
-        std::unique_ptr<container> _data;
+        container _data;
         const_iterator _begin;
         const_iterator _end;
 
     };
 
-    inline DataFrame fromTransport(const Transport& input) {
-        auto buffer = input.cbegin();
-
-        const uint16_t data_len = (buffer[4] << 8) + buffer[5];
-        auto data_begin = buffer + 6;
-        auto data_end = data_begin + data_len;
-
-        return DataFrame {
-            buffer[2], buffer[3],
-            data_len, data_begin, data_end
-        };
-    }
 
 }
