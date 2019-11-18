@@ -962,7 +962,7 @@ void relaySetupAPI() {
             },
             [relayID](const char * payload) {
 
-                if (_relayHandlePayload(relayID, payload)) {
+                if (!_relayHandlePayload(relayID, payload)) {
                     DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
                     return;
                 }
