@@ -65,6 +65,7 @@ namespace Tuya {
     void updatePins(uint8_t led, uint8_t rst) {
         setSetting("ledGPIO0", led);
         setSetting("btnGPIO0", rst);
+        //espurnaReload();
     }
 
     // --------------------------------------------
@@ -188,7 +189,7 @@ namespace Tuya {
 
     void processFrame(State& state, const Transport& buffer) {
 
-        const DataFrame frame {fromTransport(buffer)};
+        const DataFrame frame = fromTransport(buffer);
 
         dataframeDebugSend("<=", frame);
 

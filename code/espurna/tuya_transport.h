@@ -110,6 +110,7 @@ namespace Tuya {
         // 256 * 1.04 = 266.24
         constexpr static size_t TIME_LIMIT = 267;
 
+        using const_iterator = std::vector<uint8_t>::const_iterator;
 
     public:
 
@@ -128,28 +129,12 @@ namespace Tuya {
             return _buffer[i];
         }
 
-        uint8_t version() const {
-            return _buffer[2];
+        const_iterator cbegin() const {
+            return _buffer.cbegin();
         }
 
-        uint8_t command() const {
-            return _buffer[3];
-        }
-
-        uint16_t length() const {
-            return (_buffer[4] << 8) + _buffer[5];
-        }
-
-        uint8_t checksum() const {
-            return _buffer[_index];
-        }
-
-        std::vector<uint8_t>::const_iterator dataBegin() const {
-            return _buffer.begin() + 6;
-        }
-
-        std::vector<uint8_t>::const_iterator dataEnd() const {
-            return dataBegin() + length();
+        const_iterator cend() const {
+            return _buffer.cend();
         }
 
         void read() {

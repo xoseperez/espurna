@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "tuya_types.h"
 #include "tuya_transport.h"
 
@@ -12,9 +14,9 @@ namespace Tuya {
         using container = std::vector<uint8_t>;
         using const_iterator = container::const_iterator;
 
-        ~DataFrame() = default;
-
         DataFrame(DataFrame& rhs) = delete;
+
+        ~DataFrame() = default;
         DataFrame(DataFrame&& rhs) = default;
 
         DataFrame(uint8_t command) :
@@ -79,14 +81,16 @@ namespace Tuya {
         }
 
         container serialize() const {
-            container result {
+            container result;
+
+            result.reserve(6 + length);
+            result.assign({
                 version, command,
                 uint8_t(length >> 8),
                 uint8_t(length & 0xff)
-            };
+            });
 
             if (length && (_begin != _end)) {
-                result.reserve(result.size() + length);
                 result.insert(result.end(), _begin, _end);
             }
 
@@ -106,7 +110,16 @@ namespace Tuya {
     };
 
     inline DataFrame fromTransport(const Transport& input) {
-        return DataFrame(input.version(), input.command(), input.length(), input.dataBegin(), input.dataEnd());
+        auto buffer = input.cbegin();
+
+        const uint16_t data_len = (buffer[4] << 8) + buffer[5];
+        auto data_begin = buffer + 6;
+        auto data_end = data_begin + data_len;
+
+        return DataFrame {
+            buffer[2], buffer[3],
+            data_len, data_begin, data_end
+        };
     }
 
 }
