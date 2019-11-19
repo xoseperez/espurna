@@ -398,6 +398,7 @@
     #define DHT_SUPPORT         1
     #endif
     #define DHT_PIN             14
+    #define DHT_TYPE            DHT_CHIP_SI7021
 
     //#define I2C_SDA_PIN         4
     //#define I2C_SCL_PIN         14
