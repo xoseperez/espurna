@@ -8,6 +8,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DOMOTICZ_SUPPORT
 
+#include "broker.h"
 #include <ArduinoJson.h>
 
 bool _dcz_enabled = false;
@@ -164,22 +165,28 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
 };
 
 #if BROKER_SUPPORT
-void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
 
-    // Only handle messages from the relay module
-    if (strcmp(MQTT_TOPIC_RELAY, topic) != 0) return;
+void _domoticzConfigCallback(const String& key, const String& value) {
+    if (key.equals("relayDummy")) {
+        _domoticzRelayConfigure(value.toInt());
+        return;
+    }
+}
 
-    // Only process status and configuration messages
-    if (BROKER_MSG_TYPE_CONFIG == type) {
-        _domoticzRelayConfigure(payload[0]);
-    } else if (BROKER_MSG_TYPE_STATUS == type) {
-        bool status = atoi(payload) == 1;
-        if (_domoticzStatus(id) == status) return;
-        _dcz_relay_state[id] = status;
-        domoticzSendRelay(id, status);
+void _domoticzBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
+
+    if (!topic.equals(MQTT_TOPIC_CHANNEL)
+        && !topic.equals(MQTT_TOPIC_RELAY)) {
+        return;
     }
 
+    // Only process status and configuration messages
+    if (_domoticzStatus(id) == value) return;
+    _dcz_relay_state[id] = value;
+    domoticzSendRelay(id, value);
+
 }
+
 #endif // BROKER_SUPPORT
 
 #if WEB_SUPPORT
@@ -275,7 +282,8 @@ void domoticzSetup() {
     #endif
 
     #if BROKER_SUPPORT
-        brokerRegister(_domoticzBrokerCallback);
+        StatusBroker::Register(_domoticzBrokerCallback);
+        ConfigBroker::Register(_domoticzConfigCallback);
     #endif
 
     // Callbacks

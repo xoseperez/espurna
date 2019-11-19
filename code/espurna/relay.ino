@@ -12,6 +12,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <functional>
 
+#include "broker.h"
+
 typedef struct {
 
     // Configuration variables
@@ -310,7 +312,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            StatusBroker::Publish(MQTT_TOPIC_RELAY, id, target);
         #endif
 
         // Send MQTT
@@ -1332,12 +1334,10 @@ void relaySetupDummy(unsigned char size) {
     });
 
     #if BROKER_SUPPORT
-        char msg[2] = {uint8_t(_relays.size()), 0};
-        brokerPublish(BROKER_MSG_TYPE_CONFIG, MQTT_TOPIC_RELAY, 0, msg);
+        ConfigBroker::Publish("relayDummy", _relays.size());
     #endif
 
 }
-
 
 void relaySetup() {
 

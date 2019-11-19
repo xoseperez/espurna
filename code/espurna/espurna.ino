@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 #include <vector>
 
+#include "broker.h"
 #include "libs/HeapStats.h"
 
 std::vector<void (*)()> _loop_callbacks;
@@ -47,8 +48,8 @@ void espurnaReload() {
 }
 
 void _espurnaReload() {
-    for (unsigned char i = 0; i < _reload_callbacks.size(); i++) {
-        (_reload_callbacks[i])();
+    for (const auto& callback : _reload_callbacks) {
+        callback();
     }
 }
 

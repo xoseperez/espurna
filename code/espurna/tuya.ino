@@ -312,15 +312,16 @@ namespace Tuya {
         }
     #endif
 
-    void brokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+    void brokerCallback(const String& topic, unsigned char id, unsigned int value) {
 
-        // Only process status messages
-        if (BROKER_MSG_TYPE_STATUS != type) return;
-
-        unsigned char value = atoi(payload);
+        // Only process status messages for switches and channels
+        if (!topic.equals(MQTT_TOPIC_CHANNEL)
+            && !topic.equals(MQTT_TOPIC_RELAY)) {
+            return;
+        }
 
         #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT) && (LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA)
-            if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
+            if (topic.equals(MQTT_TOPIC_CHANNEL)) {
                 if (lightState(id) != switchStates[id].value) {
                     tuyaSendSwitch(id, value > 0);
                 }
@@ -328,7 +329,7 @@ namespace Tuya {
                 return;
             }
 
-            if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+            if (topic.equals(MQTT_TOPIC_RELAY)) {
                 if (lightState(id) != switchStates[id].value) {
                     tuyaSendSwitch(id, bool(value));
                 }
@@ -336,17 +337,17 @@ namespace Tuya {
                 return;
             }
         #elif (LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA)
-            if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
+            if (topic.equals(MQTT_TOPIC_CHANNEL)) {
                 tuyaSendChannel(id, value);
                 return;
             }
 
-            if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+            if (topic.equals(MQTT_TOPIC_RELAY)) {
                 tuyaSendSwitch(id, bool(value));
                 return;
             }
         #else
-            if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+            if (topic.equals(MQTT_TOPIC_RELAY)) {
                 tuyaSendSwitch(id, bool(value));
                 return;
             }
@@ -519,7 +520,7 @@ namespace Tuya {
 
         TUYA_SERIAL.begin(SERIAL_SPEED);
 
-        ::brokerRegister(brokerCallback);
+        ::StatusBroker::Register(brokerCallback);
         ::espurnaRegisterLoop(tuyaLoop);
         ::wifiRegister([](justwifi_messages_t code, char * parameter) {
             if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {

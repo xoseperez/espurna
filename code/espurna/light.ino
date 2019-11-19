@@ -9,6 +9,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 #include "light.h"
+#include "broker.h"
 
 #include <Ticker.h>
 #include <Schedule.h>
@@ -797,10 +798,8 @@ void lightMQTTGroup() {
 #if BROKER_SUPPORT
 
 void lightBroker() {
-    char buffer[10];
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-        itoa(_light_channel[i].value, buffer, 10);
-        brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_CHANNEL, i, buffer);
+    for (unsigned int id = 0; id < _light_channel.size(); ++id) {
+        StatusBroker::Publish(MQTT_TOPIC_CHANNEL, id, _light_channel[id].value);
     }
 }
 
