@@ -45,12 +45,12 @@ void _idbConfigure() {
 
 #if BROKER_SUPPORT
 
-void _idbBrokerCallback(const String& topic, unsigned char id, double, const char* value) {
+void _idbBrokerSensor(const String& topic, unsigned char id, double, const char* value) {
     idbSend(topic.c_str(), id, value);
 }
 
-void _idbBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
-    _idbBrokerCallback(topic, id, 0, String(int(value)).c_str());
+void _idbBrokerStatus(const String& topic, unsigned char id, unsigned int value) {
+    idbSend(topic.c_str(), id, String(int(value)).c_str());
 }
 
 #endif // BROKER_SUPPORT
@@ -130,8 +130,8 @@ void idbSetup() {
     #endif
 
     #if BROKER_SUPPORT
-        StatusBroker::Register(_idbBrokerCallback);
-        SensorBroker::Register(_idbBrokerCallback);
+        StatusBroker::Register(_idbBrokerStatus);
+        SensorBroker::Register(_idbBrokerSensor);
     #endif
 
     // Main callbacks

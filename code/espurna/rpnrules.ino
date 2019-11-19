@@ -109,7 +109,7 @@ void _rpnBrokerCallback(const String& topic, unsigned char id, double value, con
 
 }
 
-void _rpnBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
+void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value) {
     _rpnBrokerCallback(topic, id, double(value), nullptr);
 }
 
@@ -304,7 +304,7 @@ void rpnSetup() {
         mqttRegister(_rpnMQTTCallback);
     #endif
 
-    StatusBroker::Register(_rpnBrokerCallback);
+    StatusBroker::Register(_rpnBrokerStatus);
     SensorBroker::Register(_rpnBrokerCallback);
 
     espurnaRegisterReload(_rpnConfigure);
