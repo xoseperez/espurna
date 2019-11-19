@@ -54,6 +54,7 @@
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
     #define NTP_SUPPORT             0
+    #define RPN_RULES_SUPPORT       0
     #define SCHEDULER_SUPPORT       0
     #define SENSOR_SUPPORT          0
     #define THINGSPEAK_SUPPORT      0
@@ -179,6 +180,13 @@
     // Info
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_TARPUNA_SHIELD"
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define DHT_SUPPORT         1
+    #define DHT_PIN             12
 
 // -----------------------------------------------------------------------------
 // ESPurna
@@ -4010,6 +4018,31 @@
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3711185
     #define HLW8012_INTERRUPT_ON        FALLING
+
+
+// -----------------------------------------------------------------------------
+// MUVIT_IO_MIOBULB001
+// -----------------------------------------------------------------------------
+
+#elif defined(MUVIT_IO_MIOBULB001)
+
+    // Info
+    #define MANUFACTURER        "MUVIT_IO"
+    #define DEVICE              "MIOBULB001"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 
 // -----------------------------------------------------------------------------

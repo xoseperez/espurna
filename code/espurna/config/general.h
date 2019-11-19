@@ -299,16 +299,16 @@
 #define HEARTBEAT_REPORT_INTERVAL   0
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_RANGE
-#define HEARTBEAT_REPORT_RANGE      1
-#else
-#define HEARTBEAT_REPORT_RANGE      0
+#ifndef HEARTBEAT_REPORT_RANGE
+#define HEARTBEAT_REPORT_RANGE         THERMOSTAT_SUPPORT
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_REMOTE_TEMP
-#define HEARTBEAT_REPORT_REMOTE_TEMP 1
-#else
-#define HEARTBEAT_REPORT_REMOTE_TEMP 0
+#ifndef HEARTBEAT_REPORT_REMOTE_TEMP
+#define HEARTBEAT_REPORT_REMOTE_TEMP   THERMOSTAT_SUPPORT
+#endif
+
+#ifndef HEARTBEAT_REPORT_BSSID
+#define HEARTBEAT_REPORT_BSSID       0
 #endif
 
 //------------------------------------------------------------------------------
@@ -674,6 +674,10 @@
 #define API_ENABLED                 0           // Do not enable API by default
 #endif
 
+#ifndef API_KEY
+#define API_KEY                     ""          // Do not enable API by default. WebUI will automatically generate the key
+#endif
+
 #ifndef API_RESTFUL
 #define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
                                                 // Setting this to 0 will allow using GET to change relays, for instance
@@ -790,10 +794,6 @@
 #define OTA_CLIENT                  OTA_CLIENT_ASYNCTCP     // Terminal / MQTT OTA support
                                                             // OTA_CLIENT_ASYNCTCP   (ESPAsyncTCP library)
                                                             // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
-#endif
-
-#ifndef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE    1   // Use old HTTPUpdate API by default
 #endif
 
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
@@ -1051,9 +1051,11 @@
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
 #define MQTT_TOPIC_SSID             "ssid"
+#define MQTT_TOPIC_BSSID            "bssid"
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"
+#define MQTT_TOPIC_TIMESTAMP        "timestamp"
 #define MQTT_TOPIC_FREEHEAP         "freeheap"
 #define MQTT_TOPIC_VCC              "vcc"
 #ifndef MQTT_TOPIC_STATUS
@@ -1130,6 +1132,10 @@
 
 #ifndef BROKER_SUPPORT
 #define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
+#endif
+
+#ifndef BROKER_REAL_TIME
+#define BROKER_REAL_TIME        1           // Report real time data
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1388,11 +1394,31 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
+#define SCHEDULER_SUPPORT           1               // Enable scheduler (2.45Kb)
 #endif
 
 #ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10              // Max schedules alowed
+#endif
+
+#ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
+#define SCHEDULER_RESTORE_LAST_SCHEDULE      0      // Restore the last schedule state on the device boot
+#endif
+
+#ifndef SCHEDULER_WEEKDAYS
+#define SCHEDULER_WEEKDAYS          "1,2,3,4,5,6,7" // (Default - Run the schedules every day)
+#endif
+
+// -----------------------------------------------------------------------------
+// RPN RULES
+// -----------------------------------------------------------------------------
+
+#ifndef RPN_RULES_SUPPORT
+#define RPN_RULES_SUPPORT           0               // Enable RPN Rules (8.6Kb)
+#endif
+
+#ifndef RPN_DELAY
+#define RPN_DELAY                   100             // Execute rules after 100ms without messages
 #endif
 
 // -----------------------------------------------------------------------------

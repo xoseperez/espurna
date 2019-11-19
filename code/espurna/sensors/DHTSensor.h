@@ -20,6 +20,8 @@
 #define DHT_CHIP_DHT21              21
 #define DHT_CHIP_AM2301             21
 
+#define DHT_DUMMY_VALUE             -255
+
 class DHTSensor : public BaseSensor {
 
     public:
@@ -75,6 +77,9 @@ class DHTSensor : public BaseSensor {
             }
             _previous = _gpio;
 
+            // Set now to fail the check in _read at least once
+            _last_ok = millis();
+
             _count = 2;
             _ready = true;
 
@@ -126,7 +131,11 @@ class DHTSensor : public BaseSensor {
         void _read() {
 
             if ((_last_ok > 0) && (millis() - _last_ok < DHT_MIN_INTERVAL)) {
-                _error = SENSOR_ERROR_OK;
+                if ((_temperature == DHT_DUMMY_VALUE) && (_humidity == DHT_DUMMY_VALUE)) {
+                    _error = SENSOR_ERROR_WARM_UP;
+                } else {
+                    _error = SENSOR_ERROR_OK;
+                }
                 return;
             }
 
@@ -137,19 +146,20 @@ class DHTSensor : public BaseSensor {
             unsigned char byteInx = 0;
             unsigned char bitInx = 7;
 
+            pinMode(_gpio, OUTPUT);
+
         	// Send start signal to DHT sensor
         	if (++_errors > DHT_MAX_ERRORS) {
                 _errors = 0;
                 digitalWrite(_gpio, HIGH);
                 nice_delay(250);
             }
-            pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
             if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
                 nice_delay(20);
             } else {
-                delayMicroseconds(500);
+                delayMicroseconds(1100);
             }
             digitalWrite(_gpio, HIGH);
             delayMicroseconds(40);
@@ -245,8 +255,8 @@ class DHTSensor : public BaseSensor {
         unsigned long _last_ok = 0;
         unsigned char _errors = 0;
 
-        double _temperature = 0;
-        double _humidity = 0;
+        double _temperature = DHT_DUMMY_VALUE;
+        double _humidity = DHT_DUMMY_VALUE;
 
 };
 

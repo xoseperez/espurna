@@ -74,6 +74,9 @@ void setup() {
         debugSetup();
     #endif
 
+    // Init GPIO functions
+    gpioSetup();
+
     // Init RTCMEM
     rtcmemSetup();
 
@@ -215,6 +218,9 @@ void setup() {
     #endif
     #if SCHEDULER_SUPPORT
         schSetup();
+    #endif
+    #if RPN_RULES_SUPPORT
+        rpnSetup();
     #endif
     #if UART_MQTT_SUPPORT
         uartmqttSetup();

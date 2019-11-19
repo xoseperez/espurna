@@ -43,6 +43,11 @@
 #define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
 #endif
 
+#if RPN_RULES_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
+#endif
+
 #if INFLUXDB_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If InfluxDB enabled enable BROKER
@@ -67,7 +72,7 @@
 #endif
 #endif
 
-#if THINKSPEAK_SUPPORT
+#if THINGSPEAK_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
@@ -75,11 +80,6 @@
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
-#endif
-
-#if (SECURE_CLIENT == SECURE_CLIENT_BEARSSL)
-#undef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE 0   // Use new HTTPUpdate API with BearSSL
 #endif
 
 #if LWIP_VERSION_MAJOR != 1

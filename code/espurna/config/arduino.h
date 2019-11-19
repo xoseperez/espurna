@@ -105,6 +105,7 @@
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUS002S
+//#define MUVIT_IO_MIOBULB001
 //#define NEO_COOLCAM_NAS_WR01W
 //#define NEXETE_A19
 //#define NODEMCU_BASIC
@@ -171,6 +172,7 @@
 //#define NTP_SUPPORT            0
 //#define RF_SUPPORT             1
 //#define RFM69_SUPPORT          1
+//#define RPN_RULES_SUPPORT      0
 //#define SCHEDULER_SUPPORT      0
 //#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
@@ -217,6 +219,7 @@
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1
+//#define T6613_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
 //#define VEML6075_SUPPORT       1
