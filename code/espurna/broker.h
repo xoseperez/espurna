@@ -49,7 +49,7 @@ TBrokerCallbacks<TArgs...> TBroker<type, TArgs...>::callbacks;
 // --- Some known types. Bind them here to avoid .ino screwing with order ---
 
 using StatusBroker = TBroker<TBrokerType::STATUS, const String&, unsigned char, unsigned int>;
-using SensorBroker = TBroker<TBrokerType::STATUS, const String&, unsigned char, double, const char*>;
+using SensorBroker = TBroker<TBrokerType::SENSOR, const String&, unsigned char, double, const char*>;
 using TimeBroker = TBroker<TBrokerType::DATETIME, const String&, time_t, const String&>;
 using ConfigBroker = TBroker<TBrokerType::CONFIG, const String&, const String&>;
 
