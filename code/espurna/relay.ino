@@ -1334,7 +1334,7 @@ void relaySetupDummy(unsigned char size) {
     });
 
     #if BROKER_SUPPORT
-        ConfigBroker::Publish("relayDummy", _relays.size());
+        ConfigBroker::Publish("relayDummy", String(int(size)));
     #endif
 
 }

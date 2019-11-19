@@ -10,6 +10,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "ESPAsyncTCP.h"
 
+#include "broker.h"
 #include "libs/SyncClientWrap.h"
 
 bool _idb_enabled = false;
@@ -43,14 +44,15 @@ void _idbConfigure() {
 }
 
 #if BROKER_SUPPORT
-void _idbBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
-    
-    // Only process status & senssor messages
-    if ((BROKER_MSG_TYPE_STATUS == type) || (BROKER_MSG_TYPE_SENSOR == type)) {
-        idbSend(topic, id, (char *) payload);
-    }
 
+void _idbBrokerCallback(const String& topic, unsigned char id, double, const char* value) {
+    idbSend(topic.c_str(), id, value);
 }
+
+void _idbBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
+    _idbBrokerCallback(topic, id, 0, String(int(value)).c_str());
+}
+
 #endif // BROKER_SUPPORT
 
 // -----------------------------------------------------------------------------
@@ -128,7 +130,8 @@ void idbSetup() {
     #endif
 
     #if BROKER_SUPPORT
-        brokerRegister(_idbBrokerCallback);
+        StatusBroker::Register(_idbBrokerCallback);
+        SensorBroker::Register(_idbBrokerCallback);
     #endif
 
     // Main callbacks
