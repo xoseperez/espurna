@@ -30,11 +30,9 @@ using TBrokerCallbacks = std::vector<TBrokerCallback<TArgs...>>;
 
 template <TBrokerType type, typename... TArgs>
 struct TBroker {
-    using callback_t = TBrokerCallback<TArgs...>;
-    using callbacks_t = TBrokerCallbacks<TArgs...>;
+    static TBrokerCallbacks<TArgs...> callbacks;
 
-    static callbacks_t callbacks;
-    static void Register(callback_t callback) {
+    static void Register(TBrokerCallback<TArgs...> callback) {
         callbacks.push_back(callback);
     }
     static void Publish(TArgs... args) {
