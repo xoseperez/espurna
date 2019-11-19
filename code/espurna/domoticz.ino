@@ -175,12 +175,11 @@ void _domoticzConfigCallback(const String& key, const String& value) {
 
 void _domoticzBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
 
-    if (!topic.equals(MQTT_TOPIC_CHANNEL)
-        && !topic.equals(MQTT_TOPIC_RELAY)) {
+    // Only process status messages for switches
+    if (!topic.equals(MQTT_TOPIC_RELAY)) {
         return;
     }
 
-    // Only process status and configuration messages
     if (_domoticzStatus(id) == value) return;
     _dcz_relay_state[id] = value;
     domoticzSendRelay(id, value);

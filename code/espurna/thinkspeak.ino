@@ -47,9 +47,8 @@ bool _tspk_connected = false;
 #if BROKER_SUPPORT
 void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
 
-    // Only process status messages for switches and channels
-    if (!topic.equals(MQTT_TOPIC_CHANNEL)
-        && !topic.equals(MQTT_TOPIC_RELAY)) {
+    // Only process status messages for switches
+    if (!topic.equals(MQTT_TOPIC_RELAY)) {
         return;
     }
 
