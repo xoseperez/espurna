@@ -12,6 +12,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if LED_SUPPORT
 
+#include "broker.h"
+
 typedef struct {
     unsigned char pin;
     bool reverse;
@@ -94,12 +96,10 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 #endif
 
 #if BROKER_SUPPORT
-void _ledBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+void _ledBrokerCallback(const String& topic, unsigned char, unsigned int) {
 
-    // Only process status messages
-    if (BROKER_MSG_TYPE_STATUS != type) return;
-    
-    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+    // Only process status messages for switches
+    if (topic.equals(MQTT_TOPIC_RELAY)) {
         ledUpdate(true);
     }
 
@@ -212,7 +212,7 @@ void ledSetup() {
     #endif
 
     #if BROKER_SUPPORT
-        brokerRegister(_ledBrokerCallback);
+        StatusBroker::Register(_ledBrokerCallback);
     #endif
 
 

@@ -12,6 +12,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <functional>
 
+#include "broker.h"
+#include "tuya.h"
+
 typedef struct {
 
     // Configuration variables
@@ -43,6 +46,8 @@ typedef struct {
 } relay_t;
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
+Ticker _relaySaveTicker;
+uint8_t _relayDummy = DUMMY_RELAY_COUNT;
 
 unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
@@ -100,7 +105,7 @@ RelayStatus _relayStatusTyped(unsigned char id) {
 
 void _relayLockAll() {
     for (auto& relay : _relays) {
-        relay.lock = relay.target_status;
+        relay.lock = relay.target_status ? RELAY_LOCK_ON : RELAY_LOCK_OFF;
     }
     _relay_sync_locked = true;
 }
@@ -216,7 +221,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // Real relays
-        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+        uint8_t physical = _relays.size() - _relayDummy;
 
         // Support for a mixed of dummy and real relays
         // Reference: https://github.com/xoseperez/espurna/issues/1305
@@ -228,10 +233,10 @@ void _relayProviderStatus(unsigned char id, bool status) {
             // assume the first one controls all the channels and
             // the rest one channel each.
             // Otherwise every dummy relay controls all channels.
-            if (DUMMY_RELAY_COUNT == lightChannels()) {
+            if (_relayDummy == lightChannels()) {
                 lightState(id-physical, status);
                 lightState(true);
-            } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+            } else if (_relayDummy == (lightChannels() + 1u)) {
                 if (id == physical) {
                     lightState(status);
                 } else {
@@ -308,7 +313,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            StatusBroker::Publish(MQTT_TOPIC_RELAY, id, target);
         #endif
 
         // Send MQTT
@@ -574,7 +579,7 @@ void relaySave(bool eeprom) {
     // Persist only to rtcmem, unless requested to save to the eeprom
     _relayMaskRtcmem(mask_value);
 
-    // The 'eeprom' flag controls wether we are commiting this change or not.
+    // The 'eeprom' flag controls whether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
     // save involves a relay whose boot mode is independent from current mode,
     // thus storing the last relay value is not absolutely necessary.
@@ -732,6 +737,10 @@ void _relayBoot() {
 
     _relayRecursive = false;
 
+    #if TUYA_SUPPORT
+        tuyaSyncSwitchStatus();
+    #endif
+
 }
 
 constexpr const unsigned long _relayDelayOn(unsigned char index) {
@@ -823,11 +832,11 @@ String _relayFriendlyName(unsigned char i) {
 
     if (GPIO_NONE == _relays[i].pin) {
         #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-            uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+            uint8_t physical = _relays.size() - _relayDummy;
             if (i >= physical) {
-                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                if (_relayDummy == lightChannels()) {
                     res = String("CH") + String(i-physical);
-                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                } else if (_relayDummy == (lightChannels() + 1u)) {
                     if (physical == i) {
                         res = String("Light");
                     } else {
@@ -1233,6 +1242,15 @@ void relaySetupMQTT() {
 
 #endif
 
+void _relaySetupProvider() {
+    // TODO: implement something like `RelayProvider tuya_provider({.setup_cb = ..., .send_cb = ...})`?
+    //       note of the function call order! relay code is initialized before tuya's, and the easiest
+    //       way to accomplish that is to use ctor as a way to "register" callbacks even before setup() is called
+    #if TUYA_SUPPORT
+        tuyaSetupSwitch();
+    #endif
+}
+
 //------------------------------------------------------------------------------
 // Settings
 //------------------------------------------------------------------------------
@@ -1307,6 +1325,29 @@ void _relayLoop() {
     #endif
 }
 
+// Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
+// No delay_on or off for these devices to easily allow having more than
+// 8 channels. This behaviour will be recovered with v2.
+void relaySetupDummy(unsigned char size, bool reconfigure) {
+
+    size = constrain(size, 0, RELAY_SAVE_MASK_MAX);
+    if (size == _relays.size()) return;
+    _relayDummy = size;
+
+    _relays.assign(size, {
+        GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE
+    });
+
+    if (reconfigure) {
+        _relayConfigure();
+    }
+
+    #if BROKER_SUPPORT
+        ConfigBroker::Publish("relayDummy", String(int(size)));
+    #endif
+
+}
+
 void relaySetup() {
 
     // Ad-hoc relays
@@ -1335,13 +1376,9 @@ void relaySetup() {
         _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN });
     #endif
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
-    // No delay_on or off for these devices to easily allow having more than
-    // 8 channels. This behaviour will be recovered with v2.
-    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) { GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE });
-    }
+    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt());
 
+    _relaySetupProvider();
     _relayBackwards();
     _relayConfigure();
     _relayBoot();

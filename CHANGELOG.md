@@ -85,6 +85,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Restore last schedule after reboot ([#1948](https://github.com/xoseperez/espurna/issues/1948), thanks to **[@foxman69](https://github.com/foxman69)**)
 - Add `relayDelayOnN`, `relayDelayOffN`, `relayFloodTime`, `relayFloodCount` as runtime settings ([#1594](https://github.com/xoseperez/espurna/issues/1594), [#1962](https://github.com/xoseperez/espurna/pull/1962))
 - Add experimental `relayDelayInterlock` to add a pause after turning relay off in SYNC\_ONE or SYNC\_NONE\_OR\_ONE modes ([#1510](https://github.com/xoseperez/espurna/issues/1510), [#1962](https://github.com/xoseperez/espurna/pull/1962))
+- Add experimental `TUYA_SUPPORT` and `LIGHT_PROVIDER_TUYA` ([#1729](https://github.com/xoseperez/espurna/issues/1729), [#1997](https://github.com/xoseperez/espurna/issues/1997))
 #### MQTT
 - Add option to disable relay reporting ([#1645](https://github.com/xoseperez/espurna/issues/1645), thanks to **[@Niek](https://github.com/Niek)**)
 - Safer settings reload and change detection ([#1701](https://github.com/xoseperez/espurna/issues/1701))
@@ -118,6 +119,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - ESP8266 FS-UAP1 Control board ([#1925](https://github.com/xoseperez/espurna/issues/1925), thanks to **[@NemoN](https://github.com/NemoN)**)
 - Support for Teckin SP21 (Thanks to **[@xoseperez](https://github.com/xoseperez)**)
 - Support for TFlag NX-SM100 and NX-SM200 power monitoring switches (Thanks to **[@xoseperez](https://github.com/xoseperez)**)
+- Add tuya-generic-dimmer ([#1729](https://github.com/xoseperez/espurna/issues/1729), [#1997](https://github.com/xoseperez/espurna/issues/1997))
 #### WebUI
 - Configure WEB_REMOTE_DOMAIN at runtime ([#1789](https://github.com/xoseperez/espurna/issues/1789))
 #### Modules
