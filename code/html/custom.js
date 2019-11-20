@@ -13,6 +13,7 @@ var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
 var conf_saved = false;
+var relays_initialized = false;
 
 var useWhite = false;
 var useCCT = false;
@@ -1003,6 +1004,25 @@ function addSchedule(event) {
 
 }
 
+function initSchedules(key, value) {
+
+	while (relays_initialized == false) {
+		setTimeout(function() {initSchedules(key, value);}, 100);
+		return;
+	}
+	for (var i=0; i<value.size; ++i) {
+		var sch_line = addSchedule({ data: {schType: value.schType[i] }});
+
+		Object.keys(value).forEach(function(key) {
+			if ("size" == key) return;
+			var sch_value = value[key][i];
+			$("input[name='" + key + "']", sch_line).val(sch_value);
+			$("select[name='" + key + "']", sch_line).prop("value", sch_value);
+			$("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
+		});
+	}
+}
+
 // -----------------------------------------------------------------------------
 // Relays
 // -----------------------------------------------------------------------------
@@ -1686,17 +1706,7 @@ function processData(data) {
         }
 
         if ("schedules" === key) {
-            for (var i=0; i<value.size; ++i) {
-                var sch_line = addSchedule({ data: {schType: value.schType[i] }});
-
-                Object.keys(value).forEach(function(key) {
-                    if ("size" == key) return;
-                    var sch_value = value[key][i];
-                    $("input[name='" + key + "']", sch_line).val(sch_value);
-                    $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
-                });
-            }
+            initSchedules(key, value);
             return;
         }
 
@@ -1707,6 +1717,7 @@ function processData(data) {
         if ("relayState" === key) {
             initRelays(value.status);
             updateRelays(value);
+            relays_initialized = true;
             return;
         }
 
