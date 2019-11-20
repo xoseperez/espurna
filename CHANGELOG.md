@@ -54,7 +54,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix stored energy values when using kWh ([#1334](https://github.com/xoseperez/espurna/issues/1334)
 - Remove pinMode(0, ...) from AnalogSensor ([#1777](https://github.com/xoseperez/espurna/issues/1777), [#1827](https://github.com/xoseperez/espurna/issues/1827))
 - Check value range for PMSX005 and SenseAir CO2 sensor ([#1865](https://github.com/xoseperez/espurna/issues/1865), thanks to **[@Yonsm](https://github.com/Yonsm)**)
-- DHT: Increase read delay per datasheet value ([#1918](https://github.com/xoseperez/espurna/issues/1918), [#1979](https://github.com/xoseperez/espurna/issues/1979), thanks to **[@JavierAder](https://github.com/JavierAder)** and **[@structuralB](https://github.com/structuralB)**)
+- DHT: Increase read delay to 1100 usec per datasheet value for `DHT_CHIP_DHT22` ([#1918](https://github.com/xoseperez/espurna/issues/1918), [#1979](https://github.com/xoseperez/espurna/issues/1979), thanks to **[@JavierAder](https://github.com/JavierAder)** and **[@structuralB](https://github.com/structuralB)**)
+- DHT: Add `DHT_CHIP_SI7021` for `ITEAD_SONOFF_TH`, use 500 usec read delay ([#1918](https://github.com/xoseperez/espurna/issues/1918#issuecomment-555672628), thanks to **[@icevoodoo](https://github.com/icevoodoo)**)
 - DHT: Set pin mode before digitalWrite ([#1979](https://github.com/xoseperez/espurna/issues/1979))
 - DHT: Wait DHT_MIN_INTERVAL after initialization ([#1979](https://github.com/xoseperez/espurna/issues/1979))
 #### Build
