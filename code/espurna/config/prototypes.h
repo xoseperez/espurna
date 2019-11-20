@@ -440,26 +440,6 @@ using thermostat_callback_f = std::function<void(bool)>;
 #include "rtcmem.h"
 
 // -----------------------------------------------------------------------------
-// TUYA
-// -----------------------------------------------------------------------------
-namespace Tuya {
-    void tuyaSendChannel(unsigned char, unsigned int);
-    void tuyaSendSwitch(unsigned char, bool);
-    void tuyaSetup();
-    void tuyaSetupLight();
-    void tuyaSetupSwitch();
-}
-
-using Tuya::tuyaSetup;
-using Tuya::tuyaSetupSwitch;
-using Tuya::tuyaSendSwitch;
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-    using Tuya::tuyaSetupLight;
-    using Tuya::tuyaSendChannel;
-#endif
-
-// -----------------------------------------------------------------------------
 // Warn about broken Arduino functions
 // -----------------------------------------------------------------------------
 

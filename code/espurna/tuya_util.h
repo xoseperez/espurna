@@ -86,10 +86,10 @@ namespace Tuya {
             const_iterator begin() const {
                 return _states.begin();
             }
+
             const_iterator end() const {
                 return _states.end();
             }
-
 
         private:
             bool _changed = false;

@@ -112,6 +112,10 @@ namespace Tuya {
 
     String product;
 
+    void showProduct() {
+        if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
+    }
+
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
         if (!transportDebug) return;
         StreamString out;
@@ -218,7 +222,14 @@ namespace Tuya {
         }
 
         if (frame.commandEquals(Command::QueryProduct) && frame.length) {
-            dataframeDebugSend("Product", frame);
+            if (product.length()) {
+                product = "";
+            }
+            product.reserve(frame.length);
+            for (unsigned int n = 0; n < frame.length; ++n) {
+                product += static_cast<char>(frame[n]);
+            }
+            showProduct();
             state = State::QUERY_MODE;
             return;
         }
@@ -438,7 +449,19 @@ namespace Tuya {
     // Respective provider setup should be called before state restore,
     // so we can use dummy values
 
+    void initBrokerCallback() {
+        static bool done = false;
+        if (done) {
+            return;
+        }
+
+        ::StatusBroker::Register(brokerCallback);
+        done = true;
+    }
+
     void tuyaSetupSwitch() {
+
+        initBrokerCallback();
 
         for (unsigned char n = 0; n < switchStates.capacity(); ++n) {
             if (!hasSetting("tuyaSwitch", n)) break;
@@ -451,8 +474,16 @@ namespace Tuya {
 
     }
 
+    void tuyaSyncSwitchStatus() {
+        for (unsigned char n = 0; n < switchStates.size(); ++n) {
+            switchStates[n].value = relayStatus(n);
+        }
+    }
+
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
         void tuyaSetupLight() {
+
+            initBrokerCallback();
 
             for (unsigned char n = 0; n < channelStates.capacity(); ++n) {
                 if (!hasSetting("tuyaChannel", n)) break;
@@ -473,21 +504,16 @@ namespace Tuya {
         #if TERMINAL_SUPPORT
 
             terminalRegisterCommand(F("TUYA.SHOW"), [](Embedis* e) {
-                if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
-                if (switchStates.size()) {
-                    for (unsigned char id=0; id < switchStates.size(); ++id) {
-                        DEBUG_MSG_P(PSTR("tuyaSwitch%u => dp=%u value=%s\n"),
-                            id, switchStates[id].dp, switchStates[id].value ? "ON" : "OFF");
+                static const char fmt[] PROGMEM = "%12s%u => dp=%u value=%u\n";
+                showProduct();
 
-                    }
+                for (unsigned char id=0; id < switchStates.size(); ++id) {
+                    DEBUG_MSG_P(fmt, "tuyaSwitch", id, switchStates[id].dp, switchStates[id].value);
                 }
-                #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-                    if (channelStates.size()) {
-                        for (unsigned char id=0; id < channelStates.size(); ++id) {
-                            DEBUG_MSG_P(PSTR("tuyaChannel%u => dp=%u value=%u\n"),
-                                id, channelStates[id].dp, channelStates[id].value);
 
-                        }
+                #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                    for (unsigned char id=0; id < channelStates.size(); ++id) {
+                        DEBUG_MSG_P(fmt, "tuyaChannel", id, channelStates[id].dp, channelStates[id].value);
                     }
                 #endif
             });
@@ -518,7 +544,6 @@ namespace Tuya {
 
         TUYA_SERIAL.begin(SERIAL_SPEED);
 
-        ::StatusBroker::Register(brokerCallback);
         ::espurnaRegisterLoop(tuyaLoop);
         ::wifiRegister([](justwifi_messages_t code, char * parameter) {
             if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {

@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 
 #include "broker.h"
+#include "tuya.h"
 #include "libs/HeapStats.h"
 
 std::vector<void (*)()> _loop_callbacks;

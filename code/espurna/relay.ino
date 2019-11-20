@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 
 #include "broker.h"
+#include "tuya.h"
 
 typedef struct {
 
@@ -736,6 +737,10 @@ void _relayBoot() {
 
     _relayRecursive = false;
 
+    #if TUYA_SUPPORT
+        tuyaSyncSwitchStatus();
+    #endif
+
 }
 
 constexpr const unsigned long _relayDelayOn(unsigned char index) {
@@ -1371,10 +1376,7 @@ void relaySetup() {
         _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN });
     #endif
 
-    {
-        const auto relays = getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt();
-        relaySetupDummy(constrain(relays, 0, RELAY_SAVE_MASK_MAX));
-    }
+    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt());
 
     _relaySetupProvider();
     _relayBackwards();
