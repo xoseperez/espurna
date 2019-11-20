@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if ALEXA_SUPPORT
 
+#include "broker.h"
+
 #include <fauxmoESP.h>
 fauxmoESP alexa;
 
@@ -48,18 +50,19 @@ void _alexaConfigure() {
 #endif
 
 #if BROKER_SUPPORT
-void _alexaBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
     
-    // Only process status messages
-    if (BROKER_MSG_TYPE_STATUS != type) return;
-
-    unsigned char value = atoi(payload);
-
-    if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
-        alexa.setState(id+1, value > 0, value);
+    // Only process status messages for switches and channels
+    if (!topic.equals(MQTT_TOPIC_CHANNEL)
+        && !topic.equals(MQTT_TOPIC_RELAY)) {
+        return;
     }
 
-    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+    if (topic.equals(MQTT_TOPIC_CHANNEL)) {
+        alexa.setState(id + 1, value > 0, value);
+    }
+
+    if (topic.equals(MQTT_TOPIC_RELAY)) {
         #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
             if (id > 0) return;
         #endif
@@ -146,7 +149,7 @@ void alexaSetup() {
 
     // Register main callbacks
     #if BROKER_SUPPORT
-        brokerRegister(_alexaBrokerCallback);
+        StatusBroker::Register(_alexaBrokerCallback);
     #endif
     espurnaRegisterReload(_alexaConfigure);
     espurnaRegisterLoop(alexaLoop);

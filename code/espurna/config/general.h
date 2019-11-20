@@ -1808,3 +1808,14 @@
 #ifndef RFM69_IS_RFM69HW
 #define RFM69_IS_RFM69HW            0
 #endif
+
+//--------------------------------------------------------------------------------
+// TUYA switch & dimmer support
+//--------------------------------------------------------------------------------
+#ifndef TUYA_SUPPORT
+#define TUYA_SUPPORT                0
+#endif
+
+#ifndef TUYA_SERIAL
+#define TUYA_SERIAL                 Serial
+#endif

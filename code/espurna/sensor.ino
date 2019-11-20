@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SENSOR_SUPPORT
 
+#include "broker.h"
+
 #include <vector>
 #include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
@@ -1542,7 +1544,7 @@ void _sensorReport(unsigned char index, double value) {
 
     #if BROKER_SUPPORT
     #if not BROKER_REAL_TIME
-        brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+        SensorBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
     #endif
     #endif
 
@@ -1804,7 +1806,8 @@ void sensorLoop() {
                 {
                     char buffer[64];
                     dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
-                    brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+            
+                    SensorBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value_show, buffer);
                 }
                 #endif
 

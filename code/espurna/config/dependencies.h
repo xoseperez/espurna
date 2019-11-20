@@ -106,3 +106,16 @@
 #undef SSDP_SUPPORT
 #define SSDP_SUPPORT 0
 #endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+#undef TUYA_SUPPORT
+#define TUYA_SUPPORT                1           // Need base Tuya module for this to work
+#undef LIGHT_USE_TRANSITIONS
+#define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
+#endif
+
+#if TUYA_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
+#endif
+

@@ -26,11 +26,11 @@ bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _rpnWebSocketOnConnected(JsonObject& root) {
-    
+
     root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
     root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY).toInt();
     JsonArray& rules = root.createNestedArray("rpnRules");
-    
+
     unsigned char i = 0;
     String rule = getSetting("rpnRule", i, "");
     while (rule.length()) {
@@ -97,22 +97,20 @@ void _rpnConfigure() {
     _rpn_delay = getSetting("rpnDelay", RPN_DELAY).toInt();
 }
 
-void _rpnBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
-    
+void _rpnBrokerCallback(const String& topic, unsigned char id, double value, const char*) {
+
     char name[32] = {0};
 
-    if (BROKER_MSG_TYPE_STATUS == type || BROKER_MSG_TYPE_SENSOR == type) {
-        snprintf(name, sizeof(name), "%s%d", topic, id);
-        rpn_variable_set(_rpn_ctxt, name, atof(payload));
-    } else if (BROKER_MSG_TYPE_DATETIME == type) {
-        // Timestamp is always available via de "now" operator
-    } else {
-        return;
-    }
+    snprintf(name, sizeof(name), "%s%u", topic.c_str(), id);
+    rpn_variable_set(_rpn_ctxt, name, value);
 
     _rpn_last = millis();
     _rpn_run = true;
 
+}
+
+void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value) {
+    _rpnBrokerCallback(topic, id, double(value), nullptr);
 }
 
 void _rpnInit() {
@@ -155,7 +153,7 @@ void _rpnInit() {
     rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) {
         _rpnDump();
         return true;
-    });    
+    });
 
     // Relay operators
     rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
@@ -168,11 +166,11 @@ void _rpnInit() {
             relayStatus(int(b), int(a) == 1);
         }
         return true;
-    });    
+    });
 
     // Channel operators
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
-        
+
         rpn_operator_set(_rpn_ctxt, "update", 0, [](rpn_context & ctxt) {
             lightUpdate(true, true);
             return true;
@@ -189,7 +187,7 @@ void _rpnInit() {
             rpn_stack_pop(ctxt, a); // new value
             lightChannel(int(b), int(a));
             return true;
-        });    
+        });
 
     #endif
 
@@ -272,7 +270,7 @@ void _rpnRun() {
 }
 
 void _rpnLoop() {
-    
+
     if (_rpn_run && (millis() - _rpn_last > _rpn_delay)) {
         _rpnRun();
         _rpn_run = false;
@@ -306,7 +304,9 @@ void rpnSetup() {
         mqttRegister(_rpnMQTTCallback);
     #endif
 
-    brokerRegister(_rpnBrokerCallback);
+    StatusBroker::Register(_rpnBrokerStatus);
+    SensorBroker::Register(_rpnBrokerCallback);
+
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);
 
