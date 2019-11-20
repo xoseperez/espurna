@@ -154,9 +154,9 @@ void test_states() {
     states.update(2, true);
     states.update(2, false);
 
-    TEST_ASSERT_EQUAL_MESSAGE(states.capacity(), 8,
+    TEST_ASSERT_EQUAL_MESSAGE(8, states.capacity(),
             "Capacity has changed");
-    TEST_ASSERT_EQUAL_MESSAGE(states.size(), 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, states.size(),
             "Size should not change when updating non-existant id");
 
     // Push something at specific ID
@@ -166,7 +166,7 @@ void test_states() {
     states.pushOrUpdate(2, false);
     TEST_ASSERT_MESSAGE(states.changed(),
             "Should change after explicit update");
-    TEST_ASSERT_EQUAL_MESSAGE(states.size(), 1,
+    TEST_ASSERT_EQUAL_MESSAGE(1, states.size(),
             "Size should not change when updating existing id");
     states.pushOrUpdate(3, true);
     TEST_ASSERT_MESSAGE(states.changed(),
@@ -181,7 +181,7 @@ void test_states() {
     states.update(4, false);
     TEST_ASSERT_MESSAGE(!states.changed(),
             "Should not change after updating non-existant id");
-    TEST_ASSERT_EQUAL_MESSAGE(states.size(), 2,
+    TEST_ASSERT_EQUAL_MESSAGE(2, states.size(),
             "Size should remain the same after updating non-existant id");
 
 }
@@ -196,7 +196,7 @@ void test_static_dataframe_bool() {
 
     DataFrame frame(Command::SetDP, DataProtocol<bool>(0x02, false).serialize());
 
-    TEST_ASSERT_EQUAL_MESSAGE(frame.version, 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.version,
             "Version should stay 0 unless explicitly set");
     TEST_ASSERT_MESSAGE(frame.commandEquals(Command::SetDP),
             "commandEquals should return true with the same arg as in the constructor");
@@ -208,15 +208,15 @@ void test_static_dataframe_bool() {
 void test_static_dataframe_int() {
 
     DataFrame frame(Command::ReportDP, DataProtocol<uint32_t>(0x03, 255).serialize());
-    TEST_ASSERT_EQUAL_MESSAGE(frame.version, 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.version,
             "Version should stay 0 unless explicitly set");
     TEST_ASSERT_MESSAGE(frame.commandEquals(Command::ReportDP),
             "commandEquals should return true with the same arg as in the constructor");
-    TEST_ASSERT_EQUAL_UINT_MESSAGE(frame.length, std::distance(frame.cbegin(), frame.cend()),
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(std::distance(frame.cbegin(), frame.cend()), frame.length,
             "Data is expected to be stored in a contigious memory and be equal in length to the ::length attribute");
-    TEST_ASSERT_EQUAL_MESSAGE(frame[5], 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame[5],
             "Only last byte should be set");
-    TEST_ASSERT_EQUAL_MESSAGE(frame[7], 255,
+    TEST_ASSERT_EQUAL_MESSAGE(255, frame[7],
             "Only last byte should be set");
 
 }
@@ -224,9 +224,9 @@ void test_static_dataframe_int() {
 void test_dataframe_const() {
 
     const DataFrame frame(Command::SetDP);
-    TEST_ASSERT_EQUAL_MESSAGE(frame.length, 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length,
             "Frame with Command::SetDP should not have any data attached to it");
-    TEST_ASSERT_EQUAL_MESSAGE(std::distance(frame.cbegin(), frame.cend()), 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, std::distance(frame.cbegin(), frame.cend()),
             "Frame with Command::SetDP should not have any data attached to it");
 
 }
@@ -234,9 +234,9 @@ void test_dataframe_const() {
 void test_static_dataframe_heartbeat() {
 
     DataFrame frame(Command::Heartbeat);
-    TEST_ASSERT_EQUAL_MESSAGE(frame.length, 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length,
             "Frame with Command::Heartbeat should not have any data attached to it");
-    TEST_ASSERT_EQUAL_MESSAGE(std::distance(frame.cbegin(), frame.cend()), 0,
+    TEST_ASSERT_EQUAL_MESSAGE(0, std::distance(frame.cbegin(), frame.cend()),
             "Frame with Command::SetDP should not have any data attached to it");
     //test_hexdump("static", static_frame.serialize());
 
@@ -248,7 +248,7 @@ void test_dataframe_copy() {
     frame.version = 0x7f;
 
     DataFrame moved_frame(std::move(frame));
-    TEST_ASSERT_EQUAL_MESSAGE(moved_frame.version, 0x7f,
+    TEST_ASSERT_EQUAL_MESSAGE(0x7f, moved_frame.version,
             "DataFrame should be movable object");
 
     TEST_ASSERT_MESSAGE(!std::is_copy_constructible<DataFrame>::value,
