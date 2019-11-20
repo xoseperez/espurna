@@ -258,8 +258,34 @@ void test_dataframe_copy() {
 
 void test_dataframe_raw_data() {
 
-    const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01, 0x0f};
-    DataFrame frame(0u, static_cast<uint8_t>(Command::ReportDP), 5u, data.begin() + 6, data.begin() + 12);
+    {
+        const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+        DataFrame frame(data.cbegin());
+        TEST_ASSERT_MESSAGE(frame.commandEquals(Command::Heartbeat),
+                "This message should be parsed as heartbeat");
+        TEST_ASSERT_EQUAL_MESSAGE(0, frame.version,
+                "This message should have version == 0");
+        TEST_ASSERT_EQUAL_MESSAGE(1, frame.length,
+                "Heartbeat message contains a single byte");
+        TEST_ASSERT_EQUAL_MESSAGE(1, frame[0],
+                "Heartbeat message contains a single 0x01");
+    }
+
+    {
+        const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01, 0x0f};
+        DataFrame frame(data.cbegin());
+        TEST_ASSERT_MESSAGE(frame.commandEquals(Command::ReportDP),
+                "This message should be parsed as data protocol");
+        TEST_ASSERT_MESSAGE(test_datatype(frame, Type::BOOL),
+                "This message should have boolean datatype attached to it");
+        TEST_ASSERT_EQUAL_MESSAGE(5, frame.length,
+                "Boolean DP contains 5 bytes");
+
+        const DataProtocol<bool> dp(frame);
+        TEST_ASSERT_EQUAL_MESSAGE(1, dp.id(), "This boolean DP id should be 1");
+        TEST_ASSERT_MESSAGE(dp.value(), "This boolean DP value should be true");
+    }
+
     //show_datatype(frame);
     //std::cout << "length=" << frame.length << std::endl;
     //test_hexdump("input", frame.serialize());
