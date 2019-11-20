@@ -94,9 +94,9 @@
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
-#define RELAY_LOCK_OFF               0
-#define RELAY_LOCK_ON                1
-#define RELAY_LOCK_DISABLED          2
+#define RELAY_LOCK_DISABLED          0
+#define RELAY_LOCK_OFF               1
+#define RELAY_LOCK_ON                2
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG

@@ -404,7 +404,7 @@ namespace Tuya {
             {
                 if (discoveryTimeout) {
                     DEBUG_MSG_P(PSTR("[TUYA] Discovery finished\n"));
-                    relaySetupDummy(switchStates.size());
+                    relaySetupDummy(switchStates.size(), true);
                     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                         lightSetupChannels(channelStates.size());
                     #endif
@@ -475,18 +475,16 @@ namespace Tuya {
             terminalRegisterCommand(F("TUYA.SHOW"), [](Embedis* e) {
                 if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
                 if (switchStates.size()) {
-                    DEBUG_MSG_P(PSTR("[TUYA] BOOL\n"));
                     for (unsigned char id=0; id < switchStates.size(); ++id) {
-                        DEBUG_MSG_P(PSTR("tuyaSwitch%u=%u value=%s\n"),
+                        DEBUG_MSG_P(PSTR("tuyaSwitch%u => dp=%u value=%s\n"),
                             id, switchStates[id].dp, switchStates[id].value ? "ON" : "OFF");
 
                     }
                 }
                 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                     if (channelStates.size()) {
-                        DEBUG_MSG_P(PSTR("[TUYA] INT\n"));
                         for (unsigned char id=0; id < channelStates.size(); ++id) {
-                            DEBUG_MSG_P(PSTR("tuyaChannel%u=%u value=%u\n"),
+                            DEBUG_MSG_P(PSTR("tuyaChannel%u => dp=%u value=%u\n"),
                                 id, channelStates[id].dp, channelStates[id].value);
 
                         }

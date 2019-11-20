@@ -278,7 +278,7 @@ const String& relayPayloadOff();
 const String& relayPayloadToggle();
 const char* relayPayload(RelayStatus status);
 
-void relaySetupDummy(unsigned char size);
+void relaySetupDummy(unsigned char size, bool reconfigure = false);
 
 // -----------------------------------------------------------------------------
 // Settings

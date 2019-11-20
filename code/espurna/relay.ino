@@ -104,7 +104,7 @@ RelayStatus _relayStatusTyped(unsigned char id) {
 
 void _relayLockAll() {
     for (auto& relay : _relays) {
-        relay.lock = relay.target_status;
+        relay.lock = relay.target_status ? RELAY_LOCK_ON : RELAY_LOCK_OFF;
     }
     _relay_sync_locked = true;
 }
@@ -1323,7 +1323,7 @@ void _relayLoop() {
 // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
 // No delay_on or off for these devices to easily allow having more than
 // 8 channels. This behaviour will be recovered with v2.
-void relaySetupDummy(unsigned char size) {
+void relaySetupDummy(unsigned char size, bool reconfigure) {
 
     size = constrain(size, 0, RELAY_SAVE_MASK_MAX);
     if (size == _relays.size()) return;
@@ -1332,6 +1332,10 @@ void relaySetupDummy(unsigned char size) {
     _relays.assign(size, {
         GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE
     });
+
+    if (reconfigure) {
+        _relayConfigure();
+    }
 
     #if BROKER_SUPPORT
         ConfigBroker::Publish("relayDummy", String(int(size)));
