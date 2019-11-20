@@ -72,11 +72,11 @@ namespace Tuya {
         {}
 
         DataFrame(const_iterator iter) :
-            version(static_cast<uint8_t>(iter[2])),
-            command(static_cast<uint8_t>(iter[3])),
+            version(iter[2]),
+            command(iter[3]),
             length((iter[4] << 8) + iter[5]),
             _begin(iter + 6),
-            _end(iter + length)
+            _end(iter + 6 + length)
         {}
 
         DataFrame(const Transport& input) :
