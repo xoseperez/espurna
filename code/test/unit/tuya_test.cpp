@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include <StreamString.h>
+#include <Stream.h>
+#include <StreamString.h> // XXX: ldf does not see the header in tuya_transport
 #include <unity.h>
 
 // -----------------------------------------------------------------------------
@@ -7,6 +8,7 @@
 // -----------------------------------------------------------------------------
 
 #include <type_traits>
+#include <queue>
 
 #include "libs/TypeChecks.h"
 #include "tuya_types.h"
@@ -170,6 +172,51 @@ void test_dataframe_raw_data() {
 
 }
 
+class BufferedStream : public Stream {
+    public:
+        // Print interface
+        size_t write(uint8_t c) {
+            _buffer.push((int)c);
+        }
+        size_t write(const unsigned char* data, unsigned long size) {
+            for (size_t n = 0; n < size; ++n) {
+                _buffer.push(data[n]);
+            }
+            return size;
+        }
+        int availableForWrite() { return 1; }
+        void flush() {
+            while (!_buffer.empty()) {
+                _buffer.pop();
+            }
+        }
+        // Stream interface
+        int available() {
+            return _buffer.size();
+        }
+        int read() {
+            if (!_buffer.size()) return -1;
+            int c = _buffer.front();
+            _buffer.pop();
+            return c;
+        }
+        int peek() {
+            if (!_buffer.size()) return -1;
+            return _buffer.front();
+        }
+    private:
+        std::queue<int> _buffer;
+};
+
+void test_transport() {
+    const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+    BufferedStream stream;
+    stream.write(data.data(), data.size());
+
+    Transport transport(stream);
+    TEST_ASSERT_MESSAGE(transport.available(), "Available data");
+}
+
 int main(int argc, char** argv) {
 
     UNITY_BEGIN();
@@ -180,6 +227,7 @@ int main(int argc, char** argv) {
     RUN_TEST(test_dataframe_const);
     RUN_TEST(test_dataframe_copy);
     RUN_TEST(test_dataframe_raw_data);
+    RUN_TEST(test_transport);
     UNITY_END();
 
 }
