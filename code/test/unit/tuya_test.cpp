@@ -1,81 +1,12 @@
+#include <Arduino.h>
+#include <StreamString.h>
 #include <unity.h>
-#include <type_traits>
-
-// -----------------------------------------------------------------------------
-// Various Arduino objects emulated through the host functions
-// -----------------------------------------------------------------------------
-// TODO can we build this using some existing library?
-
-#include <chrono>
-#include <iostream>
-#include <iomanip>
-#include <cstdio>
-#include <cstring>
-#include <vector>
-#include <cstdint>
-#include <cassert>
-
-struct Serial {
-    void println(const char* some) { return; }
-};
-
-Serial Serial1;
-
-uint32_t millis() {
-    auto now = std::chrono::system_clock::now();
-    auto duration = now.time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-}
-
-struct Print {
-    size_t write(uint8_t c) { std::cout << c; return 1; }
-    size_t write(const uint8_t *data, size_t size) { if (!size) return size; for (int n=0; n<size; ++n) { write(data[n]); } return size; }
-    size_t write(const char *data, size_t size=0) { if (!size) size = strlen(data); return write((const uint8_t*)data, size); }
-    void flush() { std::cout << std::endl; }
-};
-
-struct Stream : public Print {
-    bool available() { return true; }
-    int read() { return 1; }
-};
-
-struct StreamString : public Stream {
-    void reserve(size_t size) { (void) size; }
-};
-
-/*
-class PrintRaw {
-    public:
-        static void write(Print& printer, uint8_t data) {
-            printer.write(data);
-        }
-
-        static void write(Print& printer, uint8_t* data, size_t size) {
-            printer.write(data, size);
-        }
-};
-
-class PrintHex {
-    public:
-        static void write(Print& printer, uint8_t data) {
-            char buffer[3] = {0};
-            snprintf(buffer, sizeof(buffer), "%02x", data);
-            printer.write((const uint8_t*)buffer, 2);
-        }
-
-        static void write(Print& printer, uint8_t* data, size_t size) {
-            for (size_t n=0; n<size; ++n) {
-                char buffer[3] = {0};
-                snprintf(buffer, sizeof(buffer), "%02x", data[n]);
-                printer.write((const uint8_t*)buffer, 2);
-            }
-        }
-};
-*/
 
 // -----------------------------------------------------------------------------
 // Tests
 // -----------------------------------------------------------------------------
+
+#include <type_traits>
 
 #include "libs/TypeChecks.h"
 #include "tuya_types.h"
@@ -89,59 +20,6 @@ using namespace Tuya;
 bool test_datatype(const DataFrame& frame, const Type expect_type) {
     const auto type = dataType(frame);
     return expect_type == type;
-}
-
-void show_datatype(const DataFrame& frame) {
-    const auto type = dataType(frame);
-    switch (type) {
-        case Type::INT:
-            std::cout << "INT";
-            break;
-        case Type::BOOL:
-            std::cout << "BOOL";
-            break;
-        case Type::UNKNOWN:
-        default:
-            std::cout << "UNKNOWN";
-            break;
-    }
-    std::cout << std::endl;
-}
-
-void test_dataprotocol(bool value) {
-    auto proto = DataProtocol<bool>(0x02, value);
-    assert(proto.id() == 0x02);
-    assert(proto.value() == value);
-
-    auto data = proto.serialize();
-    std::cout << "+++ DataProtocol bool(" << (value ? "true" : "false") << ")" << std::endl;
-    std::cout << "size=" << int(data.size()) << " values=";
-    for (auto it = data.begin(); it != data.end(); ++it)
-        std::cout << int(*it) << " ";
-    std::cout << std::endl;
-}
-
-void show_dataframe(const char* tag, const DataFrame& frame) {
-    auto data = const_cast<DataFrame&>(frame).serialize();
-    show_datatype(frame);
-    std::cout << " +++" << tag << " length=" << frame.length << " serialized_len=" << int(data.size());
-
-    std::cout << " values=";
-    for (auto it = data.begin(); it != data.end(); ++it)
-        std::cout << int(*it) << " ";
-    std::cout << std::endl;
-}
-
-void test_hexdump(const char* tag, const std::vector<uint8_t>& frame) {
-    std::ios oldState(nullptr);
-    oldState.copyfmt(std::cout);
-
-    std::cout << "+++" << tag << std::endl;
-    for (auto it = frame.cbegin(); it != frame.cend(); ++it)
-        std::cout << std::setfill('0') << std::setw(2) << std::hex << int(*it) << " ";
-    std::cout << std::endl << "---" << tag << std::endl;
-
-    std::cout.copyfmt(oldState);
 }
 
 void test_states() {
@@ -185,12 +63,6 @@ void test_states() {
             "Size should remain the same after updating non-existant id");
 
 }
-
-void test_dataprotocol() {
-    test_dataprotocol(true);
-    test_dataprotocol(false);
-}
-
 
 void test_static_dataframe_bool() {
 
@@ -309,11 +181,5 @@ int main(int argc, char** argv) {
     RUN_TEST(test_dataframe_copy);
     RUN_TEST(test_dataframe_raw_data);
     UNITY_END();
-
-    /*
-    test_states();
-    test_dataprotocol();
-    test_staticdataframe();
-    */
 
 }
