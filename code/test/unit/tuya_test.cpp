@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Stream.h>
-#include <StreamString.h> // XXX: ldf does not see the header in tuya_transport
 #include <unity.h>
 
 // -----------------------------------------------------------------------------
