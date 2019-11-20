@@ -10,17 +10,44 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#define DHT_MAX_DATA                5
-#define DHT_MAX_ERRORS              5
-#define DHT_MIN_INTERVAL            2000
+constexpr const double DHT_DUMMY_VALUE = -255;
+constexpr const size_t DHT_MAX_DATA = 5;
+constexpr const size_t DHT_MAX_ERRORS = 5;
+constexpr const uint32_t DHT_MIN_INTERVAL = 2000;
 
-#define DHT_CHIP_DHT11              11
-#define DHT_CHIP_DHT12              12
-#define DHT_CHIP_DHT22              22
-#define DHT_CHIP_DHT21              21
-#define DHT_CHIP_AM2301             21
+enum class DHTChipType {
+    DHT11,
+    DHT12,
+    DHT21,
+    DHT22,
+    AM2301,
+    SI7021
+};
 
-#define DHT_DUMMY_VALUE             -255
+// Note: backwards compatibility for configuration headers
+#define DHT_CHIP_DHT11              DHTChipType::DHT11
+#define DHT_CHIP_DHT12              DHTChipType::DHT12
+#define DHT_CHIP_DHT22              DHTChipType::DHT22
+#define DHT_CHIP_DHT21              DHTChipType::DHT21
+#define DHT_CHIP_AM2301             DHTChipType::AM2301
+#define DHT_CHIP_SI7021             DHTChipType::SI7021
+
+int dhtchip_to_number(DHTChipType chip) {
+    switch (chip) {
+        case DHTChipType::DHT11:
+            return 11;
+        case DHTChipType::DHT12:
+            return 12;
+        case DHTChipType::DHT21:
+        case DHTChipType::AM2301:
+            return 21;
+        case DHTChipType::DHT22:
+        case DHTChipType::SI7021:
+            return 22;
+        default:
+            return -1;
+    }
+}
 
 class DHTSensor : public BaseSensor {
 
@@ -45,7 +72,7 @@ class DHTSensor : public BaseSensor {
             _gpio = gpio;
         }
 
-        void setType(unsigned char type) {
+        void setType(DHTChipType type) {
             _type = type;
         }
 
@@ -55,7 +82,11 @@ class DHTSensor : public BaseSensor {
             return _gpio;
         }
 
-        unsigned char getType() {
+        int getType() {
+            return dhtchip_to_number(_type);
+        }
+
+        DHTChipType getChipType() {
             return _type;
         }
 
@@ -94,7 +125,7 @@ class DHTSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", _type, _gpio);
+            snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", dhtchip_to_number(_type), _gpio);
             return String(buffer);
         }
 
@@ -158,6 +189,8 @@ class DHTSensor : public BaseSensor {
         	digitalWrite(_gpio, LOW);
             if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
                 nice_delay(20);
+            } else if (_type == DHT_CHIP_SI7021) {
+                delayMicroseconds(500);
             } else {
                 delayMicroseconds(1100);
             }
@@ -248,9 +281,10 @@ class DHTSensor : public BaseSensor {
         	return uSec;
         }
 
+        DHTChipType _type = DHT_CHIP_DHT22;
+
         unsigned char _gpio = GPIO_NONE;
         unsigned char _previous = GPIO_NONE;
-        unsigned char _type = DHT_CHIP_DHT22;
 
         unsigned long _last_ok = 0;
         unsigned char _errors = 0;
