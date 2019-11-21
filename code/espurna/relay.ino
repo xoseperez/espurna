@@ -44,9 +44,9 @@ typedef struct {
     Ticker pulseTicker;         // Holds the pulse back timer
 
 } relay_t;
+
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
-Ticker _relaySaveTicker;
 uint8_t _relayDummy = DUMMY_RELAY_COUNT;
 
 unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
@@ -248,7 +248,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
             lightUpdate(true, true);
             return;
-        
+
         }
 
     #endif
@@ -1330,11 +1330,11 @@ void _relayLoop() {
 // 8 channels. This behaviour will be recovered with v2.
 void relaySetupDummy(unsigned char size, bool reconfigure) {
 
-    size = constrain(size, 0, RELAY_SAVE_MASK_MAX);
+    size = constrain(size + _relays.size(), _relays.size(), RELAY_SAVE_MASK_MAX);
     if (size == _relays.size()) return;
     _relayDummy = size;
 
-    _relays.assign(size, {
+    _relays.insert(_relays.end(), size, {
         GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE
     });
 
