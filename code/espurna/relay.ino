@@ -11,7 +11,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 #include <functional>
+#include <bitset>
 
+#include "relay.h"
 #include "broker.h"
 #include "tuya.h"
 
@@ -390,6 +392,18 @@ uint32_t _relayMaskRtcmem() {
     return Rtcmem->relay;
 }
 
+void _relayMaskSettings(const String& string) {
+    setSetting("relayBootMask", string);
+}
+
+void _relayMaskSettings(uint32_t mask) {
+    _relayMaskSettings(bitsetToString(mask));
+}
+
+uint32_t _relayMaskSettings() {
+    return bitsetFromString(getSetting("relayBootMask"));
+}
+
 void relayPulse(unsigned char id) {
 
     _relays[id].pulseTicker.detach();
@@ -563,18 +577,16 @@ void relaySync(unsigned char id) {
 
 void relaySave(bool eeprom) {
 
-    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(0);
+    auto mask = std::bitset<RELAYS_MAX>(0);
 
-    unsigned char count = relayCount();
-    if (count > RELAY_SAVE_MASK_MAX) count = RELAY_SAVE_MASK_MAX;
-
-    for (unsigned int i=0; i < count; ++i) {
-        mask.set(i, relayStatus(i));
+    const unsigned char count = constrain(relayCount(), 0, RELAYS_MAX);
+    for (unsigned int id = 0; id < count; ++id) {
+        mask.set(id, relayStatus(id));
     }
 
     const uint32_t mask_value = mask.to_ulong();
-
-    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %u\n"), mask_value);
+    const String mask_string = bitsetToString(mask_value);
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %u\n"), mask_string.c_str());
 
     // Persist only to rtcmem, unless requested to save to the eeprom
     _relayMaskRtcmem(mask_value);
@@ -586,7 +598,7 @@ void relaySave(bool eeprom) {
     // Nevertheless, we store the value in the EEPROM buffer so it will be written
     // on the next commit.
     if (eeprom) {
-        EEPROMr.write(EEPROM_RELAY_STATUS, mask_value);
+        _relayMaskSettings(mask_string);
         // We are actually enqueuing the commit so it will be
         // executed on the main loop, in case this is called from a system context callback
         eepromCommit();
@@ -651,6 +663,17 @@ RelayStatus relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    #if defined(EEPROM_RELAY_STATUS)
+    {
+        uint8_t mask = EEPROMr.read(EEPROM_RELAY_STATUS);
+        if (mask != 0xff) {
+            _relayMaskSettings(static_cast<uint32_t>(mask));
+            EEPROMr.write(EEPROM_RELAY_STATUS, 0xff);
+            eepromCommit();
+        }
+    }
+    #endif
+
     for (unsigned int i=0; i<_relays.size(); i++) {
         if (!hasSetting("mqttGroupInv", i)) continue;
         setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
@@ -668,12 +691,13 @@ void _relayBoot() {
     if (rtcmemStatus()) {
         stored_mask = _relayMaskRtcmem();
     } else {
-        stored_mask = EEPROMr.read(EEPROM_RELAY_STATUS);
+        stored_mask = _relayMaskSettings();
     }
 
-    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %u\n"), stored_mask);
+    const String string_mask(bitsetToString(stored_mask));
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s\n"), string_mask.c_str());
 
-    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(stored_mask);
+    auto mask = std::bitset<RELAYS_MAX>(stored_mask);
 
     // Walk the relays
     unsigned char lock;
@@ -687,16 +711,12 @@ void _relayBoot() {
         lock = RELAY_LOCK_DISABLED;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
-                if (i < 8) {
-                    status = mask.test(i);
-                }
+                status = mask.test(i);
                 break;
             case RELAY_BOOT_TOGGLE:
-                if (i < 8) {
-                    status = !mask[i];
-                    mask.flip(i);
-                    trigger_save = true;
-                }
+                status = !mask[i];
+                mask.flip(i);
+                trigger_save = true;
                 break;
             case RELAY_BOOT_LOCKED_ON:
                 status = true;
@@ -727,12 +747,12 @@ void _relayBoot() {
 
      }
 
+    const auto mask_value = mask.to_ulong();
+    _relayMaskRtcmem(mask_value);
+
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
-        _relayMaskRtcmem(mask.to_ulong());
-
-        EEPROMr.write(EEPROM_RELAY_STATUS, mask.to_ulong());
-        eepromCommit();
+        _relayMaskSettings(mask_value);
     }
 
     _relayRecursive = false;
@@ -1325,12 +1345,10 @@ void _relayLoop() {
     #endif
 }
 
-// Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
-// No delay_on or off for these devices to easily allow having more than
-// 8 channels. This behaviour will be recovered with v2.
+// Dummy relays for virtual light switches, Sonoff Dual, Sonoff RF Bridge and Tuya
 void relaySetupDummy(unsigned char size, bool reconfigure) {
 
-    size = constrain(size + _relays.size(), _relays.size(), RELAY_SAVE_MASK_MAX);
+    size = constrain(size + _relays.size(), _relays.size(), RELAYS_MAX);
     if (size == _relays.size()) return;
     _relayDummy = size;
 

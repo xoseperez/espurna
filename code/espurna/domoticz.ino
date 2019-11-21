@@ -8,7 +8,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DOMOTICZ_SUPPORT
 
+#include "relay.h"
 #include "broker.h"
+
 #include <ArduinoJson.h>
 
 bool _dcz_enabled = false;

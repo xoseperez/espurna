@@ -6,9 +6,11 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "utils.h"
+#include "libs/HeapStats.h"
+
 #include <Ticker.h>
 #include <limits>
-#include "libs/HeapStats.h"
 
 String getIdentifier() {
     char buffer[20];
@@ -64,7 +66,7 @@ const String& getCoreRevision() {
         #ifdef ARDUINO_ESP8266_GIT_VER
             revision = String(ARDUINO_ESP8266_GIT_VER, 16);
         #else
-            revision = "";
+            revision = "(unspecified)";
         #endif
     }
     return revision;
@@ -676,4 +678,41 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
   }
 
   return nullptr;
+}
+
+// Using standard binary literal syntax
+uint32_t bitsetFromString(const String& string) {
+    if (!string.startsWith("0b") || (string.length() < 3)) {
+        return 0;
+    }
+
+    const size_t len = string.length();
+    std::bitset<32> result;
+
+    size_t bit = 0;
+    while (bit < (len - 2)) {
+        const char c = string[bit + 2];
+        if ((c != '0') && (c != '1')) {
+            return 0;
+        }
+        result.set(bit++, bool(c - '0'));
+    }
+
+    return result.to_ulong();
+}
+
+// Note:
+// - bitset::to_string() will return std::string
+// - explicit cast is required to avoid implicit cast to int
+String bitsetToString(uint32_t bitset) {
+    String result;
+    result.reserve(34);
+    result += "0b";
+
+    do {
+        result += static_cast<uint8_t>('0' + bitset & 0x1);
+        bitset >>= 1;
+    } while (bitset);
+
+    return result;
 }
