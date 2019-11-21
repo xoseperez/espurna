@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 #include <vector>
 
+#include "utils.h"
+#include "relay.h"
 #include "broker.h"
 #include "tuya.h"
 #include "libs/HeapStats.h"
