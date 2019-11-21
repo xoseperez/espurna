@@ -194,12 +194,7 @@ namespace Heartbeat {
             return defaultValue();
         }
 
-        // invalidate the whole string when invalid chars are detected
-        char *value_endptr = nullptr;
-        const auto value = strtoul(cfg.c_str(), &value_endptr, 10);
-        if (value_endptr == cfg.c_str() || value_endptr[0] != '\0') {
-            return defaultValue();
-        }
+        const auto value = bitsetFromString(cfg);
 
         // because we start shifting from 1, we could use the
         // first bit as a flag to enable all of the messages

@@ -249,7 +249,23 @@ void _systemSetupSpecificHardware() {
 
 }
 
+// BACKWARDS COMPATIBILITY
+void _systemBackwards() {
+    if (hasSetting("hbReport")) {
+        const String hb_report = getSetting("hbReport");
+        if (!hb_report.startsWith("0b")) {
+            char *value_endptr = nullptr;
+            auto value = strtoul(hb_report.c_str(), &value_endptr, 10);
+            if (value_endptr != hb_report.c_str() && value_endptr[0] == '\0') {
+                setSetting("hbReport", bitsetToString(value));
+            }
+        }
+    }
+}
+
 void systemSetup() {
+
+    _systemBackwards();
 
     #if SPIFFS_SUPPORT
         SPIFFS.begin();
