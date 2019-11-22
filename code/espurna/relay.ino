@@ -23,45 +23,60 @@ struct relay_t {
 
     // Default to dummy (virtual) relay configuration
 
+    relay_t(unsigned char pin, unsigned char type, unsigned char reset_pin) :
+        pin(pin),
+        type(type),
+        reset_pin(reset_pin),
+        delay_on(0),
+        delay_off(0),
+        pulse(RELAY_PULSE_NONE),
+        pulse_ms(0),
+        current_status(false),
+        target_status(false),
+        lock(RELAY_LOCK_DISABLED),
+        fw_start(0),
+        fw_count(0),
+        change_start(0),
+        change_delay(0),
+        report(false),
+        group_report(false)
+    {}
+
     relay_t() :
-        pin(GPIO_NONE),
-        type(GPIO_NONE),
-        reset_pin(GPIO_NONE)
+        relay_t(GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE)
     {}
 
     // ... unless there are pre-configured values
 
     relay_t(unsigned char id) :
-        pin(_relayPin(id)),
-        type(_relayType(id)),
-        reset_pin(_relayResetPin(id))
+        relay_t(_relayPin(id), _relayType(id), _relayResetPin(id))
     {}
 
     // Configuration variables
 
-    unsigned char pin;          // GPIO pin for the relay
-    unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-    unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    unsigned long delay_on;     // Delay to turn relay ON
-    unsigned long delay_off;    // Delay to turn relay OFF
-    unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
-    unsigned long pulse_ms;     // Pulse length in millis
+    unsigned char pin;           // GPIO pin for the relay
+    unsigned char type;          // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+    unsigned char reset_pin;     // GPIO to reset the relay if RELAY_TYPE_LATCHED
+    unsigned long delay_on;      // Delay to turn relay ON
+    unsigned long delay_off;     // Delay to turn relay OFF
+    unsigned char pulse;         // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    unsigned long pulse_ms;      // Pulse length in millis
 
     // Status variables
 
-    bool current_status;        // Holds the current (physical) status of the relay
-    bool target_status;         // Holds the target status
-    unsigned char lock;         // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
-    unsigned long fw_start;     // Flood window start time
-    unsigned char fw_count;     // Number of changes within the current flood window
-    unsigned long change_start;      // Time when relay was scheduled to change
-    unsigned long change_delay;      // Delay until the next change
-    bool report;                // Whether to report to own topic
-    bool group_report;          // Whether to report to group topic
+    bool current_status;         // Holds the current (physical) status of the relay
+    bool target_status;          // Holds the target status
+    unsigned char lock;          // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
+    unsigned long fw_start;      // Flood window start time
+    unsigned char fw_count;      // Number of changes within the current flood window
+    unsigned long change_start;  // Time when relay was scheduled to change
+    unsigned long change_delay;  // Delay until the next change
+    bool report;                 // Whether to report to own topic
+    bool group_report;           // Whether to report to group topic
 
     // Helping objects
 
-    Ticker pulseTicker;         // Holds the pulse back timer
+    Ticker pulseTicker;          // Holds the pulse back timer
 
 };
 
@@ -320,7 +335,7 @@ void _relayProcess(bool mode) {
         if (target != mode) continue;
 
         // Only process if the change delay has expired
-        if (millis() - _relays[id].change_start < _relays[id].change_delay) continue;
+        if (_relays[id].change_delay && (millis() - _relays[id].change_start < _relays[id].change_delay)) continue;
 
         // Purge existing delay in case of cancelation
         _relays[id].change_delay = 0;
@@ -351,8 +366,8 @@ void _relayProcess(bool mode) {
 
             // We will trigger a eeprom save only if
             // we care about current relay status on boot
-            unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
-            bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            const auto boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
         }
@@ -720,7 +735,6 @@ void _relayBackwards() {
 void _relayBoot() {
 
     _relayRecursive = true;
-    bool trigger_save = false;
 
     const auto stored_mask = rtcmemStatus()
         ? _relayMaskRtcmem()
@@ -745,9 +759,8 @@ void _relayBoot() {
                 status = mask.test(i);
                 break;
             case RELAY_BOOT_TOGGLE:
-                status = !mask[i];
                 mask.flip(i);
-                trigger_save = true;
+                status = mask[i];
                 break;
             case RELAY_BOOT_LOCKED_ON:
                 status = true;
@@ -766,7 +779,11 @@ void _relayBoot() {
 
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
+
         _relays[i].change_start = millis();
+        _relays[i].change_delay = status
+            ? _relays[i].delay_on
+            : _relays[i].delay_off;
 
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
             // XXX hack for correctly restoring relay state on boot
@@ -776,13 +793,6 @@ void _relayBoot() {
 
         _relays[i].lock = lock;
 
-     }
-
-    _relayMaskRtcmem(mask);
-
-    // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
-    if (trigger_save) {
-        _relayMaskSettings(mask);
     }
 
     _relayRecursive = false;
