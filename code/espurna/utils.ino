@@ -247,7 +247,7 @@ void heartbeat() {
     #if MQTT_SUPPORT
         if (!serial && (_heartbeat_mode == HEARTBEAT_REPEAT || systemGetHeartbeat())) {
             if (hb_cfg & Heartbeat::Interval)
-                mqttSend(MQTT_TOPIC_INTERVAL, String(getHeartbeatInterval() / 1000).c_str());
+                mqttSend(MQTT_TOPIC_INTERVAL, String(getHeartbeatInterval()).c_str());
 
             if (hb_cfg & Heartbeat::App)
                 mqttSend(MQTT_TOPIC_APP, APP_NAME);
