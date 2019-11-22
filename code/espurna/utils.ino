@@ -319,7 +319,7 @@ void heartbeat() {
                     mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(_temp_range.max).c_str());
                 }
 
-                if (hb_cfg & Heartbeat::Remote_temp) {
+                if (hb_cfg & Heartbeat::RemoteTemp) {
                     char remote_temp[16];
                     dtostrf(_remote_temp.temp, 1, 1, remote_temp);
                     mqttSend(MQTT_TOPIC_REMOTE_TEMP, remote_temp);
@@ -354,6 +354,9 @@ void heartbeat() {
 
         if (hb_cfg & Heartbeat::Ssid)
             idbSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
+
+        if (hb_cfg & Heartbeat::Bssid)
+            idbSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
     #endif
 
 }
