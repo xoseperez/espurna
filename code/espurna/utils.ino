@@ -134,22 +134,6 @@ bool haveRelaysOrSensors() {
     return result;
 }
 
-// TODO: force getSetting return type to handle settings
-uint32_t u32fromString(const String& string, int base = 10) {
-
-    const char *ptr = string.c_str();
-    char *value_endptr = nullptr;
-
-    // invalidate the whole string when invalid chars are detected
-    const auto value = strtoul(ptr, &value_endptr, base);
-    if (value_endptr == ptr || value_endptr[0] != '\0') {
-        return 0;
-    }
-
-    return value;
-
-}
-
 // -----------------------------------------------------------------------------
 // Heartbeat helper
 // -----------------------------------------------------------------------------
@@ -691,42 +675,52 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
   return nullptr;
 }
 
-// Note:
-// - when using standard base-2 literal syntax, parse that
-//   to keep backwards compatibility
-// - otherwise, fallback to base-10 numbers
-uint32_t bitsetFromString(const String& string) {
+// TODO: force getSetting return type to handle settings
+uint32_t u32fromString(const String& string, int base) {
+
+    const char *ptr = string.c_str();
+    char *value_endptr = nullptr;
+
+    // invalidate the whole string when invalid chars are detected
+    const auto value = strtoul(ptr, &value_endptr, base);
+    if (value_endptr == ptr || value_endptr[0] != '\0') {
+        return 0;
+    }
+
+    return value;
+
+}
+
+uint32_t u32fromString(const String& string) {
     if (!string.length()) {
         return 0;
     }
 
-    if (string.startsWith("0b") && (string.length() > 2)) {
-        return u32fromString(string.substring(2), 2);
+    int base = 10;
+    if (string.length() > 2) {
+        if (string.startsWith("0b")) {
+            base = 2;
+        } else if (string.startsWith("0o")) {
+            base = 8;
+        } else if (string.startsWith("0x")) {
+            base = 16;
+        } else {
+            return 0;
+        }
+        return u32fromString(string.substring(2), base);
     }
 
-    return u32fromString(string);
+    return u32fromString(string, base);
 }
 
-// Note:
-// - bitset::to_string() will return std::string
-// - itoa accepts int, so it will cut the sign bit
-String bitsetToString(uint32_t value) {
+String u32toString(uint32_t value, int base) {
     String result;
-    result.reserve(34);
+    result.reserve(32 + 2);
     result += "0b";
 
-    const uint32_t _value { value };
-    size_t bits = 0;
-
-    do {
-        value >>= 1;
-        bits++;
-    } while (value);
-
-    int bit = bits - 1;
-    do {
-        result += ((_value & (1 << bit)) ? '1' : '0');
-    } while (--bit >= 0);
+    char buffer[33] = {0};
+    ultoa(value, buffer, base);
+    result += buffer;
 
     return result;
 }

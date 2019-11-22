@@ -52,5 +52,6 @@ void nice_delay(unsigned long ms);
 
 double roundTo(double num, unsigned char positions);
 
-uint32_t bitsetFromString(const String& string);
-String bitsetToString(uint32_t bitset);
+uint32_t u32fromString(const String& string, int base);
+uint32_t u32fromString(const String& string);
+String u32toString(uint32_t bitset, int base);

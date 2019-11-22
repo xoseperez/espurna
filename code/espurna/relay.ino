@@ -384,25 +384,41 @@ void setSpeed(unsigned char speed) {
 // RELAY
 // -----------------------------------------------------------------------------
 
-void _relayMaskRtcmem(uint32_t mask) {
+// State persistance persistance
+
+RelayMask INLINE _relayMaskRtcmem() {
+    return RelayMask(Rtcmem->relay);
+}
+
+void INLINE _relayMaskRtcmem(uint32_t mask) {
     Rtcmem->relay = mask;
 }
 
-uint32_t _relayMaskRtcmem() {
-    return Rtcmem->relay;
+void INLINE _relayMaskRtcmem(const RelayMask& mask) {
+    _relayMaskRtcmem(mask.as_u32);
 }
 
-void _relayMaskSettings(const String& string) {
-    setSetting("relayBootMask", string);
+void INLINE _relayMaskRtcmem(const std::bitset<RELAYS_MAX>& bitset) {
+    _relayMaskRtcmem(bitset.to_ulong());
 }
 
-void _relayMaskSettings(uint32_t mask) {
-    _relayMaskSettings(bitsetToString(mask));
+RelayMask INLINE _relayMaskSettings() {
+    return RelayMask(getSetting("relayBootMask"));
 }
 
-uint32_t _relayMaskSettings() {
-    return bitsetFromString(getSetting("relayBootMask"));
+void INLINE _relayMaskSettings(uint32_t mask) {
+    setSetting("relayBootMask", u32toString(mask, 2));
 }
+
+void INLINE _relayMaskSettings(const RelayMask& mask) {
+    setSetting("relayBootMask", mask.as_string);
+}
+
+void INLINE _relayMaskSettings(const std::bitset<RELAYS_MAX>& bitset) {
+    _relayMaskSettings(bitset.to_ulong());
+}
+
+// Pulse timers (timer after ON or OFF event)
 
 void relayPulse(unsigned char id) {
 
@@ -425,6 +441,8 @@ void relayPulse(unsigned char id) {
     }
 
 }
+
+// General relay status control
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report) {
 
@@ -577,19 +595,18 @@ void relaySync(unsigned char id) {
 
 void relaySave(bool eeprom) {
 
-    auto mask = std::bitset<RELAYS_MAX>(0);
-
     const unsigned char count = constrain(relayCount(), 0, RELAYS_MAX);
+
+    auto statuses = std::bitset<RELAYS_MAX>(0);
     for (unsigned int id = 0; id < count; ++id) {
-        mask.set(id, relayStatus(id));
+        statuses.set(id, relayStatus(id));
     }
 
-    const uint32_t mask_value = mask.to_ulong();
-    const String mask_string = bitsetToString(mask_value);
-    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %s\n"), mask_string.c_str());
+    const RelayMask mask(statuses);
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %s\n"), mask.as_string.c_str());
 
     // Persist only to rtcmem, unless requested to save to the eeprom
-    _relayMaskRtcmem(mask_value);
+    _relayMaskRtcmem(mask);
 
     // The 'eeprom' flag controls whether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
@@ -598,7 +615,7 @@ void relaySave(bool eeprom) {
     // Nevertheless, we store the value in the EEPROM buffer so it will be written
     // on the next commit.
     if (eeprom) {
-        _relayMaskSettings(mask_string);
+        _relayMaskSettings(mask);
         // We are actually enqueuing the commit so it will be
         // executed on the main loop, in case this is called from a system context callback
         eepromCommit();
@@ -686,18 +703,14 @@ void _relayBoot() {
 
     _relayRecursive = true;
     bool trigger_save = false;
-    uint32_t stored_mask = 0;
 
-    if (rtcmemStatus()) {
-        stored_mask = _relayMaskRtcmem();
-    } else {
-        stored_mask = _relayMaskSettings();
-    }
+    const auto stored_mask = rtcmemStatus()
+        ? _relayMaskRtcmem()
+        : _relayMaskSettings();
 
-    const String string_mask(bitsetToString(stored_mask));
-    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s\n"), string_mask.c_str());
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s\n"), stored_mask.as_string.c_str());
 
-    auto mask = std::bitset<RELAYS_MAX>(stored_mask);
+    auto mask = std::bitset<RELAYS_MAX>(stored_mask.as_u32);
 
     // Walk the relays
     unsigned char lock;
@@ -747,12 +760,11 @@ void _relayBoot() {
 
      }
 
-    const auto mask_value = mask.to_ulong();
-    _relayMaskRtcmem(mask_value);
+    _relayMaskRtcmem(mask);
 
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
-        _relayMaskSettings(mask_value);
+        _relayMaskSettings(mask);
     }
 
     _relayRecursive = false;
