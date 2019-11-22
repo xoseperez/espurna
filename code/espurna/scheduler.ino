@@ -9,6 +9,8 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
+#include "relay.h"
+
 #include <TimeLib.h>
 
 int _sch_restore = 0;

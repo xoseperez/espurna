@@ -10,6 +10,9 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #if TUYA_SUPPORT
 
+#include "relay.h"
+#include "light.h"
+
 #include <functional>
 #include <queue>
 #include <StreamString.h>
