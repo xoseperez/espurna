@@ -713,7 +713,14 @@ uint32_t u32fromString(const String& string) {
 String u32toString(uint32_t value, int base) {
     String result;
     result.reserve(32 + 2);
-    result += "0b";
+
+    if (base == 2) {
+        result += "0b";
+    } else if (base == 8) {
+        result += "0o";
+    } else if (base == 16) {
+        result += "0x";
+    }
 
     char buffer[33] = {0};
     ultoa(value, buffer, base);
