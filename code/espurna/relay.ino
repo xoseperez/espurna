@@ -17,7 +17,25 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "broker.h"
 #include "tuya.h"
 
-typedef struct {
+#include "relay_config.h"
+
+struct relay_t {
+
+    // Default to dummy (virtual) relay configuration
+
+    relay_t() :
+        pin(GPIO_NONE),
+        type(GPIO_NONE),
+        reset_pin(GPIO_NONE)
+    {}
+
+    // ... unless there are pre-configured values
+
+    relay_t(unsigned char id) :
+        pin(_relayPin(id)),
+        type(_relayType(id)),
+        reset_pin(_relayResetPin(id))
+    {}
 
     // Configuration variables
 
@@ -45,7 +63,7 @@ typedef struct {
 
     Ticker pulseTicker;         // Holds the pulse back timer
 
-} relay_t;
+};
 
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
@@ -775,32 +793,6 @@ void _relayBoot() {
 
 }
 
-constexpr const unsigned long _relayDelayOn(unsigned char index) {
-    return (
-        (index == 0) ? RELAY1_DELAY_ON :
-        (index == 1) ? RELAY2_DELAY_ON :
-        (index == 2) ? RELAY3_DELAY_ON :
-        (index == 3) ? RELAY4_DELAY_ON :
-        (index == 4) ? RELAY5_DELAY_ON :
-        (index == 5) ? RELAY6_DELAY_ON :
-        (index == 6) ? RELAY7_DELAY_ON :
-        (index == 7) ? RELAY8_DELAY_ON : 0
-    );
-}
-
-constexpr const unsigned long _relayDelayOff(unsigned char index) {
-    return (
-        (index == 0) ? RELAY1_DELAY_OFF :
-        (index == 1) ? RELAY2_DELAY_OFF :
-        (index == 2) ? RELAY3_DELAY_OFF :
-        (index == 3) ? RELAY4_DELAY_OFF :
-        (index == 4) ? RELAY5_DELAY_OFF :
-        (index == 5) ? RELAY6_DELAY_OFF :
-        (index == 6) ? RELAY7_DELAY_OFF :
-        (index == 7) ? RELAY8_DELAY_OFF : 0
-    );
-}
-
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
@@ -1362,11 +1354,9 @@ void relaySetupDummy(unsigned char size, bool reconfigure) {
 
     size = constrain(size + _relays.size(), _relays.size(), RELAYS_MAX);
     if (size == _relays.size()) return;
-    _relayDummy = size;
 
-    _relays.insert(_relays.end(), size, {
-        GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE
-    });
+    _relayDummy = size;
+    _relays.resize(size);
 
     if (reconfigure) {
         _relayConfigure();
@@ -1378,34 +1368,48 @@ void relaySetupDummy(unsigned char size, bool reconfigure) {
 
 }
 
+void _relaySetupAdhoc() {
+
+    size_t relays = 0;
+
+    #if RELAY1_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY2_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY3_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY4_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY5_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY6_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY7_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY8_PIN != GPIO_NONE
+        ++relays;
+    #endif
+
+    _relays.reserve(relays);
+    for (unsigned char id = 0; id < relays; ++id) {
+        _relays.emplace_back(id);
+    }
+
+}
+
 void relaySetup() {
 
     // Ad-hoc relays
-    #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN });
-    #endif
-    #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN });
-    #endif
-    #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN });
-    #endif
-    #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN });
-    #endif
-    #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN });
-    #endif
-    #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN });
-    #endif
-    #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN });
-    #endif
-    #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN });
-    #endif
+    _relaySetupAdhoc();
 
+    // Dummy (virtual) relays
     relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt());
 
     _relaySetupProvider();
