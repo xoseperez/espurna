@@ -704,13 +704,10 @@ uint32_t u32fromString(const String& string) {
             base = 8;
         } else if (string.startsWith("0x")) {
             base = 16;
-        } else {
-            return 0;
         }
-        return u32fromString(string.substring(2), base);
     }
 
-    return u32fromString(string, base);
+    return u32fromString((base == 10) ? string : string.substring(2), base);
 }
 
 String u32toString(uint32_t value, int base) {
