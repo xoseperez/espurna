@@ -1318,6 +1318,30 @@
     #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
+// -----------------------------------------------------------------------------
+// MAGICHOME ZJ-LB-RGBW-I VL1 RGBW LED BULB
+// -----------------------------------------------------------------------------
+
+#elif defined(MAGICHOME_ZJ_LB_RGBW_I)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ-LB-RGBW-I VL1"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       14      // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH4_PIN       13      // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
 #elif defined(MAGICHOME_ZJ_WFMN_A_11)
 
     // Info
