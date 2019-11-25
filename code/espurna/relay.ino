@@ -82,7 +82,7 @@ struct relay_t {
 
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
-uint8_t _relayDummy = DUMMY_RELAY_COUNT;
+size_t _relayDummy = 0;
 
 unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
@@ -256,7 +256,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // Real relays
-        uint8_t physical = _relays.size() - _relayDummy;
+        size_t physical = _relays.size() - _relayDummy;
 
         // Support for a mixed of dummy and real relays
         // Reference: https://github.com/xoseperez/espurna/issues/1305
@@ -1360,13 +1360,15 @@ void _relayLoop() {
 }
 
 // Dummy relays for virtual light switches, Sonoff Dual, Sonoff RF Bridge and Tuya
-void relaySetupDummy(unsigned char size, bool reconfigure) {
+void relaySetupDummy(size_t size, bool reconfigure) {
 
-    size = constrain(size + _relays.size(), _relays.size(), RELAYS_MAX);
-    if (size == _relays.size()) return;
+    if (size == _relayDummy) return;
 
-    _relayDummy = size;
-    _relays.resize(size);
+    const size_t new_size = ((_relays.size() - _relayDummy) + size);
+    if (new_size > RELAYS_MAX) return;
+
+    _relayDummy = new_size;
+    _relays.resize(new_size);
 
     if (reconfigure) {
         _relayConfigure();
