@@ -1367,7 +1367,7 @@ void relaySetupDummy(size_t size, bool reconfigure) {
     const size_t new_size = ((_relays.size() - _relayDummy) + size);
     if (new_size > RELAYS_MAX) return;
 
-    _relayDummy = new_size;
+    _relayDummy = size;
     _relays.resize(new_size);
 
     if (reconfigure) {
