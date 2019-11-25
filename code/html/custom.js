@@ -983,8 +983,7 @@ function addSchedule(event) {
     var type = (1 === event.data.schType) ? "switch" : "light";
 
     template = $("#" + type + "ActionTemplate").children();
-    var actionLine = template.clone();
-    $(line).find("#schActionDiv").append(actionLine);
+    $(line).find("#schActionDiv").append(template.clone());
 
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex);
@@ -1027,10 +1026,6 @@ function initRelays(data) {
             });
         $("label.toggle", line).prop("for", "relay" + i)
         line.appendTo("#relays");
-
-        // Populate the relay SELECTs
-        $("select.isrelay").append(
-            $("<option></option>").attr("value",i).text("Switch #" + i));
 
     }
 
@@ -1096,6 +1091,11 @@ function initRelayConfig(data) {
         }
 
         line.appendTo("#relayConfig");
+
+        // Populate the relay SELECTs
+        $("select.isrelay").append(
+            $("<option></option>").attr("value",i).text("Switch #" + i));
+
     }
 
 }
