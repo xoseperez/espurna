@@ -55,6 +55,7 @@
 //#define HOMECUBE_16A
 //#define HUACANXING_H801
 //#define HUACANXING_H802
+//#define HYKKER_POWER_PLUG
 //#define IKE_ESPIKE
 //#define INTERMITTECH_QUINLED
 //#define ITEAD_1CH_INCHING
