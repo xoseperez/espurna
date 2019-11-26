@@ -4062,11 +4062,11 @@
 // https://github.com/ct-Open-Source/tuya-convert
 // -----------------------------------------------------------------------------
 
-#elif defined(HYKKER_POWER_PLUG)
+#elif defined(HYKKER_SMART_HOME_POWER_PLUG)
 
     // Info
     #define MANUFACTURER                "HYKKER"
-    #define DEVICE                      "HYKKER_SMART_HOME_POWER_PLUG"
+    #define DEVICE                      "SMART_HOME_POWER_PLUG"
 
     // Buttons
     #define BUTTON1_PIN                 0
