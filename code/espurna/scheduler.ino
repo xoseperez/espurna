@@ -55,7 +55,7 @@ void _schWebSocketOnConnected(JsonObject &root){
 
         switch_.add(getSetting("schSwitch", i, 0).toInt());
         action.add(getSetting("schAction", i, 0).toInt());
-        type.add(getSetting("schType", i, 0).toInt());
+        type.add(getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt());
         hour.add(getSetting("schHour", i, 0).toInt());
         minute.add(getSetting("schMinute", i, 0).toInt());
         weekdays.add(getSetting("schWDs", i, SCHEDULER_WEEKDAYS));
