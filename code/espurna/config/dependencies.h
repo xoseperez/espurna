@@ -46,7 +46,12 @@
 #if RPN_RULES_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
+#undef WEB_SUPPORT
+#define WEB_SUPPORT                 1
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1
 #endif
+
 
 #if INFLUXDB_SUPPORT
 #undef BROKER_SUPPORT
