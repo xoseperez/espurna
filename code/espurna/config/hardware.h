@@ -4094,7 +4094,7 @@
 
     #define HLW8012_SEL_CURRENT         LOW
     #define HLW8012_CURRENT_RATIO       25740
-    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_VOLTAGE_RATIO       282060
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
