@@ -32,20 +32,26 @@ TOTAL_DRAM = 81920
 
 DEFAULT_ENV = "nodemcu-lolin"
 OBJDUMP_PREFIX = "~/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-"
-SECTIONS = OrderedDict([
-    ("data", "Initialized Data (RAM)"),
-    ("rodata", "ReadOnly Data (RAM)"),
-    ("bss", "Uninitialized Data (RAM)"),
-    ("text", "Cached Code (IRAM)"),
-    ("irom0_text", "Uncached Code (SPI)")
-])
-DESCRIPTION = "ESPurna Memory Analyzer v{}".format(".".join(str(x) for x in __version__))
+SECTIONS = OrderedDict(
+    [
+        ("data", "Initialized Data (RAM)"),
+        ("rodata", "ReadOnly Data (RAM)"),
+        ("bss", "Uninitialized Data (RAM)"),
+        ("text", "Cached Code (IRAM)"),
+        ("irom0_text", "Uncached Code (SPI)"),
+    ]
+)
+DESCRIPTION = "ESPurna Memory Analyzer v{}".format(
+    ".".join(str(x) for x in __version__)
+)
 
 
 # -------------------------------------------------------------------------------
 
+
 def objdump_path(prefix):
     return "{}objdump".format(os.path.expanduser(prefix))
+
 
 def file_size(file):
     try:
@@ -55,13 +61,11 @@ def file_size(file):
 
 
 def analyse_memory(elf_file, objdump):
-    command = [
-        objdump, "-t", elf_file
-    ]
+    command = [objdump, "-t", elf_file]
     response = subprocess.check_output(command)
     if isinstance(response, bytes):
-        response = response.decode('utf-8')
-    lines = response.split('\n')
+        response = response.decode("utf-8")
+    lines = response.split("\n")
 
     # print("{0: >10}|{1: >30}|{2: >12}|{3: >12}|{4: >8}".format("Section", "Description", "Start (hex)", "End (hex)", "Used space"));
     # print("------------------------------------------------------------------------------");
@@ -74,11 +78,11 @@ def analyse_memory(elf_file, objdump):
         section_end = -1
         for line in lines:
             if section_start_token in line:
-                data = line.split(' ')
+                data = line.split(" ")
                 section_start = int(data[0], 16)
 
             if section_end_token in line:
-                data = line.split(' ')
+                data = line.split(" ")
                 section_end = int(data[0], 16)
 
             if section_start != -1 and section_end != -1:
@@ -101,10 +105,7 @@ def analyse_memory(elf_file, objdump):
 
 
 def run(env_, modules_, debug=False):
-    flags = " ".join(
-        "-D{}_SUPPORT={:d}".format(k, v)
-        for k, v in modules_.items()
-    )
+    flags = " ".join("-D{}_SUPPORT={:d}".format(k, v) for k, v in modules_.items())
 
     os_env = os.environ.copy()
     os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = flags
@@ -119,7 +120,9 @@ def run(env_, modules_, debug=False):
     output = None if debug else subprocess.DEVNULL
 
     try:
-        subprocess.check_call(command, shell=False, env=os_env, stdout=output, stderr=output);
+        subprocess.check_call(
+            command, shell=False, env=os_env, stdout=output, stderr=output
+        )
     except subprocess.CalledProcessError:
         print(" - Command failed: {}".format(command))
         print(" - Selected flags: {}".format(flags))
@@ -127,15 +130,15 @@ def run(env_, modules_, debug=False):
 
 
 def calc_free(module):
-    free = 80 * 1024 - module['data'] - module['rodata'] - module['bss']
+    free = 80 * 1024 - module["data"] - module["rodata"] - module["bss"]
     free = free + (16 - free % 16)
-    module['free'] = free
+    module["free"] = free
 
 
 def modules_get():
     modules_ = OrderedDict()
     for line in open("espurna/config/arduino.h"):
-        m = re.search(r'(\w*)_SUPPORT', line)
+        m = re.search(r"(\w*)_SUPPORT", line)
         if m:
             modules_[m.group(1)] = 0
     modules_ = OrderedDict(sorted(modules_.items(), key=lambda t: t[0]))
@@ -143,22 +146,45 @@ def modules_get():
     return modules_
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Parse command line options
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument("-e", "--environment", help="platformio envrionment to use", default=DEFAULT_ENV)
-    parser.add_argument("-p", "--prefix", help="where to find xtensa toolchain, default is {}".format(OBJDUMP_PREFIX), default=OBJDUMP_PREFIX)
-    parser.add_argument("-c", "--core", help="use core as base configuration instead of default", action="store_true", default=False)
-    parser.add_argument("-l", "--list", help="list available modules", action="store_true", default=False)
+    parser.add_argument(
+        "-e", "--environment", help="platformio envrionment to use", default=DEFAULT_ENV
+    )
+    parser.add_argument(
+        "-p",
+        "--prefix",
+        help="where to find xtensa toolchain, default is {}".format(OBJDUMP_PREFIX),
+        default=OBJDUMP_PREFIX,
+    )
+    parser.add_argument(
+        "-c",
+        "--core",
+        help="use core as base configuration instead of default",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        help="list available modules",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("modules", nargs='*', help="Modules to test (use ALL to test them all)")
+    parser.add_argument(
+        "modules", nargs="*", help="Modules to test (use ALL to test them all)"
+    )
     args = parser.parse_args()
 
     # Check xtensa-lx106-elf-objdump is in the path
     status, result = getstatusoutput(objdump_path(args.prefix))
     if status != 2 and status != 512:
-        print("xtensa-lx106-elf-objdump not found, please check that the --prefix is correct")
+        print(
+            "xtensa-lx106-elf-objdump not found, please check that the --prefix is correct"
+        )
         sys.exit(1)
 
     # Load list of all modules
@@ -196,11 +222,16 @@ if __name__ == '__main__':
 
     # Show init message
     if len(test_modules) > 0:
-        print("Analyzing module(s) {} on top of {} configuration\n".format(" ".join(test_modules), configuration))
+        print(
+            "Analyzing module(s) {} on top of {} configuration\n".format(
+                " ".join(test_modules), configuration
+            )
+        )
     else:
         print("Analyzing {} configuration\n".format(configuration))
 
     output_format = "{:<20}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}"
+
     def print_format(*args):
         print(output_format.format(*args))
 
@@ -213,7 +244,7 @@ if __name__ == '__main__':
             "-" * 15,
             "-" * 15,
             "-" * 15,
-            "-" * 15
+            "-" * 15,
         )
 
     print_format(
@@ -224,17 +255,10 @@ if __name__ == '__main__':
         "Uninit RAM",
         "Available RAM",
         "Flash ROM",
-        "Binary size"
+        "Binary size",
     )
     print_format(
-        "",
-        ".text",
-        ".data",
-        ".rodata",
-        ".bss",
-        "heap + stack",
-        ".irom0.text",
-        ""
+        "", ".text", ".data", ".rodata", ".bss", "heap + stack", ".irom0.text", ""
     )
     print_delimiters()
 
@@ -258,30 +282,34 @@ if __name__ == '__main__':
         return values
 
     def show(header, values):
-        print(output_format.format(
-            header,
-            values['text'],
-            values['data'],
-            values['rodata'],
-            values['bss'],
-            values['free'],
-            values['irom0_text'],
-            values['size'],
-        ))
+        print(
+            output_format.format(
+                header,
+                values["text"],
+                values["data"],
+                values["rodata"],
+                values["bss"],
+                values["free"],
+                values["irom0_text"],
+                values["size"],
+            )
+        )
 
     # TODO: sensor modules need to be compared with SENSOR as base
     # TODO: some modules need to be compared with WEB as base
     def compare(header, values):
-        print(output_format.format(
-            header,
-            values['text'] - base['text'],
-            values['data'] - base['data'],
-            values['rodata'] - base['rodata'],
-            values['bss'] - base['bss'],
-            values['free'] - base['free'],
-            values['irom0_text'] - base['irom0_text'],
-            values['size'] - base['size'],
-        ))
+        print(
+            output_format.format(
+                header,
+                values["text"] - base["text"],
+                values["data"] - base["data"],
+                values["rodata"] - base["rodata"],
+                values["bss"] - base["bss"],
+                values["free"] - base["free"],
+                values["irom0_text"] - base["irom0_text"],
+                values["size"] - base["size"],
+            )
+        )
 
     # Build the core without modules to get base memory usage
     base = stats()
