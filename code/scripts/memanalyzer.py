@@ -149,14 +149,16 @@ def modules_get():
 if __name__ == "__main__":
 
     # Parse command line options
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser = argparse.ArgumentParser(
+        description=DESCRIPTION, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
         "-e", "--environment", help="platformio envrionment to use", default=DEFAULT_ENV
     )
     parser.add_argument(
         "-p",
         "--prefix",
-        help="where to find xtensa toolchain, default is {}".format(OBJDUMP_PREFIX),
+        help="where to find the xtensa toolchain binaries",
         default=OBJDUMP_PREFIX,
     )
     parser.add_argument(
