@@ -174,7 +174,6 @@
 //#define RFM69_SUPPORT          1
 //#define RPN_RULES_SUPPORT      0
 //#define SCHEDULER_SUPPORT      0
-//#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
