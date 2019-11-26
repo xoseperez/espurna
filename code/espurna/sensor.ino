@@ -1543,10 +1543,8 @@ void _sensorReport(unsigned char index, double value) {
     char buffer[64];
     dtostrf(value, 1, decimals, buffer);
 
-    #if BROKER_SUPPORT
-    #if not BROKER_REAL_TIME
+    #if BROKER_SUPPORT && (not BROKER_REAL_TIME)
         SensorBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
-    #endif
     #endif
 
     #if MQTT_SUPPORT
@@ -1803,7 +1801,7 @@ void sensorLoop() {
                 // -------------------------------------------------------------
 
                 value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
-                #if BROKER_REAL_TIME
+                #if BROKER_SUPPORT && BROKER_REAL_TIME
                 {
                     char buffer[64];
                     dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
