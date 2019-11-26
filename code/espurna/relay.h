@@ -68,5 +68,5 @@ const String& relayPayloadToggle();
 
 const char* relayPayload(RelayStatus status);
 
-void relaySetupDummy(unsigned char size, bool reconfigure = false);
+void relaySetupDummy(size_t size, bool reconfigure = false);
 
