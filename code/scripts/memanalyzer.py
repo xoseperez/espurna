@@ -65,9 +65,9 @@ def file_size(file):
 
 
 def analyse_memory(elf_file, objdump):
-    command = [objdump, "-t", elf_file]
-    response = subprocess.check_output(command)
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
+    proc = subprocess.Popen(
+        [objdump, "-t", elf_file], stdout=subprocess.PIPE, universal_newlines=True
+    )
     lines = proc.stdout.readlines()
 
     # print("{0: >10}|{1: >30}|{2: >12}|{3: >12}|{4: >8}".format("Section", "Description", "Start (hex)", "End (hex)", "Used space"));
@@ -359,7 +359,7 @@ def main(args):
     configuration, modules = get_modules(args)
 
     # print_values init message
-    print("Selected environment \"{}\"".format(args.environment), end='')
+    print('Selected environment "{}"'.format(args.environment), end="")
     if modules:
         print(" with modules: {}".format(" ".join(modules.keys())))
     else:
