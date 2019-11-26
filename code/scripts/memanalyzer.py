@@ -18,7 +18,6 @@ from __future__ import print_function
 import argparse
 import os
 import re
-import shlex
 import subprocess
 import sys
 from collections import OrderedDict
