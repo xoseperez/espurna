@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+# pylint: disable=C0301,C0114,C0116,W0511
 # coding=utf-8
 # -------------------------------------------------------------------------------
 # ESPurna module memory analyser
 # xose.perez@gmail.com
+#
+# Rewritten for python-3 by Maxim Prokhorov
+# prokhorov.max@outlook.com
 #
 # Based on:
 # https://github.com/letscontrolit/ESPEasy/blob/mega/memanalyzer.py
@@ -63,9 +67,8 @@ def file_size(file):
 def analyse_memory(elf_file, objdump):
     command = [objdump, "-t", elf_file]
     response = subprocess.check_output(command)
-    if isinstance(response, bytes):
-        response = response.decode("utf-8")
-    lines = response.split("\n")
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
+    lines = proc.stdout.readlines()
 
     # print("{0: >10}|{1: >30}|{2: >12}|{3: >12}|{4: >8}".format("Section", "Description", "Start (hex)", "End (hex)", "Used space"));
     # print("------------------------------------------------------------------------------");
@@ -77,6 +80,7 @@ def analyse_memory(elf_file, objdump):
         section_start = -1
         section_end = -1
         for line in lines:
+            line = line.strip()
             if section_start_token in line:
                 data = line.split(" ")
                 section_start = int(data[0], 16)
@@ -129,26 +133,18 @@ def run(env_, modules_, debug=False):
         sys.exit(1)
 
 
-def calc_free(module):
-    free = 80 * 1024 - module["data"] - module["rodata"] - module["bss"]
-    free = free + (16 - free % 16)
-    module["free"] = free
-
-
-def modules_get():
-    modules_ = OrderedDict()
+def get_available_modules():
+    modules = []
     for line in open("espurna/config/arduino.h"):
-        m = re.search(r"(\w*)_SUPPORT", line)
-        if m:
-            modules_[m.group(1)] = 0
-    modules_ = OrderedDict(sorted(modules_.items(), key=lambda t: t[0]))
+        match = re.search(r"(\w*)_SUPPORT", line)
+        if match:
+            modules.append((match.group(1), 0))
+    modules.sort(key=lambda item: item[0])
 
-    return modules_
+    return OrderedDict(modules)
 
 
-if __name__ == "__main__":
-
-    # Parse command line options
+def parse_commandline_args():
     parser = argparse.ArgumentParser(
         description=DESCRIPTION, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -179,66 +175,103 @@ if __name__ == "__main__":
     parser.add_argument(
         "modules", nargs="*", help="Modules to test (use ALL to test them all)"
     )
-    args = parser.parse_args()
 
-    # Check xtensa-lx106-elf-objdump is in the path
-    status, result = getstatusoutput(objdump_path(args.prefix))
-    if status != 2 and status != 512:
+    return parser.parse_args()
+
+
+def objdump_check(args):
+
+    status, _ = getstatusoutput(objdump_path(args.prefix))
+    if status not in (2, 512):
         print(
             "xtensa-lx106-elf-objdump not found, please check that the --prefix is correct"
         )
         sys.exit(1)
 
+
+def get_modules(args):
+
     # Load list of all modules
-    available_modules = modules_get()
+    available_modules = get_available_modules()
     if args.list:
         print("List of available modules:\n")
-        for key, value in available_modules.items():
-            print("* " + key)
+        for module in available_modules:
+            print("* " + module)
         print()
         sys.exit(0)
 
-    # Which modules to test?
-    test_modules = []
-    if len(args.modules):
+    modules = []
+    if args.modules:
         if "ALL" in args.modules:
-            test_modules.extend(available_modules.keys())
+            modules.extend(available_modules.keys())
         else:
-            test_modules.extend(args.modules)
-    test_modules.sort()
+            modules.extend(args.modules)
+    modules.sort()
 
     # Check test modules exist
-    for module in test_modules:
+    for module in modules:
         if module not in available_modules:
             print("Module {} not found".format(module))
             sys.exit(2)
 
-    configuration = "CORE" if args.core else "DEFAULT"
-    # Define base configuration
-    if not args.core:
-        modules = OrderedDict()
-        for m in test_modules:
-            modules[m] = 0
-    else:
+    # Either use all of modules or specified subset
+    if args.core:
         modules = available_modules
-
-    # Show init message
-    if len(test_modules) > 0:
-        print(
-            "Analyzing module(s) {} on top of {} configuration\n".format(
-                " ".join(test_modules), configuration
-            )
-        )
     else:
-        print("Analyzing {} configuration\n".format(configuration))
+        modules = OrderedDict((x, 0) for x in modules)
 
-    output_format = "{:<20}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}"
+    configuration = "CORE" if args.core else "DEFAULT"
 
-    def print_format(*args):
-        print(output_format.format(*args))
+    return configuration, modules
 
-    def print_delimiters():
-        print_format(
+
+class Analyser:
+    """Run platformio and print info about the resulting binary."""
+
+    OUTPUT_FORMAT = "{:<20}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}"
+    ELF_FORMAT = ".pio/build/{env}/firmware.elf"
+    BIN_FORMAT = ".pio/build/{env}/firmware.bin"
+
+    class _Enable:
+        def __init__(self, analyser, module=None):
+            self.analyser = analyser
+            self.module = module
+
+        def __enter__(self):
+            if not self.module:
+                for name in self.analyser.modules:
+                    self.analyser.modules[name] = 1
+            else:
+                self.analyser.modules[self.module] = 1
+            return self.analyser
+
+        def __exit__(self, *args, **kwargs):
+            if not self.module:
+                for name in self.analyser.modules:
+                    self.analyser.modules[name] = 0
+            else:
+                self.analyser.modules[self.module] = 0
+
+        analyser = None
+        module = None
+
+    def __init__(self, args, modules):
+        self._debug = args.debug
+        self._prefix = args.prefix
+        self._environment = args.environment
+        self._elf_path = self.ELF_FORMAT.format(env=args.environment)
+        self._bin_path = self.BIN_FORMAT.format(env=args.environment)
+        self.modules = modules
+        self.baseline = None
+
+    def enable(self, module=None):
+        return self._Enable(self, module)
+
+    def print(self, *args):
+        print(self.OUTPUT_FORMAT.format(*args))
+
+    def print_delimiters(self):
+        self.print(
             "-" * 20,
             "-" * 15,
             "-" * 15,
@@ -249,100 +282,116 @@ if __name__ == "__main__":
             "-" * 15,
         )
 
-    print_format(
-        "Module",
-        "Cache IRAM",
-        "Init RAM",
-        "R.O. RAM",
-        "Uninit RAM",
-        "Available RAM",
-        "Flash ROM",
-        "Binary size",
-    )
-    print_format(
-        "", ".text", ".data", ".rodata", ".bss", "heap + stack", ".irom0.text", ""
-    )
-    print_delimiters()
+    def begin(self, name):
+        self.print(
+            "Module",
+            "Cache IRAM",
+            "Init RAM",
+            "R.O. RAM",
+            "Uninit RAM",
+            "Available RAM",
+            "Flash ROM",
+            "Binary size",
+        )
+        self.print(
+            "", ".text", ".data", ".rodata", ".bss", "heap + stack", ".irom0.text", ""
+        )
+        self.print_delimiters()
+        self.baseline = self.run()
+        self.print_values(name, self.baseline)
 
-    environment = args.environment
-    bin_path = ".pio/build/{}/firmware.bin".format(environment)
-    elf_path = ".pio/build/{}/firmware.elf".format(environment)
+    def print_values(self, header, values):
+        self.print(
+            header,
+            values["text"],
+            values["data"],
+            values["rodata"],
+            values["bss"],
+            values["free"],
+            values["irom0_text"],
+            values["size"],
+        )
 
-    def _analyse_memory():
-        return analyse_memory(elf_path, objdump_path(args.prefix))
+    # TODO: sensor modules need to be print_compared with SENSOR as baseline
+    # TODO: some modules need to be print_compared with WEB as baseline
+    def print_compare(self, header, values):
+        self.print(
+            header,
+            values["text"] - self.baseline["text"],
+            values["data"] - self.baseline["data"],
+            values["rodata"] - self.baseline["rodata"],
+            values["bss"] - self.baseline["bss"],
+            values["free"] - self.baseline["free"],
+            values["irom0_text"] - self.baseline["irom0_text"],
+            values["size"] - self.baseline["size"],
+        )
 
-    def _file_size():
-        return file_size(bin_path)
+    def run(self):
+        run(self._environment, self.modules, self._debug)
 
-    def _run():
-        run(environment, modules, args.debug)
+        values = analyse_memory(self._elf_path, objdump_path(self._prefix))
 
-    def stats():
-        _run()
-        values = _analyse_memory()
-        values["size"] = _file_size()
+        free = 80 * 1024 - values["data"] - values["rodata"] - values["bss"]
+        free = free + (16 - free % 16)
+        values["free"] = free
+
+        values["size"] = file_size(self._bin_path)
+
         return values
 
-    def show(header, values):
-        print(
-            output_format.format(
-                header,
-                values["text"],
-                values["data"],
-                values["rodata"],
-                values["bss"],
-                values["free"],
-                values["irom0_text"],
-                values["size"],
-            )
-        )
+    modules = None
+    baseline = None
 
-    # TODO: sensor modules need to be compared with SENSOR as base
-    # TODO: some modules need to be compared with WEB as base
-    def compare(header, values):
-        print(
-            output_format.format(
-                header,
-                values["text"] - base["text"],
-                values["data"] - base["data"],
-                values["rodata"] - base["rodata"],
-                values["bss"] - base["bss"],
-                values["free"] - base["free"],
-                values["irom0_text"] - base["irom0_text"],
-                values["size"] - base["size"],
-            )
-        )
+    _debug = False
+    _modules = []
+    _environment = None
+    _prefix = None
+    _bin_path = None
+    _elf_path = None
 
-    # Build the core without modules to get base memory usage
-    base = stats()
 
-    calc_free(base)
-    show(configuration, base)
+def main(args):
 
-    # Test each module
+    # Check xtensa-lx106-elf-objdump is in the path
+    objdump_check(args)
+
+    # Which modules to test?
+    configuration, modules = get_modules(args)
+
+    # print_values init message
+    print("Selected environment \"{}\"".format(args.environment), end='')
+    if modules:
+        print(" with modules: {}".format(" ".join(modules.keys())))
+    else:
+        print()
+
+    print()
+    print("Analyzing {} configuration".format(configuration))
+    print()
+
+    # Build the core without any modules to get base memory usage
+    analyser = Analyser(args, modules)
+    analyser.begin(configuration)
+
+    # Test each module separately
     results = {}
-    for module in test_modules:
-
-        modules[module] = 1
-        results[module] = stats()
-
-        calc_free(results[module])
-        modules[module] = 0
-
-        compare(module, results[module])
+    for module in analyser.modules:
+        with analyser.enable(module):
+            results[module] = analyser.run()
+        analyser.print_compare(module, results[module])
 
     # Test all modules
-    if len(test_modules):
+    if analyser.modules:
 
-        for module in test_modules:
-            modules[module] = 1
+        with analyser.enable():
+            total = analyser.run()
 
-        total = stats()
+        analyser.print_delimiters()
+        if len(analyser.modules) > 1:
+            analyser.print_compare("ALL MODULES", total)
 
-        calc_free(total)
+        analyser.print_values("TOTAL", total)
 
-        print_delimiters()
-        if len(test_modules) > 1:
-            compare("ALL MODULES", total)
 
-        show("TOTAL", total)
+if __name__ == "__main__":
+    main(parse_commandline_args())
