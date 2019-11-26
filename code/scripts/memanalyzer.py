@@ -17,6 +17,17 @@
 # by Andrey Filimonov
 #
 # -------------------------------------------------------------------------------
+#
+# When using Windows with non-default installation at the C:\.platformio,
+# you would need to specify toolchain path manually. For example:
+#
+# $ py -3 scripts\memanalyzer.py --toolchain-prefix C:\.platformio\packages\toolchain-xtensa\bin\xtensa-lx106-elf- <args>
+#
+# You could also change the path to platformio binary in a similar fashion:
+# $ py -3 scripts\memanalyzer.py --platformio-prefix C:\Users\Max\platformio-penv\Scripts\
+#
+# -------------------------------------------------------------------------------
+
 from __future__ import print_function
 
 import argparse
@@ -25,9 +36,9 @@ import re
 import subprocess
 import sys
 from collections import OrderedDict
+from subprocess import getstatusoutput
 
 __version__ = (0, 2)
-from subprocess import getstatusoutput
 
 # -------------------------------------------------------------------------------
 
@@ -108,18 +119,18 @@ def analyse_memory(elf_file, objdump):
     return ret
 
 
-def run(env_, modules_, debug=False):
-    flags = " ".join("-D{}_SUPPORT={:d}".format(k, v) for k, v in modules_.items())
+def run(prefix, env, modules, debug):
+    flags = " ".join("-D{}_SUPPORT={:d}".format(k, v) for k, v in modules.items())
 
     os_env = os.environ.copy()
     os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = flags
     os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
     os_env["ESPURNA_PIO_SHARED_LIBRARIES"] = "y"
 
-    command = ["platformio", "run"]
+    command = [os.path.join(prefix, "platformio"), "run"]
     if not debug:
         command.append("--silent")
-    command.extend(["--environment", env_])
+    command.extend(["--environment", env])
 
     output = None if debug else subprocess.DEVNULL
 
@@ -152,10 +163,14 @@ def parse_commandline_args():
         "-e", "--environment", help="platformio envrionment to use", default=DEFAULT_ENV
     )
     parser.add_argument(
-        "-p",
-        "--prefix",
+        "--toolchain-prefix",
         help="where to find the xtensa toolchain binaries",
         default=OBJDUMP_PREFIX,
+    )
+    parser.add_argument(
+        "--platformio-prefix",
+        help="where to find the platformio executable",
+        default="",
     )
     parser.add_argument(
         "-c",
@@ -181,11 +196,9 @@ def parse_commandline_args():
 
 def objdump_check(args):
 
-    status, _ = getstatusoutput(objdump_path(args.prefix))
+    status, _ = getstatusoutput(objdump_path(args.toolchain_prefix))
     if status not in (2, 512):
-        print(
-            "xtensa-lx106-elf-objdump not found, please check that the --prefix is correct"
-        )
+        print("objdump not found, please check that the --toolchain-prefix is correct")
         sys.exit(1)
 
 
@@ -225,6 +238,9 @@ def get_modules(args):
     return configuration, modules
 
 
+# -------------------------------------------------------------------------------
+
+
 class Analyser:
     """Run platformio and print info about the resulting binary."""
 
@@ -257,7 +273,8 @@ class Analyser:
 
     def __init__(self, args, modules):
         self._debug = args.debug
-        self._prefix = args.prefix
+        self._platformio_prefix = args.platformio_prefix
+        self._toolchain_prefix = args.toolchain_prefix
         self._environment = args.environment
         self._elf_path = self.ELF_FORMAT.format(env=args.environment)
         self._bin_path = self.BIN_FORMAT.format(env=args.environment)
@@ -327,9 +344,9 @@ class Analyser:
         )
 
     def run(self):
-        run(self._environment, self.modules, self._debug)
+        run(self._platformio_prefix, self._environment, self.modules, self._debug)
 
-        values = analyse_memory(self._elf_path, objdump_path(self._prefix))
+        values = analyse_memory(self._elf_path, objdump_path(self._toolchain_prefix))
 
         free = 80 * 1024 - values["data"] - values["rodata"] - values["bss"]
         free = free + (16 - free % 16)
@@ -339,15 +356,15 @@ class Analyser:
 
         return values
 
-    modules = None
-    baseline = None
-
     _debug = False
-    _modules = []
+    _platformio_prefix = None
+    _toolchain_prefix = None
     _environment = None
-    _prefix = None
     _bin_path = None
     _elf_path = None
+
+    modules = None
+    baseline = None
 
 
 def main(args):
