@@ -253,7 +253,10 @@ if __name__ == '__main__':
         run(environment, modules, args.debug)
 
     def stats():
-        return (_run(), _analyse_memory(), _file_size())
+        _run()
+        values = _analyse_memory()
+        values["size"] = _file_size()
+        return values
 
     def show(header, values):
         print(output_format.format(
@@ -282,7 +285,7 @@ if __name__ == '__main__':
         ))
 
     # Build the core without modules to get base memory usage
-    _, base, base["size"] = stats()
+    base = stats()
 
     calc_free(base)
     show(configuration, base)
@@ -292,7 +295,7 @@ if __name__ == '__main__':
     for module in test_modules:
 
         modules[module] = 1
-        _, results[module], results[module]["size"] = stats()
+        results[module] = stats()
 
         calc_free(results[module])
         modules[module] = 0
@@ -305,7 +308,7 @@ if __name__ == '__main__':
         for module in test_modules:
             modules[module] = 1
 
-        _, total, total["size"] = stats()
+        total = stats()
 
         calc_free(total)
 
