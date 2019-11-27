@@ -261,8 +261,8 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        const String topic = mqttMagnitude((char *) topic);
-        if (!_ota_do_update && topic.equals(MQTT_TOPIC_OTA)) {
+        const String t = mqttMagnitude((char *) topic);
+        if (!_ota_do_update && t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
             schedule_function([_payload = String(payload)]() {
                 _otaClientFrom(_payload);
