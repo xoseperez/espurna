@@ -175,7 +175,7 @@ void _otaClientFromHttps(const String& url) {
     // Check for NTP early to avoid constructing SecureClient prematurely
     const int check = _ota_sc_config.on_check();
     if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
-        DEBUG_MSG_P(PSTR("[OTA] Time not synced!\n"));
+        DEBUG_MSG_P(PSTR("[OTA] Time not synced! Cannot use CA validation\n"));
         return;
     }
 
@@ -264,10 +264,10 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
         const String t = mqttMagnitude((char *) topic);
         if (!_ota_do_update && t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
-            schedule_function([_payload = String(payload)]() {
-                _otaClientFrom(_payload);
-                _ota_do_update = false;
-            });
+            // TODO: c++14 support is required for `[_payload = String(payload)]() { ... }`
+            //       c++11 also supports basic `auto _payload = String(payload); [payload]() { ... }`
+            //       bind does the same thing, so just use it
+            schedule_function(std::bind(_otaClientFrom, String(_payload)));
         }
     }
 
