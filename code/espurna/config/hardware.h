@@ -3237,7 +3237,7 @@
     #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
     
- #elif defined(ALLTERCO_SHELLY1PM)
+#elif defined(ALLTERCO_SHELLY1PM)
     // Info
     #define MANUFACTURER        "ALLTERCO"
     #define DEVICE              "SHELLY1PM"
@@ -3280,7 +3280,7 @@
      #define NTC_R_DOWN         0       
      #define NTC_R0             8000
 
- #elif defined(ALLTERCO_SHELLY25)
+#elif defined(ALLTERCO_SHELLY25)
     // Info
     #define MANUFACTURER        "ALLTERCO"
     #define DEVICE              "SHELLY25"
@@ -4055,7 +4055,7 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
-// Hykker Power Plug (Smart Home Series) available in Jerónimo Martins Polska (Biedronka)
+// Hykker Power Plug (Smart Home Series) available in Jer√≥nimo Martins Polska (Biedronka)
 // https://www.hykker.com/akcesoria/gniazdo-wi-fi-z-licznikiem-energii/
 // Reflashing from original Tuya firmware
 // to thirdparty firmware like espurna by:

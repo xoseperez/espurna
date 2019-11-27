@@ -10,8 +10,8 @@
 //#define AITHINKER_AI_LIGHT
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
 //#define ALLTERCO_SHELLY1
-//#define ALLTERCO_SHELLY2
 //#define ALLTERCO_SHELLY1PM
+//#define ALLTERCO_SHELLY2
 //#define ALLTERCO_SHELLY25
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC02
@@ -29,6 +29,7 @@
 //#define ELECTRODRAGON_WIFI_IOT
 //#define ESPURNA_BASE
 //#define ESPURNA_CORE
+//#define ETEKCITY_ESW01_USA
 //#define EUROMATE_WIFI_STECKER_SCHUKO
 //#define EUROMATE_WIFI_STECKER_SCHUKO_V2
 //#define EXS_WIFI_RELAY_V31
@@ -58,6 +59,7 @@
 //#define HYKKER_SMART_HOME_POWER_PLUG
 //#define IKE_ESPIKE
 //#define INTERMITTECH_QUINLED
+//#define ISELECTOR_SM_PW702
 //#define ITEAD_1CH_INCHING
 //#define ITEAD_BNSZ01
 //#define ITEAD_MOTOR
@@ -67,7 +69,6 @@
 //#define ITEAD_SONOFF_4CH_PRO
 //#define ITEAD_SONOFF_B1
 //#define ITEAD_SONOFF_BASIC
-//#define ITEAD_SONOFF_BNSZ01
 //#define ITEAD_SONOFF_DUAL
 //#define ITEAD_SONOFF_DUAL_R2
 //#define ITEAD_SONOFF_IFAN02
@@ -100,9 +101,9 @@
 //#define LYASI_LIGHT
 //#define MAGICHOME_LED_CONTROLLER
 //#define MAGICHOME_LED_CONTROLLER_20
+//#define MAGICHOME_ZJ_ESPM_5CH_B_13
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
-//#define MAGICHOME_ZJ_ESPM_5CH_B_13
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUS002S
@@ -116,6 +117,9 @@
 //#define OUKITEL_P1
 //#define PHYX_ESP12_RGB
 //#define PILOTAK_ESP_DIN_V1
+//#define PSH_RGBW_CONTROLLER
+//#define PSH_WIFI_PLUG
+//#define PSH_WIFI_SENSOR
 //#define SMARTLIFE_MINI_SMART_SOCKET
 //#define STM_RELAY
 //#define TECKIN_SP20
@@ -130,6 +134,7 @@
 //#define TONBUX_POWERSTRIP02
 //#define TONBUX_XSSSA01
 //#define TONBUX_XSSSA06
+//#define TUYA_GENERIC_DIMMER
 //#define VANZAVANZU_SMART_WIFI_PLUG_MINI
 //#define WEMOS_D1_MINI
 //#define WEMOS_D1_MINI_RELAYSHIELD
@@ -137,7 +142,6 @@
 //#define WION_50055
 //#define WORKCHOICE_ECOPLUG
 //#define XENON_SM_PW702U
-//#define ISELECTOR_SM_PW702
 //#define XIAOMI_SMART_DESK_LAMP
 //#define YIDIAN_XSSSA05
 //#define YJZK_SWITCH_1CH
@@ -164,15 +168,16 @@
 //#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
 //#define LED_SUPPORT            0
-//#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
+//#define LLMNR_SUPPORT          1  // Only with latest Arduino Core
 //#define MDNS_CLIENT_SUPPORT    1
 //#define MDNS_SERVER_SUPPORT    0
 //#define MQTT_SUPPORT           0
-//#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
+//#define NETBIOS_SUPPORT        1  // Only with latest Arduino Core
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
-//#define RF_SUPPORT             1
+//#define OTA_ARDUINOOTA_SUPPORT 1
 //#define RFM69_SUPPORT          1
+//#define RF_SUPPORT             1
 //#define RPN_RULES_SUPPORT      0
 //#define SCHEDULER_SUPPORT      0
 //#define SPIFFS_SUPPORT         1
@@ -180,6 +185,7 @@
 //#define TELNET_SUPPORT         0
 //#define TERMINAL_SUPPORT       0
 //#define THINGSPEAK_SUPPORT     0
+//#define TUYA_SUPPORT           0
 //#define UART_MQTT_SUPPORT      1
 //#define WEB_SUPPORT            0
 
@@ -187,6 +193,7 @@
 // Sensors (values below are non-default values)
 //--------------------------------------------------------------------------------
 
+//#define ADE7953_SUPPORT        1
 //#define AM2320_SUPPORT         1
 //#define ANALOG_SUPPORT         1
 //#define BH1750_SUPPORT         1
@@ -220,8 +227,8 @@
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1
 //#define T6613_SUPPORT          1
+//#define THERMOSTAT_SUPPORT     1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
 //#define VEML6075_SUPPORT       1
 //#define VL53L1X_SUPPORT        1
-//#define ADE7953_SUPPORT        1
