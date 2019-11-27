@@ -29,8 +29,6 @@
 #
 # -------------------------------------------------------------------------------
 
-from __future__ import print_function
-
 import argparse
 import os
 import re
@@ -226,8 +224,7 @@ class Analyser:
     DELIMETERS = OUTPUT_FORMAT.format(
         "-" * 20, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15
     )
-    ELF_FORMAT = ".pio/build/{env}/firmware.elf"
-    BIN_FORMAT = ".pio/build/{env}/firmware.bin"
+    FIRMWARE_FORMAT = ".pio/build/{env}/firmware.{suffix}"
 
     class _Enable:
         def __init__(self, analyser, module=None):
@@ -257,8 +254,6 @@ class Analyser:
         self._platformio_prefix = args.platformio_prefix
         self._toolchain_prefix = args.toolchain_prefix
         self._environment = args.environment
-        self._elf_path = self.ELF_FORMAT.format(env=args.environment)
-        self._bin_path = self.BIN_FORMAT.format(env=args.environment)
         self.modules = modules
         self.baseline = None
 
@@ -325,27 +320,20 @@ class Analyser:
     def run(self):
         run(self._platformio_prefix, self._environment, self.modules, self._debug)
 
+        elf_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="elf")
+        bin_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="bin")
+
         values = analyse_memory(
-            size_binary_path(self._toolchain_prefix), self._elf_path
+            size_binary_path(self._toolchain_prefix), elf_path
         )
 
         free = 80 * 1024 - values[".data"] - values[".rodata"] - values[".bss"]
         free = free + (16 - free % 16)
         values["free"] = free
 
-        values["size"] = file_size(self._bin_path)
+        values["size"] = file_size(bin_path)
 
         return values
-
-    _debug = False
-    _platformio_prefix = None
-    _toolchain_prefix = None
-    _environment = None
-    _bin_path = None
-    _elf_path = None
-
-    modules = None
-    baseline = None
 
 
 def main(args):
