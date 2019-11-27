@@ -268,7 +268,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||
 |**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**||
 |![Allterco Shelly 1 / 1PM](images/devices/allterco-shelly1.jpg)|![Allterco Shelly 2 / 2.5](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
-|**Alterco Shelly1**|**Alterco Shelly2**|**Jan Goedeke Wifi Relay (NO/NC)**|
+|**Alterco Shelly 1 / 1PM**|**Alterco Shelly 2 / 2.5**|**Jan Goedeke Wifi Relay (NO/NC)**|
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
 |**EXS Wifi Relay v3.1**|**EXS Wifi Relay v5.0**|**Jorge García Wifi + Relays Board Kit**|
 |![Allnet ESP8266-UP-Relay](images/devices/allnet-esp8266-up-relay.jpg)|![Bruno Horta's OnOfre](images/devices/bh-onofre.jpg)|![Luani HVIO](images/devices/luani-hvio.jpg)|
