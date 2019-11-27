@@ -23,17 +23,66 @@ import zeroconf
 __version__ = (0, 4)
 
 DESCRIPTION = "ESPurna OTA Manager v{}".format(".".join(str(x) for x in __version__))
-DISCOVERY_TIMEOUT = 5
+DISCOVERY_TIMEOUT = 10
 
 # -------------------------------------------------------------------------------
+
+class Printer:
+
+    OUTPUT_FORMAT = "{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<12}  {:<20}  {:<25}  {:<8}  {:<8}  {:<10}"
+
+    def print_header(self):
+        print(
+            self.OUTPUT_FORMAT.format(
+                "#",
+                "HOSTNAME",
+                "IP",
+                "MAC",
+                "APP",
+                "VERSION",
+                "BUILD_DATE",
+                "DEVICE",
+                "MEM_SIZE",
+                "SDK_SIZE",
+                "FREE_SPACE",
+            )
+        )
+        print("-" * 164)
+
+    def print_device(self, index, device):
+        print(
+            self.OUTPUT_FORMAT.format(
+                index,
+                device.get("hostname", ""),
+                device.get("ip", ""),
+                device.get("mac", ""),
+                device.get("app_name", ""),
+                device.get("app_version", ""),
+                device.get("build_date", ""),
+                device.get("target_board", ""),
+                device.get("mem_size", 0),
+                device.get("sdk_size", 0),
+                device.get("free_space", 0),
+            )
+        )
+
+    def print_devices(self, devices):
+        """
+        Shows the list of discovered devices
+        """
+        for index, device in enumerate(devices, 1):
+            self.print_device(index, device)
+
+        print()
+
 
 # Based on:
 # https://github.com/balloob/pychromecast/blob/master/pychromecast/discovery.py
 class Listener:
-    def __init__(self, add_service_callback=None, remove_service_callback=None):
+    def __init__(self, print_when_discovered=True):
         self.devices = []
-        self.add_service_callback = add_service_callback
-        self.remove_service_callback = remove_service_callback
+        self.printer = Printer()
+        self.print_when_discovered = print_when_discovered
 
     @property
     def count(self):
@@ -84,68 +133,26 @@ class Listener:
 
         self.devices.append(device)
 
-        if self.add_service_callback:
-            self.add_service_callback(name)
+        if self.print_when_discovered:
+            self.printer.print_device(self.count, device)
 
     def remove_service(self, browser, service_type, name):
         """ Remove a service from the collection. """
         print("remove_service %s, %s", service_type, name)
 
-        if self.remove_service_callback:
-            self.remove_service_callback(name, None)
-
-
-def print_devices(devices):
-    """
-    Shows the list of discovered devices
-    """
-    output_format = "{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<12}  {:<20}  {:<25}  {:<8}  {:<8}  {:<10}"
-    print(
-        output_format.format(
-            "#",
-            "HOSTNAME",
-            "IP",
-            "MAC",
-            "APP",
-            "VERSION",
-            "BUILD_DATE",
-            "DEVICE",
-            "MEM_SIZE",
-            "SDK_SIZE",
-            "FREE_SPACE",
-        )
-    )
-    print("-" * 164)
-
-    index = 0
-    for device in devices:
-        index += 1
-        print(
-            output_format.format(
-                index,
-                device.get("hostname", ""),
-                device.get("ip", ""),
-                device.get("mac", ""),
-                device.get("app_name", ""),
-                device.get("app_version", ""),
-                device.get("build_date", ""),
-                device.get("target_board", ""),
-                device.get("mem_size", 0),
-                device.get("sdk_size", 0),
-                device.get("free_space", 0),
-            )
-        )
-
-    print()
+    def print_devices(self, devices=None):
+        if not devices:
+            devices = self.devices
+        self.printer.print_devices(devices)
 
 
 def get_boards():
     """
-    Grabs board types fro hardware.h file
+    Grabs board types from hardware.h file
     """
     boards = []
     for line in open("espurna/config/hardware.h"):
-        match = re.search(r"defined\((\w*)\)", line)
+        match = re.search(r"^#elif defined\((\w*)\)", line)
         if match:
             boards.append(match.group(1))
     return sorted(boards)
@@ -307,17 +314,18 @@ def run(device, env):
 def parse_commandline_args():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
-        "-c", "--core", help="flash ESPurna core", default=0, action="store_true", default=False
+        "-c", "--core", help="flash ESPurna core", action="store_true", default=False
     )
     parser.add_argument("-f", "--flash", help="flash device", action="store_true", default=False)
     parser.add_argument("-o", "--flags", help="extra flags", default="")
     parser.add_argument("-p", "--password", help="auth password", default="")
     parser.add_argument(
-        "-s", "--sort", help="sort devices list by field", default="hostname"
+        "-s", "--sort", help="sort devices list by field", default=""
     )
     parser.add_argument(
         "-y", "--yes", help="do not ask for confirmation", action="store_true", default=False
     )
+    parser.add_argument("-t", "--timeout", help="how long to wait for mDNS discovery", default=DISCOVERY_TIMEOUT)
     parser.add_argument("hostnames", nargs="*", help="Hostnames to update")
     return parser.parse_args()
 
@@ -328,9 +336,12 @@ def main(args):
     print(DESCRIPTION)
     print()
 
-    # Look for services
+    # Look for services and try to immediatly print the device when it is discovered
+    # (unless --sort <field> is specified, then we will wait until discovery finishes
+    listener = Listener(print_when_discovered=not args.sort)
+
+    # Note: pass this to the Listener and do a .set() to cancel the timeout below
     discovery_complete = Event()
-    listener = Listener()
 
     try:
         browser = zeroconf.ServiceBrowser(
@@ -345,26 +356,26 @@ def main(args):
     ) as exc:
         print("! error when creating service discovery browser: {}".format(exc))
 
-    discovery_complete.wait(DISCOVERY_TIMEOUT)
+    discovery_complete.wait(args.timeout)
     browser.zc.close()
 
     if not listener.devices:
         print("Nothing found!\n")
         sys.exit(0)
 
-    # Sort list
-    field = args.sort.lower()
-    if field not in listener.devices[0]:
-        print("Unknown field '{}'\n".format(field))
-        sys.exit(1)
-    listener.devices = sorted(
-        listener.devices, key=lambda device: device.get(field, "")
-    )
+    devices = listener.devices
 
-    # Show devices overview
-    print_devices(listener.devices)
+    # Sort list by specified field name and# show devices overview
+    if args.sort:
+        field = args.sort.lower()
+        if field not in devices[0]:
+            print("Unknown field '{}'\n".format(field))
+            sys.exit(1)
+        devices.sort(key=lambda dev: dev.get(field, ""))
 
-    # Flash device
+        listener.print_devices(devices)
+
+    # Flash device only when --flash arg is provided
     if args.flash:
 
         # Board(s) to flash
@@ -372,7 +383,7 @@ def main(args):
 
         # Check if hostnames
         for hostname in args.hostnames:
-            board = get_board_by_hostname(listener.devices, hostname)
+            board = get_board_by_hostname(devices, hostname)
             if board:
                 board["auth"] = args.password
                 board["flags"] = args.flags
@@ -380,7 +391,7 @@ def main(args):
 
         # If no boards ask the user
         if len(queue) == 0:
-            board = input_board(listener.devices)
+            board = input_board(devices)
             if board:
                 board["auth"] = args.password or input(
                     "Authorization key of the device to flash: "
@@ -392,7 +403,7 @@ def main(args):
         if len(queue) == 0:
             sys.exit(0)
 
-        queue = sorted(queue, key=lambda device: device.get("board", ""))
+        queue.sort(key=lambda dev: dev.get("board", ""))
 
         # Flash each board
         for board in queue:
