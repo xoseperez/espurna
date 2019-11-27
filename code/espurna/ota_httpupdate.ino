@@ -253,15 +253,6 @@ void _otaClientInitCommands() {
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
 
 bool _ota_do_update = false;
-String _ota_url;
-
-void _otaClientLoop() {
-    if (_ota_do_update) {
-        _otaClientFrom(_ota_url);
-        _ota_do_update = false;
-        _ota_url = "";
-    }
-}
 
 void _otaClientMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -270,11 +261,13 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        String t = mqttMagnitude((char *) topic);
-        if (t.equals(MQTT_TOPIC_OTA)) {
+        const String topic = mqttMagnitude((char *) topic);
+        if (!_ota_do_update && topic.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
-            _ota_do_update = true;
-            _ota_url = payload;
+            schedule_function([_payload = String(payload)]() {
+                _otaClientFrom(_payload);
+                _ota_do_update = false;
+            });
         }
     }
 
@@ -295,7 +288,6 @@ void otaClientSetup() {
 
     #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
         mqttRegister(_otaClientMqttCallback);
-        espurnaRegisterLoop(_otaClientLoop);
     #endif
 
 }
