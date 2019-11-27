@@ -27,11 +27,12 @@ DISCOVERY_TIMEOUT = 10
 
 # -------------------------------------------------------------------------------
 
+
 class Printer:
 
     OUTPUT_FORMAT = "{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<12}  {:<20}  {:<25}  {:<8}  {:<8}  {:<10}"
 
-    def print_header(self):
+    def header(self):
         print(
             self.OUTPUT_FORMAT.format(
                 "#",
@@ -49,7 +50,7 @@ class Printer:
         )
         print("-" * 164)
 
-    def print_device(self, index, device):
+    def device(self, index, device):
         print(
             self.OUTPUT_FORMAT.format(
                 index,
@@ -66,12 +67,12 @@ class Printer:
             )
         )
 
-    def print_devices(self, devices):
+    def devices(self, devices):
         """
         Shows the list of discovered devices
         """
         for index, device in enumerate(devices, 1):
-            self.print_device(index, device)
+            self.device(index, device)
 
         print()
 
@@ -134,16 +135,12 @@ class Listener:
         self.devices.append(device)
 
         if self.print_when_discovered:
-            self.printer.print_device(self.count, device)
-
-    def remove_service(self, browser, service_type, name):
-        """ Remove a service from the collection. """
-        print("remove_service %s, %s", service_type, name)
+            self.printer.device(self.count, device)
 
     def print_devices(self, devices=None):
         if not devices:
             devices = self.devices
-        self.printer.print_devices(devices)
+        self.printer.devices(devices)
 
 
 def get_boards():
@@ -316,26 +313,30 @@ def parse_commandline_args():
     parser.add_argument(
         "-c", "--core", help="flash ESPurna core", action="store_true", default=False
     )
-    parser.add_argument("-f", "--flash", help="flash device", action="store_true", default=False)
+    parser.add_argument(
+        "-f", "--flash", help="flash device", action="store_true", default=False
+    )
     parser.add_argument("-o", "--flags", help="extra flags", default="")
     parser.add_argument("-p", "--password", help="auth password", default="")
+    parser.add_argument("-s", "--sort", help="sort devices list by field", default="")
     parser.add_argument(
-        "-s", "--sort", help="sort devices list by field", default=""
+        "-y",
+        "--yes",
+        help="do not ask for confirmation",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
-        "-y", "--yes", help="do not ask for confirmation", action="store_true", default=False
+        "-t",
+        "--timeout",
+        help="how long to wait for mDNS discovery",
+        default=DISCOVERY_TIMEOUT,
     )
-    parser.add_argument("-t", "--timeout", help="how long to wait for mDNS discovery", default=DISCOVERY_TIMEOUT)
     parser.add_argument("hostnames", nargs="*", help="Hostnames to update")
     return parser.parse_args()
 
 
-def main(args):
-
-    print()
-    print(DESCRIPTION)
-    print()
-
+def discover_devices(args):
     # Look for services and try to immediatly print the device when it is discovered
     # (unless --sort <field> is specified, then we will wait until discovery finishes
     listener = Listener(print_when_discovered=not args.sort)
@@ -348,11 +349,11 @@ def main(args):
             zeroconf.Zeroconf(), "_arduino._tcp.local.", listener
         )
     except (
-            zeroconf.BadTypeInNameException,
-            NotImplementedError,
-            OSError,
-            socket.error,
-            zeroconf.NonUniqueNameException,
+        zeroconf.BadTypeInNameException,
+        NotImplementedError,
+        OSError,
+        socket.error,
+        zeroconf.NonUniqueNameException,
     ) as exc:
         print("! error when creating service discovery browser: {}".format(exc))
 
@@ -374,6 +375,17 @@ def main(args):
         devices.sort(key=lambda dev: dev.get(field, ""))
 
         listener.print_devices(devices)
+
+    return devices
+
+
+def main(args):
+
+    print()
+    print(DESCRIPTION)
+    print()
+
+    devices = discover_devices(args)
 
     # Flash device only when --flash arg is provided
     if args.flash:
