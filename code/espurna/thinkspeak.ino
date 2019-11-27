@@ -227,7 +227,7 @@ void _tspkPost() {
 
     _tspk_client_ts = millis();
 
-    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+    #if THINGSPEAK_USE_SSL
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
     #else
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
