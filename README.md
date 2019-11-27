@@ -267,7 +267,7 @@ Here is the list of supported hardware. For more information please refer to the
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
 |![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||
 |**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**||
-|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|![Allterco Shelly2](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
+|![Allterco Shelly 1 / 1PM](images/devices/allterco-shelly1.jpg)|![Allterco Shelly 2 / 2.5](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
 |**Alterco Shelly1**|**Alterco Shelly2**|**Jan Goedeke Wifi Relay (NO/NC)**|
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
 |**EXS Wifi Relay v3.1**|**EXS Wifi Relay v5.0**|**Jorge García Wifi + Relays Board Kit**|
@@ -293,8 +293,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Xenon SM-PW702U**|**Orvibo B25**|**Oukitel P1**|
 |![Tonbux XS-SSA06](images/devices/tonbux-xs-ssa06.jpg)|![Litesun LA-WF3](images/devices/litesun-la-wf3.jpg)|![Maxcio W DE-004](images/devices/maxcio-w-de004.jpg)|
 |**Tonbux XS-SSA06**|**Litesun LA-WF3**|**Maxcio W DE-004**|
-|![Hama WiFi Steckdose](images/devices/hama-wifi-steckdose.jpg)|![GBLife RGBW Socket](images/devices/gblife-rgbw-socket.jpg)||
-|**Hama WiFi Steckdose**|**GBLife RGBW Socket**||
+|![Hama WiFi Steckdose](images/devices/hama-wifi-steckdose.jpg)|![GBLife RGBW Socket](images/devices/gblife-rgbw-socket.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)|
+|**Hama WiFi Steckdose**|**GBLife RGBW Socket**|**Hykker Smart Home Power Plug**|
 
 ### Wall switches
 
