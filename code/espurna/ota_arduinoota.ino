@@ -63,13 +63,15 @@ void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
         if (wsConnected()) return;
     #endif
 
-    static unsigned int _progOld;
+    #if DEBUG_SUPPORT
+        static unsigned int _progOld;
 
-    unsigned int _prog = (progress / (total / 100));
-    if (_prog != _progOld) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
-        _progOld = _prog;
-    }
+        unsigned int _prog = (progress / (total / 100));
+        if (_prog != _progOld) {
+            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
+            _progOld = _prog;
+        }
+    #endif
 
 }
 
