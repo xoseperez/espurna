@@ -48,7 +48,10 @@ void _arduinoOtaOnEnd() {
     #if WEB_SUPPORT
         wsSend_P(PSTR("{\"action\": \"reload\"}"));
     #endif
-    deferredReset(100, CUSTOM_RESET_OTA);
+
+    // Note: ArduinoOTA will reset the board after this callback returns.
+    customResetReason(CUSTOM_RESET_OTA);
+    nice_delay(100);
 
 }
 
