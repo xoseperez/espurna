@@ -27,33 +27,33 @@ union system_rtcmem_t {
         uint8_t stability_counter;
         uint8_t reset_reason;
         uint16_t _reserved_;
-    } parts;
+    } packed;
     uint32_t value;
 };
 
 uint8_t systemStabilityCounter() {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    return data.parts.stability_counter;
+    return data.packed.stability_counter;
 }
 
 void systemStabilityCounter(uint8_t count) {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    data.parts.stability_counter = count;
+    data.packed.stability_counter = count;
     Rtcmem->sys = data.value;
 }
 
 uint8_t _systemResetReason() {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    return data.parts.reset_reason;
+    return data.packed.reset_reason;
 }
 
 void _systemResetReason(uint8_t reason) {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    data.parts.reset_reason = reason;
+    data.packed.reset_reason = reason;
     Rtcmem->sys = data.value;
 }
 
