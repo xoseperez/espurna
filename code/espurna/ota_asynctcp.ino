@@ -15,6 +15,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
 #include <ESPAsyncTCP.h>
+
+#include "system.h"
 #include "libs/URL.h"
 
 std::unique_ptr<AsyncClient> _ota_client = nullptr;

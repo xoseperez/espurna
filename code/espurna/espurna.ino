@@ -22,14 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 #include <vector>
 
+#include "system.h"
 #include "utils.h"
 #include "relay.h"
 #include "broker.h"
 #include "tuya.h"
 #include "libs/HeapStats.h"
 
-std::vector<void (*)()> _loop_callbacks;
-std::vector<void (*)()> _reload_callbacks;
+using void_callback_f = void (*)();
+
+std::vector<void_callback_f> _loop_callbacks;
+std::vector<void_callback_f> _reload_callbacks;
 
 bool _reload_config = false;
 unsigned long _loop_delay = 0;
@@ -38,11 +41,11 @@ unsigned long _loop_delay = 0;
 // GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
 
-void espurnaRegisterLoop(void (*callback)()) {
+void espurnaRegisterLoop(void_callback_f callback) {
     _loop_callbacks.push_back(callback);
 }
 
-void espurnaRegisterReload(void (*callback)()) {
+void espurnaRegisterReload(void_callback_f callback) {
     _reload_callbacks.push_back(callback);
 }
 

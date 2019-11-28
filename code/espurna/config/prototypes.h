@@ -38,10 +38,6 @@ extern "C" {
 #define TCP_MSS (1460)
 #endif
 
-uint32_t systemResetReason();
-uint8_t systemStabilityCounter();
-void systemStabilityCounter(uint8_t);
-
 // -----------------------------------------------------------------------------
 // PROGMEM
 // -----------------------------------------------------------------------------

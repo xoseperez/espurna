@@ -9,6 +9,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <EEPROM_Rotate.h>
 
+#include "system.h"
+
 // -----------------------------------------------------------------------------
 
 bool _system_send_heartbeat = false;
@@ -35,10 +37,10 @@ uint8_t systemStabilityCounter() {
     return data.parts.stability_counter;
 }
 
-void systemStabilityCounter(uint8_t counter) {
+void systemStabilityCounter(uint8_t count) {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    data.parts.stability_counter = counter;
+    data.parts.stability_counter = count;
     Rtcmem->sys = data.value;
 }
 
