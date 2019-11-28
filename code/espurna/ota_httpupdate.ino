@@ -265,9 +265,14 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
         if (!_ota_do_update && t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
             // TODO: c++14 support is required for `[_payload = String(payload)]() { ... }`
-            //       c++11 also supports basic `auto _payload = String(payload); [payload]() { ... }`
-            //       bind does the same thing, so just use it
-            schedule_function(std::bind(_otaClientFrom, String(_payload)));
+            //       c++11 also supports basic `std::bind(func, arg)`, but we need to reset the lock
+            _ota_do_update = true;
+
+            const String _payload(payload);
+            schedule_function([_payload]() {
+                _otaClientFrom(_payload);
+                _ota_do_update = false;
+            });
         }
     }
 
