@@ -606,8 +606,8 @@
 #define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
 #endif
 
-// This is not working at the moment!!
-// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core 2.4.0
+// Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
+// XXX: This is not working at the moment!! Pending https://github.com/me-no-dev/ESPAsyncTCP/issues/95
 #ifndef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED             0           // Use HTTPS web interface
 #endif
@@ -700,11 +700,11 @@
 #endif
 
 #ifndef LLMNR_SUPPORT
-#define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires 2.4.0
+#define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires Core version >= 2.4.0
 #endif
 
 #ifndef NETBIOS_SUPPORT
-#define NETBIOS_SUPPORT             0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires 2.4.0
+#define NETBIOS_SUPPORT             0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires Core version >= 2.4.0
 #endif
 
 #ifndef SSDP_SUPPORT
@@ -1363,7 +1363,7 @@
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
-// When THINGSPEAK_USE_ASYNC is 1, requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core >= 2.4.0.
+// When THINGSPEAK_USE_ASYNC is 1, requires EspAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and ESP8266 Arduino Core >= 2.4.0.
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
