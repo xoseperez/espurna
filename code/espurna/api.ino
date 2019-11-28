@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
+#include "system.h"
+
 typedef struct {
     char * key;
     api_get_callback_f getFn = NULL;

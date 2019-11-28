@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <Ticker.h>
 #include <vector>
+
+#include "system.h"
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");

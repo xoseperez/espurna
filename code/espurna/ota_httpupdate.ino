@@ -18,6 +18,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <ESP8266httpUpdate.h>
 #include <Schedule.h>
 
+#include "system.h"
 #include "libs/URL.h"
 #include "libs/TypeChecks.h"
 #include "libs/SecureClientHelpers.h"
