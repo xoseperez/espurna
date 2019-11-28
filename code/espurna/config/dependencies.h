@@ -5,11 +5,6 @@
 // Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
 
-#if defined(ASYNC_TCP_SSL_ENABLED) && SECURE_CLIENT == SECURE_CLIENT_NONE
-#undef SECURE_CLIENT
-#define SECURE_CLIENT               SECURE_CLIENT_AXTLS
-#endif
-
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
 #define TELNET_SUPPORT              1
@@ -70,13 +65,6 @@
 #define MQTT_SUPPORT                1               // If Home Assistant enabled enable MQTT
 #endif
 
-#if SECURE_CLIENT != SECURE_CLIENT_AXTLS
-#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
-#undef THINGSPEAK_SUPPORT                       
-#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires SECURE_CLIENT_AXTLS
-#endif
-#endif
-
 #if THINGSPEAK_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
@@ -124,3 +112,20 @@
 #define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
 #endif
 
+// TODO: clean-up SSL_ENABLED and USE_SSL settings for 1.15.0
+#if ASYNC_TCP_SSL_ENABLED && SECURE_CLIENT == SECURE_CLIENT_NONE
+#undef SECURE_CLIENT
+#define SECURE_CLIENT               SECURE_CLIENT_AXTLS
+#endif
+
+#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC && (!ASYNC_TCP_SSL_ENABLED)
+#warning "Thingspeak in ASYNC mode requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
+#undef THINGSPEAK_SUPPORT
+#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#endif
+
+#if WEB_SUPPORT && WEB_SSL_ENABLED && (!ASYNC_TCP_SSL_ENABLED)
+#warning "WEB_SUPPORT with SSL requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
+#undef WEB_SSL_ENABLED
+#define WEB_SSL_ENABLED          0               // WEB_SUPPORT mode th SSL requires ASYNC_TCP_SSL_ENABLED
+#endif
