@@ -2960,6 +2960,48 @@
     #define DEBUG_SERIAL_SUPPORT        0
 
 // -----------------------------------------------------------------------------
+// Similar to both devices above but also with switchable USB ports
+// and other sensor (CSE7766).
+// the pin layout is different to the above two versions
+// BlitzWolf SHP5
+// -----------------------------------------------------------------------------
+#elif defined(BLITZWOLF_BWSHP5)
+
+    // Info
+    #define MANUFACTURER                "BLITZWOLF"
+    #define DEVICE                      "BWSHP5"
+
+    // Buttons
+    #define BUTTON1_PIN                 16
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    // Power plug
+    #define RELAY1_PIN                  14
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+    // USB
+    #define RELAY2_PIN                  5
+    #define RELAY2_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+    #define LED2_PIN                    0
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FINDME
+    #define LED2_RELAY                  1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT        0
+    
+    // CSE7766
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
+    #endif
+    #define CSE7766_PIN         1
+
+// -----------------------------------------------------------------------------
 // Teckin SP21
 // -----------------------------------------------------------------------------
 

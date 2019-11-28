@@ -25,6 +25,7 @@
 //#define BH_ONOFRE
 //#define BLITZWOLF_BWSHPX
 //#define BLITZWOLF_BWSHPX_V23
+//#define BLITZWOLF_BWSHP5
 //#define DIGOO_NX_SP202
 //#define ELECTRODRAGON_WIFI_IOT
 //#define ESPURNA_BASE
