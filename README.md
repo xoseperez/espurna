@@ -248,14 +248,14 @@ Here is the list of supported hardware. For more information please refer to the
 
 ||||
 |---|---|---|
-|![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|
-|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Gosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
-|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|
-|**Itead Sonoff POW**|**Itead Sonoff POW R2**|**Itead Sonoff S31**|
-|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|
-|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|**Digoo NX SP202**|
-|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)||
-|**Vanzavanzu Smart WiFi Plug Mini**|**Hykker Smart Home Power Plug**||
+|![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![BlitzWolf BW-SHP5](images/devices/blitzwolf-bw-shp5.jpg)|
+|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Gosund, HomeCube, Teckin)**|**Blitzwolf BW-SHP5**|
+|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|
+|**Power meters based on V9261F**|**Itead Sonoff POW**|**Itead Sonoff POW R2**|
+|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|
+|**Itead Sonoff S31**|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|
+|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)|
+|**Digoo NX SP202**|**Vanzavanzu Smart WiFi Plug Mini**|**Hykker Smart Home Power Plug**|
 
 ### Embedded switches
 
