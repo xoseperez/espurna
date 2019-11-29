@@ -254,8 +254,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Power meters based on V9261F**|**Itead Sonoff POW**|**Itead Sonoff POW R2**|
 |![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|
 |**Itead Sonoff S31**|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|
-|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)||
-|**Digoo NX SP202**|**Vanzavanzu Smart WiFi Plug Mini**||
+|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)|
+|**Digoo NX SP202**|**Vanzavanzu Smart WiFi Plug Mini**|**Hykker Smart Home Power Plug**|
 
 ### Embedded switches
 
@@ -293,8 +293,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Xenon SM-PW702U**|**Orvibo B25**|**Oukitel P1**|
 |![Tonbux XS-SSA06](images/devices/tonbux-xs-ssa06.jpg)|![Litesun LA-WF3](images/devices/litesun-la-wf3.jpg)|![Maxcio W DE-004](images/devices/maxcio-w-de004.jpg)|
 |**Tonbux XS-SSA06**|**Litesun LA-WF3**|**Maxcio W DE-004**|
-|![Hama WiFi Steckdose](images/devices/hama-wifi-steckdose.jpg)|![GBLife RGBW Socket](images/devices/gblife-rgbw-socket.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)|
-|**Hama WiFi Steckdose**|**GBLife RGBW Socket**|**Hykker Smart Home Power Plug**|
+|![Hama WiFi Steckdose](images/devices/hama-wifi-steckdose.jpg)|![GBLife RGBW Socket](images/devices/gblife-rgbw-socket.jpg)||
+|**Hama WiFi Steckdose**|**GBLife RGBW Socket**||
 
 ### Wall switches
 
