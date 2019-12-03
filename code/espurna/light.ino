@@ -8,7 +8,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
+#include "tuya.h"
 #include "light.h"
+#include "broker.h"
 
 #include <Ticker.h>
 #include <Schedule.h>
@@ -34,7 +36,7 @@ Ticker _light_transition_ticker;
 
 struct channel_t {
     unsigned char pin;          // real GPIO pin
-    bool reverse;               // wether we should invert the value before using it
+    bool reverse;               // whether we should invert the value before using it
     bool state;                 // is the channel ON
     unsigned char inputValue;   // raw value, without the brightness
     unsigned char value;        // normalized value, including brightness
@@ -42,6 +44,8 @@ struct channel_t {
     double current;             // transition value
 };
 std::vector<channel_t> _light_channel;
+
+unsigned char _light_channels = LIGHT_CHANNELS;
 
 bool _light_has_color = false;
 bool _light_use_white = false;
@@ -119,10 +123,7 @@ void _setValue(const unsigned char id, const unsigned int value) {
 }
 
 void _setInputValue(const unsigned char id, const unsigned int value) {
-    if (_light_channel[id].inputValue != value) {
-        _light_channel[id].inputValue = value;
-        _light_dirty = true;
-    }
+    _light_channel[id].inputValue = value;
 }
 
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
@@ -589,17 +590,15 @@ void _lightProviderScheduleUpdate(unsigned long steps) {
 
 union light_rtcmem_t {
     struct {
-        uint8_t channels[5];
+        uint8_t channels[Light::CHANNELS_MAX];
         uint8_t brightness;
         uint16_t mired;
-    } packed;
+    } __attribute__((packed)) packed;
     uint64_t value;
 };
 
-#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(light_rtcmem_t().packed.channels)
-
 void _lightSaveRtcmem() {
-    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+    if (lightChannels() > Light::CHANNELS_MAX) return;
 
     light_rtcmem_t light;
 
@@ -614,7 +613,7 @@ void _lightSaveRtcmem() {
 }
 
 void _lightRestoreRtcmem() {
-    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+    if (lightChannels() > Light::CHANNELS_MAX) return;
 
     light_rtcmem_t light;
     light.value = Rtcmem->light;
@@ -800,10 +799,8 @@ void lightMQTTGroup() {
 #if BROKER_SUPPORT
 
 void lightBroker() {
-    char buffer[10];
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-        itoa(_light_channel[i].inputValue, buffer, 10);
-        brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_CHANNEL, i, buffer);
+    for (unsigned int id = 0; id < _light_channel.size(); ++id) {
+        StatusBroker::Publish(MQTT_TOPIC_CHANNEL, id, _light_channel[id].value);
     }
 }
 
@@ -890,15 +887,17 @@ void lightSave() {
 }
 #endif
 
-void lightState(unsigned char i, bool state) {
-    if (_light_channel[i].state != state) {
-        _light_channel[i].state = state;
+void lightState(unsigned char id, bool state) {
+    if (id >= _light_channel.size()) return;
+    if (_light_channel[id].state != state) {
+        _light_channel[id].state = state;
         _light_dirty = true;
     }
 }
 
-bool lightState(unsigned char i) {
-    return _light_channel[i].state;
+bool lightState(unsigned char id) {
+    if (id >= _light_channel.size()) return false;
+    return _light_channel[id].state;
 }
 
 void lightState(bool state) {
@@ -944,14 +943,12 @@ String lightColor() {
 }
 
 long lightChannel(unsigned char id) {
-    if (id <= _light_channel.size()) {
-        return _light_channel[id].inputValue;
-    }
-    return 0;
+    if (id >= _light_channel.size()) return 0;
+    return _light_channel[id].inputValue;
 }
 
 void lightChannel(unsigned char id, long value) {
-    if (id > _light_channel.size()) return;
+    if (id >= _light_channel.size()) return;
     _setInputValue(id, constrain(value, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
@@ -1304,6 +1301,19 @@ void _lightConfigure() {
 
 }
 
+// Dummy channel setup for light providers without real GPIO
+void lightSetupChannels(unsigned char size) {
+
+    size = constrain(size, 0, Light::CHANNELS_MAX);
+    if (size == _light_channel.size()) return;
+    _light_channels = size;
+    _light_channel.assign(size, {
+        GPIO_NONE, false, true,
+        0, 0, 0
+    });
+
+}
+
 void lightSetup() {
 
     #ifdef LIGHT_ENABLE_PIN
@@ -1316,9 +1326,7 @@ void lightSetup() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
-            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0});
-        }
+        lightSetupChannels(LIGHT_CHANNELS);
 
     #endif
 
@@ -1358,6 +1366,10 @@ void lightSetup() {
         pwm_start();
 
 
+    #endif
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        tuyaSetupLight();
     #endif
 
     DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);

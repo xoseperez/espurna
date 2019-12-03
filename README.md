@@ -3,10 +3,10 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.6--dev-brightgreen.svg)](CHANGELOG.md)
-[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
+[![version](https://img.shields.io/badge/version-1.14.0-brightgreen.svg)](CHANGELOG.md)
+[![branch](https://img.shields.io/badge/branch-master-orange.svg)](https://github.com/xoseperez/espurna/tree/master/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=master)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 <br />
 [![latest master build](https://img.shields.io/github/release/xoseperez/espurna/all.svg?label=latest%20master%20build)](https://github.com/xoseperez/espurna/releases/latest)
@@ -35,7 +35,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
-> Process of building ESPurna from source is documented in the Wiki:
+> Process of building ESPurna from source is documented in the Wiki:  
 [Using PlatformIO IDE for VSCode](https://github.com/xoseperez/espurna/wiki/Build-and-update-from-Visual-Studio-Code-using-PlatformIO)  
 [Using PlatformIO CLI](https://github.com/xoseperez/espurna/wiki/PlatformIO)  
 [Using Arduino IDE](https://github.com/xoseperez/espurna/wiki/ArduinoIDE)  
@@ -101,6 +101,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
         * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
+        * **T6613** CO2 sensor
         * **MICS2710** CO2 & NO2 sensor
         * **MICS5525** CO & CO2 sensor
         * **SenseAir S8** CO2 sensor
@@ -247,14 +248,14 @@ Here is the list of supported hardware. For more information please refer to the
 
 ||||
 |---|---|---|
-|![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|
-|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Gosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
-|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|
-|**Itead Sonoff POW**|**Itead Sonoff POW R2**|**Itead Sonoff S31**|
-|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|
-|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|**Digoo NX SP202**|
-|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|||
-|**Vanzavanzu Smart WiFi Plug Mini**|||
+|![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![BlitzWolf BW-SHP5](images/devices/blitzwolf-bw-shp5.jpg)|
+|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Gosund, HomeCube, Teckin)**|**Blitzwolf BW-SHP5**|
+|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|
+|**Power meters based on V9261F**|**Itead Sonoff POW**|**Itead Sonoff POW R2**|
+|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|
+|**Itead Sonoff S31**|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|
+|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)|
+|**Digoo NX SP202**|**Vanzavanzu Smart WiFi Plug Mini**|**Hykker Smart Home Power Plug**|
 
 ### Embedded switches
 
@@ -266,8 +267,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
 |![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||
 |**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**||
-|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|![Allterco Shelly2](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
-|**Alterco Shelly1**|**Alterco Shelly2**|**Jan Goedeke Wifi Relay (NO/NC)**|
+|![Allterco Shelly 1 / 1PM](images/devices/allterco-shelly1.jpg)|![Allterco Shelly 2 / 2.5](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
+|**Alterco Shelly 1 / 1PM**|**Alterco Shelly 2 / 2.5**|**Jan Goedeke Wifi Relay (NO/NC)**|
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
 |**EXS Wifi Relay v3.1**|**EXS Wifi Relay v5.0**|**Jorge García Wifi + Relays Board Kit**|
 |![Allnet ESP8266-UP-Relay](images/devices/allnet-esp8266-up-relay.jpg)|![Bruno Horta's OnOfre](images/devices/bh-onofre.jpg)|![Luani HVIO](images/devices/luani-hvio.jpg)|
@@ -327,6 +328,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**Arilux AL-LC06 (RGBWWCW)**|
 |![Arilux AL-LC11 (RGBWWW) & RF](images/devices/arilux-al-lc11.jpg)|![MagicHome LED Controller (1.0 and 2.x)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801/802](images/devices/huacanxing-h801.jpg)|
 |**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x, also ZJ WFMN A/B11)**|**Huacanxing H801/802**|
+|![Muvit I/O MIOBULB001](images/devices/muvit-io-miobulb001.jpg)|
+|**Muvit I/O MIOBULB001**|
 
 ### Radio links / gateways
 

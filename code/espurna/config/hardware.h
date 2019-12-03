@@ -54,6 +54,7 @@
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
     #define NTP_SUPPORT             0
+    #define RPN_RULES_SUPPORT       0
     #define SCHEDULER_SUPPORT       0
     #define SENSOR_SUPPORT          0
     #define THINGSPEAK_SUPPORT      0
@@ -179,6 +180,13 @@
     // Info
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_TARPUNA_SHIELD"
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define DHT_SUPPORT         1
+    #define DHT_PIN             12
 
 // -----------------------------------------------------------------------------
 // ESPurna
@@ -390,6 +398,7 @@
     #define DHT_SUPPORT         1
     #endif
     #define DHT_PIN             14
+    #define DHT_TYPE            DHT_CHIP_SI7021
 
     //#define I2C_SDA_PIN         4
     //#define I2C_SCL_PIN         14
@@ -2951,6 +2960,48 @@
     #define DEBUG_SERIAL_SUPPORT        0
 
 // -----------------------------------------------------------------------------
+// Similar to both devices above but also with switchable USB ports
+// and other sensor (CSE7766).
+// the pin layout is different to the above two versions
+// BlitzWolf SHP5
+// -----------------------------------------------------------------------------
+#elif defined(BLITZWOLF_BWSHP5)
+
+    // Info
+    #define MANUFACTURER                "BLITZWOLF"
+    #define DEVICE                      "BWSHP5"
+
+    // Buttons
+    #define BUTTON1_PIN                 16
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    // Power plug
+    #define RELAY1_PIN                  14
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+    // USB
+    #define RELAY2_PIN                  5
+    #define RELAY2_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+    #define LED2_PIN                    0
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FINDME
+    #define LED2_RELAY                  1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT        0
+    
+    // CSE7766
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
+    #endif
+    #define CSE7766_PIN         1
+
+// -----------------------------------------------------------------------------
 // Teckin SP21
 // -----------------------------------------------------------------------------
 
@@ -3228,7 +3279,7 @@
     #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
     
- #elif defined(ALLTERCO_SHELLY1PM)
+#elif defined(ALLTERCO_SHELLY1PM)
     // Info
     #define MANUFACTURER        "ALLTERCO"
     #define DEVICE              "SHELLY1PM"
@@ -3271,7 +3322,7 @@
      #define NTC_R_DOWN         0       
      #define NTC_R0             8000
 
- #elif defined(ALLTERCO_SHELLY25)
+#elif defined(ALLTERCO_SHELLY25)
     // Info
     #define MANUFACTURER        "ALLTERCO"
     #define DEVICE              "SHELLY25"
@@ -3892,6 +3943,16 @@
     #define LED2_RELAY          1
     #define LED2_MODE           LED_MODE_FINDME_WIFI
 
+#elif defined(TUYA_GENERIC_DIMMER)
+
+    #define MANUFACTURER        "TUYA"
+    #define DEVICE              "GENERIC_DIMMER"
+
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
+    #define LIGHT_CHANNELS      0
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define DUMMY_RELAY_COUNT   0
+
 // -----------------------------------------------------------------------------
 // Etekcity ESW01-USA 
 // https://www.amazon.com/Etekcity-Voltson-Outlet-Monitoring-Required/dp/B01M3MYIFS
@@ -4011,7 +4072,76 @@
     #define HLW8012_POWER_RATIO         3711185
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// -----------------------------------------------------------------------------
+// MUVIT_IO_MIOBULB001
+// -----------------------------------------------------------------------------
 
+#elif defined(MUVIT_IO_MIOBULB001)
+
+    // Info
+    #define MANUFACTURER        "MUVIT_IO"
+    #define DEVICE              "MIOBULB001"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// Hykker Power Plug (Smart Home Series) available in Jerónimo Martins Polska (Biedronka)
+// https://www.hykker.com/akcesoria/gniazdo-wi-fi-z-licznikiem-energii/
+// Reflashing from original Tuya firmware
+// to thirdparty firmware like espurna by:
+// https://github.com/ct-Open-Source/tuya-convert
+// -----------------------------------------------------------------------------
+
+#elif defined(HYKKER_SMART_HOME_POWER_PLUG)
+
+    // Info
+    #define MANUFACTURER                "HYKKER"
+    #define DEVICE                      "SMART_HOME_POWER_PLUG"
+
+    // Buttons
+    #define BUTTON1_PIN                 0
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  14
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LED
+    // Red
+    #define LED1_PIN                    13
+    #define LED1_MODE                   LED_MODE_WIFI
+    #define LED1_PIN_INVERSE            1
+    // Blue connected to relay
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             5
+    #define HLW8012_CF_PIN              4
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       282060
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+    #define SENSOR_ENERGY_UNITS         ENERGY_KWH
+    #define SENSOR_POWER_UNITS          POWER_WATTS
 // -----------------------------------------------------------------------------
 
 #else

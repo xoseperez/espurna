@@ -8,11 +8,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if TERMINAL_SUPPORT
 
-#include <vector>
+#include "system.h"
+#include "utils.h"
 #include "libs/EmbedisWrap.h"
-#include <Stream.h>
 #include "libs/StreamInjector.h"
 #include "libs/HeapStats.h"
+
+#include <vector>
+#include <Stream.h>
 
 StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
 EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
