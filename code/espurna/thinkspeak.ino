@@ -8,6 +8,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_SUPPORT
 
+#include "broker.h"
+
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
 #else
@@ -43,19 +45,15 @@ bool _tspk_connected = false;
 // -----------------------------------------------------------------------------
 
 #if BROKER_SUPPORT
-void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
 
-    // Process status messages
-    if (BROKER_MSG_TYPE_STATUS == type) {
-        tspkEnqueueRelay(id, (char *) payload);
-        tspkFlush();
+    // Only process status messages for switches
+    if (!topic.equals(MQTT_TOPIC_RELAY)) {
+        return;
     }
 
-    // Porcess sensor messages
-    if (BROKER_MSG_TYPE_SENSOR == type) {
-        //tspkEnqueueMeasurement(id, (char *) payload);
-        //tspkFlush();
-    }
+    tspkEnqueueRelay(id, value > 0);
+    tspkFlush();
 
 }
 #endif // BROKER_SUPPORT
@@ -231,7 +229,7 @@ void _tspkPost() {
 
     _tspk_client_ts = millis();
 
-    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+    #if THINGSPEAK_USE_SSL
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
     #else
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
@@ -353,11 +351,11 @@ void _tspkFlush() {
 
 // -----------------------------------------------------------------------------
 
-bool tspkEnqueueRelay(unsigned char index, char * payload) {
+bool tspkEnqueueRelay(unsigned char index, bool status) {
     if (!_tspk_enabled) return true;
     unsigned char id = getSetting("tspkRelay", index, 0).toInt();
     if (id > 0) {
-        _tspkEnqueue(id, payload);
+        _tspkEnqueue(id, status ? "1" : "0");
         return true;
     }
     return false;
@@ -393,7 +391,7 @@ void tspkSetup() {
     #endif
 
     #if BROKER_SUPPORT
-        brokerRegister(_tspkBrokerCallback);
+        StatusBroker::Register(_tspkBrokerCallback);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),

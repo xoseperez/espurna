@@ -983,8 +983,7 @@ function addSchedule(event) {
     var type = (1 === event.data.schType) ? "switch" : "light";
 
     template = $("#" + type + "ActionTemplate").children();
-    var actionLine = template.clone();
-    $(line).find("#schActionDiv").append(actionLine);
+    $(line).find("#schActionDiv").append(template.clone());
 
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex);
@@ -1028,10 +1027,6 @@ function initRelays(data) {
         $("label.toggle", line).prop("for", "relay" + i)
         line.appendTo("#relays");
 
-        // Populate the relay SELECTs
-        $("select.isrelay").append(
-            $("<option></option>").attr("value",i).text("Switch #" + i));
-
     }
 
 }
@@ -1041,7 +1036,12 @@ function updateRelays(data) {
     for (var i=0; i<size; ++i) {
         var elem = $("input[name='relay'][data='" + i + "']");
         elem.prop("checked", data.status[i]);
-        elem.prop("disabled", data.lock[i] < 2); // RELAY_LOCK_DISABLED=2
+        var lock = {
+            0: false,
+            1: !data.status[i],
+            2: data.status[i]
+        };
+        elem.prop("disabled", lock[data.lock[i]]); // RELAY_LOCK_DISABLED=0
     }
 }
 
@@ -1091,6 +1091,11 @@ function initRelayConfig(data) {
         }
 
         line.appendTo("#relayConfig");
+
+        // Populate the relay SELECTs
+        $("select.isrelay").append(
+            $("<option></option>").attr("value",i).text("Switch #" + i));
+
     }
 
 }

@@ -9,6 +9,8 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
+#include "relay.h"
+
 #include <TimeLib.h>
 
 int _sch_restore = 0;
@@ -53,7 +55,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         schedule.add(getSetting("schUTC", i, 0).toInt() == 1); //UTC
         schedule.add(getSetting("schSwitch", i, 0).toInt()); //switch
         schedule.add(getSetting("schAction", i, 0).toInt()); //action
-        schedule.add(getSetting("schType", i, 0).toInt()); //type
+        schedule.add(getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt()); //type
         schedule.add(getSetting("schHour", i, 0).toInt()); //hour
         schedule.add(getSetting("schMinute", i, 0).toInt()); //minute
         schedule.add(getSetting("schWDs", i, SCHEDULER_WEEKDAYS)); //weekdays

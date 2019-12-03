@@ -8,6 +8,8 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #if THERMOSTAT_SUPPORT
 
+#include "relay.h"
+
 #include <ArduinoJson.h>
 #include <float.h>
 

@@ -6,9 +6,11 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "utils.h"
+#include "libs/HeapStats.h"
+
 #include <Ticker.h>
 #include <limits>
-#include "libs/HeapStats.h"
 
 String getIdentifier() {
     char buffer[20];
@@ -64,7 +66,7 @@ const String& getCoreRevision() {
         #ifdef ARDUINO_ESP8266_GIT_VER
             revision = String(ARDUINO_ESP8266_GIT_VER, 16);
         #else
-            revision = "";
+            revision = "(unspecified)";
         #endif
     }
     return revision;
@@ -192,12 +194,7 @@ namespace Heartbeat {
             return defaultValue();
         }
 
-        // invalidate the whole string when invalid chars are detected
-        char *value_endptr = nullptr;
-        const auto value = strtoul(cfg.c_str(), &value_endptr, 10);
-        if (value_endptr == cfg.c_str() || value_endptr[0] != '\0') {
-            return defaultValue();
-        }
+        const auto value = u32fromString(cfg);
 
         // because we start shifting from 1, we could use the
         // first bit as a flag to enable all of the messages
@@ -250,7 +247,7 @@ void heartbeat() {
     #if MQTT_SUPPORT
         if (!serial && (_heartbeat_mode == HEARTBEAT_REPEAT || systemGetHeartbeat())) {
             if (hb_cfg & Heartbeat::Interval)
-                mqttSend(MQTT_TOPIC_INTERVAL, String(getHeartbeatInterval() / 1000).c_str());
+                mqttSend(MQTT_TOPIC_INTERVAL, String(getHeartbeatInterval()).c_str());
 
             if (hb_cfg & Heartbeat::App)
                 mqttSend(MQTT_TOPIC_APP, APP_NAME);
@@ -319,7 +316,7 @@ void heartbeat() {
                     mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(_temp_range.max).c_str());
                 }
 
-                if (hb_cfg & Heartbeat::Remote_temp) {
+                if (hb_cfg & Heartbeat::RemoteTemp) {
                     char remote_temp[16];
                     dtostrf(_remote_temp.temp, 1, 1, remote_temp);
                     mqttSend(MQTT_TOPIC_REMOTE_TEMP, remote_temp);
@@ -354,6 +351,9 @@ void heartbeat() {
 
         if (hb_cfg & Heartbeat::Ssid)
             idbSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
+
+        if (hb_cfg & Heartbeat::Bssid)
+            idbSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
     #endif
 
 }
@@ -597,7 +597,7 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // Fixed since 2.4.0, see: esp8266/core/esp8266/Esp.cpp: ESP::eraseConfig()
 bool eraseSDKConfig() {
     #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-        const size_t cfgsize = 0x4000;
+        constexpr size_t cfgsize = 0x4000;
         size_t cfgaddr = ESP.getFlashChipSize() - cfgsize;
 
         for (size_t offset = 0; offset < cfgsize; offset += SPI_FLASH_SEC_SIZE) {
@@ -673,4 +673,58 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
   }
 
   return nullptr;
+}
+
+// TODO: force getSetting return type to handle settings
+uint32_t u32fromString(const String& string, int base) {
+
+    const char *ptr = string.c_str();
+    char *value_endptr = nullptr;
+
+    // invalidate the whole string when invalid chars are detected
+    const auto value = strtoul(ptr, &value_endptr, base);
+    if (value_endptr == ptr || value_endptr[0] != '\0') {
+        return 0;
+    }
+
+    return value;
+
+}
+
+uint32_t u32fromString(const String& string) {
+    if (!string.length()) {
+        return 0;
+    }
+
+    int base = 10;
+    if (string.length() > 2) {
+        if (string.startsWith("0b")) {
+            base = 2;
+        } else if (string.startsWith("0o")) {
+            base = 8;
+        } else if (string.startsWith("0x")) {
+            base = 16;
+        }
+    }
+
+    return u32fromString((base == 10) ? string : string.substring(2), base);
+}
+
+String u32toString(uint32_t value, int base) {
+    String result;
+    result.reserve(32 + 2);
+
+    if (base == 2) {
+        result += "0b";
+    } else if (base == 8) {
+        result += "0o";
+    } else if (base == 16) {
+        result += "0x";
+    }
+
+    char buffer[33] = {0};
+    ultoa(value, buffer, base);
+    result += buffer;
+
+    return result;
 }

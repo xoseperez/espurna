@@ -48,6 +48,8 @@ Raw messages:
 
 #if IR_SUPPORT
 
+#include "relay.h"
+
 #include <IRremoteESP8266.h>
 
 #if defined(IR_RX_PIN)

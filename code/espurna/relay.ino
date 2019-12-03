@@ -11,38 +11,78 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 #include <functional>
+#include <bitset>
 
-typedef struct {
+#include "relay.h"
+#include "broker.h"
+#include "tuya.h"
+
+#include "relay_config.h"
+
+struct relay_t {
+
+    // Default to dummy (virtual) relay configuration
+
+    relay_t(unsigned char pin, unsigned char type, unsigned char reset_pin) :
+        pin(pin),
+        type(type),
+        reset_pin(reset_pin),
+        delay_on(0),
+        delay_off(0),
+        pulse(RELAY_PULSE_NONE),
+        pulse_ms(0),
+        current_status(false),
+        target_status(false),
+        lock(RELAY_LOCK_DISABLED),
+        fw_start(0),
+        fw_count(0),
+        change_start(0),
+        change_delay(0),
+        report(false),
+        group_report(false)
+    {}
+
+    relay_t() :
+        relay_t(GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE)
+    {}
+
+    // ... unless there are pre-configured values
+
+    relay_t(unsigned char id) :
+        relay_t(_relayPin(id), _relayType(id), _relayResetPin(id))
+    {}
 
     // Configuration variables
 
-    unsigned char pin;          // GPIO pin for the relay
-    unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-    unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    unsigned long delay_on;     // Delay to turn relay ON
-    unsigned long delay_off;    // Delay to turn relay OFF
-    unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
-    unsigned long pulse_ms;     // Pulse length in millis
+    unsigned char pin;           // GPIO pin for the relay
+    unsigned char type;          // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+    unsigned char reset_pin;     // GPIO to reset the relay if RELAY_TYPE_LATCHED
+    unsigned long delay_on;      // Delay to turn relay ON
+    unsigned long delay_off;     // Delay to turn relay OFF
+    unsigned char pulse;         // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    unsigned long pulse_ms;      // Pulse length in millis
 
     // Status variables
 
-    bool current_status;        // Holds the current (physical) status of the relay
-    bool target_status;         // Holds the target status
-    unsigned char lock;         // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
-    unsigned long fw_start;     // Flood window start time
-    unsigned char fw_count;     // Number of changes within the current flood window
-    unsigned long change_start;      // Time when relay was scheduled to change
-    unsigned long change_delay;      // Delay until the next change
-    bool report;                // Whether to report to own topic
-    bool group_report;          // Whether to report to group topic
+    bool current_status;         // Holds the current (physical) status of the relay
+    bool target_status;          // Holds the target status
+    unsigned char lock;          // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
+    unsigned long fw_start;      // Flood window start time
+    unsigned char fw_count;      // Number of changes within the current flood window
+    unsigned long change_start;  // Time when relay was scheduled to change
+    unsigned long change_delay;  // Delay until the next change
+    bool report;                 // Whether to report to own topic
+    bool group_report;           // Whether to report to group topic
 
     // Helping objects
 
-    Ticker pulseTicker;         // Holds the pulse back timer
+    Ticker pulseTicker;          // Holds the pulse back timer
 
-} relay_t;
+};
+
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
+size_t _relayDummy = 0;
 
 unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
 unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
@@ -100,7 +140,7 @@ RelayStatus _relayStatusTyped(unsigned char id) {
 
 void _relayLockAll() {
     for (auto& relay : _relays) {
-        relay.lock = relay.target_status;
+        relay.lock = relay.target_status ? RELAY_LOCK_ON : RELAY_LOCK_OFF;
     }
     _relay_sync_locked = true;
 }
@@ -216,7 +256,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // Real relays
-        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+        size_t physical = _relays.size() - _relayDummy;
 
         // Support for a mixed of dummy and real relays
         // Reference: https://github.com/xoseperez/espurna/issues/1305
@@ -228,10 +268,10 @@ void _relayProviderStatus(unsigned char id, bool status) {
             // assume the first one controls all the channels and
             // the rest one channel each.
             // Otherwise every dummy relay controls all channels.
-            if (DUMMY_RELAY_COUNT == lightChannels()) {
+            if (_relayDummy == lightChannels()) {
                 lightState(id-physical, status);
                 lightState(true);
-            } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+            } else if (_relayDummy == (lightChannels() + 1u)) {
                 if (id == physical) {
                     lightState(status);
                 } else {
@@ -243,7 +283,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
             lightUpdate(true, true);
             return;
-        
+
         }
 
     #endif
@@ -295,7 +335,7 @@ void _relayProcess(bool mode) {
         if (target != mode) continue;
 
         // Only process if the change delay has expired
-        if (millis() - _relays[id].change_start < _relays[id].change_delay) continue;
+        if (_relays[id].change_delay && (millis() - _relays[id].change_start < _relays[id].change_delay)) continue;
 
         // Purge existing delay in case of cancelation
         _relays[id].change_delay = 0;
@@ -308,7 +348,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            StatusBroker::Publish(MQTT_TOPIC_RELAY, id, target);
         #endif
 
         // Send MQTT
@@ -326,8 +366,8 @@ void _relayProcess(bool mode) {
 
             // We will trigger a eeprom save only if
             // we care about current relay status on boot
-            unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
-            bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            const auto boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
         }
@@ -377,13 +417,41 @@ void setSpeed(unsigned char speed) {
 // RELAY
 // -----------------------------------------------------------------------------
 
-void _relayMaskRtcmem(uint32_t mask) {
+// State persistance persistance
+
+RelayMask INLINE _relayMaskRtcmem() {
+    return RelayMask(Rtcmem->relay);
+}
+
+void INLINE _relayMaskRtcmem(uint32_t mask) {
     Rtcmem->relay = mask;
 }
 
-uint32_t _relayMaskRtcmem() {
-    return Rtcmem->relay;
+void INLINE _relayMaskRtcmem(const RelayMask& mask) {
+    _relayMaskRtcmem(mask.as_u32);
 }
+
+void INLINE _relayMaskRtcmem(const std::bitset<RELAYS_MAX>& bitset) {
+    _relayMaskRtcmem(bitset.to_ulong());
+}
+
+RelayMask INLINE _relayMaskSettings() {
+    return RelayMask(getSetting("relayBootMask"));
+}
+
+void INLINE _relayMaskSettings(uint32_t mask) {
+    setSetting("relayBootMask", u32toString(mask, 2));
+}
+
+void INLINE _relayMaskSettings(const RelayMask& mask) {
+    setSetting("relayBootMask", mask.as_string);
+}
+
+void INLINE _relayMaskSettings(const std::bitset<RELAYS_MAX>& bitset) {
+    _relayMaskSettings(bitset.to_ulong());
+}
+
+// Pulse timers (timer after ON or OFF event)
 
 void relayPulse(unsigned char id) {
 
@@ -406,6 +474,8 @@ void relayPulse(unsigned char id) {
     }
 
 }
+
+// General relay status control
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report) {
 
@@ -558,30 +628,27 @@ void relaySync(unsigned char id) {
 
 void relaySave(bool eeprom) {
 
-    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(0);
+    const unsigned char count = constrain(relayCount(), 0, RELAYS_MAX);
 
-    unsigned char count = relayCount();
-    if (count > RELAY_SAVE_MASK_MAX) count = RELAY_SAVE_MASK_MAX;
-
-    for (unsigned int i=0; i < count; ++i) {
-        mask.set(i, relayStatus(i));
+    auto statuses = std::bitset<RELAYS_MAX>(0);
+    for (unsigned int id = 0; id < count; ++id) {
+        statuses.set(id, relayStatus(id));
     }
 
-    const uint32_t mask_value = mask.to_ulong();
-
-    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %u\n"), mask_value);
+    const RelayMask mask(statuses);
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %s\n"), mask.as_string.c_str());
 
     // Persist only to rtcmem, unless requested to save to the eeprom
-    _relayMaskRtcmem(mask_value);
+    _relayMaskRtcmem(mask);
 
-    // The 'eeprom' flag controls wether we are commiting this change or not.
+    // The 'eeprom' flag controls whether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
     // save involves a relay whose boot mode is independent from current mode,
     // thus storing the last relay value is not absolutely necessary.
     // Nevertheless, we store the value in the EEPROM buffer so it will be written
     // on the next commit.
     if (eeprom) {
-        EEPROMr.write(EEPROM_RELAY_STATUS, mask_value);
+        _relayMaskSettings(mask);
         // We are actually enqueuing the commit so it will be
         // executed on the main loop, in case this is called from a system context callback
         eepromCommit();
@@ -646,6 +713,17 @@ RelayStatus relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    #if defined(EEPROM_RELAY_STATUS)
+    {
+        uint8_t mask = EEPROMr.read(EEPROM_RELAY_STATUS);
+        if (mask != 0xff) {
+            _relayMaskSettings(static_cast<uint32_t>(mask));
+            EEPROMr.write(EEPROM_RELAY_STATUS, 0xff);
+            eepromCommit();
+        }
+    }
+    #endif
+
     for (unsigned int i=0; i<_relays.size(); i++) {
         if (!hasSetting("mqttGroupInv", i)) continue;
         setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
@@ -657,18 +735,14 @@ void _relayBackwards() {
 void _relayBoot() {
 
     _relayRecursive = true;
-    bool trigger_save = false;
-    uint32_t stored_mask = 0;
 
-    if (rtcmemStatus()) {
-        stored_mask = _relayMaskRtcmem();
-    } else {
-        stored_mask = EEPROMr.read(EEPROM_RELAY_STATUS);
-    }
+    const auto stored_mask = rtcmemStatus()
+        ? _relayMaskRtcmem()
+        : _relayMaskSettings();
 
-    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %u\n"), stored_mask);
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s\n"), stored_mask.as_string.c_str());
 
-    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(stored_mask);
+    auto mask = std::bitset<RELAYS_MAX>(stored_mask.as_u32);
 
     // Walk the relays
     unsigned char lock;
@@ -682,16 +756,11 @@ void _relayBoot() {
         lock = RELAY_LOCK_DISABLED;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
-                if (i < 8) {
-                    status = mask.test(i);
-                }
+                status = mask.test(i);
                 break;
             case RELAY_BOOT_TOGGLE:
-                if (i < 8) {
-                    status = !mask[i];
-                    mask.flip(i);
-                    trigger_save = true;
-                }
+                mask.flip(i);
+                status = mask[i];
                 break;
             case RELAY_BOOT_LOCKED_ON:
                 status = true;
@@ -710,7 +779,11 @@ void _relayBoot() {
 
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
+
         _relays[i].change_start = millis();
+        _relays[i].change_delay = status
+            ? _relays[i].delay_on
+            : _relays[i].delay_off;
 
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
             // XXX hack for correctly restoring relay state on boot
@@ -720,44 +793,14 @@ void _relayBoot() {
 
         _relays[i].lock = lock;
 
-     }
-
-    // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
-    if (trigger_save) {
-        _relayMaskRtcmem(mask.to_ulong());
-
-        EEPROMr.write(EEPROM_RELAY_STATUS, mask.to_ulong());
-        eepromCommit();
     }
 
     _relayRecursive = false;
 
-}
+    #if TUYA_SUPPORT
+        tuyaSyncSwitchStatus();
+    #endif
 
-constexpr const unsigned long _relayDelayOn(unsigned char index) {
-    return (
-        (index == 0) ? RELAY1_DELAY_ON :
-        (index == 1) ? RELAY2_DELAY_ON :
-        (index == 2) ? RELAY3_DELAY_ON :
-        (index == 3) ? RELAY4_DELAY_ON :
-        (index == 4) ? RELAY5_DELAY_ON :
-        (index == 5) ? RELAY6_DELAY_ON :
-        (index == 6) ? RELAY7_DELAY_ON :
-        (index == 7) ? RELAY8_DELAY_ON : 0
-    );
-}
-
-constexpr const unsigned long _relayDelayOff(unsigned char index) {
-    return (
-        (index == 0) ? RELAY1_DELAY_OFF :
-        (index == 1) ? RELAY2_DELAY_OFF :
-        (index == 2) ? RELAY3_DELAY_OFF :
-        (index == 3) ? RELAY4_DELAY_OFF :
-        (index == 4) ? RELAY5_DELAY_OFF :
-        (index == 5) ? RELAY6_DELAY_OFF :
-        (index == 6) ? RELAY7_DELAY_OFF :
-        (index == 7) ? RELAY8_DELAY_OFF : 0
-    );
 }
 
 void _relayConfigure() {
@@ -832,11 +875,11 @@ String _relayFriendlyName(unsigned char i) {
 
     if (GPIO_NONE == _relays[i].pin) {
         #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-            uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+            uint8_t physical = _relays.size() - _relayDummy;
             if (i >= physical) {
-                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                if (_relayDummy == lightChannels()) {
                     res = String("CH") + String(i-physical);
-                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                } else if (_relayDummy == (lightChannels() + 1u)) {
                     if (physical == i) {
                         res = String("Light");
                     } else {
@@ -1245,6 +1288,15 @@ void relaySetupMQTT() {
 
 #endif
 
+void _relaySetupProvider() {
+    // TODO: implement something like `RelayProvider tuya_provider({.setup_cb = ..., .send_cb = ...})`?
+    //       note of the function call order! relay code is initialized before tuya's, and the easiest
+    //       way to accomplish that is to use ctor as a way to "register" callbacks even before setup() is called
+    #if TUYA_SUPPORT
+        tuyaSetupSwitch();
+    #endif
+}
+
 //------------------------------------------------------------------------------
 // Settings
 //------------------------------------------------------------------------------
@@ -1319,41 +1371,72 @@ void _relayLoop() {
     #endif
 }
 
+// Dummy relays for virtual light switches, Sonoff Dual, Sonoff RF Bridge and Tuya
+void relaySetupDummy(size_t size, bool reconfigure) {
+
+    if (size == _relayDummy) return;
+
+    const size_t new_size = ((_relays.size() - _relayDummy) + size);
+    if (new_size > RELAYS_MAX) return;
+
+    _relayDummy = size;
+    _relays.resize(new_size);
+
+    if (reconfigure) {
+        _relayConfigure();
+    }
+
+    #if BROKER_SUPPORT
+        ConfigBroker::Publish("relayDummy", String(int(size)));
+    #endif
+
+}
+
+void _relaySetupAdhoc() {
+
+    size_t relays = 0;
+
+    #if RELAY1_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY2_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY3_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY4_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY5_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY6_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY7_PIN != GPIO_NONE
+        ++relays;
+    #endif
+    #if RELAY8_PIN != GPIO_NONE
+        ++relays;
+    #endif
+
+    _relays.reserve(relays);
+    for (unsigned char id = 0; id < relays; ++id) {
+        _relays.emplace_back(id);
+    }
+
+}
+
 void relaySetup() {
 
     // Ad-hoc relays
-    #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN });
-    #endif
-    #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN });
-    #endif
-    #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN });
-    #endif
-    #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN });
-    #endif
-    #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN });
-    #endif
-    #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN });
-    #endif
-    #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN });
-    #endif
-    #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN });
-    #endif
+    _relaySetupAdhoc();
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
-    // No delay_on or off for these devices to easily allow having more than
-    // 8 channels. This behaviour will be recovered with v2.
-    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) { GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE });
-    }
+    // Dummy (virtual) relays
+    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt());
 
+    _relaySetupProvider();
     _relayBackwards();
     _relayConfigure();
     _relayBoot();
