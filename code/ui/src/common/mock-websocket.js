@@ -216,8 +216,8 @@ export default function () {
         ];
 
         data.forEach((msg) => {
-            server.send(msg);
-            //server.send(JSON.stringify(msg));
+            //server.send(msg);
+            server.send(JSON.stringify(msg));
         })
     });
 

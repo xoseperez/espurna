@@ -72,7 +72,7 @@
                 type: Object,
                 default: () => ({list: []})
             },
-            sensors: {
+            sns: {
                 type: Object,
                 default: () => ({})
             },
@@ -97,9 +97,9 @@
                     });
                 }
 
-                if (this.sensors.magnitudes && this.sensors.magnitudes.list.length) {
+                if (this.sns.magnitudes && this.sns.magnitudes.list.length) {
                     s += 'sensor:\n';
-                    this.sensors.magnitudes.list.forEach((v) => {
+                    this.sns.magnitudes.list.forEach((v) => {
                         s += '  - name: ' + this.topic + v.name + '\n' +
                             '    platform: mqtt\n' +
                             '    state_topic: ' + this.topic + '/' + v.name + '\n' +

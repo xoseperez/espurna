@@ -235,59 +235,59 @@ void _sensorWebSocketSendData(JsonObject& root) {
 }
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
-    JsonArray& sensors = root.createNestedArray("sensors");
+    JsonArray& sns = root.createNestedArray("sns");
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
-        BaseSensor * sns = _sensors[i];
+        BaseSensor * baseSensor = _sensors[i];
 
-        JsonObject& sensor = sensors.createNestedObject();
+        JsonObject& sensor = sns.createNestedObject();
 
         #if EMON_ANALOG_SUPPORT
-            if (sns->getID() == SENSOR_EMON_ANALOG_ID) {
+            if (baseSensor->getID() == SENSOR_EMON_ANALOG_ID) {
                 sensor["emonVisible"] = 1;
                 sensor["pwrVisible"] = 1;
-                sensor["pwrVoltage"] = ((EmonAnalogSensor *) sns)->getVoltage();
+                sensor["pwrVoltage"] = ((EmonAnalogSensor *) baseSensor)->getVoltage();
             }
         #endif
 
         #if HLW8012_SUPPORT
-            if (sns->getID() == SENSOR_HLW8012_ID) {
+            if (baseSensor->getID() == SENSOR_HLW8012_ID) {
                 sensor["hlwVisible"] = 1;
                 sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if CSE7766_SUPPORT
-            if (sns->getID() == SENSOR_CSE7766_ID) {
+            if (baseSensor->getID() == SENSOR_CSE7766_ID) {
                 sensor["cseVisible"] = 1;
                 sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if V9261F_SUPPORT
-            if (sns->getID() == SENSOR_V9261F_ID) {
+            if (baseSensor->getID() == SENSOR_V9261F_ID) {
                 sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if ECH1560_SUPPORT
-            if (sns->getID() == SENSOR_ECH1560_ID) {
+            if (baseSensor->getID() == SENSOR_ECH1560_ID) {
                 sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if PZEM004T_SUPPORT
-            if (sns->getID() == SENSOR_PZEM004T_ID) {
+            if (baseSensor->getID() == SENSOR_PZEM004T_ID) {
                 sensor["pzemVisible"] = 1;
                 sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if PULSEMETER_SUPPORT
-            if (sns->getID() == SENSOR_PULSEMETER_ID) {
+            if (baseSensor->getID() == SENSOR_PULSEMETER_ID) {
                 sensor["pmVisible"] = 1;
-                sensor["pwrRatioE"] = ((PulseMeterSensor *) sns)->getEnergyRatio();
+                sensor["pwrRatioE"] = ((PulseMeterSensor *) baseSensor)->getEnergyRatio();
             }
         #endif
 
@@ -304,9 +304,9 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
     sensor["tmpUnits"] = _sensor_temperature_units;
     sensor["tmpCorrection"] = _sensor_temperature_correction;
     sensor["humCorrection"] = _sensor_humidity_correction;
-    sensor["snsRead"] = _sensor_read_interval / 1000;
-    sensor["snsReport"] = _sensor_report_every;
-    sensor["snsSave"] = _sensor_save_every;
+    sensor["read"] = _sensor_read_interval / 1000;
+    sensor["report"] = _sensor_report_every;
+    sensor["save"] = _sensor_save_every;
 
 
     /*

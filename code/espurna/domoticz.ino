@@ -200,10 +200,12 @@ void _domoticzWebSocketOnConnected(JsonObject& root) {
         relays.add(domoticzIdx(i));
     }
 
+    //Is this really needed since already done in sensor
+    /*
     #if SENSOR_SUPPORT
         _sensorWebSocketMagnitudesConfig(dcz);
     #endif
-
+    */
 }
 
 #endif // WEB_SUPPORT

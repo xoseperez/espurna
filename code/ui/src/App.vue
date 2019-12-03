@@ -5,6 +5,7 @@
         <Menu id="layout" :tabs="tabs" class="webmode">
             <template #header>
                 <div class="heading">
+                    <i v-if="close" class="back" @click="close">🡠</i>
                     <Icon class="icon"/>
                     <h1 class="hostname">{{data.device.hostname}}</h1>
                     <h2 class="desc">{{data.device.desc}}</h2>
@@ -287,6 +288,16 @@
 
     export default {
         components,
+        props: {
+            address: {
+                type: String,
+                required: false
+            },
+            close: {
+                type: Function,
+                required: false
+            }
+        },
         data() {
             return {
                 webmode: true,
@@ -337,11 +348,13 @@
                 this.data.device.uptime++
             }, 1000);
 
-            // Check host param in query string
-            var search = new URLSearchParams(window.location.search),
-                host = search.get("host");
+            if (!this.address) {
+                // Check host param in query string
+                const search = new URLSearchParams(window.location.search),
+                    host = search.get("host");
+            }
 
-            this.ws.connect(host ? host : window.location.host, this.receiveMessage);
+            this.ws.connect(this.address ? this.address : (host ? host : window.location.host), this.receiveMessage);
         },
         methods: {
             save() {
@@ -351,7 +364,7 @@
                     let config = {};
 
                     Object.keys(diff).forEach((k) => {
-                       Object.assign(config, this.flatten(diff[k]));
+                        Object.assign(config, this.flatten(diff[k]));
                     });
 
                     this.sendConfig(config);
@@ -366,9 +379,9 @@
                     const v = obj[k];
                     k = capitalize(k);
                     if (typeof v === 'object') {
-                        this.flatten(v, key+k, flat);
+                        this.flatten(v, key + k, flat);
                     } else {
-                        flat[key+k] = v;
+                        flat[key + k] = v;
                     }
                 });
                 return flat;
@@ -474,6 +487,7 @@
         margin: 7px 10px 7px 0;
         height: auto;
         float: left;
+
         path {
             fill: #fff;
         }

@@ -7,12 +7,13 @@ export default (onNewIP) => { //  onNewIp - your listener function for new IPs
         }),
         noop = () => {
         },
-        localIPs = {},
+        lastIp = null,
         ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/g;
 
     function iterateIP(ip) {
-        if (!localIPs[ip]) onNewIP(ip);
-        localIPs[ip] = true;
+        console.log(ip);
+        if (lastIp !== ip) onNewIP(ip);
+        lastIp = ip;
     }
 
     //create a bogus data channel

@@ -61,7 +61,7 @@
                 <!-- #endif -->
 
                 <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
-                <Repeater v-model="dcz.magnitudes.list" locked>
+                <Repeater v-model="sns.magnitudes.list" locked>
                     <template #default="tpl">
                         <Row>
                             <C><label>Magnitude {{tpl.value.name}}</label></C>
@@ -101,15 +101,15 @@
         props: {
             dcz: {
                 type: Object,
-                default: () => ({magnitudes:{}})
+                default: () => ({})
             },
             relays: {
                 type: Object,
                 default: () => ({config:{}})
             },
-            sensors: {
+            sns: {
                 type: Object,
-                default: () => ({})
+                default: () => ({magnitudes:{}})
             },
         }
     }

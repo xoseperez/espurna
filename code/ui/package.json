@@ -45,6 +45,7 @@
     "@vue/eslint-config-standard": "^4.0.0",
     "@vue/test-utils": "1.0.0-beta.29",
     "babel-eslint": "^10.0.1",
+    "compare-versions": "^3.5.1",
     "compression-webpack-plugin": "^3.0.0",
     "deep-object-diff": "^1.1.0",
     "eslint": "^5.16.0",

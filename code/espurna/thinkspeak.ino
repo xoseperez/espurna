@@ -84,10 +84,12 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
         relays.add(getSetting("tspkRelay", i, 0).toInt());
     }
 
+    //TODO Is this really needed since already done in sensor
+    /*
     #if SENSOR_SUPPORT
         _sensorWebSocketMagnitudesConfig(tspk);
     #endif
-
+    */
 }
 
 #endif
