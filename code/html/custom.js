@@ -46,7 +46,7 @@ function initMessages() {
 
 <!-- removeIf(!sensor)-->
 function sensorName(id) {
-    const names = [
+    var names = [
         "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
@@ -62,7 +62,7 @@ function sensorName(id) {
 }
 
 function magnitudeType(type) {
-    const types = [
+    var types = [
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
@@ -79,7 +79,7 @@ function magnitudeType(type) {
 }
 
 function magnitudeError(error) {
-    const errors = [
+    var errors = [
         "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
         "Data Error", "I2C Error", "GPIO Error", "Calibration error"
     ];
@@ -227,18 +227,18 @@ function validateForm(form) {
 }
 
 // Observe all group settings to selectively update originals based on the current data
-const groupSettingsObserver = new MutationObserver(function(mutations) {
+var groupSettingsObserver = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
         // If any new elements are added, set "settings-target" element as changed to forcibly send the data
-        const targets = $(mutation.target).attr("data-settings-target");
+        var targets = $(mutation.target).attr("data-settings-target");
         if (targets !== undefined) {
             mutation.addedNodes.forEach(function(node) {
                 var overrides = [];
                 targets.split(" ").forEach(function(target) {
-                    const elem = $("[name='" + target + "']", node);
+                    var elem = $("[name='" + target + "']", node);
                     if (!elem.length) return;
 
-                    const value = getValue(elem);
+                    var value = getValue(elem);
                     if ((value === null) || (value === elem[0].defaultValue)) {
                         overrides.push(elem);
                     }
@@ -255,7 +255,7 @@ const groupSettingsObserver = new MutationObserver(function(mutations) {
 
         // If anything was removed, forcibly send **all** of the group to avoid having any outdated keys
         // TODO: hide instead of remove?
-        const changed = $(mutation.target).attr("hasChanged") === "true";
+        var changed = $(mutation.target).attr("hasChanged") === "true";
         if (changed || mutation.removedNodes.length) {
             $(mutation.target).attr("hasChanged", "true");
             $("input,select", mutation.target.childNodes).attr("hasChanged", "true");
@@ -265,7 +265,7 @@ const groupSettingsObserver = new MutationObserver(function(mutations) {
 
 // These fields will always be a list of values
 function isGroupValue(value) {
-    const names = [
+    var names = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime", "relayLastSch",
@@ -311,12 +311,12 @@ function addValue(data, name, value) {
 
 function findListParentNode(elem) {
     while (elem !== null) {
-        const parentNode = elem.parentNode;
+        var parentNode = elem.parentNode;
         if (parentNode === undefined) {
             elem = null;
             break;
         }
-        const classes = Array.from(parentNode.classList);
+        var classes = Array.from(parentNode.classList);
         if (classes.indexOf("group-settings") >= 0) {
             break;
         }
@@ -327,7 +327,7 @@ function findListParentNode(elem) {
 }
 
 function findRelatedGroupNames(elem) {
-    const groupParent = findListParentNode(elem);
+    var groupParent = findListParentNode(elem);
     var result = [];
     if (groupParent !== null) {
         Array.from(groupParent.childNodes).forEach(function(node) {
@@ -359,15 +359,15 @@ function getData(form, changed, cleanup) {
 
         var name = $(this).attr("name");
 
-        const real_name = $(this).attr("data-settings-real-name");
+        var real_name = $(this).attr("data-settings-real-name");
         if (real_name !== undefined) {
             name = real_name;
         }
 
         var value = getValue(this);
         if (null !== value) {
-            const haschanged = ("true" === $(this).attr("hasChanged"));
-            const indexed = changed_data.indexOf(name) >= 0;
+            var haschanged = ("true" === $(this).attr("hasChanged"));
+            var indexed = changed_data.indexOf(name) >= 0;
 
             if ((haschanged || !changed) && !indexed) {
                 changed_data.push(name);
@@ -1040,7 +1040,7 @@ function moreNetwork() {
 
 function addNetwork(values) {
 
-    const number = numNetworks();
+    var number = numNetworks();
     if (number >= maxNetworks) {
         alert("Max number of networks reached");
         return null;
@@ -1080,7 +1080,7 @@ function numSchedules() {
 }
 
 function maxSchedules() {
-    const value = $("#schedules").attr("data-settings-max");
+    var value = $("#schedules").attr("data-settings-max");
     return parseInt(value === undefined ? 0 : value, 10);
 }
 
@@ -1131,7 +1131,7 @@ function addSchedule(values) {
     $(line).find("input[type='checkbox']").prop("checked", false);
 
     Object.entries(values).forEach(function(kv) {
-        const key = kv[0], value = kv[1];
+        var key = kv[0], value = kv[1];
         $("input[name='" + key + "']", line).val(value);
         $("select[name='" + key + "']", line).prop("value", value);
         $("input[type='checkbox'][name='" + key + "']", line).prop("checked", value);
@@ -2246,6 +2246,8 @@ $(function() {
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
+        processData({"webMode": 2, "multirelayVisible": 1, "ledVisible": 1, "relayVisible": 1});
+        processData({"ledConfig": [{"mode": 0, "relay": 0}]});
         return;
     }
 
