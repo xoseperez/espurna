@@ -299,16 +299,16 @@
 #define HEARTBEAT_REPORT_INTERVAL   0
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_RANGE
-#define HEARTBEAT_REPORT_RANGE      1
-#else
-#define HEARTBEAT_REPORT_RANGE      0
+#ifndef HEARTBEAT_REPORT_RANGE
+#define HEARTBEAT_REPORT_RANGE         THERMOSTAT_SUPPORT
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_REMOTE_TEMP
-#define HEARTBEAT_REPORT_REMOTE_TEMP 1
-#else
-#define HEARTBEAT_REPORT_REMOTE_TEMP 0
+#ifndef HEARTBEAT_REPORT_REMOTE_TEMP
+#define HEARTBEAT_REPORT_REMOTE_TEMP   THERMOSTAT_SUPPORT
+#endif
+
+#ifndef HEARTBEAT_REPORT_BSSID
+#define HEARTBEAT_REPORT_BSSID       0
 #endif
 
 //------------------------------------------------------------------------------
@@ -428,11 +428,6 @@
 #ifndef RELAY_MQTT_TOGGLE
 #define RELAY_MQTT_TOGGLE           "2"
 #endif
-
-// TODO Only single EEPROM address is used to store state, which is 1 byte
-// Relay status is stored using bitfield.
-// This means that, atm, we are only storing the status of the first 8 relays.
-#define RELAY_SAVE_MASK_MAX         8
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -611,8 +606,8 @@
 #define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
 #endif
 
-// This is not working at the moment!!
-// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core 2.4.0
+// Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
+// XXX: This is not working at the moment!! Pending https://github.com/me-no-dev/ESPAsyncTCP/issues/95
 #ifndef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED             0           // Use HTTPS web interface
 #endif
@@ -674,6 +669,10 @@
 #define API_ENABLED                 0           // Do not enable API by default
 #endif
 
+#ifndef API_KEY
+#define API_KEY                     ""          // Do not enable API by default. WebUI will automatically generate the key
+#endif
+
 #ifndef API_RESTFUL
 #define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
                                                 // Setting this to 0 will allow using GET to change relays, for instance
@@ -701,11 +700,11 @@
 #endif
 
 #ifndef LLMNR_SUPPORT
-#define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires 2.4.0
+#define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires Core version >= 2.4.0
 #endif
 
 #ifndef NETBIOS_SUPPORT
-#define NETBIOS_SUPPORT             0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires 2.4.0
+#define NETBIOS_SUPPORT             0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires Core version >= 2.4.0
 #endif
 
 #ifndef SSDP_SUPPORT
@@ -790,10 +789,6 @@
 #define OTA_CLIENT                  OTA_CLIENT_ASYNCTCP     // Terminal / MQTT OTA support
                                                             // OTA_CLIENT_ASYNCTCP   (ESPAsyncTCP library)
                                                             // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
-#endif
-
-#ifndef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE    1   // Use old HTTPUpdate API by default
 #endif
 
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
@@ -1051,6 +1046,7 @@
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
 #define MQTT_TOPIC_SSID             "ssid"
+#define MQTT_TOPIC_BSSID            "bssid"
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"
@@ -1367,7 +1363,7 @@
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
-// When THINGSPEAK_USE_ASYNC is 1, requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core >= 2.4.0.
+// When THINGSPEAK_USE_ASYNC is 1, requires EspAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and ESP8266 Arduino Core >= 2.4.0.
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
@@ -1806,4 +1802,15 @@
 
 #ifndef RFM69_IS_RFM69HW
 #define RFM69_IS_RFM69HW            0
+#endif
+
+//--------------------------------------------------------------------------------
+// TUYA switch & dimmer support
+//--------------------------------------------------------------------------------
+#ifndef TUYA_SUPPORT
+#define TUYA_SUPPORT                0
+#endif
+
+#ifndef TUYA_SERIAL
+#define TUYA_SERIAL                 Serial
 #endif

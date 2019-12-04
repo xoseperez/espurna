@@ -4,15 +4,6 @@
 //------------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-// BROKER
-// -----------------------------------------------------------------------------
-
-#define BROKER_MSG_TYPE_SYSTEM      0
-#define BROKER_MSG_TYPE_DATETIME    1
-#define BROKER_MSG_TYPE_STATUS      2
-#define BROKER_MSG_TYPE_SENSOR      3
-
-// -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
 
@@ -103,9 +94,9 @@
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
-#define RELAY_LOCK_OFF               0
-#define RELAY_LOCK_ON                1
-#define RELAY_LOCK_DISABLED          2
+#define RELAY_LOCK_DISABLED          0
+#define RELAY_LOCK_OFF               1
+#define RELAY_LOCK_ON                2
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG
@@ -192,6 +183,7 @@
 #define LIGHT_PROVIDER_NONE         0
 #define LIGHT_PROVIDER_MY92XX       1       // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER       2
+#define LIGHT_PROVIDER_TUYA         3
 
 // -----------------------------------------------------------------------------
 // SCHEDULER

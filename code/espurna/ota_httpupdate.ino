@@ -16,8 +16,12 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
+#include <Schedule.h>
 
+#include "system.h"
 #include "libs/URL.h"
+#include "libs/TypeChecks.h"
+#include "libs/SecureClientHelpers.h"
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
 
@@ -30,6 +34,85 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
+// -----------------------------------------------------------------------------
+// Configuration templates
+// -----------------------------------------------------------------------------
+
+template <typename T>
+void _otaFollowRedirects(const std::true_type&, T& instance) {
+    instance.followRedirects(true);
+}
+
+template <typename T>
+void _otaFollowRedirects(const std::false_type&, T& instance) {
+}
+
+template <typename T>
+t_httpUpdate_return _otaClientUpdate(const std::true_type&, T& instance, WiFiClient* client, const String& url) {
+    return instance.update(*client, url);
+}
+
+template <typename T>
+t_httpUpdate_return _otaClientUpdate(const std::false_type&, T& instance, WiFiClient*, const String& url) {
+    return instance.update(url);
+}
+
+namespace ota {
+    template <typename T>
+    using has_followRedirects_t = decltype(std::declval<T>().followRedirects(std::declval<bool>()));
+
+    template <typename T>
+    using has_followRedirects = is_detected<has_followRedirects_t, T>;
+
+    template <typename T>
+    using has_WiFiClient_argument_t = decltype(std::declval<T>().update(std::declval<WiFiClient&>(), std::declval<const String&>()));
+
+    template <typename T>
+    using has_WiFiClient_argument = is_detected<has_WiFiClient_argument_t, T>;
+}
+
+// -----------------------------------------------------------------------------
+// Settings helper
+// -----------------------------------------------------------------------------
+
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+SecureClientConfig _ota_sc_config {
+    "OTA",
+    []() -> String {
+        return String(); // NOTE: unused
+    },
+    []() -> int {
+        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
+    },
+    []() -> String {
+        return getSetting("otaFP", OTA_FINGERPRINT);
+    },
+    true
+};
+#endif
+
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+SecureClientConfig _ota_sc_config {
+    "OTA",
+    []() -> int {
+        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
+    },
+    []() -> PGM_P {
+        return _ota_client_trusted_root_ca;
+    },
+    []() -> String {
+        return getSetting("otaFP", OTA_FINGERPRINT);
+    },
+    []() -> uint16_t {
+        return getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
+    },
+    true
+};
+#endif
+
+// -----------------------------------------------------------------------------
+// Generic update methods
+// -----------------------------------------------------------------------------
 
 void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& fp = "") {
 
@@ -43,7 +126,7 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
     // TODO: support currentVersion (string arg after 'url')
     // NOTE: ESPhttpUpdate.update(..., fp) will **always** fail with empty fingerprint
-    // NOTE: It is possible to support BearSSL with 2.4.2 by using uint8_t[20] instead of String for fingerprint argument
+    _otaFollowRedirects(ota::has_followRedirects<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate);
 
     ESPhttpUpdate.rebootOnUpdate(false);
     t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
@@ -55,10 +138,10 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
         } else {
             result = ESPhttpUpdate.update(url);
         }
-    #elif OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-        result = ESPhttpUpdate.update(url);
     #else
-        result = ESPhttpUpdate.update(*client, url);
+    // TODO: implement through callbacks?
+    //       see https://github.com/esp8266/Arduino/pull/6796
+        result = _otaClientUpdate(ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate, client, url);
     #endif
 
     switch (result) {
@@ -78,80 +161,33 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
 }
 
-#if OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
 void _otaClientFromHttp(const String& url) {
-    _otaClientRunUpdater(nullptr, url, "");
-}
-#else
-void _otaClientFromHttp(const String& url) {
-    auto client = std::make_unique<WiFiClient>();
+    std::unique_ptr<WiFiClient> client(nullptr);
+    if (ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}) {
+        client = std::make_unique<WiFiClient>();
+    }
     _otaClientRunUpdater(client.get(), url, "");
 }
-#endif
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 
 void _otaClientFromHttps(const String& url) {
 
-    int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
-    bool settime = (check == SECURE_CLIENT_CHECK_CA);
-
-    if (!ntpSynced() && settime) {
-        DEBUG_MSG_P(PSTR("[OTA] Time not synced!\n"));
+    // Check for NTP early to avoid constructing SecureClient prematurely
+    const int check = _ota_sc_config.on_check();
+    if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
+        DEBUG_MSG_P(PSTR("[OTA] Time not synced! Cannot use CA validation\n"));
         return;
     }
 
     // unique_ptr self-destructs after exiting function scope
-    // create WiFiClient on heap to use less stack space
-    auto client = std::make_unique<BearSSL::WiFiClientSecure>();
-
-    if (check == SECURE_CLIENT_CHECK_NONE) {
-        DEBUG_MSG_P(PSTR("[OTA] !!! Connection will not be validated !!!\n"));
-        client->setInsecure();
+    // create the client on heap to use less stack space
+    auto client = std::make_unique<SecureClient>(_ota_sc_config);
+    if (!client->beforeConnected()) {
+        return;
     }
 
-    if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-        String fp_string = getSetting("otaFP", OTA_FINGERPRINT);
-        if (!fp_string.length()) {
-            DEBUG_MSG_P(PSTR("[OTA] Requested fingerprint auth, but 'otaFP' is not set\n"));
-            return;
-        }
-
-        uint8_t fp_bytes[20] = {0};
-        sslFingerPrintArray(fp_string.c_str(), fp_bytes);
-
-        client->setFingerprint(fp_bytes);
-    }
-
-    BearSSL::X509List *ca = nullptr;
-    if (check == SECURE_CLIENT_CHECK_CA) {
-        ca = new BearSSL::X509List(_ota_client_trusted_root_ca);
-        // because we do not support libc methods of getting time, force client to use ntpclientlib's current time
-        // XXX: local2utc method use is detrimental when DST happening. now() should be utc
-        client->setX509Time(ntpLocal2UTC(now()));
-        client->setTrustAnchors(ca);
-    }
-
-    // TODO: RX and TX buffer sizes must be equal?
-    const uint16_t requested_mfln = getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
-    switch (requested_mfln) {
-        // default, do nothing
-        case 0:
-            break;
-        // match valid sizes only
-        case 512:
-        case 1024:
-        case 2048:
-        case 4096:
-        {
-            client->setBufferSizes(requested_mfln, requested_mfln);
-            break;
-        }
-        default:
-            DEBUG_MSG_P(PSTR("[OTA] Warning: MFLN buffer size must be one of 512, 1024, 2048 or 4096\n"));
-    }
-
-    _otaClientRunUpdater(client.get(), url);
+    _otaClientRunUpdater(&client->get(), url);
 
 }
 
@@ -162,11 +198,12 @@ void _otaClientFromHttps(const String& url) {
 
 void _otaClientFromHttps(const String& url) {
 
-    const int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
+    // Note: this being the legacy option, only supporting legacy methods on ESPHttpUpdate itself
+    //       no way to know when it is connected, so no afterConnected
+    const int check = _ota_sc_config.on_check();
+    const String fp_string = _ota_sc_config.on_fingerprint();
 
-    String fp_string;
     if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-        fp_string = getSetting("otaFP", OTA_FINGERPRINT);
         if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
             DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint\n"));
             return;
@@ -217,15 +254,6 @@ void _otaClientInitCommands() {
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
 
 bool _ota_do_update = false;
-String _ota_url;
-
-void _otaClientLoop() {
-    if (_ota_do_update) {
-        _otaClientFrom(_ota_url);
-        _ota_do_update = false;
-        _ota_url = "";
-    }
-}
 
 void _otaClientMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -234,11 +262,18 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        String t = mqttMagnitude((char *) topic);
-        if (t.equals(MQTT_TOPIC_OTA)) {
+        const String t = mqttMagnitude((char *) topic);
+        if (!_ota_do_update && t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
+            // TODO: c++14 support is required for `[_payload = String(payload)]() { ... }`
+            //       c++11 also supports basic `std::bind(func, arg)`, but we need to reset the lock
             _ota_do_update = true;
-            _ota_url = payload;
+
+            const String _payload(payload);
+            schedule_function([_payload]() {
+                _otaClientFrom(_payload);
+                _ota_do_update = false;
+            });
         }
     }
 
@@ -259,7 +294,6 @@ void otaClientSetup() {
 
     #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
         mqttRegister(_otaClientMqttCallback);
-        espurnaRegisterLoop(_otaClientLoop);
     #endif
 
 }
