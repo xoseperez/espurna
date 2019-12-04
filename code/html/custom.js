@@ -390,13 +390,14 @@ function getData(form, changed, cleanup) {
     // Hack: clean-up leftover arrays.
     // When empty, the receiving side will prune all keys greater than the current one.
     if (cleanup) {
-        if (!numSchedules()) {
-            resulting_data["schSwitch"] = [];
-        }
-
-        if (!numNetworks()) {
-            resulting_data["ssid"] = [];
-        }
+        $(".group-settings").each(function() {
+            var targets = this.dataset.settingsTarget;
+            if (targets !== undefined) {
+                targets.split(" ").forEach(function(target) {
+                    resulting_data[target] = [];
+                });
+            }
+        });
     }
 
     return resulting_data;
