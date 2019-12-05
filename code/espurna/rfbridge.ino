@@ -11,7 +11,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 
 #include <queue>
-#include <Ticker.h>
 
 #if RFB_DIRECT
 #include <RCSwitch.h>
