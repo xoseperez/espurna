@@ -4143,6 +4143,27 @@
     #define SENSOR_ENERGY_UNITS         ENERGY_KWH
     #define SENSOR_POWER_UNITS          POWER_WATTS
 // -----------------------------------------------------------------------------
+// Linksprite R4
+// http://linksprite.com/wiki/index.php?title=LinkNode_R4:_Arduino-compatible_WiFi_relay_controller
+// -----------------------------------------------------------------------------
+
+#elif defined(LINKSPRITE_R4)
+
+    // Info
+    #define MANUFACTURER                "Linksprite"
+    #define DEVICE                      "LinkNode R4"
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY2_PIN              13
+    #define RELAY3_PIN              14
+    #define RELAY4_PIN              16
+
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+// -----------------------------------------------------------------------------
 
 #else
 

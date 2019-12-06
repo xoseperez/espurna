@@ -94,6 +94,7 @@
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define KMC_70011
 //#define LINGAN_SWA1
+//#define LINKSPRITE_R4
 //#define LITESUN_LA_WF3
 //#define LOHAS_9W
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
