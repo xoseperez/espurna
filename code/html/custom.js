@@ -2247,8 +2247,6 @@ $(function() {
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
-        processData({"webMode": 2, "multirelayVisible": 1, "ledVisible": 1, "relayVisible": 1});
-        processData({"ledConfig": [{"mode": 0, "relay": 0}]});
         return;
     }
 
