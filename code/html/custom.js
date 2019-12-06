@@ -1592,7 +1592,7 @@ function processData(data) {
             return;
         }
 
-        <!-- endRemoveIf(!rfbridge)-->
+        <!-- endRemoveIf(!lightfox)-->
 
         // ---------------------------------------------------------------------
         // RFM69

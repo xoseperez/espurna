@@ -109,14 +109,32 @@ var htmllintReporter = function(filepath, issues) {
 
 var buildWebUI = function(module) {
 
-    var modules = {'light': false, 'sensor': false, 'rfbridge': false, 'rfm69': false, 'thermostat': false};
+    // Declare some modules as optional to remove with
+    // removeIf(!name) ...code... endRemoveIf(!name) sections
+    // (via gulp-remove-code)
+    var modules = {
+        'light': false,
+        'sensor': false,
+        'rfbridge': false,
+        'rfm69': false,
+        'thermostat': false,
+        'lightfox': false
+    };
+
+    // Note: only build these when specified as module arg
+    var excludeAll = [
+        'rfm69',
+        'lightfox'
+    ];
+
+    // 'all' to include all *but* excludeAll
+    // '<module>' to include a single module
+    // 'small' is the default state (all disabled)
     if ('all' === module) {
-        modules['light'] = true;
-        modules['sensor'] = true;
-        modules['rfbridge'] = true;
-        modules['rfm69'] = false;   // we will never be adding this except when building RFM69GW
-        modules['lightfox'] = false;   // we will never be adding this except when building lightfox
-        modules['thermostat'] = true;
+        Object.keys(modules).forEach(function(key) {
+            if (excludeAll.indexOf(key) >= 0) return;
+            modules[key] = true;
+        });
     } else if ('small' !== module) {
         modules[module] = true;
     }
@@ -170,7 +188,7 @@ gulp.task('csslint', function() {
 });
 
 gulp.task('webui_small', function() {
-    return buildWebUI('small');
+    return buildWebUI();
 });
 
 gulp.task('webui_sensor', function() {
