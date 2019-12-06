@@ -308,36 +308,6 @@ function addValue(data, name, value) {
 
 }
 
-function findListParentNode(elem) {
-    while (elem !== null) {
-        var parentNode = elem.parentNode;
-        if (parentNode === undefined) {
-            elem = null;
-            break;
-        }
-        var classes = Array.from(parentNode.classList);
-        if (classes.indexOf("group-settings") >= 0) {
-            break;
-        }
-        elem = elem.parentNode;
-    }
-
-    return elem;
-}
-
-function findRelatedGroupNames(elem) {
-    var groupParent = findListParentNode(elem);
-    var result = [];
-    if (groupParent !== null) {
-        Array.from(groupParent.childNodes).forEach(function(node) {
-            if (result.indexOf(name) < 0) {
-                result.push(node.getAttribute("name"));
-            }
-        });
-    }
-    return result;
-}
-
 function getData(form, changed, cleanup) {
 
     // Populate two sets of data, ones that had been changed and ones that stayed the same
@@ -390,6 +360,7 @@ function getData(form, changed, cleanup) {
     // When empty, the receiving side will prune all keys greater than the current one.
     if (cleanup) {
         $(".group-settings").each(function() {
+            if (this.children.length) return;
             var targets = this.dataset.settingsTarget;
             if (targets !== undefined) {
                 targets.split(" ").forEach(function(target) {
