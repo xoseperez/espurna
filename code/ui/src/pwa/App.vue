@@ -1,13 +1,17 @@
 <template>
     <div class="content">
         <App v-if="singleAddress" :address="singleAddress" @close="() => singleAddress = null"/>
-        <div v-else class="devices">
-            <Device v-for="(device, ip) in devices" :key="ip" v-bind="device" @configure="() => singleAddress = ip"/>
-        </div>
-        <div class="options">
-            <Button>Rescan for devices</Button>
-            <Button>Add device manually</Button>
-        </div>
+        <template v-else>
+            <div class="devices">
+                <Device v-for="(device, ip) in devices" :key="ip" v-bind="device"
+                        @configure="() => singleAddress = ip"/>
+            </div>
+            <div class="options">
+                <Input v-model="scanIp"/>
+                <Button @click="retrieveDevices">Scan for devices</Button>
+                <Button>Add device manually</Button>
+            </div>
+        </template>
     </div>
 </template>
 
@@ -16,11 +20,13 @@
     import App from "../App";
     import Device from "./Device";
     import Button from "../components/Button";
+    import Input from "../components/Input";
 
     export default {
-        components: {Button, Device, App},
+        components: {Input, Button, Device, App},
         data() {
             return {
+                scanIp: null,
                 userIp: null,
                 singleAddress: null,
                 devices: {}
@@ -29,7 +35,7 @@
         watch: {
             userIp(newIp, oldIp) {
                 //We are connected to an espurna device, show single device interface
-                if (newIp == '192.168.4.1') {
+                if (newIp === '192.168.4.1' || newIp === '192.168.241.1') {
                     this.singleAddress = newIp;
                 }
             }
@@ -66,6 +72,7 @@
         transform: translateY(-50%);
         margin: 0 auto;
         font-family: Roboto, sans-serif;
+
         .device {
             width: 23%;
             margin: 1%;

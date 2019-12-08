@@ -149,7 +149,7 @@
                             <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to
                             switch it on or off. You can also send a 2 to toggle its current state. Replace # with
                             the switch ID (starting from 0). If the board has only one switch it will be 0.<br>
-                            <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
+                            <!-- #!if LIGHT === true -->
                             <template v-if="modules.color">
                                 - <strong>&lt;root&gt;/rgb/set</strong> Set the color using this topic, your can
                                 either send an "#RRGGBB" value or "RRR,GGG,BBB" (0-255 each).<br>
@@ -161,7 +161,7 @@
                                 RGBWC lights).<br>
                                 - <strong>&lt;root&gt;/mired/set</strong> Set the temperature color in mired.<br>
                             </template>
-                            <!-- #endif -->
+                            <!-- #!endif -->
                             - <strong>&lt;root&gt;/status</strong> The
                             device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this
                             will be set to 0.<br> - Other values reported (depending on the build) are:

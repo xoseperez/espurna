@@ -22,7 +22,7 @@
                     </template>
                 </Repeater>
 
-                <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
+                <!-- #!if LIGHT === true -->
                 <template v-if="modules.light">
                     <Row>
                         <C><label>Color</label></C>
@@ -56,9 +56,9 @@
                         </C>
                     </Row>
                 </template>
-                <!-- #endif -->
+                <!-- #!endif -->
 
-                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+                <!-- #!if SENSOR === true -->
                 <template v-if="modules.sns">
                     <Row v-for="(magnitude, i) in magnitudes.list" :key="magnitude.index">
                         <C><label>{{magnitudeType(magnitude.type)}} #{{magnitude.index}},</label></C>
@@ -69,9 +69,9 @@
                         </C>
                     </Row>
                 </template>
-                <!-- #endif -->
+                <!-- #!endif -->
 
-                <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
+                <!-- #!if RFM69 === true -->
                 <template v-if="modules.rfm69">
                     <Row>
                         <C><label>Packet count</label></C>
@@ -83,7 +83,7 @@
                         <C>{{rfm69.node_count}}</C>
                     </Row>
                 </template>
-                <!-- #endif -->
+                <!-- #!endif -->
 
                 <Row class="state responsive">
                     <C>

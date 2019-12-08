@@ -49,7 +49,7 @@
                     </Hint>
                 </Row>
 
-                <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
+                <!-- #!if RELAYS === true -->
                 <Repeater v-model="relays.config.list" locked>
                     <template #default="tpl">
                         <Row>
@@ -63,9 +63,9 @@
                         </Row>
                     </template>
                 </Repeater>
-                <!-- #endif -->
+                <!-- #!endif -->
 
-                <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+                <!-- #!if SENSOR === true -->
                 <Repeater v-model="sns.magnitudes.list" locked>
                     <template #default="tpl">
                         <Row>
@@ -82,7 +82,7 @@
                         </Row>
                     </template>
                 </Repeater>
-                <!-- #endif -->
+                <!-- #!endif -->
             </fieldset>
         </Group>
     </section>

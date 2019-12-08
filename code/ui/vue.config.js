@@ -14,6 +14,22 @@ const purgecss = new PurgecssPlugin({
     ])
 });
 
+const maybeStringToBoolean = (string) => {
+    switch (string.toString().toLowerCase().trim()) {
+        case "true":
+        case "yes":
+        case "1":
+            return true;
+        case "false":
+        case "no":
+        case "0":
+        case null:
+            return false;
+        default:
+            return string;
+    }
+};
+
 const faviconsPlugin = new FaviconsWebpackPlugin({
     logo: "./public/icons/icon.svg",
     prefix: 'icons/',
@@ -137,8 +153,22 @@ module.exports = {
 
         config.module.rule('ico').test(/\.ico$/).use("url-loader").loader("url-loader");
 
-        config.module.rule("vue").use("webpack-conditional-loader").loader("webpack-conditional-loader");
-        config.module.rule("js").use("webpack-conditional-loader").loader("webpack-conditional-loader");
+        let prepro_opts = {
+            params: {
+                ENV: process.env.NODE_ENV,
+            },
+            verbose: false,
+        };
+
+        Object.keys(process.env).forEach((k) => {
+            const matches = k.match(/^VUE_APP_(.*)|MODULE_(.*)$/i);
+            if (matches) {
+                prepro_opts.params[(matches[1] || matches[2]).toUpperCase()] = maybeStringToBoolean(process.env[k]);
+            }
+        });
+
+        config.module.rule("vue").use("webpack-preprocessor-loader").loader("webpack-preprocessor-loader").options(prepro_opts);
+        config.module.rule("js").use("webpack-preprocessor-loader").loader("webpack-preprocessor-loader").options(prepro_opts);
 
         if (process.env.NODE_ENV === 'production') {
 

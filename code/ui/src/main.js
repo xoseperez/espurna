@@ -2,16 +2,15 @@ import Vue from "vue";
 
 let App;
 
-// #if process.env.NODE_ENV !== 'production'
+// #!if ENV === 'production'
+import SingleApp from "./App.vue";
+App = SingleApp;
+// #!else
 import './pwa/registerServiceWorker'
 import PwaApp from "./pwa/App.vue";
 App = PwaApp;
-// #endif
+// #!endif
 
-// #if process.env.NODE_ENV === 'production'
-import SingleApp from "./App.vue";
-App = SingleApp;
-// #endif
 
 Vue.config.productionTip = false;
 

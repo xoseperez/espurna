@@ -49,89 +49,89 @@
                 <Mqtt v-bind="data"/>
             </template>
 
-            <!-- #if process.env.VUE_APP_THERMOSTAT === 'true' -->
+            <!-- #!if THERMOSTAT === true -->
             <template v-if="data.modules.thermostat" #thermostat>
                 <Tstat v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_LED === 'true' -->
+            <!-- #!if LED === true -->
             <template v-if="data.modules.led" #led>
                 <Led v-bind="data" :relay-options="relayOptions"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_LIGHT === 'true' -->
+            <!-- #!if LIGHT === true -->
             <template v-if="data.modules.color" #color>
                 <Color v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_RFM69 === 'true' -->
+            <!-- #!if RFM69 === true -->
             <template v-if="data.modules.rfm69" #rfm69>
                 <Rfm69 v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_RFBRIDGE === 'true' -->
+            <!-- #!if RFBRIDGE === true -->
             <template v-if="data.modules.rfb" #rfb>
                 <Rfb v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_SENSOR === 'true' -->
+            <!-- #!if SENSOR === true -->
             <template v-if="data.modules.sns" #sns>
                 <Sns v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_RELAYS === 'true' -->
+            <!-- #!if RELAYS === true -->
             <template v-if="data.modules.relay" #relays>
                 <Relays v-bind="data" :relay-options="relayOptions"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_LIGHTFOX === 'true' -->
+            <!-- #!if LIGHTFOX === true -->
             <template v-if="data.modules.lightfox" #lightfox>
                 <Lfox v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_DCZ === 'true' -->
+            <!-- #!if DCZ === true -->
             <template v-if="data.modules.dcz" #dcz>
                 <Dcz v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_HA === 'true' -->
+            <!-- #!if HA === true -->
             <template v-if="data.modules.ha" #ha>
                 <Ha v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_ALEXA === 'true' -->
+            <!-- #!if ALEXA === true -->
             <template v-if="data.modules.alexa" #alexa>
                 <Alexa v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_THINGSPEAK === 'true' -->
+            <!-- #!if THINGSPEAK === true -->
             <template v-if="data.modules.tspk" #thingspeak>
                 <Tspk v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_IDB === 'true' -->
+            <!-- #!if IDB === true -->
             <template v-if="data.modules.idb" #idb>
                 <Idb v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
 
-            <!-- #if process.env.VUE_APP_NOFUSS === 'true' -->
+            <!-- #!if NOFUSS === true -->
             <template v-if="data.modules.nofuss" #nofuss>
                 <Nfss v-bind="data"/>
             </template>
-            <!-- #endif -->
+            <!-- #!endif -->
         </Menu>
         <iframe id="downloader"></iframe>
     </Form>
@@ -168,107 +168,107 @@
 
     //Board Features
 
-    // #if process.env.VUE_APP_THERMOSTAT === 'true'
+    // #!if THERMOSTAT === true
     import Tstat from "./tabs/features/Thermostat";
 
     components.Tstat = Tstat;
     tabs.push({k: "thermostat", l: "Thermostat"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_LED === 'true'
+    // #!if LED === true
     import Led from "./tabs/features/Led";
 
     components.Led = Led;
     tabs.push({k: "led", l: "LED"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_LIGHT === 'true'
+    // #!if LIGHT === true
     import Color from "./tabs/features/Color";
 
     components.Color = Color;
     tabs.push({k: "color", l: "Lights"}); //Moved color schedules here
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_RFM69 === 'true'
+    // #!if RFM69 === true
     import Rfm69 from "./tabs/features/Rfm69";
 
     components.Rfm69 = Rfm69;
     tabs.push({k: "rfm69", l: "RFM69 Mapping"}); //Moved messages and mapping here
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_RFBRIDGE === 'true'
+    // #!if RFBRIDGE === true
     import Rfb from "./tabs/features/Rfb";
 
     components.Rfb = Rfb;
     tabs.push({k: "rfb", l: "RF Bridge"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_SENSOR === 'true'
+    // #!if SENSOR === true
     import Sns from "./tabs/features/Sensors";
 
     components.Sns = Sns;
     tabs.push({k: "sns", l: "Sensors"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_RELAYS === 'true'
+    // #!if RELAYS === true
     import Relays from "./tabs/features/Relays";
 
     components.Relays = Relays;
     tabs.push({k: "relays", l: "Switches"}); //Moved schedules to switches
-    // #endif
+    // #!endif
 
     tabs.push({k: "separator"});
 
     //Integrations
-    // #if process.env.VUE_APP_HA === 'true'
+    // #!if HA === true
     import Ha from "./tabs/integrations/HomeAssistant";
 
     components.Ha = Ha;
     tabs.push({k: "ha", l: "Home Assistant"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_ALEXA === 'true'
+    // #!if ALEXA === true
     import Alexa from "./tabs/integrations/Alexa";
 
     components.Alexa = Alexa;
     tabs.push({k: "alexa", l: "Alexa"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_LIGHTFOX === 'true'
+    // #!if LIGHTFOX === true
     import Lfox from "./tabs/features/LightFox";
 
     components.Lfox = Lfox;
     tabs.push({k: "lightfox", l: "LightFox"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_DCZ === 'true'
+    // #!if DCZ === true
     import Dcz from "./tabs/integrations/Domoticz";
 
     components.Dcz = Dcz;
     tabs.push({k: "dcz", l: "Domoticz"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_NOFUSS === 'true'
+    // #!if NOFUSS === true
     import Nfss from "./tabs/integrations/NoFuss";
 
     components.Nfss = Nfss;
     tabs.push({k: "nofuss", l: "NoFuss"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_THINGSPEAK === 'true'
+    // #!if THINGSPEAK === true
     import Tspk from "./tabs/integrations/ThingSpeak";
 
     components.Tspk = Tspk;
     tabs.push({k: "thingspeak", l: "ThingSpeak"});
-    // #endif
+    // #!endif
 
-    // #if process.env.VUE_APP_IDB === 'true'
+    // #!if IDB === true
     import Idb from "./tabs/integrations/InfluxDB";
     import {detailedDiff} from "deep-object-diff";
 
     components.Idb = Idb;
     tabs.push({k: "idb", l: "InfluxDB"});
-    // #endif
+    // #!endif
 
     let messages = ["",
         "Remote update started",
