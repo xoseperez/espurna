@@ -1,5 +1,6 @@
 import Vue from "vue";
 
+
 let App;
 
 // #!if ENV === 'production'
@@ -8,6 +9,7 @@ App = SingleApp;
 // #!else
 import './pwa/registerServiceWorker'
 import PwaApp from "./pwa/App.vue";
+import './pwa/plugins/element.js'
 App = PwaApp;
 // #!endif
 

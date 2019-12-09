@@ -1,9 +1,21 @@
 module.exports = {
-    presets: [
-        ["@babel/env", {
-            "targets": {
-                "chrome": "77"
+    "presets": [
+        [
+            "@babel/env",
+            {
+                "targets": {
+                    "chrome": "77"
+                }
             }
-        }]
+        ]
+    ],
+    "plugins": [
+        [
+            "component",
+            {
+                "libraryName": "element-ui",
+                "styleLibraryName": "theme-chalk"
+            }
+        ]
     ]
 };

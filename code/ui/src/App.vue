@@ -5,7 +5,10 @@
         <Menu id="layout" :tabs="tabs" class="webmode">
             <template #header>
                 <div class="heading">
-                    <i v-if="close" class="back" @click="close">🡠</i>
+                    <template>
+                        <i v-if="close" class="back" @click="close">🡠</i>
+                        <div class="clearfix"></div>
+                    </template>
                     <Icon class="icon"/>
                     <h1 class="hostname">{{data.device.hostname}}</h1>
                     <h2 class="desc">{{data.device.desc}}</h2>
@@ -352,9 +355,10 @@
                 // Check host param in query string
                 const search = new URLSearchParams(window.location.search),
                     host = search.get("host");
+                this.ws.connect(host ? host : window.location.host, this.receiveMessage);
+            } else {
+                this.ws.connect(this.address, this.receiveMessage);
             }
-
-            this.ws.connect(this.address ? this.address : (host ? host : window.location.host), this.receiveMessage);
         },
         methods: {
             save() {
@@ -726,6 +730,14 @@
 
     .hidden, [hidden] {
         display: none !important
+    }
+
+    i.back {
+        cursor: pointer;
+        font-style: normal;
+        font-size: 1.5em;
+        float: left;
+        clear: both;
     }
 
 

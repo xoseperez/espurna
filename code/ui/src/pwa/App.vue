@@ -1,34 +1,43 @@
 <template>
     <div>
-        <App v-if="singleAddress" :address="singleAddress" @close="() => singleAddress = null"/>
+        <App v-if="singleAddress" :address="singleAddress" :close="() => singleAddress = null"/>
         <div v-else class="pwa-content">
-            <div class="devices">
-                <Device v-for="(device, ip) in devices" :key="ip" :ip="ip" v-bind="device"
-                        @configure="() => singleAddress = ip"/>
+            <div class="pwa-icon">
+                <Icon/>
+                <h1>Espurna</h1>
             </div>
-            <Row class="options" no-wrap>
-                <Input v-model="scanIp" placeholder="192.168.1.1-255"/>
-                <Button color="primary" @click="retrieveDevices">Scan for devices</Button>
+            <el-row :gutter="10" class="options">
+                <el-col :span="16">
+                    <el-input v-model="scanIp" placeholder="192.168.1.1-255"/>
+                </el-col>
+                <el-col :span="8">
+                    <el-button type="primary" @click="retrieveDevices">Scan for devices</el-button>
+                </el-col>
                 <!-- <Button>Add device manually</Button>-->
-            </Row>
+            </el-row>
+            <el-row :gutter="12" class="devices">
+                <el-col v-for="(device, ip) in devices" :key="ip" :span="8">
+                    <Device :ip="ip"
+                            v-bind="device"
+                            @configure="() => singleAddress = ip"/>
+                </el-col>
+            </el-row>
         </div>
     </div>
 </template>
 
 <script>
+    import Icon from '../../public/icons/icon.svg';
     import getUserIp from './get-user-ip';
     import App from "../App";
     import Device from "./Device";
-    import Button from "../components/Button";
-    import Input from "../components/Input";
-    import Row from "../layout/Row";
 
     export default {
-        components: {Row, Input, Button, Device, App},
+        components: {Icon, Device, App},
         data() {
             return {
-                scanIp: null,
-                userIp: null,
+                scanIp: "",
+                userIp: "",
                 singleAddress: null,
                 devices: {}
             }
@@ -49,9 +58,10 @@
         mounted() {
             //this.devices = localStorage.devices;
             getUserIp((ip) => {
+                console.log(ip);
                 this.userIp = ip;
             });
-            setInterval(this.retrieveDevices, 60000); //Rescan every minute
+            // setInterval(this.retrieveDevices, 60000); //Rescan every minute
         },
         methods: {
             retrieveDevices() {
@@ -94,23 +104,54 @@
 </script>
 
 <style lang="less">
+    .el-row {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .el-input input.el-input__inner {
+        margin: 0;
+    }
+
+    .el-col > .el-button {
+        width: 100%;
+    }
+
     .pwa-content {
         transform: translate(-50%, -50%);
         position: absolute;
-        top: 50%;
+        top: 45%;
         left: 50%;
         max-width: 1000px;
+        width: 100%;
+        font-family: Roboto, sans-serif;
+
+        .el-card > * {
+            width: 100%;
+        }
+
+        .pwa-icon {
+            width: 20vh;
+            text-align: center;
+            margin: auto;
+            font-size: 2vh;
+
+            h1 {
+                margin-top: -.2em;
+                text-transform: uppercase;
+            }
+        }
 
         .devices {
-            display: flex;
+            /*display: flex;
             flex-wrap: wrap;
             margin: 0 auto;
-            font-family: Roboto, sans-serif;
 
             .device {
                 width: 32%;
                 margin: 1%;
-            }
+            }*/
         }
     }
 </style>

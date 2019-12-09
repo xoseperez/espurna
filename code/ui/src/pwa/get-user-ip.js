@@ -29,6 +29,7 @@ export default (onNewIP) => { //  onNewIp - your listener function for new IPs
         pc.setLocalDescription(sdp, noop, noop);
     }).catch(function (reason) {
         // An error occurred, so handle the failure to connect
+        console.log(reason);
     });
 
     //listen for candidate events

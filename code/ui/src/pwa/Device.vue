@@ -1,33 +1,40 @@
 <template>
-    <div class="device">
-        <div class="name">
-            {{hostname}}
+    <el-card class="device" shadow="hover">
+        <div slot="header" class="clearfix">
+            <el-button-group class="buttons">
+                <el-button type="danger" title="Upgrade" icon="el-icon-upload" size="small" @click="$emit('upgrade')"/>
+                <el-button type="primary" title="Configure" icon="el-icon-setting"
+                           size="small"
+                           @click="$emit('configure')"/>
+            </el-button-group>
+            <div class="name">
+                {{hostname}}
+            </div>
+            <div v-if="description" class="description">
+                {{description}}
+            </div>
         </div>
-        <div class="ip">
-            {{ip}}
-        </div>
-        <div class="version">
-            {{version}}
-        </div>
-        <div class="board">
-            {{device}}
-        </div>
-        <div class="description">
-            {{description}}
-        </div>
-        <div class="buttons">
-            <Button @click="$emit('upgrade')">Upgrade</Button>
-            <Button @click="$emit('configure')">Configure</Button>
-        </div>
-    </div>
+        <el-row>
+            <el-col :span="12" class="ip">
+                {{ip}}
+            </el-col>
+            <el-col :span="12" class="version">
+                {{version}}
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col class="board">
+                {{device}}
+            </el-col>
+        </el-row>
+    </el-card>
 </template>
 
 <script>
-    import Button from "../components/Button";
     import compareVersions from "compare-version";
 
     export default {
-        components: {Button},
+        components: {},
         props: {
             hostname: {
                 type: String,
@@ -73,19 +80,21 @@
 
         .name {
             color: #333;
-            width: 100%;
+            float: left;
             line-height: 2em;
-            font-size: 1.2em;
+            font-size: 1.1em;
         }
-        .ip {
-            width: 50%;
-        }
+
         .version {
-            width: 50%;
             text-align: right;
         }
+
         .description {
             padding-top: 10px;
+        }
+
+        .buttons {
+            float: right;
         }
     }
 </style>
