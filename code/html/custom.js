@@ -1075,10 +1075,14 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
-        $("input[name='relayLastSch']", line).prop('checked', data.sch_last[i]);
-        $("input[name='relayLastSch']", line).attr("id", "relayLastSch" + i);
-        $("input[name='relayLastSch']", line).attr("name", "relayLastSch" + i);
-        $("input[name='relayLastSch" + i + "']", line).next().attr("for","relayLastSch" + (i));
+
+        if ("sch_last" in data) {
+            $("input[name='relayLastSch']", line)
+                .prop('checked', data.sch_last[i])
+                .attr("id", "relayLastSch" + i)
+                .attr("name", "relayLastSch" + i)
+                .next().attr("for","relayLastSch" + (i));
+        }
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
