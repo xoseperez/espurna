@@ -1,13 +1,16 @@
 <template>
     <div class="device">
         <div class="name">
-            {{name}}
+            {{hostname}}
         </div>
         <div class="ip">
             {{ip}}
         </div>
         <div class="version">
             {{version}}
+        </div>
+        <div class="board">
+            {{device}}
         </div>
         <div class="description">
             {{description}}
@@ -26,7 +29,7 @@
     export default {
         components: {Button},
         props: {
-            name: {
+            hostname: {
                 type: String,
                 default: 'Espurna'
             },
@@ -37,6 +40,10 @@
             ip: {
                 type: String,
                 required: true
+            },
+            device: {
+                type: String,
+                default: "Unknown board"
             },
             version: {
                 type: String,
