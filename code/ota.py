@@ -14,7 +14,7 @@ import shutil
 import socket
 import subprocess
 import sys
-from threading import Event
+import time
 
 import zeroconf
 
@@ -341,9 +341,6 @@ def discover_devices(args):
     # (unless --sort <field> is specified, then we will wait until discovery finishes
     listener = Listener(print_when_discovered=not args.sort)
 
-    # Note: pass this to the Listener and do a .set() to cancel the timeout below
-    discovery_complete = Event()
-
     try:
         browser = zeroconf.ServiceBrowser(
             zeroconf.Zeroconf(), "_arduino._tcp.local.", listener
@@ -357,8 +354,12 @@ def discover_devices(args):
     ) as exc:
         print("! error when creating service discovery browser: {}".format(exc))
 
-    discovery_complete.wait(args.timeout)
-    browser.zc.close()
+    try:
+        time.sleep(args.timeout)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        browser.zc.close()
 
     if not listener.devices:
         print("Nothing found!\n")
