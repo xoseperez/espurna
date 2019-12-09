@@ -192,18 +192,18 @@ void buttonSetup() {
     #elif defined(FOXEL_LIGHTFOX_DUAL)
 
         unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
-        unsigned int btn1Relay = getSetting("btnRelay", 0, BUTTON1_RELAY - 1).toInt() + 1;
+        unsigned int btn1Relay = getSetting<int>({"btnRelay", 0}, BUTTON1_RELAY - 1) + 1;
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn1Relay});
-        unsigned int btn2Relay = getSetting("btnRelay", 1, BUTTON2_RELAY - 1).toInt() + 1;
+        unsigned int btn2Relay = getSetting<int>({"btnRelay", 1}, BUTTON2_RELAY - 1) + 1;
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn2Relay});
-        unsigned int btn3Relay = getSetting("btnRelay", 2, BUTTON3_RELAY - 1).toInt() + 1;
+        unsigned int btn3Relay = getSetting<int>({"btnRelay", 2}, BUTTON3_RELAY - 1) + 1;
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn3Relay});
-        unsigned int btn4Relay = getSetting("btnRelay", 3, BUTTON4_RELAY - 1).toInt() + 1;
+        unsigned int btn4Relay = getSetting<int>({"btnRelay", 3}, BUTTON4_RELAY - 1) + 1;
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn4Relay});
 
     #else
 
-        unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+        unsigned long btnDelay = getSetting<int>("btnDelay", BUTTON_DBLCLICK_DELAY);
         UNUSED(btnDelay);
 
         #if BUTTON1_PIN != GPIO_NONE

@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <functional>
 #include <algorithm>
+#include <limits>
 #include <vector>
 #include <memory>
 
@@ -247,36 +248,15 @@ typedef struct {
 } packet_t;
 
 // -----------------------------------------------------------------------------
-// Settings
-// -----------------------------------------------------------------------------
-#include <Embedis.h>
-
-template<typename T> bool setSetting(const String& key, T value);
-template<typename T> bool setSetting(const String& key, unsigned int index, T value);
-template<typename T> String getSetting(const String& key, T defaultValue);
-template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
-void settingsGetJson(JsonObject& data);
-bool settingsRestoreJson(JsonObject& data);
-
-struct settings_cfg_t {
-    String& setting;
-    const char* key;
-    const char* default_value;
-};
-
-using settings_filter_t = std::function<String(String& value)>;
-using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
-
-void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
-
-// -----------------------------------------------------------------------------
 // Terminal
 // -----------------------------------------------------------------------------
-#if TERMINAL_SUPPORT
-    void terminalRegisterCommand(const String& name, void (*call)(Embedis*));
-    void terminalInject(void *data, size_t len);
-    Stream & terminalSerial();
-#endif
+
+class Embedis; // FIXME: order
+using embedis_command_f = void (*)(Embedis*);
+
+void terminalRegisterCommand(const String& name, embedis_command_f func);
+void terminalInject(void *data, size_t len);
+Stream& terminalSerial();
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -391,6 +371,8 @@ bool wifiConnected();
 #else // LWIP_VERSION_MAJOR >= 2
 #include <lwip/etharp.h>
 #endif
+
+struct wifi_network_t;
 
 // -----------------------------------------------------------------------------
 // THERMOSTAT

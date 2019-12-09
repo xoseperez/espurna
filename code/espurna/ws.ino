@@ -303,19 +303,23 @@ bool _wsStore(const String& key, const String& value) {
 // Store indexed key (key0, key1, etc.) from array
 // -----------------------------------------------------------------------------
 
-bool _wsStore(const String& key, JsonArray& value) {
+bool _wsStore(const String& key, JsonArray& values) {
 
     bool changed = false;
 
     unsigned char index = 0;
-    for (auto element : value) {
-        if (_wsStore(key + index, element.as<String>())) changed = true;
-        index++;
+    for (auto& element : values) {
+        const auto value = element.as<String>();
+        if (value != getSetting({key, index})) {
+            setSetting({key, index}, value);
+            changed = true;
+        }
+        ++index;
     }
 
     // Delete further values
     for (unsigned char i=index; i<SETTINGS_MAX_LIST_COUNT; i++) {
-        if (!delSetting(key, index)) break;
+        if (!delSetting({key, index})) break;
         changed = true;
     }
 
@@ -541,11 +545,11 @@ void _wsOnConnected(JsonObject& root) {
     root["sdk"] = ESP.getSdkVersion();
     root["core"] = getCoreVersion();
 
-    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-    root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-    root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY);
+    root["webPort"] = getSetting("webPort", WEB_PORT);
+    root["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
+    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
+    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 void wsSend(JsonObject& root) {

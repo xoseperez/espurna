@@ -29,10 +29,10 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _apiWebSocketOnConnected(JsonObject& root) {
-    root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
+    root["apiEnabled"] = getSetting<bool>("apiEnabled", API_ENABLED);
     root["apiKey"] = getSetting("apiKey", API_KEY);
-    root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    root["apiRestFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
+    root["apiRealTime"] = getSetting<bool>("apiRealTime", API_REAL_TIME_VALUES);
+    root["apiRestFul"] = getSetting<bool>("apiRestFul", API_RESTFUL);
 }
 
 void _apiConfigure() {
@@ -46,7 +46,7 @@ void _apiConfigure() {
 bool _authAPI(AsyncWebServerRequest *request) {
 
     const String key = getSetting("apiKey", API_KEY);
-    if (!key.length() || getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
+    if (!key.length() || getSetting<bool>("apiEnabled", API_ENABLED)) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;
@@ -185,7 +185,7 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
         // Check if its a PUT
         if (api.putFn != NULL) {
-            if ((getSetting("apiRestFul", API_RESTFUL).toInt() != 1) || (request->method() == HTTP_PUT)) {
+            if (!getSetting<bool>("apiRestFul", API_RESTFUL) || (request->method() == HTTP_PUT)) {
                 if (request->hasParam("value", request->method() == HTTP_PUT)) {
                     AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
                     (api.putFn)((p->value()).c_str());

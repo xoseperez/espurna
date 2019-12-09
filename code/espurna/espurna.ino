@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 #include <vector>
 
+#include "settings.h"
 #include "system.h"
 #include "utils.h"
 #include "relay.h"
@@ -100,7 +101,7 @@ void setup() {
 
     // Return bogus free heap value for broken devices
     // XXX: device is likely to trigger other bugs! tread carefuly
-    wtfHeap(getSetting("wtfHeap", 0).toInt());
+    wtfHeap(getSetting<int>("wtfHeap", 0));
 
     // Init Serial, SPIFFS and system check
     systemSetup();
@@ -255,8 +256,10 @@ void setup() {
 
     // Set up delay() after loop callbacks are finished
     // Note: should be after settingsSetup()
-    _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
-    _loop_delay = constrain(_loop_delay, 0, 300);
+    _loop_delay = constrain(
+        getSetting<int>("loopDelay", LOOP_DELAY_TIME),
+        0, 300
+    );
 
     saveSettings();
 

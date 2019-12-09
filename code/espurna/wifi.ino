@@ -64,7 +64,7 @@ void _wifiConfigure() {
     jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
-    _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK).toInt();
+    _wifi_ap_mode = getSetting<int>("apmode", WIFI_AP_FALLBACK);
 
     // If system is flagged unstable we do not init wifi networks
     #if SYSTEM_CHECK_ENABLED
@@ -74,22 +74,22 @@ void _wifiConfigure() {
     // Clean settings
     _wifiClean(WIFI_MAX_NETWORKS);
 
-    int i;
+    unsigned char i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
-        if (!hasSetting("ssid", i)) break;
-        if (!hasSetting("ip", i)) {
+        if (!hasSetting({"ssid", i})) break;
+        if (!hasSetting({"ip", i})) {
             jw.addNetwork(
-                getSetting("ssid", i, "").c_str(),
-                getSetting("pass", i, "").c_str()
+                getSetting({"ssid", i}).c_str(),
+                getSetting({"pass", i}).c_str()
             );
         } else {
             jw.addNetwork(
-                getSetting("ssid", i, "").c_str(),
-                getSetting("pass", i, "").c_str(),
-                getSetting("ip", i, "").c_str(),
-                getSetting("gw", i, "").c_str(),
-                getSetting("mask", i, "").c_str(),
-                getSetting("dns", i, "").c_str()
+                getSetting({"ssid", i}).c_str(),
+                getSetting({"pass", i}).c_str(),
+                getSetting({"ip", i}).c_str(),
+                getSetting({"gw", i}).c_str(),
+                getSetting({"mask", i}).c_str(),
+                getSetting({"dns", i}).c_str()
             );
         }
     }
@@ -98,21 +98,19 @@ void _wifiConfigure() {
         if (i == 0) _wifi_smartconfig_initial = true;
     #endif
   
-    jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
+    jw.enableScan(getSetting<bool>("wifiScan", 1 == WIFI_SCAN_NETWORKS));
 
-    unsigned char sleep_mode = getSetting("wifiSleep", WIFI_SLEEP_MODE).toInt();
-    sleep_mode = constrain(sleep_mode, 0, 2);
-
+    const auto sleep_mode = constrain(getSetting<int>("wifiSleep", WIFI_SLEEP_MODE), 0, 2);
     WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
 
     #if WIFI_GRATUITOUS_ARP_SUPPORT
         _wifi_gratuitous_arp_last = millis();
         _wifi_gratuitous_arp_interval = getSetting("wifiGarpIntvl", secureRandom(
             WIFI_GRATUITOUS_ARP_INTERVAL_MIN, WIFI_GRATUITOUS_ARP_INTERVAL_MAX
-        )).toInt();
+        ));
     #endif
 
-    const auto tx_power = getSetting("wifiTxPwr", WIFI_OUTPUT_POWER_DBM).toFloat();
+    const auto tx_power = getSetting("wifiTxPwr", WIFI_OUTPUT_POWER_DBM);
     WiFi.setOutputPower(tx_power);
 
 }
@@ -164,23 +162,23 @@ void _wifiScan(wifi_scan_f callback = nullptr) {
 bool _wifiClean(unsigned char num) {
 
     bool changed = false;
-    int i = 0;
+    unsigned char i = 0;
 
     // Clean defined settings
     while (i < num) {
 
         // Skip on first non-defined setting
-        if (!hasSetting("ssid", i)) {
-            delSetting("ssid", i);
+        if (!hasSetting({"ssid", i})) {
+            delSetting({"ssid", i});
             break;
         }
 
         // Delete empty values
-        if (!hasSetting("pass", i)) delSetting("pass", i);
-        if (!hasSetting("ip", i)) delSetting("ip", i);
-        if (!hasSetting("gw", i)) delSetting("gw", i);
-        if (!hasSetting("mask", i)) delSetting("mask", i);
-        if (!hasSetting("dns", i)) delSetting("dns", i);
+        if (!hasSetting({"pass", i})) delSetting({"pass", i});
+        if (!hasSetting({"ip", i})) delSetting({"ip", i});
+        if (!hasSetting({"gw", i})) delSetting({"gw", i});
+        if (!hasSetting({"mask", i})) delSetting({"mask", i});
+        if (!hasSetting({"dns", i})) delSetting({"dns", i});
 
         ++i;
 
@@ -188,13 +186,13 @@ bool _wifiClean(unsigned char num) {
 
     // Delete all other settings
     while (i < WIFI_MAX_NETWORKS) {
-        changed = hasSetting("ssid", i);
-        delSetting("ssid", i);
-        delSetting("pass", i);
-        delSetting("ip", i);
-        delSetting("gw", i);
-        delSetting("mask", i);
-        delSetting("dns", i);
+        changed = hasSetting({"ssid", i});
+        delSetting({"ssid", i});
+        delSetting({"pass", i});
+        delSetting({"ip", i});
+        delSetting({"gw", i});
+        delSetting({"mask", i});
+        delSetting({"dns", i});
         ++i;
     }
 
@@ -203,52 +201,77 @@ bool _wifiClean(unsigned char num) {
 }
 
 // Inject hardcoded networks
+struct wifi_network_t {
+    String ssid;
+    String pass;
+    String ip;
+    String gw;
+    String mask;
+    String dns;
+};
+
+constexpr bool _wifiHasSSID(unsigned char index) {
+    return (
+        (index == 0) ? (strlen(WIFI1_SSID) > 0) :
+        (index == 1) ? (strlen(WIFI2_SSID) > 0) :
+        (index == 2) ? (strlen(WIFI3_SSID) > 0) :
+        (index == 3) ? (strlen(WIFI4_SSID) > 0) : false
+    );
+}
+
+wifi_network_t _wifiNetwork(unsigned char index) {
+    wifi_network_t result;
+    if (0 == index && _wifiHasSSID(index)) {
+        result.ssid = F(WIFI1_SSID);
+        result.pass = F(WIFI1_PASS);
+        result.ip = F(WIFI1_IP);
+        result.gw = F(WIFI1_GW);
+        result.mask = F(WIFI1_MASK);
+        result.dns = F(WIFI1_DNS);
+    } else if (1 == index && _wifiHasSSID(index)) {
+        result.ssid = F(WIFI2_SSID);
+        result.pass = F(WIFI2_PASS);
+        result.ip = F(WIFI2_IP);
+        result.gw = F(WIFI2_GW);
+        result.mask = F(WIFI2_MASK);
+        result.dns = F(WIFI2_DNS);
+    } else if (2 == index && _wifiHasSSID(index)) {
+        result.ssid = F(WIFI3_SSID);
+        result.pass = F(WIFI3_PASS);
+        result.ip = F(WIFI3_IP);
+        result.gw = F(WIFI3_GW);
+        result.mask = F(WIFI3_MASK);
+        result.dns = F(WIFI3_DNS);
+    } else if (3 == index && _wifiHasSSID(index)) {
+        result.ssid = F(WIFI4_SSID);
+        result.pass = F(WIFI4_PASS);
+        result.ip = F(WIFI4_IP);
+        result.gw = F(WIFI4_GW);
+        result.mask = F(WIFI4_MASK);
+        result.dns = F(WIFI4_DNS);
+    }
+    return result;
+}
+
 void _wifiInject() {
 
-    if (strlen(WIFI1_SSID)) {
+    unsigned char index = 0;
 
-        if (!hasSetting("ssid", 0)) {
-            setSetting("ssid", 0, F(WIFI1_SSID));
-            setSetting("pass", 0, F(WIFI1_PASS));
-            setSetting("ip", 0, F(WIFI1_IP));
-            setSetting("gw", 0, F(WIFI1_GW));
-            setSetting("mask", 0, F(WIFI1_MASK));
-            setSetting("dns", 0, F(WIFI1_DNS));
+    do {
+        const auto network = _wifiNetwork(index);
+        if (network.ssid.length() == 0) break;
+
+        setSetting({"ssid", index}, network.ssid);
+        setSetting({"pass", index}, network.pass);
+
+        if (network.ip.length()) {
+            setSetting({"ip", index}, network.ip);
+            setSetting({"gw", index}, network.gw);
+            setSetting({"mask", index}, network.mask);
+            setSetting({"dns", index}, network.dns);
         }
+    } while (++index);
 
-        if (strlen(WIFI2_SSID)) {
-            if (!hasSetting("ssid", 1)) {
-                setSetting("ssid", 1, F(WIFI2_SSID));
-                setSetting("pass", 1, F(WIFI2_PASS));
-                setSetting("ip", 1, F(WIFI2_IP));
-                setSetting("gw", 1, F(WIFI2_GW));
-                setSetting("mask", 1, F(WIFI2_MASK));
-                setSetting("dns", 1, F(WIFI2_DNS));
-            }
-
-            if (strlen(WIFI3_SSID)) {
-                if (!hasSetting("ssid", 2)) {
-                    setSetting("ssid", 2, F(WIFI3_SSID));
-                    setSetting("pass", 2, F(WIFI3_PASS));
-                    setSetting("ip", 2, F(WIFI3_IP));
-                    setSetting("gw", 2, F(WIFI3_GW));
-                    setSetting("mask", 2, F(WIFI3_MASK));
-                    setSetting("dns", 2, F(WIFI3_DNS));
-                }
-
-                if (strlen(WIFI4_SSID)) {
-                    if (!hasSetting("ssid", 3)) {
-                        setSetting("ssid", 3, F(WIFI4_SSID));
-                        setSetting("pass", 3, F(WIFI4_PASS));
-                        setSetting("ip", 3, F(WIFI4_IP));
-                        setSetting("gw", 3, F(WIFI4_GW));
-                        setSetting("mask", 3, F(WIFI4_MASK));
-                        setSetting("dns", 3, F(WIFI4_DNS));
-                    }
-                }
-            }
-        }
-    }
 }
 
 void _wifiCallback(justwifi_messages_t code, char * parameter) {
@@ -274,16 +297,16 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
         // Look for the same SSID
         uint8_t count = 0;
         while (count < WIFI_MAX_NETWORKS) {
-            if (!hasSetting("ssid", count)) break;
-            if (ssid.equals(getSetting("ssid", count, ""))) break;
+            if (!hasSetting({"ssid", count})) break;
+            if (ssid.equals(getSetting({"ssid", count}))) break;
             count++;
         }
 
         // If we have reached the max we overwrite the first one
         if (WIFI_MAX_NETWORKS == count) count = 0;
 
-        setSetting("ssid", count, ssid);
-        setSetting("pass", count, pass);
+        setSetting({"ssid", count}, ssid);
+        setSetting({"pass", count}, pass);
 
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
@@ -485,17 +508,17 @@ bool _wifiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _wifiWebSocketOnConnected(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
-    root["wifiScan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
+    root["wifiScan"] = getSetting<bool>("wifiScan", WIFI_SCAN_NETWORKS == 1);
     JsonArray& wifi = root.createNestedArray("wifi");
-    for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
-        if (!hasSetting("ssid", i)) break;
+    for (unsigned char i=0; i<WIFI_MAX_NETWORKS; ++i) {
+        if (!hasSetting({"ssid", i})) break;
         JsonObject& network = wifi.createNestedObject();
-        network["ssid"] = getSetting("ssid", i, "");
-        network["pass"] = getSetting("pass", i, "");
-        network["ip"] = getSetting("ip", i, "");
-        network["gw"] = getSetting("gw", i, "");
-        network["mask"] = getSetting("mask", i, "");
-        network["dns"] = getSetting("dns", i, "");
+        network["ssid"] = getSetting({"ssid", i});
+        network["pass"] = getSetting({"pass", i});
+        network["ip"] = getSetting({"ip", i});
+        network["gw"] = getSetting({"gw", i});
+        network["mask"] = getSetting({"mask", i});
+        network["dns"] = getSetting({"dns", i});
     }
 }
 

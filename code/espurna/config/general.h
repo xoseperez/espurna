@@ -590,7 +590,7 @@
 //
 // Issue #6366 turned out to be high tx power causing weird behavior. Lowering tx power achieved stability.
 #ifndef WIFI_OUTPUT_POWER_DBM
-#define WIFI_OUTPUT_POWER_DBM                    20.0
+#define WIFI_OUTPUT_POWER_DBM                    20.0f
 #endif
 
 
@@ -1141,7 +1141,7 @@
 #define SETTINGS_AUTOSAVE       1           // Autosave settings or force manual commit
 #endif
 
-#define SETTINGS_MAX_LIST_COUNT 10          // Maximum index for settings lists
+#define SETTINGS_MAX_LIST_COUNT 16          // Maximum index for settings lists
 
 // -----------------------------------------------------------------------------
 // LIGHT

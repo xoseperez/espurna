@@ -366,7 +366,7 @@ void _relayProcess(bool mode) {
 
             // We will trigger a eeprom save only if
             // we care about current relay status on boot
-            const auto boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            const auto boot_mode = getSetting({"relayBoot", id}, RELAY_BOOT_MODE);
             const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
@@ -469,8 +469,8 @@ void relayPulse(unsigned char id) {
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
-        _relays[id].pulse = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
-        _relays[id].pulse_ms = 1000 * getSetting("relayTime", id, RELAY_PULSE_MODE).toFloat();
+        _relays[id].pulse = getSetting({"relayPulse", id}, RELAY_PULSE_MODE);
+        _relays[id].pulse_ms = 1000 * getSetting({"relayTime", id}, .0);
     }
 
 }
@@ -724,10 +724,11 @@ void _relayBackwards() {
     }
     #endif
 
-    for (unsigned int i=0; i<_relays.size(); i++) {
-        if (!hasSetting("mqttGroupInv", i)) continue;
-        setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
-        delSetting("mqttGroupInv", i);
+    for (unsigned char i=0; i<_relays.size(); i++) {
+        const auto key = settings_key_t {"mqttGroupInv", i};
+        if (!hasSetting(key)) continue;
+        setSetting({"mqttGroupSync", i}, getSetting(key));
+        delSetting(key);
     }
 
 }
@@ -749,8 +750,8 @@ void _relayBoot() {
     bool status;
     for (unsigned char i=0; i<relayCount(); ++i) {
 
-        unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-        DEBUG_MSG_P(PSTR("[RELAY] Relay #%u boot mode %u\n"), i, boot_mode);
+        const auto boot_mode = getSetting({"relayBoot", i}, RELAY_BOOT_MODE);
+        DEBUG_MSG_P(PSTR("[RELAY] Relay #%u boot mode %d\n"), i, boot_mode);
 
         status = false;
         lock = RELAY_LOCK_DISABLED;
@@ -804,12 +805,12 @@ void _relayBoot() {
 }
 
 void _relayConfigure() {
-    for (unsigned int i=0; i<_relays.size(); i++) {
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+    for (unsigned char i = 0, relays = _relays.size() ; (i < relays); ++i) {
+        _relays[i].pulse = getSetting({"relayPulse", i}, RELAY_PULSE_MODE);
+        _relays[i].pulse_ms = 1000 * getSetting({"relayTime", i}, .0);
 
-        _relays[i].delay_on = getSetting("relayDelayOn", i, _relayDelayOn(i)).toInt();
-        _relays[i].delay_off = getSetting("relayDelayOff", i, _relayDelayOff(i)).toInt();
+        _relays[i].delay_on = getSetting({"relayDelayOn", i}, _relayDelayOn(i));
+        _relays[i].delay_off = getSetting({"relayDelayOff", i}, _relayDelayOff(i));
 
         if (GPIO_NONE == _relays[i].pin) continue;
 
@@ -823,11 +824,11 @@ void _relayConfigure() {
         }
     }
 
-    _relay_flood_window = (1000 * getSetting("relayFloodTime", RELAY_FLOOD_WINDOW).toInt());
-    _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES).toInt();
+    _relay_flood_window = (1000 * getSetting("relayFloodTime", RELAY_FLOOD_WINDOW));
+    _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES);
 
-    _relay_delay_interlock = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK).toInt();
-    _relay_sync_mode = getSetting("relaySync", RELAY_SYNC).toInt();
+    _relay_delay_interlock = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK);
+    _relay_sync_mode = getSetting("relaySync", RELAY_SYNC);
 
     #if MQTT_SUPPORT
         settingsProcessConfig({
@@ -918,19 +919,19 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
         type.add(_relays[i].type);
         reset.add(_relays[i].reset_pin);
-        boot.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt());
+        boot.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));
 
         pulse.add(_relays[i].pulse);
         pulse_time.add(_relays[i].pulse_ms / 1000.0);
 
         #if SCHEDULER_SUPPORT
-            sch_last.add(getSetting("relayLastSch", i, SCHEDULER_RESTORE_LAST_SCHEDULE).toInt());
+            sch_last.add(getSetting({"relayLastSch", i}, SCHEDULER_RESTORE_LAST_SCHEDULE));
         #endif
 
         #if MQTT_SUPPORT
-            group.add(getSetting("mqttGroup", i, ""));
-            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
-            on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
+            group.add(getSetting({"mqttGroup", i}));
+            group_sync.add(getSetting({"mqttGroupSync", i}, 0));
+            on_disconnect.add(getSetting({"relayOnDisc", i}, 0));
         #endif
     }
 }
@@ -1083,10 +1084,10 @@ const char* relayPayload(RelayStatus status) {
 }
 
 void _relayMQTTGroup(unsigned char id) {
-    String topic = getSetting("mqttGroup", id, "");
+    const String topic = getSetting({"mqttGroup", id});
     if (!topic.length()) return;
 
-    unsigned char mode = getSetting("mqttGroupSync", id, RELAY_GROUP_SYNC_NORMAL).toInt();
+    const auto mode = getSetting({"mqttGroupSync", id}, RELAY_GROUP_SYNC_NORMAL);
     if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
 
     auto status = _relayStatusTyped(id);
@@ -1167,8 +1168,8 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         #endif
 
         // Subscribe to group topics
-        for (unsigned int i=0; i < _relays.size(); i++) {
-            String t = getSetting("mqttGroup", i, "");
+        for (unsigned char i=0; i < _relays.size(); i++) {
+            const auto t(getSetting({"mqttGroup", i}));
             if (t.length() > 0) mqttSubscribeRaw(t.c_str());
         }
 
@@ -1224,9 +1225,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 
         // Check group topics
-        for (unsigned int i=0; i < _relays.size(); i++) {
+        for (unsigned char i=0; i < _relays.size(); i++) {
 
-            String t = getSetting("mqttGroup", i, "");
+            const String t = getSetting({"mqttGroup", i});
 
             if ((t.length() > 0) && t.equals(topic)) {
 
@@ -1234,7 +1235,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 if (value == RelayStatus::UNKNOWN) return;
 
                 if ((value == RelayStatus::ON) || (value == RelayStatus::OFF)) {
-                    if (getSetting("mqttGroupSync", i, RELAY_GROUP_SYNC_NORMAL).toInt() == RELAY_GROUP_SYNC_INVERSE) {
+                    if (getSetting({"mqttGroupSync", i}, RELAY_GROUP_SYNC_NORMAL) == RELAY_GROUP_SYNC_INVERSE) {
                         value = _relayStatusInvert(value);
                     }
                 }
@@ -1255,8 +1256,8 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     }
 
     if (type == MQTT_DISCONNECT_EVENT) {
-        for (unsigned int i=0; i < _relays.size(); i++){
-            int reaction = getSetting("relayOnDisc", i, 0).toInt();
+        for (unsigned char i=0; i < _relays.size(); i++){
+            const auto reaction = getSetting({"relayOnDisc", i}, 0);
             if (1 == reaction) {     // switch relay OFF
                 DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection\n"), i);
                 relayStatusWrap(i, RelayStatus::OFF, false);
@@ -1422,7 +1423,9 @@ void relaySetup() {
     _relaySetupAdhoc();
 
     // Dummy (virtual) relays
-    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT).toInt());
+    relaySetupDummy(
+        constrain(getSetting("relayDummy", DUMMY_RELAY_COUNT), 0, RELAYS_MAX)
+    );
 
     _relaySetupProvider();
     _relayBackwards();

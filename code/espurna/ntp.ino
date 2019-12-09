@@ -41,9 +41,9 @@ void _ntpWebSocketOnData(JsonObject& root) {
 
 void _ntpWebSocketOnConnected(JsonObject& root) {
     root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
-    root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-    root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET);
+    root["ntpDST"] = getSetting("ntpDST", 1 == NTP_DAY_LIGHT);
+    root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION);
 }
 
 #endif
@@ -89,7 +89,7 @@ void _ntpConfigure() {
 
     _ntp_configure = false;
 
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET);
     int sign = offset > 0 ? 1 : -1;
     offset = abs(offset);
     int tz_hours = sign * (offset / 60);
@@ -99,7 +99,7 @@ void _ntpConfigure() {
         _ntp_report = true;
     }
 
-    bool daylight = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+    const bool daylight = getSetting("ntpDST", 1 == NTP_DAY_LIGHT);
     if (NTPw.getDayLight() != daylight) {
         NTPw.setDayLight(daylight);
         _ntp_report = true;
@@ -110,12 +110,12 @@ void _ntpConfigure() {
         NTPw.setNtpServerName(server);
     }
 
-    uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION);
     NTPw.setDSTZone(dst_region);
 
     // Some remote servers can be slow to respond, increase accordingly
     // TODO does this need upper constrain?
-    NTPw.setNTPTimeout(getSetting("ntpTimeout", NTP_TIMEOUT).toInt());
+    NTPw.setNTPTimeout(getSetting("ntpTimeout", NTP_TIMEOUT));
 
 }
 
@@ -173,7 +173,7 @@ void _ntpBackwards() {
     moveSetting("ntpServer1", "ntpServer");
     delSetting("ntpServer2");
     delSetting("ntpServer3");
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET);
     if (-30 < offset && offset < 30) {
         offset *= 60;
         setSetting("ntpOffset", offset);
@@ -208,7 +208,7 @@ String ntpDateTime() {
 
 // XXX: returns garbage during DST switch
 time_t ntpLocal2UTC(time_t local) {
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET);
     if (NTPw.isSummerTime()) offset += 60;
     return local - offset * 60;
 }

@@ -160,8 +160,8 @@ unsigned long systemLoadAverage() {
 }
 
 void _systemSetupHeartbeat() {
-    _heartbeat_mode = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-    _heartbeat_interval = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+    _heartbeat_mode = getSetting<int>("hbMode", HEARTBEAT_MODE);
+    _heartbeat_interval = getSetting<int>("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 #if WEB_SUPPORT

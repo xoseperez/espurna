@@ -211,7 +211,7 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
-        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
+        String topic = getSetting<String>("haPrefix", HOMEASSISTANT_PREFIX) +
             "/sensor/" +
             getSetting("hostname") + "_" + String(i) +
             "/config";
@@ -291,7 +291,7 @@ void ha_discovery_t::prepareSwitches(ha_config_t& config) {
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
-        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
+        String topic = getSetting<String>("haPrefix", HOMEASSISTANT_PREFIX) +
             "/" + switchType +
             "/" + getSetting("hostname") + "_" + String(i) +
             "/config";
@@ -427,7 +427,7 @@ void _haSend() {
 }
 
 void _haConfigure() {
-    const bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    const bool enabled = getSetting<bool>("haEnabled", HOMEASSISTANT_ENABLED);
     _ha_send_flag = (enabled != _ha_enabled);
     _ha_enabled = enabled;
     _haSend();
@@ -445,7 +445,7 @@ void _haWebSocketOnVisible(JsonObject& root) {
 
 void _haWebSocketOnConnected(JsonObject& root) {
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    root["haEnabled"] = getSetting<bool>("haEnabled", HOMEASSISTANT_ENABLED);
 }
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {

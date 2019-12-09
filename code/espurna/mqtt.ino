@@ -62,7 +62,7 @@ bool _mqtt_connected = false;
 bool _mqtt_connecting = false;
 unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
-unsigned long _mqtt_keepalive = MQTT_KEEPALIVE;
+int _mqtt_keepalive = MQTT_KEEPALIVE;
 String _mqtt_topic;
 String _mqtt_topic_json;
 String _mqtt_setter;
@@ -243,7 +243,7 @@ void _mqttConnect() {
     _mqtt_connecting = true;
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        const bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        const bool secure = getSetting("mqttUseSSL", bool(MQTT_SSL_ENABLED));
     #else
         const bool secure = false;
     #endif
@@ -303,11 +303,11 @@ void _mqttConfigure() {
 
     // Enable only when server is set
     {
-        String server = getSetting("mqttServer", MQTT_SERVER);
-        uint16_t port = getSetting("mqttPort", MQTT_PORT).toInt();
+        const String server = getSetting("mqttServer", MQTT_SERVER);
+        const auto port = getSetting("mqttPort", static_cast<uint16_t>(MQTT_PORT));
         bool enabled = false;
         if (server.length()) {
-            enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
+            enabled = getSetting("mqttEnabled", 1 == MQTT_ENABLED);
         }
 
         _mqttApplySetting(_mqtt_server, server);
@@ -349,9 +349,14 @@ void _mqttConfigure() {
 
         String pass = getSetting("mqttPassword", MQTT_PASS);
 
-        unsigned char qos = getSetting("mqttQoS", MQTT_QOS).toInt();
-        bool retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
-        unsigned long keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
+        unsigned char qos = getSetting("mqttQoS", (unsigned char)(MQTT_QOS));
+        bool retain = getSetting("mqttRetain", bool(MQTT_RETAIN));
+        
+        // Note: MQTT spec defines this as 2 bytes
+        const auto keepalive = constrain(
+            getSetting("mqttKeep", MQTT_KEEPALIVE),
+            0, std::numeric_limits<uint16_t>::max()
+        );
 
         String id = getSetting("mqttClientID", getIdentifier());
         _mqttPlaceholders(id);
@@ -366,7 +371,7 @@ void _mqttConfigure() {
 
     // MQTT JSON
     {
-        _mqttApplySetting(_mqtt_use_json, getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
+        _mqttApplySetting(_mqtt_use_json, getSetting("mqttUseJson", bool(MQTT_USE_JSON)));
         _mqttApplyTopic(_mqtt_topic_json, MQTT_TOPIC_JSON);
     }
 
@@ -458,11 +463,11 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        root["mqttUseSSL"] = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);
         root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
-    root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    root["mqttUseJson"] = getSetting("mqttUseJson", 1 == MQTT_USE_JSON);
 }
 
 #endif
@@ -894,7 +899,7 @@ void mqttSetBroker(IPAddress ip, unsigned int port) {
 }
 
 void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
-    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
+    if (getSetting<String>("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
 }
 
 const String& mqttPayloadOnline() {

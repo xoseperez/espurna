@@ -76,7 +76,7 @@ void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int va
 // -----------------------------------------------------------------------------
 
 bool alexaEnabled() {
-    return (getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1);
+    return getSetting<bool>("alexaEnabled", 1 == ALEXA_ENABLED);
 }
 
 void alexaSetup() {

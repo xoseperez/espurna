@@ -33,11 +33,13 @@ void setBoardName() {
 }
 
 String getBoardName() {
-    return getSetting("boardName", DEVICE_NAME);
+    static const String defaultValue(DEVICE_NAME);
+    return getSetting("boardName", defaultValue);
 }
 
 String getAdminPass() {
-    return getSetting("adminPass", ADMIN_PASS);
+    static const String defaultValue(ADMIN_PASS);
+    return getSetting("adminPass", defaultValue);
 }
 
 const String& getCoreVersion() {
@@ -73,11 +75,11 @@ const String& getCoreRevision() {
 }
 
 unsigned char getHeartbeatMode() {
-    return getSetting("hbMode", HEARTBEAT_MODE).toInt();
+    return getSetting("hbMode", HEARTBEAT_MODE);
 }
 
 unsigned char getHeartbeatInterval() {
-    return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+    return getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 String getEspurnaModules() {

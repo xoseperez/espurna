@@ -86,8 +86,8 @@ bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _telnetWebSocketOnConnected(JsonObject& root) {
-    root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
-    root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+    root["telnetSTA"] = getSetting("telnetSTA", 1 == TELNET_STA);
+    root["telnetAuth"] = getSetting("telnetAuth", 1 == TELNET_AUTHENTICATION);
 }
 
 #endif
@@ -345,7 +345,7 @@ void _telnetNotifyConnected(unsigned char i) {
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
     // If there is no terminal support automatically dump info and crash data
-    #if TERMINAL_SUPPORT == 0
+    #if DEBUG_SUPPORT && not TERMINAL_SUPPORT
         info();
         wifiDebug();
         crashDump();
@@ -385,7 +385,7 @@ void _telnetLoop() {
                     #ifdef ESPURNA_CORE
                         bool telnetSTA = true;
                     #else
-                        bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+                        bool telnetSTA = getSetting("telnetSTA", 1 == TELNET_STA);
                     #endif
 
                     if (!telnetSTA) {
@@ -457,7 +457,7 @@ void _telnetNewClient(AsyncClient* client) {
         #ifdef ESPURNA_CORE
             bool telnetSTA = true;
         #else
-            bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+            bool telnetSTA = getSetting("telnetSTA", 1 == TELNET_STA);
         #endif
 
         if (!telnetSTA) {
@@ -506,7 +506,7 @@ unsigned char telnetWrite(unsigned char ch) {
 }
 
 void _telnetConfigure() {
-    _telnetAuth = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+    _telnetAuth = getSetting("telnetAuth", 1 == TELNET_AUTHENTICATION);
 }
 
 void telnetSetup() {

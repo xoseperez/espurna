@@ -279,8 +279,8 @@ int16_t i2c_read_int16_le(uint8_t address, uint8_t reg) {
 // -----------------------------------------------------------------------------
 
 void i2cClearBus() {
-    unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
-    unsigned char scl = getSetting("i2cSCL", I2C_SCL_PIN).toInt();
+    unsigned char sda = getSetting<unsigned char>("i2cSDA", I2C_SDA_PIN);
+    unsigned char scl = getSetting<unsigned char>("i2cSCL", I2C_SCL_PIN);
     DEBUG_MSG_P(PSTR("[I2C] Clear bus (response: %d)\n"), _i2cClearbus(sda, scl));
 }
 
@@ -371,12 +371,12 @@ void _i2cInitCommands() {
 
 void i2cSetup() {
 
-    unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
-    unsigned char scl = getSetting("i2cSCL", I2C_SCL_PIN).toInt();
+    unsigned char sda = getSetting<unsigned char>("i2cSDA", I2C_SDA_PIN);
+    unsigned char scl = getSetting<unsigned char>("i2cSCL", I2C_SCL_PIN);
 
     #if I2C_USE_BRZO
-        unsigned long cst = getSetting("i2cCST", I2C_CLOCK_STRETCH_TIME).toInt();
-        _i2c_scl_frequency = getSetting("i2cFreq", I2C_SCL_FREQUENCY).toInt();
+        unsigned long cst = getSetting<unsigned long>("i2cCST", I2C_CLOCK_STRETCH_TIME);
+        _i2c_scl_frequency = getSetting<unsigned long>("i2cFreq", I2C_SCL_FREQUENCY);
         brzo_i2c_setup(sda, scl, cst);
     #else
         Wire.begin(sda, scl);

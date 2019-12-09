@@ -7,12 +7,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 void _cmpMoveIndexDown(const char * key, int offset = 0) {
-    if (hasSetting(key, 0)) return;
+    if (hasSetting({key, 0})) return;
     for (unsigned char index = 1; index < SETTINGS_MAX_LIST_COUNT; index++) {
-        if (hasSetting(key, index)) {
-            setSetting(key, index - 1, getSetting(key, index).toInt() + offset);
+        const unsigned char prev = index - 1;
+        if (hasSetting({key, index})) {
+            setSetting({key, prev}, getSetting({key, index}).toInt() + offset);
         } else {
-            delSetting(key, index - 1);
+            delSetting({key, prev});
         }
     }
 }
@@ -26,8 +27,8 @@ void _cmpMoveIndexDown(const char * key, int offset = 0) {
 void migrate() {
 
     // Get config version
-    unsigned int board = getSetting("board", 0).toInt();
-    unsigned int config_version = getSetting("cfg", board > 0 ? 2 : 1).toInt();
+    const auto board = getSetting("board", 0);
+    const auto config_version = getSetting("cfg", board > 0 ? 2 : 1);
 
     // Update if not on latest version
     if (config_version == CFG_VERSION) return;
@@ -42,6 +43,7 @@ void migrate() {
         _cmpMoveIndexDown("relayType");
     }
 
+    #if 0
     if (config_version == 1) {
 
         #if defined(NODEMCU_LOLIN)
@@ -1395,6 +1397,7 @@ void migrate() {
         #endif
 
     }
+    #endif
 
     saveSettings();
 
