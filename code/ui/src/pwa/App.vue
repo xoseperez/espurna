@@ -8,7 +8,7 @@
             </div>
             <el-row :gutter="10" class="options">
                 <el-col :span="16">
-                    <el-input v-model="scanIp" placeholder="192.168.1.1-255"/>
+                    <el-input v-model="scanIp" placeholder="IP range to scan for devices"/>
                 </el-col>
                 <el-col :span="8">
                     <el-button type="primary" @click="retrieveDevices">Scan for devices</el-button>
@@ -36,7 +36,7 @@
         components: {Icon, Device, App},
         data() {
             return {
-                scanIp: "",
+                scanIp: "192.168.1.1-255",
                 userIp: "",
                 singleAddress: null,
                 devices: {}
