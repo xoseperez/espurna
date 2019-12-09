@@ -15,7 +15,10 @@ env:
 script:
 - ./travis_script.sh
 stages:
-- name: Test
+- name: Test WebUI
+  if: tag IS NOT present
+- name: Test PlatformIO Build
+  if: tag IS NOT present
 - name: Release
   if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
 jobs:
