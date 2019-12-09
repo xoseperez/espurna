@@ -1380,6 +1380,28 @@
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4
 
+#elif defined(MAGICHOME_ZJ_WFMN_C_11)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_WFMN_C_11"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+	// Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      1
+    #define LIGHT_CH1_PIN       12      // WHITE
+
 #elif defined(MAGICHOME_ZJ_ESPM_5CH_B_13)
 
     // Info
@@ -4142,6 +4164,7 @@
 
     #define SENSOR_ENERGY_UNITS         ENERGY_KWH
     #define SENSOR_POWER_UNITS          POWER_WATTS
+
 // -----------------------------------------------------------------------------
 
 #else
