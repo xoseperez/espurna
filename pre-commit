@@ -18,6 +18,7 @@ import os
 import re
 import string
 import sys
+import argparse
 from subprocess import call, check_output
 
 try:
@@ -104,14 +105,22 @@ TEMPLATES = {
 README = "README.md"
 
 if __name__ == "__main__":
-    base = os.getcwd()
 
+    base = os.getcwd()
     user, repo = git_parse_remote()
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-b", "--branch", help="git branch name", default=git_branch())
+    parser.add_argument("-u", "--user", help="git user name", default=user)
+    parser.add_argument("-r", "--repo", help="git repo name", default=repo)
+    parser.add_argument("-v", "--version", help="ESPurna version", default=espurna_get_version(base))
+    args = parser.parse_args()
+
     fmt = {
-        "USER": user,
-        "REPO": repo,
-        "BRANCH": git_branch(),
-        "VERSION": espurna_get_version(base),
+        "USER": args.user,
+        "REPO": args.repo,
+        "BRANCH": args.branch,
+        "VERSION": args.version
     }
 
     formatter = CustomFormatter()
