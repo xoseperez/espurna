@@ -597,7 +597,7 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // Fixed since 2.4.0, see: esp8266/core/esp8266/Esp.cpp: ESP::eraseConfig()
 bool eraseSDKConfig() {
     #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-        const size_t cfgsize = 0x4000;
+        constexpr size_t cfgsize = 0x4000;
         size_t cfgaddr = ESP.getFlashChipSize() - cfgsize;
 
         for (size_t offset = 0; offset < cfgsize; offset += SPI_FLASH_SEC_SIZE) {

@@ -5,8 +5,9 @@
 # ESPurna module memory analyser
 # xose.perez@gmail.com
 #
-# Rewritten for python-3 by Maxim Prokhorov
-# prokhorov.max@outlook.com
+# Rewritten for python-3 and changed to use "size" instead of "objdump"
+# Based on https://github.com/esp8266/Arduino/pull/6525
+# by Maxim Prokhorov <prokhorov.max@outlook.com>
 #
 # Based on:
 # https://github.com/letscontrolit/ESPEasy/blob/mega/memanalyzer.py
@@ -28,8 +29,6 @@
 #
 # -------------------------------------------------------------------------------
 
-from __future__ import print_function
-
 import argparse
 import os
 import re
@@ -38,7 +37,7 @@ import sys
 from collections import OrderedDict
 from subprocess import getstatusoutput
 
-__version__ = (0, 2)
+__version__ = (0, 3)
 
 # -------------------------------------------------------------------------------
 
@@ -46,14 +45,15 @@ TOTAL_IRAM = 32786
 TOTAL_DRAM = 81920
 
 DEFAULT_ENV = "nodemcu-lolin"
-OBJDUMP_PREFIX = "~/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-"
+TOOLCHAIN_PREFIX = "~/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-"
+PLATFORMIO_PREFIX = ""
 SECTIONS = OrderedDict(
     [
-        ("data", "Initialized Data (RAM)"),
-        ("rodata", "ReadOnly Data (RAM)"),
-        ("bss", "Uninitialized Data (RAM)"),
-        ("text", "Cached Code (IRAM)"),
-        ("irom0_text", "Uncached Code (SPI)"),
+        (".data", "Initialized Data (RAM)"),
+        (".rodata", "ReadOnly Data (RAM)"),
+        (".bss", "Uninitialized Data (RAM)"),
+        (".text", "Cached Code (IRAM)"),
+        (".irom0.text", "Uncached Code (SPI)"),
     ]
 )
 DESCRIPTION = "ESPurna Memory Analyzer v{}".format(
@@ -64,8 +64,8 @@ DESCRIPTION = "ESPurna Memory Analyzer v{}".format(
 # -------------------------------------------------------------------------------
 
 
-def objdump_path(prefix):
-    return "{}objdump".format(os.path.expanduser(prefix))
+def size_binary_path(prefix):
+    return "{}size".format(os.path.expanduser(prefix))
 
 
 def file_size(file):
@@ -75,48 +75,24 @@ def file_size(file):
         return 0
 
 
-def analyse_memory(elf_file, objdump):
+def analyse_memory(size, elf_file):
     proc = subprocess.Popen(
-        [objdump, "-t", elf_file], stdout=subprocess.PIPE, universal_newlines=True
+        [size, "-A", elf_file], stdout=subprocess.PIPE, universal_newlines=True
     )
     lines = proc.stdout.readlines()
 
-    # print("{0: >10}|{1: >30}|{2: >12}|{3: >12}|{4: >8}".format("Section", "Description", "Start (hex)", "End (hex)", "Used space"));
-    # print("------------------------------------------------------------------------------");
-    ret = {}
+    values = {}
 
-    for (id_, _) in list(SECTIONS.items()):
-        section_start_token = " _{}_start".format(id_)
-        section_end_token = " _{}_end".format(id_)
-        section_start = -1
-        section_end = -1
-        for line in lines:
-            line = line.strip()
-            if section_start_token in line:
-                data = line.split(" ")
-                section_start = int(data[0], 16)
-
-            if section_end_token in line:
-                data = line.split(" ")
-                section_end = int(data[0], 16)
-
-            if section_start != -1 and section_end != -1:
+    for line in lines:
+        words = line.split()
+        for name in SECTIONS.keys():
+            if line.startswith(name):
+                value = values.setdefault(name, 0)
+                value += int(words[1])
+                values[name] = value
                 break
 
-        section_length = section_end - section_start
-        # if i < 3:
-        #     usedRAM += section_length
-        # if i == 3:
-        #     usedIRAM = TOTAL_IRAM - section_length;
-
-        ret[id_] = section_length
-        # print("{0: >10}|{1: >30}|{2:12X}|{3:12X}|{4:8}".format(id_, descr, section_start, section_end, section_length))
-        # i += 1
-
-    # print("Total Used RAM : {:d}".format(usedRAM))
-    # print("Free RAM : {:d}".format(TOTAL_DRAM - usedRAM))
-    # print("Free IRam : {:d}".format(usedIRAM))
-    return ret
+    return values
 
 
 def run(prefix, env, modules, debug):
@@ -165,12 +141,12 @@ def parse_commandline_args():
     parser.add_argument(
         "--toolchain-prefix",
         help="where to find the xtensa toolchain binaries",
-        default=OBJDUMP_PREFIX,
+        default=TOOLCHAIN_PREFIX,
     )
     parser.add_argument(
         "--platformio-prefix",
         help="where to find the platformio executable",
-        default="",
+        default=PLATFORMIO_PREFIX,
     )
     parser.add_argument(
         "-c",
@@ -194,11 +170,11 @@ def parse_commandline_args():
     return parser.parse_args()
 
 
-def objdump_check(args):
+def size_binary_exists(args):
 
-    status, _ = getstatusoutput(objdump_path(args.toolchain_prefix))
-    if status not in (2, 512):
-        print("objdump not found, please check that the --toolchain-prefix is correct")
+    status, _ = getstatusoutput(size_binary_path(args.toolchain_prefix))
+    if status != 1:
+        print("size not found, please check that the --toolchain-prefix is correct")
         sys.exit(1)
 
 
@@ -245,8 +221,10 @@ class Analyser:
     """Run platformio and print info about the resulting binary."""
 
     OUTPUT_FORMAT = "{:<20}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}"
-    ELF_FORMAT = ".pio/build/{env}/firmware.elf"
-    BIN_FORMAT = ".pio/build/{env}/firmware.bin"
+    DELIMETERS = OUTPUT_FORMAT.format(
+        "-" * 20, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15
+    )
+    FIRMWARE_FORMAT = ".pio/build/{env}/firmware.{suffix}"
 
     class _Enable:
         def __init__(self, analyser, module=None):
@@ -276,8 +254,6 @@ class Analyser:
         self._platformio_prefix = args.platformio_prefix
         self._toolchain_prefix = args.toolchain_prefix
         self._environment = args.environment
-        self._elf_path = self.ELF_FORMAT.format(env=args.environment)
-        self._bin_path = self.BIN_FORMAT.format(env=args.environment)
         self.modules = modules
         self.baseline = None
 
@@ -288,16 +264,7 @@ class Analyser:
         print(self.OUTPUT_FORMAT.format(*args))
 
     def print_delimiters(self):
-        self.print(
-            "-" * 20,
-            "-" * 15,
-            "-" * 15,
-            "-" * 15,
-            "-" * 15,
-            "-" * 15,
-            "-" * 15,
-            "-" * 15,
-        )
+        print(self.DELIMETERS)
 
     def begin(self, name):
         self.print(
@@ -311,7 +278,14 @@ class Analyser:
             "Binary size",
         )
         self.print(
-            "", ".text", ".data", ".rodata", ".bss", "heap + stack", ".irom0.text", ""
+            "",
+            ".text + .text1",
+            ".data",
+            ".rodata",
+            ".bss",
+            "heap + stack",
+            ".irom0.text",
+            "",
         )
         self.print_delimiters()
         self.baseline = self.run()
@@ -320,12 +294,12 @@ class Analyser:
     def print_values(self, header, values):
         self.print(
             header,
-            values["text"],
-            values["data"],
-            values["rodata"],
-            values["bss"],
+            values[".text"],
+            values[".data"],
+            values[".rodata"],
+            values[".bss"],
             values["free"],
-            values["irom0_text"],
+            values[".irom0.text"],
             values["size"],
         )
 
@@ -334,43 +308,38 @@ class Analyser:
     def print_compare(self, header, values):
         self.print(
             header,
-            values["text"] - self.baseline["text"],
-            values["data"] - self.baseline["data"],
-            values["rodata"] - self.baseline["rodata"],
-            values["bss"] - self.baseline["bss"],
+            values[".text"] - self.baseline[".text"],
+            values[".data"] - self.baseline[".data"],
+            values[".rodata"] - self.baseline[".rodata"],
+            values[".bss"] - self.baseline[".bss"],
             values["free"] - self.baseline["free"],
-            values["irom0_text"] - self.baseline["irom0_text"],
+            values[".irom0.text"] - self.baseline[".irom0.text"],
             values["size"] - self.baseline["size"],
         )
 
     def run(self):
         run(self._platformio_prefix, self._environment, self.modules, self._debug)
 
-        values = analyse_memory(self._elf_path, objdump_path(self._toolchain_prefix))
+        elf_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="elf")
+        bin_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="bin")
 
-        free = 80 * 1024 - values["data"] - values["rodata"] - values["bss"]
+        values = analyse_memory(
+            size_binary_path(self._toolchain_prefix), elf_path
+        )
+
+        free = 80 * 1024 - values[".data"] - values[".rodata"] - values[".bss"]
         free = free + (16 - free % 16)
         values["free"] = free
 
-        values["size"] = file_size(self._bin_path)
+        values["size"] = file_size(bin_path)
 
         return values
-
-    _debug = False
-    _platformio_prefix = None
-    _toolchain_prefix = None
-    _environment = None
-    _bin_path = None
-    _elf_path = None
-
-    modules = None
-    baseline = None
 
 
 def main(args):
 
-    # Check xtensa-lx106-elf-objdump is in the path
-    objdump_check(args)
+    # Check xtensa-lx106-elf-size is in the path
+    size_binary_exists(args)
 
     # Which modules to test?
     configuration, modules = get_modules(args)

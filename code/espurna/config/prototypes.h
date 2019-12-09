@@ -38,10 +38,6 @@ extern "C" {
 #define TCP_MSS (1460)
 #endif
 
-uint32_t systemResetReason();
-uint8_t systemStabilityCounter();
-void systemStabilityCounter(uint8_t);
-
 // -----------------------------------------------------------------------------
 // PROGMEM
 // -----------------------------------------------------------------------------
@@ -81,8 +77,8 @@ void systemStabilityCounter(uint8_t);
 // API
 // -----------------------------------------------------------------------------
 
-using api_get_callback_f = std::function<void(char *, size_t)>;
-using api_put_callback_f = std::function<void(const char *)> ;
+using api_get_callback_f = std::function<void(char * buffer, size_t size)>;
+using api_put_callback_f = std::function<void(const char * payload)> ;
 
 #if WEB_SUPPORT
     void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
@@ -192,8 +188,8 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
     #include <PubSubClient.h>
 #endif
 
-using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
-using mqtt_msg_t = std::pair<String, String>;
+using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
+using mqtt_msg_t = std::pair<String, String>; // topic, payload
 
 void mqttRegister(mqtt_callback_f callback);
 
@@ -312,7 +308,7 @@ class AsyncWebServer;
     class AwsEventType;
 #endif
 
-using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t*, size_t, size_t, size_t)>;
+using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t* data, size_t len, size_t index, size_t total)>;
 using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
@@ -399,7 +395,7 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 // THERMOSTAT
 // -----------------------------------------------------------------------------
-using thermostat_callback_f = std::function<void(bool)>;
+using thermostat_callback_f = std::function<void(bool state)>;
 #if THERMOSTAT_SUPPORT
     void thermostatRegister(thermostat_callback_f callback);
 #endif
