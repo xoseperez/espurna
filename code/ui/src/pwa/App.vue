@@ -61,19 +61,45 @@
                 console.log(ip);
                 this.userIp = ip;
             });
-            // setInterval(this.retrieveDevices, 60000); //Rescan every minute
+            setInterval(this.updateDevices, 3000); //Update wifo info every 3 second
         },
         methods: {
+            updateDevices() {
+                Object.keys(this.devices).forEach((ip) => {
+                    fetch('http://' + ip + '/discover').then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Not an espurna device');
+                        }
+                    }).then(data => {
+                        this.devices[ip] = {...this.devices[ip], ...data};
+                    }).catch((error) => {
+                        return Promise.reject(error);
+                        //Do nothing
+                    }).catch(() => {
+                        this.$set(this.device[ip], 'rssi', null);
+                        this.$set(this.device[ip], 'status', 'ko');
+                    });
+                })
+            },
             retrieveDevices() {
                 let parts = this.scanIp.split('.');
                 this.rangeIterate(parts, (ip) => {
                     ip = ip.join('.');
                     fetch('http://' + ip + '/discover').then(response => {
-                        response.json().then(data => {
-                            this.$set(this.devices, ip, data);
-                        });
-                    }).catch(() => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Not an espurna device');
+                        }
+                    }).then(data => {
+                        this.$set(this.devices, ip, data);
+                    }).catch((error) => {
+                        return Promise.reject(error);
                         //Do nothing
+                    }).catch((error) => {
+                        console.log(error);
                     });
                 });
             },
@@ -116,6 +142,11 @@
 
     .el-col > .el-button {
         width: 100%;
+    }
+
+    .el-button-group button {
+        border-bottom: none;
+        border-top: none;
     }
 
     .pwa-content {
