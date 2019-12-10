@@ -28,12 +28,16 @@
 
         <el-dialog title="Upgrade"
                    :visible.sync="upgradeDialogVisible"
-                   width="30%"
+                   width="50%"
                    append-to-body>
             <el-upload ref="upload" :action="'http://'+ip+'/upgrade'" accept=".bin"
                        :before-upload="beforeUpload"
                        :auto-upload="false"
-                       drag/>
+                       drag>
+                <i class="el-icon-upload"></i>
+                <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
+                <div slot="tip" class="el-upload__tip">.bin file with a size less than {{freeSize/1024}}Kb</div>
+            </el-upload>
             <span slot="footer" class="dialog-footer">
                 <el-button @click="upgradeDialogVisible = false">Cancel</el-button>
                 <el-button v-if="canUpgrade" type="primary" @click="upgrade">Upgrade</el-button>

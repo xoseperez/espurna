@@ -148,6 +148,11 @@
         border-bottom: none;
         border-top: none;
     }
+    .el-upload .el-upload__input {
+        position: absolute;
+        opacity: 0;
+        left: 0;
+    }
 
     .pwa-content {
         transform: translate(-50%, -50%);
