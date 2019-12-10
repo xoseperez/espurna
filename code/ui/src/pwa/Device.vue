@@ -145,9 +145,6 @@
                 return mixColors('#479fd6', '#db3a22', this.wifiPercent);
             }
         },
-        mounted() {
-            setInterval()
-        },
         methods: {
             compareVersions(a, b) {
                 return compareVersions(a, b);

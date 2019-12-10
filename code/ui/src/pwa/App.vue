@@ -61,7 +61,7 @@
                 console.log(ip);
                 this.userIp = ip;
             });
-            setInterval(this.updateDevices, 3000); //Update wifo info every 3 second
+            setInterval(this.updateDevices, 3000); //Update wifi info every 3 second
         },
         methods: {
             updateDevices() {
