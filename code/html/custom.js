@@ -526,8 +526,11 @@ function doUpgrade() {
 
         var xhr = new XMLHttpRequest();
 
-        var network_error = function() {
-            alert("There was a network error trying to upload the new image, please try again.");
+        var msg_ok = "Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.";
+        var msg_err = "There was an error trying to upload the new image, please try again: ";
+
+        var network_error = function(e) {
+            alert(msg_err + " xhr request " + e.type);
         };
         xhr.addEventListener("error", network_error, false);
         xhr.addEventListener("abort", network_error, false);
@@ -535,12 +538,16 @@ function doUpgrade() {
         xhr.addEventListener("load", function(e) {
             $("#upgrade-progress").hide();
             if ("OK" === xhr.responseText) {
-                alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
+                alert(msg_ok);
                 doReload(5000);
             } else {
-                alert("There was an error trying to upload the new image, please try again ("
-                    + "response: " + xhr.responseText + ", "
-                    + "status: " + xhr.statusText + ")");
+                var msg = msg_err;
+                if (xhr.status === 200) {
+                    msg += xhr.responseText;
+                } else {
+                    msg += "HTTP status " + xhr.status.toString() + " " + xhr.statusText;
+                }
+                alert(msg);
             }
         }, false);
 
