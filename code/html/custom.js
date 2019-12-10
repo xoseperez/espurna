@@ -541,13 +541,7 @@ function doUpgrade() {
                 alert(msg_ok);
                 doReload(5000);
             } else {
-                var msg = msg_err;
-                if (xhr.status === 200) {
-                    msg += xhr.responseText;
-                } else {
-                    msg += "HTTP status " + xhr.status.toString() + " " + xhr.statusText;
-                }
-                alert(msg);
+                alert(msg_err + xhr.status.toString() + " " + xhr.statusText + ", " + xhr.responseText);
             }
         }, false);
 

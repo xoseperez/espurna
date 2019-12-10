@@ -10,6 +10,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 #include "utils.h"
+#include "ota.h"
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -100,7 +101,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    AsyncResponseStream *response = request->beginResponseStream("text/json");
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
@@ -287,6 +288,32 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
 #endif
 
+void _onUpgradeResponse(int code, AsyncWebServerRequest *request, const String& payload = "") {
+
+    auto *response = request->beginResponseStream("text/plain", 256);
+    response->addHeader("Connection", "close");
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+
+    response->setCode(code);
+
+    if (Update.hasError()) {
+        #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+            Update.printError(reinterpret_cast<Stream&>(response));
+        #else
+            Update.printError(*response);
+        #endif
+        eepromRotate(true);
+    } else if (payload.length()) {
+        response->printf("%s", payload.c_str());
+    }
+
+    request->send(response);
+    request->client()->close();
+
+}
+
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
@@ -294,24 +321,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    char buffer[10];
-    if (!Update.hasError()) {
-        sprintf_P(buffer, PSTR("OK"));
-    } else {
-        sprintf_P(buffer, PSTR("ERROR %d"), Update.getError());
+    if (!request->contentLength()) {
+        _onUpgradeResponse(400, request, F("ERROR: Zero content length"));
+        return;
     }
 
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
-    response->addHeader("Connection", "close");
-    response->addHeader("X-XSS-Protection", "1; mode=block");
-    response->addHeader("X-Content-Type-Options", "nosniff");
-    response->addHeader("X-Frame-Options", "deny");
-    if (Update.hasError()) {
-        eepromRotate(true);
-    } else {
-        deferredReset(100, CUSTOM_RESET_UPGRADE);
-    }
-    request->send(response);
+    _onUpgradeResponse(200, request, F("OK"));
 
 }
 
@@ -323,41 +338,55 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
 
     if (!index) {
 
+        // Check header before anything is written to the flash
+        if (!otaVerifyHeader(data, len)) {
+            _onUpgradeResponse(400, request, F("ERROR: Not firmware .bin / invalid flash config"));
+            return;
+        }
+        
+        // ref: cores/esp8266/Updater.cpp UpdaterClass::_writeBuffer()
+        // If the flash settings don't match what we already have, modify them.
+        // This is analogous to what esptool.py does when it receives a `--flash_mode` argument.
+        #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+        {
+            const auto flashMode = ESP.getFlashChipMode();
+            decltype(flashMode) otaFlashMode = ESP.magicFlashChipMode(data[2]);
+            if (flashMode != otaFlashMode) {
+                data[2] = flashMode;
+            }
+        }
+        #endif
+
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
 
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-        }
 
+        if (!Update.begin(request->contentLength())) {
+            _onUpgradeResponse(500, request);
+            return;
+        }
+    }
+
+    // We can enter this callback even after client->close()
+    if (!Update.isRunning()) {
+        return;
     }
 
     if (!Update.hasError()) {
         if (Update.write(data, len) != len) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
+            _onUpgradeResponse(500, request);
+            return;
         }
     }
 
     if (final) {
-        if (Update.end(true)){
-            DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
-        } else {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-        }
+        otaFinalize(index + len, CUSTOM_RESET_UPGRADE, true);
     } else {
-        // Removed to avoid websocket ping back during upgrade (see #1574)
-        // TODO: implement as separate from debugging message
-        if (wsConnected()) return;
-        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        otaProgress(index + len);
     }
+
 }
 
 bool _onAPModeRequest(AsyncWebServerRequest *request) {

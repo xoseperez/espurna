@@ -17,6 +17,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 
 #include "system.h"
+#include "ota.h"
+
 #include "libs/URL.h"
 
 std::unique_ptr<AsyncClient> _ota_client = nullptr;
@@ -36,15 +38,7 @@ void _otaClientOnDisconnect(void *s, AsyncClient *c) {
 
     DEBUG_MSG_P(PSTR("\n"));
 
-    if (Update.end(true)){
-        DEBUG_MSG_P(PSTR("[OTA] Success: %u bytes\n"), _ota_size);
-        deferredReset(100, CUSTOM_RESET_OTA);
-    } else {
-        #ifdef DEBUG_PORT
-            Update.printError(DEBUG_PORT);
-        #endif
-        eepromRotate(true);
-    }
+    otaFinalize(_ota_size, CUSTOM_RESET_OTA, true);
 
     DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
 
@@ -60,38 +54,52 @@ void _otaClientOnTimeout(void *s, AsyncClient *c, uint32_t time) {
     _ota_client->close(true);
 }
 
-void _otaClientOnData(void * arg, AsyncClient * c, void * data, size_t len) {
+void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len) {
 
     char * p = (char *) data;
 
     if (_ota_size == 0) {
 
-        Update.runAsync(true);
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-            c->close(true);
+        // Check header before anything is written to the flash
+        if (!otaVerifyHeader((uint8_t*) data, len)) {
+            otaFinalize(0, 0, true);
+            client->close(true);
             return;
         }
 
-        p = strstr((char *)data, "\r\n\r\n") + 4;
-        len = len - (p - (char *) data);
+        // TODO: really parse headers and specify size via content-length value
+        Update.runAsync(true);
+        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+            otaFinalize(0, 0, true);
+            client->close(true);
+            return;
+        }
 
+        p = strnstr((char *)data, "\r\n\r\n", len);
+        if (!p) {
+            otaFinalize(0, 0, true);
+            client->close(true);
+            return;
+        }
+        len = len - (p + 4 - (char *) data);
+
+    }
+
+    // We can enter this callback even after client->close()
+    if (!Update.isRunning()) {
+        return;
     }
 
     if (!Update.hasError()) {
         if (Update.write((uint8_t *) p, len) != len) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-            c->close(true);
+            otaFinalize(0, 0, true);
+            client->close(true);
             return;
         }
     }
 
     _ota_size += len;
-    DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
+    otaProgress(_ota_size);
 
     delay(0);
 
