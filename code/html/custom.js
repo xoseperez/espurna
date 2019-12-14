@@ -785,7 +785,7 @@ function doRestore() {
 
 function doFactoryReset() {
     var response = window.confirm("Are you sure you want to restore to factory settings?");
-    if (response === false) {
+    if (!response) {
         return false;
     }
     sendAction("factory_reset", {});
