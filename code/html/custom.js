@@ -362,9 +362,11 @@ function getData(form, changed, cleanup) {
     // When empty, the receiving side will prune all keys greater than the current one.
     if (cleanup) {
         $(".group-settings").each(function() {
-            if (this.children.length) return;
-            var targets = this.dataset.settingsTarget;
-            if (targets !== undefined) {
+            var haschanged = ("true" === $(this).attr("hasChanged"));
+            if (haschanged && !this.children.length) {
+                var targets = this.dataset.settingsTarget;
+                if (targets === undefined) return;
+
                 targets.split(" ").forEach(function(target) {
                     resulting_data[target] = [];
                 });
