@@ -188,7 +188,7 @@ gulp.task('csslint', function() {
 });
 
 gulp.task('webui_small', function() {
-    return buildWebUI();
+    return buildWebUI('small');
 });
 
 gulp.task('webui_sensor', function() {
