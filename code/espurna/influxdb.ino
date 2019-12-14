@@ -131,7 +131,7 @@ void idbSetup() {
 
     #if BROKER_SUPPORT
         StatusBroker::Register(_idbBrokerStatus);
-        SensorBroker::Register(_idbBrokerSensor);
+        SensorReportBroker::Register(_idbBrokerSensor);
     #endif
 
     // Main callbacks
