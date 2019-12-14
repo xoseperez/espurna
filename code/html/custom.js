@@ -708,7 +708,7 @@ function doCheckOriginals() {
 }
 
 function waitForSave(){
-    if (configurationSaved == false) {
+    if (!configurationSaved) {
         setTimeout(waitForSave, 1000);
     } else {
         doCheckOriginals();
@@ -1901,7 +1901,7 @@ function processData(data) {
 
         // Messages
         if ("message" === key) {
-            if (value == 8 && (numReboot > 0 || numReload > 0 || numReconnect > 0)){
+            if (value == 8) {
                 configurationSaved = true;
             }
             window.alert(messages[value]);
