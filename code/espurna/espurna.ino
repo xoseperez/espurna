@@ -244,6 +244,9 @@ void setup() {
     #if TUYA_SUPPORT
         tuyaSetup();
     #endif
+    #if KA_CURTAIN_SUPPORT
+        kacurtainSetup();
+    #endif
 
     // 3rd party code hook
     #if USE_EXTRA
