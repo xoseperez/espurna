@@ -1079,6 +1079,10 @@
 #define MQTT_TOPIC_OTA              "ota"
 #define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
 
+// KingArt WiFi Curtain Switch
+#define MQTT_TOPIC_CURTAININ        "curtainin"
+#define MQTT_TOPIC_CURTAINOUT       "curtainout"
+
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
