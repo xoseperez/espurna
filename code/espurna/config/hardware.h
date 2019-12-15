@@ -4153,7 +4153,12 @@
     #define DEVICE                  "KA_CURTAIN_SWITCH"
     #define KA_CURTAIN_SUPPORT      1
 
-    // Disable UART noise
+    #define KA_CURTAIN_HW_PORT      Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
+    #define KA_CURTAIN_BAUDRATE     19200      // Serial speed
+    #define KA_CURTAIN_TERMINATION  '\e'         // Termination character
+    #define KA_CURTAIN_BUFFER_SIZE  100         // UART buffer size
+
+// Disable UART noise
     #define DEBUG_SERIAL_SUPPORT    0
 
     // LEDs
