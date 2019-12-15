@@ -4142,6 +4142,23 @@
 
     #define SENSOR_ENERGY_UNITS         ENERGY_KWH
     #define SENSOR_POWER_UNITS          POWER_WATTS
+
+// -----------------------------------------------------------------------------
+// KA_CURTAIN_SWITCH
+// -----------------------------------------------------------------------------
+#elif defined(KA_CURTAIN_SWITCH)
+
+    // Info
+    #define MANUFACTURER            "KingArt"
+    #define DEVICE                  "KA_CURTAIN_SWITCH"
+    #define KA_CURTAIN_SUPPORT      1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
 // -----------------------------------------------------------------------------
 
 #else
