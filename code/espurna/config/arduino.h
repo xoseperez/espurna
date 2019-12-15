@@ -149,6 +149,7 @@
 //#define YJZK_SWITCH_2CH
 //#define YJZK_SWITCH_3CH
 //#define ZHILDE_EU44_W
+//#define KA_CURTAIN_SWITCH
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
