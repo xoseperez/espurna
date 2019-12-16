@@ -51,7 +51,7 @@ bool _KACurtainNewData = false;
 
 void _KACurtainReceiveUART() {
     static unsigned char ndx = 0;
-    while (KA_CURTAIN_PORT.available() > 0 && _KACurtainNewData == false) {
+    while (KA_CURTAIN_PORT.available() > 0 && !_KACurtainNewData) {
         char rc = KA_CURTAIN_PORT.read();
         if (rc != KA_CURTAIN_TERMINATION) {
             _KACurtainBuffer[ndx] = rc;
