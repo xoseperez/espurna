@@ -1129,10 +1129,6 @@
 #define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
 #endif
 
-#ifndef BROKER_REAL_TIME
-#define BROKER_REAL_TIME        1           // Report real time data
-#endif
-
 // -----------------------------------------------------------------------------
 // SETTINGS
 // -----------------------------------------------------------------------------
