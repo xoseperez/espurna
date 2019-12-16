@@ -62,15 +62,7 @@ void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len)
 
         // Check header before anything is written to the flash
         if (!otaVerifyHeader((uint8_t*) data, len)) {
-            otaFinalize(0, 0, true);
-            client->close(true);
-            return;
-        }
-
-        // TODO: really parse headers and specify size via content-length value
-        Update.runAsync(true);
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            otaFinalize(0, 0, true);
+            otaPrintError();
             client->close(true);
             return;
         }
@@ -83,6 +75,14 @@ void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len)
         }
         len = len - (p + 4 - (char *) data);
 
+        // XXX: In case of non-chunked response, really parse headers and specify size via content-length value
+        Update.runAsync(true);
+        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+            otaPrintError();
+            client->close(true);
+            return;
+        }
+
     }
 
     // We can enter this callback even after client->close()
@@ -90,12 +90,10 @@ void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len)
         return;
     }
 
-    if (!Update.hasError()) {
-        if (Update.write((uint8_t *) p, len) != len) {
-            otaFinalize(0, 0, true);
-            client->close(true);
-            return;
-        }
+    if (Update.write((uint8_t *) p, len) != len) {
+        otaFinalize(0, 0, true);
+        client->close(true);
+        return;
     }
 
     _ota_size += len;

@@ -8,13 +8,7 @@ OTA COMMON FUNCTIONS
 
 #include <Updater.h>
 
-bool otaFinalize(size_t size, int reason, bool evenIfRemaining = false) {
-    if (Update.isRunning() && Update.end(evenIfRemaining)) {
-        DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
-        deferredReset(500, reason);
-        return true;
-    }
-
+void otaPrintError() {
     if (Update.hasError()) {
         #if TERMINAL_SUPPORT
             Update.printError(terminalSerial());
@@ -22,7 +16,16 @@ bool otaFinalize(size_t size, int reason, bool evenIfRemaining = false) {
             Update.printError(DEBUG_PORT);
         #endif
     }
+}
 
+bool otaFinalize(size_t size, int reason, bool evenIfRemaining = false) {
+    if (Update.isRunning() && Update.end(evenIfRemaining)) {
+        DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
+        deferredReset(500, reason);
+        return true;
+    }
+
+    otaPrintError();
     eepromRotate(true);
 
     return false;
@@ -43,9 +46,19 @@ bool otaVerifyHeader(uint8_t* data, size_t len) {
     return true;
 }
 
-void otaProgress(size_t bytes) {
+void otaProgress(size_t bytes, size_t each = 8192u) {
     // Removed to avoid websocket ping back during upgrade (see #1574)
     // TODO: implement as separate from debugging message
     if (wsConnected()) return;
-    DEBUG_MSG_P(PSTR("[OTA] Progress: %7u bytes\r"), bytes);
+
+    // Telnet and serial will still output things, but slightly throttled
+    static size_t last = 0;
+    if (bytes < last) {
+        last = 0;
+    }
+
+    if ((bytes > each) && (bytes - each > last)) {
+        DEBUG_MSG_P(PSTR("[OTA] Progress: %7u bytes\r"), bytes);
+        last = bytes;
+    }
 }

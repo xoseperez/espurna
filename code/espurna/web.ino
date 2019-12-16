@@ -77,8 +77,6 @@ void _onDiscover(AsyncWebServerRequest *request) {
 
     webLog(request);
 
-    AsyncResponseStream *response = request->beginResponseStream("application/json");
-
     const String device = getBoardName();
     const String hostname = getSetting("hostname");
 
@@ -88,6 +86,8 @@ void _onDiscover(AsyncWebServerRequest *request) {
     root["version"] = APP_VERSION;
     root["device"] = device.c_str();
     root["hostname"] = hostname.c_str();
+
+    AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
     root.printTo(*response);
 
     request->send(response);
@@ -138,7 +138,7 @@ void _onPostConfig(AsyncWebServerRequest *request) {
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
-void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+void _onPostConfigFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
@@ -288,7 +288,7 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
 #endif
 
-void _onUpgradeResponse(int code, AsyncWebServerRequest *request, const String& payload = "") {
+void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
 
     auto *response = request->beginResponseStream("text/plain", 256);
     response->addHeader("Connection", "close");
@@ -304,29 +304,36 @@ void _onUpgradeResponse(int code, AsyncWebServerRequest *request, const String& 
         #else
             Update.printError(*response);
         #endif
-        eepromRotate(true);
     } else if (payload.length()) {
         response->printf("%s", payload.c_str());
     }
 
     request->send(response);
-    request->client()->close();
 
+}
+
+void _onUpgradeStatusSet(AsyncWebServerRequest *request, int code, const String& payload = "") {
+    _onUpgradeResponse(request, code, payload);
+    _request->_tempObject = malloc(sizeof(bool));
 }
 
 void _onUpgrade(AsyncWebServerRequest *request) {
 
+    // We expect Update to finish while in onUpgradeFile, but just to be sure
     webLog(request);
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    if (!request->contentLength()) {
-        _onUpgradeResponse(400, request, F("ERROR: Zero content length"));
+    if (request->_tempObject) {
+        auto* ptr = (web_upgrade_status_t*) request->_tempObject;
+        _onUpgradeResponse(request, ptr->code, ptr->msg);
         return;
     }
 
-    _onUpgradeResponse(200, request, F("OK"));
+    if (Update.isRunning()) {
+        _onUpgradeResponse(request, 500);
+    }
 
 }
 
@@ -336,26 +343,28 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
+    // We set this after we are done with the request
+    // It is still possible to re-enter this callback even after connection is already closed
+    // 1.14.2: TODO: see https://github.com/me-no-dev/ESPAsyncWebServer/pull/660
+    // remote close or request sending some data before finishing parsing of the body will leak 1460 bytes
+    // waiting a bit for upstream. fork and point to the fixed version if not resolved before 1.14.2
+    if (request->_tempObject) {
+        return;
+    }
+
     if (!index) {
 
-        // Check header before anything is written to the flash
-        if (!otaVerifyHeader(data, len)) {
-            _onUpgradeResponse(400, request, F("ERROR: Not firmware .bin / invalid flash config"));
+        // TODO: stop network activity completely when handling Update through ArduinoOTA or `ota` command?
+        if (Update.isRunning()) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: Upgrade in progress"));
             return;
         }
-        
-        // ref: cores/esp8266/Updater.cpp UpdaterClass::_writeBuffer()
-        // If the flash settings don't match what we already have, modify them.
-        // This is analogous to what esptool.py does when it receives a `--flash_mode` argument.
-        #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-        {
-            const auto flashMode = ESP.getFlashChipMode();
-            decltype(flashMode) otaFlashMode = ESP.magicFlashChipMode(data[2]);
-            if (flashMode != otaFlashMode) {
-                data[2] = flashMode;
-            }
+
+        // Check that header is correct and there is more data before anything is written to the flash
+        if (final || !len || !otaVerifyHeader(data, len)) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: Not firmware .bin / invalid flash config"));
+            return;
         }
-        #endif
 
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
@@ -363,26 +372,36 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
 
-        if (!Update.begin(request->contentLength())) {
-            _onUpgradeResponse(500, request);
+        // Note: cannot use request->contentLength() for multipart/form-data
+        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+            _onUpgradeStatusSet(request, 500);
+            eepromRotate(true);
             return;
         }
+
     }
 
-    // We can enter this callback even after client->close()
+    if (request->_tempObject) {
+        return;
+    }
+
+    DEBUG_MSG_P(PSTR("[upgrade] +++ %u %u %u\n"), index, len, index + len);
+
+    // Any error will cancel the update, but request may still be alive
     if (!Update.isRunning()) {
         return;
     }
 
-    if (!Update.hasError()) {
-        if (Update.write(data, len) != len) {
-            _onUpgradeResponse(500, request);
-            return;
-        }
+    if (Update.write(data, len) != len) {
+        _onUpgradeStatusSet(request, 500);
+        Update.end();
+        eepromRotate(true);
+        return;
     }
 
     if (final) {
         otaFinalize(index + len, CUSTOM_RESET_UPGRADE, true);
+        _onUpgradeStatusSet(request, 200, F("OK"));
     } else {
         otaProgress(index + len);
     }
@@ -452,10 +471,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
-        String password = getAdminPass();
-        char httpPassword[password.length() + 1];
-        password.toCharArray(httpPassword, password.length() + 1);
-        return request->authenticate(WEB_USERNAME, httpPassword);
+        return request->authenticate(WEB_USERNAME, getAdminPass().c_str());
     #else
         return true;
     #endif
@@ -507,7 +523,7 @@ void webSetup() {
     // Other entry points
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
-    _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
+    _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigFile);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 
