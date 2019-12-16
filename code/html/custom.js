@@ -485,11 +485,18 @@ function checkFirmware(file, callback) {
 
     reader.onloadend = function(evt) {
         if (FileReader.DONE === evt.target.readyState) {
-            if (0xE9 !== evt.target.result.charCodeAt(0)) {
+            var magic = evt.target.result.charCodeAt(0);
+            if ((0x1F === magic) && (0x8B === evt.target.result.charCodeAt(1))) {
+                callback(true);
+                return;
+            }
+
+            if (0xE9 !== magic) {
                 alert("Binary image does not start with a magic byte");
                 callback(false);
                 return;
             }
+
             var modes = ['QIO', 'QOUT', 'DIO', 'DOUT'];
             var flash_mode = evt.target.result.charCodeAt(2);
             if (0x03 !== flash_mode) {

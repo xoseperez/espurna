@@ -31,13 +31,25 @@ bool otaFinalize(size_t size, int reason, bool evenIfRemaining = false) {
     return false;
 }
 
-// Helper methods from UpdaterClass that need to be called manually for async mode.
-// Both only happen at the end of the process and are checking what is already written to flash.
+// Helper methods from UpdaterClass that need to be called manually for async mode,
+// because we are not using Stream interface to feed it data.
 bool otaVerifyHeader(uint8_t* data, size_t len) {
-    if ((len < 4) || (data[0] != 0xE9)) {
+    if (len < 4) {
         return false;
     }
 
+    // ref: https://github.com/esp8266/Arduino/pull/6820
+    // accept gzip, let unpacker figure things out later
+    if (data[0] == 0x1F && data[1] == 0x8B) {
+        return true;
+    }
+
+    // Check for magic byte with a normal .bin
+    if (data[0] != 0xE9) {
+        return false;
+    }
+
+    // Ensure that we only use flash config that could fit
     const auto flash_config = ESP.magicFlashChipSize((data[3] & 0xf0) >> 4);
     if (flash_config > ESP.getFlashChipRealSize()) {
         return false;
