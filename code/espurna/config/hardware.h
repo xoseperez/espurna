@@ -4146,11 +4146,11 @@
 // -----------------------------------------------------------------------------
 // KA_CURTAIN_SWITCH
 // -----------------------------------------------------------------------------
-#elif defined(KA_CURTAIN_SWITCH)
+#elif defined(KINGART_CURTAIN_SWITCH)
 
     // Info
     #define MANUFACTURER            "KingArt"
-    #define DEVICE                  "KA_CURTAIN_SWITCH"
+    #define DEVICE                  "KINGART_CURTAIN_SWITCH"
     #define KA_CURTAIN_SUPPORT      1
 
     #define KA_CURTAIN_HW_PORT      Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
