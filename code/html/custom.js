@@ -486,11 +486,14 @@ function checkFirmware(file, callback) {
     reader.onloadend = function(evt) {
         if (FileReader.DONE === evt.target.readyState) {
             if (0xE9 !== evt.target.result.charCodeAt(0)) {
+                alert("Binary image does not start with a magic byte");
                 callback(false);
                 return;
             }
-            if (0x03 !== evt.target.result.charCodeAt(2)) {
-                var response = window.confirm("Binary image is not using DOUT flash mode. This might cause resets in some devices. Press OK to continue.");
+            var modes = ['QIO', 'QOUT', 'DIO', 'DOUT'];
+            var flash_mode = evt.target.result.charCodeAt(2);
+            if (0x03 !== flash_mode) {
+                var response = window.confirm("Binary image is using " + modes[flash_mode] + " flash mode! Make sure that the device supports it before proceeding.");
                 callback(response);
             } else {
                 callback(true);
@@ -520,7 +523,6 @@ function doUpgrade() {
     checkFirmware(file, function(ok) {
 
         if (!ok) {
-            alert("The file does not seem to be a valid firmware image.");
             return;
         }
 
