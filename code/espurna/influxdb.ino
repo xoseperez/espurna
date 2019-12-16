@@ -150,9 +150,8 @@ void _idbBrokerStatus(const String& topic, unsigned char id, unsigned int value)
 // -----------------------------------------------------------------------------
 
 bool idbSend(const char * topic, const char * payload) {
-
     if (!_idb_enabled) return false;
-    if (_idb_connected) return false;
+    if (_idb_connecting || _idb_connected) return false;
 
     _idb_values[topic] = payload;
     _idb_flush = true;
