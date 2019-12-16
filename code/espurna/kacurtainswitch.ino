@@ -126,7 +126,6 @@ void _KACurtainCallback(unsigned int type, const char * topic, const char * payl
         // Match topic
         String t = mqttMagnitude((char *) topic);
         if (t.equals(MQTT_TOPIC_CURTAINOUT)) {
-        //DEBUG_MSG_P(PSTR("[KACURTAIN] payload: %s\n"), payload);
           _KACurtainActionSelect(payload);
         }
     }
