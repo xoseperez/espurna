@@ -4147,11 +4147,11 @@
 // http://linksprite.com/wiki/index.php?title=LinkNode_R4:_Arduino-compatible_WiFi_relay_controller
 // -----------------------------------------------------------------------------
 
-#elif defined(LINKSPRITE_R4)
+#elif defined(LINKSPRITE_LINKNODE_R4)
 
     // Info
-    #define MANUFACTURER                "Linksprite"
-    #define DEVICE                      "LinkNode R4"
+    #define MANUFACTURER                "LINKSPRITE"
+    #define DEVICE                      "LINKNODE_R4"
 
     // Relays
     #define RELAY1_PIN              12

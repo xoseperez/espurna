@@ -1387,7 +1387,7 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
-        #elif defined(LINKSPRITE_R4)
+        #elif defined(LINKSPRITE_LINKNODE_R4)
 
             setSetting("board", 102);
             setSetting("relayGPIO", 0, 12);
