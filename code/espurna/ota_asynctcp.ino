@@ -14,6 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
+#include <Schedule.h>
 #include <ESPAsyncTCP.h>
 
 #include "system.h"
@@ -21,85 +22,111 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/URL.h"
 
+struct ota_progress_t {
+    enum state_t {
+        HEADERS,
+        DATA,
+        END
+    };
+    state_t state = HEADERS;
+    size_t size = 0;
+};
+
 std::unique_ptr<AsyncClient> _ota_client = nullptr;
-unsigned long _ota_size = 0;
-bool _ota_connected = false;
 std::unique_ptr<URL> _ota_url = nullptr;
+std::unique_ptr<ota_progress_t> _ota_progress = nullptr;
+
+bool _ota_connected = false;
 
 const char OTA_REQUEST_TEMPLATE[] PROGMEM =
     "GET %s HTTP/1.1\r\n"
     "Host: %s\r\n"
     "User-Agent: ESPurna\r\n"
-    "Connection: close\r\n"
-    "Content-Type: application/x-www-form-urlencoded\r\n"
-    "Content-Length: 0\r\n\r\n\r\n";
+    "Connection: close\r\n\r\n";
 
-void _otaClientOnDisconnect(void *s, AsyncClient *c) {
-
-    DEBUG_MSG_P(PSTR("\n"));
-
-    otaFinalize(_ota_size, CUSTOM_RESET_OTA, true);
-
+void _otaClientDisconnect() {
     DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
-
     _ota_connected = false;
-    _ota_url = nullptr;
     _ota_client = nullptr;
-
+    _ota_url = nullptr;
+    _ota_progress = nullptr;
 }
 
-void _otaClientOnTimeout(void *s, AsyncClient *c, uint32_t time) {
+void _otaClientOnDisconnect(void*, AsyncClient * client) {
+    DEBUG_MSG_P(PSTR("\n"));
+    otaFinalize(_ota_progress->size, CUSTOM_RESET_OTA, true);
+    schedule_function(_otaClientDisconnect);
+}
+
+void _otaClientOnTimeout(void*, AsyncClient *c, uint32_t time) {
     _ota_connected = false;
     _ota_url = nullptr;
     _ota_client->close(true);
 }
 
+void _otaClientOnError(void*, AsyncClient* client, err_t error) {
+    DEBUG_MSG_P(PSTR("[OTA] ERROR: %s\n"), client->errorToString(error));
+}
+
 void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len) {
 
-    char * p = (char *) data;
+    auto* ptr = (char *) data;
 
-    if (_ota_size == 0) {
+    if (_ota_progress->state == ota_progress_t::HEADERS) {
+        ptr = (char *) strnstr((char *) data, "\r\n\r\n", len);
+        if (!ptr) {
+            return;
+        }
+        auto diff = ptr - ((char *) data);
 
-        // Check header before anything is written to the flash
-        if (!otaVerifyHeader((uint8_t*) data, len)) {
+        _ota_progress->state = ota_progress_t::DATA;
+        len -= diff + 4;
+        if (!len) {
+            return;
+        }
+        ptr += 4;
+    }
+
+    if (_ota_progress->state == ota_progress_t::DATA) {
+
+        if (!_ota_progress->size) {
+
+            // Check header before anything is written to the flash
+            if (!otaVerifyHeader((uint8_t *) ptr, len)) {
+                DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config"));
+                client->close(true);
+                _ota_progress->state = ota_progress_t::END;
+                return;
+            }
+
+            // XXX: In case of non-chunked response, really parse headers and specify size via content-length value
+            Update.runAsync(true);
+            if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+                otaPrintError();
+                client->close(true);
+                return;
+            }
+
+        }
+
+        // We can enter this callback even after client->close()
+        if (!Update.isRunning()) {
+            return;
+        }
+
+        if (Update.write((uint8_t *) ptr, len) != len) {
             otaPrintError();
             client->close(true);
+            _ota_progress->state = ota_progress_t::END;
             return;
         }
 
-        p = strnstr((char *)data, "\r\n\r\n", len);
-        if (!p) {
-            otaFinalize(0, 0, true);
-            client->close(true);
-            return;
-        }
-        len = len - (p + 4 - (char *) data);
+        _ota_progress->size += len;
+        otaProgress(_ota_progress->size);
 
-        // XXX: In case of non-chunked response, really parse headers and specify size via content-length value
-        Update.runAsync(true);
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            otaPrintError();
-            client->close(true);
-            return;
-        }
+        delay(0);
 
     }
-
-    // We can enter this callback even after client->close()
-    if (!Update.isRunning()) {
-        return;
-    }
-
-    if (Update.write((uint8_t *) p, len) != len) {
-        otaFinalize(0, 0, true);
-        client->close(true);
-        return;
-    }
-
-    _ota_size += len;
-    otaProgress(_ota_size);
-
-    delay(0);
 
 }
 
@@ -130,23 +157,13 @@ void _otaClientOnConnect(void *arg, AsyncClient *client) {
 
 void _otaClientFrom(const String& url) {
 
-    if (_ota_connected) {
+    if (_ota_client || _ota_connected) {
         DEBUG_MSG_P(PSTR("[OTA] Already connected\n"));
         return;
     }
 
-    _ota_size = 0;
-
     if (_ota_url) _ota_url = nullptr;
     _ota_url = std::make_unique<URL>(url);
-    /*
-    DEBUG_MSG_P(PSTR("[OTA] proto:%s host:%s port:%u path:%s\n"),
-        _ota_url->protocol.c_str(),
-        _ota_url->host.c_str(),
-        _ota_url->port,
-        _ota_url->path.c_str()
-    );
-    */
 
     // we only support HTTP
     if ((!_ota_url->protocol.equals("http")) && (!_ota_url->protocol.equals("https"))) {
@@ -155,11 +172,13 @@ void _otaClientFrom(const String& url) {
         return;
     }
 
-    if (!_ota_client) {
-        _ota_client = std::make_unique<AsyncClient>();
-    }
+    // Helper struct to track current data parsing state
+    _ota_progress = std::make_unique<ota_progress_t>();
 
+    _ota_client = std::make_unique<AsyncClient>();
+    _ota_client->setRxTimeout(5);
     _ota_client->onDisconnect(_otaClientOnDisconnect, nullptr);
+    _ota_client->onError(_otaClientOnError, nullptr);
     _ota_client->onTimeout(_otaClientOnTimeout, nullptr);
     _ota_client->onData(_otaClientOnData, nullptr);
     _ota_client->onConnect(_otaClientOnConnect, nullptr);
