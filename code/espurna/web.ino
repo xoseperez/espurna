@@ -298,14 +298,18 @@ void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& 
 
     response->setCode(code);
 
-    if (Update.hasError()) {
-        #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-            Update.printError(reinterpret_cast<Stream&>(response));
-        #else
-            Update.printError(*response);
-        #endif
-    } else if (payload.length()) {
+    if (payload.length()) {
         response->printf("%s", payload.c_str());
+    } else {
+        if (!Update.hasError()) {
+            response->print("OK");
+        } else {
+            #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+                Update.printError(reinterpret_cast<Stream&>(response));
+            #else
+                Update.printError(*response);
+            #endif
+        }
     }
 
     request->send(response);
@@ -314,26 +318,21 @@ void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& 
 
 void _onUpgradeStatusSet(AsyncWebServerRequest *request, int code, const String& payload = "") {
     _onUpgradeResponse(request, code, payload);
-    _request->_tempObject = malloc(sizeof(bool));
+    request->_tempObject = malloc(sizeof(bool));
 }
 
 void _onUpgrade(AsyncWebServerRequest *request) {
 
-    // We expect Update to finish while in onUpgradeFile, but just to be sure
     webLog(request);
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
     if (request->_tempObject) {
-        auto* ptr = (web_upgrade_status_t*) request->_tempObject;
-        _onUpgradeResponse(request, ptr->code, ptr->msg);
         return;
     }
 
-    if (Update.isRunning()) {
-        _onUpgradeResponse(request, 500);
-    }
+    _onUpgradeResponse(request, 200);
 
 }
 
@@ -361,8 +360,13 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
         }
 
         // Check that header is correct and there is more data before anything is written to the flash
-        if (final || !len || !otaVerifyHeader(data, len)) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: Not firmware .bin / invalid flash config"));
+        if (final || !len) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: Invalid request"));
+            return;
+        }
+
+        if (!otaVerifyHeader(data, len)) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: No magic byte / invalid flash config"));
             return;
         }
 
@@ -385,8 +389,6 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[upgrade] +++ %u %u %u\n"), index, len, index + len);
-
     // Any error will cancel the update, but request may still be alive
     if (!Update.isRunning()) {
         return;
@@ -401,7 +403,6 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
 
     if (final) {
         otaFinalize(index + len, CUSTOM_RESET_UPGRADE, true);
-        _onUpgradeStatusSet(request, 200, F("OK"));
     } else {
         otaProgress(index + len);
     }
