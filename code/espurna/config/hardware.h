@@ -4144,7 +4144,7 @@
     #define SENSOR_POWER_UNITS          POWER_WATTS
 
 // -----------------------------------------------------------------------------
-// KA_CURTAIN_SWITCH
+// KINGART_CURTAIN_SWITCH
 // -----------------------------------------------------------------------------
 #elif defined(KINGART_CURTAIN_SWITCH)
 
