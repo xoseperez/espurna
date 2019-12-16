@@ -95,7 +95,8 @@
 //#define KMC_70011
 //#define LINGAN_SWA1
 //#define LITESUN_LA_WF3
-//#define LOHAS_9W
+//#define LOHAS_E27_9W
+//#define LOHAS_E26_A19
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
 //#define LUANI_HVIO

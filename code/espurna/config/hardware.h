@@ -3367,7 +3367,10 @@
  
 // -----------------------------------------------------------------------------
 
-#elif defined(LOHAS_9W)
+// also works with https://www.amazon.com/gp/product/B07TMY394G/
+// see https://github.com/xoseperez/espurna/issues/2055
+
+#elif defined(LOHAS_E27_9W)
 
     // Info
     #define MANUFACTURER        "LOHAS"
@@ -3385,6 +3388,25 @@
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     #define MY92XX_MAPPING      0, 1, 2, 3, 4
     #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
+
+// https://www.amazon.com/gp/product/B07T7W7ZMW
+
+#elif defined(LOHAS_E26_A19)
+
+    // Info
+    #define MANUFACTURER        "LOHAS"
+    #define DEVICE              "E26_A19"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       4       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       14      // WHITE1
+    #define LIGHT_CH5_PIN       12      // WHITE1
 
 // -----------------------------------------------------------------------------
 
