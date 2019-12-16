@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 # -------------------------------------------------------------------------------
 # ESPurna OTA manager
@@ -127,7 +127,7 @@ def get_boards():
 
 def get_device_size(device):
     if device.get('mem_size', 0) == device.get('sdk_size', 0):
-        return int(device.get('mem_size', 0)) / 1024
+        return int(int(device.get('mem_size', 0)) / 1024)
     return 0
 
 
