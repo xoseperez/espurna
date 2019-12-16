@@ -4142,6 +4142,40 @@
 
     #define SENSOR_ENERGY_UNITS         ENERGY_KWH
     #define SENSOR_POWER_UNITS          POWER_WATTS
+
+// -----------------------------------------------------------------------------
+// LSC Smart LED Light Strip (Smart CXonnect Series) available ACTION (Germany)
+// https://www.action.com/de-de/p/lsc-smart-connect-intelligenter-multicolor-led-strip-/
+// Reflashing from original Tuya firmware
+// to thirdparty firmware like espurna by:
+// https://github.com/ct-Open-Source/tuya-convert
+// -----------------------------------------------------------------------------
+
+#elif defined(LSC_SMART_LED_LIGHT_STRIP)
+    // Info
+    #define MANUFACTURER        "LSC"
+    #define DEVICE              "LED_LIGHT_STRIP"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light RGBW
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       13      // WHITE
+    // #define LIGHT_CH5_PIN    5       // CW (not connected, but circuit supports it)
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+    // IR
+    #define IR_SUPPORT          1
+    #define IR_RX_PIN           0
+    #define IR_BUTTON_SET       5
+
 // -----------------------------------------------------------------------------
 
 #else
