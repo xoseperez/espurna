@@ -66,7 +66,6 @@ void _KACurtainReceiveUART() {
 
 void _kacurtainSendMQTT() {
     if (_KACurtainNewData == true && MQTT_SUPPORT) {
-        DEBUG_MSG_P(PSTR("[KACURTAIN] Send data over MQTT: %s\n"), _KACurtainBuffer);
         mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
         _KACurtainNewData = false;
         if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
@@ -87,7 +86,6 @@ void _KACurtainActionSelect(const char * message) {
 
 void _KACurtainPause(const char * message) {
   // Tell N76E003AT20 to stop moving and report current position
-  DEBUG_MSG_P(PSTR("[KACURTAIN] message: %s\n"), message);
   char tx_buffer[80];
   snprintf_P(tx_buffer, sizeof(tx_buffer), PSTR("AT+UPDATE=\"sequence\":\"%d%03d\",\"switch\":\"%s\""),
    now(), millis()%1000, message);
@@ -96,7 +94,6 @@ void _KACurtainPause(const char * message) {
 
 void _KACurtainSetclose(const char * message) {
   // Tell N76E003AT20 to go to position X (based on X N76E003AT20 decides to go up or down)
-  DEBUG_MSG_P(PSTR("[KACURTAIN] payload: %s\n"), message);
   char tx_buffer[80];
   // %d   = long / uint8_t
   // %03d = long / uint8_t - last 3 digits
@@ -109,7 +106,6 @@ void _KACurtainSetclose(const char * message) {
 void _KACurtainSendOk() {
   // Confirm N76E003AT20 message received and stop repeating
   if (_KACurtainNewData == true) {
-    DEBUG_MSG_P(PSTR("[KACURTAIN] send ok"));
     KA_CURTAIN_PORT.print("AT+SEND=ok");
     KA_CURTAIN_PORT.write(0x1B);
     KA_CURTAIN_PORT.flush();
@@ -125,7 +121,6 @@ void _KACurtainSend(const char * tx_buffer) {
 void _KACurtainCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_CURTAINOUT);
-        DEBUG_MSG_P(PSTR("[KACURTAIN] Subscribe: %s\n"), MQTT_TOPIC_CURTAINOUT);
     }
     if (type == MQTT_MESSAGE_EVENT) {
         // Match topic
