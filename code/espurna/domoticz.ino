@@ -11,10 +11,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "broker.h"
 
+#include <bitset>
 #include <ArduinoJson.h>
 
 bool _dcz_enabled = false;
-std::vector<bool> _dcz_relay_state;
+std::bitset<RELAYS_MAX> _dcz_relay_state;
 
 //------------------------------------------------------------------------------
 // Private methods
@@ -41,12 +42,10 @@ void _domoticzMqttSubscribe(bool value) {
 }
 
 bool _domoticzStatus(unsigned char id) {
-    if (id >= _dcz_relay_state.size()) return false;
     return _dcz_relay_state[id];
 }
 
 void _domoticzStatus(unsigned char id, bool status) {
-    if (id >= _dcz_relay_state.size()) return;
     _dcz_relay_state[id] = status;
     relayStatus(id, status);
 }
@@ -220,7 +219,6 @@ void _domoticzWebSocketOnConnected(JsonObject& root) {
 #endif // WEB_SUPPORT
 
 void _domoticzRelayConfigure(size_t size) {
-    _dcz_relay_state.reserve(size);
     for (size_t n = 0; n < size; ++n) {
         _dcz_relay_state[n] = relayStatus(n);
     }

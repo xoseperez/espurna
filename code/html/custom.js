@@ -121,11 +121,7 @@ function keepTime() {
 }
 
 function zeroPad(number, positions) {
-    var zeros = "";
-    for (var i = 0; i < positions; i++) {
-        zeros += "0";
-    }
-    return (zeros + number).slice(-positions);
+    return number.toString().padStart(positions, "0");
 }
 
 function loadTimeZones() {
@@ -142,15 +138,16 @@ function loadTimeZones() {
     ];
 
     for (var i in time_zones) {
-        var value = time_zones[i];
-        var offset = value >= 0 ? value : -value;
-        var text = "GMT" + (value >= 0 ? "+" : "-") +
+        var tz = time_zones[i];
+        var offset = tz >= 0 ? tz : -tz;
+        var text = "GMT" + (tz >= 0 ? "+" : "-") +
             zeroPad(parseInt(offset / 60, 10), 2) + ":" +
             zeroPad(offset % 60, 2);
         $("select[name='ntpOffset']").append(
-            $("<option></option>").
-                attr("value",value).
-                text(text));
+            $("<option></option>")
+                .attr("value", tz)
+                .text(text)
+        );
     }
 
 }
@@ -404,31 +401,23 @@ function doResetThermostatCounters(ask) {
 }
 <!-- endRemoveIf(!thermostat)-->
 
-function initGPIO(node, name, key, value) {
-
-    var template = $("#gpioConfigTemplate").children();
-    var line = $(template).clone();
-    $("span.id", line).html(value);
-    $("select", line).attr("name", key);
-    line.appendTo(node);
-
-}
-
 function initSelectGPIO(select) {
-    // TODO: cross-check used GPIOs
-    // TODO: support 9 & 10 with esp8285 variant
+    // TODO: properly lock used GPIOs via locking and apply the mask here
     var mapping = [
         [153, "NONE"],
-        [0, "0"],
+        [0, "0 (FLASH)"],
         [1, "1 (U0TXD)"],
         [2, "2 (U1TXD)"],
         [3, "3 (U0RXD)"],
-        [4, "4"],
-        [5, "5"],
+        [4, "4 (SDA)"],
+        [5, "5 (SCL)"],
+        [9, "9 (SDD2)"],
+        [10, "10 (SDD3)"],
         [12, "12 (MTDI)"],
         [13, "13 (MTCK)"],
         [14, "14 (MTMS)"],
         [15, "15 (MTDO)"],
+        [16, "15 (WAKE)"],
     ];
     for (n in mapping) {
         var elem = $('<option value="' + mapping[n][0] + '">');
@@ -1075,10 +1064,14 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
-        $("input[name='relayLastSch']", line).prop('checked', data.sch_last[i]);
-        $("input[name='relayLastSch']", line).attr("id", "relayLastSch" + i);
-        $("input[name='relayLastSch']", line).attr("name", "relayLastSch" + i);
-        $("input[name='relayLastSch" + i + "']", line).next().attr("for","relayLastSch" + (i));
+
+        if ("sch_last" in data) {
+            $("input[name='relayLastSch']", line)
+                .prop('checked', data.sch_last[i])
+                .attr("id", "relayLastSch" + i)
+                .attr("name", "relayLastSch" + i)
+                .next().attr("for","relayLastSch" + (i));
+        }
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
@@ -1094,7 +1087,10 @@ function initRelayConfig(data) {
 
         // Populate the relay SELECTs
         $("select.isrelay").append(
-            $("<option></option>").attr("value",i).text("Switch #" + i));
+            $("<option></option>")
+                .attr("value", i)
+                .text("Switch #" + i)
+        );
 
     }
 
@@ -1171,7 +1167,7 @@ function getPickerRGB(picker) {
     return $(picker).wheelColorPicker("getValue", "css");
 }
 
-function setPickerRGB(picker, color) {
+function setPickerRGB(picker, value) {
     $(picker).wheelColorPicker("setValue", value, true);
 }
 
@@ -1478,7 +1474,7 @@ function processData(data) {
             return;
         }
 
-        <!-- endRemoveIf(!rfbridge)-->
+        <!-- endRemoveIf(!lightfox)-->
 
         // ---------------------------------------------------------------------
         // RFM69
@@ -1504,22 +1500,22 @@ function processData(data) {
         }
 
         if (key == "mapping") {
-			for (var i in data.mapping) {
+            for (var i in data.mapping) {
 
-				// add a new row
-				addMapping();
+                // add a new row
+                addMapping();
 
-				// get group
-				var line = $("#mapping .pure-g")[i];
+                // get group
+                var line = $("#mapping .pure-g")[i];
 
-				// fill in the blanks
-				var mapping = data.mapping[i];
-				Object.keys(mapping).forEach(function(key) {
-				    var id = "input[name=" + key + "]";
-				    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
-				});
-			}
-			return;
+                // fill in the blanks
+                var mapping = data.mapping[i];
+                Object.keys(mapping).forEach(function(key) {
+                    var id = "input[name=" + key + "]";
+                    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+                });
+            }
+            return;
         }
 
         <!-- endRemoveIf(!rfm69)-->
@@ -1798,8 +1794,8 @@ function processData(data) {
         if ("weblog" === key) {
             send("{}");
 
-            msg = value["msg"];
-            pre = value["pre"];
+            var msg = value["msg"];
+            var pre = value["pre"];
 
             for (var i=0; i < msg.length; ++i) {
                 if (pre[i]) {

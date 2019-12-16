@@ -3511,6 +3511,30 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
+// -----------------------------------------------------------------------------
+// Generic E14
+// https://www.ebay.com/itm/LED-Bulb-Wifi-E14-4-5W-Candle-RGB-W-4in1-Dimmable-V-tac-Smart-VT-5114/163899840601
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_E14)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "E14"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       5       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Nexete A19
@@ -4176,6 +4200,27 @@
     #define BMX280_SUPPORT        1
     // #define SI7021_SUPPORT        1
 
+// -----------------------------------------------------------------------------
+// Linksprite R4
+// http://linksprite.com/wiki/index.php?title=LinkNode_R4:_Arduino-compatible_WiFi_relay_controller
+// -----------------------------------------------------------------------------
+
+#elif defined(LINKSPRITE_LINKNODE_R4)
+
+    // Info
+    #define MANUFACTURER                "LINKSPRITE"
+    #define DEVICE                      "LINKNODE_R4"
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY2_PIN              13
+    #define RELAY3_PIN              14
+    #define RELAY4_PIN              16
+
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
 // -----------------------------------------------------------------------------
 
 #else
