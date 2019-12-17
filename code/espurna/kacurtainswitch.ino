@@ -67,9 +67,7 @@ void _KACurtainReceiveUART() {
 void _kacurtainResult() {
   if (_KACurtainNewData == true) {
     #if MQTT_SUPPORT
-    if (MQTT_SUPPORT) {
-        mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
-    }
+    mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
     #endif // MQTT_SUPPORT
     if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
       wifiStartAP();
