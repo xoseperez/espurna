@@ -307,7 +307,7 @@ void rpnSetup() {
     #endif
 
     StatusBroker::Register(_rpnBrokerStatus);
-    SensorBroker::Register(_rpnBrokerCallback);
+    SensorReadBroker::Register(_rpnBrokerCallback);
 
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);

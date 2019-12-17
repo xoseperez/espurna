@@ -1387,6 +1387,33 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(LINKSPRITE_LINKNODE_R4)
+
+            setSetting("board", 104);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 13);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 2, 14);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 3, 16);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);
+
+        #elif defined(GENERIC_E14)
+
+            setSetting("board", 104);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 4);
+            setSetting("chGPIO", 1, 12);
+            setSetting("chGPIO", 2, 14);
+            setSetting("chGPIO", 3, 5);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("relays", 1);
+
         #else
 
             // Allow users to define new settings without migration config
