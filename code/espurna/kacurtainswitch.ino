@@ -64,16 +64,20 @@ void _KACurtainReceiveUART() {
     }
 }
 
-void _kacurtainSendMQTT() {
-    if (_KACurtainNewData == true && MQTT_SUPPORT) {
+void _kacurtainResult() {
+  if (_KACurtainNewData == true) {
+    #if MQTT_SUPPORT
+    if (MQTT_SUPPORT) {
         mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
-        _KACurtainNewData = false;
-        if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
-          wifiStartAP();
-        } else if (String(_KACurtainBuffer).indexOf("exitESPTOUCH") > 0 ) {
-          deferredReset(100, CUSTOM_RESET_HARDWARE);
-        }
     }
+    #endif // MQTT_SUPPORT
+    if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
+      wifiStartAP();
+    } else if (String(_KACurtainBuffer).indexOf("exitESPTOUCH") > 0 ) {
+      deferredReset(100, CUSTOM_RESET_HARDWARE);
+    }
+  }
+  _KACurtainNewData = false; //if MQTT send or no MQTT support do nothing with the new data.
 }
 
 void _KACurtainActionSelect(const char * message) {
@@ -118,6 +122,7 @@ void _KACurtainSend(const char * tx_buffer) {
   KA_CURTAIN_PORT.flush();
 }
 
+#if MQTT_SUPPORT
 void _KACurtainCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_CURTAINOUT);
@@ -130,6 +135,7 @@ void _KACurtainCallback(unsigned int type, const char * topic, const char * payl
         }
     }
 }
+#endif // MQTT_SUPPORT
 
 // -----------------------------------------------------------------------------
 // SETUP & LOOP
@@ -138,7 +144,7 @@ void _KACurtainCallback(unsigned int type, const char * topic, const char * payl
 void _kacurtainLoop() {
     _KACurtainReceiveUART();
     _KACurtainSendOk();
-    _kacurtainSendMQTT();
+    _kacurtainResult();
 }
 
 void kacurtainSetup() {
@@ -146,8 +152,10 @@ void kacurtainSetup() {
     // Init port
     KA_CURTAIN_PORT.begin(KA_CURTAIN_BAUDRATE);
 
+    #if MQTT_SUPPORT
     // Register MQTT callbackj
     mqttRegister(_KACurtainCallback);
+    #endif // MQTT_SUPPORT
 
     // Register loop
     espurnaRegisterLoop(_kacurtainLoop);
