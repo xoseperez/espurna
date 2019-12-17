@@ -35,16 +35,18 @@ struct ota_client_t {
         END
     };
 
-    ota_client_t(std::unique_ptr<URL>&& url);
+    ota_client_t() = delete;
     ota_client_t(const ota_client_t&) = delete;
+
+    ota_client_t(URL&& url);
 
     bool connect();
 
     state_t state = HEADERS;
     size_t size = 0;
 
-    std::unique_ptr<AsyncClient> client;
-    std::unique_ptr<URL> url;
+    const URL url;
+    AsyncClient client;
 };
 
 std::unique_ptr<ota_client_t> _ota_client = nullptr;
@@ -56,13 +58,13 @@ void _otaClientDisconnect() {
     _ota_client = nullptr;
 }
 
-void _otaClientOnDisconnect(void*, AsyncClient * client) {
+void _otaClientOnDisconnect(void* arg, AsyncClient* client) {
     DEBUG_MSG_P(PSTR("\n"));
-    otaFinalize(_ota_client->size, CUSTOM_RESET_OTA, true);
+    otaFinalize(reinterpret_cast<ota_client_t*>(arg)->size, CUSTOM_RESET_OTA, true);
     schedule_function(_otaClientDisconnect);
 }
 
-void _otaClientOnTimeout(void*, AsyncClient * client, uint32_t time) {
+void _otaClientOnTimeout(void*, AsyncClient * client, uint32_t) {
     client->close(true);
 }
 
@@ -70,10 +72,14 @@ void _otaClientOnError(void*, AsyncClient* client, err_t error) {
     DEBUG_MSG_P(PSTR("[OTA] ERROR: %s\n"), client->errorToString(error));
 }
 
-void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len) {
+void _otaClientOnData(void* arg, AsyncClient* client, void* data, size_t len) {
 
+    ota_client_t* ota_client = reinterpret_cast<ota_client_t*>(arg);
     auto* ptr = (char *) data;
 
+    // TODO: check status
+    // TODO: check for 3xx, discover `Location:` header and schedule
+    //       another _otaClientFrom(location_header_url)
     if (_ota_client->state == ota_client_t::HEADERS) {
         ptr = (char *) strnstr((char *) data, "\r\n\r\n", len);
         if (!ptr) {
@@ -89,15 +95,15 @@ void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len)
         ptr += 4;
     }
 
-    if (_ota_client->state == ota_client_t::DATA) {
+    if (ota_client->state == ota_client_t::DATA) {
 
-        if (!_ota_client->size) {
+        if (!ota_client->size) {
 
             // Check header before anything is written to the flash
             if (!otaVerifyHeader((uint8_t *) ptr, len)) {
                 DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config"));
                 client->close(true);
-                _ota_client->state = ota_client_t::END;
+                ota_client->state = ota_client_t::END;
                 return;
             }
 
@@ -119,12 +125,12 @@ void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len)
         if (Update.write((uint8_t *) ptr, len) != len) {
             otaPrintError();
             client->close(true);
-            _ota_client->state = ota_client_t::END;
+            ota_client->state = ota_client_t::END;
             return;
         }
 
-        _ota_client->size += len;
-        otaProgress(_ota_client->size);
+        ota_client->size += len;
+        otaProgress(ota_client->size);
 
         delay(0);
 
@@ -132,14 +138,16 @@ void _otaClientOnData(void * arg, AsyncClient * client, void * data, size_t len)
 
 }
 
-void _otaClientOnConnect(void*, AsyncClient *client) {
+void _otaClientOnConnect(void* arg, AsyncClient* client) {
+
+    ota_client_t* ota_client = reinterpret_cast<ota_client_t*>(arg);
 
     #if ASYNC_TCP_SSL_ENABLED
         int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
         if ((check == SECURE_CLIENT_CHECK_FINGERPRINT) && (443 == _ota_url->port)) {
             uint8_t fp[20] = {0};
             sslFingerPrintArray(getSetting("otaFP", OTA_FINGERPRINT).c_str(), fp);
-            SSL * ssl = _ota_client->client->getSSL();
+            SSL * ssl = client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
                 DEBUG_MSG_P(PSTR("[OTA] Warning: certificate fingerpint doesn't match\n"));
                 client->close(true);
@@ -151,28 +159,28 @@ void _otaClientOnConnect(void*, AsyncClient *client) {
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
     eepromRotate(false);
 
-    DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_client->url->path.c_str());
-    char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + _ota_client->url->path.length() + _ota_client->url->host.length()];
-    snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_client->url->path.c_str(), _ota_client->url->host.c_str());
+    DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), ota_client->url.path.c_str());
+    char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + ota_client->url.path.length() + ota_client->url.host.length()];
+    snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, ota_client->url.path.c_str(), ota_client->url.host.c_str());
     client->write(buffer);
 }
 
-ota_client_t::ota_client_t(std::unique_ptr<URL>&& url) :
-    url(std::move(url)), client(new AsyncClient())
+ota_client_t::ota_client_t(URL&& url) :
+    url(std::move(url))
 {
-    client->setRxTimeout(5);
-    client->onDisconnect(_otaClientOnDisconnect, nullptr);
-    client->onError(_otaClientOnError, nullptr);
-    client->onTimeout(_otaClientOnTimeout, nullptr);
-    client->onData(_otaClientOnData, nullptr);
-    client->onConnect(_otaClientOnConnect, nullptr);
+    client.setRxTimeout(5);
+    client.onError(_otaClientOnError, nullptr);
+    client.onTimeout(_otaClientOnTimeout, nullptr);
+    client.onDisconnect(_otaClientOnDisconnect, this);
+    client.onData(_otaClientOnData, this);
+    client.onConnect(_otaClientOnConnect, this);
 }
 
 bool ota_client_t::connect() {
     #if ASYNC_TCP_SSL_ENABLED
-        return client->connect(url->host.c_str(), url->port, 443 == url->port);
+        return client.connect(url.host.c_str(), url.port, 443 == url.port);
     #else
-        return client->connect(url->host.c_str(), url->port);
+        return client.connect(url.host.c_str(), url.port);
     #endif
 }
 
@@ -185,8 +193,8 @@ void _otaClientFrom(const String& url) {
         return;
     }
 
-    auto _url = std::make_unique<URL>(url);
-    if ((!_url->protocol.equals("http")) && (!_url->protocol.equals("https"))) {
+    auto _url = URL(url);
+    if (!_url.protocol.equals("http") && !_url.protocol.equals("https")) {
         DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
         return;
     }
