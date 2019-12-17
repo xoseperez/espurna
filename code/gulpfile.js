@@ -131,11 +131,11 @@ var buildWebUI = function(module) {
     // '<module>' to include a single module
     // 'small' is the default state (all disabled)
     if ('all' === module) {
-        Object.keys(modules)
-            .filter(function(key) {
+        Object.keys(modules).
+            filter(function(key) {
                 return excludeAll.indexOf(key) < 0;
-            })
-            .forEach(function(key) {
+            }).
+            forEach(function(key) {
                 modules[key] = true;
             });
     } else if ('small' !== module) {
