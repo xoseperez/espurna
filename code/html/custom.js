@@ -493,7 +493,7 @@ function initSelectGPIO(select) {
         [13, "13 (MTCK)"],
         [14, "14 (MTMS)"],
         [15, "15 (MTDO)"],
-        [16, "15 (WAKE)"],
+        [16, "16 (WAKE)"],
     ];
     for (n in mapping) {
         var elem = $('<option value="' + mapping[n][0] + '">');
@@ -1449,12 +1449,9 @@ function addRfbNode() {
 
     var template = $("#rfbNodeTemplate").children();
     var line = $(template).clone();
-    var status = true;
     $("span", line).html(numNodes);
     $(line).find("input").each(function() {
-        $(this).data("id", numNodes);
-        $(this).attr("status", status ? 1 : 0);
-        status = !status;
+        this.dataset["id"] = numNodes;
     });
     $(line).find(".button-rfb-learn").on("click", rfbLearn);
     $(line).find(".button-rfb-forget").on("click", rfbForget);
