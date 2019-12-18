@@ -2,7 +2,6 @@ var debug = false;
 var websock;
 var password = false;
 var maxNetworks;
-var maxSchedules;
 var messages = [];
 var free_size = 0;
 
@@ -12,7 +11,7 @@ var numChanged = 0;
 var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
-var conf_saved = false;
+var configurationSaved = false;
 
 var useWhite = false;
 var useCCT = false;
@@ -228,6 +227,60 @@ function validateForm(form) {
     return validateFormPasswords(form) && validateFormHostname(form);
 }
 
+// Observe all group settings to selectively update originals based on the current data
+var groupSettingsObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        // If any new elements are added, set "settings-target" element as changed to forcibly send the data
+        var targets = $(mutation.target).attr("data-settings-target");
+        if (targets !== undefined) {
+            mutation.addedNodes.forEach(function(node) {
+                var overrides = [];
+                targets.split(" ").forEach(function(target) {
+                    var elem = $("[name='" + target + "']", node);
+                    if (!elem.length) return;
+
+                    var value = getValue(elem);
+                    if ((value === null) || (value === elem[0].defaultValue)) {
+                        overrides.push(elem);
+                    }
+                });
+                setOriginalsFromValues($("input,select", node));
+                overrides.forEach(function(elem) {
+                    elem.attr("hasChanged", "true");
+                    if (elem.prop("tagName") === "SELECT") {
+                        elem.prop("value", 0);
+                    }
+                });
+            });
+        }
+
+        // If anything was removed, forcibly send **all** of the group to avoid having any outdated keys
+        // TODO: hide instead of remove?
+        var changed = $(mutation.target).attr("hasChanged") === "true";
+        if (changed || mutation.removedNodes.length) {
+            $(mutation.target).attr("hasChanged", "true");
+            $("input,select", mutation.target.childNodes).attr("hasChanged", "true");
+        }
+    });
+});
+
+// These fields will always be a list of values
+function isGroupValue(value) {
+    var names = [
+        "ssid", "pass", "gw", "mask", "ip", "dns",
+        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
+        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
+        "mqttGroup", "mqttGroupSync", "relayOnDisc",
+        "dczRelayIdx", "dczMagnitude",
+        "tspkRelay", "tspkMagnitude",
+        "ledMode", "ledRelay",
+        "adminPass",
+        "node", "key", "topic",
+        "rpnRule", "rpnTopic", "rpnName"
+    ];
+    return names.indexOf(value) >= 0;
+}
+
 function getValue(element) {
 
     if ($(element).attr("type") === "checkbox") {
@@ -244,37 +297,12 @@ function getValue(element) {
 
 function addValue(data, name, value) {
 
-    // These fields will always be a list of values
-    var is_group = [
-        "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
-        "mqttGroup", "mqttGroupSync", "relayOnDisc",
-        "dczRelayIdx", "dczMagnitude",
-        "tspkRelay", "tspkMagnitude",
-        "ledMode", "ledRelay",
-        "adminPass",
-        "node", "key", "topic",
-        "rpnRule", "rpnTopic", "rpnName"
-    ];
-
-
-    // join both adminPass 1 and 2
-    if (name.startsWith("adminPass")) {
-        name = "adminPass";
-    }
-
-    // join all relayLastSch values
-    if (name.startsWith("relayLastSch")) {
-        name = "relayLastSch";
-    }
-
     if (name in data) {
         if (!Array.isArray(data[name])) {
             data[name] = [data[name]];
         }
         data[name].push(value);
-    } else if (is_group.indexOf(name) >= 0) {
+    } else if (isGroupValue(name)) {
         data[name] = [value];
     } else {
         data[name] = value;
@@ -282,25 +310,71 @@ function addValue(data, name, value) {
 
 }
 
-function getData(form) {
+function getData(form, changed, cleanup) {
 
+    // Populate two sets of data, ones that had been changed and ones that stayed the same
     var data = {};
+    var changed_data = [];
+    if (cleanup === undefined) {
+        cleanup = true;
+    }
 
-    // Populate data
+    if (changed === undefined) {
+        changed = true;
+    }
+
     $("input,select", form).each(function() {
+        if ($(this).attr("data-settings-ignore") === "true") {
+            return;
+        }
+
         var name = $(this).attr("name");
+
+        var real_name = $(this).attr("data-settings-real-name");
+        if (real_name !== undefined) {
+            name = real_name;
+        }
+
         var value = getValue(this);
         if (null !== value) {
+            var haschanged = ("true" === $(this).attr("hasChanged"));
+            var indexed = changed_data.indexOf(name) >= 0;
+
+            if ((haschanged || !changed) && !indexed) {
+                changed_data.push(name);
+            }
+
             addValue(data, name, value);
         }
     });
 
-    // Post process
-    addValue(data, "schSwitch", 0xFF);
-    delete data["filename"];
-    delete data["rfbcode"];
+    // Finally, filter out only fields that had changed.
+    // Note: We need to preserve dynamic lists like schedules, wifi etc.
+    // so we don't accidentally break when user deletes entry in the middle
+    var resulting_data = {};
+    for (var value in data) {
+        if (changed_data.indexOf(value) >= 0) {
+            resulting_data[value] = data[value];
+        }
+    }
 
-    return data;
+    // Hack: clean-up leftover arrays.
+    // When empty, the receiving side will prune all keys greater than the current one.
+    if (cleanup) {
+        $(".group-settings").each(function() {
+            var haschanged = ("true" === $(this).attr("hasChanged"));
+            if (haschanged && !this.children.length) {
+                var targets = this.dataset.settingsTarget;
+                if (targets === undefined) return;
+
+                targets.split(" ").forEach(function(target) {
+                    resulting_data[target] = [];
+                });
+            }
+        });
+    }
+
+    return resulting_data;
 
 }
 
@@ -335,6 +409,7 @@ function generateAPIKey() {
     var apikey = randomString(16, {hex: true});
     $("input[name='apiKey']")
         .val(apikey)
+        .attr("original", "-".repeat(16))
         .attr("haschanged", "true");
     return false;
 }
@@ -359,7 +434,8 @@ function toggleVisiblePassword() {
 }
 
 function doGeneratePassword() {
-    $("input", $("#formPassword"))
+    var elems = $("input", $("#formPassword"));
+    elems
         .val(generatePassword())
         .attr("haschanged", "true")
         .each(function() {
@@ -444,27 +520,27 @@ function sendConfig(data) {
     send(JSON.stringify({config: data}));
 }
 
-function setOriginalsFromValues(force) {
-    force = (true === force);
-    $("input,select").each(function() {
-        var initial = (undefined === $(this).attr("original"));
-        if (force || initial) {
-            var value;
-            if ($(this).attr("type") === "checkbox") {
-                value = $(this).prop("checked");
-            } else {
-                value = $(this).val();
-            }
-            $(this).attr("original", value);
-            hasChanged.call(this);
+function setOriginalsFromValues(elems) {
+    if (typeof elems == "undefined") {
+        elems = $("input,select");
+    }
+    elems.each(function() {
+        var value;
+        if ($(this).attr("type") === "checkbox") {
+            value = $(this).prop("checked");
+        } else {
+            value = $(this).val();
         }
+        $(this).attr("original", value);
+        hasChanged.call(this);
     });
 }
 
 function resetOriginals() {
-    setOriginalsFromValues(true);
+    setOriginalsFromValues();
+    $(".group-settings").attr("haschanged", "false")
     numReboot = numReconnect = numReload = 0;
-    conf_saved = false;
+    configurationSaved = false;
 }
 
 function doReload(milliseconds) {
@@ -563,7 +639,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateFormPasswords(form)) {
-        sendConfig(getData(form));
+        sendConfig(getData(form, true, false));
     }
     return false;
 }
@@ -632,7 +708,7 @@ function doCheckOriginals() {
 }
 
 function waitForSave(){
-    if (conf_saved == false) {
+    if (!configurationSaved) {
         setTimeout(waitForSave, 1000);
     } else {
         doCheckOriginals();
@@ -709,7 +785,7 @@ function doRestore() {
 
 function doFactoryReset() {
     var response = window.confirm("Are you sure you want to restore to factory settings?");
-    if (response === false) {
+    if (!response) {
         return false;
     }
     sendAction("factory_reset", {});
@@ -836,6 +912,7 @@ function createRelayList(data, container, template_name) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
         $("input", line).attr("tabindex", 40 + i).val(data[i]);
+        setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
 
@@ -855,6 +932,7 @@ function createMagnitudeList(data, container, template_name) {
         $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
+        setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
 
@@ -873,6 +951,7 @@ function addRPNRule() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
+    setOriginalsFromValues($("input", line));
     line.appendTo("#rpnRules");
 }
 
@@ -884,6 +963,7 @@ function addRPNTopic() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
+    setOriginalsFromValues($("input", line));
     line.appendTo("#rpnTopics");
 }
 
@@ -901,6 +981,7 @@ function addMapping() {
         $(this).attr("tabindex", tabindex++);
     });
     $(line).find("button").on('click', delParent);
+    setOriginalsFromValues($("input", line));
     line.appendTo("#mapping");
 }
 
@@ -909,6 +990,10 @@ function addMapping() {
 // -----------------------------------------------------------------------------
 // Wifi
 // -----------------------------------------------------------------------------
+
+function numNetworks() {
+    return $("#networks > div").length;
+}
 
 function delNetwork() {
     var parent = $(this).parents(".pure-g");
@@ -920,12 +1005,16 @@ function moreNetwork() {
     $(".more", parent).toggle();
 }
 
-function addNetwork() {
+function addNetwork(values) {
 
-    var numNetworks = $("#networks > div").length;
-    if (numNetworks >= maxNetworks) {
+    var number = numNetworks();
+    if (number >= maxNetworks) {
         alert("Max number of networks reached");
         return null;
+    }
+
+    if (values === undefined) {
+        values = {};
     }
 
     var tabindex = 200 + numNetworks * 10;
@@ -938,6 +1027,11 @@ function addNetwork() {
     $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
+
+    Object.entries(values).forEach(function(kv) {
+        $("input[name='" + kv[0] + "']", line).val(kv[1]);
+    });
+
     line.appendTo("#networks");
 
     return line;
@@ -947,6 +1041,15 @@ function addNetwork() {
 // -----------------------------------------------------------------------------
 // Relays scheduler
 // -----------------------------------------------------------------------------
+
+function numSchedules() {
+    return $("#schedules > div").length;
+}
+
+function maxSchedules() {
+    var value = $("#schedules").attr("data-settings-max");
+    return parseInt(value === undefined ? 0 : value, 10);
+}
 
 function delSchedule() {
     var parent = $(this).parents(".pure-g");
@@ -958,18 +1061,23 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function addSchedule(event) {
+function addSchedule(values) {
 
-    var numSchedules = $("#schedules > div").length;
-    if (numSchedules >= maxSchedules) {
+    var schedules = numSchedules();
+    if (schedules >= maxSchedules()) {
         alert("Max number of schedules reached");
         return null;
     }
+
+    if (values === undefined) {
+        values = {};
+    }
+
     var tabindex = 200 + numSchedules * 10;
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = (1 === event.data.schType) ? "switch" : "light";
+    var type = (1 === values.schType) ? "switch" : "light";
 
     template = $("#" + type + "ActionTemplate").children();
     $(line).find("#schActionDiv").append(template.clone());
@@ -980,12 +1088,22 @@ function addSchedule(event) {
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
-    $(line).find("input[name='schUTC']").prop("id", "schUTC" + (numSchedules + 1))
-        .next().prop("for", "schUTC" + (numSchedules + 1));
-    $(line).find("input[name='schEnabled']").prop("id", "schEnabled" + (numSchedules + 1))
-        .next().prop("for", "schEnabled" + (numSchedules + 1));
-    line.appendTo("#schedules");
+
+    var schUTC_id = "schUTC" + (schedules + 1);
+    $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
+
+    var schEnabled_id = "schEnabled" + (schedules + 1);
+    $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
+
     $(line).find("input[type='checkbox']").prop("checked", false);
+
+    Object.entries(values).forEach(function(kv) {
+        var key = kv[0], value = kv[1];
+        $("input[name='" + key + "']", line).val(value);
+        $("select[name='" + key + "']", line).prop("value", value);
+        $("input[type='checkbox'][name='" + key + "']", line).prop("checked", value);
+    });
+    line.appendTo("#schedules");
 
     return line;
 
@@ -1083,6 +1201,7 @@ function initRelayConfig(data) {
             $("select[name='relayOnDisc']", line).val(data.on_disc[i]);
         }
 
+        setOriginalsFromValues($("input,select", line));
         line.appendTo("#relayConfig");
 
         // Populate the relay SELECTs
@@ -1333,8 +1452,8 @@ function addRfbNode() {
     var status = true;
     $("span", line).html(numNodes);
     $(line).find("input").each(function() {
-        $(this).attr("data-id", numNodes);
-        $(this).attr("data-status", status ? 1 : 0);
+        $(this).data("id", numNodes);
+        $(this).attr("status", status ? 1 : 0);
         status = !status;
     });
     $(line).find(".button-rfb-learn").on("click", rfbLearn);
@@ -1378,6 +1497,7 @@ function initLightfox(data, relayCount) {
             $(this).val(data[i]["relay"]);
             status = !status;
         });
+        setOriginalsFromValues($("input,select", $line));
         $line.appendTo("#lightfoxNodes");
     }
 
@@ -1512,8 +1632,10 @@ function processData(data) {
                 var mapping = data.mapping[i];
                 Object.keys(mapping).forEach(function(key) {
                     var id = "input[name=" + key + "]";
-                    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+                    if ($(id, line).length) $(id, line).val(mapping[key]);
                 });
+
+                setOriginalsFromValues($("input", line));
             }
             return;
         }
@@ -1535,7 +1657,9 @@ function processData(data) {
 
 				// fill in the blanks
 				var rule = data.rpnRules[i];
-                $("input", line).val(rule).attr("original", rule);
+                $("input", line).val(rule);
+
+                setOriginalsFromValues($("input", line));
 
             }
 			return;
@@ -1553,8 +1677,10 @@ function processData(data) {
 				// fill in the blanks
 				var topic = data.rpnTopics[i];
 				var name = data.rpnNames[i];
-                $("input[name='rpnTopic']", line).val(topic).attr("original", topic);
-                $("input[name='rpnName']", line).val(name).attr("original", name);
+                $("input[name='rpnTopic']", line).val(topic);
+                $("input[name='rpnName']", line).val(name);
+
+                setOriginalsFromValues($("input", line));
 
             }
 			return;
@@ -1650,13 +1776,7 @@ function processData(data) {
         }
 
         if ("wifi" === key) {
-            for (i in value) {
-                var wifi = value[i];
-                var nwk_line = addNetwork();
-                Object.keys(wifi).forEach(function(key) {
-                    $("input[name='" + key + "']", nwk_line).val(wifi[key]);
-                });
-            }
+            value.forEach(addNetwork);
             return;
         }
 
@@ -1681,22 +1801,17 @@ function processData(data) {
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
-        if ("maxSchedules" === key) {
-            maxSchedules = parseInt(value, 10);
-            return;
-        }
-
         if ("schedules" === key) {
+            $("#schedules").attr("data-settings-max", value.max);
             for (var i=0; i<value.size; ++i) {
-                var sch_line = addSchedule({ data: {schType: value.schType[i] }});
-
+                // XXX: no
+                var sch_map = {};
                 Object.keys(value).forEach(function(key) {
                     if ("size" == key) return;
-                    var sch_value = value[key][i];
-                    $("input[name='" + key + "']", sch_line).val(sch_value);
-                    $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
+                    if ("max" == key) return;
+                    sch_map[key] = value[key][i];
                 });
+                addSchedule(sch_map);
             }
             return;
         }
@@ -1724,8 +1839,11 @@ function processData(data) {
         if ("ledConfig" === key) {
             initLeds(value);
             for (var i=0; i<value.length; ++i) {
-                $("select[name='ledMode'][data='" + i + "']").val(value[i].mode);
-                $("input[name='ledRelay'][data='" + i + "']").val(value[i].relay);
+                var mode = $("select[name='ledMode'][data='" + i + "']");
+                var relay = $("select[name='ledRelay'][data='" + i + "']");
+                mode.val(value[i].mode);
+                relay.val(value[i].relay);
+                setOriginalsFromValues($([mode,relay]));
             }
             return;
         }
@@ -1783,8 +1901,8 @@ function processData(data) {
 
         // Messages
         if ("message" === key) {
-            if (value == 8 && (numReboot > 0 || numReload > 0 || numReconnect > 0)){
-                conf_saved = true;
+            if (value == 8) {
+                configurationSaved = true;
             }
             window.alert(messages[value]);
             return;
@@ -1861,6 +1979,7 @@ function processData(data) {
         // ---------------------------------------------------------------------
         // Matching
         // ---------------------------------------------------------------------
+        var elems = [];
 
         var pre;
         var post;
@@ -1877,6 +1996,7 @@ function processData(data) {
                 post = input.attr("post") || "";
                 input.val(pre + value + post);
             }
+            elems.push(input);
         }
 
         // Look for SPANs
@@ -1886,11 +2006,13 @@ function processData(data) {
                 value.forEach(function(elem) {
                     span.append(elem);
                     span.append('</br>');
+                    elems.push(span);
                 });
             } else {
                 pre = span.attr("pre") || "";
                 post = span.attr("post") || "";
                 span.html(pre + value + post);
+                elems.push(span);
             }
         }
 
@@ -1898,11 +2020,12 @@ function processData(data) {
         var select = $("select[name='" + key + "']");
         if (select.length > 0) {
             select.val(value);
+            elems.push(select);
         }
 
-    });
+        setOriginalsFromValues($(elems));
 
-    setOriginalsFromValues();
+    });
 
 }
 
@@ -1928,16 +2051,16 @@ function hasChanged() {
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", true);
         }
+        $(this).attr("hasChanged", true);
     } else {
         if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", false);
         }
+        $(this).attr("hasChanged", false);
     }
 
 }
@@ -2050,9 +2173,14 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-switch-schedule").on("click", { schType: 1 }, addSchedule);
+
+    $(".button-add-switch-schedule").on("click", function() {
+        addSchedule({schType: 1, schSwitch: -1});
+    });
     <!-- removeIf(!light)-->
-    $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
+    $(".button-add-light-schedule").on("click", function() {
+        addSchedule({schType: 2, schSwitch: -1});
+    });
     <!-- endRemoveIf(!light)-->
 
     $(".button-add-rpnrule").on('click', addRPNRule);
@@ -2083,8 +2211,16 @@ $(function() {
 
     $("textarea").on("dblclick", function() { this.select(); });
 
+    resetOriginals();
+
+    $(".group-settings").each(function() {
+        groupSettingsObserver.observe(this, {childList: true});
+    });
+
     // don't autoconnect when opening from filesystem
-    if (window.location.protocol === "file:") { return; }
+    if (window.location.protocol === "file:") {
+        return;
+    }
 
     // Check host param in query string
     var search = new URLSearchParams(window.location.search),
