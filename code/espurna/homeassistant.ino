@@ -543,7 +543,7 @@ void haSetup() {
 
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-        if (type == MQTT_CONNECT_EVENT) _haSend();
+        if (type == MQTT_CONNECT_EVENT) schedule_function(_haSend);
         if (type == MQTT_DISCONNECT_EVENT) _ha_send_flag = _ha_enabled;
     });
 
