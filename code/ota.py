@@ -329,6 +329,7 @@ def parse_commandline_args():
     parser.add_argument(
         "-t",
         "--timeout",
+        type=int,
         help="how long to wait for mDNS discovery",
         default=DISCOVERY_TIMEOUT,
     )
