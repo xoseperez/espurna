@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0330
 # coding=utf-8
 # -------------------------------------------------------------------------------
 # ESPurna OTA manager
