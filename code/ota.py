@@ -238,7 +238,7 @@ def input_board(devices):
     board = get_board_by_index(devices, index)
 
     # Choose board type if none before
-    if len(board.get("board", "")) == 0:
+    if not board.get("board"):
 
         print()
         count = 1
@@ -257,7 +257,7 @@ def input_board(devices):
         board["board"] = boards[index - 1]
 
     # Choose board size of none before
-    if board.get("size", 0) == 0:
+    if not board.get("size"):
         try:
             board["size"] = int(
                 input("Board memory size (1 for 1M, 2 for 2M, 4 for 4M): ")
@@ -267,7 +267,7 @@ def input_board(devices):
             return None
 
     # Choose IP of none before
-    if len(board.get("ip", "")) == 0:
+    if not board.get("ip"):
         board["ip"] = (
             input("IP of the device to flash (empty for 192.168.4.1): ")
             or "192.168.4.1"
@@ -405,7 +405,7 @@ def main(args):
                 queue.append(board)
 
         # If no boards ask the user
-        if len(queue) == 0:
+        if not len(queue):
             board = input_board(devices)
             if board:
                 board["auth"] = args.password or input(
@@ -415,7 +415,7 @@ def main(args):
                 queue.append(board)
 
         # If still no boards quit
-        if len(queue) == 0:
+        if not len(queue):
             sys.exit(0)
 
         queue.sort(key=lambda dev: dev.get("board", ""))
