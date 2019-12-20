@@ -355,17 +355,21 @@ def discover_devices(args):
         zeroconf.NonUniqueNameException,
     ) as exc:
         print("! error when creating service discovery browser: {}".format(exc))
+        sys.exit(1)
 
     try:
         time.sleep(args.timeout)
     except KeyboardInterrupt:
-        pass
-    finally:
+        sys.exit(1)
+
+    try:
         browser.zc.close()
+    except KeyboardInterrupt:
+        sys.exit(1)
 
     if not listener.devices:
         print("Nothing found!\n")
-        sys.exit(0)
+        sys.exit(1)
 
     devices = listener.devices
 
