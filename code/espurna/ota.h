@@ -49,9 +49,9 @@ bool otaVerifyHeader(uint8_t* data, size_t len) {
         return false;
     }
 
-    // Ensure that we only use flash config that could fit
+    // Make sure that flash config can be recognized and fit the flash
     const auto flash_config = ESP.magicFlashChipSize((data[3] & 0xf0) >> 4);
-    if (flash_config > ESP.getFlashChipRealSize()) {
+    if (flash_config && (flash_config > ESP.getFlashChipRealSize())) {
         return false;
     }
 
