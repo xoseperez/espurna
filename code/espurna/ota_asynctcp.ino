@@ -193,7 +193,7 @@ void _otaClientFrom(const String& url) {
         return;
     }
 
-    auto _url = URL(url);
+    URL _url(url);
     if (!_url.protocol.equals("http") && !_url.protocol.equals("https")) {
         DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
         return;
