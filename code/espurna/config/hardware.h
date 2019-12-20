@@ -2949,7 +2949,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 3
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
