@@ -20,6 +20,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #include "system.h"
 #include "libs/SecureClientHelpers.h"
+#include "ws.h"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 

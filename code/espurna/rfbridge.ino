@@ -8,13 +8,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RF_SUPPORT
 
-#include "relay.h"
-
 #include <queue>
 
 #if RFB_DIRECT
 #include <RCSwitch.h>
 #endif
+
+#include "relay.h"
+#include "ws.h"
 
 // -----------------------------------------------------------------------------
 // DEFINITIONS
