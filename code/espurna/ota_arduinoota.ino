@@ -9,6 +9,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if OTA_ARDUINOOTA_SUPPORT
 
 #include "system.h"
+#include "ws.h"
 
 // TODO: allocate ArduinoOTAClass on-demand, stop using global instance
 

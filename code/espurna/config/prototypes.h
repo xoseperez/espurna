@@ -11,7 +11,6 @@ extern "C" {
 }
 
 #define UNUSED(x) (void)(x)
-#define INLINE inline __attribute__((always_inline))
 
 // -----------------------------------------------------------------------------
 // System
@@ -312,69 +311,6 @@ using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t* 
 using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
-
-// -----------------------------------------------------------------------------
-// WebSockets
-// -----------------------------------------------------------------------------
-#include <queue>
-
-// TODO: pending configuration headers refactoring... here for now
-struct ws_counter_t;
-struct ws_data_t;
-struct ws_debug_t;
-struct ws_callbacks_t;
-
-using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
-using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;
-using ws_on_keycheck_callback_f = std::function<bool(const char * key, JsonVariant& value)>;
-
-using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
-using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
-using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
-
-#if WEB_SUPPORT
-    struct ws_callbacks_t {
-        ws_on_send_callback_list_t on_visible;
-        ws_on_send_callback_list_t on_connected;
-        ws_on_send_callback_list_t on_data;
-
-        ws_on_action_callback_list_t on_action;
-        ws_on_keycheck_callback_list_t on_keycheck;
-
-        ws_callbacks_t& onVisible(ws_on_send_callback_f);
-        ws_callbacks_t& onConnected(ws_on_send_callback_f);
-        ws_callbacks_t& onData(ws_on_send_callback_f);
-        ws_callbacks_t& onAction(ws_on_action_callback_f);
-        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f);
-    };
-
-    ws_callbacks_t& wsRegister();
-
-    void wsSetup();
-    void wsSend(uint32_t client_id, const char* data);
-    void wsSend(uint32_t client_id, JsonObject& root);
-    void wsSend(JsonObject& root);
-    void wsSend(ws_on_send_callback_f callback);
-
-    void wsSend_P(PGM_P data);
-    void wsSend_P(uint32_t client_id, PGM_P data);
-
-    void INLINE wsPost(const ws_on_send_callback_f& callback);
-    void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_f& callback);
-    void INLINE wsPost(const ws_on_send_callback_list_t& callbacks);
-    void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-
-    void INLINE wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-    void INLINE wsPostAll(const ws_on_send_callback_list_t& callbacks);
-
-    void INLINE wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-    void INLINE wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
-    void INLINE wsPostSequence(const ws_on_send_callback_list_t& callbacks);
-
-    bool INLINE wsConnected();
-    bool INLINE wsConnected(uint32_t client_id);
-    bool wsDebugSend(const char* prefix, const char* message);
-#endif
 
 // -----------------------------------------------------------------------------
 // WIFI

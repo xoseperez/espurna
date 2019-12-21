@@ -6,6 +6,7 @@ OTA COMMON FUNCTIONS
 
 #pragma once
 
+#include "ws.h"
 #include <Updater.h>
 
 void otaPrintError() {
@@ -61,7 +62,9 @@ bool otaVerifyHeader(uint8_t* data, size_t len) {
 void otaProgress(size_t bytes, size_t each = 8192u) {
     // Removed to avoid websocket ping back during upgrade (see #1574)
     // TODO: implement as separate from debugging message
-    if (wsConnected()) return;
+    #if WEB_SUPPORT
+        if (wsConnected()) return;
+    #endif
 
     // Telnet and serial will still output things, but slightly throttled
     static size_t last = 0;

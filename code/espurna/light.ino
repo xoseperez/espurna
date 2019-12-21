@@ -11,6 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "tuya.h"
 #include "light.h"
 #include "broker.h"
+#include "ws.h"
 
 #include <Ticker.h>
 #include <Schedule.h>

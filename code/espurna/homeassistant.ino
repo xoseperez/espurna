@@ -12,6 +12,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Schedule.h>
 #include <ArduinoJson.h>
 
+#include "ws.h"
+
 bool _ha_enabled = false;
 bool _ha_send_flag = false;
 
