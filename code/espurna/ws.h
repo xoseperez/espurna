@@ -8,16 +8,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include <ArduinoJson.h>
+
 #include <queue>
+#include <functional>
+#include <vector>
 
 #include "utils.h"
-#include "ws_internal.h"
-
-// TODO: pending configuration headers refactoring... here for now
-struct ws_counter_t;
-struct ws_data_t;
-struct ws_debug_t;
-struct ws_callbacks_t;
 
 using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
 using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;

@@ -16,6 +16,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 #include "ws.h"
+#include "ws_internal.h"
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");
@@ -108,6 +109,32 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 #if DEBUG_WEB_SUPPORT
 
 ws_debug_t _ws_debug(WS_DEBUG_MSG_BUFFER);
+
+void ws_debug_t::send(const bool connected) {
+    if (!connected && flush) {
+        clear();
+        return;
+    }
+
+    if (!flush) return;
+    // ref: http://arduinojson.org/v5/assistant/
+    // {"weblog": {"msg":[...],"pre":[...]}}
+    DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
+
+    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& weblog = root.createNestedObject("weblog");
+
+    JsonArray& msg = weblog.createNestedArray("msg");
+    JsonArray& pre = weblog.createNestedArray("pre");
+
+    for (auto& message : messages) {
+        pre.add(message.first.c_str());
+        msg.add(message.second.c_str());
+    }
+
+    wsSend(root);
+    clear();
+}
 
 bool wsDebugSend(const char* prefix, const char* message) {
     if (!wsConnected()) return false;
