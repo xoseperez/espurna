@@ -38,125 +38,127 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
  - Press up/down for 5 seconds to bring device into AP mode. Press up/down again device will
    restart in normal mode.
 */
-#include <TimeLib.h> //we need this library to make now() working.
 #if KA_CURTAIN_SUPPORT
-
-char _KACurtainBuffer[KA_CURTAIN_BUFFER_SIZE];
-bool _KACurtainNewData = false;
-#define KA_CURTAIN_PORT  KA_CURTAIN_HW_PORT
-
-// -----------------------------------------------------------------------------
-// Private
-// -----------------------------------------------------------------------------
-
-void _KACurtainReceiveUART() {
-    static unsigned char ndx = 0;
-    while (KA_CURTAIN_PORT.available() > 0 && !_KACurtainNewData) {
-        char rc = KA_CURTAIN_PORT.read();
-        if (rc != KA_CURTAIN_TERMINATION) {
-            _KACurtainBuffer[ndx] = rc;
-            if (ndx < KA_CURTAIN_BUFFER_SIZE - 1) ndx++;
-        } else {
-            _KACurtainBuffer[ndx] = '\0';
-            _KACurtainNewData = true;
-            ndx = 0;
+  #include <TimeLib.h> //we need this library to make now() working.
+  
+  char _KACurtainBuffer[KA_CURTAIN_BUFFER_SIZE];
+  bool _KACurtainNewData = false;
+  #define KA_CURTAIN_PORT  KA_CURTAIN_HW_PORT
+  
+  // -----------------------------------------------------------------------------
+  // Private
+  // -----------------------------------------------------------------------------
+  
+  void _KACurtainReceiveUART() {
+      static unsigned char ndx = 0;
+      while (KA_CURTAIN_PORT.available() > 0 && !_KACurtainNewData) {
+          char rc = KA_CURTAIN_PORT.read();
+          if (rc != KA_CURTAIN_TERMINATION) {
+              _KACurtainBuffer[ndx] = rc;
+              if (ndx < KA_CURTAIN_BUFFER_SIZE - 1) ndx++;
+          } else {
+              _KACurtainBuffer[ndx] = '\0';
+              _KACurtainNewData = true;
+              ndx = 0;
+          }
+      }
+  }
+  
+  void _kacurtainResult() {
+    if (_KACurtainNewData == true) {
+      #if MQTT_SUPPORT
+        if (MQTT_SUPPORT) {
+            mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
         }
+      #endif // MQTT_SUPPORT
+      if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
+        wifiStartAP();
+      } else if (String(_KACurtainBuffer).indexOf("exitESPTOUCH") > 0 ) {
+        deferredReset(100, CUSTOM_RESET_HARDWARE);
+      }
     }
-}
-
-void _kacurtainResult() {
-  if (_KACurtainNewData == true) {
-    #if MQTT_SUPPORT
-    mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
-    #endif // MQTT_SUPPORT
-    if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
-      wifiStartAP();
-    } else if (String(_KACurtainBuffer).indexOf("exitESPTOUCH") > 0 ) {
-      deferredReset(100, CUSTOM_RESET_HARDWARE);
+    _KACurtainNewData = false; //if MQTT send or no MQTT support do nothing with the new data.
+  }
+  
+  void _KACurtainActionSelect(const char * message) {
+    if (String(message) == "pause") {
+      _KACurtainPause(message);
+    } else {
+      _KACurtainSetclose(message);
     }
   }
-  _KACurtainNewData = false; //if MQTT send or no MQTT support do nothing with the new data.
-}
-
-void _KACurtainActionSelect(const char * message) {
-  if (String(message) == "pause") {
-    _KACurtainPause(message);
-  } else {
-    _KACurtainSetclose(message);
+  
+  void _KACurtainPause(const char * message) {
+    // Tell N76E003AT20 to stop moving and report current position
+    char tx_buffer[80];
+    snprintf_P(tx_buffer, sizeof(tx_buffer), PSTR("AT+UPDATE=\"sequence\":\"%d%03d\",\"switch\":\"%s\""),
+     now(), millis()%1000, message);
+    _KACurtainSend(tx_buffer);
   }
-}
-
-void _KACurtainPause(const char * message) {
-  // Tell N76E003AT20 to stop moving and report current position
-  char tx_buffer[80];
-  snprintf_P(tx_buffer, sizeof(tx_buffer), PSTR("AT+UPDATE=\"sequence\":\"%d%03d\",\"switch\":\"%s\""),
-   now(), millis()%1000, message);
-  _KACurtainSend(tx_buffer);
-}
-
-void _KACurtainSetclose(const char * message) {
-  // Tell N76E003AT20 to go to position X (based on X N76E003AT20 decides to go up or down)
-  char tx_buffer[80];
-  // %d   = long / uint8_t
-  // %03d = long / uint8_t - last 3 digits
-  // %s   = char
-  snprintf_P(tx_buffer, sizeof(tx_buffer), PSTR("AT+UPDATE=\"sequence\":\"%d%03d\",\"switch\":\"%s\",\"setclose\":%s"),
-   now(), millis()%1000, "off", message);
-  _KACurtainSend(tx_buffer);
-}
-
-void _KACurtainSendOk() {
-  // Confirm N76E003AT20 message received and stop repeating
-  if (_KACurtainNewData == true) {
-    KA_CURTAIN_PORT.print("AT+SEND=ok");
+  
+  void _KACurtainSetclose(const char * message) {
+    // Tell N76E003AT20 to go to position X (based on X N76E003AT20 decides to go up or down)
+    char tx_buffer[80];
+    // %d   = long / uint8_t
+    // %03d = long / uint8_t - last 3 digits
+    // %s   = char
+    snprintf_P(tx_buffer, sizeof(tx_buffer), PSTR("AT+UPDATE=\"sequence\":\"%d%03d\",\"switch\":\"%s\",\"setclose\":%s"),
+     now(), millis()%1000, "off", message);
+    _KACurtainSend(tx_buffer);
+  }
+  
+  void _KACurtainSendOk() {
+    // Confirm N76E003AT20 message received and stop repeating
+    if (_KACurtainNewData == true) {
+      KA_CURTAIN_PORT.print("AT+SEND=ok");
+      KA_CURTAIN_PORT.write(0x1B);
+      KA_CURTAIN_PORT.flush();
+    }
+  }
+  
+  void _KACurtainSend(const char * tx_buffer) {
+    KA_CURTAIN_PORT.print(tx_buffer);
     KA_CURTAIN_PORT.write(0x1B);
     KA_CURTAIN_PORT.flush();
   }
-}
-
-void _KACurtainSend(const char * tx_buffer) {
-  KA_CURTAIN_PORT.print(tx_buffer);
-  KA_CURTAIN_PORT.write(0x1B);
-  KA_CURTAIN_PORT.flush();
-}
-
-#if MQTT_SUPPORT
-void _KACurtainCallback(unsigned int type, const char * topic, const char * payload) {
-    if (type == MQTT_CONNECT_EVENT) {
-        mqttSubscribe(MQTT_TOPIC_CURTAINOUT);
-    }
-    if (type == MQTT_MESSAGE_EVENT) {
-        // Match topic
-        String t = mqttMagnitude((char *) topic);
-        if (t.equals(MQTT_TOPIC_CURTAINOUT)) {
-          _KACurtainActionSelect(payload);
+  
+  #if MQTT_SUPPORT
+    void _KACurtainCallback(unsigned int type, const char * topic, const char * payload) {
+        if (type == MQTT_CONNECT_EVENT) {
+            mqttSubscribe(MQTT_TOPIC_CURTAINOUT);
+        }
+        if (type == MQTT_MESSAGE_EVENT) {
+            // Match topic
+            String t = mqttMagnitude((char *) topic);
+            if (t.equals(MQTT_TOPIC_CURTAINOUT)) {
+              _KACurtainActionSelect(payload);
+            }
         }
     }
-}
-#endif // MQTT_SUPPORT
-
-// -----------------------------------------------------------------------------
-// SETUP & LOOP
-// -----------------------------------------------------------------------------
-
-void _kacurtainLoop() {
-    _KACurtainReceiveUART();
-    _KACurtainSendOk();
-    _kacurtainResult();
-}
-
-void kacurtainSetup() {
-
-    // Init port
-    KA_CURTAIN_PORT.begin(KA_CURTAIN_BAUDRATE);
-
-    #if MQTT_SUPPORT
-    // Register MQTT callbackj
-    mqttRegister(_KACurtainCallback);
-    #endif // MQTT_SUPPORT
-
-    // Register loop
-    espurnaRegisterLoop(_kacurtainLoop);
-}
-
+  #endif // MQTT_SUPPORT
+  
+  // -----------------------------------------------------------------------------
+  // SETUP & LOOP
+  // -----------------------------------------------------------------------------
+  
+  void _kacurtainLoop() {
+      _KACurtainReceiveUART();
+      _KACurtainSendOk();
+      _kacurtainResult();
+  }
+  
+  void kacurtainSetup() {
+  
+      // Init port
+      KA_CURTAIN_PORT.begin(KA_CURTAIN_BAUDRATE);
+  
+      #if MQTT_SUPPORT
+        // Register MQTT callbackj
+        mqttRegister(_KACurtainCallback);
+      #endif // MQTT_SUPPORT
+  
+      // Register loop
+      espurnaRegisterLoop(_kacurtainLoop);
+  }
+  
 #endif // KA_CURTAIN_SUPPORT
