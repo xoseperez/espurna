@@ -113,17 +113,15 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
     // Confirm N76E003AT20 message received and stop repeating
     if (_KACurtainNewData == true) {
       KA_CURTAIN_PORT.print("AT+SEND=ok");
-      KA_CURTAIN_PORT.write(0x1B);
+      KA_CURTAIN_PORT.print(KA_CURTAIN_TERMINATION);
       KA_CURTAIN_PORT.flush();
-      KA_CURTAIN_PORT.disable();
     }
   }
   
   void _KACurtainSend(const char * tx_buffer) {
     KA_CURTAIN_PORT.print(tx_buffer);
-    KA_CURTAIN_PORT.write(0x1B);
+    KA_CURTAIN_PORT.print(KA_CURTAIN_TERMINATION);
     KA_CURTAIN_PORT.flush();
-    KA_CURTAIN_PORT.disable();
   }
   
   #if MQTT_SUPPORT
