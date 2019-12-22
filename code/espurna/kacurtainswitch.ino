@@ -39,11 +39,15 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
    restart in normal mode.
 */
 #if KA_CURTAIN_SUPPORT
+  #define KA_CURTAIN_PORT         Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
+  #define KA_CURTAIN_BAUDRATE     19200       // Serial speed
+  #define KA_CURTAIN_TERMINATION  '\e'        // Termination character
+  #define KA_CURTAIN_BUFFER_SIZE  100         // UART buffer size
+  #define DEBUG_SERIAL_SUPPORT    0           // Disable UART noise
   #include <TimeLib.h> //we need this library to make now() working.
   
   char _KACurtainBuffer[KA_CURTAIN_BUFFER_SIZE];
   bool _KACurtainNewData = false;
-  #define KA_CURTAIN_PORT  KA_CURTAIN_HW_PORT
   
   // -----------------------------------------------------------------------------
   // Private
@@ -68,7 +72,7 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
     if (_KACurtainNewData == true) {
       #if MQTT_SUPPORT
         if (MQTT_SUPPORT) {
-            mqttSend(MQTT_TOPIC_CURTAININ, _KACurtainBuffer);
+            mqttSend(MQTT_TOPIC_CURTAIN, _KACurtainBuffer);
         }
       #endif // MQTT_SUPPORT
       if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
@@ -130,7 +134,7 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
         if (type == MQTT_MESSAGE_EVENT) {
             // Match topic
             String t = mqttMagnitude((char *) topic);
-            if (t.equals(MQTT_TOPIC_CURTAINOUT)) {
+            if (t.equals(MQTT_TOPIC_CURTAIN)) {
               _KACurtainActionSelect(payload);
             }
         }
