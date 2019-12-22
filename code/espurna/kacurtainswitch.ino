@@ -71,9 +71,7 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
   void _kacurtainResult() {
     if (_KACurtainNewData == true) {
       #if MQTT_SUPPORT
-        if (MQTT_SUPPORT) {
             mqttSend(MQTT_TOPIC_CURTAIN, _KACurtainBuffer);
-        }
       #endif // MQTT_SUPPORT
       if (String(_KACurtainBuffer).indexOf("enterESPTOUCH") > 0 ) {
         wifiStartAP();
