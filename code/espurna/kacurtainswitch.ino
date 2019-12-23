@@ -43,7 +43,6 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
   #define KA_CURTAIN_BAUDRATE     19200       // Serial speed
   #define KA_CURTAIN_TERMINATION  '\e'        // Termination character
   #define KA_CURTAIN_BUFFER_SIZE  100         // UART buffer size
-  #define DEBUG_SERIAL_SUPPORT    0           // Disable UART noise
   #include <TimeLib.h> //we need this library to make now() working.
   
   char _KACurtainBuffer[KA_CURTAIN_BUFFER_SIZE];
