@@ -126,7 +126,7 @@ it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
   #if MQTT_SUPPORT
     void _KACurtainCallback(unsigned int type, const char * topic, const char * payload) {
         if (type == MQTT_CONNECT_EVENT) {
-            mqttSubscribe(MQTT_TOPIC_CURTAINOUT);
+            mqttSubscribe(MQTT_TOPIC_CURTAIN);
         }
         if (type == MQTT_MESSAGE_EVENT) {
             // Match topic
