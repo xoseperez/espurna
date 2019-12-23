@@ -3,9 +3,20 @@
 <head>
     <title>ESPurna <%= process.env.VUE_APP_VERSION %></title>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" id="vp" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <script>
+        function viewport() {
+            if (screen.width < 500) {
+                let e = screen.width / 500;
+                document.getElementById("vp").setAttribute("content", "width=500, maximum-scale=2.0, minimum-scale=" + e)
+            }
+        }
+        viewport(), window.onresize = viewport;
+    </script>
     <link rel="shortcut icon" type="image/x-icon" href="${require('./icons/favicon32.ico')}" sizes="32x32,16x16"/>
-    <% if (process.env.NODE_ENV !== 'production') { %><link rel="manifest" href="./manifest.json"><% } %>
+    <% if (process.env.NODE_ENV !== 'production') { %>
+    <link rel="manifest" href="./manifest.json">
+    <% } %>
 </head>
 <body>
 <div id="app"></div>

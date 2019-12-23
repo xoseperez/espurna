@@ -13,7 +13,7 @@ Ws.prototype = {
     },
     connect(host, cb) {
         // #!if ENV === 'development'
-        if (!host || host.match('localhost')) {
+        if (!host || host.match('127.0.0.1')) {
             //Start mocking
             this.ws = mockServer();
             this.ws.onmessage = cb;

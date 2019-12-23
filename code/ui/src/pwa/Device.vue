@@ -1,34 +1,34 @@
 <template>
     <el-card class="device" shadow="hover">
         <el-dialog title="Authentication"
+                   custom-class="authentication-dialog"
                    :visible.sync="authDialogVisible"
                    width="30%"
                    append-to-body>
             <el-row>
                 <el-col>
-                    <label>
-                        Username
+                    <label> Username
                         <el-input v-model="username" placeholder="Username"/>
                     </label>
                 </el-col>
             </el-row>
             <el-row>
                 <el-col>
-                    <label>
-                        Password
+                    <label> Password
                         <el-input v-model="password" show-password placeholder="Password"/>
                     </label>
                 </el-col>
             </el-row>
             <span slot="footer" class="dialog-footer">
                 <el-button @click="authDialogVisible = false">Cancel</el-button>
-                <el-button type="primary" @click="configure">Confirm</el-button>
+                <el-button type="primary" @click="testAuth">Confirm</el-button>
             </span>
         </el-dialog>
 
         <el-dialog title="Upgrade"
                    :visible.sync="upgradeDialogVisible"
-                   width="50%"
+                   width="40%"
+                   center
                    append-to-body>
             <el-upload ref="upload" :action="'http://'+ip+'/upgrade'" accept=".bin"
                        :before-upload="beforeUpload"
@@ -45,10 +45,14 @@
         </el-dialog>
         <div slot="header" class="clearfix">
             <el-button-group class="buttons">
-                <el-button type="info" title="Configure" icon="el-icon-setting"
+                <el-button type="success" title="Authentication" icon="el-icon-unlock"
                            size="small"
                            circle
                            @click="authDialogVisible = true"/>
+                <el-button type="info" title="Configure" icon="el-icon-setting"
+                           size="small"
+                           circle
+                           @click="configure"/>
                 <el-button type="warning" title="Upgrade" circle
                            icon="el-icon-upload" size="small"
                            @click="upgradeDialogVisible = true"/>
@@ -88,6 +92,10 @@
 <script>
     import compareVersions from "compare-version";
     import mixColors from "./mix-colors";
+
+    // #!if ENV === 'development'
+    import fetch from "./mock-device";
+    // #!endif
 
     export default {
         components: {},
@@ -135,7 +143,6 @@
         },
         computed: {
             canUpgrade() {
-                console.log(this.$refs.upload);
                 return this.$refs && this.$refs.upload && this.$refs.upload.fileList;
             },
             wifiPercent() {
@@ -150,6 +157,40 @@
             }
         },
         methods: {
+            testAuth() {
+                let loading = this.$loading({
+                    target: '.authentication-dialog'
+                });
+                const success = () => {
+                    this.$notify.success({
+                        title: 'Authentication successful',
+                        message: this.hostname
+                    })
+                };
+                const fail = () => {
+                    this.$notify.error({
+                        title: 'Authentication failed',
+                        message: this.hostname
+                    })
+                };
+                fetch('http://' + this.ip + '/auth', {
+                    headers: new Headers({
+                        'Authorization': `Basic ${btoa(`${this.username}:${this.password}`)}`,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }),
+                }).then((resp) => {
+                    loading.close();
+                    if (resp.ok) {
+                        this.authDialogVisible = false;
+                        success();
+                    } else {
+                        fail();
+                    }
+                }).catch(() => {
+                    loading.close();
+                    fail();
+                });
+            },
             compareVersions(a, b) {
                 return compareVersions(a, b);
             },
@@ -196,6 +237,8 @@
 
         .el-card__body {
             font-size: .9em;
+            padding-top: 5px;
+            padding-bottom: 10px;
         }
 
         .name {
@@ -219,6 +262,7 @@
 
         .description {
             padding-top: 10px;
+            clear: both;
         }
 
         .buttons {

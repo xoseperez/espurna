@@ -4,8 +4,6 @@
         <RepeaterRow v-for="(row, i) in values"
                      :key="row.key"
                      :value="row.value"
-                     :row="row"
-                     :i="i"
                      @input="(val) => $emit('input', [...values].splice(i,1,val))">
             <slot name="default" :value="row.value" :k="i" :row="row" :remove="() => onRemove(row.key)"></slot>
             <template v-if="!locked" #append>
@@ -17,7 +15,7 @@
             </template>
         </RepeaterRow>
         <!--/transition-group-->
-        <slot v-if="!locked" name="btnAdd" :click="onAdd">
+        <slot v-if="!locked && canAdd" name="btnAdd" :click="onAdd">
             <Btn @click="onAdd">
                 Add
             </Btn>
@@ -89,14 +87,12 @@
 
                 if (this.value) {
                     this.value.forEach((v) => {
-                        /* eslint-disable-next-line vue/no-side-effects-in-computed-properties */
                         let row = {key: this.key++, value: v};
                         this.$emit('created', {row});
                         values.push(row);
                     })
                 } else if (this.name && this.form.values[this.name]) {
                     this.form.values[this.name].forEach((v) => {
-                        /* eslint-disable-next-line vue/no-side-effects-in-computed-properties */
                         let row = {key: this.key++, value: v};
                         this.$emit('created', {row});
                         values.push(row);
@@ -105,10 +101,11 @@
                 this.values = values;
             },
             onAdd(val) {
+                val = val instanceof Event ? undefined : val; // If called from a click handler, ignore the property
                 if (this.canAdd) {
                     let row = {
                         key: this.key++,
-                        value: typeof val !== 'undefined' ? val : {}
+                        value: val !== undefined ? val : {}
                     };
                     this.$emit('created', {row});
                     this.values.push(row);

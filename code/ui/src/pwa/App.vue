@@ -16,7 +16,7 @@
                 <!-- <Button>Add device manually</Button>-->
             </el-row>
             <el-row :gutter="12" class="devices">
-                <el-col v-for="(device, ip) in devices" :key="ip" :span="8">
+                <el-col v-for="(device, ip) in devices" :key="ip" :span="8" :xs="24" :sm="12">
                     <Device :ip="ip"
                             v-bind="device"
                             @configure="() => singleAddress = ip"/>
@@ -32,11 +32,21 @@
     import App from "../App";
     import Device from "./Device";
 
+    // #!if ENV === 'development'
+    import fetch from "./mock-device";
+    // #!endif
+
     export default {
         components: {Icon, Device, App},
         data() {
             return {
+                /* eslint-disable vue/no-dupe-keys */
+                // #!if ENV === 'development'
+                scanIp: "127.0.0.1",
+                // #!else
                 scanIp: "192.168.1.1-255",
+                // #!endif
+                /* eslint-enable */
                 userIp: "",
                 singleAddress: null,
                 devices: {}
@@ -139,6 +149,9 @@
     .el-input input.el-input__inner {
         margin: 0;
     }
+    body .el-dialog--center .el-dialog__body {
+        text-align: center;
+    }
 
     .el-col > .el-button {
         width: 100%;
@@ -157,9 +170,11 @@
     .pwa-content {
         transform: translate(-50%, -50%);
         position: absolute;
-        top: 45%;
+        top: 50%;
         left: 50%;
-        max-width: 1000px;
+        max-width: 1200px;
+        max-height: 100vh;
+        padding: 10px;
         width: 100%;
         font-family: Roboto, sans-serif;
 
@@ -180,6 +195,9 @@
         }
 
         .devices {
+            .el-col {
+                margin-bottom: 10px;
+            }
             /*display: flex;
             flex-wrap: wrap;
             margin: 0 auto;
