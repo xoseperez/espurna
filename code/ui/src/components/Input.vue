@@ -53,7 +53,7 @@
                 required: false
             },
             value: {
-                type: [String, Number, Array],
+                type: null,
                 required: false
             },
             on: {
@@ -68,7 +68,7 @@
                 type: Array
             },
             default: {
-                type: [String, Number, Array],
+                type: null,
                 default: null
             },
             unit: {

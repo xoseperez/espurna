@@ -14,7 +14,7 @@ export default (address, opts) => {
                                             device: "ITEAD_SONOFF_SV",
                                             hostname: "Espurna device",
                                             description: "A mocked espurna device",
-                                            free_size: 50408,
+                                            free_size: 504080,
                                             wifi: "MyWifi",
                                             rssi: -(Math.random() * 50 + 40)
                                         }

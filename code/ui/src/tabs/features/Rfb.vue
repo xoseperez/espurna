@@ -181,9 +181,6 @@
         Table
        -------------------------------------------------------------------------- */
 
-    .right {
-        text-align: right;
-    }
 
     table.dataTable.display tbody td {
         text-align: center;

@@ -15,8 +15,8 @@
             <div class="page">
                 <fieldset>
                     <Row>
-                        <C class="right pd"><label for="adminPass1">New Password</label></C>
-                        <C class="left pd">
+                        <C class="align-right pd"><label for="adminPass1">New Password</label></C>
+                        <C class="align-left pd">
                             <Inpt id="adminPass1"
                                   ref="adminPass1"
                                   name="adminPass1"
@@ -40,8 +40,8 @@
                     </Row>
 
                     <Row>
-                        <C class="right pd"><label for="adminPass2">Repeat password</label></C>
-                        <C class="left pd">
+                        <C class="align-right pd"><label for="adminPass2">Repeat password</label></C>
+                        <C class="align-left pd">
                             <Inpt id="adminPass2"
                                   ref="adminPass2"
                                   name="adminPass2"
@@ -56,7 +56,7 @@
                         </C>
                     </Row>
                     <Row>
-                        <C class="right">
+                        <C class="align-right">
                             <Btn name="generate-pwd" color="secondary"
                                  title="Generate password based on password policy" @click="generatePassword">
                                 Generate

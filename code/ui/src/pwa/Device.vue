@@ -31,12 +31,17 @@
                    center
                    append-to-body>
             <el-upload ref="upload" :action="'http://'+ip+'/upgrade'" accept=".bin"
+                       :multiple="false"
                        :before-upload="beforeUpload"
+                       :on-change="fileChange"
+                       :on-remove="fileChange"
                        :auto-upload="false"
                        drag>
                 <i class="el-icon-upload"></i>
                 <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
-                <div slot="tip" class="el-upload__tip">.bin file with a size less than {{freeSize/1024}}Kb</div>
+                <div slot="tip" class="el-upload__tip">
+                    .bin file with a size less than {{parseInt(free_size/1024)}}Kb
+                </div>
             </el-upload>
             <span slot="footer" class="dialog-footer">
                 <el-button @click="upgradeDialogVisible = false">Cancel</el-button>
@@ -120,7 +125,9 @@
                 type: String,
                 default: process.env.VUE_APP_VERSION
             },
-            freeSize: {
+            /* eslint-disable vue/prop-name-casing */
+            free_size: {
+                /* eslint-enable */
                 type: Number,
                 default: 0
             },
@@ -135,6 +142,8 @@
         },
         data() {
             return {
+                canUpgrade: false,
+                isMounted: false,
                 authDialogVisible: false,
                 upgradeDialogVisible: false,
                 username: 'admin',
@@ -142,9 +151,6 @@
             }
         },
         computed: {
-            canUpgrade() {
-                return this.$refs && this.$refs.upload && this.$refs.upload.fileList;
-            },
             wifiPercent() {
                 if (!this.rssi) {
                     return 0;
@@ -156,7 +162,25 @@
                 return mixColors('#479fd6', '#db3a22', this.wifiPercent);
             }
         },
+        mounted() {
+            this.isMounted = true;
+        },
         methods: {
+            fileChange(file, fileList) {
+                if (fileList.length > 1) {
+                    fileList.splice(0, fileList.length - 1);
+                }
+                if (fileList.length > 0 && fileList[0].size > this.free_size) {
+                    this.$notify.error({
+                        title: "Not enough space",
+                        message:
+                            'There is not enough space on the board to upgrade the firmware over-the-air, you will need to do a two step update',
+                        duration: 0
+                    });
+                    //TODO check if two step update possible with the space as well and do it automatically
+                }
+                this.canUpgrade = fileList.length > 0 && fileList[0].size < this.free_size;
+            },
             testAuth() {
                 let loading = this.$loading({
                     target: '.authentication-dialog'
@@ -207,7 +231,7 @@
             beforeUpload(file) {
                 console.log(file.type);
 
-                const hasEnoughSpace = file.size < this.freeSize;
+                const hasEnoughSpace = file.size < this.free_size;
 
                 if (!hasEnoughSpace) {
                     this.$message.error('There is not enough space on the board to upgrade the firmware OTA, consider doing a two step update');
@@ -221,6 +245,20 @@
 </script>
 
 <style lang="less">
+    .el-upload-list {
+        margin-top: 10px !important;
+
+        .el-upload-list__item:first-child {
+            margin-top: 0;
+        }
+
+        .el-list-enter, .el-list-leave-active {
+            opacity: 0;
+            transform: none;
+        }
+    }
+
+
     .device {
         display: flex;
         flex-wrap: wrap;

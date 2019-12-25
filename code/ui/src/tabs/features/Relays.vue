@@ -49,7 +49,7 @@
                                               min="0"
                                               step="100"
                                               max="1000"
-                                              tabindex="6"/>
+                                              tabindex="6" unit="ms"/>
                                         <Hint>
                                             Delay in milliseconds to detect a double click (from 0 to 1000ms).<br> The
                                             lower
@@ -199,7 +199,7 @@
                             </C>
 
                             <C><label>Action</label></C>
-                            <C no-wrap>
+                            <C no-wrap stretch>
                                 <Inpt type="select" name="action" :options="['Turn OFF', 'Turn ON', 'Toggle']"
                                       placeholder="Select an action"/>
                                 <Inpt type="select" name="relay" :options="relayOptions" placeholder="Select a switch"/>
@@ -208,12 +208,14 @@
 
                             <C><label>Enabled</label></C>
                             <C>
-                                <Inpt type="switch" name="enabled"/>
+                                <Inpt type="switch" name="enabled" :default="true"/>
                             </C>
                         </Row>
                     </template>
-                    <template #btnRemove="tpl">
-                        <Btn name="del-schedule" color="danger" @click="tpl.click">Delete schedule</Btn>
+                    <template>
+                        <Btn #btn-remove="tpl" name="del-schedule" color="danger" @click="tpl.click">
+                            Delete schedule
+                        </Btn>
                     </template>
                     <template #btnAdd="tpl">
                         <Btn name="add-switch-schedule" @click="tpl.click">Add switch schedule</Btn>

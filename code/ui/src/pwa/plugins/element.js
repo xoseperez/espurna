@@ -5,11 +5,14 @@ import locale from 'element-ui/lib/locale'
 
 locale.use(lang);
 
-[Loading, Button, ButtonGroup, Col, Row, Form, Input, Divider, Card, Dialog, Progress, Message, Upload, Notification].forEach((v) => {
+[Loading, Button, ButtonGroup, Col, Row, Form, Input, Divider, Card, Dialog, Progress, Upload].forEach((v) => {
     Vue.use(v);
 });
 
 Vue.prototype.$notify = Notification;
 Vue.prototype.$message = Message;
+Vue.prototype.$log = (msg) => {
+    console.log(msg);
+};
 
 import './theme.scss'

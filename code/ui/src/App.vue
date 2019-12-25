@@ -508,7 +508,7 @@
         }
     }
 
-    .right {
+    .align-right {
         text-align: right;
 
         &.pd {
@@ -516,7 +516,7 @@
         }
     }
 
-    .left {
+    .align-left {
         text-align: left;
 
         &.pd {
@@ -569,7 +569,7 @@
         margin: .5em 0 1em;
     }
 
-    .right {
+    .align-right {
         text-align: right;
     }
 
