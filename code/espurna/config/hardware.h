@@ -4224,7 +4224,7 @@
 
     // Info
     #define MANUFACTURER                "KOGAN"
-    #define DEVICE                      "SMARTER_HOME_PLUG_POW"
+    #define DEVICE                      "SMARTER_HOME_PLUG_W_POW"
 
     // Buttons
     #define BUTTON1_PIN                 0
