@@ -101,6 +101,8 @@ void _wifiConfigure() {
     #endif
   
     jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
+    jw.setPeriodicScanInterval(getSetting("wifiScanIntvl", WIFI_PERIODIC_SCAN_INTERVAL).toInt());
+    jw.setRSSIThreshold(getSetting("wifiScanRSSI", WIFI_PERIODIC_SCAN_RANGE).toInt());
 
     unsigned char sleep_mode = getSetting("wifiSleep", WIFI_SLEEP_MODE).toInt();
     sleep_mode = constrain(sleep_mode, 0, 2);
@@ -341,6 +343,11 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
     if (code == MESSAGE_FOUND_NETWORK) {
         DEBUG_MSG_P(PSTR("[WIFI] %s\n"), parameter);
+    }
+
+    if (code == MESSAGE_FOUND_BETTER_NETWORK) {
+        DEBUG_MSG_P(PSTR("[WIFI] Reconnecting to %s\n"), parameter);
+        WiFi.disconnect();
     }
 
     // -------------------------------------------------------------------------

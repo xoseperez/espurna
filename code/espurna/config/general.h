@@ -461,6 +461,14 @@
 #define WIFI_SCAN_NETWORKS          1                   // Perform a network scan before connecting
 #endif
 
+#ifndef WIFI_PERIODIC_SCAN_INTERVAL
+#define WIFI_PERIODIC_SCAN_INTERVAL  0                  // Perform a network scan while connected to find a better suited network. (time value in ms)
+#endif
+
+#ifndef WIFI_PERIODIC_SCAN_RANGE
+#define WIFI_PERIODIC_SCAN_RANGE     20                 // Minimum RSSI difference of a better network (absolute number, 0...127)
+#endif
+
 // Optional hardcoded configuration (up to 2 networks)
 #ifndef WIFI1_SSID
 #define WIFI1_SSID                  ""
