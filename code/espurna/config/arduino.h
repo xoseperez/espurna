@@ -101,6 +101,7 @@
 //#define LITESUN_LA_WF3
 //#define LOHAS_E27_9W
 //#define LOHAS_E26_A19
+//#define TECKIN_SB53
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
 //#define LUANI_HVIO
