@@ -4212,6 +4212,54 @@
     #define SENSOR_POWER_UNITS          POWER_WATTS
 
 // -----------------------------------------------------------------------------
+// Kogan Smarter Home Plug with Energy Meter (Australia)
+// Product code: KASPEMHA
+// https://www.kogan.com/au/buy/kogan-smarterhome-smart-plug-energy-meter/
+// Reflashing from original Tuya firmware
+// to thirdparty firmware like espurna by:
+// https://github.com/ct-Open-Source/tuya-convert
+// -----------------------------------------------------------------------------
+
+#elif defined(KOGAN_SMARTER_HOME_PLUG_W_POW)
+
+    // Info
+    #define MANUFACTURER                "KOGAN"
+    #define DEVICE                      "SMARTER_HOME_PLUG_POW"
+
+    // Buttons
+    #define BUTTON1_PIN                 0
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  14
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LED
+    // Red
+    #define LED1_PIN                    13
+    #define LED1_MODE                   LED_MODE_WIFI
+    #define LED1_PIN_INVERSE            1
+    // Blue connected to relay
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             5
+    #define HLW8012_CF_PIN              4
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       282060
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+    #define SENSOR_ENERGY_UNITS         ENERGY_KWH
+    #define SENSOR_POWER_UNITS          POWER_WATTS
+
+// -----------------------------------------------------------------------------
 // LSC Smart LED Light Strip (Smart CXonnect Series) available ACTION (Germany)
 // https://www.action.com/de-de/p/lsc-smart-connect-intelligenter-multicolor-led-strip-/
 // Reflashing from original Tuya firmware
