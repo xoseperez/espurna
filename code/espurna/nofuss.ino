@@ -9,6 +9,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if NOFUSS_SUPPORT
 
 #include "NoFUSSClient.h"
+#include "ws.h"
 
 unsigned long _nofussLastCheck = 0;
 unsigned long _nofussInterval = 0;
@@ -153,6 +154,7 @@ void nofussSetup() {
             #endif
             // TODO: NoFUSS will reset the board after this callback returns.
             //       Maybe this should be optional
+            customResetReason(CUSTOM_RESET_NOFUSS);
             nice_delay(100);
         }
 

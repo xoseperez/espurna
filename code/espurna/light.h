@@ -5,6 +5,8 @@
 #pragma once
 
 namespace Light {
+    constexpr const size_t CHANNELS_MAX = 5;
+
     constexpr const long VALUE_MIN = LIGHT_MIN_VALUE;
     constexpr const long VALUE_MAX = LIGHT_MAX_VALUE;
 

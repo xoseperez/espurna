@@ -299,16 +299,16 @@
 #define HEARTBEAT_REPORT_INTERVAL   0
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_RANGE
-#define HEARTBEAT_REPORT_RANGE      1
-#else
-#define HEARTBEAT_REPORT_RANGE      0
+#ifndef HEARTBEAT_REPORT_RANGE
+#define HEARTBEAT_REPORT_RANGE         THERMOSTAT_SUPPORT
 #endif
 
-#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_REMOTE_TEMP
-#define HEARTBEAT_REPORT_REMOTE_TEMP 1
-#else
-#define HEARTBEAT_REPORT_REMOTE_TEMP 0
+#ifndef HEARTBEAT_REPORT_REMOTE_TEMP
+#define HEARTBEAT_REPORT_REMOTE_TEMP   THERMOSTAT_SUPPORT
+#endif
+
+#ifndef HEARTBEAT_REPORT_BSSID
+#define HEARTBEAT_REPORT_BSSID       0
 #endif
 
 //------------------------------------------------------------------------------
@@ -428,11 +428,6 @@
 #ifndef RELAY_MQTT_TOGGLE
 #define RELAY_MQTT_TOGGLE           "2"
 #endif
-
-// TODO Only single EEPROM address is used to store state, which is 1 byte
-// Relay status is stored using bitfield.
-// This means that, atm, we are only storing the status of the first 8 relays.
-#define RELAY_SAVE_MASK_MAX         8
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -611,8 +606,8 @@
 #define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
 #endif
 
-// This is not working at the moment!!
-// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core 2.4.0
+// Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
+// XXX: This is not working at the moment!! Pending https://github.com/me-no-dev/ESPAsyncTCP/issues/95
 #ifndef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED             0           // Use HTTPS web interface
 #endif
@@ -674,6 +669,10 @@
 #define API_ENABLED                 0           // Do not enable API by default
 #endif
 
+#ifndef API_KEY
+#define API_KEY                     ""          // Do not enable API by default. WebUI will automatically generate the key
+#endif
+
 #ifndef API_RESTFUL
 #define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
                                                 // Setting this to 0 will allow using GET to change relays, for instance
@@ -701,11 +700,11 @@
 #endif
 
 #ifndef LLMNR_SUPPORT
-#define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires 2.4.0
+#define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires Core version >= 2.4.0
 #endif
 
 #ifndef NETBIOS_SUPPORT
-#define NETBIOS_SUPPORT             0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires 2.4.0
+#define NETBIOS_SUPPORT             0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires Core version >= 2.4.0
 #endif
 
 #ifndef SSDP_SUPPORT
@@ -790,10 +789,6 @@
 #define OTA_CLIENT                  OTA_CLIENT_ASYNCTCP     // Terminal / MQTT OTA support
                                                             // OTA_CLIENT_ASYNCTCP   (ESPAsyncTCP library)
                                                             // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
-#endif
-
-#ifndef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
-#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE    1   // Use old HTTPUpdate API by default
 #endif
 
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
@@ -1051,9 +1046,11 @@
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
 #define MQTT_TOPIC_SSID             "ssid"
+#define MQTT_TOPIC_BSSID            "bssid"
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"
+#define MQTT_TOPIC_TIMESTAMP        "timestamp"
 #define MQTT_TOPIC_FREEHEAP         "freeheap"
 #define MQTT_TOPIC_VCC              "vcc"
 #ifndef MQTT_TOPIC_STATUS
@@ -1362,7 +1359,7 @@
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
-// When THINGSPEAK_USE_ASYNC is 1, requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core >= 2.4.0.
+// When THINGSPEAK_USE_ASYNC is 1, requires EspAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and ESP8266 Arduino Core >= 2.4.0.
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
@@ -1388,11 +1385,31 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
+#define SCHEDULER_SUPPORT           1               // Enable scheduler (2.45Kb)
 #endif
 
 #ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10              // Max schedules alowed
+#endif
+
+#ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
+#define SCHEDULER_RESTORE_LAST_SCHEDULE      0      // Restore the last schedule state on the device boot
+#endif
+
+#ifndef SCHEDULER_WEEKDAYS
+#define SCHEDULER_WEEKDAYS          "1,2,3,4,5,6,7" // (Default - Run the schedules every day)
+#endif
+
+// -----------------------------------------------------------------------------
+// RPN RULES
+// -----------------------------------------------------------------------------
+
+#ifndef RPN_RULES_SUPPORT
+#define RPN_RULES_SUPPORT           0               // Enable RPN Rules (8.6Kb)
+#endif
+
+#ifndef RPN_DELAY
+#define RPN_DELAY                   100             // Execute rules after 100ms without messages
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1713,6 +1730,63 @@
 
 #endif
 
+//Remote Buttons SET 5 (another identical IR Remote shipped with another controller as SET 1 and 2)
+#if IR_BUTTON_SET == 5
+
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
+    #define IR_BUTTON_COUNT 24
+
+    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xF700FF, IR_BUTTON_MODE_BRIGHTER, 1 },
+        { 0xF7807F, IR_BUTTON_MODE_BRIGHTER, 0 },
+        { 0xF740BF, IR_BUTTON_MODE_STATE, 0 },
+        { 0xF7C03F, IR_BUTTON_MODE_STATE, 1 },
+
+        { 0xF720DF, IR_BUTTON_MODE_RGB, 0xFF0000 },
+        { 0xF7A05F, IR_BUTTON_MODE_RGB, 0x00FF00 },
+        { 0xF7609F, IR_BUTTON_MODE_RGB, 0x0000FF },
+        { 0xF7E01F, IR_BUTTON_MODE_RGB, 0xFFFFFF },
+
+        { 0xF710EF, IR_BUTTON_MODE_RGB, 0xD13A01 },
+        { 0xF7906F, IR_BUTTON_MODE_RGB, 0x00E644 },
+        { 0xF750AF, IR_BUTTON_MODE_RGB, 0x0040A7 },
+        { 0xF7D02F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FLASH },
+
+        { 0xF730CF, IR_BUTTON_MODE_RGB, 0xE96F2A },
+        { 0xF7B04F, IR_BUTTON_MODE_RGB, 0x00BEBF },
+        { 0xF7708F, IR_BUTTON_MODE_RGB, 0x56406F },
+        { 0xF7F00F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_STROBE },
+
+        { 0xF708F7, IR_BUTTON_MODE_RGB, 0xEE9819 },
+        { 0xF78877, IR_BUTTON_MODE_RGB, 0x00799A },
+        { 0xF748B7, IR_BUTTON_MODE_RGB, 0x944E80 },
+        { 0xF7C837, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FADE },
+
+        { 0xF728D7, IR_BUTTON_MODE_RGB, 0xFFFF00 },
+        { 0xF7A857, IR_BUTTON_MODE_RGB, 0x0060A1 },
+        { 0xF76897, IR_BUTTON_MODE_RGB, 0xEF45AD },
+        { 0xF7E817, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_SMOOTH }
+
+    };
+
+#endif
+
 #ifndef IR_BUTTON_COUNT
 #define IR_BUTTON_COUNT 0
 #endif
@@ -1781,4 +1855,15 @@
 
 #ifndef RFM69_IS_RFM69HW
 #define RFM69_IS_RFM69HW            0
+#endif
+
+//--------------------------------------------------------------------------------
+// TUYA switch & dimmer support
+//--------------------------------------------------------------------------------
+#ifndef TUYA_SUPPORT
+#define TUYA_SUPPORT                0
+#endif
+
+#ifndef TUYA_SERIAL
+#define TUYA_SERIAL                 Serial
 #endif

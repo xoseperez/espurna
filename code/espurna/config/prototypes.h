@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <algorithm>
 #include <vector>
 #include <memory>
 
@@ -10,7 +11,6 @@ extern "C" {
 }
 
 #define UNUSED(x) (void)(x)
-#define INLINE inline __attribute__((always_inline))
 
 // -----------------------------------------------------------------------------
 // System
@@ -36,10 +36,6 @@ extern "C" {
 #ifndef TCP_MSS
 #define TCP_MSS (1460)
 #endif
-
-uint32_t systemResetReason();
-uint8_t systemStabilityCounter();
-void systemStabilityCounter(uint8_t);
 
 // -----------------------------------------------------------------------------
 // PROGMEM
@@ -80,18 +76,11 @@ void systemStabilityCounter(uint8_t);
 // API
 // -----------------------------------------------------------------------------
 
-using api_get_callback_f = std::function<void(char *, size_t)>;
-using api_put_callback_f = std::function<void(const char *)> ;
+using api_get_callback_f = std::function<void(char * buffer, size_t size)>;
+using api_put_callback_f = std::function<void(const char * payload)> ;
 
 #if WEB_SUPPORT
     void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
-#endif
-
-// -----------------------------------------------------------------------------
-// Broker
-// -----------------------------------------------------------------------------
-#if BROKER_SUPPORT
-    void brokerRegister(void (*)(const unsigned char, const char *, unsigned char, const char *));
 #endif
 
 // -----------------------------------------------------------------------------
@@ -104,6 +93,9 @@ void debugSendImpl(const char*);
 extern "C" {
      void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
 }
+
+class PrintRaw;
+class PrintHex;
 
 // Core version 2.4.2 and higher changed the cont_t structure to a pointer:
 // https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35
@@ -195,7 +187,8 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
     #include <PubSubClient.h>
 #endif
 
-using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
+using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
+using mqtt_msg_t = std::pair<String, String>; // topic, payload
 
 void mqttRegister(mqtt_callback_f callback);
 
@@ -204,8 +197,8 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
 
 String mqttMagnitude(char * topic);
 
-void mqttSendRaw(const char * topic, const char * message, bool retain);
-void mqttSendRaw(const char * topic, const char * message);
+bool mqttSendRaw(const char * topic, const char * message, bool retain);
+bool mqttSendRaw(const char * topic, const char * message);
 
 void mqttSend(const char * topic, const char * message, bool force, bool retain);
 void mqttSend(const char * topic, const char * message, bool force);
@@ -251,34 +244,6 @@ typedef struct {
     char * value;
     int16_t rssi;
 } packet_t;
-
-// -----------------------------------------------------------------------------
-// Relay
-// -----------------------------------------------------------------------------
-#include <bitset>
-
-enum class RelayStatus : unsigned char {
-    OFF = 0,
-    ON = 1,
-    TOGGLE = 2,
-    UNKNOWN = 0xFF
-};
-
-RelayStatus relayParsePayload(const char * payload);
-
-bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
-bool relayStatus(unsigned char id, bool status);
-bool relayStatus(unsigned char id);
-
-void relayToggle(unsigned char id, bool report, bool group_report);
-void relayToggle(unsigned char id);
-
-unsigned char relayCount();
-
-const String& relayPayloadOn();
-const String& relayPayloadOff();
-const String& relayPayloadToggle();
-const char* relayPayload(RelayStatus status);
 
 // -----------------------------------------------------------------------------
 // Settings
@@ -342,73 +307,10 @@ class AsyncWebServer;
     class AwsEventType;
 #endif
 
-using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t*, size_t, size_t, size_t)>;
+using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t* data, size_t len, size_t index, size_t total)>;
 using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
-
-// -----------------------------------------------------------------------------
-// WebSockets
-// -----------------------------------------------------------------------------
-#include <queue>
-
-// TODO: pending configuration headers refactoring... here for now
-struct ws_counter_t;
-struct ws_data_t;
-struct ws_debug_t;
-struct ws_callbacks_t;
-
-using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
-using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;
-using ws_on_keycheck_callback_f = std::function<bool(const char * key, JsonVariant& value)>;
-
-using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
-using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
-using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
-
-#if WEB_SUPPORT
-    struct ws_callbacks_t {
-        ws_on_send_callback_list_t on_visible;
-        ws_on_send_callback_list_t on_connected;
-        ws_on_send_callback_list_t on_data;
-
-        ws_on_action_callback_list_t on_action;
-        ws_on_keycheck_callback_list_t on_keycheck;
-
-        ws_callbacks_t& onVisible(ws_on_send_callback_f);
-        ws_callbacks_t& onConnected(ws_on_send_callback_f);
-        ws_callbacks_t& onData(ws_on_send_callback_f);
-        ws_callbacks_t& onAction(ws_on_action_callback_f);
-        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f);
-    };
-
-    ws_callbacks_t& wsRegister();
-
-    void wsSetup();
-    void wsSend(uint32_t client_id, const char* data);
-    void wsSend(uint32_t client_id, JsonObject& root);
-    void wsSend(JsonObject& root);
-    void wsSend(ws_on_send_callback_f callback);
-
-    void wsSend_P(PGM_P data);
-    void wsSend_P(uint32_t client_id, PGM_P data);
-
-    void INLINE wsPost(const ws_on_send_callback_f& callback);
-    void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_f& callback);
-    void INLINE wsPost(const ws_on_send_callback_list_t& callbacks);
-    void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-
-    void INLINE wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-    void INLINE wsPostAll(const ws_on_send_callback_list_t& callbacks);
-
-    void INLINE wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-    void INLINE wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
-    void INLINE wsPostSequence(const ws_on_send_callback_list_t& callbacks);
-
-    bool INLINE wsConnected();
-    bool INLINE wsConnected(uint32_t client_id);
-    bool wsDebugSend(const char* prefix, const char* message);
-#endif
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -429,7 +331,7 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 // THERMOSTAT
 // -----------------------------------------------------------------------------
-using thermostat_callback_f = std::function<void(bool)>;
+using thermostat_callback_f = std::function<void(bool state)>;
 #if THERMOSTAT_SUPPORT
     void thermostatRegister(thermostat_callback_f callback);
 #endif

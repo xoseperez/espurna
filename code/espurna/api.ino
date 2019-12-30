@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
+#include "system.h"
+
 typedef struct {
     char * key;
     api_get_callback_f getFn = NULL;
@@ -28,7 +30,7 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _apiWebSocketOnConnected(JsonObject& root) {
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
-    root["apiKey"] = getSetting("apiKey");
+    root["apiKey"] = getSetting("apiKey", API_KEY);
     root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
     root["apiRestFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
 }
@@ -43,21 +45,16 @@ void _apiConfigure() {
 
 bool _authAPI(AsyncWebServerRequest *request) {
 
-    if (getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
+    const String key = getSetting("apiKey", API_KEY);
+    if (!key.length() || getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;
     }
 
-    if (!request->hasParam("apikey", (request->method() == HTTP_PUT))) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Missing apikey parameter\n"));
-        request->send(403);
-        return false;
-    }
-
     AsyncWebParameter* p = request->getParam("apikey", (request->method() == HTTP_PUT));
-    if (!p->value().equals(getSetting("apiKey"))) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong apikey parameter\n"));
+    if (!p || !p->value().equals(key)) {
+        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
         request->send(403);
         return false;
     }

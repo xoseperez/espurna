@@ -8,6 +8,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_SUPPORT
 
+#include "broker.h"
+
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
 #else
@@ -43,19 +45,15 @@ bool _tspk_connected = false;
 // -----------------------------------------------------------------------------
 
 #if BROKER_SUPPORT
-void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
 
-    // Process status messages
-    if (BROKER_MSG_TYPE_STATUS == type) {
-        tspkEnqueueRelay(id, (char *) payload);
-        tspkFlush();
+    // Only process status messages for switches
+    if (!topic.equals(MQTT_TOPIC_RELAY)) {
+        return;
     }
 
-    // Porcess sensor messages
-    if (BROKER_MSG_TYPE_SENSOR == type) {
-        //tspkEnqueueMeasurement(id, (char *) payload);
-        //tspkFlush();
-    }
+    tspkEnqueueRelay(id, value > 0);
+    tspkFlush();
 
 }
 #endif // BROKER_SUPPORT
@@ -74,7 +72,7 @@ void _tspkWebSocketOnVisible(JsonObject& root) {
 void _tspkWebSocketOnConnected(JsonObject& root) {
 
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
-    root["tspkKey"] = getSetting("tspkKey");
+    root["tspkKey"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
     root["tspkClear"] = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
@@ -93,7 +91,7 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
 void _tspkConfigure() {
     _tspk_clear = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
     _tspk_enabled = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
-    if (_tspk_enabled && (getSetting("tspkKey").length() == 0)) {
+    if (_tspk_enabled && (getSetting("tspkKey", THINGSPEAK_APIKEY).length() == 0)) {
         _tspk_enabled = false;
         setSetting("tspkEnabled", 0);
     }
@@ -229,7 +227,7 @@ void _tspkPost() {
 
     _tspk_client_ts = millis();
 
-    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+    #if THINGSPEAK_USE_SSL
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
     #else
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
@@ -342,7 +340,7 @@ void _tspkFlush() {
     // POST data if any
     if (_tspk_data.length()) {
         _tspk_data.concat("&api_key=");
-        _tspk_data.concat(getSetting("tspkKey"));
+        _tspk_data.concat(getSetting("tspkKey", THINGSPEAK_APIKEY));
         --_tspk_tries;
         _tspkPost();
     }
@@ -351,11 +349,11 @@ void _tspkFlush() {
 
 // -----------------------------------------------------------------------------
 
-bool tspkEnqueueRelay(unsigned char index, char * payload) {
+bool tspkEnqueueRelay(unsigned char index, bool status) {
     if (!_tspk_enabled) return true;
     unsigned char id = getSetting("tspkRelay", index, 0).toInt();
     if (id > 0) {
-        _tspkEnqueue(id, payload);
+        _tspkEnqueue(id, status ? "1" : "0");
         return true;
     }
     return false;
@@ -391,7 +389,7 @@ void tspkSetup() {
     #endif
 
     #if BROKER_SUPPORT
-        brokerRegister(_tspkBrokerCallback);
+        StatusBroker::Register(_tspkBrokerCallback);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
