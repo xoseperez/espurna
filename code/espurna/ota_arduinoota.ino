@@ -8,6 +8,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if OTA_ARDUINOOTA_SUPPORT
 
+#include "system.h"
+#include "ws.h"
+
 // TODO: allocate ArduinoOTAClass on-demand, stop using global instance
 
 void _arduinoOtaConfigure() {
@@ -48,7 +51,10 @@ void _arduinoOtaOnEnd() {
     #if WEB_SUPPORT
         wsSend_P(PSTR("{\"action\": \"reload\"}"));
     #endif
-    deferredReset(100, CUSTOM_RESET_OTA);
+
+    // Note: ArduinoOTA will reset the board after this callback returns.
+    customResetReason(CUSTOM_RESET_OTA);
+    nice_delay(100);
 
 }
 
@@ -60,13 +66,15 @@ void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
         if (wsConnected()) return;
     #endif
 
-    static unsigned int _progOld;
+    #if DEBUG_SUPPORT
+        static unsigned int _progOld;
 
-    unsigned int _prog = (progress / (total / 100));
-    if (_prog != _progOld) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
-        _progOld = _prog;
-    }
+        unsigned int _prog = (progress / (total / 100));
+        if (_prog != _progOld) {
+            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
+            _progOld = _prog;
+        }
+    #endif
 
 }
 

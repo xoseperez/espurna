@@ -18,7 +18,9 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include <Ticker.h>
 #include <TimeLib.h>
 
+#include "system.h"
 #include "libs/SecureClientHelpers.h"
+#include "ws.h"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
@@ -184,7 +186,7 @@ bool _mqttConnectSyncClient(bool secure = false) {
 
     #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
         _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqttGetClient(secure));
-        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_payload_offline.c_str(), _mqtt_qos, _mqtt_retain);
+        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_payload_offline.c_str(), _mqtt_retain, _mqtt_qos);
         result = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str());
     #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
         _mqtt.setClient(_mqttGetClient(secure));
@@ -640,25 +642,34 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
 
 // -----------------------------------------------------------------------------
 
-void mqttSendRaw(const char * topic, const char * message, bool retain) {
+bool mqttSendRaw(const char * topic, const char * message, bool retain) {
 
-    if (_mqtt.connected()) {
+    if (!_mqtt.connected()) return false;
+
+    const unsigned int packetId(
         #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-            unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, retain, message);
-            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
+            _mqtt.publish(topic, _mqtt_qos, retain, message)
         #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-            _mqtt.publish(topic, message, retain, _mqtt_qos);
-            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
+            _mqtt.publish(topic, message, retain, _mqtt_qos)
         #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
-            _mqtt.publish(topic, message, retain);
-            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
+            _mqtt.publish(topic, message, retain)
         #endif
+    );
+
+    const size_t message_len = strlen(message);
+    if (message_len > 128) {
+        DEBUG_MSG_P(PSTR("[MQTT] Sending %s => (%u bytes) (PID %u)\n"), topic, message_len, packetId);
+    } else {
+        DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %u)\n"), topic, message, packetId);
     }
+
+    return (packetId > 0);
+
 }
 
 
-void mqttSendRaw(const char * topic, const char * message) {
-    mqttSendRaw (topic, message, _mqtt_retain);
+bool mqttSendRaw(const char * topic, const char * message) {
+    return mqttSendRaw (topic, message, _mqtt_retain);
 }
 
 void mqttSend(const char * topic, const char * message, bool force, bool retain) {

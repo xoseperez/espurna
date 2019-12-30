@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 
 #include "libs/NtpClientWrap.h"
+#include "broker.h"
+#include "ws.h"
 
 Ticker _ntp_defer;
 
@@ -138,7 +140,7 @@ void inline _ntpBroker() {
     static unsigned char last_minute = 60;
     if (ntpSynced() && (minute() != last_minute)) {
         last_minute = minute();
-        brokerPublish(BROKER_MSG_TYPE_DATETIME, MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+        TimeBroker::Publish(MQTT_TOPIC_DATETIME, now(), ntpDateTime());
     }
 }
 

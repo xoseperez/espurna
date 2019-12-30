@@ -11,6 +11,10 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include <ArduinoJson.h>
 #include <float.h>
 
+#include "relay.h"
+#include "ws.h"
+
+
 bool _thermostat_enabled = true;
 bool _thermostat_mode_cooler = false;
 

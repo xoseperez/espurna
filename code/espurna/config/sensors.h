@@ -1053,6 +1053,23 @@
 #endif                                                               // error correction.
 
 //------------------------------------------------------------------------------
+// T6613 CO2 sensor
+// Enable support by passing T6613_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef T6613_SUPPORT
+#define T6613_SUPPORT                   0
+#endif
+
+#ifndef T6613_RX_PIN
+#define T6613_RX_PIN                    4
+#endif
+
+#ifndef T6613_TX_PIN
+#define T6613_TX_PIN                    5
+#endif
+
+//------------------------------------------------------------------------------
 // TMP3X analog temperature sensor
 // Enable support by passing TMP3X_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1216,6 +1233,8 @@
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
     SONAR_SUPPORT || \
+    T6613_SUPPORT || \
+    THERMOSTAT_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
@@ -1401,6 +1420,10 @@
 
 #if SONAR_SUPPORT
     #include "../sensors/SonarSensor.h"
+#endif
+
+#if T6613_SUPPORT
+    #include "../sensors/T6613Sensor.h"
 #endif
 
 #if TMP3X_SUPPORT

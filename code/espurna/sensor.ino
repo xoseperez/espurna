@@ -17,6 +17,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <float.h>
 
+#include "relay.h"
+#include "broker.h"
+#include "ws.h"
+
+
 struct sensor_magnitude_t {
     BaseSensor * sensor;        // Sensor object
     BaseFilter * filter;        // Filter object
@@ -1028,6 +1033,15 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+	
+    #if T6613_SUPPORT
+    {
+        T6613Sensor * sensor = new T6613Sensor();
+        sensor->setRX(T6613_RX_PIN);
+        sensor->setTX(T6613_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
 
     #if TMP3X_SUPPORT
     {
@@ -1532,7 +1546,7 @@ void _sensorReport(unsigned char index, double value) {
     dtostrf(value, 1, decimals, buffer);
 
     #if BROKER_SUPPORT
-        brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+        SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
     #endif
 
     #if MQTT_SUPPORT
@@ -1789,6 +1803,14 @@ void sensorLoop() {
                 // -------------------------------------------------------------
 
                 value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
+                #if BROKER_SUPPORT
+                {
+                    char buffer[64];
+                    dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
+            
+                    SensorReadBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value_show, buffer);
+                }
+                #endif
 
                 // -------------------------------------------------------------
                 // Debug
