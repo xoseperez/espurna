@@ -30,8 +30,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Home Assistant
 - Try to avoid conflict with useCSS ([#2075](https://github.com/xoseperez/espurna/issues/2075))
 #### Devices
-- Add GENERIC_E14, e14 rgb+w 4,5w ([#2039](https://github.com/xoseperez/espurna/2039), **[@orrpan](https://github.com/orrpan)**)
-- Add support for LinkSprite R4 ([#2042](https://github.com/xoseperez/espurna/issues/2042), **[@mpcusack](https://github.com/mpcusack)**)
+- Add GENERIC_E14, e14 rgb+w 4,5w ([#2039](https://github.com/xoseperez/espurna/2039), thanks to **[@orrpan](https://github.com/orrpan)**)
+- Add support for LinkSprite R4 ([#2042](https://github.com/xoseperez/espurna/issues/2042), thanks to **[@mpcusack](https://github.com/mpcusack)**)
 - Add support for eHomeDIY devices. ([#2046](https://github.com/xoseperez/espurna/issues/2046), thanks to **[@user890104](https://github.com/user890104)**)
 - Add support for MAGICHOME\_ZJ_WFMN\_C\_11 ([#2051](https://github.com/xoseperez/espurna/issues/2051), thanks to **[@davebuk](https://github.com/davebuk)**)
 - Add support for the LSC LED LIGHT STRIP from ACTION using a tuya chip. ([#2065](https://github.com/xoseperez/espurna/issues/2065), thanks to **[@sehraf](https://github.com/sehraf)**)
@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 #### PlatformIO
 - Update latest Arduino core platform to 2.6.3 ([#2069](https://github.com/xoseperez/espurna/issues/2069), thanks to **[@Niek](https://github.com/Niek)**)
-- Test espurna-core feature build (#2080)
+- Test espurna-core feature build ([#2080](https://github.com/xoseperez/espurna/issues/2080))
 #### Build
 - Removed unneeded reference to Ticker library in RFBridge module
 #### Scripts
