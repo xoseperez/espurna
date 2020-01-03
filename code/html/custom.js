@@ -1102,10 +1102,10 @@ function addSchedule(values) {
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
 
-    var schUTC_id = "schUTC" + (schedules + 1);
+    var schUTC_id = "schUTC" + schedules;
     $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
 
-    var schEnabled_id = "schEnabled" + (schedules + 1);
+    var schEnabled_id = "schEnabled" + schedules;
     $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
 
     $(line).find("input[type='checkbox']").prop("checked", false);
