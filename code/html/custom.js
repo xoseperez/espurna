@@ -1086,7 +1086,7 @@ function addSchedule(values) {
         values = {};
     }
 
-    var tabindex = 200 + numSchedules * 10;
+    var tabindex = 200 + schedules * 10;
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
