@@ -1030,7 +1030,7 @@ function addNetwork(values) {
         values = {};
     }
 
-    var tabindex = 200 + numNetworks * 10;
+    var tabindex = 200 + number * 10;
     var template = $("#networkTemplate").children();
     var line = $(template).clone();
     $(line).find("input").each(function() {
