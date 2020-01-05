@@ -64,6 +64,18 @@ def get_shared_libdeps_dir(section, name):
 
     return os.path.join(env["PROJECT_DIR"], opt)
 
+# import some custom configuration to fix platformio ini rehashing
+env.Append(
+    ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH")
+)
+
+ESPURNA_OTA_PORT = os.environ.get("ESPURNA_IP")
+if ESPURNA_OTA_PORT:
+    env.Replace(UPLOAD_PROTOCOL="espota")
+    env.Replace(UPLOAD_PORT=ESPURNA_OTA_PORT)
+    env.Replace(UPLOAD_FLAGS="--auth=$ESPURNA_AUTH")
+else:
+    env.Replace(UPLOAD_PROTOCOL="esptool")
 
 def ensure_platform_updated():
     try:
