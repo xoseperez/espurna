@@ -25,3 +25,4 @@ from .ldscripts import ldscripts_inject_libpath
 from .lwip import lwip_inject_patcher
 from .postmortem import dummy_ets_printf
 from .git import app_inject_revision
+from .ota import app_inject_ota_board
