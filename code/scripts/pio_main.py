@@ -1,4 +1,5 @@
 # coding=utf-8
+# pylint: dummy-variables-rgx='(_+[a-zA-Z0-9]*?$)|dummy|env|projenv'
 #
 # Original extra_scripts.py
 # Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
