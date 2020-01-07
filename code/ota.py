@@ -409,8 +409,7 @@ def get_platformio_env(arduino_core, size):
         )
     if arduino_core != "2_3_0":
         env_prefix = "{}-{}".format(env_prefix, arduino_core)
-    env = "{env_prefix}-{size:d}m-ota".format(env_prefix=env_prefix, size=size)
-    return env
+    return "{env_prefix}-{size:d}m-ota".format(env_prefix=env_prefix, size=size)
 
 
 def main(args):
