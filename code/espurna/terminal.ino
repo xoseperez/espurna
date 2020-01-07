@@ -17,6 +17,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <Stream.h>
 
+#include "terminal.h"
+
 StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
 EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 

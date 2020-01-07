@@ -16,6 +16,7 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <cstdlib>
 
 #include "broker.h"
+#include "terminal.h"
 
 // -----------------------------------------------------------------------------
 // Basic alarm ON OFF pattern
