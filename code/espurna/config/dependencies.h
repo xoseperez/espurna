@@ -100,6 +100,11 @@
 #define SSDP_SUPPORT 0
 #endif
 
+#if ALARM_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Broker is required to process relay events
+#endif
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
 #undef TUYA_SUPPORT
 #define TUYA_SUPPORT                1           // Need base Tuya module for this to work

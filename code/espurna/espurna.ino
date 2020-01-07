@@ -245,6 +245,9 @@ void setup() {
     #if TUYA_SUPPORT
         tuyaSetup();
     #endif
+    #if ALARM_SUPPORT
+        alarmSetup();
+    #endif
 
     // 3rd party code hook
     #if USE_EXTRA
