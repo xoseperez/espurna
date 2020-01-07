@@ -95,7 +95,11 @@ def ensure_platform_updated():
 
 # handle OTA uploads
 # using env instead of ini to fix platformio ini changing hash on every change
-env.Append(ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH", ""))
+env.Append(
+    ESPURNA_BOARD=os.environ.get("ESPURNA_BOARD", ""),
+    ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH", ""),
+    ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", "")
+)
 
 ESPURNA_OTA_PORT = os.environ.get("ESPURNA_IP")
 if ESPURNA_OTA_PORT:

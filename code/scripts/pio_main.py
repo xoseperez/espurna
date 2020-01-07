@@ -15,7 +15,7 @@ from espurna_utils import (
     lwip_inject_patcher,
     app_inject_revision,
     dummy_ets_printf,
-    app_inject_ota_board,
+    app_inject_flags,
 )
 
 Import("env", "projenv")
@@ -47,5 +47,5 @@ lwip_inject_patcher(env)
 # when using git, add -DAPP_REVISION=(git-commit-hash)
 app_inject_revision(projenv)
 
-# handle OTA board here, since projenv is not available in pre-scripts
-app_inject_ota_board(projenv)
+# handle OTA board and flags here, since projenv is not available in pre-scripts
+app_inject_flags(projenv)
