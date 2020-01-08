@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils.h"
 #include "relay.h"
 #include "broker.h"
+#include "terminal.h"
 #include "tuya.h"
 #include "ws.h"
 #include "libs/HeapStats.h"

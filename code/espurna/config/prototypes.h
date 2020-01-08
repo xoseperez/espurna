@@ -269,15 +269,6 @@ using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
 void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 
 // -----------------------------------------------------------------------------
-// Terminal
-// -----------------------------------------------------------------------------
-#if TERMINAL_SUPPORT
-    void terminalRegisterCommand(const String& name, void (*call)(Embedis*));
-    void terminalInject(void *data, size_t len);
-    Stream & terminalSerial();
-#endif
-
-// -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
 char * ltrim(char * s);
