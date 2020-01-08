@@ -12,6 +12,7 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <limits>
 #include <memory>
 #include <stack>
+#include <type_traits>
 #include <vector>
 
 #include <cstdlib>
@@ -267,12 +268,10 @@ std::vector<pattern_data_t> _deserializePattern(const char* pattern) {
 
 std::vector<alarm_t> _alarms;
 
-using alarm_id_t = char;
+using alarm_id_t = signed char;
 using switch_to_alarm_id_t = std::vector<alarm_id_t>;
-static_assert(
-    (SETTINGS_MAX_LIST_COUNT <= std::numeric_limits<alarm_id_t>::max()),
-    "ALARM ID maximum value cannot fit into this type!"
-);
+static_assert(SETTINGS_MAX_LIST_COUNT <= std::numeric_limits<alarm_id_t>::max(), "ALARM ID maximum value cannot fit into this type!");
+static_assert(std::is_signed<alarm_id_t>::value, "ALARM ID inside of this map needs to be signed");
 
 switch_to_alarm_id_t _arming_switch(RELAYS_MAX, -1);
 switch_to_alarm_id_t _trigger_switch(RELAYS_MAX, -1);
