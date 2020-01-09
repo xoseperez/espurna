@@ -116,6 +116,7 @@
 //#define MAXCIO_WUS002S
 //#define MUVIT_IO_MIOBULB001
 //#define NEO_COOLCAM_NAS_WR01W
+//#define DELTACO_SH_P01
 //#define NEXETE_A19
 //#define NODEMCU_BASIC
 //#define NODEMCU_LOLIN

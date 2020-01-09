@@ -1414,6 +1414,17 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(DELTACO_SH_P01)
+
+            setSetting("board", 105);
+            setSetting("ledGPIO", 0, 5);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledMode", 0, LED_MODE_FOLLOW);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
