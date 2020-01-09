@@ -3595,15 +3595,36 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Light
-    #define LIGHT_CHANNELS      3
+    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
-    // #define LIGHT_CH4_PIN       5       // WHITE
+    #define LIGHT_CH4_PIN       5       // WHITE
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
-    // #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// Generic E14
+// https://www.ebay.com/itm/LED-Bulb-Wifi-E14-4-5W-Candle-RGB-W-4in1-Dimmable-V-tac-Smart-VT-5114/163899840601
+// -----------------------------------------------------------------------------
+
+#elif defined(DELTACO_SH_LEXXW)
+
+    // Info
+    #define MANUFACTURER        "DELTACO"
+    #define DEVICE              "SH_LEXXW"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      2
+    #define LIGHT_CH1_PIN       12       // RED
+    #define LIGHT_CH2_PIN       14       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Nexete A19
