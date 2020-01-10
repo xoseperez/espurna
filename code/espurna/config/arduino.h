@@ -26,6 +26,10 @@
 //#define BLITZWOLF_BWSHPX
 //#define BLITZWOLF_BWSHPX_V23
 //#define BLITZWOLF_BWSHP5
+//#define DELTACO_SH_LEXXW
+//#define DELTACO_SH_LEXXRGB
+//#define DELTACO_SH_P01
+//#define DELTACO_SH_P03USB
 //#define DIGOO_NX_SP202
 //#define EHOMEDIY_WT02
 //#define EHOMEDIY_WT03
@@ -116,8 +120,6 @@
 //#define MAXCIO_WUS002S
 //#define MUVIT_IO_MIOBULB001
 //#define NEO_COOLCAM_NAS_WR01W
-//#define DELTACO_SH_P01
-//#define DELTACO_SH_LEXXW
 //#define NEXETE_A19
 //#define NODEMCU_BASIC
 //#define NODEMCU_LOLIN
