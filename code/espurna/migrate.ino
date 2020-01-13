@@ -1414,6 +1414,62 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(DELTACO_SH_P01)
+
+            setSetting("board", 105);
+            setSetting("ledGPIO", 0, 5);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledMode", 0, LED_MODE_FOLLOW);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(DELTACO_SH_P03USB)
+
+            setSetting("board", 106);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 2);
+            setSetting("ledGPIO", 0, 0);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledMode", 0, LED_MODE_FINDME);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayGPIO", 1, 12);
+            setSetting("relayGPIO", 2, 14);
+            setSetting("relayGPIO", 3, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
+        #elif defined(DELTACO_SH_LEXXW)
+
+            setSetting("board", 107);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 12);
+            setSetting("chGPIO", 1, 14);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("relays", 1);
+
+        #elif defined(DELTACO_SH_LEXXRGB)
+
+            setSetting("board", 108);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 5);
+            setSetting("chGPIO", 1, 4);
+            setSetting("chGPIO", 2, 13);
+            setSetting("chGPIO", 3, 14);
+            setSetting("chGPIO", 4, 12);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("chLogic", 4, 0);
+            setSetting("relays", 1);
+
         #else
 
             // Allow users to define new settings without migration config
