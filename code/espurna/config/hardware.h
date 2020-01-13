@@ -4228,6 +4228,7 @@
     #define KINGART_CURTAIN_SUPPORT     1
     #define DEBUG_SERIAL_SUPPORT        0
 
+// -----------------------------------------------------------------------------
 // LSC Smart LED Light Strip (Smart CXonnect Series) available ACTION (Germany)
 // https://www.action.com/de-de/p/lsc-smart-connect-intelligenter-multicolor-led-strip-/
 // Reflashing from original Tuya firmware
