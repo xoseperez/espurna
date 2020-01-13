@@ -1030,7 +1030,7 @@ function addNetwork(values) {
         values = {};
     }
 
-    var tabindex = 200 + numNetworks * 10;
+    var tabindex = 200 + number * 10;
     var template = $("#networkTemplate").children();
     var line = $(template).clone();
     $(line).find("input").each(function() {
@@ -1086,7 +1086,7 @@ function addSchedule(values) {
         values = {};
     }
 
-    var tabindex = 200 + numSchedules * 10;
+    var tabindex = 200 + schedules * 10;
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
@@ -1102,10 +1102,10 @@ function addSchedule(values) {
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
 
-    var schUTC_id = "schUTC" + (schedules + 1);
+    var schUTC_id = "schUTC" + schedules;
     $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
 
-    var schEnabled_id = "schEnabled" + (schedules + 1);
+    var schEnabled_id = "schEnabled" + schedules;
     $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
 
     $(line).find("input[type='checkbox']").prop("checked", false);
