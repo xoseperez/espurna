@@ -95,9 +95,9 @@ void _KACurtainResult() {
         #if MQTT_SUPPORT
             int setclose_idx = buffer.indexOf("setclose");
             if (setclose_idx > 0) {
-                auto position = payload.substring(setclose_idx + strlen("setclose") + 2, payload.length());
+                auto position = buffer.substring(setclose_idx + strlen("setclose") + 2, buffer.length());
                 int leftovers = position.indexOf(',');
-                if (leftovers >= 0) {
+                if (leftovers > 0) {
                     position = position.substring(0, leftovers);
                 }
                 mqttSend(MQTT_TOPIC_CURTAIN, String(position.toInt()));
@@ -105,9 +105,9 @@ void _KACurtainResult() {
         #endif // MQTT_SUPPORT
 
         // Handle configuration button presses
-        if (buffer.indexOf("enterESPTOUCH") > 0 ) {
+        if (buffer.indexOf("enterESPTOUCH") > 0) {
             wifiStartAP();
-        } else if (buffer.indexOf("exitESPTOUCH") > 0 ) {
+        } else if (buffer.indexOf("exitESPTOUCH") > 0) {
             deferredReset(100, CUSTOM_RESET_HARDWARE);
         }
 
