@@ -244,8 +244,8 @@ void setup() {
     #if TUYA_SUPPORT
         tuyaSetup();
     #endif
-    #if KA_CURTAIN_SUPPORT
-        kacurtainSetup();
+    #if KINGART_CURTAIN_SUPPORT
+        kingartCurtainSupport();
     #endif
 
     // 3rd party code hook

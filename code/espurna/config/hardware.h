@@ -4219,14 +4219,14 @@
     // Info
     #define MANUFACTURER            "KINGART"
     #define DEVICE                  "CURTAIN_SWITCH"
-    #define KA_CURTAIN_SUPPORT      1
 
     // LEDs
     #define LED1_PIN                13
     #define LED1_PIN_INVERSE        1
 
-    // Disable UART noise
-    #define DEBUG_SERIAL_SUPPORT    0
+    // KINGART module handles the UART, can't print any debug messages
+    #define KINGART_CURTAIN_SUPPORT     1
+    #define DEBUG_SERIAL_SUPPORT        0
 
 // LSC Smart LED Light Strip (Smart CXonnect Series) available ACTION (Germany)
 // https://www.action.com/de-de/p/lsc-smart-connect-intelligenter-multicolor-led-strip-/
