@@ -32,10 +32,8 @@ void _schWebSocketOnConnected(JsonObject &root){
 
     if (!relayCount()) return;
 
-    root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
-
     JsonObject &schedules = root.createNestedObject("schedules");
-    uint8_t size = 0;
+    schedules["max"] = SCHEDULER_MAX_SCHEDULES;
 
     JsonArray& enabled = schedules.createNestedArray("schEnabled");
     JsonArray& switch_ = schedules.createNestedArray("schSwitch");
@@ -45,6 +43,8 @@ void _schWebSocketOnConnected(JsonObject &root){
     JsonArray& minute = schedules.createNestedArray("schMinute");
     JsonArray& utc = schedules.createNestedArray("schUTC");
     JsonArray& weekdays = schedules.createNestedArray("schWDs");
+
+    uint8_t size = 0;
 
     for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!hasSetting("schSwitch", i)) break;

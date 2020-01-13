@@ -1,6 +1,2 @@
-enum-compat==0.0.2
-netifaces==0.10.6
-ordereddict==1.1
-six==1.11.0
-sortedcontainers==1.5.9
-zeroconf==0.19.1
+ifaddr==0.1.6
+zeroconf==0.24.0

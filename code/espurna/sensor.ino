@@ -8,9 +8,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SENSOR_SUPPORT
 
-#include "relay.h"
-#include "broker.h"
-
 #include <vector>
 #include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
@@ -19,6 +16,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "sensors/BaseSensor.h"
 
 #include <float.h>
+
+#include "relay.h"
+#include "broker.h"
+#include "ws.h"
+
 
 struct sensor_magnitude_t {
     BaseSensor * sensor;        // Sensor object

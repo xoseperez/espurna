@@ -10,6 +10,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 #include "utils.h"
+#include "ota.h"
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -76,8 +77,6 @@ void _onDiscover(AsyncWebServerRequest *request) {
 
     webLog(request);
 
-    AsyncResponseStream *response = request->beginResponseStream("application/json");
-
     const String device = getBoardName();
     const String hostname = getSetting("hostname");
 
@@ -87,6 +86,8 @@ void _onDiscover(AsyncWebServerRequest *request) {
     root["version"] = APP_VERSION;
     root["device"] = device.c_str();
     root["hostname"] = hostname.c_str();
+
+    AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
     root.printTo(*response);
 
     request->send(response);
@@ -100,7 +101,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    AsyncResponseStream *response = request->beginResponseStream("text/json");
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
@@ -137,7 +138,7 @@ void _onPostConfig(AsyncWebServerRequest *request) {
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
-void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+void _onPostConfigFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
@@ -287,6 +288,39 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
 #endif
 
+void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
+
+    auto *response = request->beginResponseStream("text/plain", 256);
+    response->addHeader("Connection", "close");
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+
+    response->setCode(code);
+
+    if (payload.length()) {
+        response->printf("%s", payload.c_str());
+    } else {
+        if (!Update.hasError()) {
+            response->print("OK");
+        } else {
+            #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+                Update.printError(reinterpret_cast<Stream&>(response));
+            #else
+                Update.printError(*response);
+            #endif
+        }
+    }
+
+    request->send(response);
+
+}
+
+void _onUpgradeStatusSet(AsyncWebServerRequest *request, int code, const String& payload = "") {
+    _onUpgradeResponse(request, code, payload);
+    request->_tempObject = malloc(sizeof(bool));
+}
+
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
@@ -294,24 +328,11 @@ void _onUpgrade(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    char buffer[10];
-    if (!Update.hasError()) {
-        sprintf_P(buffer, PSTR("OK"));
-    } else {
-        sprintf_P(buffer, PSTR("ERROR %d"), Update.getError());
+    if (request->_tempObject) {
+        return;
     }
 
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
-    response->addHeader("Connection", "close");
-    response->addHeader("X-XSS-Protection", "1; mode=block");
-    response->addHeader("X-Content-Type-Options", "nosniff");
-    response->addHeader("X-Frame-Options", "deny");
-    if (Update.hasError()) {
-        eepromRotate(true);
-    } else {
-        deferredReset(100, CUSTOM_RESET_UPGRADE);
-    }
-    request->send(response);
+    _onUpgradeResponse(request, 200);
 
 }
 
@@ -321,43 +342,71 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
+    // We set this after we are done with the request
+    // It is still possible to re-enter this callback even after connection is already closed
+    // 1.14.2: TODO: see https://github.com/me-no-dev/ESPAsyncWebServer/pull/660
+    // remote close or request sending some data before finishing parsing of the body will leak 1460 bytes
+    // waiting a bit for upstream. fork and point to the fixed version if not resolved before 1.14.2
+    if (request->_tempObject) {
+        return;
+    }
+
     if (!index) {
+
+        // TODO: stop network activity completely when handling Update through ArduinoOTA or `ota` command?
+        if (Update.isRunning()) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: Upgrade in progress"));
+            return;
+        }
+
+        // Check that header is correct and there is more data before anything is written to the flash
+        if (final || !len) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: Invalid request"));
+            return;
+        }
+
+        if (!otaVerifyHeader(data, len)) {
+            _onUpgradeStatusSet(request, 400, F("ERROR: No magic byte / invalid flash config"));
+            return;
+        }
 
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
 
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
+
+        // Note: cannot use request->contentLength() for multipart/form-data
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
+            _onUpgradeStatusSet(request, 500);
+            eepromRotate(true);
+            return;
         }
 
     }
 
-    if (!Update.hasError()) {
-        if (Update.write(data, len) != len) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-        }
+    if (request->_tempObject) {
+        return;
+    }
+
+    // Any error will cancel the update, but request may still be alive
+    if (!Update.isRunning()) {
+        return;
+    }
+
+    if (Update.write(data, len) != len) {
+        _onUpgradeStatusSet(request, 500);
+        Update.end();
+        eepromRotate(true);
+        return;
     }
 
     if (final) {
-        if (Update.end(true)){
-            DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
-        } else {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-        }
+        otaFinalize(index + len, CUSTOM_RESET_UPGRADE, true);
     } else {
-        // Removed to avoid websocket ping back during upgrade (see #1574)
-        // TODO: implement as separate from debugging message
-        if (wsConnected()) return;
-        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        otaProgress(index + len);
     }
+
 }
 
 bool _onAPModeRequest(AsyncWebServerRequest *request) {
@@ -423,10 +472,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
-        String password = getAdminPass();
-        char httpPassword[password.length() + 1];
-        password.toCharArray(httpPassword, password.length() + 1);
-        return request->authenticate(WEB_USERNAME, httpPassword);
+        return request->authenticate(WEB_USERNAME, getAdminPass().c_str());
     #else
         return true;
     #endif
@@ -478,7 +524,7 @@ void webSetup() {
     // Other entry points
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
-    _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
+    _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigFile);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 

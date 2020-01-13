@@ -12,6 +12,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Schedule.h>
 #include <ArduinoJson.h>
 
+#include "ws.h"
+
 bool _ha_enabled = false;
 bool _ha_send_flag = false;
 
@@ -430,6 +432,19 @@ void _haConfigure() {
     const bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
     _ha_send_flag = (enabled != _ha_enabled);
     _ha_enabled = enabled;
+
+    // https://github.com/xoseperez/espurna/issues/1273
+    // https://gitter.im/tinkerman-cat/espurna?at=5df8ad4655d9392300268a8c
+    // TODO: ensure that this is called before _lightConfigure()
+    //       in case useCSS value is ever cached by the lights module
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        if (enabled) {
+            if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+                setSetting("useCSS", 0);
+            }
+        }
+    #endif
+
     _haSend();
 }
 
@@ -543,7 +558,7 @@ void haSetup() {
 
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-        if (type == MQTT_CONNECT_EVENT) _haSend();
+        if (type == MQTT_CONNECT_EVENT) schedule_function(_haSend);
         if (type == MQTT_DISCONNECT_EVENT) _ha_send_flag = _ha_enabled;
     });
 

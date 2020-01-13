@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "relay.h"
 #include "broker.h"
 #include "tuya.h"
+#include "ws.h"
 #include "libs/HeapStats.h"
 
 using void_callback_f = void (*)();
