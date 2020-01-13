@@ -100,7 +100,7 @@ void _KACurtainResult() {
                 if (leftovers > 0) {
                     position = position.substring(0, leftovers);
                 }
-                mqttSend(MQTT_TOPIC_CURTAIN, String(position.toInt()));
+                mqttSend(MQTT_TOPIC_CURTAIN, position.c_str());
             }
         #endif // MQTT_SUPPORT
 
