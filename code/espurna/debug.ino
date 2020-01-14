@@ -8,7 +8,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_SUPPORT
 
-#include "libs/DebugSend.h"
+#include "debug.h"
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
