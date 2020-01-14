@@ -102,7 +102,7 @@ void _debugLogBuffer(const char* prefix, const char* data) {
     if (total_len >= std::numeric_limits<uint16_t>::max()) {
         return;
     }
-    if ((_debug_log_buffer.size() - _debug_log_buffer.capacity()) <= (total_len + 3)) {
+    if ((_debug_log_buffer.capacity() - _debug_log_buffer.size()) <= (total_len + 3)) {
         _debug_log_buffer_enabled = false;
         return;
     }
