@@ -42,7 +42,6 @@
 #define BUTTON_MODE_DIM_UP          10
 #define BUTTON_MODE_DIM_DOWN        11
 
-
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON
 #define BUTTON_PUSHBUTTON           0

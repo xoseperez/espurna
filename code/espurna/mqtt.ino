@@ -869,6 +869,10 @@ bool mqttConnected() {
     return _mqtt.connected();
 }
 
+bool mqttRetain() {
+    return _mqtt_retain;
+}
+
 void mqttDisconnect() {
     if (_mqtt.connected()) {
         DEBUG_MSG_P(PSTR("[MQTT] Disconnecting\n"));

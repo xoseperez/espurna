@@ -27,13 +27,18 @@ typedef struct {
 
 std::vector<button_t> _buttons;
 
+#define BUTTONS_MAX 8u
+
 #if MQTT_SUPPORT
 
-void buttonMQTT(unsigned char id, uint8_t event) {
+uint8_t _button_mqtt_mask_events {BUTTON_MQTT_MASK_EVENTS};
+uint8_t _button_mqtt_mask_pressed {BUTTON_MQTT_MASK_PRESSED};
+
+void buttonMQTT(unsigned char id, uint8_t event, bool optional_retain = false) {
     if (id >= _buttons.size()) return;
     char payload[2];
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, optional_retain ? mqttRetain() : false); // 1st bool = force, 2nd = retain
 }
 
 #endif
@@ -114,9 +119,18 @@ void buttonEvent(unsigned int id, unsigned char event) {
     unsigned char action = buttonAction(id, event);
 
     #if MQTT_SUPPORT
-       if (action != BUTTON_MODE_NONE || BUTTON_MQTT_SEND_ALL_EVENTS) {
-           buttonMQTT(id, event);
-       }
+    {
+        uint8_t id_bit = (1 << ((BUTTONS_MAX - 1) - id));
+
+        if (_button_mqtt_mask_pressed & id_bit) {
+            buttonMQTT(id, buttonState(id), true);
+            return;
+        }
+
+        if ((BUTTON_MODE_NONE != action) || (_button_mqtt_mask_events & id_bit)) {
+            buttonMQTT(id, event);
+        }
+    }
     #endif
 
     if (BUTTON_MODE_TOGGLE == action) {
@@ -264,6 +278,22 @@ void buttonSetup() {
         wsRegister()
             .onVisible(_buttonWebSocketOnVisible)
             .onKeyCheck(_buttonWebSocketOnKeyCheck);
+    #endif
+
+    #if MQTT_SUPPORT
+        _button_mqtt_mask_events = getSetting("btnMaskEvents", BUTTON_MQTT_MASK_EVENTS).toInt();
+        if (_button_mqtt_mask_events > 0) {
+            char buffer[16];
+            itoa(_button_mqtt_mask_events, buffer, 2);
+            DEBUG_MSG_P(PSTR("[BUTTON] MQTT Events mask: %s\n"), buffer);
+        }
+
+        _button_mqtt_mask_pressed = getSetting("btnMaskPressed", BUTTON_MQTT_MASK_PRESSED).toInt();
+        if (_button_mqtt_mask_pressed > 0) {
+            char buffer[16];
+            itoa(_button_mqtt_mask_pressed, buffer, 2);
+            DEBUG_MSG_P(PSTR("[BUTTON] MQTT pressed mask: %s\n"), buffer);
+        }
     #endif
 
     // Register loop

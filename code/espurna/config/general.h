@@ -343,9 +343,16 @@
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
-#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
-#define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
-                                                // 1 - to send all button events to MQTT
+// Button event filter for MQTT represented as bitset (unsigned)
+// 0 - to send only events the are bound to actions
+// 1 - to send all button events to MQTT
+#ifndef BUTTON_MQTT_MASK_EVENTS
+#define BUTTON_MQTT_MASK_EVENTS     0b00000000u
+#endif
+
+// Bitset for PUSHBUTTONs that can directly send pressed() status, instead of event
+#ifndef BUTTON_MQTT_MASK_PRESSED
+#define BUTTON_MQTT_MASK_PRESSED    0b00000000u
 #endif
 
 //------------------------------------------------------------------------------
