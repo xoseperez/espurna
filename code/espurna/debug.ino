@@ -18,6 +18,56 @@ char _udp_syslog_header[40] = {0};
 #endif
 #endif
 
+// -----------------------------------------------------------------------------
+// printf-like debug methods
+// -----------------------------------------------------------------------------
+
+void debugSendImpl(const char * message, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
+
+void _debugSend(const char * format, va_list args) {
+
+    char temp[64];
+    int len = ets_vsnprintf(temp, sizeof(temp), format, args);
+    if (len < 64) { debugSendImpl(temp); return; }
+
+    auto buffer = new char[len + 1];
+    ets_vsnprintf(buffer, len + 1, format, args);
+
+    debugSendImpl(buffer);
+
+    delete[] buffer;
+
+}
+
+void debugSend(const char* format, ...) {
+
+    va_list args;
+    va_start(args, format);
+
+    _debugSend(format, args);
+
+    va_end(args);
+
+}
+
+void debugSend_P(PGM_P format_P, ...) {
+
+    char format[strlen_P(format_P) + 1];
+    memcpy_P(format, format_P, sizeof(format));
+
+    va_list args;
+    va_start(args, format_P);
+
+    _debugSend(format, args);
+
+    va_end(args);
+
+}
+
+// -----------------------------------------------------------------------------
+// specific debug targets
+// -----------------------------------------------------------------------------
+
 #if DEBUG_SERIAL_SUPPORT
     void _debugSendSerial(const char* prefix, const char* data) {
         if (prefix && (prefix[0] != '\0')) {
@@ -70,6 +120,8 @@ bool debugLogBuffer() {
 }
 
 #endif // DEBUG_LOG_BUFFER_SUPPORT
+
+// -----------------------------------------------------------------------------
 
 void debugSendImpl(const char * message, bool add_timestamp) {
 
@@ -124,6 +176,7 @@ void debugSendImpl(const char * message, bool add_timestamp) {
 
 }
 
+// -----------------------------------------------------------------------------
 
 #if DEBUG_WEB_SUPPORT
 
