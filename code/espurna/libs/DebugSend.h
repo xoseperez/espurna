@@ -4,7 +4,7 @@
 
 #pragma once
 
-void debugSendImpl(const char*);
+void debugSendImpl(const char*, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
 
 void _debugSend(const char * format, va_list args) {
 

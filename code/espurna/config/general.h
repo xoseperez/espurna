@@ -102,6 +102,18 @@
 #define DEBUG_WEB_SUPPORT       1               // Enable web debug log (will only work if WEB_SUPPORT is also 1)
 #endif
 
+#ifndef DEBUG_LOG_BUFFER_SUPPORT
+#define DEBUG_LOG_BUFFER_SUPPORT 1              // Support boot log buffer (will only work if DEBUG_LOG_BUFFER_ENABLED is also 1 or runtime setting enabling it)
+#endif
+
+#ifndef DEBUG_LOG_BUFFER_ENABLED
+#define DEBUG_LOG_BUFFER_ENABLED 1              // Enable bool log (disabled by default)
+#endif
+
+#ifndef DEBUG_LOG_BUFFER_SIZE
+#define DEBUG_LOG_BUFFER_SIZE  1024
+#endif
+
 //------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------

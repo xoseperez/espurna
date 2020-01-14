@@ -118,7 +118,9 @@ void setup() {
     setBoardName();
 
     // Show welcome message and system configuration
-    info();
+    if (!debugLogBuffer()) {
+        info();
+    }
 
     wifiSetup();
     #if OTA_ARDUINOOTA_SUPPORT
