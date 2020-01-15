@@ -35,6 +35,9 @@ class settings_key_t {
         settings_key_t(const String& value) :
             value(value), index(-1)
         {}
+        settings_key_t(const __FlashStringHelper* value) :
+            value(value), index(-1)
+        {}
 
         String toString() const {
             if (index < 0) {
