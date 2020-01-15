@@ -39,7 +39,7 @@ bool haveRelaysOrSensors();
 
 void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory);
 void infoUptime();
-void info();
+void info(bool first = false);
 
 bool sslCheckFingerPrint(const char * fingerprint);
 bool sslFingerPrintArray(const char * fingerprint, unsigned char * bytearray);

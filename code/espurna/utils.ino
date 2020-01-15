@@ -423,7 +423,12 @@ const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
 }
 
 
-void info() {
+void info(bool first) {
+
+    // Avoid printing on early boot when buffering is enabled
+    #if DEBUG_LOG_BUFFER_SUPPORT
+        if (first && debugLogBuffer()) return;
+    #endif
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
@@ -490,14 +495,10 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    static bool show_frag_stats = false;
-
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
-    infoHeapStats(show_frag_stats);
+    infoHeapStats(!first);
     infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
     DEBUG_MSG_P(PSTR("\n"));
-
-    show_frag_stats = true;
 
     // -------------------------------------------------------------------------
 
