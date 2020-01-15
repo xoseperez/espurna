@@ -8,17 +8,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include <functional>
 #include <utility>
 #include <vector>
 #include <ArduinoJson.h>
 
 #include "libs/EmbedisWrap.h"
 
-void moveSetting(const String& from, const String& to);
-void moveSetting(const String& from, const String& to, unsigned int index);
-void moveSettings(const String& from, const String& to);
-
-static const String _settingsDefaultValue("");
+// --------------------------------------------------------------------------
 
 class settings_key_t {
 
@@ -39,13 +36,7 @@ class settings_key_t {
             value(value), index(-1)
         {}
 
-        String toString() const {
-            if (index < 0) {
-                return value;
-            } else {
-                return value + index;
-            }
-        }
+        String toString() const;
 
         explicit operator String () const {
             return toString();
@@ -57,59 +48,25 @@ class settings_key_t {
 };
 
 using settings_move_key_t = std::pair<settings_key_t, settings_key_t>;
+using settings_filter_t = std::function<String(String& value)>;
 
-template <typename T>
-T _settingsConvert(const String& value);
+// --------------------------------------------------------------------------
 
-template <>
-float _settingsConvert(const String& value) {
-    return value.toFloat();
-}
+struct settings_cfg_t {
+    String& setting;
+    const char* key;
+    const char* default_value;
+};
 
-template <>
-double _settingsConvert(const String& value) {
-    return _settingsConvert<float>(value);
-}
+using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
 
-template <>
-int _settingsConvert(const String& value) {
-    return value.toInt();
-}
+// --------------------------------------------------------------------------
 
-template <>
-long _settingsConvert(const String& value) {
-    return value.toInt();
-}
+void moveSetting(const String& from, const String& to);
+void moveSetting(const String& from, const String& to, unsigned int index);
+void moveSettings(const String& from, const String& to);
 
-template <>
-bool _settingsConvert(const String& value) {
-    return _settingsConvert<int>(value) == 1;
-}
-
-template <>
-unsigned long _settingsConvert(const String& value) {
-    return strtoul(value.c_str(), nullptr, 10);
-}
-
-template <>
-unsigned int _settingsConvert(const String& value) {
-    return _settingsConvert<unsigned long>(value);
-}
-
-template <>
-unsigned short _settingsConvert(const String& value) {
-    return _settingsConvert<unsigned long>(value);
-}
-
-template <>
-unsigned char _settingsConvert(const String& value) {
-    return _settingsConvert<unsigned long>(value);
-}
-
-template <>
-String _settingsConvert(const String& value) {
-    return value;
-}
+static const String _settingsDefaultValue("");
 
 template <typename T>
 T getSetting(const settings_key_t& key, T defaultValue);
@@ -126,15 +83,6 @@ void resetSettings();
 
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
-
-struct settings_cfg_t {
-    String& setting;
-    const char* key;
-    const char* default_value;
-};
-
-using settings_filter_t = std::function<String(String& value)>;
-using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
 
 void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 

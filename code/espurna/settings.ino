@@ -6,7 +6,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include <vector>
+
+#include <ArduinoJson.h>
+
 #include "settings.h"
+#include "settings_internal.h"
 
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
@@ -95,6 +100,14 @@ std::vector<String> _settingsKeys() {
 // -----------------------------------------------------------------------------
 // Key-value API
 // -----------------------------------------------------------------------------
+
+String settings_key_t::toString() const {
+    if (index < 0) {
+        return value;
+    } else {
+        return value + index;
+    }
+}
 
 settings_move_key_t _moveKeys(const String& from, const String& to, unsigned char index) {
     return settings_move_key_t {{from, index}, {to, index}};
