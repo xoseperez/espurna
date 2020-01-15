@@ -439,7 +439,7 @@ void _haConfigure() {
     //       in case useCSS value is ever cached by the lights module
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         if (enabled) {
-            if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+            if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
                 setSetting("useCSS", 0);
             }
         }

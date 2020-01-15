@@ -101,7 +101,7 @@ SecureClientConfig _mqtt_sc_config {
         return _mqtt_server;
     },
     []() -> int {
-        return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK).toInt();
+        return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK);
     },
     []() -> String {
         return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
@@ -114,7 +114,7 @@ SecureClientConfig _mqtt_sc_config {
 SecureClientConfig _mqtt_sc_config {
     "MQTT",
     []() -> int {
-        return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK).toInt();
+        return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK);
     },
     []() -> PGM_P {
         return _mqtt_client_trusted_root_ca;
@@ -123,7 +123,7 @@ SecureClientConfig _mqtt_sc_config {
         return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     },
     []() -> uint16_t {
-        return getSetting("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN).toInt();
+        return getSetting<uint16_t>("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN);
     },
     true
 };
@@ -244,7 +244,7 @@ void _mqttConnect() {
     _mqtt_connecting = true;
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        const bool secure = getSetting("mqttUseSSL", bool(MQTT_SSL_ENABLED));
+        const bool secure = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);
     #else
         const bool secure = false;
     #endif
@@ -305,7 +305,7 @@ void _mqttConfigure() {
     // Enable only when server is set
     {
         const String server = getSetting("mqttServer", MQTT_SERVER);
-        const auto port = getSetting("mqttPort", static_cast<uint16_t>(MQTT_PORT));
+        const auto port = getSetting<uint16_t>("mqttPort", MQTT_PORT);
         bool enabled = false;
         if (server.length()) {
             enabled = getSetting("mqttEnabled", 1 == MQTT_ENABLED);
@@ -350,7 +350,7 @@ void _mqttConfigure() {
 
         String pass = getSetting("mqttPassword", MQTT_PASS);
 
-        unsigned char qos = getSetting("mqttQoS", (unsigned char)(MQTT_QOS));
+        auto qos = getSetting<unsigned char>("mqttQoS", MQTT_QOS);
         bool retain = getSetting("mqttRetain", bool(MQTT_RETAIN));
         
         // Note: MQTT spec defines this as 2 bytes
@@ -372,7 +372,7 @@ void _mqttConfigure() {
 
     // MQTT JSON
     {
-        _mqttApplySetting(_mqtt_use_json, getSetting("mqttUseJson", bool(MQTT_USE_JSON)));
+        _mqttApplySetting(_mqtt_use_json, getSetting("mqttUseJson", 1 == MQTT_USE_JSON));
         _mqttApplyTopic(_mqtt_topic_json, MQTT_TOPIC_JSON);
     }
 
