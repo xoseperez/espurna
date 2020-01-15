@@ -153,6 +153,10 @@ String getSetting(const settings_key_t& key, const char* defaultValue) {
     return getSetting(key, String(defaultValue));
 }
 
+String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultValue) {
+    return getSetting(key, String(defaultValue));
+}
+
 template<typename T>
 bool setSetting(const settings_key_t& key, const T& value) {
     return Embedis::set(key.toString(), String(value));
