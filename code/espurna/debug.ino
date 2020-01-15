@@ -251,6 +251,10 @@ void debugSetup() {
     #if TERMINAL_SUPPORT
         terminalRegisterCommand(F("DEBUG.BUFFER"), [](Embedis* e) {
             _debug_log_buffer_enabled = false;
+            if (!_debug_log_buffer.size()) {
+                DEBUG_MSG_P(PSTR("[DEBUG] Buffer is empty\n"));
+                return;
+            }
             DEBUG_MSG_P(PSTR("[DEBUG] Buffer size: %u / %u bytes\n"),
                 _debug_log_buffer.size(),
                 _debug_log_buffer.capacity()
@@ -273,6 +277,9 @@ void debugSetup() {
 
                 index += len;
             } while (true);
+
+            _debug_log_buffer.clear();
+            _debug_log_buffer.shrink_to_fit();
         });
     #endif // TERMINAL_SUPPORT
 
