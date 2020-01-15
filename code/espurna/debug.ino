@@ -239,8 +239,8 @@ void debugSetup() {
 
     #if DEBUG_LOG_BUFFER_SUPPORT
     {
-        auto enabled = getSetting("dbgBuffer", DEBUG_LOG_BUFFER_ENABLED).toInt() == 1;
-        auto size = getSetting("dbgBufferSize", DEBUG_LOG_BUFFER_SIZE).toInt();
+        auto enabled = getSetting("dbgBufEnabled", DEBUG_LOG_BUFFER_ENABLED).toInt() == 1;
+        auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE).toInt();
         if (enabled) {
             _debug_log_buffer_enabled = true;
             _debug_log_buffer.reserve(size);
