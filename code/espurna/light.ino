@@ -628,8 +628,8 @@ void _lightRestoreRtcmem() {
 }
 
 void _lightSaveSettings() {
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-        setSetting("ch", i, _light_channel[i].inputValue);
+    for (unsigned char i=0; i < _light_channel.size(); ++i) {
+        setSetting({"ch", i}, _light_channel[i].inputValue);
     }
     setSetting("brightness", _light_brightness);
     setSetting("mireds", _light_mireds);
@@ -637,7 +637,7 @@ void _lightSaveSettings() {
 }
 
 void _lightRestoreSettings() {
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
+    for (unsigned char i=0; i < _light_channel.size(); ++i) {
         _light_channel[i].inputValue = getSetting({"ch", i}, (i == 0) ? Light::VALUE_MAX : 0);
     }
     _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX);
