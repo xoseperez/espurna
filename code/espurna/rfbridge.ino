@@ -775,12 +775,10 @@ void rfbSetup() {
 
         _rfModem = new RCSwitch();
         if (_rfb_receive) {
-            gpioLock(rx);
             _rfModem->enableReceive(rx);
             DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
         }
         if (_rfb_transmit) {
-            gpioLock(tx);
             _rfModem->enableTransmit(tx);
             _rfModem->setRepeatTransmit(_rfb_repeat);
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
