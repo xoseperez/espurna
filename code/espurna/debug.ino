@@ -25,20 +25,31 @@ char _udp_syslog_header[40] = {0};
 // printf-like debug methods
 // -----------------------------------------------------------------------------
 
-void debugSendImpl(const char * message, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
+constexpr const int DEBUG_SEND_STRING_BUFFER_SIZE = 128;
 
+void _debugSendInternal(const char * message, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
+
+// TODO: switch to newlib vsnprintf for latest Cores to support PROGMEM args
 void _debugSend(const char * format, va_list args) {
 
-    char temp[64];
+    char temp[DEBUG_SEND_STRING_BUFFER_SIZE];
     int len = ets_vsnprintf(temp, sizeof(temp), format, args);
-    if (len < 64) { debugSendImpl(temp); return; }
 
-    auto buffer = new char[len + 1];
-    ets_vsnprintf(buffer, len + 1, format, args);
+    // strlen(...) + '\0' already in temp buffer, avoid using malloc when possible
+    if (len < DEBUG_SEND_STRING_BUFFER_SIZE) {
+        _debugSendInternal(temp);
+        return;
+    }
 
-    debugSendImpl(buffer);
+    len += 1;
+    auto* buffer = static_cast<char*>(malloc(len));
+    if (!buffer) {
+        return;
+    }
+    ets_vsnprintf(buffer, len, format, args);
 
-    delete[] buffer;
+    _debugSendInternal(buffer);
+    free(buffer);
 
 }
 
@@ -126,7 +137,7 @@ bool debugLogBuffer() {
 
 // -----------------------------------------------------------------------------
 
-void debugSendImpl(const char * message, bool add_timestamp) {
+void _debugSendInternal(const char * message, bool add_timestamp) {
 
     const size_t msg_len = strlen(message);
 
@@ -251,7 +262,7 @@ void debugSetup() {
 
                 char value = _debug_log_buffer[index + len];
                 _debug_log_buffer[index + len] = '\0';
-                debugSendImpl(_debug_log_buffer.data() + index, false);
+                _debugSendInternal(_debug_log_buffer.data() + index, false);
                 _debug_log_buffer[index + len] = value;
 
                 index += len;
