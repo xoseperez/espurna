@@ -33,11 +33,11 @@
 #endif
 
 #ifndef HUMIDITY_MIN_CHANGE
-#define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
+#define HUMIDITY_MIN_CHANGE                 0.0             // Minimum humidity change to report
 #endif
 
 #ifndef ENERGY_MAX_CHANGE
-#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
+#define ENERGY_MAX_CHANGE                   0.0             // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
 #endif
 
 #ifndef SENSOR_SAVE_EVERY
@@ -403,7 +403,7 @@
 #endif
 
 #ifndef EMON_CURRENT_RATIO
-#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
+#define EMON_CURRENT_RATIO              30.0        // Current ratio in the clamp (30A/1V)
 #endif
 
 #ifndef EMON_REPORT_CURRENT
@@ -710,15 +710,15 @@
 #endif
 
 #ifndef HLW8012_CURRENT_RATIO
-#define HLW8012_CURRENT_RATIO           0       // Set to 0 to use factory defaults
+#define HLW8012_CURRENT_RATIO           0.0       // Set to 0.0 to use factory defaults
 #endif
 
 #ifndef HLW8012_VOLTAGE_RATIO
-#define HLW8012_VOLTAGE_RATIO           0       // Set to 0 to use factory defaults
+#define HLW8012_VOLTAGE_RATIO           0.0       // Set to 0.0 to use factory defaults
 #endif
 
 #ifndef HLW8012_POWER_RATIO
-#define HLW8012_POWER_RATIO             0       // Set to 0 to use factory defaults
+#define HLW8012_POWER_RATIO             0.0       // Set to 0.0 to use factory defaults
 #endif
 
 #ifndef HLW8012_USE_INTERRUPTS
