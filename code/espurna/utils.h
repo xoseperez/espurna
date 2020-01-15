@@ -38,6 +38,7 @@ unsigned long getUptime();
 bool haveRelaysOrSensors();
 
 void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory);
+void infoUptime();
 void info();
 
 bool sslCheckFingerPrint(const char * fingerprint);

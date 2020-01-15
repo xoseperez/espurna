@@ -207,13 +207,18 @@ namespace Heartbeat {
 
 }
 
+void infoUptime() {
+    auto uptime [[gnu::unused]] = getUptime();
+    DEBUG_MSG_P(
+        PSTR("Uptime: %02dd %02dh %02dm %02ds\n"),
+        elapsedDays(uptime), numberOfHours(uptime),
+        numberOfMinutes(uptime), numberOfSeconds(uptime)
+    );
+}
+
 void heartbeat() {
 
-    unsigned long uptime_seconds = getUptime();
-    heap_stats_t heap_stats = getHeapStats();
-
-    UNUSED(uptime_seconds);
-    UNUSED(heap_stats);
+    auto heap_stats [[gnu::unused]] = getHeapStats();
 
     #if MQTT_SUPPORT
         unsigned char _heartbeat_mode = getHeartbeatMode();
@@ -227,7 +232,7 @@ void heartbeat() {
     // -------------------------------------------------------------------------
 
     if (serial) {
-        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
+        infoUptime();
         infoHeapStats();
         #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
@@ -283,7 +288,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
 
             if (hb_cfg & Heartbeat::Uptime)
-                mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+                mqttSend(MQTT_TOPIC_UPTIME, String(getUptime()).c_str());
 
             #if NTP_SUPPORT
                 if ((hb_cfg & Heartbeat::Datetime) && (ntpSynced()))
@@ -335,7 +340,7 @@ void heartbeat() {
 
     #if INFLUXDB_SUPPORT
         if (hb_cfg & Heartbeat::Uptime)
-            idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+            idbSend(MQTT_TOPIC_UPTIME, String(getUptime()).c_str());
 
         if (hb_cfg & Heartbeat::Freeheap)
             idbSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
