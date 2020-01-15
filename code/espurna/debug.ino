@@ -215,6 +215,7 @@ void debugWebSetup() {
         .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
         .onAction(_debugWebSocketOnAction);
 
+    // TODO: if hostname string changes, need to update header too
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514
         snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
@@ -248,8 +249,13 @@ void debugSetup() {
     }
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("DEBUG.LOG"), [](Embedis* e) {
+        terminalRegisterCommand(F("DEBUG.BUFFER"), [](Embedis* e) {
             _debug_log_buffer_enabled = false;
+            DEBUG_MSG_P(PSTR("[DEBUG] Buffer size: %u / %u bytes\n"),
+                _debug_log_buffer.size(),
+                _debug_log_buffer.capacity()
+            );
+
             size_t index = 0;
             do {
                 if (index >= _debug_log_buffer.size()) {
@@ -260,7 +266,7 @@ void debugSetup() {
                 len = len | _debug_log_buffer[index + 1];
                 index += 2;
 
-                char value = _debug_log_buffer[index + len];
+                auto value = _debug_log_buffer[index + len];
                 _debug_log_buffer[index + len] = '\0';
                 _debugSendInternal(_debug_log_buffer.data() + index, false);
                 _debug_log_buffer[index + len] = value;
