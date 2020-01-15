@@ -1424,9 +1424,7 @@ void relaySetup() {
     _relaySetupAdhoc();
 
     // Dummy (virtual) relays
-    relaySetupDummy(
-        constrain(getSetting("relayDummy", DUMMY_RELAY_COUNT), 0, RELAYS_MAX)
-    );
+    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT));
 
     _relaySetupProvider();
     _relayBackwards();
