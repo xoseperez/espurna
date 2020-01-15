@@ -9,6 +9,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <JustWifi.h>
 #include <Ticker.h>
 
+#include "ws.h"
+
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
 bool _wifi_smartconfig_initial = false;

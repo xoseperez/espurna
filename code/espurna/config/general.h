@@ -1129,10 +1129,6 @@
 #define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
 #endif
 
-#ifndef BROKER_REAL_TIME
-#define BROKER_REAL_TIME        1           // Report real time data
-#endif
-
 // -----------------------------------------------------------------------------
 // SETTINGS
 // -----------------------------------------------------------------------------
@@ -1731,6 +1727,63 @@
         { 0xFFB24D, IR_BUTTON_MODE_TOGGLE, 0 } // Toggle Relay #0
 
  };
+
+#endif
+
+//Remote Buttons SET 5 (another identical IR Remote shipped with another controller as SET 1 and 2)
+#if IR_BUTTON_SET == 5
+
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
+    #define IR_BUTTON_COUNT 24
+
+    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xF700FF, IR_BUTTON_MODE_BRIGHTER, 1 },
+        { 0xF7807F, IR_BUTTON_MODE_BRIGHTER, 0 },
+        { 0xF740BF, IR_BUTTON_MODE_STATE, 0 },
+        { 0xF7C03F, IR_BUTTON_MODE_STATE, 1 },
+
+        { 0xF720DF, IR_BUTTON_MODE_RGB, 0xFF0000 },
+        { 0xF7A05F, IR_BUTTON_MODE_RGB, 0x00FF00 },
+        { 0xF7609F, IR_BUTTON_MODE_RGB, 0x0000FF },
+        { 0xF7E01F, IR_BUTTON_MODE_RGB, 0xFFFFFF },
+
+        { 0xF710EF, IR_BUTTON_MODE_RGB, 0xD13A01 },
+        { 0xF7906F, IR_BUTTON_MODE_RGB, 0x00E644 },
+        { 0xF750AF, IR_BUTTON_MODE_RGB, 0x0040A7 },
+        { 0xF7D02F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FLASH },
+
+        { 0xF730CF, IR_BUTTON_MODE_RGB, 0xE96F2A },
+        { 0xF7B04F, IR_BUTTON_MODE_RGB, 0x00BEBF },
+        { 0xF7708F, IR_BUTTON_MODE_RGB, 0x56406F },
+        { 0xF7F00F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_STROBE },
+
+        { 0xF708F7, IR_BUTTON_MODE_RGB, 0xEE9819 },
+        { 0xF78877, IR_BUTTON_MODE_RGB, 0x00799A },
+        { 0xF748B7, IR_BUTTON_MODE_RGB, 0x944E80 },
+        { 0xF7C837, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FADE },
+
+        { 0xF728D7, IR_BUTTON_MODE_RGB, 0xFFFF00 },
+        { 0xF7A857, IR_BUTTON_MODE_RGB, 0x0060A1 },
+        { 0xF76897, IR_BUTTON_MODE_RGB, 0xEF45AD },
+        { 0xF7E817, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_SMOOTH }
+
+    };
 
 #endif
 

@@ -8,9 +8,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SENSOR_SUPPORT
 
-#include "relay.h"
-#include "broker.h"
-
 #include <vector>
 #include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
@@ -19,6 +16,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "sensors/BaseSensor.h"
 
 #include <float.h>
+
+#include "relay.h"
+#include "broker.h"
+#include "ws.h"
+
 
 struct sensor_magnitude_t {
     BaseSensor * sensor;        // Sensor object
@@ -1543,8 +1545,8 @@ void _sensorReport(unsigned char index, double value) {
     char buffer[64];
     dtostrf(value, 1, decimals, buffer);
 
-    #if BROKER_SUPPORT && (not BROKER_REAL_TIME)
-        SensorBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
+    #if BROKER_SUPPORT
+        SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
     #endif
 
     #if MQTT_SUPPORT
@@ -1801,12 +1803,12 @@ void sensorLoop() {
                 // -------------------------------------------------------------
 
                 value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
-                #if BROKER_SUPPORT && BROKER_REAL_TIME
+                #if BROKER_SUPPORT
                 {
                     char buffer[64];
                     dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
             
-                    SensorBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value_show, buffer);
+                    SensorReadBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value_show, buffer);
                 }
                 #endif
 

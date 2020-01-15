@@ -3,6 +3,57 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.14.2] Not yet released
+\-
+
+## [1.14.1] 2019-12-31
+
+### Fixed
+#### Devices
+- Set button pullup on shpx-v23 boards ([#2074](https://github.com/xoseperez/espurna/issues/2074), thanks to **[@RDobrinov](https://github.com/RDobrinov)**)
+#### Domoticz
+- Fix unresponsive switches, use proper datastructure to track state ([#2049](https://github.com/xoseperez/espurna/issues/2049))
+#### InfluxDB
+- Use sensor "report" instead of sending data each reading. Use async client, send data in batches ([#2061](https://github.com/xoseperez/espurna/issues/2061))
+- Don't queue any new data while connecting
+#### IR
+- Revert "ir: use proper methods" ([#2066](https://github.com/xoseperez/espurna/issues/2066), thanks to **[@sehraf](https://github.com/sehraf)** for reporting the issue)
+#### OTA
+- Verify data stream and properly handle errors. Do not write to flash when any error was encountered. ([#2067](https://github.com/xoseperez/espurna/issues/2067))
+#### Sensor
+- Use different Broker instances for read and report data ([#2061](https://github.com/xoseperez/espurna/issues/2061))
+#### WebUI
+- Fix LED mode title style ([#2038](https://github.com/xoseperez/espurna/issues/2038), thanks to **[@foxman69](https://github.com/foxman69)**)
+- Properly handle websocket payloads when scheduler is disabled ([#2050](https://github.com/xoseperez/espurna/issues/2050))
+- Fix colorpicker not working in RGB mode ([#2053](https://github.com/xoseperez/espurna/issues/2053))
+- Remove some unused code from resulting image ([#2053](https://github.com/xoseperez/espurna/issues/2053))
+
+### Added
+#### Devices
+- Add GENERIC_E14, e14 rgb+w 4,5w ([#2039](https://github.com/xoseperez/espurna/2039), thanks to **[@orrpan](https://github.com/orrpan)**)
+- Add support for LinkSprite R4 ([#2042](https://github.com/xoseperez/espurna/issues/2042), thanks to **[@mpcusack](https://github.com/mpcusack)**)
+- Add support for eHomeDIY devices. ([#2046](https://github.com/xoseperez/espurna/issues/2046), thanks to **[@user890104](https://github.com/user890104)**)
+- Add support for MAGICHOME\_ZJ_WFMN\_C\_11 ([#2051](https://github.com/xoseperez/espurna/issues/2051), thanks to **[@davebuk](https://github.com/davebuk)**)
+- Add support for the LSC LED LIGHT STRIP from ACTION using a tuya chip. ([#2065](https://github.com/xoseperez/espurna/issues/2065), thanks to **[@sehraf](https://github.com/sehraf)**)
+- Add LOHAS_E26_A19, rename LOHAS_9W to LOHAS_E27_9W ([#2068](https://github.com/xoseperez/espurna/issues/2068), thanks to **[@cro](https://github.com/cro)** for providing A19 configuration)
+#### Home Assistant
+- Try to avoid conflict with useCSS ([#2075](https://github.com/xoseperez/espurna/issues/2075))
+#### WebUI
+- WebUI fix change detection of input elements ([#1986](https://github.com/xoseperez/espurna/issues/1986))
+
+### Changed
+#### Build
+- Removed unneeded reference to Ticker library in RFBridge module
+#### PlatformIO
+- Update latest Arduino core platform to 2.6.3 ([#2069](https://github.com/xoseperez/espurna/issues/2069), thanks to **[@Niek](https://github.com/Niek)**)
+- Test espurna-core feature build ([#2080](https://github.com/xoseperez/espurna/issues/2080))
+#### Scripts
+- Using python3 by default in OTA manager
+- Force get_device_size to return an int in OTA manager
+- Beautify build script size output
+- ota.py version 0.4 ([#2020](https://github.com/xoseperez/espurna/issues/2020))
+- Do not run test stages on tag in Travis CI ([#2052](https://github.com/xoseperez/espurna/issues/2052))
+
 ## [1.14.0] 2019-11-29
 ### Fixed
 #### Security

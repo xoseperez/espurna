@@ -14,6 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/NtpClientWrap.h"
 #include "broker.h"
+#include "ws.h"
 
 Ticker _ntp_defer;
 
