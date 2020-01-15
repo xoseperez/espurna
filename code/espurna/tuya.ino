@@ -489,7 +489,7 @@ namespace Tuya {
             initBrokerCallback();
 
             for (unsigned char n = 0; n < channelStates.capacity(); ++n) {
-                if (!hasSetting("tuyaChannel", n)) break;
+                if (!hasSetting({"tuyaChannel", n})) break;
                 const auto dp = getSetting({"tuyaChannel", n}, 0);
                 channelStates.pushOrUpdate(dp, 0);
             }
