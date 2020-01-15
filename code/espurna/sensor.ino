@@ -1361,7 +1361,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
@@ -1376,7 +1376,7 @@ void _sensorConfigure() {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
             }
@@ -1387,7 +1387,7 @@ void _sensorConfigure() {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
             }
@@ -1418,7 +1418,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
@@ -1457,7 +1457,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
@@ -1477,7 +1477,7 @@ void _sensorConfigure() {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
                 if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
@@ -1493,7 +1493,7 @@ void _sensorConfigure() {
                     unsigned char dev_count = sensor->getAddressesCount();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev, 0);
-                        delSetting("eneTotal", dev);
+                        delSetting({"eneTotal", dev});
                     }
                     _sensorResetTS();
                 }
@@ -1509,7 +1509,7 @@ void _sensorConfigure() {
                     unsigned char dev_count = sensor->getTotalDevices();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev);
-                        delSetting("eneTotal", dev);
+                        delSetting({"eneTotal", dev});
                     }
                     _sensorResetTS();
                 }
