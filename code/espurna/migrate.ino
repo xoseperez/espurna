@@ -43,7 +43,6 @@ void migrate() {
         _cmpMoveIndexDown("relayType");
     }
 
-    #if 0
     if (config_version == 1) {
 
         #if defined(NODEMCU_LOLIN)
@@ -1480,7 +1479,6 @@ void migrate() {
         #endif
 
     }
-    #endif
 
     saveSettings();
 
