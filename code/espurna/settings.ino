@@ -197,6 +197,30 @@ void resetSettings() {
 }
 
 // -----------------------------------------------------------------------------
+// Deprecated implementation
+// -----------------------------------------------------------------------------
+
+template<typename T>
+String getSetting(const String& key, unsigned char index, T defaultValue) {
+    return getSetting({key, index}, defaultValue);
+}
+
+template<typename T>
+bool setSetting(const String& key, unsigned char index, T value) {
+    return setSetting({key, index}, value);
+}
+
+template<typename T>
+bool hasSetting(const String& key, unsigned char index) {
+    return hasSetting({key, index});
+}
+
+template<typename T>
+bool delSetting(const String& key, unsigned char index) {
+    return delSetting({key, index});
+}
+
+// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 

@@ -86,3 +86,20 @@ bool settingsRestoreJson(JsonObject& data);
 
 void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 
+// --------------------------------------------------------------------------
+
+template <typename T>
+String getSetting(const String& key, unsigned char index, T defaultValue)
+__attribute__((deprecated("getSetting({key, index}, default) should be used instead")));
+
+template<typename T>
+bool setSetting(const String& key, unsigned char index, T value)
+__attribute__((deprecated("setSetting({key, index}, value) should be used instead")));
+
+template<typename T>
+bool hasSetting(const String& key, unsigned char index)
+__attribute__((deprecated("hasSetting({key, index}) should be used instead")));
+
+template<typename T>
+bool delSetting(const String& key, unsigned char index)
+__attribute__((deprecated("delSetting({key, index}) should be used instead")));
