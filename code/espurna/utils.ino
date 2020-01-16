@@ -12,12 +12,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <limits>
 
-String getIdentifier() {
-    char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
-    return String(buffer);
-}
-
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
         setSetting("hostname", HOSTNAME);
@@ -82,24 +76,6 @@ unsigned char getHeartbeatInterval() {
     return getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
-String getEspurnaModules() {
-    return FPSTR(espurna_modules);
-}
-
-String getEspurnaOTAModules() {
-    return FPSTR(espurna_ota_modules);
-}
-
-#if SENSOR_SUPPORT
-String getEspurnaSensors() {
-    return FPSTR(espurna_sensors);
-}
-#endif
-
-String getEspurnaWebUI() {
-    return FPSTR(espurna_webui);
-}
-
 String buildTime() {
     #if NTP_SUPPORT
         return ntpDateTime(__UNIX_TIMESTAMP__);
@@ -125,15 +101,6 @@ unsigned long getUptime() {
 
     return uptime_seconds;
 
-}
-
-bool haveRelaysOrSensors() {
-    bool result = false;
-    result = (relayCount() > 0);
-    #if SENSOR_SUPPORT
-        result = result || (magnitudeCount() > 0);
-    #endif
-    return result;
 }
 
 // -----------------------------------------------------------------------------

@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "config/all.h"
-#include <vector>
 
+#include "board.h"
 #include "settings.h"
 #include "system.h"
 #include "utils.h"

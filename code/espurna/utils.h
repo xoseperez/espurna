@@ -13,7 +13,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 extern "C" uint32_t _SPIFFS_start;
 extern "C" uint32_t _SPIFFS_end;
 
-String getIdentifier();
 void setDefaultHostname();
 
 void setBoardName();
@@ -26,12 +25,6 @@ const String& getCoreRevision();
 unsigned char getHeartbeatMode();
 unsigned char getHeartbeatInterval();
 void heartbeat();
-
-String getEspurnaModules();
-String getEspurnaOTAModules();
-String getEspurnaSensors();
-
-String getEspurnaWebUI();
 
 String buildTime();
 unsigned long getUptime();
