@@ -450,7 +450,7 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     root["wifiScan"] = getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS);
     JsonArray& wifi = root.createNestedArray("wifi");
     for (unsigned char i=0; i<WIFI_MAX_NETWORKS; ++i) {
-        if (!hasSetting({"ssid", i})) break;
+        if (!getSetting({"ssid", i}, _wifiSSID(i)).length()) break;
         JsonObject& network = wifi.createNestedObject();
         network["ssid"] = getSetting({"ssid", i}, _wifiSSID(i));
         network["pass"] = getSetting({"pass", i}, _wifiPass(i));
