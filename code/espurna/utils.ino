@@ -68,11 +68,11 @@ const String& getCoreRevision() {
     return revision;
 }
 
-unsigned char getHeartbeatMode() {
+int getHeartbeatMode() {
     return getSetting("hbMode", HEARTBEAT_MODE);
 }
 
-unsigned char getHeartbeatInterval() {
+unsigned long getHeartbeatInterval() {
     return getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 

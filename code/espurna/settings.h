@@ -70,6 +70,7 @@ static const String _settingsDefaultValue("");
 
 template <typename T>
 T getSetting(const settings_key_t& key, T defaultValue);
+
 String getSetting(const settings_key_t& key);
 
 template<typename T>

@@ -1288,12 +1288,10 @@ void _lightConfigure() {
         setSetting("useCCT", _light_use_cct);
     }
 
-    if (_light_use_cct) {
-        _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED);
-        _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED);
-        _light_cold_kelvin = (1000000L / _light_cold_mireds);
-        _light_warm_kelvin = (1000000L / _light_warm_mireds);
-    }
+    _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED);
+    _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED);
+    _light_cold_kelvin = (1000000L / _light_cold_mireds);
+    _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
     _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
     _light_use_transitions = getSetting("useTransitions", 1 == LIGHT_USE_TRANSITIONS);

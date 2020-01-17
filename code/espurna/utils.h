@@ -22,8 +22,8 @@ String getAdminPass();
 const String& getCoreVersion();
 const String& getCoreRevision();
 
-unsigned char getHeartbeatMode();
-unsigned char getHeartbeatInterval();
+int getHeartbeatMode();
+unsigned long getHeartbeatInterval();
 void heartbeat();
 
 String buildTime();

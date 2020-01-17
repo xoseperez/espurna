@@ -205,7 +205,7 @@ void _domoticzWebSocketOnVisible(JsonObject& root) {
 
 void _domoticzWebSocketOnConnected(JsonObject& root) {
 
-    root["dczEnabled"] = getSetting<bool>("dczEnabled", DOMOTICZ_ENABLED);
+    root["dczEnabled"] = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
@@ -229,7 +229,7 @@ void _domoticzRelayConfigure(size_t size) {
 }
 
 void _domoticzConfigure() {
-    const bool enabled = getSetting<bool>("dczEnabled", DOMOTICZ_ENABLED);
+    const bool enabled = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
     if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
 
     _domoticzRelayConfigure(relayCount());

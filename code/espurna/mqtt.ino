@@ -61,8 +61,8 @@ unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned long _mqtt_last_connection = 0;
 bool _mqtt_connected = false;
 bool _mqtt_connecting = false;
-unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
+int _mqtt_qos = MQTT_QOS;
 int _mqtt_keepalive = MQTT_KEEPALIVE;
 String _mqtt_topic;
 String _mqtt_topic_json;
@@ -350,8 +350,8 @@ void _mqttConfigure() {
 
         String pass = getSetting("mqttPassword", MQTT_PASS);
 
-        auto qos = getSetting<unsigned char>("mqttQoS", MQTT_QOS);
-        bool retain = getSetting("mqttRetain", bool(MQTT_RETAIN));
+        const auto qos = getSetting("mqttQoS", MQTT_QOS);
+        const bool retain = getSetting("mqttRetain", 1 == MQTT_RETAIN);
         
         // Note: MQTT spec defines this as 2 bytes
         const auto keepalive = constrain(
@@ -889,18 +889,20 @@ void mqttRegister(mqtt_callback_f callback) {
     _mqtt_callbacks.push_back(callback);
 }
 
-void mqttSetBroker(IPAddress ip, unsigned int port) {
+void mqttSetBroker(IPAddress ip, uint16_t port) {
     setSetting("mqttServer", ip.toString());
     _mqtt_server = ip.toString();
 
     setSetting("mqttPort", port);
     _mqtt_port = port;
 
-    mqttEnabled(MQTT_AUTOCONNECT);
+    mqttEnabled(1 == MQTT_AUTOCONNECT);
 }
 
-void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
-    if (getSetting<String>("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
+void mqttSetBrokerIfNone(IPAddress ip, uint16_t port) {
+    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
+        mqttSetBroker(ip, port);
+    }
 }
 
 const String& mqttPayloadOnline() {

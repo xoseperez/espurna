@@ -29,7 +29,7 @@ bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _rpnWebSocketOnConnected(JsonObject& root) {
 
-    root["rpnSticky"] = getSetting("rpnSticky", true);
+    root["rpnSticky"] = getSetting("rpnSticky", 1 == RPN_STICKY);
     root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY);
     JsonArray& rules = root.createNestedArray("rpnRules");
 
@@ -265,7 +265,7 @@ void _rpnRun() {
         rpn_stack_clear(_rpn_ctxt);
     }
 
-    if (getSetting("rpnSticky", true)) {
+    if (getSetting("rpnSticky", 1 == RPN_STICKY)) {
         rpn_variables_clear(_rpn_ctxt);
     }
 

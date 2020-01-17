@@ -14,7 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
 bool _wifi_smartconfig_initial = false;
-uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
+int _wifi_ap_mode = WIFI_AP_FALLBACK;
 
 #if WIFI_GRATUITOUS_ARP_SUPPORT
 unsigned long _wifi_gratuitous_arp_interval = 0;
@@ -66,7 +66,7 @@ void _wifiConfigure() {
     jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
-    _wifi_ap_mode = getSetting<int>("apmode", WIFI_AP_FALLBACK);
+    _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK);
 
     // If system is flagged unstable we do not init wifi networks
     #if SYSTEM_CHECK_ENABLED

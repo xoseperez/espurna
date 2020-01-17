@@ -89,9 +89,9 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
 #endif
 
 void _tspkConfigure() {
-    _tspk_clear = getSetting<bool>("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
-    _tspk_enabled = getSetting<bool>("tspkEnabled", 1 == THINGSPEAK_ENABLED);
-    if (_tspk_enabled && (getSetting<String>("tspkKey", THINGSPEAK_APIKEY).length() == 0)) {
+    _tspk_clear = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
+    _tspk_enabled = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
+    if (_tspk_enabled && (getSetting("tspkKey", THINGSPEAK_APIKEY).length() == 0)) {
         _tspk_enabled = false;
         setSetting("tspkEnabled", 0);
     }

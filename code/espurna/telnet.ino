@@ -345,11 +345,13 @@ void _telnetNotifyConnected(unsigned char i) {
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
     // If there is no terminal support automatically dump info and crash data
-    #if DEBUG_SUPPORT && not TERMINAL_SUPPORT
+    #if DEBUG_SUPPORT
+    #if not TERMINAL_SUPPORT
         info();
         wifiDebug();
         crashDump();
         crashClear();
+    #endif
     #endif
 
     #ifdef ESPURNA_CORE

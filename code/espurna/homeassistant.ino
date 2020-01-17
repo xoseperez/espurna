@@ -213,7 +213,7 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
-        String topic = getSetting<String>("haPrefix", HOMEASSISTANT_PREFIX) +
+        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/sensor/" +
             getSetting("hostname") + "_" + String(i) +
             "/config";
@@ -270,7 +270,7 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
                 config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
                 config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
             }
-            if (lightUseCCT()) {
+            if (lightHasColor() || lightUseCCT()) {
                 config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
                 config["color_temp_state_topic"] = mqttTopic(MQTT_TOPIC_MIRED, false);
             }
@@ -293,7 +293,7 @@ void ha_discovery_t::prepareSwitches(ha_config_t& config) {
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
-        String topic = getSetting<String>("haPrefix", HOMEASSISTANT_PREFIX) +
+        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/" + switchType +
             "/" + getSetting("hostname") + "_" + String(i) +
             "/config";
@@ -429,7 +429,7 @@ void _haSend() {
 }
 
 void _haConfigure() {
-    const bool enabled = getSetting<bool>("haEnabled", HOMEASSISTANT_ENABLED);
+    const bool enabled = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
     _ha_send_flag = (enabled != _ha_enabled);
     _ha_enabled = enabled;
 
@@ -460,7 +460,7 @@ void _haWebSocketOnVisible(JsonObject& root) {
 
 void _haWebSocketOnConnected(JsonObject& root) {
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting<bool>("haEnabled", HOMEASSISTANT_ENABLED);
+    root["haEnabled"] = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
 }
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {

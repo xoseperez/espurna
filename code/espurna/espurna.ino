@@ -258,8 +258,7 @@ void setup() {
     // Set up delay() after loop callbacks are finished
     // Note: should be after settingsSetup()
     _loop_delay = constrain(
-        getSetting<int>("loopDelay", LOOP_DELAY_TIME),
-        0, 300
+        getSetting("loopDelay", LOOP_DELAY_TIME), 0, 300
     );
 
     saveSettings();

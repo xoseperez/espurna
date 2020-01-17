@@ -247,7 +247,7 @@ void _terminalInitCommand() {
         for (unsigned char i = 1; i < e->argc; i++) {
             String key = String(e->argv[i]);
             String value;
-            if (!EmbedisWrap::get(key, value)) {
+            if (!Embedis::get(key, value)) {
                 DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
                 continue;
             }

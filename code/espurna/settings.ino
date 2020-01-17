@@ -190,7 +190,7 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+    for (unsigned int i = 0; i < EEPROM_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
     EEPROMr.commit();
@@ -311,7 +311,7 @@ void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t 
 
 void settingsSetup() {
 
-    EmbedisWrap::dictionary( F("EEPROM"),
+    Embedis::dictionary( F("EEPROM"),
         SPI_FLASH_SEC_SIZE,
         [](size_t pos) -> char { return EEPROMr.read(pos); },
         [](size_t pos, char value) { EEPROMr.write(pos, value); },

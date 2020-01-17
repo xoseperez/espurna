@@ -50,8 +50,8 @@ void _schWebSocketOnConnected(JsonObject &root){
         if (!hasSetting({"schSwitch", i})) break;
         ++size;
 
-        enabled.add<int>(getSetting({"schEnabled", i}, false));
-        utc.add<int>(getSetting({"schUTC", i}, false));
+        enabled.add(getSetting({"schEnabled", i}, 0));
+        utc.add(getSetting({"schUTC", i}, 0));
 
         switch_.add(getSetting({"schSwitch", i}, 0));
         action.add(getSetting({"schAction", i}, 0));

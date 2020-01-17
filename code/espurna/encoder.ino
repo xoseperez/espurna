@@ -26,7 +26,7 @@ unsigned long _encoder_min_delta = 1;
 
 void _encoderConfigure() {
 
-    _encoder_min_delta = getSetting<int>("encMinDelta", ENCODER_MINIMUM_DELTA);
+    _encoder_min_delta = getSetting("encMinDelta", ENCODER_MINIMUM_DELTA);
     if (!_encoder_min_delta) _encoder_min_delta = 1;
 
     // no need to reload objects right now

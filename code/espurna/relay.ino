@@ -471,7 +471,7 @@ void relayPulse(unsigned char id) {
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
         _relays[id].pulse = getSetting({"relayPulse", id}, RELAY_PULSE_MODE);
-        _relays[id].pulse_ms = 1000 * getSetting({"relayTime", id}, .0);
+        _relays[id].pulse_ms = 1000 * getSetting({"relayTime", id}, 0.);
     }
 
 }
@@ -725,10 +725,10 @@ void _relayBackwards() {
     }
     #endif
 
-    for (unsigned char i=0; i<_relays.size(); i++) {
-        const auto key = settings_key_t {"mqttGroupInv", i};
+    for (unsigned char id = 0; id < _relays.size(); ++id) {
+        const settings_key_t key {"mqttGroupInv", id};
         if (!hasSetting(key)) continue;
-        setSetting({"mqttGroupSync", i}, getSetting(key));
+        setSetting({"mqttGroupSync", id}, getSetting(key));
         delSetting(key);
     }
 
@@ -808,7 +808,7 @@ void _relayBoot() {
 void _relayConfigure() {
     for (unsigned char i = 0, relays = _relays.size() ; (i < relays); ++i) {
         _relays[i].pulse = getSetting({"relayPulse", i}, RELAY_PULSE_MODE);
-        _relays[i].pulse_ms = 1000 * getSetting({"relayTime", i}, .0);
+        _relays[i].pulse_ms = 1000 * getSetting({"relayTime", i}, 0.);
 
         _relays[i].delay_on = getSetting({"relayDelayOn", i}, _relayDelayOn(i));
         _relays[i].delay_off = getSetting({"relayDelayOff", i}, _relayDelayOff(i));
@@ -1170,7 +1170,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         // Subscribe to group topics
         for (unsigned char i=0; i < _relays.size(); i++) {
-            const auto t(getSetting({"mqttGroup", i}));
+            const auto t = getSetting({"mqttGroup", i});
             if (t.length() > 0) mqttSubscribeRaw(t.c_str());
         }
 
