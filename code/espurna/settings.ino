@@ -180,7 +180,8 @@ bool delSetting(const settings_key_t& key) {
 }
 
 bool hasSetting(const settings_key_t& key) {
-    return getSetting(key).length() != 0;
+    String value;
+    return Embedis::get(key.toString(), value)
 }
 
 void saveSettings() {

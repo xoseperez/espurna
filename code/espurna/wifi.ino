@@ -80,7 +80,7 @@ void _wifiConfigure() {
     _wifiClean(WIFI_MAX_NETWORKS);
 
     unsigned char i;
-    for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
+    for (i = 0; i < WIFI_MAX_NETWORKS; i++) {
         if (hasSetting({"ip", i}) || _wifiHasIP(i)) {
             jw.addNetwork(
                 getSetting({"ssid", i}, _wifiSSID(i)).c_str(),
@@ -90,7 +90,7 @@ void _wifiConfigure() {
                 getSetting({"mask", i}, _wifiNetmask(i)).c_str(),
                 getSetting({"dns", i}, _wifiDNS(i)).c_str()
             );
-        } else {
+        } else if (hasSetting({"ssid", i}) || _wifiHasSSID(i)) {
             jw.addNetwork(
                 getSetting({"ssid", i}, _wifiSSID(i)).c_str(),
                 getSetting({"pass", i}, _wifiPass(i)).c_str()
@@ -181,17 +181,17 @@ bool _wifiClean(unsigned char num) {
     while (i < num) {
 
         // Skip on first non-defined setting
-        if (!hasSetting({"ssid", i})) {
+        if (!getSetting({"ssid", i}).length()) {
             delSetting({"ssid", i});
             break;
         }
 
         // Delete empty values
-        if (!hasSetting({"pass", i})) delSetting({"pass", i});
-        if (!hasSetting({"ip", i})) delSetting({"ip", i});
-        if (!hasSetting({"gw", i})) delSetting({"gw", i});
-        if (!hasSetting({"mask", i})) delSetting({"mask", i});
-        if (!hasSetting({"dns", i})) delSetting({"dns", i});
+        if (!getSetting({"pass", i}).length()) delSetting({"pass", i});
+        if (!getSetting({"ip", i}).length()) delSetting({"ip", i});
+        if (!getSetting({"gw", i}).length()) delSetting({"gw", i});
+        if (!getSetting({"mask", i}).length()) delSetting({"mask", i});
+        if (!getSetting({"dns", i}).length()) delSetting({"dns", i});
 
         ++i;
 
@@ -199,7 +199,7 @@ bool _wifiClean(unsigned char num) {
 
     // Delete all other settings
     while (i < WIFI_MAX_NETWORKS) {
-        changed = hasSetting({"ssid", i});
+        changed = (getSetting({"ssid", i}).length() > 0);
         delSetting({"ssid", i});
         delSetting({"pass", i});
         delSetting({"ip", i});

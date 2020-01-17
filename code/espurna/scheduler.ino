@@ -47,7 +47,7 @@ void _schWebSocketOnConnected(JsonObject &root){
     uint8_t size = 0;
 
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-        if (!hasSetting({"schSwitch", i})) break;
+        if (!getSetting({"schSwitch", i}).length()) break;
         ++size;
 
         enabled.add(getSetting({"schEnabled", i}, 0));
