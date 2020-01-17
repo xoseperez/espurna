@@ -11,6 +11,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "ws.h"
 
+#include "wifi.h"
+#include "wifi_config.h"
+
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
 bool _wifi_smartconfig_initial = false;
@@ -78,20 +81,19 @@ void _wifiConfigure() {
 
     unsigned char i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
-        if (!hasSetting({"ssid", i})) break;
-        if (!hasSetting({"ip", i})) {
+        if (hasSetting({"ip", i}) || _wifiHasIP(i)) {
             jw.addNetwork(
-                getSetting({"ssid", i}).c_str(),
-                getSetting({"pass", i}).c_str()
+                getSetting({"ssid", i}, _wifiSSID(i)).c_str(),
+                getSetting({"pass", i}, _wifiPass(i)).c_str(),
+                getSetting({"ip", i}, _wifiIP(i)).c_str(),
+                getSetting({"gw", i}, _wifiGateway(i)).c_str(),
+                getSetting({"mask", i}, _wifiNetmask(i)).c_str(),
+                getSetting({"dns", i}, _wifiDNS(i)).c_str()
             );
         } else {
             jw.addNetwork(
-                getSetting({"ssid", i}).c_str(),
-                getSetting({"pass", i}).c_str(),
-                getSetting({"ip", i}).c_str(),
-                getSetting({"gw", i}).c_str(),
-                getSetting({"mask", i}).c_str(),
-                getSetting({"dns", i}).c_str()
+                getSetting({"ssid", i}, _wifiSSID(i)).c_str(),
+                getSetting({"pass", i}, _wifiPass(i)).c_str()
             );
         }
     }
@@ -100,10 +102,19 @@ void _wifiConfigure() {
         if (i == 0) _wifi_smartconfig_initial = true;
     #endif
   
-    jw.enableScan(getSetting<bool>("wifiScan", 1 == WIFI_SCAN_NETWORKS));
+    jw.enableScan(getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS));
 
-    const auto sleep_mode = constrain(getSetting<int>("wifiSleep", WIFI_SLEEP_MODE), 0, 2);
-    WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
+    const auto sleep_mode = getSetting("wifiSleep", static_cast<int>(WIFI_SLEEP_MODE));
+    switch (sleep_mode) {
+        case WIFI_NONE_SLEEP:
+        case WIFI_LIGHT_SLEEP:
+        case WIFI_MODEM_SLEEP:
+            WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
+            break;
+        default:
+            WiFi.setSleepMode(WIFI_NONE_SLEEP);
+            break;
+    }
 
     #if WIFI_GRATUITOUS_ARP_SUPPORT
         _wifi_gratuitous_arp_last = millis();
@@ -199,80 +210,6 @@ bool _wifiClean(unsigned char num) {
     }
 
     return changed;
-
-}
-
-// Inject hardcoded networks
-struct wifi_network_t {
-    String ssid;
-    String pass;
-    String ip;
-    String gw;
-    String mask;
-    String dns;
-};
-
-constexpr bool _wifiHasSSID(unsigned char index) {
-    return (
-        (index == 0) ? (strlen(WIFI1_SSID) > 0) :
-        (index == 1) ? (strlen(WIFI2_SSID) > 0) :
-        (index == 2) ? (strlen(WIFI3_SSID) > 0) :
-        (index == 3) ? (strlen(WIFI4_SSID) > 0) : false
-    );
-}
-
-wifi_network_t _wifiNetwork(unsigned char index) {
-    wifi_network_t result;
-    if (0 == index && _wifiHasSSID(index)) {
-        result.ssid = F(WIFI1_SSID);
-        result.pass = F(WIFI1_PASS);
-        result.ip = F(WIFI1_IP);
-        result.gw = F(WIFI1_GW);
-        result.mask = F(WIFI1_MASK);
-        result.dns = F(WIFI1_DNS);
-    } else if (1 == index && _wifiHasSSID(index)) {
-        result.ssid = F(WIFI2_SSID);
-        result.pass = F(WIFI2_PASS);
-        result.ip = F(WIFI2_IP);
-        result.gw = F(WIFI2_GW);
-        result.mask = F(WIFI2_MASK);
-        result.dns = F(WIFI2_DNS);
-    } else if (2 == index && _wifiHasSSID(index)) {
-        result.ssid = F(WIFI3_SSID);
-        result.pass = F(WIFI3_PASS);
-        result.ip = F(WIFI3_IP);
-        result.gw = F(WIFI3_GW);
-        result.mask = F(WIFI3_MASK);
-        result.dns = F(WIFI3_DNS);
-    } else if (3 == index && _wifiHasSSID(index)) {
-        result.ssid = F(WIFI4_SSID);
-        result.pass = F(WIFI4_PASS);
-        result.ip = F(WIFI4_IP);
-        result.gw = F(WIFI4_GW);
-        result.mask = F(WIFI4_MASK);
-        result.dns = F(WIFI4_DNS);
-    }
-    return result;
-}
-
-void _wifiInject() {
-
-    unsigned char index = 0;
-
-    do {
-        const auto network = _wifiNetwork(index);
-        if (network.ssid.length() == 0) break;
-
-        setSetting({"ssid", index}, network.ssid);
-        setSetting({"pass", index}, network.pass);
-
-        if (network.ip.length()) {
-            setSetting({"ip", index}, network.ip);
-            setSetting({"gw", index}, network.gw);
-            setSetting({"mask", index}, network.mask);
-            setSetting({"dns", index}, network.dns);
-        }
-    } while (++index);
 
 }
 
@@ -510,17 +447,17 @@ bool _wifiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _wifiWebSocketOnConnected(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
-    root["wifiScan"] = getSetting<bool>("wifiScan", WIFI_SCAN_NETWORKS == 1);
+    root["wifiScan"] = getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS);
     JsonArray& wifi = root.createNestedArray("wifi");
     for (unsigned char i=0; i<WIFI_MAX_NETWORKS; ++i) {
         if (!hasSetting({"ssid", i})) break;
         JsonObject& network = wifi.createNestedObject();
-        network["ssid"] = getSetting({"ssid", i});
-        network["pass"] = getSetting({"pass", i});
-        network["ip"] = getSetting({"ip", i});
-        network["gw"] = getSetting({"gw", i});
-        network["mask"] = getSetting({"mask", i});
-        network["dns"] = getSetting({"dns", i});
+        network["ssid"] = getSetting({"ssid", i}, _wifiSSID(i));
+        network["pass"] = getSetting({"pass", i}, _wifiPass(i));
+        network["ip"] = getSetting({"ip", i}, _wifiIP(i));
+        network["gw"] = getSetting({"gw", i}, _wifiGateway(i));
+        network["mask"] = getSetting({"mask", i}, _wifiNetmask(i));
+        network["dns"] = getSetting({"dns", i}, _wifiDNS(i));
     }
 }
 
@@ -748,7 +685,6 @@ void wifiRegister(wifi_callback_f callback) {
 
 void wifiSetup() {
 
-    _wifiInject();
     _wifiConfigure();
 
     #if JUSTWIFI_ENABLE_SMARTCONFIG
