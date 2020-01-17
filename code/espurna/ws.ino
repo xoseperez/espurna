@@ -182,8 +182,8 @@ bool _wsStore(const String& key, JsonArray& values) {
     }
 
     // Delete further values
-    for (unsigned char i=index; i<SETTINGS_MAX_LIST_COUNT; i++) {
-        if (!delSetting({key, index})) break;
+    for (unsigned char next_index=index; next_index < SETTINGS_MAX_LIST_COUNT; ++next_index) {
+        if (!delSetting({key, next_index})) break;
         changed = true;
     }
 
