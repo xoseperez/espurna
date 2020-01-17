@@ -155,7 +155,7 @@ bool _wsStore(const String& key, const String& value) {
         }
     }
 
-    if (value != getSetting(key)) {
+    if (!hasSetting(keyobj) || value != getSetting(keyobj)) {
         return setSetting(key, value);
     }
 
@@ -174,8 +174,9 @@ bool _wsStore(const String& key, JsonArray& values) {
     unsigned char index = 0;
     for (auto& element : values) {
         const auto value = element.as<String>();
-        if (value != getSetting({key, index})) {
-            setSetting({key, index}, value);
+        const auto keyobj settings_key_t {key, index};
+        if (!hasSetting(keyobj) || value != getSetting(keyobj)) {
+            setSetting(keyobj, value);
             changed = true;
         }
         ++index;
