@@ -1018,7 +1018,7 @@ function moreNetwork() {
     $(".more", parent).toggle();
 }
 
-function addNetwork(values) {
+function addNetwork(network) {
 
     var number = numNetworks();
     if (number >= maxNetworks) {
@@ -1026,8 +1026,8 @@ function addNetwork(values) {
         return null;
     }
 
-    if (values === undefined) {
-        values = {};
+    if (network === undefined) {
+        network = {};
     }
 
     var tabindex = 200 + number * 10;
@@ -1041,9 +1041,17 @@ function addNetwork(values) {
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
 
-    Object.entries(values).forEach(function(kv) {
-        $("input[name='" + kv[0] + "']", line).val(kv[1]);
+    Object.entries(network).forEach(function(pair) {
+        // XXX: UI deleting this network will only re-use stored values.
+        var key = pair[0],
+            val = pair[1];
+        if (key === "stored") {
+            $(line).find(".button-del-network").prop("disabled", val);
+            return;
+        }
+        $("input[name='" + key + "']", line).val(val);
     });
+
 
     line.appendTo("#networks");
 
@@ -1780,13 +1788,21 @@ function processData(data) {
         // WiFi
         // ---------------------------------------------------------------------
 
-        if ("maxNetworks" === key) {
-            maxNetworks = parseInt(value, 10);
-            return;
-        }
-
         if ("wifi" === key) {
-            value.forEach(addNetwork);
+            maxNetworks = parseInt(value["max"], 10);
+            value["networks"].forEach(function(network) {
+                var schema = value["schema"];
+                if (schema.length !== network.length) {
+                    throw "WiFi schema mismatch!";
+                }
+
+                var _network = {};
+                schema.forEach(function(key, index) {
+                    _network[key] = network[index];
+                });
+
+                addNetwork(_network);
+            });
             return;
         }
 

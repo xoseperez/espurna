@@ -101,7 +101,7 @@ void _wifiConfigure() {
     #if JUSTWIFI_ENABLE_SMARTCONFIG
         if (i == 0) _wifi_smartconfig_initial = true;
     #endif
-  
+
     jw.enableScan(getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS));
 
     const auto sleep_mode = getSetting("wifiSleep", static_cast<int>(WIFI_SLEEP_MODE));
@@ -446,18 +446,29 @@ bool _wifiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _wifiWebSocketOnConnected(JsonObject& root) {
-    root["maxNetworks"] = WIFI_MAX_NETWORKS;
     root["wifiScan"] = getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS);
-    JsonArray& wifi = root.createNestedArray("wifi");
-    for (unsigned char i=0; i<WIFI_MAX_NETWORKS; ++i) {
-        if (!getSetting({"ssid", i}, _wifiSSID(i)).length()) break;
-        JsonObject& network = wifi.createNestedObject();
-        network["ssid"] = getSetting({"ssid", i}, _wifiSSID(i));
-        network["pass"] = getSetting({"pass", i}, _wifiPass(i));
-        network["ip"] = getSetting({"ip", i}, _wifiIP(i));
-        network["gw"] = getSetting({"gw", i}, _wifiGateway(i));
-        network["mask"] = getSetting({"mask", i}, _wifiNetmask(i));
-        network["dns"] = getSetting({"dns", i}, _wifiDNS(i));
+
+    JsonObject& wifi = root.createNestedObject("wifi");
+    root["max"] = WIFI_MAX_NETWORKS;
+
+    const char* keys[] = {
+        "ssid", "pass", "ip", "gw", "mask", "dns", "stored"
+    };
+    JsonArray& schema = wifi.createNestedArray("schema");
+    schema.copyFrom(keys, 7);
+
+    JsonArray& networks = wifi.createNestedArray("networks");
+
+    for (unsigned char index = 0; index < WIFI_MAX_NETWORKS; ++index) {
+        if (!getSetting({"ssid", index}, _wifiSSID(index)).length()) break;
+        JsonArray& network = networks.createNestedArray();
+        network.add(getSetting({"ssid", index}, _wifiSSID(index)));
+        network.add(getSetting({"pass", index}, _wifiPass(index)));
+        network.add(getSetting({"ip", index}, _wifiIP(index)));
+        network.add(getSetting({"gw", index}, _wifiGateway(index)));
+        network.add(getSetting({"mask", index}, _wifiNetmask(index)));
+        network.add(getSetting({"dns", index}, _wifiDNS(index)));
+        network.add(_wifiHasSSID(index));
     }
 }
 
@@ -690,7 +701,7 @@ void wifiSetup() {
     #if JUSTWIFI_ENABLE_SMARTCONFIG
         if (_wifi_smartconfig_initial) jw.startSmartConfig();
     #endif
-   
+
     // Message callbacks
     wifiRegister(_wifiCallback);
     #if WIFI_AP_CAPTIVE
