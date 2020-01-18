@@ -964,6 +964,16 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(AVATTO_NAS_WR01W)
+
+            setSetting("board", 75);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #elif defined(NEO_COOLCAM_NAS_WR01W)
 
             setSetting("board", 75);

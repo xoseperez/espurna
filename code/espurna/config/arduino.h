@@ -21,6 +21,7 @@
 //#define ARILUX_E27
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
+//#define AVATTO_NAS_WR01W
 //#define BESTEK_MRJ1011
 //#define BH_ONOFRE
 //#define BLITZWOLF_BWSHPX
