@@ -58,6 +58,18 @@ void _wifiCheckAP() {
     }
 }
 
+WiFiSleepType_t _wifiSleepModeConvert(const String& value) {
+    switch (value.toInt()) {
+        case 2:
+            return WIFI_MODEM_SLEEP;
+        case 1:
+            return WIFI_LIGHT_SLEEP;
+        case 0:
+        default:
+            return WIFI_NONE_SLEEP;
+    }
+}
+
 void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
@@ -104,17 +116,8 @@ void _wifiConfigure() {
 
     jw.enableScan(getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS));
 
-    const auto sleep_mode = getSetting("wifiSleep", static_cast<int>(WIFI_SLEEP_MODE));
-    switch (sleep_mode) {
-        case WIFI_NONE_SLEEP:
-        case WIFI_LIGHT_SLEEP:
-        case WIFI_MODEM_SLEEP:
-            WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
-            break;
-        default:
-            WiFi.setSleepMode(WIFI_NONE_SLEEP);
-            break;
-    }
+    const auto sleep_mode = getSetting<WiFiSleepType_t, _wifiSleepModeConvert>("wifiSleep", WIFI_SLEEP_MODE);
+    WiFi.setSleepMode(sleep_mode);
 
     #if WIFI_GRATUITOUS_ARP_SUPPORT
         _wifi_gratuitous_arp_last = millis();

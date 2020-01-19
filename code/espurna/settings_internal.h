@@ -6,63 +6,70 @@ SETTINGS MODULE
 
 #pragma once
 
-#include <functional>
-#include <utility>
+#include <cstdlib>
 
 // --------------------------------------------------------------------------
 
+namespace settings {
+namespace internal {
+
 template <typename T>
-struct settings_convert_t {
-    static T convert(const String& value);
-};
+using convert_t = T(*)(const String& value);
+
+template <typename T>
+T convert(const String& value);
+
+// --------------------------------------------------------------------------
 
 template <>
-float settings_convert_t<float>::convert(const String& value) {
+float convert(const String& value) {
     return value.toFloat();
 }
 
 template <>
-double settings_convert_t<double>::convert(const String& value) {
+double convert(const String& value) {
     return value.toFloat();
 }
 
 template <>
-int settings_convert_t<int>::convert(const String& value) {
+int convert(const String& value) {
     return value.toInt();
 }
 
 template <>
-long settings_convert_t<long>::convert(const String& value) {
+long convert(const String& value) {
     return value.toInt();
 }
 
 template <>
-bool settings_convert_t<bool>::convert(const String& value) {
-    return settings_convert_t<int>::convert(value) == 1;
+bool convert(const String& value) {
+    return convert<int>(value) == 1;
 }
 
 template <>
-unsigned long settings_convert_t<unsigned long>::convert(const String& value) {
+unsigned long convert(const String& value) {
     return strtoul(value.c_str(), nullptr, 10);
 }
 
 template <>
-unsigned int settings_convert_t<unsigned int>::convert(const String& value) {
-    return settings_convert_t<unsigned long>::convert(value);
+unsigned int convert(const String& value) {
+    return convert<unsigned long>(value);
 }
 
 template <>
-unsigned short settings_convert_t<unsigned short>::convert(const String& value) {
-    return settings_convert_t<unsigned long>::convert(value);
+unsigned short convert(const String& value) {
+    return convert<unsigned long>(value);
 }
 
 template <>
-unsigned char settings_convert_t<unsigned char>::convert(const String& value) {
-    return settings_convert_t<unsigned long>::convert(value);
+unsigned char convert(const String& value) {
+    return convert<unsigned long>(value);
 }
 
 template <>
-String settings_convert_t<String>::convert(const String& value) {
+String convert(const String& value) {
     return value;
 }
 
+} // namespace settings::internal
+} // namespace settings

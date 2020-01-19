@@ -67,7 +67,7 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, unsigned int index);
 void moveSettings(const String& from, const String& to);
 
-template<typename R, typename TConvert = settings_convert_t<R>>
+template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue);
 
 String getSetting(const settings_key_t& key);

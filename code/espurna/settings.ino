@@ -139,13 +139,13 @@ void moveSettings(const String& from, const String& to) {
     }
 }
 
-template<typename R, typename TConvert = settings_convert_t<R>>
+template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) {
     String value;
     if (!Embedis::get(key.toString(), value)) {
         return defaultValue;
     }
-    return TConvert::convert(value);
+    return Rfunc(value);
 }
 
 template<>
