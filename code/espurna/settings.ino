@@ -10,8 +10,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
-#include "settings.h"
 #include "settings_internal.h"
+#include "settings.h"
 
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
@@ -139,13 +139,13 @@ void moveSettings(const String& from, const String& to) {
     }
 }
 
-template<typename T>
-T getSetting(const settings_key_t& key, T defaultValue) {
+template<typename R, typename TConvert = settings_convert_t<R>>
+R getSetting(const settings_key_t& key, R defaultValue) {
     String value;
     if (!Embedis::get(key.toString(), value)) {
         return defaultValue;
     }
-    return _settingsConvert<T>(value);
+    return TConvert::convert(value);
 }
 
 template<>

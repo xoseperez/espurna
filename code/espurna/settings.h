@@ -14,6 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 #include "libs/EmbedisWrap.h"
+#include "settings_internal.h"
 
 // --------------------------------------------------------------------------
 
@@ -66,10 +67,8 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, unsigned int index);
 void moveSettings(const String& from, const String& to);
 
-static const String _settingsDefaultValue("");
-
-template <typename T>
-T getSetting(const settings_key_t& key, T defaultValue);
+template<typename R, typename TConvert = settings_convert_t<R>>
+R getSetting(const settings_key_t& key, R defaultValue);
 
 String getSetting(const settings_key_t& key);
 
