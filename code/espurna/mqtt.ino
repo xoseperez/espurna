@@ -328,8 +328,6 @@ void _mqttConfigure() {
 
         if (topic.indexOf("#") == -1) topic.concat("/#");
         _mqttApplySetting(_mqtt_topic, topic);
-
-        _mqttApplyTopic(_mqtt_will, MQTT_TOPIC_STATUS);
     }
 
     // Getter and setter
@@ -363,6 +361,11 @@ void _mqttConfigure() {
         _mqttApplySetting(_mqtt_retain, retain);
         _mqttApplySetting(_mqtt_keepalive, keepalive);
         _mqttApplySetting(_mqtt_clientid, id);
+    }
+
+    // MQTT WILL
+    {
+        _mqttApplyTopic(_mqtt_will, MQTT_TOPIC_STATUS);
     }
 
     // MQTT JSON
