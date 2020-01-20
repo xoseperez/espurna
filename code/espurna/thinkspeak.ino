@@ -71,13 +71,13 @@ void _tspkWebSocketOnVisible(JsonObject& root) {
 
 void _tspkWebSocketOnConnected(JsonObject& root) {
 
-    root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
+    root["tspkEnabled"] = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
     root["tspkKey"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
-    root["tspkClear"] = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
+    root["tspkClear"] = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
     for (byte i=0; i<relayCount(); i++) {
-        relays.add(getSetting("tspkRelay", i, 0).toInt());
+        relays.add(getSetting({"tspkRelay", i}, 0));
     }
 
     #if SENSOR_SUPPORT
@@ -89,8 +89,8 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
 #endif
 
 void _tspkConfigure() {
-    _tspk_clear = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
-    _tspk_enabled = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
+    _tspk_clear = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
+    _tspk_enabled = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
     if (_tspk_enabled && (getSetting("tspkKey", THINGSPEAK_APIKEY).length() == 0)) {
         _tspk_enabled = false;
         setSetting("tspkEnabled", 0);
@@ -340,7 +340,7 @@ void _tspkFlush() {
     // POST data if any
     if (_tspk_data.length()) {
         _tspk_data.concat("&api_key=");
-        _tspk_data.concat(getSetting("tspkKey", THINGSPEAK_APIKEY));
+        _tspk_data.concat(getSetting<String>("tspkKey", THINGSPEAK_APIKEY));
         --_tspk_tries;
         _tspkPost();
     }
@@ -351,7 +351,7 @@ void _tspkFlush() {
 
 bool tspkEnqueueRelay(unsigned char index, bool status) {
     if (!_tspk_enabled) return true;
-    unsigned char id = getSetting("tspkRelay", index, 0).toInt();
+    unsigned char id = getSetting({"tspkRelay", index}, 0);
     if (id > 0) {
         _tspkEnqueue(id, status ? "1" : "0");
         return true;
@@ -361,7 +361,7 @@ bool tspkEnqueueRelay(unsigned char index, bool status) {
 
 bool tspkEnqueueMeasurement(unsigned char index, const char * payload) {
     if (!_tspk_enabled) return true;
-    unsigned char id = getSetting("tspkMagnitude", index, 0).toInt();
+    const auto id = getSetting({"tspkMagnitude", index}, 0);
     if (id > 0) {
         _tspkEnqueue(id, payload);
         return true;

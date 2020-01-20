@@ -1433,6 +1433,28 @@
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
 
+#elif defined(MAGICHOME_ZJ_LB_RGBWW_L)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_LB_RGBWW_L"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       4       // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       12      // COLD WHITE
+    #define LIGHT_CH5_PIN       13      // WARM WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
@@ -2784,6 +2806,45 @@
     #define LED4_RELAY          1
 
 // -----------------------------------------------------------------------------
+// Avatto NAS-WR01W Wifi Smart Power Plug
+// https://www.aliexpress.com/item/33011753732.html
+// https://todo...
+// -----------------------------------------------------------------------------
+
+#elif defined(AVATTO_NAS_WR01W)
+
+    // Info
+    #define MANUFACTURER        "AVATTO"
+    #define DEVICE              "NAS_WR01W"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             5
+    #define HLW8012_CF_PIN              4
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+    
+// -----------------------------------------------------------------------------
 // NEO Coolcam NAS-WR01W Wifi Smart Power Plug
 // https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
 // https://www.fasttech.com/product/9649426-neo-coolcam-nas-wr01w-wifi-smart-power-plug-eu
@@ -2807,6 +2868,64 @@
     // LEDs
     #define LED1_PIN            4
     #define LED1_PIN_INVERSE    1
+
+
+// -----------------------------------------------------------------------------
+// Deltaco SH_P01 Wifi Smart Power Plug
+// -----------------------------------------------------------------------------
+
+#elif defined(DELTACO_SH_P01)
+
+    // Info
+    #define MANUFACTURER        "DELTACO"
+    #define DEVICE              "SH_P01"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            5
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_FINDME
+
+
+// ------------------------------------------------------------------------------
+// DELTACO_SH_P03USB Wifi Smart Power Plug 
+// -----------------------------------------------------------------------------
+
+#elif defined(DELTACO_SH_P03USB)
+
+    // Info
+    #define MANUFACTURER        "DELTACO"
+    #define DEVICE              "SH_P03USB"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          15  // USB power
+    #define RELAY2_PIN          12  // power plug 1
+    #define RELAY3_PIN          14  // power plug 2
+    #define RELAY4_PIN          5   // power plug 3
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // power led
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_FINDME
+
 
 
 // ------------------------------------------------------------------------------
@@ -3432,6 +3551,25 @@
 
 // -----------------------------------------------------------------------------
 
+#elif defined(TECKIN_SB53)
+
+    // Info
+    #define MANUFACTURER        "TECKIN"
+    #define DEVICE              "SB53"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       13      // WARM WHITE
+    #define LIGHT_CH5_PIN       5       // COLD WHITE
+
+// -----------------------------------------------------------------------------
+
 #elif defined(XIAOMI_SMART_DESK_LAMP)
 
     // Info
@@ -3579,6 +3717,52 @@
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// Deltaco white e14 (SH-LE14W) and e27 (SH-LE27W)
+// -----------------------------------------------------------------------------
+
+#elif defined(DELTACO_SH_LEXXW)
+
+    // Info
+    #define MANUFACTURER        "DELTACO"
+    #define DEVICE              "SH_LEXXW"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      2
+    #define LIGHT_CH1_PIN       12      // WARM WHITE
+    #define LIGHT_CH2_PIN       14      // COLD WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// Deltaco rgbw e27 (SH-LE27RGB)
+// -----------------------------------------------------------------------------
+
+#elif defined(DELTACO_SH_LEXXRGB)
+
+    // Info
+    #define MANUFACTURER        "DELTACO"
+    #define DEVICE              "SH_LEXXRGB"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       5        // RED
+    #define LIGHT_CH2_PIN       4        // GREEN
+    #define LIGHT_CH3_PIN       13       // BLUE
+    #define LIGHT_CH4_PIN       14       // WARM WHITE
+    #define LIGHT_CH5_PIN       12       // COLD WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Nexete A19
@@ -4181,6 +4365,54 @@
     // Buttons
     #define BUTTON1_PIN                 0
     #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  14
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LED
+    // Red
+    #define LED1_PIN                    13
+    #define LED1_MODE                   LED_MODE_WIFI
+    #define LED1_PIN_INVERSE            1
+    // Blue connected to relay
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             5
+    #define HLW8012_CF_PIN              4
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       282060
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+    #define SENSOR_ENERGY_UNITS         ENERGY_KWH
+    #define SENSOR_POWER_UNITS          POWER_WATTS
+
+// -----------------------------------------------------------------------------
+// Kogan Smarter Home Plug with Energy Meter (Australia)
+// Product code: KASPEMHA
+// https://www.kogan.com/au/buy/kogan-smarterhome-smart-plug-energy-meter/
+// Reflashing from original Tuya firmware
+// to thirdparty firmware like espurna by:
+// https://github.com/ct-Open-Source/tuya-convert
+// -----------------------------------------------------------------------------
+
+#elif defined(KOGAN_SMARTER_HOME_PLUG_W_POW)
+
+    // Info
+    #define MANUFACTURER                "KOGAN"
+    #define DEVICE                      "SMARTER_HOME_PLUG_W_POW"
+
+    // Buttons
+    #define BUTTON1_PIN                 0
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON1_RELAY               1
 
     // Relays

@@ -10,8 +10,9 @@
 #undef I2C_SUPPORT
 #define I2C_SUPPORT 1 // Explicitly request I2C support.
 
+#include <Arduino.h>
 
-#include "Arduino.h"
+#include "../utils.h"
 #include "I2CSensor.h"
 
 class SHT3XI2CSensor : public I2CSensor {

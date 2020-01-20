@@ -8,7 +8,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <bitset>
 
-constexpr const size_t GPIO_PINS = 16;
+constexpr const size_t GPIO_PINS = 17;
 
 std::bitset<GPIO_PINS> _gpio_locked;
 std::bitset<GPIO_PINS> _gpio_available;
@@ -59,10 +59,11 @@ void gpioSetup() {
         || (efuse_blocks[2] & (1 << 16))
     );
 
+    // TODO: GPIO16 is only for basic I/O, gpioGetLock before attachInterrupt should check for that
     for (unsigned char pin=0; pin < GPIO_PINS; ++pin) {
         if (pin <= 5) _gpio_available.set(pin);
         if (((pin == 9) || (pin == 10)) && (esp8285)) _gpio_available.set(pin);
-        if (12 <= pin && pin <= 15) _gpio_available.set(pin);
+        if (12 <= pin && pin <= 16) _gpio_available.set(pin);
     }
 
 }

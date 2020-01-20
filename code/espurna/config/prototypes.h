@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <functional>
 #include <algorithm>
+#include <limits>
 #include <vector>
 #include <memory>
 
@@ -82,20 +83,6 @@ using api_put_callback_f = std::function<void(const char * payload)> ;
 #if WEB_SUPPORT
     void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
 #endif
-
-// -----------------------------------------------------------------------------
-// Debug
-// -----------------------------------------------------------------------------
-
-#include "../libs/DebugSend.h"
-
-void debugSendImpl(const char*);
-extern "C" {
-     void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
-}
-
-class PrintRaw;
-class PrintHex;
 
 // Core version 2.4.2 and higher changed the cont_t structure to a pointer:
 // https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35
@@ -246,48 +233,15 @@ typedef struct {
 } packet_t;
 
 // -----------------------------------------------------------------------------
-// Settings
-// -----------------------------------------------------------------------------
-#include <Embedis.h>
-
-template<typename T> bool setSetting(const String& key, T value);
-template<typename T> bool setSetting(const String& key, unsigned int index, T value);
-template<typename T> String getSetting(const String& key, T defaultValue);
-template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
-void settingsGetJson(JsonObject& data);
-bool settingsRestoreJson(JsonObject& data);
-
-struct settings_cfg_t {
-    String& setting;
-    const char* key;
-    const char* default_value;
-};
-
-using settings_filter_t = std::function<String(String& value)>;
-using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
-
-void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
-
-// -----------------------------------------------------------------------------
 // Terminal
 // -----------------------------------------------------------------------------
-#if TERMINAL_SUPPORT
-    void terminalRegisterCommand(const String& name, void (*call)(Embedis*));
-    void terminalInject(void *data, size_t len);
-    Stream & terminalSerial();
-#endif
 
-// -----------------------------------------------------------------------------
-// Utils
-// -----------------------------------------------------------------------------
-char * ltrim(char * s);
-void nice_delay(unsigned long ms);
-bool inline eraseSDKConfig();
+class Embedis; // FIXME: order
+using embedis_command_f = void (*)(Embedis*);
 
-#define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
-
-size_t strnlen(const char*, size_t);
-char* strnstr(const char*, const char*, size_t);
+void terminalRegisterCommand(const String& name, embedis_command_f func);
+void terminalInject(void *data, size_t len);
+Stream& terminalSerial();
 
 // -----------------------------------------------------------------------------
 // WebServer

@@ -492,11 +492,12 @@ void webRequestRegister(web_request_callback_f callback) {
     _web_request_callbacks.push_back(callback);
 }
 
-unsigned int webPort() {
+uint16_t webPort() {
     #if WEB_SSL_ENABLED
         return 443;
     #else
-        return getSetting("webPort", WEB_PORT).toInt();
+        constexpr const uint16_t defaultValue(WEB_PORT);
+        return getSetting("webPort", defaultValue);
     #endif
 }
 

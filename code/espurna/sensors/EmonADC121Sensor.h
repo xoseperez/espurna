@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
+#include "../utils.h"
 #include "EmonSensor.h"
 
 // ADC121 Registers

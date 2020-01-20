@@ -29,27 +29,27 @@ bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _rpnWebSocketOnConnected(JsonObject& root) {
 
-    root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
-    root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY).toInt();
+    root["rpnSticky"] = getSetting("rpnSticky", 1 == RPN_STICKY);
+    root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY);
     JsonArray& rules = root.createNestedArray("rpnRules");
 
     unsigned char i = 0;
-    String rule = getSetting("rpnRule", i, "");
+    String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
         rules.add(rule);
-        rule = getSetting("rpnRule", ++i, "");
+        rule = getSetting({"rpnRule", ++i});
     }
 
     #if MQTT_SUPPORT
         i=0;
         JsonArray& topics = root.createNestedArray("rpnTopics");
         JsonArray& names = root.createNestedArray("rpnNames");
-        String rpn_topic = getSetting("rpnTopic", i, "");
+        String rpn_topic = getSetting({"rpnTopic", i});
         while (rpn_topic.length() > 0) {
-            String rpn_name = getSetting("rpnName", i, "");
+            String rpn_name = getSetting({"rpnName", i});
             topics.add(rpn_topic);
             names.add(rpn_name);
-            rpn_topic = getSetting("rpnTopic", ++i, "");
+            rpn_topic = getSetting({"rpnTopic", ++i});
         }
     #endif
 
@@ -59,10 +59,10 @@ void _rpnWebSocketOnConnected(JsonObject& root) {
 
 void _rpnMQTTSubscribe() {
     unsigned char i = 0;
-    String rpn_topic = getSetting("rpnTopic", i, "");
+    String rpn_topic = getSetting({"rpnTopic", i});
     while (rpn_topic.length()) {
         mqttSubscribeRaw(rpn_topic.c_str());
-        rpn_topic = getSetting("rpnTopic", ++i, "");
+        rpn_topic = getSetting({"rpnTopic", ++i});
     }
 }
 
@@ -74,10 +74,10 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
 
     if (type == MQTT_MESSAGE_EVENT) {
         unsigned char i = 0;
-        String rpn_topic = getSetting("rpnTopic", i, "");
+        String rpn_topic = getSetting({"rpnTopic", i});
         while (rpn_topic.length()) {
             if (rpn_topic.equals(topic)) {
-                String rpn_name = getSetting("rpnName", i, "");
+                String rpn_name = getSetting({"rpnName", i});
                 if (rpn_name.length()) {
                     rpn_variable_set(_rpn_ctxt, rpn_name.c_str(), atof(payload));
                     _rpn_last = millis();
@@ -85,7 +85,7 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
                     break;
                 }
             }
-            rpn_topic = getSetting("rpnTopic", ++i, "");
+            rpn_topic = getSetting({"rpnTopic", ++i});
         }
     }
 
@@ -96,7 +96,7 @@ void _rpnConfigure() {
     #if MQTT_SUPPORT
         if (mqttConnected()) _rpnMQTTSubscribe();
     #endif
-    _rpn_delay = getSetting("rpnDelay", RPN_DELAY).toInt();
+    _rpn_delay = getSetting("rpnDelay", RPN_DELAY);
 }
 
 void _rpnBrokerCallback(const String& topic, unsigned char id, double value, const char*) {
@@ -256,16 +256,16 @@ void _rpnDump() {
 void _rpnRun() {
 
     unsigned char i = 0;
-    String rule = getSetting("rpnRule", i, "");
+    String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
         //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
         rpn_process(_rpn_ctxt, rule.c_str(), true);
         //_rpnDump();
-        rule = getSetting("rpnRule", ++i, "");
+        rule = getSetting({"rpnRule", ++i});
         rpn_stack_clear(_rpn_ctxt);
     }
 
-    if (getSetting("rpnSticky", 1).toInt() == 0) {
+    if (getSetting("rpnSticky", 1 == RPN_STICKY)) {
         rpn_variables_clear(_rpn_ctxt);
     }
 

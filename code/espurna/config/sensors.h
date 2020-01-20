@@ -33,11 +33,11 @@
 #endif
 
 #ifndef HUMIDITY_MIN_CHANGE
-#define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
+#define HUMIDITY_MIN_CHANGE                 0.0             // Minimum humidity change to report
 #endif
 
 #ifndef ENERGY_MAX_CHANGE
-#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
+#define ENERGY_MAX_CHANGE                   0.0             // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
 #endif
 
 #ifndef SENSOR_SAVE_EVERY
@@ -403,7 +403,7 @@
 #endif
 
 #ifndef EMON_CURRENT_RATIO
-#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
+#define EMON_CURRENT_RATIO              30.0        // Current ratio in the clamp (30A/1V)
 #endif
 
 #ifndef EMON_REPORT_CURRENT
@@ -710,15 +710,15 @@
 #endif
 
 #ifndef HLW8012_CURRENT_RATIO
-#define HLW8012_CURRENT_RATIO           0       // Set to 0 to use factory defaults
+#define HLW8012_CURRENT_RATIO           0.0       // Set to 0.0 to use factory defaults
 #endif
 
 #ifndef HLW8012_VOLTAGE_RATIO
-#define HLW8012_VOLTAGE_RATIO           0       // Set to 0 to use factory defaults
+#define HLW8012_VOLTAGE_RATIO           0.0       // Set to 0.0 to use factory defaults
 #endif
 
 #ifndef HLW8012_POWER_RATIO
-#define HLW8012_POWER_RATIO             0       // Set to 0 to use factory defaults
+#define HLW8012_POWER_RATIO             0.0       // Set to 0.0 to use factory defaults
 #endif
 
 #ifndef HLW8012_USE_INTERRUPTS
@@ -1263,17 +1263,28 @@
 #define I2C_USE_BRZO                    0       // Use brzo_i2c library or standard Wire
 
 #ifndef I2C_SDA_PIN
-#define I2C_SDA_PIN                     SDA     // SDA GPIO (Sonoff => 4)
+#define I2C_SDA_PIN                     SDA     // SDA GPIO (Sonoff => 4, using Arduino Core variant definition as default)
 #endif
 
 #ifndef I2C_SCL_PIN
-#define I2C_SCL_PIN                     SCL     // SCL GPIO (Sonoff => 14)
+#define I2C_SCL_PIN                     SCL     // SCL GPIO (Sonoff => 14, using Arduino Core variant definition as default)
 #endif
 
-#define I2C_CLOCK_STRETCH_TIME          200     // BRZO clock stretch time
-#define I2C_SCL_FREQUENCY               1000    // BRZO SCL frequency
+#ifndef I2C_CLOCK_STRETCH_TIME
+#define I2C_CLOCK_STRETCH_TIME          200UL     // BRZO clock stretch time
+#endif
+
+#ifndef I2C_SCL_FREQUENCY
+#define I2C_SCL_FREQUENCY               1000UL    // BRZO SCL frequency
+#endif
+
+#ifndef I2C_CLEAR_BUS
 #define I2C_CLEAR_BUS                   0       // Clear I2C bus on boot
+#endif
+
+#ifndef I2C_PERFORM_SCAN
 #define I2C_PERFORM_SCAN                1       // Perform a bus scan on boot
+#endif
 
 // -----------------------------------------------------------------------------
 // ADE7953 Shelly Sensor

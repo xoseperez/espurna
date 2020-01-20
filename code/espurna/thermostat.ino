@@ -252,25 +252,25 @@ void notifyRangeChanged(bool min) {
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
-  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED).toInt() == 1;
+  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED, false);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d\n"), _thermostat_enabled);
 
-  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE).toInt() == 1;
+  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE, false);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d\n"), _thermostat_mode_cooler);
   
-  _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN).toInt();
-  _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX).toInt();
+  _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN);
+  _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d\n"), _temp_range.max);
 
   _thermostat.remote_sensor_name = getSetting(NAME_REMOTE_SENSOR_NAME);
   thermostat_remote_sensor_topic = _thermostat.remote_sensor_name + String("/") + String(MQTT_TOPIC_JSON);
 
-  _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT).toInt()   * MILLIS_IN_SEC;
-  _thermostat_alone_on_time   = getSetting(NAME_ALONE_ON_TIME,  THERMOSTAT_ALONE_ON_TIME).toInt()  * MILLIS_IN_MIN;
-  _thermostat_alone_off_time  = getSetting(NAME_ALONE_OFF_TIME, THERMOSTAT_ALONE_OFF_TIME).toInt() * MILLIS_IN_MIN;
-  _thermostat_max_on_time     = getSetting(NAME_MAX_ON_TIME,    THERMOSTAT_MAX_ON_TIME).toInt()    * MILLIS_IN_MIN;
-  _thermostat_min_off_time    = getSetting(NAME_MIN_OFF_TIME,   THERMOSTAT_MIN_OFF_TIME).toInt()   * MILLIS_IN_MIN;
+  _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT) * MILLIS_IN_SEC;
+  _thermostat_alone_on_time   = getSetting(NAME_ALONE_ON_TIME,  THERMOSTAT_ALONE_ON_TIME)  * MILLIS_IN_MIN;
+  _thermostat_alone_off_time  = getSetting(NAME_ALONE_OFF_TIME, THERMOSTAT_ALONE_OFF_TIME) * MILLIS_IN_MIN;
+  _thermostat_max_on_time     = getSetting(NAME_MAX_ON_TIME,    THERMOSTAT_MAX_ON_TIME)    * MILLIS_IN_MIN;
+  _thermostat_min_off_time    = getSetting(NAME_MIN_OFF_TIME,   THERMOSTAT_MIN_OFF_TIME)   * MILLIS_IN_MIN;
 }
 
 //------------------------------------------------------------------------------
@@ -278,13 +278,13 @@ void thermostatConfigure() {
   commonSetup();
 
   _thermostat.temperature_source = temp_none;
-  _thermostat_burn_total      = getSetting(NAME_BURN_TOTAL).toInt();
-  _thermostat_burn_today      = getSetting(NAME_BURN_TODAY).toInt();
-  _thermostat_burn_yesterday  = getSetting(NAME_BURN_YESTERDAY).toInt();
-  _thermostat_burn_this_month = getSetting(NAME_BURN_THIS_MONTH).toInt();
-  _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH).toInt();
-  _thermostat_burn_day        = getSetting(NAME_BURN_DAY).toInt();
-  _thermostat_burn_month      = getSetting(NAME_BURN_MONTH).toInt();
+  _thermostat_burn_total      = getSetting(NAME_BURN_TOTAL, 0);
+  _thermostat_burn_today      = getSetting(NAME_BURN_TODAY, 0);
+  _thermostat_burn_yesterday  = getSetting(NAME_BURN_YESTERDAY, 0);
+  _thermostat_burn_this_month = getSetting(NAME_BURN_THIS_MONTH, 0);
+  _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH, 0);
+  _thermostat_burn_day        = getSetting(NAME_BURN_DAY, 0);
+  _thermostat_burn_month      = getSetting(NAME_BURN_MONTH, 0);
 }
 
 //------------------------------------------------------------------------------
