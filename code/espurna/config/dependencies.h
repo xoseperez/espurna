@@ -5,6 +5,8 @@
 // Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
 
+#define DEBUG_SUPPORT               (DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT || DEBUG_WEB_SUPPORT)
+
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
 #define TELNET_SUPPORT              1
@@ -134,7 +136,7 @@
 #define WEB_SSL_ENABLED          0               // WEB_SUPPORT mode th SSL requires ASYNC_TCP_SSL_ENABLED
 #endif
 
-#if not DEBUG_SUPPORT
+#if !DEBUG_SUPPORT
 #undef DEBUG_LOG_BUFFER_SUPPORT
 #define DEBUG_LOG_BUFFER_SUPPORT  0              // Can't buffer if there is no debugging enabled.
                                                  // Helps to avoid checking twice for both DEBUG_SUPPORT and BUFFER_LOG_SUPPORT

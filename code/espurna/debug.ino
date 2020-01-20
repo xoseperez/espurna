@@ -9,9 +9,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if DEBUG_SUPPORT
 
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 #include "debug.h"
+#include "telnet.h"
+#include "ws.h"
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
@@ -20,6 +23,8 @@ WiFiUDP _udp_debug;
 char _udp_syslog_header[40] = {0};
 #endif
 #endif
+
+bool _debug_enabled = false;
 
 // -----------------------------------------------------------------------------
 // printf-like debug methods
@@ -55,6 +60,8 @@ void _debugSend(const char * format, va_list args) {
 
 void debugSend(const char* format, ...) {
 
+    if (!_debug_enabled) return;
+
     va_list args;
     va_start(args, format);
 
@@ -64,7 +71,9 @@ void debugSend(const char* format, ...) {
 
 }
 
-void debugSend_P(PGM_P format_P, ...) {
+void debugSend_P(const char* format_P, ...) {
+
+    if (!_debug_enabled) return;
 
     char format[strlen_P(format_P) + 1];
     memcpy_P(format, format_P, sizeof(format));
@@ -88,19 +97,8 @@ void debugSend_P(PGM_P format_P, ...) {
             DEBUG_PORT.print(prefix);
         }
         DEBUG_PORT.print(data);
-
     }
 #endif // DEBUG_SERIAL_SUPPORT
-
-#if DEBUG_TELNET_SUPPORT
-    void _debugSendTelnet(const char* prefix, const char* data) {
-        if (prefix && (prefix[0] != '\0')) {
-            _telnetWrite(prefix);
-        }
-        _telnetWrite(data);
-
-    }
-#endif // DEBUG_TELNET_SUPPORT
 
 #if DEBUG_LOG_BUFFER_SUPPORT
 
@@ -127,6 +125,29 @@ void _debugLogBuffer(const char* prefix, const char* data) {
         _debug_log_buffer.insert(_debug_log_buffer.end(), prefix, prefix + prefix_len);
     }
     _debug_log_buffer.insert(_debug_log_buffer.end(), data, data + data_len);
+}
+
+void _debugLogBufferDump() {
+    size_t index = 0;
+    do {
+        if (index >= _debug_log_buffer.size()) {
+            break;
+        }
+
+        size_t len = _debug_log_buffer[index] << 8;
+        len = len | _debug_log_buffer[index + 1];
+        index += 2;
+
+        auto value = _debug_log_buffer[index + len];
+        _debug_log_buffer[index + len] = '\0';
+        _debugSendInternal(_debug_log_buffer.data() + index, false);
+        _debug_log_buffer[index + len] = value;
+
+        index += len;
+    } while (true);
+
+    _debug_log_buffer.clear();
+    _debug_log_buffer.shrink_to_fit();
 }
 
 bool debugLogBuffer() {
@@ -165,28 +186,27 @@ void _debugSendInternal(const char * message, bool add_timestamp) {
                 _udp_debug.write(_udp_syslog_header);
             #endif
             _udp_debug.write(message);
-            _udp_debug.endPacket();
-            pause = true;
+            pause = _udp_debug.endPacket() > 0;
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
     #endif
 
     #if DEBUG_TELNET_SUPPORT
-        _debugSendTelnet(timestamp, message);
-        pause = true;
+        pause = telnetDebugSend(timestamp, message) || pause;
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        wsDebugSend(timestamp, message);
-        pause = true;
+        pause = wsDebugSend(timestamp, message) || pause;
     #endif
 
     #if DEBUG_LOG_BUFFER_SUPPORT
         _debugLogBuffer(timestamp, message);
     #endif
 
-    if (pause) optimistic_yield(100);
+    if (pause) {
+        optimistic_yield(1000);
+    }
 
 }
 
@@ -222,7 +242,6 @@ void debugWebSetup() {
     #endif
     #endif
 
-
 }
 
 #endif // DEBUG_WEB_SUPPORT
@@ -235,30 +254,10 @@ void debugSetup() {
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
     #endif
 
-    // HardwareSerial::begin() will automatically enable this when
-    //  `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
-    // Core debugging also depends on various DEBUG_ESP_... being defined
-    #if defined(DEBUG_ESP_PORT)
-    #if not defined(NDEBUG)
-        constexpr const bool debug_sdk = true;
-    #endif // !defined(NDEBUG)
-    #else
-        constexpr const bool debug_sdk = false;
-    #endif // defined(DEBUG_ESP_PORT)
-
-    DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
+    #if TERMINAL_SUPPORT
 
     #if DEBUG_LOG_BUFFER_SUPPORT
-    {
-        const auto enabled = getSetting("dbgBufEnabled", 1 == DEBUG_LOG_BUFFER_ENABLED);
-        const auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE);
-        if (enabled) {
-            _debug_log_buffer_enabled = true;
-            _debug_log_buffer.reserve(size);
-        }
-    }
 
-    #if TERMINAL_SUPPORT
         terminalRegisterCommand(F("DEBUG.BUFFER"), [](Embedis* e) {
             _debug_log_buffer_enabled = false;
             if (!_debug_log_buffer.size()) {
@@ -270,29 +269,90 @@ void debugSetup() {
                 _debug_log_buffer.capacity()
             );
 
-            size_t index = 0;
-            do {
-                if (index >= _debug_log_buffer.size()) {
-                    break;
-                }
-
-                size_t len = _debug_log_buffer[index] << 8;
-                len = len | _debug_log_buffer[index + 1];
-                index += 2;
-
-                auto value = _debug_log_buffer[index + len];
-                _debug_log_buffer[index + len] = '\0';
-                _debugSendInternal(_debug_log_buffer.data() + index, false);
-                _debug_log_buffer[index + len] = value;
-
-                index += len;
-            } while (true);
-
-            _debug_log_buffer.clear();
-            _debug_log_buffer.shrink_to_fit();
+            _debugLogBufferDump();
         });
+
+    #endif // DEBUG_LOG_BUFFER_SUPPORT
+
     #endif // TERMINAL_SUPPORT
 
+
+}
+
+String _debugLogModeSerialize(DebugLogMode value) {
+    switch (value) {
+        case DebugLogMode::DISABLED:
+            return "0";
+        case DebugLogMode::SKIP_BOOT:
+            return "2";
+        default:
+        case DebugLogMode::ENABLED:
+            return "1";
+    }
+}
+
+DebugLogMode _debugLogModeDeserialize(const String& value) {
+    switch (value.toInt()) {
+        case 0:
+            return DebugLogMode::DISABLED;
+        case 2:
+            return DebugLogMode::SKIP_BOOT;
+        case 1:
+        default:
+            return DebugLogMode::ENABLED;
+    }
+}
+
+void debugConfigureBoot() {
+    static_assert(
+        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value, 
+        "should be able to match DebugLogMode with int"
+    );
+
+    const auto mode = getSetting<DebugLogMode, _debugLogModeDeserialize>("dbgLogMode", DEBUG_LOG_MODE);
+    switch (mode) {
+        case DebugLogMode::SKIP_BOOT:
+            schedule_function([]() {
+                _debug_enabled = true;
+            });
+            // fall through
+        case DebugLogMode::DISABLED:
+            _debug_enabled = false;
+            break;
+        case DebugLogMode::ENABLED:
+            _debug_enabled = true;
+            break;
+    }
+
+    debugConfigure();
+}
+
+void debugConfigure() {
+
+    // HardwareSerial::begin() will automatically enable this when
+    // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
+    // Core debugging also depends on various DEBUG_ESP_... being defined
+    {
+        #if defined(DEBUG_ESP_PORT)
+        #if not defined(NDEBUG)
+            constexpr const bool debug_sdk = true;
+        #endif // !defined(NDEBUG)
+        #else
+            constexpr const bool debug_sdk = false;
+        #endif // defined(DEBUG_ESP_PORT)
+
+        DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
+    }
+
+    #if DEBUG_LOG_BUFFER_SUPPORT
+    {
+        const auto enabled = getSetting("dbgBufEnabled", 1 == DEBUG_LOG_BUFFER_ENABLED);
+        const auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE);
+        if (enabled) {
+            _debug_log_buffer_enabled = true;
+            _debug_log_buffer.reserve(size);
+        }
+    }
     #endif // DEBUG_LOG_BUFFER
 
 }

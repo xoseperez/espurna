@@ -119,7 +119,11 @@ PROGMEM const char espurna_modules[] =
         "SSDP "
     #endif
     #if TELNET_SUPPORT
+    #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+        "TELNET_SYNC "
+    #else
         "TELNET "
+    #endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
     #endif
     #if TERMINAL_SUPPORT
         "TERMINAL "

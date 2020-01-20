@@ -32,6 +32,10 @@
 // DEBUG
 //------------------------------------------------------------------------------
 
+#ifndef DEBUG_LOG_MODE
+#define DEBUG_LOG_MODE          DebugLogMode::ENABLED
+#endif
+
 // Serial debug log
 
 #ifndef DEBUG_SERIAL_SUPPORT
