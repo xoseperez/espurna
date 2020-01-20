@@ -47,6 +47,10 @@
 #define MQTT_SUPPORT                1
 #endif
 
+#if LED_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If LED is enabled enable BROKER to supply status changes
+#endif
 
 #if INFLUXDB_SUPPORT
 #undef BROKER_SUPPORT
