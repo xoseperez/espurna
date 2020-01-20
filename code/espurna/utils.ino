@@ -422,7 +422,7 @@ void info(bool first) {
 
     // -------------------------------------------------------------------------
 
-    FlashMode_t [[gnu::unused]] mode = ESP.getFlashChipMode();
+    FlashMode_t mode [[gnu::unused]] = ESP.getFlashChipMode();
     DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");

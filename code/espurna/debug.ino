@@ -238,16 +238,20 @@ void debugSetup() {
     // HardwareSerial::begin() will automatically enable this when
     //  `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
     // Core debugging also depends on various DEBUG_ESP_... being defined
-    #define DEBUG_SERIAL_SDK (int)(defined(DEBUG_ESP_PORT) && !defined(NDEBUG))
-    if (getSetting("dbgSDK", DEBUG_SERIAL_SDK).toInt() == 1) {
-        DEBUG_PORT.setDebugOutput(true);
-    }
-    #undef DEBUG_SERIAL_SDK
+    #if defined(DEBUG_ESP_PORT)
+    #if not defined(NDEBUG)
+        constexpr const bool debug_sdk = true;
+    #endif // !defined(NDEBUG)
+    #else
+        constexpr const bool debug_sdk = false;
+    #endif // defined(DEBUG_ESP_PORT)
+
+    DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
 
     #if DEBUG_LOG_BUFFER_SUPPORT
     {
-        auto enabled = getSetting("dbgBufEnabled", DEBUG_LOG_BUFFER_ENABLED).toInt() == 1;
-        auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE).toInt();
+        const auto enabled = getSetting("dbgBufEnabled", 1 == DEBUG_LOG_BUFFER_ENABLED);
+        const auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE);
         if (enabled) {
             _debug_log_buffer_enabled = true;
             _debug_log_buffer.reserve(size);
