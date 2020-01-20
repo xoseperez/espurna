@@ -131,7 +131,7 @@
 #endif
 
 #if not DEBUG_SUPPORT
-#undef DEBUG_BUFFER_LOG_SUPPORT
-#define DEBUG_BUFFER_LOG_SUPPORT  0              // Can't buffer if there is no debugging enabled.
+#undef DEBUG_LOG_BUFFER_SUPPORT
+#define DEBUG_LOG_BUFFER_SUPPORT  0              // Can't buffer if there is no debugging enabled.
                                                  // Helps to avoid checking twice for both DEBUG_SUPPORT and BUFFER_LOG_SUPPORT
 #endif
