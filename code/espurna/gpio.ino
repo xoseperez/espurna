@@ -59,6 +59,7 @@ void gpioSetup() {
         || (efuse_blocks[2] & (1 << 16))
     );
 
+    // TODO: GPIO16 is only for basic I/O, gpioGetLock before attachInterrupt should check for that
     for (unsigned char pin=0; pin < GPIO_PINS; ++pin) {
         if (pin <= 5) _gpio_available.set(pin);
         if (((pin == 9) || (pin == 10)) && (esp8285)) _gpio_available.set(pin);
