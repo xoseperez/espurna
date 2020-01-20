@@ -80,7 +80,7 @@ void setup() {
     // Cache initial free heap value
     setInitialFreeHeap();
 
-    // Serial debug
+    // Init logging module
     #if DEBUG_SUPPORT
         debugSetup();
     #endif
@@ -97,8 +97,9 @@ void setup() {
     // Init persistance
     settingsSetup();
 
-    // Init crash recorder
+    // Configure logger and crash recorder
     #if DEBUG_SUPPORT
+        debugConfigureBoot();
         crashSetup();
     #endif
 
