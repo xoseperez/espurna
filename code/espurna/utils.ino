@@ -426,6 +426,8 @@ const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
 void info(bool first) {
 
     // Avoid printing on early boot when buffering is enabled
+    #if DEBUG_SUPPORT
+
     #if DEBUG_LOG_BUFFER_SUPPORT
         if (first && debugLogBuffer()) return;
     #endif
@@ -451,8 +453,7 @@ void info(bool first) {
 
     // -------------------------------------------------------------------------
 
-    FlashMode_t mode = ESP.getFlashChipMode();
-    UNUSED(mode);
+    FlashMode_t [[gnu::unused]] mode = ESP.getFlashChipMode();
     DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
@@ -553,6 +554,8 @@ void info(bool first) {
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
+
+    #endif // DEBUG_SUPPORT == 1
 
 }
 
