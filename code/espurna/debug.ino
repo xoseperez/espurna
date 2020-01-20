@@ -279,18 +279,19 @@ void debugSetup() {
 
 }
 
-String _debugLogModeConvert(DebugLogMode value) {
+String _debugLogModeSerialize(DebugLogMode value) {
     switch (value) {
         case DebugLogMode::DISABLED:
             return "0";
-        case DebugLogMode::ENABLED:
-            return "1";
         case DebugLogMode::SKIP_BOOT:
             return "2";
+        default:
+        case DebugLogMode::ENABLED:
+            return "1";
     }
 }
 
-DebugLogMode _debugLogModeConvert(const String& value) {
+DebugLogMode _debugLogModeDeserialize(const String& value) {
     switch (value.toInt()) {
         case 0:
             return DebugLogMode::DISABLED;
@@ -308,7 +309,7 @@ void debugConfigureBoot() {
         "should be able to match DebugLogMode with int"
     );
 
-    const auto mode = getSetting<DebugLogMode, _debugLodModeConvert>("dbgLogMode", DEBUG_LOG_MODE);
+    const auto mode = getSetting<DebugLogMode, _debugLogModeDeserialize>("dbgLogMode", DEBUG_LOG_MODE);
     switch (mode) {
         case DebugLogMode::SKIP_BOOT:
             schedule_function([]() {
