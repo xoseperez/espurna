@@ -50,7 +50,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         if (!getSetting({"schSwitch", i}).length()) break;
         ++size;
 
-        enabled.add(getSetting({"schEnabled", i}, 0));
+        enabled.add(getSetting({"schEnabled", i}, false) ? 1 : 0);
         utc.add(getSetting({"schUTC", i}, 0));
 
         switch_.add(getSetting({"schSwitch", i}, 0));
@@ -100,7 +100,7 @@ void _schConfigure() {
                 int sch_minute = getSetting({"schMinute", i}, 0);
                 bool sch_utc = getSetting({"schUTC", i}, false);
                 String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
-                unsigned char sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+                int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
 
                 DEBUG_MSG_P(
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
@@ -198,7 +198,7 @@ void _schCheck(int relay, int daybefore) {
             int sch_minute = getSetting({"schMinute", i}, 0);
             int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
             int sch_action = getSetting({"schAction", i}, 0);
-            unsigned char sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+            int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
 
             if (sch_type == SCHEDULER_TYPE_SWITCH && sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
                 minimum_restore_time = minutes_to_trigger;

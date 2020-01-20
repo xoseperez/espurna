@@ -22,6 +22,8 @@ extern "C" {
     #include "libs/fs_math.h"
 }
 
+#define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
 extern "C" {

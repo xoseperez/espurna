@@ -244,18 +244,6 @@ void terminalInject(void *data, size_t len);
 Stream& terminalSerial();
 
 // -----------------------------------------------------------------------------
-// Utils
-// -----------------------------------------------------------------------------
-char * ltrim(char * s);
-void nice_delay(unsigned long ms);
-bool inline eraseSDKConfig();
-
-#define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
-
-size_t strnlen(const char*, size_t);
-char* strnstr(const char*, const char*, size_t);
-
-// -----------------------------------------------------------------------------
 // WebServer
 // -----------------------------------------------------------------------------
 
@@ -293,8 +281,6 @@ bool wifiConnected();
 #else // LWIP_VERSION_MAJOR >= 2
 #include <lwip/etharp.h>
 #endif
-
-struct wifi_network_t;
 
 // -----------------------------------------------------------------------------
 // THERMOSTAT
