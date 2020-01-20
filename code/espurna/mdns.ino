@@ -40,7 +40,7 @@ void _mdnsServerStart() {
 void mdnsServerSetup() {
 
     #if WEB_SUPPORT
-        MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
+        MDNS.addService("http", "tcp", getSetting<uint16_t>("webPort", WEB_PORT));
     #endif
 
     #if TELNET_SUPPORT

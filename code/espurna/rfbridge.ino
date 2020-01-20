@@ -106,12 +106,12 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 }
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
-    root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
+    root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES);
     root["rfbCount"] = relayCount();
     #if RFB_DIRECT
         root["rfbdirectVisible"] = 1;
-        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
-        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
+        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
+        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
     #endif
 }
 
@@ -666,15 +666,19 @@ void _rfbInitCommands() {
 
 void rfbStore(unsigned char id, bool status, const char * code) {
     DEBUG_MSG_P(PSTR("[RF] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
-    char key[RF_MAX_KEY_LENGTH] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
-    setSetting(key, code);
+    if (status) {
+        setSetting({"rfbON", id}, code);
+    } else {
+        setSetting({"rfbOFF", id}, code);
+    }
 }
 
 String rfbRetrieve(unsigned char id, bool status) {
-    char key[RF_MAX_KEY_LENGTH] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
-    return getSetting(key);
+    if (status) {
+        return getSetting({"rfbON", id});
+    } else {
+        return getSetting({"rfbOFF", id});
+    }
 }
 
 void rfbStatus(unsigned char id, bool status) {
@@ -756,11 +760,11 @@ void rfbSetup() {
         _rfbInitCommands();
     #endif
 
-    _rfb_repeat = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
+    _rfb_repeat = getSetting("rfbRepeat", RF_SEND_TIMES);
 
     #if RFB_DIRECT
-        unsigned char rx = getSetting("rfbRX", RFB_RX_PIN).toInt();
-        unsigned char tx = getSetting("rfbTX", RFB_TX_PIN).toInt();
+        const auto rx = getSetting("rfbRX", RFB_RX_PIN);
+        const auto tx = getSetting("rfbTX", RFB_TX_PIN);
 
         _rfb_receive = gpioValid(rx);
         _rfb_transmit = gpioValid(tx);

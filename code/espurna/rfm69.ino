@@ -44,12 +44,12 @@ void _rfm69WebSocketOnConnected(JsonObject& root) {
     root["nodeCount"] = _rfm69_node_count;
     JsonArray& mappings = root.createNestedArray("mapping");
     for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
-        unsigned char node = getSetting("node", i, 0).toInt();
+        auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
         JsonObject& mapping = mappings.createNestedObject();
         mapping["node"] = node;
-        mapping["key"] = getSetting("key", i, "");
-        mapping["topic"] = getSetting("topic", i, "");
+        mapping["key"] = getSetting({"key", i});
+        mapping["topic"] = getSetting({"topic", i});
     }
 
 }
@@ -74,9 +74,9 @@ void _rfm69CleanNodes(unsigned char num) {
     // Look for the last defined node
     int i = 0;
     while (i < num) {
-        if (getSetting("node", i, 0).toInt() == 0) break;
-        if (getSetting("key", i, "").length() == 0) break;
-        if (getSetting("topic", i, "").length() == 0) break;
+        if (0 == getSetting({"node", i}, 0)) break;
+        if (!getSetting({"key", i}).length()) break;
+        if (!getSetting({"topic", i}).length()) break;
         ++i;
     }
 
@@ -166,10 +166,10 @@ void _rfm69Process(packet_t * data) {
 
     // Try to find a matching mapping
     for (unsigned int i=0; i<RFM69_MAX_TOPICS; i++) {
-        unsigned char node = getSetting("node", i, 0).toInt();
+        auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
-        if ((node == data->senderID) && (getSetting("key", i, "").equals(data->key))) {
-            mqttSendRaw((char *) getSetting("topic", i, "").c_str(), (char *) String(data->value).c_str());
+        if ((node == data->senderID) && (getSetting({"key", i}).equals(data->key))) {
+            mqttSendRaw((char *) getSetting({"topic", i}).c_str(), (char *) String(data->value).c_str());
             return;
         }
     }

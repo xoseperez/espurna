@@ -46,8 +46,6 @@ extern "C" {
 #define SAVE_CRASH_STACK_SIZE       0x22  // 2 bytes
 #define SAVE_CRASH_STACK_TRACE      0x24  // variable
 
-#define SAVE_CRASH_STACK_TRACE_MAX  0x80  // limit at 128 bytes (increment/decrement by 16)
-
 uint16_t _save_crash_stack_trace_max = SAVE_CRASH_STACK_TRACE_MAX;
 bool _save_crash_enabled = true;
 
@@ -190,7 +188,7 @@ void crashSetup() {
     // Minumum of 16 and align for column formatter in crashDump()
     // Maximum of flash sector size minus reserved space at the beginning
     const uint16_t trace_max = constrain(
-        abs((getSetting("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX).toInt() + 15) & -16),
+        abs((getSetting<int>("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX) + 15) & -16),
         0, (SPI_FLASH_SEC_SIZE - crashUsedSpace())
     );
 
@@ -199,7 +197,7 @@ void crashSetup() {
     }
     _save_crash_stack_trace_max = trace_max;
 
-    _save_crash_enabled = getSetting("sysCrashSave", 1).toInt() == 1;
+    _save_crash_enabled = getSetting("sysCrashSave", 1 == SAVE_CRASH_ENABLED);
 
 }
 

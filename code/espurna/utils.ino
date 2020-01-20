@@ -12,12 +12,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <limits>
 
-String getIdentifier() {
-    char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
-    return String(buffer);
-}
-
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
         setSetting("hostname", HOSTNAME);
@@ -33,11 +27,13 @@ void setBoardName() {
 }
 
 String getBoardName() {
-    return getSetting("boardName", DEVICE_NAME);
+    static const String defaultValue(DEVICE_NAME);
+    return getSetting("boardName", defaultValue);
 }
 
 String getAdminPass() {
-    return getSetting("adminPass", ADMIN_PASS);
+    static const String defaultValue(ADMIN_PASS);
+    return getSetting("adminPass", defaultValue);
 }
 
 const String& getCoreVersion() {
@@ -72,30 +68,12 @@ const String& getCoreRevision() {
     return revision;
 }
 
-unsigned char getHeartbeatMode() {
-    return getSetting("hbMode", HEARTBEAT_MODE).toInt();
+int getHeartbeatMode() {
+    return getSetting("hbMode", HEARTBEAT_MODE);
 }
 
-unsigned char getHeartbeatInterval() {
-    return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
-}
-
-String getEspurnaModules() {
-    return FPSTR(espurna_modules);
-}
-
-String getEspurnaOTAModules() {
-    return FPSTR(espurna_ota_modules);
-}
-
-#if SENSOR_SUPPORT
-String getEspurnaSensors() {
-    return FPSTR(espurna_sensors);
-}
-#endif
-
-String getEspurnaWebUI() {
-    return FPSTR(espurna_webui);
+unsigned long getHeartbeatInterval() {
+    return getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 String buildTime() {
@@ -123,15 +101,6 @@ unsigned long getUptime() {
 
     return uptime_seconds;
 
-}
-
-bool haveRelaysOrSensors() {
-    bool result = false;
-    result = (relayCount() > 0);
-    #if SENSOR_SUPPORT
-        result = result || (magnitudeCount() > 0);
-    #endif
-    return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -453,7 +422,7 @@ void info(bool first) {
 
     // -------------------------------------------------------------------------
 
-    FlashMode_t [[gnu::unused]] mode = ESP.getFlashChipMode();
+    FlashMode_t mode [[gnu::unused]] = ESP.getFlashChipMode();
     DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");

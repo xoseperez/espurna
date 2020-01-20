@@ -22,6 +22,8 @@ extern "C" {
     #include "libs/fs_math.h"
 }
 
+#define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
 extern "C" {
@@ -628,8 +630,8 @@ void _lightRestoreRtcmem() {
 }
 
 void _lightSaveSettings() {
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-        setSetting("ch", i, _light_channel[i].inputValue);
+    for (unsigned char i=0; i < _light_channel.size(); ++i) {
+        setSetting({"ch", i}, _light_channel[i].inputValue);
     }
     setSetting("brightness", _light_brightness);
     setSetting("mireds", _light_mireds);
@@ -637,11 +639,11 @@ void _lightSaveSettings() {
 }
 
 void _lightRestoreSettings() {
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-        _light_channel[i].inputValue = getSetting("ch", i, (i == 0) ? Light::VALUE_MAX : 0).toInt();
+    for (unsigned char i=0; i < _light_channel.size(); ++i) {
+        _light_channel[i].inputValue = getSetting({"ch", i}, (i == 0) ? Light::VALUE_MAX : 0);
     }
-    _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX).toInt();
-    _light_mireds = getSetting("mireds", _light_mireds).toInt();
+    _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX);
+    _light_mireds = getSetting("mireds", _light_mireds);
 }
 
 // -----------------------------------------------------------------------------
@@ -752,7 +754,7 @@ void lightMQTT() {
     if (_light_has_color) {
 
         // Color
-        if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+        if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
             _toRGB(buffer, sizeof(buffer), true);
         } else {
             _toLong(buffer, sizeof(buffer), true);
@@ -1003,7 +1005,7 @@ bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _lightWebSocketStatus(JsonObject& root) {
     if (_light_has_color) {
-        if (getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1) {
+        if (getSetting("useRGB", 1 == LIGHT_USE_RGB)) {
             root["rgb"] = lightColor(true);
         } else {
             root["hsv"] = lightColor(false);
@@ -1033,8 +1035,8 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
-    root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
-    root["useRGB"] = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
+    root["useCSS"] = getSetting("useCSS", 1 == LIGHT_USE_CSS);
+    root["useRGB"] = getSetting("useRGB", 1 == LIGHT_USE_RGB);
     root["lightTime"] = _light_transition_time;
 
     _lightWebSocketStatus(root);
@@ -1089,7 +1091,7 @@ void _lightAPISetup() {
 
         apiRegister(MQTT_TOPIC_COLOR_RGB,
             [](char * buffer, size_t len) {
-                if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+                if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
                     _toRGB(buffer, len, true);
                 } else {
                     _toLong(buffer, len, true);
@@ -1260,13 +1262,13 @@ const unsigned long _light_iofunc[16] PROGMEM = {
 
 void _lightConfigure() {
 
-    _light_has_color = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+    _light_has_color = getSetting("useColor", 1 == LIGHT_USE_COLOR);
     if (_light_has_color && (_light_channel.size() < 3)) {
         _light_has_color = false;
         setSetting("useColor", _light_has_color);
     }
 
-    _light_use_white = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
+    _light_use_white = getSetting("useWhite", 1 == LIGHT_USE_WHITE);
     if (_light_use_white && (_light_channel.size() < 4) && (_light_channel.size() != 2)) {
         _light_use_white = false;
         setSetting("useWhite", _light_use_white);
@@ -1282,22 +1284,20 @@ void _lightConfigure() {
         _light_brightness_func = []() { _lightApplyBrightness(); };
     }
 
-    _light_use_cct = getSetting("useCCT", LIGHT_USE_CCT).toInt() == 1;
+    _light_use_cct = getSetting("useCCT", 1 == LIGHT_USE_CCT);
     if (_light_use_cct && (((_light_channel.size() < 5) && (_light_channel.size() != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);
     }
 
-    if (_light_use_cct) {
-        _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED).toInt();
-        _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED).toInt();
-        _light_cold_kelvin = (1000000L / _light_cold_mireds);
-        _light_warm_kelvin = (1000000L / _light_warm_mireds);
-    }
+    _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED);
+    _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED);
+    _light_cold_kelvin = (1000000L / _light_cold_mireds);
+    _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
-    _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
-    _light_use_transitions = getSetting("useTransitions", LIGHT_USE_TRANSITIONS).toInt() == 1;
-    _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME).toInt();
+    _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
+    _light_use_transitions = getSetting("useTransitions", 1 == LIGHT_USE_TRANSITIONS);
+    _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME);
 
 }
 

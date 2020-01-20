@@ -118,16 +118,16 @@ void _idbWebSocketOnVisible(JsonObject& root) {
 }
 
 void _idbWebSocketOnConnected(JsonObject& root) {
-    root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
+    root["idbEnabled"] = getSetting("idbEnabled", 1 == INFLUXDB_ENABLED);
     root["idbHost"] = getSetting("idbHost", INFLUXDB_HOST);
-    root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
+    root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT);
     root["idbDatabase"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
     root["idbUsername"] = getSetting("idbUsername", INFLUXDB_USERNAME);
     root["idbPassword"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
 }
 
 void _idbConfigure() {
-    _idb_enabled = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
+    _idb_enabled = getSetting("idbEnabled", 1 == INFLUXDB_ENABLED);
     if (_idb_enabled && (getSetting("idbHost", INFLUXDB_HOST).length() == 0)) {
         _idb_enabled = false;
         setSetting("idbEnabled", 0);
@@ -196,7 +196,7 @@ void _idbFlush() {
         host = mdnsResolve(host);
     #endif
 
-    const uint16_t port = getSetting("idbPort", INFLUXDB_PORT).toInt();
+    const auto port = getSetting<uint16_t>("idbPort", INFLUXDB_PORT);
 
     // TODO: should we always store specific pairs like tspk keeps relay / sensor readings?
     //       note that we also send heartbeat data, persistent values should be flagged

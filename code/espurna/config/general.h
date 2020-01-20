@@ -203,6 +203,16 @@
 #define EEPROM_ROTATE_DATA      11              // Reserved for the EEPROM_ROTATE library (3 bytes)
 #define EEPROM_DATA_END         14              // End of custom EEPROM data block
 
+
+#ifndef SAVE_CRASH_ENABLED
+#define SAVE_CRASH_ENABLED          1           // Save stack trace to EEPROM by default
+                                                // Depends on DEBUG_SUPPORT == 1
+#endif
+
+#ifndef SAVE_CRASH_STACK_TRACE_MAX
+#define SAVE_CRASH_STACK_TRACE_MAX  0x80        // limit at 128 bytes (increment/decrement by 16)
+#endif
+
 //------------------------------------------------------------------------------
 // THERMOSTAT
 //------------------------------------------------------------------------------
@@ -237,10 +247,10 @@
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          300         // Interval between heartbeat messages (in sec)
+#define HEARTBEAT_INTERVAL          300UL         // Interval between heartbeat messages (in sec)
 #endif
 
-#define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
+#define UPTIME_OVERFLOW             4294967295UL  // Uptime overflow value
 
 // Values that will be reported in heartbeat
 #ifndef HEARTBEAT_REPORT_STATUS
@@ -410,7 +420,7 @@
 
 // Relay requests flood protection window - in seconds
 #ifndef RELAY_FLOOD_WINDOW
-#define RELAY_FLOOD_WINDOW          3
+#define RELAY_FLOOD_WINDOW          3.0
 #endif
 
 // Allowed actual relay changes inside requests flood protection window
@@ -574,6 +584,30 @@
 #define WIFI4_DNS                   ""
 #endif
 
+#ifndef WIFI5_SSID
+#define WIFI5_SSID                  ""
+#endif
+
+#ifndef WIFI5_PASS
+#define WIFI5_PASS                  ""
+#endif
+
+#ifndef WIFI5_IP
+#define WIFI5_IP                    ""
+#endif
+
+#ifndef WIFI5_GW
+#define WIFI5_GW                    ""
+#endif
+
+#ifndef WIFI5_MASK
+#define WIFI5_MASK                  ""
+#endif
+
+#ifndef WIFI5_DNS
+#define WIFI5_DNS                   ""
+#endif
+
 #ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M                -30         // Calibrate it with your router reading the RSSI at 1m
 #endif
@@ -606,7 +640,7 @@
 //
 // Issue #6366 turned out to be high tx power causing weird behavior. Lowering tx power achieved stability.
 #ifndef WIFI_OUTPUT_POWER_DBM
-#define WIFI_OUTPUT_POWER_DBM                    20.0
+#define WIFI_OUTPUT_POWER_DBM                    20.0f
 #endif
 
 
@@ -1153,7 +1187,7 @@
 #define SETTINGS_AUTOSAVE       1           // Autosave settings or force manual commit
 #endif
 
-#define SETTINGS_MAX_LIST_COUNT 10          // Maximum index for settings lists
+#define SETTINGS_MAX_LIST_COUNT 16          // Maximum index for settings lists
 
 // -----------------------------------------------------------------------------
 // LIGHT
@@ -1426,6 +1460,10 @@
 
 #ifndef RPN_DELAY
 #define RPN_DELAY                   100             // Execute rules after 100ms without messages
+#endif
+
+#ifndef RPN_STICKY
+#define RPN_STICKY                  1               // Keeps variable after rule execution
 #endif
 
 // -----------------------------------------------------------------------------

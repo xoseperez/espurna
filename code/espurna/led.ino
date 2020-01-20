@@ -89,8 +89,8 @@ void _ledWebSocketOnConnected(JsonObject& root) {
     JsonArray& leds = root.createNestedArray("ledConfig");
     for (byte i=0; i<_ledCount(); i++) {
         JsonObject& led = leds.createNestedObject();
-        led["mode"] = getSetting("ledMode", i, "").toInt();
-        led["relay"] = getSetting("ledRelay", i, "").toInt();
+        led["mode"] = getSetting({"ledMode", i}, _ledMode(i));
+        led["relay"] = getSetting({"ledRelay", i}, _ledRelay(i));
     }
 }
 
@@ -152,9 +152,9 @@ unsigned char _ledCount() {
 }
 
 void _ledConfigure() {
-    for (unsigned int i=0; i < _leds.size(); i++) {
-        _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
-        _ledRelay(i, getSetting("ledRelay", i, _ledRelay(i)).toInt());
+    for (unsigned char i=0; i < _leds.size(); i++) {
+        _ledMode(i, getSetting({"ledMode", i}, _ledMode(i)));
+        _ledRelay(i, getSetting({"ledRelay", i}, _ledRelay(i)));
     }
     _led_update = true;
 }
@@ -192,9 +192,9 @@ void ledSetup() {
         _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY - 1 });
     #endif
 
-    for (unsigned int i=0; i < _leds.size(); i++) {
-        if (!hasSetting("ledMode", i)) setSetting("ledMode", i, _leds[i].mode);
-        if (!hasSetting("ledRelay", i)) setSetting("ledRelay", i, _leds[i].relay);
+    for (unsigned char i=0; i < _leds.size(); i++) {
+        if (!hasSetting({"ledMode", i})) setSetting({"ledMode", i}, _leds[i].mode);
+        if (!hasSetting({"ledRelay", i})) setSetting({"ledRelay", i}, _leds[i].relay);
         pinMode(_leds[i].pin, OUTPUT);
         _ledStatus(i, false);
     }

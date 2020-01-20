@@ -270,7 +270,7 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
                 config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
                 config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
             }
-            if (lightUseCCT()) {
+            if (lightHasColor() || lightUseCCT()) {
                 config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
                 config["color_temp_state_topic"] = mqttTopic(MQTT_TOPIC_MIRED, false);
             }
@@ -429,7 +429,7 @@ void _haSend() {
 }
 
 void _haConfigure() {
-    const bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    const bool enabled = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
     _ha_send_flag = (enabled != _ha_enabled);
     _ha_enabled = enabled;
 
@@ -439,7 +439,7 @@ void _haConfigure() {
     //       in case useCSS value is ever cached by the lights module
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         if (enabled) {
-            if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+            if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
                 setSetting("useCSS", 0);
             }
         }
@@ -460,7 +460,7 @@ void _haWebSocketOnVisible(JsonObject& root) {
 
 void _haWebSocketOnConnected(JsonObject& root) {
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    root["haEnabled"] = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
 }
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
