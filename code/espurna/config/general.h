@@ -103,6 +103,22 @@
 #endif
 
 //------------------------------------------------------------------------------
+
+#ifndef DEBUG_LOG_BUFFER_SUPPORT
+#define DEBUG_LOG_BUFFER_SUPPORT       1        // Support boot log buffer (1.2Kb)
+                                                // Will only work if DEBUG_LOG_BUFFER_ENABLED or runtime setting is also 1
+#endif
+
+#ifndef DEBUG_LOG_BUFFER_ENABLED
+#define DEBUG_LOG_BUFFER_ENABLED       0        // Disable boot log buffer by default
+#endif
+
+#ifndef DEBUG_LOG_BUFFER_SIZE
+#define DEBUG_LOG_BUFFER_SIZE          4096     // Store 4 Kb of log strings
+                                                // WARNING! Memory is only reclaimed after `debug.buffer` prints the buffer contents
+#endif
+
+//------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
 

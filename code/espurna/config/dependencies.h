@@ -47,6 +47,10 @@
 #define MQTT_SUPPORT                1
 #endif
 
+#if LED_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If LED is enabled enable BROKER to supply status changes
+#endif
 
 #if INFLUXDB_SUPPORT
 #undef BROKER_SUPPORT
@@ -128,4 +132,10 @@
 #warning "WEB_SUPPORT with SSL requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
 #undef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED          0               // WEB_SUPPORT mode th SSL requires ASYNC_TCP_SSL_ENABLED
+#endif
+
+#if not DEBUG_SUPPORT
+#undef DEBUG_LOG_BUFFER_SUPPORT
+#define DEBUG_LOG_BUFFER_SUPPORT  0              // Can't buffer if there is no debugging enabled.
+                                                 // Helps to avoid checking twice for both DEBUG_SUPPORT and BUFFER_LOG_SUPPORT
 #endif

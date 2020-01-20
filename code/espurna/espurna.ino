@@ -22,14 +22,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 
 #include "board.h"
+#include "broker.h"
+#include "debug.h"
+#include "relay.h"
 #include "settings.h"
 #include "system.h"
-#include "utils.h"
-#include "relay.h"
-#include "broker.h"
 #include "tuya.h"
-#include "ws.h"
+#include "utils.h"
 #include "wifi.h"
+#include "ws.h"
 #include "libs/HeapStats.h"
 
 using void_callback_f = void (*)();
@@ -120,7 +121,7 @@ void setup() {
     setBoardName();
 
     // Show welcome message and system configuration
-    info();
+    info(true);
 
     wifiSetup();
     #if OTA_ARDUINOOTA_SUPPORT

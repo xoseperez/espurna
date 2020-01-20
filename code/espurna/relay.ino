@@ -383,7 +383,6 @@ void _relayProcess(bool mode) {
     if (_relay_sync_locked && needs_unlock && changed) {
         _relaySyncUnlock();
     }
-
 }
 
 #if defined(ITEAD_SONOFF_IFAN02)

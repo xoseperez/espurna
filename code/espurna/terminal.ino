@@ -275,7 +275,7 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("UPTIME"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+        infoUptime();
         terminalOK();
     });
 

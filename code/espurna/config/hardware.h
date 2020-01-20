@@ -2806,6 +2806,45 @@
     #define LED4_RELAY          1
 
 // -----------------------------------------------------------------------------
+// Avatto NAS-WR01W Wifi Smart Power Plug
+// https://www.aliexpress.com/item/33011753732.html
+// https://todo...
+// -----------------------------------------------------------------------------
+
+#elif defined(AVATTO_NAS_WR01W)
+
+    // Info
+    #define MANUFACTURER        "AVATTO"
+    #define DEVICE              "NAS_WR01W"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             5
+    #define HLW8012_CF_PIN              4
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+    
+// -----------------------------------------------------------------------------
 // NEO Coolcam NAS-WR01W Wifi Smart Power Plug
 // https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
 // https://www.fasttech.com/product/9649426-neo-coolcam-nas-wr01w-wifi-smart-power-plug-eu
