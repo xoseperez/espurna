@@ -11,6 +11,8 @@ AsyncBufferedClient based on ESPAsyncTCPbuffer, distributed with the ESPAsyncTCP
 (https://github.com/me-no-dev/ESPAsyncTCP/blob/master/src/ESPAsyncTCPbuffer.cpp)
 Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
+Updated to use WiFiServer and support reverse connections by Niek van der Maas < mail at niekvandermaas dot nl>
+
 */
 
 #if TELNET_SUPPORT
