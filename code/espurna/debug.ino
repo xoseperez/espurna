@@ -233,10 +233,16 @@ void debugSetup() {
 
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
-        #if DEBUG_ESP_WIFI
-            DEBUG_PORT.setDebugOutput(true);
-        #endif
     #endif
+
+    // HardwareSerial::begin() will automatically enable this when
+    //  `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
+    // Core debugging also depends on various DEBUG_ESP_... being defined
+    #define DEBUG_SERIAL_SDK (int)(defined(DEBUG_ESP_PORT) && !defined(NDEBUG))
+    if (getSetting("dbgSDK", DEBUG_SERIAL_SDK).toInt() == 1) {
+        DEBUG_PORT.setDebugOutput(true);
+    }
+    #undef DEBUG_SERIAL_SDK
 
     #if DEBUG_LOG_BUFFER_SUPPORT
     {
