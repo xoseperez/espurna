@@ -12,7 +12,9 @@
 #undef ADC_MODE_VALUE
 #define ADC_MODE_VALUE ADC_TOUT
 
-#include "Arduino.h"
+#include <Arduino.h>
+
+#include "../utils.h"
 #include "BaseSensor.h"
 
 // http://www.eoc-inc.com/genicom/GUVA-S12SD.pdf
