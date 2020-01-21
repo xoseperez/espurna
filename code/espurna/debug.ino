@@ -281,12 +281,12 @@ void debugSetup() {
 
 String _debugLogModeSerialize(DebugLogMode value) {
     switch (value) {
-        case DebugLogMode::DISABLED:
+        case DebugLogMode::Disabled:
             return "0";
-        case DebugLogMode::SKIP_BOOT:
+        case DebugLogMode::SkipBoot:
             return "2";
         default:
-        case DebugLogMode::ENABLED:
+        case DebugLogMode::Enabled:
             return "1";
     }
 }
@@ -294,12 +294,12 @@ String _debugLogModeSerialize(DebugLogMode value) {
 DebugLogMode _debugLogModeDeserialize(const String& value) {
     switch (value.toInt()) {
         case 0:
-            return DebugLogMode::DISABLED;
+            return DebugLogMode::Disabled;
         case 2:
-            return DebugLogMode::SKIP_BOOT;
+            return DebugLogMode::SkipBoot;
         case 1:
         default:
-            return DebugLogMode::ENABLED;
+            return DebugLogMode::Enabled;
     }
 }
 
@@ -311,15 +311,15 @@ void debugConfigureBoot() {
 
     const auto mode = getSetting<DebugLogMode, _debugLogModeDeserialize>("dbgLogMode", DEBUG_LOG_MODE);
     switch (mode) {
-        case DebugLogMode::SKIP_BOOT:
+        case DebugLogMode::SkipBoot:
             schedule_function([]() {
                 _debug_enabled = true;
             });
             // fall through
-        case DebugLogMode::DISABLED:
+        case DebugLogMode::Disabled:
             _debug_enabled = false;
             break;
-        case DebugLogMode::ENABLED:
+        case DebugLogMode::Enabled:
             _debug_enabled = true;
             break;
     }

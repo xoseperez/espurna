@@ -6,32 +6,49 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-// -----------------------------------------------------------------------------
-// BUTTON
-// -----------------------------------------------------------------------------
-
 #if BUTTON_SUPPORT
 
 #include <DebounceEvent.h>
+#include <memory>
 #include <vector>
 
 #include "system.h"
 #include "relay.h"
 #include "light.h"
 
-typedef struct {
-    DebounceEvent * button;
-    unsigned long actions;
-    unsigned int relayID;
-} button_t;
+#include "button.h"
+#include "button_config.h"
+
+// -----------------------------------------------------------------------------
+
+// TODO: dblclick and debounce delays - right now a global setting, independent of ID
+unsigned long button_t::DebounceDelay = BUTTON_DEBOUNCE_DELAY;
+unsigned long button_t::DblclickDelay = BUTTON_DBLCLICK_DELAY;
+
+button_t::button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) :
+    event(new DebounceEvent(pin, mode, DebounceDelay, DblclickDelay)),
+    actions(actions),
+    relayID(relayID)
+{}
+
+button_t::button_t(unsigned char index) :
+    button_t(_buttonPin(index), _buttonMode(index), _buttonConstructActions(index), _buttonRelay(index))
+{}
+
+bool button_t::state() {
+    return event->pressed();
+}
 
 std::vector<button_t> _buttons;
+
+unsigned char buttonCount() {
+    return _buttons.size();
+}
 
 #if MQTT_SUPPORT
 
 void buttonMQTT(unsigned char id, uint8_t event) {
-    if (id >= _buttons.size()) return;
-    char payload[2];
+    char payload[4] = {0};
     itoa(event, payload, 10);
     mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
 }
@@ -40,12 +57,8 @@ void buttonMQTT(unsigned char id, uint8_t event) {
 
 #if WEB_SUPPORT
 
-unsigned char _buttonCount() {
-    return _buttons.size();
-}
-
 void _buttonWebSocketOnVisible(JsonObject& root) {
-    if (_buttonCount() > 0) {
+    if (buttonCount() > 0) {
         root["btnVisible"] = 1;
     }
 }
@@ -56,62 +69,23 @@ bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 #endif
 
-int buttonFromRelay(unsigned int relayID) {
-    for (unsigned int i=0; i < _buttons.size(); i++) {
-        if (_buttons[i].relayID == relayID) return i;
-    }
-    return -1;
-}
-
 bool buttonState(unsigned char id) {
     if (id >= _buttons.size()) return false;
-    return _buttons[id].button->pressed();
+    return _buttons[id].state();
 }
 
 unsigned char buttonAction(unsigned char id, unsigned char event) {
     if (id >= _buttons.size()) return BUTTON_MODE_NONE;
-    unsigned long actions = _buttons[id].actions;
-    if (event == BUTTON_EVENT_PRESSED) return (actions) & 0x0F;
-    if (event == BUTTON_EVENT_CLICK) return (actions >> 4) & 0x0F;
-    if (event == BUTTON_EVENT_DBLCLICK) return (actions >> 8) & 0x0F;
-    if (event == BUTTON_EVENT_LNGCLICK) return (actions >> 12) & 0x0F;
-    if (event == BUTTON_EVENT_LNGLNGCLICK) return (actions >> 16) & 0x0F;
-    if (event == BUTTON_EVENT_TRIPLECLICK) return (actions >> 20) & 0x0F;
-    return BUTTON_MODE_NONE;
+    return _buttonDecodeEventAction(_buttons[id].actions, event);
 }
 
-unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
-    unsigned int value;
-    value  = pressed;
-    value += click << 4;
-    value += dblclick << 8;
-    value += lngclick << 12;
-    value += lnglngclick << 16;
-    value += tripleclick << 20;
-    return value;
-}
-
-uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
-    if (event == EVENT_PRESSED) return BUTTON_EVENT_PRESSED;
-    if (event == EVENT_CHANGED) return BUTTON_EVENT_CLICK;
-    if (event == EVENT_RELEASED) {
-        if (1 == count) {
-            if (length > BUTTON_LNGLNGCLICK_DELAY) return BUTTON_EVENT_LNGLNGCLICK;
-            if (length > BUTTON_LNGCLICK_DELAY) return BUTTON_EVENT_LNGCLICK;
-            return BUTTON_EVENT_CLICK;
-        }
-        if (2 == count) return BUTTON_EVENT_DBLCLICK;
-        if (3 == count) return BUTTON_EVENT_TRIPLECLICK;
-    }
-    return BUTTON_EVENT_NONE;
-}
-
-void buttonEvent(unsigned int id, unsigned char event) {
+void buttonEvent(unsigned char id, unsigned char event) {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
     if (event == 0) return;
 
-    unsigned char action = buttonAction(id, event);
+    auto& button = _buttons[id];
+    unsigned char action = _buttonDecodeEventAction(button.actions, event);
 
     #if MQTT_SUPPORT
        if (action != BUTTON_MODE_NONE || BUTTON_MQTT_SEND_ALL_EVENTS) {
@@ -120,21 +94,15 @@ void buttonEvent(unsigned int id, unsigned char event) {
     #endif
 
     if (BUTTON_MODE_TOGGLE == action) {
-        if (_buttons[id].relayID > 0) {
-            relayToggle(_buttons[id].relayID - 1);
-        }
+        relayToggle(button.relayID);
     }
 
     if (BUTTON_MODE_ON == action) {
-        if (_buttons[id].relayID > 0) {
-            relayStatus(_buttons[id].relayID - 1, true);
-        }
+        relayStatus(button.relayID, true);
     }
 
     if (BUTTON_MODE_OFF == action) {
-        if (_buttons[id].relayID > 0) {
-            relayStatus(_buttons[id].relayID - 1, false);
-        }
+        relayStatus(button.relayID, false);
     }
     
     if (BUTTON_MODE_AP == action) {
@@ -180,80 +148,79 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
 }
 
+unsigned char buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) {
+    _buttons.emplace_back(pin, mode, actions, relayID);
+    return _buttons.size() - 1;
+}
+
 void buttonSetup() {
+
+    // Special hardware cases
 
     #if defined(ITEAD_SONOFF_DUAL)
 
-        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, BUTTON3_RELAY});
+        _buttons.reserve(3);
+
+        buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(0));
+        buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(1));
+        buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(2));
 
     #elif defined(FOXEL_LIGHTFOX_DUAL)
 
-        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
-        unsigned int btn1Relay = getSetting<int>({"btnRelay", 0}, BUTTON1_RELAY - 1) + 1;
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn1Relay});
-        unsigned int btn2Relay = getSetting<int>({"btnRelay", 1}, BUTTON2_RELAY - 1) + 1;
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn2Relay});
-        unsigned int btn3Relay = getSetting<int>({"btnRelay", 2}, BUTTON3_RELAY - 1) + 1;
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn3Relay});
-        unsigned int btn4Relay = getSetting<int>({"btnRelay", 3}, BUTTON4_RELAY - 1) + 1;
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn4Relay});
+        _buttons.reserve(4);
+
+        const auto actions = _buttonConstructActions(
+            BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE,
+            BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE
+        );
+
+        for (unsigned char id = 0; id < 4; ++id) {
+            buttonAdd(
+                GPIO_NONE, BUTTON_PUSHBUTTON,
+                actions, getSetting({"btnRelay", id}, _buttonRelay(id))
+            );
+        }
+
+    // Generic GPIO input handlers
 
     #else
 
-        unsigned long btnDelay = getSetting<int>("btnDelay", BUTTON_DBLCLICK_DELAY);
-        UNUSED(btnDelay);
+        size_t buttons = 0;
 
         #if BUTTON1_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK, BUTTON1_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON1_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON2_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK, BUTTON2_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON2_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON3_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON3_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON4_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON4_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON5_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON5_PIN, BUTTON5_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON5_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON6_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON6_PIN, BUTTON6_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON6_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON7_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON7_PIN, BUTTON7_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON7_RELAY});
-        }
+            ++buttons;
         #endif
         #if BUTTON8_PIN != GPIO_NONE
-        {
-            unsigned int actions = buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON8_PIN, BUTTON8_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON8_RELAY});
-        }
+            ++buttons;
         #endif
+
+        _buttons.reserve(buttons);
+
+        // TODO: load based on index
+        button_t::DebounceDelay = getSetting("btnDebounce", BUTTON_DEBOUNCE_DELAY);
+        button_t::DblclickDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY);
+
+        for (unsigned char id = 0; id < buttons; ++id) {
+            _buttons.emplace_back(id);
+        }
 
     #endif
 
@@ -338,12 +305,14 @@ void buttonLoop() {
 
     #else
 
-        for (unsigned int i=0; i < _buttons.size(); i++) {
-            if (unsigned char event = _buttons[i].button->loop()) {
-                unsigned char count = _buttons[i].button->getEventCount();
-                unsigned long length = _buttons[i].button->getEventLength();
-                unsigned char mapped = mapEvent(event, count, length);
-                buttonEvent(i, mapped);
+        for (size_t id = 0; id < _buttons.size(); ++id) {
+            auto& button = _buttons[id];
+            if (auto event = button.event->loop()) {
+                buttonEvent(id, _buttonMapEvent(
+                    event,
+                    button.event->getEventCount(),
+                    button.event->getEventLength()
+                ));
             }
        }
 

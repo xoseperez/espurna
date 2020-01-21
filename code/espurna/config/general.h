@@ -33,7 +33,8 @@
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_LOG_MODE
-#define DEBUG_LOG_MODE          DebugLogMode::ENABLED
+#define DEBUG_LOG_MODE          DebugLogMode::Enabled   // Set global logger mode. One of:
+                                                        // ::Enabled, ::Disabled or ::SkipBoot
 #endif
 
 // Serial debug log
