@@ -159,11 +159,15 @@ void buttonSetup() {
 
     #if defined(ITEAD_SONOFF_DUAL)
 
+        _buttons.reserve(3);
+
         buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(0));
         buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(1));
         buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(2));
 
     #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+        _buttons.reserve(4);
 
         const auto actions = _buttonConstructActions(
             BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE,
@@ -207,6 +211,8 @@ void buttonSetup() {
         #if BUTTON8_PIN != GPIO_NONE
             ++buttons;
         #endif
+
+        _buttons.reserve(buttons);
 
         // TODO: load based on index
         button_t::DebounceDelay = getSetting("btnDebounce", BUTTON_DEBOUNCE_DELAY);
