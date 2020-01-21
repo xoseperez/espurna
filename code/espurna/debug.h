@@ -16,9 +16,9 @@ class PrintRaw;
 class PrintHex;
 
 enum class DebugLogMode : int {
-    DISABLED = 0,
-    ENABLED = 1,
-    SKIP_BOOT = 2
+    Disabled = 0,
+    Enabled = 1,
+    SkipBoot = 2
 };
 
 bool debugLogBuffer();
