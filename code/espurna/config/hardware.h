@@ -550,6 +550,8 @@
     #define DEBUG_SERIAL_SUPPORT    0
 
     // Buttons
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
     #define BUTTON3_RELAY       1
 
     // LEDs

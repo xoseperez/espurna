@@ -479,6 +479,7 @@ void relayPulse(unsigned char id) {
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report) {
 
+    if (id == RELAY_NONE) return false;
     if (id >= _relays.size()) return false;
 
     if (!_relayStatusLock(id, status)) {
