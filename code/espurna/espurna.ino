@@ -242,6 +242,9 @@ void setup() {
     #ifdef FOXEL_LIGHTFOX_DUAL
         lightfoxSetup();
     #endif
+    #if GARLAND_SUPPORT
+        garlandSetup();
+    #endif
     #if THERMOSTAT_SUPPORT
         thermostatSetup();
     #endif
