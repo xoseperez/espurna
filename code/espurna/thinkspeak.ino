@@ -106,7 +106,7 @@ void _tspkConfigure() {
   
     _tspk_host = getSetting("tspkHost", THINGSPEAK_HOST);
     _tspk_url = getSetting("tspkUrl", THINGSPEAK_URL);
-    _tspk_port = getSetting("tspkPort", THINGSPEAK_PORT).toInt();
+    _tspk_port = getSetting("tspkPort", THINGSPEAK_PORT);
 }
 
 #if THINGSPEAK_USE_ASYNC
