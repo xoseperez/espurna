@@ -29,6 +29,10 @@ const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
 bool _tspk_enabled = false;
 bool _tspk_clear = false;
 
+String _tspk_host;
+String _tspk_url;
+unsigned int _tspk_port;
+
 char * _tspk_queue[THINGSPEAK_FIELDS] = {NULL};
 String _tspk_data;
 
@@ -74,6 +78,9 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     root["tspkEnabled"] = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
     root["tspkKey"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
     root["tspkClear"] = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
+    root["tspkHost"] = getSetting("tspkHost", THINGSPEAK_HOST);
+    root["tspkUrl"] = getSetting("tspkUrl", THINGSPEAK_URL);
+    root["tspkPort"] = getSetting("tspkPort", THINGSPEAK_PORT);
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
     for (byte i=0; i<relayCount(); i++) {
@@ -96,6 +103,10 @@ void _tspkConfigure() {
         setSetting("tspkEnabled", 0);
     }
     if (_tspk_enabled && !_tspk_client) _tspkInitClient();
+  
+    _tspk_host = getSetting("tspkHost", THINGSPEAK_HOST);
+    _tspk_url = getSetting("tspkUrl", THINGSPEAK_URL);
+    _tspk_port = getSetting("tspkPort", THINGSPEAK_PORT).toInt();
 }
 
 #if THINGSPEAK_USE_ASYNC
@@ -194,7 +205,7 @@ void _tspkInitClient() {
         _tspk_connected = true;
         _tspk_connecting = false;
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), _tspk_host.c_str(), _tspk_port);
 
         #if THINGSPEAK_USE_SSL
             uint8_t fp[20] = {0};
@@ -205,12 +216,12 @@ void _tspkInitClient() {
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + 1];
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_url.c_str(), _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_url.length() + _tspk_host.length() + 1];
         snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
-            THINGSPEAK_URL,
-            THINGSPEAK_HOST,
+            _tspk_url.c_str(),
+            _tspk_host.c_str(),
             _tspk_data.length()
         );
 
@@ -228,9 +239,9 @@ void _tspkPost() {
     _tspk_client_ts = millis();
 
     #if THINGSPEAK_USE_SSL
-        bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
+        bool connected = _tspk_client->connect(_tspk_host.c_str(), _tspk_port, THINGSPEAK_USE_SSL);
     #else
-        bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
+        bool connected = _tspk_client->connect(_tspk_host.c_str(), _tspk_port);
     #endif
 
     _tspk_connecting = connected;
@@ -252,20 +263,20 @@ void _tspkPost() {
         WiFiClient _tspk_client;
     #endif
 
-    if (_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
+    if (_tspk_client.connect(_tspk_host.c_str(), _tspk_port)) {
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), _tspk_host.c_str(), _tspk_port);
 
-        if (!_tspk_client.verify(THINGSPEAK_FINGERPRINT, THINGSPEAK_HOST)) {
+        if (!_tspk_client.verify(THINGSPEAK_FINGERPRINT, _tspk_host.c_str())) {
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
         }
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + 1];
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_url.c_str(), _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_url.length() + _tspk_host.lengh() + 1];
         snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
-            THINGSPEAK_URL,
-            THINGSPEAK_HOST,
+            _tspk_url.c_str(),
+            _tspk_host.c_str(),
             _tspk_data.length()
         );
 
