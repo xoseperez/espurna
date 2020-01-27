@@ -226,6 +226,14 @@
 #define GARLAND_SUPPORT          1
 #endif
 
+#ifndef GARLAND_D_PIN
+#define GARLAND_D_PIN 4                         // WS2812 pin number
+#endif
+
+#ifndef GARLAND_LEDS
+#define GARLAND_LEDS 60                         // Leds number
+#endif
+
 //------------------------------------------------------------------------------
 // THERMOSTAT
 //------------------------------------------------------------------------------

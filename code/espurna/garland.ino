@@ -2,28 +2,38 @@
 
 GARLAND MODULE
 
-Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
+Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 */
 
 #if GARLAND_SUPPORT
 
+#include "garland\anim.h"
+#include "garland\color.h"
+#include "garland\palette.h"
 #include <Adafruit_NeoPixel.h>
-
-bool _garland_enabled = true;
 
 const char* NAME_GARLAND_ENABLED     = "garlandEnabled";
 
-#define PIN 4 // WS2812 pin number
-#define LEDS 60 // number of LEDs in the strip. Not sure why, but 100 leds don't work with software serial! Works with hardware serial though
+#define ANIMS                          1 //number of animations
+#define PALS                           7 //number of palettes
 
-//Adafruit's class to operate strip
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800); 
-
-int curpixel = 0;
-int prevpixel = 0;
-int inc = 1;
+bool _garland_enabled                = true;
+int  _curpixel                       = 0;
+int  _prevpixel                      = 0;
+int  _inc                            = 1;
 uint8_t r,g,b;
+
+unsigned long  anim_start  = 0;
+unsigned short anim_cycles = 0;
+
+int paletteInd;
+int animInd = 1;
+extern Adafruit_NeoPixel pixels;
+
+Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};
+
+Anim anim = Anim();
 
 //------------------------------------------------------------------------------
 void garlandEnabled(bool enabled) {
@@ -36,22 +46,9 @@ bool garlandEnabled() {
 }
 
 //------------------------------------------------------------------------------
-std::vector<garland_callback_f> _garland_callbacks;
-
-void garlandRegister(garland_callback_f callback) {
-    _garland_callbacks.push_back(callback);
-}
-
-//------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
-    DEBUG_MSG_P(PSTR("commonSetup\n"));
-    pixels.begin();
-    curpixel = 0;
-    r = 255;
-    g = b = 0;
-    DEBUG_MSG_P(PSTR("~commonSetup\n"));
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +82,6 @@ void garlandSetup() {
   DEBUG_MSG_P(PSTR("garlandSetup\n"));
   garlandConfigure();
 
-
   // Websockets
   #if WEB_SUPPORT
       wsRegister()
@@ -96,6 +92,15 @@ void garlandSetup() {
 
   espurnaRegisterLoop(garlandLoop);
   espurnaRegisterReload(_garlandReload);
+
+  pixels.begin();
+  randomSeed(analogRead(0)*analogRead(1));
+  paletteInd = random(PALS);
+  anim.setAnim(animInd);
+  anim.setPeriod(20);
+  anim.setPalette(pals[2]);
+  anim.doSetUp();
+  // EffectAutoChangeTimer.start(20000); // 10000 for "release" AnimStart
 }
 
 //------------------------------------------------------------------------------
@@ -106,20 +111,8 @@ void garlandLoop(void) {
   if (!garlandEnabled())
     return;
 
-  prevpixel = curpixel;
-  curpixel += inc;
-  if (curpixel >= LEDS || curpixel < 0) {
-    inc *= -1;
-    curpixel += inc;
-    r += 13;
-    g += 27;
-    b += 31;
-    DEBUG_MSG_P(PSTR("r: %d, g: %d, b: %d\n"), r, g, b);  
+  if (anim.run()) {
   }
-
-  pixels.setPixelColor(prevpixel, pixels.Color(0, 0, 0));
-  pixels.setPixelColor(curpixel, pixels.Color(r, g, b));
-  pixels.show();
 }
 
 #endif // GARLAND_SUPPORT

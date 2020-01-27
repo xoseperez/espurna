@@ -283,14 +283,6 @@ bool wifiConnected();
 #endif
 
 // -----------------------------------------------------------------------------
-// GARLAND
-// -----------------------------------------------------------------------------
-using garland_callback_f = std::function<void(bool state)>;
-#if GARLAND_SUPPORT
-    void garlandRegister(garland_callback_f callback);
-#endif
-
-// -----------------------------------------------------------------------------
 // THERMOSTAT
 // -----------------------------------------------------------------------------
 using thermostat_callback_f = std::function<void(bool state)>;
