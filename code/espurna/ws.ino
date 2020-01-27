@@ -538,7 +538,7 @@ void _wsOnConnected(JsonObject& root) {
     version["sketch_size"] = ESP.getSketchSize();
     version["sdk"] = ESP.getSdkVersion();
     version["core"] = getCoreVersion();
-    
+
     #if defined(APP_REVISION)
         version["app_revision"] = APP_REVISION;
     #endif
@@ -547,6 +547,7 @@ void _wsOnConnected(JsonObject& root) {
     device["chip_id"] = String(chipid);
     device["name"] = DEVICE;
     device["free_size"] = ESP.getFreeSketchSpace();
+    device["total_size"] = ESP.getFlashChipRealSize();
     device["hostname"] = getSetting("hostname");
     device["desc"] = getSetting("desc");
     device["webPort"] = getSetting("webPort", WEB_PORT).toInt();

@@ -30,6 +30,22 @@
                    width="40%"
                    center
                    append-to-body>
+            <el-switch v-model="twoStep" active-text="Two step upgrade" inactive-text="Simple upgrade"/>
+            <el-upload v-if="twoStep" ref="coreUpload" :action="'http://'+ip+'/upgrade'"
+                       accept=".bin"
+                       :multiple="false"
+                       :before-upload="beforeUpload"
+                       :on-change="fileChange"
+                       :on-remove="fileChange"
+                       :auto-upload="false"
+                       drag>
+                <i class="el-icon-upload"></i>
+                <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
+                <div slot="tip" class="el-upload__tip">
+                    <a :href="coreAsset">Stripped down core binary file</a>
+                    with a size less than {{parseInt(free_size/1024)}}Kb
+                </div>
+            </el-upload>
             <el-upload ref="upload" :action="'http://'+ip+'/upgrade'" accept=".bin"
                        :multiple="false"
                        :before-upload="beforeUpload"
@@ -40,9 +56,10 @@
                 <i class="el-icon-upload"></i>
                 <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
                 <div slot="tip" class="el-upload__tip">
-                    .bin file with a size less than {{parseInt(free_size/1024)}}Kb
+                    .bin file with a size less than {{parseInt(twoStep ? free_core_size/1024 : free_size/1024)}}Kb
                 </div>
             </el-upload>
+
             <span slot="footer" class="dialog-footer">
                 <el-button @click="upgradeDialogVisible = false">Cancel</el-button>
                 <el-button v-if="canUpgrade" type="primary" @click="upgrade">Upgrade</el-button>
@@ -127,10 +144,14 @@
             },
             /* eslint-disable vue/prop-name-casing */
             free_size: {
-                /* eslint-enable */
                 type: Number,
                 default: 0
             },
+            total_size: {
+                type: Number,
+                default: 1000000 //Assume 1Mb board if not provided
+            },
+            /* eslint-enable */
             wifi: {
                 type: String,
                 default: ""
@@ -142,12 +163,14 @@
         },
         data() {
             return {
+                twoStep: false,
                 canUpgrade: false,
                 isMounted: false,
                 authDialogVisible: false,
                 upgradeDialogVisible: false,
                 username: 'admin',
-                password: 'fibonacci'
+                password: 'fibonacci',
+                coreAsset: 'https://github.com/xoseperez/espurna/releases/download/1.14.1/espurna-1.14.1-espurna-core-1MB.bin'
             }
         },
         computed: {
@@ -160,24 +183,70 @@
             },
             color() {
                 return mixColors('#479fd6', '#db3a22', this.wifiPercent);
-            }
+            },
         },
         mounted() {
             this.isMounted = true;
+            this.getCoreAsset().then((res) => {
+                if ("browser_download_url" in res)
+                    this.coreAsset = res.browser_download_url;
+            })
         },
         methods: {
+            async getCoreAsset() {
+                try {
+                    let response = await fetch("https://api.github.com/repos/xoseperez/espurna/releases/latest");
+                    if (response.ok) {
+                        let data = await response.json();
+
+                        if ("assets" in data) {
+                            let asset = data.assets.find((a) => {
+                                return a.name && a.name.test(/core-1MB\.bin$/);
+                            });
+                            if (asset) {
+                                return asset;
+                            } else {
+                                throw Error('Could not find a core file to use')
+                            }
+                        }
+                    } else {
+                        throw Error('Failed to connect to github');
+                    }
+                } catch (e) {
+                    this.$notify.error(e.message);
+                }
+            },
+            freeCoreSize() {
+                return this.twoStep ? this.free_size : this.total_size -
+                    (this.$refs.coreUplad.files.length ? this.$refs.coreUplad.files[0].size : 0)
+            },
+            canDoTwoStepUpdate(file, coreFile) {
+                return (coreFile.size > this.free_size) && (coreFile.size + file.size <= this.total_size);
+            },
+            doTwoStepUpdate(file) {
+                let coreFile = this.getCoreAsset();
+                if (this.canDoTwoStepUpdate(file, coreFile)) {
+                    coreFile.browser_download_url
+                } else {
+                    this.$notify.error({
+                        title: 'Not enough space',
+                        message:
+                            'There is not enough space on the board to upgrade the firmware in any way, you will need to flash it via serial connection'
+                    });
+                }
+            },
             fileChange(file, fileList) {
                 if (fileList.length > 1) {
                     fileList.splice(0, fileList.length - 1);
                 }
                 if (fileList.length > 0 && fileList[0].size > this.free_size) {
-                    this.$notify.error({
-                        title: "Not enough space",
+                    this.$notify.warning({
+                        title: "Two step update",
                         message:
-                            'There is not enough space on the board to upgrade the firmware over-the-air, you will need to do a two step update',
+                            'There is not enough space on the board to upgrade the firmware directly, a two step update will be done',
                         duration: 0
                     });
-                    //TODO check if two step update possible with the space as well and do it automatically
+                    this.twoStep = true;
                 }
                 this.canUpgrade = fileList.length > 0 && fileList[0].size < this.free_size;
             },

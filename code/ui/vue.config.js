@@ -58,12 +58,17 @@ const pwa = new GenerateSW(
 const terser = new TerserPlugin({
     terserOptions: {
         ecma: 6,
-        compress: true,
+        compress: {
+            drop_console: true,
+            unsafe_methods: true,
+            unsafe_proto: true,
+        },
         output: {
             comments: false,
             beautify: false
-        }
-    }
+        },
+    },
+    extractComments: false
 });
 
 module.exports = {
@@ -97,6 +102,9 @@ module.exports = {
                     ],
                     devtool: false,
                     optimization: {
+                        mangleWasmImports: true,
+                        removeAvailableModules: false,
+                        mergeDuplicateChunks: true,
                         minimizer: [
                             terser
                         ]

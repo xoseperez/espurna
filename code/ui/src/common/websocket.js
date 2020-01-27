@@ -73,7 +73,10 @@ Ws.prototype = {
     },
     sendConfig(data) {
         if (this.ws)
-            this.ws.send(JSON.stringify({config: data}));
+            this.ws.send(
+                JSON.stringify({config: data},
+                    (key, value) => typeof value === 'undefined' ? null : value)
+            );
     }
 };
 
