@@ -451,7 +451,9 @@
 #define EMON_ADC121_SUPPORT             0       // Do not build support by default
 #endif
 
+#ifndef EMON_ADC121_I2C_ADDRESS
 #define EMON_ADC121_I2C_ADDRESS         0x00    // 0x00 means auto
+#endif
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
@@ -462,7 +464,10 @@
 #define EMON_ADS1X15_SUPPORT            0       // Do not build support by default
 #endif
 
+#ifndef EMON_ADS1X15_I2C_ADDRESS
 #define EMON_ADS1X15_I2C_ADDRESS        0x00    // 0x00 means auto
+#endif
+
 #define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
 #define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
@@ -1284,6 +1289,8 @@
     BH1750_SUPPORT || \
     BMP180_SUPPORT || \
     BMX280_SUPPORT || \
+    EMON_ADC121_SUPPORT || \
+    EMON_ADS1X15_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
     VEML6075_SUPPORT || \
