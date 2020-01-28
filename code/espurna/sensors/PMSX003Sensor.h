@@ -9,10 +9,10 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "BaseSensor.h"
 
 // Generic data
 #define PMS_BAUD_RATE       9600

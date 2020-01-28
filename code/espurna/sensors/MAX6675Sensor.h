@@ -8,10 +8,12 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-#include <vector>
+#include <Arduino.h>
 #include <MAX6675.h>
+
+#include <vector>
+
+#include "BaseSensor.h"
 
 #define MAX6675_READ_INTERVAL 3000
 
