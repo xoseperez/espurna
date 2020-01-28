@@ -1419,14 +1419,11 @@
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
 
-#define THINGSPEAK_HOST             "api.thingspeak.com"
 #if THINGSPEAK_USE_SSL
-#define THINGSPEAK_PORT             443
+#define THINGSPEAK_ADDRESS          "https://api.thingspeak.com/update"
 #else
-#define THINGSPEAK_PORT             80
+#define THINGSPEAK_ADDRESS          "http://api.thingspeak.com/update"
 #endif
-
-#define THINGSPEAK_URL              "/update"
 
 #define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
 #define THINGSPEAK_FIELDS           8               // Number of fields

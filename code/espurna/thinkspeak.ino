@@ -9,6 +9,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if THINGSPEAK_SUPPORT
 
 #include "broker.h"
+#include "libs/URL.h"
 
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
@@ -78,9 +79,7 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     root["tspkEnabled"] = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
     root["tspkKey"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
     root["tspkClear"] = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
-    root["tspkHost"] = getSetting("tspkHost", THINGSPEAK_HOST);
-    root["tspkUrl"] = getSetting("tspkUrl", THINGSPEAK_URL);
-    root["tspkPort"] = getSetting("tspkPort", THINGSPEAK_PORT);
+    root["tspkAddress"] = getSetting("tspkAddress", THINGSPEAK_ADDRESS);
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
     for (byte i=0; i<relayCount(); i++) {
@@ -103,10 +102,11 @@ void _tspkConfigure() {
         setSetting("tspkEnabled", 0);
     }
     if (_tspk_enabled && !_tspk_client) _tspkInitClient();
-  
-    _tspk_host = getSetting("tspkHost", THINGSPEAK_HOST);
-    _tspk_url = getSetting("tspkUrl", THINGSPEAK_URL);
-    _tspk_port = getSetting("tspkPort", THINGSPEAK_PORT);
+
+    URL _url(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
+    _tspk_host = _url.host;
+    _tspk_url = _url.path;
+    _tspk_port = _url.port;
 }
 
 #if THINGSPEAK_USE_ASYNC
