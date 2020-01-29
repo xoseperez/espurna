@@ -6,26 +6,22 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 */
 
+#include "config\general.h"
 #if GARLAND_SUPPORT
 
 #include "garland\anim.h"
 #include "garland\color.h"
 #include "garland\palette.h"
+#include "garland\small_timer.hpp"
 #include <Adafruit_NeoPixel.h>
 
 const char* NAME_GARLAND_ENABLED     = "garlandEnabled";
 
 #define ANIMS                          1 //number of animations
 #define PALS                           7 //number of palettes
+#define INTERVAL                   10000 //change interval, msec
 
 bool _garland_enabled                = true;
-int  _curpixel                       = 0;
-int  _prevpixel                      = 0;
-int  _inc                            = 1;
-uint8_t r,g,b;
-
-unsigned long  anim_start  = 0;
-unsigned short anim_cycles = 0;
 
 int paletteInd;
 int animInd = 1;
@@ -34,6 +30,10 @@ extern Adafruit_NeoPixel pixels;
 Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};
 
 Anim anim = Anim();
+
+csTimerDef <INTERVAL> EffectAutoChangeTimer; // auto change animation effect, interval timer
+
+constexpr bool disableAutoChangeEffects = false;
 
 //------------------------------------------------------------------------------
 void garlandEnabled(bool enabled) {
@@ -98,9 +98,9 @@ void garlandSetup() {
   paletteInd = random(PALS);
   anim.setAnim(animInd);
   anim.setPeriod(20);
-  anim.setPalette(pals[2]);
+  anim.setPalette(pals[0]);
   anim.doSetUp();
-  // EffectAutoChangeTimer.start(20000); // 10000 for "release" AnimStart
+  EffectAutoChangeTimer.start(10000); // 10000 for "release" AnimStart
 }
 
 //------------------------------------------------------------------------------
@@ -111,7 +111,32 @@ void garlandLoop(void) {
   if (!garlandEnabled())
     return;
 
+
   if (anim.run()) {
+  }
+
+  bool needChange = EffectAutoChangeTimer.run();
+    // auto change effect
+  if (needChange && ! disableAutoChangeEffects) {
+    EffectAutoChangeTimer.start();
+
+    switch ( (animInd < 0) ? 0 : random(2)) {
+      case 0: {
+        int prevAnimInd = animInd;
+        while (prevAnimInd == animInd) animInd = random(ANIMS);
+        anim.setAnim(animInd);
+        anim.setPeriod(random(20, 40));
+        anim.setPalette(pals[paletteInd]);
+        anim.doSetUp();
+        break;
+      }
+      case 1: {
+        int prevPalInd = paletteInd;
+        while (prevPalInd == paletteInd) paletteInd = random(PALS);
+        anim.setPalette(pals[paletteInd]);
+        break;
+      }
+    }
   }
 }
 

@@ -2,15 +2,18 @@
 
 void Anim::glowSetUp()
 {
-    braPhaseSpd = random(8,13);
-    braFreq = random(40,120);
+    braPhaseSpd = random(4,13);
+    if (braPhaseSpd > 8) {
+        braPhaseSpd = braPhaseSpd - 17;
+    }
+    braFreq = random(20,60);
 }
 
 void Anim::glowForEachLed(int i)
 {
-    int bra = (char) (braPhase + i * braFreq);
+    int8 bra = braPhase + i * braFreq;
     bra = BRA_OFFSET + (abs(bra) >> BRA_AMP_SHIFT);
-    leds[i] = leds[i].brightness((int)bra);
+    leds[i] = leds[i].brightness(bra);
 }
 
 void Anim::glowRun()

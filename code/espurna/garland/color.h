@@ -1,6 +1,7 @@
 #ifndef color_h
 #define color_h
 #include <Arduino.h>
+#include "debug.h"
 
 struct Color
 {
@@ -70,9 +71,9 @@ struct Color
     }
 
     void println() {
-        Serial.print(F("r="));Serial.print(r);
-        Serial.print(F("g="));Serial.print(g);
-        Serial.print(F("b="));Serial.println(b);
+        Serial.print(("r="));Serial.print(r);Serial.print((" "));
+        Serial.print(("g="));Serial.print(g);Serial.print( (" "));
+        Serial.print(("b="));Serial.println(b);
     }
 } ;
 

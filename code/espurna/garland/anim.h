@@ -13,7 +13,7 @@ const int   LEDS                     = GARLAND_LEDS;
 // brigthness animation amplitude shift. true BrA amplitude is calculated as (0..127) value shifted right by this amount
 #define BRA_AMP_SHIFT 1
 // brigthness animation amplitude offset
-#define BRA_OFFSET (222-64)
+#define BRA_OFFSET 127//(222-64)
 
 //probability of spark when in idle plase
 #define SPARK_PROB 3
