@@ -9,6 +9,7 @@
 
 #include <Arduino.h>
 
+#include "../debug.h"
 #include "BaseSensor.h"
 
 class PulseMeterSensor : public BaseSensor {

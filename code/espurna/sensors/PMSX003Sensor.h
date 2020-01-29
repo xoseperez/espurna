@@ -12,6 +12,7 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
+#include "../debug.h"
 #include "BaseSensor.h"
 
 // Generic data

@@ -11,6 +11,7 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
+#include "../debug.h"
 #include "BaseSensor.h"
 
 class CSE7766Sensor : public BaseSensor {

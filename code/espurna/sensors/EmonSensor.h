@@ -9,6 +9,7 @@
 
 #include <Arduino.h>
 
+#include "../debug.h"
 #include "I2CSensor.h"
 extern "C" {
     #include "../libs/fs_math.h"
