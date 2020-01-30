@@ -2113,6 +2113,13 @@ function initUrls(root) {
 
 }
 
+function ping_pong() {
+	setTimeout(function() {
+		sendAction("ping", {});
+		ping_pong();
+	}, 5000);
+}
+
 function connectToURL(url) {
 
     initUrls(url);
@@ -2136,6 +2143,15 @@ function connectToURL(url) {
                 processData(data);
             }
         };
+		websock.onclose = function(evt) {
+			if(confirm("Connection lost with the device, click OK to refresh the page")) {
+				$("#layout").toggle(false);
+				location.reload();
+			}
+		}
+		websock.onopen = function(evt) {
+			ping_pong();
+		}
     }).catch(function(error) {
         console.log(error);
         doReload(5000);
