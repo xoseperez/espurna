@@ -1460,7 +1460,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef RPN_RULES_SUPPORT
-#define RPN_RULES_SUPPORT           0               // Enable RPN Rules (8.6Kb)
+#define RPN_RULES_SUPPORT           1               // Enable RPN Rules (8.6Kb)
 #endif
 
 #ifndef RPN_DELAY
@@ -1476,12 +1476,31 @@
 // -----------------------------------------------------------------------------
 
 #ifndef NTP_SUPPORT
-#define NTP_SUPPORT                 1               // Build with NTP support by default (6.78Kb)
+#define NTP_SUPPORT                 1               // Build with NTP support by default (depends on Core version)
 #endif
 
 #ifndef NTP_SERVER
 #define NTP_SERVER                  "pool.ntp.org"  // Default NTP server
 #endif
+
+#ifndef NTP_TIMEZONE
+#define NTP_TIMEZONE                "UTC0"
+#endif
+
+#ifndef NTP_UPDATE_INTERVAL
+#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
+#endif
+
+#ifndef NTP_START_DELAY
+#define NTP_START_DELAY             1000            // Delay NTP start 1 second
+#endif
+
+#ifndef NTP_WAIT_FOR_SYNC
+#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
+#endif
+
+
+// WARNING: legacy NTP settings. can be ignored with Core 2.6.2+
 
 #ifndef NTP_TIMEOUT
 #define NTP_TIMEOUT                 1000            // Set NTP request timeout to 2 seconds (issue #452)
@@ -1499,20 +1518,8 @@
 #define NTP_SYNC_INTERVAL           60              // NTP initial check every minute
 #endif
 
-#ifndef NTP_UPDATE_INTERVAL
-#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
-#endif
-
-#ifndef NTP_START_DELAY
-#define NTP_START_DELAY             1000            // Delay NTP start 1 second
-#endif
-
 #ifndef NTP_DST_REGION
 #define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
-#endif
-
-#ifndef NTP_WAIT_FOR_SYNC
-#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
 
 // -----------------------------------------------------------------------------

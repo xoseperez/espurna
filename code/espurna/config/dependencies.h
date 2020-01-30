@@ -141,3 +141,11 @@
 #define DEBUG_LOG_BUFFER_SUPPORT  0              // Can't buffer if there is no debugging enabled.
                                                  // Helps to avoid checking twice for both DEBUG_SUPPORT and BUFFER_LOG_SUPPORT
 #endif
+
+#if NTP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#define NTP_LEGACY_SUPPORT 1
+#else
+#define NTP_LEGACY_SUPPORT 0
+#undef SCHEDULER_SUPPORT
+#define SCHEDULER_SUPPORT 0
+#endif

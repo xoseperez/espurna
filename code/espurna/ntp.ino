@@ -6,15 +6,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if NTP_SUPPORT
+#if NTP_LEGACY_SUPPORT && NTP_SUPPORT
 
-#include <TimeLib.h>
 #include <WiFiClient.h>
 #include <Ticker.h>
 
 #include "libs/NtpClientWrap.h"
 #include "broker.h"
 #include "ws.h"
+#include "ntp.h"
 
 Ticker _ntp_defer;
 
@@ -34,6 +34,7 @@ bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ntpWebSocketOnVisible(JsonObject& root) {
     root["ntpVisible"] = 1;
+    root["ntplegacyVisible"] = 1;
 }
 
 void _ntpWebSocketOnData(JsonObject& root) {
@@ -60,11 +61,11 @@ void _ntpWantSync() {
 
 // Randomized in time to avoid clogging the server with simultaious requests from multiple devices
 // (for example, when multiple devices start up at the same time)
-int inline _ntpSyncInterval() {
+int _ntpSyncInterval() {
     return secureRandom(NTP_SYNC_INTERVAL, NTP_SYNC_INTERVAL * 2);
 }
 
-int inline _ntpUpdateInterval() {
+int _ntpUpdateInterval() {
     return secureRandom(NTP_UPDATE_INTERVAL, NTP_UPDATE_INTERVAL * 2);
 }
 
@@ -106,7 +107,7 @@ void _ntpConfigure() {
         _ntp_report = true;
     }
 
-    String server = getSetting("ntpServer", NTP_SERVER);
+    const auto server = getSetting("ntpServer", NTP_SERVER);
     if (!NTPw.getNtpServerName().equals(server)) {
         NTPw.setNtpServerName(server);
     }
@@ -277,4 +278,4 @@ void ntpSetup() {
 
 }
 
-#endif // NTP_SUPPORT
+#endif // NTP_LEGACY_SUPPORT

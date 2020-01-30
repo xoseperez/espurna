@@ -10,8 +10,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #if SCHEDULER_SUPPORT
 
 #include "relay.h"
-
-#include <TimeLib.h>
+#include "ntp.h"
 
 int _sch_restore = 0;
 
@@ -166,7 +165,15 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
 void _schCheck(int relay, int daybefore) {
 
     time_t local_time = now();
-    time_t utc_time = ntpLocal2UTC(local_time);
+
+    #if NTP_LEGACY_SUPPORT
+        time_t utc_time = ntpLocal2UTC(local_time);
+    #else
+        tm utc_tm;
+        gmtime_r(&local_time, &utc_tm);
+        time_t utc_time = mktime(&utc_tm);
+    #endif
+
     int minimum_restore_time = -1440;
     int saved_action = -1;
     int saved_sch = -1;

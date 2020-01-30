@@ -8,6 +8,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RPN_RULES_SUPPORT
 
+#include "ntp.h"
 #include "relay.h"
 
 #include <rpnlib.h>
@@ -120,38 +121,40 @@ void _rpnInit() {
     // Init context
     rpn_init(_rpn_ctxt);
 
-    // Time functions
-    rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
-        if (!ntpSynced()) return false;
-        rpn_stack_push(ctxt, now());
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
-        if (!ntpSynced()) return false;
-        rpn_stack_push(ctxt, ntpLocal2UTC(now()));
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-        float a;
-        rpn_stack_pop(ctxt, a);
-        unsigned char dow = (weekday(int(a)) + 5) % 7;
-        rpn_stack_push(ctxt, dow);
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
-        float a;
-        rpn_stack_pop(ctxt, a);
-        rpn_stack_push(ctxt, hour(int(a)));
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
-        float a;
-        rpn_stack_pop(ctxt, a);
-        rpn_stack_push(ctxt, minute(int(a)));
-        return true;
-    });
+    // Time functions need NTP support
+    #if NTP_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
+            if (!ntpSynced()) return false;
+            rpn_stack_push(ctxt, now());
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
+            if (!ntpSynced()) return false;
+            rpn_stack_push(ctxt, ntpLocal2UTC(now()));
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
+            float a;
+            rpn_stack_pop(ctxt, a);
+            unsigned char dow = (weekday(int(a)) + 5) % 7;
+            rpn_stack_push(ctxt, dow);
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
+            float a;
+            rpn_stack_pop(ctxt, a);
+            rpn_stack_push(ctxt, hour(int(a)));
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
+            float a;
+            rpn_stack_pop(ctxt, a);
+            rpn_stack_push(ctxt, minute(int(a)));
+            return true;
+        });
+    #endif
 
-    // Debug
+    // Dumps RPN internal state
     rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) {
         _rpnDump();
         return true;
@@ -304,6 +307,14 @@ void rpnSetup() {
     // MQTT
     #if MQTT_SUPPORT
         mqttRegister(_rpnMQTTCallback);
+    #endif
+
+    #if NTP_SUPPORT
+        TimeBroker::Register([](const String& topic, time_t timestamp, const String& datetime) {
+            rpn_variable_set(_rpn_ctxt, topic.c_str(), timestamp);
+            _rpn_last = millis();
+            _rpn_run = true;
+        });
     #endif
 
     StatusBroker::Register(_rpnBrokerStatus);

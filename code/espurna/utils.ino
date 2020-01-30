@@ -9,8 +9,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <limits>
 
 #include <Ticker.h>
-#include <TimeLib.h>
 
+#include "ntp.h"
 #include "utils.h"
 #include "libs/HeapStats.h"
 
