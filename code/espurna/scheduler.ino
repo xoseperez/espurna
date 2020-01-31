@@ -300,8 +300,20 @@ void schSetup() {
             .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
 
+    terminalRegisterCommand(F("SHOWCASE"), [](Embedis* e) {
+        const auto ts = now();
+        for (unsigned char times = 0; times < 7; ++times) {
+            const auto cal = _schGetWeekday(ts, times);
+            DEBUG_MSG_P(PSTR("[SHOWCASE] local:wday=%d,hour=%d,min=%d utc:wday=%d,hour=%d,min=%d\n"),
+                cal.local_wday, cal.local_hour, cal.local_minute,
+                cal.utc_wday, cal.utc_hour, cal.utc_minute
+            );
+        }
+    });
+
     NtpBroker::Register([](const NtpTick tick, time_t, const String&) {
         if (NtpTick::EveryMinute != tick) return;
+        DEBUG_MSG_P(PSTR("[SHOWCASE] tick every minute\n"));
 
         static bool restore_once = true;
         if (restore_once) {
