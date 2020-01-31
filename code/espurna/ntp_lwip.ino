@@ -267,10 +267,10 @@ void ntpSetup() {
     const uint32_t startup_delay = getSetting("ntpStartDelay", NTP_START_DELAY);
     const uint32_t update_delay = getSetting("ntpUpdateIntvl", NTP_UPDATE_INTERVAL);
 
-    _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 15);
+    _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
     _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
     DEBUG_MSG_P(PSTR("[NTP] startup_delay=%us update_delay=%us\n"),
-        startup_delay, update_delay
+        _ntp_startup_delay, _ntp_update_delay
     );
 
     _ntp_startup_delay = _ntp_startup_delay * 1000;
