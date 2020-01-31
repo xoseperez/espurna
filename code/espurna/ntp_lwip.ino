@@ -235,12 +235,12 @@ void _ntpBrokerCallback() {
         // notify subscribers about each tick interval (note that both can happen simultaiously)
         if (last_hour != now_hour) {
             last_hour = now_hour;
-            TimeBroker::Publish(F("tick1h"), ts, datetime.c_str());
+            TimeBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
         }
 
         if (last_minute != now_minute) {
             last_minute = now_minute;
-            TimeBroker::Publish(F("tick1m"), ts, datetime.c_str());
+            TimeBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
         }
 
         // try to autocorrect each invocation

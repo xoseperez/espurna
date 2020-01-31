@@ -310,8 +310,16 @@ void rpnSetup() {
     #endif
 
     #if NTP_SUPPORT
-        TimeBroker::Register([](const String& topic, time_t timestamp, const String& datetime) {
-            rpn_variable_set(_rpn_ctxt, topic.c_str(), timestamp);
+        TimeBroker::Register([](const NtpTick tick, time_t timestamp, const String& datetime) {
+            String name("tick1");
+            if (tick == NtpTick::EveryHour) {
+                name += 'h';
+            } else if (tick == NtpTick::EveryMinute) {
+                name += 'm'
+            } else {
+                return;
+            }
+            rpn_variable_set(_rpn_ctxt, name.c_str(), timestamp);
             _rpn_last = millis();
             _rpn_run = true;
         });

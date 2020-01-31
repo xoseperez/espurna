@@ -1,5 +1,7 @@
 #pragma once
 
+#include "broker.h"
+
 #if !NTP_LEGACY_SUPPORT
 
 // --- shim original TimeLib macros as real functions
@@ -101,6 +103,13 @@ time_t now();
 #endif
 
 // --- rest of the module is ESPurna functions
+
+enum class NtpTick {
+    EveryMinute,
+    EveryHour
+};
+
+using TimeBroker = TBroker<TBrokerType::DATETIME, const NtpTick, time_t, const String&>;
 
 String ntpDateTime(time_t ts);
 String ntpDateTime();

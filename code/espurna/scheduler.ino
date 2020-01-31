@@ -9,6 +9,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
+#include "broker.h"
 #include "relay.h"
 #include "ntp.h"
 
@@ -165,14 +166,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
 void _schCheck(int relay, int daybefore) {
 
     time_t local_time = now();
-
-    #if NTP_LEGACY_SUPPORT
-        time_t utc_time = ntpLocal2UTC(local_time);
-    #else
-        tm utc_tm;
-        gmtime_r(&local_time, &utc_tm);
-        time_t utc_time = mktime(&utc_tm);
-    #endif
+    time_t utc_time = ntpLocal2UTC(local_time);
 
     int minimum_restore_time = -1440;
     int saved_action = -1;
@@ -259,37 +253,12 @@ void _schCheck(int relay, int daybefore) {
 
 }
 
-void _schLoop() {
-
-    // Check time has been sync'ed
-    if (!ntpSynced()) return;
-
-    if (_sch_restore == 0) {
-        for (unsigned char i = 0; i < relayCount(); i++){
-            if (getSetting({"relayLastSch", i}, 1 == SCHEDULER_RESTORE_LAST_SCHEDULE)) {
-                _schCheck(i, 0);
-            }
-        }
-        _sch_restore = 1;
-    }
-
-    // Check schedules every minute at hh:mm:00
-    static unsigned long last_minute = 60;
-    unsigned char current_minute = minute(now());
-    if (current_minute != last_minute) {
-        last_minute = current_minute;
-        _schCheck(-1, -1);
-    }
-
-}
-
 // -----------------------------------------------------------------------------
 
 void schSetup() {
 
     _schConfigure();
 
-    // Update websocket clients
     #if WEB_SUPPORT
         wsRegister()
             .onVisible(_schWebSocketOnVisible)
@@ -297,8 +266,21 @@ void schSetup() {
             .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
 
-    // Main callbacks
-    espurnaRegisterLoop(_schLoop);
+    TimeBroker::Register([](const NtpTick tick, time_t, const String&) {
+        static bool restore_once = true;
+        if (NtpTick::EveryMinute == tick) {
+            if (restore_once) {
+                for (unsigned char i = 0; i < relayCount(); i++){
+                    if (getSetting({"relayLastSch", i}, 1 == SCHEDULER_RESTORE_LAST_SCHEDULE)) {
+                        _schCheck(i, 0);
+                    }
+                }
+                restore_once = false;
+            }
+            _schCheck(-1, -1);
+        }
+    });
+
     espurnaRegisterReload(_schConfigure);
 
 }
