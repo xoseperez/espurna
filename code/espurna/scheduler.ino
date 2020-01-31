@@ -118,10 +118,10 @@ void _schConfigure() {
 
 }
 
-bool _schIsThisWeekday(time_t t, String weekdays){
+bool _schIsThisWeekday(int day, const String& weekdays){
 
     // Convert from Sunday to Monday as day 1
-    int w = weekday(t) - 1;
+    int w = day - 1;
     if (0 == w) w = 7;
 
     char pch;
@@ -134,10 +134,8 @@ bool _schIsThisWeekday(time_t t, String weekdays){
 
 }
 
-int _schMinutesLeft(time_t t, unsigned char schedule_hour, unsigned char schedule_minute){
-    unsigned char now_hour = hour(t);
-    unsigned char now_minute = minute(t);
-    return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
+int _schMinutesLeft(tm* current_time, unsigned char schedule_hour, unsigned char schedule_minute){
+    return (schedule_hour - current_time->tm_hour) * 60 + schedule_minute - current_time->tm_min;
 }
 
 void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
@@ -165,11 +163,18 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
 // Otherwise, modify it by moving 'daybefore' days back and only use the 'relay' id
 void _schCheck(int relay, int daybefore) {
 
-    // XXX: this is garbage with lwip
-    // minute() / hour() / day() below will break based on localtime() result
-    // what needs to happen instead is break here using gmtime or localtime manually and avoid using TimeLib compat altogethre
-    time_t local_time = now();
-    time_t utc_time = ntpLocal2UTC(local_time);
+    time_t timestamp = now();
+
+    tm utc_time;
+    tm local_time;
+
+    gmtime_r(&timestamp, &utc_time);
+    localtime_r(&timestamp, &local_time);
+    if (daybefore > 0) {
+        timestamp = timestamp - ((utc_time->tm_hour * 3600) + ((utc_time->tm_min + 1) * 60) + utc_time->tm_sec + (daybefore * 86400));
+        gmtime_r(&timestamp, &utc_time);
+        localtime_r(&timestamp, &local_time);
+    }
 
     int minimum_restore_time = -1440;
     int saved_action = -1;
@@ -186,21 +191,14 @@ void _schCheck(int relay, int daybefore) {
 
         // Get the datetime used for the calculation
         const bool sch_utc = getSetting({"schUTC", i}, false);
-        time_t t = sch_utc ? utc_time : local_time;
-
-        if (daybefore > 0) {
-          unsigned char now_hour = hour(t);
-          unsigned char now_minute = minute(t);
-          unsigned char now_sec = second(t);
-          t = t - ((now_hour * 3600) + ((now_minute + 1) * 60) + now_sec + (daybefore * 86400));
-        }
+        const auto* current_time = sch_utc ? utc_time : local_time;
 
         String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
-        if (_schIsThisWeekday(t, sch_weekdays)) {
+        if (_schIsThisWeekday(current_time->tm_wday, sch_weekdays)) {
 
             int sch_hour = getSetting({"schHour", i}, 0);
             int sch_minute = getSetting({"schMinute", i}, 0);
-            int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
+            int minutes_to_trigger = _schMinutesLeft(current_time, sch_hour, sch_minute);
             int sch_action = getSetting({"schAction", i}, 0);
             int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
 
