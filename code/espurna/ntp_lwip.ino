@@ -12,6 +12,7 @@ static_assert(
 #include "config/buildtime.h"
 #include "debug.h"
 #include "broker.h"
+#include "ws.h"
 #include "ntp.h"
 
 // Arduino/esp8266 lwip2 custom functions that can be redefined
@@ -169,6 +170,9 @@ void _ntpSetTimeOfDayCallback() {
     #if BROKER_SUPPORT
         // XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
         _ntp_broker_timer.once((60 - second(_ntp_last)) ?: 1, _ntpBrokerCallback);
+    #endif
+    #if WEB_SUPPORT
+        wsPost(_ntpWebSocketOnData);
     #endif
     schedule_function(_ntpReport);
 }
