@@ -14,14 +14,8 @@ static_assert(
 #include "broker.h"
 #include "ntp.h"
 
-Ticker _ntp_broker_timer;
-
-bool _ntp_synced = false;
-
-time_t _ntp_last = 0;
-
 // Arduino/esp8266 lwip2 custom functions that can be redefined
-// Must return time in milliseconds. Default to function signature values.
+// Must return time in milliseconds, legacy settings are in seconds.
 
 uint32_t _ntp_startup_delay = (NTP_START_DELAY * 1000);
 uint32_t _ntp_update_delay = (NTP_UPDATE_INTERVAL * 1000);
@@ -37,11 +31,16 @@ uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
 // We also must shim TimeLib functions until everything else is ported.
 // We can't sometimes avoid TimeLib as dependancy though, which would be really bad
 
+static Ticker _ntp_broker_timer;
+static bool _ntp_synced = false;
+
+static time_t _ntp_last = 0;
 static time_t _ntp_ts = 0;
+
 static tm _ntp_tm_local;
 static tm _ntp_tm_utc;
 
-void _ntpTmCache(time_t ts) {
+static void _ntpTmCache(time_t ts) {
     if (_ntp_ts != ts) {
         _ntp_ts = ts;
         localtime_r(&_ntp_ts, &_ntp_tm_local);
@@ -244,12 +243,12 @@ void _ntpBrokerCallback() {
         // notify subscribers about each tick interval (note that both can happen simultaiously)
         if (last_hour != now_hour) {
             last_hour = now_hour;
-            TimeBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
+            NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
         }
 
         if (last_minute != now_minute) {
             last_minute = now_minute;
-            TimeBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
+            NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
         }
 
         // try to autocorrect each invocation

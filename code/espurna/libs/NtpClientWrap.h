@@ -4,8 +4,10 @@
 
 #pragma once
 
+#if NTP_LEGACY_SUPPORT
+
 #include <WiFiUdp.h>
-//#include <NtpClientLib.h>
+#include <NtpClientLib.h>
 
 class NTPClientWrap : public NTPClient {
 
@@ -27,3 +29,5 @@ public:
 // NOTE: original NTP should be discarded by the linker
 // TODO: allow NTP client object to be destroyed
 NTPClientWrap NTPw;
+
+#endif

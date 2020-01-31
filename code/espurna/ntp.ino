@@ -11,7 +11,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiClient.h>
 #include <Ticker.h>
 
-#include "libs/NtpClientWrap.h"
 #include "broker.h"
 #include "ws.h"
 #include "ntp.h"
@@ -141,7 +140,7 @@ void inline _ntpBroker() {
     static unsigned char last_minute = 60;
     if (ntpSynced() && (minute() != last_minute)) {
         last_minute = minute();
-        TimeBroker::Publish(MQTT_TOPIC_DATETIME, now(), ntpDateTime());
+        NtpBroker::Publish(NtpTick::EveryMinute, now(), ntpDateTime());
     }
 }
 

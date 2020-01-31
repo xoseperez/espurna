@@ -98,10 +98,10 @@ int utc_hour(time_t ts);
 
 time_t now();
 
-#else // ...fallback to the TimeLib implementation
+#else // ...fallback to TimeLib and NtpClientLib
 
-//#include <TimeLib.h>
-#error "hello there"
+#include <TimeLib.h>
+#include "libs/NtpClientWrap.h"
 
 #endif
 
@@ -112,7 +112,16 @@ enum class NtpTick {
     EveryHour
 };
 
-using TimeBroker = TBroker<TBrokerType::DATETIME, const NtpTick, time_t, const String&>;
+struct NtpCalendarWeekday {
+    int local_wday;
+    int local_hour;
+    int local_minute;
+    int utc_wday;
+    int utc_hour;
+    int utc_minute;
+};
+
+using NtpBroker = TBroker<TBrokerType::DATETIME, const NtpTick, time_t, const String&>;
 
 String ntpDateTime(time_t ts);
 String ntpDateTime();

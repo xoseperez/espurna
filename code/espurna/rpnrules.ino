@@ -318,18 +318,19 @@ void rpnSetup() {
     #endif
 
     #if NTP_SUPPORT
-        TimeBroker::Register([](const NtpTick tick, time_t timestamp, const String& datetime) {
-            String name("tick1");
-            if (tick == NtpTick::EveryHour) {
-                name += 'h';
-            } else if (tick == NtpTick::EveryMinute) {
-                name += 'm';
-            } else {
-                return;
+        NtpBroker::Register([](const NtpTick tick, time_t timestamp, const String& datetime) {
+            static const String tick_every_hour(F("tick1h"));
+            static const String tick_every_minute(F("tick1m"));
+
+            const char* ptr = 
+                (tick == NtpTick::EveryMinute) ? tick_every_minute.c_str() :
+                (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
+
+            if (ptr != nullptr) {
+                rpn_variable_set(_rpn_ctxt, ptr, timestamp);
+                _rpn_last = millis();
+                _rpn_run = true;
             }
-            rpn_variable_set(_rpn_ctxt, name.c_str(), timestamp);
-            _rpn_last = millis();
-            _rpn_run = true;
         });
     #endif
 
