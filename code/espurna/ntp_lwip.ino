@@ -156,6 +156,10 @@ bool ntpSynced() {
 void _ntpSetTimeOfDayCallback() {
     _ntp_synced = true;
     _ntp_last = time(nullptr);
+    #if BROKER_SUPPORT
+        // XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
+        _ntp_broker_timer.once((60 - second(_ntp_last)) ?: 1, _ntpBrokerCallback);
+    #endif
     schedule_function(_ntpReport);
 }
 
@@ -244,7 +248,7 @@ void _ntpBrokerCallback() {
         }
 
         // try to autocorrect each invocation
-        _ntp_broker_timer.once(60 - second(ts), _ntpBrokerCallback);
+        _ntp_broker_timer.once((60 - second(ts)) ?: 1, _ntpBrokerCallback);
 
         return;
     }
@@ -287,10 +291,6 @@ void ntpSetup() {
     schedule_function(_ntpConfigure);
 
     // optional functionality
-
-    #if BROKER_SUPPORT
-        _ntp_broker_timer.once(60, _ntpBrokerCallback);
-    #endif
 
     #if WEB_SUPPORT
         wsRegister()

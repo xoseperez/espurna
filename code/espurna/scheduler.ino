@@ -165,6 +165,9 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
 // Otherwise, modify it by moving 'daybefore' days back and only use the 'relay' id
 void _schCheck(int relay, int daybefore) {
 
+    // XXX: this is garbage with lwip
+    // minute() / hour() / day() below will break based on localtime() result
+    // what needs to happen instead is break here using gmtime or localtime manually and avoid using TimeLib compat altogethre
     time_t local_time = now();
     time_t utc_time = ntpLocal2UTC(local_time);
 
