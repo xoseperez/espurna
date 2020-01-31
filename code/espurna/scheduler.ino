@@ -189,9 +189,10 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
         localtime_r(&timestamp, &local_time);
     }
 
+    // TimeLib used time starting from 1
     return NtpCalendarWeekday {
-        local_time.tm_wday, local_time.tm_hour, local_time.tm_min,
-        utc_time.tm_wday, utc_time.tm_hour, utc_time.tm_min
+        local_time.tm_wday + 1, local_time.tm_hour, local_time.tm_min,
+        utc_time.tm_wday + 1, utc_time.tm_hour, utc_time.tm_min
     };
 }
 
