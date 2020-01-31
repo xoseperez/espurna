@@ -71,7 +71,7 @@ int day(time_t ts) {
 
 int weekday(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm_local.tm_wday;
+    return _ntp_tm_local.tm_wday + 1;
 }
 
 int month(time_t ts) {
@@ -86,7 +86,7 @@ int year(time_t ts) {
 
 int utc_weekday(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm_utc.tm_wday;
+    return _ntp_tm_utc.tm_wday + 1;
 }
 int utc_hour(time_t ts) {
     _ntpTmCache(ts);
@@ -115,8 +115,8 @@ void _ntpWebSocketOnData(JsonObject& root) {
 }
 
 void _ntpWebSocketOnConnected(JsonObject& root) {
-    root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
-    root["ntpTZ"] = getSetting("ntpTZ", NTP_TIMEZONE);
+    root["ntpServer"] = getSetting("ntpServer", F(NTP_SERVER));
+    root["ntpTZ"] = getSetting("ntpTZ", F(NTP_TIMEZONE));
 }
 
 #endif
@@ -244,7 +244,7 @@ void _ntpBrokerCallback() {
             datetime = ntpDateTime(&local_tm);
         }
 
-        // notify subscribers about each tick interval (note that both can happen simultaiously)
+        // notify subscribers about each tick interval (note that both can happen simultaneously)
         if (last_hour != now_hour) {
             last_hour = now_hour;
             NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
@@ -256,7 +256,7 @@ void _ntpBrokerCallback() {
         }
 
         // try to autocorrect each invocation
-        _ntp_broker_timer.once((60 - second(ts)) ?: 1, _ntpBrokerCallback);
+        _ntp_broker_timer.once((60 - local_tm.tm_sec) ?: 1, _ntpBrokerCallback);
 
         return;
     }
@@ -274,7 +274,7 @@ void _ntpSetTimestamp(time_t ts) {
 
 void ntpSetup() {
 
-    // Randomized in time to avoid clogging the server with simultaious requests from multiple devices
+    // Randomized in time to avoid clogging the server with simultaneous requests from multiple devices
     // (for example, when multiple devices start up at the same time)
     const uint32_t startup_delay = getSetting("ntpStartDelay", NTP_START_DELAY);
     const uint32_t update_delay = getSetting("ntpUpdateIntvl", NTP_UPDATE_INTERVAL);
@@ -299,7 +299,6 @@ void ntpSetup() {
     schedule_function(_ntpConfigure);
 
     // optional functionality
-
     #if WEB_SUPPORT
         wsRegister()
             .onVisible(_ntpWebSocketOnVisible)
