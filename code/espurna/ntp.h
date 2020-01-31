@@ -93,6 +93,9 @@ int weekday();
 int month();
 int year();
 
+int utc_weekday(time_t ts);
+int utc_hour(time_t ts);
+
 time_t now();
 
 #else // ...fallback to the TimeLib implementation

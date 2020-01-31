@@ -134,7 +134,7 @@ bool _schIsThisWeekday(int day, const String& weekdays){
 
 }
 
-int _schMinutesLeft(tm* current_time, unsigned char schedule_hour, unsigned char schedule_minute){
+int _schMinutesLeft(const tm* current_time, unsigned char schedule_hour, unsigned char schedule_minute){
     return (schedule_hour - current_time->tm_hour) * 60 + schedule_minute - current_time->tm_min;
 }
 
@@ -169,10 +169,11 @@ void _schCheck(int relay, int daybefore) {
     tm local_time;
 
     gmtime_r(&timestamp, &utc_time);
-    localtime_r(&timestamp, &local_time);
     if (daybefore > 0) {
-        timestamp = timestamp - ((utc_time->tm_hour * 3600) + ((utc_time->tm_min + 1) * 60) + utc_time->tm_sec + (daybefore * 86400));
+        timestamp = timestamp - ((utc_time.tm_hour * 3600) + ((utc_time.tm_min + 1) * 60) + utc_time.tm_sec + (daybefore * 86400));
         gmtime_r(&timestamp, &utc_time);
+        localtime_r(&timestamp, &local_time);
+    } else {
         localtime_r(&timestamp, &local_time);
     }
 
@@ -191,7 +192,7 @@ void _schCheck(int relay, int daybefore) {
 
         // Get the datetime used for the calculation
         const bool sch_utc = getSetting({"schUTC", i}, false);
-        const auto* current_time = sch_utc ? utc_time : local_time;
+        const auto* current_time = sch_utc ? &utc_time : &local_time;
 
         String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
         if (_schIsThisWeekday(current_time->tm_wday, sch_weekdays)) {

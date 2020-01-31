@@ -128,11 +128,6 @@ void _rpnInit() {
             rpn_stack_push(ctxt, now());
             return true;
         });
-        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
-            if (!ntpSynced()) return false;
-            rpn_stack_push(ctxt, ntpLocal2UTC(now()));
-            return true;
-        });
         rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
             float a;
             rpn_stack_pop(ctxt, a);
@@ -150,6 +145,19 @@ void _rpnInit() {
             float a;
             rpn_stack_pop(ctxt, a);
             rpn_stack_push(ctxt, minute(int(a)));
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "utc_dow", 1, [](rpn_context & ctxt) {
+            float a;
+            rpn_stack_pop(ctxt, a);
+            unsigned char dow = (utc_weekday(int(a)) + 5) % 7;
+            rpn_stack_push(ctxt, dow);
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "utc_hour", 1, [](rpn_context & ctxt) {
+            float a;
+            rpn_stack_pop(ctxt, a);
+            rpn_stack_push(ctxt, utc_hour(int(a)));
             return true;
         });
     #endif
@@ -315,7 +323,7 @@ void rpnSetup() {
             if (tick == NtpTick::EveryHour) {
                 name += 'h';
             } else if (tick == NtpTick::EveryMinute) {
-                name += 'm'
+                name += 'm';
             } else {
                 return;
             }

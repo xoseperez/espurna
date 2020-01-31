@@ -38,48 +38,59 @@ uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
 // We can't sometimes avoid TimeLib as dependancy though, which would be really bad
 
 static time_t _ntp_ts = 0;
-static tm _ntp_tm;
+static tm _ntp_tm_local;
+static tm _ntp_tm_utc;
 
 void _ntpTmCache(time_t ts) {
     if (_ntp_ts != ts) {
         _ntp_ts = ts;
-        localtime_r(&_ntp_ts, &_ntp_tm);
+        localtime_r(&_ntp_ts, &_ntp_tm_local);
+        gmtime_r(&_ntp_ts, &_ntp_tm_utc);
     }
 }
 
 int hour(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_hour;
+    return _ntp_tm_local.tm_hour;
 }
 
 int minute(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_min;
+    return _ntp_tm_local.tm_min;
 }
 
 int second(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_sec;
+    return _ntp_tm_local.tm_sec;
 }
 
 int day(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_mday;
+    return _ntp_tm_local.tm_mday;
 }
 
 int weekday(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_wday;
+    return _ntp_tm_local.tm_wday;
 }
 
 int month(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_mon + 1;
+    return _ntp_tm_local.tm_mon + 1;
 }
 
 int year(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm.tm_year + 1900;
+    return _ntp_tm_local.tm_year + 1900;
+}
+
+int utc_weekday(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_wday;
+}
+int utc_hour(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_hour;
 }
 
 time_t now() {
@@ -209,12 +220,6 @@ String ntpDateTime() {
     return String();
 }
 
-time_t ntpLocal2UTC(time_t ts) {
-    tm result;
-    gmtime_r(&ts, &result);
-    return mktime(&result);
-}
-
 #if BROKER_SUPPORT
 
 void _ntpBrokerCallback() {
@@ -273,7 +278,7 @@ void ntpSetup() {
 
     _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
     _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
-    DEBUG_MSG_P(PSTR("[NTP] startup_delay=%us update_delay=%us\n"),
+    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %us, Update delay: %us\n"),
         _ntp_startup_delay, _ntp_update_delay
     );
 
