@@ -78,7 +78,9 @@
 
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
-#define NTP_SUPPORT                 1           // Scheduler needs NTP
+#define NTP_SUPPORT                 1           // Scheduler needs NTP to work
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
 #endif
 
 #if LWIP_VERSION_MAJOR != 1
@@ -146,6 +148,4 @@
 #define NTP_LEGACY_SUPPORT 1
 #else
 #define NTP_LEGACY_SUPPORT 0
-//#undef SCHEDULER_SUPPORT
-//#define SCHEDULER_SUPPORT 0
 #endif
