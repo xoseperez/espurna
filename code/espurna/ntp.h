@@ -22,31 +22,39 @@ constexpr time_t secondsPerYear = secondsPerWeek * 52;
 constexpr time_t secondsY2K = 946684800; // the time at the start of y2k
 
 // wall clock values
-constexpr const time_t numberOfSeconds(uint32_t ts) {
-    return (ts % secondsPerMinute);
+template <typename T>
+constexpr const T numberOfSeconds(T ts) {
+    return (ts % (T)secondsPerMinute);
 }  
 
-constexpr const time_t numberOfMinutes(uint32_t ts) {
-    return ((ts / secondsPerMinute) % secondsPerMinute);
+template <typename T>
+constexpr const T numberOfMinutes(T ts) {
+    return ((ts / (T)secondsPerMinute) % (T)secondsPerMinute);
 }
 
-constexpr const time_t numberOfHours(uint32_t ts) {
-    return ((ts % secondsPerDay) / secondsPerHour);
+template <typename T>
+constexpr const time_t numberOfHours(T ts) {
+    return ((ts % (T)secondsPerDay) / (T)secondsPerHour);
 }
 
 // week starts with sunday as number 1, monday as 2 etc.
-constexpr const time_t dayOfWeek(time_t ts) {
+constexpr const int dayOfWeek(time_t ts) {
     return ((ts / secondsPerDay + 4) % daysPerWeek) + 1;
 }
 
 // the number of days since 0 (Jan 1 1970 in case of time_t values)
-constexpr const time_t elapsedDays(uint32_t ts) {
+constexpr const int elapsedDays(uint32_t ts) {
     return (ts / secondsPerDay);
 }
 
 // the number of seconds since last midnight 
-constexpr const time_t elapsedSecsToday(uint32_t ts) {
-    return (ts % secondsPerDay);
+constexpr const uint32_t elapsedSecsToday(uint32_t ts) {
+    return (ts % (uint32_t)secondsPerDay);
+}
+
+// note that week starts on day 1
+constexpr const uint32_t elapsedSecsThisWeek(uint32_t ts) {
+    return elapsedSecsToday(ts) + ((dayOfWeek(ts) - 1) * (uint32_t)secondsPerDay);
 }
 
 // The following methods are used in calculating alarms and assume the clock is set to a date later than Jan 1 1971
@@ -60,11 +68,6 @@ constexpr const time_t previousMidnight(time_t ts) {
 // time at the end of the given day 
 constexpr const time_t nextMidnight(time_t ts) {
     return previousMidnight(ts) + secondsPerDay;
-}
-
-// note that week starts on day 1
-constexpr const time_t elapsedSecsThisWeek(uint32_t ts) {
-    return elapsedSecsToday(ts) + ((dayOfWeek(ts) - 1) * secondsPerDay);
 }
 
 // time at the start of the week for the given time
