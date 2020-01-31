@@ -5,7 +5,7 @@
 #pragma once
 
 #include <WiFiUdp.h>
-#include <NtpClientLib.h>
+//#include <NtpClientLib.h>
 
 class NTPClientWrap : public NTPClient {
 

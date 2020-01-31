@@ -275,7 +275,7 @@ void _schLoop() {
 
     // Check schedules every minute at hh:mm:00
     static unsigned long last_minute = 60;
-    unsigned char current_minute = minute();
+    unsigned char current_minute = minute(now());
     if (current_minute != last_minute) {
         last_minute = current_minute;
         _schCheck(-1, -1);
