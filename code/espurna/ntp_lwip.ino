@@ -190,7 +190,6 @@ void _ntpConfigure() {
     if (!server.equals(cfg_server) || !tz.equals(cfg_tz)) {
         DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), server.c_str(), tz.c_str());
         configTime(tz.c_str(), server.c_str());
-        if (ntpSynced()) _ntp_synced = false;
     }
 }
 

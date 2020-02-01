@@ -13,6 +13,8 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "ntp.h"
 
+constexpr const int SchedulerDummySwitchId = 0xff;
+
 int _sch_restore = 0;
 
 // -----------------------------------------------------------------------------
@@ -76,8 +78,8 @@ void _schConfigure() {
 
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
 
-        int sch_switch = getSetting({"schSwitch", i}, 0xFF);
-        if (sch_switch == 0xFF) delete_flag = true;
+        int sch_switch = getSetting({"schSwitch", i}, SchedulerDummySwitchId);
+        if (sch_switch == SchedulerDummySwitchId) delete_flag = true;
 
         if (delete_flag) {
 
@@ -163,7 +165,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
 
 NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
     if (daybefore > 0) {
-        timestamp = timestamp - ((hour(timestamp) * 3600) + ((minute(timestamp) + 1) * 60) + second(timestamp) + (daybefore * 86400));
+        timestamp = timestamp - ((hour(timestamp) * SECS_PER_HOUR) + ((minute(timestamp) + 1) * SECS_PER_MIN) + second(timestamp) + (daybefore * SECS_PER_DAY));
     }
 
     // XXX: no
@@ -182,14 +184,14 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
 
     gmtime_r(&timestamp, &utc_time);
     if (daybefore > 0) {
-        timestamp = timestamp - ((utc_time.tm_hour * 3600) + ((utc_time.tm_min + 1) * 60) + utc_time.tm_sec + (daybefore * 86400));
+        timestamp = timestamp - ((utc_time.tm_hour * secondsPerHour) + ((utc_time.tm_min + 1) * secondsPerMinute) + utc_time.tm_sec + (daybefore * secondsPerDay));
         gmtime_r(&timestamp, &utc_time);
         localtime_r(&timestamp, &local_time);
     } else {
         localtime_r(&timestamp, &local_time);
     }
 
-    // TimeLib used time starting from 1
+    // TimeLib sunday is 1 instead of 0
     return NtpCalendarWeekday {
         local_time.tm_wday + 1, local_time.tm_hour, local_time.tm_min,
         utc_time.tm_wday + 1, utc_time.tm_hour, utc_time.tm_min
@@ -205,15 +207,15 @@ void _schCheck(int relay, int daybefore) {
     time_t timestamp = now();
     auto calendar_weekday = _schGetWeekday(timestamp, daybefore);
 
-    int minimum_restore_time = -1440;
+    int minimum_restore_time = -(60 * 24);
     int saved_action = -1;
     int saved_sch = -1;
 
     // Check schedules
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
 
-        int sch_switch = getSetting({"schSwitch", i}, 0xFF);
-        if (sch_switch == 0xFF) break;
+        int sch_switch = getSetting({"schSwitch", i}, SchedulerDummySwitchId);
+        if (sch_switch == SchedulerDummySwitchId) break;
 
         // Skip disabled schedules
         if (!getSetting({"schEnabled", i}, false)) continue;
@@ -276,12 +278,12 @@ void _schCheck(int relay, int daybefore) {
 
     }
 
-    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -1440 && saved_action == -1) {
-      _schCheck(relay, ++daybefore);
-      return;
+    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -(60 * 24) && saved_action == -1) {
+        _schCheck(relay, ++daybefore);
+        return;
     }
 
-    if (minimum_restore_time != -1440 && saved_action != -1 && saved_sch != -1) {
+    if (minimum_restore_time != -(60 * 24) && saved_action != -1 && saved_sch != -1) {
         _schAction(saved_sch, saved_action, relay);
     }
 
@@ -300,20 +302,8 @@ void schSetup() {
             .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
 
-    terminalRegisterCommand(F("SHOWCASE"), [](Embedis* e) {
-        const auto ts = now();
-        for (unsigned char times = 0; times < 7; ++times) {
-            const auto cal = _schGetWeekday(ts, times);
-            DEBUG_MSG_P(PSTR("[SHOWCASE] local:wday=%d,hour=%d,min=%d utc:wday=%d,hour=%d,min=%d\n"),
-                cal.local_wday, cal.local_hour, cal.local_minute,
-                cal.utc_wday, cal.utc_hour, cal.utc_minute
-            );
-        }
-    });
-
     NtpBroker::Register([](const NtpTick tick, time_t, const String&) {
         if (NtpTick::EveryMinute != tick) return;
-        DEBUG_MSG_P(PSTR("[SHOWCASE] tick every minute\n"));
 
         static bool restore_once = true;
         if (restore_once) {
