@@ -1492,7 +1492,7 @@
 #endif
 
 #ifndef NTP_START_DELAY
-#define NTP_START_DELAY             1000            // Delay NTP start 1 second
+#define NTP_START_DELAY             3               // Delay NTP start for 3 seconds
 #endif
 
 #ifndef NTP_WAIT_FOR_SYNC

@@ -255,7 +255,7 @@ void ntpSetup() {
     wifiRegister([](justwifi_messages_t code, char * parameter) {
         if (code == MESSAGE_CONNECTED) {
             if (!ntpSynced()) {
-                _ntp_defer.once_ms(secureRandom(NTP_START_DELAY, NTP_START_DELAY * 15), _ntpWantSync);
+                _ntp_defer.once(secureRandom(NTP_START_DELAY, NTP_START_DELAY * 3), _ntpWantSync);
             }
         }
     });
