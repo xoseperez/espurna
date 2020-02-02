@@ -26,6 +26,8 @@ static_assert(
 // Arduino/esp8266 lwip2 custom functions that can be redefined
 // Must return time in milliseconds, legacy settings are in seconds.
 
+String _ntp_server;
+
 uint32_t _ntp_startup_delay = (NTP_START_DELAY * 1000);
 uint32_t _ntp_update_delay = (NTP_UPDATE_INTERVAL * 1000);
 
@@ -154,7 +156,7 @@ void _ntpReport() {
     gmtime_r(&ts, &utc_tm);
     gmtime_r(&_ntp_last, &sync_tm);
 
-    DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntpGetServer().c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntp_server.c_str());
     DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), ntpDateTime(&sync_tm).c_str());
     DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), ntpDateTime(&utc_tm).c_str());
 
@@ -197,7 +199,8 @@ void _ntpConfigure() {
 
     if (!server.equals(cfg_server) || !tz.equals(cfg_tz)) {
         DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), server.c_str(), tz.c_str());
-        configTime(tz.c_str(), server.c_str());
+        _ntp_server = server;
+        configTime(tz.c_str(), _ntp_server.c_str());
     }
 }
 
