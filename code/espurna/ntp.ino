@@ -1,6 +1,6 @@
 /*
 
-NTP MODULE
+NTP MODULE (based on NtpClientLib)
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
@@ -8,7 +8,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if NTP_LEGACY_SUPPORT && NTP_SUPPORT
 
-#include <WiFiClient.h>
 #include <Ticker.h>
 
 #include "broker.h"
@@ -255,7 +254,7 @@ void ntpSetup() {
     wifiRegister([](justwifi_messages_t code, char * parameter) {
         if (code == MESSAGE_CONNECTED) {
             if (!ntpSynced()) {
-                _ntp_defer.once(secureRandom(NTP_START_DELAY, NTP_START_DELAY * 3), _ntpWantSync);
+                _ntp_defer.once(secureRandom(NTP_START_DELAY, NTP_START_DELAY * 2), _ntpWantSync);
             }
         }
     });
