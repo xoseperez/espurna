@@ -236,42 +236,43 @@ String ntpDateTime() {
 #if BROKER_SUPPORT
 
 void _ntpBrokerCallback() {
-    if (ntpSynced()) {
-        const auto ts = now();
 
-        // current  time and formatter string is in local TZ
-        tm local_tm;
-        localtime_r(&ts, &local_tm);
-
-        int now_hour = local_tm.tm_hour;
-        int now_minute = local_tm.tm_min;
-
-        static int last_hour = -1;
-        static int last_minute = -1;
-
-        String datetime;
-        if ((last_minute != now_minute) || (last_hour != now_hour)) {
-            datetime = ntpDateTime(&local_tm);
-        }
-
-        // notify subscribers about each tick interval (note that both can happen simultaneously)
-        if (last_hour != now_hour) {
-            last_hour = now_hour;
-            NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
-        }
-
-        if (last_minute != now_minute) {
-            last_minute = now_minute;
-            NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
-        }
-
-        // try to autocorrect each invocation
-        _ntp_broker_timer.once((60 - local_tm.tm_sec) ?: 1, _ntpBrokerCallback);
-
+    if (!ntpSynced()) {
+        _ntp_broker_timer.once(60, _ntpBrokerCallback);
         return;
     }
 
-    _ntp_broker_timer.once(60, _ntpBrokerCallback);
+    const auto ts = now();
+
+    // current  time and formatter string is in local TZ
+    tm local_tm;
+    localtime_r(&ts, &local_tm);
+
+    int now_hour = local_tm.tm_hour;
+    int now_minute = local_tm.tm_min;
+
+    static int last_hour = -1;
+    static int last_minute = -1;
+
+    String datetime;
+    if ((last_minute != now_minute) || (last_hour != now_hour)) {
+        datetime = ntpDateTime(&local_tm);
+    }
+
+    // notify subscribers about each tick interval (note that both can happen simultaneously)
+    if (last_hour != now_hour) {
+        last_hour = now_hour;
+        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
+    }
+
+    if (last_minute != now_minute) {
+        last_minute = now_minute;
+        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
+    }
+
+    // try to autocorrect each invocation
+    _ntp_broker_timer.once((60 - local_tm.tm_sec) ?: 1, _ntpBrokerCallback);
+
 }
 
 #endif
