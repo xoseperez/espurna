@@ -8,11 +8,10 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <limits>
 
-#include <Ticker.h>
-
+#include "config/buildtime.h"
+#include "libs/HeapStats.h"
 #include "ntp.h"
 #include "utils.h"
-#include "libs/HeapStats.h"
 
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
@@ -79,8 +78,13 @@ unsigned long getHeartbeatInterval() {
 }
 
 String buildTime() {
-    #if NTP_SUPPORT
+    #if NTP_LEGACY_SUPPORT && NTP_SUPPORT
         return ntpDateTime(__UNIX_TIMESTAMP__);
+    #else
+        constexpr const time_t ts = __UNIX_TIMESTAMP__;
+        tm timestruct;
+        gmtime_r(&ts, &timestruct);
+        return ntpDateTime(&ts);
     #else
         char buffer[20];
         snprintf_P(
