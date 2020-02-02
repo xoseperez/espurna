@@ -1,3 +1,11 @@
+/*
+
+NTP MODULE (based on esp8266 / esp32 configTime and C date and time functions)
+
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 #if !NTP_LEGACY_SUPPORT && NTP_SUPPORT
 
 #include <Arduino.h>
