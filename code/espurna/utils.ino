@@ -80,11 +80,11 @@ unsigned long getHeartbeatInterval() {
 String buildTime() {
     #if NTP_LEGACY_SUPPORT && NTP_SUPPORT
         return ntpDateTime(__UNIX_TIMESTAMP__);
-    #else
+    #elif NTP_SUPPORT
         constexpr const time_t ts = __UNIX_TIMESTAMP__;
         tm timestruct;
         gmtime_r(&ts, &timestruct);
-        return ntpDateTime(&ts);
+        return ntpDateTime(&timestruct);
     #else
         char buffer[20];
         snprintf_P(

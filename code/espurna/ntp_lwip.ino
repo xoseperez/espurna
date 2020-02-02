@@ -307,7 +307,16 @@ void ntpSetup() {
 
     // generic configuration, always handled
     espurnaRegisterReload(_ntpConfigure);
-    schedule_function(_ntpConfigure);
+    _ntpConfigure();
+
+    static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
+        if (!_ntp_server.length()) return;
+
+        const auto sntp_server = _ntpGetServer();
+        if (sntp_server != _ntp_server) {
+            _ntp_server = sntp_server;
+        }
+    });
 
     // optional functionality
     #if WEB_SUPPORT
