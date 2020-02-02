@@ -1,6 +1,11 @@
 /*
 
-NTP MODULE (based on esp8266 / esp32 configTime and C date and time functions)
+NTP MODULE
+
+Based on esp8266 / esp32 configTime and C date and time functions:
+- https://github.com/esp8266/Arduino/blob/master/libraries/esp8266/examples/NTP-TZ-DST/NTP-TZ-DST.ino
+- https://www.nongnu.org/lwip/2_1_x/group__sntp.html
+- man 3 ctime
 
 Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
@@ -188,19 +193,19 @@ void _ntpSetTimeOfDayCallback() {
 }
 
 void _ntpConfigure() {
-    const auto tz = getSetting("ntpTZ", F(NTP_TIMEZONE));
-    const auto server = getSetting("ntpServer", F(NTP_SERVER));
-    if (!tz.length() || !server.length()) {
-        return;
+    const auto cfg_tz = getSetting("ntpTZ", F(NTP_TIMEZONE));
+    const char* active_tz = getenv("TZ");
+    if (cfg_tz != active_tz) {
+        setenv("TZ", cfg_tz.c_str(), 1);
+        tzset();
     }
     
-    const auto cfg_server = _ntpGetServer();
-    const char* cfg_tz = getenv("TZ");
-
-    if (!server.equals(cfg_server) || !tz.equals(cfg_tz)) {
-        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), server.c_str(), tz.c_str());
-        _ntp_server = server;
-        configTime(tz.c_str(), _ntp_server.c_str());
+    const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
+    const auto active_server = _ntpGetServer();
+    if (cfg_tz != active_tz) {
+        _ntp_server = cfg_server;
+        configTime(cfg_tz.c_str(), _ntp_server.c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
 
@@ -309,12 +314,14 @@ void ntpSetup() {
     espurnaRegisterReload(_ntpConfigure);
     _ntpConfigure();
 
-    static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
-        if (!_ntp_server.length()) return;
-
-        const auto sntp_server = _ntpGetServer();
-        if (sntp_server != _ntp_server) {
-            _ntp_server = sntp_server;
+    // make sure our logic does know about the actual server
+    // in case dhcp sends out ntp settings
+    static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP) {
+        const auto server = _ntpGetServer();
+        if (sntp_enabled() && (!_ntp_server.length() || (server != _ntp_server))) {
+            DEBUG_MSG_P(PSTR("[NTP] Updating `ntpServer` setting from DHCP: %s\n"), server.c_str());
+            _ntp_server = server;
+            setSetting("ntpServer", server);
         }
     });
 
@@ -339,6 +346,10 @@ void ntpSetup() {
             _ntpSetTimestamp(String(e->argv[1]).toInt());
             terminalOK();
         });
+
+        // TODO:
+        // terminalRegisterCommand(F("NTP.SYNC"), [](Embedis* e) { ... }
+        //
     #endif
 
 }
