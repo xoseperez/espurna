@@ -2144,9 +2144,9 @@ function connectToURL(url) {
             }
         };
 		websock.onclose = function(evt) {
-			if(confirm("Connection lost with the device, click OK to refresh the page")) {
+			if(window.confirm("Connection lost with the device, click OK to refresh the page")) {
 				$("#layout").toggle(false);
-				location.reload();
+				window.location.reload();
 			}
 		}
 		websock.onopen = function(evt) {
