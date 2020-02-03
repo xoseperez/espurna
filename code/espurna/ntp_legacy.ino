@@ -276,4 +276,4 @@ void ntpSetup() {
 
 }
 
-#endif // NTP_LEGACY_SUPPORT
+#endif // NTP_SUPPORT && NTP_LEGACY_SUPPORT

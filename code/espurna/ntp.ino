@@ -11,7 +11,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#if !NTP_LEGACY_SUPPORT && NTP_SUPPORT
+#if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
 
 #include <Arduino.h>
 #include <coredecls.h>
@@ -183,8 +183,12 @@ void _ntpSetTimeOfDayCallback() {
     _ntp_synced = true;
     _ntp_last = time(nullptr);
     #if BROKER_SUPPORT
+    static bool once = true;
+    if (once) {
         // XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
         _ntp_broker_timer.once((60 - second(_ntp_last)) ?: 1, _ntpBrokerCallback);
+        once = false;
+    }
     #endif
     #if WEB_SUPPORT
         wsPost(_ntpWebSocketOnData);
@@ -355,4 +359,4 @@ void ntpSetup() {
 
 }
 
-#endif
+#endif // NTP_SUPPORT && !NTP_LEGACY_SUPPORT
