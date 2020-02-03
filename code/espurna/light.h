@@ -5,7 +5,7 @@
 #pragma once
 
 namespace Light {
-    constexpr const size_t CHANNELS_MAX = 5;
+    constexpr const size_t ChannelsMax = 5;
 
     constexpr const long VALUE_MIN = LIGHT_MIN_VALUE;
     constexpr const long VALUE_MAX = LIGHT_MAX_VALUE;
@@ -23,6 +23,21 @@ namespace Light {
         COMMS_GROUP = 1 << 1
     };
 }
+
+struct channel_t {
+
+    channel_t();
+    channel_t(unsigned char pin, bool inverse);
+
+    unsigned char pin;           // real GPIO pin
+    bool inverse;                // whether we should invert the value before using it
+    bool state;                  // is the channel ON
+    unsigned char inputValue;    // raw value, without the brightness
+    unsigned char value;         // normalized value, including brightness
+    unsigned char target;        // target value
+    double current;              // transition value
+
+};
 
 size_t lightChannels();
 
