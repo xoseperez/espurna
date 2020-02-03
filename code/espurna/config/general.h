@@ -1484,7 +1484,14 @@
 #endif
 
 #ifndef NTP_TIMEZONE
-#define NTP_TIMEZONE                "UTC0"
+#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable. Default to UTC.
+                                                    // For the format documentation, see:
+                                                    // - https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+                                                    // ESP8266 Core provides human-readable aliases for POSIX format, see:
+                                                    // - Latest: https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h
+                                                    // - PlatformIO: ~/.platformio/packages/framework-arduinoespressif8266/cores/esp8266/TZ.h
+                                                    //   (or, possibly, c:\.platformio\... on Windows)
+                                                    // - Arduino IDE: depends on platform, see `/dist/arduino_ide/README.md`
 #endif
 
 #ifndef NTP_UPDATE_INTERVAL
@@ -1498,7 +1505,6 @@
 #ifndef NTP_WAIT_FOR_SYNC
 #define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
-
 
 // WARNING: legacy NTP settings. can be ignored with Core 2.6.2+
 

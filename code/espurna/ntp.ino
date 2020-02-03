@@ -131,7 +131,7 @@ void _ntpWebSocketOnData(JsonObject& root) {
 
 void _ntpWebSocketOnConnected(JsonObject& root) {
     root["ntpServer"] = getSetting("ntpServer", F(NTP_SERVER));
-    root["ntpTZ"] = getSetting("ntpTZ", F(NTP_TIMEZONE));
+    root["ntpTZ"] = getSetting("ntpTZ", NTP_TIMEZONE);
 }
 
 #endif
@@ -193,7 +193,8 @@ void _ntpSetTimeOfDayCallback() {
 }
 
 void _ntpConfigure() {
-    const auto cfg_tz = getSetting("ntpTZ", F(NTP_TIMEZONE));
+    // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
+    const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
     const char* active_tz = getenv("TZ");
     if (cfg_tz != active_tz) {
         setenv("TZ", cfg_tz.c_str(), 1);

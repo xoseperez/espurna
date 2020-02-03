@@ -9,7 +9,9 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include <sntp.h>
+#include <lwip/apps/sntp.h>
+
+#include <TZ.h>
 
 constexpr time_t daysPerWeek = 7;
 
