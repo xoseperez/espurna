@@ -175,27 +175,6 @@ void _ntpReport() {
     }
 }
 
-bool ntpSynced() {
-    return _ntp_synced;
-}
-
-void _ntpSetTimeOfDayCallback() {
-    _ntp_synced = true;
-    _ntp_last = time(nullptr);
-    #if BROKER_SUPPORT
-    static bool once = true;
-    if (once) {
-        // XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
-        _ntp_broker_timer.once((60 - second(_ntp_last)) ?: 1, _ntpBrokerCallback);
-        once = false;
-    }
-    #endif
-    #if WEB_SUPPORT
-        wsPost(_ntpWebSocketOnData);
-    #endif
-    schedule_function(_ntpReport);
-}
-
 void _ntpConfigure() {
     // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
     const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
@@ -214,7 +193,11 @@ void _ntpConfigure() {
     }
 }
 
-// --- public
+// -----------------------------------------------------------------------------
+
+bool ntpSynced() {
+    return _ntp_synced;
+}
 
 String ntpDateTime(tm* timestruct) {
     char buffer[20];
@@ -243,12 +226,19 @@ String ntpDateTime() {
     return String();
 }
 
+// -----------------------------------------------------------------------------
+
 #if BROKER_SUPPORT
+
+// XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
+void _ntpBrokerSchedule(int offset) {
+    _ntp_broker_timer.once_scheduled(offset ?: 1, _ntpBrokerCallback);
+}
 
 void _ntpBrokerCallback() {
 
     if (!ntpSynced()) {
-        _ntp_broker_timer.once(60, _ntpBrokerCallback);
+        _ntpBrokerSchedule(60);
         return;
     }
 
@@ -281,17 +271,35 @@ void _ntpBrokerCallback() {
     }
 
     // try to autocorrect each invocation
-    _ntp_broker_timer.once((60 - local_tm.tm_sec) ?: 1, _ntpBrokerCallback);
+    _ntpBrokerSchedule(60 - local_tm.tm_sec);
 
 }
 
 #endif
+
+void _ntpSetTimeOfDayCallback() {
+    _ntp_synced = true;
+    _ntp_last = time(nullptr);
+    #if BROKER_SUPPORT
+    static bool once = true;
+    if (once) {
+        _ntpBrokerSchedule(60 - second(_ntp_last));
+        once = false;
+    }
+    #endif
+    #if WEB_SUPPORT
+        wsPost(_ntpWebSocketOnData);
+    #endif
+    schedule_function(_ntpReport);
+}
 
 void _ntpSetTimestamp(time_t ts) {
     timeval tv { ts, 0 };
     timezone tz { 0, 0 };
     settimeofday(&tv, &tz);
 }
+
+// -----------------------------------------------------------------------------
 
 void ntpSetup() {
 
