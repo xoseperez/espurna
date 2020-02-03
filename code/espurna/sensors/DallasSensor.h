@@ -8,10 +8,12 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-#include <vector>
+#include <Arduino.h>
 #include <OneWire.h>
+
+#include <vector>
+
+#include "BaseSensor.h"
 
 #define DS_CHIP_DS18S20             0x10
 #define DS_CHIP_DS1822              0x22

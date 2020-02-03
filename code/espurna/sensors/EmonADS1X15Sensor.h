@@ -7,8 +7,10 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
 #include "EmonSensor.h"
+
 
 #define ADS1X15_CHANNELS                (4)
 

@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <SoftwareSerial.h>
+
 #include "BaseSensor.h"
 extern "C" {
-    #include "libs/fs_math.h"
+    #include "../libs/fs_math.h"
 }
-
-#include <SoftwareSerial.h>
 
 class V9261FSensor : public BaseSensor {
 

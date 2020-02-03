@@ -1,19 +1,42 @@
 // =============================================================================
-// SENSORS - General data
+// SENSORS - General configuration
 // =============================================================================
 
+#ifndef SENSOR_DEBUG
 #define SENSOR_DEBUG                        0               // Debug sensors
+#endif
 
+#ifndef SENSOR_READ_INTERVAL
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
+#endif
+
+#ifndef SENSOR_READ_MIN_INTERVAL
 #define SENSOR_READ_MIN_INTERVAL            1               // Minimum read interval
+#endif
+
+#ifndef SENSOR_READ_MAX_INTERVAL
 #define SENSOR_READ_MAX_INTERVAL            3600            // Maximum read interval
+#endif
+
+#ifndef SENSOR_INIT_INTERVAL
 #define SENSOR_INIT_INTERVAL                10000           // Try to re-init non-ready sensors every 10s
+#endif
 
+#ifndef SENSOR_REPORT_EVERY
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
-#define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
-#define SENSOR_REPORT_MAX_EVERY             60              // Maximum
+#endif
 
+#ifndef SENSOR_REPORT_MIN_EVERY
+#define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
+#endif
+
+#ifndef SENSOR_REPORT_MAX_EVERY
+#define SENSOR_REPORT_MAX_EVERY             60              // Maximum
+#endif
+
+#ifndef SENSOR_USE_INDEX
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
+#endif
                                                             // even if just one sensor (0 for backwards compatibility)
 
 #ifndef SENSOR_POWER_CHECK_STATUS
@@ -428,7 +451,9 @@
 #define EMON_ADC121_SUPPORT             0       // Do not build support by default
 #endif
 
+#ifndef EMON_ADC121_I2C_ADDRESS
 #define EMON_ADC121_I2C_ADDRESS         0x00    // 0x00 means auto
+#endif
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
@@ -439,7 +464,10 @@
 #define EMON_ADS1X15_SUPPORT            0       // Do not build support by default
 #endif
 
+#ifndef EMON_ADS1X15_I2C_ADDRESS
 #define EMON_ADS1X15_I2C_ADDRESS        0x00    // 0x00 means auto
+#endif
+
 #define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
 #define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
@@ -1195,54 +1223,6 @@
 #define EZOPH_SYNC_INTERVAL          1000    // Amount of time (in ms) sync new readings.
 #endif
 
-// =============================================================================
-// Sensor helpers configuration - can't move to dependencies.h
-// =============================================================================
-
-#ifndef SENSOR_SUPPORT
-#define SENSOR_SUPPORT ( \
-    AM2320_SUPPORT || \
-    ANALOG_SUPPORT || \
-    BH1750_SUPPORT || \
-    BMP180_SUPPORT || \
-    BMX280_SUPPORT || \
-    CSE7766_SUPPORT || \
-    DALLAS_SUPPORT || \
-    DHT_SUPPORT || \
-    DIGITAL_SUPPORT || \
-    ECH1560_SUPPORT || \
-    EMON_ADC121_SUPPORT || \
-    EMON_ADS1X15_SUPPORT || \
-    EMON_ANALOG_SUPPORT || \
-    EVENTS_SUPPORT || \
-    EZOPH_SUPPORT || \
-    GEIGER_SUPPORT || \
-    GUVAS12SD_SUPPORT || \
-    HLW8012_SUPPORT || \
-    LDR_SUPPORT || \
-    MAX6675_SUPPORT || \
-    MICS2710_SUPPORT || \
-    MICS5525_SUPPORT || \
-    MHZ19_SUPPORT || \
-    NTC_SUPPORT || \
-    SDS011_SUPPORT || \
-    SENSEAIR_SUPPORT || \
-    PMSX003_SUPPORT || \
-    PZEM004T_SUPPORT || \
-    PULSEMETER_SUPPORT || \
-    SHT3X_I2C_SUPPORT || \
-    SI7021_SUPPORT || \
-    SONAR_SUPPORT || \
-    T6613_SUPPORT || \
-    THERMOSTAT_SUPPORT || \
-    TMP3X_SUPPORT || \
-    V9261F_SUPPORT || \
-    VEML6075_SUPPORT || \
-    VL53L1X_SUPPORT || \
-    ADE7953_SUPPORT \
-)
-#endif
-
 // -----------------------------------------------------------------------------
 // ADC
 // -----------------------------------------------------------------------------
@@ -1299,162 +1279,83 @@
 #define ADE7953_ADDRESS                  0x38
 #endif
 
-//--------------------------------------------------------------------------------
-// Class loading
-//--------------------------------------------------------------------------------
+// =============================================================================
+// Configuration helpers
+// =============================================================================
 
-#if SENSOR_SUPPORT
-
-#if AM2320_SUPPORT
-    #include "../sensors/AM2320Sensor.h"
+// I2C support when sensor needs it
+#if ( ADE7952_SUPPORT || \
+    AM2320_SUPPORT || \
+    BH1750_SUPPORT || \
+    BMP180_SUPPORT || \
+    BMX280_SUPPORT || \
+    EMON_ADC121_SUPPORT || \
+    EMON_ADS1X15_SUPPORT || \
+    SHT3X_I2C_SUPPORT || \
+    SI7021_SUPPORT || \
+    VEML6075_SUPPORT || \
+    VL53L1X_SUPPORT \
+)
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                 1
 #endif
 
-#if ANALOG_SUPPORT
-    #include "../sensors/AnalogSensor.h"
+// Can't have ADC reading something else
+#if ( ANALOG_SUPPORT || \
+    EMON_ANALOG_SUPPORT || \
+    GUVAS12SD_SUPPORT || \
+    LDR_SUPPORT || \
+    MICS2710_SUPPORT || \
+    MICS5525_SUPPORT || \
+    NTC_SUPPORT || \
+    TMP3X_SUPPORT \
+)
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
 #endif
 
-#if BH1750_SUPPORT
-    #include "../sensors/BH1750Sensor.h"
+// Provide generic way to detect sensor presence
+#ifndef SENSOR_SUPPORT
+#define SENSOR_SUPPORT ( \
+    ADE7953_SUPPORT || \
+    AM2320_SUPPORT || \
+    ANALOG_SUPPORT || \
+    BH1750_SUPPORT || \
+    BMP180_SUPPORT || \
+    BMX280_SUPPORT || \
+    CSE7766_SUPPORT || \
+    DALLAS_SUPPORT || \
+    DHT_SUPPORT || \
+    DIGITAL_SUPPORT || \
+    ECH1560_SUPPORT || \
+    EMON_ADC121_SUPPORT || \
+    EMON_ADS1X15_SUPPORT || \
+    EMON_ANALOG_SUPPORT || \
+    EVENTS_SUPPORT || \
+    EZOPH_SUPPORT || \
+    GEIGER_SUPPORT || \
+    GUVAS12SD_SUPPORT || \
+    HLW8012_SUPPORT || \
+    LDR_SUPPORT || \
+    MAX6675_SUPPORT || \
+    MHZ19_SUPPORT || \
+    MICS2710_SUPPORT || \
+    MICS5525_SUPPORT || \
+    NTC_SUPPORT || \
+    PMSX003_SUPPORT || \
+    PULSEMETER_SUPPORT || \
+    PZEM004T_SUPPORT || \
+    SDS011_SUPPORT || \
+    SENSEAIR_SUPPORT || \
+    SHT3X_I2C_SUPPORT || \
+    SI7021_SUPPORT || \
+    SONAR_SUPPORT || \
+    T6613_SUPPORT || \
+    THERMOSTAT_SUPPORT || \
+    TMP3X_SUPPORT || \
+    V9261F_SUPPORT || \
+    VEML6075_SUPPORT || \
+    VL53L1X_SUPPORT \
+)
 #endif
 
-#if BMP180_SUPPORT
-    #include "../sensors/BMP180Sensor.h"
-#endif
-
-#if BMX280_SUPPORT
-    #include "../sensors/BMX280Sensor.h"
-#endif
-
-#if CSE7766_SUPPORT
-    #include "../sensors/CSE7766Sensor.h"
-#endif
-
-#if DALLAS_SUPPORT
-    #include "../sensors/DallasSensor.h"
-#endif
-
-#if DHT_SUPPORT
-    #include "../sensors/DHTSensor.h"
-#endif
-
-#if DIGITAL_SUPPORT
-    #include "../sensors/DigitalSensor.h"
-#endif
-
-#if ECH1560_SUPPORT
-    #include "../sensors/ECH1560Sensor.h"
-#endif
-
-#if EMON_ADC121_SUPPORT
-    #include "../sensors/EmonADC121Sensor.h"
-#endif
-
-#if EMON_ADS1X15_SUPPORT
-    #include "../sensors/EmonADS1X15Sensor.h"
-#endif
-
-#if EMON_ANALOG_SUPPORT
-    #include "../sensors/EmonAnalogSensor.h"
-#endif
-
-#if EVENTS_SUPPORT
-    #include "../sensors/EventSensor.h"
-#endif
-
-#if EZOPH_SUPPORT
-    #include "../sensors/EZOPHSensor.h"
-#endif
-
-#if GEIGER_SUPPORT
-    #include "../sensors/GeigerSensor.h"
-#endif
-
-#if GUVAS12SD_SUPPORT
-    #include "../sensors/GUVAS12SDSensor.h"
-#endif
-
-#if HLW8012_SUPPORT
-    #include "../sensors/HLW8012Sensor.h"
-#endif
-
-#if LDR_SUPPORT
-    #include "../sensors/LDRSensor.h"
-#endif
-
-#if MAX6675_SUPPORT
-    #include "../sensors/MAX6675Sensor.h"
-#endif 
-
-#if MICS2710_SUPPORT
-    #include "../sensors/MICS2710Sensor.h"
-#endif
-
-#if MICS5525_SUPPORT
-    #include "../sensors/MICS5525Sensor.h"
-#endif
-
-#if MHZ19_SUPPORT
-    #include "../sensors/MHZ19Sensor.h"
-#endif
-
-#if NTC_SUPPORT
-    #include "../sensors/NTCSensor.h"
-#endif
-
-#if SDS011_SUPPORT
-    #include "../sensors/SDS011Sensor.h"
-#endif
-
-#if SENSEAIR_SUPPORT
-    #include "../sensors/SenseAirSensor.h"
-#endif
-
-#if PMSX003_SUPPORT
-    #include "../sensors/PMSX003Sensor.h"
-#endif
-
-#if PULSEMETER_SUPPORT
-    #include "../sensors/PulseMeterSensor.h"
-#endif
-
-#if PZEM004T_SUPPORT
-    #include "../sensors/PZEM004TSensor.h"
-#endif
-
-#if SHT3X_I2C_SUPPORT
-    #include "../sensors/SHT3XI2CSensor.h"
-#endif
-
-#if SI7021_SUPPORT
-    #include "../sensors/SI7021Sensor.h"
-#endif
-
-#if SONAR_SUPPORT
-    #include "../sensors/SonarSensor.h"
-#endif
-
-#if T6613_SUPPORT
-    #include "../sensors/T6613Sensor.h"
-#endif
-
-#if TMP3X_SUPPORT
-    #include "../sensors/TMP3XSensor.h"
-#endif
-
-#if V9261F_SUPPORT
-    #include "../sensors/V9261FSensor.h"
-#endif
-
-#if VEML6075_SUPPORT
-    #include "../sensors/VEML6075Sensor.h"
-#endif
-
-#if VL53L1X_SUPPORT
-    #include "../sensors/VL53L1XSensor.h"
-#endif
-
-#if ADE7953_SUPPORT
-    #include "../sensors/ADE7953Sensor.h"
-#endif
-
-#endif // SENSOR_SUPPORT

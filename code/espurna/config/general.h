@@ -1939,3 +1939,20 @@
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
 #endif
+
+// =============================================================================
+// Configuration helpers
+// =============================================================================
+
+//------------------------------------------------------------------------------
+// Provide generic way to detect debugging support
+//------------------------------------------------------------------------------
+#ifndef DEBUG_SUPPORT
+#define DEBUG_SUPPORT ( \
+    DEBUG_SERIAL_SUPPORT || \
+    DEBUG_UDP_SUPPORT || \
+    DEBUG_TELNET_SUPPORT || \
+    DEBUG_WEB_SUPPORT \
+)
+#endif
+

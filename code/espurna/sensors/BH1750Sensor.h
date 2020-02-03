@@ -7,10 +7,8 @@
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "I2CSensor.h"
 
 #define BH1750_CONTINUOUS_HIGH_RES_MODE     0x10    // Start measurement at 1lx resolution. Measurement time is approx 120ms.

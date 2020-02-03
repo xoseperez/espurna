@@ -1,11 +1,12 @@
-#pragma once
-
 //------------------------------------------------------------------------------
 // Do not change this file unless you know what you are doing
 // Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
 
-#define DEBUG_SUPPORT               (DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT || DEBUG_WEB_SUPPORT)
+#pragma once
+
+//------------------------------------------------------------------------------
+// Various modules configuration
 
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
@@ -28,11 +29,10 @@
 #endif
 
 #if UART_MQTT_SUPPORT
-#define MQTT_SUPPORT                1
-#undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT            0
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1           // UART<->MQTT requires MQTT and no serial debug
 #undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT        0
+#define DEBUG_SERIAL_SUPPORT        0           // TODO: compare UART_MQTT_PORT with DEBUG_PORT? (as strings)
 #endif
 
 #if ALEXA_SUPPORT
@@ -48,8 +48,6 @@
 #if RPN_RULES_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
-#undef WEB_SUPPORT
-#define WEB_SUPPORT                 1
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1
 #endif
@@ -65,10 +63,10 @@
 #endif
 
 #if DOMOTICZ_SUPPORT
-#undef MQTT_SUPPORT
-#define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Domoticz enabled enable BROKER
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
 #endif
 
 #if HOMEASSISTANT_SUPPORT
@@ -98,21 +96,6 @@
 #define TELNET_SERVER_ASYNC_BUFFERED 1         // enable buffered telnet by default on latest Cores
 #endif
 
-#if LLMNR_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#undef LLMNR_SUPPORT
-#define LLMNR_SUPPORT 0
-#endif
-
-#if NETBIOS_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#undef NETBIOS_SUPPORT
-#define NETBIOS_SUPPORT 0
-#endif
-
-#if SSDP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#undef SSDP_SUPPORT
-#define SSDP_SUPPORT 0
-#endif
-
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
 #undef TUYA_SUPPORT
 #define TUYA_SUPPORT                1           // Need base Tuya module for this to work
@@ -125,7 +108,10 @@
 #define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
 #endif
 
+//------------------------------------------------------------------------------
+// Hint about ESPAsyncTCP options and our internal one
 // TODO: clean-up SSL_ENABLED and USE_SSL settings for 1.15.0
+
 #if ASYNC_TCP_SSL_ENABLED && SECURE_CLIENT == SECURE_CLIENT_NONE
 #undef SECURE_CLIENT
 #define SECURE_CLIENT               SECURE_CLIENT_AXTLS
@@ -148,6 +134,27 @@
 #define DEBUG_LOG_BUFFER_SUPPORT  0              // Can't buffer if there is no debugging enabled.
                                                  // Helps to avoid checking twice for both DEBUG_SUPPORT and BUFFER_LOG_SUPPORT
 #endif
+
+//------------------------------------------------------------------------------
+// These depend on newest Core libraries
+
+#if LLMNR_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#undef LLMNR_SUPPORT
+#define LLMNR_SUPPORT 0
+#endif
+
+#if NETBIOS_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#undef NETBIOS_SUPPORT
+#define NETBIOS_SUPPORT 0
+#endif
+
+#if SSDP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#undef SSDP_SUPPORT
+#define SSDP_SUPPORT 0
+#endif
+
+//------------------------------------------------------------------------------
+// Change ntp module depending on Core version
 
 #if NTP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
 #define NTP_LEGACY_SUPPORT 1

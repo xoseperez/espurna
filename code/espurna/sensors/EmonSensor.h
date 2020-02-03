@@ -7,13 +7,12 @@
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
+#include "../debug.h"
 #include "I2CSensor.h"
 extern "C" {
-    #include "libs/fs_math.h"
+    #include "../libs/fs_math.h"
 }
 
 class EmonSensor : public I2CSensor {
