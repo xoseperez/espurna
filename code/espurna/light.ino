@@ -25,12 +25,14 @@ extern "C" {
 }
 
 #define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
-
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+
+// default is 8, we only need up to 5
 #define PWM_CHANNEL_NUM_MAX Light::ChannelsMax
 extern "C" {
     #include "libs/pwm.h"
 }
+
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1361,10 +1363,12 @@ void lightSetup() {
             io_info[index][0] = pgm_read_dword(&_light_iomux[pin]);
             io_info[index][1] = pgm_read_dword(&_light_iofunc[pin]);
             io_info[index][2] = pin;
+            pinMode(pin, OUTPUT);
 
         }
 
-        pwm_init(LIGHT_MAX_PWM, pwm_duty_init, _light_channels.size(), io_info);
+        // with 0 channels this should not do anything at all and provider will never call pwm_set_duty(...)
+        pwm_init(Light::PWM_MAX, pwm_duty_init, _light_channels.size(), io_info);
         pwm_start();
 
     #endif
