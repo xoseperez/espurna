@@ -1484,7 +1484,7 @@
 #endif
 
 #ifndef NTP_TIMEZONE
-#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable. Default to UTC.
+#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable. Default to UTC from TZ.h (which is PSTR("UTC0"))
                                                     // For the format documentation, see:
                                                     // - https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
                                                     // ESP8266 Core provides human-readable aliases for POSIX format, see:
