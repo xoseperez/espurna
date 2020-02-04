@@ -2,6 +2,8 @@
 
 RTMEM MODULE
 
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
 */
 
 bool _rtcmem_status = false;

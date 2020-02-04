@@ -1,3 +1,11 @@
+/*
+
+RTMEM MODULE
+
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 #pragma once
 
 // Base address of USER RTC memory

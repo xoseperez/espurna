@@ -1,7 +1,9 @@
-// // //------------------------------------------------------------------------------
-// Do not change this file unless you know what you are doing
-// Configuration settings are in the settings.h file
 //------------------------------------------------------------------------------
+// Do not change this file unless you know what you are doing
+// To override user configuration, please see custom.h
+//------------------------------------------------------------------------------
+
+#pragma once
 
 //------------------------------------------------------------------------------
 // GENERAL

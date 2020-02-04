@@ -19,6 +19,12 @@
 
 */
 
+#pragma once
+
+#include <Arduino.h>
+
+#include <EEPROM_Rotate.h>
+#include <pgmspace.h>
 #include <core_version.h>
 
 #ifdef USE_CUSTOM_H
@@ -34,7 +40,5 @@
 #include "deprecated.h"
 #include "general.h"
 #include "dependencies.h"
-#include "prototypes.h"
 #include "sensors.h"
 #include "webui.h"
-#include "progmem.h"

@@ -8,11 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DOMOTICZ_SUPPORT
 
-#include "relay.h"
 #include "broker.h"
-
-#include <bitset>
-#include <ArduinoJson.h>
+#include "domoticz.h"
+#include "mqtt.h"
+#include "relay.h"
 
 bool _dcz_enabled = false;
 std::bitset<RELAYS_MAX> _dcz_relay_state;

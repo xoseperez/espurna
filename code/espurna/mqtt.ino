@@ -9,18 +9,18 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #if MQTT_SUPPORT
 
-#include <EEPROM_Rotate.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <ArduinoJson.h>
+#include "mqtt.h"
+
 #include <vector>
 #include <utility>
 #include <Ticker.h>
 
 #include "system.h"
-#include "libs/SecureClientHelpers.h"
+#include "mqtt.h"
 #include "ntp.h"
 #include "ws.h"
+
+#include "libs/SecureClientHelpers.h"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 

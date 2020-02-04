@@ -48,22 +48,16 @@ Raw messages:
 
 #if IR_SUPPORT
 
+#include "ir.h"
+#include "mqtt.h"
 #include "relay.h"
 
-#include <IRremoteESP8266.h>
-
 #if defined(IR_RX_PIN)
-
-    #include <IRrecv.h>
     IRrecv _ir_receiver(IR_RX_PIN, IR_BUFFER_SIZE, IR_TIMEOUT, true);
-
     decode_results _ir_results;
-
 #endif // defined(IR_RX_PIN)
 
 #if defined(IR_TX_PIN)
-
-    #include <IRsend.h>
     IRsend _ir_sender(IR_TX_PIN);
 
     #if IR_USE_RAW

@@ -6,6 +6,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "gpio.h"
+
 #include <bitset>
 
 constexpr const size_t GPIO_PINS = 17;

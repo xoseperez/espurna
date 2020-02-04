@@ -21,20 +21,42 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/all.h"
 
+#include <functional>
+#include <algorithm>
+#include <limits>
+#include <vector>
+#include <memory>
+
 #include "board.h"
+#include "compat.h"
+#include "storage_eeprom.h"
+#include "gpio.h"
+#include "settings.h"
+#include "system.h"
+#include "terminal.h"
+#include "utils.h"
+#include "wifi.h"
+
+#include "api.h"
 #include "broker.h"
 #include "button.h"
 #include "debug.h"
+#include "domoticz.h"
+#include "homeassistant.h"
+#include "i2c.h"
+#include "ir.h"
 #include "led.h"
+#include "mqtt.h"
 #include "ntp.h"
+#include "ota.h"
 #include "relay.h"
+#include "rfm69.h"
 #include "rpnrules.h"
-#include "settings.h"
-#include "system.h"
+#include "rtcmem.h"
+#include "thermostat.h"
 #include "tuya.h"
-#include "utils.h"
-#include "wifi.h"
 #include "ws.h"
+
 #include "libs/HeapStats.h"
 
 using void_callback_f = void (*)();
