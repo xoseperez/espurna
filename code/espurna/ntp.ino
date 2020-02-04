@@ -84,11 +84,13 @@ int day(time_t ts) {
     return _ntp_tm_local.tm_mday;
 }
 
+// `tm.tm_wday` range is 0..6, TimeLib is 1..7
 int weekday(time_t ts) {
     _ntpTmCache(ts);
     return _ntp_tm_local.tm_wday + 1;
 }
 
+// `tm.tm_mon` range is 0..11, TimeLib range is 1..12
 int month(time_t ts) {
     _ntpTmCache(ts);
     return _ntp_tm_local.tm_mon + 1;

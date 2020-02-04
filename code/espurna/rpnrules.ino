@@ -124,9 +124,9 @@ bool _rpnNtpNow(rpn_context & ctxt) {
 }
 
 bool _rpnNtpFunc(rpn_context & ctxt, int (*func)(time_t)) {
-    float a;
-    rpn_stack_pop(ctxt, a);
-    rpn_stack_push(ctxt, func(time_t(a)));
+    float timestamp;
+    rpn_stack_pop(ctxt, timestamp);
+    rpn_stack_push(ctxt, func(time_t(timestamp)));
     return true;
 }
 
@@ -159,10 +159,10 @@ void _rpnInit() {
         });
 
         rpn_operator_set(_rpn_ctxt, "utc_dow", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, [](time_t ts) { return ((5 + utc_weekday(ts)) % 7); });
+            return _rpnNtpFunc(ctxt, utc_weekday);
         });
         rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, [](time_t ts) { return ((5 + weekday(ts)) % 7); });
+            return _rpnNtpFunc(ctxt, weekday);
         });
 
         rpn_operator_set(_rpn_ctxt, "utc_hour", 1, [](rpn_context & ctxt) {
@@ -180,6 +180,9 @@ void _rpnInit() {
         });
     #endif
 
+    // TODO: 1.14.0 weekday(...) conversion seemed to have 0..6 range with Monday as 0
+    //       using classic Sunday as first, but instead of 0 it is 1
+    //       Implementation above also uses 1 for Sunday, staying compatible with TimeLib
     #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
         rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
             if (!ntpSynced()) return false;
@@ -195,7 +198,7 @@ void _rpnInit() {
             return _rpnNtpFunc(ctxt, day);
         });
         rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, [](time_t ts) { return ((5 + weekday(ts)) % 7); });
+            return _rpnNtpFunc(ctxt, weekday);
         });
         rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
             return _rpnNtpFunc(ctxt, hour);
@@ -205,21 +208,21 @@ void _rpnInit() {
         });
     #endif
 
-    // Dumps RPN internal state
+    // Dumps RPN stack contents
     rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) {
         _rpnDump();
         return true;
     });
 
-    // Relay operators
+    // Accept relay number and numeric API status value (0, 1 and 2)
     rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
-        float a, b;
-        rpn_stack_pop(ctxt, b); // relay number
-        rpn_stack_pop(ctxt, a); // new status
-        if (int(a) == 2) {
-            relayToggle(int(b));
+        float status, id;
+        rpn_stack_pop(ctxt, id);
+        rpn_stack_pop(ctxt, status);
+        if (int(status) == 2) {
+            relayToggle(int(id));
         } else {
-            relayStatus(int(b), int(a) == 1);
+            relayStatus(int(id), int(status) == 1);
         }
         return true;
     });
@@ -238,10 +241,10 @@ void _rpnInit() {
         });
 
         rpn_operator_set(_rpn_ctxt, "channel", 2, [](rpn_context & ctxt) {
-            float a, b;
-            rpn_stack_pop(ctxt, b); // channel number
-            rpn_stack_pop(ctxt, a); // new value
-            lightChannel(int(b), int(a));
+            float value, id;
+            rpn_stack_pop(ctxt, id);
+            rpn_stack_pop(ctxt, value);
+            lightChannel(int(id), int(value));
             return true;
         });
 
