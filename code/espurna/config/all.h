@@ -22,10 +22,8 @@
 #pragma once
 
 #include <Arduino.h>
-
-#include <EEPROM_Rotate.h>
-#include <pgmspace.h>
 #include <core_version.h>
+#include <pgmspace.h>
 
 #ifdef USE_CUSTOM_H
 #include "custom.h"

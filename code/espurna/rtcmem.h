@@ -24,7 +24,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // Change this when modifying RtcmemData
 #define RTCMEM_MAGIC 0x45535075
 
-// XXX: When accessing IRAM as data storage all access must be 32-bit aligned and always at full length.
+// XXX: All access must be 4-byte aligned and always at full length.
 //
 // For example, using bitfields / inner structs / etc:
 // ...
@@ -37,7 +37,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // This would not write the expected thing:
 // mem->d = 4;
 
-// TODO replace with custom memory segment in ldscript
+// TODO replace with custom memory segment in ldscript?
 struct RtcmemData {
     uint32_t magic;
     uint32_t sys;
