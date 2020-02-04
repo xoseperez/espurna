@@ -322,7 +322,7 @@ void _rpnRun() {
         rpn_stack_clear(_rpn_ctxt);
     }
 
-    if (getSetting("rpnSticky", 1 == RPN_STICKY)) {
+    if (!getSetting("rpnSticky", 1 == RPN_STICKY)) {
         rpn_variables_clear(_rpn_ctxt);
     }
 
