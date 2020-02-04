@@ -11,10 +11,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 unsigned int _i2c_locked[16] = {0};
 
 #if I2C_USE_BRZO
-#include "brzo_i2c.h"
 unsigned long _i2c_scl_frequency = 0;
-#else
-#include "Wire.h"
 #endif
 
 // -----------------------------------------------------------------------------

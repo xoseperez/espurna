@@ -2,6 +2,8 @@
 // SENSORS - General configuration
 // =============================================================================
 
+#pragma once
+
 #ifndef SENSOR_DEBUG
 #define SENSOR_DEBUG                        0               // Debug sensors
 #endif

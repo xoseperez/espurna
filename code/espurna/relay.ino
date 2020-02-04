@@ -6,15 +6,17 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM_Rotate.h>
 #include <Ticker.h>
 #include <ArduinoJson.h>
 #include <vector>
 #include <functional>
 #include <bitset>
 
-#include "relay.h"
 #include "broker.h"
+#include "storage_eeprom.h"
+#include "settings.h"
+#include "mqtt.h"
+#include "relay.h"
 #include "tuya.h"
 #include "ws.h"
 

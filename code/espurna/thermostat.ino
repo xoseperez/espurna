@@ -8,11 +8,11 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #if THERMOSTAT_SUPPORT
 
-#include <ArduinoJson.h>
 #include <float.h>
 
-#include "relay.h"
 #include "ntp.h"
+#include "relay.h"
+#include "thermostat.h"
 #include "ws.h"
 
 
@@ -602,8 +602,6 @@ void resetBurnCounters() {
 //#######################################################################
 
 #if THERMOSTAT_DISPLAY_SUPPORT
-
-#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
 
 #define wifi_on_width 16
 #define wifi_on_height 16

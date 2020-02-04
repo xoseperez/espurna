@@ -9,9 +9,34 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <limits>
 
 #include "config/buildtime.h"
-#include "libs/HeapStats.h"
+
+#include "mqtt.h"
 #include "ntp.h"
 #include "utils.h"
+
+#include "libs/HeapStats.h"
+
+//--------------------------------------------------------------------------------
+// Reset reasons
+//--------------------------------------------------------------------------------
+
+PROGMEM const char custom_reset_hardware[] = "Hardware button";
+PROGMEM const char custom_reset_web[] = "Reboot from web interface";
+PROGMEM const char custom_reset_terminal[] = "Reboot from terminal";
+PROGMEM const char custom_reset_mqtt[] = "Reboot from MQTT";
+PROGMEM const char custom_reset_rpc[] = "Reboot from RPC";
+PROGMEM const char custom_reset_ota[] = "Reboot after successful OTA update";
+PROGMEM const char custom_reset_http[] = "Reboot from HTTP";
+PROGMEM const char custom_reset_nofuss[] = "Reboot after successful NoFUSS update";
+PROGMEM const char custom_reset_upgrade[] = "Reboot after successful web update";
+PROGMEM const char custom_reset_factory[] = "Factory reset";
+PROGMEM const char* const custom_reset_string[] = {
+    custom_reset_hardware, custom_reset_web, custom_reset_terminal,
+    custom_reset_mqtt, custom_reset_rpc, custom_reset_ota,
+    custom_reset_http, custom_reset_nofuss, custom_reset_upgrade,
+    custom_reset_factory
+};
+
 
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {

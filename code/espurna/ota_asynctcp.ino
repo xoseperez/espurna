@@ -17,8 +17,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Schedule.h>
 #include <ESPAsyncTCP.h>
 
-#include "system.h"
+#include "mqtt.h"
 #include "ota.h"
+#include "system.h"
+#include "terminal.h"
 
 #include "libs/URL.h"
 

@@ -6,9 +6,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if BROKER_SUPPORT
-
 #pragma once
+
+#if BROKER_SUPPORT
 
 #include <functional>
 #include <vector>
@@ -56,4 +56,4 @@ using SensorReportBroker = TBroker<TBrokerType::SENSOR_REPORT, const String&, un
 
 using ConfigBroker = TBroker<TBrokerType::CONFIG, const String&, const String&>;
 
-#endif // BROKER_SUPPORT
+#endif // BROKER_SUPPORT == 1

@@ -10,11 +10,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <queue>
 
-#if RFB_DIRECT
-#include <RCSwitch.h>
-#endif
-
 #include "relay.h"
+#include "rfbridge.h"
+#include "terminal.h"
+#include "mqtt.h"
 #include "ws.h"
 
 // -----------------------------------------------------------------------------
