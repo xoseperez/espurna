@@ -9,8 +9,13 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #pragma once
 
+#include <WString.h>
+
 #include <utility>
 #include <functional>
+
+using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
+using mqtt_msg_t = std::pair<String, String>; // topic, payload
 
 #if MQTT_SUPPORT
 
@@ -22,9 +27,6 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
     #include <PubSubClient.h>
 #endif
-
-using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
-using mqtt_msg_t = std::pair<String, String>; // topic, payload
 
 void mqttRegister(mqtt_callback_f callback);
 

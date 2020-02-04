@@ -37,6 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils.h"
 #include "wifi.h"
 
+#include "alexa.h"
 #include "api.h"
 #include "broker.h"
 #include "button.h"
@@ -55,6 +56,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "rtcmem.h"
 #include "thermostat.h"
 #include "tuya.h"
+#include "web.h"
 #include "ws.h"
 
 #include "libs/HeapStats.h"
