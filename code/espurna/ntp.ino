@@ -56,7 +56,7 @@ static time_t _ntp_ts = 0;
 static tm _ntp_tm_local;
 static tm _ntp_tm_utc;
 
-static void _ntpTmCache(time_t ts) {
+void _ntpTmCache(time_t ts) {
     if (_ntp_ts != ts) {
         _ntp_ts = ts;
         localtime_r(&_ntp_ts, &_ntp_tm_local);
