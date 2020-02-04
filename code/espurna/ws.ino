@@ -233,9 +233,12 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     const char* action = root["action"];
     if (action) {
 
-        if (strcmp(action, "ping") != 0) {
-            DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
+        if (strcmp(action, "ping") == 0) {
+            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            return;
         }
+
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
             deferredReset(100, CUSTOM_RESET_WEB);
@@ -251,11 +254,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
             resetSettings();
             deferredReset(100, CUSTOM_RESET_FACTORY);
-            return;
-        }
-
-        if (strcmp(action, "ping") == 0) {
-            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
             return;
         }
 
