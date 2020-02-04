@@ -99,13 +99,39 @@ int year(time_t ts) {
     return _ntp_tm_local.tm_year + 1900;
 }
 
+int utc_hour(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_hour;
+}
+
+int utc_minute(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_min;
+}
+
+int utc_second(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_sec;
+}
+
+int utc_day(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_mday;
+}
+
 int utc_weekday(time_t ts) {
     _ntpTmCache(ts);
     return _ntp_tm_utc.tm_wday + 1;
 }
-int utc_hour(time_t ts) {
+
+int utc_month(time_t ts) {
     _ntpTmCache(ts);
-    return _ntp_tm_utc.tm_hour;
+    return _ntp_tm_utc.tm_mon + 1;
+}
+
+int utc_year(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_year + 1900;
 }
 
 time_t now() {

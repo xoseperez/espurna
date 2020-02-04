@@ -40,11 +40,6 @@
 #define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
 #endif
 
-#if RPN_RULES_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#undef RPN_RULES_SUPPORT
-#define RPN_RULES_SUPPORT           0
-#endif
-
 #if RPN_RULES_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER

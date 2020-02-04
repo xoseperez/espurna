@@ -10,8 +10,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "ntp.h"
 #include "relay.h"
-
-#include <rpnlib.h>
+#include "rpnrules.h"
 
 // -----------------------------------------------------------------------------
 // Custom commands
@@ -116,49 +115,93 @@ void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value)
     _rpnBrokerCallback(topic, id, double(value), nullptr);
 }
 
+#if NTP_SUPPORT
+
+bool _rpnNtpNow(rpn_context & ctxt) {
+    if (!ntpSynced()) return false;
+    rpn_stack_push(ctxt, now());
+    return true;
+}
+
+bool _rpnNtpFunc(rpn_context & ctxt, int (*func)(time_t)) {
+    float a;
+    rpn_stack_pop(ctxt, a);
+    rpn_stack_push(ctxt, func(time_t(a)));
+    return true;
+}
+
+#endif
+
 void _rpnInit() {
 
     // Init context
     rpn_init(_rpn_ctxt);
 
     // Time functions need NTP support
-    #if NTP_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
-            if (!ntpSynced()) return false;
-            rpn_stack_push(ctxt, now());
-            return true;
+    // TODO: since 1.14.2, timelib+ntpclientlib are no longer used with latest Cores
+    //       `now` is always in UTC, `utc_...` functions to be used instead to convert time
+    #if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "utc", 0, _rpnNtpNow);
+        rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
+
+        rpn_operator_set(_rpn_ctxt, "utc_month", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_month);
+        });
+        rpn_operator_set(_rpn_ctxt, "month", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, month);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_day", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_day);
+        });
+        rpn_operator_set(_rpn_ctxt, "day", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, day);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_dow", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, [](time_t ts) { return ((5 + utc_weekday(ts)) % 7); });
         });
         rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-            float a;
-            rpn_stack_pop(ctxt, a);
-            unsigned char dow = (weekday(int(a)) + 5) % 7;
-            rpn_stack_push(ctxt, dow);
-            return true;
+            return _rpnNtpFunc(ctxt, [](time_t ts) { return ((5 + weekday(ts)) % 7); });
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_hour", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_hour);
         });
         rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
-            float a;
-            rpn_stack_pop(ctxt, a);
-            rpn_stack_push(ctxt, hour(int(a)));
-            return true;
+            return _rpnNtpFunc(ctxt, hour);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_minute", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_minute);
         });
         rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
-            float a;
-            rpn_stack_pop(ctxt, a);
-            rpn_stack_push(ctxt, minute(int(a)));
+            return _rpnNtpFunc(ctxt, minute);
+        });
+    #endif
+
+    #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
+            if (!ntpSynced()) return false;
+            rpn_stack_push(ctxt, ntpLocal2UTC(now()));
             return true;
         });
-        rpn_operator_set(_rpn_ctxt, "utc_dow", 1, [](rpn_context & ctxt) {
-            float a;
-            rpn_stack_pop(ctxt, a);
-            unsigned char dow = (utc_weekday(int(a)) + 5) % 7;
-            rpn_stack_push(ctxt, dow);
-            return true;
+        rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
+
+        rpn_operator_set(_rpn_ctxt, "month", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, month);
         });
-        rpn_operator_set(_rpn_ctxt, "utc_hour", 1, [](rpn_context & ctxt) {
-            float a;
-            rpn_stack_pop(ctxt, a);
-            rpn_stack_push(ctxt, utc_hour(int(a)));
-            return true;
+        rpn_operator_set(_rpn_ctxt, "day", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, day);
+        });
+        rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, [](time_t ts) { return ((5 + weekday(ts)) % 7); });
+        });
+        rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, hour);
+        });
+        rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, minute);
         });
     #endif
 

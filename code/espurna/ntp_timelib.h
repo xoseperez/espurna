@@ -80,6 +80,14 @@ constexpr const time_t nextSunday(time_t ts) {
     return previousSunday(ts) + secondsPerWeek;
 }
 
+int utc_hour(time_t ts);
+int utc_minute(time_t ts);
+int utc_second(time_t ts);
+int utc_day(time_t ts);
+int utc_weekday(time_t ts);
+int utc_month(time_t ts);
+int utc_year(time_t ts);
+
 int hour(time_t ts);
 int minute(time_t ts);
 int second(time_t ts);
@@ -95,9 +103,6 @@ int day();
 int weekday();
 int month();
 int year();
-
-int utc_weekday(time_t ts);
-int utc_hour(time_t ts);
 
 time_t now();
 

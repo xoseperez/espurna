@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "led.h"
 #include "ntp.h"
 #include "relay.h"
+#include "rpnrules.h"
 #include "settings.h"
 #include "system.h"
 #include "tuya.h"
