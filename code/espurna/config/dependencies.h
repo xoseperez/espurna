@@ -76,7 +76,9 @@
 
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
-#define NTP_SUPPORT                 1           // Scheduler needs NTP
+#define NTP_SUPPORT                 1           // Scheduler needs NTP to work
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
 #endif
 
 #if LWIP_VERSION_MAJOR != 1
@@ -146,3 +148,11 @@
 #define SSDP_SUPPORT 0
 #endif
 
+//------------------------------------------------------------------------------
+// Change ntp module depending on Core version
+
+#if NTP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#define NTP_LEGACY_SUPPORT 1
+#else
+#define NTP_LEGACY_SUPPORT 0
+#endif

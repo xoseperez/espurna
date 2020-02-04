@@ -16,10 +16,10 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include <vector>
 #include <utility>
 #include <Ticker.h>
-#include <TimeLib.h>
 
 #include "system.h"
 #include "libs/SecureClientHelpers.h"
+#include "ntp.h"
 #include "ws.h"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
