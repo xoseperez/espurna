@@ -1286,7 +1286,7 @@
 // =============================================================================
 
 // I2C support when sensor needs it
-#if ( ADE7952_SUPPORT || \
+#if ( ADE7953_SUPPORT || \
     AM2320_SUPPORT || \
     BH1750_SUPPORT || \
     BMP180_SUPPORT || \
