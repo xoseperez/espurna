@@ -40,18 +40,9 @@ unsigned char _tspk_tries = THINGSPEAK_TRIES;
 class AsyncThingspeak : public AsyncClient
 {
   public:
-    URL* address;
-    AsyncThingspeak(const String&);
-    ~AsyncThingspeak();
+    URL address;
+    AsyncThingspeak(const String& _url) : address(_url) { };
 };
-
-AsyncThingspeak::AsyncThingspeak(const String& _url) {
-  address = new URL(_url);
-}
-
-AsyncThingspeak::~AsyncThingspeak() {
-  delete(address);
-}
 
 AsyncThingspeak * _tspk_client;
 
@@ -212,9 +203,9 @@ void _tspkInitClient(const String& _url) {
 
         _tspk_connected = true;
         _tspk_connecting = false;
-        AsyncThingspeak* _tspk_url = reinterpret_cast<AsyncThingspeak*>(client);
+        AsyncThingspeak* _tspk_client = reinterpret_cast<AsyncThingspeak*>(client);
 
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), _tspk_url->address->host.c_str(), _tspk_url->address->port);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), _tspk_client->address.host.c_str(), _tspk_client->address.port);
 
         #if THINGSPEAK_USE_SSL
             uint8_t fp[20] = {0};
@@ -225,12 +216,12 @@ void _tspkInitClient(const String& _url) {
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_url->address->path.c_str(), _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_url->address->path.length() + _tspk_url->address->host.length() + 1];
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_client->address.path.c_str(), _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_client->address.path.length() + _tspk_client->address.host.length() + 1];
         snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
-            _tspk_url->address->path.c_str(),
-            _tspk_url->address->host.c_str(),
+            _tspk_client->address.path.c_str(),
+            _tspk_client->address.host.c_str(),
             _tspk_data.length()
         );
 
@@ -250,7 +241,7 @@ void _tspkPost() {
     #if THINGSPEAK_USE_SSL
         bool connected = _tspk_client->connect(_tspk_host.c_str(), _tspk_port, THINGSPEAK_USE_SSL);
     #else
-        bool connected = _tspk_client->connect(_tspk_client->address->host.c_str(), _tspk_client->address->port);
+        bool connected = _tspk_client->connect(_tspk_client->address.host.c_str(), _tspk_client->address.port);
     #endif
 
     _tspk_connecting = connected;
@@ -280,12 +271,12 @@ void _tspkPost() {
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
         }
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_url.path.c_str(), _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_url.path.length() + _tspk_url.host.lengh() + 1];
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_client.path.c_str(), _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_client.path.length() + _tspk_client.host.lengh() + 1];
         snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
-            _tspk_url.path.c_str(),
-            _tspk_url.host.c_str(),
+            _tspk_client.path.c_str(),
+            _tspk_client.host.c_str(),
             _tspk_data.length()
         );
 
