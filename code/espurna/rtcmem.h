@@ -24,15 +24,18 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // Change this when modifying RtcmemData
 #define RTCMEM_MAGIC 0x45535075
 
-// XXX When using bitfields / inner structs / etc:
+// XXX: When accessing IRAM as data storage all access must be 32-bit aligned and always at full length.
+//
+// For example, using bitfields / inner structs / etc:
 // ...
 // uint32_t a : 8;
 // uint32_t b : 8;
 // uint32_t c : 8;
 // uint32_t d : 8;
 // ...
+//
+// This would not write the expected thing:
 // mem->d = 4;
-// At the same time writes 4 to the a, b and c
 
 // TODO replace with custom memory segment in ldscript
 struct RtcmemData {
