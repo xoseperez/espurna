@@ -283,7 +283,7 @@ void _ntpSetTimeOfDayCallback() {
     #if BROKER_SUPPORT
     static bool once = true;
     if (once) {
-        _ntpBrokerSchedule(60 - second(_ntp_last));
+        schedule_function(_ntpBrokerCallback);
         once = false;
     }
     #endif
