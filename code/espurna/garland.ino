@@ -12,26 +12,27 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include "garland\anim.h"
 #include "garland\color.h"
 #include "garland\palette.h"
-#include "garland\small_timer.hpp"
 #include <Adafruit_NeoPixel.h>
 
-const char* NAME_GARLAND_ENABLED     = "garlandEnabled";
+const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
 
-#define ANIMS                          1 //number of animations
-#define PALS                           7 //number of palettes
-#define INTERVAL                   10000 //change interval, msec
+#define ANIMS                             7 //number of animations
+#define PALS                              7 //number of palettes
+#define EFFECT_UPDATE_INTERVAL_MIN     5000 // 5 sec
+#define EFFECT_UPDATE_INTERVAL_MAX    10000 // 5 sec
 
-bool _garland_enabled                = true;
+bool _garland_enabled                   = true;
+unsigned long _last_update              = 0;
+unsigned long _interval_effect_update;
 
 int paletteInd;
-int animInd = 1;
+int animInd                             = -1; 
 extern Adafruit_NeoPixel pixels;
 
 Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};
 
 Anim anim = Anim();
 
-csTimerDef <INTERVAL> EffectAutoChangeTimer; // auto change animation effect, interval timer
 
 constexpr bool disableAutoChangeEffects = false;
 
@@ -97,10 +98,11 @@ void garlandSetup() {
   randomSeed(analogRead(0)*analogRead(1));
   paletteInd = random(PALS);
   anim.setAnim(animInd);
-  anim.setPeriod(20);
+  anim.setPeriod(6);
   anim.setPalette(pals[0]);
   anim.doSetUp();
-  EffectAutoChangeTimer.start(10000); // 10000 for "release" AnimStart
+
+  _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
 
 //------------------------------------------------------------------------------
@@ -115,28 +117,28 @@ void garlandLoop(void) {
   if (anim.run()) {
   }
 
-  bool needChange = EffectAutoChangeTimer.run();
-    // auto change effect
-  if (needChange && ! disableAutoChangeEffects) {
-    EffectAutoChangeTimer.start();
+  if (millis() - _last_update > _interval_effect_update) {
+    _last_update = millis();
+    _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+  
+    int prevAnimInd = animInd;
+    while (prevAnimInd == animInd) animInd = random(ANIMS);
 
-    switch ( (animInd < 0) ? 0 : random(2)) {
-      case 0: {
-        int prevAnimInd = animInd;
-        while (prevAnimInd == animInd) animInd = random(ANIMS);
-        anim.setAnim(animInd);
-        anim.setPeriod(random(20, 40));
-        anim.setPalette(pals[paletteInd]);
-        anim.doSetUp();
-        break;
-      }
-      case 1: {
-        int prevPalInd = paletteInd;
-        while (prevPalInd == paletteInd) paletteInd = random(PALS);
-        anim.setPalette(pals[paletteInd]);
-        break;
-      }
-    }
+    // animInd++;
+    // if (animInd == ANIMS)
+    //  animInd = 0;
+
+    anim.setAnim(animInd);
+
+    byte period = random(5, 30);
+    anim.setPeriod(period);
+
+    int prevPalInd = paletteInd;
+    while (prevPalInd == paletteInd) paletteInd = random(PALS);    
+    anim.setPalette(pals[paletteInd]);
+
+    DEBUG_MSG_P(PSTR("Animation: %d, Palette: %d, Period: %d, interval: %d, avg_calc_time: %d, avg_show_time: %d\n"), animInd, paletteInd, period, _interval_effect_update, anim.getAvgCalcTime(), anim.getAvgShowTime());
+    anim.doSetUp();
   }
 }
 

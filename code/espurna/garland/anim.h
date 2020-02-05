@@ -6,7 +6,7 @@
 
 #define PIN 4 // WS2812 pin number
 const int   LEDS                     = GARLAND_LEDS;
-#define BRIGHTNESS 256// brightness adjustment, up to 256
+#define BRIGHTNESS 8//256// brightness adjustment, up to 256
 
 #define TRANSITION_MS 1000 // transition time between animations, ms
 
@@ -62,6 +62,13 @@ private:
     //BrA frequency (spatial)
     byte braFreq=150;
 
+    unsigned long start_time = 0;
+    unsigned long sum_calc_time = 0;
+    unsigned long sum_show_time = 0;
+    unsigned int sum_num = 0;
+    unsigned int calc_num = 0;
+    unsigned int show_num = 0;
+
     //glow animation setup
     void glowSetUp();
 
@@ -109,14 +116,14 @@ private:
     // void animBT_Run();
 
 public:
-
-
     Anim();
     void setPeriod(byte period);
     void setPalette(Palette * pal);
     void setAnim(byte animInd);
     bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
     void doSetUp();
+    unsigned long getAvgCalcTime();
+    unsigned long getAvgShowTime();
 
 };
 

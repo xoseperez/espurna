@@ -10,6 +10,8 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
 // byte skip_count = 0;
 bool calc_or_show = false;
 
+
+
 Anim::Anim() 
 {
     nextms = millis();
@@ -40,7 +42,13 @@ bool Anim::run()
     //     skip_count = 0;
     //     return false;
     // }
+    if (sum_num != 0 && (millis() - start_time) / sum_num < period) {
+        return false;
+    }
 
+    ++sum_num;
+
+    unsigned long iteration_start_time = millis();
     if (calc_or_show) {
 
         if (runImpl != NULL) {
@@ -72,8 +80,13 @@ bool Anim::run()
                 pixels.setPixelColor(i, pixels.Color(r, g, b));
             }
         }
+
+        ++calc_num;
+        sum_calc_time += (millis() - iteration_start_time);
     } else {
         pixels.show();
+        ++show_num;
+        sum_show_time += (millis() - iteration_start_time);
     }
 
     calc_or_show = !calc_or_show;
@@ -101,60 +114,75 @@ void Anim::setUp()
 
 void Anim::doSetUp()
 {
+    start_time = millis();
+    sum_calc_time = 0;
+    sum_show_time = 0;
+    sum_num = 0;
+    calc_num = 0;
+    show_num = 0;
+
     if (!setUpOnPalChange) {
         setUp();
     }
 }
 
+unsigned long Anim::getAvgCalcTime() {
+    return sum_calc_time / calc_num;
+}
+
+unsigned long Anim::getAvgShowTime() {
+    return sum_show_time / show_num;
+}
+
 void Anim::setAnim(byte animInd)
 {
-    // switch (animInd) {
-    //     case 0: 
-    //         setUpImpl = &Anim::animRun_SetUp;
-    //         runImpl = &Anim::animRun_Run;
-    //         setUpOnPalChange = true;
-    //     break;
-    //     case 1: 
+    switch (animInd) {
+        case 0: 
+            setUpImpl = &Anim::animRun_SetUp;
+            runImpl = &Anim::animRun_Run;
+            setUpOnPalChange = true;
+        break;
+        case 1: 
             setUpImpl = &Anim::animPixieDust_SetUp;
             runImpl = &Anim::animPixieDust_Run;
             setUpOnPalChange = true;
-    //     break;        
-    //     case 2: 
-    //         setUpImpl = &Anim::animSparkr_SetUp;
-    //         runImpl = &Anim::animSparkr_Run;
-    //         setUpOnPalChange = true;
-    //     break;        
-    //     case 3: 
-    //         setUpImpl = &Anim::animRandCyc_SetUp;
-    //         runImpl = &Anim::animRandCyc_Run;
-    //         setUpOnPalChange = true;
-    //     break;   
-    //     case 4: 
-    //         setUpImpl = &Anim::animStars_SetUp;
-    //         runImpl = &Anim::animStars_Run;
-    //         setUpOnPalChange = false;
-    //     break;    
-    //     case 5: 
-    //         setUpImpl = &Anim::animSpread_SetUp;
-    //         runImpl = &Anim::animSpread_Run;
-    //         setUpOnPalChange = false;
-    //     break;     
-    //     case 6: 
-    //         setUpImpl = &Anim::animFly_SetUp;
-    //         runImpl = &Anim::animFly_Run;
-    //         setUpOnPalChange = false;
-    //     break;                       
-    //     // case 7: //special
-    //     //     setUpImpl = &Anim::animBT_SetUp;
-    //     //     runImpl = &Anim::animBT_Run;
-    //     //     setUpOnPalChange = false;
-    //     // break;
-    //     default:
-    //         setUpImpl = &Anim::animStart_SetUp;
-    //         runImpl = &Anim::animStart_Run;
-    //         setUpOnPalChange = true;
-    //     break;
-    // }
+        break;        
+        case 2: 
+            setUpImpl = &Anim::animSparkr_SetUp;
+            runImpl = &Anim::animSparkr_Run;
+            setUpOnPalChange = true;
+        break;        
+        case 3: 
+            setUpImpl = &Anim::animRandCyc_SetUp;
+            runImpl = &Anim::animRandCyc_Run;
+            setUpOnPalChange = true;
+        break;   
+        case 4: 
+            setUpImpl = &Anim::animStars_SetUp;
+            runImpl = &Anim::animStars_Run;
+            setUpOnPalChange = false;
+        break;    
+        case 5: 
+            setUpImpl = &Anim::animSpread_SetUp;
+            runImpl = &Anim::animSpread_Run;
+            setUpOnPalChange = false;
+        break;     
+        case 6: 
+            setUpImpl = &Anim::animFly_SetUp;
+            runImpl = &Anim::animFly_Run;
+            setUpOnPalChange = false;
+        break;                       
+        // case 7: //special
+        //     setUpImpl = &Anim::animBT_SetUp;
+        //     runImpl = &Anim::animBT_Run;
+        //     setUpOnPalChange = false;
+        // break;
+        default:
+            setUpImpl = &Anim::animStart_SetUp;
+            runImpl = &Anim::animStart_Run;
+            setUpOnPalChange = true;
+        break;
+    }
 }
 
 
