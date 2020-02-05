@@ -237,10 +237,11 @@ void _tspkPost() {
     if (_tspk_connected || _tspk_connecting) return;
 
     _tspk_client_ts = millis();
-
+    
     #if THINGSPEAK_USE_SSL
         bool connected = _tspk_client->connect(_tspk_host.c_str(), _tspk_port, THINGSPEAK_USE_SSL);
     #else
+        _tspk_client->address = URL(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
         bool connected = _tspk_client->connect(_tspk_client->address.host.c_str(), _tspk_client->address.port);
     #endif
 
