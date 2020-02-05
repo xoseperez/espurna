@@ -10,6 +10,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "settings.h"
 #include "system.h"
+#include "terminal.h"
 #include "utils.h"
 #include "libs/StreamInjector.h"
 #include "libs/HeapStats.h"

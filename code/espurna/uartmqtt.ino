@@ -9,11 +9,13 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if UART_MQTT_SUPPORT
 
+#include "mqtt.h"
+#include "uartmqtt.h"
+
 char _uartmqttBuffer[UART_MQTT_BUFFER_SIZE];
 bool _uartmqttNewData = false;
 
 #if UART_MQTT_USE_SOFT
-    #include <SoftwareSerial.h>
     SoftwareSerial _uart_mqtt_serial(UART_MQTT_RX_PIN, UART_MQTT_TX_PIN, false, UART_MQTT_BUFFER_SIZE);
     #define UART_MQTT_PORT  _uart_mqtt_serial
 #else

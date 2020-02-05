@@ -8,7 +8,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
-#include "libs/RFM69Wrap.h"
+#include "mqtt.h"
+#include "rfm69.h"
 #include "ws.h"
 
 #define RFM69_PACKET_SEPARATOR ':'

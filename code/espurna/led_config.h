@@ -41,7 +41,7 @@ constexpr const unsigned char _ledRelay(unsigned char index) {
         (index == 4) ? (LED5_RELAY - 1) :
         (index == 5) ? (LED6_RELAY - 1) :
         (index == 6) ? (LED7_RELAY - 1) :
-        (index == 7) ? (LED8_RELAY - 1) : 0
+        (index == 7) ? (LED8_RELAY - 1) : RELAY_NONE
     );
 }
 

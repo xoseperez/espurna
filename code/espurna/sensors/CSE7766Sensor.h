@@ -8,10 +8,11 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "../debug.h"
+#include "BaseSensor.h"
 
 class CSE7766Sensor : public BaseSensor {
 
@@ -234,10 +235,10 @@ class CSE7766Sensor : public BaseSensor {
             if ((_data[0] & 0xFC) > 0xF0) {
                 _error = SENSOR_ERROR_OTHER;
                 #if SENSOR_DEBUG
-                    if (0xF1 == _data[0] & 0xF1) DEBUG_MSG("[SENSOR] CSE7766: Abnormal coefficient storage area\n");
-                    if (0xF2 == _data[0] & 0xF2) DEBUG_MSG("[SENSOR] CSE7766: Power cycle exceeded range\n");
-                    if (0xF4 == _data[0] & 0xF4) DEBUG_MSG("[SENSOR] CSE7766: Current cycle exceeded range\n");
-                    if (0xF8 == _data[0] & 0xF8) DEBUG_MSG("[SENSOR] CSE7766: Voltage cycle exceeded range\n");
+                    if (0xF1 == (_data[0] & 0xF1)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Abnormal coefficient storage area\n"));
+                    if (0xF2 == (_data[0] & 0xF2)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Power cycle exceeded range\n"));
+                    if (0xF4 == (_data[0] & 0xF4)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Current cycle exceeded range\n"));
+                    if (0xF8 == (_data[0] & 0xF8)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Voltage cycle exceeded range\n"));
                 #endif
                 return;
             }

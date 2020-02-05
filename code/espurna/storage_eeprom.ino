@@ -4,10 +4,10 @@ EEPROM MODULE
 
 */
 
-#include <EEPROM_Rotate.h>
+#include "debug.h"
+#include "storage_eeprom.h"
 
-// -----------------------------------------------------------------------------
-
+EEPROM_Rotate EEPROMr;
 bool _eeprom_commit = false;
 
 uint32_t _eeprom_commit_count = 0;

@@ -1,4 +1,10 @@
 // -----------------------------------------------------------------------------
+// DEFAULTS PER MODULE
+// -----------------------------------------------------------------------------
+
+#pragma once
+
+// -----------------------------------------------------------------------------
 // Buttons
 // -----------------------------------------------------------------------------
 
@@ -664,6 +670,30 @@
 
 #ifndef LIGHT_CHANNELS
 #define LIGHT_CHANNELS      0
+#endif
+
+#ifndef LIGHT_ENABLE_PIN
+#define LIGHT_ENABLE_PIN    GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH1_PIN
+#define LIGHT_CH1_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH2_PIN
+#define LIGHT_CH2_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH3_PIN
+#define LIGHT_CH3_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH4_PIN
+#define LIGHT_CH4_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH5_PIN
+#define LIGHT_CH5_PIN       GPIO_NONE
 #endif
 
 #ifndef LIGHT_CH1_INVERSE

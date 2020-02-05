@@ -7,13 +7,10 @@
 
 #pragma once
 
-#include "../utils.h"
+#include <Arduino.h>
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
-
-#include "Arduino.h"
 #include "I2CSensor.h"
+#include "../utils.h"
 
 #define BMP180_CHIP_ID                  0x55
 

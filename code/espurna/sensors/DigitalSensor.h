@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
 #include "BaseSensor.h"
 
 class DigitalSensor : public BaseSensor {
