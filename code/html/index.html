@@ -96,6 +96,12 @@
                             <a href="#" class="pure-menu-link" data="panel-general">GENERAL</a>
                         </li>
 
+                        <!-- removeIf(!garland) -->
+                        <li class="pure-menu-item module module-garland">
+                            <a href="#" class="pure-menu-link" data="panel-garland">GARLAND</a>
+                        </li>
+                        <!-- endRemoveIf(!garland) -->
+
                         <!-- removeIf(!thermostat) -->
                         <li class="pure-menu-item module module-thermostat">
                             <a href="#" class="pure-menu-link" data="panel-thermostat">THERMOSTAT</a>
@@ -1074,6 +1080,33 @@
 
                     </div>
                 </form>
+
+                <!-- removeIf(!garland) -->
+                <form id="form-garland" class="pure-form form-settings">
+                    <div class="panel" id="panel-garland">
+
+                        <div class="header">
+                            <h1>GARLAND</h1>
+                            <h2>Garland configuration</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <div class="pure-g">
+                                <label class="pure-u-1 pure-u-lg-1-4">Enable Garland</label>
+                                <div class="pure-u-1 pure-u-lg-1-4"><input class="checkbox-garland-enable" type="checkbox" name="garlandEnabled" tabindex="30" /></div>
+                            </div>
+
+                            <div class="pure-g">
+                                <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
+                                <input type="range" min="0" max="255" class="slider pure-u-lg-1-4" name="garlandBrightness">
+                                <span class="slider brightness pure-u-lg-1-4"></span>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+                <!-- endRemoveIf(!garland) -->
 
                 <!-- removeIf(!thermostat) -->
                 <form id="form-thermostat" class="pure-form form-settings">

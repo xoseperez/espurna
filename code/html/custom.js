@@ -2183,6 +2183,13 @@ $(function() {
     $("#uploader").on("change", onFileUpload);
     $(".button-upgrade").on("click", doUpgrade);
 
+    <!-- removeIf(!garland)-->
+    $(".checkbox-garland-enable").on("change", function() {
+        sendAction("garland_switch", {status: $(this).prop("checked") ? 1 : 0});
+        return false;
+    });
+    <!-- endRemoveIf(!garland)-->
+
     <!-- removeIf(!thermostat)-->
     $(".button-thermostat-reset-counters").on('click', doResetThermostatCounters);
     <!-- endRemoveIf(!thermostat)-->

@@ -15,6 +15,7 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include <Adafruit_NeoPixel.h>
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
+const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 
 #define ANIMS                             7 //number of animations
 #define PALS                              7 //number of palettes
@@ -37,6 +38,11 @@ Anim anim = Anim();
 constexpr bool disableAutoChangeEffects = false;
 
 //------------------------------------------------------------------------------
+void garlandDisable() {
+  pixels.clear();
+}
+
+//------------------------------------------------------------------------------
 void garlandEnabled(bool enabled) {
     _garland_enabled = enabled;
 }
@@ -50,6 +56,8 @@ bool garlandEnabled() {
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
+  _garland_enabled     = getSetting(NAME_GARLAND_ENABLED, true);
+  DEBUG_MSG_P(PSTR("[GARLAND] _garland_enabled = %d\n"), _garland_enabled);
 }
 
 //------------------------------------------------------------------------------
@@ -59,6 +67,7 @@ void garlandConfigure() {
 
 //------------------------------------------------------------------------------
 void _garlandReload() {
+  commonSetup();
 }
 
 #if WEB_SUPPORT
@@ -70,25 +79,38 @@ void _garlandWebSocketOnConnected(JsonObject& root) {
 
 //------------------------------------------------------------------------------
 bool _garlandWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return false;
+  if (strncmp(key, NAME_GARLAND_ENABLED,   strlen(NAME_GARLAND_ENABLED))   == 0) return true;
+  return false;
 }
 
 //------------------------------------------------------------------------------
 void _garlandWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+  if (strcmp(action, "garland_switch") == 0) {
+    if (data.containsKey("status") && data.is<int>("status")) {
+      const char* payload = data["status"];
+      if (strlen(payload) == 1) {
+          if (payload[0] == '0') {
+            _garland_enabled = false;
+            pixels.clear();
+            pixels.show();
+          }
+          else if (payload[0] == '1') _garland_enabled = true;
+      }
+    }
+  }
 }
 #endif
 
 //------------------------------------------------------------------------------
 void garlandSetup() {
-  DEBUG_MSG_P(PSTR("garlandSetup\n"));
   garlandConfigure();
 
   // Websockets
   #if WEB_SUPPORT
-      wsRegister()
-          .onConnected(_garlandWebSocketOnConnected)
-          .onKeyCheck(_garlandWebSocketOnKeyCheck)
-          .onAction(_garlandWebSocketOnAction);
+    wsRegister()
+      .onConnected(_garlandWebSocketOnConnected)
+      .onKeyCheck(_garlandWebSocketOnKeyCheck)
+      .onAction(_garlandWebSocketOnAction);
   #endif
 
   espurnaRegisterLoop(garlandLoop);
