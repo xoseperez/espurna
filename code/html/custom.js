@@ -2190,7 +2190,7 @@ $(function() {
     });
 
     $(".slider-garland-brightness").on("change", function() {
-        sendAction("garland_set_brightness", {value: $(this).val()});
+        sendAction("garland_set_brightness", {brightness: $(this)[0].value});
         return false;
     });
     <!-- endRemoveIf(!garland)-->

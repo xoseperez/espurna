@@ -105,8 +105,9 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
   }
 
   if (strcmp(action, NAME_GARLAND_SET_BRIGHTNESS) == 0) {
-    if (data.containsKey("status") && data.is<int>("status")) {
-      byte new_brightness = data["status"];
+    if (data.containsKey("brightness")) {
+      byte new_brightness = data.get<byte>("brightness");
+      DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), new_brightness);
       anim.setBrightness(new_brightness);
     }
   }
@@ -171,7 +172,7 @@ void garlandLoop(void) {
     while (prevPalInd == paletteInd) paletteInd = random(PALS);    
     anim.setPalette(pals[paletteInd]);
 
-    DEBUG_MSG_P(PSTR("Animation: %d, Palette: %d, Period: %d, interval: %d, avg_calc_time: %d, avg_show_time: %d\n"), animInd, paletteInd, period, _interval_effect_update, anim.getAvgCalcTime(), anim.getAvgShowTime());
+    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, anim.getAvgCalcTime(), anim.getAvgShowTime());
     anim.doSetUp();
   }
 }

@@ -29,7 +29,7 @@ void Anim::setPalette(Palette * pal) {
     pinMode(LED_BUILTIN, OUTPUT);
 }
 
-void Anim::setbrightness(byte brightness) {
+void Anim::setBrightness(byte brightness) {
     this->brightness = brightness;
 }
 
