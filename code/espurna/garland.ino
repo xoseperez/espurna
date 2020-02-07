@@ -17,6 +17,9 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
 const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 
+const char* NAME_GARLAND_SWITCH         = "garland_switch";
+const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
+
 #define ANIMS                             7 //number of animations
 #define PALS                              7 //number of palettes
 #define EFFECT_UPDATE_INTERVAL_MIN     5000 // 5 sec
@@ -73,19 +76,21 @@ void _garlandReload() {
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _garlandWebSocketOnConnected(JsonObject& root) {
-  root["garlandEnabled"] = garlandEnabled();
-  root["garlandVisible"] = 1;
+  root[NAME_GARLAND_ENABLED]    = garlandEnabled();
+  root[NAME_GARLAND_BRIGHTNESS] = anim.getBrightness();
+  root["garlandVisible"]        = 1;
 }
 
 //------------------------------------------------------------------------------
 bool _garlandWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
   if (strncmp(key, NAME_GARLAND_ENABLED,   strlen(NAME_GARLAND_ENABLED))   == 0) return true;
+  if (strncmp(key, NAME_GARLAND_BRIGHTNESS,   strlen(NAME_GARLAND_BRIGHTNESS))   == 0) return true;
   return false;
 }
 
 //------------------------------------------------------------------------------
 void _garlandWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-  if (strcmp(action, "garland_switch") == 0) {
+  if (strcmp(action, NAME_GARLAND_SWITCH) == 0) {
     if (data.containsKey("status") && data.is<int>("status")) {
       const char* payload = data["status"];
       if (strlen(payload) == 1) {
@@ -96,6 +101,13 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
           }
           else if (payload[0] == '1') _garland_enabled = true;
       }
+    }
+  }
+
+  if (strcmp(action, NAME_GARLAND_SET_BRIGHTNESS) == 0) {
+    if (data.containsKey("status") && data.is<int>("status")) {
+      byte new_brightness = data["status"];
+      anim.setBrightness(new_brightness);
     }
   }
 }

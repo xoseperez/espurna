@@ -6,7 +6,7 @@
 
 #define PIN 4 // WS2812 pin number
 const int   LEDS                     = GARLAND_LEDS;
-#define BRIGHTNESS 8//256// brightness adjustment, up to 256
+#define DEFAULT_BRIGHTNESS 8//256// brightness adjustment, up to 256
 
 #define TRANSITION_MS 1000 // transition time between animations, ms
 
@@ -43,6 +43,8 @@ private:
     int phase;
     int pos;
     int inc;
+
+    byte brightness = DEFAULT_BRIGHTNESS;
 
     //whether to call SetUp on palette change
     //(some animations require full transition with fade, otherwise the colors would change in a step, some not)
@@ -119,6 +121,8 @@ public:
     Anim();
     void setPeriod(byte period);
     void setPalette(Palette * pal);
+    void setBrightness(byte brightness);
+    byte getBrightness();
     void setAnim(byte animInd);
     bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
     void doSetUp();

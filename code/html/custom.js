@@ -2188,6 +2188,11 @@ $(function() {
         sendAction("garland_switch", {status: $(this).prop("checked") ? 1 : 0});
         return false;
     });
+
+    $(".slider-garland-brightness").on("change", function() {
+        sendAction("garland_set_brightness", {value: $(this).val()});
+        return false;
+    });
     <!-- endRemoveIf(!garland)-->
 
     <!-- removeIf(!thermostat)-->
