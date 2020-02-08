@@ -10,6 +10,7 @@
 
 class URL {
     public:
+        URL();
         URL(const String&);
 
         String protocol;
@@ -18,11 +19,21 @@ class URL {
         uint16_t port;
 
     private:
-        String buffer;
+        void _parse(String);
 };
 
+URL::URL() :
+    protocol(),
+    host(),
+    path(),
+    port(0)
+{}
 
-URL::URL(const String& url) : buffer(url) {
+URL::URL(const String& string) {
+    _parse(string);
+}
+
+void URL::_parse(String buffer) {
 
     // cut the protocol part
     int index = buffer.indexOf("://");
@@ -65,3 +76,4 @@ URL::URL(const String& url) : buffer(url) {
     }
 
 }
+

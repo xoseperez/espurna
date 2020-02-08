@@ -9,15 +9,9 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if THINGSPEAK_SUPPORT
 
 #include "broker.h"
+#include "thingspeak.h"
 #include "libs/URL.h"
-
-#if THINGSPEAK_USE_ASYNC
-#include <ESPAsyncTCP.h>
-#else
-#include <ESP8266WiFi.h>
-#endif
-
-#define THINGSPEAK_DATA_BUFFER_SIZE 256
+#include "libs/AsyncClientHelpers.h"
 
 const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "POST %s HTTP/1.1\r\n"
@@ -37,18 +31,16 @@ bool _tspk_flush = false;
 unsigned long _tspk_last_flush = 0;
 unsigned char _tspk_tries = THINGSPEAK_TRIES;
 
-class AsyncThingspeak : public AsyncClient
-{
-  public:
+#if THINGSPEAK_USE_ASYNC
+class AsyncThingspeak : public AsyncClient {
+    public:
+
     URL address;
     AsyncThingspeak(const String& _url) : address(_url) { };
 };
 
-AsyncThingspeak * _tspk_client;
-
-#if THINGSPEAK_USE_ASYNC
-bool _tspk_connecting = false;
-bool _tspk_connected = false;
+AsyncThingspeak* _tspk_client = nullptr;
+AsyncClientState _tspk_state = AsyncClientState::DISCONNECTED;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -129,8 +121,7 @@ void _tspkInitClient(const String& _url) {
         _tspk_data = "";
         _tspk_client_ts = 0;
         _tspk_last_flush = millis();
-        _tspk_connected = false;
-        _tspk_connecting = false;
+        _tspk_state = AsyncClientState::DISCONNECTED;
         _tspk_client_state = tspk_state_t::NONE;
     }, nullptr);
 
@@ -201,27 +192,26 @@ void _tspkInitClient(const String& _url) {
 
     _tspk_client->onConnect([](void * arg, AsyncClient * client) {
 
-        _tspk_connected = true;
-        _tspk_connecting = false;
-        AsyncThingspeak* _tspk_client = reinterpret_cast<AsyncThingspeak*>(client);
+        _tspk_state = AsyncClientState::CONNECTED;
 
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), _tspk_client->address.host.c_str(), _tspk_client->address.port);
+        AsyncThingspeak* tspk_client = reinterpret_cast<AsyncThingspeak*>(client);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), tspk_client->address.host.c_str(), tspk_client->address.port);
 
         #if THINGSPEAK_USE_SSL
             uint8_t fp[20] = {0};
             sslFingerPrintArray(THINGSPEAK_FINGERPRINT, fp);
-            SSL * ssl = _tspk_client->getSSL();
+            SSL * ssl = tspk_client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
                 DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_client->address.path.c_str(), _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_client->address.path.length() + _tspk_client->address.host.length() + 1];
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), tspk_client->address.path.c_str(), _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + tspk_client->address.path.length() + tspk_client->address.host.length() + 1];
         snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
-            _tspk_client->address.path.c_str(),
-            _tspk_client->address.host.c_str(),
+            tspk_client->address.path.c_str(),
+            tspk_client->address.host.c_str(),
             _tspk_data.length()
         );
 
@@ -234,18 +224,18 @@ void _tspkInitClient(const String& _url) {
 
 void _tspkPost() {
 
-    if (_tspk_connected || _tspk_connecting) return;
+    if (_tspk_state != AsyncClientState::DISCONNECTED) return;
 
     _tspk_client_ts = millis();
+    _tspk_client->address = getSetting("tspkAddress", THINGSPEAK_ADDRESS);
     
     #if THINGSPEAK_USE_SSL
         bool connected = _tspk_client->connect(_tspk_host.c_str(), _tspk_port, THINGSPEAK_USE_SSL);
     #else
-        _tspk_client->address = URL(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
         bool connected = _tspk_client->connect(_tspk_client->address.host.c_str(), _tspk_client->address.port);
     #endif
 
-    _tspk_connecting = connected;
+    _tspk_state = connected ? AsyncClientState::CONNECTING : AsyncClientState::DISCONNECTED;
 
     if (!connected) {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
@@ -333,11 +323,11 @@ void _tspkFlush() {
 
     if (!_tspk_flush) return;
     if (millis() - _tspk_last_flush < THINGSPEAK_MIN_INTERVAL) return;
-    if (_tspk_connected || _tspk_connecting) return;
+    if (_tspk_state != AsyncClientState::DISCONNECTED) return;
 
     _tspk_last_flush = millis();
     _tspk_flush = false;
-    _tspk_data.reserve(THINGSPEAK_DATA_BUFFER_SIZE);
+    _tspk_data.reserve(tspkDataBufferSize);
 
     // Walk the fields, numbered 1...THINGSPEAK_FIELDS
     for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {

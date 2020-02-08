@@ -1421,18 +1421,20 @@
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
 
+#ifndef THINGSPEAK_ADDRESS
 #if THINGSPEAK_USE_SSL
 #define THINGSPEAK_ADDRESS          "https://api.thingspeak.com/update"
 #else
 #define THINGSPEAK_ADDRESS          "http://api.thingspeak.com/update"
 #endif
-
-#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
-#define THINGSPEAK_FIELDS           8               // Number of fields
+#endif // ifndef THINGSPEAK_ADDRESS
 
 #ifndef THINGSPEAK_TRIES
 #define THINGSPEAK_TRIES            3               // Number of tries when sending data (minimum 1)
 #endif
+
+#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
+#define THINGSPEAK_FIELDS           8               // Number of fields
 
 // -----------------------------------------------------------------------------
 // SCHEDULER
