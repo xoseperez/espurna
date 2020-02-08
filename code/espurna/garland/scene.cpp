@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include "color.h"
 #include "palette.h"
-#include "anim.h"
+#include "scene.h"
 #include "brightness.h"
 
 //Adafruit's class to operate strip
@@ -12,16 +12,16 @@ bool calc_or_show = false;
 
 
 
-Anim::Anim() 
+Scene::Scene() 
 {
     nextms = millis();
 }
 
-void Anim::setPeriod(byte period) {
+void Scene::setPeriod(byte period) {
     this->period = period;
 }
 
-void Anim::setPalette(Palette * pal) {
+void Scene::setPalette(Palette * pal) {
     this->palette = pal;
     if (setUpOnPalChange) {
         setUp();
@@ -29,15 +29,15 @@ void Anim::setPalette(Palette * pal) {
     pinMode(LED_BUILTIN, OUTPUT);
 }
 
-void Anim::setBrightness(byte brightness) {
+void Scene::setBrightness(byte brightness) {
     this->brightness = brightness;
 }
 
-byte Anim::getBrightness() {
+byte Scene::getBrightness() {
     return brightness;
 }
 
-bool Anim::run()
+bool Scene::run()
 {    
     if (sum_num != 0 && (millis() - start_time) / sum_num < period) {
         return false;
@@ -48,8 +48,13 @@ bool Anim::run()
     unsigned long iteration_start_time = millis();
     // if (calc_or_show) {
 
-        if (runImpl != NULL) {
-            (this->*runImpl)();
+        // if (runImpl != NULL) {
+        //     (this->*runImpl)();
+        // }
+
+
+        if (_anim) {
+            _anim->Run();
         }
 
         //transition coef, if within 0..1 - transition is active
@@ -89,7 +94,7 @@ bool Anim::run()
     return true;
 }
 
-void Anim::setUp()
+void Scene::setUp()
 {
     transms = millis() + TRANSITION_MS;
 
@@ -101,12 +106,17 @@ void Anim::setUp()
         leds = leds1;
     }
 
-    if (setUpImpl != NULL) {
-        (this->*setUpImpl)();
+    // if (setUpImpl != NULL) {
+    //     (this->*setUpImpl)();
+    // }
+
+    if (_anim) {
+        _anim->Setup();
     }
+
 }
 
-void Anim::doSetUp()
+void Scene::doSetUp()
 {
     start_time = millis();
     sum_calc_time = 0;
@@ -120,55 +130,55 @@ void Anim::doSetUp()
     }
 }
 
-unsigned long Anim::getAvgCalcTime() {
+unsigned long Scene::getAvgCalcTime() {
     return sum_calc_time / calc_num;
 }
 
-unsigned long Anim::getAvgShowTime() {
+unsigned long Scene::getAvgShowTime() {
     return sum_show_time / show_num;
 }
 
-void Anim::setAnim(byte animInd)
+void Scene::setAnim(byte animInd)
 {
     switch (animInd) {
         case 0: 
-            setUpImpl = &Anim::animRun_SetUp;
-            runImpl = &Anim::animRun_Run;
+            setUpImpl = &Scene::animRun_SetUp;
+            runImpl = &Scene::animRun_Run;
             setUpOnPalChange = true;
         break;
         case 1: 
-            setUpImpl = &Anim::animPixieDust_SetUp;
-            runImpl = &Anim::animPixieDust_Run;
+            setUpImpl = &Scene::animPixieDust_SetUp;
+            runImpl = &Scene::animPixieDust_Run;
             setUpOnPalChange = true;
         break;        
         case 2: 
-            setUpImpl = &Anim::animSparkr_SetUp;
-            runImpl = &Anim::animSparkr_Run;
+            setUpImpl = &Scene::animSparkr_SetUp;
+            runImpl = &Scene::animSparkr_Run;
             setUpOnPalChange = true;
         break;        
         case 3: 
-            setUpImpl = &Anim::animRandCyc_SetUp;
-            runImpl = &Anim::animRandCyc_Run;
+            setUpImpl = &Scene::animRandCyc_SetUp;
+            runImpl = &Scene::animRandCyc_Run;
             setUpOnPalChange = true;
         break;   
         case 4: 
-            setUpImpl = &Anim::animStars_SetUp;
-            runImpl = &Anim::animStars_Run;
+            setUpImpl = &Scene::animStars_SetUp;
+            runImpl = &Scene::animStars_Run;
             setUpOnPalChange = false;
         break;    
         case 5: 
-            setUpImpl = &Anim::animSpread_SetUp;
-            runImpl = &Anim::animSpread_Run;
+            setUpImpl = &Scene::animSpread_SetUp;
+            runImpl = &Scene::animSpread_Run;
             setUpOnPalChange = false;
         break;     
         case 6: 
-            setUpImpl = &Anim::animFly_SetUp;
-            runImpl = &Anim::animFly_Run;
+            setUpImpl = &Scene::animFly_SetUp;
+            runImpl = &Scene::animFly_Run;
             setUpOnPalChange = false;
         break;                       
         default:
-            setUpImpl = &Anim::animStart_SetUp;
-            runImpl = &Anim::animStart_Run;
+            setUpImpl = &Scene::animStart_SetUp;
+            runImpl = &Scene::animStart_Run;
             setUpOnPalChange = true;
         break;
     }
@@ -188,7 +198,12 @@ byte rngb() {
 }
 
 
-Color Anim::leds1[LEDS];
-Color Anim::leds2[LEDS];
-Color Anim::ledstmp[LEDS];
-byte Anim::seq[LEDS];
+Color Scene::leds1[LEDS];
+Color Scene::leds2[LEDS];
+Color Scene::ledstmp[LEDS];
+byte Scene::seq[LEDS];
+
+Scene::Anim::Anim(String name, Scene& scene)
+    : _name(name)
+    , _scene(scene) {
+} 

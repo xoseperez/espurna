@@ -1,9 +1,9 @@
-#include "anim.h"
+#include "scene.h"
 #include "color.h"
 #include "palette.h"
 
 #define DUST_LENGTH 20
-void Anim::animPixieDust_SetUp() {
+void Scene::animPixieDust_SetUp() {
     phase = 0;
     curColor = palette->getPalColor((float)rng()/256);
     prevColor = palette->getPalColor((float)rng()/256);
@@ -16,7 +16,7 @@ void Anim::animPixieDust_SetUp() {
     glowSetUp();
 }
 
-void Anim::animPixieDust_Run() {
+void Scene::animPixieDust_Run() {
 
     if (inc > 0) {
         for (int i=0;i<LEDS;i++) {

@@ -1,12 +1,12 @@
-#include "anim.h"
+#include "scene.h"
 
-void Anim::animRandCyc_SetUp() {
+void Scene::animRandCyc_SetUp() {
     for (int i=0;i<LEDS;i++) {
         seq[i] = rngb();
     }
 }
 
-void Anim::animRandCyc_Run() {
+void Scene::animRandCyc_Run() {
     for (int i=0;i<LEDS;i++) {
         leds[i] = palette->getPalColor((float)seq[i] / 256);
         seq[i]+=rngb() >> 6;

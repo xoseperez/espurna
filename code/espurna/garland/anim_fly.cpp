@@ -1,9 +1,9 @@
-#include "anim.h"
+#include "scene.h"
 #include "color.h"
 #include "palette.h"
 
 
-void Anim::animFly_SetUp() {
+void Scene::animFly_SetUp() {
     //length of particle tail
     pos = random(2, 15);
     //probability of the tail
@@ -14,7 +14,7 @@ void Anim::animFly_SetUp() {
     phase = 0;
 }
 
-void Anim::animFly_Run() {
+void Scene::animFly_Run() {
     
     byte launchpos;
     if (inc > 0) {

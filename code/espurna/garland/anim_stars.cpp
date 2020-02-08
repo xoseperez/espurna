@@ -1,11 +1,11 @@
-#include "anim.h"
+#include "scene.h"
 #include "color.h"
 #include "palette.h"
 
 //seq keeps phases: 0..127 increasing, 128..255 decreasing, ends at 255 (steady off)
 //ledstmp keeps color of stars
 
-void Anim::animStars_SetUp() {
+void Scene::animStars_SetUp() {
     //inc is (average) interval between appearance of new stars
     inc = random (2, 5);
 
@@ -13,7 +13,7 @@ void Anim::animStars_SetUp() {
     memset(seq, 255, LEDS); 
 }
 
-void Anim::animStars_Run() {   
+void Scene::animStars_Run() {   
     for (byte i=0;i<LEDS;i++) {
         byte phi = seq[i];
         if (phi < 254) {

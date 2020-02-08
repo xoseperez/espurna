@@ -1,7 +1,6 @@
 #ifndef color_h
 #define color_h
 #include <Arduino.h>
-#include "debug.h"
 
 struct Color
 {

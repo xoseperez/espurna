@@ -1,6 +1,6 @@
-#include "anim.h"
+#include "scene.h"
 
-void Anim::glowSetUp()
+void Scene::glowSetUp()
 {
     braPhaseSpd = random(4,13);
     if (braPhaseSpd > 8) {
@@ -9,14 +9,14 @@ void Anim::glowSetUp()
     braFreq = random(20,60);
 }
 
-void Anim::glowForEachLed(int i)
+void Scene::glowForEachLed(int i)
 {
     int8 bra = braPhase + i * braFreq;
     bra = BRA_OFFSET + (abs(bra) >> BRA_AMP_SHIFT);
     leds[i] = leds[i].brightness(bra);
 }
 
-void Anim::glowRun()
+void Scene::glowRun()
 {
     braPhase += braPhaseSpd;
 }

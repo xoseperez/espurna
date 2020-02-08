@@ -1,15 +1,15 @@
-#include "anim.h"
+#include "scene.h"
 #include "color.h"
 #include "palette.h"
 
 #define SPREAD_MAX_WIDTH 20
 
-void Anim::animSpread_SetUp() {
+void Scene::animSpread_SetUp() {
     inc = random(2,8);
     memset(seq, 0, LEDS);
 }
 
-void Anim::animSpread_Run() {
+void Scene::animSpread_Run() {
     memset(leds, 0, 3*LEDS);
 
     for (int i=0;i<LEDS;i++) {

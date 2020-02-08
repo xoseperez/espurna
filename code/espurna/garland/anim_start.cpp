@@ -1,10 +1,10 @@
-#include "anim.h"
+#include "scene.h"
 
-void Anim::animStart_SetUp() {
+void Scene::animStart_SetUp() {
     phase = 0;
 }
 
-void Anim::animStart_Run() {
+void Scene::animStart_Run() {
     if (phase < LEDS) {
         leds[phase].r = 255;
         leds[phase].g = 255;

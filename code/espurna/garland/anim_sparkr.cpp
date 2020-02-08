@@ -1,4 +1,4 @@
-#include "anim.h"
+#include "scene.h"
 
 void AnimSparkr_initSeq(byte * seq)
 {
@@ -20,7 +20,7 @@ void AnimSparkr_shuffleSeq(byte * seq)
  
 }
 
-void Anim::animSparkr_SetUp() {
+void Scene::animSparkr_SetUp() {
     glowSetUp();
     phase = 0;
     curColor = palette->getPalColor((float)rngb()/256);
@@ -31,7 +31,7 @@ void Anim::animSparkr_SetUp() {
 
 }
 
-void Anim::animSparkr_Run() {
+void Scene::animSparkr_Run() {
     for (int i=0;i<LEDS;i++) {
         byte pos = seq[i];
 

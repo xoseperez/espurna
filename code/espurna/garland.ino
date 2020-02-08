@@ -9,9 +9,10 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include "config\general.h"
 #if GARLAND_SUPPORT
 
-#include "garland\anim.h"
+#include "garland\scene.h"
 #include "garland\color.h"
 #include "garland\palette.h"
+#include "garland\anim_run2.h"
 #include <Adafruit_NeoPixel.h>
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
@@ -35,8 +36,8 @@ extern Adafruit_NeoPixel pixels;
 
 Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};
 
-Anim anim = Anim();
-
+Scene scene = Scene();
+AnimRun anim_run(scene);
 
 constexpr bool disableAutoChangeEffects = false;
 
@@ -77,7 +78,7 @@ void _garlandReload() {
 //------------------------------------------------------------------------------
 void _garlandWebSocketOnConnected(JsonObject& root) {
   root[NAME_GARLAND_ENABLED]    = garlandEnabled();
-  root[NAME_GARLAND_BRIGHTNESS] = anim.getBrightness();
+  root[NAME_GARLAND_BRIGHTNESS] = scene.getBrightness();
   root["garlandVisible"]        = 1;
 }
 
@@ -108,7 +109,7 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
     if (data.containsKey("brightness")) {
       byte new_brightness = data.get<byte>("brightness");
       DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), new_brightness);
-      anim.setBrightness(new_brightness);
+      scene.setBrightness(new_brightness);
     }
   }
 }
@@ -132,10 +133,11 @@ void garlandSetup() {
   pixels.begin();
   randomSeed(analogRead(0)*analogRead(1));
   paletteInd = random(PALS);
-  anim.setAnim(animInd);
-  anim.setPeriod(6);
-  anim.setPalette(pals[0]);
-  anim.doSetUp();
+  scene.setAnim(animInd);
+  scene.setAnim(&anim_run);
+  scene.setPeriod(6);
+  scene.setPalette(pals[0]);
+  scene.doSetUp();
 
   _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
@@ -149,7 +151,7 @@ void garlandLoop(void) {
     return;
 
 
-  if (anim.run()) {
+  if (scene.run()) {
   }
 
   if (millis() - _last_update > _interval_effect_update) {
@@ -159,17 +161,17 @@ void garlandLoop(void) {
     int prevAnimInd = animInd;
     while (prevAnimInd == animInd) animInd = random(ANIMS);
 
-    anim.setAnim(animInd);
+    scene.setAnim(animInd);
 
     byte period = random(5, 30);
-    anim.setPeriod(period);
+    scene.setPeriod(period);
 
     int prevPalInd = paletteInd;
     while (prevPalInd == paletteInd) paletteInd = random(PALS);    
-    anim.setPalette(pals[paletteInd]);
+    scene.setPalette(pals[paletteInd]);
 
-    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, anim.getAvgCalcTime(), anim.getAvgShowTime());
-    anim.doSetUp();
+    DEBUG_MSG_P(PSTR("[GARLAND] Scene: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
+    scene.doSetUp();
   }
 }
 

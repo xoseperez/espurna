@@ -18,7 +18,38 @@ const int   LEDS                     = GARLAND_LEDS;
 //probability of spark when in idle plase
 #define SPARK_PROB 3
 
-class Anim {
+class Scene {
+public:
+    Scene();
+
+    class Anim {
+    public:
+        String getName();
+        Anim(String name, Scene& scene);
+        virtual void Setup() = 0;
+        virtual void Run() = 0;
+    protected:
+        int phase;
+        int pos;
+        int inc;
+        Scene& _scene;
+    private:
+        const String _name;
+    };
+
+    friend class Anim;
+    friend class AnimRun;
+
+    void setAnim(Anim* anim) { _anim = anim; }
+    void setPeriod(byte period);
+    void setPalette(Palette * pal);
+    void setBrightness(byte brightness);
+    byte getBrightness();
+    void setAnim(byte animInd);
+    bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
+    void doSetUp();
+    unsigned long getAvgCalcTime();
+    unsigned long getAvgShowTime();
     
 private:
     //Color arrays - two for making transition
@@ -69,6 +100,8 @@ private:
     unsigned int calc_num = 0;
     unsigned int show_num = 0;
 
+    Anim* _anim = nullptr;
+
     //glow animation setup
     void glowSetUp();
 
@@ -83,8 +116,8 @@ private:
     void setUp();
 
     //run and setup handlers
-    void (Anim::*runImpl)();
-    void (Anim::*setUpImpl)();
+    void (Scene::*runImpl)();
+    void (Scene::*setUpImpl)();
 
 
     //animation implementations
@@ -111,19 +144,6 @@ private:
 
     void animFly_SetUp();
     void animFly_Run();
-
-public:
-    Anim();
-    void setPeriod(byte period);
-    void setPalette(Palette * pal);
-    void setBrightness(byte brightness);
-    byte getBrightness();
-    void setAnim(byte animInd);
-    bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
-    void doSetUp();
-    unsigned long getAvgCalcTime();
-    unsigned long getAvgShowTime();
-
 };
 
 unsigned int rng();
