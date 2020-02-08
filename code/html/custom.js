@@ -12,6 +12,7 @@ var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
 var configurationSaved = false;
+var ws_pingpong;
 
 var useWhite = false;
 var useCCT = false;
@@ -2136,6 +2137,16 @@ function connectToURL(url) {
                 processData(data);
             }
         };
+        websock.onclose = function(evt) {
+            clearInterval(ws_pingpong);
+            if (window.confirm("Connection lost with the device, click OK to refresh the page")) {
+                $("#layout").toggle(false);
+                window.location.reload();
+            }
+        }
+        websock.onopen = function(evt) {
+            ws_pingpong = setInterval(function() { sendAction("ping", {}); }, 5000);
+        }
     }).catch(function(error) {
         console.log(error);
         doReload(5000);

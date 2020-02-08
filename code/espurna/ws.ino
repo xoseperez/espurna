@@ -231,6 +231,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     const char* action = root["action"];
     if (action) {
 
+        if (strcmp(action, "ping") == 0) {
+            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            return;
+        }
+
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
