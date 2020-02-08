@@ -159,10 +159,6 @@ void garlandLoop(void) {
     int prevAnimInd = animInd;
     while (prevAnimInd == animInd) animInd = random(ANIMS);
 
-    // animInd++;
-    // if (animInd == ANIMS)
-    //  animInd = 0;
-
     anim.setAnim(animInd);
 
     byte period = random(5, 30);

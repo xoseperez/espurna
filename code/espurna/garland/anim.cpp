@@ -39,17 +39,6 @@ byte Anim::getBrightness() {
 
 bool Anim::run()
 {    
-    // if ( millis()<=nextms) {
-    //     digitalWrite(LED_BUILTIN, LOW);
-    //     return false;
-    // }
-    // digitalWrite(LED_BUILTIN, HIGH);
-    // nextms=millis() + period;
-    
-    // if (++skip_count > 3) {
-    //     skip_count = 0;
-    //     return false;
-    // }
     if (sum_num != 0 && (millis() - start_time) / sum_num < period) {
         return false;
     }
@@ -57,7 +46,7 @@ bool Anim::run()
     ++sum_num;
 
     unsigned long iteration_start_time = millis();
-    if (calc_or_show) {
+    // if (calc_or_show) {
 
         if (runImpl != NULL) {
             (this->*runImpl)();
@@ -72,7 +61,6 @@ bool Anim::run()
             for(int i=0; i<LEDS; i++) {
                 //transition is in progress
                 Color c = leds[i].interpolate(leds_prev[i], transc);
-                //pixels.setPixelColor(i, pixels.Color(c.r, c.g, c.b));
                 byte r = (int)pgm_read_byte_near(BRI + c.r) * brightness / 256;
                 byte g = (int)pgm_read_byte_near(BRI + c.g) * brightness / 256;
                 byte b = (int)pgm_read_byte_near(BRI + c.b) * brightness / 256;
@@ -81,7 +69,6 @@ bool Anim::run()
         } else {
             for(int i=0; i<LEDS; i++) {
                 //regular operation
-                //pixels.setPixelColor(i, pixels.Color(leds[i].r, leds[i].g, leds[i].b));
                 byte r = (int)pgm_read_byte_near(BRI + leds[i].r) * brightness / 256;
                 byte g = (int)pgm_read_byte_near(BRI + leds[i].g) * brightness / 256;
                 byte b = (int)pgm_read_byte_near(BRI + leds[i].b) * brightness / 256;
@@ -91,11 +78,11 @@ bool Anim::run()
 
         ++calc_num;
         sum_calc_time += (millis() - iteration_start_time);
-    } else {
+    // } else {
         pixels.show();
         ++show_num;
         sum_show_time += (millis() - iteration_start_time);
-    }
+    // }
 
     calc_or_show = !calc_or_show;
 
@@ -104,7 +91,6 @@ bool Anim::run()
 
 void Anim::setUp()
 {
-   //pinMode(LED_BUILTIN, OUTPUT);  
     transms = millis() + TRANSITION_MS;
 
     //switch operation buffers (for transition to operate)
@@ -180,11 +166,6 @@ void Anim::setAnim(byte animInd)
             runImpl = &Anim::animFly_Run;
             setUpOnPalChange = false;
         break;                       
-        // case 7: //special
-        //     setUpImpl = &Anim::animBT_SetUp;
-        //     runImpl = &Anim::animBT_Run;
-        //     setUpOnPalChange = false;
-        // break;
         default:
             setUpImpl = &Anim::animStart_SetUp;
             runImpl = &Anim::animStart_Run;

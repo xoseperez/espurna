@@ -27,8 +27,6 @@ private:
     //auxiliary colors array
     static Color ledstmp[LEDS];
 
-    void animStart();
-    
     // length of animation timeslot (period)
     byte period;
     // array of Color to work with
@@ -113,9 +111,6 @@ private:
 
     void animFly_SetUp();
     void animFly_Run();
-
-    // void animBT_SetUp();
-    // void animBT_Run();
 
 public:
     Anim();
