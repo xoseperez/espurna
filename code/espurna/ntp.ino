@@ -2,28 +2,144 @@
 
 NTP MODULE
 
-Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Based on esp8266 / esp32 configTime and C date and time functions:
+- https://github.com/esp8266/Arduino/blob/master/libraries/esp8266/examples/NTP-TZ-DST/NTP-TZ-DST.ino
+- https://www.nongnu.org/lwip/2_1_x/group__sntp.html
+- man 3 ctime
+
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#if NTP_SUPPORT
+#if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
 
-#include <TimeLib.h>
-#include <WiFiClient.h>
+#include <Arduino.h>
+#include <coredecls.h>
 #include <Ticker.h>
 
-#include "libs/NtpClientWrap.h"
+static_assert(
+    (SNTP_SERVER_DNS == 1),
+    "lwip must be configured with SNTP_SERVER_DNS"
+);
+
+#include "config/buildtime.h"
+#include "debug.h"
 #include "broker.h"
 #include "ws.h"
+#include "ntp.h"
 
-Ticker _ntp_defer;
+// Arduino/esp8266 lwip2 custom functions that can be redefined
+// Must return time in milliseconds, legacy settings are in seconds.
 
-bool _ntp_report = false;
-bool _ntp_configure = false;
-bool _ntp_want_sync = false;
+String _ntp_server;
 
-// -----------------------------------------------------------------------------
-// NTP
+uint32_t _ntp_startup_delay = (NTP_START_DELAY * 1000);
+uint32_t _ntp_update_delay = (NTP_UPDATE_INTERVAL * 1000);
+
+uint32_t sntp_startup_delay_MS_rfc_not_less_than_60000() {
+    return _ntp_startup_delay;
+}
+
+uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
+    return _ntp_update_delay;
+}
+
+// We also must shim TimeLib functions until everything else is ported.
+// We can't sometimes avoid TimeLib as dependancy though, which would be really bad
+
+static Ticker _ntp_broker_timer;
+static bool _ntp_synced = false;
+
+static time_t _ntp_last = 0;
+static time_t _ntp_ts = 0;
+
+static tm _ntp_tm_local;
+static tm _ntp_tm_utc;
+
+void _ntpTmCache(time_t ts) {
+    if (_ntp_ts != ts) {
+        _ntp_ts = ts;
+        localtime_r(&_ntp_ts, &_ntp_tm_local);
+        gmtime_r(&_ntp_ts, &_ntp_tm_utc);
+    }
+}
+
+int hour(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_hour;
+}
+
+int minute(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_min;
+}
+
+int second(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_sec;
+}
+
+int day(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_mday;
+}
+
+// `tm.tm_wday` range is 0..6, TimeLib is 1..7
+int weekday(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_wday + 1;
+}
+
+// `tm.tm_mon` range is 0..11, TimeLib range is 1..12
+int month(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_mon + 1;
+}
+
+int year(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_local.tm_year + 1900;
+}
+
+int utc_hour(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_hour;
+}
+
+int utc_minute(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_min;
+}
+
+int utc_second(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_sec;
+}
+
+int utc_day(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_mday;
+}
+
+int utc_weekday(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_wday + 1;
+}
+
+int utc_month(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_mon + 1;
+}
+
+int utc_year(time_t ts) {
+    _ntpTmCache(ts);
+    return _ntp_tm_utc.tm_year + 1900;
+}
+
+time_t now() {
+    return time(nullptr);
+}
+
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
@@ -34,232 +150,223 @@ bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ntpWebSocketOnVisible(JsonObject& root) {
     root["ntpVisible"] = 1;
+    root["ntplwipVisible"] = 1;
 }
 
 void _ntpWebSocketOnData(JsonObject& root) {
-    root["ntpStatus"] = (timeStatus() == timeSet);
+    root["ntpStatus"] = ntpSynced();
 }
 
 void _ntpWebSocketOnConnected(JsonObject& root) {
-    root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
-    root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET);
-    root["ntpDST"] = getSetting("ntpDST", 1 == NTP_DAY_LIGHT);
-    root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION);
+    root["ntpServer"] = getSetting("ntpServer", F(NTP_SERVER));
+    root["ntpTZ"] = getSetting("ntpTZ", NTP_TIMEZONE);
 }
 
 #endif
 
-time_t _ntpSyncProvider() {
-    _ntp_want_sync = true;
-    return 0;
-}
+// TODO: mention possibility of multiple servers
+String _ntpGetServer() {
+    String server;
 
-void _ntpWantSync() {
-    _ntp_want_sync = true;
-}
-
-// Randomized in time to avoid clogging the server with simultaious requests from multiple devices
-// (for example, when multiple devices start up at the same time)
-int inline _ntpSyncInterval() {
-    return secureRandom(NTP_SYNC_INTERVAL, NTP_SYNC_INTERVAL * 2);
-}
-
-int inline _ntpUpdateInterval() {
-    return secureRandom(NTP_UPDATE_INTERVAL, NTP_UPDATE_INTERVAL * 2);
-}
-
-void _ntpStart() {
-
-    _ntpConfigure();
-
-    // short (initial) and long (after sync) intervals
-    NTPw.setInterval(_ntpSyncInterval(), _ntpUpdateInterval());
-    DEBUG_MSG_P(PSTR("[NTP] Update intervals: %us / %us\n"),
-        NTPw.getShortInterval(), NTPw.getLongInterval());
-
-    // setSyncProvider will immediatly call given function by setting next sync time to the current time.
-    // Avoid triggering sync immediatly by canceling sync provider flag and resetting sync interval again
-    setSyncProvider(_ntpSyncProvider);
-    _ntp_want_sync = false;
-
-    setSyncInterval(NTPw.getShortInterval());
-
-}
-
-void _ntpConfigure() {
-
-    _ntp_configure = false;
-
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET);
-    int sign = offset > 0 ? 1 : -1;
-    offset = abs(offset);
-    int tz_hours = sign * (offset / 60);
-    int tz_minutes = sign * (offset % 60);
-    if (NTPw.getTimeZone() != tz_hours || NTPw.getTimeZoneMinutes() != tz_minutes) {
-        NTPw.setTimeZone(tz_hours, tz_minutes);
-        _ntp_report = true;
+    server = sntp_getservername(0);
+    if (!server.length()) {
+        server = IPAddress(sntp_getserver(0)).toString();
     }
 
-    const bool daylight = getSetting("ntpDST", 1 == NTP_DAY_LIGHT);
-    if (NTPw.getDayLight() != daylight) {
-        NTPw.setDayLight(daylight);
-        _ntp_report = true;
-    }
-
-    String server = getSetting("ntpServer", NTP_SERVER);
-    if (!NTPw.getNtpServerName().equals(server)) {
-        NTPw.setNtpServerName(server);
-    }
-
-    uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION);
-    NTPw.setDSTZone(dst_region);
-
-    // Some remote servers can be slow to respond, increase accordingly
-    // TODO does this need upper constrain?
-    NTPw.setNTPTimeout(getSetting("ntpTimeout", NTP_TIMEOUT));
-
+    return server;
 }
 
 void _ntpReport() {
-
-    _ntp_report = false;
-
-    #if DEBUG_SUPPORT
-    if (ntpSynced()) {
-        time_t t = now();
-        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), ntpDateTime(ntpLocal2UTC(t)).c_str());
-        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), ntpDateTime(t).c_str());
-    }
-    #endif
-
-}
-
-#if BROKER_SUPPORT
-
-void inline _ntpBroker() {
-    static unsigned char last_minute = 60;
-    if (ntpSynced() && (minute() != last_minute)) {
-        last_minute = minute();
-        TimeBroker::Publish(MQTT_TOPIC_DATETIME, now(), ntpDateTime());
-    }
-}
-
-#endif
-
-void _ntpLoop() {
-
-    // Disable ntp sync when softAP is active. This will not crash, but instead spam debug-log with pointless sync failures.
-    if (!wifiConnected()) return;
-
-    if (_ntp_configure) _ntpConfigure();
-
-    // NTPClientLib will trigger callback with sync status
-    // see: NTPw.onNTPSyncEvent([](NTPSyncEvent_t error){ ... }) below
-    if (_ntp_want_sync) {
-        _ntp_want_sync = false;
-        NTPw.getTime();
+    if (!ntpSynced()) {
+        DEBUG_MSG_P(PSTR("[NTP] Not synced\n")); 
+        return;
     }
 
-    // Print current time whenever configuration changes or after successful sync
-    if (_ntp_report) _ntpReport();
+    tm utc_tm;
+    tm sync_tm;
 
-    #if BROKER_SUPPORT
-        _ntpBroker();
-    #endif
+    auto ts = now();
+    gmtime_r(&ts, &utc_tm);
+    gmtime_r(&_ntp_last, &sync_tm);
 
+    DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntp_server.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), ntpDateTime(&sync_tm).c_str());
+    DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), ntpDateTime(&utc_tm).c_str());
+
+    const char* cfg_tz = getenv("TZ");
+    if ((cfg_tz != nullptr) && (strcmp(cfg_tz, "UTC0") != 0)) {
+        tm local_tm;
+        localtime_r(&ts, &local_tm);
+        DEBUG_MSG_P(PSTR("[NTP] Local Time : %s (%s)\n"),
+            ntpDateTime(&local_tm).c_str(), cfg_tz
+        );
+    }
 }
 
-// TODO: remove me!
-void _ntpBackwards() {
-    moveSetting("ntpServer1", "ntpServer");
-    delSetting("ntpServer2");
-    delSetting("ntpServer3");
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET);
-    if (-30 < offset && offset < 30) {
-        offset *= 60;
-        setSetting("ntpOffset", offset);
+void _ntpConfigure() {
+    // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
+    const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
+    const char* active_tz = getenv("TZ");
+    if (cfg_tz != active_tz) {
+        setenv("TZ", cfg_tz.c_str(), 1);
+        tzset();
+    }
+    
+    const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
+    const auto active_server = _ntpGetServer();
+    if (cfg_tz != active_tz) {
+        _ntp_server = cfg_server;
+        configTime(cfg_tz.c_str(), _ntp_server.c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
 
 // -----------------------------------------------------------------------------
 
 bool ntpSynced() {
-    #if NTP_WAIT_FOR_SYNC
-        // Has synced at least once
-        return (NTPw.getFirstSync() > 0);
-    #else
-        // TODO: runtime setting?
-        return true;
-    #endif
+    return _ntp_synced;
 }
 
-String ntpDateTime(time_t t) {
+String ntpDateTime(tm* timestruct) {
     char buffer[20];
     snprintf_P(buffer, sizeof(buffer),
         PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        year(t), month(t), day(t), hour(t), minute(t), second(t)
+        timestruct->tm_year + 1900,
+        timestruct->tm_mon + 1,
+        timestruct->tm_mday,
+        timestruct->tm_hour,
+        timestruct->tm_min,
+        timestruct->tm_sec
     );
     return String(buffer);
 }
 
+String ntpDateTime(time_t ts) {
+    tm timestruct;
+    localtime_r(&ts, &timestruct);
+    return ntpDateTime(&timestruct);
+}
+
 String ntpDateTime() {
-    if (ntpSynced()) return ntpDateTime(now());
+    if (ntpSynced()) {
+        return ntpDateTime(now());
+    }
     return String();
 }
 
-// XXX: returns garbage during DST switch
-time_t ntpLocal2UTC(time_t local) {
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET);
-    if (NTPw.isSummerTime()) offset += 60;
-    return local - offset * 60;
+// -----------------------------------------------------------------------------
+
+#if BROKER_SUPPORT
+
+// XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
+void _ntpBrokerSchedule(int offset) {
+    _ntp_broker_timer.once_scheduled(offset ?: 1, _ntpBrokerCallback);
+}
+
+void _ntpBrokerCallback() {
+
+    if (!ntpSynced()) {
+        _ntpBrokerSchedule(60);
+        return;
+    }
+
+    const auto ts = now();
+
+    // current  time and formatter string is in local TZ
+    tm local_tm;
+    localtime_r(&ts, &local_tm);
+
+    int now_hour = local_tm.tm_hour;
+    int now_minute = local_tm.tm_min;
+
+    static int last_hour = -1;
+    static int last_minute = -1;
+
+    String datetime;
+    if ((last_minute != now_minute) || (last_hour != now_hour)) {
+        datetime = ntpDateTime(&local_tm);
+    }
+
+    // notify subscribers about each tick interval (note that both can happen simultaneously)
+    if (last_hour != now_hour) {
+        last_hour = now_hour;
+        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
+    }
+
+    if (last_minute != now_minute) {
+        last_minute = now_minute;
+        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
+    }
+
+    // try to autocorrect each invocation
+    _ntpBrokerSchedule(60 - local_tm.tm_sec);
+
+}
+
+#endif
+
+void _ntpSetTimeOfDayCallback() {
+    _ntp_synced = true;
+    _ntp_last = time(nullptr);
+    #if BROKER_SUPPORT
+    static bool once = true;
+    if (once) {
+        schedule_function(_ntpBrokerCallback);
+        once = false;
+    }
+    #endif
+    #if WEB_SUPPORT
+        wsPost(_ntpWebSocketOnData);
+    #endif
+    schedule_function(_ntpReport);
+}
+
+void _ntpSetTimestamp(time_t ts) {
+    timeval tv { ts, 0 };
+    timezone tz { 0, 0 };
+    settimeofday(&tv, &tz);
 }
 
 // -----------------------------------------------------------------------------
 
 void ntpSetup() {
 
-    _ntpBackwards();
+    // Randomized in time to avoid clogging the server with simultaneous requests from multiple devices
+    // (for example, when multiple devices start up at the same time)
+    const uint32_t startup_delay = getSetting("ntpStartDelay", NTP_START_DELAY);
+    const uint32_t update_delay = getSetting("ntpUpdateIntvl", NTP_UPDATE_INTERVAL);
 
-    #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("NTP"), [](Embedis* e) {
-            if (ntpSynced()) {
-                _ntpReport();
-                terminalOK();
-            } else {
-                DEBUG_MSG_P(PSTR("[NTP] Not synced\n"));
-            }
-        });
+    _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
+    _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
+    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %us, Update delay: %us\n"),
+        _ntp_startup_delay, _ntp_update_delay
+    );
 
-        terminalRegisterCommand(F("NTP.SYNC"), [](Embedis* e) {
-            _ntpWantSync();
-            terminalOK();
-        });
-    #endif
+    _ntp_startup_delay = _ntp_startup_delay * 1000;
+    _ntp_update_delay = _ntp_update_delay * 1000;
 
-    NTPw.onNTPSyncEvent([](NTPSyncEvent_t error) {
-        if (error) {
-            if (error == noResponse) {
-                DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable\n"));
-            } else if (error == invalidAddress) {
-                DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
-            }
-            #if WEB_SUPPORT
-                wsPost(_ntpWebSocketOnData);
-            #endif
-        } else {
-            _ntp_report = true;
-            setTime(NTPw.getLastNTPSync());
+    // start up with some reasonable timestamp already available
+    _ntpSetTimestamp(__UNIX_TIMESTAMP__);
+
+    // will be called every time after ntp syncs AND loop() finishes
+    settimeofday_cb(_ntpSetTimeOfDayCallback);
+
+    // generic configuration, always handled
+    espurnaRegisterReload(_ntpConfigure);
+    _ntpConfigure();
+
+    // make sure our logic does know about the actual server
+    // in case dhcp sends out ntp settings
+    static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP) {
+        const auto server = _ntpGetServer();
+        if (sntp_enabled() && (!_ntp_server.length() || (server != _ntp_server))) {
+            DEBUG_MSG_P(PSTR("[NTP] Updating `ntpServer` setting from DHCP: %s\n"), server.c_str());
+            _ntp_server = server;
+            setSetting("ntpServer", server);
         }
     });
 
-    wifiRegister([](justwifi_messages_t code, char * parameter) {
-        if (code == MESSAGE_CONNECTED) {
-            if (!ntpSynced()) {
-                _ntp_defer.once_ms(secureRandom(NTP_START_DELAY, NTP_START_DELAY * 15), _ntpWantSync);
-            }
-        }
-    });
-
+    // optional functionality
     #if WEB_SUPPORT
         wsRegister()
             .onVisible(_ntpWebSocketOnVisible)
@@ -268,13 +375,24 @@ void ntpSetup() {
             .onKeyCheck(_ntpWebSocketOnKeyCheck);
     #endif
 
-    // Main callbacks
-    espurnaRegisterLoop(_ntpLoop);
-    espurnaRegisterReload([]() { _ntp_configure = true; });
+    #if TERMINAL_SUPPORT
+        terminalRegisterCommand(F("NTP"), [](Embedis* e) {
+            _ntpReport();
+            terminalOK();
+        });
 
-    // Sets up NTP instance, installs ours sync provider
-    _ntpStart();
+        terminalRegisterCommand(F("NTP.SETTIME"), [](Embedis* e) {
+            if (e->argc != 2) return;
+            _ntp_synced = true;
+            _ntpSetTimestamp(String(e->argv[1]).toInt());
+            terminalOK();
+        });
+
+        // TODO:
+        // terminalRegisterCommand(F("NTP.SYNC"), [](Embedis* e) { ... }
+        //
+    #endif
 
 }
 
-#endif // NTP_SUPPORT
+#endif // NTP_SUPPORT && !NTP_LEGACY_SUPPORT

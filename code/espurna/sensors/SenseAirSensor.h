@@ -8,10 +8,11 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <SoftwareSerial.h>
+
 #include "BaseSensor.h"
 
-#include <SoftwareSerial.h>
 
 // SenseAir sensor utils
 class SenseAir

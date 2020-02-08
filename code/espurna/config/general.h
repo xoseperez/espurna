@@ -1,7 +1,9 @@
-// // //------------------------------------------------------------------------------
-// Do not change this file unless you know what you are doing
-// Configuration settings are in the settings.h file
 //------------------------------------------------------------------------------
+// Do not change this file unless you know what you are doing
+// To override user configuration, please see custom.h
+//------------------------------------------------------------------------------
+
+#pragma once
 
 //------------------------------------------------------------------------------
 // GENERAL
@@ -1419,14 +1421,11 @@
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
 
-#define THINGSPEAK_HOST             "api.thingspeak.com"
 #if THINGSPEAK_USE_SSL
-#define THINGSPEAK_PORT             443
+#define THINGSPEAK_ADDRESS          "https://api.thingspeak.com/update"
 #else
-#define THINGSPEAK_PORT             80
+#define THINGSPEAK_ADDRESS          "http://api.thingspeak.com/update"
 #endif
-
-#define THINGSPEAK_URL              "/update"
 
 #define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
 #define THINGSPEAK_FIELDS           8               // Number of fields
@@ -1476,12 +1475,37 @@
 // -----------------------------------------------------------------------------
 
 #ifndef NTP_SUPPORT
-#define NTP_SUPPORT                 1               // Build with NTP support by default (6.78Kb)
+#define NTP_SUPPORT                 1               // Build with NTP support by default (depends on Core version)
 #endif
 
 #ifndef NTP_SERVER
 #define NTP_SERVER                  "pool.ntp.org"  // Default NTP server
 #endif
+
+#ifndef NTP_TIMEZONE
+#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable. Default to UTC from TZ.h (which is PSTR("UTC0"))
+                                                    // For the format documentation, see:
+                                                    // - https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+                                                    // ESP8266 Core provides human-readable aliases for POSIX format, see:
+                                                    // - Latest: https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h
+                                                    // - PlatformIO: ~/.platformio/packages/framework-arduinoespressif8266/cores/esp8266/TZ.h
+                                                    //   (or, possibly, c:\.platformio\... on Windows)
+                                                    // - Arduino IDE: depends on platform, see `/dist/arduino_ide/README.md`
+#endif
+
+#ifndef NTP_UPDATE_INTERVAL
+#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
+#endif
+
+#ifndef NTP_START_DELAY
+#define NTP_START_DELAY             3               // Delay NTP start for 3 seconds
+#endif
+
+#ifndef NTP_WAIT_FOR_SYNC
+#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
+#endif
+
+// WARNING: legacy NTP settings. can be ignored with Core 2.6.2+
 
 #ifndef NTP_TIMEOUT
 #define NTP_TIMEOUT                 1000            // Set NTP request timeout to 2 seconds (issue #452)
@@ -1499,20 +1523,8 @@
 #define NTP_SYNC_INTERVAL           60              // NTP initial check every minute
 #endif
 
-#ifndef NTP_UPDATE_INTERVAL
-#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
-#endif
-
-#ifndef NTP_START_DELAY
-#define NTP_START_DELAY             1000            // Delay NTP start 1 second
-#endif
-
 #ifndef NTP_DST_REGION
 #define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
-#endif
-
-#ifndef NTP_WAIT_FOR_SYNC
-#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1926,3 +1938,20 @@
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
 #endif
+
+// =============================================================================
+// Configuration helpers
+// =============================================================================
+
+//------------------------------------------------------------------------------
+// Provide generic way to detect debugging support
+//------------------------------------------------------------------------------
+#ifndef DEBUG_SUPPORT
+#define DEBUG_SUPPORT ( \
+    DEBUG_SERIAL_SUPPORT || \
+    DEBUG_UDP_SUPPORT || \
+    DEBUG_TELNET_SUPPORT || \
+    DEBUG_WEB_SUPPORT \
+)
+#endif
+

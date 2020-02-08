@@ -20,6 +20,8 @@
 //
 // Besides, other hardware specific information should be stated here
 
+#pragma once
+
 // -----------------------------------------------------------------------------
 // Custom hardware
 // -----------------------------------------------------------------------------

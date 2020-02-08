@@ -49,10 +49,11 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <PZEM004T.h>
+
 #include "BaseSensor.h"
 
-#include <PZEM004T.h>
 
 #define PZ_MAGNITUDE_COUNT                  4
 

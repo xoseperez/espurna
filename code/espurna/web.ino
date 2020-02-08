@@ -8,16 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+#include "ota.h"
 #include "system.h"
 #include "utils.h"
-#include "ota.h"
-
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <Hash.h>
-#include <FS.h>
-#include <AsyncJson.h>
-#include <ArduinoJson.h>
+#include "web.h"
 
 #if WEB_EMBEDDED
 

@@ -14,6 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 #include <vector>
 
+#include "web.h"
 #include "utils.h"
 
 using ws_on_send_callback_f = std::function<void(JsonObject& root)>;

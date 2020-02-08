@@ -8,12 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if API_SUPPORT
 
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
-#include <vector>
-
+#include "api.h"
 #include "system.h"
+#include "web.h"
+#include "ws.h"
 
 typedef struct {
     char * key;

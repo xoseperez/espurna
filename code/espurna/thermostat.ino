@@ -8,10 +8,11 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #if THERMOSTAT_SUPPORT
 
-#include <ArduinoJson.h>
 #include <float.h>
 
+#include "ntp.h"
 #include "relay.h"
+#include "thermostat.h"
 #include "ws.h"
 
 
@@ -462,21 +463,21 @@ void updateCounters() {
   }
 
   if (ntpSynced()) {
-    String value = NTP.getDateStr();
-    unsigned int day = value.substring(0, 2).toInt();
-    unsigned int month = value.substring(3, 5).toInt();
-    if (day != _thermostat_burn_day) {
+    const auto ts = now();
+    unsigned int now_day = day(ts);
+    unsigned int now_month = month(ts);
+    if (now_day != _thermostat_burn_day) {
       _thermostat_burn_yesterday = _thermostat_burn_today;
       _thermostat_burn_today = 0;
-      _thermostat_burn_day = day;
+      _thermostat_burn_day = now_day;
       setSetting(NAME_BURN_YESTERDAY, _thermostat_burn_yesterday);
       setSetting(NAME_BURN_TODAY,     _thermostat_burn_today);
       setSetting(NAME_BURN_DAY,       _thermostat_burn_day);
     }
-    if (month != _thermostat_burn_month) {
+    if (now_month != _thermostat_burn_month) {
       _thermostat_burn_prev_month = _thermostat_burn_this_month;
       _thermostat_burn_this_month = 0;
-      _thermostat_burn_month = month;
+      _thermostat_burn_month = now_month;
       setSetting(NAME_BURN_PREV_MONTH, _thermostat_burn_prev_month);
       setSetting(NAME_BURN_THIS_MONTH, _thermostat_burn_this_month);
       setSetting(NAME_BURN_MONTH,      _thermostat_burn_month);
@@ -601,8 +602,6 @@ void resetBurnCounters() {
 //#######################################################################
 
 #if THERMOSTAT_DISPLAY_SUPPORT
-
-#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
 
 #define wifi_on_width 16
 #define wifi_on_height 16
