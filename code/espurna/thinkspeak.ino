@@ -357,7 +357,7 @@ void _tspkPost(const String& address) {
     #endif
 
     if (url.protocol == "http") {
-        std::unique_ptr<WiFiClient> client(nullptr);
+        auto client = std::make_unique<WiFiClient>();
         _tspkPost(client.get(), url);
         return;
     }        
