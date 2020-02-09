@@ -1411,15 +1411,29 @@
                                                     // Not clearing it will result in latest values for each field being sent every time
 #endif
 
-#define THINGSPEAK_USE_ASYNC        1               // Use AsyncClient instead of WiFiClientSecure
+#define THINGSPEAK_USE_ASYNC        0               // Use AsyncClient instead of WiFiClientSecure
 
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
 // When THINGSPEAK_USE_ASYNC is 1, requires EspAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and ESP8266 Arduino Core >= 2.4.0.
-#define THINGSPEAK_USE_SSL          0               // Use secure connection
+// When THINGSPEAK_USE_ASYNC is 0, requires Arduino Core >= 2.6.0 and SECURE_CLIENT_BEARSSL
 
+#ifndef THINGSPEAK_USE_SSL
+#define THINGSPEAK_USE_SSL          1               // Use secure connection
+#endif
+
+#ifndef THINGSPEAK_SECURE_CLIENT_CHECK
+#define THINGSPEAK_SECURE_CLIENT_CHECK    SECURE_CLIENT_CHECK
+#endif
+
+#ifndef THINGSPEAK_SECURE_CLIENT_MFLN
+#define THINGSPEAK_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN
+#endif
+
+#ifndef THINGSPEAK_FINGERPRINT
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
+#endif
 
 #ifndef THINGSPEAK_ADDRESS
 #if THINGSPEAK_USE_SSL

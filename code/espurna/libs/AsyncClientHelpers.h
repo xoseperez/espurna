@@ -5,9 +5,9 @@
 #pragma once
 
 enum class AsyncClientState {
-    DISCONNECTED,
-    CONNECTING,
-    CONNECTED
+    Disconnected,
+    Connecting,
+    Connected
 };
     
 

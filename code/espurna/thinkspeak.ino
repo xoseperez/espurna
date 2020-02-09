@@ -8,10 +8,24 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_SUPPORT
 
+#include <memory>
+
 #include "broker.h"
 #include "thingspeak.h"
 #include "libs/URL.h"
+#include "libs/SecureClientHelpers.h"
 #include "libs/AsyncClientHelpers.h"
+
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
+
+#if THINGSPEAK_SECURE_CLIENT_INCLUDE_CA
+#include "static/thingspeak_client_trusted_root_ca.h"
+#else
+#include "static/digicert_high_assurance_pem.h"
+#define _tspk_client_trusted_root_ca _ssl_digicert_high_assurance_ev_root_ca
+#endif
+
+#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "POST %s HTTP/1.1\r\n"
@@ -32,16 +46,31 @@ unsigned long _tspk_last_flush = 0;
 unsigned char _tspk_tries = THINGSPEAK_TRIES;
 
 #if THINGSPEAK_USE_ASYNC
+
 class AsyncThingspeak : public AsyncClient {
     public:
 
     URL address;
     AsyncThingspeak(const String& _url) : address(_url) { };
+
+    bool connect() {
+        #if ASYNC_TCP_SSL_ENABLED && THINGSPEAK_USE_SSL
+            return connect(address.host.c_str(), address.port, true);
+        #else
+            return connect(address.host.c_str(), address.port);
+        #endif
+    }
+
+    bool connect(const String& url) {
+        address = url;
+        return connect();
+    }
 };
 
 AsyncThingspeak* _tspk_client = nullptr;
-AsyncClientState _tspk_state = AsyncClientState::DISCONNECTED;
-#endif
+AsyncClientState _tspk_state = AsyncClientState::Disconnected;
+
+#endif // THINGSPEAK_USE_ASYNC == 1
 
 // -----------------------------------------------------------------------------
 
@@ -97,7 +126,10 @@ void _tspkConfigure() {
         _tspk_enabled = false;
         setSetting("tspkEnabled", 0);
     }
-    if (_tspk_enabled && !_tspk_client) _tspkInitClient(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
+
+    #if THINGSPEAK_USE_ASYNC
+        if (_tspk_enabled && !_tspk_client) _tspkInitClient(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
+    #endif
 }
 
 #if THINGSPEAK_USE_ASYNC
@@ -121,7 +153,7 @@ void _tspkInitClient(const String& _url) {
         _tspk_data = "";
         _tspk_client_ts = 0;
         _tspk_last_flush = millis();
-        _tspk_state = AsyncClientState::DISCONNECTED;
+        _tspk_state = AsyncClientState::Disconnected;
         _tspk_client_state = tspk_state_t::NONE;
     }, nullptr);
 
@@ -192,7 +224,7 @@ void _tspkInitClient(const String& _url) {
 
     _tspk_client->onConnect([](void * arg, AsyncClient * client) {
 
-        _tspk_state = AsyncClientState::CONNECTED;
+        _tspk_state = AsyncClientState::Disconnected;
 
         AsyncThingspeak* tspk_client = reinterpret_cast<AsyncThingspeak*>(client);
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), tspk_client->address.host.c_str(), tspk_client->address.port);
@@ -222,22 +254,16 @@ void _tspkInitClient(const String& _url) {
 
 }
 
-void _tspkPost() {
+void _tspkPost(const String& address) {
 
-    if (_tspk_state != AsyncClientState::DISCONNECTED) return;
+    if (_tspk_state != AsyncClientState::Disconnected) return;
 
     _tspk_client_ts = millis();
-    _tspk_client->address = getSetting("tspkAddress", THINGSPEAK_ADDRESS);
-    
-    #if THINGSPEAK_USE_SSL
-        bool connected = _tspk_client->connect(_tspk_host.c_str(), _tspk_port, THINGSPEAK_USE_SSL);
-    #else
-        bool connected = _tspk_client->connect(_tspk_client->address.host.c_str(), _tspk_client->address.port);
-    #endif
+    _tspk_state = _tspk_client->connect(address)
+        ? AsyncClientState::Connecting
+        : AsyncClientState::Disconnected;
 
-    _tspk_state = connected ? AsyncClientState::CONNECTING : AsyncClientState::DISCONNECTED;
-
-    if (!connected) {
+    if (_tspk_state == AsyncClientState::Disconnected) {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
         _tspk_client->close(true);
     }
@@ -246,55 +272,95 @@ void _tspkPost() {
 
 #else // THINGSPEAK_USE_ASYNC
 
-void _tspkPost() {
+#if THINGSPEAK_USE_SSL && (SECURE_CLIENT == SECURE_CLIENT_BEARSSL)
 
-    #if THINGSPEAK_USE_SSL
-        WiFiClientSecure _tspk_client;
-    #else
-        WiFiClient _tspk_client;
-    #endif
+SecureClientConfig _tspk_sc_config {
+    "THINGSPEAK",
+    []() -> int {
+        return getSetting("tspkScCheck", THINGSPEAK_SECURE_CLIENT_CHECK);
+    },
+    []() -> PGM_P {
+        return _tspk_client_trusted_root_ca;
+    },
+    []() -> String {
+        return getSetting("tspkFP", THINGSPEAK_FINGERPRINT);
+    },
+    []() -> uint16_t {
+        return getSetting("tspkScMFLN", THINGSPEAK_SECURE_CLIENT_MFLN);
+    },
+    true
+};
 
-    if (_tspk_client.connect(_tspk_host.c_str(), _tspk_port)) {
+#endif // THINGSPEAK_USE_SSL && SECURE_CLIENT_BEARSSL
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), _tspk_host.c_str(), _tspk_port);
+void _tspkPost(WiFiClient* client, const URL& url) {
 
-        if (!_tspk_client.verify(THINGSPEAK_FINGERPRINT, _tspk_host.c_str())) {
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
-        }
-
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), _tspk_client.path.c_str(), _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + _tspk_client.path.length() + _tspk_client.host.lengh() + 1];
-        snprintf_P(headers, sizeof(headers),
-            THINGSPEAK_REQUEST_TEMPLATE,
-            _tspk_client.path.c_str(),
-            _tspk_client.host.c_str(),
-            _tspk_data.length()
-        );
-
-        _tspk_client.print(headers);
-        _tspk_client.print(_tspk_data);
-
-        nice_delay(100);
-
-        String response = _tspk_client.readString();
-        int pos = response.indexOf("\r\n\r\n");
-        unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
-        _tspk_client.stop();
-
-        _tspk_last_flush = millis();
-        if ((0 == code) && _tspk_tries) {
-            _tspk_flush = true;
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
-        } else {
-            _tspkClearQueue();
-        }
-
+    if (!client->connect(url.host.c_str(), url.port)) {
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
         return;
-
     }
 
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), url.host.c_str(), url.port);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), url.path.c_str(), _tspk_data.c_str());
+
+    char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + url.path.length() + url.host.length() + 1];
+    snprintf_P(headers, sizeof(headers),
+        THINGSPEAK_REQUEST_TEMPLATE,
+        url.path.c_str(),
+        url.host.c_str(),
+        _tspk_data.length()
+    );
+
+    client->print(headers);
+    client->print(_tspk_data);
+
+    nice_delay(100);
+
+    const auto response = client->readString();
+    int pos = response.indexOf("\r\n\r\n");
+
+    unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
+
+    client->stop();
+
+    _tspk_last_flush = millis();
+    if ((0 == code) && _tspk_tries) {
+        _tspk_flush = true;
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
+    } else {
+        _tspkClearQueue();
+    }
+
+}
+
+void _tspkPost(const String& address) {
+
+    const URL url(address);
+
+    #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+        if (url.protocol == "https") {
+            const int check = _ota_sc_config.on_check();
+            if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
+                DEBUG_MSG_P(PSTR("[THINGSPEAK] Time not synced! Cannot use CA validation\n"));
+                return;
+            }
+
+            auto client = std::make_unique<SecureClient>(_tspk_sc_config);
+            if (!client->beforeConnected()) {
+                return;
+            }
+
+            _tspkPost(&client->get(), url);
+            return;
+        }
+    #endif
+
+    if (url.protocol == "http") {
+        std::unique_ptr<WiFiClient> client(nullptr);
+        _tspkPost(client.get(), url);
+        return;
+    }        
 
 }
 
@@ -323,7 +389,10 @@ void _tspkFlush() {
 
     if (!_tspk_flush) return;
     if (millis() - _tspk_last_flush < THINGSPEAK_MIN_INTERVAL) return;
-    if (_tspk_state != AsyncClientState::DISCONNECTED) return;
+
+    #if THINGSPEAK_USE_ASYNC
+        if (_tspk_state != AsyncClientState::Disconnected) return;
+    #endif
 
     _tspk_last_flush = millis();
     _tspk_flush = false;
@@ -344,7 +413,7 @@ void _tspkFlush() {
         _tspk_data.concat("&api_key=");
         _tspk_data.concat(getSetting<String>("tspkKey", THINGSPEAK_APIKEY));
         --_tspk_tries;
-        _tspkPost();
+        _tspkPost(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
     }
 
 }

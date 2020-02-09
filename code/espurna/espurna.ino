@@ -59,6 +59,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "web.h"
 #include "ws.h"
 
+#include "libs/URL.h"
 #include "libs/HeapStats.h"
 
 using void_callback_f = void (*)();
