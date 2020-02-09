@@ -1,16 +1,20 @@
-#include "scene.h"
+#include "anims.h"
 #include "color.h"
 #include "palette.h"
+#include "scene.h"
 
 #define SPREAD_MAX_WIDTH 20
 
-void Scene::animSpread_SetUp() {
+AnimSpread::AnimSpread() : Scene::Anim("Spread") {
+}
+
+void AnimSpread::SetupImpl() {
     inc = random(2,8);
     memset(seq, 0, LEDS);
 }
 
-void Scene::animSpread_Run() {
-    memset(leds, 0, 3*LEDS);
+void AnimSpread::Run() {
+    memset(_leds, 0, 3*LEDS);
 
     for (int i=0;i<LEDS;i++) {
         if (seq[i] > 0) {
@@ -18,9 +22,9 @@ void Scene::animSpread_Run() {
             for (int j=i-width;j<=(i+width);j++) {
                 Color c = ledstmp[i];
                 if (j>=0 && j<LEDS) {
-                    leds[j].r += c.r;
-                    leds[j].g += c.g;
-                    leds[j].b += c.b;
+                    _leds[j].r += c.r;
+                    _leds[j].g += c.g;
+                    _leds[j].b += c.b;
                 }
             }
             ledstmp[i].fade(255/SPREAD_MAX_WIDTH);
@@ -30,7 +34,9 @@ void Scene::animSpread_Run() {
 
     if (random(inc) == 0) {
         byte pos = random(0,LEDS); 
-        ledstmp[pos] = palette->getPalColor((float)rngb()/256);
+        ledstmp[pos] = _palette->getPalColor((float)rngb()/256);
         seq[pos] = SPREAD_MAX_WIDTH;
     }        
 }
+
+AnimSpread anim_spread;

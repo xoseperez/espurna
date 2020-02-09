@@ -6,7 +6,7 @@
 
 #define DUST_LENGTH 20
 
-AnimPixieDust::AnimPixieDust() : Scene::Anim("Fly") {
+AnimPixieDust::AnimPixieDust() : Scene::Anim("PixieDust") {
 }
 
 void AnimPixieDust::SetupImpl() {

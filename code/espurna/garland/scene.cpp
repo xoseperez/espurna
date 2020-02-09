@@ -47,11 +47,6 @@ bool Scene::run()
     unsigned long iteration_start_time = millis();
     // if (calc_or_show) {
 
-        // if (runImpl != NULL) {
-        //     (this->*runImpl)();
-        // }
-
-
         if (_anim) {
             _anim->Run();
         }
@@ -140,54 +135,6 @@ unsigned long Scene::getAvgShowTime() {
     return sum_show_time / show_num;
 }
 
-void Scene::setAnim(byte animInd)
-{
-    switch (animInd) {
-        // case 0: 
-        //     setUpImpl = &Scene::animRun_SetUp;
-        //     runImpl = &Scene::animRun_Run;
-        //     setUpOnPalChange = true;
-        // break;
-        // case 1: 
-        //     setUpImpl = &Scene::animPixieDust_SetUp;
-        //     runImpl = &Scene::animPixieDust_Run;
-        //     setUpOnPalChange = true;
-        // break;        
-        case 2: 
-            setUpImpl = &Scene::animSparkr_SetUp;
-            runImpl = &Scene::animSparkr_Run;
-            setUpOnPalChange = true;
-        break;        
-        case 3: 
-            setUpImpl = &Scene::animRandCyc_SetUp;
-            runImpl = &Scene::animRandCyc_Run;
-            setUpOnPalChange = true;
-        break;   
-        case 4: 
-            setUpImpl = &Scene::animStars_SetUp;
-            runImpl = &Scene::animStars_Run;
-            setUpOnPalChange = false;
-        break;    
-        case 5: 
-            setUpImpl = &Scene::animSpread_SetUp;
-            runImpl = &Scene::animSpread_Run;
-            setUpOnPalChange = false;
-        break;     
-        // case 6: 
-        //     setUpImpl = &Scene::animFly_SetUp;
-        //     runImpl = &Scene::animFly_Run;
-        //     setUpOnPalChange = false;
-        // break;                       
-        default:
-            setUpImpl = &Scene::animStart_SetUp;
-            runImpl = &Scene::animStart_Run;
-            setUpOnPalChange = true;
-        break;
-    }
-}
-
-
-
 unsigned int rng() {
     static unsigned int y = 0;
     y += micros(); // seeded with changing number
@@ -204,6 +151,10 @@ Color Scene::leds1[LEDS];
 Color Scene::leds2[LEDS];
 Color Scene::ledstmp[LEDS];
 byte Scene::seq[LEDS];
+
+
+byte Scene::Anim::seq[LEDS];
+Color Scene::Anim::ledstmp[LEDS];
 
 Scene::Anim::Anim(String name)
     : _name(name) {

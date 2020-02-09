@@ -21,7 +21,7 @@ const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 
-#define ANIMS                             3 //number of animations
+#define ANIMS                             7 //number of animations
 #define EFFECT_UPDATE_INTERVAL_MIN     5000 // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX    10000 // 5 sec
 
@@ -35,7 +35,7 @@ extern Adafruit_NeoPixel pixels;
 
 Scene scene = Scene();
 
-Scene::Anim* anims[] = {&anim_run, &anim_fly, &anim_pixel_dust};
+Scene::Anim* anims[] = {&anim_run, &anim_fly, &anim_pixel_dust, &anim_rand_cyc, &anim_sparkr, &anim_spread, &anim_stars};
 
 constexpr bool disableAutoChangeEffects = false;
 
@@ -132,7 +132,7 @@ void garlandSetup() {
   randomSeed(analogRead(0)*analogRead(1));
   paletteInd = random(PALS);
   // scene.setAnim(animInd);
-  scene.setAnim(anims[animInd]);
+  scene.setAnim(&anim_start);
   scene.setPeriod(6);
   // scene.setPalette(pals[0]);
   scene.doSetUp();

@@ -43,8 +43,15 @@ public:
         //BrA frequency (spatial)
         byte braFreq=150;
 
-        const Color sparkleColor = Color(0xFFFFFF);
+        static byte seq[LEDS];
 
+        Color curColor = Color(0);
+        Color prevColor = Color(0);
+        const Color sparkleColor = Color(0xFFFFFF);
+        
+        //auxiliary colors array
+        static Color ledstmp[LEDS];
+        
         virtual void SetupImpl(){};
 
         //glow animation setup
@@ -67,7 +74,6 @@ public:
     void setBrightness(byte brightness);
     byte getBrightness();
     void setAnim(Anim* anim) { _anim = anim; }
-    void setAnim(byte animInd);
     bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
     void doSetUp();
     unsigned long getAvgCalcTime();
@@ -153,11 +159,11 @@ private:
     // void animPixieDust_SetUp();
     // void animPixieDust_Run();
     
-    void animSparkr_SetUp();
-    void animSparkr_Run();
+    // void animSparkr_SetUp();
+    // void animSparkr_Run();
 
-    void animRandCyc_SetUp();
-    void animRandCyc_Run();
+    // void animRandCyc_SetUp();
+    // void animRandCyc_Run();
 
     void animStars_SetUp();
     void animStars_Run();
