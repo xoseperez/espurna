@@ -29,6 +29,7 @@ struct Palette
 ////////////////////////////////////////////////////////////////////////////////
 // Palette definitions
 ////////////////////////////////////////////////////////////////////////////////
+#define PALS                              7 //number of palettes
 extern Palette PalRgb;
 extern Palette PalRainbow;
 extern Palette PalRainbowStripe;
@@ -37,4 +38,5 @@ extern Palette PalHeat;
 extern Palette PalFire;
 extern Palette PalIceBlue;
 
+extern Palette * pals[];
 #endif

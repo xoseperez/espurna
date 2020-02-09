@@ -22,7 +22,6 @@ const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 
 #define ANIMS                             7 //number of animations
-#define PALS                              7 //number of palettes
 #define EFFECT_UPDATE_INTERVAL_MIN     5000 // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX    10000 // 5 sec
 
@@ -34,10 +33,8 @@ int paletteInd;
 int animInd                             = -1; 
 extern Adafruit_NeoPixel pixels;
 
-Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};
-
 Scene scene = Scene();
-AnimRun anim_run(scene);
+AnimRun anim_run;
 
 constexpr bool disableAutoChangeEffects = false;
 
@@ -133,10 +130,10 @@ void garlandSetup() {
   pixels.begin();
   randomSeed(analogRead(0)*analogRead(1));
   paletteInd = random(PALS);
-  scene.setAnim(animInd);
+  // scene.setAnim(animInd);
   scene.setAnim(&anim_run);
   scene.setPeriod(6);
-  scene.setPalette(pals[0]);
+  // scene.setPalette(pals[0]);
   scene.doSetUp();
 
   _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
@@ -158,17 +155,17 @@ void garlandLoop(void) {
     _last_update = millis();
     _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
   
-    int prevAnimInd = animInd;
-    while (prevAnimInd == animInd) animInd = random(ANIMS);
+    // int prevAnimInd = animInd;
+    // while (prevAnimInd == animInd) animInd = random(ANIMS);
 
-    scene.setAnim(animInd);
+    // scene.setAnim(animInd);
 
     byte period = random(5, 30);
     scene.setPeriod(period);
 
-    int prevPalInd = paletteInd;
-    while (prevPalInd == paletteInd) paletteInd = random(PALS);    
-    scene.setPalette(pals[paletteInd]);
+    // int prevPalInd = paletteInd;
+    // while (prevPalInd == paletteInd) paletteInd = random(PALS);    
+    // scene.setPalette(pals[paletteInd]);
 
     DEBUG_MSG_P(PSTR("[GARLAND] Scene: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
     scene.doSetUp();

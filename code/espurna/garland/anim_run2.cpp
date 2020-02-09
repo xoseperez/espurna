@@ -1,9 +1,9 @@
 #include "anim_run2.h"
 
-AnimRun::AnimRun(Scene& scene) : Scene::Anim("Run", scene) {
+AnimRun::AnimRun() : Scene::Anim("Run") {
 }
 
-void AnimRun::Setup() {
+void AnimRun::SetupImpl() {
     pos = 0;
     inc = 1 + (rngb() >> 5);
     if (random(10) > 5) {
@@ -14,8 +14,8 @@ void AnimRun::Setup() {
 void AnimRun::Run() {
     int p = pos;
     for (int i=0;i<LEDS;i++) {
-        Color c = _scene.palette->getPalColor((float)p/256);
-        _scene.leds[i] = c;
+        Color c = _palette->getPalColor((float)p/256);
+        _leds[i] = c;
    
         p = p + inc;
         if (p >= 256) {

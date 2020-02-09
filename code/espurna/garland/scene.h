@@ -25,20 +25,19 @@ public:
     class Anim {
     public:
         String getName();
-        Anim(String name, Scene& scene);
-        virtual void Setup() = 0;
+        Anim(String name);
+        void Setup(int paletteInd , Color* leds);
         virtual void Run() = 0;
     protected:
         int phase;
         int pos;
         int inc;
-        Scene& _scene;
+        Palette*        _palette;
+        Color*          _leds;
+        virtual void SetupImpl(){};
     private:
-        const String _name;
+        const String    _name;
     };
-
-    friend class Anim;
-    friend class AnimRun;
 
     void setAnim(Anim* anim) { _anim = anim; }
     void setPeriod(byte period);
@@ -62,6 +61,7 @@ private:
     byte period;
     // array of Color to work with
     Color *leds;
+    int paletteInd = 0;
     Palette *palette;
 
     // millis for next timeslot 

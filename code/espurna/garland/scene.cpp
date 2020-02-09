@@ -7,10 +7,9 @@
 //Adafruit's class to operate strip
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800); 
 
+
 // byte skip_count = 0;
-bool calc_or_show = false;
-
-
+// bool calc_or_show = false;
 
 Scene::Scene() 
 {
@@ -21,13 +20,13 @@ void Scene::setPeriod(byte period) {
     this->period = period;
 }
 
-void Scene::setPalette(Palette * pal) {
-    this->palette = pal;
-    if (setUpOnPalChange) {
-        setUp();
-    }
-    pinMode(LED_BUILTIN, OUTPUT);
-}
+// void Scene::setPalette(Palette * pal) {
+//     this->palette = pal;
+//     if (setUpOnPalChange) {
+//         setUp();
+//     }
+//     pinMode(LED_BUILTIN, OUTPUT);
+// }
 
 void Scene::setBrightness(byte brightness) {
     this->brightness = brightness;
@@ -89,7 +88,7 @@ bool Scene::run()
         sum_show_time += (millis() - iteration_start_time);
     // }
 
-    calc_or_show = !calc_or_show;
+    // calc_or_show = !calc_or_show;
 
     return true;
 }
@@ -110,8 +109,11 @@ void Scene::setUp()
     //     (this->*setUpImpl)();
     // }
 
+    int prevPalInd = paletteInd;
+    while (prevPalInd == paletteInd) paletteInd = random(PALS);    
+
     if (_anim) {
-        _anim->Setup();
+        _anim->Setup(paletteInd, leds);
     }
 
 }
@@ -203,7 +205,12 @@ Color Scene::leds2[LEDS];
 Color Scene::ledstmp[LEDS];
 byte Scene::seq[LEDS];
 
-Scene::Anim::Anim(String name, Scene& scene)
-    : _name(name)
-    , _scene(scene) {
+Scene::Anim::Anim(String name)
+    : _name(name) {
 } 
+
+void Scene::Anim::Setup(int paletteInd , Color* leds) {
+    _palette = pals[paletteInd];
+    _leds = leds;
+    SetupImpl();
+}

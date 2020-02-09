@@ -70,3 +70,5 @@ Color PalIceBlue_[] =
     0xffffff, 0x0000ff, 0x00ffff
 };
 Palette PalIceBlue = { 3, PalIceBlue_};
+
+Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};

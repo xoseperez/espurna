@@ -5,8 +5,8 @@
 
 class AnimRun : public Scene::Anim {
 public:
-    AnimRun(Scene& scene);
-    void Setup() override;
+    AnimRun();
+    void SetupImpl() override;
     void Run() override;
 };
 
