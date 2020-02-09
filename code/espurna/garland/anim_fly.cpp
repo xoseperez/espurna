@@ -1,9 +1,13 @@
-#include "scene.h"
+#include "anims.h"
 #include "color.h"
 #include "palette.h"
+#include "scene.h"
 
 
-void Scene::animFly_SetUp() {
+AnimFly::AnimFly() : Scene::Anim("Fly") {
+}
+
+void AnimFly::SetupImpl() {
     //length of particle tail
     pos = random(2, 15);
     //probability of the tail
@@ -14,26 +18,27 @@ void Scene::animFly_SetUp() {
     phase = 0;
 }
 
-void Scene::animFly_Run() {
-    
+void AnimFly::Run() {
     byte launchpos;
     if (inc > 0) {
         launchpos = LEDS-1;
         for (int i=1;i<LEDS;i++) {
-            leds[i-1] = leds[i];
+            _leds[i-1] = _leds[i];
         }
     } else {
         launchpos = 0;
         for (int i=LEDS-2;i>=0;i--) {
-            leds[i+1] = leds[i];
+            _leds[i+1] = _leds[i];
         }
     }
 
     if (random(abs(inc)) == 0) {
-        curColor = palette->getPalColor((float)rngb()/256);
+        curColor = _palette->getPalColor((float)rngb()/256);
         phase = pos;
     }
 
-    leds[launchpos] = Color( (int)curColor.r * phase / pos, (int)curColor.g * phase / pos, (int)curColor.b * phase / pos) ;
+    _leds[launchpos] = Color( (int)curColor.r * phase / pos, (int)curColor.g * phase / pos, (int)curColor.b * phase / pos) ;
     if (phase > 0) phase--; 
 }
+
+AnimFly anim_fly;

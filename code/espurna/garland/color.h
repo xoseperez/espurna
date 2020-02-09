@@ -31,7 +31,7 @@ struct Color
 
     //interpolates between this color and provided. 
     //x is from 0 to 1, 0 gives this color, 1 gives provided color, values between give interpolation
-    Color interpolate(Color color, float x)
+    Color interpolate(Color color, float x) const
     {
         int r0 = x*(color.r - r) + r;
         int g0 = x*(color.g - g) + g;
@@ -40,7 +40,7 @@ struct Color
     }
 
     //creates color with decreased brightness
-    Color brightness(byte k) {
+    Color brightness(byte k) const {
         int r0 = r * (int)k / 255;
         int g0 = g * (int)k / 255;
         int b0 = b * (int)k / 255;

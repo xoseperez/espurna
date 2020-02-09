@@ -28,22 +28,45 @@ public:
         Anim(String name);
         void Setup(int paletteInd , Color* leds);
         virtual void Run() = 0;
+
     protected:
         int phase;
         int pos;
         int inc;
         Palette*        _palette;
         Color*          _leds;
+
+        //brigthness animation (BrA) current initial phase
+        byte braPhase;
+        //braPhase change speed 
+        byte braPhaseSpd=5;
+        //BrA frequency (spatial)
+        byte braFreq=150;
+
+        const Color sparkleColor = Color(0xFFFFFF);
+
         virtual void SetupImpl(){};
+
+        //glow animation setup
+        void glowSetUp();
+
+        //glow animation - must be called for each LED after it's BASIC color is set
+        //note this overwrites the LED color, so the glow assumes that color will be stored elsewhere (not in leds[])
+        //or computed each time regardless previous leds[] value
+        void glowForEachLed(int i);
+        
+        //glow animation - must be called at the end of each animaton run
+        void glowRun();
+
     private:
         const String    _name;
     };
 
-    void setAnim(Anim* anim) { _anim = anim; }
     void setPeriod(byte period);
     void setPalette(Palette * pal);
     void setBrightness(byte brightness);
     byte getBrightness();
+    void setAnim(Anim* anim) { _anim = anim; }
     void setAnim(byte animInd);
     bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
     void doSetUp();
@@ -124,11 +147,11 @@ private:
     void animStart_SetUp();
     void animStart_Run();
 
-    void animRun_SetUp();
-    void animRun_Run();
+    // void animRun_SetUp();
+    // void animRun_Run();
     
-    void animPixieDust_SetUp();
-    void animPixieDust_Run();
+    // void animPixieDust_SetUp();
+    // void animPixieDust_Run();
     
     void animSparkr_SetUp();
     void animSparkr_Run();
@@ -142,8 +165,8 @@ private:
     void animSpread_SetUp();
     void animSpread_Run();
 
-    void animFly_SetUp();
-    void animFly_Run();
+    // void animFly_SetUp();
+    // void animFly_Run();
 };
 
 unsigned int rng();

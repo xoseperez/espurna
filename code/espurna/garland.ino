@@ -12,7 +12,7 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include "garland\scene.h"
 #include "garland\color.h"
 #include "garland\palette.h"
-#include "garland\anim_run2.h"
+#include "garland\anims.h"
 #include <Adafruit_NeoPixel.h>
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
@@ -21,7 +21,7 @@ const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 
-#define ANIMS                             7 //number of animations
+#define ANIMS                             3 //number of animations
 #define EFFECT_UPDATE_INTERVAL_MIN     5000 // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX    10000 // 5 sec
 
@@ -30,11 +30,12 @@ unsigned long _last_update              = 0;
 unsigned long _interval_effect_update;
 
 int paletteInd;
-int animInd                             = -1; 
+int animInd                             = 0; 
 extern Adafruit_NeoPixel pixels;
 
 Scene scene = Scene();
-AnimRun anim_run;
+
+Scene::Anim* anims[] = {&anim_run, &anim_fly, &anim_pixel_dust};
 
 constexpr bool disableAutoChangeEffects = false;
 
@@ -131,7 +132,7 @@ void garlandSetup() {
   randomSeed(analogRead(0)*analogRead(1));
   paletteInd = random(PALS);
   // scene.setAnim(animInd);
-  scene.setAnim(&anim_run);
+  scene.setAnim(anims[animInd]);
   scene.setPeriod(6);
   // scene.setPalette(pals[0]);
   scene.doSetUp();
@@ -155,10 +156,10 @@ void garlandLoop(void) {
     _last_update = millis();
     _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
   
-    // int prevAnimInd = animInd;
-    // while (prevAnimInd == animInd) animInd = random(ANIMS);
+    int prevAnimInd = animInd;
+    while (prevAnimInd == animInd) animInd = random(ANIMS);
 
-    // scene.setAnim(animInd);
+    scene.setAnim(anims[animInd]);
 
     byte period = random(5, 30);
     scene.setPeriod(period);

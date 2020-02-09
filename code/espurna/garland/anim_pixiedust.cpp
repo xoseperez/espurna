@@ -1,12 +1,18 @@
-#include "scene.h"
+#include "anims.h"
 #include "color.h"
 #include "palette.h"
+#include "scene.h"
+
 
 #define DUST_LENGTH 20
-void Scene::animPixieDust_SetUp() {
+
+AnimPixieDust::AnimPixieDust() : Scene::Anim("Fly") {
+}
+
+void AnimPixieDust::SetupImpl() {
     phase = 0;
-    curColor = palette->getPalColor((float)rng()/256);
-    prevColor = palette->getPalColor((float)rng()/256);
+    curColor = _palette->getPalColor((float)rng()/256);
+    prevColor = _palette->getPalColor((float)rng()/256);
     inc = random(2)*2-1;
     if (inc > 0) {
         phase = -DUST_LENGTH/2;
@@ -16,22 +22,21 @@ void Scene::animPixieDust_SetUp() {
     glowSetUp();
 }
 
-void Scene::animPixieDust_Run() {
-
+void AnimPixieDust::Run() {
     if (inc > 0) {
         for (int i=0;i<LEDS;i++) {
-            leds[i] = (i > phase) ? prevColor : curColor;
+            _leds[i] = (i > phase) ? prevColor : curColor;
             glowForEachLed(i);
         }
         phase++;
         if (phase >= 4*LEDS) {
             phase = -DUST_LENGTH/2;
             prevColor = curColor;
-            curColor = palette->getPalColor((float)rngb()/256);     
+            curColor = _palette->getPalColor((float)rngb()/256);     
         }
     } else {
         for (int i=0;i<LEDS;i++) {
-            leds[i] = (i < phase) ? prevColor : curColor;
+            _leds[i] = (i < phase) ? prevColor : curColor;
             glowForEachLed(i);
         }
         phase--;
@@ -39,7 +44,7 @@ void Scene::animPixieDust_Run() {
             phase = LEDS + DUST_LENGTH/2;
             prevColor = curColor;
             while (prevColor.isCloseTo(curColor)) { 
-              curColor = palette->getPalColor((float)rngb()/256);     
+              curColor = _palette->getPalColor((float)rngb()/256);     
             }
         }
     }
@@ -53,8 +58,9 @@ void Scene::animPixieDust_Run() {
             } else if (mix > 255) {
                 mix = 255;
             }
-            leds[k] = sparkleColor.interpolate(leds[k], (float)mix/255);
+            _leds[k] = sparkleColor.interpolate(_leds[k], (float)mix/255);
         }
     }
-    
 }
+
+AnimPixieDust anim_pixel_dust;

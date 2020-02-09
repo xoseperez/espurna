@@ -143,16 +143,16 @@ unsigned long Scene::getAvgShowTime() {
 void Scene::setAnim(byte animInd)
 {
     switch (animInd) {
-        case 0: 
-            setUpImpl = &Scene::animRun_SetUp;
-            runImpl = &Scene::animRun_Run;
-            setUpOnPalChange = true;
-        break;
-        case 1: 
-            setUpImpl = &Scene::animPixieDust_SetUp;
-            runImpl = &Scene::animPixieDust_Run;
-            setUpOnPalChange = true;
-        break;        
+        // case 0: 
+        //     setUpImpl = &Scene::animRun_SetUp;
+        //     runImpl = &Scene::animRun_Run;
+        //     setUpOnPalChange = true;
+        // break;
+        // case 1: 
+        //     setUpImpl = &Scene::animPixieDust_SetUp;
+        //     runImpl = &Scene::animPixieDust_Run;
+        //     setUpOnPalChange = true;
+        // break;        
         case 2: 
             setUpImpl = &Scene::animSparkr_SetUp;
             runImpl = &Scene::animSparkr_Run;
@@ -173,11 +173,11 @@ void Scene::setAnim(byte animInd)
             runImpl = &Scene::animSpread_Run;
             setUpOnPalChange = false;
         break;     
-        case 6: 
-            setUpImpl = &Scene::animFly_SetUp;
-            runImpl = &Scene::animFly_Run;
-            setUpOnPalChange = false;
-        break;                       
+        // case 6: 
+        //     setUpImpl = &Scene::animFly_SetUp;
+        //     runImpl = &Scene::animFly_Run;
+        //     setUpOnPalChange = false;
+        // break;                       
         default:
             setUpImpl = &Scene::animStart_SetUp;
             runImpl = &Scene::animStart_Run;
@@ -213,4 +213,25 @@ void Scene::Anim::Setup(int paletteInd , Color* leds) {
     _palette = pals[paletteInd];
     _leds = leds;
     SetupImpl();
+}
+
+void Scene::Anim::glowSetUp()
+{
+    braPhaseSpd = random(4,13);
+    if (braPhaseSpd > 8) {
+        braPhaseSpd = braPhaseSpd - 17;
+    }
+    braFreq = random(20,60);
+}
+
+void Scene::Anim::glowForEachLed(int i)
+{
+    int8 bra = braPhase + i * braFreq;
+    bra = BRA_OFFSET + (abs(bra) >> BRA_AMP_SHIFT);
+    _leds[i] = _leds[i].brightness(bra);
+}
+
+void Scene::Anim::glowRun()
+{
+    braPhase += braPhaseSpd;
 }
