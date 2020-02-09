@@ -1411,7 +1411,9 @@
                                                     // Not clearing it will result in latest values for each field being sent every time
 #endif
 
-#define THINGSPEAK_USE_ASYNC        0               // Use AsyncClient instead of WiFiClientSecure
+#ifndef THINGSPEAK_USE_ASYNC
+#define THINGSPEAK_USE_ASYNC        1               // Use AsyncClient instead of WiFiClientSecure
+#endif
 
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
@@ -1420,7 +1422,7 @@
 // When THINGSPEAK_USE_ASYNC is 0, requires Arduino Core >= 2.6.0 and SECURE_CLIENT_BEARSSL
 
 #ifndef THINGSPEAK_USE_SSL
-#define THINGSPEAK_USE_SSL          1               // Use secure connection
+#define THINGSPEAK_USE_SSL          0               // Use secure connection
 #endif
 
 #ifndef THINGSPEAK_SECURE_CLIENT_CHECK
