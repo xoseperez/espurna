@@ -55,9 +55,9 @@ class AsyncThingspeak : public AsyncClient {
 
     bool connect() {
         #if ASYNC_TCP_SSL_ENABLED && THINGSPEAK_USE_SSL
-            return connect(address.host.c_str(), address.port, true);
+            return AsyncClient::connect(address.host.c_str(), address.port, true);
         #else
-            return connect(address.host.c_str(), address.port);
+            return AsyncClient::connect(address.host.c_str(), address.port);
         #endif
     }
 
