@@ -166,7 +166,7 @@ void _rfm69Process(packet_t * data) {
     if (!RFM69_PROMISCUOUS_SENDS && (RFM69_GATEWAY_ID != data->targetID)) return;
 
     // Try to find a matching mapping
-    for (unsigned int i=0; i<RFM69_MAX_TOPICS; i++) {
+    for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
         auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
         if ((node == data->senderID) && (getSetting({"key", i}).equals(data->key))) {
