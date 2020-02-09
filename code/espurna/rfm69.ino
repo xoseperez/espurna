@@ -73,20 +73,20 @@ void _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void _rfm69CleanNodes(unsigned char num) {
 
     // Look for the last defined node
-    int i = 0;
-    while (i < num) {
-        if (0 == getSetting({"node", i}, 0)) break;
-        if (!getSetting({"key", i}).length()) break;
-        if (!getSetting({"topic", i}).length()) break;
-        ++i;
+    unsigned char id = 0;
+    while (id < num) {
+        if (0 == getSetting({"node", id}, 0)) break;
+        if (!getSetting({"key", id}).length()) break;
+        if (!getSetting({"topic", id}).length()) break;
+        ++id;
     }
 
     // Delete all other settings
-    while (i < WIFI_MAX_NETWORKS) {
-        delSetting("node", i);
-        delSetting("key", i);
-        delSetting("topic", i);
-        ++i;
+    while (id < SETTINGS_MAX_LIST_COUNT) {
+        delSetting({"node", id});
+        delSetting({"key", id});
+        delSetting({"topic", id});
+        ++id;
     }
 
 }
@@ -166,7 +166,7 @@ void _rfm69Process(packet_t * data) {
     if (!RFM69_PROMISCUOUS_SENDS && (RFM69_GATEWAY_ID != data->targetID)) return;
 
     // Try to find a matching mapping
-    for (unsigned int i=0; i<RFM69_MAX_TOPICS; i++) {
+    for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
         auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
         if ((node == data->senderID) && (getSetting({"key", i}).equals(data->key))) {
