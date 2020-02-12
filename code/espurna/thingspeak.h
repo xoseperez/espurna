@@ -12,6 +12,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
+#else
+#include <ESP8266HTTPClient.h>
 #endif
 
 constexpr const size_t tspkDataBufferSize = 256;

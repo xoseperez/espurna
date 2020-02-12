@@ -7,10 +7,10 @@ OTA MODULE
 #pragma once
 
 #include <Updater.h>
+#include <ArduinoOTA.h>
 
 #if OTA_ARDUINOOTA_SUPPORT
 
-#include <ArduinoOTA.h>
 void arduinoOtaSetup();
 
 #endif // OTA_ARDUINOOTA_SUPPORT == 1

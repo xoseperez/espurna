@@ -1420,6 +1420,9 @@
 // so you should compile it with WEB_SUPPORT to 0.
 // When THINGSPEAK_USE_ASYNC is 1, requires EspAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and ESP8266 Arduino Core >= 2.4.0.
 // When THINGSPEAK_USE_ASYNC is 0, requires Arduino Core >= 2.6.0 and SECURE_CLIENT_BEARSSL
+//
+// WARNING: Thingspeak servers do not support MFLN right now, connection requires at least 30KB of free RAM.
+//          Also see MQTT comments above.
 
 #ifndef THINGSPEAK_USE_SSL
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
