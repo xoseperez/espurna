@@ -6,10 +6,19 @@ let Ws = function () {
 };
 Ws.prototype = {
     ws: undefined,
-    retry(time, args) {
+    pingInterval: null,
+    args: null,
+    retry(time, tries) {
         setTimeout(() => {
-            this.connectToUrl.apply(this, args)
+            this.connectToUrl.apply(this, this.args)
         }, time);
+
+        if (tries > 5) {
+            clearInterval(this.pingInterval);
+            if (window.confirm("Connection lost with the device, click OK to refresh the page")) {
+                window.location.reload();
+            }
+        }
     },
     connect(host, cb) {
         // #!if ENV === 'development'
@@ -26,8 +35,10 @@ Ws.prototype = {
         }
         this.connectToUrl(new URL(host), cb);
     },
-    connectToUrl(url, onMessage) {
-        let args = arguments;
+    connectToUrl(url, onMessage, tries) {
+        tries = tries || 1;
+
+        this.args = Array.prototype.slice.call(arguments);
         let urls = this.initUrls(url);
 
         fetch(urls.auth.href, {
@@ -37,7 +48,7 @@ Ws.prototype = {
         }).then((response) => {
             // Failed, retry
             if (response.status !== 200) {
-                return this.retry(5000, args);
+                return this.retry(5000, tries + 1);
             }
             // update websock object
             if (this.ws) {
@@ -45,9 +56,12 @@ Ws.prototype = {
             }
             this.ws = new WebSocket(urls.ws.href);
             this.ws.onmessage = onMessage;
+            this.ws.onclose = this.onClose;
+            this.ws.onopen = this.onOpen;
+
         }).catch((error) => {
             console.log(error);
-            return this.retry(5000, args);
+            return this.retry(5000, tries + 1);
         });
     },
     initUrls(root) {
@@ -77,6 +91,12 @@ Ws.prototype = {
                 JSON.stringify({config: data},
                     (key, value) => typeof value === 'undefined' ? null : value)
             );
+    },
+    onClose() {
+        this.retry(1000);
+    },
+    onOpen() {
+        this.pingInterval = setInterval(() => { this.sendAction("ping"); }, 30000);
     }
 };
 
