@@ -70,7 +70,7 @@
                 </Row>
 
                 <legend>Networks</legend>
-                <Repeater v-model="wifi.list" @created="({row})=>$set(row, 'more', false)">
+                <Repeater v-model="wifi.list" :max="wifi.max" @created="({row})=>$set(row, 'more', false)">
                     <template #default="tpl">
                         <Row>
                             <C><label :for="'ssid-'+tpl.row.key">Network SSID</label></C>

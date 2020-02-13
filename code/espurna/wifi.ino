@@ -453,15 +453,16 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     root["max"] = WIFI_MAX_NETWORKS;
     wifi["scan"] = getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS);
 
-    const char* keys[] = {
-        "ssid", "pass", "ip", "gw", "mask", "dns", "stored"
-    };
-  
-    // TODO check schema
     JsonArray& schema = wifi.createNestedArray("schema");
-    schema.copyFrom(keys, 7);
 
-    JsonArray& networks = wifi.createNestedArray("networks");
+    schema.add("ssid");
+    schema.add("pass");
+    schema.add("ip");
+    schema.add("gw");
+    schema.add("mask");
+    schema.add("dns");
+
+    JsonArray& networks = wifi.createNestedArray("list");
 
     for (unsigned char index = 0; index < WIFI_MAX_NETWORKS; ++index) {
         if (!getSetting({"ssid", index}, _wifiSSID(index)).length()) break;
@@ -472,7 +473,6 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
         network.add(getSetting({"gw", index}, _wifiGateway(index)));
         network.add(getSetting({"mask", index}, _wifiNetmask(index)));
         network.add(getSetting({"dns", index}, _wifiDNS(index)));
-        network.add(_wifiHasSSID(index));
     }
 }
 

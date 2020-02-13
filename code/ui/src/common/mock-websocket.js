@@ -44,7 +44,7 @@ export default function () {
             }, {
                 "wifi": {
                     "rssi": -86,
-                    "maxNetworks": 5,
+                    "max": 5,
                     "scan": true,
                     "schema": [
                         "ssid",
