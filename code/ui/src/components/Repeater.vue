@@ -5,7 +5,10 @@
                      :key="row.key"
                      :value="row.value"
                      @input="(val) => $emit('input', [...values].splice(i,1,val))">
-            <slot name="default" :value="row.value" :k="i" :row="row" :remove="() => onRemove(row.key)"></slot>
+            <slot name="default" :value="row.value"
+                  :k="i"
+                  :row="row"
+                  :remove="() => onRemove(row.key)"></slot>
             <template v-if="!locked" #append>
                 <slot name="btnRemove" :click="() => onRemove(row.key)" :row="row">
                     <Btn color="danger" @click="() => onRemove(row.key)">

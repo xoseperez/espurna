@@ -109,14 +109,6 @@
                                               tabindex="6" unit="ms"/>
                                     </C>
                                 </Row>
-
-                                <Row>
-                                    <C><label>Restore last schedules</label></C>
-                                    <C>
-                                        <Inpt name="lastSch"
-                                              type="switch"/>
-                                    </C>
-                                </Row>
                             </C>
                         </Row>
 
@@ -164,6 +156,18 @@
                                         </C>
                                     </Row>
                                 </C>
+                            </Row>
+                            <Row>
+                                <C>
+                                    <Row>
+                                        <C><label>Restore last schedules</label></C>
+                                        <C>
+                                            <Inpt name="lastSch"
+                                                  type="switch"/>
+                                        </C>
+                                    </Row>
+                                </C>
+                                <C/>
                             </Row>
                         </template>
                     </template>
@@ -220,8 +224,8 @@
                             </C>
                         </Row>
                     </template>
-                    <template>
-                        <Btn #btn-remove="tpl" name="del-schedule" color="danger" @click="tpl.click">
+                    <template #btnRemove="tpl">
+                        <Btn name="del-schedule" color="danger" @click="tpl.click">
                             Delete schedule
                         </Btn>
                     </template>

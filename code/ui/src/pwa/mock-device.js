@@ -1,4 +1,7 @@
 export default (address, opts) => {
+    if (address.includes('github')) {
+        return fetch(address, opts)
+    }
     return new Promise((resolve, fail) => {
             setTimeout(() => {
                 const url = new URL(address);

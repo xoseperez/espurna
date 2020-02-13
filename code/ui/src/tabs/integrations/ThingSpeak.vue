@@ -21,7 +21,7 @@
                 </Row>
 
                 <Row>
-                    <label>Clear cache</label>
+                    <C><label>Clear cache</label></C>
                     <C>
                         <Inpt type="switch"
                               name="clear"
@@ -60,7 +60,7 @@
                 <Repeater v-model="relays.config.list" locked>
                     <template #default="tpl">
                         <Row>
-                            <C><label>Switch #{{tpl.i}}</label></C>
+                            <C><label>Switch #{{tpl.k}}</label></C>
                             <C>
                                 <Inpt name="relay"
                                       type="number"
@@ -120,7 +120,7 @@
             },
             relays: {
                 type: Object,
-                default: () => ({config:{}})
+                default: () => ({list:{}})
             },
             sns: {
                 type: Object,

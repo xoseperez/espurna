@@ -201,7 +201,7 @@
 
                         if ("assets" in data) {
                             let asset = data.assets.find((a) => {
-                                return a.name && a.name.test(/core-1MB\.bin$/);
+                                return a.name && a.name.match(/core-1MB\.bin$/);
                             });
                             if (asset) {
                                 return asset;
@@ -213,7 +213,7 @@
                         throw Error('Failed to connect to github');
                     }
                 } catch (e) {
-                    this.$notify.error(e.message);
+                    this.$notify.error(e.toString());
                 }
             },
             freeCoreSize() {
@@ -298,8 +298,6 @@
                 this.authDialogVisible = false
             },
             beforeUpload(file) {
-                console.log(file.type);
-
                 const hasEnoughSpace = file.size < this.free_size;
 
                 if (!hasEnoughSpace) {

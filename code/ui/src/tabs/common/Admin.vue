@@ -196,7 +196,7 @@
                         <C><label>Time Zone</label></C>
                         <C>
                             <Inpt type="select" name="ntpTZ"
-                                  :options="ntpTZ"
+                                  :options="ntpOffsets"
                                   tabindex="42"/>
                         </C>
                     </Row>

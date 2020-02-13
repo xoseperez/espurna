@@ -34,7 +34,7 @@
                 <legend>RF Codes</legend>
                 <Repeater name="list">
                     <template #default="tpl">
-                        <label>Switch #{{tpl.i}}</label>
+                        <label>Switch #{{tpl.k}}</label>
                         <Row>
                             <C><label>Switch ON</label></C>
                             <C>

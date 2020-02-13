@@ -49,7 +49,7 @@
                 <Repeater v-model="relays.config.list" locked>
                     <template #default="tpl">
                         <Row>
-                            <C><label>Switch #{{tpl.i}}</label></C>
+                            <C><label>Switch #{{tpl.k}}</label></C>
                             <C>
                                 <Inpt name="relayIdx"
                                       type="number"

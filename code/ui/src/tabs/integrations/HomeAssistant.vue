@@ -70,6 +70,10 @@
         },
         inheritAttrs: false,
         props: {
+            modules: {
+                type: Object,
+                default: () => ({})
+            },
             ha: {
                 type: Object,
                 default: () => ({})
