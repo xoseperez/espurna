@@ -278,8 +278,8 @@
                 default: () => ({})
             },
             weblog: {
-                type: Object,
-                default: () => ({})
+                type: Array,
+                default: () => ([])
             }
         },
         data() {
@@ -288,11 +288,16 @@
         computed: {
             logs() {
                 let str = "";
-                if (this.weblog.msg)
-                    this.weblog.msg.forEach((v, i) => {
-                        str += this.weblog.pre[i] + v + "\n";
+                if (this.weblog)
+                    this.weblog.forEach((v) => {
+                        str += v + "\n";
                     });
                 return str;
+            }
+        },
+        watch: {
+            weblog(newLog, oldLog) {
+                this.weblog = [...oldLog, ...newLog]
             }
         },
         methods: {
@@ -307,7 +312,7 @@
                 }
             },
             toggleRelay(id, val) {
-                sendAction("relay", {id: id, status: value ? 1 : 0});
+                sendAction("relay", {id: id, status: val ? 1 : 0});
                 this.$set(relays, id, !val)
             },
 

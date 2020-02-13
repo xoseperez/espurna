@@ -131,7 +131,7 @@ bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, relayCount());    
+    _rfbWebSocketSendCodeArray(root, 0, relayCount());
 }
 
 #endif // WEB_SUPPORT
@@ -194,7 +194,7 @@ void _rfbSend(byte * code, unsigned char times) {
 
     char buffer[RF_MESSAGE_SIZE];
     _rfbToChar(code, buffer);
-    DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%s' %d time(s)\n"), buffer, times);
+    DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%s' %d time(s)"), buffer, times);
 
     rfb_message_t message;
     memcpy(message.code, code, RF_MESSAGE_SIZE);
@@ -206,7 +206,7 @@ void _rfbSend(byte * code, unsigned char times) {
 void _rfbSendRawOnce(byte *code, unsigned char length) {
     char buffer[length*2];
     _rfbToChar(code, buffer, length);
-    DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE '%s'\n"), buffer);
+    DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE '%s'"), buffer);
     _rfbSendRaw(code, length);
 }
 
@@ -217,13 +217,13 @@ bool _rfbMatch(char* code, unsigned char& relayID, unsigned char& value, char* b
     bool found = false;
     String compareto = String(&code[12]);
     compareto.toUpperCase();
-    DEBUG_MSG_P(PSTR("[RF] Trying to match code %s\n"), compareto.c_str());
+    DEBUG_MSG_P(PSTR("[RF] Trying to match code %s"), compareto.c_str());
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
         String code_on = rfbRetrieve(i, true);
         if (code_on.length() && code_on.endsWith(compareto)) {
-            DEBUG_MSG_P(PSTR("[RF] Match ON code for relay %d\n"), i);
+            DEBUG_MSG_P(PSTR("[RF] Match ON code for relay %d"), i);
             value = 1;
             found = true;
             if (buffer) strcpy(buffer, code_on.c_str());
@@ -231,7 +231,7 @@ bool _rfbMatch(char* code, unsigned char& relayID, unsigned char& value, char* b
 
         String code_off = rfbRetrieve(i, false);
         if (code_off.length() && code_off.endsWith(compareto)) {
-            DEBUG_MSG_P(PSTR("[RF] Match OFF code for relay %d\n"), i);
+            DEBUG_MSG_P(PSTR("[RF] Match OFF code for relay %d"), i);
             if (found) value = 2;
             found = true;
             if (buffer) strcpy(buffer, code_off.c_str());
@@ -256,11 +256,11 @@ void _rfbDecode() {
 
     byte action = _uartbuf[0];
     char buffer[RF_MESSAGE_SIZE * 2 + 1] = {0};
-    DEBUG_MSG_P(PSTR("[RF] Action 0x%02X\n"), action);
+    DEBUG_MSG_P(PSTR("[RF] Action 0x%02X"), action);
 
     if (action == RF_CODE_LEARN_KO) {
         _rfbAck();
-        DEBUG_MSG_P(PSTR("[RF] Learn timeout\n"));
+        DEBUG_MSG_P(PSTR("[RF] Learn timeout"));
     }
 
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
@@ -268,13 +268,13 @@ void _rfbDecode() {
         _rfbAck();
         _rfbToChar(&_uartbuf[1], buffer);
 
-        DEBUG_MSG_P(PSTR("[RF] Received message '%s'\n"), buffer);
+        DEBUG_MSG_P(PSTR("[RF] Received message '%s'"), buffer);
 
     }
 
     if (action == RF_CODE_LEARN_OK) {
 
-        DEBUG_MSG_P(PSTR("[RF] Learn success\n"));
+        DEBUG_MSG_P(PSTR("[RF] Learn success"));
         rfbStore(_learnId, _learnStatus, buffer);
 
         // Websocket update
@@ -295,9 +295,9 @@ void _rfbDecode() {
         unsigned char id;
         unsigned char status;
         bool matched = _rfbMatch(buffer, id, status, buffer);
-        
+
         if (matched) {
-            DEBUG_MSG_P(PSTR("[RF] Matched message '%s'\n"), buffer);
+            DEBUG_MSG_P(PSTR("[RF] Matched message '%s'"), buffer);
             _rfbin = true;
             if (status == 2) {
                 relayToggle(id);
@@ -366,7 +366,7 @@ void _rfbParseCode(char * code) {
 #if !RFB_DIRECT // Default for ITEAD SONOFF RFBRIDGE
 
 void _rfbAck() {
-    DEBUG_MSG_P(PSTR("[RF] Sending ACK\n"));
+    DEBUG_MSG_P(PSTR("[RF] Sending ACK"));
     Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_ACK);
@@ -376,7 +376,7 @@ void _rfbAck() {
 }
 
 void _rfbLearnImpl() {
-    DEBUG_MSG_P(PSTR("[RF] Sending LEARN\n"));
+    DEBUG_MSG_P(PSTR("[RF] Sending LEARN"));
     Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_LEARN);
@@ -403,7 +403,7 @@ void _rfbReceive() {
 
         yield();
         byte c = Serial.read();
-        //DEBUG_MSG_P(PSTR("[RF] Received 0x%02X\n"), c);
+        //DEBUG_MSG_P(PSTR("[RF] Received 0x%02X"), c);
 
         if (receiving) {
             if (c == RF_CODE_STOP && (_uartpos == 1 || _uartpos == RF_MESSAGE_SIZE + 1)) {
@@ -429,7 +429,7 @@ void _rfbReceive() {
 void _rfbAck() {}
 
 void _rfbLearnImpl() {
-    DEBUG_MSG_P(PSTR("[RF] Entering LEARN mode\n"));
+    DEBUG_MSG_P(PSTR("[RF] Entering LEARN mode"));
     _learning = true;
 }
 
@@ -466,11 +466,11 @@ void _rfbReceive() {
     }
     if (_learning) {
         if (!learn_start) {
-            DEBUG_MSG_P(PSTR("[RF] Arming learn timeout\n"));
+            DEBUG_MSG_P(PSTR("[RF] Arming learn timeout"));
             learn_start = millis();
         }
         if (learn_start > 0 && millis() - learn_start > RF_LEARN_TIMEOUT) {
-            DEBUG_MSG_P(PSTR("[RF] Learn timeout triggered\n"));
+            DEBUG_MSG_P(PSTR("[RF] Learn timeout triggered"));
             memset(_uartbuf, 0, sizeof(_uartbuf));
             _uartbuf[0] = RF_CODE_LEARN_KO;
             _rfbDecode();
@@ -484,7 +484,7 @@ void _rfbReceive() {
             last = millis();
             unsigned long rf_code = _rfModem->getReceivedValue();
             if ( rf_code > 0) {
-                DEBUG_MSG_P(PSTR("[RF] Received code: %08X\n"), rf_code);
+                DEBUG_MSG_P(PSTR("[RF] Received code: %08X"), rf_code);
                 unsigned int timing = _rfModem->getReceivedDelay();
                 memset(_uartbuf, 0, sizeof(_uartbuf));
                 unsigned char *msgbuf = _uartbuf + 1;
@@ -541,7 +541,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
             _learnId = t.substring(strlen(MQTT_TOPIC_RFLEARN)+1).toInt();
             if (_learnId >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
+                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)"), _learnId);
                 return;
             }
             _learnStatus = (char)payload[0] != '0';
@@ -590,7 +590,7 @@ void _rfbAPISetup() {
             if (!isNumber(tok)) return;
             _learnId = atoi(tok);
             if (_learnId >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
+                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)"), _learnId);
                 return;
             }
             tok = strtok(NULL, ",");
@@ -625,10 +625,10 @@ void _rfbInitCommands() {
             terminalError(F("Wrong arguments"));
             return;
         }
-        
+
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)"), id);
             return;
         }
 
@@ -646,10 +646,10 @@ void _rfbInitCommands() {
             terminalError(F("Wrong arguments"));
             return;
         }
-        
+
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)"), id);
             return;
         }
 
@@ -670,7 +670,7 @@ void _rfbInitCommands() {
 // -----------------------------------------------------------------------------
 
 void rfbStore(unsigned char id, bool status, const char * code) {
-    DEBUG_MSG_P(PSTR("[RF] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
+    DEBUG_MSG_P(PSTR("[RF] Storing %d-%s => '%s'"), id, status ? "ON" : "OFF", code);
     if (status) {
         setSetting({"rfbON", id}, code);
     } else {
@@ -774,19 +774,19 @@ void rfbSetup() {
         _rfb_receive = gpioValid(rx);
         _rfb_transmit = gpioValid(tx);
         if (!_rfb_transmit && !_rfb_receive) {
-            DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
+            DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set"));
             return;
         }
 
         _rfModem = new RCSwitch();
         if (_rfb_receive) {
             _rfModem->enableReceive(rx);
-            DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
+            DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u"), rx);
         }
         if (_rfb_transmit) {
             _rfModem->enableTransmit(tx);
             _rfModem->setRepeatTransmit(_rfb_repeat);
-            DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
+            DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u"), tx);
         }
     #else
         _rfb_receive = true;

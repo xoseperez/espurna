@@ -147,7 +147,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
     const auto sch_type = getSetting({"schType", sch_id}, SCHEDULER_TYPE_SWITCH);
 
     if (SCHEDULER_TYPE_SWITCH == sch_type) {
-        DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
+        DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d"), sch_switch, sch_action);
         if (sch_action == 2) {
             relayToggle(sch_switch);
         } else {
@@ -157,7 +157,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         if (SCHEDULER_TYPE_DIM == sch_type) {
-            DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
+            DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d"), sch_switch, sch_action);
             lightChannel(sch_switch, sch_action);
             lightUpdate(true, true);
         }
@@ -257,7 +257,7 @@ void _schCheck(int relay, int daybefore) {
             if (minutes_to_trigger == 0 && relay == -1) {
 
                 _schAction(i, sch_action, sch_switch);
-                DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), i);
+                DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!"), i);
 
             // Show minutes to trigger every 15 minutes
             // or every minute if less than 15 minutes to scheduled time.

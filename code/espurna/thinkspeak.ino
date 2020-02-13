@@ -153,7 +153,7 @@ void _tspkInitClient(const String& _url) {
     _tspk_client = new AsyncThingspeak(_url);
 
     _tspk_client->onDisconnect([](void * s, AsyncClient * client) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected\n"));
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected"));
         _tspk_data = "";
         _tspk_client_ts = 0;
         _tspk_last_flush = millis();
@@ -162,14 +162,14 @@ void _tspkInitClient(const String& _url) {
     }, nullptr);
 
     _tspk_client->onTimeout([](void * s, AsyncClient * client, uint32_t time) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Network timeout after %ums\n"), time);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Network timeout after %ums"), time);
         client->close(true);
     }, nullptr);
 
     _tspk_client->onPoll([](void * s, AsyncClient * client) {
         uint32_t ts = millis() - _tspk_client_ts;
         if (ts > THINGSPEAK_CLIENT_TIMEOUT) {
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] No response after %ums\n"), ts);
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] No response after %ums"), ts);
             client->close(true);
         }
     }, nullptr);
@@ -207,11 +207,11 @@ void _tspkInitClient(const String& _url) {
                     }
 
                     unsigned int code = (p) ? atoi(&p[4]) : 0;
-                    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
+                    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u"), code);
 
                     if ((0 == code) && _tspk_tries) {
                         _tspk_flush = true;
-                        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
+                        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)"), _tspk_tries);
                     } else {
                         _tspkClearQueue();
                     }
@@ -231,18 +231,18 @@ void _tspkInitClient(const String& _url) {
         _tspk_state = AsyncClientState::Disconnected;
 
         AsyncThingspeak* tspk_client = reinterpret_cast<AsyncThingspeak*>(client);
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), tspk_client->address.host.c_str(), tspk_client->address.port);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u"), tspk_client->address.host.c_str(), tspk_client->address.port);
 
         #if THINGSPEAK_USE_SSL
             uint8_t fp[20] = {0};
             sslFingerPrintArray(THINGSPEAK_FINGERPRINT, fp);
             SSL * ssl = tspk_client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
-                DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
+                DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match"));
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), tspk_client->address.path.c_str(), _tspk_data.c_str());
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s"), tspk_client->address.path.c_str(), _tspk_data.c_str());
         char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + tspk_client->address.path.length() + tspk_client->address.host.length() + 1];
         snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
@@ -268,7 +268,7 @@ void _tspkPost(const String& address) {
         : AsyncClientState::Disconnected;
 
     if (_tspk_state == AsyncClientState::Disconnected) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed"));
         _tspk_client->close(true);
     }
 
@@ -300,12 +300,12 @@ SecureClientConfig _tspk_sc_config {
 void _tspkPost(WiFiClient* client, const URL& url) {
 
     if (!client->connect(url.host.c_str(), url.port)) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed"));
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), url.host.c_str(), url.port);
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), url.path.c_str(), _tspk_data.c_str());
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u"), url.host.c_str(), url.port);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s"), url.path.c_str(), _tspk_data.c_str());
 
     char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + url.path.length() + url.host.length() + 1];
     snprintf_P(headers, sizeof(headers),
@@ -324,14 +324,14 @@ void _tspkPost(WiFiClient* client, const URL& url) {
     int pos = response.indexOf("\r\n\r\n");
 
     unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u"), code);
 
     client->stop();
 
     _tspk_last_flush = millis();
     if ((0 == code) && _tspk_tries) {
         _tspk_flush = true;
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)"), _tspk_tries);
     } else {
         _tspkClearQueue();
     }
@@ -346,7 +346,7 @@ void _tspkPost(const String& address) {
         if (url.protocol == "https") {
             const int check = _ota_sc_config.on_check();
             if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
-                DEBUG_MSG_P(PSTR("[THINGSPEAK] Time not synced! Cannot use CA validation\n"));
+                DEBUG_MSG_P(PSTR("[THINGSPEAK] Time not synced! Cannot use CA validation"));
                 return;
             }
 
@@ -364,14 +364,14 @@ void _tspkPost(const String& address) {
         auto client = std::make_unique<WiFiClient>();
         _tspkPost(client.get(), url);
         return;
-    }        
+    }
 
 }
 
 #endif // THINGSPEAK_USE_ASYNC
 
 void _tspkEnqueue(unsigned char index, const char * payload) {
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%u with value %s\n"), index, payload);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%u with value %s"), index, payload);
     --index;
     if (_tspk_queue[index] != NULL) free(_tspk_queue[index]);
     _tspk_queue[index] = strdup(payload);
@@ -467,7 +467,7 @@ void tspkSetup() {
         StatusBroker::Register(_tspkBrokerCallback);
     #endif
 
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s"),
         THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",
         THINGSPEAK_USE_SSL ? "ENABLED" : "DISABLED"
     );

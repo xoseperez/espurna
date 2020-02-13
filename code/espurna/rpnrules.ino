@@ -259,14 +259,14 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.VARS"), [](Embedis* e) {
         unsigned char num = rpn_variables_size(_rpn_ctxt);
         if (0 == num) {
-            DEBUG_MSG_P(PSTR("[RPN] No variables\n"));
+            DEBUG_MSG_P(PSTR("[RPN] No variables"));
         } else {
-            DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
+            DEBUG_MSG_P(PSTR("[RPN] Variables:"));
             for (unsigned char i=0; i<num; i++) {
                 char * name = rpn_variable_name(_rpn_ctxt, i);
                 float value;
                 rpn_variable_get(_rpn_ctxt, name, value);
-                DEBUG_MSG_P(PSTR("   %s: %s\n"), name, String(value).c_str());
+                DEBUG_MSG_P(PSTR("   %s: %s"), name, String(value).c_str());
             }
         }
         terminalOK();
@@ -274,16 +274,16 @@ void _rpnInitCommands() {
 
     terminalRegisterCommand(F("RPN.OPS"), [](Embedis* e) {
         unsigned char num = _rpn_ctxt.operators.size();
-        DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
+        DEBUG_MSG_P(PSTR("[RPN] Operators:"));
         for (unsigned char i=0; i<num; i++) {
-            DEBUG_MSG_P(PSTR("   %s (%d)\n"), _rpn_ctxt.operators[i].name, _rpn_ctxt.operators[i].argc);
+            DEBUG_MSG_P(PSTR("   %s (%d)"), _rpn_ctxt.operators[i].name, _rpn_ctxt.operators[i].argc);
         }
         terminalOK();
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](Embedis* e) {
         if (e->argc == 2) {
-            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), e->argv[1]);
+            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\""), e->argv[1]);
             rpn_process(_rpn_ctxt, e->argv[1], true);
             _rpnDump();
             rpn_stack_clear(_rpn_ctxt);
@@ -298,14 +298,14 @@ void _rpnInitCommands() {
 
 void _rpnDump() {
     float value;
-    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
+    DEBUG_MSG_P(PSTR("[RPN] Stack:"));
     unsigned char num = rpn_stack_size(_rpn_ctxt);
     if (0 == num) {
-        DEBUG_MSG_P(PSTR("      (empty)\n"));
+        DEBUG_MSG_P(PSTR("      (empty)"));
     } else {
         unsigned char index = num - 1;
         while (rpn_stack_get(_rpn_ctxt, index, value)) {
-            DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, String(value).c_str());
+            DEBUG_MSG_P(PSTR("      %02d: %s"), index--, String(value).c_str());
         }
     }
 }
@@ -315,7 +315,7 @@ void _rpnRun() {
     unsigned char i = 0;
     String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
-        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
+        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\""), rule.c_str());
         rpn_process(_rpn_ctxt, rule.c_str(), true);
         //_rpnDump();
         rule = getSetting({"rpnRule", ++i});
@@ -368,7 +368,7 @@ void rpnSetup() {
             static const String tick_every_hour(F("tick1h"));
             static const String tick_every_minute(F("tick1m"));
 
-            const char* ptr = 
+            const char* ptr =
                 (tick == NtpTick::EveryMinute) ? tick_every_minute.c_str() :
                 (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
 

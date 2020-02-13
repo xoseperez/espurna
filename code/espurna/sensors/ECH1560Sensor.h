@@ -284,7 +284,7 @@ class ECH1560Sensor : public BaseSensor {
             if (byte2 == 0) {
                 _dosync = false;
             #if SENSOR_DEBUG
-                DEBUG_MSG_P(PSTR("Nothing connected, or out of sync!\n"));
+                DEBUG_MSG_P(PSTR("Nothing connected, or out of sync!"));
             #endif
             }
         }
@@ -347,7 +347,7 @@ void ECH1560Sensor::_attach(ECH1560Sensor * instance, unsigned char gpio, unsign
     _ech1560_sensor_instance[index] = instance;
     attachInterrupt(gpio, _ech1560_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -357,7 +357,7 @@ void ECH1560Sensor::_detach(unsigned char gpio) {
     if (_ech1560_sensor_instance[index]) {
         detachInterrupt(gpio);
         #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _ech1560_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s"), gpio, _ech1560_sensor_instance[index]->description().c_str());
         #endif
         _ech1560_sensor_instance[index] = NULL;
     }

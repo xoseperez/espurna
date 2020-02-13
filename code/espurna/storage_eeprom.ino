@@ -18,9 +18,9 @@ void eepromRotate(bool value) {
     // reserved by the memory layout
     if (EEPROMr.size() > EEPROMr.reserved()) {
         if (value) {
-            DEBUG_MSG_P(PSTR("[EEPROM] Reenabling EEPROM rotation\n"));
+            DEBUG_MSG_P(PSTR("[EEPROM] Reenabling EEPROM rotation"));
         } else {
-            DEBUG_MSG_P(PSTR("[EEPROM] Disabling EEPROM rotation\n"));
+            DEBUG_MSG_P(PSTR("[EEPROM] Disabling EEPROM rotation"));
         }
         EEPROMr.rotate(value);
 
@@ -43,8 +43,8 @@ String eepromSectors() {
 }
 
 void eepromSectorsDebug() {
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s"), (char *) eepromSectors().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu"), eepromCurrent());
 }
 
 bool _eepromCommit() {
@@ -69,8 +69,8 @@ void _eepromInitCommands() {
         infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
         eepromSectorsDebug();
         if (_eeprom_commit_count > 0) {
-            DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
-            DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
+            DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu"), _eeprom_commit_count);
+            DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s"), _eeprom_last_commit_result ? "OK" : "ERROR");
         }
         terminalOK();
     });
@@ -80,7 +80,7 @@ void _eepromInitCommands() {
         if (res) {
             terminalOK();
         } else {
-            DEBUG_MSG_P(PSTR("-ERROR\n"));
+            DEBUG_MSG_P(PSTR("-ERROR"));
         }
     });
 

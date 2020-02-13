@@ -198,7 +198,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
             // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
             // This is necessary when a TLS connection is open since it sucks too much memory
-            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
+            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes"), getFreeHeap());
             size_t max = (getFreeHeap() / 3) & 0xFFE0;
 
             AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
@@ -209,8 +209,7 @@ void _onHome(AsyncWebServerRequest *request) {
                 if (len > max) len = max;
                 if (len > 0) memcpy_P(buffer, webui_image + index, len);
 
-                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
-                if (len == 0) DEBUG_MSG_P(PSTR("\n"));
+                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)"), int(100 * index / webui_image_len), max);
 
                 // Return the actual length of the chunk (0 for end of file)
                 return len;
@@ -245,7 +244,7 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
         uint8_t * nbuf = (uint8_t*) malloc(server_cer_len);
         memcpy_P(nbuf, server_cer, server_cer_len);
         *buf = nbuf;
-        DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+        DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK"), filename);
         return server_cer_len;
     }
 
@@ -253,11 +252,11 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
         uint8_t * nbuf = (uint8_t*) malloc(server_key_len);
         memcpy_P(nbuf, server_key, server_key_len);
         *buf = nbuf;
-        DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+        DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK"), filename);
         return server_key_len;
     }
 
-    DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
+    DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR"), filename);
     *buf = 0;
     return 0;
 
@@ -271,12 +270,12 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
             size = file.read(nbuf, size);
             file.close();
             *buf = nbuf;
-            DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+            DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK"), filename);
             return size;
         }
         file.close();
     }
-    DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
+    DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR"), filename);
     *buf = 0;
     return 0;
 
@@ -371,7 +370,7 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
 
-        DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
+        DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s"), filename.c_str());
         Update.runAsync(true);
 
         // Note: cannot use request->contentLength() for multipart/form-data
@@ -500,7 +499,7 @@ uint16_t webPort() {
 }
 
 void webLog(AsyncWebServerRequest *request) {
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Request: %s %s\n"), request->methodToString(), request->url().c_str());
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Request: %s %s"), request->methodToString(), request->url().c_str());
 }
 
 void webSetup() {
@@ -550,7 +549,7 @@ void webSetup() {
         _server->begin();
     #endif
 
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u"), port);
 
 }
 

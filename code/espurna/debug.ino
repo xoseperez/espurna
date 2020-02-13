@@ -267,10 +267,10 @@ void debugSetup() {
         terminalRegisterCommand(F("DEBUG.BUFFER"), [](Embedis* e) {
             _debug_log_buffer_enabled = false;
             if (!_debug_log_buffer.size()) {
-                DEBUG_MSG_P(PSTR("[DEBUG] Buffer is empty\n"));
+                DEBUG_MSG_P(PSTR("[DEBUG] Buffer is empty"));
                 return;
             }
-            DEBUG_MSG_P(PSTR("[DEBUG] Buffer size: %u / %u bytes\n"),
+            DEBUG_MSG_P(PSTR("[DEBUG] Buffer size: %u / %u bytes"),
                 _debug_log_buffer.size(),
                 _debug_log_buffer.capacity()
             );
@@ -311,7 +311,7 @@ DebugLogMode _debugLogModeDeserialize(const String& value) {
 
 void debugConfigureBoot() {
     static_assert(
-        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value, 
+        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value,
         "should be able to match DebugLogMode with int"
     );
 

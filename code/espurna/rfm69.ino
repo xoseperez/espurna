@@ -143,7 +143,7 @@ void _rfm69Process(packet_t * data) {
 
             if ((gap > 1) && (data->packetID > 1)) {
                 _rfm69_node_info[data->senderID].missing = _rfm69_node_info[data->senderID].missing + gap - 1;
-                DEBUG_MSG_P(PSTR("[RFM69] %u missing packets detected\n"), gap - 1);
+                DEBUG_MSG_P(PSTR("[RFM69] %u missing packets detected"), gap - 1);
             }
         }
 
@@ -270,10 +270,10 @@ void rfm69Setup() {
     _rfm69_radio->enableAutoPower(0);
     if (RFM69_IS_RFM69HW) _rfm69_radio->setHighPower();
 
-    DEBUG_MSG_P(PSTR("[RFM69] Worning at %u MHz\n"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
-    DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), RFM69_NODE_ID);
-    DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), RFM69_NETWORK_ID);
-    DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s\n"), RFM69_PROMISCUOUS ? "ON" : "OFF");
+    DEBUG_MSG_P(PSTR("[RFM69] Worning at %u MHz"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
+    DEBUG_MSG_P(PSTR("[RFM69] Node %u"), RFM69_NODE_ID);
+    DEBUG_MSG_P(PSTR("[RFM69] Network %u"), RFM69_NETWORK_ID);
+    DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s"), RFM69_PROMISCUOUS ? "ON" : "OFF");
 
     #if WEB_SUPPORT
         wsRegister()

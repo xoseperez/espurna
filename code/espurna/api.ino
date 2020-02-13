@@ -63,14 +63,14 @@ bool _authAPI(AsyncWebServerRequest *request) {
 
     const auto key = _apiKey();
     if (!key.length() || !_apiEnabled()) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
+        DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled"));
         request->send(403);
         return false;
     }
 
     AsyncWebParameter* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
     if (!keyParam || !keyParam->value().equals(key)) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
+        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter"));
         request->send(403);
         return false;
     }
@@ -157,7 +157,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         AsyncWebParameter* p = request->getParam("action");
         String action = p->value();
-        DEBUG_MSG_P(PSTR("[RPC] Action: %s\n"), action.c_str());
+        DEBUG_MSG_P(PSTR("[RPC] Action: %s"), action.c_str());
 
         if (action.equals("reboot")) {
             response = 200;
@@ -215,12 +215,12 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
         // The response will be a 404 NOT FOUND if the resource is not available
         if (0 == value[0]) {
-            DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
+            DEBUG_MSG_P(PSTR("[API] Sending 404 response"));
             request->send(404);
             return false;
         }
 
-        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), value);
+        DEBUG_MSG_P(PSTR("[API] Sending response '%s'"), value);
 
         // Format response according to the Accept header
         if (_asJson(request)) {

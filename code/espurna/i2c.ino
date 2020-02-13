@@ -306,7 +306,7 @@ bool i2cGetLock(unsigned char address) {
     unsigned char mask = 1 << (address % 8);
     if (_i2c_locked[index] & mask) return false;
     _i2c_locked[index] = _i2c_locked[index] | mask;
-    DEBUG_MSG_P(PSTR("[I2C] Address 0x%02X locked\n"), address);
+    DEBUG_MSG_P(PSTR("[I2C] Address 0x%02X locked"), address);
     return true;
 }
 
@@ -350,11 +350,11 @@ void i2cScan() {
     for (unsigned char address = 1; address < 127; address++) {
         unsigned char error = i2cCheck(address);
         if (error == 0) {
-            DEBUG_MSG_P(PSTR("[I2C] Device found at address 0x%02X\n"), address);
+            DEBUG_MSG_P(PSTR("[I2C] Device found at address 0x%02X"), address);
             nDevices++;
         }
     }
-    if (nDevices == 0) DEBUG_MSG_P(PSTR("[I2C] No devices found\n"));
+    if (nDevices == 0) DEBUG_MSG_P(PSTR("[I2C] No devices found"));
 }
 
 #if TERMINAL_SUPPORT
@@ -388,7 +388,7 @@ void i2cSetup() {
         Wire.begin(sda, scl);
     #endif
 
-    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%02d for SDA and GPIO%02d for SCL\n"), sda, scl);
+    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%02d for SDA and GPIO%02d for SCL"), sda, scl);
 
     #if TERMINAL_SUPPORT
         _i2cInitCommands();

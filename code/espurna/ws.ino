@@ -120,14 +120,10 @@ void ws_debug_t::send(const bool connected) {
     DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
 
     JsonObject& root = jsonBuffer.createObject();
-    JsonObject& weblog = root.createNestedObject("weblog");
-
-    JsonArray& msg = weblog.createNestedArray("msg");
-    JsonArray& pre = weblog.createNestedArray("pre");
+    JsonArray& weblog = root.createNestedArray("weblog");
 
     for (auto& message : messages) {
-        pre.add(message.first.c_str());
-        msg.add(message.second.c_str());
+        weblog.add(message.second.c_str());
     }
 
     wsSend(root);
@@ -201,7 +197,7 @@ bool _wsCheckKey(const String& key, JsonVariant& value) {
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
-    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %s\n"), length ? (char*) payload : "");
+    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %s"), length ? (char*) payload : "");
 
     // Get client ID
     uint32_t client_id = client->id();
@@ -221,7 +217,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error"));
         wsSend_P(client_id, PSTR("{\"message\": 3}"));
         return;
     }
@@ -236,7 +232,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             return;
         }
 
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s"), action);
 
         if (strcmp(action, "reboot") == 0) {
             deferredReset(100, CUSTOM_RESET_WEB);
@@ -249,7 +245,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "factory_reset") == 0) {
-            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n"));
             resetSettings();
             deferredReset(100, CUSTOM_RESET_FACTORY);
             return;
@@ -283,7 +279,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     JsonObject& config = root["config"];
     if (config.success()) {
 
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data\n"));
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data"));
 
         String adminPass;
         bool save = false;
@@ -491,34 +487,34 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         #ifndef NOWSAUTH
             if (!_wsAuth(client)) {
                 wsSend_P(client->id(), PSTR("{\"message\": 10}"));
-                DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
+                DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed"));
                 client->close();
                 return;
             }
         #endif
 
         IPAddress ip = client->remoteIP();
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsConnected(client->id());
         _wsResetUpdateTimer();
         wifiReconnectCheck();
         client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 
     } else if(type == WS_EVT_DISCONNECT) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected"), client->id());
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
         }
         wifiReconnectCheck();
 
     } else if(type == WS_EVT_ERROR) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s"), client->id(), *((uint16_t*)arg), (char*)data);
 
     } else if(type == WS_EVT_PONG) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u pong(%u): %s\n"), client->id(), len, len ? (char*) data : "");
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u pong(%u): %s"), client->id(), len, len ? (char*) data : "");
 
     } else if(type == WS_EVT_DATA) {
-        //DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u data(%u): %s\n"), client->id(), len, len ? (char*) data : "");
+        //DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u data(%u): %s"), client->id(), len, len ? (char*) data : "");
         if (!client->_tempObject) return;
         WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *)client->_tempObject;
         AwsFrameInfo * info = (AwsFrameInfo*)arg;

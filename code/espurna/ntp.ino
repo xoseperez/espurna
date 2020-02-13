@@ -182,7 +182,7 @@ String _ntpGetServer() {
 
 void _ntpReport() {
     if (!ntpSynced()) {
-        DEBUG_MSG_P(PSTR("[NTP] Not synced\n")); 
+        DEBUG_MSG_P(PSTR("[NTP] Not synced"));
         return;
     }
 
@@ -193,15 +193,15 @@ void _ntpReport() {
     gmtime_r(&ts, &utc_tm);
     gmtime_r(&_ntp_last, &sync_tm);
 
-    DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntp_server.c_str());
-    DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), ntpDateTime(&sync_tm).c_str());
-    DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), ntpDateTime(&utc_tm).c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Server     : %s"), _ntp_server.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)"), ntpDateTime(&sync_tm).c_str());
+    DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s"), ntpDateTime(&utc_tm).c_str());
 
     const char* cfg_tz = getenv("TZ");
     if ((cfg_tz != nullptr) && (strcmp(cfg_tz, "UTC0") != 0)) {
         tm local_tm;
         localtime_r(&ts, &local_tm);
-        DEBUG_MSG_P(PSTR("[NTP] Local Time : %s (%s)\n"),
+        DEBUG_MSG_P(PSTR("[NTP] Local Time : %s (%s)"),
             ntpDateTime(&local_tm).c_str(), cfg_tz
         );
     }
@@ -215,13 +215,13 @@ void _ntpConfigure() {
         setenv("TZ", cfg_tz.c_str(), 1);
         tzset();
     }
-    
+
     const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
     const auto active_server = _ntpGetServer();
     if (cfg_tz != active_tz) {
         _ntp_server = cfg_server;
         configTime(cfg_tz.c_str(), _ntp_server.c_str());
-        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
+        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
 
@@ -342,7 +342,7 @@ void ntpSetup() {
 
     _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
     _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
-    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %us, Update delay: %us\n"),
+    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %us, Update delay: %us"),
         _ntp_startup_delay, _ntp_update_delay
     );
 
@@ -364,7 +364,7 @@ void ntpSetup() {
     static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP) {
         const auto server = _ntpGetServer();
         if (sntp_enabled() && (!_ntp_server.length() || (server != _ntp_server))) {
-            DEBUG_MSG_P(PSTR("[NTP] Updating `ntpServer` setting from DHCP: %s\n"), server.c_str());
+            DEBUG_MSG_P(PSTR("[NTP] Updating `ntpServer` setting from DHCP: %s"), server.c_str());
             _ntp_server = server;
             setSetting("ntpServer", server);
         }

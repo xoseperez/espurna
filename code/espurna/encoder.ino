@@ -150,7 +150,7 @@ void encoderSetup() {
     espurnaRegisterLoop(_encoderLoop);
     espurnaRegisterReload(_encoderConfigure);
 
-    DEBUG_MSG_P(PSTR("[ENCODER] Number of encoders: %u\n"), _encoders.size());
+    DEBUG_MSG_P(PSTR("[ENCODER] Number of encoders: %u"), _encoders.size());
 
 }
 

@@ -576,9 +576,9 @@
     textarea.terminal, div.terminal, pre.terminal {
         font-family: 'Courier New', monospace;
         font-size: 80%;
-        line-height: 100%;
         background-color: #333;
         color: #52ff5f;
+        line-height: .7em;
     }
 
 
@@ -736,10 +736,21 @@
         cursor: pointer;
         font-style: normal;
         font-size: 1.5em;
-        float: left;
-        clear: both;
+        position: absolute;
+        display: block;
+        color: white;
+        top: 0;
+        right: 0;
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        line-height: 38px;
+        border-color: darken(@primary, 15%);
+        border-style: solid;
+        border-width: 0 0 3px 0;
+        border-radius: 0 0 0 5px;
+        background: @primary;
     }
-
 
     @media screen and (max-width: 48em) {
         .header {

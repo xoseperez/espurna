@@ -230,7 +230,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
             if (_relays[i].current_status) mask = mask + (1 << i);
         }
 
-        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
+        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d"), mask);
 
         // Send it to F330
         Serial.flush();
@@ -344,7 +344,7 @@ void _relayProcess(bool mode) {
         _relays[id].change_delay = 0;
         changed = true;
 
-        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s"), id, target ? "ON" : "OFF");
 
         // Call the provider to perform the action
         _relayProviderStatus(id, target);
@@ -468,7 +468,7 @@ void relayPulse(unsigned char id) {
     bool pulseStatus = (mode == RELAY_PULSE_ON);
 
     if (pulseStatus != status) {
-        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)"), id, ms);
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
         _relays[id].pulse = getSetting({"relayPulse", id}, RELAY_PULSE_MODE);
@@ -485,7 +485,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
     if (id >= _relays.size()) return false;
 
     if (!_relayStatusLock(id, status)) {
-        DEBUG_MSG_P(PSTR("[RELAY] #%d is locked to %s\n"), id, _relays[id].current_status ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[RELAY] #%d is locked to %s"), id, _relays[id].current_status ? "ON" : "OFF");
         _relays[id].report = true;
         _relays[id].group_report = true;
         return false;
@@ -496,7 +496,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
     if (_relays[id].current_status == status) {
 
         if (_relays[id].target_status != status) {
-            DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled change cancelled\n"), id);
+            DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled change cancelled"), id);
             _relays[id].target_status = status;
             _relays[id].report = false;
             _relays[id].group_report = false;
@@ -547,7 +547,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
         relaySync(id);
 
-        DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled %s in %u ms\n"),
+        DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled %s in %u ms"),
             id, status ? "ON" : "OFF", _relays[id].change_delay
         );
 
@@ -639,7 +639,7 @@ void relaySave(bool eeprom) {
     }
 
     const RelayMask mask(statuses);
-    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %s\n"), mask.as_string.c_str());
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %s"), mask.as_string.c_str());
 
     // Persist only to rtcmem, unless requested to save to the eeprom
     _relayMaskRtcmem(mask);
@@ -744,7 +744,7 @@ void _relayBoot() {
         ? _relayMaskRtcmem()
         : _relayMaskSettings();
 
-    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s\n"), stored_mask.as_string.c_str());
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s"), stored_mask.as_string.c_str());
 
     auto mask = std::bitset<RELAYS_MAX>(stored_mask.as_u32);
 
@@ -754,7 +754,7 @@ void _relayBoot() {
     for (unsigned char i=0; i<relayCount(); ++i) {
 
         const auto boot_mode = getSetting({"relayBoot", i}, RELAY_BOOT_MODE);
-        DEBUG_MSG_P(PSTR("[RELAY] Relay #%u boot mode %d\n"), i, boot_mode);
+        DEBUG_MSG_P(PSTR("[RELAY] Relay #%u boot mode %d"), i, boot_mode);
 
         status = false;
         lock = RELAY_LOCK_DISABLED;
@@ -1030,7 +1030,7 @@ void relaySetupAPI() {
             [relayID](const char * payload) {
 
                 if (!_relayHandlePayload(relayID, payload)) {
-                    DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
+                    DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)"), payload);
                     return;
                 }
 
@@ -1048,7 +1048,7 @@ void relaySetupAPI() {
                 if (0 == pulse) return;
 
                 if (RELAY_PULSE_NONE != _relays[relayID].pulse) {
-                    DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), relayID);
+                    DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings"), relayID);
                 }
 
                 _relays[relayID].pulse_ms = pulse;
@@ -1210,7 +1210,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             unsigned int id = t.substring(strlen(MQTT_TOPIC_PULSE)+1).toInt();
 
             if (id >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), id);
+                DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)"), id);
                 return;
             }
 
@@ -1218,7 +1218,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             if (0 == pulse) return;
 
             if (RELAY_PULSE_NONE != _relays[id].pulse) {
-                DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), id);
+                DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings"), id);
             }
 
             _relays[id].pulse_ms = pulse;
@@ -1235,7 +1235,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             // Get relay ID
             unsigned int id = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
             if (id >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), id);
+                DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)"), id);
                 return;
             }
 
@@ -1265,7 +1265,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                     }
                 }
 
-                DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d\n"), i);
+                DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d"), i);
                 relayStatusWrap(i, value, true);
 
             }
@@ -1284,10 +1284,10 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         for (unsigned char i=0; i < _relays.size(); i++){
             const auto reaction = getSetting({"relayOnDisc", i}, 0);
             if (1 == reaction) {     // switch relay OFF
-                DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection\n"), i);
+                DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection"), i);
                 relayStatusWrap(i, RelayStatus::OFF, false);
             } else if(2 == reaction) { // switch relay ON
-                DEBUG_MSG_P(PSTR("[RELAY] Set relay (%d) due to MQTT disconnection\n"), i);
+                DEBUG_MSG_P(PSTR("[RELAY] Set relay (%d) due to MQTT disconnection"), i);
                 relayStatusWrap(i, RelayStatus::ON, false);
             }
         }
@@ -1326,7 +1326,7 @@ void _relayInitCommands() {
         }
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)"), id);
             return;
         }
 
@@ -1338,10 +1338,10 @@ void _relayInitCommands() {
                 relayStatus(id, value == 1);
             }
         }
-        DEBUG_MSG_P(PSTR("Status: %s\n"), _relays[id].target_status ? "true" : "false");
+        DEBUG_MSG_P(PSTR("Status: %s"), _relays[id].target_status ? "true" : "false");
         if (_relays[id].pulse != RELAY_PULSE_NONE) {
-            DEBUG_MSG_P(PSTR("Pulse: %s\n"), (_relays[id].pulse == RELAY_PULSE_ON) ? "ON" : "OFF");
-            DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
+            DEBUG_MSG_P(PSTR("Pulse: %s"), (_relays[id].pulse == RELAY_PULSE_ON) ? "ON" : "OFF");
+            DEBUG_MSG_P(PSTR("Pulse time: %d"), _relays[id].pulse_ms);
 
         }
         terminalOK();
@@ -1349,11 +1349,11 @@ void _relayInitCommands() {
 
     #if 0
     terminalRegisterCommand(F("RELAY.INFO"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("    cur tgt pin type reset lock  delay_on   delay_off  pulse  pulse_ms\n"));
-        DEBUG_MSG_P(PSTR("    --- --- --- ---- ----- ---- ---------- ----------- ----- ----------\n"));
+        DEBUG_MSG_P(PSTR("    cur tgt pin type reset lock  delay_on   delay_off  pulse  pulse_ms"));
+        DEBUG_MSG_P(PSTR("    --- --- --- ---- ----- ---- ---------- ----------- ----- ----------"));
         for (unsigned char index = 0; index < _relays.size(); ++index) {
             const auto& relay = _relays.at(index);
-            DEBUG_MSG_P(PSTR("%3u %3s %3s %3u %4u %5u %4u %10u %11u %5u %10u\n"),
+            DEBUG_MSG_P(PSTR("%3u %3s %3s %3u %4u %5u %4u %10u %11u %5u %10u"),
                 index,
                 relay.current_status ? "ON" : "OFF",
                 relay.target_status ? "ON" : "OFF",
@@ -1473,6 +1473,6 @@ void relaySetup() {
     espurnaRegisterLoop(_relayLoop);
     espurnaRegisterReload(_relayConfigure);
 
-    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
+    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d"), _relays.size());
 
 }

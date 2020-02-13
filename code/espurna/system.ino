@@ -73,7 +73,7 @@ void systemCheck(bool stable) {
 
     if (stable) {
         value = 0;
-        DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
+        DEBUG_MSG_P(PSTR("[MAIN] System OK"));
     } else {
         if (!rtcmemStatus()) {
             systemStabilityCounter(1);
@@ -85,7 +85,7 @@ void systemCheck(bool stable) {
         if (++value > SYSTEM_CHECK_MAX) {
             _systemStable = false;
             value = 0;
-            DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
+            DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE"));
         }
     }
 

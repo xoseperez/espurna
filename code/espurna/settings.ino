@@ -239,7 +239,7 @@ bool settingsRestoreJson(JsonObject& data) {
     // Check this is an ESPurna configuration file (must have "app":"ESPURNA")
     const char* app = data["app"];
     if (!app || strcmp(app, APP_NAME) != 0) {
-        DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key\n"));
+        DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key"));
         return false;
     }
 
@@ -262,7 +262,7 @@ bool settingsRestoreJson(JsonObject& data) {
     // Persist to EEPROM
     saveSettings();
 
-    DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
+    DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully"));
     return true;
 
 }
@@ -276,7 +276,7 @@ bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024) {
     JsonObject& root = jsonBuffer.parseObject((char *) json_string);
 
     if (!root.success()) {
-        DEBUG_MSG_P(PSTR("[SETTINGS] JSON parsing error\n"));
+        DEBUG_MSG_P(PSTR("[SETTINGS] JSON parsing error"));
         return false;
     }
 

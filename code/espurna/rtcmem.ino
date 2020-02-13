@@ -11,7 +11,7 @@ bool _rtcmem_status = false;
 void _rtcmemErase() {
     auto ptr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
     const auto end = ptr + RTCMEM_BLOCKS;
-    DEBUG_MSG_P(PSTR("[RTCMEM] Erasing start=%p end=%p\n"), ptr, end);
+    DEBUG_MSG_P(PSTR("[RTCMEM] Erasing start=%p end=%p"), ptr, end);
     do {
         *ptr = 0;
     } while (++ptr != end);
@@ -51,7 +51,7 @@ void _rtcmemInitCommands() {
     #if DEBUG_SUPPORT
         terminalRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
 
-            DEBUG_MSG_P(PSTR("[RTCMEM] boot_status=%u status=%u blocks_used=%u\n"),
+            DEBUG_MSG_P(PSTR("[RTCMEM] boot_status=%u status=%u blocks_used=%u"),
                 _rtcmem_status, _rtcmemStatus(), RtcmemSize);
 
             String line;
@@ -72,7 +72,7 @@ void _rtcmemInitCommands() {
                 line += buffer;
 
                 if ((block % 8) == 0) {
-                    DEBUG_MSG_P(PSTR("%02u %p: %s\n"), start, addr+start, line.c_str());
+                    DEBUG_MSG_P(PSTR("%02u %p: %s"), start, addr+start, line.c_str());
                     start = block;
                     line = "";
                 }

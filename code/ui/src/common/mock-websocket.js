@@ -35,12 +35,8 @@ export default function () {
                     "sch": 1
                 }
             },
-
             {
-                "weblog": {
-                    "msg": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
-                    "pre": ["[842843] "]
-                }
+                "weblog": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
             }, {
                 "wifi": {
                     "rssi": -86,
@@ -237,13 +233,28 @@ export default function () {
                         [7, 0]
                     ]
                 }
+            },
+            {
+                "ha": {
+                    "prefix": "homeassistant",
+                    "enabled": false
+                }
             }
         ];
 
         data.forEach((msg) => {
             //server.send(msg);
             server.send(JSON.stringify(msg));
-        })
+        });
+
+        setTimeout(() => {
+            server.send(JSON.stringify({
+                "weblog": [
+                    "[NTP] UTC Time  : 2020-02-13 17:49:33\n",
+                    "[NTP] Local Time: 2020-02-13 18:49:33\n"
+                ],
+            }));
+        }, 20000);
     });
 
 

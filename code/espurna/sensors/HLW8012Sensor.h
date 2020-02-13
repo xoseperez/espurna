@@ -316,7 +316,7 @@ void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsign
     _hlw8012_sensor_instance[index] = instance;
     attachInterrupt(gpio, _hlw8012_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s\n"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -326,7 +326,7 @@ void HLW8012Sensor::_detach(unsigned char gpio) {
     if (_hlw8012_sensor_instance[index]) {
         detachInterrupt(gpio);
         #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s\n"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
         #endif
         _hlw8012_sensor_instance[index] = NULL;
     }

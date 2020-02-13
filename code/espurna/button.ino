@@ -82,7 +82,7 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
 
 void buttonEvent(unsigned char id, unsigned char event) {
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
+    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u"), id, event);
     if (event == 0) return;
 
     auto& button = _buttons[id];
@@ -105,7 +105,7 @@ void buttonEvent(unsigned char id, unsigned char event) {
     if (BUTTON_MODE_OFF == action) {
         relayStatus(button.relayID, false);
     }
-    
+
     if (BUTTON_MODE_AP == action) {
         if (wifiState() & WIFI_STATE_AP) {
             wifiStartSTA();
@@ -113,13 +113,13 @@ void buttonEvent(unsigned char id, unsigned char event) {
             wifiStartAP();
         }
     }
-    
+
     if (BUTTON_MODE_RESET == action) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
 
     if (BUTTON_MODE_FACTORY == action) {
-        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n"));
         resetSettings();
         deferredReset(100, CUSTOM_RESET_FACTORY);
     }
@@ -129,13 +129,13 @@ void buttonEvent(unsigned char id, unsigned char event) {
             wifiStartWPS();
         }
     #endif // defined(JUSTWIFI_ENABLE_WPS)
-    
+
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
         if (BUTTON_MODE_SMART_CONFIG == action) {
             wifiStartSmartConfig();
         }
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-    
+
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     if (BUTTON_MODE_DIM_UP == action) {
         lightBrightnessStep(1);
@@ -225,7 +225,7 @@ void buttonSetup() {
 
     #endif
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
+    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u"), _buttons.size());
 
     // Websocket Callbacks
     #if WEB_SUPPORT
@@ -289,7 +289,7 @@ void buttonLoop() {
                     unsigned char value = Serial.read();
                     if (Serial.read() == 0xA1) {
 
-                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d\n"), value);
+                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d"), value);
 
                         for (unsigned int i=0; i<_buttons.size(); i++) {
 

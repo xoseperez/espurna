@@ -205,7 +205,7 @@ PROGMEM const char* const magnitude_units[] = {
 
 #if MAX6675_SUPPORT
     #include "sensors/MAX6675Sensor.h"
-#endif 
+#endif
 
 #if MICS2710_SUPPORT
     #include "sensors/MICS2710Sensor.h"
@@ -561,7 +561,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
     JsonObject& sensor = root.createNestedObject("sensor");
 
     _sensorWebSocketMagnitudesConfig(sensor);
-        
+
     //TODO why is this not nested?
     sensor["pwrUnits"] = _sensor_power_units;
     sensor["eneUnits"] = _sensor_energy_units;
@@ -623,7 +623,7 @@ void _sensorInitCommands() {
     terminalRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
             sensor_magnitude_t magnitude = _magnitudes[i];
-            DEBUG_MSG_P(PSTR("[SENSOR] * %2d: %s @ %s (%s/%d)\n"),
+            DEBUG_MSG_P(PSTR("[SENSOR] * %2d: %s @ %s (%s/%d)"),
                 i,
                 magnitudeTopic(magnitude.type).c_str(),
                 magnitude.sensor->slot(magnitude.local).c_str(),
@@ -636,10 +636,10 @@ void _sensorInitCommands() {
     #if PZEM004T_SUPPORT
     terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
         if (e->argc == 1) {
-            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T"));
             unsigned char dev_count = pzem004t_sensor->getAddressesCount();
             for(unsigned char dev = 0; dev < dev_count; dev++) {
-                DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
+                DEBUG_MSG_P(PSTR("Device %d/%s"), dev, pzem004t_sensor->getAddress(dev).c_str());
             }
             terminalOK();
         } else if(e->argc == 2) {
@@ -661,11 +661,11 @@ void _sensorInitCommands() {
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
-            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T"));
             for(unsigned char dev = init; dev < limit; dev++) {
                 float offset = pzem004t_sensor->resetEnergy(dev);
                 _sensorEnergyTotal(dev, offset);
-                DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
+                DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
             terminalOK();
         }
@@ -676,9 +676,9 @@ void _sensorInitCommands() {
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
-            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T"));
             for(unsigned char dev = init; dev < limit; dev++) {
-                DEBUG_MSG_P(PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s\n"), //
+                DEBUG_MSG_P(PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s"), //
                             dev,
                             pzem004t_sensor->getAddress(dev).c_str(),
                             String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_CURRENT_INDEX)).c_str(),
@@ -704,7 +704,7 @@ void _sensorPre() {
     for (unsigned char i=0; i<_sensors.size(); i++) {
         _sensors[i]->pre();
         if (!_sensors[i]->status()) {
-            DEBUG_MSG_P(PSTR("[SENSOR] Error reading data from %s (error: %d)\n"),
+            DEBUG_MSG_P(PSTR("[SENSOR] Error reading data from %s (error: %d)"),
                 _sensors[i]->description().c_str(),
                 _sensors[i]->error()
             );
@@ -1242,7 +1242,7 @@ void _sensorLoad() {
     {
         String addresses = getSetting("pzemAddr", F(PZEM004T_ADDRESSES));
         if (!addresses.length()) {
-            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured"));
             return;
         }
 
@@ -1299,7 +1299,7 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
-	
+
     #if T6613_SUPPORT
     {
         T6613Sensor * sensor = new T6613Sensor();
@@ -1375,7 +1375,7 @@ void _sensorLoad() {
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
 
-    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
+    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'"), i, type, String(value).c_str());
 
     for (unsigned char k=0; k<_magnitudes.size(); k++) {
         if ((_sensors[i] == _magnitudes[k].sensor) && (type == _magnitudes[k].type)) {
@@ -1395,12 +1395,12 @@ void _sensorInit() {
 
         // Do not process an already initialized sensor
         if (_sensors[i]->ready()) continue;
-        DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s"), _sensors[i]->description().c_str());
 
         // Force sensor to reload config
         _sensors[i]->begin();
         if (!_sensors[i]->ready()) {
-            if (_sensors[i]->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
+            if (_sensors[i]->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d"), _sensors[i]->error());
             _sensors_ready = false;
             continue;
         }
@@ -1445,7 +1445,7 @@ void _sensorInit() {
 
             _magnitudes.push_back(new_magnitude);
 
-            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
+            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d"), magnitudeTopic(type).c_str(), _counts[type]);
 
             _counts[type] = _counts[type] + 1;
 
@@ -2080,7 +2080,7 @@ void sensorLoop() {
                 {
                     char buffer[64];
                     dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
-            
+
                     SensorReadBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value_show, buffer);
                 }
                 #endif
@@ -2093,7 +2093,7 @@ void sensorLoop() {
                 {
                     char buffer[64];
                     dtostrf(value_show, 1, magnitude.decimals, buffer);
-                    DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
+                    DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
                         buffer,

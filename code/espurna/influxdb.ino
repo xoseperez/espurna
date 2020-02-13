@@ -40,7 +40,7 @@ void _idbInitClient() {
     _idb_client = std::make_unique<AsyncClient>();
 
     _idb_client->onDisconnect([](void * s, AsyncClient * client) {
-        DEBUG_MSG_P(PSTR("[INFLUXDB] Disconnected\n"));
+        DEBUG_MSG_P(PSTR("[INFLUXDB] Disconnected"));
         _idb_flush = false;
         _idb_data = "";
         _idb_client_ts = 0;
@@ -49,7 +49,7 @@ void _idbInitClient() {
     }, nullptr);
 
     _idb_client->onTimeout([](void * s, AsyncClient * client, uint32_t time) {
-        DEBUG_MSG_P(PSTR("[INFLUXDB] Network timeout after %ums\n"), time);
+        DEBUG_MSG_P(PSTR("[INFLUXDB] Network timeout after %ums"), time);
         client->close(true);
     }, nullptr);
 
@@ -57,7 +57,7 @@ void _idbInitClient() {
         // ref: https://docs.influxdata.com/influxdb/v1.7/tools/api/#summary-table-1
         const char idb_success[] = "HTTP/1.1 204";
         const bool result = (len > sizeof(idb_success) && (0 == strncmp((char*) response, idb_success, sizeof(idb_success))));
-        DEBUG_MSG_P(PSTR("[INFLUXDB] %s response after %ums\n"), result ? "Success" : "Failure", millis() - _idb_client_ts);
+        DEBUG_MSG_P(PSTR("[INFLUXDB] %s response after %ums"), result ? "Success" : "Failure", millis() - _idb_client_ts);
         _idb_client_ts = millis();
         client->close();
     }, nullptr);
@@ -65,7 +65,7 @@ void _idbInitClient() {
     _idb_client->onPoll([](void * arg, AsyncClient * client) {
         unsigned long ts = millis() - _idb_client_ts;
         if (ts > INFLUXDB_CLIENT_TIMEOUT) {
-            DEBUG_MSG_P(PSTR("[INFLUXDB] No response after %ums\n"), ts);
+            DEBUG_MSG_P(PSTR("[INFLUXDB] No response after %ums"), ts);
             client->close(true);
             return;
         }
@@ -82,7 +82,7 @@ void _idbInitClient() {
         _idb_connected = true;
         _idb_connecting = false;
 
-        DEBUG_MSG_P(PSTR("[INFLUXDB] Connected to %s:%u\n"),
+        DEBUG_MSG_P(PSTR("[INFLUXDB] Connected to %s:%u"),
             IPAddress(client->getRemoteAddress()).toString().c_str(),
             client->getRemotePort()
         );
@@ -165,7 +165,7 @@ bool idbSend(const char * topic, const char * payload) {
 void _idbSend(const String& host, const uint16_t port) {
     if (_idb_connected || _idb_connecting) return;
 
-    DEBUG_MSG_P(PSTR("[INFLUXDB] Sending to %s:%u\n"), host.c_str(), port);
+    DEBUG_MSG_P(PSTR("[INFLUXDB] Sending to %s:%u"), host.c_str(), port);
 
     // TODO: cache `Host: <host>:<port>` instead of storing things separately?
     _idb_host = host;
@@ -175,7 +175,7 @@ void _idbSend(const String& host, const uint16_t port) {
     _idb_connecting = _idb_client->connect(host.c_str(), port);
 
     if (!_idb_connecting) {
-        DEBUG_MSG_P(PSTR("[INFLUXDB] Connection to %s:%u failed\n"), host.c_str(), port);
+        DEBUG_MSG_P(PSTR("[INFLUXDB] Connection to %s:%u failed"), host.c_str(), port);
         _idb_client->close(true);
     }
 }

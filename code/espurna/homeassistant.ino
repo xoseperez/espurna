@@ -113,7 +113,7 @@ struct ha_discovery_t {
     }
 
     ~ha_discovery_t() {
-        DEBUG_MSG_P(PSTR("[HA] Discovery %s\n"), empty() ? "OK" : "FAILED");
+        DEBUG_MSG_P(PSTR("[HA] Discovery %s"), empty() ? "OK" : "FAILED");
     }
 
     // TODO: is this expected behaviour?
@@ -224,7 +224,7 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
             _haSendMagnitude(i, root);
             root["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
             root["device"] = config.deviceConfig;
-            
+
             message.reserve(root.measureLength());
             root.printTo(message);
         }
@@ -410,7 +410,7 @@ void _haSend() {
     // Are we still trying to send discovery messages?
     if (_ha_discovery) return;
 
-    DEBUG_MSG_P(PSTR("[HA] Preparing MQTT discovery message(s)...\n"));
+    DEBUG_MSG_P(PSTR("[HA] Preparing MQTT discovery message(s)..."));
 
     // Get common device config / context object
     ha_config_t config;
@@ -423,7 +423,7 @@ void _haSend() {
     #if SENSOR_SUPPORT
         _ha_discovery->prepareMagnitudes(config);
     #endif
-    
+
     _ha_send_flag = false;
     schedule_function(_haSendDiscovery);
 

@@ -55,7 +55,7 @@ void _alexaConfigure() {
 
 #if BROKER_SUPPORT
 void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
-    
+
     // Only process status messages for switches and channels
     if (!topic.equals(MQTT_TOPIC_CHANNEL)
         && !topic.equals(MQTT_TOPIC_RELAY)) {
@@ -167,7 +167,7 @@ void alexaLoop() {
     while (!_alexa_queue.empty()) {
 
         alexa_queue_element_t element = _alexa_queue.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d\n"), element.device_id, element.state ? "ON" : "OFF", element.value);
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d"), element.device_id, element.state ? "ON" : "OFF", element.value);
 
         #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
             if (0 == element.device_id) {
