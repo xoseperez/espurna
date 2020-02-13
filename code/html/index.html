@@ -42,13 +42,13 @@
                             <fieldset>
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4" for="adminPass1">New Password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass1" minlength="8" maxlength="63" type="password" tabindex="1" autocomplete="false" spellcheck="false" required />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass1" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" tabindex="1" autocomplete="false" spellcheck="false" required />
                                     <span class="no-select password-reveal"></span>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4" for="adminPass2">Repeat password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass2" minlength="8" maxlength="63" type="password" tabindex="2" autocomplete="false" spellcheck="false" required />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass2" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" tabindex="2" autocomplete="false" spellcheck="false" required />
                                     <span class="no-select password-reveal"></span>
                                 </div>
                             </fieldset>
@@ -421,8 +421,8 @@
 
                             <fieldset>
 
+                                <legend class="module module-led">Modes</legend>
                                 <div class="pure-g module module-led">
-                                    <div class="pure-u-0 pure-u-lg-1-4">Modes</div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         <li><strong>WiFi status</strong> will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.</li>
                                         <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (you must define which switch to follow in the side field).</li>
@@ -536,7 +536,12 @@
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="12" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        <div class="module module-ha">
+                                            <strong>WARNING! </strong>Incompatible with Home Assistant MQTT integration
+                                        </div>
+                                        Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"
+                                    </div>
                                 </div>
 
                                 <div class="pure-g">
@@ -589,10 +594,10 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-lg-3-4" placeholder="New password" minlength="8" maxlength="63" type="password" action="reboot" tabindex="11" autocomplete="false" spellcheck="false" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-lg-3-4" placeholder="New password" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" action="reboot" tabindex="11" autocomplete="false" spellcheck="false" />
                                     <span class="no-select password-reveal"></span>
                                     <div class="pure-u-1 pure-u-lg-1-4"></div>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-lg-3-4" placeholder="Repeat password" minlength="8" maxlength="63" type="password" action="reboot" tabindex="12" autocomplete="false" spellcheck="false" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-lg-3-4" placeholder="Repeat password" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" action="reboot" tabindex="12" autocomplete="false" spellcheck="false" />
                                     <span class="no-select password-reveal"></span>
 
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -753,7 +758,7 @@
 
                                 <legend>Networks</legend>
 
-                                <div id="networks"></div>
+                                <div id="networks" class="group-settings" data-settings-target="ssid pass" ></div>
 
                                 <button type="button" class="pure-button button-add-network">Add network</button>
 
@@ -774,7 +779,7 @@
 
                             <fieldset>
 
-                                <div id="schedules"></div>
+                                <div id="schedules" class="group-settings" data-settings-max="10" data-settings-target="schSwitch" ></div>
 
                                 <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
                                 <!-- removeIf(!light) -->
@@ -812,7 +817,7 @@
 
                                 <legend>Specific topics</legend>
 
-                                <div id="mapping"></div>
+                                <div id="mapping" class="group-settings" ></div>
 
                                 <button type="button" class="pure-button button-add-mapping">Add</button>
 
@@ -1041,17 +1046,22 @@
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer" type="text" tabindex="41" />
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ntplwip">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpTZ" type="text" tabindex="42" />
+                                </div>
+
+                                <div class="pure-g module module-ntplegacy">
                                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
                                     <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ntplegacy">
                                     <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ntpDST" /></div>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ntplegacy">
                                     <label class="pure-u-1 pure-u-lg-1-4">DST Region</label>
                                     <select class="pure-u-1 pure-u-lg-1-4" name="ntpRegion">
                                         <option value="0">Europe</option>
@@ -1236,10 +1246,10 @@
                                     <div class="pure-u-1 hint">Set IDX to 0 to disable notifications from that component.</div>
                                 </div>
 
-                                <div id="dczRelays"></div>
+                                <div id="dczRelays" class="group-settings" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="dczMagnitudes"></div>
+                                <div id="dczMagnitudes" class="group-settings" ></div>
                                 <!-- endRemoveIf(!sensor) -->
 
                             </fieldset>
@@ -1270,9 +1280,6 @@
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
-                                        <!-- removeIf(!light) -->
-                                        When using a colour light you might want to disable CSS style so Home Assistant can parse the color.
-                                        <!-- endRemoveIf(!light) -->
                                     </div>
                                 </div>
 
@@ -1338,8 +1345,13 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak address</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkAddress" type="text" tabindex="32" />
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="33" />
                                 </div>
 
                                 <legend>Sensors &amp; actuators</legend>
@@ -1348,10 +1360,10 @@
                                     <div class="pure-u-1 hint">Enter the field number to send each data to, 0 disable notifications from that component.</div>
                                 </div>
 
-                                <div id="tspkRelays"></div>
+                                <div id="tspkRelays" class="group-settings" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="tspkMagnitudes"></div>
+                                <div id="tspkMagnitudes" class="group-settings" ></div>
                                 <!-- endRemoveIf(!sensor) -->
 
                             </fieldset>
@@ -1417,7 +1429,7 @@
                         <div class="header">
                             <h1>RULES</h1>
                             <h2>
-                                Here you can configure advanced rules based on RPN expressions. Check the <a href="https://github.com/xoseperez/espurna/wiki/RPN-Rules" target="_blank">wiki page about the RPN Rules module</a> to know how to use them.
+                                Here you can configure advanced rules based on RPN expressions. Check the <a href="https://github.com/xoseperez/espurna/wiki/RPN-Rules" rel="noopener" target="_blank">wiki page about the RPN Rules module</a> to know how to use them.
                             </h2>
                         </div>
 
@@ -1438,7 +1450,7 @@
                                         Mind that calling a non-existing variable from a rule will make it silently fail.
                                     </div>
                                 </div>
-    
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4" for="rpnDelay">Execution delay (ms)</label>
                                     <input class="pure-u-1 pure-u-lg-1-4" name="rpnDelay" type="number" min="100" tabindex="101" />
@@ -1446,7 +1458,7 @@
 
                                 <legend>Rules</legend>
 
-                                <div id="rpnRules"></div>
+                                <div id="rpnRules" class="group-settings" data-settings-target="rpnRule" ></div>
                                 <button type="button" class="pure-button button-add-rpnrule">Add</button>
 
                                 <legend>MQTT</legend>
@@ -1456,7 +1468,7 @@
                                     <div class="pure-u-1-3">Variable Name</div>
                                 </div>
 
-                                <div id="rpnTopics"></div>
+                                <div id="rpnTopics" class="group-settings" data-settings-target="rpnTopic" ></div>
                                 <button type="button" class="pure-button button-add-rpntopic">Add</button>
 
                             </fieldset>
@@ -1789,7 +1801,7 @@
 
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Switch ON</label></div>
-                <input class="pure-u-1 pure-u-lg-1-3" type="text" maxlength="116" name="rfbcode" data-id="1" data-status="1" />
+                <input class="pure-u-1 pure-u-lg-1-3" type="text" maxlength="116" name="rfbcode" data-status="1" data-settings-ignore="true" />
                 <div class="pure-u-1-3 pure-u-lg-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button></div>
                 <div class="pure-u-1-3 pure-u-lg-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button></div>
                 <div class="pure-u-1-3 pure-u-lg-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button></div>
@@ -1797,7 +1809,7 @@
 
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Switch OFF</label></div>
-                <input class="pure-u-1 pure-u-lg-1-3" type="text" maxlength="116" name="rfbcode" data-id="1" data-status="0" />
+                <input class="pure-u-1 pure-u-lg-1-3" type="text" maxlength="116" name="rfbcode" data-status="0" data-settings-ignore="true" />
                 <div class="pure-u-1-3 pure-u-lg-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button></div>
                 <div class="pure-u-1-3 pure-u-lg-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button></div>
                 <div class="pure-u-1-3 pure-u-lg-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button></div>
@@ -1840,12 +1852,12 @@
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set when using a static IP</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Network Mask</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="mask" type="text" action="reconnect" value="255.255.255.0" maxlength="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="mask" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Usually 255.255.255.0 for /24 networks</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">DNS IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="dns" type="text" action="reconnect" value="8.8.8.8" maxlength="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="dns" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set the Domain Name Server IP to use when using a static IP</div>
 
@@ -1862,7 +1874,7 @@
 
                 <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" value="0" />
+                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" value="12" />
                     <div class="pure-u-1-4 hint center">&nbsp;h</div>
                 </div>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
@@ -1879,7 +1891,7 @@
                 <div class="pure-u-2-5 pure-u-lg-1-5">
                     <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" maxlength="15" tabindex="0" value="1,2,3,4,5,6,7" />
                 </div>
-                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday...</div>
+                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday etc., comma separated</div>
 
                 <div id="schActionDiv" class="pure-u-1">
                 </div>
@@ -1895,13 +1907,13 @@
         <div id="switchActionTemplate" class="template">
             <label class="pure-u-1 pure-u-lg-1-4">Action</label>
             <div class="pure-u-1 pure-u-lg-1-5">
-                <select class="pure-u-1 pure-u-lg-23-24" name="schAction">
+                <select class="pure-u-1 pure-u-lg-23-24" name="schAction" haschanged="true">
                     <option value="0">Turn OFF</option>
                     <option value="1">Turn ON</option>
                     <option value="2">Toggle</option>
                 </select>
             </div>
-            <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch"></select>
+            <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch" ></select>
             <input type="hidden" name="schType" value="1">
         </div>
 
@@ -1911,7 +1923,7 @@
             <div class="pure-u-1 pure-u-lg-1-5">
                 <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="255" value="0" />
             </div>
-            <select class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch"></select>
+            <select class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" ></select>
             <input type="hidden" name="schType" value="2">
         </div>
         <!-- endRemoveIf(!light) -->
@@ -1950,7 +1962,7 @@
             </div>
             <div class="pure-g module module-sch">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Restore last schedule</label></div>
-                <div><input name="relayLastSch" type="checkbox" /></div>
+                <div><input name="relayLastSch" data-settings-real-name="relayLastSch" type="checkbox" /></div>
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>

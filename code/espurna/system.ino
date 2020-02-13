@@ -14,7 +14,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 bool _system_send_heartbeat = false;
-unsigned char _heartbeat_mode = HEARTBEAT_MODE;
+int _heartbeat_mode = HEARTBEAT_MODE;
 unsigned long _heartbeat_interval = HEARTBEAT_INTERVAL;
 
 // Calculated load average 0 to 100;
@@ -160,8 +160,8 @@ unsigned long systemLoadAverage() {
 }
 
 void _systemSetupHeartbeat() {
-    _heartbeat_mode = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-    _heartbeat_interval = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+    _heartbeat_mode = getSetting("hbMode", HEARTBEAT_MODE);
+    _heartbeat_interval = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 #if WEB_SUPPORT

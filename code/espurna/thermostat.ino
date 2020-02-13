@@ -8,10 +8,13 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #if THERMOSTAT_SUPPORT
 
-#include "relay.h"
-
-#include <ArduinoJson.h>
 #include <float.h>
+
+#include "ntp.h"
+#include "relay.h"
+#include "thermostat.h"
+#include "ws.h"
+
 
 bool _thermostat_enabled = true;
 bool _thermostat_mode_cooler = false;
@@ -250,25 +253,25 @@ void notifyRangeChanged(bool min) {
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
-  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED).toInt() == 1;
+  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED, false);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d\n"), _thermostat_enabled);
 
-  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE).toInt() == 1;
+  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE, false);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d\n"), _thermostat_mode_cooler);
   
-  _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN).toInt();
-  _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX).toInt();
+  _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN);
+  _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d\n"), _temp_range.max);
 
   _thermostat.remote_sensor_name = getSetting(NAME_REMOTE_SENSOR_NAME);
   thermostat_remote_sensor_topic = _thermostat.remote_sensor_name + String("/") + String(MQTT_TOPIC_JSON);
 
-  _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT).toInt()   * MILLIS_IN_SEC;
-  _thermostat_alone_on_time   = getSetting(NAME_ALONE_ON_TIME,  THERMOSTAT_ALONE_ON_TIME).toInt()  * MILLIS_IN_MIN;
-  _thermostat_alone_off_time  = getSetting(NAME_ALONE_OFF_TIME, THERMOSTAT_ALONE_OFF_TIME).toInt() * MILLIS_IN_MIN;
-  _thermostat_max_on_time     = getSetting(NAME_MAX_ON_TIME,    THERMOSTAT_MAX_ON_TIME).toInt()    * MILLIS_IN_MIN;
-  _thermostat_min_off_time    = getSetting(NAME_MIN_OFF_TIME,   THERMOSTAT_MIN_OFF_TIME).toInt()   * MILLIS_IN_MIN;
+  _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT) * MILLIS_IN_SEC;
+  _thermostat_alone_on_time   = getSetting(NAME_ALONE_ON_TIME,  THERMOSTAT_ALONE_ON_TIME)  * MILLIS_IN_MIN;
+  _thermostat_alone_off_time  = getSetting(NAME_ALONE_OFF_TIME, THERMOSTAT_ALONE_OFF_TIME) * MILLIS_IN_MIN;
+  _thermostat_max_on_time     = getSetting(NAME_MAX_ON_TIME,    THERMOSTAT_MAX_ON_TIME)    * MILLIS_IN_MIN;
+  _thermostat_min_off_time    = getSetting(NAME_MIN_OFF_TIME,   THERMOSTAT_MIN_OFF_TIME)   * MILLIS_IN_MIN;
 }
 
 //------------------------------------------------------------------------------
@@ -276,13 +279,13 @@ void thermostatConfigure() {
   commonSetup();
 
   _thermostat.temperature_source = temp_none;
-  _thermostat_burn_total      = getSetting(NAME_BURN_TOTAL).toInt();
-  _thermostat_burn_today      = getSetting(NAME_BURN_TODAY).toInt();
-  _thermostat_burn_yesterday  = getSetting(NAME_BURN_YESTERDAY).toInt();
-  _thermostat_burn_this_month = getSetting(NAME_BURN_THIS_MONTH).toInt();
-  _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH).toInt();
-  _thermostat_burn_day        = getSetting(NAME_BURN_DAY).toInt();
-  _thermostat_burn_month      = getSetting(NAME_BURN_MONTH).toInt();
+  _thermostat_burn_total      = getSetting(NAME_BURN_TOTAL, 0);
+  _thermostat_burn_today      = getSetting(NAME_BURN_TODAY, 0);
+  _thermostat_burn_yesterday  = getSetting(NAME_BURN_YESTERDAY, 0);
+  _thermostat_burn_this_month = getSetting(NAME_BURN_THIS_MONTH, 0);
+  _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH, 0);
+  _thermostat_burn_day        = getSetting(NAME_BURN_DAY, 0);
+  _thermostat_burn_month      = getSetting(NAME_BURN_MONTH, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -461,21 +464,21 @@ void updateCounters() {
   }
 
   if (ntpSynced()) {
-    String value = NTP.getDateStr();
-    unsigned int day = value.substring(0, 2).toInt();
-    unsigned int month = value.substring(3, 5).toInt();
-    if (day != _thermostat_burn_day) {
+    const auto ts = now();
+    unsigned int now_day = day(ts);
+    unsigned int now_month = month(ts);
+    if (now_day != _thermostat_burn_day) {
       _thermostat_burn_yesterday = _thermostat_burn_today;
       _thermostat_burn_today = 0;
-      _thermostat_burn_day = day;
+      _thermostat_burn_day = now_day;
       setSetting(NAME_BURN_YESTERDAY, _thermostat_burn_yesterday);
       setSetting(NAME_BURN_TODAY,     _thermostat_burn_today);
       setSetting(NAME_BURN_DAY,       _thermostat_burn_day);
     }
-    if (month != _thermostat_burn_month) {
+    if (now_month != _thermostat_burn_month) {
       _thermostat_burn_prev_month = _thermostat_burn_this_month;
       _thermostat_burn_this_month = 0;
-      _thermostat_burn_month = month;
+      _thermostat_burn_month = now_month;
       setSetting(NAME_BURN_PREV_MONTH, _thermostat_burn_prev_month);
       setSetting(NAME_BURN_THIS_MONTH, _thermostat_burn_this_month);
       setSetting(NAME_BURN_MONTH,      _thermostat_burn_month);
@@ -600,8 +603,6 @@ void resetBurnCounters() {
 //#######################################################################
 
 #if THERMOSTAT_DISPLAY_SUPPORT
-
-#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
 
 #define wifi_on_width 16
 #define wifi_on_height 16

@@ -9,9 +9,11 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "BaseSensor.h"
+
 
 #define T6613_REQUEST_LEN       5
 #define T6613_RESPONSE_LEN      5

@@ -3,6 +3,8 @@
 // Do not touch this definitions
 //------------------------------------------------------------------------------
 
+#pragma once
+
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
@@ -153,7 +155,7 @@
 // LED
 //------------------------------------------------------------------------------
 
-#define LED_MODE_MQTT               0       // LED will be managed from MQTT (OFF by default)
+#define LED_MODE_MANUAL             0       // LED will be managed manually (OFF by default)
 #define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
 #define LED_MODE_FOLLOW             2       // LED will follow state of linked relay (check RELAY#_LED)
 #define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
@@ -377,3 +379,9 @@
 #define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
 #define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
 
+// -----------------------------------------------------------------------------
+// Hardware default values
+// -----------------------------------------------------------------------------
+
+#define GPIO_NONE           0x99
+#define RELAY_NONE          0x99

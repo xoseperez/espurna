@@ -18,7 +18,7 @@
 
 using namespace Tuya;
 
-bool test_datatype(const DataFrame& frame, const Type expect_type) {
+static bool datatype_same(const DataFrame& frame, const Type expect_type) {
     const auto type = dataType(frame);
     return expect_type == type;
 }
@@ -73,7 +73,7 @@ void test_static_dataframe_bool() {
             "Version should stay 0 unless explicitly set");
     TEST_ASSERT_MESSAGE(frame.commandEquals(Command::SetDP),
             "commandEquals should return true with the same arg as in the constructor");
-    TEST_ASSERT_MESSAGE(test_datatype(frame, Type::BOOL),
+    TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
             "DataProtocol<bool> should translate to Type::BOOL");
 
 }
@@ -94,16 +94,6 @@ void test_static_dataframe_int() {
 
 }
 
-void test_dataframe_const() {
-
-    const DataFrame frame(Command::SetDP);
-    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length,
-            "Frame with Command::SetDP should not have any data attached to it");
-    TEST_ASSERT_EQUAL_MESSAGE(0, std::distance(frame.cbegin(), frame.cend()),
-            "Frame with Command::SetDP should not have any data attached to it");
-
-}
-
 void test_static_dataframe_heartbeat() {
 
     DataFrame frame(Command::Heartbeat);
@@ -114,6 +104,17 @@ void test_static_dataframe_heartbeat() {
     //test_hexdump("static", static_frame.serialize());
 
 }
+
+void test_dataframe_const() {
+
+    const DataFrame frame(Command::SetDP);
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length,
+            "Frame with Command::SetDP should not have any data attached to it");
+    TEST_ASSERT_EQUAL_MESSAGE(0, std::distance(frame.cbegin(), frame.cend()),
+            "Frame with Command::SetDP should not have any data attached to it");
+
+}
+
 
 void test_dataframe_copy() {
 
@@ -149,7 +150,7 @@ void test_dataframe_raw_data() {
         DataFrame frame(data.cbegin());
         TEST_ASSERT_MESSAGE(frame.commandEquals(Command::ReportDP),
                 "This message should be parsed as data protocol");
-        TEST_ASSERT_MESSAGE(test_datatype(frame, Type::BOOL),
+        TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
                 "This message should have boolean datatype attached to it");
         TEST_ASSERT_EQUAL_MESSAGE(5, frame.length,
                 "Boolean DP contains 5 bytes");
@@ -176,6 +177,7 @@ class BufferedStream : public Stream {
         // Print interface
         size_t write(uint8_t c) {
             _buffer.push((int)c);
+            return 1;
         }
         size_t write(const unsigned char* data, unsigned long size) {
             for (size_t n = 0; n < size; ++n) {
@@ -219,6 +221,7 @@ void test_transport() {
 int main(int argc, char** argv) {
 
     UNITY_BEGIN();
+
     RUN_TEST(test_states);
     RUN_TEST(test_static_dataframe_bool);
     RUN_TEST(test_static_dataframe_int);
@@ -227,6 +230,7 @@ int main(int argc, char** argv) {
     RUN_TEST(test_dataframe_copy);
     RUN_TEST(test_dataframe_raw_data);
     RUN_TEST(test_transport);
+
     UNITY_END();
 
 }

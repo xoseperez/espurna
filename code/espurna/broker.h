@@ -6,9 +6,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if BROKER_SUPPORT
-
 #pragma once
+
+#if BROKER_SUPPORT
 
 #include <functional>
 #include <vector>
@@ -17,7 +17,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 enum class TBrokerType {
     SYSTEM,
     STATUS,
-    SENSOR,
+    SENSOR_READ,
+    SENSOR_REPORT,
     DATETIME,
     CONFIG
 };
@@ -49,8 +50,10 @@ TBrokerCallbacks<TArgs...> TBroker<type, TArgs...>::callbacks;
 // --- Some known types. Bind them here to avoid .ino screwing with order ---
 
 using StatusBroker = TBroker<TBrokerType::STATUS, const String&, unsigned char, unsigned int>;
-using SensorBroker = TBroker<TBrokerType::SENSOR, const String&, unsigned char, double, const char*>;
-using TimeBroker = TBroker<TBrokerType::DATETIME, const String&, time_t, const String&>;
+
+using SensorReadBroker = TBroker<TBrokerType::SENSOR_READ, const String&, unsigned char, double, const char*>;
+using SensorReportBroker = TBroker<TBrokerType::SENSOR_REPORT, const String&, unsigned char, double, const char*>;
+
 using ConfigBroker = TBroker<TBrokerType::CONFIG, const String&, const String&>;
 
-#endif // BROKER_SUPPORT
+#endif // BROKER_SUPPORT == 1

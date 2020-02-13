@@ -14,11 +14,11 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <memory>
 
-#include <ESP8266HTTPClient.h>
-#include <ESP8266httpUpdate.h>
-#include <Schedule.h>
-
+#include "mqtt.h"
+#include "ota.h"
 #include "system.h"
+#include "terminal.h"
+
 #include "libs/URL.h"
 #include "libs/TypeChecks.h"
 #include "libs/SecureClientHelpers.h"
@@ -82,7 +82,7 @@ SecureClientConfig _ota_sc_config {
         return String(); // NOTE: unused
     },
     []() -> int {
-        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
+        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK);
     },
     []() -> String {
         return getSetting("otaFP", OTA_FINGERPRINT);
@@ -95,7 +95,7 @@ SecureClientConfig _ota_sc_config {
 SecureClientConfig _ota_sc_config {
     "OTA",
     []() -> int {
-        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
+        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK);
     },
     []() -> PGM_P {
         return _ota_client_trusted_root_ca;
@@ -104,7 +104,7 @@ SecureClientConfig _ota_sc_config {
         return getSetting("otaFP", OTA_FINGERPRINT);
     },
     []() -> uint16_t {
-        return getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
+        return getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN);
     },
     true
 };

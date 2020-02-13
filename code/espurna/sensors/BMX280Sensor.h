@@ -7,11 +7,10 @@
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "I2CSensor.h"
+#include "../utils.h"
 
 #define BMX280_CHIP_BMP280              0x58
 #define BMX280_CHIP_BME280              0x60

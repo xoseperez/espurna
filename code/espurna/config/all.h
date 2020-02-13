@@ -19,7 +19,11 @@
 
 */
 
+#pragma once
+
+#include <Arduino.h>
 #include <core_version.h>
+#include <pgmspace.h>
 
 #ifdef USE_CUSTOM_H
 #include "custom.h"
@@ -34,8 +38,5 @@
 #include "deprecated.h"
 #include "general.h"
 #include "dependencies.h"
-#include "debug.h"
-#include "prototypes.h"
 #include "sensors.h"
 #include "webui.h"
-#include "progmem.h"

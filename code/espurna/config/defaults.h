@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------
-// Hardware default values
+// DEFAULTS PER MODULE
 // -----------------------------------------------------------------------------
 
-#define GPIO_NONE           0x99
+#pragma once
 
 // -----------------------------------------------------------------------------
 // Buttons
@@ -31,6 +31,31 @@
 #endif
 #ifndef BUTTON8_PIN
 #define BUTTON8_PIN         GPIO_NONE
+#endif
+
+#ifndef BUTTON1_MODE
+#define BUTTON1_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON2_MODE
+#define BUTTON2_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON3_MODE
+#define BUTTON3_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON4_MODE
+#define BUTTON4_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON5_MODE
+#define BUTTON5_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON6_MODE
+#define BUTTON6_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON7_MODE
+#define BUTTON7_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+#endif
+#ifndef BUTTON8_MODE
+#define BUTTON8_MODE         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
 #endif
 
 #ifndef BUTTON1_PRESS
@@ -184,28 +209,28 @@
 #endif
 
 #ifndef BUTTON1_RELAY
-#define BUTTON1_RELAY       0
+#define BUTTON1_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON2_RELAY
-#define BUTTON2_RELAY       0
+#define BUTTON2_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON3_RELAY
-#define BUTTON3_RELAY       0
+#define BUTTON3_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON4_RELAY
-#define BUTTON4_RELAY       0
+#define BUTTON4_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON5_RELAY
-#define BUTTON5_RELAY       0
+#define BUTTON5_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON6_RELAY
-#define BUTTON6_RELAY       0
+#define BUTTON6_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON7_RELAY
-#define BUTTON7_RELAY       0
+#define BUTTON7_RELAY       RELAY_NONE
 #endif
 #ifndef BUTTON8_RELAY
-#define BUTTON8_RELAY       0
+#define BUTTON8_RELAY       RELAY_NONE
 #endif
 
 // -----------------------------------------------------------------------------
@@ -510,25 +535,25 @@
 #define LED1_MODE           LED_MODE_WIFI
 #endif
 #ifndef LED2_MODE
-#define LED2_MODE           LED_MODE_MQTT
+#define LED2_MODE           LED_MODE_MANUAL
 #endif
 #ifndef LED3_MODE
-#define LED3_MODE           LED_MODE_MQTT
+#define LED3_MODE           LED_MODE_MANUAL
 #endif
 #ifndef LED4_MODE
-#define LED4_MODE           LED_MODE_MQTT
+#define LED4_MODE           LED_MODE_MANUAL
 #endif
 #ifndef LED5_MODE
-#define LED5_MODE           LED_MODE_MQTT
+#define LED5_MODE           LED_MODE_MANUAL
 #endif
 #ifndef LED6_MODE
-#define LED6_MODE           LED_MODE_MQTT
+#define LED6_MODE           LED_MODE_MANUAL
 #endif
 #ifndef LED7_MODE
-#define LED7_MODE           LED_MODE_MQTT
+#define LED7_MODE           LED_MODE_MANUAL
 #endif
 #ifndef LED8_MODE
-#define LED8_MODE           LED_MODE_MQTT
+#define LED8_MODE           LED_MODE_MANUAL
 #endif
 
 #ifndef LED1_RELAY
@@ -645,6 +670,30 @@
 
 #ifndef LIGHT_CHANNELS
 #define LIGHT_CHANNELS      0
+#endif
+
+#ifndef LIGHT_ENABLE_PIN
+#define LIGHT_ENABLE_PIN    GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH1_PIN
+#define LIGHT_CH1_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH2_PIN
+#define LIGHT_CH2_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH3_PIN
+#define LIGHT_CH3_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH4_PIN
+#define LIGHT_CH4_PIN       GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH5_PIN
+#define LIGHT_CH5_PIN       GPIO_NONE
 #endif
 
 #ifndef LIGHT_CH1_INVERSE

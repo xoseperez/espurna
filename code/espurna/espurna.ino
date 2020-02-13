@@ -20,13 +20,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "config/all.h"
-#include <vector>
 
+#include <functional>
+#include <algorithm>
+#include <limits>
+#include <vector>
+#include <memory>
+
+#include "board.h"
+#include "compat.h"
+#include "storage_eeprom.h"
+#include "gpio.h"
+#include "settings.h"
 #include "system.h"
+#include "terminal.h"
 #include "utils.h"
-#include "relay.h"
+#include "wifi.h"
+
+#include "alexa.h"
+#include "api.h"
 #include "broker.h"
+#include "button.h"
+#include "debug.h"
+#include "domoticz.h"
+#include "homeassistant.h"
+#include "i2c.h"
+#include "ir.h"
+#include "led.h"
+#include "mqtt.h"
+#include "ntp.h"
+#include "ota.h"
+#include "relay.h"
+#include "rfm69.h"
+#include "rpnrules.h"
+#include "rtcmem.h"
+#include "thermostat.h"
 #include "tuya.h"
+#include "web.h"
+#include "ws.h"
+
+#include "libs/URL.h"
 #include "libs/HeapStats.h"
 
 using void_callback_f = void (*)();
@@ -76,7 +109,7 @@ void setup() {
     // Cache initial free heap value
     setInitialFreeHeap();
 
-    // Serial debug
+    // Init logging module
     #if DEBUG_SUPPORT
         debugSetup();
     #endif
@@ -93,14 +126,15 @@ void setup() {
     // Init persistance
     settingsSetup();
 
-    // Init crash recorder
+    // Configure logger and crash recorder
     #if DEBUG_SUPPORT
+        debugConfigureBoot();
         crashSetup();
     #endif
 
     // Return bogus free heap value for broken devices
     // XXX: device is likely to trigger other bugs! tread carefuly
-    wtfHeap(getSetting("wtfHeap", 0).toInt());
+    wtfHeap(getSetting<int>("wtfHeap", 0));
 
     // Init Serial, SPIFFS and system check
     systemSetup();
@@ -117,7 +151,7 @@ void setup() {
     setBoardName();
 
     // Show welcome message and system configuration
-    info();
+    info(true);
 
     wifiSetup();
     #if OTA_ARDUINOOTA_SUPPORT
@@ -255,8 +289,9 @@ void setup() {
 
     // Set up delay() after loop callbacks are finished
     // Note: should be after settingsSetup()
-    _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
-    _loop_delay = constrain(_loop_delay, 0, 300);
+    _loop_delay = constrain(
+        getSetting("loopDelay", LOOP_DELAY_TIME), 0, 300
+    );
 
     saveSettings();
 

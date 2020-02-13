@@ -8,9 +8,9 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RPN_RULES_SUPPORT
 
+#include "ntp.h"
 #include "relay.h"
-
-#include <rpnlib.h>
+#include "rpnrules.h"
 
 // -----------------------------------------------------------------------------
 // Custom commands
@@ -29,27 +29,27 @@ bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _rpnWebSocketOnConnected(JsonObject& root) {
 
-    root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
-    root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY).toInt();
+    root["rpnSticky"] = getSetting("rpnSticky", 1 == RPN_STICKY);
+    root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY);
     JsonArray& rules = root.createNestedArray("rpnRules");
 
     unsigned char i = 0;
-    String rule = getSetting("rpnRule", i, "");
+    String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
         rules.add(rule);
-        rule = getSetting("rpnRule", ++i, "");
+        rule = getSetting({"rpnRule", ++i});
     }
 
     #if MQTT_SUPPORT
         i=0;
         JsonArray& topics = root.createNestedArray("rpnTopics");
         JsonArray& names = root.createNestedArray("rpnNames");
-        String rpn_topic = getSetting("rpnTopic", i, "");
+        String rpn_topic = getSetting({"rpnTopic", i});
         while (rpn_topic.length() > 0) {
-            String rpn_name = getSetting("rpnName", i, "");
+            String rpn_name = getSetting({"rpnName", i});
             topics.add(rpn_topic);
             names.add(rpn_name);
-            rpn_topic = getSetting("rpnTopic", ++i, "");
+            rpn_topic = getSetting({"rpnTopic", ++i});
         }
     #endif
 
@@ -59,10 +59,10 @@ void _rpnWebSocketOnConnected(JsonObject& root) {
 
 void _rpnMQTTSubscribe() {
     unsigned char i = 0;
-    String rpn_topic = getSetting("rpnTopic", i, "");
+    String rpn_topic = getSetting({"rpnTopic", i});
     while (rpn_topic.length()) {
         mqttSubscribeRaw(rpn_topic.c_str());
-        rpn_topic = getSetting("rpnTopic", ++i, "");
+        rpn_topic = getSetting({"rpnTopic", ++i});
     }
 }
 
@@ -74,10 +74,10 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
 
     if (type == MQTT_MESSAGE_EVENT) {
         unsigned char i = 0;
-        String rpn_topic = getSetting("rpnTopic", i, "");
+        String rpn_topic = getSetting({"rpnTopic", i});
         while (rpn_topic.length()) {
             if (rpn_topic.equals(topic)) {
-                String rpn_name = getSetting("rpnName", i, "");
+                String rpn_name = getSetting({"rpnName", i});
                 if (rpn_name.length()) {
                     rpn_variable_set(_rpn_ctxt, rpn_name.c_str(), atof(payload));
                     _rpn_last = millis();
@@ -85,7 +85,7 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
                     break;
                 }
             }
-            rpn_topic = getSetting("rpnTopic", ++i, "");
+            rpn_topic = getSetting({"rpnTopic", ++i});
         }
     }
 
@@ -96,7 +96,7 @@ void _rpnConfigure() {
     #if MQTT_SUPPORT
         if (mqttConnected()) _rpnMQTTSubscribe();
     #endif
-    _rpn_delay = getSetting("rpnDelay", RPN_DELAY).toInt();
+    _rpn_delay = getSetting("rpnDelay", RPN_DELAY);
 }
 
 void _rpnBrokerCallback(const String& topic, unsigned char id, double value, const char*) {
@@ -115,57 +115,114 @@ void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value)
     _rpnBrokerCallback(topic, id, double(value), nullptr);
 }
 
+#if NTP_SUPPORT
+
+bool _rpnNtpNow(rpn_context & ctxt) {
+    if (!ntpSynced()) return false;
+    rpn_stack_push(ctxt, now());
+    return true;
+}
+
+bool _rpnNtpFunc(rpn_context & ctxt, int (*func)(time_t)) {
+    float timestamp;
+    rpn_stack_pop(ctxt, timestamp);
+    rpn_stack_push(ctxt, func(time_t(timestamp)));
+    return true;
+}
+
+#endif
+
 void _rpnInit() {
 
     // Init context
     rpn_init(_rpn_ctxt);
 
-    // Time functions
-    rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
-        if (!ntpSynced()) return false;
-        rpn_stack_push(ctxt, now());
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
-        if (!ntpSynced()) return false;
-        rpn_stack_push(ctxt, ntpLocal2UTC(now()));
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-        float a;
-        rpn_stack_pop(ctxt, a);
-        unsigned char dow = (weekday(int(a)) + 5) % 7;
-        rpn_stack_push(ctxt, dow);
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
-        float a;
-        rpn_stack_pop(ctxt, a);
-        rpn_stack_push(ctxt, hour(int(a)));
-        return true;
-    });
-    rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
-        float a;
-        rpn_stack_pop(ctxt, a);
-        rpn_stack_push(ctxt, minute(int(a)));
-        return true;
-    });
+    // Time functions need NTP support
+    // TODO: since 1.14.2, timelib+ntpclientlib are no longer used with latest Cores
+    //       `now` is always in UTC, `utc_...` functions to be used instead to convert time
+    #if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "utc", 0, _rpnNtpNow);
+        rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
 
-    // Debug
+        rpn_operator_set(_rpn_ctxt, "utc_month", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_month);
+        });
+        rpn_operator_set(_rpn_ctxt, "month", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, month);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_day", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_day);
+        });
+        rpn_operator_set(_rpn_ctxt, "day", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, day);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_dow", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_weekday);
+        });
+        rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, weekday);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_hour", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_hour);
+        });
+        rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, hour);
+        });
+
+        rpn_operator_set(_rpn_ctxt, "utc_minute", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, utc_minute);
+        });
+        rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, minute);
+        });
+    #endif
+
+    // TODO: 1.14.0 weekday(...) conversion seemed to have 0..6 range with Monday as 0
+    //       using classic Sunday as first, but instead of 0 it is 1
+    //       Implementation above also uses 1 for Sunday, staying compatible with TimeLib
+    #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
+            if (!ntpSynced()) return false;
+            rpn_stack_push(ctxt, ntpLocal2UTC(now()));
+            return true;
+        });
+        rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
+
+        rpn_operator_set(_rpn_ctxt, "month", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, month);
+        });
+        rpn_operator_set(_rpn_ctxt, "day", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, day);
+        });
+        rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, weekday);
+        });
+        rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, hour);
+        });
+        rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
+            return _rpnNtpFunc(ctxt, minute);
+        });
+    #endif
+
+    // Dumps RPN stack contents
     rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) {
         _rpnDump();
         return true;
     });
 
-    // Relay operators
+    // Accept relay number and numeric API status value (0, 1 and 2)
     rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
-        float a, b;
-        rpn_stack_pop(ctxt, b); // relay number
-        rpn_stack_pop(ctxt, a); // new status
-        if (int(a) == 2) {
-            relayToggle(int(b));
+        float status, id;
+        rpn_stack_pop(ctxt, id);
+        rpn_stack_pop(ctxt, status);
+        if (int(status) == 2) {
+            relayToggle(int(id));
         } else {
-            relayStatus(int(b), int(a) == 1);
+            relayStatus(int(id), int(status) == 1);
         }
         return true;
     });
@@ -184,10 +241,10 @@ void _rpnInit() {
         });
 
         rpn_operator_set(_rpn_ctxt, "channel", 2, [](rpn_context & ctxt) {
-            float a, b;
-            rpn_stack_pop(ctxt, b); // channel number
-            rpn_stack_pop(ctxt, a); // new value
-            lightChannel(int(b), int(a));
+            float value, id;
+            rpn_stack_pop(ctxt, id);
+            rpn_stack_pop(ctxt, value);
+            lightChannel(int(id), int(value));
             return true;
         });
 
@@ -256,16 +313,16 @@ void _rpnDump() {
 void _rpnRun() {
 
     unsigned char i = 0;
-    String rule = getSetting("rpnRule", i, "");
+    String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
         //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
         rpn_process(_rpn_ctxt, rule.c_str(), true);
         //_rpnDump();
-        rule = getSetting("rpnRule", ++i, "");
+        rule = getSetting({"rpnRule", ++i});
         rpn_stack_clear(_rpn_ctxt);
     }
 
-    if (getSetting("rpnSticky", 1).toInt() == 0) {
+    if (!getSetting("rpnSticky", 1 == RPN_STICKY)) {
         rpn_variables_clear(_rpn_ctxt);
     }
 
@@ -306,8 +363,25 @@ void rpnSetup() {
         mqttRegister(_rpnMQTTCallback);
     #endif
 
+    #if NTP_SUPPORT
+        NtpBroker::Register([](const NtpTick tick, time_t timestamp, const String& datetime) {
+            static const String tick_every_hour(F("tick1h"));
+            static const String tick_every_minute(F("tick1m"));
+
+            const char* ptr = 
+                (tick == NtpTick::EveryMinute) ? tick_every_minute.c_str() :
+                (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
+
+            if (ptr != nullptr) {
+                rpn_variable_set(_rpn_ctxt, ptr, timestamp);
+                _rpn_last = millis();
+                _rpn_run = true;
+            }
+        });
+    #endif
+
     StatusBroker::Register(_rpnBrokerStatus);
-    SensorBroker::Register(_rpnBrokerCallback);
+    SensorReadBroker::Register(_rpnBrokerCallback);
 
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);

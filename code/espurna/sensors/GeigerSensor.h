@@ -8,7 +8,9 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
+#include "../debug.h"
 #include "BaseSensor.h"
 
 class GeigerSensor : public BaseSensor {
@@ -131,38 +133,37 @@ unsigned char type(unsigned char index) {
 // Current value for slot # index
 double value(unsigned char index) {
         unsigned char i=0;
-            #if GEIGER_REPORT_CPM
+        #if GEIGER_REPORT_CPM
         if (index == i++) {
                 unsigned long _period_begin = _lastreport_cpm;
                 _lastreport_cpm = millis();
                 double value = _events * 60000;
                 value = value / (_lastreport_cpm-_period_begin);
                 #if SENSOR_DEBUG
-                char data[128]; char buffer[32];
-                dtostrf(value, 1, 4, buffer);
-                snprintf(data, sizeof(data), "Ticks: %u | Interval: %u | CPM: %s", _ticks, (_lastreport_cpm-_period_begin), buffer);
-                DEBUG_MSG("[GEIGER] %s\n", data);
+                    char buffer[32] = {0};
+                    dtostrf(value, 1, 4, buffer);
+
+                    DEBUG_MSG_P(PSTR("[GEIGER] Ticks: %u | Interval: %u | CPM: %s\n"), _ticks, (_lastreport_cpm - _period_begin), buffer);
                 #endif
                 _events = 0;
                 return value;
         }
-            #endif
-            #if GEIGER_REPORT_SIEVERTS
+        #endif
+        #if GEIGER_REPORT_SIEVERTS
         if (index == i++) {
                 unsigned long _period_begin = _lastreport_sv;
                 _lastreport_sv = millis();
                 double value = _ticks * 60000 / _cpm2sievert;
                 value = value / (_lastreport_sv-_period_begin);
                 #if SENSOR_DEBUG
-                char data[128]; char buffer[32];
-                dtostrf(value, 1, 4, buffer);
-                snprintf(data, sizeof(data), "Ticks: %u | Interval: %u | µSievert: %s", _ticks, (_lastreport_sv-_period_begin), buffer);
-                DEBUG_MSG("[GEIGER] %s\n", data);
+                    char buffer[32] = {0};
+                    dtostrf(value, 1, 4, buffer);
+                    DEBUG_MSG_P(PSTR("[GEIGER] Ticks: %u | Interval: %u | CPM: %s\n"), _ticks, (_lastreport_cpm - _period_begin), buffer);
                 #endif
                 _ticks = 0;
                 return value;
         }
-            #endif
+        #endif
         return 0;
 }
 

@@ -10,7 +10,10 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Ticker.h>
 #include <Schedule.h>
-#include <ArduinoJson.h>
+
+#include "homeassistant.h"
+#include "mqtt.h"
+#include "ws.h"
 
 bool _ha_enabled = false;
 bool _ha_send_flag = false;
@@ -268,7 +271,7 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
                 config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
                 config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
             }
-            if (lightUseCCT()) {
+            if (lightHasColor() || lightUseCCT()) {
                 config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
                 config["color_temp_state_topic"] = mqttTopic(MQTT_TOPIC_MIRED, false);
             }
@@ -427,9 +430,22 @@ void _haSend() {
 }
 
 void _haConfigure() {
-    const bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    const bool enabled = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
     _ha_send_flag = (enabled != _ha_enabled);
     _ha_enabled = enabled;
+
+    // https://github.com/xoseperez/espurna/issues/1273
+    // https://gitter.im/tinkerman-cat/espurna?at=5df8ad4655d9392300268a8c
+    // TODO: ensure that this is called before _lightConfigure()
+    //       in case useCSS value is ever cached by the lights module
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        if (enabled) {
+            if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
+                setSetting("useCSS", 0);
+            }
+        }
+    #endif
+
     _haSend();
 }
 
@@ -447,7 +463,7 @@ void _haWebSocketOnVisible(JsonObject& root) {
 void _haWebSocketOnConnected(JsonObject& root) {
     JsonObject& ha = root.createNestedObject("ha");
 
-    ha["enabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    ha["enabled"] = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
     ha["prefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
 }
 
@@ -546,7 +562,7 @@ void haSetup() {
 
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-        if (type == MQTT_CONNECT_EVENT) _haSend();
+        if (type == MQTT_CONNECT_EVENT) schedule_function(_haSend);
         if (type == MQTT_DISCONNECT_EVENT) _ha_send_flag = _ha_enabled;
     });
 

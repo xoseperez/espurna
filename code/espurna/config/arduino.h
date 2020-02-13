@@ -3,6 +3,8 @@
 // Uncomment the appropiate line(s) to build from the Arduino IDE
 //--------------------------------------------------------------------------------
 
+#pragma once
+
 //--------------------------------------------------------------------------------
 // Hardware
 //--------------------------------------------------------------------------------
@@ -21,12 +23,19 @@
 //#define ARILUX_E27
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
+//#define AVATTO_NAS_WR01W
 //#define BESTEK_MRJ1011
 //#define BH_ONOFRE
+//#define BLITZWOLF_BWSHP5
 //#define BLITZWOLF_BWSHPX
 //#define BLITZWOLF_BWSHPX_V23
-//#define BLITZWOLF_BWSHP5
+//#define DELTACO_SH_LEXXRGB
+//#define DELTACO_SH_LEXXW
+//#define DELTACO_SH_P01
+//#define DELTACO_SH_P03USB
 //#define DIGOO_NX_SP202
+//#define EHOMEDIY_WT02
+//#define EHOMEDIY_WT03
 //#define ELECTRODRAGON_WIFI_IOT
 //#define ESPURNA_BASE
 //#define ESPURNA_CORE
@@ -41,6 +50,7 @@
 //#define GBLIFE_RGBW_SOCKET
 //#define GENERIC_8CH
 //#define GENERIC_AG_L4
+//#define GENERIC_E14
 //#define GENERIC_ECH1560
 //#define GENERIC_ESP01S_DHT11_V10
 //#define GENERIC_ESP01S_DS18B20_V10
@@ -93,18 +103,24 @@
 //#define JINVOO_VALVE_SM_AW713
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define KMC_70011
+//#define KOGAN_SMARTER_HOME_PLUG_W_POW
 //#define LINGAN_SWA1
+//#define LINKSPRITE_LINKNODE_R4
 //#define LITESUN_LA_WF3
-//#define LOHAS_9W
+//#define LOHAS_E26_A19
+//#define LOHAS_E27_9W
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
+//#define LSC_SMART_LED_LIGHT_STRIP
 //#define LUANI_HVIO
 //#define LYASI_LIGHT
 //#define MAGICHOME_LED_CONTROLLER
 //#define MAGICHOME_LED_CONTROLLER_20
 //#define MAGICHOME_ZJ_ESPM_5CH_B_13
+//#define MAGICHOME_ZJ_LB_RGBWW_L
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
+//#define MAGICHOME_ZJ_WFMN_C_11
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUS002S
@@ -123,6 +139,7 @@
 //#define PSH_WIFI_SENSOR
 //#define SMARTLIFE_MINI_SMART_SOCKET
 //#define STM_RELAY
+//#define TECKIN_SB53
 //#define TECKIN_SP20
 //#define TECKIN_SP21
 //#define TECKIN_SP22_V14

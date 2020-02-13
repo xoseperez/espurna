@@ -8,13 +8,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
-#include <Ticker.h>
 #include <vector>
 
 #include "system.h"
+#include "web.h"
+#include "ws.h"
+#include "ws_internal.h"
+
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");
@@ -51,112 +51,12 @@ ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
 }
 
 ws_callbacks_t _ws_callbacks;
-
-struct ws_counter_t {
-
-    ws_counter_t() : current(0), start(0), stop(0) {}
-
-    ws_counter_t(uint32_t start, uint32_t stop) :
-        current(start), start(start), stop(stop) {}
-
-    void reset() {
-        current = start;
-    }
-
-    void next() {
-        if (current < stop) {
-            ++current;
-        }
-    }
-
-    bool done() {
-        return (current >= stop);
-    }
-
-    uint32_t current;
-    uint32_t start;
-    uint32_t stop;
-};
-
-struct ws_data_t {
-
-    enum mode_t {
-        SEQUENCE,
-        ALL
-    };
-
-    ws_data_t(const ws_on_send_callback_f& cb) :
-        storage(new ws_on_send_callback_list_t {cb}),
-        client_id(0),
-        mode(ALL),
-        callbacks(*storage.get()),
-        counter(0, 1)
-    {}
-
-    ws_data_t(uint32_t client_id, const ws_on_send_callback_f& cb) :
-        storage(new ws_on_send_callback_list_t {cb}),
-        client_id(client_id),
-        mode(ALL),
-        callbacks(*storage.get()),
-        counter(0, 1)
-    {}
-
-    ws_data_t(const uint32_t client_id, ws_on_send_callback_list_t&& callbacks, mode_t mode = SEQUENCE) :
-        storage(new ws_on_send_callback_list_t(std::move(callbacks))),
-        client_id(client_id),
-        mode(mode),
-        callbacks(*storage.get()),
-        counter(0, (storage.get())->size())
-    {}
-
-    ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
-        client_id(client_id),
-        mode(mode),
-        callbacks(callbacks),
-        counter(0, callbacks.size())
-    {}
-
-    bool done() {
-        return counter.done();
-    }
-
-    void sendAll(JsonObject& root) {
-        while (!counter.done()) counter.next();
-        for (auto& callback : callbacks) {
-            callback(root);
-        }
-    }
-
-    void sendCurrent(JsonObject& root) {
-        callbacks[counter.current](root);
-        counter.next();
-    }
-
-    void send(JsonObject& root) {
-        switch (mode) {
-            case SEQUENCE: sendCurrent(root); break;
-            case ALL: sendAll(root); break;
-        }
-    }
-
-    std::unique_ptr<ws_on_send_callback_list_t> storage;
-
-    const uint32_t client_id;
-    const mode_t mode;
-    const ws_on_send_callback_list_t& callbacks;
-    ws_counter_t counter;
-};
-
 std::queue<ws_data_t> _ws_client_data;
 
 // -----------------------------------------------------------------------------
 // WS authentication
 // -----------------------------------------------------------------------------
 
-struct ws_ticket_t {
-    IPAddress ip;
-    unsigned long timestamp = 0;
-};
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
 void _onAuth(AsyncWebServerRequest *request) {
@@ -206,71 +106,33 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 #if DEBUG_WEB_SUPPORT
 
-using ws_debug_msg_t = std::pair<String, String>;
-
-struct ws_debug_t {
-
-    ws_debug_t(size_t capacity) :
-        flush(false),
-        current(0),
-        capacity(capacity)
-    {
-        messages.reserve(capacity);
-    }
-
-    void clear() {
-        messages.clear();
-        current = 0;
-        flush = false;
-    }
-
-    void add(const char* prefix, const char* message) {
-        if (current >= capacity) {
-            flush = true;
-            send(wsConnected());
-        }
-
-        messages.emplace(messages.begin() + current, prefix, message);
-        flush = true;
-        ++current;
-    }
-
-    void send(const bool connected) {
-        if (!connected && flush) {
-            clear();
-            return;
-        }
-
-        if (!flush) return;
-        // ref: http://arduinojson.org/v5/assistant/
-        // {"weblog": {"msg":[...],"pre":[...]}}
-        DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
-
-        JsonObject& root = jsonBuffer.createObject();
-        JsonObject& weblog = root.createNestedObject("weblog");
-
-        JsonArray& msg = weblog.createNestedArray("msg");
-        JsonArray& pre = weblog.createNestedArray("pre");
-
-        for (auto& message : messages) {
-            pre.add(message.first.c_str());
-            msg.add(message.second.c_str());
-        }
-
-        wsSend(root);
-        clear();
-    }
-
-    bool flush;
-    size_t current;
-    const size_t capacity;
-    std::vector<ws_debug_msg_t> messages;
-
-};
-
-// TODO: move to the headers?
-constexpr const size_t WS_DEBUG_MSG_BUFFER = 8;
 ws_debug_t _ws_debug(WS_DEBUG_MSG_BUFFER);
+
+void ws_debug_t::send(const bool connected) {
+    if (!connected && flush) {
+        clear();
+        return;
+    }
+
+    if (!flush) return;
+    // ref: http://arduinojson.org/v5/assistant/
+    // {"weblog": {"msg":[...],"pre":[...]}}
+    DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
+
+    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& weblog = root.createNestedObject("weblog");
+
+    JsonArray& msg = weblog.createNestedArray("msg");
+    JsonArray& pre = weblog.createNestedArray("pre");
+
+    for (auto& message : messages) {
+        pre.add(message.first.c_str());
+        msg.add(message.second.c_str());
+    }
+
+    wsSend(root);
+    clear();
+}
 
 bool wsDebugSend(const char* prefix, const char* message) {
     if (!wsConnected()) return false;
@@ -291,7 +153,7 @@ bool _wsStore(const String& key, const String& value) {
         }
     }
 
-    if (value != getSetting(key)) {
+    if (!hasSetting(key) || value != getSetting(key)) {
         return setSetting(key, value);
     }
 
@@ -303,19 +165,24 @@ bool _wsStore(const String& key, const String& value) {
 // Store indexed key (key0, key1, etc.) from array
 // -----------------------------------------------------------------------------
 
-bool _wsStore(const String& key, JsonArray& value) {
+bool _wsStore(const String& key, JsonArray& values) {
 
     bool changed = false;
 
     unsigned char index = 0;
-    for (auto element : value) {
-        if (_wsStore(key + index, element.as<String>())) changed = true;
-        index++;
+    for (auto& element : values) {
+        const auto value = element.as<String>();
+        const auto keyobj = settings_key_t {key, index};
+        if (!hasSetting(keyobj) || value != getSetting(keyobj)) {
+            setSetting(keyobj, value);
+            changed = true;
+        }
+        ++index;
     }
 
     // Delete further values
-    for (unsigned char i=index; i<SETTINGS_MAX_LIST_COUNT; i++) {
-        if (!delSetting(key, index)) break;
+    for (unsigned char next_index=index; next_index < SETTINGS_MAX_LIST_COUNT; ++next_index) {
+        if (!delSetting({key, next_index})) break;
         changed = true;
     }
 
@@ -363,6 +230,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     const char* action = root["action"];
     if (action) {
+
+        if (strcmp(action, "ping") == 0) {
+            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            return;
+        }
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
@@ -550,10 +422,10 @@ void _wsOnConnected(JsonObject& root) {
     device["total_size"] = ESP.getFlashChipRealSize();
     device["hostname"] = getSetting("hostname");
     device["desc"] = getSetting("desc");
-    device["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-    device["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+    device["webPort"] = getSetting("webPort", WEB_PORT);
+    device["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
+    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
+    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 
     wifi["rssi"] = WiFi.RSSI();
     wifi["mac"] = WiFi.macAddress();
@@ -562,8 +434,7 @@ void _wsOnConnected(JsonObject& root) {
     wifi["name"] = getNetwork();
     wifi["ip"] = getIP();
 
-
-    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY); // TODO move this as a setting per button
 }
 
 void wsSend(JsonObject& root) {

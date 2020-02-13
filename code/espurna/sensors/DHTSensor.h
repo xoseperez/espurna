@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
+#include "../utils.h"
 #include "BaseSensor.h"
 
 constexpr const double DHT_DUMMY_VALUE = -255;

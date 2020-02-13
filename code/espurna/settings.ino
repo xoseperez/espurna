@@ -7,7 +7,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <vector>
-#include "libs/EmbedisWrap.h"
+
+#include <ArduinoJson.h>
+
+#include "storage_eeprom.h"
+
+#include "settings_internal.h"
+#include "settings.h"
 
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
@@ -97,65 +103,87 @@ std::vector<String> _settingsKeys() {
 // Key-value API
 // -----------------------------------------------------------------------------
 
-void moveSetting(const char * from, const char * to) {
-    String value = getSetting(from);
+String settings_key_t::toString() const {
+    if (index < 0) {
+        return value;
+    } else {
+        return value + index;
+    }
+}
+
+settings_move_key_t _moveKeys(const String& from, const String& to, unsigned char index) {
+    return settings_move_key_t {{from, index}, {to, index}};
+}
+
+void moveSetting(const String& from, const String& to) {
+    const auto value = getSetting(from);
     if (value.length() > 0) setSetting(to, value);
     delSetting(from);
 }
 
-void moveSetting(const char * from, const char * to, unsigned int index) {
-    String value = getSetting(from, index, "");
-    if (value.length() > 0) setSetting(to, index, value);
-    delSetting(from, index);
+void moveSetting(const String& from, const String& to, unsigned char index) {
+    const auto keys = _moveKeys(from, to, index);
+    const auto value = getSetting(keys.first);
+    if (value.length() > 0) setSetting(keys.second, value);
+
+    delSetting(keys.first);
 }
 
-void moveSettings(const char * from, const char * to) {
-    unsigned int index = 0;
+void moveSettings(const String& from, const String& to) {
+    unsigned char index = 0;
     while (index < 100) {
-        String value = getSetting(from, index, "");
+        const auto keys = _moveKeys(from, to, index);
+        const auto value = getSetting(keys.first);
         if (value.length() == 0) break;
-        setSetting(to, index, value);
-        delSetting(from, index);
-        index++;
+        setSetting(keys.second, value);
+        delSetting(keys.first);
+        ++index;
     }
 }
 
-template<typename T> String getSetting(const String& key, T defaultValue) {
+template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
+R getSetting(const settings_key_t& key, R defaultValue) {
     String value;
-    if (!Embedis::get(key, value)) value = String(defaultValue);
+    if (!Embedis::get(key.toString(), value)) {
+        return defaultValue;
+    }
+    return Rfunc(value);
+}
+
+template<>
+String getSetting(const settings_key_t& key, String defaultValue) {
+    String value;
+    if (!Embedis::get(key.toString(), value)) {
+        value = defaultValue;
+    }
     return value;
 }
 
-template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue) {
-    return getSetting(key + String(index), defaultValue);
+String getSetting(const settings_key_t& key) {
+    static const String defaultValue("");
+    return getSetting(key, defaultValue);
 }
 
-String getSetting(const String& key) {
-    return getSetting(key, "");
+String getSetting(const settings_key_t& key, const char* defaultValue) {
+    return getSetting(key, String(defaultValue));
 }
 
-template<typename T> bool setSetting(const String& key, T value) {
-    return Embedis::set(key, String(value));
+String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultValue) {
+    return getSetting(key, String(defaultValue));
 }
 
-template<typename T> bool setSetting(const String& key, unsigned int index, T value) {
-    return setSetting(key + String(index), value);
+template<typename T>
+bool setSetting(const settings_key_t& key, const T& value) {
+    return Embedis::set(key.toString(), String(value));
 }
 
-bool delSetting(const String& key) {
-    return Embedis::del(key);
+bool delSetting(const settings_key_t& key) {
+    return Embedis::del(key.toString());
 }
 
-bool delSetting(const String& key, unsigned int index) {
-    return delSetting(key + String(index));
-}
-
-bool hasSetting(const String& key) {
-    return getSetting(key).length() != 0;
-}
-
-bool hasSetting(const String& key, unsigned int index) {
-    return getSetting(key, index, "").length() != 0;
+bool hasSetting(const settings_key_t& key) {
+    String value;
+    return Embedis::get(key.toString(), value);
 }
 
 void saveSettings() {
@@ -165,10 +193,34 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+    for (unsigned int i = 0; i < EEPROM_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
     EEPROMr.commit();
+}
+
+// -----------------------------------------------------------------------------
+// Deprecated implementation
+// -----------------------------------------------------------------------------
+
+template<typename T>
+String getSetting(const String& key, unsigned char index, T defaultValue) {
+    return getSetting({key, index}, defaultValue);
+}
+
+template<typename T>
+bool setSetting(const String& key, unsigned char index, T value) {
+    return setSetting({key, index}, value);
+}
+
+template<typename T>
+bool hasSetting(const String& key, unsigned char index) {
+    return hasSetting({key, index});
+}
+
+template<typename T>
+bool delSetting(const String& key, unsigned char index) {
+    return delSetting({key, index});
 }
 
 // -----------------------------------------------------------------------------

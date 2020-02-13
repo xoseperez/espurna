@@ -10,9 +10,10 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "BaseSensor.h"
 
 #define MHZ19_REQUEST_LEN       8
 #define MHZ19_RESPONSE_LEN      9

@@ -1,7 +1,9 @@
-// // //------------------------------------------------------------------------------
-// Do not change this file unless you know what you are doing
-// Configuration settings are in the settings.h file
 //------------------------------------------------------------------------------
+// Do not change this file unless you know what you are doing
+// To override user configuration, please see custom.h
+//------------------------------------------------------------------------------
+
+#pragma once
 
 //------------------------------------------------------------------------------
 // GENERAL
@@ -31,6 +33,11 @@
 //------------------------------------------------------------------------------
 // DEBUG
 //------------------------------------------------------------------------------
+
+#ifndef DEBUG_LOG_MODE
+#define DEBUG_LOG_MODE          DebugLogMode::Enabled   // Set global logger mode. One of:
+                                                        // ::Enabled, ::Disabled or ::SkipBoot
+#endif
 
 // Serial debug log
 
@@ -100,6 +107,22 @@
 
 #ifndef DEBUG_WEB_SUPPORT
 #define DEBUG_WEB_SUPPORT       1               // Enable web debug log (will only work if WEB_SUPPORT is also 1)
+#endif
+
+//------------------------------------------------------------------------------
+
+#ifndef DEBUG_LOG_BUFFER_SUPPORT
+#define DEBUG_LOG_BUFFER_SUPPORT       1        // Support boot log buffer (1.2Kb)
+                                                // Will only work if DEBUG_LOG_BUFFER_ENABLED or runtime setting is also 1
+#endif
+
+#ifndef DEBUG_LOG_BUFFER_ENABLED
+#define DEBUG_LOG_BUFFER_ENABLED       0        // Disable boot log buffer by default
+#endif
+
+#ifndef DEBUG_LOG_BUFFER_SIZE
+#define DEBUG_LOG_BUFFER_SIZE          4096     // Store 4 Kb of log strings
+                                                // WARNING! Memory is only reclaimed after `debug.buffer` prints the buffer contents
 #endif
 
 //------------------------------------------------------------------------------
@@ -187,6 +210,16 @@
 #define EEPROM_ROTATE_DATA      11              // Reserved for the EEPROM_ROTATE library (3 bytes)
 #define EEPROM_DATA_END         14              // End of custom EEPROM data block
 
+
+#ifndef SAVE_CRASH_ENABLED
+#define SAVE_CRASH_ENABLED          1           // Save stack trace to EEPROM by default
+                                                // Depends on DEBUG_SUPPORT == 1
+#endif
+
+#ifndef SAVE_CRASH_STACK_TRACE_MAX
+#define SAVE_CRASH_STACK_TRACE_MAX  0x80        // limit at 128 bytes (increment/decrement by 16)
+#endif
+
 //------------------------------------------------------------------------------
 // THERMOSTAT
 //------------------------------------------------------------------------------
@@ -221,10 +254,10 @@
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          300         // Interval between heartbeat messages (in sec)
+#define HEARTBEAT_INTERVAL          300UL         // Interval between heartbeat messages (in sec)
 #endif
 
-#define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
+#define UPTIME_OVERFLOW             4294967295UL  // Uptime overflow value
 
 // Values that will be reported in heartbeat
 #ifndef HEARTBEAT_REPORT_STATUS
@@ -394,7 +427,7 @@
 
 // Relay requests flood protection window - in seconds
 #ifndef RELAY_FLOOD_WINDOW
-#define RELAY_FLOOD_WINDOW          3
+#define RELAY_FLOOD_WINDOW          3.0
 #endif
 
 // Allowed actual relay changes inside requests flood protection window
@@ -558,6 +591,30 @@
 #define WIFI4_DNS                   ""
 #endif
 
+#ifndef WIFI5_SSID
+#define WIFI5_SSID                  ""
+#endif
+
+#ifndef WIFI5_PASS
+#define WIFI5_PASS                  ""
+#endif
+
+#ifndef WIFI5_IP
+#define WIFI5_IP                    ""
+#endif
+
+#ifndef WIFI5_GW
+#define WIFI5_GW                    ""
+#endif
+
+#ifndef WIFI5_MASK
+#define WIFI5_MASK                  ""
+#endif
+
+#ifndef WIFI5_DNS
+#define WIFI5_DNS                   ""
+#endif
+
 #ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M                -30         // Calibrate it with your router reading the RSSI at 1m
 #endif
@@ -590,7 +647,7 @@
 //
 // Issue #6366 turned out to be high tx power causing weird behavior. Lowering tx power achieved stability.
 #ifndef WIFI_OUTPUT_POWER_DBM
-#define WIFI_OUTPUT_POWER_DBM                    20.0
+#define WIFI_OUTPUT_POWER_DBM                    20.0f
 #endif
 
 
@@ -1129,10 +1186,6 @@
 #define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
 #endif
 
-#ifndef BROKER_REAL_TIME
-#define BROKER_REAL_TIME        1           // Report real time data
-#endif
-
 // -----------------------------------------------------------------------------
 // SETTINGS
 // -----------------------------------------------------------------------------
@@ -1141,7 +1194,7 @@
 #define SETTINGS_AUTOSAVE       1           // Autosave settings or force manual commit
 #endif
 
-#define SETTINGS_MAX_LIST_COUNT 10          // Maximum index for settings lists
+#define SETTINGS_MAX_LIST_COUNT 16          // Maximum index for settings lists
 
 // -----------------------------------------------------------------------------
 // LIGHT
@@ -1358,31 +1411,46 @@
                                                     // Not clearing it will result in latest values for each field being sent every time
 #endif
 
+#ifndef THINGSPEAK_USE_ASYNC
 #define THINGSPEAK_USE_ASYNC        1               // Use AsyncClient instead of WiFiClientSecure
+#endif
 
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
 // When THINGSPEAK_USE_ASYNC is 1, requires EspAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and ESP8266 Arduino Core >= 2.4.0.
+// When THINGSPEAK_USE_ASYNC is 0, requires Arduino Core >= 2.6.0 and SECURE_CLIENT_BEARSSL
+
+#ifndef THINGSPEAK_USE_SSL
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
-
-#define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
-
-#define THINGSPEAK_HOST             "api.thingspeak.com"
-#if THINGSPEAK_USE_SSL
-#define THINGSPEAK_PORT             443
-#else
-#define THINGSPEAK_PORT             80
 #endif
 
-#define THINGSPEAK_URL              "/update"
+#ifndef THINGSPEAK_SECURE_CLIENT_CHECK
+#define THINGSPEAK_SECURE_CLIENT_CHECK    SECURE_CLIENT_CHECK
+#endif
 
-#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
-#define THINGSPEAK_FIELDS           8               // Number of fields
+#ifndef THINGSPEAK_SECURE_CLIENT_MFLN
+#define THINGSPEAK_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN
+#endif
+
+#ifndef THINGSPEAK_FINGERPRINT
+#define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
+#endif
+
+#ifndef THINGSPEAK_ADDRESS
+#if THINGSPEAK_USE_SSL
+#define THINGSPEAK_ADDRESS          "https://api.thingspeak.com/update"
+#else
+#define THINGSPEAK_ADDRESS          "http://api.thingspeak.com/update"
+#endif
+#endif // ifndef THINGSPEAK_ADDRESS
 
 #ifndef THINGSPEAK_TRIES
 #define THINGSPEAK_TRIES            3               // Number of tries when sending data (minimum 1)
 #endif
+
+#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
+#define THINGSPEAK_FIELDS           8               // Number of fields
 
 // -----------------------------------------------------------------------------
 // SCHEDULER
@@ -1416,17 +1484,46 @@
 #define RPN_DELAY                   100             // Execute rules after 100ms without messages
 #endif
 
+#ifndef RPN_STICKY
+#define RPN_STICKY                  1               // Keeps variable after rule execution
+#endif
+
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
 
 #ifndef NTP_SUPPORT
-#define NTP_SUPPORT                 1               // Build with NTP support by default (6.78Kb)
+#define NTP_SUPPORT                 1               // Build with NTP support by default (depends on Core version)
 #endif
 
 #ifndef NTP_SERVER
 #define NTP_SERVER                  "pool.ntp.org"  // Default NTP server
 #endif
+
+#ifndef NTP_TIMEZONE
+#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable. Default to UTC from TZ.h (which is PSTR("UTC0"))
+                                                    // For the format documentation, see:
+                                                    // - https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+                                                    // ESP8266 Core provides human-readable aliases for POSIX format, see:
+                                                    // - Latest: https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h
+                                                    // - PlatformIO: ~/.platformio/packages/framework-arduinoespressif8266/cores/esp8266/TZ.h
+                                                    //   (or, possibly, c:\.platformio\... on Windows)
+                                                    // - Arduino IDE: depends on platform, see `/dist/arduino_ide/README.md`
+#endif
+
+#ifndef NTP_UPDATE_INTERVAL
+#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
+#endif
+
+#ifndef NTP_START_DELAY
+#define NTP_START_DELAY             3               // Delay NTP start for 3 seconds
+#endif
+
+#ifndef NTP_WAIT_FOR_SYNC
+#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
+#endif
+
+// WARNING: legacy NTP settings. can be ignored with Core 2.6.2+
 
 #ifndef NTP_TIMEOUT
 #define NTP_TIMEOUT                 1000            // Set NTP request timeout to 2 seconds (issue #452)
@@ -1444,20 +1541,8 @@
 #define NTP_SYNC_INTERVAL           60              // NTP initial check every minute
 #endif
 
-#ifndef NTP_UPDATE_INTERVAL
-#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
-#endif
-
-#ifndef NTP_START_DELAY
-#define NTP_START_DELAY             1000            // Delay NTP start 1 second
-#endif
-
 #ifndef NTP_DST_REGION
 #define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
-#endif
-
-#ifndef NTP_WAIT_FOR_SYNC
-#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1734,6 +1819,63 @@
 
 #endif
 
+//Remote Buttons SET 5 (another identical IR Remote shipped with another controller as SET 1 and 2)
+#if IR_BUTTON_SET == 5
+
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
+    #define IR_BUTTON_COUNT 24
+
+    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xF700FF, IR_BUTTON_MODE_BRIGHTER, 1 },
+        { 0xF7807F, IR_BUTTON_MODE_BRIGHTER, 0 },
+        { 0xF740BF, IR_BUTTON_MODE_STATE, 0 },
+        { 0xF7C03F, IR_BUTTON_MODE_STATE, 1 },
+
+        { 0xF720DF, IR_BUTTON_MODE_RGB, 0xFF0000 },
+        { 0xF7A05F, IR_BUTTON_MODE_RGB, 0x00FF00 },
+        { 0xF7609F, IR_BUTTON_MODE_RGB, 0x0000FF },
+        { 0xF7E01F, IR_BUTTON_MODE_RGB, 0xFFFFFF },
+
+        { 0xF710EF, IR_BUTTON_MODE_RGB, 0xD13A01 },
+        { 0xF7906F, IR_BUTTON_MODE_RGB, 0x00E644 },
+        { 0xF750AF, IR_BUTTON_MODE_RGB, 0x0040A7 },
+        { 0xF7D02F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FLASH },
+
+        { 0xF730CF, IR_BUTTON_MODE_RGB, 0xE96F2A },
+        { 0xF7B04F, IR_BUTTON_MODE_RGB, 0x00BEBF },
+        { 0xF7708F, IR_BUTTON_MODE_RGB, 0x56406F },
+        { 0xF7F00F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_STROBE },
+
+        { 0xF708F7, IR_BUTTON_MODE_RGB, 0xEE9819 },
+        { 0xF78877, IR_BUTTON_MODE_RGB, 0x00799A },
+        { 0xF748B7, IR_BUTTON_MODE_RGB, 0x944E80 },
+        { 0xF7C837, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FADE },
+
+        { 0xF728D7, IR_BUTTON_MODE_RGB, 0xFFFF00 },
+        { 0xF7A857, IR_BUTTON_MODE_RGB, 0x0060A1 },
+        { 0xF76897, IR_BUTTON_MODE_RGB, 0xEF45AD },
+        { 0xF7E817, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_SMOOTH }
+
+    };
+
+#endif
+
 #ifndef IR_BUTTON_COUNT
 #define IR_BUTTON_COUNT 0
 #endif
@@ -1814,3 +1956,20 @@
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
 #endif
+
+// =============================================================================
+// Configuration helpers
+// =============================================================================
+
+//------------------------------------------------------------------------------
+// Provide generic way to detect debugging support
+//------------------------------------------------------------------------------
+#ifndef DEBUG_SUPPORT
+#define DEBUG_SUPPORT ( \
+    DEBUG_SERIAL_SUPPORT || \
+    DEBUG_UDP_SUPPORT || \
+    DEBUG_TELNET_SUPPORT || \
+    DEBUG_WEB_SUPPORT \
+)
+#endif
+

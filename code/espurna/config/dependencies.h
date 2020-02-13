@@ -1,9 +1,12 @@
-#pragma once
-
 //------------------------------------------------------------------------------
 // Do not change this file unless you know what you are doing
 // Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
+
+#pragma once
+
+//------------------------------------------------------------------------------
+// Various modules configuration
 
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
@@ -26,11 +29,10 @@
 #endif
 
 #if UART_MQTT_SUPPORT
-#define MQTT_SUPPORT                1
-#undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT            0
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1           // UART<->MQTT requires MQTT and no serial debug
 #undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT        0
+#define DEBUG_SERIAL_SUPPORT        0           // TODO: compare UART_MQTT_PORT with DEBUG_PORT? (as strings)
 #endif
 
 #if ALEXA_SUPPORT
@@ -41,12 +43,14 @@
 #if RPN_RULES_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
-#undef WEB_SUPPORT
-#define WEB_SUPPORT                 1
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1
 #endif
 
+#if LED_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If LED is enabled enable BROKER to supply status changes
+#endif
 
 #if INFLUXDB_SUPPORT
 #undef BROKER_SUPPORT
@@ -54,10 +58,10 @@
 #endif
 
 #if DOMOTICZ_SUPPORT
-#undef MQTT_SUPPORT
-#define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Domoticz enabled enable BROKER
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
 #endif
 
 #if HOMEASSISTANT_SUPPORT
@@ -72,7 +76,9 @@
 
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
-#define NTP_SUPPORT                 1           // Scheduler needs NTP
+#define NTP_SUPPORT                 1           // Scheduler needs NTP to work
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
 #endif
 
 #if LWIP_VERSION_MAJOR != 1
@@ -84,6 +90,48 @@
 #undef TELNET_SERVER_ASYNC_BUFFERED
 #define TELNET_SERVER_ASYNC_BUFFERED 1         // enable buffered telnet by default on latest Cores
 #endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+#undef TUYA_SUPPORT
+#define TUYA_SUPPORT                1           // Need base Tuya module for this to work
+#undef LIGHT_USE_TRANSITIONS
+#define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
+#endif
+
+#if TUYA_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
+#endif
+
+//------------------------------------------------------------------------------
+// Hint about ESPAsyncTCP options and our internal one
+// TODO: clean-up SSL_ENABLED and USE_SSL settings for 1.15.0
+
+#if ASYNC_TCP_SSL_ENABLED && SECURE_CLIENT == SECURE_CLIENT_NONE
+#undef SECURE_CLIENT
+#define SECURE_CLIENT               SECURE_CLIENT_AXTLS
+#endif
+
+#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC && (!ASYNC_TCP_SSL_ENABLED)
+#warning "Thingspeak in ASYNC mode requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
+#undef THINGSPEAK_SUPPORT
+#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#endif
+
+#if WEB_SUPPORT && WEB_SSL_ENABLED && (!ASYNC_TCP_SSL_ENABLED)
+#warning "WEB_SUPPORT with SSL requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
+#undef WEB_SSL_ENABLED
+#define WEB_SSL_ENABLED          0               // WEB_SUPPORT mode th SSL requires ASYNC_TCP_SSL_ENABLED
+#endif
+
+#if !DEBUG_SUPPORT
+#undef DEBUG_LOG_BUFFER_SUPPORT
+#define DEBUG_LOG_BUFFER_SUPPORT  0              // Can't buffer if there is no debugging enabled.
+                                                 // Helps to avoid checking twice for both DEBUG_SUPPORT and BUFFER_LOG_SUPPORT
+#endif
+
+//------------------------------------------------------------------------------
+// These depend on newest Core libraries
 
 #if LLMNR_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
 #undef LLMNR_SUPPORT
@@ -100,32 +148,11 @@
 #define SSDP_SUPPORT 0
 #endif
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-#undef TUYA_SUPPORT
-#define TUYA_SUPPORT                1           // Need base Tuya module for this to work
-#undef LIGHT_USE_TRANSITIONS
-#define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
-#endif
+//------------------------------------------------------------------------------
+// Change ntp module depending on Core version
 
-#if TUYA_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
-#endif
-
-// TODO: clean-up SSL_ENABLED and USE_SSL settings for 1.15.0
-#if ASYNC_TCP_SSL_ENABLED && SECURE_CLIENT == SECURE_CLIENT_NONE
-#undef SECURE_CLIENT
-#define SECURE_CLIENT               SECURE_CLIENT_AXTLS
-#endif
-
-#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC && (!ASYNC_TCP_SSL_ENABLED)
-#warning "Thingspeak in ASYNC mode requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
-#undef THINGSPEAK_SUPPORT
-#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
-#endif
-
-#if WEB_SUPPORT && WEB_SSL_ENABLED && (!ASYNC_TCP_SSL_ENABLED)
-#warning "WEB_SUPPORT with SSL requires a globally defined ASYNC_TCP_SSL_ENABLED=1"
-#undef WEB_SSL_ENABLED
-#define WEB_SSL_ENABLED          0               // WEB_SUPPORT mode th SSL requires ASYNC_TCP_SSL_ENABLED
+#if NTP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#define NTP_LEGACY_SUPPORT 1
+#else
+#define NTP_LEGACY_SUPPORT 0
 #endif

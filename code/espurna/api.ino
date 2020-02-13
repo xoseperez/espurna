@@ -8,12 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if API_SUPPORT
 
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
-#include <vector>
-
+#include "api.h"
 #include "system.h"
+#include "web.h"
+#include "ws.h"
 
 typedef struct {
     char * key;
@@ -23,6 +21,18 @@ typedef struct {
 std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
+
+bool _apiEnabled() {
+    return getSetting("apiEnabled", 1 == API_ENABLED);
+}
+
+bool _apiRestFul() {
+    return getSetting("apiRestFul", 1 == API_RESTFUL);
+}
+
+String _apiKey() {
+    return getSetting("apiKey", API_KEY);
+}
 
 bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "api", 3) == 0);
@@ -35,10 +45,10 @@ void _apiWebSocketOnVisible(JsonObject& root) {
 
 void _apiWebSocketOnConnected(JsonObject& root) {
     JsonObject& api = root.createNestedObject("api");
-    api["enabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
-    api["key"] = getSetting("apiKey", API_KEY);
-    api["realTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    api["restFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
+    api["enabled"] = _apiEnabled();
+    api["key"] = _apiKey();
+    api["restFul"] = _apiRestFul();
+    api["realTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
 }
 
 void _apiConfigure() {
@@ -51,15 +61,15 @@ void _apiConfigure() {
 
 bool _authAPI(AsyncWebServerRequest *request) {
 
-    const String key = getSetting("apiKey", API_KEY);
-    if (!key.length() || getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
+    const auto key = _apiKey();
+    if (!key.length() || !_apiEnabled()) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;
     }
 
-    AsyncWebParameter* p = request->getParam("apikey", (request->method() == HTTP_PUT));
-    if (!p || !p->value().equals(key)) {
+    AsyncWebParameter* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
+    if (!keyParam || !keyParam->value().equals(key)) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
         request->send(403);
         return false;
@@ -82,12 +92,12 @@ void _onAPIsText(AsyncWebServerRequest *request) {
     AsyncResponseStream *response = request->beginResponseStream("text/plain");
     String output;
     output.reserve(48);
-    for (unsigned int i=0; i < _apis.size(); i++) {
+    for (auto& api : _apis) {
         output = "";
-        output += _apis[i].key;
+        output += api.key;
         output += " -> ";
         output += "/api/";
-        output += _apis[i].key;
+        output += api.key;
         output += '\n';
         response->write(output.c_str());
     }
@@ -191,7 +201,7 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
         // Check if its a PUT
         if (api.putFn != NULL) {
-            if ((getSetting("apiRestFul", API_RESTFUL).toInt() != 1) || (request->method() == HTTP_PUT)) {
+            if (!_apiRestFul() || (request->method() == HTTP_PUT)) {
                 if (request->hasParam("value", request->method() == HTTP_PUT)) {
                     AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
                     (api.putFn)((p->value()).c_str());

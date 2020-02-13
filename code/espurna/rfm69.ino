@@ -8,7 +8,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
-#include "libs/RFM69Wrap.h"
+#include "mqtt.h"
+#include "rfm69.h"
+#include "ws.h"
 
 #define RFM69_PACKET_SEPARATOR ':'
 
@@ -44,12 +46,12 @@ void _rfm69WebSocketOnConnected(JsonObject& root) {
     rfm69["nodeCount"] = _rfm69_node_count;
     JsonArray& mappings = rfm69.createNestedArray("mapping");
     for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
-        unsigned char node = getSetting("node", i, 0).toInt();
+        auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
         JsonObject& mapping = mappings.createNestedObject();
         mapping["node"] = node;
-        mapping["key"] = getSetting("key", i, "");
-        mapping["topic"] = getSetting("topic", i, "");
+        mapping["key"] = getSetting({"key", i});
+        mapping["topic"] = getSetting({"topic", i});
     }
 
 }
@@ -72,20 +74,20 @@ void _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void _rfm69CleanNodes(unsigned char num) {
 
     // Look for the last defined node
-    int i = 0;
-    while (i < num) {
-        if (getSetting("node", i, 0).toInt() == 0) break;
-        if (getSetting("key", i, "").length() == 0) break;
-        if (getSetting("topic", i, "").length() == 0) break;
-        ++i;
+    unsigned char id = 0;
+    while (id < num) {
+        if (0 == getSetting({"node", id}, 0)) break;
+        if (!getSetting({"key", id}).length()) break;
+        if (!getSetting({"topic", id}).length()) break;
+        ++id;
     }
 
     // Delete all other settings
-    while (i < WIFI_MAX_NETWORKS) {
-        delSetting("node", i);
-        delSetting("key", i);
-        delSetting("topic", i);
-        ++i;
+    while (id < SETTINGS_MAX_LIST_COUNT) {
+        delSetting({"node", id});
+        delSetting({"key", id});
+        delSetting({"topic", id});
+        ++id;
     }
 
 }
@@ -165,11 +167,11 @@ void _rfm69Process(packet_t * data) {
     if (!RFM69_PROMISCUOUS_SENDS && (RFM69_GATEWAY_ID != data->targetID)) return;
 
     // Try to find a matching mapping
-    for (unsigned int i=0; i<RFM69_MAX_TOPICS; i++) {
-        unsigned char node = getSetting("node", i, 0).toInt();
+    for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
+        auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
-        if ((node == data->senderID) && (getSetting("key", i, "").equals(data->key))) {
-            mqttSendRaw((char *) getSetting("topic", i, "").c_str(), (char *) String(data->value).c_str());
+        if ((node == data->senderID) && (getSetting({"key", i}).equals(data->key))) {
+            mqttSendRaw((char *) getSetting({"topic", i}).c_str(), (char *) String(data->value).c_str());
             return;
         }
     }

@@ -8,14 +8,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RF_SUPPORT
 
-#include "relay.h"
-
 #include <queue>
-#include <Ticker.h>
 
-#if RFB_DIRECT
-#include <RCSwitch.h>
-#endif
+#include "relay.h"
+#include "rfbridge.h"
+#include "terminal.h"
+#include "mqtt.h"
+#include "ws.h"
 
 // -----------------------------------------------------------------------------
 // DEFINITIONS
@@ -113,11 +112,11 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 void _rfbWebSocketOnConnected(JsonObject& root) {
     JsonObject& rfb = root.createNestedObject("rfb");
 
-    rfb["repeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
+    rfb["repeat"] = getSetting("rfbRepeat", RF_SEND_TIMES);
     rfb["count"] = relayCount();
     #if RFB_DIRECT
-        rfb["RX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
-        rfb["TX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
+        rfb["RX"] = getSetting("rfbRX", RFB_RX_PIN);
+        rfb["TX"] = getSetting("rfbTX", RFB_TX_PIN);
     #endif
 }
 
@@ -672,15 +671,19 @@ void _rfbInitCommands() {
 
 void rfbStore(unsigned char id, bool status, const char * code) {
     DEBUG_MSG_P(PSTR("[RF] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
-    char key[RF_MAX_KEY_LENGTH] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
-    setSetting(key, code);
+    if (status) {
+        setSetting({"rfbON", id}, code);
+    } else {
+        setSetting({"rfbOFF", id}, code);
+    }
 }
 
 String rfbRetrieve(unsigned char id, bool status) {
-    char key[RF_MAX_KEY_LENGTH] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
-    return getSetting(key);
+    if (status) {
+        return getSetting({"rfbON", id});
+    } else {
+        return getSetting({"rfbOFF", id});
+    }
 }
 
 void rfbStatus(unsigned char id, bool status) {
@@ -762,11 +765,11 @@ void rfbSetup() {
         _rfbInitCommands();
     #endif
 
-    _rfb_repeat = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
+    _rfb_repeat = getSetting("rfbRepeat", RF_SEND_TIMES);
 
     #if RFB_DIRECT
-        unsigned char rx = getSetting("rfbRX", RFB_RX_PIN).toInt();
-        unsigned char tx = getSetting("rfbTX", RFB_TX_PIN).toInt();
+        const auto rx = getSetting("rfbRX", RFB_RX_PIN);
+        const auto tx = getSetting("rfbTX", RFB_TX_PIN);
 
         _rfb_receive = gpioValid(rx);
         _rfb_transmit = gpioValid(tx);

@@ -8,45 +8,10 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <EEPROM_Rotate.h>
 
-extern "C" {
-    #include "user_interface.h"
-}
-
-#define SAVE_CRASH_EEPROM_OFFSET    0x0100  // initial address for crash data
-
-/**
- * Structure of the single crash data set
- *
- *  1. Crash time
- *  2. Restart reason
- *  3. Exception cause
- *  4. epc1
- *  5. epc2
- *  6. epc3
- *  7. excvaddr
- *  8. depc
- *  9. adress of stack start
- * 10. adress of stack end
- * 11. stack trace size
- * 12. stack trace bytes
- *     ...
- */
-#define SAVE_CRASH_CRASH_TIME       0x00  // 4 bytes
-#define SAVE_CRASH_RESTART_REASON   0x04  // 1 byte
-#define SAVE_CRASH_EXCEPTION_CAUSE  0x05  // 1 byte
-#define SAVE_CRASH_EPC1             0x06  // 4 bytes
-#define SAVE_CRASH_EPC2             0x0A  // 4 bytes
-#define SAVE_CRASH_EPC3             0x0E  // 4 bytes
-#define SAVE_CRASH_EXCVADDR         0x12  // 4 bytes
-#define SAVE_CRASH_DEPC             0x16  // 4 bytes
-#define SAVE_CRASH_STACK_START      0x1A  // 4 bytes
-#define SAVE_CRASH_STACK_END        0x1E  // 4 bytes
-#define SAVE_CRASH_STACK_SIZE       0x22  // 2 bytes
-#define SAVE_CRASH_STACK_TRACE      0x24  // variable
-
-#define SAVE_CRASH_STACK_TRACE_MAX  0x80  // limit at 128 bytes (increment/decrement by 16)
+#include "system.h"
+#include "storage_eeprom.h"
+#include "crash.h"
 
 uint16_t _save_crash_stack_trace_max = SAVE_CRASH_STACK_TRACE_MAX;
 bool _save_crash_enabled = true;
@@ -173,10 +138,6 @@ void crashDump() {
 
 }
 
-constexpr size_t crashUsedSpace() {
-    return (SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_SIZE + 2);
-}
-
 void crashSetup() {
 
     #if TERMINAL_SUPPORT
@@ -190,7 +151,7 @@ void crashSetup() {
     // Minumum of 16 and align for column formatter in crashDump()
     // Maximum of flash sector size minus reserved space at the beginning
     const uint16_t trace_max = constrain(
-        abs((getSetting("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX).toInt() + 15) & -16),
+        abs((getSetting<int>("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX) + 15) & -16),
         0, (SPI_FLASH_SEC_SIZE - crashUsedSpace())
     );
 
@@ -199,7 +160,7 @@ void crashSetup() {
     }
     _save_crash_stack_trace_max = trace_max;
 
-    _save_crash_enabled = getSetting("sysCrashSave", 1).toInt() == 1;
+    _save_crash_enabled = getSetting("sysCrashSave", 1 == SAVE_CRASH_ENABLED);
 
 }
 

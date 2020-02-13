@@ -2,6 +2,8 @@
 
 RTMEM MODULE
 
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
 */
 
 bool _rtcmem_status = false;
@@ -46,39 +48,41 @@ void _rtcmemInitCommands() {
         _rtcmemInit();
     });
 
-    terminalRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
+    #if DEBUG_SUPPORT
+        terminalRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
 
-        DEBUG_MSG_P(PSTR("[RTCMEM] boot_status=%u status=%u blocks_used=%u\n"),
-            _rtcmem_status, _rtcmemStatus(), RtcmemSize);
+            DEBUG_MSG_P(PSTR("[RTCMEM] boot_status=%u status=%u blocks_used=%u\n"),
+                _rtcmem_status, _rtcmemStatus(), RtcmemSize);
 
-        String line;
-        line.reserve(96);
-        char buffer[16] = {0};
+            String line;
+            line.reserve(96);
+            char buffer[16] = {0};
 
-        auto addr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+            auto addr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
 
-        uint8_t block = 1;
-        uint8_t offset = 0;
-        uint8_t start = 0;
+            uint8_t block = 1;
+            uint8_t offset = 0;
+            uint8_t start = 0;
 
-        do {
+            do {
 
-            offset = block - 1;
+                offset = block - 1;
 
-            snprintf(buffer, sizeof(buffer), "%08x ", *(addr + offset));
-            line += buffer;
+                snprintf(buffer, sizeof(buffer), "%08x ", *(addr + offset));
+                line += buffer;
 
-            if ((block % 8) == 0) {
-                DEBUG_MSG_P(PSTR("%02u %p: %s\n"), start, addr+start, line.c_str());
-                start = block;
-                line = "";
-            }
+                if ((block % 8) == 0) {
+                    DEBUG_MSG_P(PSTR("%02u %p: %s\n"), start, addr+start, line.c_str());
+                    start = block;
+                    line = "";
+                }
 
-            ++block;
+                ++block;
 
-        } while (block<(RTCMEM_BLOCKS+1));
+            } while (block<(RTCMEM_BLOCKS+1));
 
-    });
+        });
+    #endif
 }
 
 #endif

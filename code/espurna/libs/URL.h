@@ -8,28 +8,38 @@
 
 #pragma once
 
-struct URL {
-    String value;
-    String protocol;
-    String host;
-    String path;
-    uint16_t port;
-    
-    URL(const char* url) { init(url); }
-    URL(const String& url) { init(url); }
+class URL {
+    public:
+        URL();
+        URL(const String&);
 
-    void init(String url);
+        String protocol;
+        String host;
+        String path;
+        uint16_t port;
+
+    private:
+        void _parse(String);
 };
 
-void URL::init(String url) {
+URL::URL() :
+    protocol(),
+    host(),
+    path(),
+    port(0)
+{}
 
-    this->value = url;
+URL::URL(const String& string) {
+    _parse(string);
+}
+
+void URL::_parse(String buffer) {
 
     // cut the protocol part
-    int index = url.indexOf("://");
+    int index = buffer.indexOf("://");
     if (index > 0) {
-        this->protocol = url.substring(0, index);
-        url.remove(0, (index + 3));
+        this->protocol = buffer.substring(0, index);
+        buffer.remove(0, (index + 3));
     }
 
     if (this->protocol == "http") {
@@ -41,17 +51,17 @@ void URL::init(String url) {
     // cut the host part
     String _host;
 
-    index = url.indexOf('/');
+    index = buffer.indexOf('/');
     if (index >= 0) {
-        _host = url.substring(0, index);
+        _host = buffer.substring(0, index);
     } else {
-        _host = url;
+        _host = buffer;
     }
 
     // store the remaining part as path
     if (index >= 0) {
-        url.remove(0, index);
-        this->path = url;
+        buffer.remove(0, index);
+        this->path = buffer;
     } else {
         this->path = "/";
     }
@@ -66,3 +76,4 @@ void URL::init(String url) {
     }
 
 }
+
