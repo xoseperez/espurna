@@ -204,7 +204,7 @@
                 </Row>
 
                 <Row>
-                    <textarea v-model="logs"
+                    <textarea :value='logs.join("\n")'
                               class="terminal"
                               wrap="soft"
                               readonly spellcheck="false">
@@ -283,21 +283,16 @@
             }
         },
         data() {
-            return {}
-        },
-        computed: {
-            logs() {
-                let str = "";
-                if (this.weblog)
-                    this.weblog.forEach((v) => {
-                        str += v + "\n";
-                    });
-                return str;
+            return {
+                logs: []
             }
         },
         watch: {
-            weblog(newLog, oldLog) {
-                this.weblog = [...oldLog, ...newLog]
+            weblog() {
+                const date = '['+new Date().toLocaleString(navigator.languages)+'] ';
+                this.weblog.forEach((v) => {
+                   this.logs.push(date + v);
+                });
             }
         },
         methods: {

@@ -578,7 +578,7 @@
         font-size: 80%;
         background-color: #333;
         color: #52ff5f;
-        line-height: .7em;
+        line-height: 1.2em;
     }
 
 
