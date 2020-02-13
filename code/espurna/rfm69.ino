@@ -37,10 +37,14 @@ unsigned long _rfm69_packet_count;
 
 #if WEB_SUPPORT
 
+void _rfm69WebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["modules"];
+    modules["rfm69"] = 1;
+}
+
 void _rfm69WebSocketOnConnected(JsonObject& root) {
     JsonObject& rfm69 = root.createNestedObject("rfm69");
 
-    rfm69["visible"] = 1;
     rfm69["topic"] = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
     rfm69["packetCount"] = _rfm69_packet_count;
     rfm69["nodeCount"] = _rfm69_node_count;
@@ -273,6 +277,7 @@ void rfm69Setup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_rfm69WebSocketOnVisible)
             .onConnected(_rfm69WebSocketOnConnected)
             .onAction(_rfm69WebSocketOnAction)
             .onKeyCheck(_rfm69WebSocketOnKeyCheck);

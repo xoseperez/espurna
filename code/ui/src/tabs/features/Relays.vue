@@ -73,7 +73,7 @@
                                               action="reboot"
                                               min="0"
                                               step="100"
-                                              max="1000"
+                                              max="10000"
                                               tabindex="6" unit="ms"/>
                                     </C>
                                 </Row>
@@ -105,7 +105,7 @@
                                               action="reboot"
                                               min="0"
                                               step="100"
-                                              max="1000"
+                                              max="100000"
                                               tabindex="6" unit="ms"/>
                                     </C>
                                 </Row>
@@ -135,7 +135,7 @@
                                         <C><label>Send all button events</label></C>
                                         <C>
                                             <Inpt type="switch"
-                                                  name="sendAllEvents"/>
+                                                  name="sndAllEvts"/>
                                         </C>
                                         <Hint>
                                             If you need to receive double tap (code: 3) or long tap (code: 4) events,

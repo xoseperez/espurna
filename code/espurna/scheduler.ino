@@ -25,7 +25,14 @@ bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "sch", 3) == 0);
 }
 
-void _schWebSocketOnConnected(JsonObject &root){
+void _schWebSocketOnVisible(JsonObject &root) {
+    if (!relayCount()) return;
+
+    JsonObject& modules = root["modules"];
+    modules["sch"] = 1;
+}
+
+void _schWebSocketOnConnected(JsonObject &root) {
     if (!relayCount()) return;
 
     JsonObject& module = root.createNestedObject("schedule"); // TODO check was schedules
@@ -50,7 +57,7 @@ void _schWebSocketOnConnected(JsonObject &root){
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!getSetting({"schSwitch", i}).length()) break;
         ++size;
-      
+
         JsonArray& schedule = list.createNestedArray();
 
         schedule.add(getSetting({"schEnabled", i}, false) ? 1 : 0);      //enabled
@@ -293,6 +300,7 @@ void schSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_schWebSocketOnVisible)
             .onConnected(_schWebSocketOnConnected)
             .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
