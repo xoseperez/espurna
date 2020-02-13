@@ -131,7 +131,7 @@
                                         <Inpt name="dns"
                                               type="text"
                                               action="reconnect"
-                                              value="8.8.8.8"
+                                              value=""
                                               maxlength="15"
                                               tabindex="0"
                                               autocomplete="false"/>

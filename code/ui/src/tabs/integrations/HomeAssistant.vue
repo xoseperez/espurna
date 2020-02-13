@@ -17,8 +17,14 @@
                         <Inpt type="switch"
                               name="enabled"
                               tabindex="1"/>
-                        <Hint>
-                            Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
+                        <Hint v-if="modules.mqtt || modules.light">
+                            <div v-if="modules.mqtt">
+                                <strong>WARNING! </strong>Incompatible with Home Assistant MQTT integration
+                            </div>
+                            <div v-if="modules.light">
+                                Use CSS style to report colors to MQTT and REST API. <br> Red will be reported as
+                                "#FF0000" if ON, otherwise "255,0,0"
+                            </div>
                         </Hint>
                     </C>
                 </Row>
@@ -33,9 +39,9 @@
                 <legend>Configuration</legend>
 
                 <p>
-                    These are the settings you should copy to your Home Assistant "configuration.yaml" file. If
-                    any of the sections below (switch, light, sensor) already exists, do not duplicate it,
-                    simply copy the contents of the section below the ones already present.
+                    These are the settings you should copy to your Home Assistant "configuration.yaml" file. If any of
+                    the sections below (switch, light, sensor) already exists, do not duplicate it, simply copy the
+                    contents of the section below the ones already present.
                 </p>
                 <Row>
                     <textarea :value="config" class="terminal"

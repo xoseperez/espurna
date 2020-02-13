@@ -35,9 +35,16 @@
                 </Row>
 
                 <Row>
+                    <C><label>ThingSpeak Address</label></C>
+                    <C>
+                        <Inpt name="address" type="text" tabindex="3"/>
+                    </C>
+                </Row>
+
+                <Row>
                     <C><label>ThingSpeak API Key</label></C>
                     <C>
-                        <Inpt name="key" type="text" tabindex="3"/>
+                        <Inpt name="key" type="text" tabindex="4"/>
                     </C>
                 </Row>
 

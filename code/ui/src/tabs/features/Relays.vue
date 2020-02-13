@@ -109,6 +109,14 @@
                                               tabindex="6" unit="ms"/>
                                     </C>
                                 </Row>
+
+                                <Row>
+                                    <C><label>Restore last schedules</label></C>
+                                    <C>
+                                        <Inpt name="lastSch"
+                                              type="switch"/>
+                                    </C>
+                                </Row>
                             </C>
                         </Row>
 
@@ -174,7 +182,7 @@
                                       min="0"
                                       step="1"
                                       max="23"
-                                      :default="0" unit="h"/>
+                                      :default="12" unit="h"/>
                                 <Inpt name="minute"
                                       type="number"
                                       min="0"

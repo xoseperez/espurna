@@ -195,22 +195,9 @@
                     <Row>
                         <C><label>Time Zone</label></C>
                         <C>
-                            <Inpt type="select" name="ntpOffset"
-                                  :options="ntpOffsets"
+                            <Inpt type="select" name="ntpTZ"
+                                  :options="ntpTZ"
                                   tabindex="42"/>
-                        </C>
-                    </Row>
-                    <Row>
-                        <C><label>Enable DST</label></C>
-                        <C>
-                            <Inpt type="switch" name="ntpDST"/>
-                        </C>
-                    </Row>
-                    <Row>
-                        <C><label>DST Region</label></C>
-                        <C>
-                            <Inpt type="select" name="ntpRegion"
-                                  :options="['Europe', 'USA']"/>
                         </C>
                     </Row>
                 </fieldset>
