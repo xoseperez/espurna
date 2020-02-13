@@ -916,14 +916,20 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     schema.add("pulse");
     schema.add("pulse_time");
 
+    schema.add("dblDl");
+    schema.add("lngDl");
+    schema.add("lngLngDl");
+
+
     #if SCHEDULER_SUPPORT
-        JsonArray& sch_last = relays.createNestedArray("sch_last");
+        schema.add('lastSch');
     #endif
 
     #if MQTT_SUPPORT
         schema.add("group");
         schema.add("group_sync");
         schema.add("on_disc");
+        schema.add("sndAllEvts");
     #endif
 
     config["start"] = 0;
@@ -932,21 +938,25 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
     for (unsigned char i=0; i<relayCount(); i++) {
         JsonArray& relay = relays.createNestedArray();
-        relay.add(_relayFriendlyName(i));                               //gpio
-        relay.add(_relays[i].type);                                     //type
-        relay.add(_relays[i].reset_pin);                                //reset
-        relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));       //boot
-        relay.add(_relays[i].pulse);                                    //pulse
-        relay.add(_relays[i].pulse_ms / 1000.0);                        //pulse_time
+        relay.add(_relayFriendlyName(i));                                       //gpio
+        relay.add(_relays[i].type);                                             //type
+        relay.add(_relays[i].reset_pin);                                        //reset
+        relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));               //boot
+        relay.add(_relays[i].pulse);                                            //pulse
+        relay.add(_relays[i].pulse_ms / 1000.0);                                //pulse_time
+        relay.add(getSetting({"relayDblDl", i}, BUTTON_DBLCLICK_DELAY));        //dblDl
+        relay.add(getSetting({"relayLngDl", i}, BUTTON_LNGCLICK_DELAY));        //lngDl
+        relay.add(getSetting({"relayLngLngDl", i}, BUTTON_LNGLNGCLICK_DELAY));  //lngLngDl
 
         #if SCHEDULER_SUPPORT
-            sch_last.add(getSetting({"relayLastSch", i}, SCHEDULER_RESTORE_LAST_SCHEDULE));
+            relay.add(getSetting({"relayLastSch", i}, SCHEDULER_RESTORE_LAST_SCHEDULE));
         #endif
 
         #if MQTT_SUPPORT
             relay.add(getSetting({"mqttGroup", i}));              //group
             relay.add(getSetting({"mqttGroupSync", i}, 0));       //group_sync
             relay.add(getSetting({"relayOnDisc", i}, 0));         //on_disc
+            relay.add(getSetting({"sndAllEvts", i}, 0));          //sendAllEvts
         #endif
     }
 }

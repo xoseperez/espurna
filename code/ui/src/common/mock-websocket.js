@@ -117,6 +117,11 @@ export default function () {
                             "group",
                             "group_sync",
                             "on_disc",
+                            "dblDl",
+                            "lngDl",
+                            "lnglngDl",
+                            "sndAllEvts",
+                            "lastSch"
                         ],
                         "list": [
                             [
@@ -128,7 +133,12 @@ export default function () {
                                 1,
                                 "",
                                 0,
-                                0
+                                0,
+                                500,
+                                1000,
+                                10000,
+                                1,
+                                1
                             ],
                             [
                                 "GPIO13",
@@ -139,6 +149,11 @@ export default function () {
                                 1,
                                 "",
                                 0,
+                                0,
+                                500,
+                                1000,
+                                10000,
+                                1,
                                 0
                             ],
                             [
@@ -150,6 +165,11 @@ export default function () {
                                 1,
                                 "",
                                 0,
+                                0,
+                                1000,
+                                2000,
+                                10000,
+                                0,
                                 0
                             ],
                             [
@@ -160,6 +180,11 @@ export default function () {
                                 1,
                                 1,
                                 "",
+                                0,
+                                0,
+                                100,
+                                2000,
+                                5000,
                                 0,
                                 0
                             ]
