@@ -224,7 +224,7 @@ void PulseMeterSensor::_attach(PulseMeterSensor * instance, unsigned char gpio, 
     _pulsemeter_sensor_instance[index] = instance;
     attachInterrupt(gpio, _pulsemeter_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s\n"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -234,7 +234,7 @@ void PulseMeterSensor::_detach(unsigned char gpio) {
     if (_pulsemeter_sensor_instance[index]) {
         detachInterrupt(gpio);
         #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s"), gpio, _pulsemeter_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s\n"), gpio, _pulsemeter_sensor_instance[index]->description().c_str());
         #endif
         _pulsemeter_sensor_instance[index] = NULL;
     }

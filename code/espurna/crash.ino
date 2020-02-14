@@ -90,13 +90,13 @@ void crashDump() {
     uint32_t crash_time;
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
     if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
-        DEBUG_MSG_P(PSTR("[DEBUG] No crash info"));
+        DEBUG_MSG_P(PSTR("[DEBUG] No crash info\n"));
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot"), crash_time);
-    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
+    DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
+    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
+    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 
     uint32_t epc1, epc2, epc3, excvaddr, depc;
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
@@ -105,8 +105,8 @@ void crashDump() {
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
 
-    DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x"), epc1, epc2, epc3);
-    DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x"), excvaddr, depc);
+    DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
+    DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
 
     uint32_t stack_start, stack_end;
     uint16_t stack_size;
@@ -115,26 +115,26 @@ void crashDump() {
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_SIZE, stack_size);
 
-    DEBUG_MSG_P(PSTR("sp=0x%08x end=0x%08x saved=0x%04x\n"), stack_start, stack_end, stack_size);
+    DEBUG_MSG_P(PSTR("sp=0x%08x end=0x%08x saved=0x%04x\n\n"), stack_start, stack_end, stack_size);
     if (0xFFFF == stack_size) return;
     stack_size = constrain(stack_size, 0, _save_crash_stack_trace_max);
 
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     uint32_t stack_trace;
 
-    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>[DEBUG] "));
+    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>[DEBUG] \n"));
 
     uint16_t offset = 0;
     do {
-        DEBUG_MSG_P(PSTR("%08x: "), stack_start + offset);
+        DEBUG_MSG_P(PSTR("%08x: \n"), stack_start + offset);
         for (byte b = 0; b < 4; b++) {
             EEPROMr.get(current_address, stack_trace);
-            DEBUG_MSG_P(PSTR("%08x "), stack_trace);
+            DEBUG_MSG_P(PSTR("%08x \n"), stack_trace);
             current_address += 4;
         }
-        DEBUG_MSG_P(PSTR("[DEBUG] "));
+        DEBUG_MSG_P(PSTR("[DEBUG] \n"));
     } while ((offset < stack_size) && (offset += 0x10));
-    DEBUG_MSG_P(PSTR("<<<stack<<<"));
+    DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 
 }
 

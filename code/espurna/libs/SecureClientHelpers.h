@@ -70,11 +70,11 @@ struct SecureClientChecks {
         int check = getCheck();
 
         if(config.debug) {
-            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %s"), config.tag.c_str(), _secureClientCheckAsString(check));
+            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %s\n"), config.tag.c_str(), _secureClientCheckAsString(check));
         }
 
         if (check == SECURE_CLIENT_CHECK_NONE) {
-            if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!"), config.tag.c_str());
+            if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!\n"), config.tag.c_str());
             result = true;
         } else if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
             if (config.on_fingerprint) {
@@ -82,10 +82,10 @@ struct SecureClientChecks {
                 if (config.on_fingerprint && config.on_host && sslFingerPrintChar(config.on_fingerprint().c_str(), _buffer)) {
                     result = client.verify(_buffer, config.on_host().c_str());
                 }
-                if (!result) DEBUG_MSG_P(PSTR("[%s] Wrong fingerprint, cannot connect"), config.tag.c_str());
+                if (!result) DEBUG_MSG_P(PSTR("[%s] Wrong fingerprint, cannot connect\n"), config.tag.c_str());
             }
         } else if (check == SECURE_CLIENT_CHECK_CA) {
-           if (config.debug) DEBUG_MSG_P(PSTR("[%s] CA verification is not supported with axTLS client"), config.tag.c_str());
+           if (config.debug) DEBUG_MSG_P(PSTR("[%s] CA verification is not supported with axTLS client\n"), config.tag.c_str());
         }
 
         return result;
@@ -146,14 +146,14 @@ struct SecureClientChecks {
                 client.setBufferSizes(requested_mfln, requested_mfln);
                 result = true;
                 if (config.debug) {
-                    DEBUG_MSG_P(PSTR("[%s] MFLN buffer size set to %u"), config.tag.c_str(), requested_mfln);
+                    DEBUG_MSG_P(PSTR("[%s] MFLN buffer size set to %u\n"), config.tag.c_str(), requested_mfln);
                 }
                 break;
             }
             default:
             {
                 if (config.debug) {
-                    DEBUG_MSG_P(PSTR("[%s] Warning: MFLN buffer size must be one of 512, 1024, 2048 or 4096"), config.tag.c_str());
+                    DEBUG_MSG_P(PSTR("[%s] Warning: MFLN buffer size must be one of 512, 1024, 2048 or 4096\n"), config.tag.c_str());
                 }
             }
         }
@@ -166,18 +166,18 @@ struct SecureClientChecks {
         bool settime = (check == SECURE_CLIENT_CHECK_CA);
 
         if(config.debug) {
-            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %s"), config.tag.c_str(), _secureClientCheckAsString(check));
+            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %s\n"), config.tag.c_str(), _secureClientCheckAsString(check));
         }
 
         if (!ntpSynced() && settime) {
-            if (config.debug) DEBUG_MSG_P(PSTR("[%s] Time not synced! Cannot use CA validation"), config.tag.c_str());
+            if (config.debug) DEBUG_MSG_P(PSTR("[%s] Time not synced! Cannot use CA validation\n"), config.tag.c_str());
             return false;
         }
 
         prepareMFLN(client);
 
         if (check == SECURE_CLIENT_CHECK_NONE) {
-            if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!"), config.tag.c_str());
+            if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!\n"), config.tag.c_str());
             client.setInsecure();
         } else if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
             uint8_t _buffer[20] = {0};

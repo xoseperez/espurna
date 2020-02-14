@@ -216,7 +216,7 @@ void infoUptime() {
             numberOfMinutes(uptime), numberOfSeconds(uptime)
         );
     #else
-        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds"), uptime);
+        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime);
     #endif // NTP_SUPPORT
 }
 
@@ -239,10 +239,10 @@ void heartbeat() {
         infoUptime();
         infoHeapStats();
         #if ADC_MODE_VALUE == ADC_VCC
-            DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV"), ESP.getVcc());
+            DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
         #if NTP_SUPPORT
-            if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s"), (char *) ntpDateTime().c_str());
+            if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
         #endif
     }
 
@@ -395,7 +395,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool
     if (reset) index = 0;
     if (0 == bytes) return;
     unsigned int _sectors = info_bytes2sectors(bytes);
-    DEBUG_MSG_P(PSTR("[MAIN] %-20s: %8lu bytes / %4d sectors (%4d to %4d)"), name, bytes, _sectors, index, index + _sectors - 1);
+    DEBUG_MSG_P(PSTR("[MAIN] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
     index += _sectors;
 }
 
@@ -436,7 +436,7 @@ void info(bool first) {
         if (first && debugLogBuffer()) return;
     #endif
 
-    DEBUG_MSG_P(PSTR("\n\n---8<-------\n"));
+    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
     // -------------------------------------------------------------------------
 
@@ -447,22 +447,20 @@ void info(bool first) {
     #endif
     DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR ""));
     DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n"));
-    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X"), ESP.getChipId());
-    DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz"), ESP.getCpuFreqMHz());
-    DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s"), ESP.getSdkVersion());
-    DEBUG_MSG_P(PSTR("[MAIN] Core version: %s"), getCoreVersion().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s"), getCoreRevision().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu"), __UNIX_TIMESTAMP__);
-    DEBUG_MSG_P(PSTR(""));
+    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
+    DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
+    DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu\n\n"), __UNIX_TIMESTAMP__);
 
     // -------------------------------------------------------------------------
 
     FlashMode_t mode [[gnu::unused]] = ESP.getFlashChipMode();
 
-    DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X"), ESP.getFlashChipId());
-    DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz"), ESP.getFlashChipSpeed());
-    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
-    DEBUG_MSG_P(PSTR(""));
+    DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
+    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
 
     // -------------------------------------------------------------------------
 
@@ -481,14 +479,14 @@ void info(bool first) {
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size   : %8u bytes / %4d sectors"), fs_info.totalBytes, info_bytes2sectors(fs_info.totalBytes));
-            DEBUG_MSG_P(PSTR("[MAIN]        used size    : %8u bytes"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("[MAIN]        block size   : %8u bytes"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        page size    : %8u bytes"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        max files    : %8u"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("[MAIN]        max length   : %8u"), fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, info_bytes2sectors(fs_info.totalBytes));
+            DEBUG_MSG_P(PSTR("[MAIN]        used size    : %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("[MAIN]        block size   : %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        page size    : %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        max files    : %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("[MAIN]        max length   : %8u\n"), fs_info.maxPathLength);
         } else {
-            DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition"));
+            DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
         }
     #endif
 
@@ -504,57 +502,57 @@ void info(bool first) {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d"), ESP.getBootVersion());
-    DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d"), ESP.getBootMode());
+    DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
+    DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
     unsigned char reason = customResetReason();
     if (reason > 0) {
         char buffer[32];
         strcpy_P(buffer, custom_reset_string[reason-1]);
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s"), buffer);
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), buffer);
     } else {
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s"), (char *) ESP.getResetReason().c_str());
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s"), (char *) ESP.getResetInfo().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
     }
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[MAIN] Board: %s"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Support: %s"), getEspurnaModules().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] OTA: %s"), getEspurnaOTAModules().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] OTA: %s\n"), getEspurnaOTAModules().c_str());
     #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s"), getEspurnaSensors().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s"), getEspurnaWebUI().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s\n"), getEspurnaWebUI().c_str());
 
     // -------------------------------------------------------------------------
 
     if (!first) {
-        DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s"), (char *) ESP.getSketchMD5().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
     }
 
     #if ADC_MODE_VALUE == ADC_VCC
-        DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV"), ESP.getVcc());
+        DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif
     if (espurnaLoopDelay()) {
-        DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms"), espurnaLoopDelay());
+        DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), espurnaLoopDelay());
     }
 
     const WiFiSleepType_t sleep_mode = WiFi.getSleepMode();
     if (sleep_mode != WIFI_NONE_SLEEP) {
-        DEBUG_MSG_P(PSTR("[MAIN] WiFi Sleep Mode: %s"), _info_wifi_sleep_mode(sleep_mode));
+        DEBUG_MSG_P(PSTR("[MAIN] WiFi Sleep Mode: %s\n"), _info_wifi_sleep_mode(sleep_mode));
     }
 
     // -------------------------------------------------------------------------
 
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) {
-            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE"));
+            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
         }
     #endif
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("\n\n---8<-------\n"));
+    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
 
     #endif // DEBUG_SUPPORT == 1

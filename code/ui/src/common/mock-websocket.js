@@ -36,7 +36,7 @@ export default function () {
                 }
             },
             {
-                "weblog": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws"],
+                "weblog": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
             }, {
                 "wifi": {
                     "rssi": -86,
@@ -250,8 +250,8 @@ export default function () {
         setTimeout(() => {
             server.send(JSON.stringify({
                 "weblog": [
-                    "[NTP] UTC Time  : 2020-02-13 17:49:33",
-                    "[NTP] Local Time: 2020-02-13 18:49:33"
+                    "[NTP] UTC Time  : 2020-02-13 17:49:33\n",
+                    "[NTP] Local Time: 2020-02-13 18:49:33\n"
                 ],
             }));
         }, 2000);

@@ -68,7 +68,7 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
     // https://github.com/domoticz/domoticz/blob/development/hardware/ColorSwitch.h
     // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Set_a_light_to_a_certain_color_or_color_temperature
 
-    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u t:%u brightness:%u for IDX %u"),
+    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u t:%u brightness:%u for IDX %u\n"),
         color["r"].as<unsigned char>(),
         color["g"].as<unsigned char>(),
         color["b"].as<unsigned char>(),
@@ -141,7 +141,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
             DynamicJsonBuffer jsonBuffer(1024);
             JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
-                DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data"));
+                DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;
             }
 
@@ -158,7 +158,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
             int relayID = _domoticzRelay(idx);
             if (relayID >= 0) {
                 unsigned char value = root["nvalue"];
-                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u"), value, idx);
+                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
                 _domoticzStatus(relayID, value >= 1);
             }
 

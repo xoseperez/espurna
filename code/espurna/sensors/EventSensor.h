@@ -246,7 +246,7 @@ void EventSensor::_attach(unsigned char gpio, unsigned char mode) {
     attachInterrupt(gpio, _event_sensor_isr_list[index], mode);
 
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s"), gpio, this->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, this->description().c_str());
     #endif
 }
 
@@ -258,7 +258,7 @@ void EventSensor::_detach(unsigned char gpio) {
         _event_sensor_instance[index] = nullptr;
 
         #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s"), gpio, _event_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _event_sensor_instance[index]->description().c_str());
         #endif
     }
 }

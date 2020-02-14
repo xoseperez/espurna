@@ -122,7 +122,7 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
     eepromRotate(false);
 
-    DEBUG_MSG_P(PSTR("[OTA] Downloading %s ..."), url.c_str());
+    DEBUG_MSG_P(PSTR("[OTA] Downloading %s ...\n"), url.c_str());
 
     // TODO: support currentVersion (string arg after 'url')
     // NOTE: ESPhttpUpdate.update(..., fp) will **always** fail with empty fingerprint
@@ -146,15 +146,15 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
     switch (result) {
         case HTTP_UPDATE_FAILED:
-            DEBUG_MSG_P(PSTR("[OTA] Update failed (error %d): %s"), ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+            DEBUG_MSG_P(PSTR("[OTA] Update failed (error %d): %s\n"), ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
             eepromRotate(true);
             break;
         case HTTP_UPDATE_NO_UPDATES:
-            DEBUG_MSG_P(PSTR("[OTA] No updates"));
+            DEBUG_MSG_P(PSTR("[OTA] No updates\n"));
             eepromRotate(true);
             break;
         case HTTP_UPDATE_OK:
-            DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
+            DEBUG_MSG_P(PSTR("[OTA] Done, restarting...\n"));
             deferredReset(500, CUSTOM_RESET_OTA); // wait a bit more than usual
             break;
     }
@@ -176,7 +176,7 @@ void _otaClientFromHttps(const String& url) {
     // Check for NTP early to avoid constructing SecureClient prematurely
     const int check = _ota_sc_config.on_check();
     if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
-        DEBUG_MSG_P(PSTR("[OTA] Time not synced! Cannot use CA validation"));
+        DEBUG_MSG_P(PSTR("[OTA] Time not synced! Cannot use CA validation\n"));
         return;
     }
 
@@ -205,7 +205,7 @@ void _otaClientFromHttps(const String& url) {
 
     if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
         if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
-            DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint"));
+            DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint\n"));
             return;
         }
     }
@@ -230,7 +230,7 @@ void _otaClientFrom(const String& url) {
         }
     #endif
 
-    DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified"));
+    DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
 
 }
 
@@ -264,7 +264,7 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
     if (type == MQTT_MESSAGE_EVENT) {
         const String t = mqttMagnitude((char *) topic);
         if (!_ota_do_update && t.equals(MQTT_TOPIC_OTA)) {
-            DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s"), payload);
+            DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
             // TODO: c++14 support is required for `[_payload = String(payload)]() { ... }`
             //       c++11 also supports basic `std::bind(func, arg)`, but we need to reset the lock
             _ota_do_update = true;

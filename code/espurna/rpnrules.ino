@@ -259,14 +259,14 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.VARS"), [](Embedis* e) {
         unsigned char num = rpn_variables_size(_rpn_ctxt);
         if (0 == num) {
-            DEBUG_MSG_P(PSTR("[RPN] No variables"));
+            DEBUG_MSG_P(PSTR("[RPN] No variables\n"));
         } else {
-            DEBUG_MSG_P(PSTR("[RPN] Variables:"));
+            DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
             for (unsigned char i=0; i<num; i++) {
                 char * name = rpn_variable_name(_rpn_ctxt, i);
                 float value;
                 rpn_variable_get(_rpn_ctxt, name, value);
-                DEBUG_MSG_P(PSTR("   %s: %s"), name, String(value).c_str());
+                DEBUG_MSG_P(PSTR("   %s: %s\n"), name, String(value).c_str());
             }
         }
         terminalOK();
@@ -274,9 +274,9 @@ void _rpnInitCommands() {
 
     terminalRegisterCommand(F("RPN.OPS"), [](Embedis* e) {
         unsigned char num = _rpn_ctxt.operators.size();
-        DEBUG_MSG_P(PSTR("[RPN] Operators:"));
+        DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
         for (unsigned char i=0; i<num; i++) {
-            DEBUG_MSG_P(PSTR("   %s (%d)"), _rpn_ctxt.operators[i].name, _rpn_ctxt.operators[i].argc);
+            DEBUG_MSG_P(PSTR("   %s (%d)\n"), _rpn_ctxt.operators[i].name, _rpn_ctxt.operators[i].argc);
         }
         terminalOK();
     });
@@ -298,14 +298,14 @@ void _rpnInitCommands() {
 
 void _rpnDump() {
     float value;
-    DEBUG_MSG_P(PSTR("[RPN] Stack:"));
+    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
     unsigned char num = rpn_stack_size(_rpn_ctxt);
     if (0 == num) {
-        DEBUG_MSG_P(PSTR("      (empty)"));
+        DEBUG_MSG_P(PSTR("      (empty)\n"));
     } else {
         unsigned char index = num - 1;
         while (rpn_stack_get(_rpn_ctxt, index, value)) {
-            DEBUG_MSG_P(PSTR("      %02d: %s"), index--, String(value).c_str());
+            DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, String(value).c_str());
         }
     }
 }

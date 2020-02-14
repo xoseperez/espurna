@@ -56,9 +56,9 @@ void _terminalHelpCommand() {
     }
 
     // Output the list
-    DEBUG_MSG_P(PSTR("Available commands:"));
+    DEBUG_MSG_P(PSTR("Available commands:\n"));
     for (unsigned char i=0; i<commands.size(); i++) {
-        DEBUG_MSG_P(PSTR("> %s"), (commands[i]).c_str());
+        DEBUG_MSG_P(PSTR("> %s\n"), (commands[i]).c_str());
     }
 
 }
@@ -69,16 +69,16 @@ void _terminalKeysCommand() {
     std::vector<String> keys = _settingsKeys();
 
     // Write key-values
-    DEBUG_MSG_P(PSTR("Current settings:"));
+    DEBUG_MSG_P(PSTR("Current settings:\n"));
     for (unsigned int i=0; i<keys.size(); i++) {
         const auto value = getSetting(keys[i]);
         DEBUG_MSG_P(PSTR("> %s => \"%s\""), (keys[i]).c_str(), value.c_str());
     }
 
     unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
-    DEBUG_MSG_P(PSTR("Number of keys: %d"), keys.size());
-    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u"), EEPROMr.current());
-    DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
+    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
+    DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
 }
 
@@ -116,7 +116,7 @@ void _terminalPrintTcpPcb(tcp_pcb* pcb) {
     inet_ntoa_r((pcb->local_ip), local_ip, sizeof(local_ip));
     inet_ntoa_r((pcb->remote_ip), remote_ip, sizeof(remote_ip));
 
-    DEBUG_MSG_P(PSTR("state=%s local=%s:%u remote=%s:%u snd_queuelen=%u lastack=%u send_wnd=%u rto=%u"),
+    DEBUG_MSG_P(PSTR("state=%s local=%s:%u remote=%s:%u snd_queuelen=%u lastack=%u send_wnd=%u rto=%u\n"),
             _terminalPcbStateToString(pcb->state).c_str(),
             local_ip, pcb->local_port,
             remote_ip, pcb->remote_port,
@@ -129,15 +129,15 @@ void _terminalPrintTcpPcb(tcp_pcb* pcb) {
 void _terminalPrintTcpPcbs() {
 
     tcp_pcb *pcb;
-    //DEBUG_MSG_P(PSTR("Active PCB states:"));
+    //DEBUG_MSG_P(PSTR("Active PCB states:\n"));
     for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
         _terminalPrintTcpPcb(pcb);
     }
-    //DEBUG_MSG_P(PSTR("TIME-WAIT PCB states:"));
+    //DEBUG_MSG_P(PSTR("TIME-WAIT PCB states:\n"));
     for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
         _terminalPrintTcpPcb(pcb);
     }
-    //DEBUG_MSG_P(PSTR("BOUND PCB states:"));
+    //DEBUG_MSG_P(PSTR("BOUND PCB states:\n"));
     for (pcb = tcp_bound_pcbs; pcb != NULL; pcb = pcb->next) {
         _terminalPrintTcpPcb(pcb);
     }
@@ -149,16 +149,16 @@ void _terminalPrintDnsResult(const char* name, const ip_addr_t* address) {
     /*
     #if LWIP_IPV6
         if (IP_IS_V6(address)) {
-            DEBUG_MSG_P(PSTR("[DNS] %s has IPV6 address %s"), name, ip6addr_ntoa(ip_2_ip6(address)));
+            DEBUG_MSG_P(PSTR("[DNS] %s has IPV6 address %s\n"), name, ip6addr_ntoa(ip_2_ip6(address)));
         }
     #endif
     */
-    DEBUG_MSG_P(PSTR("[DNS] %s has address %s"), name, ipaddr_ntoa(address));
+    DEBUG_MSG_P(PSTR("[DNS] %s has address %s\n"), name, ipaddr_ntoa(address));
 }
 
 void _terminalDnsFound(const char* name, const ip_addr_t* result, void*) {
     if (!result) {
-        DEBUG_MSG_P(PSTR("[DNS] %s not found"), name);
+        DEBUG_MSG_P(PSTR("[DNS] %s not found\n"), name);
         return;
     }
 
@@ -206,7 +206,7 @@ void _terminalInitCommand() {
 
         for (int i = 0; i <= 15; i++) {
             if (gpioValid(i) && (pin == -1 || pin == i)) {
-                DEBUG_MSG_P(PSTR("GPIO %s pin %d is %s"), GPEP(i) ? "output" : "input", i, digitalRead(i) == HIGH ? "HIGH" : "LOW");
+                DEBUG_MSG_P(PSTR("GPIO %s pin %d is %s\n"), GPEP(i) ? "output" : "input", i, digitalRead(i) == HIGH ? "HIGH" : "LOW");
             }
         }
 
@@ -248,7 +248,7 @@ void _terminalInitCommand() {
             String key = String(e->argv[i]);
             String value;
             if (!Embedis::get(key, value)) {
-                DEBUG_MSG_P(PSTR("> %s =>"), key.c_str());
+                DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
                 continue;
             }
 
@@ -332,7 +332,7 @@ void _terminalInitCommand() {
                 terminalOK();
                 return;
             } else if (error != ERR_INPROGRESS) {
-                DEBUG_MSG_P(PSTR("[DNS] dns_gethostbyname error: %s"), lwip_strerr(error));
+                DEBUG_MSG_P(PSTR("[DNS] dns_gethostbyname error: %s\n"), lwip_strerr(error));
                 return;
             }
 
@@ -393,11 +393,11 @@ void terminalRegisterCommand(const String& name, embedis_command_f command) {
 };
 
 void terminalOK() {
-    DEBUG_MSG_P(PSTR("+OK"));
+    DEBUG_MSG_P(PSTR("+OK\n"));
 }
 
 void terminalError(const String& error) {
-    DEBUG_MSG_P(PSTR("-ERROR: %s"), error.c_str());
+    DEBUG_MSG_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
 void _terminalWebSocketOnVisible(JsonObject& root) {

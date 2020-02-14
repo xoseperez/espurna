@@ -37,7 +37,7 @@ void _arduinoOtaOnStart() {
     // Because ArduinoOTA is synchronous, force backup right now instead of waiting for the next loop()
     eepromBackup(0);
 
-    DEBUG_MSG_P(PSTR("[OTA] Start"));
+    DEBUG_MSG_P(PSTR("[OTA] Start\n"));
 
     #if WEB_SUPPORT
         wsSend_P(PSTR("{\"message\": 2}"));
@@ -47,8 +47,7 @@ void _arduinoOtaOnStart() {
 
 void _arduinoOtaOnEnd() {
 
-    DEBUG_MSG_P(PSTR(""));
-    DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
+    DEBUG_MSG_P(PSTR("\n[OTA] Done, restarting...\n"));
     #if WEB_SUPPORT
         wsSend_P(PSTR("{\"action\": \"reload\"}"));
     #endif
@@ -72,7 +71,7 @@ void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
 
         unsigned int _prog = (progress / (total / 100));
         if (_prog != _progOld) {
-            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
+            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r\n"), _prog);
             _progOld = _prog;
         }
     #endif
@@ -82,12 +81,12 @@ void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
 void _arduinoOtaOnError(ota_error_t error) {
 
     #if DEBUG_SUPPORT
-        DEBUG_MSG_P(PSTR("[OTA] Error #%u: "), error);
-        if (error == OTA_AUTH_ERROR) DEBUG_MSG_P(PSTR("Auth Failed"));
-        else if (error == OTA_BEGIN_ERROR) DEBUG_MSG_P(PSTR("Begin Failed"));
-        else if (error == OTA_CONNECT_ERROR) DEBUG_MSG_P(PSTR("Connect Failed"));
-        else if (error == OTA_RECEIVE_ERROR) DEBUG_MSG_P(PSTR("Receive Failed"));
-        else if (error == OTA_END_ERROR) DEBUG_MSG_P(PSTR("End Failed"));
+        DEBUG_MSG_P(PSTR("[OTA] Error #%u: \n"), error);
+        if (error == OTA_AUTH_ERROR) DEBUG_MSG_P(PSTR("Auth Failed\n"));
+        else if (error == OTA_BEGIN_ERROR) DEBUG_MSG_P(PSTR("Begin Failed\n"));
+        else if (error == OTA_CONNECT_ERROR) DEBUG_MSG_P(PSTR("Connect Failed\n"));
+        else if (error == OTA_RECEIVE_ERROR) DEBUG_MSG_P(PSTR("Receive Failed\n"));
+        else if (error == OTA_END_ERROR) DEBUG_MSG_P(PSTR("End Failed\n"));
     #endif
     eepromRotate(true);
 

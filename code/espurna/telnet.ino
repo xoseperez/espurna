@@ -53,7 +53,7 @@ void _telnetWebSocketOnConnected(JsonObject& root) {
 #if TELNET_REVERSE_SUPPORT
 
 void _telnetReverse(const char * host, uint16_t port) {
-    DEBUG_MSG_P(PSTR("[TELNET] Connecting to reverse telnet on %s:%d"), host, port);
+    DEBUG_MSG_P(PSTR("[TELNET] Connecting to reverse telnet on %s:%d\n"), host, port);
 
     unsigned char i;
     for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
@@ -68,7 +68,7 @@ void _telnetReverse(const char * host, uint16_t port) {
                 _telnetNotifyConnected(i);
                 return;
             } else {
-                DEBUG_MSG_P(PSTR("[TELNET] Error connecting reverse telnet"));
+                DEBUG_MSG_P(PSTR("[TELNET] Error connecting reverse telnet\n"));
                 _telnetDisconnect(i);
                 return;
             }
@@ -77,7 +77,7 @@ void _telnetReverse(const char * host, uint16_t port) {
 
     //no free/disconnected spot so reject
     if (i == TELNET_MAX_CLIENTS) {
-        DEBUG_MSG_P(PSTR("[TELNET] Failed too connect - too many clients connected"));
+        DEBUG_MSG_P(PSTR("[TELNET] Failed too connect - too many clients connected\n"));
     }
 }
 
@@ -114,7 +114,7 @@ void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->stop();
     _telnetClients[clientId] = nullptr;
     wifiReconnectCheck();
-    DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected"), clientId);
+    DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
 
 #elif TELNET_SERVER == TELNET_SERVER_ASYNC
@@ -125,7 +125,7 @@ void _telnetCleanUp() {
             if (!_telnetClients[clientId]->connected()) {
                 _telnetClients[clientId] = nullptr;
                 wifiReconnectCheck();
-                DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected"), clientId);
+                DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
             }
         }
     });
@@ -288,7 +288,7 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
     if (_telnetAuth && !authenticated) {
         String password = getAdminPass();
         if (strncmp(data, password.c_str(), password.length()) == 0) {
-            DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated"), clientId);
+            DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
             _telnetWrite(clientId, "Password correct, welcome!\n");
             _telnetClientsAuth[clientId] = true;
         } else {
@@ -305,7 +305,7 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
 
 void _telnetNotifyConnected(unsigned char i) {
 
-    DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected"), i);
+    DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
     // If there is no terminal support automatically dump info and crash data
     #if DEBUG_SUPPORT
@@ -354,7 +354,7 @@ void _telnetLoop() {
                     #endif
 
                     if (!telnetSTA) {
-                        DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections"));
+                        DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
                         _telnetDisconnect(i);
                         return;
                     }
@@ -368,7 +368,7 @@ void _telnetLoop() {
 
         //no free/disconnected spot so reject
         if (i == TELNET_MAX_CLIENTS) {
-            DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections"));
+            DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections\n"));
             _telnetServer.available().stop();
             return;
         }
@@ -398,7 +398,7 @@ void _telnetLoop() {
 void _telnetSetupClient(unsigned char i, AsyncClient *client) {
 
     client->onError([i](void *s, AsyncClient *client, int8_t error) {
-        DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u"), client->errorToString(error), error, i);
+        DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), client->errorToString(error), error, i);
     });
     client->onData([i](void*, AsyncClient*, void *data, size_t len){
         _telnetData(i, reinterpret_cast<char*>(data), len);
@@ -426,7 +426,7 @@ void _telnetNewClient(AsyncClient* client) {
         #endif
 
         if (!telnetSTA) {
-            DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections"));
+            DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
             client->onDisconnect([](void *s, AsyncClient *c) {
                 delete c;
             });
@@ -445,7 +445,7 @@ void _telnetNewClient(AsyncClient* client) {
 
     }
 
-    DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections"));
+    DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections\n"));
     client->onDisconnect([](void *s, AsyncClient *c) {
         delete c;
     });
@@ -531,7 +531,7 @@ void telnetSetup() {
     espurnaRegisterReload(_telnetConfigure);
     _telnetConfigure();
 
-    DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d"), TELNET_PORT);
+    DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);
 
 }
 

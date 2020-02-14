@@ -82,7 +82,7 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
 
 void buttonEvent(unsigned char id, unsigned char event) {
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u"), id, event);
+    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
     if (event == 0) return;
 
     auto& button = _buttons[id];
@@ -119,7 +119,7 @@ void buttonEvent(unsigned char id, unsigned char event) {
     }
 
     if (BUTTON_MODE_FACTORY == action) {
-        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n"));
+        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
         resetSettings();
         deferredReset(100, CUSTOM_RESET_FACTORY);
     }
@@ -225,7 +225,7 @@ void buttonSetup() {
 
     #endif
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u"), _buttons.size());
+    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
 
     // Websocket Callbacks
     #if WEB_SUPPORT
@@ -289,7 +289,7 @@ void buttonLoop() {
                     unsigned char value = Serial.read();
                     if (Serial.read() == 0xA1) {
 
-                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d"), value);
+                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d\n"), value);
 
                         for (unsigned int i=0; i<_buttons.size(); i++) {
 

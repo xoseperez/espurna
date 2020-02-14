@@ -751,7 +751,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         if (t.startsWith(MQTT_TOPIC_CHANNEL)) {
             unsigned int channelID = t.substring(strlen(MQTT_TOPIC_CHANNEL)+1).toInt();
             if (channelID >= _light_channels.size()) {
-                DEBUG_MSG_P(PSTR("[LIGHT] Wrong channelID (%d)"), channelID);
+                DEBUG_MSG_P(PSTR("[LIGHT] Wrong channelID (%d)\n"), channelID);
                 return;
             }
             _lightAdjustChannel(channelID, payload);
@@ -931,7 +931,7 @@ bool lightState() {
 }
 
 void lightColor(const char * color, bool rgb) {
-    DEBUG_MSG_P(PSTR("[LIGHT] %s: %s"), rgb ? "RGB" : "HSV", color);
+    DEBUG_MSG_P(PSTR("[LIGHT] %s: %s\n"), rgb ? "RGB" : "HSV", color);
     if (rgb) {
         _fromRGB(color);
     } else {
@@ -1190,7 +1190,7 @@ void _lightAPISetup() {
 #if TERMINAL_SUPPORT
 
 void _lightChannelDebug(unsigned char id) {
-    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d"), id, lightDesc(id).c_str(), lightChannel(id));
+    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
 }
 
 void _lightInitCommands() {
@@ -1200,7 +1200,7 @@ void _lightInitCommands() {
             _lightAdjustBrightness(e->argv[1]);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Brightness: %u"), lightBrightness());
+        DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
         terminalOK();
     });
 
@@ -1234,7 +1234,7 @@ void _lightInitCommands() {
             lightColor(e->argv[1]);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Color: %s"), lightColor().c_str());
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
     });
 
@@ -1243,7 +1243,7 @@ void _lightInitCommands() {
             _lightAdjustKelvin(e->argv[1]);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Color: %s"), lightColor().c_str());
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
     });
 
@@ -1252,7 +1252,7 @@ void _lightInitCommands() {
             _lightAdjustMireds(e->argv[1]);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Color: %s"), lightColor().c_str());
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
     });
 
@@ -1379,8 +1379,8 @@ void lightSetup() {
         tuyaSetupLight();
     #endif
 
-    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d"), LIGHT_PROVIDER);
-    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d"), _light_channels.size());
+    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
+    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channels.size());
 
     _lightConfigure();
     if (rtcmemStatus()) {

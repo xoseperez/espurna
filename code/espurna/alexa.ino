@@ -167,7 +167,7 @@ void alexaLoop() {
     while (!_alexa_queue.empty()) {
 
         alexa_queue_element_t element = _alexa_queue.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d"), element.device_id, element.state ? "ON" : "OFF", element.value);
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d\n"), element.device_id, element.state ? "ON" : "OFF", element.value);
 
         #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
             if (0 == element.device_id) {

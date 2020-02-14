@@ -18,9 +18,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 void _mdnsFindMQTT() {
     int count = MDNS.queryService("mqtt", "tcp");
-    DEBUG_MSG_P(PSTR("[MQTT] MQTT brokers found: %d"), count);
+    DEBUG_MSG_P(PSTR("[MQTT] MQTT brokers found: %d\n"), count);
     for (int i=0; i<count; i++) {
-        DEBUG_MSG_P(PSTR("[MQTT] Broker at %s:%d"), MDNS.IP(i).toString().c_str(), MDNS.port(i));
+        DEBUG_MSG_P(PSTR("[MQTT] Broker at %s:%d\n"), MDNS.IP(i).toString().c_str(), MDNS.port(i));
         mqttSetBrokerIfNone(MDNS.IP(i), MDNS.port(i));
     }
 }
@@ -29,9 +29,9 @@ void _mdnsFindMQTT() {
 
 void _mdnsServerStart() {
     if (MDNS.begin((char *) getSetting("hostname").c_str())) {
-        DEBUG_MSG_P(PSTR("[MDNS] OK"));
+        DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     } else {
-        DEBUG_MSG_P(PSTR("[MDNS] FAIL"));
+        DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
     }
 }
 
@@ -110,7 +110,7 @@ String mdnsResolve(char * name) {
     IPAddress ip = _mdns_resolver.search(name);
 
     if (ip == INADDR_NONE) return String(name);
-    DEBUG_MSG_P(PSTR("[MDNS] '%s' resolved to '%s'"), name, ip.toString().c_str());
+    DEBUG_MSG_P(PSTR("[MDNS] '%s' resolved to '%s'\n"), name, ip.toString().c_str());
     return ip.toString();
 
 }

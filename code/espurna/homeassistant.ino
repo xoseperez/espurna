@@ -113,7 +113,7 @@ struct ha_discovery_t {
     }
 
     ~ha_discovery_t() {
-        DEBUG_MSG_P(PSTR("[HA] Discovery %s"), empty() ? "OK" : "FAILED");
+        DEBUG_MSG_P(PSTR("[HA] Discovery %s\n"), empty() ? "OK" : "FAILED");
     }
 
     // TODO: is this expected behaviour?
@@ -410,7 +410,7 @@ void _haSend() {
     // Are we still trying to send discovery messages?
     if (_ha_discovery) return;
 
-    DEBUG_MSG_P(PSTR("[HA] Preparing MQTT discovery message(s)..."));
+    DEBUG_MSG_P(PSTR("[HA] Preparing MQTT discovery message(s)...\n"));
 
     // Get common device config / context object
     ha_config_t config;

@@ -53,14 +53,14 @@ void _uartmqttReceiveUART() {
 
 void _uartmqttSendMQTT() {
     if (_uartmqttNewData == true && MQTT_SUPPORT) {
-        DEBUG_MSG_P(PSTR("[UART_MQTT] Send data over MQTT: %s"), _uartmqttBuffer);
+        DEBUG_MSG_P(PSTR("[UART_MQTT] Send data over MQTT: %s\n"), _uartmqttBuffer);
         mqttSend(MQTT_TOPIC_UARTIN, _uartmqttBuffer);
         _uartmqttNewData = false;
     }
 }
 
 void _uartmqttSendUART(const char * message) {
-    DEBUG_MSG_P(PSTR("[UART_MQTT] Send data over UART: %s"), message);
+    DEBUG_MSG_P(PSTR("[UART_MQTT] Send data over UART: %s\n"), message);
     UART_MQTT_PORT.println(message);
 }
 

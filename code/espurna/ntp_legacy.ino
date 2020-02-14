@@ -73,7 +73,7 @@ void _ntpStart() {
 
     // short (initial) and long (after sync) intervals
     NTPw.setInterval(_ntpSyncInterval(), _ntpUpdateInterval());
-    DEBUG_MSG_P(PSTR("[NTP] Update intervals: %us / %us"),
+    DEBUG_MSG_P(PSTR("[NTP] Update intervals: %us / %us\n"),
         NTPw.getShortInterval(), NTPw.getLongInterval());
 
     // setSyncProvider will immediatly call given function by setting next sync time to the current time.
@@ -126,8 +126,8 @@ void _ntpReport() {
     #if DEBUG_SUPPORT
     if (ntpSynced()) {
         time_t t = now();
-        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s"), ntpDateTime(ntpLocal2UTC(t)).c_str());
-        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s"), ntpDateTime(t).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), ntpDateTime(ntpLocal2UTC(t)).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), ntpDateTime(t).c_str());
     }
     #endif
 
@@ -225,7 +225,7 @@ void ntpSetup() {
                 _ntpReport();
                 terminalOK();
             } else {
-                DEBUG_MSG_P(PSTR("[NTP] Not synced"));
+                DEBUG_MSG_P(PSTR("[NTP] Not synced\n"));
             }
         });
 
@@ -238,9 +238,9 @@ void ntpSetup() {
     NTPw.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
             if (error == noResponse) {
-                DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable"));
+                DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable\n"));
             } else if (error == invalidAddress) {
-                DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address"));
+                DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
             #if WEB_SUPPORT
                 wsPost(_ntpWebSocketOnData);

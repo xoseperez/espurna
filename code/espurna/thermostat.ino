@@ -184,7 +184,7 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.parseObject(payload);
         if (!root.success()) {
-            DEBUG_MSG_P(PSTR("[THERMOSTAT] Error parsing data"));
+            DEBUG_MSG_P(PSTR("[THERMOSTAT] Error parsing data\n"));
             return;
         }
 
@@ -195,7 +195,7 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
                 _remote_temp.temp = remote_temp.toFloat();
                 _remote_temp.last_update = millis();
                 _remote_temp.need_display_update = true;
-                DEBUG_MSG_P(PSTR("[THERMOSTAT] Remote sensor temperature: %s"), remote_temp.c_str());
+                DEBUG_MSG_P(PSTR("[THERMOSTAT] Remote sensor temperature: %s\n"), remote_temp.c_str());
                 updateRemoteTemp(true);
             }
         }
@@ -207,7 +207,7 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
                 int t_max = root[MQTT_TOPIC_HOLD_TEMP_MAX];
                 if (t_min < THERMOSTAT_TEMP_RANGE_MIN_MIN || t_min > THERMOSTAT_TEMP_RANGE_MIN_MAX ||
                     t_max < THERMOSTAT_TEMP_RANGE_MAX_MIN || t_max > THERMOSTAT_TEMP_RANGE_MAX_MAX) {
-                    DEBUG_MSG_P(PSTR("[THERMOSTAT] Hold temperature range error"));
+                    DEBUG_MSG_P(PSTR("[THERMOSTAT] Hold temperature range error\n"));
                     return;
                 }
                 _temp_range.min = root[MQTT_TOPIC_HOLD_TEMP_MIN];
@@ -219,7 +219,7 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
                 _temp_range.last_update = millis();
                 _temp_range.need_display_update = true;
 
-                DEBUG_MSG_P(PSTR("[THERMOSTAT] Hold temperature range: (%d - %d)"), _temp_range.min, _temp_range.max);
+                DEBUG_MSG_P(PSTR("[THERMOSTAT] Hold temperature range: (%d - %d)\n"), _temp_range.min, _temp_range.max);
                 // Update websocket clients
                 #if WEB_SUPPORT
                     char buffer[100];
@@ -227,7 +227,7 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
                     wsSend(buffer);
                 #endif
             } else {
-                DEBUG_MSG_P(PSTR("[THERMOSTAT] Error temperature range data"));
+                DEBUG_MSG_P(PSTR("[THERMOSTAT] Error temperature range data\n"));
             }
         }
     }
@@ -242,7 +242,7 @@ void thermostatSetupMQTT() {
 
 //------------------------------------------------------------------------------
 void notifyRangeChanged(bool min) {
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] notifyRangeChanged %s = %d"), min ? "MIN" : "MAX", min ? _temp_range.min : _temp_range.max);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] notifyRangeChanged %s = %d\n"), min ? "MIN" : "MAX", min ? _temp_range.min : _temp_range.max);
   char tmp_str[6];
   sprintf(tmp_str, "%d", min ? _temp_range.min : _temp_range.max);
 
@@ -254,15 +254,15 @@ void notifyRangeChanged(bool min) {
 //------------------------------------------------------------------------------
 void commonSetup() {
   _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED, false);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d"), _thermostat_enabled);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d\n"), _thermostat_enabled);
 
   _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE, false);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d"), _thermostat_mode_cooler);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d\n"), _thermostat_mode_cooler);
 
   _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN);
   _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d"), _temp_range.min);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d"), _temp_range.max);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d\n"), _temp_range.max);
 
   _thermostat.remote_sensor_name = getSetting(NAME_REMOTE_SENSOR_NAME);
   thermostat_remote_sensor_topic = _thermostat.remote_sensor_name + String("/") + String(MQTT_TOPIC_JSON);
@@ -376,13 +376,13 @@ void thermostatSetup() {
 
 //------------------------------------------------------------------------------
 void sendTempRangeRequest() {
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] sendTempRangeRequest"));
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] sendTempRangeRequest\n"));
   mqttSend(MQTT_TOPIC_ASK_TEMP_RANGE, "", true);
 }
 
 //------------------------------------------------------------------------------
 void setThermostatState(bool state) {
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] setThermostatState: %s"), state ? "ON" : "OFF");
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] setThermostatState: %s\n"), state ? "ON" : "OFF");
   relayStatus(THERMOSTAT_RELAY, state, mqttForward(), false);
   _thermostat.last_switch = millis();
   // Send thermostat change state event to subscribers
@@ -395,7 +395,7 @@ void setThermostatState(bool state) {
 void debugPrintSwitch(bool state, double temp) {
   char tmp_str[16];
   dtostrf(temp, 1, 1, tmp_str);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d"),
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d\n"),
    state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER", relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch);
 }
 
@@ -494,7 +494,7 @@ double getLocalTemperature() {
               double temp = magnitudeValue(i);
               char tmp_str[16];
               dtostrf(temp, 1, 1, tmp_str);
-              DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalTemperature temp: %s"), tmp_str);
+              DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalTemperature temp: %s\n"), tmp_str);
               return temp > -0.1 && temp < 0.1 ? DBL_MIN : temp;
           }
       }
@@ -510,7 +510,7 @@ double getLocalHumidity() {
               double hum = magnitudeValue(i);
               char tmp_str[16];
               dtostrf(hum, 1, 0, tmp_str);
-              DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalHumidity hum: %s\%"), tmp_str);
+              DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalHumidity hum: %s\%\n"), tmp_str);
               return hum > -0.1 && hum < 0.1 ? DBL_MIN : hum;
           }
       }
@@ -542,18 +542,18 @@ void thermostatLoop(void) {
     if (_remote_temp.last_update != 0 && millis() - _remote_temp.last_update < _thermostat_remote_temp_max_wait) {
       // we have remote temp
       _thermostat.temperature_source = temp_remote;
-      DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by remote temperature"));
+      DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by remote temperature\n"));
       checkTempAndAdjustRelay(_remote_temp.temp);
     } else if (getLocalTemperature() != DBL_MIN) {
       // we have local temp
       _thermostat.temperature_source = temp_local;
-      DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by local temperature"));
+      DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by local temperature\n"));
       checkTempAndAdjustRelay(getLocalTemperature());
       // updateRemoteTemp(false);
     } else {
       // we don't have any temp - switch thermostat on for N minutes every hour
       _thermostat.temperature_source = temp_none;
-      DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by timeout"));
+      DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by timeout\n"));
       if (relayStatus(THERMOSTAT_RELAY) && millis() - _thermostat.last_switch > _thermostat_alone_on_time) {
         setThermostatState(false);
       } else if (!relayStatus(THERMOSTAT_RELAY) && millis() - _thermostat.last_switch > _thermostat_alone_off_time) {
@@ -579,7 +579,7 @@ String getBurnTimeStr(unsigned int burn_time) {
 
 //------------------------------------------------------------------------------
 void resetBurnCounters() {
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] resetBurnCounters"));
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] resetBurnCounters\n"));
   setSetting(NAME_BURN_TOTAL,      0);
   setSetting(NAME_BURN_TODAY,      0);
   setSetting(NAME_BURN_YESTERDAY,  0);

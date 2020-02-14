@@ -116,7 +116,7 @@ namespace Tuya {
     String product;
 
     void showProduct() {
-        if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s"), product.c_str());
+        if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
     }
 
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
@@ -148,12 +148,12 @@ namespace Tuya {
         if (Type::BOOL == type) {
             const DataProtocol<bool> proto(frame);
             switchStates.pushOrUpdate(proto.id(), proto.value());
-            //DEBUG_MSG_P(PSTR("[TUYA] apply BOOL id=%02u value=%s"), proto.id(), proto.value() ? "true" : "false");
+            //DEBUG_MSG_P(PSTR("[TUYA] apply BOOL id=%02u value=%s\n"), proto.id(), proto.value() ? "true" : "false");
         } else if (Type::INT == type) {
             #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                 const DataProtocol<uint32_t> proto(frame);
                 channelStates.pushOrUpdate(proto.id(), proto.value());
-                //DEBUG_MSG_P(PSTR("[TUYA] apply  INT id=%02u value=%u"), proto.id(), proto.value());
+                //DEBUG_MSG_P(PSTR("[TUYA] apply  INT id=%02u value=%u\n"), proto.id(), proto.value());
             #endif
         }
     }
@@ -178,16 +178,16 @@ namespace Tuya {
 
         // TODO: do not log protocol errors without transport debug enabled
         if (!frame.length) {
-            DEBUG_MSG_P(PSTR("[TUYA] DP frame must have data"));
+            DEBUG_MSG_P(PSTR("[TUYA] DP frame must have data\n"));
             return;
         }
 
         const Type type {dataType(frame)};
         if (Type::UNKNOWN == type) {
             if (frame.length >= 2) {
-                DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u"), frame[0], frame[1]);
+                DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame[0], frame[1]);
             } else {
-                DEBUG_MSG_P(PSTR("[TUYA] Invalid DP frame"));
+                DEBUG_MSG_P(PSTR("[TUYA] Invalid DP frame\n"));
             }
             return;
         }
@@ -212,11 +212,11 @@ namespace Tuya {
         if (frame.commandEquals(Command::Heartbeat) && (frame.length == 1)) {
             if (State::HEARTBEAT == state) {
                 if ((frame[0] == 0) || !configDone) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Starting configuration ..."));
+                    DEBUG_MSG_P(PSTR("[TUYA] Starting configuration ...\n"));
                     state = State::QUERY_PRODUCT;
                     return;
                 } else {
-                    DEBUG_MSG_P(PSTR("[TUYA] Already configured"));
+                    DEBUG_MSG_P(PSTR("[TUYA] Already configured\n"));
                     state = State::IDLE;
                 }
             }
@@ -240,11 +240,11 @@ namespace Tuya {
         if (frame.commandEquals(Command::QueryMode)) {
             // first and second byte are GPIO pin for WiFi status and RST respectively
             if (frame.length == 2) {
-                DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u"), frame[0], frame[1]);
+                DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u\n"), frame[0], frame[1]);
                 updatePins(frame[0], frame[1]);
             // ... or nothing. we need to report wifi status to the mcu via Command::WiFiStatus
             } else if (!frame.length) {
-                DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU"));
+                DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU\n"));
                 reportWiFi = true;
                 sendWiFiStatus();
             }
@@ -253,13 +253,13 @@ namespace Tuya {
         }
 
         if (frame.commandEquals(Command::WiFiResetCfg) && !frame.length) {
-            DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request"));
+            DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
             outputFrames.emplace(Command::WiFiResetCfg);
             return;
         }
 
         if (frame.commandEquals(Command::WiFiResetSelect) && (frame.length == 1)) {
-            DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s"),
+            DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
                 (frame[0] == 0) ? "Smart Config" : "AP");
             outputFrames.emplace(Command::WiFiResetSelect);
             return;
@@ -407,7 +407,7 @@ namespace Tuya {
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
-                DEBUG_MSG_P(PSTR("[TUYA] Starting discovery"));
+                DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
                 outputFrames.emplace(Command::QueryDP);
                 discoveryTimeout.feed();
                 state = State::DISCOVERY;
@@ -417,7 +417,7 @@ namespace Tuya {
             case State::DISCOVERY:
             {
                 if (discoveryTimeout) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Discovery finished"));
+                    DEBUG_MSG_P(PSTR("[TUYA] Discovery finished\n"));
                     relaySetupDummy(switchStates.size(), true);
                     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                         lightSetupChannels(channelStates.size());
@@ -522,7 +522,7 @@ namespace Tuya {
             });
 
             terminalRegisterCommand(F("TUYA.SAVE"), [](Embedis* e) {
-                DEBUG_MSG_P(PSTR("[TUYA] Saving current configuration ..."));
+                DEBUG_MSG_P(PSTR("[TUYA] Saving current configuration ...\n"));
                 for (unsigned char n=0; n < switchStates.size(); ++n) {
                     setSetting({"tuyaSwitch", n}, switchStates[n].dp);
                 }

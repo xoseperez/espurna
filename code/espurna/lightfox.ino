@@ -28,7 +28,7 @@ void lightfoxLearn() {
     Serial.write(LIGHTFOX_CODE_STOP);
     Serial.println();
     Serial.flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Learn command sent"));
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Learn command sent\n"));
 }
 
 void lightfoxClear() {
@@ -38,7 +38,7 @@ void lightfoxClear() {
     Serial.write(LIGHTFOX_CODE_STOP);
     Serial.println();
     Serial.flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Clear command sent"));
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Clear command sent\n"));
 }
 
 // -----------------------------------------------------------------------------
@@ -78,12 +78,12 @@ void _lightfoxInitCommands() {
 
     terminalRegisterCommand(F("LIGHTFOX.LEARN"), [](Embedis* e) {
         lightfoxLearn();
-        DEBUG_MSG_P(PSTR("+OK"));
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("LIGHTFOX.CLEAR"), [](Embedis* e) {
         lightfoxClear();
-        DEBUG_MSG_P(PSTR("+OK"));
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 }
 

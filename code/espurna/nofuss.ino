@@ -57,7 +57,7 @@ void _nofussConfigure() {
 
     if (!_nofussEnabled) {
 
-        DEBUG_MSG_P(PSTR("[NOFUSS] Disabled"));
+        DEBUG_MSG_P(PSTR("[NOFUSS] Disabled\n"));
 
     } else {
 
@@ -66,11 +66,11 @@ void _nofussConfigure() {
         NoFUSSClient.setVersion(APP_VERSION);
         NoFUSSClient.setBuild(String(__UNIX_TIMESTAMP__));
 
-        DEBUG_MSG_P(PSTR("[NOFUSS] Server : %s"), nofussServer.c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Dervice: %s"), APP_NAME "_" DEVICE);
-        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s"), APP_VERSION);
-        DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s"), String(__UNIX_TIMESTAMP__).c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Enabled"));
+        DEBUG_MSG_P(PSTR("[NOFUSS] Server : %s\n"), nofussServer.c_str());
+        DEBUG_MSG_P(PSTR("[NOFUSS] Dervice: %s\n"), APP_NAME "_" DEVICE);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), APP_VERSION);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), String(__UNIX_TIMESTAMP__).c_str());
+        DEBUG_MSG_P(PSTR("[NOFUSS] Enabled\n"));
 
     }
 
@@ -103,26 +103,26 @@ void nofussSetup() {
     NoFUSSClient.onMessage([](nofuss_t code) {
 
         if (code == NOFUSS_START) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Start"));
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Start\n"));
         }
 
         if (code == NOFUSS_UPTODATE) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Already in the last version"));
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Already in the last version\n"));
         }
 
         if (code == NOFUSS_NO_RESPONSE_ERROR) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Wrong server response: %d %s"), NoFUSSClient.getErrorNumber(), (char *) NoFUSSClient.getErrorString().c_str());
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Wrong server response: %d %s\n"), NoFUSSClient.getErrorNumber(), (char *) NoFUSSClient.getErrorString().c_str());
         }
 
         if (code == NOFUSS_PARSE_ERROR) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Error parsing server response"));
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Error parsing server response\n"));
         }
 
         if (code == NOFUSS_UPDATING) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Updating"));
-    	    DEBUG_MSG_P(PSTR("         New version: %s"), (char *) NoFUSSClient.getNewVersion().c_str());
-        	DEBUG_MSG_P(PSTR("         Firmware: %s"), (char *) NoFUSSClient.getNewFirmware().c_str());
-        	DEBUG_MSG_P(PSTR("         File System: %s"), (char *) NoFUSSClient.getNewFileSystem().c_str());
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Updating\n"));
+        	DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
+        	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
+        	DEBUG_MSG_P(PSTR("         File System: %s\n"), (char *) NoFUSSClient.getNewFileSystem().c_str());
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"message\": 1}"));
             #endif
@@ -135,23 +135,23 @@ void nofussSetup() {
         }
 
         if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] File System Update Error: %s"), (char *) NoFUSSClient.getErrorString().c_str());
+        	DEBUG_MSG_P(PSTR("[NoFUSS] File System Update Error: %s\n"), (char *) NoFUSSClient.getErrorString().c_str());
         }
 
         if (code == NOFUSS_FILESYSTEM_UPDATED) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] File System Updated"));
+        	DEBUG_MSG_P(PSTR("[NoFUSS] File System Updated\n"));
         }
 
         if (code == NOFUSS_FIRMWARE_UPDATE_ERROR) {
-            DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Update Error: %s"), (char *) NoFUSSClient.getErrorString().c_str());
+            DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Update Error: %s\n"), (char *) NoFUSSClient.getErrorString().c_str());
         }
 
         if (code == NOFUSS_FIRMWARE_UPDATED) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Updated"));
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Updated\n"));
         }
 
         if (code == NOFUSS_RESET) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Resetting board"));
+        	DEBUG_MSG_P(PSTR("[NoFUSS] Resetting board\n"));
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
@@ -162,7 +162,7 @@ void nofussSetup() {
         }
 
         if (code == NOFUSS_END) {
-            DEBUG_MSG_P(PSTR("[NoFUSS] End"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] End\n"));
             eepromRotate(true);
         }
 

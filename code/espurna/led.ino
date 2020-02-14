@@ -159,7 +159,7 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
         // Get led ID from after the slash when t is `led/<LED_ID>`
         unsigned int ledID = magnitude.substring(strlen(MQTT_TOPIC_LED) + 1).toInt();
         if (ledID >= _ledCount()) {
-            DEBUG_MSG_P(PSTR("[LED] Wrong ledID (%d)"), ledID);
+            DEBUG_MSG_P(PSTR("[LED] Wrong ledID (%d)\n"), ledID);
             return;
         }
 
@@ -248,7 +248,7 @@ void ledSetup() {
     #endif
 
 
-    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d"), _leds.size());
+    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 
     // Main callbacks
     espurnaRegisterLoop(ledLoop);

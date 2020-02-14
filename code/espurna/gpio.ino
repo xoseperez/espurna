@@ -25,21 +25,21 @@ bool gpioGetLock(unsigned char gpio) {
     if (gpioValid(gpio)) {
         if (!_gpio_locked.test(gpio)) {
             _gpio_locked.set(gpio);
-            DEBUG_MSG_P(PSTR("[GPIO] GPIO%u locked"), gpio);
+            DEBUG_MSG_P(PSTR("[GPIO] GPIO%u locked\n"), gpio);
             return true;
         }
     }
-    DEBUG_MSG_P(PSTR("[GPIO] Failed getting lock for GPIO%u"), gpio);
+    DEBUG_MSG_P(PSTR("[GPIO] Failed getting lock for GPIO%u\n"), gpio);
     return false;
 }
 
 bool gpioReleaseLock(unsigned char gpio) {
     if (gpioValid(gpio)) {
         _gpio_locked.reset(gpio);
-        DEBUG_MSG_P(PSTR("[GPIO] GPIO%u lock released"), gpio);
+        DEBUG_MSG_P(PSTR("[GPIO] GPIO%u lock released\n"), gpio);
         return true;
     }
-    DEBUG_MSG_P(PSTR("[GPIO] Failed releasing lock for GPIO%u"), gpio);
+    DEBUG_MSG_P(PSTR("[GPIO] Failed releasing lock for GPIO%u\n"), gpio);
     return false;
 }
 

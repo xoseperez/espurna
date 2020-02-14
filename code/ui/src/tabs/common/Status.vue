@@ -204,7 +204,7 @@
                 </Row>
 
                 <Row>
-                    <textarea :value='logs.join("\n")'
+                    <textarea :value="logs.join('')"
                               class="terminal"
                               wrap="soft"
                               readonly spellcheck="false">

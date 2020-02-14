@@ -21,7 +21,7 @@ void otaPrintError() {
 
 bool otaFinalize(size_t size, int reason, bool evenIfRemaining) {
     if (Update.isRunning() && Update.end(evenIfRemaining)) {
-        DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes"), size);
+        DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
         deferredReset(500, reason);
         return true;
     }
@@ -73,7 +73,7 @@ void otaProgress(size_t bytes, size_t each) {
     }
 
     if ((bytes > each) && (bytes - each > last)) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %7u bytes\r"), bytes);
+        DEBUG_MSG_P(PSTR("[OTA] Progress: %7u bytes\r\n"), bytes);
         last = bytes;
     }
 }

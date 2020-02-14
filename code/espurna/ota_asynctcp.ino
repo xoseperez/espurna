@@ -56,12 +56,11 @@ std::unique_ptr<ota_client_t> _ota_client = nullptr;
 // -----------------------------------------------------------------------------
 
 void _otaClientDisconnect() {
-    DEBUG_MSG_P(PSTR("[OTA] Disconnected"));
+    DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
     _ota_client = nullptr;
 }
 
 void _otaClientOnDisconnect(void* arg, AsyncClient* client) {
-    DEBUG_MSG_P(PSTR(""));
     otaFinalize(reinterpret_cast<ota_client_t*>(arg)->size, CUSTOM_RESET_OTA, true);
     schedule_function(_otaClientDisconnect);
 }
@@ -71,7 +70,7 @@ void _otaClientOnTimeout(void*, AsyncClient * client, uint32_t) {
 }
 
 void _otaClientOnError(void*, AsyncClient* client, err_t error) {
-    DEBUG_MSG_P(PSTR("[OTA] ERROR: %s"), client->errorToString(error));
+    DEBUG_MSG_P(PSTR("[OTA] ERROR: %s\n"), client->errorToString(error));
 }
 
 void _otaClientOnData(void* arg, AsyncClient* client, void* data, size_t len) {
@@ -103,7 +102,7 @@ void _otaClientOnData(void* arg, AsyncClient* client, void* data, size_t len) {
 
             // Check header before anything is written to the flash
             if (!otaVerifyHeader((uint8_t *) ptr, len)) {
-                DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config"));
+                DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config\n"));
                 client->close(true);
                 ota_client->state = ota_client_t::END;
                 return;
@@ -151,7 +150,7 @@ void _otaClientOnConnect(void* arg, AsyncClient* client) {
             sslFingerPrintArray(getSetting("otaFP", OTA_FINGERPRINT).c_str(), fp);
             SSL * ssl = client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
-                DEBUG_MSG_P(PSTR("[OTA] Warning: certificate fingerpint doesn't match"));
+                DEBUG_MSG_P(PSTR("[OTA] Warning: certificate fingerpint doesn't match\n"));
                 client->close(true);
                 return;
             }
@@ -161,7 +160,7 @@ void _otaClientOnConnect(void* arg, AsyncClient* client) {
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
     eepromRotate(false);
 
-    DEBUG_MSG_P(PSTR("[OTA] Downloading %s"), ota_client->url.path.c_str());
+    DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), ota_client->url.path.c_str());
     char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + ota_client->url.path.length() + ota_client->url.host.length()];
     snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, ota_client->url.path.c_str(), ota_client->url.host.c_str());
     client->write(buffer);
@@ -191,19 +190,19 @@ bool ota_client_t::connect() {
 void _otaClientFrom(const String& url) {
 
     if (_ota_client) {
-        DEBUG_MSG_P(PSTR("[OTA] Already connected"));
+        DEBUG_MSG_P(PSTR("[OTA] Already connected\n"));
         return;
     }
 
     URL _url(url);
     if (!_url.protocol.equals("http") && !_url.protocol.equals("https")) {
-        DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified"));
+        DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
         return;
     }
 
     _ota_client = std::make_unique<ota_client_t>(std::move(_url));
     if (!_ota_client->connect()) {
-        DEBUG_MSG_P(PSTR("[OTA] Connection failed"));
+        DEBUG_MSG_P(PSTR("[OTA] Connection failed\n"));
     }
 
 }
@@ -238,7 +237,7 @@ void _otaClientMqttCallback(unsigned int type, const char * topic, const char * 
     if (type == MQTT_MESSAGE_EVENT) {
         String t = mqttMagnitude((char *) topic);
         if (t.equals(MQTT_TOPIC_OTA)) {
-            DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s"), payload);
+            DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
             _otaClientFrom(payload);
         }
     }

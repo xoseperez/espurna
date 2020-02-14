@@ -39,7 +39,7 @@ void ssdpSetup() {
 
     webServer()->on("/description.xml", HTTP_GET, [](AsyncWebServerRequest *request) {
 
-        DEBUG_MSG_P(PSTR("[SSDP] Schema request"));
+        DEBUG_MSG_P(PSTR("[SSDP] Schema request\n"));
 
         IPAddress ip = WiFi.localIP();
         uint32_t chipId = ESP.getChipId();
@@ -76,7 +76,7 @@ void ssdpSetup() {
     SSDP.setURL("/");
     SSDP.begin();
 
-    DEBUG_MSG_P(PSTR("[SSDP] Started"));
+    DEBUG_MSG_P(PSTR("[SSDP] Started\n"));
 
 }
 

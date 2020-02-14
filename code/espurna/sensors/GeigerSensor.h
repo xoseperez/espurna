@@ -143,7 +143,7 @@ double value(unsigned char index) {
                     char buffer[32] = {0};
                     dtostrf(value, 1, 4, buffer);
 
-                    DEBUG_MSG_P(PSTR("[GEIGER] Ticks: %u | Interval: %u | CPM: %s"), _ticks, (_lastreport_cpm - _period_begin), buffer);
+                    DEBUG_MSG_P(PSTR("[GEIGER] Ticks: %u | Interval: %u | CPM: %s\n"), _ticks, (_lastreport_cpm - _period_begin), buffer);
                 #endif
                 _events = 0;
                 return value;
@@ -158,7 +158,7 @@ double value(unsigned char index) {
                 #if SENSOR_DEBUG
                     char buffer[32] = {0};
                     dtostrf(value, 1, 4, buffer);
-                    DEBUG_MSG_P(PSTR("[GEIGER] Ticks: %u | Interval: %u | CPM: %s"), _ticks, (_lastreport_cpm - _period_begin), buffer);
+                    DEBUG_MSG_P(PSTR("[GEIGER] Ticks: %u | Interval: %u | CPM: %s\n"), _ticks, (_lastreport_cpm - _period_begin), buffer);
                 #endif
                 _ticks = 0;
                 return value;
@@ -280,7 +280,7 @@ void GeigerSensor::_attach(GeigerSensor * instance, unsigned char gpio, unsigned
         _geiger_sensor_instance[index] = instance;
         attachInterrupt(gpio, _geiger_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[GEIGER] GPIO%d interrupt attached to %s"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[GEIGER] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -290,7 +290,7 @@ void GeigerSensor::_detach(unsigned char gpio) {
         if (_geiger_sensor_instance[index]) {
                 detachInterrupt(gpio);
         #if SENSOR_DEBUG
-                DEBUG_MSG_P(PSTR("[GEIGER] GPIO%d interrupt detached from %s"), gpio, _geiger_sensor_instance[index]->description().c_str());
+                DEBUG_MSG_P(PSTR("[GEIGER] GPIO%d interrupt detached from %s\n"), gpio, _geiger_sensor_instance[index]->description().c_str());
         #endif
                 _geiger_sensor_instance[index] = NULL;
         }

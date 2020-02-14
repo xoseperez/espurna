@@ -111,7 +111,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                                 // Error in repeat_code. Use comma separated unsigned integer values.
                                 // Last three is repeat delay, repeat count(<120) and frequency.
                                 // After all you may write ':' and specify repeat code followed by comma.
-                                DEBUG_MSG_P(PSTR("[IR] Error in repeat code."));
+                                DEBUG_MSG_P(PSTR("[IR] Error in repeat code.\n"));
                                 return;
                             }
                         }
@@ -130,7 +130,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                             // Error in main code. Use comma separated unsigned integer values.
                             // Last three is repeat delay, repeat count(<120) and frequency.
                             // After all you may write ':' and specify repeat code followed by comma.
-                            DEBUG_MSG_P(PSTR("[IR] Error in main code."));
+                            DEBUG_MSG_P(PSTR("[IR] Error in main code.\n"));
                             return;
                         }
                     }
@@ -164,7 +164,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                     }
                 }
 
-                DEBUG_MSG_P(PSTR("[IR] Raw IR output %d codes, repeat %d times on %d(k)Hz freq."), count, _ir_repeat, _ir_freq);
+                DEBUG_MSG_P(PSTR("[IR] Raw IR output %d codes, repeat %d times on %d(k)Hz freq.\n"), count, _ir_repeat, _ir_freq);
 
                 #if defined(IR_RX_PIN)
                     _ir_receiver.disableIRIn();
@@ -178,7 +178,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                     #endif
                 } else if (col>2) { // repeat with repeat_code
 
-                    DEBUG_MSG_P(PSTR("[IR] Repeat codes count: %d"), _ir_repeat_size);
+                    DEBUG_MSG_P(PSTR("[IR] Repeat codes count: %d\n"), _ir_repeat_size);
 
                     free(_ir_raw);
                     _ir_raw = (uint16_t*)calloc(_ir_repeat_size, sizeof(uint16_t));
@@ -222,9 +222,9 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 }
 
                 if (_ir_repeat > 0) {
-                    DEBUG_MSG_P(PSTR("[IR] IROUT: %d:%lu:%d:%d"), _ir_type, (unsigned long) _ir_code, _ir_bits, _ir_repeat);
+                    DEBUG_MSG_P(PSTR("[IR] IROUT: %d:%lu:%d:%d\n"), _ir_type, (unsigned long) _ir_code, _ir_bits, _ir_repeat);
                 } else {
-                    DEBUG_MSG_P(PSTR("[IR] Wrong MQTT payload format (%s)"), payload);
+                    DEBUG_MSG_P(PSTR("[IR] Wrong MQTT payload format (%s)\n"), payload);
                 }
 
             #endif // IR_USE_RAW
@@ -328,7 +328,7 @@ void _irProcess(unsigned char type, unsigned long code) {
     	}
 
     	if (!found) {
-    		DEBUG_MSG_P(PSTR("[IR] Code does not match any action"));
+    		DEBUG_MSG_P(PSTR("[IR] Code does not match any action\n"));
     	}
 
     #endif
@@ -365,7 +365,7 @@ void _irRXLoop() {
             snprintf_P(payload, sizeof(payload), PSTR("%u:%lu:%u"), _ir_results.decode_type, (unsigned long) _ir_results.value, _ir_results.bits);
         #endif
 
-        DEBUG_MSG_P(PSTR("[IR] IRIN: %s"), payload);
+        DEBUG_MSG_P(PSTR("[IR] IRIN: %s\n"), payload);
 
         #if not IR_USE_RAW
             _irProcess(_ir_results.decode_type, (unsigned long) _ir_results.value);
@@ -398,13 +398,13 @@ void irSetup() {
 
     #if defined(IR_RX_PIN)
         _ir_receiver.enableIRIn();
-        DEBUG_MSG_P(PSTR("[IR] Receiver initialized "));
+        DEBUG_MSG_P(PSTR("[IR] Receiver initialized\n"));
     #endif
 
     #if MQTT_SUPPORT && defined(IR_TX_PIN)
         _ir_sender.begin();
         mqttRegister(_irMqttCallback);
-        DEBUG_MSG_P(PSTR("[IR] Transmitter initialized "));
+        DEBUG_MSG_P(PSTR("[IR] Transmitter initialized\n"));
     #endif
 
     espurnaRegisterLoop(_irLoop);
