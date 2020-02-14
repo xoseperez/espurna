@@ -122,17 +122,17 @@ void crashDump() {
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     uint32_t stack_trace;
 
-    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>[DEBUG] \n"));
+    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
 
     uint16_t offset = 0;
     do {
-        DEBUG_MSG_P(PSTR("%08x: \n"), stack_start + offset);
+        DEBUG_MSG_P(PSTR("%08x: "), stack_start + offset);
         for (byte b = 0; b < 4; b++) {
             EEPROMr.get(current_address, stack_trace);
-            DEBUG_MSG_P(PSTR("%08x \n"), stack_trace);
+            DEBUG_MSG_P(PSTR("%08x "), stack_trace);
             current_address += 4;
         }
-        DEBUG_MSG_P(PSTR("[DEBUG] \n"));
+        DEBUG_MSG_P(PSTR("\n[DEBUG] "));
     } while ((offset < stack_size) && (offset += 0x10));
     DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 

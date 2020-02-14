@@ -73,7 +73,7 @@ void otaProgress(size_t bytes, size_t each) {
     }
 
     if ((bytes > each) && (bytes - each > last)) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %7u bytes\r\n"), bytes);
+        DEBUG_MSG_P(PSTR("[OTA] Progress: %7u bytes\r"), bytes);
         last = bytes;
     }
 }

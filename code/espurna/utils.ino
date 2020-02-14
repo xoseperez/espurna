@@ -441,12 +441,12 @@ void info(bool first) {
     // -------------------------------------------------------------------------
 
     #if defined(APP_REVISION)
-        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION " (" APP_REVISION ")"));
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION " (" APP_REVISION ")\n"));
     #else
-        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION ""));
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION "\n"));
     #endif
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR ""));
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
@@ -546,7 +546,7 @@ void info(bool first) {
 
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) {
-            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
+            DEBUG_MSG_P(PSTR("\n[MAIN] Device is in SAFE MODE\n"));
         }
     #endif
 
