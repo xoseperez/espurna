@@ -873,7 +873,7 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     // Update channels
     for (unsigned int i=0; i < _light_channels.size(); i++) {
         _light_channels[i].target = _light_state && _light_channels[i].state ? _light_channels[i].value : 0;
-        //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u", i, _light_channels[i].target);
+        //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channels[i].target);
     }
 
     // Channel transition will be handled by the provider function

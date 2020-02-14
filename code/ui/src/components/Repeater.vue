@@ -10,7 +10,10 @@
                   :row="row"
                   :remove="() => onRemove(row.key)"></slot>
             <template v-if="!locked" #append>
-                <slot name="btnRemove" :click="() => onRemove(row.key)" :row="row">
+                <slot name="btnRemove" :click="() => onRemove(row.key)"
+                      :row="row"
+                      :value="row.value"
+                      :k="i">
                     <Btn color="danger" @click="() => onRemove(row.key)">
                         Remove
                     </Btn>

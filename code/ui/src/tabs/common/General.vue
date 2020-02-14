@@ -70,89 +70,7 @@
                 </Row>
 
                 <legend>Networks</legend>
-                <Repeater v-model="wifi.list" :max="wifi.max" @created="({row})=>$set(row, 'more', false)">
-                    <template #default="tpl">
-                        <Row>
-                            <C><label :for="'ssid-'+tpl.row.key">Network SSID</label></C>
-                            <C no-wrap>
-                                <Inpt :id="'ssid-'+tpl.row.key" name="ssid"
-                                      type="text"
-                                      action="reconnect"
-                                      tabindex="0"
-                                      placeholder="Network SSID"
-                                      required
-                                      autocomplete="network-ssid"/>
-                                <Btn @click="() => { $set(tpl.row, 'more', !tpl.row.more) }">...</Btn>
-                            </C>
-                            <template v-if="tpl.row.more">
-                                <C><label>Password</label></C>
-                                <C>
-                                    <Inpt name="pass"
-                                          type="password"
-                                          action="reconnect"
-                                          tabindex="0"
-                                          autocomplete="network-password"
-                                          spellcheck="false"/>
-                                </C>
-
-
-                                <C><label>Static IP</label></C>
-                                <C>
-                                    <Inpt name="ip"
-                                          type="text"
-                                          action="reconnect"
-                                          maxlength="15"
-                                          tabindex="0"
-                                          autocomplete="false"/>
-                                    <Hint>Leave empty for DHCP negotiation</Hint>
-                                </C>
-
-                                <C><label>Gateway IP</label></C>
-                                <C>
-                                    <Inpt name="gw"
-                                          type="text"
-                                          action="reconnect"
-                                          maxlength="15"
-                                          tabindex="0"
-                                          autocomplete="false"/>
-                                    <Hint>Set when using a static IP</Hint>
-                                </C>
-
-                                <C><label>Network Mask</label></C>
-                                <C>
-                                    <Inpt name="mask"
-                                          type="text"
-                                          action="reconnect"
-                                          placeholder="255.255.255.0"
-                                          maxlength="15"
-                                          tabindex="0"
-                                          autocomplete="false"/>
-                                    <Hint>Usually 255.255.255.0 for /24 networks</Hint>
-                                </C>
-
-                                <C><label>DNS IP</label></C>
-                                <C>
-                                    <Inpt name="dns"
-                                          type="text"
-                                          action="reconnect"
-                                          value=""
-                                          maxlength="15"
-                                          tabindex="0"
-                                          autocomplete="false"/>
-                                    <Hint>
-                                        Set the Domain Name Server IP to use when using a static IP
-                                    </Hint>
-                                </C>
-                            </template>
-                        </Row>
-                    </template>
-                    <template #btnRemove="tpl">
-                        <Btn name="del-network" color="danger" @click="tpl.click">Delete network</Btn>
-                    </template>
-                    <template #btnAdd="tpl">
-                        <Btn name="add-network" @click="tpl.click">Add network</Btn>
-                    </template>
-                </Repeater>
+                <Wifi v-model="wifi.list" :max="wifi.max"/>
             </fieldset>
         </Group>
     </section>
@@ -164,13 +82,13 @@
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";
     import Row from "../../layout/Row";
-    import Repeater from "../../components/Repeater";
     import Group from "../../components/Group";
+    import Wifi from "../../components/Wifi";
 
     export default {
         components: {
+            Wifi,
             Group,
-            Repeater,
             Row,
             Hint,
             C,

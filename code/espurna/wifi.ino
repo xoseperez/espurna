@@ -461,6 +461,7 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     schema.add("gw");
     schema.add("mask");
     schema.add("dns");
+    schema.add("hardcoded");
 
     JsonArray& networks = wifi.createNestedArray("list");
 
@@ -473,6 +474,7 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
         network.add(getSetting({"gw", index}, _wifiGateway(index)));
         network.add(getSetting({"mask", index}, _wifiNetmask(index)));
         network.add(getSetting({"dns", index}, _wifiDNS(index)));
+        network.add(_wifiHasSSID(index));
     }
 }
 
