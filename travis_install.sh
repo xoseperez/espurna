@@ -9,6 +9,7 @@ npm_install() {
 
 pio_install() {
     pip install -U platformio
+    pio upgrade --dev
     pio platform update -p
 }
 
