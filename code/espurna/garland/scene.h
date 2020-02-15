@@ -143,36 +143,6 @@ private:
     void glowRun();
 
     void setUp();
-
-    //run and setup handlers
-    void (Scene::*runImpl)();
-    void (Scene::*setUpImpl)();
-
-
-    //animation implementations
-    void animStart_SetUp();
-    void animStart_Run();
-
-    // void animRun_SetUp();
-    // void animRun_Run();
-    
-    // void animPixieDust_SetUp();
-    // void animPixieDust_Run();
-    
-    // void animSparkr_SetUp();
-    // void animSparkr_Run();
-
-    // void animRandCyc_SetUp();
-    // void animRandCyc_Run();
-
-    void animStars_SetUp();
-    void animStars_Run();
-
-    void animSpread_SetUp();
-    void animSpread_Run();
-
-    // void animFly_SetUp();
-    // void animFly_Run();
 };
 
 unsigned int rng();
