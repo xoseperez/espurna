@@ -494,7 +494,7 @@
 #define WIFI_SCAN_NETWORKS          1                   // Perform a network scan before connecting
 #endif
 
-// Optional hardcoded configuration (up to 2 networks)
+// Optional hardcoded configuration (up to 5 networks, depending on WIFI_MAX_NETWORKS and espurna/wifi_config.h)
 #ifndef WIFI1_SSID
 #define WIFI1_SSID                  ""
 #endif
