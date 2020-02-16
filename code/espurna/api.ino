@@ -39,7 +39,7 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _apiWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["api"] = 1;
 }
 

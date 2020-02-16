@@ -101,7 +101,7 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
 }
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["rfb"] = 1;
 
     #if RFB_DIRECT

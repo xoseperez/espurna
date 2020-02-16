@@ -215,7 +215,7 @@ void _debugSendInternal(const char * message, bool add_timestamp) {
 #if DEBUG_WEB_SUPPORT
 
 void _debugWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
 
     modules["dbg"] = 1;
 }

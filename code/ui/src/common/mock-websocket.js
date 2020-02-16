@@ -7,18 +7,18 @@ export default function () {
     server.on('connection', () => {
         let data = [{
             "device": {
-                "heap": 18536,
-                "uptime": 291842,
-                "load_average": 1,
-                "vcc": 3058,
-                "now": 1571866442
+                "_heap": 18536,
+                "_uptime": 291842,
+                "_load_average": 1,
+                "_vcc": 3058,
+                "_now": 1571866442
             },
             "wifi": {
-                "rssi": -84
+                "_rssi": -84
             }
         },
             {
-                "modules": {
+                "_modules": {
                     "cmd": 1,
                     "telnet": 1,
                     "dbg": 1,
@@ -39,10 +39,10 @@ export default function () {
                 "weblog": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
             }, {
                 "wifi": {
-                    "rssi": -86,
-                    "max": 5,
+                    "_rssi": -86,
+                    "_max": 5,
                     "scan": true,
-                    "schema": [
+                    "_schema": [
                         "ssid",
                         "pass",
                         "ip",
@@ -88,7 +88,7 @@ export default function () {
                 }
             }, {
                 "webMode": 0,
-                "version": {
+                "_version": {
                     "app_name": "ESPURNA",
                     "app_version": "1.13.6-dev",
                     "app_build": "2019-10-05 17:29:31",
@@ -97,23 +97,24 @@ export default function () {
                     "core": "2.3.0",
                 },
                 "device": {
-                    "name": "SONOFF_SV",
-                    "manufacturer": "ITEAD",
-                    "chip_id": "209458",
+                    "_name": "SONOFF_SV",
+                    "_manufacturer": "ITEAD",
+                    "_chip_id": "209458",
                     "hostname": "ESPURNA",
                     "desc": "An espurna enabled device",
-                    "free_size": 532480,
+                    "_free_size": 532480,
+                    "_total_size": 1032480,
                     "webPort": 80,
                     "wsAuth": true,
                     "hbMode": 2,
                     "hbInterval": 300
                 },
                 "wifi": {
-                    "name": "TestWifi",
-                    "mac": "AA:BB:CC:DD:EE:FF",
-                    "bssid": "00:11:22:33:44:55",
-                    "channel": 11,
-                    "ip": "192.168.1.3",
+                    "_name": "TestWifi",
+                    "_mac": "AA:BB:CC:DD:EE:FF",
+                    "_bssid": "00:11:22:33:44:55",
+                    "_channel": 11,
+                    "_ip": "192.168.1.3",
                 },
                 "btnDelay": 500, //This should be by relay
             },
@@ -123,7 +124,7 @@ export default function () {
                 "relays": {
                     "config": {
                         "start": 0,
-                        "schema": [
+                        "_schema": [
                             "gpio",
                             "type",
                             "reset",
@@ -212,7 +213,7 @@ export default function () {
                 "relays": {
                     "state": {
                         "start": 0,
-                        "schema": [
+                        "_schema": [
                             "status",
                             "lock"
                         ],
@@ -227,8 +228,8 @@ export default function () {
             },
             {
                 "schedule": {
-                    "max": 10,
-                    "schema": [
+                    "_max": 10,
+                    "_schema": [
                         "enabled",
                         "UTC",
                         "switch",
@@ -243,7 +244,7 @@ export default function () {
             },
             {
                 "led": {
-                    "schema": [
+                    "_schema": [
                         "mode",
                         "relay"
                     ],

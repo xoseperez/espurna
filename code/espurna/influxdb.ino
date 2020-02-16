@@ -114,7 +114,7 @@ bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _idbWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["idb"] = 1;
 }
 

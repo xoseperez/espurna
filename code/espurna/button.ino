@@ -59,7 +59,7 @@ void buttonMQTT(unsigned char id, uint8_t event) {
 
 void _buttonWebSocketOnVisible(JsonObject& root) {
     if (buttonCount() > 0) {
-        JsonObject& modules = root["modules"];
+        JsonObject& modules = root["_modules"];
         modules["btn"] = 1;
     }
 }

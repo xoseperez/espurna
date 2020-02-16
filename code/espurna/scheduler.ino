@@ -28,7 +28,7 @@ bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 void _schWebSocketOnVisible(JsonObject &root) {
     if (!relayCount()) return;
 
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["sch"] = 1;
 }
 
@@ -37,12 +37,12 @@ void _schWebSocketOnConnected(JsonObject &root) {
 
     JsonObject& module = root.createNestedObject("schedule"); // TODO check was schedules
 
-    module["max"] = SCHEDULER_MAX_SCHEDULES;
+    module["_max"] = SCHEDULER_MAX_SCHEDULES;
 
     uint8_t size = 0;
 
 
-    JsonArray& schema = module.createNestedArray("schema");
+    JsonArray& schema = module.createNestedArray("_schema");
     JsonArray& list = module.createNestedArray("list");
 
     schema.add("enabled");

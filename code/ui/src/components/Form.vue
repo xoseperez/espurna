@@ -1,5 +1,5 @@
 <template>
-    <form>
+    <form ref="form">
         <slot></slot>
     </form>
 </template>
@@ -30,6 +30,11 @@
                 $form: () => ({
                     values: this.values
                 })
+            }
+        },
+        methods: {
+            reportValidity() {
+                return this.$refs.form.reportValidity();
             }
         }
     }

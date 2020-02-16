@@ -37,7 +37,7 @@ bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _telnetWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["telnet"] = 1;
 }
 

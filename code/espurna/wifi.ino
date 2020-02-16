@@ -453,7 +453,7 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     root["max"] = WIFI_MAX_NETWORKS;
     wifi["scan"] = getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS);
 
-    JsonArray& schema = wifi.createNestedArray("schema");
+    JsonArray& schema = wifi.createNestedArray("_schema");
 
     schema.add("ssid");
     schema.add("pass");

@@ -38,7 +38,7 @@ unsigned long _rfm69_packet_count;
 #if WEB_SUPPORT
 
 void _rfm69WebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["rfm69"] = 1;
 }
 

@@ -96,7 +96,7 @@ bool _tspkWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _tspkWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["tspk"] = static_cast<unsigned char>(haveRelaysOrSensors());
 }
 

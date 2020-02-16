@@ -856,7 +856,7 @@ void _relayWebSocketUpdate(JsonObject& root) {
     JsonObject& module = root.createNestedObject("relays");
     JsonObject& state = module.createNestedObject("state");
 
-    JsonArray& schema = state.createNestedArray("schema");
+    JsonArray& schema = state.createNestedArray("_schema");
     JsonArray& list = state.createNestedArray("list");
 
     schema.add("status");
@@ -908,7 +908,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& module = root.createNestedObject("relays");
     JsonObject& config = module.createNestedObject("config");
 
-    JsonArray& schema = config.createNestedArray("schema");
+    JsonArray& schema = config.createNestedArray("_schema");
     schema.add("gpio");
     schema.add("type");
     schema.add("reset");
@@ -964,7 +964,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     if (relayCount() > 1) {
         modules["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }

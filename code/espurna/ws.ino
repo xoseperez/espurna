@@ -352,16 +352,16 @@ void _wsUpdate(JsonObject& root) {
     JsonObject& device = root.createNestedObject("device");
     JsonObject& wifi = root.createNestedObject("wifi");
 
-    wifi["rssi"] = WiFi.RSSI();
+    wifi["_rssi"] = WiFi.RSSI();
 
-    device["uptime"] = getUptime();
-    device["heap"] = getFreeHeap();
-    device["load_average"] = systemLoadAverage();
+    device["_uptime"] = getUptime();
+    device["_heap"] = getFreeHeap();
+    device["_load_average"] = systemLoadAverage();
     #if ADC_MODE_VALUE == ADC_VCC
-        device["vcc"] = ESP.getVcc();
+        device["_vcc"] = ESP.getVcc();
     #endif
     #if NTP_SUPPORT
-        if (ntpSynced()) device["now"] = now();
+        if (ntpSynced()) device["_now"] = now();
     #endif
 }
 
@@ -387,7 +387,7 @@ bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _wsOnVisible(JsonObject& root) {
-    JsonObject& modules = root.createNestedObject("modules");
+    JsonObject& modules = root.createNestedObject("_modules");
 }
 
 void _wsOnConnected(JsonObject& root) {
@@ -396,7 +396,7 @@ void _wsOnConnected(JsonObject& root) {
 
     root["webMode"] = WEB_MODE_NORMAL;
 
-    JsonObject& version = root.createNestedObject("version");
+    JsonObject& version = root.createNestedObject("_version");
     JsonObject& device = root.createNestedObject("device");
     JsonObject& wifi = root.createNestedObject("wifi");
 
@@ -411,11 +411,11 @@ void _wsOnConnected(JsonObject& root) {
         version["app_revision"] = APP_REVISION;
     #endif
 
-    device["manufacturer"] = MANUFACTURER;
-    device["chip_id"] = String(chipid);
-    device["name"] = DEVICE;
-    device["free_size"] = ESP.getFreeSketchSpace();
-    device["total_size"] = ESP.getFlashChipRealSize();
+    device["_manufacturer"] = MANUFACTURER;
+    device["_chip_id"] = String(chipid);
+    device["_name"] = DEVICE;
+    device["_free_size"] = ESP.getFreeSketchSpace();
+    device["_total_size"] = ESP.getFlashChipRealSize();
     device["hostname"] = getSetting("hostname");
     device["desc"] = getSetting("desc");
     device["webPort"] = getSetting("webPort", WEB_PORT);
@@ -423,12 +423,12 @@ void _wsOnConnected(JsonObject& root) {
     device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
     device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 
-    wifi["rssi"] = WiFi.RSSI();
-    wifi["mac"] = WiFi.macAddress();
-    wifi["bssid"] = WiFi.BSSIDstr();
-    wifi["channel"] = WiFi.channel();
-    wifi["name"] = getNetwork();
-    wifi["ip"] = getIP();
+    wifi["_rssi"] = WiFi.RSSI();
+    wifi["_mac"] = WiFi.macAddress();
+    wifi["_bssid"] = WiFi.BSSIDstr();
+    wifi["_channel"] = WiFi.channel();
+    wifi["_name"] = getNetwork();
+    wifi["_ip"] = getIP();
 
     root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY); // TODO move this as a setting per button
 }

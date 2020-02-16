@@ -24,15 +24,11 @@
                 </div>
 
                 <div class="footer">
-                    &copy; 2016-2019<br>
-                    Xose Pérez<br>
-                    <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
-                    <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
-                    <A href="https://github.com/xoseperez/espurna">ESPurna @
-                        GitHub</A><br>
-                    UI by <A href="https://github.com/tofandel">Tofandel</A><br>
-                    GPLv3 license<br><br>
-                    Version: {{data.version.app_version}}
+                    &copy; 2016-2019<br> Xose Pérez<br> <A href="https://twitter.com/xoseperez">@xoseperez</A><br> <A
+                        href="http://tinkerman.cat">http://tinkerman.cat</A><br>
+                    <A href="https://github.com/xoseperez/espurna">ESPurna @ GitHub</A><br> UI by
+                    <A href="https://github.com/tofandel">Tofandel</A><br> GPLv3 license<br><br> Version:
+                    {{data.version.app_version}}
                 </div>
             </template>
 
@@ -159,6 +155,8 @@
     import General from "./tabs/common/General";
     import Status from "./tabs/common/Status";
 
+    import diff from "deep-object-diff/dist/diff";
+
     let tabs = [
         //Basic settings
         {k: "status", l: "Status"}, //Move debug to status
@@ -267,7 +265,6 @@
 
     // #!if IDB === true
     import Idb from "./tabs/integrations/InfluxDB";
-    import {detailedDiff} from "deep-object-diff";
 
     components.Idb = Idb;
     tabs.push({k: "idb", l: "InfluxDB"});
@@ -305,18 +302,19 @@
             return {
                 webmode: true,
                 ws: new Socket,
-                original: {},
-                data: {
-                    modules: {},
-                    version: {
+                data: {},
+                received: {
+                    _modules: {},
+                    _version: {
                         app_version: process.env.VUE_APP_VERSION
                     },
                     device: {
+                        _path: "",
                         hostname: 'ESPURNA',
                         desc: '',
-                        now: Math.floor(Date.now() / 1000),
-                        uptime: 0,
-                        lastUpdate: 0
+                        _now: Math.floor(Date.now() / 1000),
+                        _uptime: 0,
+                        _lastUpdate: 0
                     },
                     relays: {}
                 },
@@ -325,6 +323,12 @@
             }
         },
         computed: {
+            modified() {
+                return this.flatten(diff(this.original, this.data), this.received);
+            },
+            original() {
+                return JSON.parse(JSON.stringify(this.received).replace(/"_/g, '"'))
+            },
             lightOptions() {
                 let options = [];
                 if ("light" in this.data) {
@@ -344,6 +348,17 @@
                 return options;
             },
         },
+        watch: {
+            original: {
+                handler() {
+                    if (!this.modified) { //TODO if the change is not in the modified it should be allowed else ask user
+                        this.data = JSON.parse(JSON.stringify(this.original)); //Cheap deep clone
+                    }
+                },
+                immediate: true,
+                deep: true
+            }
+        },
         mounted() {
             setInterval(() => {
                 this.data.device.now++;
@@ -362,30 +377,32 @@
         },
         methods: {
             save() {
-                if (this.$refs.formSettings.reportValidity()) {
-                    const diff = detailedDiff(this.original, this.data);
-
-                    let config = {};
-
-                    Object.keys(diff).forEach((k) => {
-                        Object.assign(config, this.flatten(diff[k]));
-                    });
-
-                    this.sendConfig(config);
+                if (this.$refs.formSettings.reportValidity() && this.modified) {
+                    this.ws.sendConfig(this.modified);
                 }
             },
-            flatten(obj, key, flat) {
+            flatten(obj, mask, prefix, suffix, flat) {
                 flat = typeof flat === 'undefined' ? {} : flat;
 
-                key = key || '';
+                prefix = prefix || "";
+                suffix = suffix || "";
+                mask = mask || {};
 
-                Object.keys(obj).forEach((k) => {
-                    const v = obj[k];
-                    k = capitalize(k);
-                    if (typeof v === 'object') {
-                        this.flatten(v, key + k, flat);
-                    } else {
-                        flat[key + k] = v;
+                Object.keys(obj).forEach((key) => {
+                    if (!("_" + key in mask)) {
+                        if ("_path" in mask) {
+                            prefix = mask._path;
+                        }
+
+                        const v = obj[key];
+                        let Key = prefix !== "" ? capitalize(key) : key;
+                        if (typeof v === 'object') {
+                            this.flatten(v, mask[key], Array.isArray(mask[key]) || Array.isArray(mask) ? prefix : (prefix + Key),
+                                Array.isArray(mask) ? suffix + key : suffix,
+                                flat);
+                        } else {
+                            flat[prefix + Key + suffix] = v;
+                        }
                     }
                 });
                 return flat;
@@ -403,7 +420,11 @@
                 this.doAction(question, "reboot");
             },
             doAction(question, action) {
-                this.checkChanges();
+                if (this.modified) {
+                    if (window.confirm("Some changes have not been saved yet, do you want to save them first?")) {
+                        this.ws.sendConfig(this.modified)
+                    }
+                }
 
                 if (question) {
                     let response = window.confirm(question);
@@ -412,7 +433,7 @@
                     }
                 }
 
-                this.sendAction(action, {});
+                this.ws.sendAction(action, {});
                 this.doReload(5000);
             },
             receiveMessage(evt) {
@@ -425,8 +446,8 @@
                     }
                 }
                 if (data && typeof data === 'object') {
-                    this.prepareData(this.data, data);
-                    this.data.device.lastUpdate = 0;
+                    this.prepareData(this.received, data);
+                    this.received.device.lastUpdate = 0;
                 }
             },
             prepareData(target, source) {
@@ -438,7 +459,7 @@
                             this.$set(target, k, {});
                         }
 
-                        if (val.schema && Array.isArray(val.list)) {
+                        if (val._schema && Array.isArray(val.list)) {
                             let objs = [];
 
                             val.list.forEach((v) => {
@@ -446,7 +467,7 @@
                                     let i = 0;
                                     let obj = {};
                                     v.forEach((prop) => {
-                                        obj[val.schema[i++]] = prop;
+                                        obj[val._schema[i++]] = prop;
                                     });
                                     objs.push(obj);
                                 }

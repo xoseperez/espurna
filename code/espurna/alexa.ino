@@ -28,7 +28,7 @@ bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _alexaWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["alexa"] = 1;
 }
 

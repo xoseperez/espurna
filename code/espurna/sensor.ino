@@ -377,7 +377,7 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 
 //void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
 /*template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root) {
-    JsonArray& schema = root.createNestedArray("schema");
+    JsonArray& schema = root.createNestedArray("_schema");
     JsonArray& list = root.createNestedArray("list");
 
     //root["size"] = magnitudeCount();
@@ -421,7 +421,7 @@ bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
 
     modules["sns"] = 1;
 
@@ -440,7 +440,7 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
     JsonObject& magnitudes = root.createNestedObject("magnitudes");
     uint8_t size = 0;
 
-    JsonArray& schema = magnitudes.createNestedArray("schema");
+    JsonArray& schema = magnitudes.createNestedArray("_schema");
     JsonArray& list = magnitudes.createNestedArray("list");
 
     //root["size"] = magnitudeCount();

@@ -401,7 +401,7 @@ void terminalError(const String& error) {
 }
 
 void _terminalWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["cmd"] = 1;
 }
 

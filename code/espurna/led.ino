@@ -106,7 +106,7 @@ bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ledWebSocketOnVisible(JsonObject& root) {
     if (_ledCount() > 0) {
-        JsonObject& modules = root["modules"];
+        JsonObject& modules = root["_modules"];
         modules["led"] = 1;
     }
 }
@@ -115,7 +115,7 @@ void _ledWebSocketOnConnected(JsonObject& root) {
     if (!_ledCount()) return;
     JsonObject& led = root.createNestedObject("led");
 
-    JsonArray& schema = led.createNestedArray("schema");
+    JsonArray& schema = led.createNestedArray("_schema");
 
     schema.add("mode");
     schema.add("relay");

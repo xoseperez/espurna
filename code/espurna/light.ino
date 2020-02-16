@@ -1042,7 +1042,7 @@ void _lightWebSocketStatus(JsonObject& root) {
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
-    JsonObject& modules = root["modules"];
+    JsonObject& modules = root["_modules"];
     modules["color"] = 1;
 }
 
