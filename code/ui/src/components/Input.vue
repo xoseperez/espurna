@@ -275,10 +275,11 @@
     .file {
         opacity: 0;
         position: absolute;
+        z-index: -1;
     }
 
 
-    input:not([type=checkbox]):not([type=radio]), select, textarea {
+    input:not([type=file]):not([type=checkbox]):not([type=radio]), select, textarea {
         padding: .5em .6em;
         display: inline-block;
         border: 1px solid #ccc;

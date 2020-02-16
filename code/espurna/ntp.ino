@@ -152,7 +152,6 @@ bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 void _ntpWebSocketOnVisible(JsonObject& root) {
     JsonObject& modules = root["_modules"];
     modules["ntp"] = 1;
-    modules["ntplwip"] = 1;
 }
 
 void _ntpWebSocketOnData(JsonObject& root) {

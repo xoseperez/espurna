@@ -1,12 +1,18 @@
 <template>
-    <button type="button" :class="classes" @click="$emit('click')">
+    <component :is="tag" type="button" class="btn"
+               :class="{['btn-'+color]:color, ['btn-'+name]: name}"
+               @click="(evt) => $emit('click', evt)">
         <slot></slot>
-    </button>
+    </component>
 </template>
 
 <script>
     export default {
         props: {
+            tag: {
+                type: String,
+                default: "button"
+            },
             color: {
                 type: String,
                 default: "success"
@@ -16,12 +22,6 @@
                 default: ""
             }
         },
-        computed: {
-            classes() {
-                return "btn btn-" + this.color + (this.name ? " btn-" + this.name : "")
-            }
-        }
-
     }
 </script>
 

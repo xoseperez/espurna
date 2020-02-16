@@ -11,7 +11,7 @@
                         <label>Settings</label>
                     </C>
                     <C stretch>
-                        <Btn name="settings-backup">Backup</Btn>
+                        <Btn name="settings-backup" tag="a" target="_blank" href="#" @click="doBackup">Backup</Btn>
                         <Btn name="settings-restore" color="primary" @click="() => $refs.restoreFile.el.click()">
                             Restore
                         </Btn>
@@ -156,7 +156,7 @@
                             <Btn name="upgrade" color="danger">Upgrade</Btn>
                         </Row>
                         <Hint>
-                            The device has {{status.free_size}} bytes available for
+                            The device has {{device.free_size}} bytes available for
                             OTA updates. If your image is larger than this consider doing a
                             <A href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates"><strong>two-step
                                 update</strong></A>.
@@ -218,14 +218,8 @@
         components: {Group, Hint, C, Row, Inpt, Btn, A},
         inheritAttrs: false,
         props: {
-            device: {
-                type: Object,
-                default: () => ({})
-            },
-            status: {
-                type: Object,
-                default: () => ({})
-            }
+            getSettings: Function,
+            device: Object,
         },
         data() {
             return {
@@ -235,6 +229,7 @@
         },
         computed: {
             ntpOffsets() {
+                // TODO this needs a new notation
                 const tz = [
                     -720, -660, -600, -570, -540,
                     -480, -420, -360, -300, -240,
@@ -255,7 +250,16 @@
                 return offsets;
             }
         },
-        methods: {}
+        methods: {
+            doBackup(event) {
+                try {
+                    const json = JSON.stringify(this.getSettings());
+                    console.log(json);
+                    const blob = new Blob([json], {type: "application/json"});
+                    event.target.href = URL.createObjectURL(blob);
+                } catch (e) {}
+            }
+        }
     }
 </script>
 <style>

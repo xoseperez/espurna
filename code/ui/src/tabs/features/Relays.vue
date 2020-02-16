@@ -5,9 +5,9 @@
             <h2>Switch / relay configuration</h2>
         </div>
 
-        <Group v-model="relays.config" class="page">
+        <Group v-model="relay.config" class="page">
             <fieldset>
-                <template v-if="relays.config.list.length > 1">
+                <template v-if="relay.config.list.length > 1">
                     <legend>General</legend>
 
                     <Row>
@@ -21,16 +21,23 @@
                                 'Switch #0 controls all other switches'
                             ]"/>
                             <Hint>
-                                Define how the different switches should be
-                                synchronized.
+                                Define how the different switches should be synchronized.
                             </Hint>
                         </C>
                     </Row>
                 </template>
 
-                <Repeater v-model="relays.config.list" locked class="switches">
+                <Repeater v-model="relay.config.list" locked class="switches">
                     <template #default="tpl">
                         <legend>Switch #{{tpl.k}} ({{tpl.value.gpio}})</legend>
+                        <Row>
+                            <C>
+                                <Inpt type="text" name="name"/>
+                                <Hint>
+                                    A name to distinguish the different relays
+                                </Hint>
+                            </C>
+                        </Row>
                         <Row>
                             <C>
                                 <Row>
@@ -49,19 +56,14 @@
                                               min="0"
                                               step="100"
                                               max="1000"
-                                              tabindex="6" unit="ms"/>
+                                              unit="ms"/>
                                         <Hint>
                                             Delay in milliseconds to detect a double click (from 0 to 1000ms).<br> The
-                                            lower
-                                            this number the faster the device will respond to button clicks but the
-                                            harder it
-                                            will be to get a double click. Increase this number if you are having
-                                            trouble to
-                                            double click the button. Set this value to 0 to disable double click. You
-                                            won't be
-                                            able to set the device in AP mode manually but your device will respond
-                                            immediately
-                                            to button clicks.
+                                            lower this number the faster the device will respond to button clicks but
+                                            the harder it will be to get a double click. Increase this number if you are
+                                            having trouble to double click the button. Set this value to 0 to disable
+                                            double click. You won't be able to set the device in AP mode manually but
+                                            your device will respond immediately to button clicks.
                                         </Hint>
                                     </C>
                                 </Row>
@@ -74,7 +76,7 @@
                                               min="0"
                                               step="100"
                                               max="10000"
-                                              tabindex="6" unit="ms"/>
+                                              unit="ms"/>
                                     </C>
                                 </Row>
                             </C>
@@ -89,11 +91,12 @@
                                 <Row>
                                     <C><label>Pulse time</label></C>
                                     <C>
-                                        <Inpt name="pulse_time"
+                                        <Inpt name="time"
                                               type="number"
                                               min="0"
                                               step="0.1"
-                                              max="3600" unit="s"/>
+                                              max="3600"
+                                              unit="s"/>
                                     </C>
                                 </Row>
 
@@ -106,7 +109,7 @@
                                               min="0"
                                               step="100"
                                               max="100000"
-                                              tabindex="6" unit="ms"/>
+                                              unit="ms"/>
                                     </C>
                                 </Row>
                             </C>
@@ -123,6 +126,19 @@
                                                   action="reconnect"/>
                                         </C>
                                     </Row>
+                                </C>
+                                <C v-show="tpl.value.group">
+                                    <Row>
+                                        <C><label>MQTT group sync</label></C>
+                                        <C>
+                                            <Inpt type="select" name="groupSync"
+                                                  :options="['Same','Inverse', 'Receive Only']"/>
+                                        </C>
+                                    </Row>
+                                </C>
+                            </Row>
+                            <Row>
+                                <C>
                                     <Row>
                                         <C><label>Send all button events</label></C>
                                         <C>
@@ -131,19 +147,11 @@
                                         </C>
                                         <Hint>
                                             If you need to receive double tap (code: 3) or long tap (code: 4) events,
-                                            enable
-                                            this
+                                            enable this
                                         </Hint>
                                     </Row>
                                 </C>
                                 <C>
-                                    <Row>
-                                        <C><label>MQTT group sync</label></C>
-                                        <C>
-                                            <Inpt type="select" name="group_sync"
-                                                  :options="['Same','Inverse', 'Receive Only']"/>
-                                        </C>
-                                    </Row>
                                     <Row>
                                         <C><label>On MQTT disconnect</label></C>
                                         <C>
@@ -260,14 +268,11 @@
         },
         inheritAttrs: false,
         props: {
-            relays: {
+            relay: {
                 type: Object,
                 default: () => ({})
             },
-            modules: {
-                type: Object,
-                default: () => ({})
-            },
+            modules: Object,
             schedule: {
                 type: Object,
                 default: () => ({})

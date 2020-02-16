@@ -862,7 +862,7 @@ void _relayWebSocketUpdate(JsonObject& root) {
     schema.add("status");
     schema.add("lock");
 
-    state["size"] = relayCount();
+    //state["_size"] = relayCount();
 
     JsonArray& status = state.createNestedArray("status");
     JsonArray& lock = state.createNestedArray("lock");
@@ -905,16 +905,17 @@ String _relayFriendlyName(unsigned char i) {
 
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& module = root.createNestedObject("relays");
+    JsonObject& module = root.createNestedObject("relay");
     JsonObject& config = module.createNestedObject("config");
 
     JsonArray& schema = config.createNestedArray("_schema");
-    schema.add("gpio");
+    schema.add("GPIO");
     schema.add("type");
-    schema.add("reset");
+    //schema.add("resetGPIO"); //This is not needed
+    schema.add("name");
     schema.add("boot");
     schema.add("pulse");
-    schema.add("pulse_time");
+    schema.add("time");
 
     schema.add("dblDl");
     schema.add("lngDl");
@@ -927,12 +928,12 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
     #if MQTT_SUPPORT
         schema.add("group");
-        schema.add("group_sync");
-        schema.add("on_disc");
+        schema.add("groupSync");
+        schema.add("onDisc");
         schema.add("sndAllEvts");
     #endif
 
-    config["start"] = 0;
+    //config["_start"] = 0;
 
     JsonArray& relays = config.createNestedArray("list");
 
@@ -940,10 +941,11 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         JsonArray& relay = relays.createNestedArray();
         relay.add(_relayFriendlyName(i));                                       //gpio
         relay.add(_relays[i].type);                                             //type
-        relay.add(_relays[i].reset_pin);                                        //reset
+        //relay.add(_relays[i].reset_pin);                                        //reset
+        relay.add(getSetting({"relayName", i});                                 //name
         relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));               //boot
         relay.add(_relays[i].pulse);                                            //pulse
-        relay.add(_relays[i].pulse_ms / 1000.0);                                //pulse_time
+        relay.add(_relays[i].pulse_ms / 1000.0);                                //time
         relay.add(getSetting({"relayDblDl", i}, BUTTON_DBLCLICK_DELAY));        //dblDl
         relay.add(getSetting({"relayLngDl", i}, BUTTON_LNGCLICK_DELAY));        //lngDl
         relay.add(getSetting({"relayLngLngDl", i}, BUTTON_LNGLNGCLICK_DELAY));  //lngLngDl
@@ -953,10 +955,11 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         #endif
 
         #if MQTT_SUPPORT
-            relay.add(getSetting({"mqttGroup", i}));              //group
-            relay.add(getSetting({"mqttGroupSync", i}, 0));       //group_sync
+            // TODO setting needs migration
+            relay.add(getSetting({"relayGroup", i}));             //group
+            relay.add(getSetting({"relayGroupSync", i}, 0));      //group_sync
             relay.add(getSetting({"relayOnDisc", i}, 0));         //on_disc
-            relay.add(getSetting({"sndAllEvts", i}, 0));          //sendAllEvts
+            relay.add(getSetting({"relaySndAllEvts", i}, 0));     //sendAllEvts
         #endif
     }
 }

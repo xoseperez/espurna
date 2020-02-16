@@ -120,7 +120,7 @@ void ws_debug_t::send(const bool connected) {
     DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
 
     JsonObject& root = jsonBuffer.createObject();
-    JsonArray& weblog = root.createNestedArray("weblog");
+    JsonArray& weblog = root.createNestedArray("_weblog");
 
     for (auto& message : messages) {
         weblog.add(message.second.c_str());
@@ -464,16 +464,18 @@ void _wsConnected(uint32_t client_id) {
         ? getAdminPass().equals(ADMIN_PASS)
         : false;
 
+    JsonObject& root = jsonBuffer.createObject();
     if (changePassword) {
         StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
         root["webMode"] = WEB_MODE_PASSWORD;
         wsSend(client_id, root);
         return;
     }
+    root["_loaded"] = 1;
 
     wsPostAll(client_id, _ws_callbacks.on_visible);
     wsPostSequence(client_id, _ws_callbacks.on_connected);
+    wsSend(client_id, root);
     wsPostSequence(client_id, _ws_callbacks.on_data);
 
 }

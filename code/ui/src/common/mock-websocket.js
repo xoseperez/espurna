@@ -11,7 +11,7 @@ export default function () {
                 "_uptime": 291842,
                 "_load_average": 1,
                 "_vcc": 3058,
-                "_now": 1571866442
+                "_now": Math.floor(Date.now() / 1000)
             },
             "wifi": {
                 "_rssi": -84
@@ -36,7 +36,7 @@ export default function () {
                 }
             },
             {
-                "weblog": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
+                "_weblog": ["[WEBSOCKET] #3 connected, ip: 192.168.1.5, url: /ws\n"],
             }, {
                 "wifi": {
                     "_rssi": -86,
@@ -121,19 +121,19 @@ export default function () {
             {
                 "api": {"enabled": false, "key": "123456789ABCDEF", "realTime": false, "restFul": true}
             }, {
-                "relays": {
+                "relay": {
                     "config": {
-                        "start": 0,
+                        "_start": 0,
                         "_schema": [
-                            "gpio",
+                            "GPIO",
                             "type",
-                            "reset",
+                            //"resetGPIO",
                             "boot",
                             "pulse",
-                            "pulse_time",
+                            "time",
                             "group",
-                            "group_sync",
-                            "on_disc",
+                            "groupSync",
+                            "onDisc",
                             "dblDl",
                             "lngDl",
                             "lnglngDl",
@@ -144,7 +144,7 @@ export default function () {
                             [
                                 "GPIO12",
                                 0,
-                                153,
+                                //153,
                                 0,
                                 1,
                                 1,
@@ -160,7 +160,7 @@ export default function () {
                             [
                                 "GPIO13",
                                 0,
-                                153,
+                                //153,
                                 0,
                                 1,
                                 1,
@@ -176,7 +176,7 @@ export default function () {
                             [
                                 "GPIO14",
                                 0,
-                                153,
+                                //153,
                                 0,
                                 1,
                                 1,
@@ -192,7 +192,7 @@ export default function () {
                             [
                                 "GPIO15",
                                 0,
-                                153,
+                                //153,
                                 0,
                                 1,
                                 1,
@@ -210,9 +210,9 @@ export default function () {
                 }
             },
             {
-                "relays": {
+                "relay": {
                     "state": {
-                        "start": 0,
+                        "_start": 0,
                         "_schema": [
                             "status",
                             "lock"
@@ -260,27 +260,46 @@ export default function () {
                     "prefix": "homeassistant",
                     "enabled": false
                 }
+            },
+            {
+                "_loaded": true
             }
         ];
 
+        let i = 50;
         data.forEach((msg) => {
             //server.send(msg);
-            server.send(JSON.stringify(msg));
+            setTimeout(() => {
+                server.send(JSON.stringify(msg));
+            }, i);
+            i += 50;
         });
 
         setTimeout(() => {
             server.send(JSON.stringify({
-                "weblog": [
+                "_weblog": [
                     "[NTP] UTC Time  : 2020-02-13 17:49:33\n",
                     "[NTP] Local Time: 2020-02-13 18:49:33\n"
                 ],
             }));
-        }, 2000);
+        }, i + 4000);
     });
 
 
     server.on('message', (con, msg) => {
         console.log(con, msg);
+        try {
+            msg = JSON.parse(msg);
+
+            if (msg.id) {
+                setTimeout(() => {
+                    //Send success for cb
+                    server.send(JSON.stringify({id: msg.id}));
+                }, 100);
+            }
+        } catch (e) {
+
+        }
     });
 
     return new WebSocket("ws://localhost:8080");

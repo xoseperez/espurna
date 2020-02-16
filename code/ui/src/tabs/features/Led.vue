@@ -90,17 +90,12 @@
         },
         inheritAttrs: false,
         props: {
-            modules: {
-                type: Object,
-                default: () => ({})
-            },
+            modules: Object,
+            relayOptions: Array,
             led: {
                 type: Object,
                 default: () => ({})
             },
-            relayOptions: {
-                type: Array
-            }
         },
         computed: {
             modeOptions() {

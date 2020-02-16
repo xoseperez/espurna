@@ -78,6 +78,7 @@
 
 
     .content {
+        min-height: 100vh;
         max-width: 1000px;
         margin: 0 0 0 -10px;
         line-height: 1.6em;
@@ -97,7 +98,7 @@
 
         .inner {
             background: #222;
-            height: 100%;
+            min-height: 100%;
             box-shadow: 1px 0 6px rgba(0, 0, 0, .5);
         }
 
@@ -243,7 +244,7 @@
         }
 
         .menu {
-            position: fixed;
+            position: absolute;
             height: 100%;
             padding-right: @menu-toggle-size;
 

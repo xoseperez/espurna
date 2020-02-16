@@ -232,10 +232,7 @@
         },
         inheritAttrs: false,
         props: {
-            modules: {
-                type: Object,
-                default: () => ({})
-            },
+            modules: Object,
             sensors: {
                 type: Object,
                 default: () => ({})

@@ -7,7 +7,10 @@ let Ws = function () {
 Ws.prototype = {
     ws: undefined,
     pingInterval: null,
+    _onMsg: null,
     args: null,
+    queue: {},
+    id: 0,
     retry(time, tries) {
         setTimeout(() => {
             this.connectToUrl.apply(this, this.args)
@@ -25,7 +28,10 @@ Ws.prototype = {
         if (!host || host.match('127.0.0.1')) {
             //Start mocking
             this.ws = mockServer();
-            this.ws.onmessage = cb;
+            this._onMsg = cb;
+            this.ws.onmessage = this.onMessage.bind(this);
+            this.ws.onclose = this.onClose.bind(this);
+            this.ws.onopen = this.onOpen.bind(this);
             return;
         }
         // #!endif
@@ -35,7 +41,7 @@ Ws.prototype = {
         }
         this.connectToUrl(new URL(host), cb);
     },
-    connectToUrl(url, onMessage, tries) {
+    connectToUrl(url, onMsg, tries) {
         tries = tries || 1;
 
         this.args = Array.prototype.slice.call(arguments);
@@ -54,10 +60,11 @@ Ws.prototype = {
             if (this.ws) {
                 this.ws.close();
             }
+            this._onMsg = onMsg;
             this.ws = new WebSocket(urls.ws.href);
-            this.ws.onmessage = onMessage;
-            this.ws.onclose = this.onClose;
-            this.ws.onopen = this.onOpen;
+            this.ws.onmessage = this.onMessage.bind(this);
+            this.ws.onclose = this.onClose.bind(this);
+            this.ws.onopen = this.onOpen.bind(this);
 
         }).catch((error) => {
             console.log(error);
@@ -81,22 +88,44 @@ Ws.prototype = {
         }
         return urls;
     },
-    sendAction(action, data) {
+    send(payload, cb, repl) {
         if (this.ws)
-            this.ws.send(JSON.stringify({action: action, data: data}));
-    },
-    sendConfig(data) {
-        if (this.ws)
-            this.ws.send(
-                JSON.stringify({config: data},
-                    (key, value) => typeof value === 'undefined' ? null : value)
-            );
+            if (cb) {
+                payload.id = ++this.id;
+                this.queue[payload.id] = cb;
+            }
+        this.ws.send(
+            JSON.stringify(payload,
+                repl ? ((key, value) => typeof value === 'undefined' ? null : value) : undefined)
+        );
     },
     onClose() {
         this.retry(1000);
     },
     onOpen() {
-        this.pingInterval = setInterval(() => { this.sendAction("ping"); }, 30000);
+        this.pingInterval = setInterval(() => {
+            this.send({action: "ping"});
+        }, 30000);
+    },
+    onMessage(evt) {
+        let data = evt.data;
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+            } catch (e) {
+                console.log('Invalid data received', evt.data);
+            }
+        }
+        console.log(data);
+        if (data && typeof data === 'object') {
+            if (data.id) {
+                if (this.queue[data.id]) {
+                    this.queue[data.id](data);
+                }
+            } else {
+                this._onMsg(data);
+            }
+        }
     }
 };
 

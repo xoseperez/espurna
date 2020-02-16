@@ -443,7 +443,7 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
     JsonArray& schema = magnitudes.createNestedArray("_schema");
     JsonArray& list = magnitudes.createNestedArray("list");
 
-    //root["size"] = magnitudeCount();
+    //root["_size"] = magnitudeCount();
 
     schema.add("index");
     schema.add("type");
@@ -494,7 +494,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
         error.add(magnitude.sensor->error());
     }
 
-    magnitudes["size"] = size;
+    //magnitudes["_size"] = size;
 
 }
 

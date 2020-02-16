@@ -214,10 +214,7 @@
         },
         inheritAttrs: false,
         props: {
-            modules: {
-                type: Object,
-                default: () => ({})
-            },
+            modules: Object,
             mqtt: {
                 type: Object,
                 default: () => ({})

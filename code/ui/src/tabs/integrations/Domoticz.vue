@@ -46,7 +46,7 @@
                 </Row>
 
                 <!-- #!if RELAYS === true -->
-                <Repeater v-model="relays.config.list" locked>
+                <Repeater v-model="relay.config.list" locked>
                     <template #default="tpl">
                         <Row>
                             <C><label>Switch #{{tpl.k}}</label></C>
@@ -103,7 +103,7 @@
                 type: Object,
                 default: () => ({})
             },
-            relays: {
+            relay: {
                 type: Object,
                 default: () => ({config:{}})
             },

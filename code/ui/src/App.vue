@@ -1,139 +1,137 @@
 <template>
-    <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
-    <Setup v-if="!webmode"/>
-    <Form v-else ref="formSettings" v-model="data">
-        <Menu id="layout" :tabs="tabs" class="webmode">
-            <template #header>
-                <div class="heading">
-                    <template>
-                        <i v-if="close" class="back" @click="close">🡠</i>
+    <div v-loading="!isLoaded" class="wrapper">
+        <i v-if="close" class="back" @click="close">🡠</i>
+        <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
+        <Setup v-if="!webmode"/>
+        <Form v-else ref="formSettings" v-model="data">
+            <Menu id="layout" :tabs="tabs" class="webmode">
+                <template #header>
+                    <div class="heading">
+                        <Icon class="icon"/>
+                        <h1 class="hostname">{{data.device.hostname}}</h1>
+                        <h2 class="desc">{{data.device.desc}}</h2>
                         <div class="clearfix"></div>
-                    </template>
-                    <Icon class="icon"/>
-                    <h1 class="hostname">{{data.device.hostname}}</h1>
-                    <h2 class="desc">{{data.device.desc}}</h2>
-                    <div class="clearfix"></div>
-                </div>
-            </template>
+                    </div>
+                </template>
 
-            <template #footer>
-                <div class="main-buttons">
-                    <Btn name="update" @click="save">Save</Btn>
-                    <Btn name="reconnect" color="primary" @click="reconnect">Reconnect</Btn>
-                    <Btn name="reboot" color="danger" @click="reboot">Reboot</Btn>
-                </div>
+                <template #footer>
+                    <div class="main-buttons">
+                        <Btn name="update" @click="save">Save</Btn>
+                        <Btn name="reconnect" color="primary" @click="reconnect">Reconnect</Btn>
+                        <Btn name="reboot" color="danger" @click="reboot">Reboot</Btn>
+                    </div>
 
-                <div class="footer">
-                    &copy; 2016-2019<br> Xose Pérez<br> <A href="https://twitter.com/xoseperez">@xoseperez</A><br> <A
-                        href="http://tinkerman.cat">http://tinkerman.cat</A><br>
-                    <A href="https://github.com/xoseperez/espurna">ESPurna @ GitHub</A><br> UI by
-                    <A href="https://github.com/tofandel">Tofandel</A><br> GPLv3 license<br><br> Version:
-                    {{data.version.app_version}}
-                </div>
-            </template>
+                    <div class="footer">
+                        &copy; 2016-2019<br> Xose Pérez<br> <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
+                        <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
+                        <A href="https://github.com/xoseperez/espurna">ESPurna @ GitHub</A> <br>UI by
+                        <A href="https://github.com/tofandel">Tofandel</A> <br>GPLv3 license<br><br> Version:
+                        {{data.version.app_version}}
+                    </div>
+                </template>
 
-            <template #status>
-                <Status v-bind="data"/>
-            </template>
+                <template #status>
+                    <Status v-bind="data"/>
+                </template>
 
-            <template #general>
-                <General v-bind="data"/>
-            </template>
+                <template #general>
+                    <General v-bind="data"/>
+                </template>
 
-            <template #admin>
-                <Admin v-bind="data"/>
-            </template>
+                <template #admin>
+                    <Admin v-bind="data" :get-settings="() => flatten(data, received)"/>
+                </template>
 
-            <template v-if="data.modules.mqtt" #mqtt>
-                <Mqtt v-bind="data"/>
-            </template>
+                <template v-if="data.modules.mqtt" #mqtt>
+                    <Mqtt v-bind="data"/>
+                </template>
 
-            <!-- #!if THERMOSTAT === true -->
-            <template v-if="data.modules.thermostat" #thermostat>
-                <Tstat v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if THERMOSTAT === true -->
+                <template v-if="data.modules.thermostat" #thermostat>
+                    <Tstat v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if LED === true -->
-            <template v-if="data.modules.led" #led>
-                <Led v-bind="data" :relay-options="relayOptions"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if LED === true -->
+                <template v-if="data.modules.led" #led>
+                    <Led v-bind="data" :relay-options="relayOptions"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if LIGHT === true -->
-            <template v-if="data.modules.color" #color>
-                <Color v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if LIGHT === true -->
+                <template v-if="data.modules.color" #color>
+                    <Color v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if RFM69 === true -->
-            <template v-if="data.modules.rfm69" #rfm69>
-                <Rfm69 v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if RFM69 === true -->
+                <template v-if="data.modules.rfm69" #rfm69>
+                    <Rfm69 v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if RFBRIDGE === true -->
-            <template v-if="data.modules.rfb" #rfb>
-                <Rfb v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if RFBRIDGE === true -->
+                <template v-if="data.modules.rfb" #rfb>
+                    <Rfb v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if SENSOR === true -->
-            <template v-if="data.modules.sns" #sns>
-                <Sns v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if SENSOR === true -->
+                <template v-if="data.modules.sns" #sns>
+                    <Sns v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if RELAYS === true -->
-            <template v-if="data.modules.relay" #relays>
-                <Relays v-bind="data" :relay-options="relayOptions"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if RELAYS === true -->
+                <template v-if="data.modules.relay" #relays>
+                    <Relays v-bind="data" :relay-options="relayOptions"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if LIGHTFOX === true -->
-            <template v-if="data.modules.lightfox" #lightfox>
-                <Lfox v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if LIGHTFOX === true -->
+                <template v-if="data.modules.lightfox" #lightfox>
+                    <Lfox v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if DCZ === true -->
-            <template v-if="data.modules.dcz" #dcz>
-                <Dcz v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if DCZ === true -->
+                <template v-if="data.modules.dcz" #dcz>
+                    <Dcz v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if HA === true -->
-            <template v-if="data.modules.ha" #ha>
-                <Ha v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if HA === true -->
+                <template v-if="data.modules.ha" #ha>
+                    <Ha v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if ALEXA === true -->
-            <template v-if="data.modules.alexa" #alexa>
-                <Alexa v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if ALEXA === true -->
+                <template v-if="data.modules.alexa" #alexa>
+                    <Alexa v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if THINGSPEAK === true -->
-            <template v-if="data.modules.tspk" #thingspeak>
-                <Tspk v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if THINGSPEAK === true -->
+                <template v-if="data.modules.tspk" #thingspeak>
+                    <Tspk v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if IDB === true -->
-            <template v-if="data.modules.idb" #idb>
-                <Idb v-bind="data"/>
-            </template>
-            <!-- #!endif -->
+                <!-- #!if IDB === true -->
+                <template v-if="data.modules.idb" #idb>
+                    <Idb v-bind="data"/>
+                </template>
+                <!-- #!endif -->
 
-            <!-- #!if NOFUSS === true -->
-            <template v-if="data.modules.nofuss" #nofuss>
-                <Nfss v-bind="data"/>
-            </template>
-            <!-- #!endif -->
-        </Menu>
-        <iframe id="downloader"></iframe>
-    </Form>
+                <!-- #!if NOFUSS === true -->
+                <template v-if="data.modules.nofuss" #nofuss>
+                    <Nfss v-bind="data"/>
+                </template>
+                <!-- #!endif -->
+            </Menu>
+        </Form>
+    </div>
 </template>
 
 <script>
@@ -304,6 +302,7 @@
                 ws: new Socket,
                 data: {},
                 received: {
+                    _loaded: false,
                     _modules: {},
                     _version: {
                         app_version: process.env.VUE_APP_VERSION
@@ -316,15 +315,25 @@
                         _uptime: 0,
                         _lastUpdate: 0
                     },
-                    relays: {}
+                    relay: {
+                        config: {
+                            _path: "",
+                        },
+                    },
                 },
-                settings: {},
-                tabs: tabs
+                tabs: tabs,
+                interval: null
             }
         },
         computed: {
+            isLoaded() {
+                return this.original.loaded;
+            },
             modified() {
-                return this.flatten(diff(this.original, this.data), this.received);
+                return diff(this.original, this.data);
+            },
+            modifiedSettings() {
+                return this.flatten(this.modified, this.received);
             },
             original() {
                 return JSON.parse(JSON.stringify(this.received).replace(/"_/g, '"'))
@@ -340,8 +349,8 @@
             },
             relayOptions() {
                 let options = [];
-                if (this.data.relays.config) {
-                    for (let i = 0; i < this.data.relays.config.list.length; ++i) {
+                if (this.data.relay.config) {
+                    for (let i = 0; i < this.data.relay.config.list.length; ++i) {
                         options.push({k: i, l: "Switch #" + i});
                     }
                 }
@@ -350,17 +359,22 @@
         },
         watch: {
             original: {
-                handler() {
-                    if (!this.modified) { //TODO if the change is not in the modified it should be allowed else ask user
+                handler(rec, old) {
+                    if (old === undefined || old.loaded !== true || Object.keys(this.modifiedSettings).length === 0) {
                         this.data = JSON.parse(JSON.stringify(this.original)); //Cheap deep clone
                     }
+                    /*else {
+                    // This is not yet needed but might be used to have synchronized changes between two instances or more of the interface
+                        const dif = diff(this.modified, diff(old, rec));
+                        console.log(dif, this.modified, diff(old, rec));
+                    }*/
                 },
                 immediate: true,
                 deep: true
             }
         },
         mounted() {
-            setInterval(() => {
+            this.interval = setInterval(() => {
                 this.data.device.now++;
                 this.data.device.lastUpdate++;
                 this.data.device.uptime++
@@ -375,10 +389,15 @@
                 this.ws.connect(this.address, this.receiveMessage);
             }
         },
+        beforeDestroy() {
+            clearInterval(this.interval);
+        },
         methods: {
             save() {
-                if (this.$refs.formSettings.reportValidity() && this.modified) {
-                    this.ws.sendConfig(this.modified);
+                if (this.$refs.formSettings.reportValidity() && Object.keys(this.modifiedSettings).length) {
+                    this.ws.send({config: this.modifiedSettings}, () => {
+                        this.prepareData(this.received, this.modified);
+                    }, true);
                 }
             },
             flatten(obj, mask, prefix, suffix, flat) {
@@ -390,12 +409,12 @@
 
                 Object.keys(obj).forEach((key) => {
                     if (!("_" + key in mask)) {
+                        let Key = prefix !== "" ? capitalize(key) : key;
                         if ("_path" in mask) {
-                            prefix = mask._path;
+                            Key = mask._path;
                         }
 
                         const v = obj[key];
-                        let Key = prefix !== "" ? capitalize(key) : key;
                         if (typeof v === 'object') {
                             this.flatten(v, mask[key], Array.isArray(mask[key]) || Array.isArray(mask) ? prefix : (prefix + Key),
                                 Array.isArray(mask) ? suffix + key : suffix,
@@ -419,7 +438,7 @@
                     "Are you sure you want to reboot the device?";
                 this.doAction(question, "reboot");
             },
-            doAction(question, action) {
+            doAction(question, action, data) {
                 if (this.modified) {
                     if (window.confirm("Some changes have not been saved yet, do you want to save them first?")) {
                         this.ws.sendConfig(this.modified)
@@ -433,22 +452,12 @@
                     }
                 }
 
-                this.ws.sendAction(action, {});
+                this.ws.send({action, data});
                 this.doReload(5000);
             },
-            receiveMessage(evt) {
-                let data = evt.data;
-                if (typeof data === 'string') {
-                    try {
-                        data = JSON.parse(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-                    } catch (e) {
-                        console.log('Invalid data received', evt.data);
-                    }
-                }
-                if (data && typeof data === 'object') {
-                    this.prepareData(this.received, data);
-                    this.received.device.lastUpdate = 0;
-                }
+            receiveMessage(data) {
+                this.prepareData(this.received, data);
+                this.received.device.lastUpdate = 0;
             },
             prepareData(target, source) {
                 Object.keys(source).forEach((k) => {
@@ -771,6 +780,12 @@
         border-width: 0 0 3px 0;
         border-radius: 0 0 0 5px;
         background: @primary;
+        z-index: 100;
+    }
+
+    .wrapper {
+        max-width: 100vw;
+        overflow-x: hidden;
     }
 
     @media screen and (max-width: 48em) {

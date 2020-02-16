@@ -1,0 +1,1814 @@
+[
+  {
+    "k": "<+14>-14",
+    "l": "Etc/GMT-14"
+  },
+  {
+    "k": "<+13>-13",
+    "l": "Etc/GMT-13"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Etc/GMT-12"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Etc/GMT-11"
+  },
+  {
+    "k": "<+10>-10",
+    "l": "Etc/GMT-10"
+  },
+  {
+    "k": "<+09>-9",
+    "l": "Etc/GMT-9"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Etc/GMT-8"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Etc/GMT-7"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Etc/GMT-6"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Etc/GMT-5"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Etc/GMT-4"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Etc/GMT-3"
+  },
+  {
+    "k": "<+02>-2",
+    "l": "Etc/GMT-2"
+  },
+  {
+    "k": "<+01>-1",
+    "l": "Etc/GMT-1"
+  },
+  {
+    "k": "GMT0",
+    "l": "Etc/GMT+0"
+  },
+  {
+    "k": "<-01>1",
+    "l": "Etc/GMT+1"
+  },
+  {
+    "k": "<-02>2",
+    "l": "Etc/GMT+2"
+  },
+  {
+    "k": "<-03>3",
+    "l": "Etc/GMT+3"
+  },
+  {
+    "k": "<-04>4",
+    "l": "Etc/GMT+4"
+  },
+  {
+    "k": "<-05>5",
+    "l": "Etc/GMT+5"
+  },
+  {
+    "k": "<-06>6",
+    "l": "Etc/GMT+6"
+  },
+  {
+    "k": "<-07>7",
+    "l": "Etc/GMT+7"
+  },
+  {
+    "k": "<-08>8",
+    "l": "Etc/GMT+8"
+  },
+  {
+    "k": "<-09>9",
+    "l": "Etc/GMT+9"
+  },
+  {
+    "k": "<-10>10",
+    "l": "Etc/GMT+10"
+  },
+  {
+    "k": "<-11>11",
+    "l": "Etc/GMT+11"
+  },
+  {
+    "k": "<-12>12",
+    "l": "Etc/GMT+12"
+  },
+  {
+    "k": "UTC0",
+    "l": "Etc/UTC"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Abidjan"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Accra"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Addis Ababa"
+  },
+  {
+    "k": "CET-1",
+    "l": "Africa/Algiers"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Asmara"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Bamako"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Bangui"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Banjul"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Bissau"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Blantyre"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Brazzaville"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Bujumbura"
+  },
+  {
+    "k": "EET-2",
+    "l": "Africa/Cairo"
+  },
+  {
+    "k": "<+01>-1",
+    "l": "Africa/Casablanca"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Africa/Ceuta"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Conakry"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Dakar"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Dar es Salaam"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Djibouti"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Douala"
+  },
+  {
+    "k": "<+01>-1",
+    "l": "Africa/El Aaiun"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Freetown"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Gaborone"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Harare"
+  },
+  {
+    "k": "SAST-2",
+    "l": "Africa/Johannesburg"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Juba"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Kampala"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Khartoum"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Kigali"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Kinshasa"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Lagos"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Libreville"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Lome"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Luanda"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Lubumbashi"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Lusaka"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Malabo"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Maputo"
+  },
+  {
+    "k": "SAST-2",
+    "l": "Africa/Maseru"
+  },
+  {
+    "k": "SAST-2",
+    "l": "Africa/Mbabane"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Mogadishu"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Monrovia"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Africa/Nairobi"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Ndjamena"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/Niamey"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Nouakchott"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Ouagadougou"
+  },
+  {
+    "k": "WAT-1",
+    "l": "Africa/PortomNovo"
+  },
+  {
+    "k": "GMT0",
+    "l": "Africa/Sao Tome"
+  },
+  {
+    "k": "EET-2",
+    "l": "Africa/Tripoli"
+  },
+  {
+    "k": "CET-1",
+    "l": "Africa/Tunis"
+  },
+  {
+    "k": "CAT-2",
+    "l": "Africa/Windhoek"
+  },
+  {
+    "k": "HST10HDT,M3.2.0,M11.1.0",
+    "l": "America/Adak"
+  },
+  {
+    "k": "AKST9AKDT,M3.2.0,M11.1.0",
+    "l": "America/Anchorage"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Anguilla"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Antigua"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Araguaina"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Buenos Aires"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Catamarca"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Cordoba"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Jujuy"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina La Rioja"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Mendoza"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Rio Gallegos"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Salta"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina San Juan"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina San Luis"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Tucuman"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Argentina Ushuaia"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Aruba"
+  },
+  {
+    "k": "<-04>4<-03>,M10.1.0/0,M3.4.0/0",
+    "l": "America/Asuncion"
+  },
+  {
+    "k": "EST5",
+    "l": "America/Atikokan"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Bahia"
+  },
+  {
+    "k": "CST6CDT,M4.1.0,M10.5.0",
+    "l": "America/Bahia Banderas"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Barbados"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Belem"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Belize"
+  },
+  {
+    "k": "AST4",
+    "l": "America/BlancmSablon"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Boa Vista"
+  },
+  {
+    "k": "<-05>5",
+    "l": "America/Bogota"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Boise"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Cambridge Bay"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Campo Grande"
+  },
+  {
+    "k": "EST5",
+    "l": "America/Cancun"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Caracas"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Cayenne"
+  },
+  {
+    "k": "EST5",
+    "l": "America/Cayman"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Chicago"
+  },
+  {
+    "k": "MST7MDT,M4.1.0,M10.5.0",
+    "l": "America/Chihuahua"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Costa Rica"
+  },
+  {
+    "k": "MST7",
+    "l": "America/Creston"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Cuiaba"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Curacao"
+  },
+  {
+    "k": "GMT0",
+    "l": "America/Danmarkshavn"
+  },
+  {
+    "k": "PST8PDT,M3.2.0,M11.1.0",
+    "l": "America/Dawson"
+  },
+  {
+    "k": "MST7",
+    "l": "America/Dawson Creek"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Denver"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Detroit"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Dominica"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Edmonton"
+  },
+  {
+    "k": "<-05>5",
+    "l": "America/Eirunepe"
+  },
+  {
+    "k": "CST6",
+    "l": "America/El Salvador"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Fortaleza"
+  },
+  {
+    "k": "MST7",
+    "l": "America/Fort Nelson"
+  },
+  {
+    "k": "AST4ADT,M3.2.0,M11.1.0",
+    "l": "America/Glace Bay"
+  },
+  {
+    "k": "<-03>3<-02>,M3.5.0/-2,M10.5.0/-1",
+    "l": "America/Godthab"
+  },
+  {
+    "k": "AST4ADT,M3.2.0,M11.1.0",
+    "l": "America/Goose Bay"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Grand Turk"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Grenada"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Guadeloupe"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Guatemala"
+  },
+  {
+    "k": "<-05>5",
+    "l": "America/Guayaquil"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Guyana"
+  },
+  {
+    "k": "AST4ADT,M3.2.0,M11.1.0",
+    "l": "America/Halifax"
+  },
+  {
+    "k": "CST5CDT,M3.2.0/0,M11.1.0/1",
+    "l": "America/Havana"
+  },
+  {
+    "k": "MST7",
+    "l": "America/Hermosillo"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Indianapolis"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Knox"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Marengo"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Petersburg"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Tell City"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Vevay"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Vincennes"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Indiana Winamac"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Inuvik"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Iqaluit"
+  },
+  {
+    "k": "EST5",
+    "l": "America/Jamaica"
+  },
+  {
+    "k": "AKST9AKDT,M3.2.0,M11.1.0",
+    "l": "America/Juneau"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Kentucky Louisville"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Kentucky Monticello"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Kralendijk"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/La Paz"
+  },
+  {
+    "k": "<-05>5",
+    "l": "America/Lima"
+  },
+  {
+    "k": "PST8PDT,M3.2.0,M11.1.0",
+    "l": "America/Los Angeles"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Lower Princes"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Maceio"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Managua"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Manaus"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Marigot"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Martinique"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Matamoros"
+  },
+  {
+    "k": "MST7MDT,M4.1.0,M10.5.0",
+    "l": "America/Mazatlan"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Menominee"
+  },
+  {
+    "k": "CST6CDT,M4.1.0,M10.5.0",
+    "l": "America/Merida"
+  },
+  {
+    "k": "AKST9AKDT,M3.2.0,M11.1.0",
+    "l": "America/Metlakatla"
+  },
+  {
+    "k": "CST6CDT,M4.1.0,M10.5.0",
+    "l": "America/Mexico City"
+  },
+  {
+    "k": "<-03>3<-02>,M3.2.0,M11.1.0",
+    "l": "America/Miquelon"
+  },
+  {
+    "k": "AST4ADT,M3.2.0,M11.1.0",
+    "l": "America/Moncton"
+  },
+  {
+    "k": "CST6CDT,M4.1.0,M10.5.0",
+    "l": "America/Monterrey"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Montevideo"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Montreal"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Montserrat"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Nassau"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/New York"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Nipigon"
+  },
+  {
+    "k": "AKST9AKDT,M3.2.0,M11.1.0",
+    "l": "America/Nome"
+  },
+  {
+    "k": "<-02>2",
+    "l": "America/Noronha"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/North Dakota Beulah"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/North Dakota Center"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/North Dakota New Salem"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Ojinaga"
+  },
+  {
+    "k": "EST5",
+    "l": "America/Panama"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Pangnirtung"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Paramaribo"
+  },
+  {
+    "k": "MST7",
+    "l": "America/Phoenix"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/PortmaumPrince"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Port of Spain"
+  },
+  {
+    "k": "<-04>4",
+    "l": "America/Porto Velho"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Puerto Rico"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Punta Arenas"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Rainy River"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Rankin Inlet"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Recife"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Regina"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Resolute"
+  },
+  {
+    "k": "<-05>5",
+    "l": "America/Rio Branco"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Santarem"
+  },
+  {
+    "k": "<-04>4<-03>,M9.1.6/24,M4.1.6/24",
+    "l": "America/Santiago"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Santo Domingo"
+  },
+  {
+    "k": "<-03>3",
+    "l": "America/Sao Paulo"
+  },
+  {
+    "k": "<-01>1<+00>,M3.5.0/0,M10.5.0/1",
+    "l": "America/Scoresbysund"
+  },
+  {
+    "k": "AKST9AKDT,M3.2.0,M11.1.0",
+    "l": "America/Sitka"
+  },
+  {
+    "k": "AST4",
+    "l": "America/St Barthelemy"
+  },
+  {
+    "k": "NST3:30NDT,M3.2.0,M11.1.0",
+    "l": "America/St Johns"
+  },
+  {
+    "k": "AST4",
+    "l": "America/St Kitts"
+  },
+  {
+    "k": "AST4",
+    "l": "America/St Lucia"
+  },
+  {
+    "k": "AST4",
+    "l": "America/St Thomas"
+  },
+  {
+    "k": "AST4",
+    "l": "America/St Vincent"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Swift Current"
+  },
+  {
+    "k": "CST6",
+    "l": "America/Tegucigalpa"
+  },
+  {
+    "k": "AST4ADT,M3.2.0,M11.1.0",
+    "l": "America/Thule"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Thunder Bay"
+  },
+  {
+    "k": "PST8PDT,M3.2.0,M11.1.0",
+    "l": "America/Tijuana"
+  },
+  {
+    "k": "EST5EDT,M3.2.0,M11.1.0",
+    "l": "America/Toronto"
+  },
+  {
+    "k": "AST4",
+    "l": "America/Tortola"
+  },
+  {
+    "k": "PST8PDT,M3.2.0,M11.1.0",
+    "l": "America/Vancouver"
+  },
+  {
+    "k": "PST8PDT,M3.2.0,M11.1.0",
+    "l": "America/Whitehorse"
+  },
+  {
+    "k": "CST6CDT,M3.2.0,M11.1.0",
+    "l": "America/Winnipeg"
+  },
+  {
+    "k": "AKST9AKDT,M3.2.0,M11.1.0",
+    "l": "America/Yakutat"
+  },
+  {
+    "k": "MST7MDT,M3.2.0,M11.1.0",
+    "l": "America/Yellowknife"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Antarctica/Casey"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Antarctica/Davis"
+  },
+  {
+    "k": "<+10>-10",
+    "l": "Antarctica/DumontDUrville"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Antarctica/Macquarie"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Antarctica/Mawson"
+  },
+  {
+    "k": "NZST-12NZDT,M9.5.0,M4.1.0/3",
+    "l": "Antarctica/McMurdo"
+  },
+  {
+    "k": "<-03>3",
+    "l": "Antarctica/Palmer"
+  },
+  {
+    "k": "<-03>3",
+    "l": "Antarctica/Rothera"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Antarctica/Syowa"
+  },
+  {
+    "k": "<+00>0<+02>-2,M3.5.0/1,M10.5.0/3",
+    "l": "Antarctica/Troll"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Antarctica/Vostok"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Arctic/Longyearbyen"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Asia/Aden"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Asia/Almaty"
+  },
+  {
+    "k": "EET-2EEST,M3.5.4/24,M10.5.5/1",
+    "l": "Asia/Amman"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Asia/Anadyr"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Aqtau"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Aqtobe"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Ashgabat"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Atyrau"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Asia/Baghdad"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Asia/Bahrain"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Asia/Baku"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Bangkok"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Barnaul"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/0,M10.5.0/0",
+    "l": "Asia/Beirut"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Asia/Bishkek"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Brunei"
+  },
+  {
+    "k": "<+09>-9",
+    "l": "Asia/Chita"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Choibalsan"
+  },
+  {
+    "k": "<+0530>-5:30",
+    "l": "Asia/Colombo"
+  },
+  {
+    "k": "EET-2EEST,M3.5.5/0,M10.5.5/0",
+    "l": "Asia/Damascus"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Asia/Dhaka"
+  },
+  {
+    "k": "<+09>-9",
+    "l": "Asia/Dili"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Asia/Dubai"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Dushanbe"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Asia/Famagusta"
+  },
+  {
+    "k": "EET-2EEST,M3.5.5/0,M10.5.6/1",
+    "l": "Asia/Gaza"
+  },
+  {
+    "k": "EET-2EEST,M3.5.5/0,M10.5.6/1",
+    "l": "Asia/Hebron"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Ho Chi Minh"
+  },
+  {
+    "k": "HKT-8",
+    "l": "Asia/Hong Kong"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Hovd"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Irkutsk"
+  },
+  {
+    "k": "WIB-7",
+    "l": "Asia/Jakarta"
+  },
+  {
+    "k": "WIT-9",
+    "l": "Asia/Jayapura"
+  },
+  {
+    "k": "IST-2IDT,M3.4.4/26,M10.5.0",
+    "l": "Asia/Jerusalem"
+  },
+  {
+    "k": "<+0430>-4:30",
+    "l": "Asia/Kabul"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Asia/Kamchatka"
+  },
+  {
+    "k": "PKT-5",
+    "l": "Asia/Karachi"
+  },
+  {
+    "k": "<+0545>-5:45",
+    "l": "Asia/Kathmandu"
+  },
+  {
+    "k": "<+09>-9",
+    "l": "Asia/Khandyga"
+  },
+  {
+    "k": "IST-5:30",
+    "l": "Asia/Kolkata"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Krasnoyarsk"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Kuala Lumpur"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Kuching"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Asia/Kuwait"
+  },
+  {
+    "k": "CST-8",
+    "l": "Asia/Macau"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Asia/Magadan"
+  },
+  {
+    "k": "WITA-8",
+    "l": "Asia/Makassar"
+  },
+  {
+    "k": "PST-8",
+    "l": "Asia/Manila"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Asia/Muscat"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Asia/Nicosia"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Novokuznetsk"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Novosibirsk"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Asia/Omsk"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Oral"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Phnom Penh"
+  },
+  {
+    "k": "WIB-7",
+    "l": "Asia/Pontianak"
+  },
+  {
+    "k": "KST-9",
+    "l": "Asia/Pyongyang"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Asia/Qatar"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Qyzylorda"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Asia/Riyadh"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Asia/Sakhalin"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Samarkand"
+  },
+  {
+    "k": "KST-9",
+    "l": "Asia/Seoul"
+  },
+  {
+    "k": "CST-8",
+    "l": "Asia/Shanghai"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Singapore"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Asia/Srednekolymsk"
+  },
+  {
+    "k": "CST-8",
+    "l": "Asia/Taipei"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Tashkent"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Asia/Tbilisi"
+  },
+  {
+    "k": "<+0330>-3:30<+0430>,J79/24,J263/24",
+    "l": "Asia/Tehran"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Asia/Thimphu"
+  },
+  {
+    "k": "JST-9",
+    "l": "Asia/Tokyo"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Tomsk"
+  },
+  {
+    "k": "<+08>-8",
+    "l": "Asia/Ulaanbaatar"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Asia/Urumqi"
+  },
+  {
+    "k": "<+10>-10",
+    "l": "Asia/UstmNera"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Asia/Vientiane"
+  },
+  {
+    "k": "<+10>-10",
+    "l": "Asia/Vladivostok"
+  },
+  {
+    "k": "<+09>-9",
+    "l": "Asia/Yakutsk"
+  },
+  {
+    "k": "<+0630>-6:30",
+    "l": "Asia/Yangon"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Asia/Yekaterinburg"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Asia/Yerevan"
+  },
+  {
+    "k": "<-01>1<+00>,M3.5.0/0,M10.5.0/1",
+    "l": "Atlantic/Azores"
+  },
+  {
+    "k": "AST4ADT,M3.2.0,M11.1.0",
+    "l": "Atlantic/Bermuda"
+  },
+  {
+    "k": "WET0WEST,M3.5.0/1,M10.5.0",
+    "l": "Atlantic/Canary"
+  },
+  {
+    "k": "<-01>1",
+    "l": "Atlantic/Cape Verde"
+  },
+  {
+    "k": "WET0WEST,M3.5.0/1,M10.5.0",
+    "l": "Atlantic/Faroe"
+  },
+  {
+    "k": "WET0WEST,M3.5.0/1,M10.5.0",
+    "l": "Atlantic/Madeira"
+  },
+  {
+    "k": "GMT0",
+    "l": "Atlantic/Reykjavik"
+  },
+  {
+    "k": "<-02>2",
+    "l": "Atlantic/South Georgia"
+  },
+  {
+    "k": "<-03>3",
+    "l": "Atlantic/Stanley"
+  },
+  {
+    "k": "GMT0",
+    "l": "Atlantic/St Helena"
+  },
+  {
+    "k": "ACST-9:30ACDT,M10.1.0,M4.1.0/3",
+    "l": "Australia/Adelaide"
+  },
+  {
+    "k": "AEST-10",
+    "l": "Australia/Brisbane"
+  },
+  {
+    "k": "ACST-9:30ACDT,M10.1.0,M4.1.0/3",
+    "l": "Australia/Broken Hill"
+  },
+  {
+    "k": "AEST-10AEDT,M10.1.0,M4.1.0/3",
+    "l": "Australia/Currie"
+  },
+  {
+    "k": "ACST-9:30",
+    "l": "Australia/Darwin"
+  },
+  {
+    "k": "<+0845>-8:45",
+    "l": "Australia/Eucla"
+  },
+  {
+    "k": "AEST-10AEDT,M10.1.0,M4.1.0/3",
+    "l": "Australia/Hobart"
+  },
+  {
+    "k": "AEST-10",
+    "l": "Australia/Lindeman"
+  },
+  {
+    "k": "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0",
+    "l": "Australia/Lord Howe"
+  },
+  {
+    "k": "AEST-10AEDT,M10.1.0,M4.1.0/3",
+    "l": "Australia/Melbourne"
+  },
+  {
+    "k": "AWST-8",
+    "l": "Australia/Perth"
+  },
+  {
+    "k": "AEST-10AEDT,M10.1.0,M4.1.0/3",
+    "l": "Australia/Sydney"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Amsterdam"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Andorra"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Europe/Astrakhan"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Athens"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Belgrade"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Berlin"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Bratislava"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Brussels"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Bucharest"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Budapest"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Busingen"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Chisinau"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Copenhagen"
+  },
+  {
+    "k": "IST-1GMT0,M10.5.0,M3.5.0/1",
+    "l": "Europe/Dublin"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Gibraltar"
+  },
+  {
+    "k": "GMT0BST,M3.5.0/1,M10.5.0",
+    "l": "Europe/Guernsey"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Helsinki"
+  },
+  {
+    "k": "GMT0BST,M3.5.0/1,M10.5.0",
+    "l": "Europe/Isle of Man"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Europe/Istanbul"
+  },
+  {
+    "k": "GMT0BST,M3.5.0/1,M10.5.0",
+    "l": "Europe/Jersey"
+  },
+  {
+    "k": "EET-2",
+    "l": "Europe/Kaliningrad"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Kiev"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Europe/Kirov"
+  },
+  {
+    "k": "WET0WEST,M3.5.0/1,M10.5.0",
+    "l": "Europe/Lisbon"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Ljubljana"
+  },
+  {
+    "k": "GMT0BST,M3.5.0/1,M10.5.0",
+    "l": "Europe/London"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Luxembourg"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Madrid"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Malta"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Mariehamn"
+  },
+  {
+    "k": "<+03>-3",
+    "l": "Europe/Minsk"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Monaco"
+  },
+  {
+    "k": "MSK-3",
+    "l": "Europe/Moscow"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Oslo"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Paris"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Podgorica"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Prague"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Riga"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Rome"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Europe/Samara"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/San Marino"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Sarajevo"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Europe/Saratov"
+  },
+  {
+    "k": "MSK-3",
+    "l": "Europe/Simferopol"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Skopje"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Sofia"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Stockholm"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Tallinn"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Tirane"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Europe/Ulyanovsk"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Uzhgorod"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Vaduz"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Vatican"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Vienna"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Vilnius"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Europe/Volgograd"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Warsaw"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Zagreb"
+  },
+  {
+    "k": "EET-2EEST,M3.5.0/3,M10.5.0/4",
+    "l": "Europe/Zaporozhye"
+  },
+  {
+    "k": "CET-1CEST,M3.5.0,M10.5.0/3",
+    "l": "Europe/Zurich"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Indian/Antananarivo"
+  },
+  {
+    "k": "<+06>-6",
+    "l": "Indian/Chagos"
+  },
+  {
+    "k": "<+07>-7",
+    "l": "Indian/Christmas"
+  },
+  {
+    "k": "<+0630>-6:30",
+    "l": "Indian/Cocos"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Indian/Comoro"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Indian/Kerguelen"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Indian/Mahe"
+  },
+  {
+    "k": "<+05>-5",
+    "l": "Indian/Maldives"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Indian/Mauritius"
+  },
+  {
+    "k": "EAT-3",
+    "l": "Indian/Mayotte"
+  },
+  {
+    "k": "<+04>-4",
+    "l": "Indian/Reunion"
+  },
+  {
+    "k": "<+13>-13<+14>,M9.5.0/3,M4.1.0/4",
+    "l": "Pacific/Apia"
+  },
+  {
+    "k": "NZST-12NZDT,M9.5.0,M4.1.0/3",
+    "l": "Pacific/Auckland"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Pacific/Bougainville"
+  },
+  {
+    "k": "<+1245>-12:45<+1345>,M9.5.0/2:45,M4.1.0/3:45",
+    "l": "Pacific/Chatham"
+  },
+  {
+    "k": "<+10>-10",
+    "l": "Pacific/Chuuk"
+  },
+  {
+    "k": "<-06>6<-05>,M9.1.6/22,M4.1.6/22",
+    "l": "Pacific/Easter"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Pacific/Efate"
+  },
+  {
+    "k": "<+13>-13",
+    "l": "Pacific/Enderbury"
+  },
+  {
+    "k": "<+13>-13",
+    "l": "Pacific/Fakaofo"
+  },
+  {
+    "k": "<+12>-12<+13>,M11.2.0,M1.2.3/99",
+    "l": "Pacific/Fiji"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Funafuti"
+  },
+  {
+    "k": "<-06>6",
+    "l": "Pacific/Galapagos"
+  },
+  {
+    "k": "<-09>9",
+    "l": "Pacific/Gambier"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Pacific/Guadalcanal"
+  },
+  {
+    "k": "ChST-10",
+    "l": "Pacific/Guam"
+  },
+  {
+    "k": "HST10",
+    "l": "Pacific/Honolulu"
+  },
+  {
+    "k": "<+14>-14",
+    "l": "Pacific/Kiritimati"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Pacific/Kosrae"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Kwajalein"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Majuro"
+  },
+  {
+    "k": "<-0930>9:30",
+    "l": "Pacific/Marquesas"
+  },
+  {
+    "k": "SST11",
+    "l": "Pacific/Midway"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Nauru"
+  },
+  {
+    "k": "<-11>11",
+    "l": "Pacific/Niue"
+  },
+  {
+    "k": "<+11>-11<+12>,M10.1.0,M4.1.0/3",
+    "l": "Pacific/Norfolk"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Pacific/Noumea"
+  },
+  {
+    "k": "SST11",
+    "l": "Pacific/Pago Pago"
+  },
+  {
+    "k": "<+09>-9",
+    "l": "Pacific/Palau"
+  },
+  {
+    "k": "<-08>8",
+    "l": "Pacific/Pitcairn"
+  },
+  {
+    "k": "<+11>-11",
+    "l": "Pacific/Pohnpei"
+  },
+  {
+    "k": "<+10>-10",
+    "l": "Pacific/Port Moresby"
+  },
+  {
+    "k": "<-10>10",
+    "l": "Pacific/Rarotonga"
+  },
+  {
+    "k": "ChST-10",
+    "l": "Pacific/Saipan"
+  },
+  {
+    "k": "<-10>10",
+    "l": "Pacific/Tahiti"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Tarawa"
+  },
+  {
+    "k": "<+13>-13",
+    "l": "Pacific/Tongatapu"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Wake"
+  },
+  {
+    "k": "<+12>-12",
+    "l": "Pacific/Wallis"
+  }
+]

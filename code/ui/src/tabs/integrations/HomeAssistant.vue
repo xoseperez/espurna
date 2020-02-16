@@ -70,15 +70,12 @@
         },
         inheritAttrs: false,
         props: {
-            modules: {
-                type: Object,
-                default: () => ({})
-            },
+            modules: Object,
             ha: {
                 type: Object,
                 default: () => ({})
             },
-            relays: {
+            relay: {
                 type: Object,
                 default: () => ({list: []})
             },
@@ -91,10 +88,10 @@
             config() {
                 let s = '';
 
-                if (this.relays.config && this.relays.config.list.length) {
+                if (this.relay.config && this.relay.config.list.length) {
                     s += 'switch:\n';
 
-                    this.relays.config.list.forEach((v, i) => {
+                    this.relay.config.list.forEach((v, i) => {
                         s += '  - name: ' + v.name + '\n' +
                             '    platform: mqtt\n' +
                             '    state_topic: ' + this.topic + '/relay/' + i + '\n' +

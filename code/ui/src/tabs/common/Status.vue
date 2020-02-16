@@ -7,7 +7,7 @@
 
         <div class="page">
             <fieldset>
-                <Repeater v-if="relays.state" v-model="relays.state.list" class="relays" locked>
+                <Repeater v-if="relay.state" v-model="relay.state.list" class="relays" locked>
                     <template #default="tpl">
                         <Row>
                             <C :size="2"><label>Switch #{{tpl.k}}</label></C>
@@ -211,7 +211,7 @@
                     </textarea>
                 </Row>
                 <Row>
-                    <Btn name="dbg-clear" color="danger">
+                    <Btn name="dbg-clear" color="danger" @click="logs = []">
                         Clear
                     </Btn>
                 </Row>
@@ -239,23 +239,13 @@
         },
         inheritAttrs: false,
         props: {
-            version: {
-                type: Object,
-            },
-            relays: {
-                type: Object,
-                default: () => ({})
-            },
-            modules: {
-                type: Object,
-                default: () => ({})
-            },
+            modules: Object,
+            version: Object,
+            device: Object,
+            relay: Object,
             magnitudes: {
                 type: Object,
                 default: () => ({})
-            },
-            device: {
-                type: Object,
             },
             wifi: {
                 type: Object,
@@ -288,11 +278,13 @@
             }
         },
         watch: {
-            weblog() {
-                const date = '['+new Date().toLocaleString(navigator.languages)+'] ';
-                this.weblog.forEach((v) => {
-                   this.logs.push(date + v);
-                });
+            weblog(rec, old) {
+                if (JSON.stringify(old) !== JSON.stringify(rec)) {
+                    const date = '[' + new Date().toLocaleString(navigator.languages) + '] ';
+                    this.weblog.forEach((v) => {
+                        this.logs.push(date + v);
+                    });
+                }
             }
         },
         methods: {
@@ -307,8 +299,8 @@
                 }
             },
             toggleRelay(id, val) {
-                sendAction("relay", {id: id, status: val ? 1 : 0});
-                this.$set(relays, id, !val)
+                //sendAction("relay", {id: id, status: val ? 1 : 0});
+                //this.$set(this.relay.state, id, !val)
             },
 
             magnitudeType(type) {

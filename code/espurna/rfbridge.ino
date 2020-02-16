@@ -88,8 +88,8 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 
 void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned char size) {
     JsonObject& rfb = root.createNestedObject("rfb");
-    rfb["size"] = size;
-    rfb["start"] = start;
+    rfb["_size"] = size;
+    rfb["_start"] = start;
 
     JsonArray& on = rfb.createNestedArray("on");
     JsonArray& off = rfb.createNestedArray("off");
