@@ -2298,6 +2298,46 @@
     #define LED1_PIN_INVERSE	1
 
 // -----------------------------------------------------------------------------
+// Maxcio W-UK007S
+// Like this: https://www.amazon.co.uk/Maxcio-Monitoring-Function-Compatible-Required/dp/B07BWFB55Q/ref=pd_rhf_se_p_img_2?_encoding=UTF8&psc=1&refRID=4H63A43SKHV8WV54XH19
+// -----------------------------------------------------------------------------
+
+#elif defined(MAXCIO_WUK007S)
+
+    // Info
+    #define MANUFACTURER                "MAXCIO"
+    #define DEVICE                      "WUK007S"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            0
+    #define LED1_RELAY                  1
+    #define LED1_MODE                   LED_MODE_RELAY_WIFI
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       24380
+    #define HLW8012_VOLTAGE_RATIO       32048
+    #define HLW8012_POWER_RATIO         3509285
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+// -----------------------------------------------------------------------------
 // Oukitel P1 Smart Plug
 // https://www.amazon.com/Docooler-OUKITEL-Control-Wireless-Adaptor/dp/B07J3BYFJX/ref=sr_1_fkmrnull_2?keywords=oukitel+p1+smart+switch&qid=1550424399&s=gateway&sr=8-2-fkmrnull
 // -----------------------------------------------------------------------------
@@ -3213,6 +3253,50 @@
 
     // BUTTON1 and LED1 are using Serial pins
     #define DEBUG_SERIAL_SUPPORT        0
+
+// -----------------------------------------------------------------------------
+// Teckin SP22 v1.4 - v1.6
+// 
+// NB Notes suggest that energy monitoring is removed from later versions 
+// -----------------------------------------------------------------------------
+
+#elif defined(TECKIN_SP23_V13)
+
+    // Info  .. NB Newer versions apparently lack energy monitor 
+    // The board revision is not indicated externally 
+    #define MANUFACTURER                "TECKIN"
+    #define DEVICE                      "SP23_V13"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    4 
+    #define LED1_PIN_INVERSE            1
+    #define LED2_PIN                    2 
+    #define LED2_PIN_INVERSE            0
+    #define LED2_MODE                   LED_MODE_FINDME
+    #define LED2_RELAY                  1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       23324  
+    #define HLW8012_VOLTAGE_RATIO       324305 
+    #define HLW8012_POWER_RATIO         3580841
+    #define HLW8012_INTERRUPT_ON        FALLING
 
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
