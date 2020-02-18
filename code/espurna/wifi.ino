@@ -88,30 +88,41 @@ void _wifiConfigure() {
         if (!systemCheck()) return;
     #endif
 
-    // Clean settings
-    _wifiClean(WIFI_MAX_NETWORKS);
+    unsigned char index = 0;
+    for (index = 0; index < WIFI_MAX_NETWORKS; index++) {
+        const auto ssid = getSetting({"ssid", index}, _wifiSSID(index));
+        const auto pass = getSetting({"pass", index}, _wifiPass(index));
 
-    unsigned char i;
-    for (i = 0; i < WIFI_MAX_NETWORKS; i++) {
-        if (hasSetting({"ip", i}) || _wifiHasIP(i)) {
-            jw.addNetwork(
-                getSetting({"ssid", i}, _wifiSSID(i)).c_str(),
-                getSetting({"pass", i}, _wifiPass(i)).c_str(),
-                getSetting({"ip", i}, _wifiIP(i)).c_str(),
-                getSetting({"gw", i}, _wifiGateway(i)).c_str(),
-                getSetting({"mask", i}, _wifiNetmask(i)).c_str(),
-                getSetting({"dns", i}, _wifiDNS(i)).c_str()
-            );
-        } else if (hasSetting({"ssid", i}) || _wifiHasSSID(i)) {
-            jw.addNetwork(
-                getSetting({"ssid", i}, _wifiSSID(i)).c_str(),
-                getSetting({"pass", i}, _wifiPass(i)).c_str()
-            );
+        if (!ssid.length()) {
+            delSetting({"ssid", index});
+            delSetting({"pass", index});
+            delSetting({"ip", index});
+            delSetting({"gw", index});
+            delSetting({"mask", index});
+            delSetting({"dns", index});
+            continue;
         }
+
+        bool result = false;
+
+        if (ssid.length() && pass.length()) {
+            result = jw.addNetwork(
+                ssid.c_str(),
+                pass.c_str(),
+                getSetting({"ip", index}, _wifiIP(index)).c_str(),
+                getSetting({"gw", index}, _wifiGateway(index)).c_str(),
+                getSetting({"mask", index}, _wifiNetmask(index)).c_str(),
+                getSetting({"dns", index}, _wifiDNS(index)).c_str()
+            );
+        } else if (ssid.length()) {
+            result = jw.addNetwork(ssid.c_str(), pass.c_str());
+        }
+
+        if (!result) break;
     }
 
     #if JUSTWIFI_ENABLE_SMARTCONFIG
-        if (i == 0) _wifi_smartconfig_initial = true;
+        if (index == 0) _wifi_smartconfig_initial = true;
     #endif
 
     jw.enableScan(getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS));
@@ -175,84 +186,51 @@ void _wifiScan(wifi_scan_f callback = nullptr) {
 
 }
 
-bool _wifiClean(unsigned char num) {
-
-    bool changed = false;
-    unsigned char i = 0;
-
-    // Clean defined settings
-    while (i < num) {
-
-        // Skip on first non-defined setting
-        if (!getSetting({"ssid", i}).length()) {
-            delSetting({"ssid", i});
-            break;
-        }
-
-        // Delete empty values
-        if (!getSetting({"pass", i}).length()) delSetting({"pass", i});
-        if (!getSetting({"ip", i}).length()) delSetting({"ip", i});
-        if (!getSetting({"gw", i}).length()) delSetting({"gw", i});
-        if (!getSetting({"mask", i}).length()) delSetting({"mask", i});
-        if (!getSetting({"dns", i}).length()) delSetting({"dns", i});
-
-        ++i;
-
-    }
-
-    // Delete all other settings
-    while (i < WIFI_MAX_NETWORKS) {
-        changed = (getSetting({"ssid", i}).length() > 0);
-        delSetting({"ssid", i});
-        delSetting({"pass", i});
-        delSetting({"ip", i});
-        delSetting({"gw", i});
-        delSetting({"mask", i});
-        delSetting({"dns", i});
-        ++i;
-    }
-
-    return changed;
-
-}
-
 void _wifiCallback(justwifi_messages_t code, char * parameter) {
 
     if (MESSAGE_WPS_START == code) {
         _wifi_wps_running = true;
+        return;
     }
 
     if (MESSAGE_SMARTCONFIG_START == code) {
         _wifi_smartconfig_running = true;
+        return;
     }
 
     if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
+        return;
     }
 
     if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
+        _wifi_wps_running = false;
+        _wifi_smartconfig_running = false;
 
-        String ssid = WiFi.SSID();
-        String pass = WiFi.psk();
+        const String current_ssid = WiFi.SSID();
+        const String current_pass = WiFi.psk();
 
-        // Look for the same SSID
-        uint8_t count = 0;
-        while (count < WIFI_MAX_NETWORKS) {
-            if (!hasSetting({"ssid", count})) break;
-            if (ssid.equals(getSetting({"ssid", count}))) break;
-            count++;
+        // Write current ssid & pass at the end of the networks list
+        unsigned char count;
+        for (count = 0; count < WIFI_MAX_NETWORKS; count++) {
+            const auto ssid = getSetting({"ssid", count}, _wifiSSID(count));
+            const auto pass = getSetting({"pass", count}, _wifiPass(count));
+            // Ignore existing network settings
+            if (current_ssid.equals(ssid) && current_pass.equals(pass)) {
+                return;
+            }
+            if (current_ssid.equals(ssid)) break;
+            if (!ssid.length()) break;
         }
 
         // If we have reached the max we overwrite the first one
         if (WIFI_MAX_NETWORKS == count) count = 0;
 
-        setSetting({"ssid", count}, ssid);
-        setSetting({"pass", count}, pass);
+        setSetting({"ssid", count}, current_ssid);
+        setSetting({"pass", count}, current_pass);
 
-        _wifi_wps_running = false;
-        _wifi_smartconfig_running = false;
-
+        return;
     }
 
 }
