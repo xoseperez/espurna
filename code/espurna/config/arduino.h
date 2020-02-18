@@ -124,6 +124,7 @@
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUS002S
+//#define MAXCIO_WUK007S
 //#define MUVIT_IO_MIOBULB001
 //#define NEO_COOLCAM_NAS_WR01W
 //#define NEXETE_A19
@@ -143,6 +144,7 @@
 //#define TECKIN_SP20
 //#define TECKIN_SP21
 //#define TECKIN_SP22_V14
+//#define TECKIN_SP23_V13
 //#define TFLAG_NX_SMX00
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
