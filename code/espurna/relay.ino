@@ -301,7 +301,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
         } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
             digitalWrite(_relays[id].pin, !status);
         } else if (_relays[id].type == RELAY_TYPE_LATCHED || _relays[id].type == RELAY_TYPE_LATCHED_INVERSE) {
-            bool pulse = RELAY_TYPE_LATCHED ? HIGH : LOW;
+            bool pulse = (_relays[id].type == RELAY_TYPE_LATCHED) ? HIGH : LOW;
             digitalWrite(_relays[id].pin, !pulse);
             if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
             if (status || (GPIO_NONE == _relays[id].reset_pin)) {
