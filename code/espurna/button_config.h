@@ -6,7 +6,7 @@ BUTTON MODULE
 
 #pragma once
 
-constexpr const unsigned char _buttonPinDefault(unsigned char index) {
+constexpr const unsigned char _buttonPin(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PIN :
         (index == 1) ? BUTTON2_PIN :
@@ -19,7 +19,7 @@ constexpr const unsigned char _buttonPinDefault(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonModeDefault(unsigned char index) {
+constexpr const unsigned char _buttonMode(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_MODE :
         (index == 1) ? BUTTON2_MODE :
@@ -148,4 +148,5 @@ constexpr uint32_t _buttonConstructActions(unsigned long pressed, unsigned long 
 constexpr uint32_t _buttonConstructActions(unsigned char id) {
     return _buttonConstructActions(_buttonPress(id), _buttonClick(id), _buttonDoubleClick(id), _buttonLongClick(id), _buttonLongLongClick(id), _buttonTripleClick(id));
 }
+
 

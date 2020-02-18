@@ -117,6 +117,7 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 
     JsonArray& schema = led.createNestedArray("_schema");
 
+    schema.add("pin");
     schema.add("mode");
     schema.add("relay");
 

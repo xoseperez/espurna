@@ -20,36 +20,50 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "button_config.h"
 
 
+// -----------------------------------------------------------------------------
 
-unsigned char _buttonPin(unsigned char index) {
-    return getSetting({"btnGPIO", index}, _buttonPinDefault(index));
+button_t::button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID, unsigned long int debounceDelay, unsigned long int doubleClickDelay, unsigned long int longClickDelay, unsigned long int longLongClickDelay) :
+    event(new DebounceEvent(pin, mode, debounceDelay, doubleClickDelay)),
+    pin(pin),
+    mode(mode),
+    actions(actions),
+    relayID(relayID),
+    debounceDelay(debounceDelay),
+    doubleClickDelay(doubleClickDelay),
+    longClickDelay(longClickDelay),
+    longLongClickDelay(longLongClickDelay)
+{}
+
+button_t::button_t(unsigned char index) :
+    button_t(
+        getSetting({"btnPin", index}, _buttonPin(index)),
+        getSetting({"btnMode", index}, _buttonMode(index)),
+        _buttonConstructActions(index), //TODO
+        getSetting({"btnRelay", index}, _buttonRelay(index)),
+        getSetting({"btnDbnce", index}, BUTTON_DEBOUNCE_DELAY),
+        getSetting({"btnDblDl", index}, BUTTON_DBLCLICK_DELAY),
+        getSetting({"btnLngDl", index}, BUTTON_LNGCLICK_DELAY),
+        getSetting({"btnLngLngDl", index}, BUTTON_LNGLNGCLICK_DELAY)
+    )
+{}
+
+bool button_t::state() {
+    return event->pressed();
 }
 
-unsigned char _buttonMode(unsigned char index) {
-    return getSetting({"btnMode", index}, _buttonModeDefault(index));
+std::vector<button_t> _buttons;
+
+unsigned char buttonCount() {
+    return _buttons.size();
 }
 
-unsigned long int _buttonLongClickDelay(unsigned char index) {
-    return getSetting<unsigned long int>({"btnLngDl", index}, BUTTON_LNGCLICK_DELAY);
-}
 
-unsigned long int _buttonLongLongClickDelay(unsigned char index) {
-    return getSetting<unsigned long int>({"btnLngLngDl", index}, BUTTON_LNGLNGCLICK_DELAY);
-}
-
-unsigned long int _buttonDoubleClickDelay(unsigned char index) {
-    return getSetting<unsigned long int>({"btnDblDl", index}, BUTTON_DBLCLICK_DELAY);
-}
-
-unsigned long int _buttonDebounceDelay(unsigned char index) {
-    return getSetting<unsigned long int>({"btnDbnce", index}, BUTTON_DEBOUNCE_DELAY);
-}
 
 const uint8_t _buttonMapReleased(unsigned char index, uint8_t count, uint8_t length) {
     return (
         (1 == count) ? (
-            (length > _buttonLongLongClickDelay(index)) ? BUTTON_EVENT_LNGLNGCLICK :
-            (length > _buttonLongClickDelay(index)) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
+            (length > _buttons[index].longLongClickDelay) ? BUTTON_EVENT_LNGLNGCLICK :
+            (length > _buttons[index].longClickDelay) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
         ) :
         (2 == count) ? BUTTON_EVENT_DBLCLICK :
         (3 == count) ? BUTTON_EVENT_TRIPLECLICK :
@@ -66,40 +80,21 @@ const uint8_t _buttonMapEvent(unsigned char index, uint8_t event, uint8_t count,
     );
 }
 
-
-// -----------------------------------------------------------------------------
-
-button_t::button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID, unsigned long int debounceDelay, unsigned long int dblClickDelay) :
-    event(new DebounceEvent(pin, mode, debounceDelay, dblClickDelay)),
-    actions(actions),
-    relayID(relayID)
-{}
-
-button_t::button_t(unsigned char index) :
-    button_t(_buttonPin(index), _buttonMode(index), _buttonConstructActions(index), _buttonRelay(index), _buttonDebounceDelay(index), _buttonDoubleClickDelay(index))
-{}
-
-bool button_t::state() {
-    return event->pressed();
-}
-
-std::vector<button_t> _buttons;
-
-unsigned char buttonCount() {
-    return _buttons.size();
-}
-
 #if MQTT_SUPPORT
 
 void buttonMQTT(unsigned char id, uint8_t event) {
     char payload[4] = {0};
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, getSetting({"btnMqttRetain", id})); // 1st bool = force, 2nd = retain
 }
 
 
-unsigned char _buttonSendAllEvents(unsigned char index) {
-    return getSetting({"btnSndAllEvts", index}, BUTTON_MQTT_SEND_ALL_EVENTS);
+bool _buttonMqttSendAllEvents(unsigned char index) {
+    return getSetting({"btnMqttSnd", index}, 1 == BUTTON_MQTT_SEND_ALL_EVENTS);
+}
+
+bool _buttonMqttRetain(unsigned char index) {
+    return getSetting({"btnMqttRetain", index}, 1 == BUTTON_MQTT_RETAIN);
 }
 
 #endif
@@ -119,8 +114,13 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     JsonObject& module = root.createNestedObject("btn");
 
     JsonArray& schema = module.createNestedArray("_schema");
-    schema.add("GPIO");
-    schema.add("mode");
+
+    //Serial buttons don't have pins or mode
+    #if !defined(ITEAD_SONOFF_DUAL) && !defined(FOXEL_LIGHTFOX_DUAL)
+        schema.add("pin");
+        schema.add("mode");
+    #endif
+
     schema.add("relay");
 
     schema.add("dbnce");
@@ -129,7 +129,8 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     schema.add("lngLngDl");
 
     #if MQTT_SUPPORT
-        schema.add("sndAllEvts");
+        schema.add("MqttSnd");
+        schema.add("MqttRetain");
     #endif
 
 
@@ -137,16 +138,19 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     for (unsigned char i=0; i<buttonCount(); i++) {
         JsonArray& button = buttons.createNestedArray();
-        button.add(_buttonPin(i));
-        button.add(_buttonMode(i));
-        button.add(_buttonRelay(i));
-        button.add(_buttonDebounceDelay(i));
-        button.add(_buttonDoubleClickDelay(i));
-        button.add(_buttonLongClickDelay(i));
-        button.add(_buttonLongLongClickDelay(i));
+        #if !defined(ITEAD_SONOFF_DUAL) && !defined(FOXEL_LIGHTFOX_DUAL)
+            button.add(_buttons[i].pin);
+            button.add(_buttons[i].mode);
+        #endif
+        button.add(_buttons[i].relayID);
+        button.add(_buttons[i].debounceDelay);
+        button.add(_buttons[i].doubleClickDelay);
+        button.add(_buttons[i].longClickDelay);
+        button.add(_buttons[i].longLongClickDelay);
 
         #if MQTT_SUPPORT
-            button.add(_buttonSendAllEvents(i));
+            button.add(_buttonMqttSendAllEvents(i));
+            button.add(_buttonMqttRetain(i));
         #endif
     }
 }
@@ -177,7 +181,7 @@ void buttonEvent(unsigned char id, unsigned char event) {
     unsigned char action = _buttonDecodeEventAction(button.actions, event);
 
     #if MQTT_SUPPORT
-       if (action != BUTTON_MODE_NONE || _buttonSendAllEvents(id)) {
+       if (action != BUTTON_MODE_NONE || _buttonMqttSendAllEvents(id)) {
            buttonMQTT(id, event);
        }
     #endif
@@ -237,15 +241,23 @@ void buttonEvent(unsigned char id, unsigned char event) {
 
 }
 
-unsigned char buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) {
-    _buttons.emplace_back(pin, mode, actions, relayID, _buttonDebounceDelay(_buttons.size()), _buttonDoubleClickDelay(_buttons.size()));
-    return _buttons.size() - 1;
+void buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) {
+    _buttons.emplace_back(
+        pin,
+        mode,
+        actions,
+        relayID,
+        BUTTON_DEBOUNCE_DELAY,
+        BUTTON_DBLCLICK_DELAY,
+        BUTTON_LNGCLICK_DELAY,
+        BUTTON_LNGLNGCLICK_DELAY
+    );
 }
 
 void buttonSetup() {
 
     // Special hardware cases
-
+    // TODO: do we need settings for special hardware buttons?
     #if defined(ITEAD_SONOFF_DUAL)
 
         _buttons.reserve(3);

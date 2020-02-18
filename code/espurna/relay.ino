@@ -864,9 +864,6 @@ void _relayWebSocketUpdate(JsonObject& root) {
 
     //state["_size"] = relayCount();
 
-    JsonArray& status = state.createNestedArray("status");
-    JsonArray& lock = state.createNestedArray("lock");
-
     for (unsigned char i=0; i<relayCount(); i++) {
         JsonArray& relay = list.createNestedArray();
         relay.add<uint8_t>(_relays[i].target_status);
@@ -909,6 +906,8 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& config = module.createNestedObject("config");
 
     JsonArray& schema = config.createNestedArray("_schema");
+
+    schema.add("pin");
     schema.add("GPIO");
     schema.add("type");
     //schema.add("resetGPIO"); //This is not needed
@@ -939,7 +938,8 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
     for (unsigned char i=0; i<relayCount(); i++) {
         JsonArray& relay = relays.createNestedArray();
-        relay.add(_relayFriendlyName(i));                                       //gpio
+        relay.add(_relays[i].pin);                                       //gpio, why friendly name?
+        relay.add(_relayFriendlyName(i));                                       //gpio, why friendly name?
         relay.add(_relays[i].type);                                             //type
         //relay.add(_relays[i].reset_pin);                                        //reset
         relay.add(getSetting({"relayName", i}));                                 //name
@@ -959,7 +959,6 @@ void _relayWebSocketSendRelays(JsonObject& root) {
             relay.add(getSetting({"relayGroup", i}));             //group
             relay.add(getSetting({"relayGroupSync", i}, 0));      //group_sync
             relay.add(getSetting({"relayOnDisc", i}, 0));         //on_disc
-            relay.add(getSetting({"relaySndAllEvts", i}, 0));     //sendAllEvts
         #endif
     }
 }

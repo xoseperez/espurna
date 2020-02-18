@@ -285,7 +285,8 @@ void setup() {
     #endif
 
     // Prepare configuration for version 2.0
-    migrate();
+    //migrate();
+    // TODO
 
     // Set up delay() after loop callbacks are finished
     // Note: should be after settingsSetup()

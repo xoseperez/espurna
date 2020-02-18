@@ -376,10 +376,14 @@
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
-#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
+#ifndef BUTTON_MQTT_SEND_ALL_EVENTS             // 1 - to send all button events to MQTT
 #define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
-                                                // 1 - to send all button events to MQTT
 #endif
+
+#ifndef BUTTON_MQTT_RETAIN
+#define BUTTON_MQTT_RETAIN          0
+#endif
+
 
 //------------------------------------------------------------------------------
 // ENCODER
@@ -624,7 +628,7 @@
 #endif
 
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
-// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546 
+// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546
 //
 // Broadcast gratuitous ARP periodically to update ARP tables on the AP and all devices on the same network.
 // Helps to solve compatibility issues when ESP fails to timely reply to ARP requests, causing the device's ARP table entry to expire.
@@ -659,8 +663,8 @@
 #define WEB_SUPPORT                 1           // Enable web support (http, api, 121.65Kb)
 #endif
 
-#ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
+#ifndef WEB_EMBEDDED                            // Build the firmware with the web interface embedded in
+#define WEB_EMBEDDED                0           // (off by default since v2 because of the PWA)
 #endif
 
 // Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
@@ -981,7 +985,7 @@
 #endif
 
 #ifndef MQTT_SECURE_CLIENT_MFLN
-#define MQTT_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN  // Use global MFLN setting by default 
+#define MQTT_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN  // Use global MFLN setting by default
 #endif
 
 #ifndef MQTT_SECURE_CLIENT_INCLUDE_CA

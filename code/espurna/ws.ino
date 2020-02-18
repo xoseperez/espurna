@@ -308,6 +308,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 continue;
             }
 
+            // TODO why delete the setting? Just ignore
             if (!_wsCheckKey(key, value)) {
                 delSetting(key);
                 continue;
@@ -387,7 +388,7 @@ bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _wsOnVisible(JsonObject& root) {
-    JsonObject& modules = root.createNestedObject("_modules");
+    root.createNestedObject("_modules");
 }
 
 void _wsOnConnected(JsonObject& root) {

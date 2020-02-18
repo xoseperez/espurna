@@ -14,7 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "web.h"
 
 #if WEB_EMBEDDED
-
+//TODO vue image
 #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
     #include "static/index.small.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
