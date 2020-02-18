@@ -1029,7 +1029,7 @@
 #endif
 
 #ifndef MQTT_KEEPALIVE
-#define MQTT_KEEPALIVE              300             // MQTT keepalive value
+#define MQTT_KEEPALIVE              120             // MQTT keepalive value
 #endif
 
 
