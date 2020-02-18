@@ -106,7 +106,7 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     tspk["enabled"] = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
     tspk["key"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
     tspk["clear"] = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
-    tspk["address"] = getSetting("tspkAddress", THINGSPEAK_ADDRESS)
+    tspk["address"] = getSetting("tspkAddress", THINGSPEAK_ADDRESS);
 
     JsonArray& relays = tspk.createNestedArray("relays");
     for (byte i=0; i<relayCount(); i++) {

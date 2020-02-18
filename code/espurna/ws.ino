@@ -464,9 +464,9 @@ void _wsConnected(uint32_t client_id) {
         ? getAdminPass().equals(ADMIN_PASS)
         : false;
 
+    StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
     if (changePassword) {
-        StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
         root["webMode"] = WEB_MODE_PASSWORD;
         wsSend(client_id, root);
         return;

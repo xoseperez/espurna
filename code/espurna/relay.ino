@@ -923,7 +923,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
 
     #if SCHEDULER_SUPPORT
-        schema.add('lastSch');
+        schema.add("lastSch");
     #endif
 
     #if MQTT_SUPPORT
@@ -942,7 +942,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         relay.add(_relayFriendlyName(i));                                       //gpio
         relay.add(_relays[i].type);                                             //type
         //relay.add(_relays[i].reset_pin);                                        //reset
-        relay.add(getSetting({"relayName", i});                                 //name
+        relay.add(getSetting({"relayName", i}));                                 //name
         relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));               //boot
         relay.add(_relays[i].pulse);                                            //pulse
         relay.add(_relays[i].pulse_ms / 1000.0);                                //time

@@ -6,7 +6,7 @@ BUTTON MODULE
 
 #pragma once
 
-constexpr const unsigned char _buttonPin(unsigned char index) {
+constexpr const unsigned char _buttonPinDefault(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PIN :
         (index == 1) ? BUTTON2_PIN :
@@ -19,7 +19,7 @@ constexpr const unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonMode(unsigned char index) {
+constexpr const unsigned char _buttonModeDefault(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_MODE :
         (index == 1) ? BUTTON2_MODE :
@@ -131,27 +131,6 @@ constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, un
         (event == BUTTON_EVENT_LNGCLICK) ? ((actions >> 12) & 0x0F) :
         (event == BUTTON_EVENT_LNGLNGCLICK) ? ((actions >> 16) & 0x0F) :
         (event == BUTTON_EVENT_TRIPLECLICK) ? ((actions >> 20) & 0x0F) : BUTTON_MODE_NONE
-    );
-}
-
-constexpr const uint8_t _buttonMapReleased(uint8_t count, uint8_t length) {
-    return (
-        (1 == count) ? (
-            (length > BUTTON_LNGLNGCLICK_DELAY) ? BUTTON_EVENT_LNGLNGCLICK :
-            (length > BUTTON_LNGCLICK_DELAY) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
-        ) : 
-        (2 == count) ? BUTTON_EVENT_DBLCLICK : 
-        (3 == count) ? BUTTON_EVENT_TRIPLECLICK : 
-        BUTTON_EVENT_NONE
-    );
-}
-
-constexpr const uint8_t _buttonMapEvent(uint8_t event, uint8_t count, uint16_t length) {
-    return (
-        (event == EVENT_PRESSED) ? BUTTON_EVENT_PRESSED :
-        (event == EVENT_CHANGED) ? BUTTON_EVENT_CLICK :
-        (event == EVENT_RELEASED) ? _buttonMapReleased(count, length) :
-        BUTTON_EVENT_NONE
     );
 }
 

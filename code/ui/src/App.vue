@@ -22,7 +22,7 @@
                     </div>
 
                     <div class="footer">
-                        &copy; 2016-2019<br> Xose Pérez<br> <A href="https://twitter.com/xoseperez">@xoseperez</A><br>
+                        &copy; 2016-2020<br><A href="https://twitter.com/xoseperez">Xose Pérez</A><br>
                         <A href="http://tinkerman.cat">http://tinkerman.cat</A><br>
                         <A href="https://github.com/xoseperez/espurna">ESPurna @ GitHub</A> <br>UI by
                         <A href="https://github.com/tofandel">Tofandel</A> <br>GPLv3 license<br><br> Version:

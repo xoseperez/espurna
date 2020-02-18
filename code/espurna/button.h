@@ -12,15 +12,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 struct button_t {
 
-    // TODO: dblclick and debounce delays - right now a global setting, independent of ID
-    static unsigned long DebounceDelay;
-    static unsigned long DblclickDelay;
-
     // Use built-in indexed definitions to configure DebounceEvent
     button_t(unsigned char index);
 
     // Provide custom DebounceEvent parameters instead
-    button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID); 
+    button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID, unsigned long int debounceDelay, unsigned long int dblClickDelay);
 
     bool state();
 

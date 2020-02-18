@@ -14,5 +14,3 @@ String getEspurnaSensors();
 
 String getEspurnaWebUI();
 
-int getBoardId();
-
