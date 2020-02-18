@@ -187,6 +187,7 @@ bool _mqttConnectSyncClient(bool secure = false) {
     #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
         _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqttGetClient(secure));
         _mqtt.setWill(_mqtt_will.c_str(), _mqtt_payload_offline.c_str(), _mqtt_retain, _mqtt_qos);
+        _mqtt.setKeepAlive(_mqtt_keepalive);
         result = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str());
     #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
         _mqtt.setClient(_mqttGetClient(secure));
