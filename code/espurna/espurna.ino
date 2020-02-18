@@ -52,6 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ota.h"
 #include "relay.h"
 #include "rfm69.h"
+#include "rpc.h"
 #include "rpnrules.h"
 #include "rtcmem.h"
 #include "thermostat.h"
