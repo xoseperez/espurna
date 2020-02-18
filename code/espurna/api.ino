@@ -11,6 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "api.h"
 #include "system.h"
 #include "web.h"
+#include "rpc.h"
 #include "ws.h"
 
 typedef struct {
@@ -150,12 +151,12 @@ void _onRPC(AsyncWebServerRequest *request) {
     if (request->hasParam("action")) {
 
         AsyncWebParameter* p = request->getParam("action");
-        String action = p->value();
+
+        const auto action = p->value();
         DEBUG_MSG_P(PSTR("[RPC] Action: %s\n"), action.c_str());
 
-        if (action.equals("reboot")) {
-            response = 200;
-            deferredReset(100, CUSTOM_RESET_RPC);
+        if (rpcHandleAction(action)) {
+            response = 204;
         }
 
     }

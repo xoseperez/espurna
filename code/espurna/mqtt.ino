@@ -18,6 +18,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include "system.h"
 #include "mqtt.h"
 #include "ntp.h"
+#include "rpc.h"
 #include "ws.h"
 
 #include "libs/SecureClientHelpers.h"
@@ -523,9 +524,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
-            if (strcmp(payload, MQTT_ACTION_RESET) == 0) {
-                deferredReset(100, CUSTOM_RESET_MQTT);
-            }
+            rpcHandleAction(payload);
         }
 
     }
