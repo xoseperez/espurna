@@ -277,15 +277,15 @@
 // UNITS
 //------------------------------------------------------------------------------
 
-#define POWER_WATTS                 0
-#define POWER_KILOWATTS             1
+#define POWER_WATTS                 sensor::Unit::Watt
+#define POWER_KILOWATTS             sensor::Unit::Kilowatt
 
-#define ENERGY_JOULES               0
-#define ENERGY_KWH                  1
+#define ENERGY_JOULES               sensor::Unit::Joule
+#define ENERGY_KWH                  sensor::Unit::KilowattHour
 
-#define TMP_CELSIUS                 0
-#define TMP_FAHRENHEIT              1
-#define TMP_KELVIN                  2
+#define TMP_CELSIUS                 sensor::Unit::Celcius
+#define TMP_FAHRENHEIT              sensor::Unit::Farenheit
+#define TMP_KELVIN                  sensor::Unit::Kelvin
 
 //--------------------------------------------------------------------------------
 // Sensor ID
@@ -371,6 +371,16 @@
 
 #define MAGNITUDE_MAX               32
 
+#define SENSOR_ERROR_OK             0       // No error
+#define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
+#define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
+#define SENSOR_ERROR_TIMEOUT        3       // Response from sensor timed out
+#define SENSOR_ERROR_UNKNOWN_ID     4       // Sensor did not report a known ID
+#define SENSOR_ERROR_CRC            5       // Sensor data corrupted
+#define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
+#define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
+#define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
+#define SENSOR_ERROR_OTHER          99      // Any other error
 //------------------------------------------------------------------------------
 // Telnet server
 //------------------------------------------------------------------------------

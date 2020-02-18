@@ -55,6 +55,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "rpc.h"
 #include "rpnrules.h"
 #include "rtcmem.h"
+#include "sensor.h"
 #include "thermostat.h"
 #include "tuya.h"
 #include "web.h"

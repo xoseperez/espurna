@@ -2004,7 +2004,7 @@ function processData(data) {
         }
         <!-- removeIf(!thermostat)-->
         if ("tmpUnits" == key) {
-            $("span.tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
+            $("span.tmpUnit").html(data[key] == 3 ? "ºF" : "ºC");
         }
         <!-- endRemoveIf(!thermostat)-->
 

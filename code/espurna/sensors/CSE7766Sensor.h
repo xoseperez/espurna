@@ -12,9 +12,11 @@
 #include <SoftwareSerial.h>
 
 #include "../debug.h"
-#include "BaseSensor.h"
 
-class CSE7766Sensor : public BaseSensor {
+#include "BaseSensor.h"
+#include "BaseEmonSensor.h"
+
+class CSE7766Sensor : public BaseEmonSensor {
 
     public:
 
@@ -22,7 +24,7 @@ class CSE7766Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        CSE7766Sensor(): BaseSensor(), _data() {
+        CSE7766Sensor(): _data() {
             _count = 7;
             _sensor_id = SENSOR_CSE7766_ID;
         }
@@ -99,12 +101,8 @@ class CSE7766Sensor : public BaseSensor {
             return _ratioP;
         };
 
-        void resetRatios() {
+        void resetCalibration() {
             _ratioC = _ratioV = _ratioP = 1.0;
-        }
-
-        void resetEnergy(double value = 0) {
-            _energy = value;
         }
 
         // ---------------------------------------------------------------------
@@ -177,7 +175,7 @@ class CSE7766Sensor : public BaseSensor {
             if (index == 3) return _reactive;
             if (index == 4) return _voltage * _current;
             if (index == 5) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
-            if (index == 6) return _energy;
+            if (index == 6) return getEnergy();
             return 0;
         }
 
@@ -287,16 +285,21 @@ class CSE7766Sensor : public BaseSensor {
             }
 
             // Calculate energy
-            unsigned int difference;
-            static unsigned int cf_pulses_last = 0;
-            unsigned int cf_pulses = _data[21] << 8 | _data[22];
+            uint32_t difference;
+            uint32_t cf_pulses = _data[21] << 8 | _data[22];
+
+            static uint32_t cf_pulses_last = 0;
             if (0 == cf_pulses_last) cf_pulses_last = cf_pulses;
+
             if (cf_pulses < cf_pulses_last) {
                 difference = cf_pulses + (0xFFFF - cf_pulses_last) + 1;
             } else {
                 difference = cf_pulses - cf_pulses_last;
             }
-            _energy += difference * (float) _coefP / 1000000.0;
+
+            _energy[0] += sensor::Ws {
+                static_cast<decltype(difference)>(difference * (float) _coefP / 1000000.0)
+            };
             cf_pulses_last = cf_pulses;
 
         }
@@ -383,7 +386,6 @@ class CSE7766Sensor : public BaseSensor {
         double _reactive = 0;
         double _voltage = 0;
         double _current = 0;
-        double _energy = 0;
 
         double _ratioV = 1.0;
         double _ratioC = 1.0;

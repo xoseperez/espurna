@@ -93,6 +93,20 @@
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
+#if EMON_REPORT_ENERGY
+
+static_assert(
+    EmonSensor::MaxDevices >= ADS1X15_CHANNELS,
+    "_energy[] array must be able to hold all of the channels"
+);
+static_assert(
+    EmonSensor::MaxDevices >= __builtin_popcount(EMON_ADS1X15_MASK),
+    "_energy[] array must be able to hold all of the channels"
+);
+
+#endif // EMON_REPORT_ENERGY == 1
+
+
 class EmonADS1X15Sensor : public EmonSensor {
 
     public:
@@ -228,7 +242,9 @@ class EmonADS1X15Sensor : public EmonSensor {
                 unsigned char channel = getChannel(port);
                 _current[port] = getCurrent(channel);
                 #if EMON_REPORT_ENERGY
-                    _energy[port] += (_current[port] * _voltage * (millis() - last) / 1000);
+                    _energy[port] += sensor::Ws {
+                        static_cast<uint32_t>(_current[port] * _voltage * (millis() - last) / 1000)
+                    };
                 #endif
             }
             last = millis();
@@ -247,7 +263,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (magnitude == i++) return _current[port] * _voltage;
             #endif
             #if EMON_REPORT_ENERGY
-                if (magnitude == i) return _energy[port];
+                if (magnitude == i) return _energy[port].asDouble();
             #endif
             return 0;
         }

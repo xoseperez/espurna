@@ -201,12 +201,10 @@ void _haSendDiscovery() {
 
 #if SENSOR_SUPPORT
 
-void _haSendMagnitude(unsigned char i, JsonObject& config) {
-
-    unsigned char type = magnitudeType(i);
-    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
-    config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = magnitudeUnits(type);
+void _haSendMagnitude(unsigned char index, JsonObject& config) {
+    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(magnitudeType(index)));
+    config["state_topic"] = mqttTopic(magnitudeTopicIndex(index).c_str(), false);
+    config["unit_of_measurement"] = magnitudeUnits(index);
 }
 
 void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {

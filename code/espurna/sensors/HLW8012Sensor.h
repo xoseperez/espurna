@@ -11,9 +11,10 @@
 #include <HLW8012.h>
 
 #include "../debug.h"
-#include "BaseSensor.h"
 
-class HLW8012Sensor : public BaseSensor {
+#include "BaseEmonSensor.h"
+
+class HLW8012Sensor : public BaseEmonSensor {
 
     public:
 
@@ -21,8 +22,8 @@ class HLW8012Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        HLW8012Sensor(): BaseSensor() {
-            _count = 7;
+        HLW8012Sensor() {
+            _count = 8;
             _sensor_id = SENSOR_HLW8012_ID;
             _hlw8012 = new HLW8012();
         }
@@ -46,11 +47,6 @@ class HLW8012Sensor : public BaseSensor {
 
         void resetRatios() {
             _hlw8012->resetMultipliers();
-        }
-
-        void resetEnergy(double value = 0) {
-            _energy_offset = value;
-            _hlw8012->resetEnergy();
         }
 
         // ---------------------------------------------------------------------
@@ -185,8 +181,16 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 3) return MAGNITUDE_POWER_REACTIVE;
             if (index == 4) return MAGNITUDE_POWER_APPARENT;
             if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            if (index == 6) return MAGNITUDE_ENERGY;
+            if (index == 6) return MAGNITUDE_ENERGY_DELTA;
+            if (index == 7) return MAGNITUDE_ENERGY;
             return MAGNITUDE_NONE;
+        }
+
+        double getEnergyDelta() {
+            const auto result = _hlw8012->getEnergy();
+            _energy[0] += sensor::Ws { result };
+            _hlw8012->resetEnergy();
+            return result;
         }
 
         // Current value for slot # index
@@ -197,8 +201,9 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 3) return _hlw8012->getReactivePower();
             if (index == 4) return _hlw8012->getApparentPower();
             if (index == 5) return 100 * _hlw8012->getPowerFactor();
-            if (index == 6) return (_energy_offset + _hlw8012->getEnergy());
-            return 0;
+            if (index == 6) return getEnergyDelta();
+            if (index == 7) return getEnergy();
+            return 0.0;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
@@ -272,7 +277,6 @@ class HLW8012Sensor : public BaseSensor {
         unsigned char _cf = GPIO_NONE;
         unsigned char _cf1 = GPIO_NONE;
         bool _sel_current = true;
-        double _energy_offset = 0;
 
         HLW8012 * _hlw8012 = NULL;
 
