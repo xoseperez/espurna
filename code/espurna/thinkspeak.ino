@@ -205,13 +205,7 @@ void _tspkInitClient(const String& _url) {
                     unsigned int code = (p) ? atoi(&p[4]) : 0;
                     DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
 
-                    if ((0 == code) && _tspk_tries) {
-                        _tspk_flush = true;
-                        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
-                    } else {
-                        _tspkClearQueue();
-                    }
-
+                    _tspkRetry(code);
                     client->close(true);
 
                     _tspk_client_state = tspk_state_t::NONE;
@@ -293,44 +287,28 @@ SecureClientConfig _tspk_sc_config {
 
 #endif // THINGSPEAK_USE_SSL && SECURE_CLIENT_BEARSSL
 
-void _tspkPost(WiFiClient* client, const URL& url) {
+void _tspkPost(WiFiClient& client, const URL& url, bool https) {
 
-    if (!client->connect(url.host.c_str(), url.port)) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
-        return;
-    }
-
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), url.host.c_str(), url.port);
     DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), url.path.c_str(), _tspk_data.c_str());
 
-    char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + url.path.length() + url.host.length() + 1];
-    snprintf_P(headers, sizeof(headers),
-        THINGSPEAK_REQUEST_TEMPLATE,
-        url.path.c_str(),
-        url.host.c_str(),
-        _tspk_data.length()
-    );
+    HTTPClient http;
+    http.begin(client, url.host, url.port, url.path, https);
 
-    client->print(headers);
-    client->print(_tspk_data);
+    http.addHeader("User-agent", "ESPurna");
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-    nice_delay(100);
+    const auto http_code = http.POST(_tspk_data);
+    int value = 0;
 
-    const auto response = client->readString();
-    int pos = response.indexOf("\r\n\r\n");
-
-    unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
-
-    client->stop();
-
-    _tspk_last_flush = millis();
-    if ((0 == code) && _tspk_tries) {
-        _tspk_flush = true;
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
+    if (http_code == 200) {
+        value = http.getString().toInt();
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), value);
     } else {
-        _tspkClearQueue();
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response HTTP code: %d\n"), http_code);
     }
+
+    _tspkRetry(value);
+    _tspk_data = "";
 
 }
 
@@ -351,14 +329,14 @@ void _tspkPost(const String& address) {
                 return;
             }
 
-            _tspkPost(&client->get(), url);
+            _tspkPost(client->get(), url, true);
             return;
         }
     #endif
 
     if (url.protocol == "http") {
         auto client = std::make_unique<WiFiClient>();
-        _tspkPost(client.get(), url);
+        _tspkPost(*client.get(), url, false);
         return;
     }        
 
@@ -382,6 +360,15 @@ void _tspkClearQueue() {
                 _tspk_queue[id] = NULL;
             }
         }
+    }
+}
+
+void _tspkRetry(int code) {
+    if ((0 == code) && _tspk_tries) {
+        _tspk_flush = true;
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
+    } else {
+        _tspkClearQueue();
     }
 }
 
