@@ -120,10 +120,20 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
     #endif
 }
 
-void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
-    if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
-    if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+uint8_t _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "rfblearn") == 0) {
+        rfbLearn(data["id"], data["status"]);
+        return 1;
+    }
+    if (strcmp(action, "rfbforget") == 0) {
+        rfbForget(data["id"], data["status"]);
+        return 1
+    }
+    if (strcmp(action, "rfbsend") == 0) {
+        rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+        return 1;
+    }
+    return true;
 }
 
 bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {

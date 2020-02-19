@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-import {register} from "register-service-worker"
+import {register} from "register-service-worker";
+import {alertError} from "../common/notification";
 
 //TODO add a version system
 
@@ -17,6 +18,6 @@ register(`${process.env.BASE_URL}service-worker.js`, {
     offline() {
     },
     error(error) {
-        console.log('Error during service worker registration:' + error);
+        alertError({title: "Cannot register service worker", message: error});
     }
 });

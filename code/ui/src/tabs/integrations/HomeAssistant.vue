@@ -86,38 +86,38 @@
         },
         computed: {
             config() {
-                let s = '';
+                let s = "";
 
                 if (this.relay.config && this.relay.config.list.length) {
-                    s += 'switch:\n';
+                    s += "switch:\n";
 
                     this.relay.config.list.forEach((v, i) => {
-                        s += '  - name: ' + v.name + '\n' +
-                            '    platform: mqtt\n' +
-                            '    state_topic: ' + this.topic + '/relay/' + i + '\n' +
-                            '    command_topic: ' + this.topic + '/relay/' + i + '/set\n' +
-                            '    payload_on: 1\n' +
-                            '    payload_off: 0\n' +
-                            '    availability_topic: ' + this.topic + '/status\n' +
-                            '    payload_available: 1\n' +
-                            '    payload_not_available: 0\n\n';
+                        s += "  - name: " + v.name + "\n" +
+                            "    platform: mqtt\n" +
+                            "    state_topic: " + this.topic + "/relay/" + i + "\n" +
+                            "    command_topic: " + this.topic + "/relay/" + i + "/set\n" +
+                            "    payload_on: 1\n" +
+                            "    payload_off: 0\n" +
+                            "    availability_topic: " + this.topic + "/status\n" +
+                            "    payload_available: 1\n" +
+                            "    payload_not_available: 0\n\n";
                     });
                 }
 
                 if (this.sns.magnitudes && this.sns.magnitudes.list.length) {
-                    s += 'sensor:\n';
+                    s += "sensor:\n";
                     this.sns.magnitudes.list.forEach((v) => {
-                        s += '  - name: ' + this.topic + v.name + '\n' +
-                            '    platform: mqtt\n' +
-                            '    state_topic: ' + this.topic + '/' + v.name + '\n' +
-                            '    unit_of_measurement: ' + v.unit + '\n\n'
+                        s += "  - name: " + this.topic + v.name + "\n" +
+                            "    platform: mqtt\n" +
+                            "    state_topic: " + this.topic + "/" + v.name + "\n" +
+                            "    unit_of_measurement: " + v.unit + "\n\n";
                     });
 
                 }
                 return s;
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

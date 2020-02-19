@@ -4,7 +4,7 @@
         <RepeaterRow v-for="(row, i) in values"
                      :key="row.key"
                      :value="row.value"
-                     @input="(val) => $emit('input', [...values].splice(i,1,val))">
+                     @input="(v) => onInput(v, i)">
             <slot name="default" :value="row.value"
                   :k="i"
                   :row="row"
@@ -30,7 +30,7 @@
 </template>
 
 <script>
-    import Btn from './Button'
+    import Btn from "./Button";
     import RepeaterRow from "./RepeaterRow";
 
 
@@ -39,8 +39,9 @@
         for (let key in arr) {
             if (arr.hasOwnProperty(key)) {
                 let v = callback(arr[key], key);
-                if (v !== undefined)
+                if (v !== undefined) {
                     out.push(v);
+                }
             }
         }
         return out;
@@ -73,20 +74,20 @@
             return {
                 key: 0,
                 values: []
-            }
+            };
         },
         computed: {
             form() {
                 return this.$form ? this.$form() : false;
             },
             canAdd() {
-                return !this.locked && (!this.max || this.values.length < this.max)
+                return !this.locked && (!this.max || this.values.length < this.max);
             },
         },
         mounted() {
             this.setValues();
         },
-        inject: {$form: {name: '$form', default: false}},
+        inject: {$form: {name: "$form", default: false}},
         methods: {
             setValues() {
                 let values = [];
@@ -94,17 +95,22 @@
                 if (this.value) {
                     this.value.forEach((v) => {
                         let row = {key: this.key++, value: v};
-                        this.$emit('created', {row});
+                        this.$emit("created", {row});
                         values.push(row);
-                    })
+                    });
                 } else if (this.name && this.form.values[this.name]) {
                     this.form.values[this.name].forEach((v) => {
                         let row = {key: this.key++, value: v};
-                        this.$emit('created', {row});
+                        this.$emit("created", {row});
                         values.push(row);
-                    })
+                    });
                 }
                 this.values = values;
+            },
+            getValues() {
+                return this.values.map((v) => {
+                    return v.value;
+                });
             },
             onAdd(val) {
                 val = val instanceof Event ? undefined : val; // If called from a click handler, ignore the property
@@ -113,7 +119,7 @@
                         key: this.key++,
                         value: val !== undefined ? val : {}
                     };
-                    this.$emit('created', {row});
+                    this.$emit("created", {row});
                     this.values.push(row);
                 }
             },
@@ -126,10 +132,14 @@
                         return val;
                     });
                 }
+            },
+            onInput(val, i) {
+                this.$set(this.values[i], "value", val);
+                this.$emit("input", this.getValues());
             }
         },
 
-    }
+    };
 </script>
 
 <style lang="less">

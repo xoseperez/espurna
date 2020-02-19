@@ -1,5 +1,7 @@
 & {
-  @base-line-height: 44px;
+  @size: 44px;
+  @size-small: @size / 2;
+  @size-big: @size * 1.5;
   @color: #666;
   @faded: #6663;
   @spin-duration: 1s;
@@ -15,8 +17,8 @@
 
   .loading {
     position: relative;
-    min-width: @base-line-height + 20px;
-    min-height: @base-line-height + 20px;
+    min-width: @size + 20px;
+    min-height: @size + 20px;
 
     /* Overlay */
 
@@ -27,6 +29,8 @@
       position: absolute;
       z-index: 8;
       height: 100%;
+      top: 0;
+      left: 0;
     }
 
     /* Spinner */
@@ -38,20 +42,42 @@
       left: 50%;
       z-index: 9;
       border-radius: 50%;
-      width: @base-line-height;
-      height: @base-line-height;
+      width: @size;
+      height: @size;
       border: .3rem solid @faded;
       border-top-color: @color;
       animation: spin @spin-duration infinite linear;
     }
+
+    &.small {
+      min-width: @size-small + 10px;
+      min-height: @size-small + 10px;
+
+      &:after {
+        width: @size-small;
+        height: @size-small;
+      }
+    }
+    &.big {
+      min-width: @size-big + 30px;
+      min-height: @size-big + 30px;
+
+      &:after {
+        width: @size-big;
+        height: @size-big;
+      }
+    }
   }
+
 
   section.loading {
     max-height: 100vh;
     overflow: hidden;
+
     > * {
       filter: blur(4px);
     }
+
 
     &:after {
       border-width: .5rem;

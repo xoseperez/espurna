@@ -32,51 +32,20 @@
                         <legend>Switch #{{tpl.k}} ({{tpl.value.gpio}})</legend>
                         <Row>
                             <C>
-                                <Inpt type="text" name="name"/>
-                                <Hint>
-                                    A name to distinguish the different relays
-                                </Hint>
-                            </C>
-                        </Row>
-                        <Row>
-                            <C>
+                                <Row>
+                                    <C><label>Switch name</label></C>
+                                    <C>
+                                        <Inpt type="text" name="name"/>
+                                        <Hint>
+                                            A name to distinguish the different relays
+                                        </Hint>
+                                    </C>
+                                </Row>
                                 <Row>
                                     <C><label>Boot mode</label></C>
                                     <C>
                                         <Inpt type="select" name="boot"
                                               :options="['Always OFF', 'Always ON', 'Same as before', 'Toggle before', 'Locked OFF', 'Locked ON']"/>
-                                    </C>
-                                </Row>
-                                <Row>
-                                    <C><label>Double click delay</label></C>
-                                    <C>
-                                        <Inpt name="dblDl"
-                                              type="number"
-                                              action="reboot"
-                                              min="0"
-                                              step="100"
-                                              max="1000"
-                                              unit="ms"/>
-                                        <Hint>
-                                            Delay in milliseconds to detect a double click (from 0 to 1000ms).<br> The
-                                            lower this number the faster the device will respond to button clicks but
-                                            the harder it will be to get a double click. Increase this number if you are
-                                            having trouble to double click the button. Set this value to 0 to disable
-                                            double click. You won't be able to set the device in AP mode manually but
-                                            your device will respond immediately to button clicks.
-                                        </Hint>
-                                    </C>
-                                </Row>
-                                <Row>
-                                    <C><label>Long click delay</label></C>
-                                    <C>
-                                        <Inpt name="lngDl"
-                                              type="number"
-                                              action="reboot"
-                                              min="0"
-                                              step="100"
-                                              max="10000"
-                                              unit="ms"/>
                                     </C>
                                 </Row>
                             </C>
@@ -99,22 +68,33 @@
                                               unit="s"/>
                                     </C>
                                 </Row>
+                            </C>
+                        </Row>
 
+                        <Row>
+                            <C>
                                 <Row>
-                                    <C><label>Very long click delay</label></C>
+                                    <C><label>Restore last schedules</label></C>
                                     <C>
-                                        <Inpt name="lngLngDl"
-                                              type="number"
-                                              action="reboot"
-                                              min="0"
-                                              step="100"
-                                              max="100000"
-                                              unit="ms"/>
+                                        <Inpt name="lastSch"
+                                              type="switch"/>
+                                    </C>
+                                </Row>
+                            </C>
+                            <C>
+                                <Row v-if="modules.mqtt">
+                                    <C><label>On MQTT disconnect</label></C>
+                                    <C>
+                                        <Inpt type="select" name="on_disc"
+                                              :options="[
+                                                  'Don\'t change',
+                                                  'Turn the switch OFF',
+                                                  'Turn the switch ON'
+                                              ]"/>
                                     </C>
                                 </Row>
                             </C>
                         </Row>
-
                         <template v-if="modules.mqtt">
                             <Row>
                                 <C>
@@ -127,8 +107,8 @@
                                         </C>
                                     </Row>
                                 </C>
-                                <C v-show="tpl.value.group">
-                                    <Row>
+                                <C>
+                                    <Row v-if="tpl.value.group">
                                         <C><label>MQTT group sync</label></C>
                                         <C>
                                             <Inpt type="select" name="groupSync"
@@ -136,46 +116,6 @@
                                         </C>
                                     </Row>
                                 </C>
-                            </Row>
-                            <Row>
-                                <C>
-                                    <Row>
-                                        <C><label>Send all button events</label></C>
-                                        <C>
-                                            <Inpt type="switch"
-                                                  name="sndAllEvts"/>
-                                        </C>
-                                        <Hint>
-                                            If you need to receive double tap (code: 3) or long tap (code: 4) events,
-                                            enable this
-                                        </Hint>
-                                    </Row>
-                                </C>
-                                <C>
-                                    <Row>
-                                        <C><label>On MQTT disconnect</label></C>
-                                        <C>
-                                            <Inpt type="select" name="on_disc"
-                                                  :options="[
-                                                      'Don\'t change',
-                                                      'Turn the switch OFF',
-                                                      'Turn the switch ON'
-                                                  ]"/>
-                                        </C>
-                                    </Row>
-                                </C>
-                            </Row>
-                            <Row>
-                                <C>
-                                    <Row>
-                                        <C><label>Restore last schedules</label></C>
-                                        <C>
-                                            <Inpt name="lastSch"
-                                                  type="switch"/>
-                                        </C>
-                                    </Row>
-                                </C>
-                                <C/>
                             </Row>
                         </template>
                     </template>
@@ -288,7 +228,7 @@
                 let d = new Date(0);
                 for (let i = 0; i < 7; ++i) {
                     d.setDate(i + 5);
-                    let s = d.toLocaleString(navigator.language, {weekday: 'long'});
+                    let s = d.toLocaleString(navigator.language, {weekday: "long"});
                     s = capitalize(s);
                     days.push({k: i + 1, l: s});
                 }
@@ -296,7 +236,7 @@
                 return days;
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

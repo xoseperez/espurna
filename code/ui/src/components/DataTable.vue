@@ -32,10 +32,10 @@
 
         const key = primer ?
             function (x) {
-                return primer(x[field])
+                return primer(x[field]);
             } :
             function (x) {
-                return x[field]
+                return x[field];
             };
 
         reverse = !reverse ? 1 : -1;
@@ -44,7 +44,7 @@
             a = key(a);
             b = key(b);
             return reverse * ((a > b) - (b > a));
-        }
+        };
     };
 
     export default {
@@ -71,7 +71,7 @@
                 orderBy: null,
                 order: false,
                 hover: ""
-            }
+            };
         },
         computed: {
             rows() {
@@ -85,7 +85,7 @@
         },
         methods: {
             getUniqueKey(row) {
-                return typeof this.uniqueKey === 'string' ? row[this.uniqueKey] : this.uniqueKey.call(this, row);
+                return typeof this.uniqueKey === "string" ? row[this.uniqueKey] : this.uniqueKey.call(this, row);
             },
             fieldClasses(field) {
                 let classes = [];
@@ -94,15 +94,15 @@
                     classes.push(field.class);
                 }
                 if (field.align) {
-                    classes.push('align-' + field.align);
+                    classes.push("align-" + field.align);
                 }
                 if (this.orderBy === field.key) {
-                    classes.push(this.order ? 'order-asc' : 'order-desc');
+                    classes.push(this.order ? "order-asc" : "order-desc");
                 }
                 return classes;
             },
             newFieldOrder(field) {
-                return "asc" in field ? !!field.asc : ("desc" in field ? !field.desc : "order" in field ? field.order.match(/asc/i) : true)
+                return "asc" in field ? !!field.asc : ("desc" in field ? !field.desc : "order" in field ? field.order.match(/asc/i) : true);
             },
             getOrderIcon(field) {
                 let hover = this.hover === field.key;
@@ -110,9 +110,9 @@
                 if (current || hover) {
                     let order = current ? !!(this.order * (-1 + hover)) : this.newFieldOrder(field);
 
-                    return order ? '▾' : '▴';
+                    return order ? "▾" : "▴";
                 }
-                return ""
+                return "";
             },
             toggleFilter(field) {
                 if (field.key === this.orderBy) {
@@ -123,7 +123,7 @@
                 }
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

@@ -467,7 +467,8 @@ void _haWebSocketOnConnected(JsonObject& root) {
     ha["prefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
 }
 
-void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+// TODO not needed in vue
+uint8_t _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
     if (strcmp(action, "haconfig") == 0) {
         ws_on_send_callback_list_t callbacks;
         #if SENSOR_SUPPORT
@@ -492,7 +493,9 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
         }
         #endif // SENSOR_SUPPORT
         if (callbacks.size()) wsPostSequence(client_id, std::move(callbacks));
+        return 1;
     }
+    return 0;
 }
 
 #endif // WEB_SUPPORT
@@ -552,7 +555,7 @@ void haSetup() {
         wsRegister()
             .onVisible(_haWebSocketOnVisible)
             .onConnected(_haWebSocketOnConnected)
-            .onAction(_haWebSocketOnAction)
+            //.onAction(_haWebSocketOnAction)
             .onKeyCheck(_haWebSocketOnKeyCheck);
     #endif
 

@@ -12,19 +12,24 @@
 <script>
     export default {
         props: {
-            value: {
-                type: Object,
-                default: () => ({})
-            },
+            value: Object,
         },
         provide() {
             return {
                 $form: () => ({
                     values: this.value
                 })
+            };
+        },
+        watch: {
+            value: {
+                deep: true,
+                handler() {
+                    this.$emit("input", this.value);
+                }
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

@@ -1,7 +1,7 @@
-import Vue from 'vue'
-import {Loading, Button, Card, Col, Row, Form, Input, ButtonGroup, Divider, Dialog, Progress, Message, Upload, Notification} from 'element-ui'
-import lang from 'element-ui/lib/locale/lang/en'
-import locale from 'element-ui/lib/locale'
+import Vue from "vue";
+import {Loading, Button, Card, Col, Row, Form, Input, ButtonGroup, Divider, Dialog, Progress, Message, Upload, Notification, MessageBox} from "element-ui";
+import lang from "element-ui/lib/locale/lang/en";
+import locale from "element-ui/lib/locale";
 
 locale.use(lang);
 
@@ -9,10 +9,9 @@ locale.use(lang);
     Vue.use(v);
 });
 
-Vue.prototype.$notify = Notification;
-Vue.prototype.$message = Message;
-Vue.prototype.$log = (msg) => {
-    console.log(msg);
-};
+Vue.$confirm = MessageBox.confirm;
+Vue.$alert = MessageBox.alert;
+Vue.$notify = Notification;
+Vue.$message = Message;
 
-import './theme.scss'
+import "./theme.scss";

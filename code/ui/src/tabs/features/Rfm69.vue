@@ -123,45 +123,45 @@
             return {
                 columns: [
                     {
-                        key: 'packetID',
-                        title: 'Packet ID'
+                        key: "packetID",
+                        title: "Packet ID"
                     },
                     {
-                        key: 'senderID',
-                        title: 'Sender ID'
+                        key: "senderID",
+                        title: "Sender ID"
                     },
                     {
-                        key: 'targetID',
-                        title: 'Target ID'
+                        key: "targetID",
+                        title: "Target ID"
                     },
                     {
-                        key: 'key',
-                        title: 'Key'
+                        key: "key",
+                        title: "Key"
                     },
                     {
-                        key: 'value',
-                        title: 'Value'
+                        key: "value",
+                        title: "Value"
                     },
                     {
-                        key: 'rssi',
-                        title: 'RSSI'
+                        key: "rssi",
+                        title: "RSSI"
                     },
                     {
-                        key: 'duplicates',
-                        title: 'Duplicates'
+                        key: "duplicates",
+                        title: "Duplicates"
                     },
                     {
-                        key: 'missing',
-                        title: 'Missing'
+                        key: "missing",
+                        title: "Missing"
                     },
                     {
-                        key: 'time',
-                        title: 'Time'
+                        key: "time",
+                        title: "Time"
                     },
                 ]
-            }
+            };
         }
-    }
+    };
 </script>
 
 <style lang="less">

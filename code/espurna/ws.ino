@@ -116,8 +116,8 @@ void ws_debug_t::send(const bool connected) {
 
     if (!flush) return;
     // ref: http://arduinojson.org/v5/assistant/
-    // {"weblog": {"msg":[...],"pre":[...]}}
-    DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
+    // {"weblog": [...]}
+    DynamicJsonBuffer jsonBuffer(JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1));
 
     JsonObject& root = jsonBuffer.createObject();
     JsonArray& weblog = root.createNestedArray("_weblog");
@@ -254,19 +254,25 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         JsonObject& data = root["data"];
         if (data.success()) {
 
-            // Callbacks
-            for (auto& callback : _ws_callbacks.on_action) {
-                callback(client_id, action, data);
+            DynamicJsonBuffer jsonBuffer(512);
+            JsonObject& res = jsonBuffer.createObject();
+
+            if (root["id"]) {
+                res["id"] = root["id"];
             }
 
-            // Restore configuration via websockets
-            if (strcmp(action, "restore") == 0) {
-                if (settingsRestoreJson(data)) {
-                    wsSend_P(client_id, PSTR("{\"message\": 5}"));
-                } else {
-                    wsSend_P(client_id, PSTR("{\"message\": 4}"));
+            uint8_t success;
+            res["success"] = false;
+            // Callbacks
+            for (auto& callback : _ws_callbacks.on_action) {
+                success = callback(client_id, action, data, res);
+                if (success) {
+                    res["success"] = success < 2;
+                    break; //No need to continue looping if a callback return true
                 }
             }
+
+            wsSend(client_id, res);
 
             return;
 
@@ -430,8 +436,13 @@ void _wsOnConnected(JsonObject& root) {
     wifi["_channel"] = WiFi.channel();
     wifi["_name"] = getNetwork();
     wifi["_ip"] = getIP();
+}
 
-    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY); // TODO move this as a setting per button
+uint8_t _wsOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+   if (strcmp(action, "restore") == 0) {
+       return (settingsRestoreJson(data)) ? 1 : 2;
+   }
+   return 0;
 }
 
 void wsSend(JsonObject& root) {
@@ -565,6 +576,9 @@ void _wsHandleClientData(const bool connected) {
 
     data.send(root);
     if (data.client_id) {
+        if (data.request_id) {
+            root["id"] = data.request_id;
+        }
         wsSend(data.client_id, root);
     } else {
         wsSend(root);
@@ -611,6 +625,19 @@ void wsSend(ws_on_send_callback_f callback) {
     }
 }
 
+void wsSend(uint32_t client_id, uint32_t request_id, ws_on_send_callback_f callback) {
+    if (_ws.count() > 0) {
+        DynamicJsonBuffer jsonBuffer(512);
+        JsonObject& root = jsonBuffer.createObject();
+        callback(root);
+
+        root["id"] = request_id;
+
+        wsSend(client_id, root);
+    }
+}
+
+
 void wsSend(const char * payload) {
     if (_ws.count() > 0) {
         _ws.textAll(payload);
@@ -653,6 +680,10 @@ void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb) {
     _ws_client_data.emplace(client_id, cb);
 }
 
+void wsPost(uint32_t client_id, uint32_t request_id, const ws_on_send_callback_f& cb) {
+    _ws_client_data.emplace(client_id, cb);
+}
+
 void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
     _ws_client_data.emplace(client_id, cbs, ws_data_t::ALL);
 }
@@ -689,6 +720,7 @@ void wsSetup() {
     wsRegister()
         .onVisible(_wsOnVisible)
         .onConnected(_wsOnConnected)
+        .onAction(_wsOnAction)
         .onKeyCheck(_wsOnKeyCheck);
 
     espurnaRegisterLoop(_wsLoop);

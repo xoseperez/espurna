@@ -114,9 +114,9 @@
         },
         data() {
             return {
-                passRegex: '(?=^.*[a-z]+.*$)^(?=^.*[A-Z0-9]+.*$)^[a-zA-Z0-9-_,\\.;:~!\\?@#\\$%\\^&\\*<>\\|=\\(\\)/{}\\[\\]]{8,63}$',
+                passRegex: "(?=^.*[a-z]+.*$)^(?=^.*[A-Z0-9]+.*$)^[a-zA-Z0-9-_,\\.;:~!\\?@#\\$%\\^&\\*<>\\|=\\(\\)/{}\\[\\]]{8,63}$",
                 restoreFile: {}
-            }
+            };
         },
         methods: {
             checkPasswords() {
@@ -135,7 +135,7 @@
                 this.$refs.adminPass1.setVisible();
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

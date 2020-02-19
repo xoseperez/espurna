@@ -36,16 +36,16 @@
             style() {
                 let style = "";
                 if (this.size !== 5)
-                    style += 'width:' + this.size * 10 + '%;';
+                    {style += "width:" + this.size * 10 + "%;";}
                 if (this.offset)
-                    style += 'margin-left:' + this.offset * 10 + '%;';
+                    {style += "margin-left:" + this.offset * 10 + "%;";}
                 if (this.outset)
-                    style += 'margin-right:' + this.outset * 10 + '%;';
+                    {style += "margin-right:" + this.outset * 10 + "%;";}
 
                 return style;
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

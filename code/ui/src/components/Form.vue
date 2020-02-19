@@ -15,13 +15,13 @@
         data() {
             return {
                 values: this.value
-            }
+            };
         },
         watch: {
             values: {
                 deep: true,
                 handler(newVal) {
-                    this.$emit('input', newVal);
+                    this.$emit("input", newVal);
                 }
             }
         },
@@ -30,14 +30,14 @@
                 $form: () => ({
                     values: this.values
                 })
-            }
+            };
         },
         methods: {
             reportValidity() {
                 return this.$refs.form.reportValidity();
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

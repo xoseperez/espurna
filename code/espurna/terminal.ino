@@ -405,6 +405,21 @@ void _terminalWebSocketOnVisible(JsonObject& root) {
     modules["cmd"] = 1;
 }
 
+
+uint8_t _terminalWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "dbgcmd") == 0) {
+        if (!data.containsKey("command") || !data["command"].is<const char*>()) return 2;
+        const char* command = data["command"];
+        if (command && strlen(command)) {
+            auto command = data.get<const char*>("command");
+            terminalInject((void*) command, strlen(command));
+            terminalInject('\n');
+        }
+        return 1;
+    }
+    return 0;
+}
+
 void terminalSetup() {
 
     _serial.callback([](uint8_t ch) {
@@ -418,7 +433,8 @@ void terminalSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible(_terminalWebSocketOnVisible);
+            .onVisible(_terminalWebSocketOnVisible)
+            .onAction(_terminalWebSocketOnAction);
     #endif
 
     _terminalInitCommand();

@@ -203,16 +203,18 @@
                 </fieldset>
             </div>
         </Group>
+        <iframe v-if="downloader" v-show="false" :href="downloader"></iframe>
     </section>
 </template>
 <script>
     import Inpt from "./../../components/Input";
-    import Btn from './../../components/Button';
-    import A from './../../components/ExtLink';
+    import Btn from "./../../components/Button";
+    import A from "./../../components/ExtLink";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";
     import Group from "../../components/Group";
+    import ws from "../../common/websocket";
 
     export default {
         components: {Group, Hint, C, Row, Inpt, Btn, A},
@@ -225,7 +227,8 @@
             return {
                 upgradeFile: {},
                 restoreFile: {},
-            }
+                downloader: null,
+            };
         },
         computed: {
             ntpOffsets() {
@@ -244,7 +247,7 @@
 
                 tz.forEach((v) => {
                     const text = "GMT" + (v >= 0 ? "+" : "-") + new Date((1440 + Math.abs(v)) * 60000).toISOString().substr(11, 5);
-                    offsets.push({k: v, l: text})
+                    offsets.push({k: v, l: text});
                 });
 
                 return offsets;
@@ -254,13 +257,14 @@
             doBackup(event) {
                 try {
                     const json = JSON.stringify(this.getSettings());
-                    console.log(json);
                     const blob = new Blob([json], {type: "application/json"});
                     event.target.href = URL.createObjectURL(blob);
-                } catch (e) {}
+                } catch (e) {
+                    this.downloader = ws.urls.config;
+                }
             }
         }
-    }
+    };
 </script>
 <style>
     #upgrade-progress {

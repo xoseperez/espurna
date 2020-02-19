@@ -153,7 +153,7 @@ void _wifiScan(wifi_scan_f callback = nullptr) {
     for (unsigned char i = 0; i < result; ++i) {
 
         WiFi.getNetworkInfo(i, info.ssid_scan, info.sec_scan, info.rssi_scan, info.BSSID_scan, info.chan_scan, info.hidden_scan);
-
+        // TODO we can send this as an array and let the ui format it
         snprintf_P(info.buffer, sizeof(info.buffer),
             PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
             info.BSSID_scan[0], info.BSSID_scan[1], info.BSSID_scan[2], info.BSSID_scan[3], info.BSSID_scan[4], info.BSSID_scan[5],
@@ -466,7 +466,7 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     JsonArray& networks = wifi.createNestedArray("list");
 
     for (unsigned char index = 0; index < WIFI_MAX_NETWORKS; ++index) {
-        if (!getSetting({"ssid", index}, _wifiSSID(index)).length()) break;
+        if (!_wifiHasSSID(index) && !getSetting({"ssid", index}, _wifiSSID(index)).length()) break;
         JsonArray& network = networks.createNestedArray();
         network.add(getSetting({"ssid", index}, _wifiSSID(index)));
         network.add(getSetting({"pass", index}, _wifiPass(index)));
@@ -479,14 +479,36 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
 }
 
 void _wifiWebSocketScan(JsonObject& root) {
-    JsonArray& scanResult = root.createNestedArray("scanResult");
+    JsonArray& scanResult = root.createNestedArray("list");
+
+    JsonArray& schema = root.createNestedArray("_schema");
+
+    schema.add("ssid");
+    schema.add("sec");
+    schema.add("rssi");
+    schema.add("BSSID");
+    schema.add("channel");
+    schema.add("hidden");
+
     _wifiScan([&scanResult](wifi_scan_info_t& info) {
-        scanResult.add(info.buffer);
+        JsonArray& wifi = scanResult.createNestedArray();
+        wifi.add(info.ssid_scan);
+        wifi.add(info.sec_scan);
+        wifi.add(info.rssi_scan);
+        wifi.add(info.BSSID_scan);
+        wifi.add(info.chan_scan);
+        wifi.add(info.hidden_scan);
     });
 }
 
-void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "scan") == 0) wsPost(client_id, _wifiWebSocketScan);
+uint8_t _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "scan") == 0) {
+        _wifiWebSocketScan(res);
+
+        return 1;
+    }
+
+    return 0;
 }
 
 #endif

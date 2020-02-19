@@ -36,14 +36,14 @@
             return {
                 currentPanel: this.tabs[0].k,
                 open: false
-            }
+            };
         },
         methods: {
             toggleMenu() {
                 this.open = !this.open;
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

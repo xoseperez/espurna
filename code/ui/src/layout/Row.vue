@@ -12,7 +12,7 @@
                 default: false
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

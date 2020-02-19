@@ -1,10 +1,11 @@
 //import 'setimmediate';
 import {WebSocket, Server} from "mock-websocket";
+import {alertInfo, alertError} from "./notification";
 
 export default function () {
     const server = new Server("ws://localhost:8080");
 
-    server.on('connection', () => {
+    server.on("connection", () => {
         let data = [{
             "device": {
                 "_heap": 18536,
@@ -125,7 +126,9 @@ export default function () {
                     "config": {
                         "_start": 0,
                         "_schema": [
+                            "pin",
                             "GPIO",
+                            "name",
                             "type",
                             //"resetGPIO",
                             "boot",
@@ -142,7 +145,9 @@ export default function () {
                         ],
                         "list": [
                             [
+                                12,
                                 "GPIO12",
+                                "Entrance",
                                 0,
                                 //153,
                                 0,
@@ -158,7 +163,9 @@ export default function () {
                                 1
                             ],
                             [
+                                13,
                                 "GPIO13",
+                                "Kitchen",
                                 0,
                                 //153,
                                 0,
@@ -174,7 +181,9 @@ export default function () {
                                 0
                             ],
                             [
+                                14,
                                 "GPIO14",
+                                "Stairs",
                                 0,
                                 //153,
                                 0,
@@ -190,7 +199,9 @@ export default function () {
                                 0
                             ],
                             [
+                                15,
                                 "GPIO15",
+                                "Balcony",
                                 0,
                                 //153,
                                 0,
@@ -286,19 +297,68 @@ export default function () {
     });
 
 
-    server.on('message', (con, msg) => {
-        console.log(con, msg);
+    server.on("message", (con, msg) => {
         try {
             msg = JSON.parse(msg);
 
+            alertInfo({title: "Sent message", message: JSON.stringify(msg, null, 2)});
             if (msg.id) {
                 setTimeout(() => {
+                    const payload = {id: msg.id, success: true};
+                    switch (msg.action) {
+                        case "scan":
+                            payload._schema = [
+                                "ssid",
+                                "sec",
+                                "rssi",
+                                "BSSID",
+                                "channel",
+                                "hidden"
+                            ];
+                            payload.list = [
+                                [
+                                    "TestWifi1",
+                                    true,
+                                    -60,
+                                    "00:11:22:33:44:55",
+                                    2,
+                                    false
+                                ],
+                                [
+                                    "TestWifi2",
+                                    true,
+                                    -70,
+                                    "00:11:22:33:44:55",
+                                    3,
+                                    false
+                                ],
+                                [
+                                    "TestWifi3",
+                                    true,
+                                    -50,
+                                    "00:11:22:33:44:55",
+                                    4,
+                                    false
+                                ],
+                            ];
+                            payload.scanResult = "BSSID: 00:11:22:33:44:55 SEC: YES RSSI: -60 CH:  2 SSID: TestWifi<br />BSSID: 00:11:22:33:44:55 SEC: YES RSSI: -69 CH:  2 SSID: TestWifi<br />BSSID: 00:11:22:33:44:55 SEC: YES RSSI: -65 CH:  2 SSID: TestWifi<br />";
+                            break;
+                        case "lightfoxLearn":
+                        case "lightfoxClear":
+                        case "relay":
+                            break;
+                        case "dbgcmd":
+                            payload.success = Math.random() >= 0.5;
+                            break;
+                        default:
+                            payload.success = false;
+                    }
                     //Send success for cb
-                    server.send(JSON.stringify({id: msg.id}));
-                }, 100);
+                    server.send(JSON.stringify(payload));
+                }, 300);
             }
         } catch (e) {
-
+            alertError({title: "Invalid message sent", message: msg});
         }
     });
 

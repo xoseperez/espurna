@@ -1,5 +1,5 @@
 <template>
-    <div v-loading="!isLoaded" class="wrapper">
+    <section v-loading="!isLoaded" class="wrapper">
         <i v-if="close" class="back" @click="close">🡠</i>
         <!-- TODO if process.env.VUE_APP_FORCE_PASS_CHANGE -->
         <Setup v-if="!webmode"/>
@@ -52,9 +52,9 @@
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if LED === true -->
-                <template v-if="data.modules.led" #led>
-                    <Led v-bind="data" :relay-options="relayOptions"/>
+                <!-- #!if LED === true || BUTTON === true -->
+                <template v-if="data.modules.led" #ledButton>
+                    <LedButton v-bind="data" :relay-options="relayOptions"/>
                 </template>
                 <!-- #!endif -->
 
@@ -131,21 +131,21 @@
                 <!-- #!endif -->
             </Menu>
         </Form>
-    </div>
+    </section>
 </template>
 
 <script>
 
-    import Socket from './common/websocket';
-    import Icon from '../public/icons/icon.svg';
-    import capitalize from './common/capitalize';
+    import ws from "./common/websocket";
+    import Icon from "../public/icons/icon.svg";
+    import capitalize from "./common/capitalize";
 
-    import Setup from './tabs/common/Setup';
-    import Inpt from './components/Input';
-    import Menu from './components/Menu';
-    import Form from './components/Form';
-    import A from './components/ExtLink';
-    import Btn from './components/Button';
+    import Setup from "./tabs/common/Setup";
+    import Inpt from "./components/Input";
+    import Menu from "./components/Menu";
+    import Form from "./components/Form";
+    import A from "./components/ExtLink";
+    import Btn from "./components/Button";
 
 
     import Mqtt from "./tabs/common/Mqtt";
@@ -154,6 +154,8 @@
     import Status from "./tabs/common/Status";
 
     import diff from "deep-object-diff/dist/diff";
+    import {confirm} from "./common/notification";
+    import prepareData from "./common/prepareData";
 
     let tabs = [
         //Basic settings
@@ -174,11 +176,24 @@
     tabs.push({k: "thermostat", l: "Thermostat"});
     // #!endif
 
-    // #!if LED === true
-    import Led from "./tabs/features/Led";
 
-    components.Led = Led;
-    tabs.push({k: "led", l: "LED"});
+    // #!if LED === true || BUTTON === true
+    let label = [];
+    // #!endif
+
+    // #!if LED === true
+    label.push("Led");
+    // #!endif
+
+    // #!if BUTTON === true
+    label.push("Button");
+    // #!endif
+
+    // #!if LED === true || BUTTON === true
+    import LedButton from "./tabs/features/LedButton";
+
+    components.LedButton = LedButton;
+    tabs.push({k: "ledButton", l: label.join("/")});
     // #!endif
 
     // #!if LIGHT === true
@@ -280,9 +295,6 @@
         "Session expired, please reload page..."
     ];
 
-    function isObject(item) {
-        return (item && typeof item === 'object' && !Array.isArray(item));
-    }
 
     export default {
         components,
@@ -299,7 +311,6 @@
         data() {
             return {
                 webmode: true,
-                ws: new Socket,
                 data: {},
                 received: {
                     _loaded: false,
@@ -309,8 +320,8 @@
                     },
                     device: {
                         _path: "",
-                        hostname: 'ESPURNA',
-                        desc: '',
+                        hostname: "ESPURNA",
+                        desc: "",
                         _now: Math.floor(Date.now() / 1000),
                         _uptime: 0,
                         _lastUpdate: 0
@@ -323,7 +334,7 @@
                 },
                 tabs: tabs,
                 interval: null
-            }
+            };
         },
         computed: {
             isLoaded() {
@@ -336,7 +347,7 @@
                 return this.flatten(this.modified, this.received);
             },
             original() {
-                return JSON.parse(JSON.stringify(this.received).replace(/"_/g, '"'))
+                return JSON.parse(JSON.stringify(this.received).replace(/"_/g, "\""));
             },
             lightOptions() {
                 let options = [];
@@ -349,10 +360,10 @@
             },
             relayOptions() {
                 let options = [];
-                if (this.data.relay.config) {
-                    for (let i = 0; i < this.data.relay.config.list.length; ++i) {
-                        options.push({k: i, l: "Switch #" + i});
-                    }
+                if (this.data.relay.config && this.data.relay.config.list) {
+                    this.data.relay.config.list.forEach((v, i) => {
+                        options.push({k: i, l: "Switch " + (v.name || "#" + i) + " (" + v.gpio + ")"});
+                    });
                 }
                 return options;
             },
@@ -377,31 +388,32 @@
             this.interval = setInterval(() => {
                 this.data.device.now++;
                 this.data.device.lastUpdate++;
-                this.data.device.uptime++
+                this.data.device.uptime++;
             }, 1000);
 
             if (!this.address) {
                 // Check host param in query string
                 const search = new URLSearchParams(window.location.search),
                     host = search.get("host");
-                this.ws.connect(host ? host : window.location.host, this.receiveMessage);
+                ws.connect(host ? host : window.location.host, this.receiveMessage);
             } else {
-                this.ws.connect(this.address, this.receiveMessage);
+                ws.connect(this.address, this.receiveMessage);
             }
         },
         beforeDestroy() {
             clearInterval(this.interval);
+            ws.close();
         },
         methods: {
             save() {
                 if (this.$refs.formSettings.reportValidity() && Object.keys(this.modifiedSettings).length) {
-                    this.ws.send({config: this.modifiedSettings}, () => {
-                        this.prepareData(this.received, this.modified);
+                    ws.send({config: this.modifiedSettings}, () => {
+                        prepareData(this.received, this.modified);
                     }, true);
                 }
             },
             flatten(obj, mask, prefix, suffix, flat) {
-                flat = typeof flat === 'undefined' ? {} : flat;
+                flat = typeof flat === "undefined" ? {} : flat;
 
                 prefix = prefix || "";
                 suffix = suffix || "";
@@ -415,7 +427,7 @@
                         }
 
                         const v = obj[key];
-                        if (typeof v === 'object') {
+                        if (typeof v === "object") {
                             this.flatten(v, mask[key], Array.isArray(mask[key]) || Array.isArray(mask) ? prefix : (prefix + Key),
                                 Array.isArray(mask) ? suffix + key : suffix,
                                 flat);
@@ -427,74 +439,57 @@
                 return flat;
             },
             reconnect(ask) {
-                let question = (typeof ask === "undefined" || false === ask) ?
-                    null :
-                    "Are you sure you want to disconnect from the current WIFI network?";
-                this.doAction(question, "reconnect");
+                let question = ask ? null : "Are you sure you want to disconnect from the current WIFI network?";
+                this.doAction(question, "reconnect").then(() => {
+                    this.doReload(1000);
+                });
             },
             reboot(ask) {
-                let question = (typeof ask === "undefined" || false === ask) ?
-                    null :
-                    "Are you sure you want to reboot the device?";
-                this.doAction(question, "reboot");
+                let question = ask ? null : "Are you sure you want to reboot the device?";
+                this.doAction(question, "reboot").then(() => {
+                    this.doReload(4000);
+                });
             },
-            doAction(question, action, data) {
-                if (this.modified) {
-                    if (window.confirm("Some changes have not been saved yet, do you want to save them first?")) {
-                        this.ws.sendConfig(this.modified)
-                    }
-                }
-
-                if (question) {
-                    let response = window.confirm(question);
-                    if (false === response) {
-                        return;
-                    }
-                }
-
-                this.ws.send({action, data});
-                this.doReload(5000);
-            },
-            receiveMessage(data) {
-                this.prepareData(this.received, data);
-                this.received.device.lastUpdate = 0;
-            },
-            prepareData(target, source) {
-                Object.keys(source).forEach((k) => {
-                    let val = source[k];
-
-                    if (isObject(val)) {
-                        if (!target[k]) {
-                            this.$set(target, k, {});
-                        }
-
-                        if (val._schema && Array.isArray(val.list)) {
-                            let objs = [];
-
-                            val.list.forEach((v) => {
-                                if (Array.isArray(v)) {
-                                    let i = 0;
-                                    let obj = {};
-                                    v.forEach((prop) => {
-                                        obj[val._schema[i++]] = prop;
-                                    });
-                                    objs.push(obj);
-                                }
-                            });
-
-                            if (val.start) {
-                                val.list = [...target.list];
-                                val.list.splice(val.start, objs.length, ...objs);
-                            } else {
-                                val.list = objs;
-                            }
-                        }
-
-                        this.prepareData(target[k], val);
+            askSave() {
+                return new Promise((resolve) => {
+                    if (this.modified) {
+                        confirm("Some changes have not been saved yet, do you want to save them first?").then(() => {
+                            ws.send({config: this.modified}, () => {
+                                resolve();
+                            }, true);
+                        }).catch(resolve);
                     } else {
-                        this.$set(target, k, val);
+                        resolve();
                     }
                 });
+            },
+            askQuestion(question) {
+                return new Promise((resolve) => {
+                    if (question) {
+                        confirm(question).then(resolve);
+                    } else {
+                        resolve();
+                    }
+                });
+            },
+            doAction(question, action, data) {
+                return new Promise((resolve, fail) => {
+                    this.askSave().then(() => {
+                        this.askQuestion(question).then(() => {
+                            ws.send({action, data}, () => {
+                                resolve();
+                            });
+                        }).catch(fail);
+                    }).catch(fail);
+                });
+            },
+            doReload(wait_time) {
+                ws.retry(wait_time);
+                ws.close(1000, "Device reload");
+            },
+            receiveMessage(data) {
+                prepareData(this.received, data);
+                this.received.device.lastUpdate = 0;
             }
         },
         provide() {
@@ -503,7 +498,7 @@
                     ws: this.ws,
                     node: this
                 }
-            }
+            };
         }
     };
 

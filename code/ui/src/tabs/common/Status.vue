@@ -12,11 +12,11 @@
                         <Row>
                             <C :size="2"><label>Switch #{{tpl.k}}</label></C>
                             <C :size="8">
-                                <Inpt type="switch" name="status"
+                                <Inpt type="switch" :value="tpl.value.status"
                                       on="ON"
                                       off="OFF"
                                       :disabled="tpl.value.lock < 2"
-                                      @input="() => {}"/>
+                                      @input="(v) => toggleRelay(tpl, v)"/>
                             </C>
                         </Row>
                     </template>
@@ -42,8 +42,7 @@
                         <C>
                             <input type="range" min="0" max="255"
                                    :value="light.brightness"
-                                   readonly>
-                            {{light.brightness}}
+                                   readonly> {{light.brightness}}
                         </C>
                     </Row>
 
@@ -153,8 +152,7 @@
 
                             <C>IP</C>
                             <C>
-                                <a :href="'//'+wifi.ip">{{wifi.ip}}</a>
-                                (<a :href="'telnet://'+wifi.ip">telnet</a>)
+                                <a :href="'//'+wifi.ip">{{wifi.ip}}</a> (<a :href="'telnet://'+wifi.ip">telnet</a>)
                             </C>
 
                             <template v-if="modules.mqtt">
@@ -187,18 +185,18 @@
             </h2>
         </div>
 
-        <div class="page">
+        <div v-if="modules.cmd || modules.debug" class="page">
             <fieldset>
                 <Row v-if="modules.cmd" class="responsive">
                     <C :size="2"><label>Command</label></C>
                     <C :size="8" no-wrap>
-                        <Inpt name="dbgcmd" type="text" tabindex="2"/>
-                        <Btn name="dbgcmd">
+                        <Inpt v-model="dbgcmd" type="text" tabindex="2"/>
+                        <Btn name="dbgcmd" @click="sendCmd">
                             Send
                         </Btn>
                         <Hint>
-                            Write a command and click send to execute it on the device. The output will be shown
-                            in the debug text area below.
+                            Write a command and click send to execute it on the device. The output will be shown in the
+                            debug text area below.
                         </Hint>
                     </C>
                 </Row>
@@ -222,11 +220,12 @@
 
 <script>
     import Inpt from "./../../components/Input";
-    import Btn from './../../components/Button'
+    import Btn from "./../../components/Button";
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Hint from "../../components/Hint";
     import Repeater from "../../components/Repeater";
+    import ws from "./../../common/websocket";
 
     export default {
         components: {
@@ -274,13 +273,14 @@
         },
         data() {
             return {
-                logs: []
-            }
+                logs: [],
+                dbgcmd: ""
+            };
         },
         watch: {
             weblog(rec, old) {
                 if (JSON.stringify(old) !== JSON.stringify(rec)) {
-                    const date = '[' + new Date().toLocaleString(navigator.languages) + '] ';
+                    const date = "[" + this.date() + "] ";
                     this.weblog.forEach((v) => {
                         this.logs.push(date + v);
                     });
@@ -289,20 +289,38 @@
         },
         methods: {
             date(d) {
-                return new Date(d * 1000).toLocaleString(navigator.languages);
+                return (d ? new Date(d * 1000) : new Date()).toLocaleString(navigator.languages);
             },
             elapsed(d) {
                 try {
                     return parseInt(d / 86400) + "d " + new Date(d * 1000).toISOString().replace(/.*(\d{2}):(\d{2}):(\d{2}).*/, "$1h $2m $3s");
                 } catch (e) {
-                    return ""
+                    return "";
                 }
             },
-            toggleRelay(id, val) {
-                //sendAction("relay", {id: id, status: val ? 1 : 0});
-                //this.$set(this.relay.state, id, !val)
+            toggleRelay(tpl, val) {
+                if (tpl.value.lock >= 2) {
+                    ws.send({action: "relay", data: {id: tpl.k, status: val ? 1 : 0}}, (res) => {
+                        if (res.success) {
+                            this.$set(tpl.value, "status", val ? 1 : 0);
+                        }
+                    });
+                }
             },
+            sendCmd() {
+                const dbgcmd = this.dbgcmd;
+                if (dbgcmd) {
+                    this.logs.push("[" + this.date() + "] > " + dbgcmd + "\n");
 
+                    ws.send({action: "dbgcmd", data: {command: dbgcmd}}, (res) => {
+                        if (res.success) {
+                            this.dbgcmd = "";
+                        } else {
+                            this.logs.push("[" + this.date() + "] < Command: `" + dbgcmd + "` failed\n");
+                        }
+                    });
+                }
+            },
             magnitudeType(type) {
                 const types = [
                     "Temperature", "Humidity", "Pressure",
@@ -319,7 +337,7 @@
                 return null;
             }
         }
-    }
+    };
 </script>
 
 <style>

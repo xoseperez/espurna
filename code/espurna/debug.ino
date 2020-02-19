@@ -220,20 +220,6 @@ void _debugWebSocketOnVisible(JsonObject& root) {
     modules["dbg"] = 1;
 }
 
-void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-
-        #if TERMINAL_SUPPORT
-            if (strcmp(action, "dbgcmd") == 0) {
-                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
-                const char* command = data["command"];
-                if (command && strlen(command)) {
-                    auto command = data.get<const char*>("command");
-                    terminalInject((void*) command, strlen(command));
-                    terminalInject('\n');
-                }
-            }
-        #endif
-}
 
 void debugWebSetup() {
 

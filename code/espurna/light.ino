@@ -1059,26 +1059,33 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     _lightWebSocketStatus(root);
 }
 
-void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+uint8_t _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
 
-    if (_light_has_color) {
-        if (strcmp(action, "color") == 0) {
+    if (strcmp(action, "color") == 0) {
+        if (_light_has_color) {
             if (data.containsKey("rgb")) {
                 lightColor(data["rgb"], true);
                 lightUpdate(true, true);
+                return 1;
             }
             if (data.containsKey("hsv")) {
                 lightColor(data["hsv"], false);
                 lightUpdate(true, true);
+                return 1;
             }
         }
+        return 2;
     }
 
-    if (_light_use_cct) {
-      if (strcmp(action, "mireds") == 0) {
-          _fromMireds(data["mireds"]);
-          lightUpdate(true, true);
-      }
+    if (strcmp(action, "mireds") == 0) {
+        if (_light_use_cct) {
+            if (data.containsKey("mireds"]) {
+                _fromMireds(data["mireds"]);
+                lightUpdate(true, true);
+                return 1;
+            }
+        }
+        return 2;
     }
 
 
@@ -1086,16 +1093,21 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
         if (data.containsKey("id") && data.containsKey("value")) {
             lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
             lightUpdate(true, true);
+            return 1;
         }
+        return 2;
     }
 
     if (strcmp(action, "brightness") == 0) {
         if (data.containsKey("value")) {
             lightBrightness(data["value"].as<int>());
             lightUpdate(true, true);
+            return 1;
         }
+        return 2;
     }
 
+    return 0;
 }
 
 #endif

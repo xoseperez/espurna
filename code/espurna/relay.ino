@@ -908,7 +908,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     JsonArray& schema = config.createNestedArray("_schema");
 
     schema.add("pin");
-    schema.add("GPIO");
+    schema.add("_gpio");
     schema.add("type");
     //schema.add("resetGPIO"); //This is not needed
     schema.add("name");
@@ -938,11 +938,11 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 
     for (unsigned char i=0; i<relayCount(); i++) {
         JsonArray& relay = relays.createNestedArray();
-        relay.add(_relays[i].pin);                                       //gpio, why friendly name?
+        relay.add(_relays[i].pin);                                              //pin
         relay.add(_relayFriendlyName(i));                                       //gpio, why friendly name?
         relay.add(_relays[i].type);                                             //type
         //relay.add(_relays[i].reset_pin);                                        //reset
-        relay.add(getSetting({"relayName", i}));                                 //name
+        relay.add(getSetting({"relayName", i}, _relayFriendlyName(i)));         //name
         relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));               //boot
         relay.add(_relays[i].pulse);                                            //pulse
         relay.add(_relays[i].pulse_ms / 1000.0);                                //time
@@ -983,9 +983,9 @@ void _relayWebSocketOnConnected(JsonObject& root) {
 
 }
 
-void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+uint8_t _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
 
-    if (strcmp(action, "relay") != 0) return;
+    if (strcmp(action, "relay") != 0) return 0;
 
     if (data.containsKey("status")) {
 
@@ -998,6 +998,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
     }
 
+    return 2;
 }
 
 void relaySetupWS() {

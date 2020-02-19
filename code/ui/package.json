@@ -9,6 +9,8 @@
   },
   "scripts": {
     "serve": "vue-cli-service serve",
+    "serve:dev": "vue-cli-service serve --mode dev",
+    "serve:pwa": "vue-cli-service serve --mode pwa",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint",

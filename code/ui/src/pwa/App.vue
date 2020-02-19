@@ -27,8 +27,8 @@
 </template>
 
 <script>
-    import Icon from '../../public/icons/icon.svg';
-    import getUserIp from './get-user-ip';
+    import Icon from "../../public/icons/icon.svg";
+    import getUserIp from "./get-user-ip";
     import App from "../App";
     import Device from "./Device";
 
@@ -50,25 +50,24 @@
                 userIp: "",
                 singleAddress: null,
                 devices: {}
-            }
+            };
         },
         watch: {
             userIp(newIp) {
                 //We are connected to an espurna device, show single device interface
-                if (newIp === '192.168.4.1' || newIp === '192.168.241.1') {
+                if (newIp === "192.168.4.1" || newIp === "192.168.241.1") {
                     this.singleAddress = newIp;
                 } else {
-                    this.scanIp = newIp.split('.');
+                    this.scanIp = newIp.split(".");
                     this.scanIp.pop();
-                    this.scanIp.push('1-255');
-                    this.scanIp = this.scanIp.join('.');
+                    this.scanIp.push("1-255");
+                    this.scanIp = this.scanIp.join(".");
                 }
             }
         },
         mounted() {
             //this.devices = localStorage.devices;
             getUserIp((ip) => {
-                console.log(ip);
                 this.userIp = ip;
             });
             setInterval(this.updateDevices, 3000); //Update wifi info every 3 second
@@ -76,11 +75,11 @@
         methods: {
             updateDevices() {
                 Object.keys(this.devices).forEach((ip) => {
-                    fetch('http://' + ip + '/discover').then(response => {
+                    fetch("http://" + ip + "/discover").then(response => {
                         if (response.ok) {
                             return response.json();
                         } else {
-                            throw new Error('Not an espurna device');
+                            throw new Error("Not an espurna device");
                         }
                     }).then(data => {
                         this.devices[ip] = {...this.devices[ip], ...data};
@@ -88,20 +87,20 @@
                         return Promise.reject(error);
                         //Do nothing
                     }).catch(() => {
-                        this.$set(this.device[ip], 'rssi', null);
-                        this.$set(this.device[ip], 'status', 'ko');
+                        this.$set(this.device[ip], "rssi", null);
+                        this.$set(this.device[ip], "status", "ko");
                     });
-                })
+                });
             },
             retrieveDevices() {
-                let parts = this.scanIp.split('.');
+                let parts = this.scanIp.split(".");
                 this.rangeIterate(parts, (ip) => {
-                    ip = ip.join('.');
-                    fetch('http://' + ip + '/discover').then(response => {
+                    ip = ip.join(".");
+                    fetch("http://" + ip + "/discover").then(response => {
                         if (response.ok) {
                             return response.json();
                         } else {
-                            throw new Error('Not an espurna device');
+                            throw new Error("Not an espurna device");
                         }
                     }).then(data => {
                         this.$set(this.devices, ip, data);
@@ -109,7 +108,9 @@
                         return Promise.reject(error);
                         //Do nothing
                     }).catch((error) => {
+                        /* eslint-disable no-console */
                         console.log(error);
+                        /* eslint-enable */
                     });
                 });
             },
@@ -119,7 +120,7 @@
                 if (r === parts.length) {
                     cb(parts);
                 } else {
-                    let range = parts[r].split('-', 2);
+                    let range = parts[r].split("-", 2);
                     if (range.length > 1) {
                         let i;
 
@@ -136,7 +137,7 @@
             },
 
         }
-    }
+    };
 </script>
 
 <style lang="less">

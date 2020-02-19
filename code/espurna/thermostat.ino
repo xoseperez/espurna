@@ -349,8 +349,12 @@ bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 //------------------------------------------------------------------------------
-void _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "thermostat_reset_counters") == 0) resetBurnCounters();
+uint8_t _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "thermostat_reset_counters") == 0) {
+        resetBurnCounters();
+        return 1;
+    }
+    return 0;
 }
 #endif
 

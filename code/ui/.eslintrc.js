@@ -12,7 +12,7 @@ module.exports = {
     extends: [
         // add more generic rulesets here, such as:
         // 'eslint:recommended',
-        'plugin:vue/recommended'
+        "plugin:vue/recommended"
     ],
     rules: {
         "vue/html-indent": ["error", 4, {
@@ -43,7 +43,7 @@ module.exports = {
         "vue/singleline-html-element-content-newline": ["warning", {
             "ignoreWhenNoAttributes": true,
             "ignoreWhenEmpty": true,
-            "ignores": ["pre", "textarea", "v-btn", 'v-icon']
+            "ignores": ["pre", "textarea", "v-btn", "v-icon"]
         }],
         "vue/html-self-closing": ["error", {
             "html": {
@@ -54,6 +54,11 @@ module.exports = {
             "svg": "always",
             "math": "always"
         }],
-        "vue/require-default-prop": false
+        "vue/require-default-prop": false,
+        "semi": ["error", "always"],
+        "quotes": ["error", "double"],
+        "no-empty": ["error"],
+        "no-console": ["error"],
+        "curly": ["error"]
     }
 };

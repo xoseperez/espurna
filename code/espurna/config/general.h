@@ -42,7 +42,7 @@
 // Serial debug log
 
 #ifndef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT    1               // Enable serial debug log
+#define DEBUG_SERIAL_SUPPORT    0               // Enable serial debug log
 #endif
 
 #ifndef DEBUG_PORT
@@ -100,13 +100,13 @@
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_TELNET_SUPPORT
-#define DEBUG_TELNET_SUPPORT    1               // Enable telnet debug log (will only work if TELNET_SUPPORT is also 1)
+#define DEBUG_TELNET_SUPPORT    0               // Enable telnet debug log (will enable telnet if set)
 #endif
 
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT       1               // Enable web debug log (will only work if WEB_SUPPORT is also 1)
+#define DEBUG_WEB_SUPPORT       0               // Enable web debug log (will only work if WEB_SUPPORT is also 1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1959,21 +1959,5 @@
 
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
-#endif
-
-// =============================================================================
-// Configuration helpers
-// =============================================================================
-
-//------------------------------------------------------------------------------
-// Provide generic way to detect debugging support
-//------------------------------------------------------------------------------
-#ifndef DEBUG_SUPPORT
-#define DEBUG_SUPPORT ( \
-    DEBUG_SERIAL_SUPPORT || \
-    DEBUG_UDP_SUPPORT || \
-    DEBUG_TELNET_SUPPORT || \
-    DEBUG_WEB_SUPPORT \
-)
 #endif
 

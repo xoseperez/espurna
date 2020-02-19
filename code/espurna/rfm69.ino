@@ -68,8 +68,12 @@ bool _rfm69WebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "clear-counts") == 0) _rfm69Clear();
+uint8_t _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "clear-counts") == 0) {
+        _rfm69Clear();
+        return 1;
+    }
+    return 0;
 }
 
 

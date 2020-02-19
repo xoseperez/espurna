@@ -83,7 +83,7 @@
         data() {
             return {
                 passType: this.type
-            }
+            };
         },
         computed: {
             val: {
@@ -91,9 +91,10 @@
                     return this.value ? this.value : (this.form && this.form.values && this.name in this.form.values ? this.form.values[this.name] : this.default);
                 },
                 set(v) {
-                    if (this.name)
+                    if (this.name) {
                         this.$set(this.form.values, this.name, v);
-                    this.$emit('input', v);
+                    }
+                    this.$emit("input", v);
                 }
             },
             form() {
@@ -103,7 +104,7 @@
                 let options = [];
 
                 this.options.forEach((v, k) => {
-                    options.push({k: this.key(k, v), l: this.label(k, v)})
+                    options.push({k: this.key(k, v), l: this.label(k, v)});
                 });
 
                 return options;
@@ -113,26 +114,26 @@
             if (this.val === undefined || this.val === null) {
                 if (this.default !== null) {
                     this.val = this.default;
-                } else if (this.type === 'select' && !this.placeholder) {
+                } else if (this.type === "select" && !this.placeholder) {
                     this.val = 0;
-                } else if (this.type === 'number' && "min" in this.$attrs) {
+                } else if (this.type === "number" && "min" in this.$attrs) {
                     this.val = this.$attrs.min;
                 }
             }
         },
-        inject: {$form: {name: '$form', default: false}},
+        inject: {$form: {name: "$form", default: false}},
         methods: {
             key(k, l) {
-                return typeof l === 'object' ? l.k : k
+                return typeof l === "object" ? l.k : k;
             },
             label(k, l) {
-                return typeof l === 'object' ? l.l : l
+                return typeof l === "object" ? l.l : l;
             },
             togglePass() {
-                this.passType = (this.passType === 'text' ? 'password' : 'text');
+                this.passType = (this.passType === "text" ? "password" : "text");
             },
             setVisible() {
-                this.passType = 'text';
+                this.passType = "text";
             }
         },
     };

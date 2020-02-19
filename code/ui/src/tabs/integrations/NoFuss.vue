@@ -53,7 +53,7 @@
                 default: () => ({})
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

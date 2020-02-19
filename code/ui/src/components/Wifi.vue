@@ -87,12 +87,12 @@
 </template>
 
 <script>
-    import Repeater from './Repeater';
-    import Hint from './Hint';
-    import Inpt from './Input';
-    import Btn from './Button';
-    import Row from '../layout/Row';
-    import C from '../layout/Col';
+    import Repeater from "./Repeater";
+    import Hint from "./Hint";
+    import Inpt from "./Input";
+    import Btn from "./Button";
+    import Row from "../layout/Row";
+    import C from "../layout/Col";
 
     export default {
         components: {
@@ -111,12 +111,12 @@
         data() {
             return {
                 list: this.value
-            }
+            };
         },
         watch: {
             list() {
                 if (this.list !== this.value) {
-                    this.$emit('input', this.list);
+                    this.$emit("input", this.list);
                 }
             },
             value() {
@@ -135,14 +135,14 @@
                     //We cannot delete it if it was hardcoded or if there is a hardcoded value after
                     Object.keys(tpl.value).forEach((k) => {
                         if (k !== "hardcoded")
-                            tpl.value[k] = "";
+                            {tpl.value[k] = "";}
                     });
                 } else {
                     tpl.click();
                 }
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

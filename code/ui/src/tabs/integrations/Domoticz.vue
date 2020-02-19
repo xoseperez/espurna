@@ -112,7 +112,7 @@
                 default: () => ({magnitudes:{}})
             },
         }
-    }
+    };
 </script>
 
 <style lang="less">

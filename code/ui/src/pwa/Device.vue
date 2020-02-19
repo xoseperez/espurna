@@ -124,7 +124,7 @@
         props: {
             hostname: {
                 type: String,
-                default: 'Espurna'
+                default: "Espurna"
             },
             description: {
                 type: String,
@@ -168,10 +168,10 @@
                 isMounted: false,
                 authDialogVisible: false,
                 upgradeDialogVisible: false,
-                username: 'admin',
-                password: 'fibonacci',
-                coreAsset: 'https://github.com/xoseperez/espurna/releases/download/1.14.1/espurna-1.14.1-espurna-core-1MB.bin'
-            }
+                username: "admin",
+                password: "fibonacci",
+                coreAsset: "https://github.com/xoseperez/espurna/releases/download/1.14.1/espurna-1.14.1-espurna-core-1MB.bin"
+            };
         },
         computed: {
             wifiPercent() {
@@ -179,18 +179,18 @@
                     return 0;
                 }
                 let rssi = Math.abs(this.rssi);
-                return Math.min(100, Math.max(0, 100 * (1 - Math.pow(rssi - 40, 2) / Math.pow(50, 2))))
+                return Math.min(100, Math.max(0, 100 * (1 - Math.pow(rssi - 40, 2) / Math.pow(50, 2))));
             },
             color() {
-                return mixColors('#479fd6', '#db3a22', this.wifiPercent);
+                return mixColors("#479fd6", "#db3a22", this.wifiPercent);
             },
         },
         mounted() {
             this.isMounted = true;
             this.getCoreAsset().then((res) => {
                 if ("browser_download_url" in res)
-                    this.coreAsset = res.browser_download_url;
-            })
+                    {this.coreAsset = res.browser_download_url;}
+            });
         },
         methods: {
             async getCoreAsset() {
@@ -206,11 +206,11 @@
                             if (asset) {
                                 return asset;
                             } else {
-                                throw Error('Could not find a core file to use')
+                                throw Error("Could not find a core file to use");
                             }
                         }
                     } else {
-                        throw Error('Failed to connect to github');
+                        throw Error("Failed to connect to github");
                     }
                 } catch (e) {
                     this.$notify.error(e.toString());
@@ -218,7 +218,7 @@
             },
             freeCoreSize() {
                 return this.twoStep ? this.free_size : this.total_size -
-                    (this.$refs.coreUplad.files.length ? this.$refs.coreUplad.files[0].size : 0)
+                    (this.$refs.coreUplad.files.length ? this.$refs.coreUplad.files[0].size : 0);
             },
             canDoTwoStepUpdate(file, coreFile) {
                 return (coreFile.size > this.free_size) && (coreFile.size + file.size <= this.total_size);
@@ -226,12 +226,12 @@
             doTwoStepUpdate(file) {
                 let coreFile = this.getCoreAsset();
                 if (this.canDoTwoStepUpdate(file, coreFile)) {
-                    coreFile.browser_download_url
+                    coreFile.browser_download_url;
                 } else {
                     this.$notify.error({
-                        title: 'Not enough space',
+                        title: "Not enough space",
                         message:
-                            'There is not enough space on the board to upgrade the firmware in any way, you will need to flash it via serial connection'
+                            "There is not enough space on the board to upgrade the firmware in any way, you will need to flash it via serial connection"
                     });
                 }
             },
@@ -243,7 +243,7 @@
                     this.$notify.warning({
                         title: "Two step update",
                         message:
-                            'There is not enough space on the board to upgrade the firmware directly, a two step update will be done',
+                            "There is not enough space on the board to upgrade the firmware directly, a two step update will be done",
                         duration: 0
                     });
                     this.twoStep = true;
@@ -252,24 +252,24 @@
             },
             testAuth() {
                 let loading = this.$loading({
-                    target: '.authentication-dialog'
+                    target: ".authentication-dialog"
                 });
                 const success = () => {
                     this.$notify.success({
-                        title: 'Authentication successful',
+                        title: "Authentication successful",
                         message: this.hostname
-                    })
+                    });
                 };
                 const fail = () => {
                     this.$notify.error({
-                        title: 'Authentication failed',
+                        title: "Authentication failed",
                         message: this.hostname
-                    })
+                    });
                 };
-                fetch('http://' + this.ip + '/auth', {
+                fetch("http://" + this.ip + "/auth", {
                     headers: new Headers({
-                        'Authorization': `Basic ${btoa(`${this.username}:${this.password}`)}`,
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                        "Authorization": `Basic ${btoa(`${this.username}:${this.password}`)}`,
+                        "Content-Type": "application/x-www-form-urlencoded"
                     }),
                 }).then((resp) => {
                     loading.close();
@@ -288,27 +288,26 @@
                 return compareVersions(a, b);
             },
             configure() {
-                console.log(this.compareVersions(this.version, '2'));
-                if (this.compareVersions(this.version, '2') >= 0) {
-                    this.$emit('configure', this.username, this.password);
+                if (this.compareVersions(this.version, "2") >= 0) {
+                    this.$emit("configure", this.username, this.password);
                 } else {
-                    const win = window.open('http://' + this.username + ':' + this.password + '@' + this.ip, '_blank');
+                    const win = window.open("http://" + this.username + ":" + this.password + "@" + this.ip, "_blank");
                     win.focus();
                 }
-                this.authDialogVisible = false
+                this.authDialogVisible = false;
             },
             beforeUpload(file) {
                 const hasEnoughSpace = file.size < this.free_size;
 
                 if (!hasEnoughSpace) {
-                    this.$message.error('There is not enough space on the board to upgrade the firmware OTA, consider doing a two step update');
+                    this.$message.error("There is not enough space on the board to upgrade the firmware OTA, consider doing a two step update");
                 }
             },
             upgrade() {
                 return this.$refs.upload.submit();
             },
         }
-    }
+    };
 </script>
 
 <style lang="less">

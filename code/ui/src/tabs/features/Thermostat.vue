@@ -217,10 +217,10 @@
         inheritAttrs: false,
         computed: {
             tempUnit() {
-                return this.sensors.tmpUnits ? '°F' : '°C';
+                return this.sensors.tmpUnits ? "°F" : "°C";
             }
         },
-    }
+    };
 </script>
 
 <style lang="less">

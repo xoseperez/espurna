@@ -15,7 +15,7 @@
                 $form: () => ({
                     values: this.value
                 })
-            }
+            };
         }
-    }
+    };
 </script>

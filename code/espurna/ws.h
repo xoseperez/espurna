@@ -18,7 +18,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "utils.h"
 
 using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
-using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;
+using ws_on_action_callback_f = std::function<uint8_t(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res)>;
 using ws_on_keycheck_callback_f = std::function<bool(const char * key, JsonVariant& value)>;
 
 using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;

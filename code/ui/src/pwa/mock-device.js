@@ -1,13 +1,13 @@
 export default (address, opts) => {
-    if (address.includes('github')) {
-        return fetch(address, opts)
+    if (address.includes("github")) {
+        return fetch(address, opts);
     }
     return new Promise((resolve, fail) => {
             setTimeout(() => {
                 const url = new URL(address);
-                if (url.hostname === '127.0.0.1') {
+                if (url.hostname === "127.0.0.1") {
                     switch (url.pathname) {
-                        case '/discover':
+                        case "/discover":
                             resolve(
                                 {
                                     ok: true, json() {
@@ -20,15 +20,15 @@ export default (address, opts) => {
                                             free_size: 504080,
                                             wifi: "MyWifi",
                                             rssi: -(Math.random() * 50 + 40)
-                                        }
+                                        };
                                     }
                                 });
                             break;
-                        case '/auth':
-                            if (opts.headers.get('Authorization') === 'Basic ' + btoa('admin:fibonacci')) {
+                        case "/auth":
+                            if (opts.headers.get("Authorization") === "Basic " + btoa("admin:fibonacci")) {
                                 resolve({
                                     ok: true
-                                })
+                                });
                             } else {
                                 fail("Authentication failed");
                             }
@@ -36,7 +36,7 @@ export default (address, opts) => {
                 } else {
                     fail("Ip address for mocked device is 127.0.0.1");
                 }
-            }, 1000)
+            }, 1000);
         }
-    )
-}
+    );
+};

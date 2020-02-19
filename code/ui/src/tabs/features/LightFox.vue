@@ -21,12 +21,12 @@
                 <Row>
                     <C><label>RF Actions</label></C>
                     <C>
-                        <Btn name="learn">
+                        <Btn name="learn" @click="sendLearn">
                             Learn
                         </Btn>
                     </C>
                     <C>
-                        <Btn name="clear" color="danger">
+                        <Btn name="clear" color="danger" @click="sendClear">
                             Clear
                         </Btn>
                     </C>
@@ -55,6 +55,8 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Repeater from "../../components/Repeater";
+    import ws from "../../common/websocket";
+    import {alertSuccess, alertError} from "../../common/notification";
 
     export default {
         components: {
@@ -74,8 +76,28 @@
             relayOptions: {
                 type: Array
             }
+        },
+        methods: {
+            sendLearn() {
+                ws.send({action: "lightfoxLearn"}, (res) => {
+                    if (res.success) {
+                        alertSuccess("Learned successfully");
+                    } else {
+                        alertError("Learn command failed");
+                    }
+                });
+            },
+            sendClear() {
+                ws.send({action: "lightfoxClear"}, (res) => {
+                    if (res.success) {
+                        alertSuccess("Cleared successfully");
+                    } else {
+                        alertError("Clear command failed");
+                    }
+                });
+            }
         }
-    }
+    };
 </script>
 
 <style lang="less">

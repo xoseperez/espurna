@@ -28,19 +28,19 @@
         data() {
             return {
                 val: "",
-            }
+            };
         },
         computed: {
             _options() {
                 if (this.value.length === this.options.length)
-                    return null;
+                    {return null;}
 
                 let options = [...this.options];
 
                 this.value.forEach((v) => {
                     v = v.toString();
                     options.splice(options.findIndex((el) => {
-                        return el.k.toString() === v
+                        return el.k.toString() === v;
                     }), 1);
                 });
                 return options;
@@ -50,24 +50,24 @@
             find(key) {
                 key = key.toString();
                 return this.options.find((el) => {
-                    return el.k.toString() === key
+                    return el.k.toString() === key;
                 });
             },
             onSelect(ev) {
                 if (ev.target.value && this.find(ev.target.value)) {
                     let value = [...this.value];
                     value.push(ev.target.value);
-                    this.$emit('input', value);
-                    ev.target.value = ''
+                    this.$emit("input", value);
+                    ev.target.value = "";
                 }
             },
             onDelete(i) {
                 let value = [...this.value];
                 value.splice(i, 1);
-                this.$emit('input', value);
+                this.$emit("input", value);
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">

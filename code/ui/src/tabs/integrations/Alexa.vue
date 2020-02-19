@@ -62,7 +62,7 @@
                 default: () => ({})
             }
         }
-    }
+    };
 </script>
 
 <style scoped>

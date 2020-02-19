@@ -61,9 +61,16 @@ void _lightfoxWebSocketOnConnected(JsonObject& root) {
     }
 }
 
-void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "lightfoxLearn") == 0) lightfoxLearn();
-    if (strcmp(action, "lightfoxClear") == 0) lightfoxClear();
+uint8_t _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "lightfoxLearn") == 0) {
+        lightfoxLearn();
+        return 1;
+    }
+    if (strcmp(action, "lightfoxClear") == 0) {
+        lightfoxClear();
+        return 1;
+    }
+    return 0;
 }
 
 #endif

@@ -1,10 +1,10 @@
 const PurgecssPlugin = require("purgecss-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
-const TerserPlugin = require('terser-webpack-plugin');
+const TerserPlugin = require("terser-webpack-plugin");
 const glob = require("glob-all");
 const path = require("path");
-const {GenerateSW} = require('workbox-webpack-plugin');
-const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
+const {GenerateSW} = require("workbox-webpack-plugin");
+const FaviconsWebpackPlugin = require("favicons-webpack-plugin");
 
 const purgecss = new PurgecssPlugin({
     paths: glob.sync([
@@ -32,11 +32,11 @@ const maybeStringToBoolean = (string) => {
 
 const faviconsPlugin = new FaviconsWebpackPlugin({
     logo: "./public/icons/icon.svg",
-    prefix: 'icons/',
-    mode: 'webapp',
-    devMode: 'light',
+    prefix: "icons/",
+    mode: "webapp",
+    devMode: "light",
     favicons: {
-        start_url: '',
+        start_url: "",
         icons: {
             coast: false,
             yandex: false
@@ -51,7 +51,7 @@ const pwa = new GenerateSW(
             /favicon\.ico$/,
             /^manifest.*\.js?$/
         ],
-        cacheId: 'ui'
+        cacheId: "ui"
     }
 );
 
@@ -72,27 +72,27 @@ const terser = new TerserPlugin({
 });
 
 module.exports = {
-    publicPath: '',
+    publicPath: "",
     pwa: {
-        themeColor: '#479fd6',
-        workboxPluginMode: 'InjectManifest',
+        themeColor: "#479fd6",
+        workboxPluginMode: "InjectManifest",
         workboxOptions: {
             // swSrc is required in InjectManifest mode.
-            swSrc: 'public/service-worker.js',
+            swSrc: "public/service-worker.js",
             // ...other Workbox options...
         },
         iconPaths: {
-            favicon32: 'icons/favicon32.png',
-            favicon16: 'icons/favicon16.png',
-            appleTouchIcon: 'icons/apple-touch-icon-152x152.png',
-            maskIcon: 'icons/icon.svg',
-            msTileImage: 'icons/mstile-144x144.png'
+            favicon32: "icons/favicon32.png",
+            favicon16: "icons/favicon16.png",
+            appleTouchIcon: "icons/apple-touch-icon-152x152.png",
+            maskIcon: "icons/icon.svg",
+            msTileImage: "icons/mstile-144x144.png"
         }
     },
     //runtimeCompiler: true,
     configureWebpack() {
         switch (process.env.NODE_ENV) {
-            case 'production':
+            case "production":
                 return {
                     plugins: [
                         purgecss,
@@ -110,9 +110,9 @@ module.exports = {
                         ]
                     }
                 };
-            case 'pwa':
+            case "pwa":
                 return {
-                    mode: 'production',
+                    mode: "production",
                     node: {
                         setImmediate: true
                     },
@@ -126,9 +126,9 @@ module.exports = {
                     ],
                 };
             default:
-            case 'development':
+            case "development":
                 return {
-                    mode: 'development',
+                    mode: "development",
                     node: {
                         setImmediate: true
                     },
@@ -137,7 +137,7 @@ module.exports = {
                         purgecss,
                         pwa
                     ],
-                }
+                };
         }
     },
     chainWebpack(config) {
@@ -147,19 +147,19 @@ module.exports = {
             .loader("vue-loader")
             .tap(options => {
                 options.compilerOptions.whitespace = "condense";
-                return options
+                return options;
             });
 
 
-        const svgRule = config.module.rule('svg');
+        const svgRule = config.module.rule("svg");
 
         svgRule.uses.clear();
 
         svgRule
-            .use('vue-svg-loader')
-            .loader('vue-svg-loader');
+            .use("vue-svg-loader")
+            .loader("vue-svg-loader");
 
-        config.module.rule('ico').test(/\.ico$/).use("url-loader").loader("url-loader");
+        config.module.rule("ico").test(/\.ico$/).use("url-loader").loader("url-loader");
 
         let prepro_opts = {
             params: {
@@ -178,15 +178,15 @@ module.exports = {
         config.module.rule("vue").use("webpack-preprocessor-loader").loader("webpack-preprocessor-loader").options(prepro_opts);
         config.module.rule("js").use("webpack-preprocessor-loader").loader("webpack-preprocessor-loader").options(prepro_opts);
 
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === "production") {
 
-            config.plugins.delete('pwa');
-            config.plugins.delete('workbox');
+            config.plugins.delete("pwa");
+            config.plugins.delete("workbox");
 
             config.plugin("preload")
                 .tap(args => {
                     args[0].fileBlacklist.push(/\.css/, /\.js/);
-                    return args
+                    return args;
                 });
 
             config.plugin("inline-source")
@@ -197,8 +197,7 @@ module.exports = {
                     args[0].inlineSource = ".(js|css)$"; // embed all javascript and css inline
                     args.minify = true;
                     return args;
-                })
-        } else {
+                });
         }
     },
 };

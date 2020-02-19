@@ -243,20 +243,20 @@
                 let opts = [1, 2, 3, 4, 5, 6, 10, 15, 30, 45, 60, 120, 180, 240, 300, 600, 900, 1800, 3600];
 
                 return opts.map((v) => {
-                    let u = 'second';
+                    let u = "second";
                     let uv = v;
                     if (v > 60) {
-                        u = 'minute';
+                        u = "minute";
                         uv = v / 60;
                     }
                     if (uv > 1) {
-                        u += 's';
+                        u += "s";
                     }
-                    return {k: v, l: uv + ' ' + u};
+                    return {k: v, l: uv + " " + u};
                 });
             }
         }
-    }
+    };
 </script>
 
 <style lang="less">
