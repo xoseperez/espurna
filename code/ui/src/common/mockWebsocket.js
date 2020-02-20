@@ -50,7 +50,7 @@ export default function () {
                         "gw",
                         "mask",
                         "dns",
-                        "hardcoded"
+                        "_hardcoded"
                     ],
                     "list": [
                         [
@@ -127,7 +127,7 @@ export default function () {
                         "_start": 0,
                         "_schema": [
                             "pin",
-                            "GPIO",
+                            "_gpio",
                             "name",
                             "type",
                             //"resetGPIO",
@@ -301,7 +301,9 @@ export default function () {
         try {
             msg = JSON.parse(msg);
 
-            alertInfo({title: "Sent message", message: JSON.stringify(msg, null, 2)});
+            if (msg.action !== "ping") {
+                alertInfo({title: "Sent message", message: JSON.stringify(msg, null, 2)});
+            }
             if (msg.id) {
                 setTimeout(() => {
                     const payload = {id: msg.id, success: true};

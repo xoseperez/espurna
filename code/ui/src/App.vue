@@ -16,7 +16,10 @@
 
                 <template #footer>
                     <div class="main-buttons">
-                        <Btn name="update" @click="save">Save</Btn>
+                        <Btn v-loading="saving" name="update" :disabled="Object.keys(modifiedSettings).length < 1"
+                             @click="save">
+                            Save
+                        </Btn>
                         <Btn name="reconnect" color="primary" @click="reconnect">Reconnect</Btn>
                         <Btn name="reboot" color="danger" @click="reboot">Reboot</Btn>
                     </div>
@@ -31,7 +34,7 @@
                 </template>
 
                 <template #status>
-                    <Status v-bind="data"/>
+                    <Status v-bind="data" :last-update="lastUpdate"/>
                 </template>
 
                 <template #general>
@@ -138,7 +141,6 @@
 
     import ws from "./common/websocket";
     import Icon from "../public/icons/icon.svg";
-    import capitalize from "./common/capitalize";
 
     import Setup from "./tabs/common/Setup";
     import Inpt from "./components/Input";
@@ -154,7 +156,8 @@
     import Status from "./tabs/common/Status";
 
     import diff from "deep-object-diff/dist/diff";
-    import {confirm} from "./common/notification";
+    import {confirm, alertError, alertWarning} from "./common/notification";
+    import flatten from "./common/flatten";
     import prepareData from "./common/prepareData";
 
     let tabs = [
@@ -310,6 +313,8 @@
         },
         data() {
             return {
+                lastUpdate: Date.now(),
+                saving: false,
                 webmode: true,
                 data: {},
                 received: {
@@ -324,7 +329,6 @@
                         desc: "",
                         _now: Math.floor(Date.now() / 1000),
                         _uptime: 0,
-                        _lastUpdate: 0
                     },
                     relay: {
                         config: {
@@ -371,7 +375,8 @@
         watch: {
             original: {
                 handler(rec, old) {
-                    if (old === undefined || old.loaded !== true || Object.keys(this.modifiedSettings).length === 0) {
+                    if (typeof old === "undefined" || old.loaded !== true
+                        || Object.keys(this.modifiedSettings).length === 0) {
                         this.data = JSON.parse(JSON.stringify(this.original)); //Cheap deep clone
                     }
                     /*else {
@@ -385,12 +390,6 @@
             }
         },
         mounted() {
-            this.interval = setInterval(() => {
-                this.data.device.now++;
-                this.data.device.lastUpdate++;
-                this.data.device.uptime++;
-            }, 1000);
-
             if (!this.address) {
                 // Check host param in query string
                 const search = new URLSearchParams(window.location.search),
@@ -405,38 +404,25 @@
             ws.close();
         },
         methods: {
+            flatten: flatten,
             save() {
-                if (this.$refs.formSettings.reportValidity() && Object.keys(this.modifiedSettings).length) {
-                    ws.send({config: this.modifiedSettings}, () => {
-                        prepareData(this.received, this.modified);
-                    }, true);
-                }
-            },
-            flatten(obj, mask, prefix, suffix, flat) {
-                flat = typeof flat === "undefined" ? {} : flat;
-
-                prefix = prefix || "";
-                suffix = suffix || "";
-                mask = mask || {};
-
-                Object.keys(obj).forEach((key) => {
-                    if (!("_" + key in mask)) {
-                        let Key = prefix !== "" ? capitalize(key) : key;
-                        if ("_path" in mask) {
-                            Key = mask._path;
-                        }
-
-                        const v = obj[key];
-                        if (typeof v === "object") {
-                            this.flatten(v, mask[key], Array.isArray(mask[key]) || Array.isArray(mask) ? prefix : (prefix + Key),
-                                Array.isArray(mask) ? suffix + key : suffix,
-                                flat);
-                        } else {
-                            flat[prefix + Key + suffix] = v;
-                        }
+                if (this.$refs.formSettings.reportValidity()) {
+                    if (Object.keys(this.modifiedSettings).length) {
+                        this.saving = true;
+                        console.log(this.modifiedSettings);
+                        ws.send({config: this.modifiedSettings}, () => {
+                            prepareData(this.received, this.modified);
+                            this.saving = false;
+                        }, true);
+                    } else {
+                        alertWarning({title: "Nothing to save", message: "Data has not been modified"});
                     }
-                });
-                return flat;
+                } else {
+                    alertError({
+                        title: "The data entered is not valid"
+                    });
+                    //TODO focus invalid
+                }
             },
             reconnect(ask) {
                 let question = ask ? null : "Are you sure you want to disconnect from the current WIFI network?";
@@ -488,8 +474,12 @@
                 ws.close(1000, "Device reload");
             },
             receiveMessage(data) {
-                prepareData(this.received, data);
-                this.received.device.lastUpdate = 0;
+                if (data.action === "reload") {
+                    this.doReload();
+                } else {
+                    prepareData(this.received, data);
+                    this.lastUpdate = Date.now();
+                }
             }
         },
         provide() {

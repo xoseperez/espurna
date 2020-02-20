@@ -111,7 +111,7 @@
             },
         },
         mounted() {
-            if (this.val === undefined || this.val === null) {
+            if (typeof this.val === "undefined" || this.val === null) {
                 if (this.default !== null) {
                     this.val = this.default;
                 } else if (this.type === "select" && !this.placeholder) {
@@ -134,6 +134,9 @@
             },
             setVisible() {
                 this.passType = "text";
+            },
+            open() {
+                this.$refs.input.click();
             }
         },
     };

@@ -85,7 +85,7 @@ const uint8_t _buttonMapEvent(unsigned char index, uint8_t event, uint8_t count,
 void buttonMQTT(unsigned char id, uint8_t event) {
     char payload[4] = {0};
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, getSetting({"btnMqttRetain", id})); // 1st bool = force, 2nd = retain
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, getSetting({"btnMqttRetain", id}, BUTTON_MQTT_RETAIN)); // 1st bool = force, 2nd = retain
 }
 
 
@@ -173,7 +173,6 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
 }
 
 void buttonEvent(unsigned char id, unsigned char event) {
-
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
     if (event == 0) return;
 

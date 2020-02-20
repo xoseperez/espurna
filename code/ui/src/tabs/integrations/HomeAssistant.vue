@@ -59,6 +59,7 @@
     import Row from "../../layout/Row";
     import C from "../../layout/Col";
     import Group from "../../components/Group";
+    import ws from "../../common/websocket";
 
     export default {
         components: {
@@ -83,6 +84,11 @@
                 type: Object,
                 default: () => ({})
             },
+        },
+        mounted() {
+            ws.send({action: "haConfig"}, () => {
+
+            });
         },
         computed: {
             config() {

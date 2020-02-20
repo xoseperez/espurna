@@ -461,7 +461,7 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     schema.add("gw");
     schema.add("mask");
     schema.add("dns");
-    schema.add("hardcoded");
+    schema.add("_hardcoded");
 
     JsonArray& networks = wifi.createNestedArray("list");
 

@@ -60,6 +60,7 @@ std::queue<ws_data_t> _ws_client_data;
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
 void _onAuth(AsyncWebServerRequest *request) {
+    _ws.cleanupClients();
 
     webLog(request);
     if (!webAuthenticate(request)) return request->requestAuthentication();
@@ -211,14 +212,18 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         return;
     }
 
+    if (length > ESP.getFreeHeap() / 2) {
+        client->close(1009, "Too big"); //Received a message that is too big for us
+    }
+
     // Parse JSON input
     // TODO: json buffer should be pretty efficient with the non-const payload,
     // most of the space is taken by the object key references
-    DynamicJsonBuffer jsonBuffer(512);
+    DynamicJsonBuffer jsonBuffer(calcJsonPayloadBufferSize((char *) payload));
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
-        wsSend_P(client_id, PSTR("{\"message\": 3}"));
+        client->close(1003, "Invalid json"); //We will never send invalid json, if that happens close the malicious connection exhausting resources
         return;
     }
 
@@ -226,132 +231,31 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     const char* action = root["action"];
     if (action) {
-
-        if (strcmp(action, "ping") == 0) {
-            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
-            return;
-        }
-
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
-
-        if (strcmp(action, "reboot") == 0) {
-            deferredReset(100, CUSTOM_RESET_WEB);
-            return;
-        }
-
-        if (strcmp(action, "reconnect") == 0) {
-            _ws_defer.once_ms(100, wifiDisconnect);
-            return;
-        }
-
-        if (strcmp(action, "factory_reset") == 0) {
-            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
-            resetSettings();
-            deferredReset(100, CUSTOM_RESET_FACTORY);
-            return;
-        }
-
         JsonObject& data = root["data"];
-        if (data.success()) {
 
-            DynamicJsonBuffer jsonBuffer(512);
-            JsonObject& res = jsonBuffer.createObject();
+        //TODO have another callback return the size based on action
+        DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(4));
+        JsonObject& res = jsonBuffer.createObject();
 
-            if (root["id"]) {
-                res["id"] = root["id"];
-            }
-
-            uint8_t success;
-            res["success"] = false;
-            // Callbacks
-            for (auto& callback : _ws_callbacks.on_action) {
-                success = callback(client_id, action, data, res);
-                if (success) {
-                    res["success"] = success < 2;
-                    break; //No need to continue looping if a callback return true
-                }
-            }
-
-            wsSend(client_id, res);
-
-            return;
-
+        if (root["id"]) {
+            res["id"] = root["id"];
         }
 
+        uint8_t success;
+        res["success"] = false;
+        // Callbacks
+        for (auto& callback : _ws_callbacks.on_action) {
+            success = callback(client_id, action, data, res);
+            if (success) {
+                res["success"] = success < 2;
+                break; //No need to continue looping if a callback return true
+            }
+        }
+
+        wsSend(client_id, res);
+
+        return;
     };
-
-    // Check configuration -----------------------------------------------------
-
-    JsonObject& config = root["config"];
-    if (config.success()) {
-
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data\n"));
-
-        String adminPass;
-        bool save = false;
-
-        for (auto kv: config) {
-
-            bool changed = false;
-            String key = kv.key;
-            JsonVariant& value = kv.value;
-
-            // Check password
-            if (key == "adminPass") {
-                if (!value.is<JsonArray&>()) continue;
-                JsonArray& values = value.as<JsonArray&>();
-                if (values.size() != 2) continue;
-                if (values[0].as<String>().equals(values[1].as<String>())) {
-                    String password = values[0].as<String>();
-                    if (password.length() > 0) {
-                        setSetting(key, password);
-                        save = true;
-                        wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
-                    }
-                } else {
-                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
-                }
-                continue;
-            }
-
-            // TODO why delete the setting? Just ignore
-            if (!_wsCheckKey(key, value)) {
-                delSetting(key);
-                continue;
-            }
-
-            // Store values
-            if (value.is<JsonArray&>()) {
-                if (_wsStore(key, value.as<JsonArray&>())) changed = true;
-            } else {
-                if (_wsStore(key, value.as<String>())) changed = true;
-            }
-
-            // Update flags if value has changed
-            if (changed) {
-                save = true;
-            }
-
-        }
-
-        // Save settings
-        if (save) {
-
-            // Callbacks
-            espurnaReload();
-
-            // Persist settings
-            saveSettings();
-
-            wsSend_P(client_id, PSTR("{\"message\": 8}"));
-
-        } else {
-
-            wsSend_P(client_id, PSTR("{\"message\": 9}"));
-
-        }
-
-    }
 
 }
 
@@ -423,12 +327,12 @@ void _wsOnConnected(JsonObject& root) {
     device["_name"] = DEVICE;
     device["_free_size"] = ESP.getFreeSketchSpace();
     device["_total_size"] = ESP.getFlashChipRealSize();
-    device["hostname"] = getSetting("hostname");
-    device["desc"] = getSetting("desc");
-    device["webPort"] = getSetting("webPort", WEB_PORT);
-    device["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
-    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
-    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
+    device["hostname"] = getSetting("deviceHostname");
+    device["desc"] = getSetting("deviceDesc");
+    device["webPort"] = getSetting("deviceWebPort", WEB_PORT);
+    device["wsAuth"] = getSetting("deviceWsAuth", 1 == WS_AUTHENTICATION);
+    device["hbMode"] = getSetting("deviceHbMode", HEARTBEAT_MODE);
+    device["hbInterval"] = getSetting("deviceHbInterval", HEARTBEAT_INTERVAL);
 
     wifi["_rssi"] = WiFi.RSSI();
     wifi["_mac"] = WiFi.macAddress();
@@ -439,19 +343,114 @@ void _wsOnConnected(JsonObject& root) {
 }
 
 uint8_t _wsOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
-   if (strcmp(action, "restore") == 0) {
-       return (settingsRestoreJson(data)) ? 1 : 2;
-   }
+
+    if (strcmp(action, "ping") == 0) {
+        char buffer[22];
+        snprintf_P(buffer, 22, PSTR("{\"pong\":1,\"id\":%u}"), data["id"]);
+        wsSend_P(client_id, buffer);
+        return 1;
+    }
+
+    DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
+
+    if (strcmp(action, "reboot") == 0) {
+        deferredReset(100, CUSTOM_RESET_WEB);
+        return 1;
+    }
+
+    if (strcmp(action, "reconnect") == 0) {
+        _ws_defer.once_ms(100, wifiDisconnect);
+        return 1;
+    }
+
+    if (strcmp(action, "factory_reset") == 0) {
+        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+        resetSettings();
+        deferredReset(100, CUSTOM_RESET_FACTORY);
+        return 1;
+    }
+
+    if (strcmp(action, "restore") == 0) {
+        if (settingsRestoreJson(data)) {
+            res["message"] = 5;
+            return 1;
+        } else {
+            res["message"] = 4;
+            return 2;
+        };
+    }
+
+    if (strcmp(action, "config") == 0) {
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data\n"));
+
+        String adminPass;
+        bool save = false;
+        JsonObject& errors = res.createNestedObject("errors");
+
+        JsonObject& config = data["config"];
+
+        for (auto kv: config) {
+            String key = kv.key;
+            JsonVariant& value = kv.value;
+
+            // Check password
+            if (key == "adminPass") {
+                if (!value.is<JsonArray&>()) continue;
+                JsonArray& values = value.as<JsonArray&>();
+                if (values.size() != 2) continue;
+                if (values[0].as<String>().equals(values[1].as<String>())) {
+                    String password = values[0].as<String>();
+                    if (password.length() > 0) {
+                        setSetting(key, password);
+                        save = true;
+                        //wsSend_P(client_id, PSTR("{\"action\":\"reload\"}"));
+                    }
+                } else {
+                    errors["pass"] = 1;
+                    //wsSend_P(client_id, PSTR("{\"action\":\"message\",\"id\":6}"));
+                }
+                continue;
+            }
+
+
+            if (!_wsCheckKey(key, value)) {
+               //delSetting(key); // TODO why delete the setting? It supposedly isn't set, just ignore
+               errors[key] = value;
+               continue;
+            }
+
+            // Store values
+            if (value.is<JsonArray&>()) {
+               if (_wsStore(key, value.as<JsonArray&>())) save = true;
+            } else {
+               if (_wsStore(key, value.as<String>())) save = true;
+            }
+        }
+
+        // Save settings
+        if (save) {
+            // Callbacks
+            espurnaReload();
+            // Persist settings
+            saveSettings();
+            return 1;
+        } else {
+            return 2;
+        }
+    }
+
    return 0;
 }
 
 void wsSend(JsonObject& root) {
-    // TODO: avoid serializing twice?
-    size_t len = root.measureLength();
+    size_t len = root.measureLength(); //Serialize once but only to calculate the size and without storing the data in memory
     AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
 
+   // Don't try to improve on the double serialization as we need to know the size beforehand
+   // which would require to iterate recursively on the JsonObject which is the same as doing a dummy serialization
+
     if (buffer) {
-        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        root.printTo((char *)buffer->get(), len + 1); //This will serialize again now using memory,
         _ws.textAll(buffer);
     }
 }
@@ -460,12 +459,11 @@ void wsSend(uint32_t client_id, JsonObject& root) {
     AsyncWebSocketClient* client = _ws.client(client_id);
     if (client == nullptr) return;
 
-    // TODO: avoid serializing twice?
     size_t len = root.measureLength();
     AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
 
     if (buffer) {
-        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        root.printTo((char *)buffer->get(), len + 1);
         client->text(buffer);
     }
 }
@@ -500,15 +498,19 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
         #ifndef NOWSAUTH
             if (!_wsAuth(client)) {
-                wsSend_P(client->id(), PSTR("{\"message\": 10}"));
+                wsSend_P(client->id(), PSTR("{\"message\":9}"));
                 DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
                 client->close();
                 return;
             }
         #endif
 
+
+        #if DEBUG_SUPPORT
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
+        #endif
+
         _wsConnected(client->id());
         _wsResetUpdateTimer();
         wifiReconnectCheck();
@@ -570,8 +572,8 @@ void _wsHandleClientData(const bool connected) {
     // XXX: block allocation will try to create *2 next time,
     // likely failing and causing wsSend to reference empty objects
     // XXX: arduinojson6 will not do this, but we may need to use per-callback buffers
-    constexpr const size_t BUFFER_SIZE = 3192;
-    DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
+    //constexpr const size_t BUFFER_SIZE = 3192;
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(20));
     JsonObject& root = jsonBuffer.createObject();
 
     data.send(root);
@@ -617,7 +619,7 @@ ws_callbacks_t& wsRegister() {
 
 void wsSend(ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
-        DynamicJsonBuffer jsonBuffer(512);
+        DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(20));
         JsonObject& root = jsonBuffer.createObject();
         callback(root);
 
@@ -627,7 +629,7 @@ void wsSend(ws_on_send_callback_f callback) {
 
 void wsSend(uint32_t client_id, uint32_t request_id, ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
-        DynamicJsonBuffer jsonBuffer(512);
+        DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(20));
         JsonObject& root = jsonBuffer.createObject();
         callback(root);
 
@@ -656,7 +658,7 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     AsyncWebSocketClient* client = _ws.client(client_id);
     if (client == nullptr) return;
 
-    DynamicJsonBuffer jsonBuffer(512);
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(20));
     JsonObject& root = jsonBuffer.createObject();
     callback(root);
     wsSend(client_id, root);

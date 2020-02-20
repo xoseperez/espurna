@@ -85,7 +85,7 @@
                                 <Row v-if="modules.mqtt">
                                     <C><label>On MQTT disconnect</label></C>
                                     <C>
-                                        <Inpt type="select" name="on_disc"
+                                        <Inpt type="select" name="onDisc"
                                               :options="[
                                                   'Don\'t change',
                                                   'Turn the switch OFF',
@@ -159,7 +159,7 @@
                             </C>
 
                             <C><label>Action</label></C>
-                            <C no-wrap stretch>
+                            <C no-wrap>
                                 <Inpt type="select" name="action" :options="['Turn OFF', 'Turn ON', 'Toggle']"
                                       placeholder="Select an action"/>
                                 <Inpt type="select" name="relay" :options="relayOptions" placeholder="Select a switch"/>

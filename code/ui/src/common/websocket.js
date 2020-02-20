@@ -15,6 +15,8 @@ Ws.prototype = {
     urls: null,
     id: 0,
     retry(time, tries) {
+        time = time || 1000;
+
         if (this.retryTimeout) {
             return;
         }
@@ -39,7 +41,7 @@ Ws.prototype = {
     },
     connect(host, cb) {
         // #!if ENV === 'development'
-        if (!host || host.match("127.0.0.1")) {
+        if (!host || host.match("127.0.0.1") || host.match("localhost")) {
             //Start mocking
             this.ws = mockServer();
             this._onMsg = cb;
@@ -112,7 +114,7 @@ Ws.prototype = {
         }
         this.ws.send(
             JSON.stringify(payload,
-                repl ? ((key, value) => typeof value === "undefined" ? null : value) : undefined)
+                repl ? ((key, value) => typeof value === "undefined" ? null : value) : null)
         );
     },
     onClose() {

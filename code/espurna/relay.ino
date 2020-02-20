@@ -915,10 +915,10 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     schema.add("boot");
     schema.add("pulse");
     schema.add("time");
-
-    schema.add("dblDl");
-    schema.add("lngDl");
-    schema.add("lngLngDl");
+//
+//    schema.add("dblDl");
+//    schema.add("lngDl");
+//    schema.add("lngLngDl");
 
 
     #if SCHEDULER_SUPPORT
@@ -929,7 +929,12 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         schema.add("group");
         schema.add("groupSync");
         schema.add("onDisc");
-        schema.add("sndAllEvts");
+//        schema.add("sndAllEvts");
+
+
+        config["payloadOn"] = _relay_mqtt_payload_on;
+        config["payloadOff"] = _relay_mqtt_payload_off;
+        config["payloadToggle"] = _relay_mqtt_payload_toggle;
     #endif
 
     //config["_start"] = 0;
@@ -1086,15 +1091,15 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
-const String& relayPayloadOn() {
+constexpr const String& relayPayloadOn() {
     return _relay_mqtt_payload_on;
 }
 
-const String& relayPayloadOff() {
+constexpr const String& relayPayloadOff() {
     return _relay_mqtt_payload_off;
 }
 
-const String& relayPayloadToggle() {
+constexpr const String& relayPayloadToggle() {
     return _relay_mqtt_payload_toggle;
 }
 

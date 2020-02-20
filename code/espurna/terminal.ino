@@ -280,14 +280,14 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer(1024);
+        DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(200));
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
         // XXX: replace with streaming
         String output;
         root.printTo(output);
         DEBUG_MSG(output.c_str());
-
+        DEBUG_MSG_P(PSTR("[JsonBuffer] Allocated %u bytes of ram"), root.size());
     });
 
     #if not SETTINGS_AUTOSAVE

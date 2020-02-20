@@ -737,3 +737,13 @@ String u32toString(uint32_t value, int base) {
 
     return result;
 }
+
+
+constexpr uint32_t calcJsonPayloadBufferSize(char * payload) {
+    uint16_t i, o;
+    for (i=0; payload[i]; i++) {
+        if (payload[i] == ',') o++;
+    }
+
+    return JSON_OBJECT_SIZE(o);
+}

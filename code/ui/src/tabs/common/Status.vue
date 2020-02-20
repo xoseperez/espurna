@@ -164,14 +164,14 @@
                                 <C>NTP Status</C>
                                 <C>{{ntp.status ? 'SYNCED' : 'NOT SYNCED'}}</C>
                                 <C>Current time</C>
-                                <C>{{date(device.now)}}</C>
+                                <C>{{date(now)}}</C>
                             </template>
 
                             <C>Uptime</C>
-                            <C>{{elapsed(device.uptime)}}</C>
+                            <C>{{elapsed(uptime)}}</C>
 
                             <C>Last update</C>
-                            <C>{{device.lastUpdate}} seconds ago</C>
+                            <C>{{lastUpdateSeconds}} seconds ago</C>
                         </Row>
                     </C>
                 </Row>
@@ -238,6 +238,7 @@
         },
         inheritAttrs: false,
         props: {
+            lastUpdate: Number,
             modules: Object,
             version: Object,
             device: Object,
@@ -274,10 +275,28 @@
         data() {
             return {
                 logs: [],
-                dbgcmd: ""
+                dbgcmd: "",
+                datenow: Math.floor(Date.now() / 1000) + 1,
+                interval: null
             };
         },
+        computed: {
+            lastUpdateSeconds() {
+                return this.datenow - Math.floor(this.lastUpdate / 1000);
+            },
+            now() {
+                return this.lastUpdateSeconds + this.device.now;
+            },
+            uptime() {
+                return this.lastUpdateSeconds + this.device.uptime;
+            },
+        },
         watch: {
+            lastUpdate(rec, old) {
+                const incr = Math.floor((rec - old) / 1000);
+                this.device.now += incr;
+                this.device.uptime += incr;
+            },
             weblog(rec, old) {
                 if (JSON.stringify(old) !== JSON.stringify(rec)) {
                     const date = "[" + this.date() + "] ";
@@ -286,6 +305,14 @@
                     });
                 }
             }
+        },
+        mounted() {
+            this.interval = setInterval(() => {
+                this.datenow++;
+            }, 1000);
+        },
+        beforeDestroy() {
+            clearInterval(this.interval);
         },
         methods: {
             date(d) {

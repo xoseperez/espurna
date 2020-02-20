@@ -706,7 +706,7 @@
 #endif
 
 #ifndef WS_BUFFER_SIZE
-#define WS_BUFFER_SIZE              5           // Max number of secured websocket connections
+#define WS_BUFFER_SIZE              5           // Max number of websocket connections
 #endif
 
 #ifndef WS_TIMEOUT

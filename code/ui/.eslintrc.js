@@ -20,7 +20,7 @@ module.exports = {
             "baseIndent": 1,
             "closeBracket": 0,
             "alignAttributesVertically": true,
-            "ignores": []
+            "ignores": ["VElement[name=strong].children"]
         }],
         "vue/name-property-casing": ["error", "kebab-case"],
         "vue/mustache-interpolation-spacing": ["error", "never"],
@@ -59,6 +59,8 @@ module.exports = {
         "quotes": ["error", "double"],
         "no-empty": ["error"],
         "no-console": ["error"],
+        "no-unreachable": ["error"],
+        "no-undefined": ["error"],
         "curly": ["error"]
     }
 };

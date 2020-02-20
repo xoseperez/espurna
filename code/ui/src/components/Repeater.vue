@@ -39,7 +39,7 @@
         for (let key in arr) {
             if (arr.hasOwnProperty(key)) {
                 let v = callback(arr[key], key);
-                if (v !== undefined) {
+                if (v !== null) {
                     out.push(v);
                 }
             }
@@ -113,11 +113,11 @@
                 });
             },
             onAdd(val) {
-                val = val instanceof Event ? undefined : val; // If called from a click handler, ignore the property
+                val = val instanceof Event ? null : val; // If called from a click handler, ignore the property
                 if (this.canAdd) {
                     let row = {
                         key: this.key++,
-                        value: val !== undefined ? val : {}
+                        value: val !== null ? val : {}
                     };
                     this.$emit("created", {row});
                     this.values.push(row);
@@ -127,10 +127,11 @@
                 if (!this.locked) {
                     this.values = filterMap(this.values, (val) => {
                         if (val.key === key) {
-                            return undefined;
+                            return null;
                         }
                         return val;
                     });
+                    this.$emit("input", this.getValues());
                 }
             },
             onInput(val, i) {

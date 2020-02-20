@@ -104,12 +104,9 @@ void _onAPIsText(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
-constexpr const size_t API_JSON_BUFFER_SIZE = 1024;
-
 void _onAPIsJson(AsyncWebServerRequest *request) {
 
-
-    DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(_apis.size()));
     JsonObject& root = jsonBuffer.createObject();
 
     constexpr const int BUFFER_SIZE = 48;

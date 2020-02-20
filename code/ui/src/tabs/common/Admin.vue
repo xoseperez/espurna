@@ -11,11 +11,15 @@
                         <label>Settings</label>
                     </C>
                     <C stretch>
-                        <Btn name="settings-backup" tag="a" target="_blank" href="#" @click="doBackup">Backup</Btn>
-                        <Btn name="settings-restore" color="primary" @click="() => $refs.restoreFile.el.click()">
+                        <Btn name="settings-backup" tag="a" :download="downloadName" href="#" @click="doBackup">
+                            Backup
+                        </Btn>
+                        <Btn name="settings-restore" color="primary" @click="() => $refs.restoreFile.open()">
                             Restore
                         </Btn>
-                        <Inpt ref="restoreFile" name="restore" type="file" @change="(file) => { restoreFile = file }"/>
+                        <Inpt ref="restoreFile" name="restore" type="file"
+                              accept=".json, text/json"
+                              @change="restoreFile"/>
                         <Btn name="settings-factory" color="danger">Factory Reset</Btn>
                     </C>
                 </Row>
@@ -26,35 +30,32 @@
                             <Inpt name="adminPass1" placeholder="New password"
                                   minlength="8"
                                   maxlength="63" type="password" action="reboot"
-                                  tabindex="11" autocomplete="false"
+                                  autocomplete="false"
                                   spellcheck="false"/>
                         </Row>
                         <Row>
                             <Inpt name="adminPass2" placeholder="Repeat password"
                                   minlength="8"
                                   maxlength="63" type="password" action="reboot"
-                                  tabindex="12" autocomplete="false"
+                                  autocomplete="false"
                                   spellcheck="false"/>
                         </Row>
                         <Hint>
                             The administrator password is used to access this web interface (user 'admin'), but also to
                             connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br> It
                             must be <strong>8..63 characters</strong> (numbers and letters and any of these special
-                            characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least
-                            <strong>one lowercase</strong> and <strong>one uppercase</strong> or
-                            <strong>one number</strong>.
+                            characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one
+                            lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.
                         </Hint>
                     </C>
                 </Row>
                 <Row>
                     <C><label>HTTP port</label></C>
                     <C>
-                        <Inpt name="webPort" type="text" action="reboot" tabindex="13"/>
+                        <Inpt name="webPort" type="text" action="reboot"/>
                         <Hint>
-                            This is the port for the web interface and API requests.
-                            If different than 80 (standard HTTP port) you will have to add it explicitly to your
-                            requests:
-                            http://myip:myport/
+                            This is the port for the web interface and API requests. If different than 80 (standard HTTP
+                            port) you will have to add it explicitly to your requests: http://myip:myport/
                         </Hint>
                     </C>
                 </Row>
@@ -75,9 +76,8 @@
                     <C>
                         <Inpt type="switch" name="apiRestFul"/>
                         <Hint>
-                            If enabled, API requests to change a status (like a relay)
-                            must be done using PUT. If disabled you can issue them as GET requests (easier from a
-                            browser).
+                            If enabled, API requests to change a status (like a relay) must be done using PUT. If
+                            disabled you can issue them as GET requests (easier from a browser).
                         </Hint>
                     </C>
                 </Row>
@@ -94,13 +94,12 @@
                 <Row ref="api">
                     <C><label>HTTP API Key</label></C>
                     <C no-wrap>
-                        <Inpt name="apiKey" type="text" tabindex="14"/>
+                        <Inpt name="apiKey" type="text"/>
                         <Btn name="apikey" color="primary">Auto</Btn>
                         <Hint>
-                            This is the key you will have to pass with every HTTP
-                            request to the API, either to get or write values. All API calls must contain the
-                            <strong>apikey</strong> parameter with the value above. To know what APIs are enabled do a
-                            call to <strong>/apis</strong>.
+                            This is the key you will have to pass with every HTTP request to the API, either to get or
+                            write values. All API calls must contain the <strong>apikey</strong> parameter with the
+                            value above. To know what APIs are enabled do a call to <strong>/apis</strong>.
                         </Hint>
                     </C>
                 </Row>
@@ -109,8 +108,8 @@
                     <C>
                         <Inpt type="switch" name="telnetSTA"/>
                         <Hint>
-                            Turn ON to be able to telnet to your device while
-                            connected to your home router.<br>TELNET is always enabled in AP mode.
+                            Turn ON to be able to telnet to your device while connected to your home router.<br>TELNET
+                            is always enabled in AP mode.
                         </Hint>
                     </C>
                 </Row>
@@ -125,7 +124,7 @@
                     <C><label>Heartbeat message</label></C>
                     <C>
                         <Inpt type="select" name="hbMode"
-                              tabindex="15" :options="[
+                              :options="[
                                   'Disabled',
                                   'On device startup',
                                   'Repeat after defined interval',
@@ -137,10 +136,9 @@
                 <Row>
                     <C><label>Heartbeat interval</label></C>
                     <C>
-                        <Inpt name="hbInterval" type="number" tabindex="16"/>
+                        <Inpt name="hbInterval" type="number"/>
                         <Hint>
-                            This is the interval in <strong>seconds</strong> how often
-                            to send the heartbeat message.
+                            This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
                         </Hint>
                     </C>
                 </Row>
@@ -148,24 +146,24 @@
                     <C><label>Upgrade</label></C>
                     <C>
                         <Row no-wrap>
-                            <input type="text" :value="upgradeFile.name"
-                                   readonly @click="() => $refs.upgradeFile.$el.click()">
+                            <Inpt type="text" :value="upgradeFile.name"
+                                  readonly @click="() => $refs.upgradeFile.$el.click()"/>
                             <Btn ref="browse" name="upgrade-browse" @click="() => $refs.upgradeFile.$el.click()">
                                 Browse
                             </Btn>
                             <Btn name="upgrade" color="danger">Upgrade</Btn>
                         </Row>
                         <Hint>
-                            The device has {{device.free_size}} bytes available for
-                            OTA updates. If your image is larger than this consider doing a
-                            <A href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates"><strong>two-step
-                                update</strong></A>.
+                            The device has {{device.free_size}} bytes available for OTA updates. If your image is larger
+                            than this consider doing a
+                            <A href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" strong>two-step
+                                update</A>.
                         </Hint>
                         <Row>
                             <progress id="upgrade-progress"></progress>
                         </Row>
                         <Inpt ref="upgradeFile" name="upgrade" type="file"
-                              tabindex="17"
+
                               @change="(file) => {upgradeFile = file}"/>
                     </C>
                 </Row>
@@ -189,15 +187,14 @@
                     <Row>
                         <C><label>NTP Server</label></C>
                         <C>
-                            <Inpt name="ntpServer" type="text" tabindex="41"/>
+                            <Inpt name="ntpServer" type="text"/>
                         </C>
                     </Row>
                     <Row>
                         <C><label>Time Zone</label></C>
                         <C>
                             <Inpt type="select" name="ntpTZ"
-                                  :options="ntpOffsets"
-                                  tabindex="42"/>
+                                  :options="ntpOffsets"/>
                         </C>
                     </Row>
                 </fieldset>
@@ -215,6 +212,7 @@
     import Hint from "../../components/Hint";
     import Group from "../../components/Group";
     import ws from "../../common/websocket";
+    import {alertError} from "../../common/notification";
 
     export default {
         components: {Group, Hint, C, Row, Inpt, Btn, A},
@@ -226,11 +224,13 @@
         data() {
             return {
                 upgradeFile: {},
-                restoreFile: {},
                 downloader: null,
             };
         },
         computed: {
+            downloadName() {
+                return "esp_backup_" + this.device.hostname.replace(/[\W_]+/g, "_") + ".json";
+            },
             ntpOffsets() {
                 // TODO this needs a new notation
                 const tz = [
@@ -257,10 +257,23 @@
             doBackup(event) {
                 try {
                     const json = JSON.stringify(this.getSettings());
-                    const blob = new Blob([json], {type: "application/json"});
-                    event.target.href = URL.createObjectURL(blob);
+                    event.target.href = "data:text/json;charset=utf-8," + encodeURIComponent(json);
                 } catch (e) {
                     this.downloader = ws.urls.config;
+                }
+            },
+            restoreFile(file) {
+                try {
+                    const fr = new FileReader();
+
+                    fr.onload = (e) => {
+                        //TODO make a setting parser and load the data in the UI directly
+                        ws.send({action: "restore", data: JSON.parse(e.target.result)});
+                    };
+
+                    fr.readAsText(file);
+                } catch (e) {
+                    alertError("Your browser doesn't support the file reader API");
                 }
             }
         }

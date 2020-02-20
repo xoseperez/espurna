@@ -5,13 +5,18 @@ import locale from "element-ui/lib/locale";
 
 locale.use(lang);
 
-[Loading, Button, ButtonGroup, Col, Row, Form, Input, Divider, Card, Dialog, Progress, Upload].forEach((v) => {
+[Button, ButtonGroup, Col, Row, Form, Input, Divider, Card, Dialog, Progress, Upload].forEach((v) => {
     Vue.use(v);
 });
 
-Vue.$confirm = MessageBox.confirm;
-Vue.$alert = MessageBox.alert;
-Vue.$notify = Notification;
-Vue.$message = Message;
+Vue.confirm = MessageBox.confirm;
+Vue.alert = MessageBox.alert;
+Vue.notify = Notification;
+Vue.message = Message;
+
+Vue.prototype.$notify = Notification;
+Vue.prototype.$message = Message;
+Vue.prototype.$confirm = MessageBox.confirm;
+Vue.prototype.$alert = MessageBox.alert;
 
 import "./theme.scss";

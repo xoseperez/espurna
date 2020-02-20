@@ -138,12 +138,13 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
         if (dczTopicOut.equals(topic)) {
 
             // Parse response
-            DynamicJsonBuffer jsonBuffer(1024);
+            DynamicJsonBuffer jsonBuffer(calcJsonPayloadBufferSize(payload));
             JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;
             }
+            DEBUG_MSG_P(PSTR("[JsonBuffer] Allocated %u bytes of ram"), root.size());
 
             // IDX
             unsigned int idx = root["idx"];

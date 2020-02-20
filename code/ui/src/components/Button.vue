@@ -1,5 +1,6 @@
 <template>
     <component :is="tag" type="button" class="btn"
+               :disabled="disabled"
                :class="{['btn-'+color]:color, ['btn-'+name]: name}"
                @click="(evt) => $emit('click', evt)">
         <slot></slot>
@@ -20,7 +21,8 @@
             name: {
                 type: String,
                 default: ""
-            }
+            },
+            disabled: Boolean
         },
     };
 </script>

@@ -11,7 +11,10 @@
                     <el-input v-model="scanIp" placeholder="IP range to scan for devices"/>
                 </el-col>
                 <el-col :span="8">
-                    <el-button type="primary" @click="retrieveDevices">Scan for devices</el-button>
+                    <el-button v-loading="scanning" type="primary"
+                               @click="retrieveDevices">
+                        Scan for devices
+                    </el-button>
                 </el-col>
                 <!-- <Button>Add device manually</Button>-->
             </el-row>
@@ -49,7 +52,8 @@
                 /* eslint-enable */
                 userIp: "",
                 singleAddress: null,
-                devices: {}
+                devices: {},
+                scanning: false
             };
         },
         watch: {
@@ -94,9 +98,12 @@
             },
             retrieveDevices() {
                 let parts = this.scanIp.split(".");
+                this.scanning = true;
+
+                const promises = [];
                 this.rangeIterate(parts, (ip) => {
                     ip = ip.join(".");
-                    fetch("http://" + ip + "/discover").then(response => {
+                    promises.push(fetch("http://" + ip + "/discover").then(response => {
                         if (response.ok) {
                             return response.json();
                         } else {
@@ -111,7 +118,10 @@
                         /* eslint-disable no-console */
                         console.log(error);
                         /* eslint-enable */
-                    });
+                    }));
+                });
+                Promise.all(promises).then(() => {
+                    this.scanning = false;
                 });
             },
             rangeIterate(parts, cb, r) {
@@ -148,7 +158,7 @@
         flex-wrap: wrap;
     }
     .el-input input.el-input__inner {
-        margin: 0;
+        margin: 0 !important;
     }
     body .el-dialog--center .el-dialog__body {
         text-align: center;

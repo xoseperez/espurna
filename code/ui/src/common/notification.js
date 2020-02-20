@@ -24,7 +24,7 @@ const _text = (msg) => {
 
 const _alert = (msg) => {
     // #!if PWA
-    Vue.$notify(msg);
+    Vue.notify(msg);
     // #!else
     alert(_text(msg));
     // #!endif
@@ -46,13 +46,15 @@ const alertWarning = (message) => {
 };
 
 const confirm = (msg) => {
+    /* eslint-disable no-unreachable */
     // #!if PWA
-    return typeof msg === "string" ? Vue.$confirm(msg) : Vue.$confirm(msg.message, msg.title, msg);
+    return typeof msg === "string" ? Vue.confirm(msg) : Vue.confirm(msg.message, msg.title, msg);
     // #!else
     return new Promise((resolve, fail) => {
         confirm(_text(msg)) ? resolve() : fail();
     });
     // #!endif
+    /* eslint-enable */
 };
 
 

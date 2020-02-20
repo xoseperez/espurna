@@ -55,7 +55,7 @@
                             below. Disable this option if you are <strong>connecting to a single access point</strong>
                             (or router) or to a <strong>hidden SSID</strong>.
                         </Hint>
-                        <Btn v-loading="scanLoading" class="small"
+                        <Btn v-loading="scanLoading"
                              name="wifi-scan" color="primary" @click="wifiScan">
                             Scan now
                         </Btn>

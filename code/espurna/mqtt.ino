@@ -461,20 +461,25 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
     JsonObject& mqtt = root.createNestedObject("mqtt");
 
     mqtt["enabled"] = mqttEnabled();
-    mqtt["server"] = getSetting("mqttServer", MQTT_SERVER);
-    mqtt["port"] = getSetting("mqttPort", MQTT_PORT);
-    mqtt["user"] = getSetting("mqttUser", MQTT_USER);
-    mqtt["clientID"] = getSetting("mqttClientID");
-    mqtt["password"] = getSetting("mqttPassword", MQTT_PASS);
+    mqtt["server"] = _mqtt_server;
+    mqtt["port"] = _mqtt_port;
+    mqtt["user"] = _mqtt_user;
+    mqtt["clientID"] =  _mqtt_clientid;
+    mqtt["password"] = _mqtt_pass;
     mqtt["keep"] = _mqtt_keepalive;
     mqtt["retain"] = _mqtt_retain;
     mqtt["qoS"] = _mqtt_qos;
+    mqtt["payloadOnline"] = _mqtt_payload_online;
+    mqtt["payloadOffline"] = _mqtt_payload_offline;
+    mqtt["getter"] = _mqtt_getter;
+    mqtt["setter"] = _mqtt_setter;
+    mqtt["topic"] = _mqtt_topic;
+    mqtt["useJson"] = _mqtt_use_json;
+
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
         mqtt["useSSL"] = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);
         mqtt["FP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
-    mqtt["topic"] = getSetting("mqttTopic", MQTT_TOPIC);
-    mqtt["useJson"] = getSetting("mqttUseJson", 1 == MQTT_USE_JSON);
 }
 
 #endif
@@ -764,7 +769,7 @@ void mqttFlush() {
     if (_mqtt_queue.size() == 0) return;
 
     // Build tree recursively
-    DynamicJsonBuffer jsonBuffer(1024);
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(5));
     JsonObject& root = jsonBuffer.createObject();
     _mqttBuildTree(root, mqtt_message_t::END);
 
@@ -837,8 +842,12 @@ int8_t mqttEnqueue(const char * topic, const char * message) {
 void mqttSubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
         #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+            #if DEBUG_SUPPORT
             unsigned int packetId = _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
+            #else
+            _mqtt.subscribe(topic, _mqtt_qos);
+            #endif
         #else // Arduino-MQTT or PubSubClient
             _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
@@ -853,8 +862,12 @@ void mqttSubscribe(const char * topic) {
 void mqttUnsubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
         #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+            #if DEBUG_SUPPORT
             unsigned int packetId = _mqtt.unsubscribe(topic);
             DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s (PID %d)\n"), topic, packetId);
+            #else
+            _mqtt.unsubscribe(topic);
+            #endif
         #else // Arduino-MQTT or PubSubClient
             _mqtt.unsubscribe(topic);
             DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s\n"), topic);

@@ -10,11 +10,13 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "serve:dev": "vue-cli-service serve --mode dev",
+    "serve:dev:pwa": "vue-cli-service serve --mode devpwa",
     "serve:pwa": "vue-cli-service serve --mode pwa",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint",
     "build:dev": "vue-cli-service build --mode dev",
+    "build:dev:pwa": "vue-cli-service build --mode devpwa",
     "build:pwa": "vue-cli-service build --mode pwa"
   },
   "dependencies": {

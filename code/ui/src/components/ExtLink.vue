@@ -1,9 +1,12 @@
 <template>
-    <a rel="noopener" target="_blank"><slot></slot></a>
+    <a rel="noopener" target="_blank"><strong v-if="strong"><slot></slot></strong><slot v-else></slot></a>
 </template>
 
 <script>
     export default {
+        props: {
+            strong: Boolean
+        }
     };
 </script>
 

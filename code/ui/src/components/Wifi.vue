@@ -9,7 +9,6 @@
                           action="reconnect"
                           tabindex="0"
                           placeholder="Network SSID"
-                          required
                           autocomplete="network-ssid"/>
                     <Btn @click="() => { $set(tpl.row, 'more', !tpl.row.more) }">...</Btn>
                 </C>
