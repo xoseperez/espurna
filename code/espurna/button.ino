@@ -8,7 +8,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if BUTTON_SUPPORT
 
-#include <DebounceEvent.h>
 #include <memory>
 #include <vector>
 
@@ -19,27 +18,71 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "button.h"
 #include "button_config.h"
 
+#include "debounce.h"
+
 // -----------------------------------------------------------------------------
 
-// TODO: dblclick and debounce delays - right now a global setting, independent of ID
-unsigned long button_t::DebounceDelay = BUTTON_DEBOUNCE_DELAY;
-unsigned long button_t::DblclickDelay = BUTTON_DBLCLICK_DELAY;
+button_event_delays_t::button_event_delays_t() :
+    debounce(BUTTON_DEBOUNCE_DELAY),
+    dblclick(BUTTON_DBLCLICK_DELAY),
+    lngclick(BUTTON_LNGCLICK_DELAY),
+    lnglngclick(BUTTON_LNGLNGCLICK_DELAY)
+{}
 
-button_t::button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) :
-    event(new DebounceEvent(pin, mode, DebounceDelay, DblclickDelay)),
+button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick) :
+    debounce(debounce),
+    dblclick(dblclick),
+    lngclick(lngclick),
+    lnglngclick(lnglngclick)
+{}
+
+button_t::button_t(std::shared_ptr<DebounceEvent::PinBase> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
+    event_handler(new DebounceEvent::DebounceEvent(pin, mode, delays.debounce, delays.dblclick)),
+    event_delays(delays),
     actions(actions),
     relayID(relayID)
 {}
 
-button_t::button_t(unsigned char index) :
-    button_t(_buttonPin(index), _buttonMode(index), _buttonConstructActions(index), _buttonRelay(index))
-{}
-
 bool button_t::state() {
-    return event->pressed();
+    return event_handler->pressed();
 }
 
 std::vector<button_t> _buttons;
+
+// -----------------------------------------------------------------------------
+
+constexpr const uint8_t _buttonMapReleased(uint8_t count, uint8_t length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+    return (
+        (1 == count) ? (
+            (length > lnglngclick_delay) ? BUTTON_EVENT_LNGLNGCLICK :
+            (length > lngclick_delay) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
+        ) :
+        (2 == count) ? BUTTON_EVENT_DBLCLICK :
+        (3 == count) ? BUTTON_EVENT_TRIPLECLICK :
+        BUTTON_EVENT_NONE
+    );
+}
+
+const uint8_t _buttonMapEvent(button_t& button, DebounceEvent::Types::event_t event) {
+    using namespace DebounceEvent;
+    switch (event) {
+        case Types::EventPressed:
+            return BUTTON_EVENT_PRESSED;
+        case Types::EventChanged:
+            return BUTTON_EVENT_CLICK;
+        case Types::EventReleased: {
+            return _buttonMapReleased(
+                button.event_handler->getEventCount(),
+                button.event_handler->getEventLength(),
+                button.event_delays.lngclick,
+                button.event_delays.lnglngclick
+            );
+        }
+        case Types::EventNone:
+        default:
+            return BUTTON_EVENT_NONE;
+    }
+}
 
 unsigned char buttonCount() {
     return _buttons.size();
@@ -148,8 +191,22 @@ void buttonEvent(unsigned char id, unsigned char event) {
 
 }
 
+struct DummyPin : virtual public DebounceEvent::PinBase {
+    DummyPin(unsigned char pin) : DebounceEvent::PinBase(pin) {}
+    void digitalWrite(int8_t val) {}
+    void pinMode(int8_t mode) {}
+    int digitalRead() { return 0; }
+};
+
 unsigned char buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) {
-    _buttons.emplace_back(pin, mode, actions, relayID);
+    const unsigned char index = _buttons.size();
+    button_event_delays_t delays {
+        getSetting({"btnDebDelay", index}, _buttonDebounceDelay(index)),
+        getSetting({"btnDblCDelay", index}, _buttonDoubleClickDelay(index)),
+        getSetting({"btnLngCDelay", index}, _buttonLongClickDelay(index)),
+        getSetting({"btnLngLngCDelay", index}, _buttonLongLongClickDelay(index))
+    };
+    _buttons.emplace_back(std::make_shared<DummyPin>(GPIO_NONE), BUTTON_PUSHBUTTON, actions, relayID, delays);
     return _buttons.size() - 1;
 }
 
@@ -214,12 +271,26 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
-        // TODO: load based on index
-        button_t::DebounceDelay = getSetting("btnDebounce", BUTTON_DEBOUNCE_DELAY);
-        button_t::DblclickDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY);
+        for (unsigned char index = 0; index < buttons; ++index) {
+            const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
+            if (!gpioValid(pin)) {
+                break;
+            }
 
-        for (unsigned char id = 0; id < buttons; ++id) {
-            _buttons.emplace_back(id);
+            button_event_delays_t delays {
+                getSetting({"btnDebDelay", index}, _buttonDebounceDelay(index)),
+                getSetting({"btnDblCDelay", index}, _buttonDoubleClickDelay(index)),
+                getSetting({"btnLngCDelay", index}, _buttonLongClickDelay(index)),
+                getSetting({"btnLngLngCDelay", index}, _buttonLongLongClickDelay(index))
+            };
+
+            _buttons.emplace_back(
+                std::make_shared<DebounceEvent::DigitalPin>(pin),
+                getSetting({"btnMode", index}, _buttonMode(index)),
+                getSetting({"btnActions", index}, _buttonConstructActions(index)),
+                getSetting({"btnRelay", index}, _buttonRelay(index)),
+                delays
+            );
         }
 
     #endif
@@ -307,12 +378,8 @@ void buttonLoop() {
 
         for (size_t id = 0; id < _buttons.size(); ++id) {
             auto& button = _buttons[id];
-            if (auto event = button.event->loop()) {
-                buttonEvent(id, _buttonMapEvent(
-                    event,
-                    button.event->getEventCount(),
-                    button.event->getEventLength()
-                ));
+            if (auto event = button.event_handler->loop()) {
+                buttonEvent(id, _buttonMapEvent(button, event));
             }
        }
 

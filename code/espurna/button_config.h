@@ -123,6 +123,58 @@ constexpr const unsigned char _buttonRelay(unsigned char index) {
     );
 }
 
+constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
+    return (
+        (index == 0) ? BUTTON1_DEBOUNCE_DELAY :
+        (index == 1) ? BUTTON2_DEBOUNCE_DELAY :
+        (index == 2) ? BUTTON3_DEBOUNCE_DELAY :
+        (index == 3) ? BUTTON4_DEBOUNCE_DELAY :
+        (index == 4) ? BUTTON5_DEBOUNCE_DELAY :
+        (index == 5) ? BUTTON6_DEBOUNCE_DELAY :
+        (index == 6) ? BUTTON7_DEBOUNCE_DELAY :
+        (index == 7) ? BUTTON8_DEBOUNCE_DELAY : BUTTON_DEBOUNCE_DELAY
+    );
+}
+
+constexpr const unsigned long _buttonDoubleClickDelay(unsigned char index) {
+    return (
+        (index == 0) ? BUTTON1_DBLCLICK_DELAY :
+        (index == 1) ? BUTTON2_DBLCLICK_DELAY :
+        (index == 2) ? BUTTON3_DBLCLICK_DELAY :
+        (index == 3) ? BUTTON4_DBLCLICK_DELAY :
+        (index == 4) ? BUTTON5_DBLCLICK_DELAY :
+        (index == 5) ? BUTTON6_DBLCLICK_DELAY :
+        (index == 6) ? BUTTON7_DBLCLICK_DELAY :
+        (index == 7) ? BUTTON8_DBLCLICK_DELAY : BUTTON_DBLCLICK_DELAY
+    );
+}
+
+constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
+    return (
+        (index == 0) ? BUTTON1_LNGCLICK_DELAY :
+        (index == 1) ? BUTTON2_LNGCLICK_DELAY :
+        (index == 2) ? BUTTON3_LNGCLICK_DELAY :
+        (index == 3) ? BUTTON4_LNGCLICK_DELAY :
+        (index == 4) ? BUTTON5_LNGCLICK_DELAY :
+        (index == 5) ? BUTTON6_LNGCLICK_DELAY :
+        (index == 6) ? BUTTON7_LNGCLICK_DELAY :
+        (index == 7) ? BUTTON8_LNGCLICK_DELAY : BUTTON_LNGCLICK_DELAY
+    );
+}
+
+constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
+    return (
+        (index == 0) ? BUTTON1_LNGLNGCLICK_DELAY :
+        (index == 1) ? BUTTON2_LNGLNGCLICK_DELAY :
+        (index == 2) ? BUTTON3_LNGLNGCLICK_DELAY :
+        (index == 3) ? BUTTON4_LNGLNGCLICK_DELAY :
+        (index == 4) ? BUTTON5_LNGLNGCLICK_DELAY :
+        (index == 5) ? BUTTON6_LNGLNGCLICK_DELAY :
+        (index == 6) ? BUTTON7_LNGLNGCLICK_DELAY :
+        (index == 7) ? BUTTON8_LNGLNGCLICK_DELAY : BUTTON_LNGLNGCLICK_DELAY
+    );
+}
+
 constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, unsigned char event) {
     return (
         (event == BUTTON_EVENT_PRESSED) ? ((actions) & 0x0F) :
@@ -131,27 +183,6 @@ constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, un
         (event == BUTTON_EVENT_LNGCLICK) ? ((actions >> 12) & 0x0F) :
         (event == BUTTON_EVENT_LNGLNGCLICK) ? ((actions >> 16) & 0x0F) :
         (event == BUTTON_EVENT_TRIPLECLICK) ? ((actions >> 20) & 0x0F) : BUTTON_MODE_NONE
-    );
-}
-
-constexpr const uint8_t _buttonMapReleased(uint8_t count, uint8_t length) {
-    return (
-        (1 == count) ? (
-            (length > BUTTON_LNGLNGCLICK_DELAY) ? BUTTON_EVENT_LNGLNGCLICK :
-            (length > BUTTON_LNGCLICK_DELAY) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
-        ) : 
-        (2 == count) ? BUTTON_EVENT_DBLCLICK : 
-        (3 == count) ? BUTTON_EVENT_TRIPLECLICK : 
-        BUTTON_EVENT_NONE
-    );
-}
-
-constexpr const uint8_t _buttonMapEvent(uint8_t event, uint8_t count, uint16_t length) {
-    return (
-        (event == EVENT_PRESSED) ? BUTTON_EVENT_PRESSED :
-        (event == EVENT_CHANGED) ? BUTTON_EVENT_CLICK :
-        (event == EVENT_RELEASED) ? _buttonMapReleased(count, length) :
-        BUTTON_EVENT_NONE
     );
 }
 
