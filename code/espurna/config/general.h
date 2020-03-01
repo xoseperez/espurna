@@ -377,8 +377,15 @@
 #endif
 
 #ifndef BUTTON_MQTT_SEND_ALL_EVENTS
-#define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
-                                                // 1 - to send all button events to MQTT
+#define BUTTON_MQTT_SEND_ALL_EVENTS     0           // 0 - to send only events the are bound to actions
+                                                   // 1 - to send all button events to MQTT
+#endif
+
+#ifndef BUTTON_EVENTS_SOURCE
+#define BUTTON_EVENTS_SOURCE            BUTTON_EVENTS_SOURCE_GENERIC   // Type of button event source. One of:
+                                                                       // BUTTON_EVENTS_SOURCE_GENERIC - GPIOs (virtual or real)
+                                                                       // BUTTON_EVENTS_SOURCE_SONOFF_DUAL - hardware specific, drive buttons through serial connection
+                                                                       // BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL - similar to Itead Sonoff Dual, hardware specific
 #endif
 
 //------------------------------------------------------------------------------

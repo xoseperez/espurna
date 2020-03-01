@@ -19,7 +19,11 @@ PROGMEM const char espurna_modules[] =
         "BROKER "
     #endif
     #if BUTTON_SUPPORT
+    #if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
         "BUTTON "
+    #else
+        "BUTTON_DUAL "
+    #endif
     #endif
     #if DEBUG_SERIAL_SUPPORT
         "DEBUG_SERIAL "
@@ -80,6 +84,9 @@ PROGMEM const char espurna_modules[] =
     #endif
     #if RF_SUPPORT
         "RF "
+    #endif
+    #if RPN_RULES_SUPPORT
+        "RPN_RULES "
     #endif
     #if SCHEDULER_SUPPORT
         "SCHEDULER "

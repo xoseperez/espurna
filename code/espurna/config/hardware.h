@@ -556,6 +556,8 @@
     #define BUTTON2_RELAY       2
     #define BUTTON3_RELAY       1
 
+    #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
@@ -4124,6 +4126,8 @@
     #define BUTTON2_RELAY           2
     #define BUTTON3_RELAY           2
     #define BUTTON4_RELAY           1
+
+    #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
 
 // -----------------------------------------------------------------------------
 // Teckin SP20

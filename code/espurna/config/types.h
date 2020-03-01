@@ -44,6 +44,10 @@
 #define BUTTON_MODE_DIM_UP          10
 #define BUTTON_MODE_DIM_DOWN        11
 
+#define BUTTON_EVENTS_SOURCE_GENERIC               0
+#define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL     1
+#define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
+
 //------------------------------------------------------------------------------
 // ENCODER
 //------------------------------------------------------------------------------

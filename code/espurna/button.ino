@@ -147,7 +147,7 @@ void buttonEvent(unsigned char id, unsigned char event) {
     if (BUTTON_MODE_OFF == action) {
         relayStatus(button.relayID, false);
     }
-    
+
     if (BUTTON_MODE_AP == action) {
         if (wifiState() & WIFI_STATE_AP) {
             wifiStartSTA();
@@ -155,7 +155,7 @@ void buttonEvent(unsigned char id, unsigned char event) {
             wifiStartAP();
         }
     }
-    
+
     if (BUTTON_MODE_RESET == action) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
@@ -171,13 +171,13 @@ void buttonEvent(unsigned char id, unsigned char event) {
             wifiStartWPS();
         }
     #endif // defined(JUSTWIFI_ENABLE_WPS)
-    
+
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
         if (BUTTON_MODE_SMART_CONFIG == action) {
             wifiStartSmartConfig();
         }
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-    
+
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     if (BUTTON_MODE_DIM_UP == action) {
         lightBrightnessStep(1);
@@ -214,24 +214,32 @@ void buttonSetup() {
 
     // Special hardware cases
 
-    #if defined(ITEAD_SONOFF_DUAL)
+    #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
+        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
 
-        _buttons.reserve(3);
+        size_t buttons = 0;
+        #if BUTTON1_RELAY != RELAY_NONE
+            ++buttons;
+        #endif
+        #if BUTTON2_RELAY != RELAY_NONE
+            ++buttons;
+        #endif
+        #if BUTTON3_RELAY != RELAY_NONE
+            ++buttons;
+        #endif
+        #if BUTTON4_RELAY != RELAY_NONE
+            ++buttons;
+        #endif
 
-        buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(0));
-        buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(1));
-        buttonAdd(GPIO_NONE, BUTTON_PUSHBUTTON, 0, _buttonRelay(2));
+        _buttons.reserve(buttons);
 
-    #elif defined(FOXEL_LIGHTFOX_DUAL)
-
-        _buttons.reserve(4);
-
+        // Ignore default button modes
         const auto actions = _buttonConstructActions(
             BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE,
             BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE
         );
 
-        for (unsigned char id = 0; id < 4; ++id) {
+        for (unsigned char id = 0; id < buttons; ++id) {
             buttonAdd(
                 GPIO_NONE, BUTTON_PUSHBUTTON,
                 actions, getSetting({"btnRelay", id}, _buttonRelay(id))
@@ -244,6 +252,9 @@ void buttonSetup() {
 
         size_t buttons = 0;
 
+        // TODO: no real point of doing this when running with dynamic settings
+        //       if there is limit like RELAYS_MAX - use that
+        //       if not, try to allocate some reasonable amount
         #if BUTTON1_PIN != GPIO_NONE
             ++buttons;
         #endif
@@ -284,6 +295,7 @@ void buttonSetup() {
                 getSetting({"btnLngLngCDelay", index}, _buttonLongLongClickDelay(index))
             };
 
+            // TODO: allow to change DebounceEvent::DigitalPin to something else based on config
             _buttons.emplace_back(
                 std::make_shared<DebounceEvent::DigitalPin>(pin),
                 getSetting({"btnMode", index}, _buttonMode(index)),
@@ -309,80 +321,109 @@ void buttonSetup() {
 
 }
 
+// Sonoff Dual does not do real GPIO readings and we
+// depend on the external MCU to send us relay / button events
+// TODO: move this to a separate 'hardware' setup file?
+#if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+
+void _buttonLoopSonoffDual() {
+
+    if (Serial.available() < 4) {
+        return;
+    }
+
+    unsigned char bytes[4] = {0};
+    Serial.readBytes(bytes, 4);
+    if ((bytes[0] != 0xA0) || (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
+        return;
+    }
+
+    const unsigned char value = bytes[2];
+
+    // RELAYs and BUTTONs are synchonized in the SIL F330
+    // The on-board BUTTON2 should toggle RELAY0 value
+    // Since we are not passing back RELAY2 value
+    // (in the relayStatus method) it will only be present
+    // here if it has actually been pressed
+    if ((value & 4) == 4) {
+        buttonEvent(2, BUTTON_EVENT_CLICK);
+        return;
+    }
+
+    // Otherwise check if any of the other two BUTTONs
+    // (in the header) has been pressed, but we should
+    // ensure that we only toggle one of them to avoid
+    // the synchronization going mad
+    // This loop is generic for any PSB-04 module
+    for (unsigned int i=0; i<relayCount(); i++) {
+
+        bool status = (value & (1 << i)) > 0;
+
+        // Check if the status for that relay has changed
+        if (relayStatus(i) != status) {
+            buttonEvent(i, BUTTON_EVENT_CLICK);
+            break;
+        }
+
+    }
+
+}
+
+#endif // BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL == 1
+
+// Lightfox uses the same protocol as Dual, but has slightly different actions
+// TODO: same as above, move from here someplace else
+#if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+
+void _buttonLoopFoxelLightfox() {
+
+    if (Serial.available() < 4) {
+        return;
+    }
+
+    unsigned char bytes[4] = {0};
+    Serial.readBytes(bytes, 4);
+    if ((bytes[0] != 0xA0) || (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
+        return;
+    }
+
+    const unsigned char value = bytes[2];
+
+    DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %u\n"), value);
+
+    for (unsigned int i=0; i<_buttons.size(); i++) {
+
+        bool clicked = (value & (1 << i)) > 0;
+
+        if (clicked) {
+            buttonEvent(i, BUTTON_EVENT_CLICK);
+        }
+    }
+}
+
+#endif // BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL == 1
+
+void _buttonLoopGeneric() {
+    for (size_t id = 0; id < _buttons.size(); ++id) {
+        auto& button = _buttons[id];
+        auto event = button.event_handler->loop();
+
+        if (event != DebounceEvent::Types::EventNone) {
+            buttonEvent(id, _buttonMapEvent(button, event));
+        }
+    }
+}
+
 void buttonLoop() {
 
-    #if defined(ITEAD_SONOFF_DUAL)
-
-        if (Serial.available() >= 4) {
-            if (Serial.read() == 0xA0) {
-                if (Serial.read() == 0x04) {
-                    unsigned char value = Serial.read();
-                    if (Serial.read() == 0xA1) {
-
-                        // RELAYs and BUTTONs are synchonized in the SIL F330
-                        // The on-board BUTTON2 should toggle RELAY0 value
-                        // Since we are not passing back RELAY2 value
-                        // (in the relayStatus method) it will only be present
-                        // here if it has actually been pressed
-                        if ((value & 4) == 4) {
-                            buttonEvent(2, BUTTON_EVENT_CLICK);
-                            return;
-                        }
-
-                        // Otherwise check if any of the other two BUTTONs
-                        // (in the header) has been pressed, but we should
-                        // ensure that we only toggle one of them to avoid
-                        // the synchronization going mad
-                        // This loop is generic for any PSB-04 module
-                        for (unsigned int i=0; i<relayCount(); i++) {
-
-                            bool status = (value & (1 << i)) > 0;
-
-                            // Check if the status for that relay has changed
-                            if (relayStatus(i) != status) {
-                                buttonEvent(i, BUTTON_EVENT_CLICK);
-                                break;
-                            }
-
-                        }
-
-                    }
-                }
-            }
-        }
-
-    #elif defined(FOXEL_LIGHTFOX_DUAL)
-
-        if (Serial.available() >= 4) {
-            if (Serial.read() == 0xA0) {
-                if (Serial.read() == 0x04) {
-                    unsigned char value = Serial.read();
-                    if (Serial.read() == 0xA1) {
-
-                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d\n"), value);
-
-                        for (unsigned int i=0; i<_buttons.size(); i++) {
-
-                            bool clicked = (value & (1 << i)) > 0;
-
-                            if (clicked) {
-                                buttonEvent(i, BUTTON_EVENT_CLICK);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
+    #if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
+        _buttonLoopGeneric();
+    #elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+        _buttonLoopSonoffDual();
+    #elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+        _buttonLoopFoxelLightfox();
     #else
-
-        for (size_t id = 0; id < _buttons.size(); ++id) {
-            auto& button = _buttons[id];
-            if (auto event = button.event_handler->loop()) {
-                buttonEvent(id, _buttonMapEvent(button, event));
-            }
-       }
-
+        #warning "Unknown value for BUTTON_EVENTS_SOURCE"
     #endif
 
 }
