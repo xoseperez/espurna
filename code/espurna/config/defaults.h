@@ -233,31 +233,6 @@
 #define BUTTON8_RELAY       RELAY_NONE
 #endif
 
-#ifndef BUTTON1_EVENT_SOURCE
-#define BUTTON1_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON2_EVENT_SOURCE
-#define BUTTON2_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON3_EVENT_SOURCE
-#define BUTTON3_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON4_EVENT_SOURCE
-#define BUTTON4_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON5_EVENT_SOURCE
-#define BUTTON5_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON6_EVENT_SOURCE
-#define BUTTON6_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON7_EVENT_SOURCE
-#define BUTTON7_EVENT_SOURCE       DigitalPin
-#endif
-#ifndef BUTTON8_EVENT_SOURCE
-#define BUTTON8_EVENT_SOURCE       DigitalPin
-#endif
-
 #ifndef BUTTON1_DEBOUNCE_DELAY
 #define BUTTON1_DEBOUNCE_DELAY    BUTTON_DEBOUNCE_DELAY
 #endif
