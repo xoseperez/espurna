@@ -91,11 +91,11 @@ unsigned char buttonCount() {
 
 #if MQTT_SUPPORT
 
-std::bitset<BUTTONS_MAX> _buttons_mqtt_retain(
-    (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
-);
 std::bitset<BUTTONS_MAX> _buttons_mqtt_send_all(
     (1 == BUTTON_MQTT_SEND_ALL_EVENTS) ? 0xFFFFFFFFUL : 0UL
+);
+std::bitset<BUTTONS_MAX> _buttons_mqtt_retain(
+    (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
 );
 
 void buttonMQTT(unsigned char id, uint8_t event) {
@@ -130,7 +130,7 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     JsonArray& schema = module.createNestedArray("_schema");
 
-    schema.add("Pin");
+    schema.add("Pin"); // GPIO id?
     schema.add("Mode");
 
     schema.add("Relay");
@@ -150,17 +150,18 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     for (unsigned char i=0; i<buttonCount(); i++) {
         JsonArray& button = buttons.createNestedArray();
 
-        button.add(_buttons[i].pin);
-        button.add(_buttons[i].mode);
+        button.add(_buttons[i].event_handler.pin.pin);
+        button.add(_buttons[i].event_handler.pin.mode);
         button.add(_buttons[i].relayID);
-        button.add(_buttons[i].debounceDelay);
-        button.add(_buttons[i].doubleClickDelay);
-        button.add(_buttons[i].longClickDelay);
-        button.add(_buttons[i].longLongClickDelay);
+        button.add(_buttons[i].event_delays.debounce);
+        button.add(_buttons[i].event_delays.dblclick);
+        button.add(_buttons[i].event_delays.lngclick);
+        button.add(_buttons[i].event_delays.lnglngclick);
 
+        // TODO: send bitmask as number?
         #if MQTT_SUPPORT
-            button.add(_buttonMqttSendAllEvents(i));
-            button.add(_buttonMqttRetain(i));
+            button.add(_buttons_mqtt_send_all[i] ? 1 : 0);
+            button.add(_buttons_mqtt_retain[i] ? 1 : 0);
         #endif
     }
 #endif
@@ -258,19 +259,10 @@ struct DummyPin : virtual public DebounceEvent::PinBase {
     int digitalRead() { return 0; }
 };
 
-unsigned char buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID) {
-    const unsigned char index = _buttons.size();
-    button_event_delays_t delays {
-        getSetting({"btnDebDelay", index}, _buttonDebounceDelay(index)),
-        getSetting({"btnDblCDelay", index}, _buttonDoubleClickDelay(index)),
-        getSetting({"btnLngCDelay", index}, _buttonLongClickDelay(index)),
-        getSetting({"btnLngLngCDelay", index}, _buttonLongLongClickDelay(index))
-    };
-    _buttons.emplace_back(std::make_shared<DummyPin>(GPIO_NONE), BUTTON_PUSHBUTTON, actions, relayID, delays);
-    return _buttons.size() - 1;
-}
-
 void buttonSetup() {
+
+    // Backwards compatibility
+    moveSetting("btnDelay", "btnDblDel");
 
     // Special hardware cases
 
@@ -299,10 +291,13 @@ void buttonSetup() {
             BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE
         );
 
+        const auto delays = button_event_delays_t();
+
         for (unsigned char id = 0; id < buttons; ++id) {
-            buttonAdd(
-                GPIO_NONE, BUTTON_PUSHBUTTON,
-                actions, getSetting({"btnRelay", id}, _buttonRelay(id))
+            _buttons.emplace_back(
+                nullptr, BUTTON_PUSHBUTTON,
+                actions, getSetting({"btnRelay", id}, _buttonRelay(id)),
+                delays
             );
         }
 
