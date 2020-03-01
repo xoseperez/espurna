@@ -381,6 +381,10 @@
                                                    // 1 - to send all button events to MQTT
 #endif
 
+#ifndef BUTTON_MQTT_RETAIN
+#define BUTTON_MQTT_RETAIN              1
+#endif
+
 #ifndef BUTTON_EVENTS_SOURCE
 #define BUTTON_EVENTS_SOURCE            BUTTON_EVENTS_SOURCE_GENERIC   // Type of button event source. One of:
                                                                        // BUTTON_EVENTS_SOURCE_GENERIC - GPIOs (virtual or real)

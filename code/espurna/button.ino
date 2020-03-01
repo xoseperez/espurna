@@ -8,6 +8,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if BUTTON_SUPPORT
 
+#include <bitset>
 #include <memory>
 #include <vector>
 
@@ -18,7 +19,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "button.h"
 #include "button_config.h"
 
-#include "debounce.h"
+#include "libs/DebounceEvent.h"
 
 // -----------------------------------------------------------------------------
 
@@ -90,10 +91,18 @@ unsigned char buttonCount() {
 
 #if MQTT_SUPPORT
 
+std::bitset<BUTTONS_MAX> _buttons_mqtt_retain(
+    (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
+);
+std::bitset<BUTTONS_MAX> _buttons_mqtt_send_all(
+    (1 == BUTTON_MQTT_SEND_ALL_EVENTS) ? 0xFFFFFFFFUL : 0UL
+);
+
 void buttonMQTT(unsigned char id, uint8_t event) {
     char payload[4] = {0};
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
+    // mqttSend(topic, id, payload, force, retail)
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, _buttons_mqtt_retain[id]);
 }
 
 #endif
@@ -104,6 +113,57 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
     if (buttonCount() > 0) {
         root["btnVisible"] = 1;
     }
+}
+
+// XXX: unused! pending webui changes
+
+void _buttonWebSocketOnConnected(JsonObject& root) {
+#if 0
+    if (buttonCount() < 1) return;
+
+    JsonObject& module = root.createNestedObject("btn");
+
+    // TODO: hardware can sometimes use a different event source
+    //       e.g. Sonoff Dual does not need `Pin`, `Mode` or any of `Del`
+    // TODO: schema names are uppercase to easily match settings?
+    // TODO: schema name->type map to generate WebUI elements?
+
+    JsonArray& schema = module.createNestedArray("_schema");
+
+    schema.add("Pin");
+    schema.add("Mode");
+
+    schema.add("Relay");
+
+    schema.add("DebDel");
+    schema.add("DblDel");
+    schema.add("LngDel");
+    schema.add("LngLngDel");
+
+    #if MQTT_SUPPORT
+        schema.add("MqttSnd");
+        schema.add("MqttRetain");
+    #endif
+
+    JsonArray& buttons = module.createNestedArray("list");
+
+    for (unsigned char i=0; i<buttonCount(); i++) {
+        JsonArray& button = buttons.createNestedArray();
+
+        button.add(_buttons[i].pin);
+        button.add(_buttons[i].mode);
+        button.add(_buttons[i].relayID);
+        button.add(_buttons[i].debounceDelay);
+        button.add(_buttons[i].doubleClickDelay);
+        button.add(_buttons[i].longClickDelay);
+        button.add(_buttons[i].longLongClickDelay);
+
+        #if MQTT_SUPPORT
+            button.add(_buttonMqttSendAllEvents(i));
+            button.add(_buttonMqttRetain(i));
+        #endif
+    }
+#endif
 }
 
 bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
@@ -131,7 +191,7 @@ void buttonEvent(unsigned char id, unsigned char event) {
     unsigned char action = _buttonDecodeEventAction(button.actions, event);
 
     #if MQTT_SUPPORT
-       if (action != BUTTON_MODE_NONE || BUTTON_MQTT_SEND_ALL_EVENTS) {
+       if (action != BUTTON_MODE_NONE || _buttons_mqtt_send_all[id]) {
            buttonMQTT(id, event);
        }
     #endif
@@ -248,7 +308,7 @@ void buttonSetup() {
 
     // Generic GPIO input handlers
 
-    #else
+    #elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
 
         size_t buttons = 0;
 
@@ -289,10 +349,10 @@ void buttonSetup() {
             }
 
             button_event_delays_t delays {
-                getSetting({"btnDebDelay", index}, _buttonDebounceDelay(index)),
-                getSetting({"btnDblCDelay", index}, _buttonDoubleClickDelay(index)),
-                getSetting({"btnLngCDelay", index}, _buttonLongClickDelay(index)),
-                getSetting({"btnLngLngCDelay", index}, _buttonLongLongClickDelay(index))
+                getSetting({"btnDebDel", index}, _buttonDebounceDelay(index)),
+                getSetting({"btnDblCDel", index}, _buttonDoubleClickDelay(index)),
+                getSetting({"btnLngCDel", index}, _buttonLongClickDelay(index)),
+                getSetting({"btnLngLngCDel", index}, _buttonLongLongClickDelay(index))
             };
 
             // TODO: allow to change DebounceEvent::DigitalPin to something else based on config
@@ -309,14 +369,22 @@ void buttonSetup() {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
 
+    #if MQTT_SUPPORT
+        for (unsigned char index = 0; index < _buttons.size(); ++index) {
+            _buttons_mqtt_send_all[index] = getSetting({"btnMqttSendAll", index}, _buttonMqttSendAllEvents(index));
+            _buttons_mqtt_retain[index] = getSetting({"btnMqttRetain", index}, _buttonMqttRetain(index));
+        }
+    #endif
+
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsRegister()
+            .onConnected(_buttonWebSocketOnVisible)
             .onVisible(_buttonWebSocketOnVisible)
             .onKeyCheck(_buttonWebSocketOnKeyCheck);
     #endif
 
-    // Register loop
+    // Register system callbacks
     espurnaRegisterLoop(buttonLoop);
 
 }

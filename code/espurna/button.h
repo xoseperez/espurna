@@ -8,9 +8,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "debounce.h"
+#include "libs/DebounceEvent.h"
 
 #include <memory>
+
+constexpr size_t BUTTONS_MAX = 32;
 
 struct button_event_delays_t {
     button_event_delays_t();

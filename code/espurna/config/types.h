@@ -48,6 +48,18 @@
 #define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL     1
 #define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
 
+// compat definitions for DebounceEvent
+#define BUTTON_PUSHBUTTON           DebounceEvent::Types::ModePushbutton
+#define BUTTON_SWITCH               DebounceEvent::Types::ModeSwitch
+#define BUTTON_DEFAULT_HIGH         DebounceEvent::Types::ModeDefaultHigh
+#define BUTTON_SET_PULLUP           DebounceEvent::Types::ModeSetPullup
+
+#define EVENT_NONE                  DebounceEvent::Types::EventNone
+#define EVENT_CHANGED               DebounceEvent::Types::EventChanged
+#define EVENT_PRESSED               DebounceEvent::Types::EventPressed
+#define EVENT_RELEASED              DebounceEvent::Types::EventReleased
+
+
 //------------------------------------------------------------------------------
 // ENCODER
 //------------------------------------------------------------------------------
