@@ -30,7 +30,7 @@ struct button_t {
 
     bool state();
 
-    std::unique_ptr<DebounceEvent::DebounceEvent> event_handler;
+    std::unique_ptr<DebounceEvent::EventHandler> event_handler;
     button_event_delays_t event_delays;
 
     const unsigned long actions;

@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <memory>
 #include <vector>
 
+#include "compat.h"
 #include "system.h"
 #include "relay.h"
 #include "light.h"
@@ -38,7 +39,7 @@ button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned lo
 {}
 
 button_t::button_t(std::shared_ptr<DebounceEvent::PinBase> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
-    event_handler(new DebounceEvent::DebounceEvent(pin, mode, delays.debounce, delays.dblclick)),
+    event_handler(std::make_unique<DebounceEvent::EventHandler>(pin, mode, delays.debounce, delays.dblclick)),
     event_delays(delays),
     actions(actions),
     relayID(relayID)
@@ -151,8 +152,8 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         JsonArray& button = buttons.createNestedArray();
 
         if (_buttons[i].event_handler) {
-            button.add(_buttons[i].event_handler.pin.pin);
-            button.add(_buttons[i].event_handler.pin.mode);
+            button.add(_buttons[i].event_handler.getPin());
+            button.add(_buttons[i].event_handler.getMode());
         } else {
             button.add(GPIO_NONE);
             button.add(BUTTON_PUSHBUTTON);

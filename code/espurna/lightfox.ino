@@ -55,7 +55,7 @@ void _lightfoxWebSocketOnConnected(JsonObject& root) {
     for (byte id=0; id<buttonsCount; id++) {
         JsonObject& node = rfb.createNestedObject();
         node["id"] = id;
-        node["relay"] = getSetting("btnRelay", id, "0");
+        node["relay"] = getSetting({"btnRelay", id}, 0);
     }
 }
 

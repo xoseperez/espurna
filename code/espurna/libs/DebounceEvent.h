@@ -32,8 +32,8 @@
 
 namespace DebounceEvent {
 
-#include <functional>
-#include <memory>
+constexpr const unsigned long DebounceDelay = 50UL;
+constexpr const unsigned long RepeatDelay = 500UL;
 
 namespace Types {
     enum event_t {
@@ -50,9 +50,6 @@ namespace Types {
         ModeSetPullup = 1 << 3
     };
 }
-
-constexpr const unsigned long DebounceDelay = 50UL;
-constexpr const unsigned long RepeatDelay = 500UL;
 
 // base interface for generic pin handler. 
 class PinBase {
@@ -91,31 +88,32 @@ class DigitalPin : public PinBase {
         }
 };
 
-class DebounceEvent {
+class EventHandler {
 
 
     public:
 
         // TODO: not used in espurna buttons node
-        using callback_f = std::function<void(DebounceEvent* self, uint8_t event, uint8_t count, uint16_t length)>;
+        using callback_f = std::function<void(EventHandler* self, uint8_t event, uint8_t count, uint16_t length)>;
 
-        DebounceEvent(std::shared_ptr<PinBase> pin, int mode = Types::ModePushbutton | Types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        DebounceEvent(std::shared_ptr<PinBase> pin, callback_f callback, int mode = Types::ModePushbutton | Types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventHandler(std::shared_ptr<PinBase> pin, int mode = Types::ModePushbutton | Types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventHandler(std::shared_ptr<PinBase> pin, callback_f callback, int mode = Types::ModePushbutton | Types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
         Types::event_t loop();
         bool pressed();
 
-        unsigned char getPin();
-        unsigned char getMode();
+        const unsigned char getPin() const;
+        const int getMode() const;
+
         unsigned long getEventLength();
         unsigned long getEventCount();
 
-        std::shared_ptr<PinBase> pin;
-        callback_f callback;
-
-        const int mode;
-
     private:
+
+        std::shared_ptr<PinBase> _pin;
+        callback_f _callback;
+
+        const int _mode;
 
         const bool _is_switch;
         const bool _default_status;
@@ -134,96 +132,5 @@ class DebounceEvent {
 
 };
 
-DebounceEvent::DebounceEvent(std::shared_ptr<PinBase> pin, DebounceEvent::callback_f callback, int mode, unsigned long debounce_delay, unsigned long repeat) :
-    pin(pin),
-    callback(callback),
-    mode(mode),
-    _is_switch(mode & Types::ModeSwitch),
-    _default_status(mode & Types::ModeDefaultHigh),
-    _delay(debounce_delay),
-    _repeat(repeat),
-    _status(false),
-    _ready(false),
-    _reset_count(true),
-    _event_start(0),
-    _event_length(0),
-    _event_count(0)
-{
-    pin->pinMode((mode & Types::ModeSetPullup) ? INPUT_PULLUP : INPUT);
-    _status = (mode & Types::ModeSwitch) ? pin->digitalRead() : _default_status;
-}
-
-DebounceEvent::DebounceEvent(std::shared_ptr<PinBase> pin, int mode, unsigned long delay, unsigned long repeat) :
-    DebounceEvent(pin, nullptr, mode, delay, repeat)
-{}
-
-bool DebounceEvent::pressed() {
-    return (_status != _default_status);
-}
-
-unsigned char DebounceEvent::getPin() const {
-    return _pin.pin;
-}
-
-int DebounceEvent::getMode() const {
-    return mode;
-}
-
-unsigned long DebounceEvent::getEventLength() {
-    return _event_length;
-}
-unsigned long DebounceEvent::getEventCount() {
-    return _event_count;
-}
-
-Types::event_t DebounceEvent::loop() {
-
-    auto event = Types::EventNone;
-
-    if (pin->digitalRead() != _status) {
-
-        // TODO: check each loop instead of blocking?
-        auto start = millis();
-        while (millis() - start < _delay) delay(1);
-
-        if (pin->digitalRead() != _status) {
-
-            _status = !_status;
-
-            if (_is_switch) {
-                event = Types::EventChanged;
-            } else {
-                if (_status == _default_status) {
-                    _event_length = millis() - _event_start;
-                    _ready = true;
-                } else {
-                    event = Types::EventPressed;
-                    _event_start = millis();
-                    _event_length = 0;
-                    if (_reset_count) {
-                        _event_count = 1;
-                        _reset_count = false;
-                    } else {
-                        ++_event_count;
-                    }
-                    _ready = false;
-                }
-            }
-        }
-    }
-
-    if (_ready && (millis() - _event_start > _repeat)) {
-        _ready = false;
-        _reset_count = true;
-        event = Types::EventReleased;
-    }
-
-    if (callback && (event != Types::EventNone)) {
-        callback(this, event, _event_count, _event_length);
-    }
-
-    return event;
-
-}
 
 } // namespace DebounceEvent
