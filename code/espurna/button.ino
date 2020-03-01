@@ -150,8 +150,13 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     for (unsigned char i=0; i<buttonCount(); i++) {
         JsonArray& button = buttons.createNestedArray();
 
-        button.add(_buttons[i].event_handler.pin.pin);
-        button.add(_buttons[i].event_handler.pin.mode);
+        if (_buttons[i].event_handler) {
+            button.add(_buttons[i].event_handler.pin.pin);
+            button.add(_buttons[i].event_handler.pin.mode);
+        } else {
+            button.add(GPIO_NONE);
+            button.add(BUTTON_PUSHBUTTON);
+        }
         button.add(_buttons[i].relayID);
         button.add(_buttons[i].event_delays.debounce);
         button.add(_buttons[i].event_delays.dblclick);
@@ -285,18 +290,18 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
-        // Ignore default button modes
+        // Ignore real button settings, only map CLICK -> relay TOGGLE
+        const auto delays = button_event_delays_t();
         const auto actions = _buttonConstructActions(
             BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE,
             BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE
         );
 
-        const auto delays = button_event_delays_t();
-
-        for (unsigned char id = 0; id < buttons; ++id) {
+        for (unsigned char index = 0; index < buttons; ++index) {
             _buttons.emplace_back(
-                nullptr, BUTTON_PUSHBUTTON,
-                actions, getSetting({"btnRelay", id}, _buttonRelay(id)),
+                nullptr, 0,
+                getSetting({"btnActions", index}, actions),
+                getSetting({"btnRelay", index}, _buttonRelay(index)),
                 delays
             );
         }
@@ -337,6 +342,8 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
+        // TODO: allow to change DebounceEvent::DigitalPin to something else based on config?
+
         for (unsigned char index = 0; index < buttons; ++index) {
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
             if (!gpioValid(pin)) {
@@ -350,7 +357,6 @@ void buttonSetup() {
                 getSetting({"btnLngLngCDel", index}, _buttonLongLongClickDelay(index))
             };
 
-            // TODO: allow to change DebounceEvent::DigitalPin to something else based on config
             _buttons.emplace_back(
                 std::make_shared<DebounceEvent::DigitalPin>(pin),
                 getSetting({"btnMode", index}, _buttonMode(index)),

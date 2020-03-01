@@ -44,7 +44,5 @@ unsigned char buttonAction(unsigned char id, unsigned char event);
 void buttonMQTT(unsigned char id, uint8_t event);
 void buttonEvent(unsigned char id, unsigned char event);
 
-unsigned char buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID = RELAY_NONE);
-
 unsigned char buttonCount();
 void buttonSetup();
