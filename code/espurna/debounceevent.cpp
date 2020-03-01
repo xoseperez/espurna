@@ -51,7 +51,7 @@ EventHandler::EventHandler(std::shared_ptr<PinBase> pin, EventHandler::callback_
     _event_count(0)
 {
     _pin->pinMode((_mode & Types::ModeSetPullup) ? INPUT_PULLUP : INPUT);
-    _status = (_mode & Types::ModeSwitch) ? _pin->digitalRead() : _default_status;
+    _status = (_mode & Types::ModeSwitch) ? (_pin->digitalRead() == (HIGH)) : _default_status;
 }
 
 EventHandler::EventHandler(std::shared_ptr<PinBase> pin, int mode, unsigned long delay, unsigned long repeat) :
@@ -79,15 +79,20 @@ unsigned long EventHandler::getEventCount() {
 
 Types::event_t EventHandler::loop() {
 
-    auto event = Types::EventNone;
+    static_assert((HIGH) == 1, "Arduino API HIGH is not 1");
+    static_assert((LOW) == 0, "Arduino API LOW is not 0");
 
-    if (_pin->digitalRead() != _status) {
+    auto event = Types::EventNone;
+    bool status = _pin->digitalRead() == (HIGH);
+
+    if (status != _status) {
 
         // TODO: check each loop instead of blocking?
         auto start = millis();
         while (millis() - start < _delay) delay(1);
 
-        if (_pin->digitalRead() != _status) {
+        status = _pin->digitalRead() == (HIGH);
+        if (status != _status) {
 
             _status = !_status;
 
