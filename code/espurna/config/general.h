@@ -382,7 +382,7 @@
 #endif
 
 #ifndef BUTTON_MQTT_RETAIN
-#define BUTTON_MQTT_RETAIN              1
+#define BUTTON_MQTT_RETAIN              0
 #endif
 
 #ifndef BUTTON_EVENTS_SOURCE
