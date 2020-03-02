@@ -30,6 +30,9 @@
 
 #include <Arduino.h>
 
+#include <functional>
+#include <memory>
+
 namespace DebounceEvent {
 
 constexpr const unsigned long DebounceDelay = 50UL;
