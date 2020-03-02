@@ -33,6 +33,24 @@
 
 namespace DebounceEvent {
 
+// We need to explicitly call the constructor, because we need to set the const `pin`:
+// https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
+DigitalPin::DigitalPin(unsigned char pin) :
+    PinBase(pin)
+{}
+
+inline void DigitalPin::pinMode(int8_t mode) {
+    ::pinMode(this->pin, mode);
+}
+
+inline void DigitalPin::digitalWrite(int8_t val) {
+    ::digitalWrite(this->pin, val);
+}
+
+inline int DigitalPin::digitalRead() {
+    return ::digitalRead(this->pin);
+}
+
 // TODO: current implementation allows pin == nullptr
 
 EventHandler::EventHandler(std::shared_ptr<PinBase> pin, EventHandler::callback_f callback, int mode, unsigned long debounce_delay, unsigned long repeat) :

@@ -67,21 +67,13 @@ class PinBase {
 };
 
 // real hardware pin
-class DigitalPin : public PinBase {
+class DigitalPin : virtual public PinBase {
     public:
-        DigitalPin(unsigned char pin) :
-            PinBase(pin)
-        {}
+        DigitalPin(unsigned char pin);
 
-        void pinMode(int8_t mode) {
-            ::pinMode(this->pin, mode);
-        }
-        void digitalWrite(int8_t val) {
-            ::digitalWrite(this->pin, val);
-        }
-        int digitalRead() {
-            return ::digitalRead(this->pin);
-        }
+        void pinMode(int8_t mode) final;
+        void digitalWrite(int8_t val) final;
+        int digitalRead() final;
 };
 
 class EventHandler {
