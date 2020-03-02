@@ -265,13 +265,6 @@ void buttonEvent(unsigned char id, unsigned char event) {
 
 }
 
-struct DummyPin : virtual public DebounceEvent::PinBase {
-    DummyPin(unsigned char pin) : DebounceEvent::PinBase(pin) {}
-    void digitalWrite(int8_t val) {}
-    void pinMode(int8_t mode) {}
-    int digitalRead() { return 0; }
-};
-
 void buttonSetup() {
 
     // Backwards compatibility
