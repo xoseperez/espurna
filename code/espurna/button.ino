@@ -38,6 +38,13 @@ button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned lo
     lnglngclick(lnglngclick)
 {}
 
+button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
+    event_handler(nullptr),
+    event_delays(delays),
+    actions(actions),
+    relayID(relayID)
+{}
+
 button_t::button_t(std::shared_ptr<DebounceEvent::PinBase> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
     event_handler(std::make_unique<DebounceEvent::EventHandler>(pin, mode, delays.debounce, delays.dblclick)),
     event_delays(delays),
@@ -300,7 +307,6 @@ void buttonSetup() {
 
         for (unsigned char index = 0; index < buttons; ++index) {
             _buttons.emplace_back(
-                nullptr, 0,
                 getSetting({"btnActions", index}, actions),
                 getSetting({"btnRelay", index}, _buttonRelay(index)),
                 delays

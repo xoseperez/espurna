@@ -26,6 +26,7 @@ struct button_event_delays_t {
 
 struct button_t {
 
+    button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays);
     button_t(std::shared_ptr<DebounceEvent::PinBase> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
 
     bool state();
