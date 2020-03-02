@@ -47,7 +47,8 @@ namespace Types {
         ModePushbutton = 1 << 0,
         ModeSwitch = 1 << 1,
         ModeDefaultHigh = 1 << 2,
-        ModeSetPullup = 1 << 3
+        ModeSetPullup = 1 << 3,
+        ModeSetPulldown = 1 << 4
     };
 }
 
@@ -73,11 +74,6 @@ class DigitalPin : public PinBase {
         {}
 
         void pinMode(int8_t mode) {
-            // Note: proxy for pinMode so it doesn't ignore INPUT_PULLUP with GPIO16
-            if (((mode == INPUT) || (mode == INPUT_PULLUP)) && this->pin == 16) {
-                ::pinMode(this->pin, ((mode == INPUT_PULLUP) ? INPUT : INPUT_PULLDOWN_16));
-                return;
-            }
             ::pinMode(this->pin, mode);
         }
         void digitalWrite(int8_t val) {

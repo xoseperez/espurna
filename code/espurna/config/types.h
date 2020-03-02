@@ -53,6 +53,7 @@
 #define BUTTON_SWITCH               DebounceEvent::Types::ModeSwitch
 #define BUTTON_DEFAULT_HIGH         DebounceEvent::Types::ModeDefaultHigh
 #define BUTTON_SET_PULLUP           DebounceEvent::Types::ModeSetPullup
+#define BUTTON_SET_PULLDOWN         DebounceEvent::Types::ModeSetPulldown
 
 #define EVENT_NONE                  DebounceEvent::Types::EventNone
 #define EVENT_CHANGED               DebounceEvent::Types::EventChanged

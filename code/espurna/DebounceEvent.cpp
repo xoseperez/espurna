@@ -50,8 +50,27 @@ EventHandler::EventHandler(std::shared_ptr<PinBase> pin, EventHandler::callback_
     _event_length(0),
     _event_count(0)
 {
-    _pin->pinMode((_mode & Types::ModeSetPullup) ? INPUT_PULLUP : INPUT);
-    _status = (_mode & Types::ModeSwitch) ? (_pin->digitalRead() == (HIGH)) : _default_status;
+    if (_mode & Types::ModeSetPullup) {
+        _pin->pinMode(INPUT_PULLUP);
+    } else if (_mode & Types::ModeSetPulldown) {
+        // ESP8266 does not have INPUT_PULLDOWN definition, and instead
+        // has a GPIO16-specific INPUT_PULLDOWN_16:
+        // - https://github.com/esp8266/Arduino/issues/478
+        // - https://github.com/esp8266/Arduino/commit/1b3581d55ebf0f8c91e081f9af4cf7433d492ec9
+        #ifdef ESP8266
+            if (_pin->pin == 16) {
+                _pin->pinMode(_default_status ? INPUT : INPUT_PULLDOWN_16);
+            } else {
+                _pin->pinMode(INPUT);
+            }
+        #else
+            _pin->pinMode(INPUT_PULLDOWN);
+        #endif
+    } else {
+        _pin->pinMode(INPUT);
+    }
+
+    _status = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_status;
 }
 
 EventHandler::EventHandler(std::shared_ptr<PinBase> pin, int mode, unsigned long delay, unsigned long repeat) :
