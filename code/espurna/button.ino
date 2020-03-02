@@ -109,7 +109,7 @@ std::bitset<BUTTONS_MAX> _buttons_mqtt_retain(
 void buttonMQTT(unsigned char id, uint8_t event) {
     char payload[4] = {0};
     itoa(event, payload, 10);
-    // mqttSend(topic, id, payload, force, retail)
+    // mqttSend(topic, id, payload, force, retain)
     mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, _buttons_mqtt_retain[id]);
 }
 
@@ -144,9 +144,9 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     schema.add("Relay");
 
     schema.add("DebDel");
-    schema.add("DblDel");
-    schema.add("LngDel");
-    schema.add("LngLngDel");
+    schema.add("DclkDel");
+    schema.add("LclkDel");
+    schema.add("LLclkDel");
 
     #if MQTT_SUPPORT
         schema.add("MqttSnd");
@@ -275,7 +275,7 @@ struct DummyPin : virtual public DebounceEvent::PinBase {
 void buttonSetup() {
 
     // Backwards compatibility
-    moveSetting("btnDelay", "btnDblDel");
+    moveSetting("btnDelay", "btnDclkDel");
 
     // Special hardware cases
 
@@ -359,9 +359,9 @@ void buttonSetup() {
 
             button_event_delays_t delays {
                 getSetting({"btnDebDel", index}, _buttonDebounceDelay(index)),
-                getSetting({"btnDblCDel", index}, _buttonDoubleClickDelay(index)),
-                getSetting({"btnLngCDel", index}, _buttonLongClickDelay(index)),
-                getSetting({"btnLngLngCDel", index}, _buttonLongLongClickDelay(index))
+                getSetting({"btnDclkDel", index}, _buttonDoubleClickDelay(index)),
+                getSetting({"btnLclkDel", index}, _buttonLongClickDelay(index)),
+                getSetting({"btnLLclkDel", index}, _buttonLongLongClickDelay(index))
             };
 
             _buttons.emplace_back(
