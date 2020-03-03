@@ -38,7 +38,7 @@ button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned lo
     lnglngclick(lnglngclick)
 {}
 
-button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
+button_t::button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
     event_handler(nullptr),
     event_delays(delays),
     actions(actions),
@@ -72,6 +72,7 @@ constexpr const uint8_t _buttonMapReleased(uint8_t count, uint8_t length, unsign
     );
 }
 
+// TODO: button_event_t { event, count, length } ?
 const uint8_t _buttonMapEvent(button_t& button, DebounceEvent::Types::event_t event) {
     using namespace DebounceEvent;
     switch (event) {
