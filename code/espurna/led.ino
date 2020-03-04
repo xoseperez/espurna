@@ -78,10 +78,11 @@ bool led_pattern_t::ready() {
 }
 
 void led_pattern_t::load() {
-    queue.clear();
-    std::for_each(delays.rbegin(), delays.rend(), [](const led_delay_t& v) {
-        queue.push_back(v);
-    });
+    clock_last = ESP.getCycleCount();
+    clock_delay = 0;
+    queue = {
+        delays.rbegin(), delays.rend()
+    };
 }
 
 void led_pattern_t::unload() {
