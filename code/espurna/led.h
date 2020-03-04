@@ -8,6 +8,52 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include <vector>
+#include <memory>
+
+enum class LedMode {
+    NetworkAutoconfig,
+    NetworkConnected,
+    NetworkConnectedInverse,
+    NetworkConfig,
+    NetworkConfigInverse,
+    NetworkIdle,
+    None
+};
+
+enum class led_delay_mode_t {
+    Finite,
+    Infinite,
+    None
+};
+
+struct led_delay_t {
+    led_delay_t() = delete;
+    led_delay_t(unsigned long on_ms, unsigned long off_ms);
+    led_delay_t(unsigned long on_ms, unsigned long off_ms, unsigned char repeats);
+
+    led_delay_mode_t type;
+    unsigned long on;
+    unsigned long off;
+    unsigned char repeats;
+};
+
+struct led_pattern_t {
+    led_pattern_t() = default;
+    led_pattern_t(const std::vector<led_delay_t>& delays);
+
+    void load();
+    void unload();
+
+    bool loaded();
+    bool ready();
+
+    std::vector<led_delay_t> delays;
+    std::vector<led_delay_t> queue;
+    unsigned long clock_last;
+    unsigned long clock_delay;
+};
+
 struct led_t {
     led_t();
     led_t(unsigned char id);
@@ -21,25 +67,13 @@ struct led_t {
     bool inverse;
     unsigned char mode;
     unsigned char relayID;
+
+    led_pattern_t pattern;
 };
 
-struct led_delay_t {
-    led_delay_t(unsigned long on_ms, unsigned long off_ms);
-    const unsigned long on;
-    const unsigned long off;
-};
-
-enum class LedMode {
-    NetworkAutoconfig,
-    NetworkConnected,
-    NetworkConnectedInverse,
-    NetworkConfig,
-    NetworkConfigInverse,
-    NetworkIdle,
-    None
-};
-
-const led_delay_t& _ledGetDelay(LedMode mode);
 void ledUpdate(bool do_update);
+unsigned char ledCount();
+bool ledStatus(unsigned char id, bool status);
+bool ledStatus(unsigned char id);
 void ledSetup();
 
