@@ -79,7 +79,9 @@ bool led_pattern_t::ready() {
 
 void led_pattern_t::load() {
     queue.clear();
-    std::copy(delays.rbegin(), delays.rend(), queue.begin());
+    std::for_each(delays.rbegin(), delays.rend(), [](const led_delay_t& v) {
+        queue.push_back(v);
+    });
 }
 
 void led_pattern_t::unload() {
