@@ -127,6 +127,7 @@ bool _ledStatus(led_t& led, bool status) {
             result = true;
         } else {
             led.pattern.unload();
+            led.status(false);
             result = false;
         }
     // if not, simply proxy status directly to the led pin
@@ -260,14 +261,22 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
         // Check if LED is managed
         if (_leds[ledID].mode != LED_MODE_MANUAL) return;
 
-        // Get value based on relays payload logic (0 / off, 1 / on, 2 / toggle)
+        // Get value based on relays payload logic (see relay.ino)
+        // XXX: we will also 'match' custom relay MQTT payload strings
         const auto value = relayParsePayload(payload);
-
-        // Action to perform is also based on relay constants ... TODO generic enum?
-        if (value == RelayStatus::TOGGLE) {
-            _ledToggle(_leds[ledID]);
-        } else {
-            _ledStatus(_leds[ledID], (value == RelayStatus::ON));
+        switch (value) {
+            case RelayStatus::ON:
+            case RelayStatus::OFF:
+                _ledStatus(_leds[ledID], (value == RelayStatus::ON));
+                break;
+            case RelayStatus::TOGGLE:
+                _ledToggle(_leds[ledID]);
+                break;
+            case RelayStatus::UNKNOWN:
+            default:
+                _ledLoadPattern(_leds[ledID], payload);
+                _ledStatus(_leds[ledID], true);
+                break;
         }
 
     }
