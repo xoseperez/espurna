@@ -276,10 +276,6 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
 #endif
 
 void _ledConfigure() {
-    static led_pattern_t _led_pattern_test {
-        {{250, 250, 0}, {500, 500, 10}, {1000, 1000, 10}}
-    };
-
     for (unsigned char id = 0; id < _leds.size(); ++id) {
         _leds[id].mode = getSetting({"ledMode", id}, _ledMode(id));
         _leds[id].relayID = getSetting({"ledRelay", id}, _ledRelay(id));
@@ -328,6 +324,7 @@ void ledSetup() {
 
     for (unsigned char id=0; id < leds; ++id) {
         _leds.emplace_back(id);
+        _leds[id].status(false);
     }
 
     _ledConfigure();
