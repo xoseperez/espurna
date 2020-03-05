@@ -17,6 +17,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "settings.h"
 #include "mqtt.h"
 #include "relay.h"
+#include "rpc.h"
 #include "tuya.h"
 #include "ws.h"
 
@@ -103,13 +104,13 @@ bool _relay_report_ws = false;
 
 #endif // WEB_SUPPORT
 
-#if MQTT_SUPPORT
+#if MQTT_SUPPORT || API_SUPPORT
 
-String _relay_mqtt_payload_on;
-String _relay_mqtt_payload_off;
-String _relay_mqtt_payload_toggle;
+String _relay_rpc_payload_on;
+String _relay_rpc_payload_off;
+String _relay_rpc_payload_toggle;
 
-#endif // MQTT_SUPPORT
+#endif // MQTT_SUPPORT || API_SUPPORT
 
 // -----------------------------------------------------------------------------
 // UTILITY
@@ -117,28 +118,28 @@ String _relay_mqtt_payload_toggle;
 
 bool _relayHandlePayload(unsigned char relayID, const char* payload) {
     auto value = relayParsePayload(payload);
-    if (value == RelayStatus::UNKNOWN) return false;
+    if (value == PayloadStatus::Unknown) return false;
 
-    if (value == RelayStatus::OFF) {
+    if (value == PayloadStatus::Off) {
         relayStatus(relayID, false);
-    } else if (value == RelayStatus::ON) {
+    } else if (value == PayloadStatus::On) {
         relayStatus(relayID, true);
-    } else if (value == RelayStatus::TOGGLE) {
+    } else if (value == PayloadStatus::Toggle) {
         relayToggle(relayID);
     }
 
     return true;
 }
 
-RelayStatus _relayStatusInvert(RelayStatus status) {
-    return (status == RelayStatus::ON) ? RelayStatus::OFF : status;
+PayloadStatus _relayStatusInvert(PayloadStatus status) {
+    return (status == PayloadStatus::On) ? PayloadStatus::Off : status;
 }
 
-RelayStatus _relayStatusTyped(unsigned char id) {
-    if (id >= _relays.size()) return RelayStatus::OFF;
+PayloadStatus _relayStatusTyped(unsigned char id) {
+    if (id >= _relays.size()) return PayloadStatus::Off;
 
     const bool status = _relays[id].current_status;
-    return (status) ? RelayStatus::ON : RelayStatus::OFF;
+    return (status) ? PayloadStatus::On : PayloadStatus::Off;
 }
 
 void _relayLockAll() {
@@ -676,41 +677,17 @@ unsigned char relayCount() {
     return _relays.size();
 }
 
-RelayStatus relayParsePayload(const char * payload) {
-
-    // Don't parse empty strings
-    const auto len = strlen(payload);
-    if (!len) return RelayStatus::UNKNOWN;
-
-    // Check most commonly used payloads
-    if (len == 1) {
-        if (payload[0] == '0') return RelayStatus::OFF;
-        if (payload[0] == '1') return RelayStatus::ON;
-        if (payload[0] == '2') return RelayStatus::TOGGLE;
-        return RelayStatus::UNKNOWN;
-    }
-
-    // If possible, compare to locally configured payload strings
-    #if MQTT_SUPPORT
-        if (_relay_mqtt_payload_off.equals(payload)) return RelayStatus::OFF;
-        if (_relay_mqtt_payload_on.equals(payload)) return RelayStatus::ON;
-        if (_relay_mqtt_payload_toggle.equals(payload)) return RelayStatus::TOGGLE;
-    #endif // MQTT_SUPPORT
-
-    // Finally, check for "OFF", "ON", "TOGGLE" (both lower and upper cases)
-    String temp(payload);
-    temp.trim();
-
-    if (temp.equalsIgnoreCase("off")) {
-        return RelayStatus::OFF;
-    } else if (temp.equalsIgnoreCase("on")) {
-        return RelayStatus::ON;
-    } else if (temp.equalsIgnoreCase("toggle")) {
-        return RelayStatus::TOGGLE;
-    }
-
-    return RelayStatus::UNKNOWN;
-
+PayloadStatus relayParsePayload(const char * payload) {
+    #if MQTT_SUPPORT || API_SUPPORT
+        return rpcParsePayload(payload, [](const char* payload) {
+            if (_relay_rpc_payload_off.equals(payload)) return PayloadStatus::Off;
+            if (_relay_rpc_payload_on.equals(payload)) return PayloadStatus::On;
+            if (_relay_rpc_payload_toggle.equals(payload)) return PayloadStatus::Toggle;
+            return PayloadStatus::Unknown;
+        });
+    #else
+        return rpcParsePayload(payload);
+    #endif
 }
 
 // BACKWARDS COMPATIBILITY
@@ -835,9 +812,9 @@ void _relayConfigure() {
 
     #if MQTT_SUPPORT
         settingsProcessConfig({
-            {_relay_mqtt_payload_on,     "relayPayloadOn",     RELAY_MQTT_ON},
-            {_relay_mqtt_payload_off,    "relayPayloadOff",    RELAY_MQTT_OFF},
-            {_relay_mqtt_payload_toggle, "relayPayloadToggle", RELAY_MQTT_TOGGLE},
+            {_relay_rpc_payload_on,     "relayPayloadOn",     RELAY_MQTT_ON},
+            {_relay_rpc_payload_off,    "relayPayloadOff",    RELAY_MQTT_OFF},
+            {_relay_rpc_payload_toggle, "relayPayloadToggle", RELAY_MQTT_TOGGLE},
         });
     #endif // MQTT_SUPPORT
 }
@@ -1059,32 +1036,37 @@ void relaySetupAPI() {
 // MQTT
 //------------------------------------------------------------------------------
 
-#if MQTT_SUPPORT
+#if MQTT_SUPPORT || API_SUPPORT
 
 const String& relayPayloadOn() {
-    return _relay_mqtt_payload_on;
+    return _relay_rpc_payload_on;
 }
 
 const String& relayPayloadOff() {
-    return _relay_mqtt_payload_off;
+    return _relay_rpc_payload_off;
 }
 
 const String& relayPayloadToggle() {
-    return _relay_mqtt_payload_toggle;
+    return _relay_rpc_payload_toggle;
 }
 
-const char* relayPayload(RelayStatus status) {
-
-    if (status == RelayStatus::OFF) {
-        return _relay_mqtt_payload_off.c_str();
-    } else if (status == RelayStatus::ON) {
-        return _relay_mqtt_payload_on.c_str();
-    } else if (status == RelayStatus::TOGGLE) {
-        return _relay_mqtt_payload_toggle.c_str();
+const char* relayPayload(PayloadStatus status) {
+    switch (status) {
+        case PayloadStatus::Off:
+            return _relay_rpc_payload_off.c_str();
+        case PayloadStatus::On:
+            return _relay_rpc_payload_on.c_str();
+        case PayloadStatus::Toggle:
+            return _relay_rpc_payload_toggle.c_str();
+        case PayloadStatus::Unknown:
+        default:
+            return "";
     }
-
-    return "";
 }
+
+#endif // MQTT_SUPPORT || API_SUPPORT
+
+#if MQTT_SUPPORT
 
 void _relayMQTTGroup(unsigned char id) {
     const String topic = getSetting({"mqttGroup", id});
@@ -1129,17 +1111,18 @@ void relayMQTT() {
     }
 }
 
-void relayStatusWrap(unsigned char id, RelayStatus value, bool is_group_topic) {
+void relayStatusWrap(unsigned char id, PayloadStatus value, bool is_group_topic) {
     switch (value) {
-        case RelayStatus::OFF:
+        case PayloadStatus::Off:
             relayStatus(id, false, mqttForward(), !is_group_topic);
             break;
-        case RelayStatus::ON:
+        case PayloadStatus::On:
             relayStatus(id, true, mqttForward(), !is_group_topic);
             break;
-        case RelayStatus::TOGGLE:
+        case PayloadStatus::Toggle:
             relayToggle(id, true, true);
             break;
+        case PayloadStatus::Unknown:
         default:
             _relays[id].report = true;
             relayMQTT(id);
@@ -1219,7 +1202,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
             // Get value
             auto value = relayParsePayload(payload);
-            if (value == RelayStatus::UNKNOWN) return;
+            if (value == PayloadStatus::Unknown) return;
 
             relayStatusWrap(id, value, false);
 
@@ -1235,9 +1218,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             if ((t.length() > 0) && t.equals(topic)) {
 
                 auto value = relayParsePayload(payload);
-                if (value == RelayStatus::UNKNOWN) return;
+                if (value == PayloadStatus::Unknown) return;
 
-                if ((value == RelayStatus::ON) || (value == RelayStatus::OFF)) {
+                if ((value == PayloadStatus::On) || (value == PayloadStatus::Off)) {
                     if (getSetting({"mqttGroupSync", i}, RELAY_GROUP_SYNC_NORMAL) == RELAY_GROUP_SYNC_INVERSE) {
                         value = _relayStatusInvert(value);
                     }
@@ -1263,10 +1246,10 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             const auto reaction = getSetting({"relayOnDisc", i}, 0);
             if (1 == reaction) {     // switch relay OFF
                 DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection\n"), i);
-                relayStatusWrap(i, RelayStatus::OFF, false);
+                relayStatusWrap(i, PayloadStatus::Off, false);
             } else if(2 == reaction) { // switch relay ON
                 DEBUG_MSG_P(PSTR("[RELAY] Set relay (%d) due to MQTT disconnection\n"), i);
-                relayStatusWrap(i, RelayStatus::ON, false);
+                relayStatusWrap(i, PayloadStatus::On, false);
             }
         }
 

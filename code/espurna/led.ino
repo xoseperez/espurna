@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "broker.h"
 #include "relay.h"
+#include "rpc.h"
 
 #include "led.h"
 #include "led_pattern.h"
@@ -261,18 +262,17 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
         // Check if LED is managed
         if (_leds[ledID].mode != LED_MODE_MANUAL) return;
 
-        // Get value based on relays payload logic (see relay.ino)
-        // XXX: we will also 'match' custom relay MQTT payload strings
-        const auto value = relayParsePayload(payload);
+        // Get value based on rpc payload logic (see rpc.ino)
+        const auto value = rpcParsePayload(payload);
         switch (value) {
-            case RelayStatus::ON:
-            case RelayStatus::OFF:
-                _ledStatus(_leds[ledID], (value == RelayStatus::ON));
+            case PayloadStatus::On:
+            case PayloadStatus::Off:
+                _ledStatus(_leds[ledID], (value == PayloadStatus::On));
                 break;
-            case RelayStatus::TOGGLE:
+            case PayloadStatus::Toggle:
                 _ledToggle(_leds[ledID]);
                 break;
-            case RelayStatus::UNKNOWN:
+            case PayloadStatus::Unknown:
             default:
                 _ledLoadPattern(_leds[ledID], payload);
                 _ledStatus(_leds[ledID], true);
