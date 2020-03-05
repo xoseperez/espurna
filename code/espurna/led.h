@@ -42,10 +42,10 @@ struct led_pattern_t {
     led_pattern_t() = default;
     led_pattern_t(const std::vector<led_delay_t>& delays);
 
-    void load();
-    void unload();
+    void start();
+    void stop();
 
-    bool loaded();
+    bool started();
     bool ready();
 
     std::vector<led_delay_t> delays;

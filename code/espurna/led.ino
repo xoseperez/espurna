@@ -69,7 +69,7 @@ led_pattern_t::led_pattern_t(const std::vector<led_delay_t>& delays) :
     clock_delay(delays.size() ? delays.back().on : 0)
 {}
 
-bool led_pattern_t::loaded() {
+bool led_pattern_t::started() {
     return queue.size() > 0;
 }
 
@@ -77,7 +77,7 @@ bool led_pattern_t::ready() {
     return delays.size() > 0;
 }
 
-void led_pattern_t::load() {
+void led_pattern_t::start() {
     clock_last = ESP.getCycleCount();
     clock_delay = 0;
     queue = {
@@ -85,7 +85,7 @@ void led_pattern_t::load() {
     };
 }
 
-void led_pattern_t::unload() {
+void led_pattern_t::stop() {
     queue.clear();
 }
 
@@ -112,7 +112,7 @@ unsigned char ledCount() {
 }
 
 bool _ledStatus(led_t& led) {
-    return led.pattern.loaded() || led.status();
+    return led.pattern.started() || led.status();
 }
 
 bool _ledStatus(led_t& led, bool status) {
@@ -121,12 +121,12 @@ bool _ledStatus(led_t& led, bool status) {
     // when led has pattern, status depends on whether it's running
     if (led.pattern.ready()) {
         if (status) {
-            if (!led.pattern.loaded()) {
-                led.pattern.load();
+            if (!led.pattern.started()) {
+                led.pattern.start();
             }
             result = true;
         } else {
-            led.pattern.unload();
+            led.pattern.stop();
             led.status(false);
             result = false;
         }
@@ -288,7 +288,7 @@ void _ledConfigure() {
     for (unsigned char id = 0; id < _leds.size(); ++id) {
         _leds[id].mode = getSetting({"ledMode", id}, _ledMode(id));
         _leds[id].relayID = getSetting({"ledRelay", id}, _ledRelay(id));
-        _leds[id].pattern.unload();
+        _leds[id].pattern.stop();
         _ledLoadPattern(_leds[id], getSetting({"ledPattern", id}).c_str());
     }
     _led_update = true;
@@ -470,7 +470,7 @@ void ledLoop() {
 
         }
 
-        if (led.pattern.loaded()) {
+        if (led.pattern.started()) {
             _ledPattern(led);
             continue;
         }
