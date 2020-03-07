@@ -54,6 +54,8 @@ const char* NAME_OPERATION_MODE         = "thermostatOperationMode";
 #define THERMOSTAT_ALONE_OFF_TIME               55 // 55 min
 #define THERMOSTAT_MAX_ON_TIME                  30 // 30 min
 #define THERMOSTAT_MIN_OFF_TIME                 10 // 10 min
+#define THERMOSTAT_ENABLED_BY_DEFAULT         true
+#define THERMOSTAT_MODE_COOLER_BY_DEFAULT     false
 
 unsigned long _thermostat_remote_temp_max_wait  = THERMOSTAT_REMOTE_TEMP_MAX_WAIT * MILLIS_IN_SEC;
 unsigned long _thermostat_alone_on_time   = THERMOSTAT_ALONE_ON_TIME  * MILLIS_IN_MIN;
@@ -81,7 +83,7 @@ struct temp_range_t {
   int max = THERMOSTAT_TEMP_RANGE_MAX;
   unsigned long last_update = 0;
   unsigned long ask_time = 0;
-  unsigned int  ask_interval = 0;
+  unsigned long  ask_interval = ASK_TEMP_RANGE_INTERVAL_INITIAL;
   bool need_display_update = true;
 };
 temp_range_t _temp_range;
@@ -167,8 +169,6 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
     if (type == MQTT_CONNECT_EVENT) {
       mqttSubscribeRaw(thermostat_remote_sensor_topic.c_str());
       mqttSubscribe(MQTT_TOPIC_HOLD_TEMP);
-      _temp_range.ask_interval = ASK_TEMP_RANGE_INTERVAL_INITIAL;
-      _temp_range.ask_time = millis();
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -253,10 +253,10 @@ void notifyRangeChanged(bool min) {
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
-  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED, false);
+  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED, THERMOSTAT_ENABLED_BY_DEFAULT);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d\n"), _thermostat_enabled);
 
-  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE, false);
+  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE, THERMOSTAT_MODE_COOLER_BY_DEFAULT);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d\n"), _thermostat_mode_cooler);
   
   _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN);
@@ -264,7 +264,7 @@ void commonSetup() {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d\n"), _temp_range.max);
 
-  _thermostat.remote_sensor_name = getSetting(NAME_REMOTE_SENSOR_NAME);
+  _thermostat.remote_sensor_name = getSetting(NAME_REMOTE_SENSOR_NAME, THERMOSTAT_REMOTE_SENSOR_NAME);
   thermostat_remote_sensor_topic = _thermostat.remote_sensor_name + String("/") + String(MQTT_TOPIC_JSON);
 
   _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT) * MILLIS_IN_SEC;
@@ -275,7 +275,7 @@ void commonSetup() {
 }
 
 //------------------------------------------------------------------------------
-void thermostatConfigure() {
+void thermostatSetup() {
   commonSetup();
 
   _thermostat.temperature_source = temp_none;
@@ -286,6 +286,21 @@ void thermostatConfigure() {
   _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH, 0);
   _thermostat_burn_day        = getSetting(NAME_BURN_DAY, 0);
   _thermostat_burn_month      = getSetting(NAME_BURN_MONTH, 0);
+
+  #if MQTT_SUPPORT
+    thermostatSetupMQTT();
+  #endif
+
+  // Websockets
+  #if WEB_SUPPORT
+      wsRegister()
+          .onConnected(_thermostatWebSocketOnConnected)
+          .onKeyCheck(_thermostatWebSocketOnKeyCheck)
+          .onAction(_thermostatWebSocketOnAction);
+  #endif
+
+  espurnaRegisterLoop(thermostatLoop);
+  espurnaRegisterReload(_thermostatReload);
 }
 
 //------------------------------------------------------------------------------
@@ -352,26 +367,6 @@ void _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonO
     if (strcmp(action, "thermostat_reset_counters") == 0) resetBurnCounters();
 }
 #endif
-
-//------------------------------------------------------------------------------
-void thermostatSetup() {
-  thermostatConfigure();
-
-  #if MQTT_SUPPORT
-    thermostatSetupMQTT();
-  #endif
-
-  // Websockets
-  #if WEB_SUPPORT
-      wsRegister()
-          .onConnected(_thermostatWebSocketOnConnected)
-          .onKeyCheck(_thermostatWebSocketOnKeyCheck)
-          .onAction(_thermostatWebSocketOnAction);
-  #endif
-
-  espurnaRegisterLoop(thermostatLoop);
-  espurnaRegisterReload(_thermostatReload);
-}
 
 //------------------------------------------------------------------------------
 void sendTempRangeRequest() {
@@ -638,12 +633,16 @@ SSD1306  display(0x3c, 1, 3);
 
 unsigned long _local_temp_last_update = 0xFFFF;
 unsigned long _local_hum_last_update = 0xFFFF;
+unsigned long _thermostat_display_off_interval = THERMOSTAT_DISPLAY_OFF_INTERVAL * MILLIS_IN_SEC;
+unsigned long _thermostat_display_on_time = millis();
+bool _thermostat_display_is_on = true;
 bool _display_wifi_status   = true;
 bool _display_mqtt_status   = true;
 bool _display_server_status = true;
 bool _display_remote_temp_status = true;
-bool _display_need_refresh  = false;
+bool _display_need_refresh  = true;
 bool _temp_range_need_update = true;
+
 //------------------------------------------------------------------------------
 void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
   display.drawIco16x16(x, y, ico, !on);
@@ -695,7 +694,7 @@ void display_remote_temp() {
   display.setColor(WHITE);
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  String temp_range_title = String("Remote   t");
+  String temp_range_title = String("Remote  t");
   display.drawString(0, 16, temp_range_title);
 
   String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "°";
@@ -712,7 +711,7 @@ void display_local_temp() {
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-  String local_temp_title = String("Local    t");
+  String local_temp_title = String("Local      t");
   display.drawString(0, 32, local_temp_title);
 
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "°";
@@ -729,7 +728,7 @@ void display_local_humidity() {
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-  String local_hum_title = String("Local    h ");
+  String local_hum_title = String("Local      h ");
   display.drawString(0, 48, local_hum_title);
 
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
@@ -737,6 +736,23 @@ void display_local_humidity() {
 
   _display_need_refresh = true;
 }
+
+//------------------------------------------------------------------------------
+void displayOn() {
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] Display is On.\n"));
+  _thermostat_display_on_time = millis();
+  _thermostat_display_is_on = true;
+  _display_need_refresh = true;
+  display_wifi_status(_display_wifi_status);
+  display_mqtt_status(_display_mqtt_status);
+  display_server_status(_display_server_status);
+  display_remote_temp_status(_display_remote_temp_status);
+  _temp_range.need_display_update = true;
+  _remote_temp.need_display_update = true;
+  display_local_temp();
+  display_local_humidity();
+}
+
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
@@ -744,16 +760,21 @@ void displaySetup() {
   display.init();
   display.flipScreenVertically();
 
-  // display.setFont(ArialMT_Plain_24);
-  // display.setTextAlignment(TEXT_ALIGN_CENTER);
-  // display.drawString(64, 17, "Thermostat");
+  displayOn();
 
-    espurnaRegisterLoop(displayLoop);
+  espurnaRegisterLoop(displayLoop);
 }
 
 //------------------------------------------------------------------------------
 void displayLoop() {
-  _display_need_refresh = false;
+  if (THERMOSTAT_DISPLAY_OFF_INTERVAL > 0 && millis() - _thermostat_display_on_time > _thermostat_display_off_interval) {
+    if (_thermostat_display_is_on) {
+      DEBUG_MSG_P(PSTR("[THERMOSTAT] Display Off by timeout\n"));
+      _thermostat_display_is_on = false;
+      display.resetDisplay();
+    }
+    return;
+  }
 
   //------------------------------------------------------------------------------
   // Indicators
@@ -772,14 +793,14 @@ void displayLoop() {
     display_mqtt_status(false);
   }
 
-  if (millis() - _temp_range.last_update < THERMOSTAT_SERVER_LOST_INTERVAL) {
+  if (_temp_range.last_update != 0 && millis() - _temp_range.last_update < THERMOSTAT_SERVER_LOST_INTERVAL) {
     if (!_display_server_status)
       display_server_status(true);
   } else if (_display_server_status) {
     display_server_status(false);
   }
 
-  if (millis() - _remote_temp.last_update < _thermostat_remote_temp_max_wait) {
+  if (_remote_temp.last_update != 0 && millis() - _remote_temp.last_update < _thermostat_remote_temp_max_wait) {
     if (!_display_remote_temp_status)
       display_remote_temp_status(true);
   } else if (_display_remote_temp_status) {
@@ -823,6 +844,7 @@ void displayLoop() {
   if (_display_need_refresh) {
     yield();
     display.display();
+    _display_need_refresh = false;
   }
 }
 
