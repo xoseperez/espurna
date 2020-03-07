@@ -134,7 +134,7 @@ constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, un
     );
 }
 
-constexpr const uint8_t _buttonMapReleased(uint8_t count, uint8_t length) {
+constexpr const uint8_t _buttonMapReleased(uint8_t count, uint16_t length) {
     return (
         (1 == count) ? (
             (length > BUTTON_LNGLNGCLICK_DELAY) ? BUTTON_EVENT_LNGLNGCLICK :
