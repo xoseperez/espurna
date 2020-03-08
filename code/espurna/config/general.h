@@ -9,7 +9,9 @@
 // GENERAL
 //------------------------------------------------------------------------------
 
+#ifndef DEVICE_NAME
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
+#endif
 
 // When defined, ADMIN_PASS must be 8..63 printable ASCII characters. See:
 // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
@@ -232,8 +234,16 @@
 #define THERMOSTAT_DISPLAY_SUPPORT  0
 #endif
 
+#ifndef THERMOSTAT_DISPLAY_OFF_INTERVAL         // Interval in seconds after which display will be switched off
+#define THERMOSTAT_DISPLAY_OFF_INTERVAL  0      // This will prevent it from burnout
+#endif                                          // 0 - newer switch display off
+
 #define THERMOSTAT_SERVER_LOST_INTERVAL  120000 //server means lost after 2 min from last response
 #define THERMOSTAT_REMOTE_TEMP_MAX_WAIT     120 // 2 min
+
+#ifndef THERMOSTAT_REMOTE_SENSOR_NAME
+#define THERMOSTAT_REMOTE_SENSOR_NAME        "" // Get remote temp(hum) from mqtt topic of this device
+#endif
 
 //------------------------------------------------------------------------------
 // HEARTBEAT

@@ -93,6 +93,12 @@ void buttonEvent(unsigned char id, unsigned char event) {
        }
     #endif
 
+    #if THERMOSTAT_DISPLAY_SUPPORT
+        if (BUTTON_MODE_DISPLAY_ON == action) {
+            displayOn();
+        }
+    #endif
+
     if (BUTTON_MODE_TOGGLE == action) {
         relayToggle(button.relayID);
     }
