@@ -156,3 +156,13 @@
 #else
 #define NTP_LEGACY_SUPPORT 0
 #endif
+
+//------------------------------------------------------------------------------
+// It looks more natural that one click will enable display
+// and long click will switch relay
+#if THERMOSTAT_DISPLAY_SUPPORT
+#undef BUTTON1_CLICK
+#define BUTTON1_CLICK           BUTTON_MODE_DISPLAY_ON
+#undef BUTTON1_LNGCLICK
+#define BUTTON1_LNGCLICK        BUTTON_MODE_TOGGLE
+#endif
