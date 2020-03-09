@@ -159,7 +159,13 @@ class DallasSensor : public BaseSensor {
 
                         uint8_t data[DS2406_STATE_BUF_LEN];
 
-                        _wire->reset();
+                        // Read scratchpad
+                        if (_wire->reset() == 0) {
+                            // Force a CRC check error
+                            _devices[index].data[0] = _devices[index].data[0] + 1;
+                            return;
+                        }
+                        
                         _wire->select(_devices[index].address);
 
                         data[0] = DS2406_CHANNEL_ACCESS;
@@ -173,9 +179,14 @@ class DallasSensor : public BaseSensor {
                             data[i] = _wire->read();
                         }
 
-                        memcpy(_devices[index].data, data, DS2406_STATE_BUF_LEN);
+                        // Read scratchpad
+                        if (_wire->reset() == 0) {
+                            // Force a CRC check error
+                            _devices[index].data[0] = _devices[index].data[0] + 1;
+                            return;
+                        }
 
-                        _wire->reset();
+                        memcpy(_devices[index].data, data, DS2406_STATE_BUF_LEN);
 
                     } else {
 
