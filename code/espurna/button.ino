@@ -60,7 +60,7 @@ std::vector<button_t> _buttons;
 
 // -----------------------------------------------------------------------------
 
-constexpr const uint8_t _buttonMapReleased(uint8_t count, uint8_t length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+constexpr const uint8_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
     return (
         (1 == count) ? (
             (length > lnglngclick_delay) ? BUTTON_EVENT_LNGLNGCLICK :
