@@ -16,6 +16,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 constexpr size_t ButtonsPresetMax = 8;
 constexpr size_t ButtonsMax = 32;
 
+using button_event_t = uint8_t;
+
 struct button_event_delays_t {
     button_event_delays_t();
     button_event_delays_t(unsigned long debounce, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick);
@@ -32,6 +34,7 @@ struct button_t {
     button_t(std::shared_ptr<BasePin> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
 
     bool state();
+    button_event_t loop();
 
     std::unique_ptr<debounce_event::EventHandler> event_handler;
     button_event_delays_t event_delays;

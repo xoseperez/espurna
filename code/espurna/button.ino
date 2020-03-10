@@ -25,6 +25,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
+constexpr const uint8_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+    return (
+        (1 == count) ? (
+            (length > lnglngclick_delay) ? BUTTON_EVENT_LNGLNGCLICK :
+            (length > lngclick_delay) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
+        ) :
+        (2 == count) ? BUTTON_EVENT_DBLCLICK :
+        (3 == count) ? BUTTON_EVENT_TRIPLECLICK :
+        BUTTON_EVENT_NONE
+    );
+}
+
 button_event_delays_t::button_event_delays_t() :
     debounce(BUTTON_DEBOUNCE_DELAY),
     dblclick(BUTTON_DBLCLICK_DELAY),
@@ -57,25 +69,18 @@ bool button_t::state() {
     return event_handler->pressed();
 }
 
-std::vector<button_t> _buttons;
+button_event_t button_t::loop() {
+    if (!event_handler) {
+        return BUTTON_EVENT_NONE;
+    }
 
-// -----------------------------------------------------------------------------
-
-constexpr const uint8_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
-    return (
-        (1 == count) ? (
-            (length > lnglngclick_delay) ? BUTTON_EVENT_LNGLNGCLICK :
-            (length > lngclick_delay) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
-        ) :
-        (2 == count) ? BUTTON_EVENT_DBLCLICK :
-        (3 == count) ? BUTTON_EVENT_TRIPLECLICK :
-        BUTTON_EVENT_NONE
-    );
-}
-
-// TODO: button_event_t { event, count, length } ?
-const uint8_t _buttonMapEvent(button_t& button, debounce_event::types::Event event) {
     using namespace debounce_event::types;
+
+    auto event = event_handler->loop();
+    if (event == EventNone) {
+        return BUTTON_EVENT_NONE;
+    }
+
     switch (event) {
         case EventPressed:
             return BUTTON_EVENT_PRESSED;
@@ -83,17 +88,23 @@ const uint8_t _buttonMapEvent(button_t& button, debounce_event::types::Event eve
             return BUTTON_EVENT_CLICK;
         case EventReleased: {
             return _buttonMapReleased(
-                button.event_handler->getEventCount(),
-                button.event_handler->getEventLength(),
-                button.event_delays.lngclick,
-                button.event_delays.lnglngclick
+                event_handler->getEventCount(),
+                event_handler->getEventLength(),
+                event_delays.lngclick,
+                event_delays.lnglngclick
             );
         }
         case EventNone:
         default:
-            return BUTTON_EVENT_NONE;
+            break;
     }
+
+    return BUTTON_EVENT_NONE;
 }
+
+std::vector<button_t> _buttons;
+
+// -----------------------------------------------------------------------------
 
 unsigned char buttonCount() {
     return _buttons.size();
@@ -160,9 +171,10 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     for (unsigned char i=0; i<buttonCount(); i++) {
         JsonArray& button = buttons.createNestedArray();
 
-        if (_buttons[i].event_handler && _buttons[i].event_handler.getPin()) {
-            button.add(_buttons[i].event_handler.getPin()->pin);
-            button.add(_buttons[i].event_handler.getMode());
+        // TODO: configure PIN object instead of button specifically, link PIN<->BUTTON
+        if (_buttons[i].getPin()) {
+            button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
+            button.add(getSetting({"btnMode", index}, _buttonMode(index)));
         } else {
             button.add(GPIO_NONE);
             button.add(BUTTON_PUSHBUTTON);
@@ -473,11 +485,9 @@ void _buttonLoopFoxelLightfox() {
 
 void _buttonLoopGeneric() {
     for (size_t id = 0; id < _buttons.size(); ++id) {
-        auto& button = _buttons[id];
-        auto event = button.event_handler->loop();
-
-        if (event != debounce_event::types::EventNone) {
-            buttonEvent(id, _buttonMapEvent(button, event));
+        auto event = _buttons[id].loop();
+        if (event != BUTTON_EVENT_NONE) {
+            buttonEvent(id, event);
         }
     }
 }
