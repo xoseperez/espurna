@@ -2,21 +2,29 @@
 // Configuration HELP
 // -----------------------------------------------------------------------------
 //
+// Required:
+//
 // MANUFACTURER: Name of the manufacturer of the board ("string")
 // DEVICE: Name of the device ("string")
-// BUTTON#_PIN: GPIO for the n-th button (1-based, up to 4 buttons)
-// BUTTON#_RELAY: Relay number that will be bind to the n-th button (1-based)
-// BUTTON#_MODE: A mask of options (BUTTON_PUSHBUTTON and BUTTON_SWITCH cannot be together)
+//
+// For example, some configuration options for BUTTON, RELAY and LED modules.
+// See general.h, defaults.h and types.h for all of the available flags.
+//
+// BUTTON[1-8]_PIN: GPIO for the n-th button (1-based, up to 8 buttons)
+// BUTTON[1-8]_RELAY: Relay number that will be bind to the n-th button (1-based)
+// BUTTON[1-8]_CONFIG: Configuration mask (e.g. BUTTON_PUSHBUTTON and BUTTON_SWITCH cannot be together)
 //   - BUTTON_PUSHBUTTON: button event is fired when released
 //   - BUTTON_SWITCH: button event is fired when pressed or released
 //   - BUTTON_DEFAULT_HIGH: there is a pull up in place
 //   - BUTTON_SET_PULLUP: set pullup by software
-// RELAY#_PIN: GPIO for the n-th relay (1-based, up to 8 relays)
-// RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-// LED#_PIN: GPIO for the n-th LED (1-based, up to 8 LEDs)
-// LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
-// LED#_MODE: Check types.h for LED_MODE_%
-// LED#_RELAY: Linked relay (1-based)
+//
+// RELAY[1-8]_PIN: GPIO for the n-th relay (1-based, up to 8 relays)
+// RELAY[1-8]_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+//
+// LED[1-8]_PIN: GPIO for the n-th LED (1-based, up to 8 LEDs)
+// LED[1-8]_PIN_INVERSE: LED has inversed logic (lit when pulled down)
+// LED[1-8]_MODE: Check types.h for LED_MODE_%
+// LED[1-8]_RELAY: Linked relay (1-based)
 //
 // Besides, other hardware specific information should be stated here
 
@@ -114,7 +122,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
@@ -141,7 +149,7 @@
     // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
     #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
                                     // it's the same as using a Wemos one button shield
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // LEDs
@@ -161,7 +169,7 @@
     // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
     #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
                                     // it's the same as using a Wemos one button shield
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -205,7 +213,7 @@
     #define BUTTON1_RELAY       1
 
     // Normal pushbutton
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -234,7 +242,7 @@
     #define BUTTON1_RELAY       1
 
     // Normal pushbutton
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -263,12 +271,12 @@
     #define BUTTON1_RELAY       1
 
     // Touch button
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK           BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON
+    #define BUTTON1_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK           BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_ACTION_NONE
 
     // LEDs
     #define LED1_PIN            2
@@ -287,7 +295,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 0
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // RFM69GW
     #define RFM69_SUPPORT               1
@@ -313,10 +321,10 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
     #define BUTTON2_PIN         14
-    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       1
 
     // Relays
@@ -335,10 +343,10 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
     #define BUTTON2_PIN         14
-    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       1
 
     // Relays
@@ -357,10 +365,10 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
     #define BUTTON2_PIN         4
-    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       1
 
     // Relays
@@ -379,7 +387,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -413,7 +421,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -432,7 +440,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -451,7 +459,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -470,12 +478,12 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -494,7 +502,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -521,7 +529,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -574,9 +582,9 @@
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
     #define BUTTON3_RELAY       1
-    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -600,10 +608,10 @@
     #define BUTTON3_PIN         10
     #define BUTTON4_PIN         14
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON4_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -637,10 +645,10 @@
     #define BUTTON3_PIN         10
     #define BUTTON4_PIN         14
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON4_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -667,18 +675,18 @@
     // reset mode and factory reset functionalities, or link other actions like
     // AP mode in the commented line below.
 
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    //#define BUTTON1_LNGCLICK    BUTTON_MODE_AP
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_NONE
-    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK       BUTTON_MODE_NONE
-    #define BUTTON3_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON3_CLICK       BUTTON_MODE_NONE
-    #define BUTTON4_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON4_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    //#define BUTTON1_LNGCLICK    BUTTON_ACTION_AP
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_NONE
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON3_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON4_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON4_CLICK       BUTTON_ACTION_NONE
 
     // Relays
     #define RELAY1_PIN          12
@@ -712,7 +720,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -732,7 +740,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -774,7 +782,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // LEDs
     #define LED1_PIN            13
@@ -841,12 +849,12 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -867,19 +875,19 @@
     #define BUTTON1_PIN         0
     #define BUTTON2_PIN         9
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
 
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK       BUTTON_MODE_NONE
-    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_ACTION_RESET
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -906,26 +914,26 @@
     #define BUTTON2_PIN         9
     #define BUTTON3_PIN         10
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
 
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK       BUTTON_MODE_NONE
-    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_ACTION_RESET
 
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON3_CLICK       BUTTON_MODE_NONE
-    #define BUTTON3_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON3_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON3_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON3_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON3_LNGLNGCLICK BUTTON_ACTION_RESET
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -952,7 +960,7 @@
 
     // Buttons
     #define BUTTON1_PIN             0
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY           1
 
     // Relays
@@ -978,7 +986,7 @@
 
     // Buttons
     #define BUTTON1_PIN             0
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY           1
 
     // Relays
@@ -1000,10 +1008,10 @@
     #define BUTTON2_PIN             9
     #define BUTTON3_PIN             10
     #define BUTTON4_PIN             14
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON4_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN              12
@@ -1031,7 +1039,7 @@
 
     // Buttons
     #define BUTTON1_PIN         14
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -1057,12 +1065,12 @@
     // Buttons
     #define BUTTON1_PIN         0
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
 
     #define BUTTON1_RELAY       1
 
@@ -1084,19 +1092,19 @@
     #define BUTTON1_PIN         0
     #define BUTTON2_PIN         9
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
 
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK       BUTTON_MODE_NONE
-    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_ACTION_RESET
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1126,26 +1134,26 @@
     #define BUTTON2_PIN         9
     #define BUTTON3_PIN         10
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
 
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK       BUTTON_MODE_NONE
-    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_ACTION_RESET
 
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON3_CLICK       BUTTON_MODE_NONE
-    #define BUTTON3_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON3_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON3_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON3_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON3_LNGLNGCLICK BUTTON_ACTION_RESET
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1178,8 +1186,8 @@
     #define BUTTON1_PIN         0
     #define BUTTON2_PIN         2
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1207,7 +1215,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -1397,7 +1405,7 @@
 
 	// Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // LEDs
@@ -1419,7 +1427,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // LEDs
@@ -1530,8 +1538,8 @@
     #define BUTTON1_PIN         12
     #define BUTTON2_PIN         13
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1553,8 +1561,8 @@
     #define BUTTON1_PIN         12
     #define BUTTON2_PIN         13
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1598,7 +1606,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -1625,7 +1633,7 @@
     // Buttons
     #define BUTTON1_PIN         13
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          15
@@ -1651,7 +1659,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          13
@@ -1673,8 +1681,8 @@
     #define BUTTON2_PIN         4
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
-    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
-    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_CONFIG      BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
 
     // Relays
     #define RELAY1_PIN          14
@@ -1736,8 +1744,8 @@
     #define BUTTON1_PIN         4
     #define BUTTON2_PIN         5
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1855,7 +1863,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Light
@@ -1923,7 +1931,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -1946,7 +1954,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -1997,12 +2005,12 @@
 
     // Buttons
     #define BUTTON1_PIN         4
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK       BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_ACTION_RESET
 
     #define ANALOG_SUPPORT      1
 
@@ -2032,7 +2040,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2067,7 +2075,7 @@
 
     // Buttons
     #define BUTTON1_PIN         14
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // The relay in the device is not a bistable (latched) relay.
@@ -2097,7 +2105,7 @@
 
     // Buttons
     #define BUTTON1_PIN         5
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2171,7 +2179,7 @@
 
     // Buttons
     #define BUTTON1_PIN         5
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       0
 
     // Relays
@@ -2205,7 +2213,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2228,7 +2236,7 @@
 
     // Buttons
     #define BUTTON1_PIN			13
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -2251,7 +2259,7 @@
 
     // Buttons
     #define BUTTON1_PIN			2
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -2288,7 +2296,7 @@
 
     // Buttons
     #define BUTTON1_PIN			1
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -2312,7 +2320,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -2351,7 +2359,7 @@
 
     // Buttons
     #define BUTTON1_PIN			13
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -2379,7 +2387,7 @@
 
     // Buttons
     #define BUTTON1_PIN			13
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -2421,7 +2429,7 @@
 
     // Buttons
     #define BUTTON1_PIN         4
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2444,7 +2452,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2473,7 +2481,7 @@
     // Buttons
     // Not a button but input via Optocoupler
     #define BUTTON1_PIN         5
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2494,21 +2502,21 @@
     #define MANUFACTURER            "IKE"
     #define DEVICE                  "ESPIKE"
 
-    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_ACTION_NONE
 
     #define BUTTON1_PIN             13
     #define BUTTON1_RELAY           1
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON2_PIN             12
     #define BUTTON2_RELAY           2
-    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON3_PIN             14
     #define BUTTON3_RELAY           3
-    #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define RELAY1_PIN              4
     #define RELAY1_TYPE             RELAY_TYPE_NORMAL
@@ -2535,14 +2543,14 @@
 
     // Buttons
     #define BUTTON1_PIN           4 // D2
-    #define BUTTON1_MODE          BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY         1
 
-    #define BUTTON1_PRESS         BUTTON_MODE_NONE
-    #define BUTTON1_CLICK         BUTTON_MODE_TOGGLE
-    #define BUTTON1_DBLCLICK      BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK      BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK   BUTTON_MODE_NONE
+    #define BUTTON1_PRESS         BUTTON_ACTION_NONE
+    #define BUTTON1_CLICK         BUTTON_ACTION_TOGGLE
+    #define BUTTON1_DBLCLICK      BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK      BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK   BUTTON_ACTION_NONE
 
     // Relays
     #define RELAY1_PIN            5 // D1
@@ -2647,7 +2655,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          4
@@ -2693,7 +2701,7 @@
     // Buttons
     #define BUTTON1_PIN         14
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON
 
     // Relays
     #define RELAY1_PIN          12
@@ -2717,7 +2725,7 @@
 
     // Buttons
     #define BUTTON1_PIN             3
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN              5
@@ -2758,19 +2766,19 @@
 
     // Buttons
     //#define BUTTON1_PIN             0
-    //#define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    //#define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Using pins labelled as SDA & SCL as buttons
     #define BUTTON2_PIN             4
-    #define BUTTON2_MODE            BUTTON_PUSHBUTTON
-    #define BUTTON2_PRESS           BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK           BUTTON_MODE_NONE
-    #define BUTTON2_DBLCLICK        BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_NONE
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON
+    #define BUTTON2_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK           BUTTON_ACTION_NONE
+    #define BUTTON2_DBLCLICK        BUTTON_ACTION_NONE
+    #define BUTTON2_LNGCLICK        BUTTON_ACTION_NONE
+    #define BUTTON2_LNGLNGCLICK     BUTTON_ACTION_NONE
 
     #define BUTTON3_PIN             5
-    #define BUTTON3_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON
 
     // Using pins labelled as SDA & SCL for I2C
     //#define I2C_SDA_PIN             4
@@ -2792,19 +2800,19 @@
     // Buttons
     #define BUTTON1_PIN             12
     #define BUTTON1_RELAY           1
-    #define BUTTON1_MODE            BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
+    #define BUTTON1_CONFIG          BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
 
-    #define BUTTON1_PRESS           BUTTON_MODE_NONE
-    #define BUTTON1_CLICK           BUTTON_MODE_TOGGLE
-    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+    #define BUTTON1_PRESS           BUTTON_ACTION_NONE
+    #define BUTTON1_CLICK           BUTTON_ACTION_TOGGLE
+    #define BUTTON1_DBLCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_ACTION_NONE
 
     #define BUTTON2_PIN             13
     #define BUTTON2_RELAY           2
-    #define BUTTON2_MODE            BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
+    #define BUTTON2_CONFIG          BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
 
-    #define BUTTON2_CLICK          BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK          BUTTON_ACTION_TOGGLE
 
     // Relays
     #define RELAY1_PIN              4
@@ -2829,7 +2837,7 @@
 
     // Buttons
     #define BUTTON1_PIN         2
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2865,7 +2873,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2904,7 +2912,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2928,7 +2936,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -2953,7 +2961,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON1_RELAY       2
 
     // Relays
@@ -2991,7 +2999,7 @@
 
     // Buttons
     #define BUTTON1_PIN         16
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       4
 
     // Relays
@@ -3040,10 +3048,10 @@
 
     // Buttons
     #define BUTTON1_PIN         12
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON1_RELAY       1
     #define BUTTON2_PIN         13
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON2_RELAY       2
 
     // Relays
@@ -3071,7 +3079,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3114,7 +3122,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 3
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3160,7 +3168,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 16
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3200,7 +3208,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3224,7 +3232,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 1
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3271,7 +3279,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3313,7 +3321,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -3340,7 +3348,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3394,7 +3402,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -3440,21 +3448,21 @@
     // button 1: "power" button
     #define BUTTON1_PIN                 4
     #define BUTTON1_RELAY               1
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS               BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK               BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK            BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK            BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK         BUTTON_MODE_RESET
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS               BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK               BUTTON_ACTION_NONE
+    #define BUTTON1_DBLCLICK            BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK            BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK         BUTTON_ACTION_RESET
 
     // button 2: "wifi" button
     #define BUTTON2_PIN                 2
-    #define BUTTON2_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PRESS               BUTTON_MODE_TOGGLE
-    #define BUTTON2_CLICK               BUTTON_MODE_NONE
-    #define BUTTON2_DBLCLICK            BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK            BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK         BUTTON_MODE_NONE
+    #define BUTTON2_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS               BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK               BUTTON_ACTION_NONE
+    #define BUTTON2_DBLCLICK            BUTTON_ACTION_NONE
+    #define BUTTON2_LNGCLICK            BUTTON_ACTION_NONE
+    #define BUTTON2_LNGLNGCLICK         BUTTON_ACTION_NONE
 
     // LEDs
     #define LED1_PIN                    5      // red status led
@@ -3483,7 +3491,7 @@
 
     // Buttons
     #define BUTTON1_PIN         5
-    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -3499,8 +3507,8 @@
     // Buttons
     #define BUTTON1_PIN         12
     #define BUTTON2_PIN         14
-    #define BUTTON1_MODE        BUTTON_SWITCH
-    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON1_CONFIG      BUTTON_SWITCH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
 
@@ -3517,13 +3525,13 @@
 
     // Buttons
     #define BUTTON1_PIN         4
-    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
 
     #define BUTTON2_PIN         2
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_LNGCLICK    BUTTON_MODE_RESET
-    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_FACTORY
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_LNGCLICK    BUTTON_ACTION_RESET
+    #define BUTTON2_LNGLNGCLICK BUTTON_ACTION_FACTORY
 
     // Relays
     #define RELAY1_PIN          15
@@ -3560,17 +3568,17 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
 
     #define BUTTON2_PIN         5
-    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH
     #define BUTTON2_RELAY       2
 
     #define BUTTON3_PIN         2
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_LNGCLICK    BUTTON_MODE_RESET
-    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_FACTORY
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_LNGCLICK    BUTTON_ACTION_RESET
+    #define BUTTON3_LNGLNGCLICK BUTTON_ACTION_FACTORY
 
     // Relays
     #define RELAY1_PIN          4
@@ -3670,21 +3678,21 @@
     #define BUTTON1_PIN         2
     #define BUTTON2_PIN         14
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
 
     // This button doubles as switch here and as encoder mode switch below
     // Clicking it (for less than 500ms) will turn the light on and off
     // Double and Long clicks will not work as these are used to modify the encoder action
     #define BUTTON1_RELAY           1
     #define BUTTON_LNGCLICK_DELAY   500
-    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_ACTION_NONE
 
     // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
-    #define BUTTON2_DBLCLICK        BUTTON_MODE_AP
-    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_RESET
+    #define BUTTON2_DBLCLICK        BUTTON_ACTION_AP
+    #define BUTTON2_LNGLNGCLICK     BUTTON_ACTION_RESET
 
     // Light
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
@@ -3939,7 +3947,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relay
@@ -3962,7 +3970,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -3999,7 +4007,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -4050,7 +4058,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -4076,10 +4084,10 @@
 
     // Buttons
     #define BUTTON1_PIN                 0
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
     #define BUTTON2_PIN                 16
-    #define BUTTON2_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY               2
 
     // Relays
@@ -4141,7 +4149,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -4182,7 +4190,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -4269,7 +4277,7 @@
 
     // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
@@ -4310,7 +4318,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 14
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -4386,7 +4394,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 13
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -4456,7 +4464,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 0
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
     // Relays
@@ -4504,7 +4512,7 @@
 
     // Buttons
     #define BUTTON1_PIN                 0
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON1_RELAY               1
 
     // Relays

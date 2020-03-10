@@ -52,12 +52,12 @@ namespace types {
         EventReleased
     };
 
-    enum Mode {
-        ModePushbutton = 1 << 0,
-        ModeSwitch = 1 << 1,
-        ModeDefaultHigh = 1 << 2,
-        ModeSetPullup = 1 << 3,
-        ModeSetPulldown = 1 << 4
+    enum Config {
+        ConfigPushbutton = 1 << 0,
+        ConfigSwitch = 1 << 1,
+        ConfigDefaultHigh = 1 << 2,
+        ConfigSetPullup = 1 << 3,
+        ConfigSetPulldown = 1 << 4
     };
 
     using Pin = std::shared_ptr<BasePin>;
@@ -69,14 +69,14 @@ class EventHandler {
 
     public:
 
-        EventHandler(types::Pin pin, int mode = types::ModePushbutton | types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        EventHandler(types::Pin pin, types::EventCallback callback, int mode = types::ModePushbutton | types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventHandler(types::Pin pin, int config = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventHandler(types::Pin pin, types::EventCallback callback, int mode = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
         types::Event loop();
         bool pressed();
 
         const types::Pin getPin() const;
-        const int getMode() const;
+        const int getConfig() const;
 
         unsigned long getEventLength();
         unsigned long getEventCount();
@@ -86,7 +86,7 @@ class EventHandler {
         types::Pin _pin;
         types::EventCallback _callback;
 
-        const int _mode;
+        const int _config;
 
         const bool _is_switch;
         const bool _default_status;

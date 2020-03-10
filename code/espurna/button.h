@@ -16,7 +16,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 constexpr size_t ButtonsPresetMax = 8;
 constexpr size_t ButtonsMax = 32;
 
-using button_event_t = uint8_t;
+enum class button_event_t {
+    None = 0,
+    Pressed = 1,
+    Click = 2,
+    DoubleClick = 3,
+    LongClick = 4,
+    LongLongClick = 5,
+    TripleClick = 6
+};
 
 struct button_event_delays_t {
     button_event_delays_t();
@@ -31,7 +39,7 @@ struct button_event_delays_t {
 struct button_t {
 
     button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays);
-    button_t(std::shared_ptr<BasePin> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
+    button_t(std::shared_ptr<BasePin> pin, int config, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
 
     bool state();
     button_event_t loop();
@@ -45,10 +53,10 @@ struct button_t {
 };
 
 bool buttonState(unsigned char id);
-unsigned char buttonAction(unsigned char id, unsigned char event);
+unsigned char buttonAction(unsigned char id, button_event_t event);
 
-void buttonMQTT(unsigned char id, uint8_t event);
-void buttonEvent(unsigned char id, unsigned char event);
+void buttonMQTT(unsigned char id, button_event_t event);
+void buttonEvent(unsigned char id, button_event_t event);
 
 unsigned char buttonCount();
 void buttonSetup();

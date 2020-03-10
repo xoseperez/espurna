@@ -19,16 +19,16 @@ constexpr const unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonMode(unsigned char index) {
+constexpr const int _buttonConfig(unsigned char index) {
     return (
-        (index == 0) ? BUTTON1_MODE :
-        (index == 1) ? BUTTON2_MODE :
-        (index == 2) ? BUTTON3_MODE :
-        (index == 3) ? BUTTON4_MODE :
-        (index == 4) ? BUTTON5_MODE :
-        (index == 5) ? BUTTON6_MODE :
-        (index == 6) ? BUTTON7_MODE :
-        (index == 7) ? BUTTON8_MODE : (BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH)
+        (index == 0) ? BUTTON1_CONFIG :
+        (index == 1) ? BUTTON2_CONFIG :
+        (index == 2) ? BUTTON3_CONFIG :
+        (index == 3) ? BUTTON4_CONFIG :
+        (index == 4) ? BUTTON5_CONFIG :
+        (index == 5) ? BUTTON6_CONFIG :
+        (index == 6) ? BUTTON7_CONFIG :
+        (index == 7) ? BUTTON8_CONFIG : (BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH)
     );
 }
 
@@ -41,7 +41,7 @@ constexpr const unsigned char _buttonPress(unsigned char index) {
         (index == 4) ? BUTTON5_PRESS :
         (index == 5) ? BUTTON6_PRESS :
         (index == 6) ? BUTTON7_PRESS :
-        (index == 7) ? BUTTON8_PRESS : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_PRESS : BUTTON_ACTION_NONE
     );
 }
 
@@ -54,7 +54,7 @@ constexpr const unsigned char _buttonClick(unsigned char index) {
         (index == 4) ? BUTTON5_CLICK :
         (index == 5) ? BUTTON6_CLICK :
         (index == 6) ? BUTTON7_CLICK :
-        (index == 7) ? BUTTON8_CLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_CLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -67,7 +67,7 @@ constexpr const unsigned char _buttonDoubleClick(unsigned char index) {
         (index == 4) ? BUTTON5_DBLCLICK :
         (index == 5) ? BUTTON6_DBLCLICK :
         (index == 6) ? BUTTON7_DBLCLICK :
-        (index == 7) ? BUTTON8_DBLCLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_DBLCLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -80,7 +80,7 @@ constexpr const unsigned char _buttonTripleClick(unsigned char index) {
         (index == 4) ? BUTTON5_TRIPLECLICK :
         (index == 5) ? BUTTON6_TRIPLECLICK :
         (index == 6) ? BUTTON7_TRIPLECLICK :
-        (index == 7) ? BUTTON8_TRIPLECLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_TRIPLECLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -93,7 +93,7 @@ constexpr const unsigned char _buttonLongClick(unsigned char index) {
         (index == 4) ? BUTTON5_LNGCLICK :
         (index == 5) ? BUTTON6_LNGCLICK :
         (index == 6) ? BUTTON7_LNGCLICK :
-        (index == 7) ? BUTTON8_LNGCLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_LNGCLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -106,7 +106,7 @@ constexpr const unsigned char _buttonLongLongClick(unsigned char index) {
         (index == 4) ? BUTTON5_LNGLNGCLICK :
         (index == 5) ? BUTTON6_LNGLNGCLICK :
         (index == 6) ? BUTTON7_LNGLNGCLICK :
-        (index == 7) ? BUTTON8_LNGLNGCLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_LNGLNGCLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -201,30 +201,3 @@ constexpr const bool _buttonMqttRetain(unsigned char index) {
         (index == 7) ? (1 == BUTTON8_MQTT_RETAIN ) : (1 == BUTTON_MQTT_RETAIN)
     );
 }
-
-constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, unsigned char event) {
-    return (
-        (event == BUTTON_EVENT_PRESSED) ? ((actions) & 0x0F) :
-        (event == BUTTON_EVENT_CLICK) ? ((actions >> 4) & 0x0F) :
-        (event == BUTTON_EVENT_DBLCLICK) ? ((actions >> 8) & 0x0F) :
-        (event == BUTTON_EVENT_LNGCLICK) ? ((actions >> 12) & 0x0F) :
-        (event == BUTTON_EVENT_LNGLNGCLICK) ? ((actions >> 16) & 0x0F) :
-        (event == BUTTON_EVENT_TRIPLECLICK) ? ((actions >> 20) & 0x0F) : BUTTON_MODE_NONE
-    );
-}
-
-constexpr uint32_t _buttonConstructActions(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
-    return (
-        (tripleclick << 20) |
-        (lnglngclick << 16) |
-        (lngclick << 12) |
-        (dblclick << 8) |
-        (click << 4) |
-        pressed
-    );
-}
-
-constexpr uint32_t _buttonConstructActions(unsigned char id) {
-    return _buttonConstructActions(_buttonPress(id), _buttonClick(id), _buttonDoubleClick(id), _buttonLongClick(id), _buttonLongLongClick(id), _buttonTripleClick(id));
-}
-

@@ -22,39 +22,47 @@
 // BUTTONS
 //------------------------------------------------------------------------------
 
-#define BUTTON_EVENT_NONE           0
-#define BUTTON_EVENT_PRESSED        1
-#define BUTTON_EVENT_RELEASED       2
-#define BUTTON_EVENT_CLICK          2
-#define BUTTON_EVENT_DBLCLICK       3
-#define BUTTON_EVENT_LNGCLICK       4
-#define BUTTON_EVENT_LNGLNGCLICK    5
-#define BUTTON_EVENT_TRIPLECLICK    6
+// button actions, limited to 4-bit number (0b1111 / 0xf / 15)
+#define BUTTON_ACTION_NONE            0u
+#define BUTTON_ACTION_TOGGLE          1u
+#define BUTTON_ACTION_ON              2u
+#define BUTTON_ACTION_OFF             3u
+#define BUTTON_ACTION_AP              4u
+#define BUTTON_ACTION_RESET           5u
+#define BUTTON_ACTION_PULSE           6u
+#define BUTTON_ACTION_FACTORY         7u
+#define BUTTON_ACTION_WPS             8u
+#define BUTTON_ACTION_SMART_CONFIG    9u
+#define BUTTON_ACTION_DIM_UP          10u
+#define BUTTON_ACTION_DIM_DOWN        11u
+#define BUTTON_ACTION_DISPLAY_ON      12u
+#define BUTTON_ACTION_MAX             15u
 
-#define BUTTON_MODE_NONE            0
-#define BUTTON_MODE_TOGGLE          1
-#define BUTTON_MODE_ON              2
-#define BUTTON_MODE_OFF             3
-#define BUTTON_MODE_AP              4
-#define BUTTON_MODE_RESET           5
-#define BUTTON_MODE_PULSE           6
-#define BUTTON_MODE_FACTORY         7
-#define BUTTON_MODE_WPS             8
-#define BUTTON_MODE_SMART_CONFIG    9
-#define BUTTON_MODE_DIM_UP          10
-#define BUTTON_MODE_DIM_DOWN        11
-#define BUTTON_MODE_DISPLAY_ON      12
+// Deprecated: legacy mapping, changed to action from above
+#define BUTTON_MODE_NONE              BUTTON_ACTION_NONE
+#define BUTTON_MODE_TOGGLE            BUTTON_ACTION_TOGGLE
+#define BUTTON_MODE_ON                BUTTON_ACTION_ON
+#define BUTTON_MODE_OFF               BUTTON_ACTION_OFF
+#define BUTTON_MODE_AP                BUTTON_ACTION_AP
+#define BUTTON_MODE_RESET             BUTTON_ACTION_RESET
+#define BUTTON_MODE_PULSE             BUTTON_ACTION_PULSE
+#define BUTTON_MODE_FACTORY           BUTTON_ACTION_FACTORY
+#define BUTTON_MODE_WPS               BUTTON_ACTION_WPS
+#define BUTTON_MODE_SMART_CONFIG      BUTTON_ACTION_SMART_CONFIG
+#define BUTTON_MODE_DIM_UP            BUTTON_ACTION_DIM_UP
+#define BUTTON_MODE_DIM_DOWN          BUTTON_ACTION_DIM_DOWN
+#define BUTTON_MODE_DISPLAY_ON        BUTTON_ACTION_DISPLAY_ON
 
 #define BUTTON_EVENTS_SOURCE_GENERIC               0
 #define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL     1
 #define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
 
 // compat definitions for DebounceEvent
-#define BUTTON_PUSHBUTTON           debounce_event::types::ModePushbutton
-#define BUTTON_SWITCH               debounce_event::types::ModeSwitch
-#define BUTTON_DEFAULT_HIGH         debounce_event::types::ModeDefaultHigh
-#define BUTTON_SET_PULLUP           debounce_event::types::ModeSetPullup
-#define BUTTON_SET_PULLDOWN         debounce_event::types::ModeSetPulldown
+#define BUTTON_PUSHBUTTON           debounce_event::types::ConfigPushbutton
+#define BUTTON_SWITCH               debounce_event::types::ConfigSwitch
+#define BUTTON_DEFAULT_HIGH         debounce_event::types::ConfigDefaultHigh
+#define BUTTON_SET_PULLUP           debounce_event::types::ConfigSetPullup
+#define BUTTON_SET_PULLDOWN         debounce_event::types::ConfigSetPulldown
 
 #define EVENT_NONE                  debounce_event::types::EventNone
 #define EVENT_CHANGED               debounce_event::types::EventChanged
@@ -207,14 +215,21 @@
 // IR
 // -----------------------------------------------------------------------------
 
-// IR Button modes
-#define IR_BUTTON_MODE_NONE         0
-#define IR_BUTTON_MODE_RGB          1
-#define IR_BUTTON_MODE_HSV          2
-#define IR_BUTTON_MODE_BRIGHTER     3
-#define IR_BUTTON_MODE_STATE        4
-#define IR_BUTTON_MODE_EFFECT       5
-#define IR_BUTTON_MODE_TOGGLE       6
+#define IR_BUTTON_ACTION_NONE         0
+#define IR_BUTTON_ACTION_RGB          1
+#define IR_BUTTON_ACTION_HSV          2
+#define IR_BUTTON_ACTION_BRIGHTER     3
+#define IR_BUTTON_ACTION_STATE        4
+#define IR_BUTTON_ACTION_EFFECT       5
+#define IR_BUTTON_ACTION_TOGGLE       6
+
+#define IR_BUTTON_MODE_NONE         IR_BUTTON_ACTION_NONE
+#define IR_BUTTON_MODE_RGB          IR_BUTTON_ACTION_RGB
+#define IR_BUTTON_MODE_HSV          IR_BUTTON_ACTION_HSV
+#define IR_BUTTON_MODE_BRIGHTER     IR_BUTTON_ACTION_BRIGHTER
+#define IR_BUTTON_MODE_STATE        IR_BUTTON_ACTION_STATE
+#define IR_BUTTON_MODE_EFFECT       IR_BUTTON_ACTION_EFFECT
+#define IR_BUTTON_MODE_TOGGLE       IR_BUTTON_ACTION_TOGGLE
 
 #define LIGHT_EFFECT_SOLID          0
 #define LIGHT_EFFECT_FLASH          1

@@ -167,6 +167,7 @@
 #undef DEBUG_SERIAL_SUPPORT
 #define DEBUG_SERIAL_SUPPORT 0
 #endif
+#endif
 
 //------------------------------------------------------------------------------
 // It looks more natural that one click will enable display
@@ -174,7 +175,7 @@
 
 #if THERMOSTAT_DISPLAY_SUPPORT
 #undef BUTTON1_CLICK
-#define BUTTON1_CLICK           BUTTON_MODE_DISPLAY_ON
+#define BUTTON1_CLICK           BUTTON_ACTION_DISPLAY_ON
 #undef BUTTON1_LNGCLICK
-#define BUTTON1_LNGCLICK        BUTTON_MODE_TOGGLE
+#define BUTTON1_LNGCLICK        BUTTON_ACTION_TOGGLE
 #endif

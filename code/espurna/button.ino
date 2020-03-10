@@ -25,17 +25,45 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
-constexpr const uint8_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, button_event_t event) {
     return (
-        (1 == count) ? (
-            (length > lnglngclick_delay) ? BUTTON_EVENT_LNGLNGCLICK :
-            (length > lngclick_delay) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
-        ) :
-        (2 == count) ? BUTTON_EVENT_DBLCLICK :
-        (3 == count) ? BUTTON_EVENT_TRIPLECLICK :
-        BUTTON_EVENT_NONE
+        (event == button_event_t::Pressed) ? ((actions) & 15u) :
+        (event == button_event_t::Click) ? ((actions >> 4) & 15u) :
+        (event == button_event_t::DoubleClick) ? ((actions >> 8) & 15u) :
+        (event == button_event_t::LongClick) ? ((actions >> 12) & 15u) :
+        (event == button_event_t::LongLongClick) ? ((actions >> 16) & 15u) :
+        (event == button_event_t::TripleClick) ? ((actions >> 20) & 15u) : 0
     );
 }
+
+constexpr uint32_t _buttonConstructActions(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
+    return (
+        (tripleclick << 20) |
+        (lnglngclick << 16) |
+        (lngclick << 12) |
+        (dblclick << 8) |
+        (click << 4) |
+        pressed
+    );
+}
+
+constexpr uint32_t _buttonConstructActions(unsigned char id) {
+    return _buttonConstructActions(_buttonPress(id), _buttonClick(id), _buttonDoubleClick(id), _buttonLongClick(id), _buttonLongLongClick(id), _buttonTripleClick(id));
+}
+
+constexpr const button_event_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+    return (
+        (1 == count) ? (
+            (length > lnglngclick_delay) ? button_event_t::LongLongClick :
+            (length > lngclick_delay) ? button_event_t::LongClick : button_event_t::Click
+        ) :
+        (2 == count) ? button_event_t::DoubleClick :
+        (3 == count) ? button_event_t::TripleClick :
+        button_event_t::None
+    );
+}
+
+// -----------------------------------------------------------------------------
 
 button_event_delays_t::button_event_delays_t() :
     debounce(BUTTON_DEBOUNCE_DELAY),
@@ -71,22 +99,20 @@ bool button_t::state() {
 
 button_event_t button_t::loop() {
     if (!event_handler) {
-        return BUTTON_EVENT_NONE;
+        return button_event_t::None;
     }
 
-    using namespace debounce_event::types;
-
     auto event = event_handler->loop();
-    if (event == EventNone) {
-        return BUTTON_EVENT_NONE;
+    if (event == debounce_event::types::EventNone) {
+        return button_event_t::None;
     }
 
     switch (event) {
-        case EventPressed:
-            return BUTTON_EVENT_PRESSED;
-        case EventChanged:
-            return BUTTON_EVENT_CLICK;
-        case EventReleased: {
+        case debounce_event::types::EventPressed:
+            return button_event_t::Pressed;
+        case debounce_event::types::EventChanged:
+            return button_event_t::Click;
+        case debounce_event::types::EventReleased: {
             return _buttonMapReleased(
                 event_handler->getEventCount(),
                 event_handler->getEventLength(),
@@ -94,12 +120,12 @@ button_event_t button_t::loop() {
                 event_delays.lnglngclick
             );
         }
-        case EventNone:
+        case debounce_event::types::EventNone:
         default:
             break;
     }
 
-    return BUTTON_EVENT_NONE;
+    return button_event_t::None;
 }
 
 std::vector<button_t> _buttons;
@@ -119,9 +145,9 @@ std::bitset<ButtonsMax> _buttons_mqtt_retain(
     (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
 );
 
-void buttonMQTT(unsigned char id, uint8_t event) {
+void buttonMQTT(unsigned char id, button_event_t event) {
     char payload[4] = {0};
-    itoa(event, payload, 10);
+    itoa(_buttonEventNumber(event), payload, 10);
     // mqttSend(topic, id, payload, force, retain)
     mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, _buttons_mqtt_retain[id]);
 }
@@ -151,8 +177,8 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     JsonArray& schema = module.createNestedArray("_schema");
 
-    schema.add("Pin"); // GPIO id?
-    schema.add("Mode");
+    schema.add("GPIO");
+    schema.add("Config");
 
     schema.add("Relay");
 
@@ -162,7 +188,7 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     schema.add("LLclkDel");
 
     #if MQTT_SUPPORT
-        schema.add("MqttSnd");
+        schema.add("MqttSendAll");
         schema.add("MqttRetain");
     #endif
 
@@ -174,10 +200,10 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         // TODO: configure PIN object instead of button specifically, link PIN<->BUTTON
         if (_buttons[i].getPin()) {
             button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
-            button.add(getSetting({"btnMode", index}, _buttonMode(index)));
+            button.add(getSetting({"btnConfig", index}, _buttonConfig(index)));
         } else {
             button.add(GPIO_NONE);
-            button.add(BUTTON_PUSHBUTTON);
+            button.add(static_cast<int>(BUTTON_PUSHBUTTON));
         }
         button.add(_buttons[i].relayID);
         button.add(_buttons[i].event_delays.debounce);
@@ -205,83 +231,120 @@ bool buttonState(unsigned char id) {
     return _buttons[id].state();
 }
 
-unsigned char buttonAction(unsigned char id, unsigned char event) {
-    if (id >= _buttons.size()) return BUTTON_MODE_NONE;
+unsigned char buttonAction(unsigned char id, button_event_t event) {
+    if (id >= _buttons.size()) return 0;
     return _buttonDecodeEventAction(_buttons[id].actions, event);
 }
 
-void buttonEvent(unsigned char id, unsigned char event) {
+int _buttonEventNumber(button_event_t event) {
+    return static_cast<int>(event);
+}
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
-    if (event == 0) return;
+String _buttonEventString(button_event_t event) {
+    const __FlashStringHelper* ptr = nullptr;
+    switch (event) {
+        case button_event_t::Pressed:
+            ptr = F("Pressed");
+            break;
+        case button_event_t::Click:
+            ptr = F("Click");
+            break;
+        case button_event_t::DoubleClick:
+            ptr = F("Double-click");
+            break;
+        case button_event_t::LongClick:
+            ptr = F("Long-click");
+            break;
+        case button_event_t::LongLongClick:
+            ptr = F("Looong-click");
+            break;
+        case button_event_t::TripleClick:
+            ptr = F("Triple-click");
+            break;
+        case button_event_t::None:
+        default:
+            ptr = F("(None)");
+            break;
+    }
+    return String(ptr);
+}
+
+void buttonEvent(unsigned char id, button_event_t event) {
+
+    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event \"%s\"\n"), id, _buttonEventString(event).c_str());
+    if (event == button_event_t::None) return;
 
     auto& button = _buttons[id];
-    unsigned char action = _buttonDecodeEventAction(button.actions, event);
+    auto action = _buttonDecodeEventAction(button.actions, event);
 
     #if MQTT_SUPPORT
-       if (action != BUTTON_MODE_NONE || _buttons_mqtt_send_all[id]) {
-           buttonMQTT(id, event);
-       }
-    #endif
-
-    #if THERMOSTAT_DISPLAY_SUPPORT
-        if (BUTTON_MODE_DISPLAY_ON == action) {
-            displayOn();
+        if (action || _buttons_mqtt_send_all[id]) {
+            buttonMQTT(id, event);
         }
     #endif
 
-    if (BUTTON_MODE_TOGGLE == action) {
-        relayToggle(button.relayID);
-    }
+    switch (action) {
+        case BUTTON_ACTION_TOGGLE:
+            relayToggle(button.relayID);
+            break;
 
-    if (BUTTON_MODE_ON == action) {
-        relayStatus(button.relayID, true);
-    }
+        case BUTTON_ACTION_ON:
+            relayStatus(button.relayID, true);
+            break;
 
-    if (BUTTON_MODE_OFF == action) {
-        relayStatus(button.relayID, false);
-    }
+        case BUTTON_ACTION_OFF:
+            relayStatus(button.relayID, false);
+            break;
 
-    if (BUTTON_MODE_AP == action) {
-        if (wifiState() & WIFI_STATE_AP) {
-            wifiStartSTA();
-        } else {
-            wifiStartAP();
-        }
-    }
+        case BUTTON_ACTION_AP:
+            if (wifiState() & WIFI_STATE_AP) {
+                wifiStartSTA();
+            } else {
+                wifiStartAP();
+            }
+            break;
 
-    if (BUTTON_MODE_RESET == action) {
-        deferredReset(100, CUSTOM_RESET_HARDWARE);
-    }
+        case BUTTON_ACTION_RESET:
+            deferredReset(100, CUSTOM_RESET_HARDWARE);
+            break;
 
-    if (BUTTON_MODE_FACTORY == action) {
-        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
-        resetSettings();
-        deferredReset(100, CUSTOM_RESET_FACTORY);
-    }
+        case BUTTON_ACTION_FACTORY:
+            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+            resetSettings();
+            deferredReset(100, CUSTOM_RESET_FACTORY);
+            break;
 
     #if defined(JUSTWIFI_ENABLE_WPS)
-        if (BUTTON_MODE_WPS == action) {
+        case BUTTON_ACTION_WPS:
             wifiStartWPS();
-        }
+            break;
     #endif // defined(JUSTWIFI_ENABLE_WPS)
 
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        if (BUTTON_MODE_SMART_CONFIG == action) {
+        case BUTTON_ACTION_SMART_CONFIG:
             wifiStartSmartConfig();
-        }
+            break;
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    if (BUTTON_MODE_DIM_UP == action) {
-        lightBrightnessStep(1);
-        lightUpdate(true, true);
-    }
-    if (BUTTON_MODE_DIM_DOWN == action) {
-        lightBrightnessStep(-1);
-        lightUpdate(true, true);
-    }
+        case BUTTON_ACTION_DIM_UP:
+            lightBrightnessStep(1);
+            lightUpdate(true, true);
+            break;
+
+        case BUTTON_ACTION_DIM_DOWN:
+            lightBrightnessStep(-1);
+            lightUpdate(true, true);
+            break;
     #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
+    #if THERMOSTAT_DISPLAY_SUPPORT
+        case BUTTON_ACTION_DISPLAY_ON:
+            displayOn();
+            break;
+    #endif
+
+    }
 
 }
 
@@ -314,8 +377,8 @@ void buttonSetup() {
         // Ignore real button settings, only map CLICK -> relay TOGGLE
         const auto delays = button_event_delays_t();
         const auto actions = _buttonConstructActions(
-            BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE,
-            BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE
+            BUTTON_ACTION_NONE, BUTTON_ACTION_TOGGLE, BUTTON_ACTION_NONE,
+            BUTTON_ACTION_NONE, BUTTON_ACTION_NONE, BUTTON_ACTION_NONE
         );
 
         for (unsigned char index = 0; index < buttons; ++index) {
@@ -376,7 +439,7 @@ void buttonSetup() {
 
             _buttons.emplace_back(
                 std::make_shared<DigitalPin>(pin),
-                getSetting({"btnMode", index}, _buttonMode(index)),
+                getSetting({"btnConfig", index}, _buttonConfig(index)),
                 getSetting({"btnActions", index}, _buttonConstructActions(index)),
                 getSetting({"btnRelay", index}, _buttonRelay(index)),
                 delays
@@ -432,7 +495,7 @@ void _buttonLoopSonoffDual() {
     // (in the relayStatus method) it will only be present
     // here if it has actually been pressed
     if ((value & 4) == 4) {
-        buttonEvent(2, BUTTON_EVENT_CLICK);
+        buttonEvent(2, button_event_t::Click);
         return;
     }
 
@@ -447,7 +510,7 @@ void _buttonLoopSonoffDual() {
 
         // Check if the status for that relay has changed
         if (relayStatus(i) != status) {
-            buttonEvent(i, BUTTON_EVENT_CLICK);
+            buttonEvent(i, button_event_t::Click);
             break;
         }
 
@@ -482,7 +545,7 @@ void _buttonLoopFoxelLightfox() {
         bool clicked = (value & (1 << i)) > 0;
 
         if (clicked) {
-            buttonEvent(i, BUTTON_EVENT_CLICK);
+            buttonEvent(i, button_event_t::Click);
         }
     }
 }
@@ -492,7 +555,7 @@ void _buttonLoopFoxelLightfox() {
 void _buttonLoopGeneric() {
     for (size_t id = 0; id < _buttons.size(); ++id) {
         auto event = _buttons[id].loop();
-        if (event != BUTTON_EVENT_NONE) {
+        if (event != button_event_t::None) {
             buttonEvent(id, event);
         }
     }
