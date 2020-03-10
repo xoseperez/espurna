@@ -1293,6 +1293,27 @@
     #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
+#elif defined(MAGICHOME_LED_CONTROLLER_RGB)
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "LED_CONTROLLER_RGB"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+    
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       5      // RED
+    #define LIGHT_CH2_PIN       12       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
     // Info
