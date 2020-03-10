@@ -20,8 +20,9 @@
 
   ----------------------------------------------------------------------------------
 
-  Modified to include generic INPUT / OUTPUT pin support through a custom interface.
+  Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
+  Modified to include generic INPUT / OUTPUT pin support through a custom interface.
   Definitions are incompatible with DebounceEvent, you should not include it's headers.
 
 */
@@ -33,67 +34,48 @@
 #include <functional>
 #include <memory>
 
-namespace DebounceEvent {
+#include "BasePin.h"
+
+namespace debounce_event {
 
 constexpr const unsigned long DebounceDelay = 50UL;
 constexpr const unsigned long RepeatDelay = 500UL;
 
-namespace Types {
-    enum event_t {
+class EventHandler;
+
+namespace types {
+
+    enum Event {
         EventNone,
         EventChanged,
         EventPressed,
         EventReleased
     };
 
-    enum mode_t {
+    enum Mode {
         ModePushbutton = 1 << 0,
         ModeSwitch = 1 << 1,
         ModeDefaultHigh = 1 << 2,
         ModeSetPullup = 1 << 3,
         ModeSetPulldown = 1 << 4
     };
+
+    using Pin = std::shared_ptr<BasePin>;
+    using EventCallback = std::function<void(const EventHandler& self, types::Event event, uint8_t count, unsigned long length)>;
+
 }
-
-// base interface for generic pin handler. 
-class PinBase {
-    public:
-        PinBase(unsigned char pin) :
-            pin(pin)
-        {}
-
-        virtual void pinMode(int8_t mode) = 0;
-        virtual void digitalWrite(int8_t val) = 0;
-        virtual int digitalRead() = 0;
-
-        const unsigned char pin;
-};
-
-// real hardware pin
-class DigitalPin : virtual public PinBase {
-    public:
-        DigitalPin(unsigned char pin);
-
-        void pinMode(int8_t mode) final;
-        void digitalWrite(int8_t val) final;
-        int digitalRead() final;
-};
 
 class EventHandler {
 
-
     public:
 
-        // TODO: not used in espurna buttons node
-        using callback_f = std::function<void(EventHandler* self, uint8_t event, uint8_t count, uint16_t length)>;
+        EventHandler(types::Pin pin, int mode = types::ModePushbutton | types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventHandler(types::Pin pin, types::EventCallback callback, int mode = types::ModePushbutton | types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
-        EventHandler(std::shared_ptr<PinBase> pin, int mode = Types::ModePushbutton | Types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        EventHandler(std::shared_ptr<PinBase> pin, callback_f callback, int mode = Types::ModePushbutton | Types::ModeDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-
-        Types::event_t loop();
+        types::Event loop();
         bool pressed();
 
-        const unsigned char getPin() const;
+        const types::Pin getPin() const;
         const int getMode() const;
 
         unsigned long getEventLength();
@@ -101,8 +83,8 @@ class EventHandler {
 
     private:
 
-        std::shared_ptr<PinBase> _pin;
-        callback_f _callback;
+        types::Pin _pin;
+        types::EventCallback _callback;
 
         const int _mode;
 
@@ -124,4 +106,4 @@ class EventHandler {
 };
 
 
-} // namespace DebounceEvent
+} // namespace debounce_event

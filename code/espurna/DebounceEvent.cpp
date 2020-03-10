@@ -20,8 +20,9 @@
 
   ----------------------------------------------------------------------------------
 
-  Modified to include generic INPUT / OUTPUT pin support through a custom interface.
+  Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
+  Modified to include generic INPUT / OUTPUT pin support through a custom interface.
   Definitions are incompatible with DebounceEvent, you should not include it's headers.
 
 */
@@ -31,34 +32,14 @@
 
 #include "libs/DebounceEvent.h"
 
-namespace DebounceEvent {
+namespace debounce_event {
 
-// We need to explicitly call the constructor, because we need to set the const `pin`:
-// https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
-DigitalPin::DigitalPin(unsigned char pin) :
-    PinBase(pin)
-{}
-
-inline void DigitalPin::pinMode(int8_t mode) {
-    ::pinMode(this->pin, mode);
-}
-
-inline void DigitalPin::digitalWrite(int8_t val) {
-    ::digitalWrite(this->pin, val);
-}
-
-inline int DigitalPin::digitalRead() {
-    return ::digitalRead(this->pin);
-}
-
-// TODO: current implementation allows pin == nullptr
-
-EventHandler::EventHandler(std::shared_ptr<PinBase> pin, EventHandler::callback_f callback, int mode, unsigned long debounce_delay, unsigned long repeat) :
+EventHandler::EventHandler(types::Pin pin, types::EventCallback callback, int mode, unsigned long debounce_delay, unsigned long repeat) :
     _pin(pin),
     _callback(callback),
     _mode(mode),
-    _is_switch(mode & Types::ModeSwitch),
-    _default_status(mode & Types::ModeDefaultHigh),
+    _is_switch(mode & types::ModeSwitch),
+    _default_status(mode & types::ModeDefaultHigh),
     _delay(debounce_delay),
     _repeat(repeat),
     _status(false),
@@ -68,9 +49,11 @@ EventHandler::EventHandler(std::shared_ptr<PinBase> pin, EventHandler::callback_
     _event_length(0),
     _event_count(0)
 {
-    if (_mode & Types::ModeSetPullup) {
+    if (!pin) return;
+
+    if (_mode & types::ModeSetPullup) {
         _pin->pinMode(INPUT_PULLUP);
-    } else if (_mode & Types::ModeSetPulldown) {
+    } else if (_mode & types::ModeSetPulldown) {
         // ESP8266 does not have INPUT_PULLDOWN definition, and instead
         // has a GPIO16-specific INPUT_PULLDOWN_16:
         // - https://github.com/esp8266/Arduino/issues/478
@@ -91,7 +74,7 @@ EventHandler::EventHandler(std::shared_ptr<PinBase> pin, EventHandler::callback_
     _status = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_status;
 }
 
-EventHandler::EventHandler(std::shared_ptr<PinBase> pin, int mode, unsigned long delay, unsigned long repeat) :
+EventHandler::EventHandler(types::Pin pin, int mode, unsigned long delay, unsigned long repeat) :
     EventHandler(pin, nullptr, mode, delay, repeat)
 {}
 
@@ -99,8 +82,8 @@ bool EventHandler::pressed() {
     return (_status != _default_status);
 }
 
-const unsigned char EventHandler::getPin() const {
-    return _pin->pin;
+const types::Pin EventHandler::getPin() const {
+    return _pin;
 }
 
 const int EventHandler::getMode() const {
@@ -114,12 +97,14 @@ unsigned long EventHandler::getEventCount() {
     return _event_count;
 }
 
-Types::event_t EventHandler::loop() {
+// TODO: current implementation allows pin == nullptr
+
+types::Event EventHandler::loop() {
 
     static_assert((HIGH) == 1, "Arduino API HIGH is not 1");
     static_assert((LOW) == 0, "Arduino API LOW is not 0");
 
-    auto event = Types::EventNone;
+    auto event = types::EventNone;
     bool status = _pin->digitalRead() == (HIGH);
 
     if (status != _status) {
@@ -134,13 +119,13 @@ Types::event_t EventHandler::loop() {
             _status = !_status;
 
             if (_is_switch) {
-                event = Types::EventChanged;
+                event = types::EventChanged;
             } else {
                 if (_status == _default_status) {
                     _event_length = millis() - _event_start;
                     _ready = true;
                 } else {
-                    event = Types::EventPressed;
+                    event = types::EventPressed;
                     _event_start = millis();
                     _event_length = 0;
                     if (_reset_count) {
@@ -158,15 +143,15 @@ Types::event_t EventHandler::loop() {
     if (_ready && (millis() - _event_start > _repeat)) {
         _ready = false;
         _reset_count = true;
-        event = Types::EventReleased;
+        event = types::EventReleased;
     }
 
-    if (_callback && (event != Types::EventNone)) {
-        _callback(this, event, _event_count, _event_length);
+    if (_callback && (event != types::EventNone)) {
+        _callback(*this, event, _event_count, _event_length);
     }
 
     return event;
 
 }
 
-} // namespace DebounceEvent
+} // namespace debounce_event

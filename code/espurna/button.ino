@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #include "compat.h"
+#include "gpio.h"
 #include "system.h"
 #include "relay.h"
 #include "light.h"
@@ -45,8 +46,8 @@ button_t::button_t(unsigned long actions, unsigned char relayID, button_event_de
     relayID(relayID)
 {}
 
-button_t::button_t(std::shared_ptr<DebounceEvent::PinBase> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
-    event_handler(std::make_unique<DebounceEvent::EventHandler>(pin, mode, delays.debounce, delays.dblclick)),
+button_t::button_t(std::shared_ptr<BasePin> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
+    event_handler(std::make_unique<debounce_event::EventHandler>(pin, mode, delays.debounce, delays.dblclick)),
     event_delays(delays),
     actions(actions),
     relayID(relayID)
@@ -73,14 +74,14 @@ constexpr const uint8_t _buttonMapReleased(uint8_t count, unsigned long length, 
 }
 
 // TODO: button_event_t { event, count, length } ?
-const uint8_t _buttonMapEvent(button_t& button, DebounceEvent::Types::event_t event) {
-    using namespace DebounceEvent;
+const uint8_t _buttonMapEvent(button_t& button, debounce_event::types::Event event) {
+    using namespace debounce_event::types;
     switch (event) {
-        case Types::EventPressed:
+        case EventPressed:
             return BUTTON_EVENT_PRESSED;
-        case Types::EventChanged:
+        case EventChanged:
             return BUTTON_EVENT_CLICK;
-        case Types::EventReleased: {
+        case EventReleased: {
             return _buttonMapReleased(
                 button.event_handler->getEventCount(),
                 button.event_handler->getEventLength(),
@@ -88,7 +89,7 @@ const uint8_t _buttonMapEvent(button_t& button, DebounceEvent::Types::event_t ev
                 button.event_delays.lnglngclick
             );
         }
-        case Types::EventNone:
+        case EventNone:
         default:
             return BUTTON_EVENT_NONE;
     }
@@ -100,10 +101,10 @@ unsigned char buttonCount() {
 
 #if MQTT_SUPPORT
 
-std::bitset<BUTTONS_MAX> _buttons_mqtt_send_all(
+std::bitset<ButtonsMax> _buttons_mqtt_send_all(
     (1 == BUTTON_MQTT_SEND_ALL_EVENTS) ? 0xFFFFFFFFUL : 0UL
 );
-std::bitset<BUTTONS_MAX> _buttons_mqtt_retain(
+std::bitset<ButtonsMax> _buttons_mqtt_retain(
     (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
 );
 
@@ -159,8 +160,8 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     for (unsigned char i=0; i<buttonCount(); i++) {
         JsonArray& button = buttons.createNestedArray();
 
-        if (_buttons[i].event_handler) {
-            button.add(_buttons[i].event_handler.getPin());
+        if (_buttons[i].event_handler && _buttons[i].event_handler.getPin()) {
+            button.add(_buttons[i].event_handler.getPin()->pin);
             button.add(_buttons[i].event_handler.getMode());
         } else {
             button.add(GPIO_NONE);
@@ -313,9 +314,6 @@ void buttonSetup() {
 
         size_t buttons = 0;
 
-        // TODO: no real point of doing this when running with dynamic settings
-        //       if there is limit like RELAYS_MAX - use that
-        //       if not, try to allocate some reasonable amount
         #if BUTTON1_PIN != GPIO_NONE
             ++buttons;
         #endif
@@ -343,7 +341,7 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
-        // TODO: allow to change DebounceEvent::DigitalPin to something else based on config?
+        // TODO: allow to change DigitalPin to something else based on config?
 
         for (unsigned char index = 0; index < buttons; ++index) {
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
@@ -359,7 +357,7 @@ void buttonSetup() {
             };
 
             _buttons.emplace_back(
-                std::make_shared<DebounceEvent::DigitalPin>(pin),
+                std::make_shared<DigitalPin>(pin),
                 getSetting({"btnMode", index}, _buttonMode(index)),
                 getSetting({"btnActions", index}, _buttonConstructActions(index)),
                 getSetting({"btnRelay", index}, _buttonRelay(index)),
@@ -478,7 +476,7 @@ void _buttonLoopGeneric() {
         auto& button = _buttons[id];
         auto event = button.event_handler->loop();
 
-        if (event != DebounceEvent::Types::EventNone) {
+        if (event != debounce_event::types::EventNone) {
             buttonEvent(id, _buttonMapEvent(button, event));
         }
     }

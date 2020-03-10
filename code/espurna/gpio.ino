@@ -10,6 +10,26 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <bitset>
 
+// We need to explicitly call the constructor, because we need to set the const `pin`:
+// https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
+DigitalPin::DigitalPin(unsigned char pin) :
+    BasePin(pin)
+{}
+
+inline void DigitalPin::pinMode(int8_t mode) {
+    ::pinMode(this->pin, mode);
+}
+
+inline void DigitalPin::digitalWrite(int8_t val) {
+    ::digitalWrite(this->pin, val);
+}
+
+inline int DigitalPin::digitalRead() {
+    return ::digitalRead(this->pin);
+}
+
+// --------------------------------------------------------------------------
+
 constexpr const size_t GPIO_PINS = 17;
 
 std::bitset<GPIO_PINS> _gpio_locked;

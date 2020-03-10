@@ -8,11 +8,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "libs/BasePin.h"
 #include "libs/DebounceEvent.h"
 
 #include <memory>
 
-constexpr size_t BUTTONS_MAX = 32;
+constexpr size_t ButtonsPresetMax = 8;
+constexpr size_t ButtonsMax = 32;
 
 struct button_event_delays_t {
     button_event_delays_t();
@@ -27,11 +29,11 @@ struct button_event_delays_t {
 struct button_t {
 
     button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays);
-    button_t(std::shared_ptr<DebounceEvent::PinBase> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
+    button_t(std::shared_ptr<BasePin> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
 
     bool state();
 
-    std::unique_ptr<DebounceEvent::EventHandler> event_handler;
+    std::unique_ptr<debounce_event::EventHandler> event_handler;
     button_event_delays_t event_delays;
 
     const unsigned long actions;

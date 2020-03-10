@@ -49,16 +49,16 @@
 #define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
 
 // compat definitions for DebounceEvent
-#define BUTTON_PUSHBUTTON           DebounceEvent::Types::ModePushbutton
-#define BUTTON_SWITCH               DebounceEvent::Types::ModeSwitch
-#define BUTTON_DEFAULT_HIGH         DebounceEvent::Types::ModeDefaultHigh
-#define BUTTON_SET_PULLUP           DebounceEvent::Types::ModeSetPullup
-#define BUTTON_SET_PULLDOWN         DebounceEvent::Types::ModeSetPulldown
+#define BUTTON_PUSHBUTTON           debounce_event::types::ModePushbutton
+#define BUTTON_SWITCH               debounce_event::types::ModeSwitch
+#define BUTTON_DEFAULT_HIGH         debounce_event::types::ModeDefaultHigh
+#define BUTTON_SET_PULLUP           debounce_event::types::ModeSetPullup
+#define BUTTON_SET_PULLDOWN         debounce_event::types::ModeSetPulldown
 
-#define EVENT_NONE                  DebounceEvent::Types::EventNone
-#define EVENT_CHANGED               DebounceEvent::Types::EventChanged
-#define EVENT_PRESSED               DebounceEvent::Types::EventPressed
-#define EVENT_RELEASED              DebounceEvent::Types::EventReleased
+#define EVENT_NONE                  debounce_event::types::EventNone
+#define EVENT_CHANGED               debounce_event::types::EventChanged
+#define EVENT_PRESSED               debounce_event::types::EventPressed
+#define EVENT_RELEASED              debounce_event::types::EventReleased
 
 
 //------------------------------------------------------------------------------
