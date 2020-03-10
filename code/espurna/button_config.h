@@ -162,6 +162,7 @@ constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
     );
 }
 
+
 constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGLNGCLICK_DELAY :
