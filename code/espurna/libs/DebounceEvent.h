@@ -45,19 +45,33 @@ class EventEmitter;
 
 namespace types {
 
+    enum class Mode {
+        Pushbutton,
+        Switch
+    };
+
+    enum class DefaultState {
+        Low,
+        High
+    };
+
+    enum class PinMode {
+        Input,
+        InputPullup,
+        InputPulldown
+    };
+
+    struct Config {
+        Mode mode;
+        DefaultState default_state;
+        PinMode pin_mode;
+    };
+
     enum Event {
         EventNone,
         EventChanged,
         EventPressed,
         EventReleased
-    };
-
-    enum Config {
-        ConfigPushbutton = 1 << 0,
-        ConfigSwitch = 1 << 1,
-        ConfigDefaultHigh = 1 << 2,
-        ConfigSetPullup = 1 << 3,
-        ConfigSetPulldown = 1 << 4
     };
 
     using Pin = std::shared_ptr<BasePin>;
@@ -69,14 +83,14 @@ class EventEmitter {
 
     public:
 
-        EventEmitter(types::Pin pin, int config = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        EventEmitter(types::Pin pin, types::EventHandler callback, int mode = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(types::Pin pin, const types::Config& config = {types::Mode::Pushbutton, types::DefaultState::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(types::Pin pin, types::EventHandler callback, const types::Config& = {types::Mode::Pushbutton, types::DefaultState::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
         types::Event loop();
         bool isPressed();
 
         const types::Pin getPin() const;
-        const int getConfig() const;
+        const types::Config getConfig() const;
 
         unsigned long getEventLength();
         unsigned long getEventCount();
@@ -86,7 +100,7 @@ class EventEmitter {
         types::Pin _pin;
         types::EventHandler _callback;
 
-        const int _config;
+        const types::Config _config;
 
         const bool _is_switch;
         const bool _default_status;

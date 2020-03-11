@@ -47,8 +47,9 @@ struct button_event_delays_t {
 
 struct button_t {
 
-    button_t(unsigned char relayID, button_actions_t actions, button_event_delays_t delays);
-    button_t(std::shared_ptr<BasePin> pin, int config, unsigned char relayID, button_actions_t actions, button_event_delays_t delays);
+    button_t(unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
+    button_t(std::shared_ptr<BasePin> pin, const debounce_event::types::Config& config, 
+        unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
 
     bool state();
     button_event_t loop();
@@ -63,7 +64,7 @@ struct button_t {
 };
 
 bool buttonState(unsigned char id);
-unsigned char buttonAction(button_actions_t actions, button_event_t event);
+uint16_t buttonAction(unsigned char id, const button_event_t event);
 
 void buttonMQTT(unsigned char id, button_event_t event);
 void buttonEvent(unsigned char id, button_event_t event);

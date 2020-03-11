@@ -54,11 +54,11 @@
 #define BUTTON_MODE_DISPLAY_ON        BUTTON_ACTION_DISPLAY_ON
 
 // compat definitions for DebounceEvent
-#define BUTTON_PUSHBUTTON           debounce_event::types::ConfigPushbutton
-#define BUTTON_SWITCH               debounce_event::types::ConfigSwitch
-#define BUTTON_DEFAULT_HIGH         debounce_event::types::ConfigDefaultHigh
-#define BUTTON_SET_PULLUP           debounce_event::types::ConfigSetPullup
-#define BUTTON_SET_PULLDOWN         debounce_event::types::ConfigSetPulldown
+#define BUTTON_PUSHBUTTON           ButtonMask::Pushbutton
+#define BUTTON_SWITCH               ButtonMask::Switch
+#define BUTTON_DEFAULT_HIGH         ButtonMask::DefaultHigh
+#define BUTTON_SET_PULLUP           ButtonMask::SetPullup
+#define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
 
 // configure which type of event emitter is used
 #define BUTTON_EVENTS_SOURCE_GENERIC               0

@@ -6,6 +6,18 @@ BUTTON MODULE
 
 #pragma once
 
+namespace ButtonMask {
+
+enum {
+    Pushbutton = 1 << 0,
+    Switch = 1 << 1,
+    DefaultHigh = 1 << 2,
+    SetPullup = 1 << 3,
+    SetPulldown = 1 << 4
+};
+
+} // namespace ButtonMask
+
 constexpr const unsigned char _buttonPin(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PIN :
@@ -19,16 +31,16 @@ constexpr const unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr const int _buttonConfig(unsigned char index) {
+constexpr const unsigned char _buttonConfig(unsigned char index) {
     return (
-        (index == 0) ? BUTTON1_CONFIG :
-        (index == 1) ? BUTTON2_CONFIG :
-        (index == 2) ? BUTTON3_CONFIG :
-        (index == 3) ? BUTTON4_CONFIG :
-        (index == 4) ? BUTTON5_CONFIG :
-        (index == 5) ? BUTTON6_CONFIG :
-        (index == 6) ? BUTTON7_CONFIG :
-        (index == 7) ? BUTTON8_CONFIG : (BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH)
+        (index == 0) ? (BUTTON1_CONFIG) :
+        (index == 1) ? (BUTTON2_CONFIG) :
+        (index == 2) ? (BUTTON3_CONFIG) :
+        (index == 3) ? (BUTTON4_CONFIG) :
+        (index == 4) ? (BUTTON5_CONFIG) :
+        (index == 5) ? (BUTTON6_CONFIG) :
+        (index == 6) ? (BUTTON7_CONFIG) :
+        (index == 7) ? (BUTTON8_CONFIG) : (BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH)
     );
 }
 

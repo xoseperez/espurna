@@ -34,12 +34,12 @@
 
 namespace debounce_event {
 
-EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, int config, unsigned long debounce_delay, unsigned long repeat) :
+EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const types::Config& config, unsigned long debounce_delay, unsigned long repeat) :
     _pin(pin),
     _callback(callback),
     _config(config),
-    _is_switch(config & types::ConfigSwitch),
-    _default_status(config & types::ConfigDefaultHigh),
+    _is_switch(config.mode == types::Mode::Switch),
+    _default_status(config.default_state == types::DefaultState::High),
     _delay(debounce_delay),
     _repeat(repeat),
     _status(false),
@@ -51,9 +51,9 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, int con
 {
     if (!pin) return;
 
-    if (_config & types::ConfigSetPullup) {
+    if (_config.pin_mode == types::PinMode::InputPullup) {
         _pin->pinMode(INPUT_PULLUP);
-    } else if (_config & types::ConfigSetPulldown) {
+    } else if (_config.pin_mode == types::PinMode::InputPulldown) {
         // ESP8266 does not have INPUT_PULLDOWN definition, and instead
         // has a GPIO16-specific INPUT_PULLDOWN_16:
         // - https://github.com/esp8266/Arduino/issues/478
@@ -74,7 +74,7 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, int con
     _status = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_status;
 }
 
-EventEmitter::EventEmitter(types::Pin pin, int config, unsigned long delay, unsigned long repeat) :
+EventEmitter::EventEmitter(types::Pin pin, const types::Config& config, unsigned long delay, unsigned long repeat) :
     EventEmitter(pin, nullptr, config, delay, repeat)
 {}
 
@@ -86,7 +86,7 @@ const types::Pin EventEmitter::getPin() const {
     return _pin;
 }
 
-const int EventEmitter::getConfig() const {
+const types::Config EventEmitter::getConfig() const {
     return _config;
 }
 
