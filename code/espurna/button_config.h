@@ -178,26 +178,26 @@ constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
 
 constexpr const bool _buttonMqttSendAllEvents(unsigned char index) {
     return (
-        (index == 0) ? (1 == BUTTON1_MQTT_SEND_ALL_EVENTS ) :
-        (index == 1) ? (1 == BUTTON2_MQTT_SEND_ALL_EVENTS ) :
-        (index == 2) ? (1 == BUTTON3_MQTT_SEND_ALL_EVENTS ) :
-        (index == 3) ? (1 == BUTTON4_MQTT_SEND_ALL_EVENTS ) :
-        (index == 4) ? (1 == BUTTON5_MQTT_SEND_ALL_EVENTS ) :
-        (index == 5) ? (1 == BUTTON6_MQTT_SEND_ALL_EVENTS ) :
-        (index == 6) ? (1 == BUTTON7_MQTT_SEND_ALL_EVENTS ) :
-        (index == 7) ? (1 == BUTTON8_MQTT_SEND_ALL_EVENTS ) : (1 == BUTTON_MQTT_SEND_ALL_EVENTS)
+        (index == 0) ? (1 == BUTTON1_MQTT_SEND_ALL_EVENTS) :
+        (index == 1) ? (1 == BUTTON2_MQTT_SEND_ALL_EVENTS) :
+        (index == 2) ? (1 == BUTTON3_MQTT_SEND_ALL_EVENTS) :
+        (index == 3) ? (1 == BUTTON4_MQTT_SEND_ALL_EVENTS) :
+        (index == 4) ? (1 == BUTTON5_MQTT_SEND_ALL_EVENTS) :
+        (index == 5) ? (1 == BUTTON6_MQTT_SEND_ALL_EVENTS) :
+        (index == 6) ? (1 == BUTTON7_MQTT_SEND_ALL_EVENTS) :
+        (index == 7) ? (1 == BUTTON8_MQTT_SEND_ALL_EVENTS) : (1 == BUTTON_MQTT_SEND_ALL_EVENTS)
     );
 }
 
 constexpr const bool _buttonMqttRetain(unsigned char index) {
     return (
-        (index == 0) ? (1 == BUTTON1_MQTT_RETAIN ) :
-        (index == 1) ? (1 == BUTTON2_MQTT_RETAIN ) :
-        (index == 2) ? (1 == BUTTON3_MQTT_RETAIN ) :
-        (index == 3) ? (1 == BUTTON4_MQTT_RETAIN ) :
-        (index == 4) ? (1 == BUTTON5_MQTT_RETAIN ) :
-        (index == 5) ? (1 == BUTTON6_MQTT_RETAIN ) :
-        (index == 6) ? (1 == BUTTON7_MQTT_RETAIN ) :
-        (index == 7) ? (1 == BUTTON8_MQTT_RETAIN ) : (1 == BUTTON_MQTT_RETAIN)
+        (index == 0) ? (1 == BUTTON1_MQTT_RETAIN) :
+        (index == 1) ? (1 == BUTTON2_MQTT_RETAIN) :
+        (index == 2) ? (1 == BUTTON3_MQTT_RETAIN) :
+        (index == 3) ? (1 == BUTTON4_MQTT_RETAIN) :
+        (index == 4) ? (1 == BUTTON5_MQTT_RETAIN) :
+        (index == 5) ? (1 == BUTTON6_MQTT_RETAIN) :
+        (index == 6) ? (1 == BUTTON7_MQTT_RETAIN) :
+        (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
     );
 }

@@ -44,7 +44,7 @@ struct button_t {
     bool state();
     button_event_t loop();
 
-    std::unique_ptr<debounce_event::EventHandler> event_handler;
+    std::unique_ptr<debounce_event::EventEmitter> event_handler;
     button_event_delays_t event_delays;
 
     const unsigned long actions;

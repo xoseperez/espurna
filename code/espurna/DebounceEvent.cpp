@@ -34,7 +34,7 @@
 
 namespace debounce_event {
 
-EventHandler::EventHandler(types::Pin pin, types::EventCallback callback, int config, unsigned long debounce_delay, unsigned long repeat) :
+EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, int config, unsigned long debounce_delay, unsigned long repeat) :
     _pin(pin),
     _callback(callback),
     _config(config),
@@ -74,32 +74,32 @@ EventHandler::EventHandler(types::Pin pin, types::EventCallback callback, int co
     _status = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_status;
 }
 
-EventHandler::EventHandler(types::Pin pin, int config, unsigned long delay, unsigned long repeat) :
-    EventHandler(pin, nullptr, config, delay, repeat)
+EventEmitter::EventEmitter(types::Pin pin, int config, unsigned long delay, unsigned long repeat) :
+    EventEmitter(pin, nullptr, config, delay, repeat)
 {}
 
-bool EventHandler::pressed() {
+bool EventEmitter::isPressed() {
     return (_status != _default_status);
 }
 
-const types::Pin EventHandler::getPin() const {
+const types::Pin EventEmitter::getPin() const {
     return _pin;
 }
 
-const int EventHandler::getConfig() const {
+const int EventEmitter::getConfig() const {
     return _config;
 }
 
-unsigned long EventHandler::getEventLength() {
+unsigned long EventEmitter::getEventLength() {
     return _event_length;
 }
-unsigned long EventHandler::getEventCount() {
+unsigned long EventEmitter::getEventCount() {
     return _event_count;
 }
 
 // TODO: current implementation allows pin == nullptr
 
-types::Event EventHandler::loop() {
+types::Event EventEmitter::loop() {
 
     static_assert((HIGH) == 1, "Arduino API HIGH is not 1");
     static_assert((LOW) == 0, "Arduino API LOW is not 0");

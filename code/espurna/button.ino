@@ -87,14 +87,14 @@ button_t::button_t(unsigned long actions, unsigned char relayID, button_event_de
 {}
 
 button_t::button_t(std::shared_ptr<BasePin> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
-    event_handler(std::make_unique<debounce_event::EventHandler>(pin, mode, delays.debounce, delays.dblclick)),
+    event_handler(std::make_unique<debounce_event::EventEmitter>(pin, mode, delays.debounce, delays.dblclick)),
     event_delays(delays),
     actions(actions),
     relayID(relayID)
 {}
 
 bool button_t::state() {
-    return event_handler->pressed();
+    return event_handler->isPressed();
 }
 
 button_event_t button_t::loop() {
@@ -263,7 +263,7 @@ String _buttonEventString(button_event_t event) {
             break;
         case button_event_t::None:
         default:
-            ptr = F("(None)");
+            ptr = F("None");
             break;
     }
     return String(ptr);
@@ -271,7 +271,9 @@ String _buttonEventString(button_event_t event) {
 
 void buttonEvent(unsigned char id, button_event_t event) {
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event \"%s\"\n"), id, _buttonEventString(event).c_str());
+    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %d (%s)\n"),
+        id, _buttonEventNumber(event), _buttonEventString(event).c_str()
+    );
     if (event == button_event_t::None) return;
 
     auto& button = _buttons[id];
@@ -346,6 +348,15 @@ void buttonEvent(unsigned char id, button_event_t event) {
 
     }
 
+}
+
+void _buttonConfigure() {
+    #if MQTT_SUPPORT
+        for (unsigned char index = 0; index < _buttons.size(); ++index) {
+            _buttons_mqtt_send_all[index] = getSetting({"btnMqttSendAll", index}, _buttonMqttSendAllEvents(index));
+            _buttons_mqtt_retain[index] = getSetting({"btnMqttRetain", index}, _buttonMqttRetain(index));
+        }
+    #endif
 }
 
 void buttonSetup() {
@@ -448,14 +459,9 @@ void buttonSetup() {
 
     #endif
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
+    _buttonConfigure();
 
-    #if MQTT_SUPPORT
-        for (unsigned char index = 0; index < _buttons.size(); ++index) {
-            _buttons_mqtt_send_all[index] = getSetting({"btnMqttSendAll", index}, _buttonMqttSendAllEvents(index));
-            _buttons_mqtt_retain[index] = getSetting({"btnMqttRetain", index}, _buttonMqttRetain(index));
-        }
-    #endif
+    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
 
     // Websocket Callbacks
     #if WEB_SUPPORT
@@ -467,6 +473,7 @@ void buttonSetup() {
 
     // Register system callbacks
     espurnaRegisterLoop(buttonLoop);
+    espurnaRegisterReload(_buttonConfigure);
 
 }
 

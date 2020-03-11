@@ -53,10 +53,6 @@
 #define BUTTON_MODE_DIM_DOWN          BUTTON_ACTION_DIM_DOWN
 #define BUTTON_MODE_DISPLAY_ON        BUTTON_ACTION_DISPLAY_ON
 
-#define BUTTON_EVENTS_SOURCE_GENERIC               0
-#define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL     1
-#define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
-
 // compat definitions for DebounceEvent
 #define BUTTON_PUSHBUTTON           debounce_event::types::ConfigPushbutton
 #define BUTTON_SWITCH               debounce_event::types::ConfigSwitch
@@ -64,11 +60,10 @@
 #define BUTTON_SET_PULLUP           debounce_event::types::ConfigSetPullup
 #define BUTTON_SET_PULLDOWN         debounce_event::types::ConfigSetPulldown
 
-#define EVENT_NONE                  debounce_event::types::EventNone
-#define EVENT_CHANGED               debounce_event::types::EventChanged
-#define EVENT_PRESSED               debounce_event::types::EventPressed
-#define EVENT_RELEASED              debounce_event::types::EventReleased
-
+// configure which type of event emitter is used
+#define BUTTON_EVENTS_SOURCE_GENERIC               0
+#define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL     1
+#define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
 
 //------------------------------------------------------------------------------
 // ENCODER

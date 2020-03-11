@@ -41,7 +41,7 @@ namespace debounce_event {
 constexpr const unsigned long DebounceDelay = 50UL;
 constexpr const unsigned long RepeatDelay = 500UL;
 
-class EventHandler;
+class EventEmitter;
 
 namespace types {
 
@@ -61,19 +61,19 @@ namespace types {
     };
 
     using Pin = std::shared_ptr<BasePin>;
-    using EventCallback = std::function<void(const EventHandler& self, types::Event event, uint8_t count, unsigned long length)>;
+    using EventHandler = std::function<void(const EventEmitter& self, types::Event event, uint8_t count, unsigned long length)>;
 
 }
 
-class EventHandler {
+class EventEmitter {
 
     public:
 
-        EventHandler(types::Pin pin, int config = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        EventHandler(types::Pin pin, types::EventCallback callback, int mode = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(types::Pin pin, int config = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(types::Pin pin, types::EventHandler callback, int mode = types::ConfigPushbutton | types::ConfigDefaultHigh, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
         types::Event loop();
-        bool pressed();
+        bool isPressed();
 
         const types::Pin getPin() const;
         const int getConfig() const;
@@ -84,7 +84,7 @@ class EventHandler {
     private:
 
         types::Pin _pin;
-        types::EventCallback _callback;
+        types::EventHandler _callback;
 
         const int _config;
 
