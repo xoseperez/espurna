@@ -201,3 +201,18 @@ constexpr const bool _buttonMqttRetain(unsigned char index) {
         (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
     );
 }
+
+constexpr uint32_t _buttonConstructActions(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
+    return (
+        (tripleclick << 20) |
+        (lnglngclick << 16) |
+        (lngclick << 12) |
+        (dblclick << 8) |
+        (click << 4) |
+        pressed
+    );
+}
+
+constexpr uint32_t _buttonConstructActions(unsigned char id) {
+    return _buttonConstructActions(_buttonPress(id), _buttonClick(id), _buttonDoubleClick(id), _buttonLongClick(id), _buttonLongLongClick(id), _buttonTripleClick(id));
+}
