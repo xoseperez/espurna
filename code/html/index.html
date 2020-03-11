@@ -374,16 +374,16 @@
                                 </div>
 
                                 <div class="pure-g module module-btn">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Double click delay</label>
-                                    <input name="btnDelay" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Click repeat delay</label>
+                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
-                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
-                                        Increase this number if you are having trouble to double click the button.
-                                        Set this value to 0 to disable double click. You won't be able to set the device in AP mode manually but your device will respond immediately to button clicks.<br />
-                                        You will have to <strong>reboot the device</strong> after updating for this setting to apply.
+                                        Delay in milliseconds to detect a double or triple click (from 0 to 1000ms).<br />
+                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get the expected event.
+                                        Increase this number if you are having trouble triggering the event.
+                                        Set this value to 0 to disable repeat detection, device will respond immediately to a single button click. When using default configuration, consider that this will disable the SoftAP button action.<br />
+                                        You will have to <strong>reboot the device</strong> to apply this setting.
                                     </div>
                                 </div>
 

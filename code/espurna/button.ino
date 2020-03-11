@@ -371,13 +371,18 @@ void _buttonConfigure() {
     #endif
 }
 
+// TODO: compatibility proxy, fetch global key before indexed
+template<typename T>
+unsigned long _buttonGetSetting(const char* key, unsigned char index, T default_value) {
+    return getSetting(key, getSetting({key, index}, default_value));
+}
+
 void buttonSetup() {
 
     // Backwards compatibility
     moveSetting("btnDelay", "btnRepDel");
 
     // Special hardware cases
-
     #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
         (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
 
@@ -456,11 +461,12 @@ void buttonSetup() {
                 break;
             }
 
+            // TODO: compatibility proxy, fetch global key before indexed
             const button_event_delays_t delays {
-                getSetting({"btnDebDel", index}, _buttonDebounceDelay(index)),
-                getSetting({"btnRepDel", index}, _buttonRepeatDelay(index)),
-                getSetting({"btnLclkDel", index}, _buttonLongClickDelay(index)),
-                getSetting({"btnLLclkDel", index}, _buttonLongLongClickDelay(index))
+                _buttonGetSetting("btnDebDel", index, _buttonDebounceDelay(index)),
+                _buttonGetSetting("btnRepDel", index, _buttonRepeatDelay(index)),
+                _buttonGetSetting("btnLclkDel", index, _buttonLongClickDelay(index)),
+                _buttonGetSetting("btnLLclkDel", index, _buttonLongLongClickDelay(index)),
             };
 
             const button_actions_t actions {
