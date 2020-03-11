@@ -374,8 +374,8 @@
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
 #endif
 
-#ifndef BUTTON_DBLCLICK_DELAY
-#define BUTTON_DBLCLICK_DELAY       500         // Time in ms to wait for a second (or third...) click
+#ifndef BUTTON_REPEAT_DELAY
+#define BUTTON_REPEAT_DELAY         500         // Time in ms to wait for a second (or third...) click
 #endif
 
 #ifndef BUTTON_LNGCLICK_DELAY

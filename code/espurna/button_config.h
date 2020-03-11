@@ -136,16 +136,16 @@ constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
     );
 }
 
-constexpr const unsigned long _buttonDoubleClickDelay(unsigned char index) {
+constexpr const unsigned long _buttonRepeatDelay(unsigned char index) {
     return (
-        (index == 0) ? BUTTON1_DBLCLICK_DELAY :
-        (index == 1) ? BUTTON2_DBLCLICK_DELAY :
-        (index == 2) ? BUTTON3_DBLCLICK_DELAY :
-        (index == 3) ? BUTTON4_DBLCLICK_DELAY :
-        (index == 4) ? BUTTON5_DBLCLICK_DELAY :
-        (index == 5) ? BUTTON6_DBLCLICK_DELAY :
-        (index == 6) ? BUTTON7_DBLCLICK_DELAY :
-        (index == 7) ? BUTTON8_DBLCLICK_DELAY : BUTTON_DBLCLICK_DELAY
+        (index == 0) ? BUTTON1_REPEAT_DELAY :
+        (index == 1) ? BUTTON2_REPEAT_DELAY :
+        (index == 2) ? BUTTON3_REPEAT_DELAY :
+        (index == 3) ? BUTTON4_REPEAT_DELAY :
+        (index == 4) ? BUTTON5_REPEAT_DELAY :
+        (index == 5) ? BUTTON6_REPEAT_DELAY :
+        (index == 6) ? BUTTON7_REPEAT_DELAY :
+        (index == 7) ? BUTTON8_REPEAT_DELAY : BUTTON_REPEAT_DELAY
     );
 }
 
@@ -200,19 +200,4 @@ constexpr const bool _buttonMqttRetain(unsigned char index) {
         (index == 6) ? (1 == BUTTON7_MQTT_RETAIN) :
         (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
     );
-}
-
-constexpr uint32_t _buttonConstructActions(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
-    return (
-        (tripleclick << 20) |
-        (lnglngclick << 16) |
-        (lngclick << 12) |
-        (dblclick << 8) |
-        (click << 4) |
-        pressed
-    );
-}
-
-constexpr uint32_t _buttonConstructActions(unsigned char id) {
-    return _buttonConstructActions(_buttonPress(id), _buttonClick(id), _buttonDoubleClick(id), _buttonLongClick(id), _buttonLongLongClick(id), _buttonTripleClick(id));
 }

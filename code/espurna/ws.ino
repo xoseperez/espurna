@@ -413,7 +413,6 @@ void _wsOnConnected(JsonObject& root) {
     root["sdk"] = ESP.getSdkVersion();
     root["core"] = getCoreVersion();
 
-    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY);
     root["webPort"] = getSetting("webPort", WEB_PORT);
     root["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
     root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);

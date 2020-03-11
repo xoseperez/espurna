@@ -26,34 +26,44 @@ enum class button_event_t {
     TripleClick = 6
 };
 
+struct button_actions_t {
+    uint16_t pressed;
+    uint16_t click;
+    uint16_t dblclick;
+    uint16_t lngclick;
+    uint16_t lnglngclick;
+    uint16_t trplclick;
+};
+
 struct button_event_delays_t {
     button_event_delays_t();
-    button_event_delays_t(unsigned long debounce, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick);
+    button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick);
 
     const unsigned long debounce;
-    const unsigned long dblclick;
+    const unsigned long repeat;
     const unsigned long lngclick;
     const unsigned long lnglngclick;
 };
 
 struct button_t {
 
-    button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays);
-    button_t(std::shared_ptr<BasePin> pin, int config, unsigned long actions, unsigned char relayID, button_event_delays_t delays); 
+    button_t(unsigned char relayID, button_actions_t actions, button_event_delays_t delays);
+    button_t(std::shared_ptr<BasePin> pin, int config, unsigned char relayID, button_actions_t actions, button_event_delays_t delays);
 
     bool state();
     button_event_t loop();
 
-    std::unique_ptr<debounce_event::EventEmitter> event_handler;
-    button_event_delays_t event_delays;
+    std::unique_ptr<debounce_event::EventEmitter> event_emitter;
 
-    const unsigned long actions;
+    const button_event_delays_t event_delays;
+    const button_actions_t actions;
+
     const unsigned char relayID;
 
 };
 
 bool buttonState(unsigned char id);
-unsigned char buttonAction(unsigned char id, button_event_t event);
+unsigned char buttonAction(button_actions_t actions, button_event_t event);
 
 void buttonMQTT(unsigned char id, button_event_t event);
 void buttonEvent(unsigned char id, button_event_t event);

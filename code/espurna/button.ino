@@ -25,14 +25,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
-constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, button_event_t event) {
+constexpr const uint16_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
     return (
-        (event == button_event_t::Pressed) ? ((actions) & 15u) :
-        (event == button_event_t::Click) ? ((actions >> 4) & 15u) :
-        (event == button_event_t::DoubleClick) ? ((actions >> 8) & 15u) :
-        (event == button_event_t::LongClick) ? ((actions >> 12) & 15u) :
-        (event == button_event_t::LongLongClick) ? ((actions >> 16) & 15u) :
-        (event == button_event_t::TripleClick) ? ((actions >> 20) & 15u) : 0
+        (event == button_event_t::Pressed) ? actions.pressed :
+        (event == button_event_t::Click) ? actions.click :
+        (event == button_event_t::DoubleClick) ? actions.dblclick :
+        (event == button_event_t::LongClick) ? actions.lngclick :
+        (event == button_event_t::LongLongClick) ? actions.lnglngclick :
+        (event == button_event_t::TripleClick) ? actions.trplclick : 0U
     );
 }
 
@@ -48,46 +48,57 @@ constexpr const button_event_t _buttonMapReleased(uint8_t count, unsigned long l
     );
 }
 
+button_actions_t _buttonConstructActions(unsigned char index) {
+    return {
+        _buttonPress(index),
+        _buttonClick(index),
+        _buttonDoubleClick(index),
+        _buttonLongClick(index),
+        _buttonLongLongClick(index),
+        _buttonTripleClick(index)
+    };
+}
+
 // -----------------------------------------------------------------------------
 
 button_event_delays_t::button_event_delays_t() :
     debounce(BUTTON_DEBOUNCE_DELAY),
-    dblclick(BUTTON_DBLCLICK_DELAY),
+    repeat(BUTTON_REPEAT_DELAY),
     lngclick(BUTTON_LNGCLICK_DELAY),
     lnglngclick(BUTTON_LNGLNGCLICK_DELAY)
 {}
 
-button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick) :
+button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick) :
     debounce(debounce),
-    dblclick(dblclick),
+    repeat(repeat),
     lngclick(lngclick),
     lnglngclick(lnglngclick)
 {}
 
-button_t::button_t(unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
-    event_handler(nullptr),
+button_t::button_t(unsigned char relayID, button_actions_t actions, button_event_delays_t delays) :
+    event_emitter(nullptr),
     event_delays(delays),
     actions(actions),
     relayID(relayID)
 {}
 
-button_t::button_t(std::shared_ptr<BasePin> pin, int mode, unsigned long actions, unsigned char relayID, button_event_delays_t delays) :
-    event_handler(std::make_unique<debounce_event::EventEmitter>(pin, mode, delays.debounce, delays.dblclick)),
+button_t::button_t(std::shared_ptr<BasePin> pin, int mode, unsigned char relayID, button_actions_t actions, button_event_delays_t delays) :
+    event_emitter(std::make_unique<debounce_event::EventEmitter>(pin, mode, delays.debounce, delays.repeat)),
     event_delays(delays),
     actions(actions),
     relayID(relayID)
 {}
 
 bool button_t::state() {
-    return event_handler->isPressed();
+    return event_emitter->isPressed();
 }
 
 button_event_t button_t::loop() {
-    if (!event_handler) {
+    if (!event_emitter) {
         return button_event_t::None;
     }
 
-    auto event = event_handler->loop();
+    auto event = event_emitter->loop();
     if (event == debounce_event::types::EventNone) {
         return button_event_t::None;
     }
@@ -99,8 +110,8 @@ button_event_t button_t::loop() {
             return button_event_t::Click;
         case debounce_event::types::EventReleased: {
             return _buttonMapReleased(
-                event_handler->getEventCount(),
-                event_handler->getEventLength(),
+                event_emitter->getEventCount(),
+                event_emitter->getEventLength(),
                 event_delays.lngclick,
                 event_delays.lnglngclick
             );
@@ -167,8 +178,15 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     schema.add("Relay");
 
+    schema.add("Press");
+    schema.add("Click");
+    schema.add("Dclk");
+    schema.add("Lclk");
+    schema.add("LLclk");
+    schema.add("Tclk");
+
     schema.add("DebDel");
-    schema.add("DclkDel");
+    schema.add("RepDel");
     schema.add("LclkDel");
     schema.add("LLclkDel");
 
@@ -190,9 +208,18 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
             button.add(GPIO_NONE);
             button.add(static_cast<int>(BUTTON_PUSHBUTTON));
         }
+
         button.add(_buttons[i].relayID);
+
+        button.add(_buttons[i].actions.pressed);
+        button.add(_buttons[i].actions.click);
+        button.add(_buttons[i].actions.dblclick);
+        button.add(_buttons[i].actions.lngclick);
+        button.add(_buttons[i].actions.lnglngclick);
+        button.add(_buttons[i].actions.trplclick);
+
         button.add(_buttons[i].event_delays.debounce);
-        button.add(_buttons[i].event_delays.dblclick);
+        button.add(_buttons[i].event_delays.repeat);
         button.add(_buttons[i].event_delays.lngclick);
         button.add(_buttons[i].event_delays.lnglngclick);
 
@@ -216,7 +243,7 @@ bool buttonState(unsigned char id) {
     return _buttons[id].state();
 }
 
-unsigned char buttonAction(unsigned char id, button_event_t event) {
+uint16_t buttonAction(unsigned char id, button_event_t event) {
     if (id >= _buttons.size()) return 0;
     return _buttonDecodeEventAction(_buttons[id].actions, event);
 }
@@ -347,7 +374,7 @@ void _buttonConfigure() {
 void buttonSetup() {
 
     // Backwards compatibility
-    moveSetting("btnDelay", "btnDclkDel");
+    moveSetting("btnDelay", "btnRepDel");
 
     // Special hardware cases
 
@@ -370,17 +397,22 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
-        // Ignore real button settings, only map CLICK -> relay TOGGLE
+        // Ignore real button delays since we don't use them here
         const auto delays = button_event_delays_t();
-        const auto actions = _buttonConstructActions(
-            BUTTON_ACTION_NONE, BUTTON_ACTION_TOGGLE, BUTTON_ACTION_NONE,
-            BUTTON_ACTION_NONE, BUTTON_ACTION_NONE, BUTTON_ACTION_NONE
-        );
 
         for (unsigned char index = 0; index < buttons; ++index) {
+            const button_actions_t actions {
+                BUTTON_ACTION_NONE,
+                // The only generated event is ::Click
+                getSetting({"btnClick", index}, BUTTON_ACTION_TOGGLE),
+                BUTTON_ACTION_NONE,
+                BUTTON_ACTION_NONE,
+                BUTTON_ACTION_NONE,
+                BUTTON_ACTION_NONE
+            };
             _buttons.emplace_back(
-                getSetting({"btnActions", index}, actions),
                 getSetting({"btnRelay", index}, _buttonRelay(index)),
+                actions,
                 delays
             );
         }
@@ -418,26 +450,36 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
-        // TODO: allow to change DigitalPin to something else based on config?
-
         for (unsigned char index = 0; index < buttons; ++index) {
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
             if (!gpioValid(pin)) {
                 break;
             }
 
-            button_event_delays_t delays {
+            const button_event_delays_t delays {
                 getSetting({"btnDebDel", index}, _buttonDebounceDelay(index)),
-                getSetting({"btnDclkDel", index}, _buttonDoubleClickDelay(index)),
+                getSetting({"btnRepDel", index}, _buttonRepeatDelay(index)),
                 getSetting({"btnLclkDel", index}, _buttonLongClickDelay(index)),
                 getSetting({"btnLLclkDel", index}, _buttonLongLongClickDelay(index))
             };
 
+            const button_actions_t actions {
+                getSetting({"btnPress", index}, _buttonPress(index)),
+                getSetting({"btnClick", index}, _buttonClick(index)),
+                getSetting({"btnDclk", index}, _buttonDoubleClick(index)),
+                getSetting({"btnLclk", index}, _buttonLongClick(index)),
+                getSetting({"btnLLclk", index}, _buttonLongLongClick(index)),
+                getSetting({"btnTclk", index}, _buttonTripleClick(index))
+            };
+
+            // TODO: allow to change DigitalPin to something else based on config?
+            // TODO: encode pin config as separate settings?
+
             _buttons.emplace_back(
                 std::make_shared<DigitalPin>(pin),
                 getSetting({"btnConfig", index}, _buttonConfig(index)),
-                getSetting({"btnActions", index}, _buttonConstructActions(index)),
                 getSetting({"btnRelay", index}, _buttonRelay(index)),
+                actions,
                 delays
             );
         }
