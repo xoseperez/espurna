@@ -25,7 +25,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
-constexpr const debounce_event::types::Config _buttonDecodeConfig(const int bitmask) {
+constexpr const debounce_event::types::Config _buttonDecodeConfig(const unsigned char bitmask) {
     return {
         ((bitmask & ButtonMask::Pushbutton)
             ? debounce_event::types::Mode::Pushbutton
@@ -76,10 +76,10 @@ button_actions_t _buttonConstructActions(unsigned char index) {
 // -----------------------------------------------------------------------------
 
 button_event_delays_t::button_event_delays_t() :
-    debounce(BUTTON_DEBOUNCE_DELAY),
-    repeat(BUTTON_REPEAT_DELAY),
-    lngclick(BUTTON_LNGCLICK_DELAY),
-    lnglngclick(BUTTON_LNGLNGCLICK_DELAY)
+    debounce(_buttonDebounceDelay()),
+    repeat(_buttonRepeatDelay()),
+    lngclick(_buttonLongClickDelay()),
+    lnglngclick(_buttonLongLongClickDelay())
 {}
 
 button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick) :
@@ -172,9 +172,20 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
     }
 }
 
-// XXX: unused! pending webui changes
+#if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
+    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
 
 void _buttonWebSocketOnConnected(JsonObject& root) {
+    root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
+}
+
+#else
+
+void _buttonWebSocketOnConnected(JsonObject& root) {
+    root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
+
+    // XXX: unused! pending webui changes
+
 #if 0
     if (buttonCount() < 1) return;
 
@@ -245,6 +256,8 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     }
 #endif
 }
+
+#endif // BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
 
 bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "btn", 3) == 0);

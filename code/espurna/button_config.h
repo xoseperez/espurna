@@ -135,6 +135,10 @@ constexpr const unsigned char _buttonRelay(unsigned char index) {
     );
 }
 
+constexpr const unsigned long _buttonDebounceDelay() {
+    return BUTTON_DEBOUNCE_DELAY;
+}
+
 constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_DEBOUNCE_DELAY :
@@ -144,8 +148,12 @@ constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
         (index == 4) ? BUTTON5_DEBOUNCE_DELAY :
         (index == 5) ? BUTTON6_DEBOUNCE_DELAY :
         (index == 6) ? BUTTON7_DEBOUNCE_DELAY :
-        (index == 7) ? BUTTON8_DEBOUNCE_DELAY : BUTTON_DEBOUNCE_DELAY
+        (index == 7) ? BUTTON8_DEBOUNCE_DELAY : _buttonDebounceDelay()
     );
+}
+
+constexpr const unsigned long _buttonRepeatDelay() {
+    return BUTTON_REPEAT_DELAY;
 }
 
 constexpr const unsigned long _buttonRepeatDelay(unsigned char index) {
@@ -157,8 +165,12 @@ constexpr const unsigned long _buttonRepeatDelay(unsigned char index) {
         (index == 4) ? BUTTON5_REPEAT_DELAY :
         (index == 5) ? BUTTON6_REPEAT_DELAY :
         (index == 6) ? BUTTON7_REPEAT_DELAY :
-        (index == 7) ? BUTTON8_REPEAT_DELAY : BUTTON_REPEAT_DELAY
+        (index == 7) ? BUTTON8_REPEAT_DELAY : _buttonRepeatDelay()
     );
+}
+
+constexpr const unsigned long _buttonLongClickDelay() {
+    return BUTTON_LNGCLICK_DELAY;
 }
 
 constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
@@ -170,10 +182,13 @@ constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
         (index == 4) ? BUTTON5_LNGCLICK_DELAY :
         (index == 5) ? BUTTON6_LNGCLICK_DELAY :
         (index == 6) ? BUTTON7_LNGCLICK_DELAY :
-        (index == 7) ? BUTTON8_LNGCLICK_DELAY : BUTTON_LNGCLICK_DELAY
+        (index == 7) ? BUTTON8_LNGCLICK_DELAY : _buttonLongClickDelay()
     );
 }
 
+constexpr const unsigned long _buttonLongLongClickDelay() {
+    return BUTTON_LNGLNGCLICK_DELAY;
+}
 
 constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
     return (
@@ -184,7 +199,7 @@ constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
         (index == 4) ? BUTTON5_LNGLNGCLICK_DELAY :
         (index == 5) ? BUTTON6_LNGLNGCLICK_DELAY :
         (index == 6) ? BUTTON7_LNGLNGCLICK_DELAY :
-        (index == 7) ? BUTTON8_LNGLNGCLICK_DELAY : BUTTON_LNGLNGCLICK_DELAY
+        (index == 7) ? BUTTON8_LNGLNGCLICK_DELAY : _buttonLongLongClickDelay()
     );
 }
 
