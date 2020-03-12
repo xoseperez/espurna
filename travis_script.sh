@@ -4,7 +4,9 @@ set -x -e -v
 
 cd code
 
-if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test webui" ]; then
+if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test host" ]; then
+    cd test/ && pio test
+elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test webui" ]; then
     ./build.sh -f environments
 elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test platformio build" ]; then
     # shellcheck disable=SC2086

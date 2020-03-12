@@ -9,12 +9,15 @@ npm_install() {
 
 pio_install() {
     pip install -U platformio
+    pio upgrade --dev
     pio platform update -p
 }
 
 cd code
 
-if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test webui" ]; then
+if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test host" ]; then
+    pio_install
+elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test webui" ]; then
     npm_install
 elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test platformio build" ]; then
     pio_install

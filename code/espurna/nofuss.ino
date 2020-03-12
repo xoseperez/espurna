@@ -30,7 +30,7 @@ void _nofussWebSocketOnVisible(JsonObject& root) {
 }
 
 void _nofussWebSocketOnConnected(JsonObject& root) {
-    root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+    root["nofussEnabled"] = getSetting("nofussEnabled", 1 == NOFUSS_ENABLED);
     root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
 
@@ -47,9 +47,9 @@ void _nofussConfigure() {
         setSetting("nofussEnabled", 0);
         _nofussEnabled = false;
     } else {
-        _nofussEnabled = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+        _nofussEnabled = getSetting("nofussEnabled", 1 == NOFUSS_ENABLED);
     }
-    _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL).toInt();
+    _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL);
     _nofussLastCheck = 0;
 
     if (!_nofussEnabled) {

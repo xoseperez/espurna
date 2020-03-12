@@ -8,12 +8,10 @@
 
 #pragma once
 
-// Set ADC to TOUT pin
-#undef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_TOUT
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "BaseSensor.h"
+#include "../utils.h"
 
 // http://www.eoc-inc.com/genicom/GUVA-S12SD.pdf
 //

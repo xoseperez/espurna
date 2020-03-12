@@ -8,18 +8,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if ALEXA_SUPPORT
 
-#include "relay.h"
-#include "broker.h"
-
-#include <fauxmoESP.h>
-fauxmoESP alexa;
-
 #include <queue>
-typedef struct {
-    unsigned char device_id;
-    bool state;
-    unsigned char value;
-} alexa_queue_element_t;
+
+#include "alexa.h"
+#include "broker.h"
+#include "relay.h"
+#include "ws.h"
+#include "web.h"
+
+fauxmoESP _alexa;
 static std::queue<alexa_queue_element_t> _alexa_queue;
 
 // -----------------------------------------------------------------------------
@@ -36,17 +33,17 @@ void _alexaWebSocketOnConnected(JsonObject& root) {
 }
 
 void _alexaConfigure() {
-    alexa.enable(wifiConnected() && alexaEnabled());
+    _alexa.enable(wifiConnected() && alexaEnabled());
 }
 
 #if WEB_SUPPORT
     bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), String((char *)data));
+        return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), String((char *)data));
     }
 
     bool _alexaRequestCallback(AsyncWebServerRequest *request) {
         String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
-        return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
+        return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
     }
 #endif
 
@@ -60,14 +57,14 @@ void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int va
     }
 
     if (topic.equals(MQTT_TOPIC_CHANNEL)) {
-        alexa.setState(id + 1, value > 0, value);
+        _alexa.setState(id + 1, value > 0, value);
     }
 
     if (topic.equals(MQTT_TOPIC_RELAY)) {
         #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
             if (id > 0) return;
         #endif
-        alexa.setState(id, value, value > 0 ? 255 : 0);
+        _alexa.setState(id, value, value > 0 ? 255 : 0);
     }
 
 }
@@ -76,7 +73,7 @@ void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int va
 // -----------------------------------------------------------------------------
 
 bool alexaEnabled() {
-    return (getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1);
+    return getSetting<bool>("alexaEnabled", 1 == ALEXA_ENABLED);
 }
 
 void alexaSetup() {
@@ -85,8 +82,8 @@ void alexaSetup() {
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
     // Basic fauxmoESP configuration
-    alexa.createServer(!WEB_SUPPORT);
-    alexa.setPort(80);
+    _alexa.createServer(!WEB_SUPPORT);
+    _alexa.setPort(80);
 
     // Use custom alexa hostname if defined, device hostname otherwise
     String hostname = getSetting("alexaName", ALEXA_HOSTNAME);
@@ -98,11 +95,11 @@ void alexaSetup() {
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // Global switch
-        alexa.addDevice(hostname.c_str());
+        _alexa.addDevice(hostname.c_str());
 
         // For each channel
         for (unsigned char i = 1; i <= lightChannels(); i++) {
-            alexa.addDevice((hostname + " " + i).c_str());
+            _alexa.addDevice((hostname + " " + i).c_str());
         }
 
     // Relays
@@ -110,10 +107,10 @@ void alexaSetup() {
 
         unsigned int relays = relayCount();
         if (relays == 1) {
-            alexa.addDevice(hostname.c_str());
+            _alexa.addDevice(hostname.c_str());
         } else {
             for (unsigned int i=1; i<=relays; i++) {
-                alexa.addDevice((hostname + " " + i).c_str());
+                _alexa.addDevice((hostname + " " + i).c_str());
             }
         }
 
@@ -140,7 +137,7 @@ void alexaSetup() {
     });
 
     // Callback
-    alexa.onSetState([&](unsigned char device_id, const char * name, bool state, unsigned char value) {
+    _alexa.onSetState([&](unsigned char device_id, const char * name, bool state, unsigned char value) {
         alexa_queue_element_t element;
         element.device_id = device_id;
         element.state = state;
@@ -159,7 +156,7 @@ void alexaSetup() {
 
 void alexaLoop() {
 
-    alexa.handle();
+    _alexa.handle();
 
     while (!_alexa_queue.empty()) {
 

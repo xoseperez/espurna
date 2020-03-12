@@ -8,16 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+#include "ota.h"
 #include "system.h"
 #include "utils.h"
-#include "ota.h"
-
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <Hash.h>
-#include <FS.h>
-#include <AsyncJson.h>
-#include <ArduinoJson.h>
+#include "web.h"
 
 #if WEB_EMBEDDED
 
@@ -492,11 +486,12 @@ void webRequestRegister(web_request_callback_f callback) {
     _web_request_callbacks.push_back(callback);
 }
 
-unsigned int webPort() {
+uint16_t webPort() {
     #if WEB_SSL_ENABLED
         return 443;
     #else
-        return getSetting("webPort", WEB_PORT).toInt();
+        constexpr const uint16_t defaultValue(WEB_PORT);
+        return getSetting("webPort", defaultValue);
     #endif
 }
 

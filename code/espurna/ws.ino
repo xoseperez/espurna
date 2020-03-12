@@ -8,15 +8,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
-#include <Ticker.h>
 #include <vector>
 
 #include "system.h"
+#include "web.h"
 #include "ws.h"
 #include "ws_internal.h"
+
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");
@@ -155,7 +153,7 @@ bool _wsStore(const String& key, const String& value) {
         }
     }
 
-    if (value != getSetting(key)) {
+    if (!hasSetting(key) || value != getSetting(key)) {
         return setSetting(key, value);
     }
 
@@ -167,19 +165,24 @@ bool _wsStore(const String& key, const String& value) {
 // Store indexed key (key0, key1, etc.) from array
 // -----------------------------------------------------------------------------
 
-bool _wsStore(const String& key, JsonArray& value) {
+bool _wsStore(const String& key, JsonArray& values) {
 
     bool changed = false;
 
     unsigned char index = 0;
-    for (auto element : value) {
-        if (_wsStore(key + index, element.as<String>())) changed = true;
-        index++;
+    for (auto& element : values) {
+        const auto value = element.as<String>();
+        const auto keyobj = settings_key_t {key, index};
+        if (!hasSetting(keyobj) || value != getSetting(keyobj)) {
+            setSetting(keyobj, value);
+            changed = true;
+        }
+        ++index;
     }
 
     // Delete further values
-    for (unsigned char i=index; i<SETTINGS_MAX_LIST_COUNT; i++) {
-        if (!delSetting(key, index)) break;
+    for (unsigned char next_index=index; next_index < SETTINGS_MAX_LIST_COUNT; ++next_index) {
+        if (!delSetting({key, next_index})) break;
         changed = true;
     }
 
@@ -227,6 +230,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     const char* action = root["action"];
     if (action) {
+
+        if (strcmp(action, "ping") == 0) {
+            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            return;
+        }
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
@@ -405,11 +413,11 @@ void _wsOnConnected(JsonObject& root) {
     root["sdk"] = ESP.getSdkVersion();
     root["core"] = getCoreVersion();
 
-    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-    root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-    root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY);
+    root["webPort"] = getSetting("webPort", WEB_PORT);
+    root["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
+    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
+    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 void wsSend(JsonObject& root) {

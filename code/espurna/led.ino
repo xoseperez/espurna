@@ -6,70 +6,96 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-// -----------------------------------------------------------------------------
-// LED
-// -----------------------------------------------------------------------------
-
 #if LED_SUPPORT
 
-#include "relay.h"
 #include "broker.h"
+#include "relay.h"
 
-typedef struct {
-    unsigned char pin;
-    bool reverse;
-    unsigned char mode;
-    unsigned char relay;
-} led_t;
+#include "led.h"
+#include "led_config.h"
+
+// LED helper class
+
+led_t::led_t() :
+    pin(GPIO_NONE),
+    inverse(false),
+    mode(LED_MODE_MANUAL),
+    relayID(0)
+{}
+
+led_t::led_t(unsigned char id) :
+    pin(_ledPin(id)),
+    inverse(_ledInverse(id)),
+    mode(_ledMode(id)),
+    relayID(_ledRelay(id))
+{
+    if (pin != GPIO_NONE) {
+        pinMode(pin, OUTPUT);
+    }
+}
+
+bool led_t::status() {
+    bool result = digitalRead(pin);
+    return inverse ? !result : result;
+}
+
+bool led_t::status(bool new_status) {
+    digitalWrite(pin, inverse ? !new_status : new_status);
+    return new_status;
+}
+
+bool led_t::toggle() {
+    return status(!status());
+}
+
+led_delay_t::led_delay_t(unsigned long on_ms, unsigned long off_ms) :
+    on(microsecondsToClockCycles(on_ms * 1000)),
+    off(microsecondsToClockCycles(off_ms * 1000))
+{}
+
+// For relay-based modes
+bool _led_update = false;
+
+// For network-based modes, cycle ON & OFF (time in milliseconds)
+// XXX: internals convert these to clock cycles, delay cannot be longer than 25000 / 50000 ms
+const led_delay_t _ledDelays[] {
+    {100, 100},   // Autoconfig
+    {100, 4900},  // Connected
+    {4900, 100},  // Connected (inverse)
+    {100, 900},   // Config / AP
+    {900, 100},   // Config / AP (inverse)
+    {500, 500}    // Idle
+};
 
 std::vector<led_t> _leds;
-bool _led_update = false;            // For relay-based modes
 
 // -----------------------------------------------------------------------------
 
-bool _ledStatus(unsigned char id) {
-    if (id >= _ledCount()) return false;
-    bool status = digitalRead(_leds[id].pin);
-    return _leds[id].reverse ? !status : status;
+unsigned char _ledCount() {
+    return _leds.size();
 }
 
-bool _ledStatus(unsigned char id, bool status) {
-    if (id >=_ledCount()) return false;
-    digitalWrite(_leds[id].pin, _leds[id].reverse ? !status : status);
-    return status;
+const led_delay_t& _ledModeToDelay(LedMode mode) {
+    static_assert(
+        (sizeof(_ledDelays) / sizeof(_ledDelays[0])) <= static_cast<int>(LedMode::None),
+        "LedMode mapping out-of-bounds"
+    );
+    return _ledDelays[static_cast<int>(mode)];
 }
 
-bool _ledToggle(unsigned char id) {
-    if (id >= _ledCount()) return false;
-    return _ledStatus(id, !_ledStatus(id));
-}
+void _ledBlink(led_t& led, const led_delay_t& delays) {
+    static auto clock_last = ESP.getCycleCount();
+    static auto delay_for = delays.on;
 
-unsigned char _ledMode(unsigned char id) {
-    if (id >= _ledCount()) return false;
-    return _leds[id].mode;
-}
-
-void _ledMode(unsigned char id, unsigned char mode) {
-    if (id >= _ledCount()) return;
-    _leds[id].mode = mode;
-}
-
-unsigned char _ledRelay(unsigned char id) {
-    if (id >= _ledCount()) return false;
-    return _leds[id].relay;
-}
-
-void _ledRelay(unsigned char id, unsigned char relay) {
-    if (id >= _ledCount()) return;
-    _leds[id].relay = relay;
-}
-
-void _ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) {
-    if (id >= _ledCount()) return;
-    static unsigned long next = millis();
-    if (next < millis()) {
-        next += (_ledToggle(id) ? delayOn : delayOff);
+    const auto clock_current = ESP.getCycleCount();
+    if (clock_current - clock_last >= delay_for) {
+        delay_for = led.toggle() ? delays.on : delays.off;
+        clock_last = clock_current;
     }
+}
+
+inline void _ledBlink(led_t& led, const LedMode mode) {
+    _ledBlink(led, _ledModeToDelay(mode));
 }
 
 #if WEB_SUPPORT
@@ -85,12 +111,12 @@ void _ledWebSocketOnVisible(JsonObject& root) {
 }
 
 void _ledWebSocketOnConnected(JsonObject& root) {
-    if (_ledCount() == 0) return;
+    if (!_ledCount()) return;
     JsonArray& leds = root.createNestedArray("ledConfig");
-    for (byte i=0; i<_ledCount(); i++) {
+    for (unsigned char id = 0; id < _ledCount(); ++id) {
         JsonObject& led = leds.createNestedObject();
-        led["mode"] = getSetting("ledMode", i, "").toInt();
-        led["relay"] = getSetting("ledRelay", i, "").toInt();
+        led["mode"] = getSetting({"ledMode", id}, _leds[id].mode);
+        led["relay"] = getSetting<unsigned char>({"ledRelay", id}, _leds[id].relayID);
     }
 }
 
@@ -118,28 +144,28 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
 
     if (type == MQTT_MESSAGE_EVENT) {
 
-        // Match topic
-        String t = mqttMagnitude((char *) topic);
-        if (!t.startsWith(MQTT_TOPIC_LED)) return;
+        // Only want `led/+/<MQTT_SETTER>`
+        const String magnitude = mqttMagnitude((char *) topic);
+        if (!magnitude.startsWith(MQTT_TOPIC_LED)) return;
 
-        // Get led ID
-        unsigned int ledID = t.substring(strlen(MQTT_TOPIC_LED)+1).toInt();
+        // Get led ID from after the slash when t is `led/<LED_ID>`
+        unsigned int ledID = magnitude.substring(strlen(MQTT_TOPIC_LED) + 1).toInt();
         if (ledID >= _ledCount()) {
             DEBUG_MSG_P(PSTR("[LED] Wrong ledID (%d)\n"), ledID);
             return;
         }
 
         // Check if LED is managed
-        if (_ledMode(ledID) != LED_MODE_MQTT) return;
+        if (_leds[ledID].mode != LED_MODE_MANUAL) return;
 
-        // get value
+        // Get value based on relays payload logic (0 / off, 1 / on, 2 / toggle)
         const auto value = relayParsePayload(payload);
 
-        // Action to perform
+        // Action to perform is also based on relay constants ... TODO generic enum?
         if (value == RelayStatus::TOGGLE) {
-            _ledToggle(ledID);
+            _leds[ledID].toggle();
         } else {
-            _ledStatus(ledID, (value == RelayStatus::ON));
+            _leds[ledID].status(value == RelayStatus::ON);
         }
 
     }
@@ -147,56 +173,53 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
 }
 #endif
 
-unsigned char _ledCount() {
-    return _leds.size();
-}
-
 void _ledConfigure() {
-    for (unsigned int i=0; i < _leds.size(); i++) {
-        _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
-        _ledRelay(i, getSetting("ledRelay", i, _ledRelay(i)).toInt());
+    for (unsigned char id = 0; id < _leds.size(); ++id) {
+        _leds[id].mode = getSetting({"ledMode", id}, _ledMode(id));
+        _leds[id].relayID = getSetting<unsigned char>({"ledRelay", id}, _ledRelay(id));
     }
     _led_update = true;
 }
 
 // -----------------------------------------------------------------------------
 
-void ledUpdate(bool value) {
-    _led_update = value;
+void ledUpdate(bool do_update) {
+    _led_update = do_update;
 }
 
 void ledSetup() {
 
+    size_t leds = 0;
+
     #if LED1_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE, LED1_RELAY - 1 });
+        ++leds;
     #endif
     #if LED2_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE, LED2_RELAY - 1 });
+        ++leds;
     #endif
     #if LED3_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE, LED3_RELAY - 1 });
+        ++leds;
     #endif
     #if LED4_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY - 1 });
+        ++leds;
     #endif
     #if LED5_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY - 1 });
+        ++leds;
     #endif
     #if LED6_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY - 1 });
+        ++leds;
     #endif
     #if LED7_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY - 1 });
+        ++leds;
     #endif
     #if LED8_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY - 1 });
+        ++leds;
     #endif
 
-    for (unsigned int i=0; i < _leds.size(); i++) {
-        if (!hasSetting("ledMode", i)) setSetting("ledMode", i, _leds[i].mode);
-        if (!hasSetting("ledRelay", i)) setSetting("ledRelay", i, _leds[i].relay);
-        pinMode(_leds[i].pin, OUTPUT);
-        _ledStatus(i, false);
+    _leds.reserve(leds);
+
+    for (unsigned char id=0; id < leds; ++id) {
+        _leds.emplace_back(id);
     }
 
     _ledConfigure();
@@ -223,69 +246,68 @@ void ledSetup() {
     espurnaRegisterLoop(ledLoop);
     espurnaRegisterReload(_ledConfigure);
 
-
 }
 
 void ledLoop() {
 
-    uint8_t wifi_state = wifiState();
+    const auto wifi_state = wifiState();
 
-    for (unsigned char i=0; i<_leds.size(); i++) {
+    for (auto& led : _leds) {
 
-        if (_ledMode(i) == LED_MODE_WIFI) {
+        if (led.mode == LED_MODE_WIFI) {
 
-            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
-                _ledBlink(i, 100, 100);
+            if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
+                _ledBlink(led, LedMode::NetworkAutoconfig);
             } else if (wifi_state & WIFI_STATE_STA) {
-                _ledBlink(i, 4900, 100);
+                _ledBlink(led, LedMode::NetworkConnected);
             } else if (wifi_state & WIFI_STATE_AP) {
-                _ledBlink(i, 900, 100);
+                _ledBlink(led, LedMode::NetworkConfig);
             } else {
-                _ledBlink(i, 500, 500);
+                _ledBlink(led, LedMode::NetworkIdle);
             }
 
         }
 
-        if (_ledMode(i) == LED_MODE_FINDME_WIFI) {
+        if (led.mode == LED_MODE_FINDME_WIFI) {
 
-            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
-                _ledBlink(i, 100, 100);
+            if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
+                _ledBlink(led, LedMode::NetworkAutoconfig);
             } else if (wifi_state & WIFI_STATE_STA) {
-                if (relayStatus(_leds[i].relay)) {
-                    _ledBlink(i, 4900, 100);
+                if (relayStatus(led.relayID)) {
+                    _ledBlink(led, LedMode::NetworkConnected);
                 } else {
-                    _ledBlink(i, 100, 4900);
+                    _ledBlink(led, LedMode::NetworkConnectedInverse);
                 }
             } else if (wifi_state & WIFI_STATE_AP) {
-                if (relayStatus(_leds[i].relay)) {
-                    _ledBlink(i, 900, 100);
+                if (relayStatus(led.relayID)) {
+                    _ledBlink(led, LedMode::NetworkConfig);
                 } else {
-                    _ledBlink(i, 100, 900);
+                    _ledBlink(led, LedMode::NetworkConfigInverse);
                 }
             } else {
-                _ledBlink(i, 500, 500);
+                _ledBlink(led, LedMode::NetworkIdle);
             }
 
         }
 
-        if (_ledMode(i) == LED_MODE_RELAY_WIFI) {
+        if (led.mode == LED_MODE_RELAY_WIFI) {
 
-            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
-                _ledBlink(i, 100, 100);
+            if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
+                _ledBlink(led, LedMode::NetworkAutoconfig);
             } else if (wifi_state & WIFI_STATE_STA) {
-                if (relayStatus(_leds[i].relay)) {
-                    _ledBlink(i, 100, 4900);
+                if (relayStatus(led.relayID)) {
+                    _ledBlink(led, LedMode::NetworkConnected);
                 } else {
-                    _ledBlink(i, 4900, 100);
+                    _ledBlink(led, LedMode::NetworkConnectedInverse);
                 }
             } else if (wifi_state & WIFI_STATE_AP) {
-                if (relayStatus(_leds[i].relay)) {
-                    _ledBlink(i, 100, 900);
+                if (relayStatus(led.relayID)) {
+                    _ledBlink(led, LedMode::NetworkConfig);
                 } else {
-                    _ledBlink(i, 900, 100);
+                    _ledBlink(led, LedMode::NetworkConfigInverse);
                 }
             } else {
-                _ledBlink(i, 500, 500);
+                _ledBlink(led, LedMode::NetworkIdle);
             }
 
         }
@@ -293,42 +315,42 @@ void ledLoop() {
         // Relay-based modes, update only if relays have been updated
         if (!_led_update) continue;
 
-        if (_ledMode(i) == LED_MODE_FOLLOW) {
-            _ledStatus(i, relayStatus(_leds[i].relay));
+        if (led.mode == LED_MODE_FOLLOW) {
+            led.status(relayStatus(led.relayID));
         }
 
-        if (_ledMode(i) == LED_MODE_FOLLOW_INVERSE) {
-            _ledStatus(i, !relayStatus(_leds[i].relay));
+        if (led.mode == LED_MODE_FOLLOW_INVERSE) {
+            led.status(!relayStatus(led.relayID));
         }
 
-        if (_ledMode(i) == LED_MODE_FINDME) {
+        if (led.mode == LED_MODE_FINDME) {
             bool status = true;
-            for (unsigned char k=0; k<relayCount(); k++) {
-                if (relayStatus(k)) {
+            for (unsigned char relayID = 0; relayID < relayCount(); ++relayID) {
+                if (relayStatus(relayID)) {
                     status = false;
                     break;
                 }
             }
-            _ledStatus(i, status);
+            led.status(status);
         }
 
-        if (_ledMode(i) == LED_MODE_RELAY) {
+        if (led.mode == LED_MODE_RELAY) {
             bool status = false;
-            for (unsigned char k=0; k<relayCount(); k++) {
-                if (relayStatus(k)) {
+            for (unsigned char relayID = 0; relayID < relayCount(); ++relayID) {
+                if (relayStatus(relayID)) {
                     status = true;
                     break;
                 }
             }
-            _ledStatus(i, status);
+            led.status(status);
         }
 
-        if (_ledMode(i) == LED_MODE_ON) {
-            _ledStatus(i, true);
+        if (led.mode == LED_MODE_ON) {
+            led.status(true);
         }
 
-        if (_ledMode(i) == LED_MODE_OFF) {
-            _ledStatus(i, false);
+        if (led.mode == LED_MODE_OFF) {
+            led.status(false);
         }
 
     }

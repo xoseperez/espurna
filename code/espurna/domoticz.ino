@@ -8,11 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DOMOTICZ_SUPPORT
 
-#include "relay.h"
 #include "broker.h"
-
-#include <bitset>
-#include <ArduinoJson.h>
+#include "domoticz.h"
+#include "mqtt.h"
+#include "relay.h"
 
 bool _dcz_enabled = false;
 std::bitset<RELAYS_MAX> _dcz_relay_state;
@@ -21,9 +20,13 @@ std::bitset<RELAYS_MAX> _dcz_relay_state;
 // Private methods
 //------------------------------------------------------------------------------
 
+unsigned char _domoticzIdx(unsigned char relayID, unsigned char defaultValue = 0) {
+    return getSetting({"dczRelayIdx", relayID}, defaultValue);
+}
+
 int _domoticzRelay(unsigned int idx) {
     for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
-        if (domoticzIdx(relayID) == idx) {
+        if (_domoticzIdx(relayID) == idx) {
             return relayID;
         }
     }
@@ -32,7 +35,7 @@ int _domoticzRelay(unsigned int idx) {
 
 void _domoticzMqttSubscribe(bool value) {
 
-    String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+    const String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
     if (value) {
         mqttSubscribeRaw(dczTopicOut.c_str());
     } else {
@@ -117,7 +120,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
 
     if (!_dcz_enabled) return;
 
-    String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+    const String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
     if (type == MQTT_CONNECT_EVENT) {
 
@@ -147,7 +150,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
             String stype = root["stype"];
 
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                if (stype.startsWith("RGB") && (domoticzIdx(0) == idx)) {
+                if (stype.startsWith("RGB") && (_domoticzIdx(0) == idx)) {
                     _domoticzLight(idx, root);
                 }
             #endif
@@ -201,13 +204,13 @@ void _domoticzWebSocketOnVisible(JsonObject& root) {
 
 void _domoticzWebSocketOnConnected(JsonObject& root) {
 
-    root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    root["dczEnabled"] = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
     JsonArray& relays = root.createNestedArray("dczRelays");
     for (unsigned char i=0; i<relayCount(); i++) {
-        relays.add(domoticzIdx(i));
+        relays.add(_domoticzIdx(i));
     }
 
     #if SENSOR_SUPPORT
@@ -225,7 +228,7 @@ void _domoticzRelayConfigure(size_t size) {
 }
 
 void _domoticzConfigure() {
-    bool enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    const bool enabled = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
     if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
 
     _domoticzRelayConfigure(relayCount());
@@ -238,11 +241,11 @@ void _domoticzConfigure() {
 
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue) {
     if (!_dcz_enabled) return;
-    unsigned int idx = getSetting(key).toInt();
+    const auto idx = getSetting<int>(key, 0);
     if (idx > 0) {
         char payload[128];
-        snprintf(payload, sizeof(payload), "{\"idx\": %u, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
-        mqttSendRaw(getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
+        snprintf(payload, sizeof(payload), "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
+        mqttSendRaw(getSetting<String>("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
     }
 }
 
@@ -261,12 +264,6 @@ void domoticzSendRelays() {
     for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
         domoticzSendRelay(relayID, relayStatus(relayID));
     }
-}
-
-unsigned int domoticzIdx(unsigned char relayID) {
-    char buffer[15];
-    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
-    return getSetting(buffer).toInt();
 }
 
 void domoticzSetup() {

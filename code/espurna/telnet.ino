@@ -9,65 +9,16 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
 AsyncBufferedClient based on ESPAsyncTCPbuffer, distributed with the ESPAsyncTCP
 (https://github.com/me-no-dev/ESPAsyncTCP/blob/master/src/ESPAsyncTCPbuffer.cpp)
+Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+Updated to use WiFiServer and support reverse connections by Niek van der Maas < mail at niekvandermaas dot nl>
 
 */
 
 #if TELNET_SUPPORT
 
-#define TELNET_IAC  0xFF
-#define TELNET_XEOF 0xEC
-
-#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-    using TTelnetServer = WiFiServer;
-    using TTelnetClient = WiFiClient;
-
-#elif TELNET_SERVER == TELNET_SERVER_ASYNC
-    #include <ESPAsyncTCP.h>
-    #include <Schedule.h>
-    using TTelnetServer = AsyncServer;
-
-#if TELNET_SERVER_ASYNC_BUFFERED
-    #include <list>
-
-    struct AsyncBufferedClient {
-        constexpr static const size_t BUFFERS_MAX = 5;
-        using buffer_t = std::vector<uint8_t>;
-
-        AsyncBufferedClient(AsyncClient* client) :
-            _client(client)
-        {
-            _client->onAck(_s_onAck, this);
-            _client->onPoll(_s_onPoll, this);
-        }
-
-        void _addBuffer();
-        static void _trySend(AsyncBufferedClient* client);
-        static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
-        static void _s_onPoll(void* client_ptr, AsyncClient* client);
-
-        size_t write(char c);
-        size_t write(const char* data, size_t size=0);
-
-        void flush();
-        size_t available();
-
-        bool connect(const char *host, uint16_t port);
-        void close(bool now = false);
-        bool connected();
-
-        std::unique_ptr<AsyncClient> _client;
-
-        std::list<buffer_t> _buffers;
-    };
-
-    using TTelnetClient = AsyncBufferedClient;
-
-#else
-    using TTelnetClient = AsyncClient;
-
-#endif // TELNET_SERVER_ASYNC_BUFFERED
-
-#endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
+#include <memory>
+#include "telnet.h"
 
 TTelnetServer _telnetServer(TELNET_PORT);
 std::unique_ptr<TTelnetClient> _telnetClients[TELNET_MAX_CLIENTS];
@@ -86,8 +37,8 @@ bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _telnetWebSocketOnConnected(JsonObject& root) {
-    root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
-    root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+    root["telnetSTA"] = getSetting("telnetSTA", 1 == TELNET_STA);
+    root["telnetAuth"] = getSetting("telnetAuth", 1 == TELNET_AUTHENTICATION);
 }
 
 #endif
@@ -179,6 +130,11 @@ void _telnetDisconnect(unsigned char clientId) {
 }
 
 #if TELNET_SERVER_ASYNC_BUFFERED
+
+AsyncBufferedClient::AsyncBufferedClient(AsyncClient* client) : _client(client) {
+    _client->onAck(_s_onAck, this);
+    _client->onPoll(_s_onPoll, this);
+}
 
 void AsyncBufferedClient::_trySend(AsyncBufferedClient* client) {
     while (!client->_buffers.empty()) {
@@ -345,11 +301,13 @@ void _telnetNotifyConnected(unsigned char i) {
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
     // If there is no terminal support automatically dump info and crash data
-    #if TERMINAL_SUPPORT == 0
+    #if DEBUG_SUPPORT
+    #if not TERMINAL_SUPPORT
         info();
         wifiDebug();
         crashDump();
         crashClear();
+    #endif
     #endif
 
     #ifdef ESPURNA_CORE
@@ -385,7 +343,7 @@ void _telnetLoop() {
                     #ifdef ESPURNA_CORE
                         bool telnetSTA = true;
                     #else
-                        bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+                        bool telnetSTA = getSetting("telnetSTA", 1 == TELNET_STA);
                     #endif
 
                     if (!telnetSTA) {
@@ -457,7 +415,7 @@ void _telnetNewClient(AsyncClient* client) {
         #ifdef ESPURNA_CORE
             bool telnetSTA = true;
         #else
-            bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+            bool telnetSTA = getSetting("telnetSTA", 1 == TELNET_STA);
         #endif
 
         if (!telnetSTA) {
@@ -494,11 +452,24 @@ void _telnetNewClient(AsyncClient* client) {
 // -----------------------------------------------------------------------------
 
 bool telnetConnected() {
-    for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
-        if (_telnetClients[i] && _telnetClients[i]->connected()) return true;
+    for (auto& client : _telnetClients) {
+        if (client && client->connected()) return true;
     }
     return false;
 }
+
+#if DEBUG_TELNET_SUPPORT
+
+bool telnetDebugSend(const char* prefix, const char* data) {
+    if (!telnetConnected()) return false;
+    bool result = false;
+    if (prefix && (prefix[0] != '\0')) {
+        result = _telnetWrite(prefix) > 0;
+    }
+    return (_telnetWrite(data) > 0) || result;
+}
+
+#endif // DEBUG_TELNET_SUPPORT
 
 unsigned char telnetWrite(unsigned char ch) {
     char data[1] = {ch};
@@ -506,10 +477,11 @@ unsigned char telnetWrite(unsigned char ch) {
 }
 
 void _telnetConfigure() {
-    _telnetAuth = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+    _telnetAuth = getSetting("telnetAuth", 1 == TELNET_AUTHENTICATION);
 }
 
 void telnetSetup() {
+
     #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
         espurnaRegisterLoop(_telnetLoop);
         _telnetServer.setNoDelay(true);
@@ -517,7 +489,7 @@ void telnetSetup() {
     #else
         _telnetServer.onClient([](void *s, AsyncClient* c) {
             _telnetNewClient(c);
-        }, 0);
+        }, nullptr);
         _telnetServer.begin();
     #endif
 
@@ -552,9 +524,7 @@ void telnetSetup() {
     espurnaRegisterReload(_telnetConfigure);
     _telnetConfigure();
 
-    DEBUG_MSG_P(PSTR("[TELNET] %s server, Listening on port %d\n"),
-        (TELNET_SERVER == TELNET_SERVER_WIFISERVER) ? "Sync" : "Async",
-        TELNET_PORT);
+    DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);
 
 }
 

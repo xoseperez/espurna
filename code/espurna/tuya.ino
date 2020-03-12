@@ -467,8 +467,8 @@ namespace Tuya {
         initBrokerCallback();
 
         for (unsigned char n = 0; n < switchStates.capacity(); ++n) {
-            if (!hasSetting("tuyaSwitch", n)) break;
-            uint8_t dp = getSetting("tuyaSwitch", n, 0).toInt();
+            if (!hasSetting({"tuyaSwitch", n})) break;
+            const auto dp = getSetting({"tuyaSwitch", n}, 0);
             switchStates.pushOrUpdate(dp, false);
         }
         relaySetupDummy(switchStates.size());
@@ -489,8 +489,8 @@ namespace Tuya {
             initBrokerCallback();
 
             for (unsigned char n = 0; n < channelStates.capacity(); ++n) {
-                if (!hasSetting("tuyaChannel", n)) break;
-                uint8_t dp = getSetting("tuyaChannel", n, 0).toInt();
+                if (!hasSetting({"tuyaChannel", n})) break;
+                const auto dp = getSetting({"tuyaChannel", n}, 0);
                 channelStates.pushOrUpdate(dp, 0);
             }
             lightSetupChannels(channelStates.size());
@@ -524,11 +524,11 @@ namespace Tuya {
             terminalRegisterCommand(F("TUYA.SAVE"), [](Embedis* e) {
                 DEBUG_MSG_P(PSTR("[TUYA] Saving current configuration ...\n"));
                 for (unsigned char n=0; n < switchStates.size(); ++n) {
-                    setSetting("tuyaSwitch", n, switchStates[n].dp);
+                    setSetting({"tuyaSwitch", n}, switchStates[n].dp);
                 }
                 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                     for (unsigned char n=0; n < channelStates.size(); ++n) {
-                        setSetting("tuyaChannel", n, channelStates[n].dp);
+                        setSetting({"tuyaChannel", n}, channelStates[n].dp);
                     }
                 #endif
             });
@@ -536,12 +536,12 @@ namespace Tuya {
         #endif
 
         // Filtering for incoming data
-        unsigned char filter_raw = getSetting("tuyaFilter", dp_states_filter_t::NONE).toInt();
+        auto filter_raw = getSetting("tuyaFilter", dp_states_filter_t::NONE);
         filterDP = dp_states_filter_t::clamp(filter_raw);
 
         // Print all IN and OUT messages
 
-        transportDebug = getSetting("tuyaDebug", 1).toInt() == 1;
+        transportDebug = getSetting("tuyaDebug", true);
 
         // Install main loop method and WiFiStatus ping (only works with specific mode)
 

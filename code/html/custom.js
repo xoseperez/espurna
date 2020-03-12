@@ -12,6 +12,7 @@ var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
 var configurationSaved = false;
+var ws_pingpong;
 
 var useWhite = false;
 var useCCT = false;
@@ -1018,7 +1019,7 @@ function moreNetwork() {
     $(".more", parent).toggle();
 }
 
-function addNetwork(values) {
+function addNetwork(network) {
 
     var number = numNetworks();
     if (number >= maxNetworks) {
@@ -1026,11 +1027,11 @@ function addNetwork(values) {
         return null;
     }
 
-    if (values === undefined) {
-        values = {};
+    if (network === undefined) {
+        network = {};
     }
 
-    var tabindex = 200 + numNetworks * 10;
+    var tabindex = 200 + number * 10;
     var template = $("#networkTemplate").children();
     var line = $(template).clone();
     $(line).find("input").each(function() {
@@ -1041,9 +1042,17 @@ function addNetwork(values) {
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
 
-    Object.entries(values).forEach(function(kv) {
-        $("input[name='" + kv[0] + "']", line).val(kv[1]);
+    Object.entries(network).forEach(function(pair) {
+        // XXX: UI deleting this network will only re-use stored values.
+        var key = pair[0],
+            val = pair[1];
+        if (key === "stored") {
+            $(line).find(".button-del-network").prop("disabled", val);
+            return;
+        }
+        $("input[name='" + key + "']", line).val(val);
     });
+
 
     line.appendTo("#networks");
 
@@ -1086,7 +1095,7 @@ function addSchedule(values) {
         values = {};
     }
 
-    var tabindex = 200 + numSchedules * 10;
+    var tabindex = 200 + schedules * 10;
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
@@ -1102,10 +1111,10 @@ function addSchedule(values) {
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
 
-    var schUTC_id = "schUTC" + (schedules + 1);
+    var schUTC_id = "schUTC" + schedules;
     $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
 
-    var schEnabled_id = "schEnabled" + (schedules + 1);
+    var schEnabled_id = "schEnabled" + schedules;
     $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
 
     $(line).find("input[type='checkbox']").prop("checked", false);
@@ -1780,13 +1789,21 @@ function processData(data) {
         // WiFi
         // ---------------------------------------------------------------------
 
-        if ("maxNetworks" === key) {
-            maxNetworks = parseInt(value, 10);
-            return;
-        }
-
         if ("wifi" === key) {
-            value.forEach(addNetwork);
+            maxNetworks = parseInt(value["max"], 10);
+            value["networks"].forEach(function(network) {
+                var schema = value["schema"];
+                if (schema.length !== network.length) {
+                    throw "WiFi schema mismatch!";
+                }
+
+                var _network = {};
+                schema.forEach(function(key, index) {
+                    _network[key] = network[index];
+                });
+
+                addNetwork(_network);
+            });
             return;
         }
 
@@ -2120,6 +2137,16 @@ function connectToURL(url) {
                 processData(data);
             }
         };
+        websock.onclose = function(evt) {
+            clearInterval(ws_pingpong);
+            if (window.confirm("Connection lost with the device, click OK to refresh the page")) {
+                $("#layout").toggle(false);
+                window.location.reload();
+            }
+        }
+        websock.onopen = function(evt) {
+            ws_pingpong = setInterval(function() { sendAction("ping", {}); }, 5000);
+        }
     }).catch(function(error) {
         console.log(error);
         doReload(5000);

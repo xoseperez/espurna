@@ -9,18 +9,277 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if SENSOR_SUPPORT
 
 #include <vector>
+#include <float.h>
+
+#include "broker.h"
+#include "mqtt.h"
+#include "relay.h"
+#include "terminal.h"
+#include "ws.h"
+
+//--------------------------------------------------------------------------------
+
+PROGMEM const unsigned char magnitude_decimals[] = {
+    0,
+    1, 0, 2, // THP
+    3, 0, 0, 0, 0, 0, 0, 0, // Power decimals
+    0, 0, 0, // analog, digital, event
+    0, 0, 0, // PM
+    0, 0,
+    0, 0, 3, // UVA, UVB, UVI
+    3, 0,
+    4, 4, // Geiger Counter decimals
+    0,
+    0, 0, 0, 3    // NO2, CO, Ohms, pH
+};
+
+PROGMEM const char magnitude_unknown_topic[] = "unknown";
+PROGMEM const char magnitude_temperature_topic[] =  "temperature";
+PROGMEM const char magnitude_humidity_topic[] = "humidity";
+PROGMEM const char magnitude_pressure_topic[] = "pressure";
+PROGMEM const char magnitude_current_topic[] = "current";
+PROGMEM const char magnitude_voltage_topic[] = "voltage";
+PROGMEM const char magnitude_active_power_topic[] = "power";
+PROGMEM const char magnitude_apparent_power_topic[] = "apparent";
+PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
+PROGMEM const char magnitude_power_factor_topic[] = "factor";
+PROGMEM const char magnitude_energy_topic[] = "energy";
+PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
+PROGMEM const char magnitude_analog_topic[] = "analog";
+PROGMEM const char magnitude_digital_topic[] = "digital";
+PROGMEM const char magnitude_event_topic[] = "event";
+PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_topic[] = "pm10";
+PROGMEM const char magnitude_co2_topic[] = "co2";
+PROGMEM const char magnitude_lux_topic[] = "lux";
+PROGMEM const char magnitude_uva_topic[] = "uva";
+PROGMEM const char magnitude_uvb_topic[] = "uvb";
+PROGMEM const char magnitude_uvi_topic[] = "uvi";
+PROGMEM const char magnitude_distance_topic[] = "distance";
+PROGMEM const char magnitude_hcho_topic[] = "hcho";
+PROGMEM const char magnitude_geiger_cpm_topic[] = "ldr_cpm";  // local dose rate [Counts per minute]
+PROGMEM const char magnitude_geiger_sv_topic[] = "ldr_uSvh";  // local dose rate [µSievert per hour]
+PROGMEM const char magnitude_count_topic[] = "count";
+PROGMEM const char magnitude_no2_topic[] = "no2";
+PROGMEM const char magnitude_co_topic[] = "co";
+PROGMEM const char magnitude_resistance_topic[] = "resistance";
+PROGMEM const char magnitude_ph_topic[] = "ph";
+
+PROGMEM const char* const magnitude_topics[] = {
+    magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
+    magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
+    magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
+    magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
+    magnitude_analog_topic, magnitude_digital_topic, magnitude_event_topic,
+    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
+    magnitude_co2_topic, magnitude_lux_topic,
+    magnitude_uva_topic, magnitude_uvb_topic, magnitude_uvi_topic,
+    magnitude_distance_topic, magnitude_hcho_topic,
+    magnitude_geiger_cpm_topic, magnitude_geiger_sv_topic,
+    magnitude_count_topic,
+    magnitude_no2_topic, magnitude_co_topic, magnitude_resistance_topic, magnitude_ph_topic
+};
+
+PROGMEM const char magnitude_empty[] = "";
+PROGMEM const char magnitude_celsius[] =  "°C";
+PROGMEM const char magnitude_fahrenheit[] =  "°F";
+PROGMEM const char magnitude_percentage[] = "%";
+PROGMEM const char magnitude_hectopascals[] = "hPa";
+PROGMEM const char magnitude_amperes[] = "A";
+PROGMEM const char magnitude_volts[] = "V";
+PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_kw[] = "kW";
+PROGMEM const char magnitude_joules[] = "J";
+PROGMEM const char magnitude_kwh[] = "kWh";
+PROGMEM const char magnitude_ugm3[] = "µg/m³";
+PROGMEM const char magnitude_ppm[] = "ppm";
+PROGMEM const char magnitude_lux[] = "lux";
+PROGMEM const char magnitude_distance[] = "m";
+PROGMEM const char magnitude_mgm3[] = "mg/m³";
+PROGMEM const char magnitude_geiger_cpm[] = "cpm";    // Counts per Minute: Unit of local dose rate (Geiger counting)
+PROGMEM const char magnitude_geiger_sv[] = "µSv/h";   // µSievert per hour: 2nd unit of local dose rate (Geiger counting)
+PROGMEM const char magnitude_resistance[] = "ohm";
+
+
+PROGMEM const char* const magnitude_units[] = {
+    magnitude_empty, magnitude_celsius, magnitude_percentage,
+    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
+    magnitude_watts, magnitude_watts, magnitude_watts,
+    magnitude_percentage, magnitude_joules, magnitude_joules,
+    magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
+    magnitude_ppm, magnitude_lux,
+    magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_distance, magnitude_mgm3,
+    magnitude_geiger_cpm, magnitude_geiger_sv,                  // Geiger counter units
+    magnitude_empty,                                            //
+    magnitude_ppm, magnitude_ppm,                               // NO2 & CO2
+    magnitude_resistance,
+    magnitude_empty                                             // pH
+};
+
+//--------------------------------------------------------------------------------
+
 #include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
 #include "filters/MedianFilter.h"
 #include "filters/MovingAverageFilter.h"
 #include "sensors/BaseSensor.h"
 
-#include <float.h>
+#if AM2320_SUPPORT
+    #include "sensors/AM2320Sensor.h"
+#endif
 
-#include "relay.h"
-#include "broker.h"
-#include "ws.h"
+#if ANALOG_SUPPORT
+    #include "sensors/AnalogSensor.h"
+#endif
 
+#if BH1750_SUPPORT
+    #include "sensors/BH1750Sensor.h"
+#endif
+
+#if BMP180_SUPPORT
+    #include "sensors/BMP180Sensor.h"
+#endif
+
+#if BMX280_SUPPORT
+    #include "sensors/BMX280Sensor.h"
+#endif
+
+#if CSE7766_SUPPORT
+    #include "sensors/CSE7766Sensor.h"
+#endif
+
+#if DALLAS_SUPPORT
+    #include "sensors/DallasSensor.h"
+#endif
+
+#if DHT_SUPPORT
+    #include "sensors/DHTSensor.h"
+#endif
+
+#if DIGITAL_SUPPORT
+    #include "sensors/DigitalSensor.h"
+#endif
+
+#if ECH1560_SUPPORT
+    #include "sensors/ECH1560Sensor.h"
+#endif
+
+#if EMON_ADC121_SUPPORT
+    #include "sensors/EmonADC121Sensor.h"
+#endif
+
+#if EMON_ADS1X15_SUPPORT
+    #include "sensors/EmonADS1X15Sensor.h"
+#endif
+
+#if EMON_ANALOG_SUPPORT
+    #include "sensors/EmonAnalogSensor.h"
+#endif
+
+#if EVENTS_SUPPORT
+    #include "sensors/EventSensor.h"
+#endif
+
+#if EZOPH_SUPPORT
+    #include "sensors/EZOPHSensor.h"
+#endif
+
+#if GEIGER_SUPPORT
+    #include "sensors/GeigerSensor.h"
+#endif
+
+#if GUVAS12SD_SUPPORT
+    #include "sensors/GUVAS12SDSensor.h"
+#endif
+
+#if HLW8012_SUPPORT
+    #include "sensors/HLW8012Sensor.h"
+#endif
+
+#if LDR_SUPPORT
+    #include "sensors/LDRSensor.h"
+#endif
+
+#if MAX6675_SUPPORT
+    #include "sensors/MAX6675Sensor.h"
+#endif 
+
+#if MICS2710_SUPPORT
+    #include "sensors/MICS2710Sensor.h"
+#endif
+
+#if MICS5525_SUPPORT
+    #include "sensors/MICS5525Sensor.h"
+#endif
+
+#if MHZ19_SUPPORT
+    #include "sensors/MHZ19Sensor.h"
+#endif
+
+#if NTC_SUPPORT
+    #include "sensors/NTCSensor.h"
+#endif
+
+#if SDS011_SUPPORT
+    #include "sensors/SDS011Sensor.h"
+#endif
+
+#if SENSEAIR_SUPPORT
+    #include "sensors/SenseAirSensor.h"
+#endif
+
+#if PMSX003_SUPPORT
+    #include "sensors/PMSX003Sensor.h"
+#endif
+
+#if PULSEMETER_SUPPORT
+    #include "sensors/PulseMeterSensor.h"
+#endif
+
+#if PZEM004T_SUPPORT
+    #include "sensors/PZEM004TSensor.h"
+#endif
+
+#if SHT3X_I2C_SUPPORT
+    #include "sensors/SHT3XI2CSensor.h"
+#endif
+
+#if SI7021_SUPPORT
+    #include "sensors/SI7021Sensor.h"
+#endif
+
+#if SONAR_SUPPORT
+    #include "sensors/SonarSensor.h"
+#endif
+
+#if T6613_SUPPORT
+    #include "sensors/T6613Sensor.h"
+#endif
+
+#if TMP3X_SUPPORT
+    #include "sensors/TMP3XSensor.h"
+#endif
+
+#if V9261F_SUPPORT
+    #include "sensors/V9261FSensor.h"
+#endif
+
+#if VEML6075_SUPPORT
+    #include "sensors/VEML6075Sensor.h"
+#endif
+
+#if VL53L1X_SUPPORT
+    #include "sensors/VL53L1XSensor.h"
+#endif
+
+#if ADE7953_SUPPORT
+    #include "sensors/ADE7953Sensor.h"
+#endif
+
+//--------------------------------------------------------------------------------
 
 struct sensor_magnitude_t {
     BaseSensor * sensor;        // Sensor object
@@ -68,7 +327,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
     if (type == MAGNITUDE_ANALOG) return ANALOG_DECIMALS;
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
-        _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS).toInt();
+        _sensor_energy_units = getSetting("eneUnits", (unsigned char)SENSOR_ENERGY_UNITS);
         if (_sensor_energy_units == ENERGY_KWH) return 3;
     }
     if (type == MAGNITUDE_POWER_ACTIVE ||
@@ -137,7 +396,7 @@ template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix)
         //name.add(magnitudeName(i));
         type.add(magnitudeType(i));
         index.add(magnitudeIndex(i));
-        idx.add(getSetting(conf_name, i, 0).toInt());
+        idx.add(getSetting({conf_name, i}, 0));
     }
 }
 
@@ -468,13 +727,13 @@ void _sensorResetTS() {
     #endif
 }
 
-double _sensorEnergyTotal(unsigned int index) {
+double _sensorEnergyTotal(unsigned char index) {
     double value = 0;
 
     if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
         value = Rtcmem->energy[index];
     } else {
-        value = (_sensor_save_every > 0) ? getSetting("eneTotal", index, 0).toInt() : 0;
+        value = (_sensor_save_every > 0) ? getSetting<double>({"eneTotal", index}, 0.) : 0.;
     }
 
     return value;
@@ -484,14 +743,14 @@ double _sensorEnergyTotal() {
     return _sensorEnergyTotal(0);
 }
 
-void _sensorEnergyTotal(unsigned int index, double value) {
+void _sensorEnergyTotal(unsigned char index, double value) {
     static unsigned long save_count = 0;
 
     // Save to EEPROM every '_sensor_save_every' readings
     if (_sensor_save_every > 0) {
         save_count = (save_count + 1) % _sensor_save_every;
         if (0 == save_count) {
-            setSetting("eneTotal", index, value);
+            setSetting({"eneTotal", index}, value);
             saveSettings();
         }
     }
@@ -561,14 +820,14 @@ void _sensorLoad() {
     #if BMX280_SUPPORT
     {
         // Support up to two sensors with full auto-discovery.
-        const unsigned char number = constrain(getSetting("bmx280Number", BMX280_NUMBER).toInt(), 1, 2);
+        const unsigned char number = constrain(getSetting<int>("bmx280Number", BMX280_NUMBER), 1, 2);
 
         // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
         // otherwise choose the other unnamed sensor address
-        const unsigned char first = getSetting("bmx280Address", BMX280_ADDRESS).toInt();
-        const unsigned char second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
+        const auto first = getSetting("bmx280Address", BMX280_ADDRESS);
+        const auto second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
 
-        const unsigned char address_map[2] = { first, second };
+        const decltype(first) address_map[2] { first, second };
 
         for (unsigned char n=0; n < number; ++n) {
             BMX280Sensor * sensor = new BMX280Sensor();
@@ -881,9 +1140,9 @@ void _sensorLoad() {
     #if HLW8012_SUPPORT
     {
         HLW8012Sensor * sensor = new HLW8012Sensor();
-        sensor->setSEL(HLW8012_SEL_PIN);
-        sensor->setCF(HLW8012_CF_PIN);
-        sensor->setCF1(HLW8012_CF1_PIN);
+        sensor->setSEL(getSetting("snsHlw8012SelGPIO", HLW8012_SEL_PIN));
+        sensor->setCF(getSetting("snsHlw8012CfGPIO", HLW8012_CF_PIN));
+        sensor->setCF1(getSetting("snsHlw8012Cf1GPIO", HLW8012_CF1_PIN));
         sensor->setSELCurrent(HLW8012_SEL_CURRENT);
         _sensors.push_back(sensor);
     }
@@ -907,8 +1166,9 @@ void _sensorLoad() {
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setRX(MHZ19_RX_PIN);
         sensor->setTX(MHZ19_TX_PIN);
-        if (getSetting("mhz19CalibrateAuto", 0).toInt() == 1)
+        if (getSetting("mhz19CalibrateAuto", false)) {
             sensor->setCalibrateAuto(true);
+        }
         _sensors.push_back(sensor);
     }
     #endif
@@ -974,7 +1234,7 @@ void _sensorLoad() {
 
     #if PZEM004T_SUPPORT
     {
-        String addresses = getSetting("pzemAddr", PZEM004T_ADDRESSES);
+        String addresses = getSetting("pzemAddr", F(PZEM004T_ADDRESSES));
         if (!addresses.length()) {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
             return;
@@ -983,9 +1243,9 @@ void _sensorLoad() {
         PZEM004TSensor * sensor = pzem004t_sensor = new PZEM004TSensor();
         sensor->setAddresses(addresses.c_str());
 
-        if (getSetting("pzemSoft", PZEM004T_USE_SOFT).toInt() == 1) {
-            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN).toInt());
-            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN).toInt());
+        if (getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
+            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
+            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
         } else {
             sensor->setSerial(& PZEM004T_HW_PORT);
         }
@@ -1123,7 +1383,7 @@ void _sensorCallback(unsigned char i, unsigned char type, double value) {
 void _sensorInit() {
 
     _sensors_ready = true;
-    _sensor_save_every = getSetting("snsSave", 0).toInt();
+    _sensor_save_every = getSetting<int>("snsSave", 0);
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
@@ -1159,11 +1419,11 @@ void _sensorInit() {
 
             // TODO: find a proper way to extend this to min/max of any magnitude
             if (MAGNITUDE_ENERGY == type) {
-                new_magnitude.max_change = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE).toFloat();
+                new_magnitude.max_change = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE);
             } else if (MAGNITUDE_TEMPERATURE == type) {
-                new_magnitude.min_change = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE).toFloat();
+                new_magnitude.min_change = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE);
             } else if (MAGNITUDE_HUMIDITY == type) {
-                new_magnitude.min_change = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE).toFloat();
+                new_magnitude.min_change = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE);
             }
 
             if (MAGNITUDE_ENERGY == type) {
@@ -1195,14 +1455,14 @@ void _sensorInit() {
         #if MICS2710_SUPPORT
             if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
                 MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
-                sensor->setR0(getSetting("snsR0", MICS2710_R0).toInt());
+                sensor->setR0(getSetting("snsR0", MICS2710_R0));
             }
         #endif // MICS2710_SUPPORT
 
         #if MICS5525_SUPPORT
             if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
                 MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
-                sensor->setR0(getSetting("snsR0", MICS5525_R0).toInt());
+                sensor->setR0(getSetting("snsR0", MICS5525_R0));
             }
         #endif // MICS5525_SUPPORT
 
@@ -1210,8 +1470,8 @@ void _sensorInit() {
 
             if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-                sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+                sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO));
+                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE));
 
                 double value = _sensorEnergyTotal();
 
@@ -1228,13 +1488,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", HLW8012_CURRENT_RATIO).toFloat();
+                value = getSetting("pwrRatioC", HLW8012_CURRENT_RATIO);
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", HLW8012_VOLTAGE_RATIO).toFloat();
+                value = getSetting("pwrRatioV", HLW8012_VOLTAGE_RATIO);
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
+                value = getSetting("pwrRatioP", HLW8012_POWER_RATIO);
                 if (value > 0) sensor->setPowerRatio(value);
 
                 value = _sensorEnergyTotal();
@@ -1265,13 +1525,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", 0).toFloat();
+                value = getSetting("pwrRatioC", 0.0);
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", 0).toFloat();
+                value = getSetting("pwrRatioV", 0.0);
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", 0).toFloat();
+                value = getSetting("pwrRatioP", 0.0);
                 if (value > 0) sensor->setPowerRatio(value);
 
                 value = _sensorEnergyTotal();
@@ -1284,7 +1544,7 @@ void _sensorInit() {
         #if PULSEMETER_SUPPORT
             if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
+                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()));
             }
         #endif // PULSEMETER_SUPPORT
 
@@ -1294,18 +1554,25 @@ void _sensorInit() {
 
 void _sensorConfigure() {
 
-    // General sensor settings
-    _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
-    _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
-    _sensor_save_every = getSetting("snsSave", SENSOR_SAVE_EVERY).toInt();
-    _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    _sensor_power_units = getSetting("pwrUnits", SENSOR_POWER_UNITS).toInt();
-    _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS).toInt();
-    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
-    _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION).toFloat();
-    _sensor_energy_reset_ts = getSetting("snsResetTS", "");
-    _sensor_lux_correction = getSetting("luxCorrection", SENSOR_LUX_CORRECTION).toFloat();
+    // General sensor settings for reporting and saving
+    _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
+    _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
+    _sensor_save_every = getSetting("snsSave", SENSOR_SAVE_EVERY);
+
+    _sensor_realtime = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
+
+    // Units are configured globally atm
+    _sensor_power_units = getSetting("pwrUnits", SENSOR_POWER_UNITS);
+    _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS);
+    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS);
+
+    // ...same with corrections
+    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION);
+    _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION);
+    _sensor_lux_correction = getSetting("luxCorrection", SENSOR_LUX_CORRECTION);
+
+    // energy reset should be timestamped
+    _sensor_energy_reset_ts = getSetting("snsResetTS");
 
     // Specific sensor settings
     for (unsigned char i=0; i<_sensors.size(); i++) {
@@ -1313,7 +1580,7 @@ void _sensorConfigure() {
         #if MICS2710_SUPPORT
 
             if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
-                if (getSetting("snsResetCalibration", 0).toInt() == 1) {
+                if (getSetting("snsResetCalibration", false)) {
                     MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
                     sensor->calibrate();
                     setSetting("snsR0", sensor->getR0());
@@ -1325,7 +1592,7 @@ void _sensorConfigure() {
         #if MICS5525_SUPPORT
 
             if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
-                if (getSetting("snsResetCalibration", 0).toInt() == 1) {
+                if (getSetting("snsResetCalibration", false)) {
                     MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
                     sensor->calibrate();
                     setSetting("snsR0", sensor->getR0());
@@ -1341,23 +1608,23 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
+                if ((value = getSetting("pwrExpectedP", 0))) {
                     sensor->expectedPower(0, value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio(0));
                 }
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                if (getSetting("pwrResetCalibration", false)) {
                     sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
                     delSetting("pwrRatioC");
                 }
 
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE));
 
             }
 
@@ -1366,9 +1633,9 @@ void _sensorConfigure() {
         #if EMON_ADC121_SUPPORT
             if (_sensors[i]->getID() == SENSOR_EMON_ADC121_ID) {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
             }
@@ -1377,9 +1644,9 @@ void _sensorConfigure() {
         #if EMON_ADS1X15_SUPPORT
             if (_sensors[i]->getID() == SENSOR_EMON_ADS1X15_ID) {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
             }
@@ -1393,28 +1660,28 @@ void _sensorConfigure() {
                 double value;
                 HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
-                if ((value = getSetting("pwrExpectedC", 0).toFloat())) {
+                if ((value = getSetting("pwrExpectedC", 0.0))) {
                     sensor->expectedCurrent(value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio());
                 }
 
-                if ((value = getSetting("pwrExpectedV", 0).toInt())) {
+                if ((value = getSetting("pwrExpectedV", 0.0))) {
                     sensor->expectedVoltage(value);
                     setSetting("pwrRatioV", sensor->getVoltageRatio());
                 }
 
-                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
+                if ((value = getSetting("pwrExpectedP", 0.0))) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
                 }
 
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                if (getSetting("pwrResetCalibration", false)) {
                     sensor->resetRatios();
                     delSetting("pwrRatioC");
                     delSetting("pwrRatioV");
@@ -1432,28 +1699,28 @@ void _sensorConfigure() {
                 double value;
                 CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
-                if ((value = getSetting("pwrExpectedC", 0).toFloat())) {
+                if ((value = getSetting("pwrExpectedC", 0.0))) {
                     sensor->expectedCurrent(value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio());
                 }
 
-                if ((value = getSetting("pwrExpectedV", 0).toInt())) {
+                if ((value = getSetting("pwrExpectedV", 0.0))) {
                     sensor->expectedVoltage(value);
                     setSetting("pwrRatioV", sensor->getVoltageRatio());
                 }
 
-                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
+                if ((value = getSetting("pwrExpectedP", 0.0))) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
                 }
 
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                if (getSetting("pwrResetCalibration", false)) {
                     sensor->resetRatios();
                     delSetting("pwrRatioC");
                     delSetting("pwrRatioV");
@@ -1467,13 +1734,13 @@ void _sensorConfigure() {
         #if PULSEMETER_SUPPORT
             if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal", 0);
+                    delSetting({"eneTotal", 0});
                     _sensorResetTS();
                 }
 
-                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
+                sensor->setEnergyRatio(getSetting<unsigned long>("pwrRatioE", sensor->getEnergyRatio()));
             }
         #endif // PULSEMETER_SUPPORT
 
@@ -1481,11 +1748,11 @@ void _sensorConfigure() {
 
             if (_sensors[i]->getID() == SENSOR_PZEM004T_ID) {
                 PZEM004TSensor * sensor = (PZEM004TSensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     unsigned char dev_count = sensor->getAddressesCount();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev, 0);
-                        delSetting("eneTotal", dev);
+                        delSetting({"eneTotal", dev});
                     }
                     _sensorResetTS();
                 }
@@ -1497,11 +1764,11 @@ void _sensorConfigure() {
 
             if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {
                 ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("pwrResetE", false)) {
                     unsigned char dev_count = sensor->getTotalDevices();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev);
-                        delSetting("eneTotal", dev);
+                        delSetting({"eneTotal", dev});
                     }
                     _sensorResetTS();
                 }
@@ -1517,7 +1784,7 @@ void _sensorConfigure() {
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
             _magnitudes[i].filter->resize(_sensor_report_every);
             if ((_magnitudes[i].type == MAGNITUDE_ENERGY) && reset_saved_energy) {
-                delSetting("eneTotal", _magnitudes[i].global);
+                delSetting({"eneTotal", _magnitudes[i].global});
             }
         }
     }

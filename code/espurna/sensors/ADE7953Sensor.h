@@ -8,12 +8,11 @@
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
-
-#include "Arduino.h"
-#include "I2CSensor.h"
+#include <Arduino.h>
 #include <Wire.h>
+
+#include "I2CSensor.h"
+#include "../utils.h"
 
 // -----------------------------------------------------------------------------
 // ADE7953 - Energy (Shelly 2.5)

@@ -11,15 +11,20 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 unsigned int _i2c_locked[16] = {0};
 
 #if I2C_USE_BRZO
-#include "brzo_i2c.h"
 unsigned long _i2c_scl_frequency = 0;
-#else
-#include "Wire.h"
 #endif
 
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
+
+int _i2cGetSDA() {
+    return getSetting("i2cSDA", I2C_SDA_PIN);
+}
+
+int _i2cGetSCL() {
+    return getSetting("i2cSCL", I2C_SCL_PIN);
+}
 
 int _i2cClearbus(int sda, int scl) {
 
@@ -279,9 +284,10 @@ int16_t i2c_read_int16_le(uint8_t address, uint8_t reg) {
 // -----------------------------------------------------------------------------
 
 void i2cClearBus() {
-    unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
-    unsigned char scl = getSetting("i2cSCL", I2C_SCL_PIN).toInt();
-    DEBUG_MSG_P(PSTR("[I2C] Clear bus (response: %d)\n"), _i2cClearbus(sda, scl));
+    DEBUG_MSG_P(
+        PSTR("[I2C] Clear bus (response: %d)\n"),
+        _i2cClearbus(_i2cGetSDA(), _i2cGetSCL())
+    );
 }
 
 bool i2cCheck(unsigned char address) {
@@ -371,18 +377,18 @@ void _i2cInitCommands() {
 
 void i2cSetup() {
 
-    unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
-    unsigned char scl = getSetting("i2cSCL", I2C_SCL_PIN).toInt();
+    const auto sda = _i2cGetSDA();
+    const auto scl = _i2cGetSCL();
 
     #if I2C_USE_BRZO
-        unsigned long cst = getSetting("i2cCST", I2C_CLOCK_STRETCH_TIME).toInt();
-        _i2c_scl_frequency = getSetting("i2cFreq", I2C_SCL_FREQUENCY).toInt();
+        auto cst = getSetting("i2cCST", I2C_CLOCK_STRETCH_TIME);
+        _i2c_scl_frequency = getSetting("i2cFreq", I2C_SCL_FREQUENCY);
         brzo_i2c_setup(sda, scl, cst);
     #else
         Wire.begin(sda, scl);
     #endif
 
-    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);
+    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%02d for SDA and GPIO%02d for SCL\n"), sda, scl);
 
     #if TERMINAL_SUPPORT
         _i2cInitCommands();

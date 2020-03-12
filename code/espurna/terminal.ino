@@ -8,9 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if TERMINAL_SUPPORT
 
+#include "settings.h"
 #include "system.h"
+#include "terminal.h"
 #include "utils.h"
-#include "libs/EmbedisWrap.h"
 #include "libs/StreamInjector.h"
 #include "libs/HeapStats.h"
 
@@ -70,12 +71,11 @@ void _terminalKeysCommand() {
     // Write key-values
     DEBUG_MSG_P(PSTR("Current settings:\n"));
     for (unsigned int i=0; i<keys.size(); i++) {
-        String value = getSetting(keys[i]);
+        const auto value = getSetting(keys[i]);
         DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
     }
 
-    unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
-    UNUSED(freeEEPROM);
+    unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
     DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
     DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
     DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
@@ -275,7 +275,7 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("UPTIME"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+        infoUptime();
         terminalOK();
     });
 
@@ -388,8 +388,8 @@ Stream & terminalSerial() {
     return (Stream &) _serial;
 }
 
-void terminalRegisterCommand(const String& name, void (*call)(Embedis*)) {
-    Embedis::command(name, call);
+void terminalRegisterCommand(const String& name, embedis_command_f command) {
+    Embedis::command(name, command);
 };
 
 void terminalOK() {
