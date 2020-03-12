@@ -339,6 +339,11 @@ int _buttonEventNumber(button_event_t event) {
     return static_cast<int>(event);
 }
 
+// Approach based on https://github.com/esp8266/Arduino/pull/6950
+// "PROGMEM footprint cleanup for responseCodeToString (#6950)"
+// In this particular case, saves 76 bytes (120 vs 44)
+
+#if 1
 String _buttonEventString(button_event_t event) {
     const __FlashStringHelper* ptr = nullptr;
     switch (event) {
@@ -367,6 +372,27 @@ String _buttonEventString(button_event_t event) {
     }
     return String(ptr);
 }
+#else
+String _buttonEventString(button_event_t event) {
+    switch (event) {
+        case button_event_t::Pressed:
+            return F("Pressed");
+        case button_event_t::Click:
+            return F("Click");
+        case button_event_t::DoubleClick:
+            return F("Double-click");
+        case button_event_t::LongClick:
+            return F("Long-click");
+        case button_event_t::LongLongClick:
+            return F("Looong-click");
+        case button_event_t::TripleClick:
+            return F("Triple-click");
+        case button_event_t::None:
+        default:
+            return F("None");
+    }
+}
+#endif
 
 void buttonEvent(unsigned char id, button_event_t event) {
 
