@@ -623,8 +623,8 @@ void buttonSetup() {
 
 // Sonoff Dual does not do real GPIO readings and we
 // depend on the external MCU to send us relay / button events
+// Lightfox uses the same protocol as Dual, but has slightly different actions
 // TODO: move this to a separate 'hardware' setup file?
-#if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
 
 void _buttonLoopSonoffDual() {
 
@@ -634,11 +634,13 @@ void _buttonLoopSonoffDual() {
 
     unsigned char bytes[4] = {0};
     Serial.readBytes(bytes, 4);
-    if ((bytes[0] != 0xA0) || (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
+    if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
         return;
     }
 
     const unsigned char value = bytes[2];
+
+#if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
 
     // RELAYs and BUTTONs are synchonized in the SIL F330
     // The on-board BUTTON2 should toggle RELAY0 value
@@ -657,7 +659,7 @@ void _buttonLoopSonoffDual() {
     // This loop is generic for any PSB-04 module
     for (unsigned int i=0; i<relayCount(); i++) {
 
-        bool status = (value & (1 << i)) > 0;
+        const bool status = (value & (1 << i)) > 0;
 
         // Check if the status for that relay has changed
         if (relayStatus(i) != status) {
@@ -667,41 +669,19 @@ void _buttonLoopSonoffDual() {
 
     }
 
-}
-
-#endif // BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL == 1
-
-// Lightfox uses the same protocol as Dual, but has slightly different actions
-// TODO: same as above, move from here someplace else
-#if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
-
-void _buttonLoopFoxelLightfox() {
-
-    if (Serial.available() < 4) {
-        return;
-    }
-
-    unsigned char bytes[4] = {0};
-    Serial.readBytes(bytes, 4);
-    if ((bytes[0] != 0xA0) || (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
-        return;
-    }
-
-    const unsigned char value = bytes[2];
+#elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
 
     DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %u\n"), value);
 
     for (unsigned int i=0; i<_buttons.size(); i++) {
-
-        bool clicked = (value & (1 << i)) > 0;
-
-        if (clicked) {
+        if ((value & (1 << i)) > 0);
             buttonEvent(i, button_event_t::Click);
         }
     }
-}
 
-#endif // BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL == 1
+#endif // BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+
+}
 
 void _buttonLoopGeneric() {
     for (size_t id = 0; id < _buttons.size(); ++id) {
@@ -716,10 +696,9 @@ void buttonLoop() {
 
     #if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
         _buttonLoopGeneric();
-    #elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+    #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
+        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
         _buttonLoopSonoffDual();
-    #elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
-        _buttonLoopFoxelLightfox();
     #else
         #warning "Unknown value for BUTTON_EVENTS_SOURCE"
     #endif
