@@ -12,19 +12,19 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // We need to explicitly call the constructor, because we need to set the const `pin`:
 // https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
-DigitalPin::DigitalPin(unsigned char pin) :
+GpioPin::GpioPin(unsigned char pin) :
     BasePin(pin)
 {}
 
-inline void DigitalPin::pinMode(int8_t mode) {
+inline void GpioPin::pinMode(int8_t mode) {
     ::pinMode(this->pin, mode);
 }
 
-inline void DigitalPin::digitalWrite(int8_t val) {
+inline void GpioPin::digitalWrite(int8_t val) {
     ::digitalWrite(this->pin, val);
 }
 
-inline int DigitalPin::digitalRead() {
+inline int GpioPin::digitalRead() {
     return ::digitalRead(this->pin);
 }
 

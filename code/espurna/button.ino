@@ -556,9 +556,9 @@ void buttonSetup() {
                 getSetting({"btnPinMode", index}, raw_config.pin_mode)
             };
 
-            // TODO: allow to change DigitalPin to something else based on config?
+            // TODO: allow to change GpioPin to something else based on config?
             _buttons.emplace_back(
-                std::make_shared<DigitalPin>(pin), config,
+                std::make_shared<GpioPin>(pin), config,
                 relayID, actions, delays
             );
         }
