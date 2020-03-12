@@ -522,7 +522,7 @@ void buttonSetup() {
             const button_actions_t actions {
                 BUTTON_ACTION_NONE,
                 // The only generated event is ::Click
-                getSetting({"btnClick", index}, BUTTON_ACTION_TOGGLE),
+                getSetting({"btnClick", index}, _buttonClick(index)),
                 BUTTON_ACTION_NONE,
                 BUTTON_ACTION_NONE,
                 BUTTON_ACTION_NONE,
