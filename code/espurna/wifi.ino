@@ -94,13 +94,17 @@ void _wifiConfigure() {
         const auto pass = getSetting({"pass", index}, _wifiPass(index));
 
         if (!ssid.length()) {
-            delSetting({"ssid", index});
-            delSetting({"pass", index});
-            delSetting({"ip", index});
-            delSetting({"gw", index});
-            delSetting({"mask", index});
-            delSetting({"dns", index});
-            continue;
+            auto current = index;
+            do {
+                delSetting({"ssid", index});
+                delSetting({"pass", index});
+                delSetting({"ip", index});
+                delSetting({"gw", index});
+                delSetting({"mask", index});
+                delSetting({"dns", index});
+            } while (++index < WIFI_MAX_NETWORKS);
+            index = current;
+            break;
         }
 
         bool result = false;
