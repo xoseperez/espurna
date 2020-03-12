@@ -23,9 +23,52 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/DebounceEvent.h"
 
+// TODO: if we are using such conversion helpers across the codebase, should convert() be in internal ns?
+
+namespace settings {
+namespace internal {
+
+template<>
+debounce_event::types::Mode convert(const String& value) {
+    switch (value.toInt()) {
+        case 1:
+            return debounce_event::types::Mode::Switch;
+        case 0:
+        default:
+            return debounce_event::types::Mode::Pushbutton;
+    }
+}
+
+template<>
+debounce_event::types::DefaultState convert(const String& value) {
+    switch (value.toInt()) {
+        case 0:
+            return debounce_event::types::DefaultState::Low;
+        case 1:
+        default:
+            return debounce_event::types::DefaultState::High;
+    }
+}
+
+template<>
+debounce_event::types::PinMode convert(const String& value) {
+    switch (value.toInt()) {
+        case 1:
+            return debounce_event::types::PinMode::InputPullup;
+        case 2:
+            return debounce_event::types::PinMode::InputPulldown;
+        case 0:
+        default:
+            return debounce_event::types::PinMode::Input;
+    }
+}
+
+} // namespace settings::internal
+} // namespace settings
+
 // -----------------------------------------------------------------------------
 
-constexpr const debounce_event::types::Config _buttonDecodeConfig(const unsigned char bitmask) {
+constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const unsigned char bitmask) {
     return {
         ((bitmask & ButtonMask::Pushbutton)
             ? debounce_event::types::Mode::Pushbutton
@@ -70,6 +113,15 @@ button_actions_t _buttonConstructActions(unsigned char index) {
         _buttonLongClick(index),
         _buttonLongLongClick(index),
         _buttonTripleClick(index)
+    };
+}
+
+debounce_event::types::Config _buttonConfig(unsigned char index) {
+    const auto config = _buttonDecodeConfigBitmask(_buttonConfigBitmask(index));
+    return {
+        getSetting({"btnMode", index}, config.mode),
+        getSetting({"btnDefState", index}, config.default_state),
+        getSetting({"btnPinMode", index}, config.pin_mode)
     };
 }
 
@@ -199,7 +251,9 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     JsonArray& schema = module.createNestedArray("_schema");
 
     schema.add("GPIO");
-    schema.add("Config");
+    schema.add("Mode");
+    schema.add("DefState");
+    schema.add("PinMode");
 
     schema.add("Relay");
 
@@ -228,10 +282,16 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         // TODO: configure PIN object instead of button specifically, link PIN<->BUTTON
         if (_buttons[i].getPin()) {
             button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
-            button.add(getSetting({"btnConfig", index}, _buttonConfig(index)));
+            const auto config = _buttonConfig(index);
+            button.add(static_cast<int>(config.mode));
+            button.add(static_cast<int>(config.default_state));
+            button.add(static_cast<int>(config.pin_mode));
         } else {
             button.add(GPIO_NONE);
             button.add(static_cast<int>(BUTTON_PUSHBUTTON));
+            button.add(0);
+            button.add(0);
+            button.add(0);
         }
 
         button.add(_buttons[i].relayID);
@@ -404,49 +464,6 @@ unsigned long _buttonGetSetting(const char* key, unsigned char index, T default_
     return getSetting(key, getSetting({key, index}, default_value));
 }
 
-// TODO: if we want a custom conversion, is it OK to inject ns like this?
-// TODO: implement shorter getSetting signtature resolution? e.g. getSetting<convert_f>(..., return_type<convert_f>())
-namespace settings {
-namespace internal {
-
-template<>
-debounce_event::types::Mode convert(const String& value) {
-    switch (value.toInt()) {
-        case 1:
-            return debounce_event::types::Mode::Switch;
-        case 0:
-        default:
-            return debounce_event::types::Mode::Pushbutton;
-    }
-}
-
-template<>
-debounce_event::types::DefaultState convert(const String& value) {
-    switch (value.toInt()) {
-        case 0:
-            return debounce_event::types::DefaultState::Low;
-        case 1:
-        default:
-            return debounce_event::types::DefaultState::High;
-    }
-}
-
-template<>
-debounce_event::types::PinMode convert(const String& value) {
-    switch (value.toInt()) {
-        case 1:
-            return debounce_event::types::PinMode::InputPullup;
-        case 2:
-            return debounce_event::types::PinMode::InputPulldown;
-        case 0:
-        default:
-            return debounce_event::types::PinMode::Input;
-    }
-}
-
-} // namespace settings::internal
-} // namespace settings
-
 void buttonSetup() {
 
     // Backwards compatibility
@@ -549,12 +566,7 @@ void buttonSetup() {
                 getSetting({"btnTclk", index}, _buttonTripleClick(index))
             };
 
-            const auto raw_config = _buttonDecodeConfig(_buttonConfig(index));
-            const debounce_event::types::Config config {
-                getSetting({"btnMode", index}, raw_config.mode),
-                getSetting({"btnDefState", index}, raw_config.default_state),
-                getSetting({"btnPinMode", index}, raw_config.pin_mode)
-            };
+            const auto config = _buttonConfig(index);
 
             // TODO: allow to change GpioPin to something else based on config?
             _buttons.emplace_back(

@@ -31,7 +31,7 @@ constexpr const unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonConfig(unsigned char index) {
+constexpr const unsigned char _buttonConfigBitmask(unsigned char index) {
     return (
         (index == 0) ? (BUTTON1_CONFIG) :
         (index == 1) ? (BUTTON2_CONFIG) :
