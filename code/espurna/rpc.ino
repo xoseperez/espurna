@@ -2,11 +2,14 @@
 
 Part of MQTT and API modules
 
+Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
 */
 
 #if MQTT_SUPPORT || API_SUPPORT
 
 #include <Schedule.h>
+#include <cstring>
 
 #include "system.h"
 #include "utils.h"
