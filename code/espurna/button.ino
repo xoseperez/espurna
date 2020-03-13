@@ -638,7 +638,7 @@ void _buttonLoopSonoffDual() {
         return;
     }
 
-    const unsigned char value = bytes[2];
+    const unsigned char value [[gnu::unused]] = bytes[2];
 
 #if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
 
