@@ -40,13 +40,13 @@ debounce_event::types::Mode convert(const String& value) {
 }
 
 template<>
-debounce_event::types::DefaultState convert(const String& value) {
+debounce_event::types::PinValue convert(const String& value) {
     switch (value.toInt()) {
         case 0:
-            return debounce_event::types::DefaultState::Low;
+            return debounce_event::types::PinValue::Low;
         case 1:
         default:
-            return debounce_event::types::DefaultState::High;
+            return debounce_event::types::PinValue::High;
     }
 }
 
@@ -74,15 +74,15 @@ constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const u
             ? debounce_event::types::Mode::Pushbutton
             : debounce_event::types::Mode::Switch),
         ((bitmask & ButtonMask::DefaultHigh) 
-            ? debounce_event::types::DefaultState::High
-            : debounce_event::types::DefaultState::Low),
+            ? debounce_event::types::PinValue::High
+            : debounce_event::types::PinValue::Low),
         ((bitmask & ButtonMask::SetPullup) 
             ? debounce_event::types::PinMode::InputPullup : (bitmask & ButtonMask::SetPulldown) 
             ? debounce_event::types::PinMode::InputPullup : debounce_event::types::PinMode::Input)
     };
 }
 
-constexpr const uint16_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
+constexpr const button_action_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
     return (
         (event == button_event_t::Pressed) ? actions.pressed :
         (event == button_event_t::Click) ? actions.click :
@@ -120,7 +120,7 @@ debounce_event::types::Config _buttonConfig(unsigned char index) {
     const auto config = _buttonDecodeConfigBitmask(_buttonConfigBitmask(index));
     return {
         getSetting({"btnMode", index}, config.mode),
-        getSetting({"btnDefState", index}, config.default_state),
+        getSetting({"btnDefVal", index}, config.default_value),
         getSetting({"btnPinMode", index}, config.pin_mode)
     };
 }
@@ -252,7 +252,7 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     schema.add("GPIO");
     schema.add("Mode");
-    schema.add("DefState");
+    schema.add("DefVal");
     schema.add("PinMode");
 
     schema.add("Relay");
@@ -284,7 +284,7 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
             button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
             const auto config = _buttonConfig(index);
             button.add(static_cast<int>(config.mode));
-            button.add(static_cast<int>(config.default_state));
+            button.add(static_cast<int>(config.default_value));
             button.add(static_cast<int>(config.pin_mode));
         } else {
             button.add(GPIO_NONE);

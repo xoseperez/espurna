@@ -50,7 +50,7 @@ namespace types {
         Switch
     };
 
-    enum class DefaultState {
+    enum class PinValue {
         Low,
         High
     };
@@ -63,7 +63,7 @@ namespace types {
 
     struct Config {
         Mode mode;
-        DefaultState default_state;
+        PinValue default_value;
         PinMode pin_mode;
     };
 
@@ -83,8 +83,8 @@ class EventEmitter {
 
     public:
 
-        EventEmitter(types::Pin pin, const types::Config& config = {types::Mode::Pushbutton, types::DefaultState::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        EventEmitter(types::Pin pin, types::EventHandler callback, const types::Config& = {types::Mode::Pushbutton, types::DefaultState::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(types::Pin pin, const types::Config& config = {types::Mode::Pushbutton, types::PinValue::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(types::Pin pin, types::EventHandler callback, const types::Config& = {types::Mode::Pushbutton, types::PinValue::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
         types::Event loop();
         bool isPressed();
@@ -103,12 +103,12 @@ class EventEmitter {
         const types::Config _config;
 
         const bool _is_switch;
-        const bool _default_status;
+        const bool _default_value;
 
         const unsigned long _delay;
         const unsigned long _repeat;
 
-        bool _status;
+        bool _value;
 
         bool _ready;
         bool _reset_count;
