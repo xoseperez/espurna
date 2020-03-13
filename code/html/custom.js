@@ -1237,23 +1237,6 @@ function initRelayConfig(data) {
 
 }
 
-function initLeds(data) {
-
-    var current = $("#ledConfig > div").length;
-    if (current > 0) { return; }
-
-    var size = data.length;
-    var template = $("#ledConfigTemplate").children();
-    for (var i=0; i<size; ++i) {
-        var line = $(template).clone();
-        $("span.id", line).html(i);
-        $("select", line).attr("data", i);
-        $("input", line).attr("data", i);
-        line.appendTo("#ledConfig");
-    }
-
-}
-
 // -----------------------------------------------------------------------------
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
@@ -1863,15 +1846,37 @@ function processData(data) {
         // LEDs
         // ---------------------------------------------------------------------
 
-        if ("ledConfig" === key) {
-            initLeds(value);
-            for (var i=0; i<value.length; ++i) {
-                var mode = $("select[name='ledMode'][data='" + i + "']");
-                var relay = $("select[name='ledRelay'][data='" + i + "']");
-                mode.val(value[i].mode);
-                relay.val(value[i].relay);
-                setOriginalsFromValues($([mode,relay]));
-            }
+        if ("led" === key) {
+            if($("#ledConfig > div").length > 0) return;
+
+            var schema = value["schema"];
+            value["list"].forEach(function(led_data, index) {
+                if (schema.length !== led_data.length) {
+                    throw "LED schema mismatch!";
+                }
+
+                var led = {};
+                schema.forEach(function(key, index) {
+                    led[key] = led_data[index];
+                });
+
+                var line = $($("#ledConfigTemplate").children()).clone();
+
+                $("span.id", line).html(index);
+                $("select", line).attr("data", index);
+                $("input", line).attr("data", index);
+
+                $("select[name='ledGPIO']", line).val(led.GPIO);
+                // XXX: checkbox implementation depends on unique id
+                // $("input[name='ledInv']", line).val(led.Inv);
+                $("select[name='ledMode']", line).val(led.Mode);
+                $("input[name='ledRelay']", line).val(led.Relay);
+
+                setOriginalsFromValues($("input,select", line));
+
+                line.appendTo("#ledConfig");
+            });
+
             return;
         }
 

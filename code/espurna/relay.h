@@ -9,16 +9,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #pragma once
 
 #include <bitset>
+#include "rpc.h"
 #include "utils.h"
 
 constexpr size_t RELAYS_MAX = 32; 
-
-enum class RelayStatus : unsigned char {
-    OFF = 0,
-    ON = 1,
-    TOGGLE = 2,
-    UNKNOWN = 0xFF
-};
 
 struct RelayMask {
 
@@ -51,7 +45,7 @@ struct RelayMask {
 
 };
 
-RelayStatus relayParsePayload(const char * payload);
+PayloadStatus relayParsePayload(const char * payload);
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
 bool relayStatus(unsigned char id, bool status);
@@ -66,7 +60,7 @@ const String& relayPayloadOn();
 const String& relayPayloadOff();
 const String& relayPayloadToggle();
 
-const char* relayPayload(RelayStatus status);
+const char* relayPayload(PayloadStatus status);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 

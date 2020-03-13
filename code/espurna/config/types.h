@@ -169,8 +169,8 @@
 
 #define LED_MODE_MANUAL             0       // LED will be managed manually (OFF by default)
 #define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW             2       // LED will follow state of linked relay (check RELAY#_LED)
-#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
+#define LED_MODE_FOLLOW             2       // LED will follow state of linked LED#_RELAY relay ID
+#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked LED#_RELAY relay ID
 #define LED_MODE_FINDME             4       // LED will be ON if all relays are OFF
 #define LED_MODE_FINDME_WIFI        5       // A mixture between WIFI and FINDME
 #define LED_MODE_ON                 6       // LED always ON
