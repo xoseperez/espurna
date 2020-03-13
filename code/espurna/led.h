@@ -11,6 +11,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <memory>
 
+constexpr const size_t LedsMax = 8;
+
 enum class LedMode {
     NetworkAutoconfig,
     NetworkConnected,
@@ -55,8 +57,8 @@ struct led_pattern_t {
 };
 
 struct led_t {
-    led_t();
-    led_t(unsigned char id);
+    led_t() = delete;
+    led_t(unsigned char pin, bool inverse, unsigned char mode, unsigned char relayID);
 
     bool status();
     bool status(bool new_status);

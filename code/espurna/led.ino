@@ -20,18 +20,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // LED helper class
 
-led_t::led_t() :
-    pin(GPIO_NONE),
-    inverse(false),
-    mode(LED_MODE_MANUAL),
-    relayID(0)
-{}
-
-led_t::led_t(unsigned char id) :
-    pin(_ledPin(id)),
-    inverse(_ledInverse(id)),
-    mode(_ledMode(id)),
-    relayID(_ledRelay(id))
+led_t::led_t(unsigned char pin, bool inverse, unsigned char mode, unsigned char relayID) :
+    pin(pin),
+    inverse(inverse),
+    mode(mode),
+    relayID(relayID)
 {
     if (pin != GPIO_NONE) {
         pinMode(pin, OUTPUT);
@@ -216,11 +209,22 @@ void _ledWebSocketOnVisible(JsonObject& root) {
 
 void _ledWebSocketOnConnected(JsonObject& root) {
     if (!ledCount()) return;
-    JsonArray& leds = root.createNestedArray("ledConfig");
+    JsonObject& module = root.createNestedObject("led");
+
+    JsonArray& schema = module.createNestedArray("schema");
+    schema.add("GPIO");
+    schema.add("Inv");
+    schema.add("Mode");
+    schema.add("Relay");
+
+    JsonArray& leds = module.createNestedArray("list");
+
     for (unsigned char id = 0; id < ledCount(); ++id) {
-        JsonObject& led = leds.createNestedObject();
-        led["mode"] = getSetting({"ledMode", id}, _leds[id].mode);
-        led["relay"] = getSetting<unsigned char>({"ledRelay", id}, _leds[id].relayID);
+        JsonArray& led = leds.createNestedArray();
+        led.add(getSetting({"ledGPIO", index}, _ledPin(index)));
+        led.add(getSetting({"ledInv", index}, _ledInverse(index)));
+        led.add(getSetting({"ledMode", index}, _ledMode(index)));
+        led.add(getSetting({"ledRelay", index}, _ledRelay(index)));
     }
 }
 
@@ -331,12 +335,20 @@ void ledSetup() {
 
     _leds.reserve(leds);
 
-    for (unsigned char id=0; id < leds; ++id) {
-        _leds.emplace_back(id);
-        _leds[id].status(false);
+    for (unsigned char index=0; index < leds; ++index) {
+        const auto pin = getSetting({"ledGPIO", index}, _ledPin(index));
+        if (!gpioValid(pin)) {
+            break;
+        }
+        _leds.emplace_back(
+            pin,
+            getSetting({"ledInv", index}, _ledInverse(index)),
+            getSetting({"ledMode", index}, _ledMode(index)),
+            getSetting({"ledRelay", index}, _ledRelay(index))
+        );
     }
 
-    _ledConfigure();
+    _led_update = true;
 
     #if MQTT_SUPPORT
         mqttRegister(_ledMQTTCallback);
