@@ -38,6 +38,8 @@
 #if ALEXA_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1               // and switches
 #endif
 
 #if RPN_RULES_SUPPORT
@@ -45,6 +47,11 @@
 #define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1
+#endif
+
+#if RF_SUPPORT
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1
 #endif
 
 #if LED_SUPPORT
@@ -74,11 +81,18 @@
 #define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
 
+#if THERMOSTAT_SUPPORT
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Thermostat depends on switches
+#endif
+
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP to work
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Scheduler needs relays
 #endif
 
 #if LWIP_VERSION_MAJOR != 1
@@ -101,6 +115,8 @@
 #if TUYA_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Most of the time we require it
 #endif
 
 //------------------------------------------------------------------------------

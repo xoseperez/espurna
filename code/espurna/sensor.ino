@@ -2028,7 +2028,7 @@ void sensorLoop() {
         _sensorPre();
 
         // Get the first relay state
-        #if SENSOR_POWER_CHECK_STATUS
+        #if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
             bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
         #endif
 
@@ -2046,7 +2046,7 @@ void sensorLoop() {
                 value_raw = magnitude.sensor->value(magnitude.local);
 
                 // Completely remove spurious values if relay is OFF
-                #if SENSOR_POWER_CHECK_STATUS
+                #if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
                     if (relay_off) {
                         if (magnitude.type == MAGNITUDE_POWER_ACTIVE ||
                             magnitude.type == MAGNITUDE_POWER_REACTIVE ||

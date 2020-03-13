@@ -6,8 +6,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#if MQTT_SUPPORT || API_SUPPORT
-
 #include <Schedule.h>
 #include <cstring>
 
@@ -66,5 +64,3 @@ PayloadStatus rpcParsePayload(const char* payload, const rpc_payload_check_t ext
     return PayloadStatus::Unknown;
 
 }
-
-#endif // MQTT_SUPPORT || API_SUPPORT

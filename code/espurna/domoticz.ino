@@ -128,7 +128,9 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
         mqttSubscribeRaw(dczTopicOut.c_str());
 
         // Send relays state on connection
-        domoticzSendRelays();
+        #if RELAY_SUPPORT
+            domoticzSendRelays();
+        #endif
 
     }
 
@@ -231,7 +233,10 @@ void _domoticzConfigure() {
     const bool enabled = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
     if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
 
-    _domoticzRelayConfigure(relayCount());
+    #if RELAY_SUPPORT
+        _domoticzRelayConfigure(relayCount());
+    #endif
+
     _dcz_enabled = enabled;
 }
 

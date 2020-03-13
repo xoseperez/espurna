@@ -284,6 +284,8 @@ void _irProcess(unsigned char type, unsigned long code) {
                 unsigned long button_value = pgm_read_dword(&IR_BUTTON[i][2]);
 
                 switch (button_action) {
+
+                #if RELAY_SUPPORT
                     case IR_BUTTON_ACTION_STATE:
                         relayStatus(0, button_value);
                         break;
@@ -291,6 +293,7 @@ void _irProcess(unsigned char type, unsigned long code) {
                     case IR_BUTTON_ACTION_TOGGLE:
                         relayToggle(button_value);
                         break;
+                #endif // RELAY_SUPPORT == 1
 
                 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 

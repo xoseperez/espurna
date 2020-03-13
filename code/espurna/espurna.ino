@@ -193,7 +193,9 @@ void setup() {
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
-    relaySetup();
+    #if RELAY_SUPPORT
+        relaySetup();
+    #endif
     #if BUTTON_SUPPORT
         buttonSetup();
     #endif

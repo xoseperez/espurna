@@ -56,10 +56,10 @@
     #define ALEXA_SUPPORT           0
     #define API_SUPPORT             0
     #define BROKER_SUPPORT          0
-    #define DOMOTICZ_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
     #define DEBUG_TELNET_SUPPORT    0
     #define DEBUG_WEB_SUPPORT       0
+    #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
@@ -71,11 +71,13 @@
     #define WEB_SUPPORT             0
 
     // Extra light-weight image
-    //#define BUTTON_SUPPORT          0
-    //#define LED_SUPPORT             0
-    //#define MDNS_SERVER_SUPPORT     0
-    //#define TELNET_SUPPORT          0
-    //#define TERMINAL_SUPPORT        0
+    //#define BUTTON_SUPPORT          0 // don't need / have buttons
+    //#define LED_SUPPORT             0 // don't need wifi indicator
+    //#define RELAY_SUPPORT           0 // don't need to preserve pin state between resets
+    //#define OTA_ARDUINOOTA_SUPPORT  0 // when only using `ota` command
+    //#define MDNS_SERVER_SUPPORT     0 // 
+    //#define TELNET_SUPPORT          0 // when only using espota.py
+    //#define TERMINAL_SUPPORT        0 //
 
 #elif defined(ESPURNA_BASE)
 

@@ -6,6 +6,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#if RELAY_SUPPORT
+
 #include <Ticker.h>
 #include <ArduinoJson.h>
 #include <vector>
@@ -1437,3 +1439,5 @@ void relaySetup() {
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
 }
+
+#endif // RELAY_SUPPORT == 1
