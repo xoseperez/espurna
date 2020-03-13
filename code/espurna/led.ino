@@ -28,6 +28,7 @@ led_t::led_t(unsigned char pin, bool inverse, unsigned char mode, unsigned char 
 {
     if (pin != GPIO_NONE) {
         pinMode(pin, OUTPUT);
+        status(false);
     }
 }
 
