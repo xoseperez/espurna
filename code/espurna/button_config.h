@@ -6,6 +6,18 @@ BUTTON MODULE
 
 #pragma once
 
+namespace ButtonMask {
+
+enum {
+    Pushbutton = 1 << 0,
+    Switch = 1 << 1,
+    DefaultHigh = 1 << 2,
+    SetPullup = 1 << 3,
+    SetPulldown = 1 << 4
+};
+
+} // namespace ButtonMask
+
 constexpr const unsigned char _buttonPin(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PIN :
@@ -19,16 +31,16 @@ constexpr const unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonMode(unsigned char index) {
+constexpr const unsigned char _buttonConfigBitmask(unsigned char index) {
     return (
-        (index == 0) ? BUTTON1_MODE :
-        (index == 1) ? BUTTON2_MODE :
-        (index == 2) ? BUTTON3_MODE :
-        (index == 3) ? BUTTON4_MODE :
-        (index == 4) ? BUTTON5_MODE :
-        (index == 5) ? BUTTON6_MODE :
-        (index == 6) ? BUTTON7_MODE :
-        (index == 7) ? BUTTON8_MODE : (BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH)
+        (index == 0) ? (BUTTON1_CONFIG) :
+        (index == 1) ? (BUTTON2_CONFIG) :
+        (index == 2) ? (BUTTON3_CONFIG) :
+        (index == 3) ? (BUTTON4_CONFIG) :
+        (index == 4) ? (BUTTON5_CONFIG) :
+        (index == 5) ? (BUTTON6_CONFIG) :
+        (index == 6) ? (BUTTON7_CONFIG) :
+        (index == 7) ? (BUTTON8_CONFIG) : (BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH)
     );
 }
 
@@ -41,7 +53,7 @@ constexpr const unsigned char _buttonPress(unsigned char index) {
         (index == 4) ? BUTTON5_PRESS :
         (index == 5) ? BUTTON6_PRESS :
         (index == 6) ? BUTTON7_PRESS :
-        (index == 7) ? BUTTON8_PRESS : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_PRESS : BUTTON_ACTION_NONE
     );
 }
 
@@ -54,7 +66,7 @@ constexpr const unsigned char _buttonClick(unsigned char index) {
         (index == 4) ? BUTTON5_CLICK :
         (index == 5) ? BUTTON6_CLICK :
         (index == 6) ? BUTTON7_CLICK :
-        (index == 7) ? BUTTON8_CLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_CLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -67,7 +79,7 @@ constexpr const unsigned char _buttonDoubleClick(unsigned char index) {
         (index == 4) ? BUTTON5_DBLCLICK :
         (index == 5) ? BUTTON6_DBLCLICK :
         (index == 6) ? BUTTON7_DBLCLICK :
-        (index == 7) ? BUTTON8_DBLCLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_DBLCLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -80,7 +92,7 @@ constexpr const unsigned char _buttonTripleClick(unsigned char index) {
         (index == 4) ? BUTTON5_TRIPLECLICK :
         (index == 5) ? BUTTON6_TRIPLECLICK :
         (index == 6) ? BUTTON7_TRIPLECLICK :
-        (index == 7) ? BUTTON8_TRIPLECLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_TRIPLECLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -93,7 +105,7 @@ constexpr const unsigned char _buttonLongClick(unsigned char index) {
         (index == 4) ? BUTTON5_LNGCLICK :
         (index == 5) ? BUTTON6_LNGCLICK :
         (index == 6) ? BUTTON7_LNGCLICK :
-        (index == 7) ? BUTTON8_LNGCLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_LNGCLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -106,7 +118,7 @@ constexpr const unsigned char _buttonLongLongClick(unsigned char index) {
         (index == 4) ? BUTTON5_LNGLNGCLICK :
         (index == 5) ? BUTTON6_LNGLNGCLICK :
         (index == 6) ? BUTTON7_LNGLNGCLICK :
-        (index == 7) ? BUTTON8_LNGLNGCLICK : BUTTON_MODE_NONE
+        (index == 7) ? BUTTON8_LNGLNGCLICK : BUTTON_ACTION_NONE
     );
 }
 
@@ -123,50 +135,96 @@ constexpr const unsigned char _buttonRelay(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonDecodeEventAction(unsigned long actions, unsigned char event) {
+constexpr const unsigned long _buttonDebounceDelay() {
+    return BUTTON_DEBOUNCE_DELAY;
+}
+
+constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
     return (
-        (event == BUTTON_EVENT_PRESSED) ? ((actions) & 0x0F) :
-        (event == BUTTON_EVENT_CLICK) ? ((actions >> 4) & 0x0F) :
-        (event == BUTTON_EVENT_DBLCLICK) ? ((actions >> 8) & 0x0F) :
-        (event == BUTTON_EVENT_LNGCLICK) ? ((actions >> 12) & 0x0F) :
-        (event == BUTTON_EVENT_LNGLNGCLICK) ? ((actions >> 16) & 0x0F) :
-        (event == BUTTON_EVENT_TRIPLECLICK) ? ((actions >> 20) & 0x0F) : BUTTON_MODE_NONE
+        (index == 0) ? BUTTON1_DEBOUNCE_DELAY :
+        (index == 1) ? BUTTON2_DEBOUNCE_DELAY :
+        (index == 2) ? BUTTON3_DEBOUNCE_DELAY :
+        (index == 3) ? BUTTON4_DEBOUNCE_DELAY :
+        (index == 4) ? BUTTON5_DEBOUNCE_DELAY :
+        (index == 5) ? BUTTON6_DEBOUNCE_DELAY :
+        (index == 6) ? BUTTON7_DEBOUNCE_DELAY :
+        (index == 7) ? BUTTON8_DEBOUNCE_DELAY : _buttonDebounceDelay()
     );
 }
 
-constexpr const uint8_t _buttonMapReleased(uint8_t count, uint16_t length) {
+constexpr const unsigned long _buttonRepeatDelay() {
+    return BUTTON_REPEAT_DELAY;
+}
+
+constexpr const unsigned long _buttonRepeatDelay(unsigned char index) {
     return (
-        (1 == count) ? (
-            (length > BUTTON_LNGLNGCLICK_DELAY) ? BUTTON_EVENT_LNGLNGCLICK :
-            (length > BUTTON_LNGCLICK_DELAY) ? BUTTON_EVENT_LNGCLICK : BUTTON_EVENT_CLICK
-        ) : 
-        (2 == count) ? BUTTON_EVENT_DBLCLICK : 
-        (3 == count) ? BUTTON_EVENT_TRIPLECLICK : 
-        BUTTON_EVENT_NONE
+        (index == 0) ? BUTTON1_REPEAT_DELAY :
+        (index == 1) ? BUTTON2_REPEAT_DELAY :
+        (index == 2) ? BUTTON3_REPEAT_DELAY :
+        (index == 3) ? BUTTON4_REPEAT_DELAY :
+        (index == 4) ? BUTTON5_REPEAT_DELAY :
+        (index == 5) ? BUTTON6_REPEAT_DELAY :
+        (index == 6) ? BUTTON7_REPEAT_DELAY :
+        (index == 7) ? BUTTON8_REPEAT_DELAY : _buttonRepeatDelay()
     );
 }
 
-constexpr const uint8_t _buttonMapEvent(uint8_t event, uint8_t count, uint16_t length) {
+constexpr const unsigned long _buttonLongClickDelay() {
+    return BUTTON_LNGCLICK_DELAY;
+}
+
+constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
     return (
-        (event == EVENT_PRESSED) ? BUTTON_EVENT_PRESSED :
-        (event == EVENT_CHANGED) ? BUTTON_EVENT_CLICK :
-        (event == EVENT_RELEASED) ? _buttonMapReleased(count, length) :
-        BUTTON_EVENT_NONE
+        (index == 0) ? BUTTON1_LNGCLICK_DELAY :
+        (index == 1) ? BUTTON2_LNGCLICK_DELAY :
+        (index == 2) ? BUTTON3_LNGCLICK_DELAY :
+        (index == 3) ? BUTTON4_LNGCLICK_DELAY :
+        (index == 4) ? BUTTON5_LNGCLICK_DELAY :
+        (index == 5) ? BUTTON6_LNGCLICK_DELAY :
+        (index == 6) ? BUTTON7_LNGCLICK_DELAY :
+        (index == 7) ? BUTTON8_LNGCLICK_DELAY : _buttonLongClickDelay()
     );
 }
 
-constexpr uint32_t _buttonConstructActions(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
+constexpr const unsigned long _buttonLongLongClickDelay() {
+    return BUTTON_LNGLNGCLICK_DELAY;
+}
+
+constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
     return (
-        (tripleclick << 20) |
-        (lnglngclick << 16) |
-        (lngclick << 12) |
-        (dblclick << 8) |
-        (click << 4) |
-        pressed
+        (index == 0) ? BUTTON1_LNGLNGCLICK_DELAY :
+        (index == 1) ? BUTTON2_LNGLNGCLICK_DELAY :
+        (index == 2) ? BUTTON3_LNGLNGCLICK_DELAY :
+        (index == 3) ? BUTTON4_LNGLNGCLICK_DELAY :
+        (index == 4) ? BUTTON5_LNGLNGCLICK_DELAY :
+        (index == 5) ? BUTTON6_LNGLNGCLICK_DELAY :
+        (index == 6) ? BUTTON7_LNGLNGCLICK_DELAY :
+        (index == 7) ? BUTTON8_LNGLNGCLICK_DELAY : _buttonLongLongClickDelay()
     );
 }
 
-constexpr uint32_t _buttonConstructActions(unsigned char id) {
-    return _buttonConstructActions(_buttonPress(id), _buttonClick(id), _buttonDoubleClick(id), _buttonLongClick(id), _buttonLongLongClick(id), _buttonTripleClick(id));
+constexpr const bool _buttonMqttSendAllEvents(unsigned char index) {
+    return (
+        (index == 0) ? (1 == BUTTON1_MQTT_SEND_ALL_EVENTS) :
+        (index == 1) ? (1 == BUTTON2_MQTT_SEND_ALL_EVENTS) :
+        (index == 2) ? (1 == BUTTON3_MQTT_SEND_ALL_EVENTS) :
+        (index == 3) ? (1 == BUTTON4_MQTT_SEND_ALL_EVENTS) :
+        (index == 4) ? (1 == BUTTON5_MQTT_SEND_ALL_EVENTS) :
+        (index == 5) ? (1 == BUTTON6_MQTT_SEND_ALL_EVENTS) :
+        (index == 6) ? (1 == BUTTON7_MQTT_SEND_ALL_EVENTS) :
+        (index == 7) ? (1 == BUTTON8_MQTT_SEND_ALL_EVENTS) : (1 == BUTTON_MQTT_SEND_ALL_EVENTS)
+    );
 }
 
+constexpr const bool _buttonMqttRetain(unsigned char index) {
+    return (
+        (index == 0) ? (1 == BUTTON1_MQTT_RETAIN) :
+        (index == 1) ? (1 == BUTTON2_MQTT_RETAIN) :
+        (index == 2) ? (1 == BUTTON3_MQTT_RETAIN) :
+        (index == 3) ? (1 == BUTTON4_MQTT_RETAIN) :
+        (index == 4) ? (1 == BUTTON5_MQTT_RETAIN) :
+        (index == 5) ? (1 == BUTTON6_MQTT_RETAIN) :
+        (index == 6) ? (1 == BUTTON7_MQTT_RETAIN) :
+        (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
+    );
+}
