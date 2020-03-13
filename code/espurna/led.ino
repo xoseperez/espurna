@@ -219,10 +219,10 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 
     JsonArray& leds = module.createNestedArray("list");
 
-    for (unsigned char id = 0; id < ledCount(); ++id) {
+    for (unsigned char index = 0; index < ledCount(); ++index) {
         JsonArray& led = leds.createNestedArray();
         led.add(getSetting({"ledGPIO", index}, _ledPin(index)));
-        led.add(getSetting({"ledInv", index}, _ledInverse(index)));
+        led.add(static_cast<int>(getSetting({"ledInv", index}, _ledInverse(index))));
         led.add(getSetting({"ledMode", index}, _ledMode(index)));
         led.add(getSetting({"ledRelay", index}, _ledRelay(index)));
     }
