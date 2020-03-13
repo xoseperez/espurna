@@ -39,10 +39,10 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
     _callback(callback),
     _config(config),
     _is_switch(config.mode == types::Mode::Switch),
-    _default_status(config.default_state == types::DefaultState::High),
+    _default_value(config.default_value == types::PinValue::High),
     _delay(debounce_delay),
     _repeat(repeat),
-    _status(false),
+    _value(false),
     _ready(false),
     _reset_count(true),
     _event_start(0),
@@ -60,7 +60,7 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
         // - https://github.com/esp8266/Arduino/commit/1b3581d55ebf0f8c91e081f9af4cf7433d492ec9
         #ifdef ESP8266
             if (_pin->pin == 16) {
-                _pin->pinMode(_default_status ? INPUT : INPUT_PULLDOWN_16);
+                _pin->pinMode(_default_value ? INPUT : INPUT_PULLDOWN_16);
             } else {
                 _pin->pinMode(INPUT);
             }
@@ -71,7 +71,7 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
         _pin->pinMode(INPUT);
     }
 
-    _status = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_status;
+    _value = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_value;
 }
 
 EventEmitter::EventEmitter(types::Pin pin, const types::Config& config, unsigned long delay, unsigned long repeat) :
@@ -79,7 +79,7 @@ EventEmitter::EventEmitter(types::Pin pin, const types::Config& config, unsigned
 {}
 
 bool EventEmitter::isPressed() {
-    return (_status != _default_status);
+    return (_value != _default_value);
 }
 
 const types::Pin EventEmitter::getPin() const {
@@ -105,23 +105,23 @@ types::Event EventEmitter::loop() {
     static_assert((LOW) == 0, "Arduino API LOW is not 0");
 
     auto event = types::EventNone;
-    bool status = _pin->digitalRead() == (HIGH);
+    bool value = _pin->digitalRead() == (HIGH);
 
-    if (status != _status) {
+    if (value != _value) {
 
         // TODO: check each loop instead of blocking?
         auto start = millis();
         while (millis() - start < _delay) delay(1);
 
-        status = _pin->digitalRead() == (HIGH);
-        if (status != _status) {
+        value = _pin->digitalRead() == (HIGH);
+        if (value != _value) {
 
-            _status = !_status;
+            _value = !_value;
 
             if (_is_switch) {
                 event = types::EventChanged;
             } else {
-                if (_status == _default_status) {
+                if (_value == _default_value) {
                     _event_length = millis() - _event_start;
                     _ready = true;
                 } else {
