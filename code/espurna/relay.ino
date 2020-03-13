@@ -810,7 +810,7 @@ void _relayConfigure() {
     _relay_delay_interlock = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK);
     _relay_sync_mode = getSetting("relaySync", RELAY_SYNC);
 
-    #if MQTT_SUPPORT
+    #if MQTT_SUPPORT || API_SUPPORT
         settingsProcessConfig({
             {_relay_rpc_payload_on,     "relayPayloadOn",     RELAY_MQTT_ON},
             {_relay_rpc_payload_off,    "relayPayloadOff",    RELAY_MQTT_OFF},
