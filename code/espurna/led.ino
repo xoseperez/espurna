@@ -336,7 +336,7 @@ void ledSetup() {
 
     _leds.reserve(leds);
 
-    for (unsigned char index=0; index < leds; ++index) {
+    for (unsigned char index=0; index < LedsMax; ++index) {
         const auto pin = getSetting({"ledGPIO", index}, _ledPin(index));
         if (!gpioValid(pin)) {
             break;
