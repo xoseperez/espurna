@@ -394,6 +394,8 @@ void ledLoop() {
                 }
                 break;
 
+        #if RELAY_SUPPORT
+
             case LED_MODE_FINDME_WIFI:
                 if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
                     _ledBlink(led, LedMode::NetworkAutoconfig);
@@ -470,6 +472,8 @@ void ledLoop() {
                 _ledStatus(led, status);
                 break;
             }
+
+        #endif // RELAY_SUPPORT == 1
 
             case LED_MODE_ON:
                 if (!_led_update) break;

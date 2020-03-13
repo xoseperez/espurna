@@ -215,17 +215,21 @@ void _rpnInit() {
     });
 
     // Accept relay number and numeric API status value (0, 1 and 2)
-    rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
-        float status, id;
-        rpn_stack_pop(ctxt, id);
-        rpn_stack_pop(ctxt, status);
-        if (int(status) == 2) {
-            relayToggle(int(id));
-        } else {
-            relayStatus(int(id), int(status) == 1);
-        }
-        return true;
-    });
+    #if RELAY_SUPPORT
+
+        rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
+            float status, id;
+            rpn_stack_pop(ctxt, id);
+            rpn_stack_pop(ctxt, status);
+            if (int(status) == 2) {
+                relayToggle(int(id));
+            } else {
+                relayStatus(int(id), int(status) == 1);
+            }
+            return true;
+        });
+
+    #endif // RELAY_SUPPORT == 1
 
     // Channel operators
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT

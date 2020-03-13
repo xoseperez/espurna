@@ -426,6 +426,10 @@
 // RELAY
 //------------------------------------------------------------------------------
 
+#ifndef RELAY_SUPPORT
+#define RELAY_SUPPORT               1
+#endif
+
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
 #ifndef RELAY_BOOT_MODE
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF

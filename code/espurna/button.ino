@@ -411,6 +411,8 @@ void buttonEvent(unsigned char id, button_event_t event) {
     #endif
 
     switch (action) {
+
+    #if RELAY_SUPPORT
         case BUTTON_ACTION_TOGGLE:
             relayToggle(button.relayID);
             break;
@@ -422,6 +424,7 @@ void buttonEvent(unsigned char id, button_event_t event) {
         case BUTTON_ACTION_OFF:
             relayStatus(button.relayID, false);
             break;
+    #endif // RELAY_SUPPORT == 1
 
         case BUTTON_ACTION_AP:
             if (wifiState() & WIFI_STATE_AP) {
