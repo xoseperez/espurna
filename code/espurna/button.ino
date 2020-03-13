@@ -568,7 +568,7 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
-        for (unsigned char index = 0; index < buttons; ++index) {
+        for (unsigned char index = 0; index < ButtonsMax; ++index) {
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
             if (!gpioValid(pin)) {
                 break;
