@@ -75,13 +75,13 @@
     //#define LED_SUPPORT             0 // don't need wifi indicator
     //#define RELAY_SUPPORT           0 // don't need to preserve pin state between resets
     //#define OTA_ARDUINOOTA_SUPPORT  0 // when only using `ota` command
-    //#define MDNS_SERVER_SUPPORT     0 // 
+    //#define MDNS_SERVER_SUPPORT     0 //
     //#define TELNET_SUPPORT          0 // when only using espota.py
     //#define TERMINAL_SUPPORT        0 //
 
 #elif defined(ESPURNA_BASE)
 
-    // This is a special device with no specific hardware 
+    // This is a special device with no specific hardware
     // with the basics to easily upgrade it to a device-specific image
 
     // Info
@@ -768,7 +768,6 @@
     // Light
     #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       12
-    #define LIGHT_CH1_INVERSE   0
 
 #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
@@ -840,8 +839,6 @@
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       12  // Cold white
     #define LIGHT_CH2_PIN       14  // Warm white
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
 
 #elif defined(ITEAD_SONOFF_T1_1CH)
 
@@ -1295,10 +1292,6 @@
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
     // IR
     #define IR_SUPPORT          1
@@ -1324,10 +1317,6 @@
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
     // IR
     #define IR_SUPPORT          1
@@ -1355,10 +1344,6 @@
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       14      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
     // IR
     #define IR_SUPPORT          1
@@ -1386,10 +1371,6 @@
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
     // RF
     #define RF_SUPPORT          1
@@ -1443,11 +1424,6 @@
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       5       // COLD WHITE
     #define LIGHT_CH5_PIN       15      // WARM WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-    #define LIGHT_CH5_INVERSE   0
 
 #elif defined(MAGICHOME_ZJ_LB_RGBWW_L)
 
@@ -1465,11 +1441,6 @@
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       12      // COLD WHITE
     #define LIGHT_CH5_PIN       13      // WARM WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-    #define LIGHT_CH5_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
@@ -1497,11 +1468,6 @@
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       14      // WHITE1
     #define LIGHT_CH5_PIN       4       // WHITE2
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-    #define LIGHT_CH5_INVERSE   0
 
 #elif defined(HUACANXING_H802)
 
@@ -1520,10 +1486,6 @@
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
@@ -1789,8 +1751,6 @@
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       0
     #define LIGHT_CH2_PIN       2
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Arilux AL-LC06
@@ -1810,9 +1770,6 @@
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
 
 #elif defined(ARILUX_AL_LC02)
 
@@ -1829,10 +1786,6 @@
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE1
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 #elif defined(ARILUX_AL_LC02_V14)
 
@@ -1849,10 +1802,6 @@
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE1
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 #elif defined(ARILUX_AL_LC06)
 
@@ -1875,11 +1824,6 @@
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE1
     #define LIGHT_CH5_PIN       5       // WHITE2
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-    #define LIGHT_CH5_INVERSE   0
 
 #elif defined(ARILUX_AL_LC11)
 
@@ -1897,11 +1841,6 @@
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE1
     #define LIGHT_CH5_PIN       12      // WHITE1
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-    #define LIGHT_CH5_INVERSE   0
 
 #elif defined(ARILUX_E27)
 
@@ -1989,10 +1928,6 @@
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       2       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
     #define LIGHT_ENABLE_PIN    15
 
@@ -2025,9 +1960,6 @@
     #define LIGHT_CH1_PIN       15       // RED
     #define LIGHT_CH2_PIN       12       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // KMC 70011
@@ -2899,7 +2831,7 @@
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
-    
+
 // -----------------------------------------------------------------------------
 // NEO Coolcam NAS-WR01W Wifi Smart Power Plug
 // https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
@@ -2952,7 +2884,7 @@
 
 
 // ------------------------------------------------------------------------------
-// DELTACO_SH_P03USB Wifi Smart Power Plug 
+// DELTACO_SH_P03USB Wifi Smart Power Plug
 // -----------------------------------------------------------------------------
 
 #elif defined(DELTACO_SH_P03USB)
@@ -3191,7 +3123,7 @@
 
     // Disable UART noise
     #define DEBUG_SERIAL_SUPPORT        0
-    
+
     // CSE7766
     #ifndef CSE7766_SUPPORT
     #define CSE7766_SUPPORT     1
@@ -3268,14 +3200,14 @@
 
 // -----------------------------------------------------------------------------
 // Teckin SP22 v1.4 - v1.6
-// 
-// NB Notes suggest that energy monitoring is removed from later versions 
+//
+// NB Notes suggest that energy monitoring is removed from later versions
 // -----------------------------------------------------------------------------
 
 #elif defined(TECKIN_SP23_V13)
 
-    // Info  .. NB Newer versions apparently lack energy monitor 
-    // The board revision is not indicated externally 
+    // Info  .. NB Newer versions apparently lack energy monitor
+    // The board revision is not indicated externally
     #define MANUFACTURER                "TECKIN"
     #define DEVICE                      "SP23_V13"
 
@@ -3289,9 +3221,9 @@
     #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN                    4 
+    #define LED1_PIN                    4
     #define LED1_PIN_INVERSE            1
-    #define LED2_PIN                    2 
+    #define LED2_PIN                    2
     #define LED2_PIN_INVERSE            0
     #define LED2_MODE                   LED_MODE_FINDME
     #define LED2_RELAY                  1
@@ -3305,8 +3237,8 @@
     #define HLW8012_CF_PIN              5
 
     #define HLW8012_SEL_CURRENT         LOW
-    #define HLW8012_CURRENT_RATIO       23324  
-    #define HLW8012_VOLTAGE_RATIO       324305 
+    #define HLW8012_CURRENT_RATIO       23324
+    #define HLW8012_VOLTAGE_RATIO       324305
     #define HLW8012_POWER_RATIO         3580841
     #define HLW8012_INTERRUPT_ON        FALLING
 
@@ -3479,9 +3411,6 @@
     #define LIGHT_CH1_PIN               14       // RED
     #define LIGHT_CH2_PIN               13       // GREEN
     #define LIGHT_CH3_PIN               12      // BLUE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
 
 // -----------------------------------------------------------------------------
 
@@ -3519,7 +3448,7 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
-    
+
 #elif defined(ALLTERCO_SHELLY1PM)
     // Info
     #define MANUFACTURER        "ALLTERCO"
@@ -3558,9 +3487,9 @@
     //Temperature
      #define NTC_SUPPORT        1
      #define SENSOR_SUPPORT     1
-     #define NTC_BETA           3350    
-     #define NTC_R_UP           10000   
-     #define NTC_R_DOWN         0       
+     #define NTC_BETA           3350
+     #define NTC_R_UP           10000
+     #define NTC_R_DOWN         0
      #define NTC_R0             8000
 
 #elif defined(ALLTERCO_SHELLY25)
@@ -3596,16 +3525,16 @@
     //Temperature
      #define NTC_SUPPORT        1
      #define SENSOR_SUPPORT     1
-     #define NTC_BETA           3350    
-     #define NTC_R_UP           10000   
-     #define NTC_R_DOWN         0       
-     #define NTC_R0             8000 
+     #define NTC_BETA           3350
+     #define NTC_R_UP           10000
+     #define NTC_R_DOWN         0
+     #define NTC_R0             8000
 
     //Current
     #define ADE7953_SUPPORT     1
     #define I2C_SDA_PIN         12
     #define I2C_SCL_PIN         14
- 
+
 // -----------------------------------------------------------------------------
 
 // also works with https://www.amazon.com/gp/product/B07TMY394G/
@@ -3703,9 +3632,7 @@
     #define LIGHT_STEP          8
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       5   // warm white
-    #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_PIN       4   // cold white
-    #define LIGHT_CH2_INVERSE   0
 
     // https://www.xiaomitoday.com/xiaomi-mijia-mjtd01yl-led-desk-lamp-review/
     #define LIGHT_COLDWHITE_MIRED 153
@@ -3739,9 +3666,6 @@
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // iWoole LED Table Lamp
@@ -3763,10 +3687,6 @@
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       4       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Generic GU10
@@ -3788,10 +3708,6 @@
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       4       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Generic E14
@@ -3813,10 +3729,6 @@
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       5       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Deltaco white e14 (SH-LE14W) and e27 (SH-LE27W)
@@ -3835,8 +3747,6 @@
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       12      // WARM WHITE
     #define LIGHT_CH2_PIN       14      // COLD WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Deltaco rgbw e27 (SH-LE27RGB)
@@ -3858,11 +3768,6 @@
     #define LIGHT_CH3_PIN       13       // BLUE
     #define LIGHT_CH4_PIN       14       // WARM WHITE
     #define LIGHT_CH5_PIN       12       // COLD WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-    #define LIGHT_CH5_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Nexete A19
@@ -3884,10 +3789,6 @@
     #define LIGHT_CH2_PIN       15      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       5       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Lombex Lux Nova 2 Tunable White
@@ -3977,9 +3878,9 @@
 
     // Relays
     #define RELAY1_PIN          15
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL 
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // Light RGBW 
+    // Light RGBW
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
@@ -3989,11 +3890,7 @@
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       4       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0	
-    
+
 // ----------------------------------------------------------------------------------------
 // Smart life Mini Smart Socket is similar Homecube 16A but some GPIOs differ
 // https://www.ebay.de/itm/Smart-Steckdose-WIFI-WLAN-Amazon-Alexa-Fernbedienung-Home-Socket-Zeitschaltuh-DE/123352026749?hash=item1cb85a8e7d:g:IasAAOSwk6dbj390
@@ -4029,9 +3926,6 @@
     #define LIGHT_CH1_PIN               0       // RED
     #define LIGHT_CH2_PIN               4       // GREEN
     #define LIGHT_CH3_PIN               2       // BLUE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
 
     // HJL01 / BL0937
     #ifndef HLW8012_SUPPORT
@@ -4203,7 +4097,7 @@
     #define LED1_PIN            4  // 4 blue led
     #define LED1_MODE           LED_MODE_WIFI
     #define LED1_PIN_INVERSE    1
-    
+
     #define LED2_PIN            5  // 5 red led
     #define LED2_MODE           LED_MODE_RELAY
     #define LED2_PIN_INVERSE    1
@@ -4245,10 +4139,6 @@
     #define LIGHT_CH2_PIN       4      // GREEN
     #define LIGHT_CH3_PIN       12     // BLUE
     #define LIGHT_CH4_PIN       14     // WHITE1
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 #elif defined(PSH_WIFI_SENSOR)
 
@@ -4308,7 +4198,7 @@
     #define DUMMY_RELAY_COUNT   0
 
 // -----------------------------------------------------------------------------
-// Etekcity ESW01-USA 
+// Etekcity ESW01-USA
 // https://www.amazon.com/Etekcity-Voltson-Outlet-Monitoring-Required/dp/B01M3MYIFS
 // -----------------------------------------------------------------------------
 
@@ -4330,11 +4220,9 @@
     // LEDs
     // Blue
     #define LED1_PIN                    5
-    #define LED1_PIN_INVERSE            0    
     #define LED1_MODE                   LED_MODE_WIFI
     // Yellow
     #define LED2_PIN                    16
-    #define LED2_PIN_INVERSE            0
     #define LED2_MODE                   LED_MODE_FOLLOW
     #define LED2_RELAY                  1
 
@@ -4379,7 +4267,6 @@
 
     // LEDs
     #define LED1_PIN                2
-    #define LED1_PIN_INVERSE        0
 
     // Disable UART noise
     #define DEBUG_SERIAL_SUPPORT    0
@@ -4445,10 +4332,6 @@
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       4       // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Hykker Power Plug (Smart Home Series) available in Jerónimo Martins Polska (Biedronka)
@@ -4568,10 +4451,6 @@
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE
     // #define LIGHT_CH5_PIN    5       // CW (not connected, but circuit supports it)
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
     // IR
     #define IR_SUPPORT          1
