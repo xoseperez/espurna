@@ -330,7 +330,7 @@ bool buttonState(unsigned char id) {
     return _buttons[id].state();
 }
 
-uint16_t buttonAction(unsigned char id, const button_event_t event) {
+button_action_t buttonAction(unsigned char id, const button_event_t event) {
     if (id >= _buttons.size()) return 0;
     return _buttonDecodeEventAction(_buttons[id].actions, event);
 }

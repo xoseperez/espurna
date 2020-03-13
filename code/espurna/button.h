@@ -16,6 +16,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 constexpr size_t ButtonsPresetMax = 8;
 constexpr size_t ButtonsMax = 32;
 
+using button_action_t = uint8_t;
+
 enum class button_event_t {
     None = 0,
     Pressed = 1,
@@ -27,12 +29,12 @@ enum class button_event_t {
 };
 
 struct button_actions_t {
-    uint16_t pressed;
-    uint16_t click;
-    uint16_t dblclick;
-    uint16_t lngclick;
-    uint16_t lnglngclick;
-    uint16_t trplclick;
+    button_action_t pressed;
+    button_action_t click;
+    button_action_t dblclick;
+    button_action_t lngclick;
+    button_action_t lnglngclick;
+    button_action_t trplclick;
 };
 
 struct button_event_delays_t {
@@ -64,7 +66,7 @@ struct button_t {
 };
 
 bool buttonState(unsigned char id);
-uint16_t buttonAction(unsigned char id, const button_event_t event);
+button_action_t buttonAction(unsigned char id, const button_event_t event);
 
 void buttonMQTT(unsigned char id, button_event_t event);
 void buttonEvent(unsigned char id, button_event_t event);
