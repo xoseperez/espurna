@@ -317,8 +317,9 @@ void _irProcess(unsigned char type, unsigned long code) {
                     case IR_BUTTON_ACTION_HSV:
                         lightColor(button_value);
                         break;
-                }
                 */
+
+                }
 
                 #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
