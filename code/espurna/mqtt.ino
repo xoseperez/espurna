@@ -402,40 +402,76 @@ void _mqttBackwards() {
 }
 
 void _mqttInfo() {
-    DEBUG_MSG_P(PSTR(
-        "[MQTT] "
-        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-            "AsyncMqttClient"
-        #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-            "Arduino-MQTT"
-        #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
-            "PubSubClient"
-        #endif
-        ", SSL "
-        #if SECURE_CLIENT != SEURE_CLIENT_NONE
-            "ENABLED"
-        #else
-            "DISABLED"
-        #endif
-        ", Autoconnect "
-        #if MQTT_AUTOCONNECT
-            "ENABLED"
-        #else
-            "DISABLED"
-        #endif
-        "\n"
-    ));
-    DEBUG_MSG_P(PSTR("[MQTT] Client %s, %s\n"),
-        _mqtt_enabled ? "ENABLED" : "DISABLED",
-        _mqtt.connected() ? "CONNECTED" : "DISCONNECTED"
-    );
-    DEBUG_MSG_P(PSTR("[MQTT] Retry %s (Now %u, Last %u, Delay %u, Step %u)\n"),
-        (_mqtt_state == AsyncClientState::Connecting) ? "CONNECTING" : "WAITING",
-        millis(),
-        _mqtt_last_connection,
-        _mqtt_reconnect_delay,
-        MQTT_RECONNECT_DELAY_STEP
-    );
+    // Build information
+    {
+        #define __MQTT_INFO_STR(X) #X
+        #define _MQTT_INFO_STR(X) __MQTT_INFO_STR(X)
+        DEBUG_MSG_P(PSTR(
+            "[MQTT] "
+            #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+                "AsyncMqttClient"
+            #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
+                "Arduino-MQTT"
+            #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+                "PubSubClient"
+            #endif
+            ", SSL "
+            #if SECURE_CLIENT != SEURE_CLIENT_NONE
+                "ENABLED"
+            #else
+                "DISABLED"
+            #endif
+            ", Autoconnect "
+            #if MQTT_AUTOCONNECT
+                "ENABLED"
+            #else
+                "DISABLED"
+            #endif
+            ", Buffer size " _MQTT_INFO_STR(MQTT_MAX_PACKET_SIZE) " bytes"
+            "\n"
+        ));
+        #undef _MQTT_INFO_STR
+        #undef __MQTT_INFO_STR
+    }
+
+    // Notify about the general state of the client
+    {
+        const __FlashStringHelper* enabled = _mqtt_enabled
+            ? F("ENABLED")
+            : F("DISABLED");
+
+        const __FlashStringHelper* state = nullptr;
+        switch (_mqtt_state) {
+            case AsyncClientState::Connecting:
+                state = F("CONNECTING");
+                break;
+            case AsyncClientState::Connected:
+                state = F("CONNECTED");
+                break;
+            case AsyncClientState::Disconnected:
+                state = F("DISCONNECTED");
+                break;
+            case AsyncClientState::Disconnecting:
+                state = F("DISCONNECTING");
+                break;
+            default:
+                state = F("WAITING");
+                break;
+        }
+
+        DEBUG_MSG_P(PSTR("[MQTT] Client %s, %s\n"),
+            String(enabled).c_str(),
+            String(state).c_str()
+        );
+
+        if (_mqtt_enabled && (_mqtt_state != AsyncClientState::Connected)) {
+            DEBUG_MSG_P(PSTR("[MQTT] Retrying, Last %u with Delay %u (Step %u)\n"),
+                _mqtt_last_connection,
+                _mqtt_reconnect_delay,
+                MQTT_RECONNECT_DELAY_STEP
+            );
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -996,40 +1032,63 @@ void mqttSetup() {
         }
         #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
-        _mqtt.onConnect([](bool sessionPresent) {
+        _mqtt.onMessage(_mqttOnMessageAsync);
+
+        _mqtt.onConnect([](bool) {
             _mqttOnConnect();
         });
-        _mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
-            if (reason == AsyncMqttClientDisconnectReason::TCP_DISCONNECTED) {
-                DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));
-            }
-            if (reason == AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED) {
-                DEBUG_MSG_P(PSTR("[MQTT] Identifier Rejected\n"));
-            }
-            if (reason == AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE) {
-                DEBUG_MSG_P(PSTR("[MQTT] Server unavailable\n"));
-            }
-            if (reason == AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS) {
-                DEBUG_MSG_P(PSTR("[MQTT] Malformed credentials\n"));
-            }
-            if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
-                DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
-            }
-            #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-            if (reason == AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT) {
-                DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
-            }
-            #endif
-            _mqttOnDisconnect();
-        });
-        _mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-            _mqttOnMessage(topic, payload, len);
-        });
+
         _mqtt.onSubscribe([](uint16_t packetId, uint8_t qos) {
-            DEBUG_MSG_P(PSTR("[MQTT] Subscribe ACK for PID %d\n"), packetId);
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribe ACK for PID %u\n"), packetId);
         });
         _mqtt.onPublish([](uint16_t packetId) {
-            DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %d\n"), packetId);
+            DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %u\n"), packetId);
+        });
+
+        _mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
+
+            switch (reason) {
+                case AsyncMqttClientDisconnectReason::TCP_DISCONNECTED:
+                    DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));
+                    break;
+
+                case AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED:
+                    DEBUG_MSG_P(PSTR("[MQTT] Identifier Rejected\n"));
+                    break;
+
+                case AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE:
+                    DEBUG_MSG_P(PSTR("[MQTT] Server unavailable\n"));
+                    break;
+
+                case AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS:
+                    DEBUG_MSG_P(PSTR("[MQTT] Malformed credentials\n"));
+                    break;
+
+                case AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED:
+                    DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
+                    break;
+
+                case AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT:
+                    #if ASYNC_TCP_SSL_ENABLED
+                        DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
+                    #endif
+                    break;
+
+                case AsyncMqttClientDisconnectReason::MQTT_UNACCEPTABLE_PROTOCOL_VERSION:
+                    // This is never used by the AsyncMqttClient source
+                    #if 0
+                        DEBUG_MSG_P(PSTR("[MQTT] Unacceptable protocol version\n"));
+                    #endif
+                    break;
+
+                case AsyncMqttClientDisconnectReason::ESP8266_NOT_ENOUGH_SPACE:
+                    DEBUG_MSG_P(PSTR("[MQTT] Connect packet too big\n"));
+                    break;
+
+            }
+
+            _mqttOnDisconnect();
+
         });
 
     #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
