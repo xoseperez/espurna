@@ -21,6 +21,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include "rpc.h"
 #include "ws.h"
 
+#include "libs/AsyncClientHelpers.h"
 #include "libs/SecureClientHelpers.h"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
@@ -60,8 +61,7 @@ bool _mqtt_enabled = MQTT_ENABLED;
 bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned long _mqtt_last_connection = 0;
-bool _mqtt_connected = false;
-bool _mqtt_connecting = false;
+AsyncClientState _mqtt_state = AsyncClientState::Disconnected;
 bool _mqtt_retain = MQTT_RETAIN;
 int _mqtt_qos = MQTT_QOS;
 int _mqtt_keepalive = MQTT_KEEPALIVE;
@@ -220,7 +220,7 @@ void _mqttConnect() {
     if (!_mqtt_enabled) return;
 
     // Do not connect if already connected or still trying to connect
-    if (_mqtt.connected() || _mqtt_connecting) return;
+    if (_mqtt.connected() || (_mqtt_state != AsyncClientState::Disconnected)) return;
 
     // Check reconnect interval
     if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
@@ -243,7 +243,7 @@ void _mqttConnect() {
     DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
     DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
 
-    _mqtt_connecting = true;
+    _mqtt_state = AsyncClientState::Connecting;
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
         const bool secure = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);
@@ -429,7 +429,7 @@ void _mqttInfo() {
         _mqtt.connected() ? "CONNECTED" : "DISCONNECTED"
     );
     DEBUG_MSG_P(PSTR("[MQTT] Retry %s (Now %u, Last %u, Delay %u, Step %u)\n"),
-        _mqtt_connecting ? "CONNECTING" : "WAITING",
+        (_mqtt_state == AsyncClientState::Connecting) ? "CONNECTING" : "WAITING",
         millis(),
         _mqtt_last_connection,
         _mqtt_reconnect_delay,
@@ -533,19 +533,19 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
 
 void _mqttOnConnect() {
 
-    DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
     _mqtt_last_connection = millis();
-    _mqtt_connecting = false;
-    _mqtt_connected = true;
+    _mqtt_state = AsyncClientState::Connected;
+
+    DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 
     // Clean subscriptions
     mqttUnsubscribeRaw("#");
 
-    // Send connect event to subscribers
-    for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
+    // Notify all subscribers about the connection
+    for (auto& callback : _mqtt_callbacks) {
+        callback(MQTT_CONNECT_EVENT, nullptr, nullptr);
     }
 
 }
@@ -554,8 +554,7 @@ void _mqttOnDisconnect() {
 
     // Reset reconnection delay
     _mqtt_last_connection = millis();
-    _mqtt_connecting = false;
-    _mqtt_connected = false;
+    _mqtt_state = AsyncClientState::Disconnected;
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
@@ -1039,7 +1038,7 @@ void mqttLoop() {
 
         } else {
 
-            if (_mqtt_connected) {
+            if (_mqtt_state != AsyncClientState::Disconnected) {
                 _mqttOnDisconnect();
             }
 
