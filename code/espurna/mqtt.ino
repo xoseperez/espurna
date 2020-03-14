@@ -62,6 +62,7 @@ bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned long _mqtt_last_connection = 0;
 AsyncClientState _mqtt_state = AsyncClientState::Disconnected;
+bool _mqtt_retain_skipped = false;
 bool _mqtt_retain = MQTT_RETAIN;
 int _mqtt_qos = MQTT_QOS;
 int _mqtt_keepalive = MQTT_KEEPALIVE;
@@ -537,6 +538,7 @@ void _mqttOnConnect() {
 
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Connected;
+    _mqtt_retain_skipped = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 
@@ -555,37 +557,84 @@ void _mqttOnDisconnect() {
     // Reset reconnection delay
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Disconnected;
+    _mqtt_retain_skipped = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
-    // Send disconnect event to subscribers
-    for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (_mqtt_callbacks[i])(MQTT_DISCONNECT_EVENT, NULL, NULL);
+    // Notify all subscribers about the disconnect
+    for (auto& callback : _mqtt_callbacks) {
+        callback(MQTT_DISCONNECT_EVENT, nullptr, nullptr);
     }
 
 }
+
+// Force-skip everything received in a short window right after connecting to avoid syncronization issues.
+
+bool _mqttMaybeSkipRetained(char* topic) {
+    #if MQTT_SKIP_RETAINED
+        if (!_mqtt_retain_skipped && (millis() - _mqtt_last_connection < MQTT_SKIP_TIME)) {
+            DEBUG_MSG_P(PSTR("[MQTT] Received %s - SKIPPED\n"), topic);
+            return true;
+        }
+    #endif
+
+    _mqtt_retain_skipped = true;
+    return false;
+}
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+
+// MQTT Broker can sometimes send messages in bulk. Even when message size is less than MQTT_MAX_PACKET_SIZE, we *could*
+// receive a message with `len != total`, this requiring buffering of the received data. Prepare a static memory to store the
+// data until `(len + index) == total`.
+// TODO: One pending issue is streaming arbitrary data (e.g. binary, for OTA). We always set '\0' and expect text data.
+//       In that case, there could be MQTT_MESSAGE_PARTIAL_EVENT and this callback only trigger on small messages.
+
+void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties, size_t len, size_t index, size_t total) {
+
+    if (!len || (len >= MQTT_MAX_PACKET_SIZE) || (total >= MQTT_MAX_PACKET_SIZE)) return;
+    if (_mqttMaybeSkipRetained(topic)) return;
+
+    static char message[MQTT_MAX_PACKET_SIZE] = {0};
+    memmove(message + index, (char *) payload, len);
+
+    // Not done yet
+    if (total != (len + index)) {
+        return;
+    }
+    message[len + index] = '\0';
+
+    // Call subscribers with the message buffer
+    for (auto& callback : _mqtt_callbacks) {
+        callback(MQTT_MESSAGE_EVENT, topic, message);
+    }
+
+}
+
+#else
+
+// Sync client already implements buffering, but we still need to add '\0' because API consumer expects C-String :/
+// TODO: consider reworking this (and async counterpart), giving callback func length of the message.
 
 void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
-    if (len == 0) return;
+    if (!len || (len >= MQTT_MAX_PACKET_SIZE)) return;
+    if (_mqttMaybeSkipRetained(topic)) return;
 
-    char message[len + 1];
-    strlcpy(message, (char *) payload, len + 1);
+    static char message[MQTT_MAX_PACKET_SIZE] = {0};
+    memmove(message, (char *) payload, len);
+    message[len] = '\0';
 
-    #if MQTT_SKIP_RETAINED
-        if (millis() - _mqtt_last_connection < MQTT_SKIP_TIME) {
-            DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
-			return;
-		}
-    #endif
     DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s\n"), topic, message);
 
-    // Send message event to subscribers
-    for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
+    // Call subscribers with the message buffer
+    for (auto& callback : _mqtt_callbacks) {
+        callback(MQTT_MESSAGE_EVENT, topic, message);
     }
 
 }
+
+#endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 // -----------------------------------------------------------------------------
 // Public API
