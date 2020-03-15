@@ -45,13 +45,13 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-#ifdef MQTT_MAX_PACKET_SIZE
-        MQTTClient _mqtt(MQTT_MAX_PACKET_SIZE);
-#else
-        MQTTClient _mqtt;
-#endif
+
+    MQTTClient _mqtt(MQTT_BUFFER_MAX_SIZE);
+
 #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
-        PubSubClient _mqtt;
+
+    PubSubClient _mqtt;
+
 #endif
 
 #endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
@@ -427,7 +427,7 @@ void _mqttInfo() {
             #else
                 "DISABLED"
             #endif
-            ", Buffer size " _MQTT_INFO_STR(MQTT_MAX_PACKET_SIZE) " bytes"
+            ", Buffer size " _MQTT_INFO_STR(MQTT_BUFFER_MAX_SIZE) " bytes"
             "\n"
         ));
         #undef _MQTT_INFO_STR
@@ -620,18 +620,18 @@ bool _mqttMaybeSkipRetained(char* topic) {
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
-// MQTT Broker can sometimes send messages in bulk. Even when message size is less than MQTT_MAX_PACKET_SIZE, we *could*
+// MQTT Broker can sometimes send messages in bulk. Even when message size is less than MQTT_BUFFER_MAX_SIZE, we *could*
 // receive a message with `len != total`, this requiring buffering of the received data. Prepare a static memory to store the
 // data until `(len + index) == total`.
-// TODO: One pending issue is streaming arbitrary data (e.g. binary, for OTA). We always set '\0' and expect text data.
-//       In that case, there could be MQTT_MESSAGE_PARTIAL_EVENT and this callback only trigger on small messages.
+// TODO: One pending issue is streaming arbitrary data (e.g. binary, for OTA). We always set '\0' and API consumer expects C-String.
+//       In that case, there could be MQTT_MESSAGE_RAW_EVENT and this callback only trigger on small messages.
 
 void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties, size_t len, size_t index, size_t total) {
 
-    if (!len || (len >= MQTT_MAX_PACKET_SIZE) || (total >= MQTT_MAX_PACKET_SIZE)) return;
+    if (!len || (len > MQTT_BUFFER_MAX_SIZE) || (total > MQTT_BUFFER_MAX_SIZE)) return;
     if (_mqttMaybeSkipRetained(topic)) return;
 
-    static char message[MQTT_MAX_PACKET_SIZE] = {0};
+    static char message[((MQTT_BUFFER_MAX_SIZE + 1) + 31) & -32] = {0};
     memmove(message + index, (char *) payload, len);
 
     // Not done yet
@@ -654,10 +654,10 @@ void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessagePrope
 
 void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
-    if (!len || (len >= MQTT_MAX_PACKET_SIZE)) return;
+    if (!len || (len > MQTT_BUFFER_MAX_SIZE)) return;
     if (_mqttMaybeSkipRetained(topic)) return;
 
-    static char message[MQTT_MAX_PACKET_SIZE] = {0};
+    static char message[((MQTT_BUFFER_MAX_SIZE + 1) + 31) & -32] = {0};
     memmove(message, (char *) payload, len);
     message[len] = '\0';
 

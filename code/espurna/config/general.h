@@ -1079,15 +1079,8 @@
 #define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
 #endif
 
-
-#if THERMOSTAT_SUPPORT == 1
-    #ifndef MQTT_USE_JSON
-    #define MQTT_USE_JSON               1           // Group messages in a JSON body
-    #endif
-#else
-    #ifndef MQTT_USE_JSON
-    #define MQTT_USE_JSON               0           // Don't group messages in a JSON body (default)
-    #endif
+#ifndef MQTT_USE_JSON
+#define MQTT_USE_JSON               0               // Don't group messages in a JSON body by default
 #endif
 
 #ifndef MQTT_USE_JSON_DELAY
@@ -1098,6 +1091,10 @@
 #define MQTT_QUEUE_MAX_SIZE         20              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 #endif
 
+#ifndef MQTT_BUFFER_MAX_SIZE
+#define MQTT_BUFFER_MAX_SIZE        1024            // Size of the MQTT payload buffer for MQTT_MESSAGE_EVENT. Large messages will only be available via MQTT_MESSAGE_RAW_EVENT.
+                                                    // Note: When using MQTT_LIBRARY_PUBSUBCLIENT, MQTT_MAX_PACKET_SIZE should not be more than this value.
+#endif
 
 // These are the properties that will be sent when useJson is true
 #ifndef MQTT_ENQUEUE_IP
