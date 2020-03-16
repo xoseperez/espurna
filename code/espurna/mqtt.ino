@@ -626,7 +626,12 @@ bool _mqttMaybeSkipRetained(char* topic) {
 // TODO: One pending issue is streaming arbitrary data (e.g. binary, for OTA). We always set '\0' and API consumer expects C-String.
 //       In that case, there could be MQTT_MESSAGE_RAW_EVENT and this callback only trigger on small messages.
 
-void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties, size_t len, size_t index, size_t total) {
+void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+    DEBUG_MSG_P(PSTR("[MQTT] topic=%s mqtt:qos=%u:dup=%c:ret=%c msg:len=%u:idx=%u:total=%u\n"),
+        topic,
+        properties.qos, (properties.dup ? 'y' : 'n'), (properties.retain ? 'y' : 'n'),
+        len, index, total
+    );
 
     if (!len || (len > MQTT_BUFFER_MAX_SIZE) || (total > MQTT_BUFFER_MAX_SIZE)) return;
     if (_mqttMaybeSkipRetained(topic)) return;
@@ -639,6 +644,7 @@ void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessagePrope
         return;
     }
     message[len + index] = '\0';
+    DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s\n"), topic, message);
 
     // Call subscribers with the message buffer
     for (auto& callback : _mqtt_callbacks) {
