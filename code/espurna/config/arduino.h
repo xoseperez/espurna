@@ -30,6 +30,7 @@
 //#define EHOMEDIY_WT02
 //#define EHOMEDIY_WT03
 //#define ELECTRODRAGON_WIFI_IOT
+//#define ESP8266_SERIAL
 //#define ESPURNA_BASE
 //#define ESPURNA_CORE
 //#define ETEKCITY_ESW01_USA

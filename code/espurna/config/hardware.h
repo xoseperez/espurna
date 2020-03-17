@@ -4300,6 +4300,26 @@
     #define RELAY4_TYPE             RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+// ESP8266 Serial, example for use connected to a arduino
+//
+// -----------------------------------------------------------------------------
+
+#elif defined(ESP8266_SERIAL)
+
+    // Info
+    #define MANUFACTURER                "ESP8266"
+    #define DEVICE                      "SERIAL"
+
+    // Serial to MQTT
+    #define UART_MQTT_SUPPORT       1
+    #define UART_MQTT_USE_SOFT      0
+    #define UART_MQTT_HW_PORT       Serial
+    #define UART_MQTT_BAUDRATE      115200
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
+    #define UART_MQTT_BUFFER_SIZE   256
+
+// -----------------------------------------------------------------------------
 
 #else
 
