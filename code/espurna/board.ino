@@ -646,6 +646,8 @@ int getBoardId() {
         return 154;
     #elif defined(LINKSPRITE_LINKNODE_R4)
         return 155;
+    #elif defined(GENERIC_ESP01_512KB)
+        return 156;
     #else
         return -1; // CUSTOM
     #endif

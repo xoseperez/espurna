@@ -4513,6 +4513,22 @@
     #define RELAY4_TYPE             RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+// ESP-01 generic esp8266 board with 512 kB flash
+// // -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01_512KB)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01_512KB"
+
+    // Relays
+    #define RELAY1_PIN          2
+    #ifndef RELAY1_TYPE
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #endif
+
+// -----------------------------------------------------------------------------
 
 #else
 
