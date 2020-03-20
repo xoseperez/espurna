@@ -3243,6 +3243,38 @@
     #define HLW8012_INTERRUPT_ON        FALLING
 
 // -----------------------------------------------------------------------------
+// The Gosund WP3 is based on ESP8285, so 1 MB internal flash (DOUT required)
+// The module has no-connect:  TX, RX, RST, AD, GPIO5, (and GPIO0, 
+//     GPIO2 via test points on the back of the module)
+// and these are wired to devices:
+// GPIO4: /BTN
+// GPIO12: /LED blue
+// GPIO13: /LED red
+// GPIO14: RELAY
+// -----------------------------------------------------------------------------
+
+#elif defined(GOSUND_WP3)
+
+    // Info
+    #define MANUFACTURER                "GOSUND"
+    #define DEVICE                      "WP3"
+
+    // Buttons
+    #define BUTTON1_PIN                 4
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN                  14
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    12
+    #define LED1_PIN_INVERSE            1
+
+    #define LED2_PIN                    13
+    #define LED2_PIN_INVERSE            1
+
+// -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
 // Also model number KS-602S
 // -----------------------------------------------------------------------------
