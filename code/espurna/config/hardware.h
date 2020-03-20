@@ -4514,7 +4514,7 @@
 
 // -----------------------------------------------------------------------------
 // ESP-01 generic esp8266 board with 512 kB flash
-// // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 #elif defined(GENERIC_ESP01_512KB)
 
@@ -4527,6 +4527,11 @@
     #ifndef RELAY1_TYPE
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #endif
+
+    // No need for OTA
+    #define OTA_WEB_SUPPORT          0
+    #define OTA_ARDUINOOTA_SUPPORT   0
+    #define OTA_CLIENT               OTA_CLIENT_NONE
 
 // -----------------------------------------------------------------------------
 
