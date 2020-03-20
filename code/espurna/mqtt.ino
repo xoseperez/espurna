@@ -625,14 +625,9 @@ bool _mqttMaybeSkipRetained(char* topic) {
 // data until `(len + index) == total`.
 // TODO: One pending issue is streaming arbitrary data (e.g. binary, for OTA). We always set '\0' and API consumer expects C-String.
 //       In that case, there could be MQTT_MESSAGE_RAW_EVENT and this callback only trigger on small messages.
+// TODO: Current callback model does not allow to pass message length. Instead, implement a topic filter and record all subscriptions. That way we don't need to filter out events and could implement per-event callbacks.
 
 void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-    DEBUG_MSG_P(PSTR("[MQTT] topic=%s mqtt:qos=%u:dup=%c:ret=%c msg:len=%u:idx=%u:total=%u\n"),
-        topic,
-        properties.qos, (properties.dup ? 'y' : 'n'), (properties.retain ? 'y' : 'n'),
-        len, index, total
-    );
-
     if (!len || (len > MQTT_BUFFER_MAX_SIZE) || (total > MQTT_BUFFER_MAX_SIZE)) return;
     if (_mqttMaybeSkipRetained(topic)) return;
 
@@ -641,6 +636,7 @@ void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessagePrope
 
     // Not done yet
     if (total != (len + index)) {
+        DEBUG_MSG_P(PSTR("[MQTT] Buffered %s => %u / %u bytes\n"), topic, len, total);
         return;
     }
     message[len + index] = '\0';
