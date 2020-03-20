@@ -82,6 +82,8 @@
 #endif
 
 #if THERMOSTAT_SUPPORT
+#undef MQTT_USE_JSON
+#define MQTT_USE_JSON               1           // Thermostat depends on group messages in a JSON body
 #undef RELAY_SUPPORT
 #define RELAY_SUPPORT               1           // Thermostat depends on switches
 #endif
@@ -194,4 +196,14 @@
 #define BUTTON1_CLICK           BUTTON_ACTION_DISPLAY_ON
 #undef BUTTON1_LNGCLICK
 #define BUTTON1_LNGCLICK        BUTTON_ACTION_TOGGLE
+#endif
+
+//------------------------------------------------------------------------------
+// We should always set MQTT_MAX_PACKET_SIZE
+//
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+#if not defined(MQTT_MAX_PACKET_SIZE)
+#warning "MQTT_MAX_PACKET_SIZE should be set in `build_flags = ...` of the environment! Default value is used instead."
+#endif
 #endif

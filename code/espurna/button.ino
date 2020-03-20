@@ -677,7 +677,7 @@ void _buttonLoopSonoffDual() {
     DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %u\n"), value);
 
     for (unsigned int i=0; i<_buttons.size(); i++) {
-        if ((value & (1 << i)) > 0);
+        if ((value & (1 << i)) > 0) {
             buttonEvent(i, button_event_t::Click);
         }
     }
