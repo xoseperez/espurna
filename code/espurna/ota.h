@@ -9,6 +9,12 @@ OTA MODULE
 #include <Updater.h>
 #include <ArduinoOTA.h>
 
+#if OTA_WEB_SUPPORT
+
+void otaWebSetup();
+
+#endif // OTA_WEB_SUPPORT == 1
+
 #if OTA_ARDUINOOTA_SUPPORT
 
 void arduinoOtaSetup();
