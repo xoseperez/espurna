@@ -184,9 +184,9 @@ void setup() {
         #if DEBUG_WEB_SUPPORT
             debugWebSetup();
         #endif
-    #endif
-    #if OTA_WEB_SUPPORT
-        otaWebSetup();
+        #if OTA_WEB_SUPPORT
+            otaWebSetup();
+        #endif
     #endif
     #if API_SUPPORT
         apiSetup();
