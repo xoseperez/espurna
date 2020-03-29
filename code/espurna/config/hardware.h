@@ -3248,8 +3248,8 @@
 //     GPIO2 via test points on the back of the module)
 // and these are wired to devices:
 // GPIO4: /BTN
-// GPIO12: /LED blue
-// GPIO13: /LED red
+// GPIO12: /LED red
+// GPIO13: /LED blue
 // GPIO14: RELAY
 // -----------------------------------------------------------------------------
 
@@ -3262,17 +3262,31 @@
     // Buttons
     #define BUTTON1_PIN                 4
     #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+    // the defaults are reasonable, but you can change them as desired
+    //#define BUTTON1_PRESS               BUTTON_ACTION_NONE
+    //#define BUTTON1_CLICK               BUTTON_ACTION_TOGGLE
+    //#define BUTTON1_DBLCLICK            BUTTON_ACTION_AP
+    //#define BUTTON1_LNGCLICK            BUTTON_ACTION_RESET
+    //#define BUTTON1_LNGLNGCLICK         BUTTON_ACTION_FACTORY
 
     // Relays
     #define RELAY1_PIN                  14
     #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
 
     // LEDs
+
+    // LED1 (red) indicates wifi activity
     #define LED1_PIN                    12
     #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_WIFI
 
+    // LED2 (blue) indicates on/off state; you could use LED_MODE_FOLLOW_INVERSE
+    // so that the LED lights the button when 'off' so it can be found easily.
     #define LED2_PIN                    13
     #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FOLLOW
+    #define LED2_RELAY                  1
 
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
