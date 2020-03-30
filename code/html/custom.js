@@ -274,7 +274,7 @@ function isGroupValue(value) {
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
-        "ledMode", "ledRelay",
+        "ledGPIO", "ledMode", "ledRelay",
         "adminPass",
         "node", "key", "topic",
         "rpnRule", "rpnTopic", "rpnName"
