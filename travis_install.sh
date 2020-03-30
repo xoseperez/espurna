@@ -15,11 +15,11 @@ pio_install() {
 
 cd code
 
-if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test host" ]; then
+if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test Host" ]; then
     pio_install
-elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test webui" ]; then
+elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test WebUI" ]; then
     npm_install
-elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test platformio build" ]; then
+elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test PlatformIO Build" ]; then
     pio_install
 elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Release" ]; then
     npm_install
