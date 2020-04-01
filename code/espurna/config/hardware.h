@@ -3262,6 +3262,7 @@
     // Buttons
     #define BUTTON1_PIN                 4
     #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
 
     // Relays
     #define RELAY1_PIN                  14
