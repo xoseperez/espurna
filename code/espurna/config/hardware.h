@@ -3276,17 +3276,17 @@
 
     // LEDs
 
-    // LED1 (red) indicates wifi activity
+    // LED1 (red) indicates on/off state; you could use LED_MODE_FOLLOW_INVERSE
+    // so that the LED lights the button when 'off' so it can be found easily.
     #define LED1_PIN                    12
     #define LED1_PIN_INVERSE            1
-    #define LED1_MODE                   LED_MODE_WIFI
+    #define LED1_MODE                   LED_MODE_FOLLOW
+    #define LED1_RELAY                  1
 
-    // LED2 (blue) indicates on/off state; you could use LED_MODE_FOLLOW_INVERSE
-    // so that the LED lights the button when 'off' so it can be found easily.
+    // LED2 (blue) indicates wifi activity
     #define LED2_PIN                    13
     #define LED2_PIN_INVERSE            1
-    #define LED2_MODE                   LED_MODE_FOLLOW
-    #define LED2_RELAY                  1
+    #define LED2_MODE                   LED_MODE_WIFI
 
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
