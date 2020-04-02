@@ -35,7 +35,7 @@ class AM2320Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        AM2320Sensor(): I2CSensor() {
+        AM2320Sensor() {
             _count = 2;
             _sensor_id = SENSOR_AM2320_ID;
         }

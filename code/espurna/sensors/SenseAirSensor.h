@@ -116,7 +116,7 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         // Public
         // ---------------------------------------------------------------------
 
-        SenseAirSensor(): BaseSensor() {
+        SenseAirSensor() {
             _count = 1;
             _co2 = 0;
             _lastCo2 = 0;

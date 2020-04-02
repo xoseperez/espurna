@@ -70,7 +70,7 @@ class DallasSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        DallasSensor(): BaseSensor() {
+        DallasSensor() {
             _sensor_id = SENSOR_DALLAS_ID;
         }
 

@@ -22,7 +22,7 @@ class EmonAnalogSensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonAnalogSensor(): EmonSensor() {
+        EmonAnalogSensor() {
             _channels = EMON_ANALOG_CHANNELS;
             _sensor_id = SENSOR_EMON_ANALOG_ID;
             init();

@@ -20,7 +20,7 @@ class VL53L1XSensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        VL53L1XSensor(): I2CSensor() {
+        VL53L1XSensor() {
             _count = 1;
             _sensor_id = SENSOR_VL53L1X_ID;
             _vl53l1x = new VL53L1X();

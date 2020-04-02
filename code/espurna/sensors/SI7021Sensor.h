@@ -33,7 +33,7 @@ class SI7021Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SI7021Sensor(): I2CSensor() {
+        SI7021Sensor() {
             _sensor_id = SENSOR_SI7021_ID;
         }
 

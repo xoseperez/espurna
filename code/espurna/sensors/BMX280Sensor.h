@@ -59,7 +59,7 @@ class BMX280Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BMX280Sensor(): I2CSensor() {
+        BMX280Sensor() {
             _sensor_id = SENSOR_BMX280_ID;
         }
 

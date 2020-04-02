@@ -115,7 +115,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonADS1X15Sensor(): EmonSensor() {
+        EmonADS1X15Sensor() {
             _channels = ADS1X15_CHANNELS;
             _sensor_id = SENSOR_EMON_ADS1X15_ID;
             init();

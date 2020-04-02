@@ -159,7 +159,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
-        PMSX003Sensor(): BaseSensor() {
+        PMSX003Sensor() {
             _count = pms_specs[_type].slot_count;
             _sensor_id = SENSOR_PMSX003_ID;
         }

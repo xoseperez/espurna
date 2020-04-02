@@ -30,7 +30,7 @@ class LDRSensor : public AnalogSensor {
 		// Public
 		// ---------------------------------------------------------------------
 
-		LDRSensor(): AnalogSensor() {
+		LDRSensor() {
 			_count = 1;
 			_sensor_id = SENSOR_LDR_ID;
 		}

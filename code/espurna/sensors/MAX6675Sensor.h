@@ -25,7 +25,7 @@ class MAX6675Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        MAX6675Sensor(): BaseSensor() {
+        MAX6675Sensor() {
             _sensor_id = SENSOR_MAX6675_ID;
             _count = 1;
         }

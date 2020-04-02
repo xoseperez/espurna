@@ -46,7 +46,7 @@ class BMP180Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BMP180Sensor(): I2CSensor() {
+        BMP180Sensor() {
             _sensor_id = SENSOR_BMP180_ID;
             _count = 2;
         }

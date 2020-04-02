@@ -29,7 +29,7 @@ class BH1750Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BH1750Sensor(): I2CSensor() {
+        BH1750Sensor() {
             _sensor_id = SENSOR_BH1750_ID;
             _count = 1;
         }
