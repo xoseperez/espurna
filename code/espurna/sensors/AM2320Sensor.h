@@ -27,7 +27,7 @@ Retention        | 0x06    | Device ID(24-31)Bit| 0x0E    | Retention           
 Retention        | 0x07    | Status Register    | 0x0F    | Retention               | 0x17    | Retention | 0x1F
 */
 
-class AM2320Sensor : public I2CSensor {
+class AM2320Sensor : public I2CSensor<> {
 
     public:
 

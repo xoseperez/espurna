@@ -25,7 +25,7 @@
 PROGMEM const char si7021_chip_si7021_name[] = "SI7021";
 PROGMEM const char si7021_chip_htu21d_name[] = "HTU21D";
 
-class SI7021Sensor : public I2CSensor {
+class SI7021Sensor : public I2CSensor<> {
 
     public:
 

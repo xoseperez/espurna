@@ -12,7 +12,7 @@
 
 #include "I2CSensor.h"
 
-class VL53L1XSensor : public I2CSensor {
+class VL53L1XSensor : public I2CSensor<> {
 
     public:
 

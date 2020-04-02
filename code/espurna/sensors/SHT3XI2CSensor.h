@@ -12,7 +12,7 @@
 #include "I2CSensor.h"
 #include "../utils.h"
 
-class SHT3XI2CSensor : public I2CSensor {
+class SHT3XI2CSensor : public I2CSensor<> {
 
     public:
 

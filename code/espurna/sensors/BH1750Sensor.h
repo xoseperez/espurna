@@ -21,7 +21,7 @@
 #define BH1750_ONE_TIME_LOW_RES_MODE        0x23    // Start measurement at 1lx resolution. Measurement time is approx 120ms.
                                                     // Device is automatically set to Power Down after measurement.
 
-class BH1750Sensor : public I2CSensor {
+class BH1750Sensor : public I2CSensor<> {
 
     public:
 

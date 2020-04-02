@@ -49,7 +49,7 @@
 #define BMX280_REGISTER_TEMPDATA        0xFA
 #define BMX280_REGISTER_HUMIDDATA       0xFD
 
-class BMX280Sensor : public I2CSensor {
+class BMX280Sensor : public I2CSensor<> {
 
     public:
 

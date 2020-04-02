@@ -12,7 +12,7 @@
 
 #include "I2CSensor.h"
 
-class VEML6075Sensor : public I2CSensor {
+class VEML6075Sensor : public I2CSensor<> {
 
     public:
 
