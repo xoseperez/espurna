@@ -57,11 +57,11 @@ fi
 
 # Available environments
 list_envs() {
-    grep env: platformio.ini | sed 's/\[env:\(.*\)\]/\1/g'
+    grep -E '^\[env:' platformio.ini | sed 's/\[env:\(.*\)\]/\1/g'
 }
 
 travis=$(list_envs | grep travis | sort)
-available=$(list_envs | grep -Ev -- '-ota$|-ssl$|^travis' | sort)
+available=$(list_envs | grep -Ev -- '-ota$|-ssl$|^esp8266-.*base' | sort)
 
 # Functions
 print_available() {
