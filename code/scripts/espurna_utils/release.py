@@ -14,7 +14,7 @@ def copy_release(target, source, env):
         os.makedirs(destdir)
 
     dest = os.path.join(
-        destdir, "espurna-{name}-{version}.bin".format(name=name, version=version)
+        destdir, "espurna-{version}-{name}.bin".format(version=version, name=name)
     )
     src = env.subst("$BUILD_DIR/${PROGNAME}.bin")
 
