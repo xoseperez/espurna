@@ -477,9 +477,8 @@ String magnitudeUnits(unsigned char index) {
 
 double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
-    switch (magnitude.type) {
-        case MAGNITUDE_TEMPERATURE:
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::Celcius) ?
+    switch (magnitude.sensor->units(magnitude.type)) {
+        case sensor::Unit::Celcius:
             if (magnitude.units == sensor::Unit::Farenheit) {
                 value = (value * 1.8) + 32.0;
             } else if (magnitude.units == sensor::Unit::Kelvin) {
@@ -487,31 +486,25 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
             }
             value = value + _sensor_temperature_correction;
             break;
-        case MAGNITUDE_HUMIDITY:
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::Hectopascal) ?
+        case sensor::Unit::Hectopascal:
             value = constrain(value + _sensor_humidity_correction, 0.0, 100.0);
             break;
-        case MAGNITUDE_POWER_ACTIVE:
-        case MAGNITUDE_POWER_APPARENT:
-        case MAGNITUDE_POWER_REACTIVE:
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::Watt) ?
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::Voltampere) ?
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::VoltampereReactive) ?
+        case sensor::Unit::Watt:
+        case sensor::Unit::Voltampere:
+        case sensor::Unit::VoltampereReactive:
             if ((magnitude.units == sensor::Unit::Kilowatt)
                 || (magnitude.units == sensor::Unit::Kilovoltampere)
                 || (magnitude.units == sensor::Unit::KilovoltampereReactive)) {
                 value = value / 1.0e+3;
             }
             break;
-        case MAGNITUDE_ENERGY:
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::KilowattHour) ?
+        case sensor::Unit::KilowattHour:
             // TODO: we may end up with inf at some point?
             if (magnitude.units == sensor::Unit::Joule) {
                 value = value * 3.6e+6;
             }
             break;
-        case MAGNITUDE_LUX:
-            // TODO: assert(magnitude.sensor->units(magnitude.type) == sensor::Unit::Lux) ?
+        case sensor::Unit::Lux:
             value = value + _sensor_lux_correction;
             break;
         default:
