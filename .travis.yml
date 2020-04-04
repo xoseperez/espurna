@@ -23,7 +23,7 @@ stages:
   - name: Test PlatformIO Build
     if: tag IS NOT present
   - name: Release
-    #if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
+    if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
     - stage: Test Host
