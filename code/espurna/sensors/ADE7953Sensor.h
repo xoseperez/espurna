@@ -50,6 +50,7 @@ class ADE7953Sensor : public I2CSensor<BaseEmonSensor> {
         // Public
         // ---------------------------------------------------------------------
         ADE7953Sensor() {
+            resizeDevices(ADE7953_TOTAL_DEVICES);
             _sensor_id = SENSOR_ADE7953_ID;
             _readings.resize(countDevices());
             _count = _readings.size() * countDevices() + ADE7953_VOLTAGE; //10
@@ -136,12 +137,6 @@ class ADE7953Sensor : public I2CSensor<BaseEmonSensor> {
                 _energy[relay] += sensor::Ws { delta };
             }
             last = millis();
-        }
-
-        // We adjust magnitude index to interal device index
-
-        size_t countDevices() {
-            return ADE7953_TOTAL_DEVICES;
         }
 
         // Current value for slot # index

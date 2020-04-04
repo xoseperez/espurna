@@ -69,7 +69,8 @@ class PZEM004TSensor : public BaseEmonSensor {
 
     private:
 
-        PZEM004TSensor() {
+        // We can only create a single instance of the sensor class.
+        PZEM004TSensor() : BaseEmonSensor(0) {
             _sensor_id = SENSOR_PZEM004T_ID;
         }
 
@@ -80,15 +81,31 @@ class PZEM004TSensor : public BaseEmonSensor {
 
     public:
 
+        static PZEM004TSensor* instance;
+
         static PZEM004TSensor* create() {
             if (PZEM004TSensor::instance) return PZEM004TSensor::instance;
             PZEM004TSensor::instance = new PZEM004TSensor();
             return PZEM004TSensor::instance;
         }
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
+        // We can't modify PZEM values, just ignore this
+        void resetEnergy() {}
+        void resetEnergy(unsigned char) {}
+        void resetEnergy(unsigned char, sensor::Energy) {}
+
+        // Override Base methods that deal with _energy[]
+        size_t countDevices() {
+            return _addresses.size();
+        }
+
+        double getEnergy(unsigned char index) {
+            return _readings[index].energy;
+        }
+
+        sensor::Energy totalEnergy(unsigned char index) {
+            return getEnergy(index);
+        }
 
         // ---------------------------------------------------------------------
 
@@ -124,24 +141,21 @@ class PZEM004TSensor : public BaseEmonSensor {
                 reading.current = PZEM_ERROR_VALUE;
                 reading.voltage = PZEM_ERROR_VALUE;
                 reading.power = PZEM_ERROR_VALUE;
+                reading.energy = PZEM_ERROR_VALUE;
                 if (addr.fromString(address)) {
-                    _devices.push_back(addr);
+                    _addresses.push_back(addr);
                     _readings.push_back(reading);
                 }
                 address = strtok(0, sep);
             }
-            _count = _devices.size() * PZ_MAGNITUDE_COUNT;
-            _dirty = true;
-        }
 
-        // Return the number of devices managed by this sensor
-        unsigned char getAddressesCount() {
-            return _devices.size();
+            _count = _addresses.size() * PZ_MAGNITUDE_COUNT;
+            _dirty = true;
         }
 
         // Get device physical address based on the device index
         String getAddress(unsigned char dev) {
-            return _devices[dev].toString();
+            return _addresses[dev].toString();
         }
 
         // Set the device physical address
@@ -178,7 +192,7 @@ class PZEM004TSensor : public BaseEmonSensor {
             } else {
                 _pzem = new PZEM004T(_pin_rx, _pin_tx);
             }
-            if(_devices.size() == 1) _pzem->setAddress(_devices[0]);
+            if(_addresses.size() == 1) _pzem->setAddress(_addresses[0]);
 
             _ready = true;
             _dirty = false;
@@ -206,7 +220,7 @@ class PZEM004TSensor : public BaseEmonSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
             int dev = index / PZ_MAGNITUDE_COUNT;
-            return _devices[dev].toString();
+            return _addresses[dev].toString();
         }
 
         // Type for slot # index
@@ -238,7 +252,7 @@ class PZEM004TSensor : public BaseEmonSensor {
                     response = _readings[dev].power;
                     break;
                 case PZ_MAGNITUDE_ENERGY_INDEX: {
-                    response = _energy[dev].asDouble();
+                    response = _readings[dev].energy;
                     break;
                 }
                 default:
@@ -274,15 +288,9 @@ class PZEM004TSensor : public BaseEmonSensor {
                 // This we cannot do it from outside the library
             }
 
-            // we snapshot energy value directly
-            if (PZ_MAGNITUDE_ENERGY_INDEX == magnitude) {
-                tickStoreEnergy(dev);
-            // otherwise, store in the local struct
-            } else {
-                tickStoreReading(dev, magnitude);
-            }
+            tickStoreReading(dev, magnitude);
 
-            if(++dev == _devices.size()) {
+            if(++dev == _addresses.size()) {
                 dev = 0;
                 last_millis = millis();
                 if(++magnitude == PZ_MAGNITUDE_COUNT) {
@@ -292,41 +300,32 @@ class PZEM004TSensor : public BaseEmonSensor {
             _busy = false;
         }
 
-        static PZEM004TSensor* instance;
-
     protected:
 
         // ---------------------------------------------------------------------
         // Protected
         // ---------------------------------------------------------------------
 
-        void tickStoreEnergy(unsigned char dev) {
-            auto read = static_cast<double>(_pzem->energy(_devices[dev]));
-            if (read != PZEM_ERROR_VALUE) {
-                _energy[dev] = read;
-            } else {
-                _error = SENSOR_ERROR_TIMEOUT;
-            }
-        }
-
         void tickStoreReading(unsigned char dev, unsigned char magnitude) {
-
-
             float read = PZEM_ERROR_VALUE;
             float* readings_p = nullptr;
 
             switch (magnitude) {
                 case PZ_MAGNITUDE_CURRENT_INDEX:
-                    read = _pzem->current(_devices[dev]);
+                    read = _pzem->current(_addresses[dev]);
                     readings_p = &_readings[dev].current;
                     break;
                 case PZ_MAGNITUDE_VOLTAGE_INDEX:
-                    read = _pzem->voltage(_devices[dev]);
+                    read = _pzem->voltage(_addresses[dev]);
                     readings_p = &_readings[dev].voltage;
                     break;
                 case PZ_MAGNITUDE_POWER_ACTIVE_INDEX:
-                    read = _pzem->power(_devices[dev]);
+                    read = _pzem->power(_addresses[dev]);
                     readings_p = &_readings[dev].power;
+                    break;
+                case PZ_MAGNITUDE_ENERGY_INDEX:
+                    read = _pzem->energy(_addresses[dev]);
+                    readings_p = &_readings[dev].energy;
                     break;
                 default:
                     _busy = false;
@@ -345,13 +344,14 @@ class PZEM004TSensor : public BaseEmonSensor {
             float voltage;
             float current;
             float power;
+            float energy;
         };
 
         unsigned int _pin_rx = PZEM004T_RX_PIN;
         unsigned int _pin_tx = PZEM004T_TX_PIN;
         bool _busy = false;
         std::vector<reading_t> _readings;
-        std::vector<IPAddress> _devices;
+        std::vector<IPAddress> _addresses;
         HardwareSerial * _serial = NULL;
         PZEM004T * _pzem = NULL;
 

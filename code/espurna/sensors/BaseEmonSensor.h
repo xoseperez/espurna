@@ -8,15 +8,26 @@
 #include "../sensor.h"
 #include "BaseSensor.h"
 
-template <size_t ParamDevices>
-class BaseEmonSensorTemplate : public BaseSensor {
+class BaseEmonSensor : public BaseSensor {
 
     public:
 
-        constexpr static size_t MaxDevices = ParamDevices;
+        BaseEmonSensor(size_t devices) :
+            _energy(devices),
+            _devices(devices)
+        {}
+
+        BaseEmonSensor() :
+            BaseEmonSensor(1)
+        {}
+
+        virtual void resizeDevices(size_t devices) {
+            _energy.resize(devices);
+            _devices = devices;
+        }
 
         virtual size_t countDevices() {
-            return 1;
+            return _devices;
         }
 
         virtual void resetEnergy(unsigned char index, sensor::Energy energy) {
@@ -42,7 +53,6 @@ class BaseEmonSensorTemplate : public BaseSensor {
         }
 
         virtual double getEnergy(unsigned char index) {
-            if (index >= ParamDevices) return 0.0;
             return _energy[index].asDouble();
         }
 
@@ -76,11 +86,8 @@ class BaseEmonSensorTemplate : public BaseSensor {
 
     protected:
 
-        sensor::Energy _energy[MaxDevices];
+        std::vector<sensor::Energy> _energy;
+        size_t _devices;
 
 };
-
-// Default to 4, as current sensors only implement up to 3 devices
-// TODO: expose as build time flag?
-using BaseEmonSensor = BaseEmonSensorTemplate<4>;
 

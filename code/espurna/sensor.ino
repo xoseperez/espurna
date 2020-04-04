@@ -1349,12 +1349,6 @@ void _sensorLoad() {
             sensor->setSerial(& PZEM004T_HW_PORT);
         }
 
-        // Read saved energy offset
-        unsigned char dev_count = sensor->getAddressesCount();
-        for (unsigned char dev = 0; dev < dev_count; dev++) {
-            auto value = _sensorEnergyTotal(dev);
-            if (value) sensor->resetEnergy(dev, value);
-        }
         _sensors.push_back(sensor);
 
         #if TERMINAL_SUPPORT

@@ -93,19 +93,6 @@
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
-#if EMON_REPORT_ENERGY
-
-static_assert(
-    EmonSensor::MaxDevices >= ADS1X15_CHANNELS,
-    "_energy[] array must be able to hold all of the channels"
-);
-static_assert(
-    EmonSensor::MaxDevices >= __builtin_popcount(EMON_ADS1X15_MASK),
-    "_energy[] array must be able to hold all of the channels"
-);
-
-#endif // EMON_REPORT_ENERGY == 1
-
 
 class EmonADS1X15Sensor : public EmonSensor {
 
@@ -176,6 +163,8 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (mask & 0x01) ++_ports;
                 mask = mask >> 1;
             }
+
+            resizeDevices(_ports);
             _count = _ports * _magnitudes;
 
             // Bit depth
