@@ -9,7 +9,7 @@ def copy_release(target, source, env):
     if not name or not version:
         raise ValueError("Cannot set up release without release variables present")
 
-    destdir = os.path.join("release", version)
+    destdir = os.path.join(env.subst("$PROJECT_DIR"), "..", "firmware", version)
     if not os.path.exists(destdir):
         os.makedirs(destdir)
 

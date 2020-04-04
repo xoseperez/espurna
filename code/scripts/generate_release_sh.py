@@ -4,6 +4,7 @@ import sys
 import configparser
 import collections
 
+CI = any(os.environ.get("TRAVIS"), os.environ.get("CI"))
 Build = collections.namedtuple("Build", "env extends build_flags src_build_flags")
 
 
@@ -79,13 +80,14 @@ def every(seq, nth, total):
             yield value
         index = (index + 1) % total
 
-
 if __name__ == "__main__":
+    if not CI:
+        raise SystemExit("* Not in CI *")
     if len(sys.argv) != 2:
-        raise SystemError("Invalid arguments")
+        raise SystemExit("* Invalid arguments *")
 
     Config = configparser.ConfigParser()
-    with open("platformio.ini", "r") as f:
+    with open("code/platformio.ini", "r") as f:
         Config.read_file(f)
 
     builder_total_threads = int(os.environ["BUILDER_TOTAL_THREADS"])
@@ -94,6 +96,7 @@ if __name__ == "__main__":
 
     print("#!/bin/bash")
     print("set -e -x")
+    print("trap \"ls -l ${TRAVIS_BUILD_DIR}/firmware\" EXIT")
     print(
         'echo "Selected thread #{} out of {}"'.format(
             builder_thread, builder_total_threads
@@ -101,3 +104,4 @@ if __name__ == "__main__":
     )
     for line in generate_lines(sys.argv[1], builds):
         print(line)
+    

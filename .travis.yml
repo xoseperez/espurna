@@ -41,7 +41,7 @@ jobs:
     - env: BUILDER_THREAD=3
 before_deploy:
   - mkdir -p firmware/
-  - mv code/release/*/espurna-*.bin firmware/
+  - mv firmware/*/espurna-*.bin firmware/
 deploy:
   provider: releases
   api_key:
