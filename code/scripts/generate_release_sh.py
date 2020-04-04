@@ -43,7 +43,7 @@ def get_builds(cfg):
         )
 
 
-def generate_lines(version, builds):
+def generate_lines(builds):
     cores = []
     generic = []
 
@@ -55,7 +55,6 @@ def generate_lines(version, builds):
         if build.src_build_flags:
             flags.append('ESPURNA_FLAGS="{}"'.format(build.src_build_flags))
         flags.append('ESPURNA_NAME="{env}"'.format(env=build.env))
-        flags.append('ESPURNA_VERSION="{version}"'.format(version=version))
 
         cmd = ["env"]
         cmd.extend(flags)
@@ -93,15 +92,18 @@ if __name__ == "__main__":
 
     builder_total_threads = int(os.environ["BUILDER_TOTAL_THREADS"])
     builder_thread = int(os.environ["BUILDER_THREAD"])
+    version = sys.argv[1]
+
     builds = every(get_builds(Config), builder_thread, builder_total_threads)
 
     print("#!/bin/bash")
     print("set -e -x")
+    print('export ESPURNA_VERSION="{}"'.format(version))
     print('trap "ls -l ${TRAVIS_BUILD_DIR}/firmware/${ESPURNA_VERSION}" EXIT')
     print(
         'echo "Selected thread #{} out of {}"'.format(
             builder_thread, builder_total_threads
         )
     )
-    for line in generate_lines(sys.argv[1], builds):
+    for line in generate_lines(builds):
         print(line)
