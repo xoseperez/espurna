@@ -743,7 +743,43 @@ void _sensorAPISetup() {
 
 }
 
-#endif // API_SUPPORT
+#endif // API_SUPPORT == 1
+
+#if MQTT_SUPPORT
+
+void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
+    static const auto energy_topic = magnitudeTopic(MAGNITUDE_ENERGY);
+    switch (type) {
+        case MQTT_MESSAGE_EVENT: {
+            String t = mqttMagnitude((char *) topic);
+            if (!t.startsWith(energy_topic)) break;
+
+            unsigned int index = t.substring(energy_topic.length() + 1).toInt();
+            if (index >= sensor_magnitude_t::counts(MAGNITUDE_ENERGY)) break;
+
+            for (auto& magnitude : _magnitudes) {
+                if (MAGNITUDE_ENERGY != magnitude.type) continue;
+                if (index != magnitude.global) continue;
+                _sensorApiResetEnergy(magnitude, payload);
+                break;
+            }
+        }
+        case MQTT_CONNECT_EVENT: {
+            for (auto& magnitude : _magnitudes) {
+                if (MAGNITUDE_ENERGY == magnitude.type) {
+                    const String topic = energy_topic + "/+";
+                    mqttSubscribe(topic.c_str());
+                    break;
+                }
+            }
+        }
+        case MQTT_DISCONNECT_EVENT:
+        default:
+            break;
+    }
+}
+
+#endif // MQTT_SUPPORT == 1
 
 #if TERMINAL_SUPPORT
 
@@ -766,7 +802,7 @@ void _sensorInitCommands() {
     });
 }
 
-#endif
+#endif // TERMINAL_SUPPORT == 1
 
 void _sensorTick() {
     for (auto* sensor : _sensors) {
@@ -1879,23 +1915,28 @@ void _sensorBackwards() {
 
 void sensorSetup() {
 
-    // Backwards compatibility
+    // Settings backwards compatibility
     _sensorBackwards();
 
-    // Load sensors
+    // Load configured sensors and set up all of magnitudes
     _sensorLoad();
     _sensorInit();
 
-    // Configure stored values
+    // Configure based on settings
     _sensorConfigure();
 
-    // Websockets
+    // Websockets integration, send sensor readings and configuration
     #if WEB_SUPPORT
         wsRegister()
             .onVisible(_sensorWebSocketOnVisible)
             .onConnected(_sensorWebSocketOnConnected)
             .onData(_sensorWebSocketSendData)
             .onKeyCheck(_sensorWebSocketOnKeyCheck);
+    #endif
+
+    // MQTT receive callback, atm only for energy reset
+    #if MQTT_SUPPORT
+        mqttRegister(_sensorMqttCallback);
     #endif
 
     // API
