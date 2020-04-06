@@ -829,10 +829,10 @@ void _sensorPost() {
 }
 
 sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
-    sensor::Energy result;
-    result.kwh.value = Rtcmem->energy[index].kwh;
-    result.ws.value = Rtcmem->energy[index].ws;
-    return result;
+    return sensor::Energy {
+        sensor::KWh { Rtcmem->energy[index].kwh },
+        sensor::Ws { Rtcmem->energy[index].ws }
+    };
 }
 
 void _sensorRtcmemSaveEnergy(unsigned char index, const sensor::Energy& source) {
