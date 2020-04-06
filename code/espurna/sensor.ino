@@ -714,45 +714,31 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
 #endif // WEB_SUPPORT
 
-void _sensorApiResetEnergy(const char* payload) {
-    if (!payload || !strlen(payload)) return;
-    if (payload[0] != '0') return;
-    for (auto& magnitude : _magnitudes) {
-        if (magnitude.type == MAGNITUDE_ENERGY) {
-            static_cast<BaseEmonSensor*>(magnitude.sensor)->resetEnergy();
-            _sensorResetEnergyTotal(magnitude.global);
-        }
-    }
-}
-
 #if API_SUPPORT
 
 void _sensorAPISetup() {
 
-    bool register_energy_reset = false;
-
     for (unsigned char magnitude_id=0; magnitude_id<_magnitudes.size(); magnitude_id++) {
 
-        sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
-        if (!register_energy_reset && (magnitude.type == MAGNITUDE_ENERGY)) {
-            register_energy_reset = true;
-        }
+        auto& magnitude = _magnitudes.at(magnitude_id);
 
         String topic = magnitudeTopic(magnitude.type);
         if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) topic = topic + "/" + String(magnitude.global);
 
-        api_get_callback_f get_cb = [magnitude_id](char * buffer, size_t len) {
-            sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
+        api_get_callback_f get_cb = [&magnitude](char * buffer, size_t len) {
             double value = _sensor_realtime ? magnitude.last : magnitude.reported;
             dtostrf(value, 1, magnitude.decimals, buffer);
         };
+        api_put_callback_f put_cb = nullptr;
 
-        apiRegister(topic.c_str(), get_cb);
+        if (magnitude.type == MAGNITUDE_ENERGY) {
+            put_cb = [&magnitude](const char* payload) {
+                _sensorApiResetEnergy(magnitude, payload);
+            };
+        }
 
-    }
+        apiRegister(topic.c_str(), get_cb, put_cb);
 
-    if (register_energy_reset) {
-        apiRegister(magnitudeTopic(MAGNITUDE_ENERGY).c_str(), nullptr, _sensorApiResetEnergy);
     }
 
 }
@@ -806,15 +792,40 @@ void _sensorPost() {
     }
 }
 
-// XXX: volatile vicious cycle ...
-void _sensorRtcmemLoadEnergy(sensor::Energy& target, const volatile RtcmemEnergy& source) {
-    target.kwh.value = source.kwh;
-    target.ws.value = source.ws;
+sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
+    sensor::Energy result;
+    result.kwh.value = Rtcmem->energy[index].kwh;
+    result.ws.value = Rtcmem->energy[index].ws;
+    return result;
 }
 
-void _sensorRtcmemSaveEnergy(volatile RtcmemEnergy& target, const sensor::Energy& source) {
-    target.kwh = source.kwh.value;
-    target.ws = source.ws.value;
+void _sensorRtcmemSaveEnergy(unsigned char index, const sensor::Energy& source) {
+    Rtcmem->energy[index].kwh = source.kwh.value;
+    Rtcmem->energy[index].ws = source.ws.value;
+}
+
+sensor::Energy _sensorParseEnergy(const String& value) {
+    sensor::Energy result;
+
+    const bool separator = value.indexOf('+') > 0;
+    if (value.length() && (separator > 0)) {
+        const String before = value.substring(0, separator);
+        const String after = value.substring(separator + 1);
+        result.kwh = strtoul(before.c_str(), nullptr, 10);
+        result.ws = strtoul(after.c_str(), nullptr, 10);
+    }
+
+    return result;
+}
+
+void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
+    if (!payload || !strlen(payload)) return;
+    if (payload[0] != '0') return;
+
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
+    auto energy = _sensorParseEnergy(payload);
+
+    sensor->resetEnergy(magnitude.global, energy);
 }
 
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
@@ -822,16 +833,9 @@ sensor::Energy _sensorEnergyTotal(unsigned char index) {
     sensor::Energy result;
 
     if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
-        _sensorRtcmemLoadEnergy(result, Rtcmem->energy[index]);
+        result = _sensorRtcmemLoadEnergy(index);
     } else if (_sensor_save_every > 0) {
-        const String value = getSetting({"eneTotal", index});
-        const bool separator = value.indexOf('+') > 0;
-        if (value.length() && (separator > 0)) {
-            const String before = value.substring(0, separator);
-            const String after = value.substring(separator + 1);
-            result.kwh = strtoul(before.c_str(), nullptr, 10);
-            result.ws = strtoul(after.c_str(), nullptr, 10);
-        }
+        result = _sensorParseEnergy(getSetting({"eneTotal", index}));
     }
 
     return result;
@@ -859,7 +863,7 @@ void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool report) {
 
     // Always save to RTCMEM
     if (magnitude.global < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
-        _sensorRtcmemSaveEnergy(Rtcmem->energy[magnitude.global], energy);
+        _sensorRtcmemSaveEnergy(magnitude.global, energy);
     }
 
     // Save to EEPROM every '_sensor_save_every' readings
