@@ -126,12 +126,12 @@ struct Energy {
 }
 
 String magnitudeName(unsigned char index);
+String magnitudeUnits(unsigned char index);
 unsigned char magnitudeType(unsigned char index);
 
 // XXX: without param name it is kind of vague what exactly unsigned char is
 //      consider using index instead of type or adding stronger param type
 String magnitudeTopic(unsigned char type);
-String magnitudeUnits(unsigned char index);
 
 String magnitudeTopic(const sensor_magnitude_t& magnitude);
 String magnitudeUnits(const sensor_magnitude_t& magnitude);

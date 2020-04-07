@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "broker.h"
 #include "mqtt.h"
+#include "ntp.h"
 #include "relay.h"
 #include "sensor.h"
 #include "terminal.h"
@@ -167,8 +168,6 @@ double _sensor_lux_correction = SENSOR_LUX_CORRECTION;
 // Energy persistence
 std::vector<unsigned char> _sensor_save_count;
 unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
-
-std::vector<String> _sensor_emon_timestamp;
 
 // -----------------------------------------------------------------------------
 // Private
@@ -636,11 +635,6 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
         {
             String sensor_desc = magnitude.sensor->slot(magnitude.local);
-            if (magnitude.type == MAGNITUDE_ENERGY) {
-                char buffer[32] = {0};
-                snprintf(buffer, sizeof(buffer), "(every %lu seconds)", _sensor_read_interval);
-                sensor_desc += buffer;
-            }
             description.add(sensor_desc);
         }
 
@@ -659,6 +653,9 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
     JsonArray& value = magnitudes.createNestedArray("value");
     JsonArray& error = magnitudes.createNestedArray("error");
+    #if NTP_SUPPORT
+        JsonArray& info = magnitudes.createNestedArray("info");
+    #endif
 
     for (auto& magnitude : _magnitudes) {
         if (magnitude.type == MAGNITUDE_EVENT) continue;
@@ -668,6 +665,16 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
         value.add(buffer);
         error.add(magnitude.sensor->error());
+
+        #if NTP_SUPPORT
+            if ((_sensor_save_every > 0) && (magnitude.type == MAGNITUDE_ENERGY)) {
+                String string = F("Last saved: ");
+                string += getSetting({"eneTime", magnitude.global}, F("(unknown)"));
+                info.add(string);
+            } else {
+                info.add((uint8_t)0);
+            }
+        #endif
     }
 
     magnitudes["size"] = size;
@@ -916,13 +923,14 @@ sensor::Energy sensorEnergyTotal() {
 
 void _sensorResetEnergyTotal(unsigned char index) {
     delSetting({"eneTotal", index});
+    delSetting({"eneTime", index});
     if (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
         Rtcmem->energy[index].kwh = 0;
         Rtcmem->energy[index].ws = 0;
     }
 }
 
-void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool report) {
+void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
     if (magnitude.type != MAGNITUDE_ENERGY) return;
 
     auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
@@ -936,13 +944,16 @@ void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool report) {
 
     // Save to EEPROM every '_sensor_save_every' readings
     // Format is `<kwh>+<ws>`, value without `+` is treated as `<ws>`
-    if (report && _sensor_save_every) {
+    if (persistent && _sensor_save_every) {
         _sensor_save_count[magnitude.global] =
             (_sensor_save_count[magnitude.global] + 1) % _sensor_save_every;
 
         if (0 == _sensor_save_count[magnitude.global]) {
             const String total = String(energy.kwh.value) + "+" + String(energy.ws.value);
             setSetting({"eneTotal", magnitude.global}, total);
+            #if NTP_SUPPORT
+                if (ntpSynced()) setSetting({"eneTime", magnitude.global}, ntpDateTime());
+            #endif
         }
     }
 }
@@ -1546,7 +1557,7 @@ void _sensorCallback(unsigned char i, unsigned char type, double value) {
 void _sensorInit() {
 
     _sensors_ready = true;
-    _sensor_save_every = getSetting<int>("snsSave", 0);
+    _sensor_save_every = 0;
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
@@ -1698,20 +1709,24 @@ void _sensorConfigure() {
 
             if ((value = getSetting("pwrExpectedC", 0.0))) {
                 sensor->expectedCurrent(value);
+                delSetting("pwrExpectedC");
                 setSetting("pwrRatioC", sensor->getCurrentRatio());
             }
 
             if ((value = getSetting("pwrExpectedV", 0.0))) {
+                delSetting("pwrExpectedV");
                 sensor->expectedVoltage(value);
                 setSetting("pwrRatioV", sensor->getVoltageRatio());
             }
 
             if ((value = getSetting("pwrExpectedP", 0.0))) {
+                delSetting("pwrExpectedP");
                 sensor->expectedPower(value);
                 setSetting("pwrRatioP", sensor->getPowerRatio());
             }
 
             if (getSetting("pwrResetE", false)) {
+                delSetting("pwrResetE");
                 for (size_t index = 0; index < sensor->countDevices(); ++index) {
                     sensor->resetEnergy(index);
                     _sensorResetEnergyTotal(index);
@@ -1719,10 +1734,11 @@ void _sensorConfigure() {
             }
 
             if (getSetting("pwrResetCalibration", false)) {
-                sensor->resetRatios();
+                delSetting("pwrResetCalibration");
                 delSetting("pwrRatioC");
                 delSetting("pwrRatioV");
                 delSetting("pwrRatioP");
+                sensor->resetRatios();
             }
 
             sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()));
@@ -2118,8 +2134,14 @@ void sensorLoop() {
                 // -------------------------------------------------------------------
 
                 bool report = (0 == report_count);
+
                 if (magnitude.max_change > 0) {
                     report = (fabs(value_show - magnitude.reported) >= magnitude.max_change);
+                }
+
+                // Special case for energy, save readings to RAM and EEPROM
+                if (MAGNITUDE_ENERGY == magnitude.type) {
+                    _magnitudeSaveEnergyTotal(magnitude, report);
                 }
 
                 if (report) {
