@@ -490,7 +490,7 @@ void _buttonConfigure() {
 // TODO: compatibility proxy, fetch global key before indexed
 template<typename T>
 unsigned long _buttonGetSetting(const char* key, unsigned char index, T default_value) {
-    return getSetting(key, getSetting({key, index}, default_value));
+    return getSetting({key, index}, getSetting(key, default_value));
 }
 
 void buttonSetup() {
