@@ -461,8 +461,54 @@ String magnitudeUnits(unsigned char index) {
     return magnitudeUnits(_magnitudes[index]);
 }
 
+// Choose unit based on type of magnitude we use
+
+sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::Unit updated) {
+    auto result = magnitude.units;
+
+    switch (magnitude.type) {
+        case MAGNITUDE_TEMPERATURE: {
+            switch (updated) {
+                case sensor::Unit::Celcius:
+                case sensor::Unit::Farenheit:
+                case sensor::Unit::Kelvin:
+                    result = updated;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case MAGNITUDE_POWER_ACTIVE: {
+            switch (updated) {
+                case sensor::Unit::Kilowatt:
+                case sensor::Unit::Watt:
+                    result = updated;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case MAGNITUDE_ENERGY: {
+            switch (updated) {
+                case sensor::Unit::KilowattHour:
+                case sensor::Unit::Joule:
+                    result = updated;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+    }
+
+    return result;
+};
+
 double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
+    // Process input (sensor) units and convert to the ones that magnitude specifies as output
     switch (magnitude.sensor->units(magnitude.type)) {
         case sensor::Unit::Celcius:
             if (magnitude.units == sensor::Unit::Farenheit) {
@@ -1700,13 +1746,22 @@ void _sensorConfigure() {
             // update units based either on hard-coded defaults or runtime settings
             switch (magnitude.type) {
                 case MAGNITUDE_TEMPERATURE:
-                    magnitude.units = getSetting({"tmpUnits", magnitude.global}, tmpUnits);
+                    magnitude.units = _magnitudeUnitFilter(
+                        magnitude,
+                        getSetting({"tmpUnits", magnitude.global}, tmpUnits)
+                    );
                     break;
                 case MAGNITUDE_POWER_ACTIVE:
-                    magnitude.units = getSetting({"pwrUnits", magnitude.global}, pwrUnits);
+                    magnitude.units = _magnitudeUnitFilter(
+                        magnitude,
+                        getSetting({"pwrUnits", magnitude.global}, pwrUnits)
+                    );
                     break;
                 case MAGNITUDE_ENERGY:
-                    magnitude.units = getSetting({"eneUnits", magnitude.global}, eneUnits);
+                    magnitude.units = _magnitudeUnitFilter(
+                        magnitude,
+                        getSetting({"eneUnits", magnitude.global}, eneUnits)
+                    );
                     break;
                 default:
                     magnitude.units = magnitude.sensor->units(magnitude.type);
