@@ -10,6 +10,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "config/buildtime.h"
 
+#include "board.h"
 #include "mqtt.h"
 #include "ntp.h"
 #include "utils.h"
@@ -37,7 +38,6 @@ PROGMEM const char* const custom_reset_string[] = {
     custom_reset_factory
 };
 
-
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
         setSetting("hostname", HOSTNAME);
@@ -47,9 +47,9 @@ void setDefaultHostname() {
 }
 
 void setBoardName() {
-    #ifndef ESPURNA_CORE
+    if (!isEspurnaCore()) {
         setSetting("boardName", DEVICE_NAME);
-    #endif
+    }
 }
 
 String getBoardName() {
