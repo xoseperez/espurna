@@ -1532,10 +1532,18 @@ void _sensorLoad() {
     }
     #endif
 
-     #if ADE7953_SUPPORT
+    #if ADE7953_SUPPORT
     {
         ADE7953Sensor * sensor = new ADE7953Sensor();
         sensor->setAddress(ADE7953_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SI1145_SUPPORT
+    {
+        SI1145Sensor * sensor = new SI1145Sensor();
+        sensor->setAddress(SI1145_ADDRESS);
         _sensors.push_back(sensor);
     }
     #endif
