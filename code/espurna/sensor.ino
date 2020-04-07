@@ -1813,14 +1813,13 @@ void _sensorConfigure() {
 
 void _sensorReport(unsigned char index, double value) {
 
-    sensor_magnitude_t magnitude = _magnitudes[index];
-    unsigned char decimals = magnitude.decimals;
+    const auto& magnitude = _magnitudes.at(index);
 
     // XXX: ensure that the received 'value' will fit here
     // dtostrf 2nd arg only controls leading zeroes and the
     // 3rd is only for the part after the dot
     char buffer[64];
-    dtostrf(value, 1, decimals, buffer);
+    dtostrf(value, 1, magnitude.decimals, buffer);
 
     #if BROKER_SUPPORT
         SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
