@@ -50,7 +50,7 @@
 
     // Info
     #define MANUFACTURER            "ESPURNA"
-    #define DEVICE                  "ESPURNA_CORE"
+    #define DEVICE                  "CORE"
 
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
@@ -79,14 +79,14 @@
     //#define TELNET_SUPPORT          0 // when only using espota.py
     //#define TERMINAL_SUPPORT        0 //
 
-#elif defined(ESPURNA_BASE)
+#elif defined(ESPURNA_CORE_WEBUI)
 
     // This is a special device with no specific hardware
     // with the basics to easily upgrade it to a device-specific image
 
     // Info
     #define MANUFACTURER            "ESPURNA"
-    #define DEVICE                  "ESPURNA_BASE"
+    #define DEVICE                  "CORE_WEBUI"
 
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
