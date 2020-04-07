@@ -14,7 +14,7 @@ def expand_variables(cfg, value):
     RE_VARS = re.compile("\$\{.*?\}")
 
     for var in RE_VARS.findall(value):
-        section, option = var.replace("${", "").replace("}","").split(".", 1)
+        section, option = var.replace("${", "").replace("}", "").split(".", 1)
         value = value.replace(var, expand_variables(cfg, cfg.get(section, option)))
 
     return value
@@ -22,7 +22,9 @@ def expand_variables(cfg, value):
 
 def get_builds(cfg):
     RE_NEWLINE = re.compile("\r\n|\n")
-    BASE_BUILD_FLAGS = set(shlex.split(expand_variables(cfg,cfg.get("env", "build_flags"))))
+    BASE_BUILD_FLAGS = set(
+        shlex.split(expand_variables(cfg, cfg.get("env", "build_flags")))
+    )
 
     for section in cfg.sections():
         if (not section.startswith("env:")) or (
@@ -36,7 +38,9 @@ def get_builds(cfg):
         try:
             build_flags = cfg.get(section, "build_flags")
             build_flags = RE_NEWLINE.sub(" ", build_flags).strip()
-            build_flags = " ".join(BASE_BUILD_FLAGS ^ set(shlex.split(expand_variables(cfg, build_flags))))
+            build_flags = " ".join(
+                BASE_BUILD_FLAGS ^ set(shlex.split(expand_variables(cfg, build_flags)))
+            )
         except configparser.NoOptionError:
             pass
 
