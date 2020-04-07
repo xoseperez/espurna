@@ -285,12 +285,12 @@ class CSE7766Sensor : public BaseEmonSensor {
             }
 
             // Calculate energy
-            uint32_t difference;
             uint32_t cf_pulses = _data[21] << 8 | _data[22];
 
             static uint32_t cf_pulses_last = 0;
             if (0 == cf_pulses_last) cf_pulses_last = cf_pulses;
 
+            uint32_t difference;
             if (cf_pulses < cf_pulses_last) {
                 difference = cf_pulses + (0xFFFF - cf_pulses_last) + 1;
             } else {
@@ -298,7 +298,7 @@ class CSE7766Sensor : public BaseEmonSensor {
             }
 
             _energy[0] += sensor::Ws {
-                static_cast<decltype(difference)>(difference * (float) _coefP / 1000000.0)
+                static_cast<uint32_t>(difference * (float) _coefP / 1000000.0)
             };
             cf_pulses_last = cf_pulses;
 
