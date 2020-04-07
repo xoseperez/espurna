@@ -147,21 +147,7 @@ void Energy::reset() {
 } // namespace sensor
 
 bool _sensorIsEmon(BaseSensor* sensor) {
-    switch (sensor->getID()) {
-        case SENSOR_ADE7953_ID:
-        case SENSOR_CSE7766_ID:
-        case SENSOR_ECH1560_ID:
-        case SENSOR_EMON_ADC121_ID:
-        case SENSOR_EMON_ADS1X15_ID:
-        case SENSOR_EMON_ANALOG_ID:
-        case SENSOR_HLW8012_ID:
-        case SENSOR_PULSEMETER_ID:
-        case SENSOR_PZEM004T_ID:
-        case SENSOR_V9261F_ID:
-            return true;
-        default:
-            return false;
-    }
+    return sensor->type() & sensor::type::Emon;
 }
 
 // ---------------------------------------------------------------------------

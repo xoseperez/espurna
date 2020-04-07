@@ -45,6 +45,9 @@ class BaseSensor {
         // Descriptive name of the slot # index
         virtual String slot(unsigned char index) = 0;
 
+        // Type of sensor
+        virtual unsigned char type() { return sensor::type::Base; }
+
         // Type for slot # index
         virtual unsigned char type(unsigned char index) = 0;
 

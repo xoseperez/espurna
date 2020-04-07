@@ -21,6 +21,10 @@ class BaseEmonSensor : public BaseSensor {
             BaseEmonSensor(1)
         {}
 
+        unsigned char type() {
+            return sensor::type::Emon;
+        }
+
         virtual void resizeDevices(size_t devices) {
             _energy.resize(devices);
             _devices = devices;

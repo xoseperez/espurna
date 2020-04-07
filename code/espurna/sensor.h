@@ -15,6 +15,16 @@ struct sensor_magnitude_t;
 
 namespace sensor {
 
+namespace type {
+
+enum Type : unsigned char {
+    Base = 0,
+    Emon = 1 << 0,
+    Analog = 1 << 1
+};
+
+} // namespace type
+
 enum class Unit : int {
     Min_,
     None,

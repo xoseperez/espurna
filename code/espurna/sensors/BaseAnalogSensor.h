@@ -22,6 +22,8 @@ class BaseAnalogSensor : public BaseSensor {
 
         virtual void calibrate() { }
 
+        unsigned char type() { return sensor::type::Analog; }
+
     protected:
 
         unsigned long _R0;            // R0, calibration value at 25º
