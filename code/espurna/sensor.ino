@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <float.h>
 
 #include "broker.h"
+#include "domoticz.h"
 #include "mqtt.h"
 #include "ntp.h"
 #include "relay.h"
@@ -1859,30 +1860,10 @@ void _sensorReport(unsigned char index, double value) {
 
     #if THINGSPEAK_SUPPORT
         tspkEnqueueMeasurement(index, buffer);
-    #endif
+    #endif // THINGSPEAK_SUPPORT
 
     #if DOMOTICZ_SUPPORT
-    {
-        char key[15];
-        snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), index);
-        if (magnitude.type == MAGNITUDE_HUMIDITY) {
-            int status;
-            if (value > 70) {
-                status = HUMIDITY_WET;
-            } else if (value > 45) {
-                status = HUMIDITY_COMFORTABLE;
-            } else if (value > 30) {
-                status = HUMIDITY_NORMAL;
-            } else {
-                status = HUMIDITY_DRY;
-            }
-            char status_buf[5];
-            itoa(status, status_buf, 10);
-            domoticzSend(key, buffer, status_buf);
-        } else {
-            domoticzSend(key, 0, buffer);
-        }
-    }
+        domoticzSendMagnitude(magnitude.type, index, value, buffer);
     #endif // DOMOTICZ_SUPPORT
 
 }

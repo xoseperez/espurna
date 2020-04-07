@@ -10,6 +10,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "broker.h"
 #include "domoticz.h"
+#include "sensor.h"
 #include "mqtt.h"
 #include "relay.h"
 
@@ -194,6 +195,47 @@ void _domoticzBrokerCallback(const String& topic, unsigned char id, unsigned int
 
 #endif // BROKER_SUPPORT
 
+#if SENSOR_SUPPORT
+
+void domoticzSendMagnitude(unsigned char type, unsigned char index, double value, const char* buffer) {
+    if (!_dcz_enabled) return;
+
+    char key[15];
+    snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), index);
+
+    // Domoticz expects some additional data, dashboard might break otherwise.
+
+    // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Barometer
+    // TODO: Must send 'forecast' data. Default is last 3 hours:
+    // https://github.com/domoticz/domoticz/blob/6027b1d9e3b6588a901de42d82f3a6baf1374cd1/hardware/I2C.cpp#L1092-L1193
+    // For now, just send invalid value. Consider simplifying sampling function and adding it here, with custom sampling time (3 hours, 6 hours, 12 hours etc.)
+    if (MAGNITUDE_PRESSURE == type) {
+        String svalue = buffer;
+        svalue += ";-1";
+        domoticzSend(key, 0, svalue.c_str());
+    // Special case to allow us to use it with switches directly
+    } else if (MAGNITUDE_DIGITAL == type) {
+        int nvalue = (buffer[0] >= 48) ? (buffer[0] - 48) : 0;
+        domoticzSend(key, nvalue, buffer);
+    // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Humidity
+    // svalue contains HUM_STAT, one of consts below
+    } else if (MAGNITUDE_HUMIDITY == type) {
+        const char status = 48 + (
+            (value > 70) ? HUMIDITY_WET :
+            (value > 45) ? HUMIDITY_COMFORTABLE :
+            (value > 30) ? HUMIDITY_NORMAL :
+            HUMIDITY_DRY
+        );
+        char svalue[2] = {status, '\0'};
+        domoticzSend(key, buffer, svalue);
+    // Otherwise, send char string (nvalue is only for integers)
+    } else {
+        domoticzSend(key, 0, buffer);
+    }
+}
+
+#endif // SENSOR_SUPPORT
+
 #if WEB_SUPPORT
 
 bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
@@ -246,11 +288,11 @@ void _domoticzConfigure() {
 
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue) {
     if (!_dcz_enabled) return;
-    const auto idx = getSetting<int>(key, 0);
+    const auto idx = getSetting(key, 0);
     if (idx > 0) {
         char payload[128];
         snprintf(payload, sizeof(payload), "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
-        mqttSendRaw(getSetting<String>("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
+        mqttSendRaw(getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
     }
 }
 
