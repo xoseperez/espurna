@@ -94,9 +94,11 @@ def ensure_platform_updated():
         log("Warning: no connection, cannot check for outdated packages", verbose=True)
 
 
-# handle OTA uploads
-# using env instead of ini to fix platformio ini changing hash on every change
+# handle build flags through os environment.
+# using env instead of ini to avoid platformio ini changing hash on every change
 env.Append(
+    ESPURNA_VERSION=os.environ.get("ESPURNA_VERSION", ""),
+    ESPURNA_NAME=os.environ.get("ESPURNA_NAME", ""),
     ESPURNA_BOARD=os.environ.get("ESPURNA_BOARD", ""),
     ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH", ""),
     ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", "")
@@ -110,12 +112,13 @@ if ESPURNA_OTA_PORT:
 else:
     env.Replace(UPLOAD_PROTOCOL="esptool")
 
-# latest toolchain is still optional with PIO (TODO: recheck after 2.6.0!)
-# also updates arduino core git to the latest master commit
-if TRAVIS and (
-    env.GetProjectOption("platform") == CONFIG.get("common", "arduino_core_git")
-):
-    ensure_platform_updated()
+# updates arduino core git to the latest master commit
+if TRAVIS:
+    package_overrides = env.GetProjectOption("platform_packages")
+    for package in package_overrides:
+        if "https://github.com/esp8266/Arduino.git" in package:
+            ensure_platform_updated()
+            break
 
 # to speed-up build process, install libraries in either global or local shared storage
 if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):

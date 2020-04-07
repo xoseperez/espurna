@@ -17,6 +17,7 @@ from espurna_utils import (
     app_inject_revision,
     dummy_ets_printf,
     app_inject_flags,
+    copy_release,
 )
 
 Import("env", "projenv")
@@ -50,3 +51,6 @@ app_inject_revision(projenv)
 
 # handle OTA board and flags here, since projenv is not available in pre-scripts
 app_inject_flags(projenv)
+
+# handle `-t release` when CI does a tagged build
+env.AlwaysBuild(env.Alias("release", "${BUILD_DIR}/${PROGNAME}.bin", copy_release))
