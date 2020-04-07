@@ -311,5 +311,9 @@ void sensorLoop();
     #include "sensors/ADE7953Sensor.h"
 #endif
 
+#if SI1145_SUPPORT
+    #include "sensors/SI1145Sensor.h"
+#endif
+
 //--------------------------------------------------------------------------------
 

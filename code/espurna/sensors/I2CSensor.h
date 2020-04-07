@@ -27,6 +27,9 @@
 
 #include "BaseSensor.h"
 
+// TODO: Must inherit from I2CSensor<>, not just I2CSensor. Even with default value :(
+//       Perhaps I2CSensor should be alias for I2CSensorBase?
+
 template <typename T = BaseSensor>
 class I2CSensor : public T {
 
