@@ -50,7 +50,7 @@
 
     // Info
     #define MANUFACTURER            "ESPURNA"
-    #define DEVICE                  "ESPURNA_CORE"
+    #define DEVICE                  "CORE"
 
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
@@ -79,14 +79,14 @@
     //#define TELNET_SUPPORT          0 // when only using espota.py
     //#define TERMINAL_SUPPORT        0 //
 
-#elif defined(ESPURNA_BASE)
+#elif defined(ESPURNA_CORE_WEBUI)
 
     // This is a special device with no specific hardware
     // with the basics to easily upgrade it to a device-specific image
 
     // Info
     #define MANUFACTURER            "ESPURNA"
-    #define DEVICE                  "ESPURNA_BASE"
+    #define DEVICE                  "CORE_WEBUI"
 
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
@@ -1692,6 +1692,43 @@
     #define ECH1560_CLK_PIN     4
     #define ECH1560_MISO_PIN    5
     #define ECH1560_INVERTED    0
+
+// -----------------------------------------------------------------------------
+// PZEM004T
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_PZEM004T)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "PZEM004T"
+
+    #define PZEM004T_SUPPORT     1
+
+    #define ALEXA_SUPPORT              0
+    #define DEBUG_SERIAL_SUPPORT       0
+
+// -----------------------------------------------------------------------------
+// ESP-01 generic esp8266 board with 512 kB flash
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01_512KB)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01_512KB"
+
+    // Relays
+    #define RELAY1_PIN          2
+    #ifndef RELAY1_TYPE
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #endif
+
+    // No need for OTA
+    #define OTA_WEB_SUPPORT          0
+    #define OTA_ARDUINOOTA_SUPPORT   0
+    #define OTA_CLIENT               OTA_CLIENT_NONE
+
 
 // -----------------------------------------------------------------------------
 // ESPLive
@@ -4557,27 +4594,6 @@
     #define RELAY2_TYPE             RELAY_TYPE_NORMAL
     #define RELAY3_TYPE             RELAY_TYPE_NORMAL
     #define RELAY4_TYPE             RELAY_TYPE_NORMAL
-
-// -----------------------------------------------------------------------------
-// ESP-01 generic esp8266 board with 512 kB flash
-// -----------------------------------------------------------------------------
-
-#elif defined(GENERIC_ESP01_512KB)
-
-    // Info
-    #define MANUFACTURER        "GENERIC"
-    #define DEVICE              "ESP01_512KB"
-
-    // Relays
-    #define RELAY1_PIN          2
-    #ifndef RELAY1_TYPE
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-    #endif
-
-    // No need for OTA
-    #define OTA_WEB_SUPPORT          0
-    #define OTA_ARDUINOOTA_SUPPORT   0
-    #define OTA_CLIENT               OTA_CLIENT_NONE
 
 // -----------------------------------------------------------------------------
 

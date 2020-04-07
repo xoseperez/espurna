@@ -324,6 +324,14 @@ String getEspurnaWebUI() {
     return FPSTR(espurna_webui);
 }
 
+bool isEspurnaCore() {
+    #if defined(ESPURNA_CORE) || defined(ESPURNA_CORE_WEBUI)
+        return true;
+    #else
+        return false;
+    #endif
+}
+
 bool haveRelaysOrSensors() {
     bool result = false;
     result = (relayCount() > 0);
@@ -334,10 +342,8 @@ bool haveRelaysOrSensors() {
 }
 
 int getBoardId() {
-    #if defined(ESPURNA_CORE)
+    #if defined(ESPURNA_CORE) || defined(ESPURNA_CORE_WEBUI)
         return 0;
-    #elif defined(ESPURNA_BASE)
-        return 1;
     #elif defined(NODEMCU_LOLIN)
         return 2;
     #elif defined(NODEMCU_BASIC)

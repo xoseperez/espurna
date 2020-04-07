@@ -18,6 +18,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #if TELNET_SUPPORT
 
 #include <memory>
+#include "board.h"
 #include "telnet.h"
 
 TTelnetServer _telnetServer(TELNET_PORT);
@@ -272,11 +273,7 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
     }
 
     // Password prompt (disable on CORE variant)
-    #ifdef ESPURNA_CORE
-        const bool authenticated = true;
-    #else
-        const bool authenticated = _telnetClientsAuth[clientId];
-    #endif
+    const bool authenticated = isEspurnaCore() ? true : _telnetClientsAuth[clientId];
 
     if (_telnetAuth && !authenticated) {
         String password = getAdminPass();
@@ -310,9 +307,7 @@ void _telnetNotifyConnected(unsigned char i) {
     #endif
     #endif
 
-    #ifdef ESPURNA_CORE
-        _telnetClientsAuth[i] = true;
-    #else
+    if (!isEspurnaCore()) {
         _telnetClientsAuth[i] = !_telnetAuth;
         if (_telnetAuth) {
             if (getAdminPass().length()) {
@@ -321,7 +316,9 @@ void _telnetNotifyConnected(unsigned char i) {
                 _telnetClientsAuth[i] = true;
             }
         }
-    #endif
+    } else {
+        _telnetClientsAuth[i] = true;
+    }
 
     wifiReconnectCheck();
 
@@ -340,13 +337,8 @@ void _telnetLoop() {
 
                 if (_telnetClients[i]->localIP() != WiFi.softAPIP()) {
                     // Telnet is always available for the ESPurna Core image
-                    #ifdef ESPURNA_CORE
-                        bool telnetSTA = true;
-                    #else
-                        bool telnetSTA = getSetting("telnetSTA", 1 == TELNET_STA);
-                    #endif
-
-                    if (!telnetSTA) {
+                    const bool can_connect = isEspurnaCore() ? true : getSetting("telnetSTA", 1 == TELNET_STA);
+                    if (!can_connect) {
                         DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
                         _telnetDisconnect(i);
                         return;
@@ -412,13 +404,9 @@ void _telnetSetupClient(unsigned char i, AsyncClient *client) {
 void _telnetNewClient(AsyncClient* client) {
     if (client->localIP() != WiFi.softAPIP()) {
         // Telnet is always available for the ESPurna Core image
-        #ifdef ESPURNA_CORE
-            bool telnetSTA = true;
-        #else
-            bool telnetSTA = getSetting("telnetSTA", 1 == TELNET_STA);
-        #endif
+        const bool can_connect = isEspurnaCore() ? true : getSetting("telnetSTA", 1 == TELNET_STA);
 
-        if (!telnetSTA) {
+        if (!can_connect) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
             client->onDisconnect([](void *s, AsyncClient *c) {
                 delete c;
