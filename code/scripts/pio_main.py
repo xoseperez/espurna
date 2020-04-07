@@ -27,7 +27,7 @@ projenv.ProcessUnFlags("-w")
 
 # XXX: note that this will also break %d format with floats and print raw memory contents as int
 # Cores after 2.3.0 can disable %f in the printf / scanf to reduce .bin size
-# remove_float_support(env)
+remove_float_support(env)
 ldscripts_inject_libpath(env)
 
 # two-step update hint when using 1MB boards

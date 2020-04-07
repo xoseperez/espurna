@@ -1,7 +1,6 @@
 import os
 import argparse
 import re
-import sys
 import shlex
 import configparser
 import collections
