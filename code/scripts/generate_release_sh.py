@@ -1,4 +1,5 @@
 import os
+import argparse
 import re
 import sys
 import shlex
@@ -54,11 +55,21 @@ def get_builds(cfg):
         )
 
 
-def generate_lines(builds):
+def find_any(string, values):
+    for value in values:
+        if value in string:
+            return True
+
+    return False
+
+
+def generate_lines(builds, ignore):
     cores = []
     generic = []
 
     for build in builds:
+        if find_any(build.env, ignore):
+            continue
 
         flags = []
         if build.build_flags:
@@ -94,8 +105,11 @@ def every(seq, nth, total):
 if __name__ == "__main__":
     if not CI:
         raise ValueError("* Not in CI *")
-    if len(sys.argv) != 2:
-        raise ValueError("* Invalid arguments *")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("version")
+    parser.add_argument("--ignore", action="append")
+    args = parser.parse_args()
 
     Config = configparser.ConfigParser()
     with open("platformio.ini", "r") as f:
@@ -103,7 +117,6 @@ if __name__ == "__main__":
 
     builder_total_threads = int(os.environ["BUILDER_TOTAL_THREADS"])
     builder_thread = int(os.environ["BUILDER_THREAD"])
-    version = sys.argv[1]
     if builder_thread >= builder_total_threads:
         raise ValueError("* Builder thread index out of range *")
 
@@ -111,12 +124,12 @@ if __name__ == "__main__":
 
     print("#!/bin/bash")
     print("set -e -x")
-    print('export ESPURNA_VERSION="{}"'.format(version))
+    print('export ESPURNA_VERSION="{}"'.format(args.version))
     print('trap "ls -l ${TRAVIS_BUILD_DIR}/firmware/${ESPURNA_VERSION}" EXIT')
     print(
         'echo "Selected thread #{} out of {}"'.format(
             builder_thread + 1, builder_total_threads
         )
     )
-    for line in generate_lines(builds):
+    for line in generate_lines(builds, args.ignore or ()):
         print(line)
