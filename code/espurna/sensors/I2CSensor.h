@@ -27,14 +27,15 @@
 
 #include "BaseSensor.h"
 
-class I2CSensor : public BaseSensor {
+template <typename T = BaseSensor>
+class I2CSensor : public T {
 
     public:
 
         void setAddress(unsigned char address) {
             if (_address == address) return;
             _address = address;
-            _dirty = true;
+            T::_dirty = true;
         }
 
         unsigned char getAddress() {
@@ -43,7 +44,7 @@ class I2CSensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return description();
+            return static_cast<T*>(this)->description();
         };
 
         // Address of the sensor (it could be the GPIO or I2C address)
@@ -80,7 +81,7 @@ class I2CSensor : public BaseSensor {
 
             // Flag error
             if (0 == _previous_address) {
-                _error = SENSOR_ERROR_I2C;
+                T::_error = SENSOR_ERROR_I2C;
             }
 
             return _previous_address;

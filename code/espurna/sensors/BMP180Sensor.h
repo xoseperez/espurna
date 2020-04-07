@@ -36,7 +36,7 @@
 #define BMP180_REGISTER_READTEMPCMD     0x2E
 #define BMP180_REGISTER_READPRESSURECMD 0x34
 
-class BMP180Sensor : public I2CSensor {
+class BMP180Sensor : public I2CSensor<> {
 
     public:
 
@@ -46,7 +46,7 @@ class BMP180Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BMP180Sensor(): I2CSensor() {
+        BMP180Sensor() {
             _sensor_id = SENSOR_BMP180_ID;
             _count = 2;
         }

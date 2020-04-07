@@ -23,7 +23,7 @@ class EventSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EventSensor(): BaseSensor() {
+        EventSensor() {
             _count = 1;
             _sensor_id = SENSOR_EVENTS_ID;
         }

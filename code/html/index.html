@@ -1583,24 +1583,25 @@
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Power units</label>
                                     <select name="pwrUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Watts (W)</option>
-                                        <option value="1">Kilowatts (kW)</option>
+                                        <option value="13">Watts (W)</option>
+                                        <option value="14">Kilowatts (kW)</option>
                                     </select>
                                 </div>
 
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
                                     <select name="eneUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Joules (J)</option>
-                                        <option value="1">Kilowatts·hour (kWh)</option>
+                                        <option value="15">Joules (J)</option>
+                                        <option value="16">Kilowatts·hour (kWh)</option>
                                     </select>
                                 </div>
 
                                 <div class="pure-g module module-temperature">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
                                     <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Celsius (&deg;C)</option>
-                                        <option value="1">Fahrenheit (&deg;F)</option>
+                                        <option value="2">Celsius (&deg;C)</option>
+                                        <option value="3">Fahrenheit (&deg;F)</option>
+                                        <option value="4">Kelvin (K)</option>
                                     </select>
                                 </div>
 
@@ -2076,7 +2077,9 @@
                 <div class="pure-u-1 pure-u-lg-1-4">
                     <input class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude" data="256" readonly />
                 </div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center sns-desc"></div>
+                <div class="pure-u-1 pure-u-lg-1 hint sns-info">
+                </div>
             </div>
         </div>
         <!-- endRemoveIf(!sensor) -->

@@ -1263,8 +1263,9 @@ function initMagnitudes(data) {
 
         var line = $(template).clone();
         $("label", line).html(magnitude.name);
-        $("div.hint", line).html(magnitude.description);
         $("input", line).attr("data", i);
+        $("div.sns-desc", line).html(magnitude.description);
+        $("div.sns-info", line).hide();
         line.appendTo("#magnitudes");
     }
 
@@ -1756,12 +1757,20 @@ function processData(data) {
 
         if ("magnitudes" === key) {
             for (var i=0; i<value.size; ++i) {
+                var inputElem = $("input[name='magnitude'][data='" + i + "']");
+                var infoElem = inputElem.parent().parent().find("div.sns-info");
+
                 var error = value.error[i] || 0;
-                var text = (0 === error) ?
-                    value.value[i] + magnitudes[i].units :
-                    magnitudeError(error);
-                var element = $("input[name='magnitude'][data='" + i + "']");
-                element.val(text);
+                var text = (0 === error)
+                    ? value.value[i] + magnitudes[i].units
+                    : magnitudeError(error);
+                inputElem.val(text);
+
+                if (value.info !== undefined) {
+                    var info = value.info[i] || 0;
+                    infoElem.toggle(info != 0);
+                    infoElem.text(info);
+                }
             }
             return;
         }
@@ -2004,7 +2013,7 @@ function processData(data) {
         }
         <!-- removeIf(!thermostat)-->
         if ("tmpUnits" == key) {
-            $("span.tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
+            $("span.tmpUnit").html(data[key] == 3 ? "ºF" : "ºC");
         }
         <!-- endRemoveIf(!thermostat)-->
 
@@ -2261,6 +2270,9 @@ $(function() {
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
+        processData({"webMode": 0});
+        processData({"hlwVisible":1,"pwrVisible":1,"tmpCorrection":0,"humCorrection":0,"luxCorrection":0,"snsRead":5,"snsReport":10,"snsSave":2,"magnitudesConfig":{"index":[0,0,0,0,0,0,0,0],"type":[4,5,6,8,7,9,11,10],"units":["A","V","W","VAR","VA","%","J","kWh"],"description":["HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)"],"size":8}});
+        processData({"magnitudes":{"value":["0.079","218","37","0","17","100","96","0.001"],"error":[0,0,0,0,0,0,0,0],"info":[0,0,0,0,0,0,0,"Last saved: 2020-04-07 21:10:15"],"size":8}});
         return;
     }
 

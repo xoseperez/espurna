@@ -10,6 +10,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/BasePin.h"
 
+constexpr const size_t GpioPins = 17;
+
 // real hardware pin
 class GpioPin final : virtual public BasePin {
     public:

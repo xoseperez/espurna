@@ -30,13 +30,11 @@ inline int GpioPin::digitalRead() {
 
 // --------------------------------------------------------------------------
 
-constexpr const size_t GPIO_PINS = 17;
-
-std::bitset<GPIO_PINS> _gpio_locked;
-std::bitset<GPIO_PINS> _gpio_available;
+std::bitset<GpioPins> _gpio_locked;
+std::bitset<GpioPins> _gpio_available;
 
 bool gpioValid(unsigned char gpio) {
-    if (gpio >= GPIO_PINS) return false;
+    if (gpio >= GpioPins) return false;
 
     return _gpio_available.test(gpio);
 }
@@ -82,7 +80,7 @@ void gpioSetup() {
     );
 
     // TODO: GPIO16 is only for basic I/O, gpioGetLock before attachInterrupt should check for that
-    for (unsigned char pin=0; pin < GPIO_PINS; ++pin) {
+    for (unsigned char pin=0; pin < GpioPins; ++pin) {
         if (pin <= 5) _gpio_available.set(pin);
         if (((pin == 9) || (pin == 10)) && (esp8285)) _gpio_available.set(pin);
         if (12 <= pin && pin <= 16) _gpio_available.set(pin);

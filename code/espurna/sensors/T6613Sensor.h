@@ -28,7 +28,7 @@ class T6613Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        T6613Sensor(): BaseSensor() {
+        T6613Sensor() {
             _count = 1;
             _sensor_id = SENSOR_T6613_ID;
         }

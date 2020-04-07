@@ -59,7 +59,7 @@ class DHTSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        DHTSensor(): BaseSensor() {
+        DHTSensor() {
             _count = 2;
             _sensor_id = SENSOR_DHTXX_ID;
         }
