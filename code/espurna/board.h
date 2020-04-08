@@ -6,7 +6,8 @@ BOARD MODULE
 
 #pragma once
 
-String getIdentifier();
+const String& getChipId();
+const String& getIdentifier();
 
 String getEspurnaModules();
 String getEspurnaOTAModules();

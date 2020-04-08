@@ -15,6 +15,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
+#include "utils.h"
 #include "ws.h"
 
 bool _ha_enabled = false;
@@ -78,8 +79,8 @@ struct ha_config_t {
         deviceConfig.createNestedArray("identifiers").add(identifier.c_str());
         deviceConfig["name"] = name.c_str();
         deviceConfig["sw_version"] = version.c_str();
-        deviceConfig["manufacturer"] = MANUFACTURER;
-        deviceConfig["model"] = DEVICE;
+        deviceConfig["manufacturer"] = getDevice().c_str();
+        deviceConfig["model"] = getManufacturer().c_str();
     }
 
     ha_config_t() : ha_config_t(DEFAULT_BUFFER_SIZE) {}
@@ -394,8 +395,8 @@ void _haSensorYaml(unsigned char index, JsonObject& root) {
 void _haGetDeviceConfig(JsonObject& config) {
     config.createNestedArray("identifiers").add(getIdentifier());
     config["name"] = getSetting("desc", getSetting("hostname"));
-    config["manufacturer"] = MANUFACTURER;
-    config["model"] = DEVICE;
+    config["manufacturer"] = getManufacturer().c_str();
+    config["model"] = getDevice().c_str();
     config["sw_version"] = String(APP_NAME) + " " + APP_VERSION + " (" + getCoreVersion() + ")";
 }
 

@@ -12,6 +12,8 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 
 #include <ESP8266SSDP.h>
 
+#include "utils.h"
+
 const char _ssdp_template[] PROGMEM =
     "<?xml version=\"1.0\"?>"
     "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
@@ -54,7 +56,7 @@ void ssdpSetup() {
             APP_NAME,                           // modelName
             APP_VERSION,                        // modelNumber
             APP_WEBSITE,                        // modelURL
-            DEVICE_NAME,                        // manufacturer
+            getBoardName().c_str(),             // manufacturer
             "",                                 // manufacturerURL
             chipId                              // UUID
         );
@@ -71,7 +73,7 @@ void ssdpSetup() {
     SSDP.setModelName(APP_NAME);
     SSDP.setModelNumber(APP_VERSION);
     SSDP.setModelURL(APP_WEBSITE);
-    SSDP.setManufacturer(DEVICE_NAME);
+    SSDP.setManufacturer(getBoardName());
     SSDP.setManufacturerURL("");
     SSDP.setURL("/");
     SSDP.begin();
