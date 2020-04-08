@@ -22,6 +22,9 @@ from espurna_utils import (
 
 Import("env", "projenv")
 
+import os
+CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
+
 # Always show warnings for project code
 projenv.ProcessUnFlags("-w")
 
@@ -31,7 +34,8 @@ remove_float_support(env)
 ldscripts_inject_libpath(env)
 
 # two-step update hint when using 1MB boards
-env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_printsize)
+if not CI:
+    env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_printsize)
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
 if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:

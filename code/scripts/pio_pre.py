@@ -20,7 +20,7 @@ import sys
 from SCons.Script import ARGUMENTS
 
 
-TRAVIS = os.environ.get("TRAVIS")
+CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
 PIO_PLATFORM = env.PioPlatform()
 CONFIG = env.GetProjectConfig()
 VERBOSE = "1" == ARGUMENTS.get("PIOVERBOSE", "0")
@@ -97,8 +97,6 @@ def ensure_platform_updated():
 # handle build flags through os environment.
 # using env instead of ini to avoid platformio ini changing hash on every change
 env.Append(
-    ESPURNA_VERSION=os.environ.get("ESPURNA_VERSION", ""),
-    ESPURNA_NAME=os.environ.get("ESPURNA_NAME", ""),
     ESPURNA_BOARD=os.environ.get("ESPURNA_BOARD", ""),
     ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH", ""),
     ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", "")
@@ -112,8 +110,16 @@ if ESPURNA_OTA_PORT:
 else:
     env.Replace(UPLOAD_PROTOCOL="esptool")
 
+# handle `-t release` parameters
+if CI:
+    env.Append(
+        ESPURNA_RELEASE_NAME=os.environ.get("ESPURNA_RELEASE_NAME", ""),
+        ESPURNA_RELEASE_VERSION=os.environ.get("ESPURNA_RELEASE_VERSION", ""),
+        ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", "")
+    )
+
 # updates arduino core git to the latest master commit
-if TRAVIS:
+if CI:
     package_overrides = env.GetProjectOption("platform_packages")
     for package in package_overrides:
         if "https://github.com/esp8266/Arduino.git" in package:
@@ -122,7 +128,7 @@ if TRAVIS:
 
 # to speed-up build process, install libraries in either global or local shared storage
 if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
-    if TRAVIS:
+    if CI:
         storage = None
         log("using global library storage")
     else:
