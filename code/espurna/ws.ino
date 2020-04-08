@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 #include "web.h"
+#include "utils.h"
 #include "ws.h"
 #include "ws_internal.h"
 
@@ -387,9 +388,6 @@ bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _wsOnConnected(JsonObject& root) {
-    char chipid[7];
-    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
-
     root["webMode"] = WEB_MODE_NORMAL;
 
     root["app_name"] = APP_NAME;
@@ -398,12 +396,12 @@ void _wsOnConnected(JsonObject& root) {
     #if defined(APP_REVISION)
         root["app_revision"] = APP_REVISION;
     #endif
-    root["manufacturer"] = MANUFACTURER;
-    root["chipid"] = String(chipid);
+    root["device"] = getDevice().c_str();
+    root["manufacturer"] = getManufacturer().c_str();
+    root["chipid"] = getChipId().c_str();
     root["mac"] = WiFi.macAddress();
     root["bssid"] = WiFi.BSSIDstr();
     root["channel"] = WiFi.channel();
-    root["device"] = DEVICE;
     root["hostname"] = getSetting("hostname");
     root["desc"] = getSetting("desc");
     root["network"] = getNetwork();

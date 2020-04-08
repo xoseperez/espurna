@@ -40,25 +40,35 @@ PROGMEM const char* const custom_reset_string[] = {
 
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
-        setSetting("hostname", HOSTNAME);
+        setSetting("hostname", F(HOSTNAME));
     } else {
         setSetting("hostname", getIdentifier());
     }
 }
 
-void setBoardName() {
-    if (!isEspurnaCore()) {
-        setSetting("boardName", DEVICE_NAME);
-    }
+const String& getDevice() {
+    static const String value(F(DEVICE));
+    return value;
+}
+
+const String& getManufacturer() {
+    static const String value(F(MANUFACTURER));
+    return value;
 }
 
 String getBoardName() {
-    static const String defaultValue(DEVICE_NAME);
+    static const String defaultValue(F(DEVICE_NAME));
     return getSetting("boardName", defaultValue);
 }
 
+void setBoardName() {
+    if (!isEspurnaCore()) {
+        setSetting("boardName", F(DEVICE_NAME));
+    }
+}
+
 String getAdminPass() {
-    static const String defaultValue(ADMIN_PASS);
+    static const String defaultValue(F(ADMIN_PASS));
     return getSetting("adminPass", defaultValue);
 }
 

@@ -18,9 +18,9 @@ extern "C" uint32_t _SPIFFS_end;
 void setDefaultHostname();
 
 void setBoardName();
-String getBoardName();
-String getAdminPass();
 
+const String& getDevice();
+const String& getManufacturer();
 const String& getCoreVersion();
 const String& getCoreRevision();
 

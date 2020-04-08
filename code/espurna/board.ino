@@ -303,10 +303,25 @@ PROGMEM const char espurna_sensors[] =
 
 //--------------------------------------------------------------------------------
 
-String getIdentifier() {
-    char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
-    return String(buffer);
+const String& getChipId() {
+    static String value;
+    if (!value.length()) {
+        char buffer[7];
+        value.reserve(sizeof(buffer));
+        snprintf_P(buffer, sizeof(buffer), PSTR("%06X"), ESP.getChipId());
+        value = buffer;
+    }
+    return value;
+}
+
+const String& getIdentifier() {
+    static String value;
+    if (!value.length()) {
+        value += APP_NAME;
+        value += '-';
+        value += getChipId();
+    }
+    return value;
 }
 
 String getEspurnaModules() {
