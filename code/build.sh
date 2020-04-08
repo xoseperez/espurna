@@ -96,7 +96,10 @@ build_webui() {
 build_release() {
     echo "--------------------------------------------------------------"
     echo "Building release images..."
-    python scripts/generate_release_sh.py --ignore secure-client $version > release.sh
+    python scripts/generate_release_sh.py \
+        --ignore secure-client \
+        --version $version \
+        --destination $destination/espurna-$version > release.sh
     bash release.sh
     echo "--------------------------------------------------------------"
 }
