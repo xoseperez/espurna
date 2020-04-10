@@ -128,6 +128,7 @@ void _onPostConfig(AsyncWebServerRequest *request) {
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
+    if (_webConfigSuccess) deferredReset(100, CUSTOM_RESET_CONFIG_UPDATE);
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
@@ -140,6 +141,7 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String filename, size_t i
     // No buffer
     if (final && (index == 0)) {
         _webConfigSuccess = settingsRestoreJson((char*) data);
+        if (_webConfigSuccess) deferredReset(100, CUSTOM_RESET_CONFIG_UPDATE);
         return;
     }
 
@@ -172,6 +174,7 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String filename, size_t i
         delete _webConfigBuffer;
 
     }
+    if (_webConfigSuccess) deferredReset(100, CUSTOM_RESET_CONFIG_UPDATE);
 
 }
 
