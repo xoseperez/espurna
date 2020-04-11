@@ -1317,6 +1317,9 @@ void _sensorLoad() {
         sensor->setSEL(getSetting("snsHlw8012SelGPIO", HLW8012_SEL_PIN));
         sensor->setCF(getSetting("snsHlw8012CfGPIO", HLW8012_CF_PIN));
         sensor->setCF1(getSetting("snsHlw8012Cf1GPIO", HLW8012_CF1_PIN));
+        sensor->setCurrentRatio(HLW8012_CURRENT_RATIO);
+        sensor->setVoltageRatio(HLW8012_VOLTAGE_RATIO);
+        sensor->setPowerRatio(HLW8012_POWER_RATIO);
         sensor->setSELCurrent(HLW8012_SEL_CURRENT);
         _sensors.push_back(sensor);
     }
