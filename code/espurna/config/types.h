@@ -331,6 +331,7 @@
 #define SENSOR_ADE7953_ID           37
 #define SENSOR_T6613_ID             38
 #define SENSOR_SI1145_ID            39
+#define SENSOR_HDC1080_ID           40
 
 //--------------------------------------------------------------------------------
 // Magnitudes

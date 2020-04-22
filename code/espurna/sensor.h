@@ -315,5 +315,8 @@ void sensorLoop();
     #include "sensors/SI1145Sensor.h"
 #endif
 
+#if HDC1080_SUPPORT
+    #include "sensors/HDC1080Sensor.h"
+#endif
 //--------------------------------------------------------------------------------
 
