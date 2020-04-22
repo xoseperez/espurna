@@ -5,7 +5,7 @@
             <h2>General configuration values</h2>
         </div>
 
-        <Group v-model="device" class="page form">
+        <Group v-model="device" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>Hostname</label></C>
@@ -40,7 +40,7 @@
                 </Row>
             </fieldset>
         </Group>
-        <Group v-model="wifi" class="page form">
+        <Group v-model="wifi" class="page form" #default>
             <fieldset>
                 <legend>Wifi</legend>
 

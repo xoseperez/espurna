@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <section>
         <!--transition-group name="flip-list" tag="div"-->
         <RepeaterRow v-for="(row, i) in values"
                      :key="row.key"
@@ -26,7 +26,7 @@
                 Add
             </Btn>
         </slot>
-    </div>
+    </section>
 </template>
 
 <script>

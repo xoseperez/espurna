@@ -16,27 +16,7 @@ App = SingleApp;
 
 // #!endif
 
-Vue.directive("loading", {
-    update(el, binding) {
-        if (el.tagName === "BUTTON") {
-            el.classList.add("small");
-        }
-        if (binding.value) {
-            el.classList.add("loading");
-            if (!binding.oldValue) {
-                el.setAttribute("disabled", "disabled");
-            }
-        } else {
-            el.classList.remove("loading");
-            if (binding.oldValue) {
-                el.removeAttribute("disabled");
-            }
-        }
-    },
-    unbind(el) {
-        el.classList.remove("loading");
-    },
-});
+import "./directives/loading";
 
 // #!if ENV === "development"
 /* eslint-disable no-console */

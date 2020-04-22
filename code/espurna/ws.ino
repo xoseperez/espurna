@@ -265,9 +265,14 @@ void _wsUpdate(JsonObject& root) {
 
     wifi["_rssi"] = WiFi.RSSI();
 
+    const auto stats = getHeapStats();
+
     device["_uptime"] = getUptime();
-    device["_heap"] = getFreeHeap();
-    device["_load_average"] = systemLoadAverage();
+    device["_heapFree"] = stats.available;
+    device["_heapInit"] = getInitialFreeHeap;
+    device["_heapUsable"] = stats.usable;
+    device["_heapFrag"] = stats.frag_pct;
+    device["_loadAverage"] = systemLoadAverage();
     #if ADC_MODE_VALUE == ADC_VCC
         device["_vcc"] = ESP.getVcc();
     #endif
@@ -311,28 +316,28 @@ void _wsOnConnected(JsonObject& root) {
     JsonObject& device = root.createNestedObject("device");
     JsonObject& wifi = root.createNestedObject("wifi");
 
-    version["app_name"] = APP_NAME;
-    version["app_version"] = APP_VERSION;
-    version["app_build"] = buildTime();
-    version["sketch_size"] = ESP.getSketchSize();
+    version["appName"] = APP_NAME;
+    version["appVersion"] = APP_VERSION;
+    version["appBuild"] = buildTime();
+    version["sketchSize"] = ESP.getSketchSize();
     version["sdk"] = ESP.getSdkVersion();
     version["core"] = getCoreVersion();
 
     #if defined(APP_REVISION)
-        version["app_revision"] = APP_REVISION;
+        version["appRevision"] = APP_REVISION;
     #endif
 
     device["_manufacturer"] = MANUFACTURER;
-    device["_chip_id"] = String(chipid);
+    device["_chipId"] = String(chipid);
     device["_name"] = DEVICE;
-    device["_free_size"] = ESP.getFreeSketchSpace();
-    device["_total_size"] = ESP.getFlashChipRealSize();
-    device["hostname"] = getSetting("deviceHostname");
-    device["desc"] = getSetting("deviceDesc");
-    device["webPort"] = getSetting("deviceWebPort", WEB_PORT);
-    device["wsAuth"] = getSetting("deviceWsAuth", 1 == WS_AUTHENTICATION);
-    device["hbMode"] = getSetting("deviceHbMode", HEARTBEAT_MODE);
-    device["hbInterval"] = getSetting("deviceHbInterval", HEARTBEAT_INTERVAL);
+    device["_freeSize"] = ESP.getFreeSketchSpace();
+    device["_totalSize"] = ESP.getFlashChipRealSize();
+    device["hostname"] = getSetting("hostname");
+    device["desc"] = getSetting("desc");
+    device["webPort"] = getSetting("webPort", WEB_PORT);
+    device["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
+    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
+    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 
     wifi["_rssi"] = WiFi.RSSI();
     wifi["_mac"] = WiFi.macAddress();

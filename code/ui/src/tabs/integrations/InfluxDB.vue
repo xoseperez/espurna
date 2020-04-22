@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!idb">
         <div class="header">
             <h1>INFLUXDB</h1>
             <h2>
@@ -8,7 +8,7 @@
             </h2>
         </div>
 
-        <Group v-model="idb" class="page form">
+        <Group v-model="idb" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>Enable InfluxDB</label></C>
@@ -81,10 +81,7 @@
         },
         inheritAttrs: false,
         props: {
-            idb: {
-                type: Object,
-                default: () => ({})
-            },
+            idb: Object,
         },
     };
 </script>

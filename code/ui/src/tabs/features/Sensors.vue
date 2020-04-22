@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!sensors">
         <div class="header">
             <h1>SENSOR CONFIGURATION</h1>
             <h2>
@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <Group v-model="sensors" class="page form">
+        <Group v-model="sensors" class="page form" #default>
             <fieldset>
                 <legend>General</legend>
                 <Row>
@@ -233,10 +233,7 @@
         inheritAttrs: false,
         props: {
             modules: Object,
-            sensors: {
-                type: Object,
-                default: () => ({})
-            }
+            sensors: Object,
         },
         computed: {
             intervalOptions() {

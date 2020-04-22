@@ -1,11 +1,11 @@
 <template>
-    <section>
+    <section v-loading="!color">
         <div class="header">
             <h1>LIGHTS</h1>
             <h2>Lights configuration</h2>
         </div>
 
-        <Group v-model="color" class="page form">
+        <Group v-model="color" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>Use color</label></C>
@@ -181,10 +181,7 @@
         },
         inheritAttrs: false,
         props: {
-            color: {
-                type: Object,
-                default: () => ({})
-            }
+            color: Object
         }
     };
 </script>

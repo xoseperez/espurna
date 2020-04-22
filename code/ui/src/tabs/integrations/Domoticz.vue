@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!dcz">
         <div class="header">
             <h1>DOMOTICZ</h1>
             <h2>
@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <Group v-model="dcz" class="page form">
+        <Group v-model="dcz" class="page form" #default>
             <fieldset>
                 <legend>General</legend>
 
@@ -46,7 +46,7 @@
                 </Row>
 
                 <!-- #!if RELAYS === true -->
-                <Repeater v-model="relay.config.list" locked>
+                <Repeater v-if="relay" v-model="relay.list" locked>
                     <template #default="tpl">
                         <Row>
                             <C><label>Switch #{{tpl.k}}</label></C>
@@ -99,10 +99,7 @@
         },
         inheritAttrs: false,
         props: {
-            dcz: {
-                type: Object,
-                default: () => ({})
-            },
+            dcz: Object,
             relay: {
                 type: Object,
                 default: () => ({config:{}})

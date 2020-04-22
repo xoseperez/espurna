@@ -1,11 +1,11 @@
 <template>
-    <section>
+    <section v-loading="true">
         <div class="header">
             <h1>THERMOSTAT</h1>
             <h2>Thermostat configuration</h2>
         </div>
 
-        <Group v-model="thermostat" class="page form">
+        <Group v-model="thermostat" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>Enable Thermostat</label></C>
@@ -215,9 +215,13 @@
             Inpt
         },
         inheritAttrs: false,
+        props: {
+            sns: Object,
+            thermostat: Object
+        },
         computed: {
             tempUnit() {
-                return this.sensors.tmpUnits ? "°F" : "°C";
+                return this.sns && this.sns.tmpUnits ? "°F" : "°C";
             }
         },
     };

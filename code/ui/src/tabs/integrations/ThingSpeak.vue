@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!tspk">
         <div class="header">
             <h1>THINGSPEAK</h1>
             <h2>
@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <Group v-model="tspk" class="page form">
+        <Group v-model="tspk" class="page form" #default>
             <fieldset>
                 <legend>General</legend>
 
@@ -57,7 +57,7 @@
                 </Row>
 
                 <!-- #!if RELAYS === true -->
-                <Repeater v-model="relay.config.list" locked>
+                <Repeater v-if="relay" v-model="relay.list" locked>
                     <template #default="tpl">
                         <Row>
                             <C><label>Switch #{{tpl.k}}</label></C>
@@ -73,7 +73,7 @@
                 <!-- #!endif -->
 
                 <!-- #!if SENSOR === true -->
-                <Repeater v-model="sns.magnitudes.list" locked>
+                <Repeater v-if="sns" v-model="sns.magnitudes.list" locked>
                     <template #default="tpl">
                         <Row>
                             <C><label>Magnitude {{tpl.value.name}}</label></C>
@@ -114,18 +114,9 @@
         },
         inheritAttrs: false,
         props: {
-            tspk: {
-                type: Object,
-                default: () => ({})
-            },
-            relay: {
-                type: Object,
-                default: () => ({list:{}})
-            },
-            sns: {
-                type: Object,
-                default: () => ({magnitudes:{}})
-            },
+            tspk: Object,
+            relay: Object,
+            sns: Object,
         }
     };
 </script>

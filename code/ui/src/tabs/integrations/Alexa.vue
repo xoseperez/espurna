@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!alexa">
         <div class="header">
             <h1>Alexa</h1>
             <h2>
@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <Group v-model="alexa" class="page form">
+        <Group v-model="alexa" class="page form" #default>
             <fieldset>
                 <Row>
                     <C>
@@ -57,10 +57,7 @@
         },
         inheritAttrs: false,
         props: {
-            alexa: {
-                type: Object,
-                default: () => ({})
-            }
+            alexa: Object
         }
     };
 </script>

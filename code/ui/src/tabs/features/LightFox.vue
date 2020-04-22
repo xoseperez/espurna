@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!lightfox">
         <div class="header">
             <h1>LIGHTFOX RF</h1>
             <h2>
@@ -16,7 +16,7 @@
             You can also specify which RF button controls which relay using controls below.
         </div>
 
-        <Group v-model="lightfox" class="page form">
+        <Group v-model="lightfox" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>RF Actions</label></C>
@@ -69,13 +69,8 @@
         },
         inheritAttrs: false,
         props: {
-            buttons: {
-                type: Array,
-                default: () => ([])
-            },
-            relayOptions: {
-                type: Array
-            }
+            lightfox: Object,
+            relayOptions: Array
         },
         methods: {
             sendLearn() {

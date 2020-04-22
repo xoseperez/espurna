@@ -13,6 +13,7 @@
     "serve:dev:pwa": "vue-cli-service serve --mode devpwa",
     "serve:pwa": "vue-cli-service serve --mode pwa",
     "build": "vue-cli-service build",
+    "test": "vue-cli-service test:unit",
     "test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint",
     "build:dev": "vue-cli-service build --mode dev",

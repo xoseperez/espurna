@@ -1,13 +1,13 @@
 <template>
-    <section>
+    <section v-loading="!relay">
         <div class="header">
             <h1>SWITCHES</h1>
             <h2>Switch / relay configuration</h2>
         </div>
 
-        <Group v-model="relay.config" class="page">
+        <Group v-model="relay" class="page" #default>
             <fieldset>
-                <template v-if="relay.config.list.length > 1">
+                <template v-if="relay.list.length > 1">
                     <legend>General</legend>
 
                     <Row>
@@ -27,7 +27,7 @@
                     </Row>
                 </template>
 
-                <Repeater v-model="relay.config.list" locked class="switches">
+                <Repeater v-model="relay.list" locked class="switches">
                     <template #default="tpl">
                         <legend>Switch #{{tpl.k}} ({{tpl.value.gpio}})</legend>
                         <Row>
@@ -208,18 +208,10 @@
         },
         inheritAttrs: false,
         props: {
-            relay: {
-                type: Object,
-                default: () => ({})
-            },
+            relay: Object,
             modules: Object,
-            schedule: {
-                type: Object,
-                default: () => ({})
-            },
-            relayOptions: {
-                type: Array
-            }
+            schedule: Object,
+            relayOptions: Array
         },
         computed: {
             daysOfWeek() {

@@ -8,9 +8,12 @@ export default function () {
     server.on("connection", () => {
         let data = [{
             "device": {
-                "_heap": 18536,
+                "_heapFree": 18536,
+                "_heapInit": 36534,
+                "_heapUsable": 10442,
+                "_heapFrag": 9,
                 "_uptime": 291842,
-                "_load_average": 1,
+                "_loadAverage": 1,
                 "_vcc": 3058,
                 "_now": Math.floor(Date.now() / 1000)
             },
@@ -26,6 +29,7 @@ export default function () {
                     "api": 1,
                     "relay": 1,
                     "led": 1,
+                    "btn": 1,
                     "mqtt": 1,
                     "ntp": 1,
                     "alexa": 1,
@@ -33,7 +37,13 @@ export default function () {
                     "tspk": 1,
                     "dcz": 1,
                     "ha": 1,
-                    "sch": 1
+                    "sch": 1,
+                    "rfm69": 1,
+                    "tsp": 1,
+                    "dcs": 1,
+                    "idb": 1,
+                    "lightfox": 1,
+                    "thermostat": 1
                 }
             },
             {
@@ -90,21 +100,21 @@ export default function () {
             }, {
                 "webMode": 0,
                 "_version": {
-                    "app_name": "ESPURNA",
-                    "app_version": "1.13.6-dev",
-                    "app_build": "2019-10-05 17:29:31",
-                    "sketch_size": 494096,
+                    "appName": "ESPURNA",
+                    "appVersion": "1.13.6-dev",
+                    "appBuild": "2019-10-05 17:29:31",
+                    "sketchSize": 494096,
                     "sdk": "1.5.3(aec24ac9)",
                     "core": "2.3.0",
                 },
                 "device": {
                     "_name": "SONOFF_SV",
                     "_manufacturer": "ITEAD",
-                    "_chip_id": "209458",
+                    "_chipId": "209458",
                     "hostname": "ESPURNA",
                     "desc": "An espurna enabled device",
-                    "_free_size": 532480,
-                    "_total_size": 1032480,
+                    "_freeSize": 532480,
+                    "_totalSize": 1032480,
                     "webPort": 80,
                     "wsAuth": true,
                     "hbMode": 2,
@@ -123,118 +133,114 @@ export default function () {
                 "api": {"enabled": false, "key": "123456789ABCDEF", "realTime": false, "restFul": true}
             }, {
                 "relay": {
-                    "config": {
-                        "_start": 0,
-                        "_schema": [
-                            "pin",
-                            "_gpio",
-                            "name",
-                            "type",
-                            //"resetGPIO",
-                            "boot",
-                            "pulse",
-                            "time",
-                            "group",
-                            "groupSync",
-                            "onDisc",
-                            "dblDl",
-                            "lngDl",
-                            "lnglngDl",
-                            "sndAllEvts",
-                            "lastSch"
+                    "_start": 0,
+                    "_schema": [
+                        "pin",
+                        "_gpio",
+                        "name",
+                        "type",
+                        //"resetGPIO",
+                        "boot",
+                        "pulse",
+                        "time",
+                        "group",
+                        "groupSync",
+                        "onDisc",
+                        "dblDl",
+                        "lngDl",
+                        "lnglngDl",
+                        "sndAllEvts",
+                        "lastSch"
+                    ],
+                    "list": [
+                        [
+                            12,
+                            "GPIO12",
+                            "Entrance",
+                            0,
+                            //153,
+                            0,
+                            1,
+                            1,
+                            "",
+                            0,
+                            0,
+                            500,
+                            1000,
+                            10000,
+                            1,
+                            1
                         ],
-                        "list": [
-                            [
-                                12,
-                                "GPIO12",
-                                "Entrance",
-                                0,
-                                //153,
-                                0,
-                                1,
-                                1,
-                                "",
-                                0,
-                                0,
-                                500,
-                                1000,
-                                10000,
-                                1,
-                                1
-                            ],
-                            [
-                                13,
-                                "GPIO13",
-                                "Kitchen",
-                                0,
-                                //153,
-                                0,
-                                1,
-                                1,
-                                "",
-                                0,
-                                0,
-                                500,
-                                1000,
-                                10000,
-                                1,
-                                0
-                            ],
-                            [
-                                14,
-                                "GPIO14",
-                                "Stairs",
-                                0,
-                                //153,
-                                0,
-                                1,
-                                1,
-                                "",
-                                0,
-                                0,
-                                1000,
-                                2000,
-                                10000,
-                                0,
-                                0
-                            ],
-                            [
-                                15,
-                                "GPIO15",
-                                "Balcony",
-                                0,
-                                //153,
-                                0,
-                                1,
-                                1,
-                                "",
-                                0,
-                                0,
-                                100,
-                                2000,
-                                5000,
-                                0,
-                                0
-                            ]
+                        [
+                            13,
+                            "GPIO13",
+                            "Kitchen",
+                            0,
+                            //153,
+                            0,
+                            1,
+                            1,
+                            "",
+                            0,
+                            0,
+                            500,
+                            1000,
+                            10000,
+                            1,
+                            0
                         ],
-                    }
+                        [
+                            14,
+                            "GPIO14",
+                            "Stairs",
+                            0,
+                            //153,
+                            0,
+                            1,
+                            1,
+                            "",
+                            0,
+                            0,
+                            1000,
+                            2000,
+                            10000,
+                            0,
+                            0
+                        ],
+                        [
+                            15,
+                            "GPIO15",
+                            "Balcony",
+                            0,
+                            //153,
+                            0,
+                            1,
+                            1,
+                            "",
+                            0,
+                            0,
+                            100,
+                            2000,
+                            5000,
+                            0,
+                            0
+                        ]
+                    ],
                 }
             },
             {
-                "relay": {
-                    "state": {
-                        "_start": 0,
-                        "_schema": [
-                            "status",
-                            "lock"
-                        ],
-                        "list": [
-                            [0, 2],
-                            [1, 2],
-                            [0, 1],
-                            [1, 1],
-                        ]
-                    }
+                "_relayState": {
+                    "start": 0,
+                    "_schema": [
+                        "status",
+                        "lock"
+                    ],
+                    "list": [
+                        [0, 2],
+                        [1, 2],
+                        [0, 1],
+                        [1, 1],
+                    ]
                 }
             },
             {
@@ -273,8 +279,46 @@ export default function () {
                 }
             },
             {
+                "rfm69": {
+                    "topic": "/rfm69gw/{node}/{key}",
+                    "_packetCount": 10,
+                    "_nodeCount": 2,
+                    "_schema": [
+                        "node",
+                        "key",
+                        "topic"
+                    ],
+                    "list": [
+                        [
+                            1,
+                            ""
+                        ]
+                    ]
+                }
+            },
+            {
+                "mqtt": {
+                    "_status": true,
+                    "enabled": true,
+                    "server": "192.168.1.123",
+                    "port": "1883",
+                    "user": "mqttuser",
+                    "clientID": "",
+                    "password": "mqttpass",
+                    "keep": 300,
+                    "retain": true,
+                    "qoS": 0,
+                    "topic": "{hostname}",
+                    "useJson": false,
+                    "payloadOnline": "1",
+                    "payloadOffline": "0",
+                    "getter": "",
+                    "setter": "/set"
+                },
+            },
+            {
                 "_loaded": true
-            }
+            },
         ];
 
         let i = 50;

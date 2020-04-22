@@ -7,7 +7,7 @@
             </h2>
         </div>
 
-        <Group v-model="ha" class="page form">
+        <Group v-model="ha" class="page form" #default>
             <fieldset>
                 <legend>Discover</legend>
 
@@ -36,18 +36,20 @@
                     </C>
                 </Row>
 
-                <legend>Configuration</legend>
+                <template v-if="modules.mqtt">
+                    <legend>Configuration</legend>
 
-                <p>
-                    These are the settings you should copy to your Home Assistant "configuration.yaml" file. If any of
-                    the sections below (switch, light, sensor) already exists, do not duplicate it, simply copy the
-                    contents of the section below the ones already present.
-                </p>
-                <Row>
-                    <textarea :value="config" class="terminal"
-                              wrap="soft"
-                              readonly></textarea>
-                </Row>
+                    <p>
+                        These are the settings you should copy to your Home Assistant "configuration.yaml" file. If any
+                        of the sections below (switch, light, sensor) already exists, do not duplicate it, simply copy
+                        the contents of the section below the ones already present.
+                    </p>
+                    <Row>
+                        <textarea :value="config" class="terminal"
+                                  wrap="soft"
+                                  readonly></textarea>
+                    </Row>
+                </template>
             </fieldset>
         </Group>
     </section>
@@ -60,6 +62,7 @@
     import C from "../../layout/Col";
     import Group from "../../components/Group";
     import ws from "../../common/websocket";
+    import objectToYaml from "../../common/objectToYaml";
 
     export default {
         components: {
@@ -72,42 +75,53 @@
         inheritAttrs: false,
         props: {
             modules: Object,
-            ha: {
-                type: Object,
-                default: () => ({})
-            },
-            relay: {
-                type: Object,
-                default: () => ({list: []})
-            },
-            sns: {
-                type: Object,
-                default: () => ({})
-            },
-        },
-        mounted() {
-            ws.send({action: "haConfig"}, () => {
-
-            });
+            ha: Object,
+            relay: Object,
+            mqtt: Object,
+            sns: Object,
         },
         computed: {
             config() {
                 let s = "";
+                const yaml = {};
+                if (this.relay && this.relay.list.length) {
 
-                if (this.relay.config && this.relay.config.list.length) {
-                    s += "switch:\n";
+                    yaml.switch = [];
 
-                    this.relay.config.list.forEach((v, i) => {
-                        s += "  - name: " + v.name + "\n" +
-                            "    platform: mqtt\n" +
-                            "    state_topic: " + this.topic + "/relay/" + i + "\n" +
-                            "    command_topic: " + this.topic + "/relay/" + i + "/set\n" +
-                            "    payload_on: 1\n" +
-                            "    payload_off: 0\n" +
-                            "    availability_topic: " + this.topic + "/status\n" +
-                            "    payload_available: 1\n" +
-                            "    payload_not_available: 0\n\n";
+                    this.relay.list.forEach((v, i) => {
+                        yaml.switch.push({
+                            name: v.name,
+                            platform: "mqtt",
+                            state_topic: this.mqttTopic(this.ha.relayTopic, i),
+                            command_topic: this.mqttTopic(this.ha.relayTopic, i, true),
+                            payload_on: this.yamlEscape(this.relay.payloadOn),
+                            payload_off: this.yamlEscape(this.relay.payloadOff),
+                            availability_topic: this.mqttTopic(this.ha.statusTopic),
+                            payload_available: this.yamlEscape(this.mqtt.payloadOnline),
+                            payload_not_available: this.yamlEscape(this.mqtt.payloadOffline)
+                        });
+                        if ()
                     });
+
+                    /*
+                    todo
+                        config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
+                        config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
+
+                        if (lightHasColor()) {
+                            config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
+                            config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
+                        }
+                        if (lightHasColor() || lightUseCCT()) {
+                            config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
+                            config["color_temp_state_topic"] = mqttTopic(MQTT_TOPIC_MIRED, false);
+                        }
+
+                        if (lightChannels() > 3) {
+                            config["white_value_state_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, false);
+                            config["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
+                        }
+                     */
                 }
 
                 if (this.sns.magnitudes && this.sns.magnitudes.list.length) {
@@ -120,9 +134,28 @@
                     });
 
                 }
-                return s;
+                return objectToYaml(yaml);
             }
-        }
+        },
+        methods: {
+            mqttTopic(category, index, set) {
+                let topic = this.mqtt.topic;
+
+                if (category) {
+                    topic += "/" + category;
+                }
+
+                if (index) {
+                    topic += "/" + i;
+                }
+
+                if (set) {
+                    topic += this.mqtt.setter;
+                } else {
+                    topic += this.mqtt.getter;
+                }
+            }
+        },
     };
 </script>
 

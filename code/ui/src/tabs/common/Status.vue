@@ -1,13 +1,13 @@
 <template>
-    <section class="status">
+    <section v-loading="!device || !wifi" class="status">
         <div class="header">
             <h1>STATUS</h1>
             <h2>Current configuration</h2>
         </div>
 
-        <div class="page">
+        <div v-if="device && wifi" class="page">
             <fieldset>
-                <Repeater v-if="relay.state" v-model="relay.state.list" class="relays" locked>
+                <Repeater v-if="relayState" v-model="relayState.list" class="relays" locked>
                     <template #default="tpl">
                         <Row>
                             <C :size="2"><label>Switch #{{tpl.k}}</label></C>
@@ -23,7 +23,7 @@
                 </Repeater>
 
                 <!-- #!if LIGHT === true -->
-                <template v-if="modules.light">
+                <template v-if="modules.light && light">
                     <Row>
                         <C><label>Color</label></C>
                         <C><span>{{light.color}}</span></C>
@@ -58,8 +58,8 @@
                 <!-- #!endif -->
 
                 <!-- #!if SENSOR === true -->
-                <template v-if="modules.sns">
-                    <Row v-for="(magnitude, i) in magnitudes.list" :key="magnitude.index">
+                <template v-if="modules.sns && sns && sns.magnitudes">
+                    <Row v-for="(magnitude, i) in sns.magnitudes.list" :key="magnitude.index">
                         <C><label>{{magnitudeType(magnitude.type)}} #{{magnitude.index}},</label></C>
                         <C>
                             <Inpt class="center" type="text" name="magnitude"
@@ -71,17 +71,20 @@
                 <!-- #!endif -->
 
                 <!-- #!if RFM69 === true -->
-                <template v-if="modules.rfm69">
-                    <Row>
-                        <C><label>Packet count</label></C>
-                        <C>{{rfm69.packet_count}}</C>
-                    </Row>
-
-                    <Row>
-                        <C><label>Node count</label></C>
-                        <C>{{rfm69.node_count}}</C>
-                    </Row>
-                </template>
+                <Row v-if="modules.rfm69 && rfm69" class="state responsive">
+                    <C>
+                        <Row>
+                            <C><label>Packet count</label></C>
+                            <C>{{rfm69.packetCount}}</C>
+                        </Row>
+                    </C>
+                    <C>
+                        <Row>
+                            <C><label>Node count</label></C>
+                            <C>{{rfm69.nodeCount}}</C>
+                        </Row>
+                    </C>
+                </Row>
                 <!-- #!endif -->
 
                 <Row class="state responsive">
@@ -94,7 +97,7 @@
                             <C>{{device.name}}</C>
 
                             <C>Chip ID</C>
-                            <C>{{device.chip_id}}</C>
+                            <C>{{device.chipId}}</C>
 
                             <C>SDK version</C>
                             <C>{{version.sdk}}</C>
@@ -103,30 +106,39 @@
                             <C>{{version.core}}</C>
 
                             <C>Firmware name</C>
-                            <C>{{version.app_name}}</C>
+                            <C>{{version.appName}}</C>
 
                             <C>Firmware version</C>
-                            <C>{{version.app_version}}</C>
+                            <C>{{version.appVersion}}</C>
 
-                            <template v-if="version.app_revision">
+                            <template v-if="version.appRevision">
                                 <C>Firmware revision</C>
-                                <C>{{version.app_revision}}</C>
+                                <C>{{version.appRevision}}</C>
                             </template>
 
                             <C>Firmware build date</C>
-                            <C>{{version.app_build}}</C>
+                            <C>{{version.appBuild}}</C>
 
                             <C>Firmware size</C>
-                            <C>{{version.sketch_size}}</C>
+                            <C>{{version.sketchSize}}</C>
 
                             <C>Free space</C>
-                            <C>{{device.free_size}} bytes</C>
+                            <C>{{device.freeSize}} bytes</C>
 
                             <C>Free heap</C>
-                            <C>{{device.heap}} bytes</C>
+                            <C>{{device.heapFree}} bytes</C>
+
+                            <C>Initial heap</C>
+                            <C>{{device.heapTotal}} bytes</C>
+
+                            <C>Usable heap</C>
+                            <C>{{device.heapUsable}} bytes</C>
+
+                            <C>Heap fragmentation</C>
+                            <C>{{device.heapFrag}} %</C>
 
                             <C>Load average</C>
-                            <C>{{device.load_average}}%</C>
+                            <C>{{device.loadAverage}}%</C>
 
                             <C>VCC</C>
                             <C>{{device.vcc}} mV</C>
@@ -155,12 +167,12 @@
                                 <a :href="'//'+wifi.ip">{{wifi.ip}}</a> (<a :href="'telnet://'+wifi.ip">telnet</a>)
                             </C>
 
-                            <template v-if="modules.mqtt">
+                            <template v-if="modules.mqtt && mqtt">
                                 <C>MQTT Status</C>
                                 <C>{{mqtt.status ? 'CONNECTED' : 'NOT CONNECTED'}}</C>
                             </template>
 
-                            <template v-if="modules.ntp">
+                            <template v-if="modules.ntp && ntp">
                                 <C>NTP Status</C>
                                 <C>{{ntp.status ? 'SYNCED' : 'NOT SYNCED'}}</C>
                                 <C>Current time</C>
@@ -177,15 +189,19 @@
                 </Row>
             </fieldset>
         </div>
-
-        <div class="header">
-            <h1>DEBUG LOG</h1>
-            <h2>
-                Shows debug messages from the device
-            </h2>
-        </div>
-
-        <div v-if="modules.cmd || modules.debug" class="page">
+        <div v-if="modules.cmd || modules.dbg" class="page">
+            <div class="header">
+                <h1>
+                    <span v-if="modules.dbg">DEBUG LOG</span>
+                    <span v-if="modules.dbg && modules.cmd"> / </span>
+                    <span v-if="modules.cmd">TERMINAL</span>
+                </h1>
+                <h2>
+                    <span v-if="modules.dbg && modules.cmd">Shows debug messages and send commands to the device</span>
+                    <span v-else-if="modules.dbg">Shows debug messages from the device</span>
+                    <span v-else>Send commands to the device</span>
+                </h2>
+            </div>
             <fieldset>
                 <Row v-if="modules.cmd" class="responsive">
                     <C :size="2"><label>Command</label></C>
@@ -243,34 +259,14 @@
             version: Object,
             device: Object,
             relay: Object,
-            magnitudes: {
-                type: Object,
-                default: () => ({})
-            },
-            wifi: {
-                type: Object,
-                default: () => ({})
-            },
-            light: {
-                type: Object,
-                default: () => ({channels: []})
-            },
-            rfm69: {
-                type: Object,
-                default: () => ({})
-            },
-            mqtt: {
-                type: Object,
-                default: () => ({})
-            },
-            ntp: {
-                type: Object,
-                default: () => ({})
-            },
-            weblog: {
-                type: Array,
-                default: () => ([])
-            }
+            relayState: Object,
+            sns: Object,
+            wifi: Object,
+            light: Object,
+            rfm69: Object,
+            mqtt: Object,
+            ntp: Object,
+            weblog: Array
         },
         data() {
             return {
@@ -297,12 +293,15 @@
                 this.device.now += incr;
                 this.device.uptime += incr;
             },
-            weblog(rec, old) {
-                if (JSON.stringify(old) !== JSON.stringify(rec)) {
-                    const date = "[" + this.date() + "] ";
-                    this.weblog.forEach((v) => {
-                        this.logs.push(date + v);
-                    });
+            weblog: {
+                immediate: true,
+                handler(rec, old) {
+                    if (this.weblog && (typeof old === "undefined" || JSON.stringify(old) !== JSON.stringify(rec))) {
+                        const date = "[" + this.date() + "] ";
+                        this.weblog.forEach((v) => {
+                            this.logs.push(date + v);
+                        });
+                    }
                 }
             }
         },

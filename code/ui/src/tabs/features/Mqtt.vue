@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!mqtt">
         <div class="header">
             <h1>MQTT</h1>
             <h2>
@@ -8,7 +8,7 @@
             </h2>
         </div>
 
-        <Group v-model="mqtt.settings" class="page form">
+        <Group v-model="mqtt" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>Enable MQTT</label></C>
@@ -215,10 +215,7 @@
         inheritAttrs: false,
         props: {
             modules: Object,
-            mqtt: {
-                type: Object,
-                default: () => ({})
-            }
+            mqtt: Object
         }
     };
 </script>

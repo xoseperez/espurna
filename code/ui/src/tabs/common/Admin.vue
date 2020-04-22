@@ -4,7 +4,7 @@
             <h1>ADMINISTRATION</h1>
             <h2>Device administration and security settings</h2>
         </div>
-        <Group v-model="device" class="page form">
+        <Group v-model="device" class="page form" #default>
             <fieldset>
                 <Row>
                     <C>

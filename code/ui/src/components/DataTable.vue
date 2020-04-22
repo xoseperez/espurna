@@ -49,10 +49,7 @@
 
     export default {
         props: {
-            columns: {
-                type: Object,
-                required: true
-            },
+            columns: Array,
             uniqueKey: {
                 type: [String, Function],
                 required: true

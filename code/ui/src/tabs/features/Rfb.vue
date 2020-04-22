@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!rfb">
         <div class="header">
             <h1>RADIO FREQUENCY</h1>
             <h2>
@@ -29,7 +29,7 @@
             (original firmware supports codes from <strong>0xA0</strong> to <strong>0xA5</strong>).
         </div>
 
-        <Group v-model="rfb" class="page form">
+        <Group v-model="rfb" class="page form" #default>
             <fieldset>
                 <legend>RF Codes</legend>
                 <Repeater name="list">
@@ -128,10 +128,8 @@
         },
         inheritAttrs: false,
         props: {
-            modules: {
-                type: Object,
-                default: () => ({})
-            }
+            modules: Object,
+            rfb: Object
         },
         computed: {
             gpios() {

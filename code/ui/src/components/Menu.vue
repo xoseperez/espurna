@@ -9,10 +9,9 @@
                 <ul class="list">
                     <!-- eslint-disable vue/no-use-v-if-with-v-for || because this is one of the only valid use case -->
                     <li v-for="(v, i) in tabs" v-if="v.k === 'separator' || $scopedSlots[v.k]" :key="i"
-                        :class="{current: currentPanel === v.k}">
+                        :class="{current: currentPanel === v.k, [v.k]: true}">
                         <!-- eslint-enable -->
                         <a v-if="v.k !== 'separator'" href="#" @click="currentPanel = v.k">{{v.l}}</a>
-                        <span v-else class="separator"></span>
                     </li>
                 </ul>
                 <slot name="footer"></slot>

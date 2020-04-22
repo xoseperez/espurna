@@ -403,7 +403,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
     _info_print_memory_layout_line(name, bytes, false);
 }
 
-void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
+void infoMemory(const char * name, unsigned int total_memory, uint32_t free_memory) {
 
     DEBUG_MSG_P(
         PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
@@ -739,10 +739,10 @@ String u32toString(uint32_t value, int base) {
 }
 
 
-constexpr uint32_t calcJsonPayloadBufferSize(char * payload) {
-    uint16_t i, o;
-    for (i=0; payload[i]; i++) {
-        if (payload[i] == ',') o++;
+const uint32_t calcJsonPayloadBufferSize(char * payload) {
+    uint16_t i, o = 0;
+    for (i = 0; payload[i]; i++) {
+        o += (payload[i] == ',');
     }
 
     return JSON_OBJECT_SIZE(o);

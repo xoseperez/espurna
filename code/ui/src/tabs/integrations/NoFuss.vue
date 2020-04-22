@@ -1,5 +1,5 @@
 <template>
-    <section>
+    <section v-loading="!nofuss">
         <div class="header">
             <h1>NoFUSS</h1>
             <h2>
@@ -8,19 +8,19 @@
             </h2>
         </div>
 
-        <Group v-model="nofuss" class="page form">
+        <Group v-model="nofuss" class="page form" #default>
             <fieldset>
                 <Row>
                     <C><label>Enable</label></C>
                     <C>
-                        <Inpt type="switch" name="enabled" tabindex="1"/>
+                        <Inpt type="switch" name="enabled"/>
                     </C>
                 </Row>
 
                 <Row>
                     <C><label>Server</label></C>
                     <C>
-                        <Inpt name="server" type="text" tabindex="2"/>
+                        <Inpt name="server" type="text"/>
                         <Hint>Address of the NoFUSS server</Hint>
                     </C>
                 </Row>
@@ -48,10 +48,7 @@
         },
         inheritAttrs: false,
         props: {
-            nofuss: {
-                type: Object,
-                default: () => ({})
-            }
+            nofuss: Object
         }
     };
 </script>

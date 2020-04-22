@@ -454,7 +454,8 @@ void _mqttWebSocketOnVisible(JsonObject& root) {
 }
 
 void _mqttWebSocketOnData(JsonObject& root) {
-    root["mqttStatus"] = mqttConnected();
+    JsonObject& mqtt = root.createNestedObject("mqtt");
+    mqtt["_status"] = mqttConnected();
 }
 
 void _mqttWebSocketOnConnected(JsonObject& root) {

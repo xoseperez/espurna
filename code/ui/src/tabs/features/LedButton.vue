@@ -1,12 +1,12 @@
 <template>
     <section>
-        <template v-if="modules.led">
+        <section v-if="modules.led" v-loading="!led">
             <div class="header">
                 <h1>LED</h1>
                 <h2>Notification LED configuration</h2>
             </div>
 
-            <Group v-model="led" class="page">
+            <Group v-model="led" class="page" #default>
                 <fieldset>
                     <legend>Modes</legend>
                     <div>
@@ -70,14 +70,14 @@
                     </Repeater>
                 </fieldset>
             </Group>
-        </template>
+        </section>
 
-        <template v-if="modules.btn">
+        <section v-if="modules.btn" v-loading="!button">
             <div class="header">
                 <h1>Buttons</h1>
                 <h2>Buttons configuration</h2>
             </div>
-            <Group v-model="button" class="page">
+            <Group v-model="button" class="page" #default>
                 <fieldset>
                     <Repeater name="list" locked>
                         <template #default="tpl">
@@ -98,7 +98,7 @@
                     </Repeater>
                 </fieldset>
             </Group>
-        </template>
+        </section>
     </section>
 </template>
 
@@ -121,14 +121,8 @@
         props: {
             modules: Object,
             relayOptions: Array,
-            led: {
-                type: Object,
-                default: () => ({})
-            },
-            button: {
-                type: Object,
-                default: () => ({})
-            },
+            led: Object,
+            button: Object,
         },
         computed: {
             modeOptions() {

@@ -138,7 +138,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
         if (dczTopicOut.equals(topic)) {
 
             // Parse response
-            DynamicJsonBuffer jsonBuffer(calcJsonPayloadBufferSize(payload));
+            DynamicJsonBuffer jsonBuffer(calcJsonPayloadBufferSize(payload)); //TODO test
             JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));

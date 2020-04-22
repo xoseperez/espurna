@@ -49,85 +49,85 @@
                     <Mqtt v-bind="data"/>
                 </template>
 
-                <!-- #!if THERMOSTAT === true -->
+                <!-- #!if THERMOSTAT -->
                 <template v-if="data.modules.thermostat" #thermostat>
                     <Tstat v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if LED === true || BUTTON === true -->
+                <!-- #!if LED || BUTTON -->
                 <template v-if="data.modules.led" #ledButton>
                     <LedButton v-bind="data" :relay-options="relayOptions"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if LIGHT === true -->
+                <!-- #!if LIGHT -->
                 <template v-if="data.modules.color" #color>
                     <Color v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if RFM69 === true -->
+                <!-- #!if RFM69 -->
                 <template v-if="data.modules.rfm69" #rfm69>
                     <Rfm69 v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if RFBRIDGE === true -->
+                <!-- #!if RFBRIDGE -->
                 <template v-if="data.modules.rfb" #rfb>
                     <Rfb v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if SENSOR === true -->
+                <!-- #!if SENSOR -->
                 <template v-if="data.modules.sns" #sns>
                     <Sns v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if RELAYS === true -->
+                <!-- #!if RELAYS -->
                 <template v-if="data.modules.relay" #relays>
                     <Relays v-bind="data" :relay-options="relayOptions"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if LIGHTFOX === true -->
+                <!-- #!if LIGHTFOX -->
                 <template v-if="data.modules.lightfox" #lightfox>
                     <Lfox v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if DCZ === true -->
+                <!-- #!if DCZ -->
                 <template v-if="data.modules.dcz" #dcz>
                     <Dcz v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if HA === true -->
+                <!-- #!if HA -->
                 <template v-if="data.modules.ha" #ha>
                     <Ha v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if ALEXA === true -->
+                <!-- #!if ALEXA -->
                 <template v-if="data.modules.alexa" #alexa>
                     <Alexa v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if THINGSPEAK === true -->
+                <!-- #!if THINGSPEAK -->
                 <template v-if="data.modules.tspk" #thingspeak>
                     <Tspk v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if IDB === true -->
+                <!-- #!if IDB -->
                 <template v-if="data.modules.idb" #idb>
                     <Idb v-bind="data"/>
                 </template>
                 <!-- #!endif -->
 
-                <!-- #!if NOFUSS === true -->
+                <!-- #!if NOFUSS -->
                 <template v-if="data.modules.nofuss" #nofuss>
                     <Nfss v-bind="data"/>
                 </template>
@@ -138,6 +138,8 @@
 </template>
 
 <script>
+
+    import "./directives/loading";
 
     import ws from "./common/websocket";
     import Icon from "../public/icons/icon.svg";
@@ -150,7 +152,6 @@
     import Btn from "./components/Button";
 
 
-    import Mqtt from "./tabs/common/Mqtt";
     import Admin from "./tabs/common/Admin";
     import General from "./tabs/common/General";
     import Status from "./tabs/common/Status";
@@ -165,14 +166,20 @@
         {k: "status", l: "Status"}, //Move debug to status
         {k: "general", l: "General"}, //Move wifi to general
         {k: "admin", l: "Admin"}, //Move ntp to admin
-        {k: "mqtt", l: "MQTT"},
         {k: "separator"}
     ];
-    let components = {A, Icon, Inpt, Menu, Form, Mqtt, Admin, General, Status, Btn, Setup};
+    let components = {A, Icon, Inpt, Menu, Form, Admin, General, Status, Btn, Setup};
 
     //Board Features
 
-    // #!if THERMOSTAT === true
+    // #!if MQTT
+    import Mqtt from "./tabs/features/Mqtt";
+
+    components.Mqtt = Mqtt;
+    tabs.push({k: "mqtt", l: "MQTT"});
+    // #!endif
+
+    // #!if THERMOSTAT
     import Tstat from "./tabs/features/Thermostat";
 
     components.Tstat = Tstat;
@@ -180,54 +187,54 @@
     // #!endif
 
 
-    // #!if LED === true || BUTTON === true
+    // #!if LED || BUTTON
     let label = [];
     // #!endif
 
-    // #!if LED === true
+    // #!if LED
     label.push("Led");
     // #!endif
 
-    // #!if BUTTON === true
+    // #!if BUTTON
     label.push("Button");
     // #!endif
 
-    // #!if LED === true || BUTTON === true
+    // #!if LED || BUTTON
     import LedButton from "./tabs/features/LedButton";
 
     components.LedButton = LedButton;
     tabs.push({k: "ledButton", l: label.join("/")});
     // #!endif
 
-    // #!if LIGHT === true
+    // #!if LIGHT
     import Color from "./tabs/features/Color";
 
     components.Color = Color;
     tabs.push({k: "color", l: "Lights"}); //Moved color schedules here
     // #!endif
 
-    // #!if RFM69 === true
+    // #!if RFM69
     import Rfm69 from "./tabs/features/Rfm69";
 
     components.Rfm69 = Rfm69;
     tabs.push({k: "rfm69", l: "RFM69 Mapping"}); //Moved messages and mapping here
     // #!endif
 
-    // #!if RFBRIDGE === true
+    // #!if RFBRIDGE
     import Rfb from "./tabs/features/Rfb";
 
     components.Rfb = Rfb;
     tabs.push({k: "rfb", l: "RF Bridge"});
     // #!endif
 
-    // #!if SENSOR === true
+    // #!if SENSOR
     import Sns from "./tabs/features/Sensors";
 
     components.Sns = Sns;
     tabs.push({k: "sns", l: "Sensors"});
     // #!endif
 
-    // #!if RELAYS === true
+    // #!if RELAYS
     import Relays from "./tabs/features/Relays";
 
     components.Relays = Relays;
@@ -237,49 +244,49 @@
     tabs.push({k: "separator"});
 
     //Integrations
-    // #!if HA === true
+    // #!if HA
     import Ha from "./tabs/integrations/HomeAssistant";
 
     components.Ha = Ha;
     tabs.push({k: "ha", l: "Home Assistant"});
     // #!endif
 
-    // #!if ALEXA === true
+    // #!if ALEXA
     import Alexa from "./tabs/integrations/Alexa";
 
     components.Alexa = Alexa;
     tabs.push({k: "alexa", l: "Alexa"});
     // #!endif
 
-    // #!if LIGHTFOX === true
+    // #!if LIGHTFOX
     import Lfox from "./tabs/features/LightFox";
 
     components.Lfox = Lfox;
     tabs.push({k: "lightfox", l: "LightFox"});
     // #!endif
 
-    // #!if DCZ === true
+    // #!if DCZ
     import Dcz from "./tabs/integrations/Domoticz";
 
     components.Dcz = Dcz;
     tabs.push({k: "dcz", l: "Domoticz"});
     // #!endif
 
-    // #!if NOFUSS === true
+    // #!if NOFUSS
     import Nfss from "./tabs/integrations/NoFuss";
 
     components.Nfss = Nfss;
     tabs.push({k: "nofuss", l: "NoFuss"});
     // #!endif
 
-    // #!if THINGSPEAK === true
+    // #!if THINGSPEAK
     import Tspk from "./tabs/integrations/ThingSpeak";
 
     components.Tspk = Tspk;
     tabs.push({k: "thingspeak", l: "ThingSpeak"});
     // #!endif
 
-    // #!if IDB === true
+    // #!if IDB
     import Idb from "./tabs/integrations/InfluxDB";
 
     components.Idb = Idb;
@@ -330,11 +337,6 @@
                         _now: Math.floor(Date.now() / 1000),
                         _uptime: 0,
                     },
-                    relay: {
-                        config: {
-                            _path: "",
-                        },
-                    },
                 },
                 tabs: tabs,
                 interval: null
@@ -364,8 +366,8 @@
             },
             relayOptions() {
                 let options = [];
-                if (this.data.relay.config && this.data.relay.config.list) {
-                    this.data.relay.config.list.forEach((v, i) => {
+                if (this.data.relay && this.data.relay.list) {
+                    this.data.relay.list.forEach((v, i) => {
                         options.push({k: i, l: "Switch " + (v.name || "#" + i) + " (" + v.gpio + ")"});
                     });
                 }
@@ -409,8 +411,7 @@
                 if (this.$refs.formSettings.reportValidity()) {
                     if (Object.keys(this.modifiedSettings).length) {
                         this.saving = true;
-                        console.log(this.modifiedSettings);
-                        ws.send({config: this.modifiedSettings}, () => {
+                       ws.send({config: this.modifiedSettings}, () => {
                             prepareData(this.received, this.modified);
                             this.saving = false;
                         }, true);

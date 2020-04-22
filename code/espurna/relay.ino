@@ -853,11 +853,11 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    JsonObject& module = root.createNestedObject("relays");
-    JsonObject& state = module.createNestedObject("state");
+    JsonObject& module = root.createNestedObject("_relaysState");
+//    JsonObject& state = module.createNestedObject("state");
 
-    JsonArray& schema = state.createNestedArray("_schema");
-    JsonArray& list = state.createNestedArray("list");
+    JsonArray& schema = module.createNestedArray("_schema");
+    JsonArray& list = module.createNestedArray("list");
 
     schema.add("status");
     schema.add("lock");
@@ -902,8 +902,8 @@ String _relayFriendlyName(unsigned char i) {
 
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& module = root.createNestedObject("relay");
-    JsonObject& config = module.createNestedObject("config");
+    JsonObject& config = root.createNestedObject("relay");
+    //JsonObject& config = module.createNestedObject("config");
 
     JsonArray& schema = config.createNestedArray("_schema");
 

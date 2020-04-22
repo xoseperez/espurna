@@ -1,14 +1,11 @@
 <template>
-    <div class="group"><slot></slot></div>
+    <div v-if="value" class="group"><slot></slot></div>
 </template>
 
 <script>
     export default {
         props: {
-            value: {
-                type: Object,
-                default: () => ({})
-            },
+            value: Object,
         },
         provide() {
             return {

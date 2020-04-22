@@ -50,12 +50,19 @@ void lightfoxClear() {
 void _lightfoxWebSocketOnConnected(JsonObject& root) {
     JsonObject& lightfox = root.createNestedObject("lightfox");
 
+    //TODO setting
     lightfox["enabled"] = 1;
 
     uint8_t buttonsCount = _buttons.size();
-    JsonArray& rfb = root.createNestedArray("buttons");
+
+    JsonArray& schema = root.createNestedArray("_schema");
+    JsonArray& list = root.createNestedArray("list");
+
+    schema.add("id");
+    schema.add("relay");
+
     for (byte id=0; id<buttonsCount; id++) {
-        JsonObject& node = rfb.createNestedObject();
+        JsonArray& node = list.createNestedArray();
         node["id"] = id;
         node["relay"] = getSetting("btnRelay", id, "0");
     }

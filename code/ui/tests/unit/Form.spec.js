@@ -9,7 +9,8 @@ describe("Form", () => {
         cmp = mount(Form, {
             propsData: {
                 value: {
-                    test1: "foo"
+                    test1: "foo",
+                    test2: 0
                 }
             },
             slots: {
@@ -62,15 +63,15 @@ describe("Form", () => {
 
 
 
-    it("should emit input when its values are changed", () => {
+    it("should emit input when its values are changed", async () => {
         const form = cmp.find(Form);
 
         const in1 = form.find("input");
         in1.setValue("Hello world");
 
-        form.vm.$emit("input");
+        await cmp.vm.$nextTick();
 
         expect(cmp.emitted().input).toBeTruthy();
-        expect(cmp.emitted().input[0]).toStrictEqual([{test1: "Hello world"}]);
+        expect(cmp.emitted().input[0]).toStrictEqual([{test1: "Hello world", test2: 0}]);
     });
 });

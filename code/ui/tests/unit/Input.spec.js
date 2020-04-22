@@ -5,7 +5,7 @@ import Vue from "vue";
 describe("Input", () => {
     let values = {};
 
-    const form = new Vue({data:{values}});
+    const form = new Vue({data: {values}});
 
     const provide = () => {
         return {
@@ -15,17 +15,21 @@ describe("Input", () => {
         };
     };
 
-    it("renders correctly", () => {
+    it("should render correctly", () => {
         const input = mount(Input, {
             propsData: {
                 type: "text", name: "test1"
             }
         });
+
         expect(input.exists()).toBeTruthy();
-        expect(input.element.type).toBe("text");
+
+        const in1 = input.find("input");
+
+        expect(in1.element.type).toBe("text");
     });
 
-    it("has a default value", () => {
+    it("should have a default value", () => {
 
         let input = mount(Input, {
             propsData: {
@@ -34,10 +38,47 @@ describe("Input", () => {
             provide
         });
 
-        expect(input.vm.value).toBe("default");
+        expect(input.vm.val).toBe("default");
     });
 
-    it("updates its value for text", () => {
+
+    it("should work with v-model", () => {
+
+        let input = mount(Input, {
+            propsData: {
+                type: "text", value: "test"
+            },
+        });
+
+        expect(input.vm.val).toBe("test");
+
+
+        const in1 = input.find("input");
+        in1.element.value = "Hello world";
+        in1.trigger("input");
+
+        expect(input.emitted().input).toBeTruthy();
+        expect(input.emitted().input.length).toBe(1);
+        expect(input.emitted().input[0]).toEqual(["Hello world"]);
+    });
+
+    it("should emit input when its internal value changes", () => {
+        const input = mount(Input, {
+            propsData: {
+                type: "text", name: "test1"
+            },
+            provide
+        });
+
+        const in1 = input.find("input");
+        in1.setValue("Hello world");
+
+        expect(input.emitted().input).toBeTruthy();
+        expect(input.emitted().input.length).toBe(1);
+        expect(input.emitted().input[0]).toEqual(["Hello world"]);
+    });
+
+    it("should update its value for text", async () => {
         const input = mount(Input, {
             propsData: {
                 type: "text", name: "test1"
@@ -49,11 +90,13 @@ describe("Input", () => {
         in1.element.value = "Hello world";
         in1.trigger("input");
 
-        expect(input.vm.value).toBe("Hello world");
+        await Vue.nextTick();
+
+        expect(input.vm.val).toBe("Hello world");
         expect(values.test1).toBe("Hello world");
     });
 
-    it("updates its value for switch", () => {
+    it("should update its value for switch", async () => {
         const
             input = mount(Input, {
                 propsData: {
@@ -65,17 +108,21 @@ describe("Input", () => {
         const in3 = input.find("label");
         in3.trigger("click");
 
-        expect(input.vm.value).toBe(true);
+        await Vue.nextTick();
+
+        expect(input.vm.val).toBe(true);
         expect(values.test3).toBe(true);
 
         in3.trigger("click");
 
-        expect(input.vm.value).toBe(false);
+        await Vue.nextTick();
+
+        expect(input.vm.val).toBe(false);
         expect(values.test3).toBe(false);
 
     });
 
-    it("updates its value for select", () => {
+    it("should update its value for select", async () => {
         const input = mount(Input, {
             propsData: {
                 type: "select", name: "test2", options: ["1", "2", "3"]
@@ -87,7 +134,9 @@ describe("Input", () => {
         in2.element.value = 1;
         in2.trigger("change");
 
-        expect(input.vm.value).toBe(1);
+        await Vue.nextTick();
+
+        expect(input.vm.val).toBe(1);
         expect(values.test2).toBe(1);
     });
 
