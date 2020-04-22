@@ -72,7 +72,7 @@ void _terminalKeysCommand() {
     DEBUG_MSG_P(PSTR("Current settings:\n"));
     for (unsigned int i=0; i<keys.size(); i++) {
         const auto value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("> %s => \"%s\""), (keys[i]).c_str(), value.c_str());
+        DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
     }
 
     unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
@@ -252,7 +252,7 @@ void _terminalInitCommand() {
                 continue;
             }
 
-            DEBUG_MSG_P(PSTR("> %s => \"%s\""), key.c_str(), value.c_str());
+            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
         }
 
         terminalOK();

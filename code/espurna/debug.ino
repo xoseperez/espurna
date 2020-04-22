@@ -224,8 +224,7 @@ void _debugWebSocketOnVisible(JsonObject& root) {
 void debugWebSetup() {
 
     wsRegister()
-        .onVisible(_debugWebSocketOnVisible)
-        .onAction(_debugWebSocketOnAction);
+        .onVisible(_debugWebSocketOnVisible);
 
     // TODO: if hostname string changes, need to update header too
     #if DEBUG_UDP_SUPPORT

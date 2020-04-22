@@ -205,7 +205,7 @@ void _haSendDiscovery() {
 void _haSendMagnitude(unsigned char index, JsonObject& config) {
     config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(magnitudeType(index)));
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(index).c_str(), false);
-    config["unit_of_measurement"] = magnitudeUnit(index);
+    config["unit_of_measurement"] = magnitudeUnits(index);
 }
 
 void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {

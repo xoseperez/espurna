@@ -287,7 +287,7 @@ void _rpnInitCommands() {
 
     terminalRegisterCommand(F("RPN.TEST"), [](Embedis* e) {
         if (e->argc == 2) {
-            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\""), e->argv[1]);
+            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), e->argv[1]);
             rpn_process(_rpn_ctxt, e->argv[1], true);
             _rpnDump();
             rpn_stack_clear(_rpn_ctxt);
@@ -319,7 +319,7 @@ void _rpnRun() {
     unsigned char i = 0;
     String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
-        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\""), rule.c_str());
+        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
         rpn_process(_rpn_ctxt, rule.c_str(), true);
         //_rpnDump();
         rule = getSetting({"rpnRule", ++i});
