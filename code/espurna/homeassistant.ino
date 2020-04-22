@@ -13,6 +13,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "homeassistant.h"
 #include "mqtt.h"
+#include "relay.h"
+#include "rpc.h"
+#include "utils.h"
 #include "ws.h"
 
 bool _ha_enabled = false;
@@ -76,8 +79,8 @@ struct ha_config_t {
         deviceConfig.createNestedArray("identifiers").add(identifier.c_str());
         deviceConfig["name"] = name.c_str();
         deviceConfig["sw_version"] = version.c_str();
-        deviceConfig["manufacturer"] = MANUFACTURER;
-        deviceConfig["model"] = DEVICE;
+        deviceConfig["manufacturer"] = getDevice().c_str();
+        deviceConfig["model"] = getManufacturer().c_str();
     }
 
     ha_config_t() : ha_config_t(DEFAULT_BUFFER_SIZE) {}
@@ -199,12 +202,10 @@ void _haSendDiscovery() {
 
 #if SENSOR_SUPPORT
 
-void _haSendMagnitude(unsigned char i, JsonObject& config) {
-
-    unsigned char type = magnitudeType(i);
-    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
-    config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = magnitudeUnit(type);
+void _haSendMagnitude(unsigned char index, JsonObject& config) {
+    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(magnitudeType(index)));
+    config["state_topic"] = mqttTopic(magnitudeTopicIndex(index).c_str(), false);
+    config["unit_of_measurement"] = magnitudeUnit(index);
 }
 
 void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
@@ -241,7 +242,6 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
 // SWITCHES & LIGHTS
 // -----------------------------------------------------------------------------
 
-
 void _haSendSwitch(unsigned char i, JsonObject& config) {
 
     String name = getSetting({"relayName", i}, getSetting("hostname"));
@@ -257,8 +257,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
         config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
     }
-    config["payload_on"] = relayPayload(RelayStatus::ON);
-    config["payload_off"] = relayPayload(RelayStatus::OFF);
+    config["payload_on"] = relayPayload(PayloadStatus::On);
+    config["payload_off"] = relayPayload(PayloadStatus::Off);
     config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
     config["payload_available"] = mqttPayloadStatus(true);
     config["payload_not_available"] = mqttPayloadStatus(false);
@@ -392,8 +392,8 @@ String _haSensorYaml(unsigned char index) {
 //void _haGetDeviceConfig(JsonObject& config) {
 //    config.createNestedArray("identifiers").add(getIdentifier());
 //    config["name"] = getSetting("desc", getSetting("hostname"));
-//    config["manufacturer"] = MANUFACTURER;
-//    config["model"] = DEVICE;
+//    config["manufacturer"] = getManufacturer().c_str();
+//    config["model"] = getDevice().c_str();
 //    config["sw_version"] = String(APP_NAME) + " " + APP_VERSION + " (" + getCoreVersion() + ")";
 //}
 

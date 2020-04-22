@@ -10,13 +10,31 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <bitset>
 
-constexpr const size_t GPIO_PINS = 17;
+// We need to explicitly call the constructor, because we need to set the const `pin`:
+// https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
+GpioPin::GpioPin(unsigned char pin) :
+    BasePin(pin)
+{}
 
-std::bitset<GPIO_PINS> _gpio_locked;
-std::bitset<GPIO_PINS> _gpio_available;
+inline void GpioPin::pinMode(int8_t mode) {
+    ::pinMode(this->pin, mode);
+}
+
+inline void GpioPin::digitalWrite(int8_t val) {
+    ::digitalWrite(this->pin, val);
+}
+
+inline int GpioPin::digitalRead() {
+    return ::digitalRead(this->pin);
+}
+
+// --------------------------------------------------------------------------
+
+std::bitset<GpioPins> _gpio_locked;
+std::bitset<GpioPins> _gpio_available;
 
 bool gpioValid(unsigned char gpio) {
-    if (gpio >= GPIO_PINS) return false;
+    if (gpio >= GpioPins) return false;
 
     return _gpio_available.test(gpio);
 }
@@ -62,7 +80,7 @@ void gpioSetup() {
     );
 
     // TODO: GPIO16 is only for basic I/O, gpioGetLock before attachInterrupt should check for that
-    for (unsigned char pin=0; pin < GPIO_PINS; ++pin) {
+    for (unsigned char pin=0; pin < GpioPins; ++pin) {
         if (pin <= 5) _gpio_available.set(pin);
         if (((pin == 9) || (pin == 10)) && (esp8285)) _gpio_available.set(pin);
         if (12 <= pin && pin <= 16) _gpio_available.set(pin);

@@ -8,37 +8,68 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include <DebounceEvent.h>
+#include "libs/BasePin.h"
+#include "libs/DebounceEvent.h"
+
+#include <memory>
+
+constexpr size_t ButtonsPresetMax = 8;
+constexpr size_t ButtonsMax = 32;
+
+using button_action_t = uint8_t;
+
+enum class button_event_t {
+    None = 0,
+    Pressed = 1,
+    Click = 2,
+    DoubleClick = 3,
+    LongClick = 4,
+    LongLongClick = 5,
+    TripleClick = 6
+};
+
+struct button_actions_t {
+    button_action_t pressed;
+    button_action_t click;
+    button_action_t dblclick;
+    button_action_t lngclick;
+    button_action_t lnglngclick;
+    button_action_t trplclick;
+};
+
+struct button_event_delays_t {
+    button_event_delays_t();
+    button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick);
+
+    const unsigned long debounce;
+    const unsigned long repeat;
+    const unsigned long lngclick;
+    const unsigned long lnglngclick;
+};
 
 struct button_t {
 
-    // Use built-in indexed definitions to configure DebounceEvent
-    button_t(unsigned char index);
-
-    // Provide custom DebounceEvent parameters instead
-    button_t(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID, unsigned long int dbnceDl, unsigned long int dblDl, unsigned long int lngDl, unsigned long int lngLngDl);
+    button_t(unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
+    button_t(std::shared_ptr<BasePin> pin, const debounce_event::types::Config& config,
+        unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
 
     bool state();
+    button_event_t loop();
 
-    std::unique_ptr<DebounceEvent> event;
-    unsigned char pin;
-    unsigned char mode;
-    unsigned long actions;
-    unsigned char relayID;
+    std::unique_ptr<debounce_event::EventEmitter> event_emitter;
 
-    unsigned long int debounceDelay;
-    unsigned long int doubleClickDelay;
-    unsigned long int longClickDelay;
-    unsigned long int longLongClickDelay;
+    const button_event_delays_t event_delays;
+    const button_actions_t actions;
+
+    const unsigned char relayID;
+
 };
 
 bool buttonState(unsigned char id);
-unsigned char buttonAction(unsigned char id, unsigned char event);
+button_action_t buttonAction(unsigned char id, const button_event_t event);
 
-void buttonMQTT(unsigned char id, uint8_t event);
-void buttonEvent(unsigned char id, unsigned char event);
-
-void buttonAdd(unsigned char pin, unsigned char mode, unsigned long actions, unsigned char relayID = RELAY_NONE);
+void buttonMQTT(unsigned char id, button_event_t event);
+void buttonEvent(unsigned char id, button_event_t event);
 
 unsigned char buttonCount();
 void buttonSetup();

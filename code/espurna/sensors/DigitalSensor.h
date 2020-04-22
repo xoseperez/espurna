@@ -19,7 +19,7 @@ class DigitalSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        DigitalSensor(): BaseSensor() {
+        DigitalSensor() {
             _count = 1;
             _sensor_id = SENSOR_DIGITAL_ID;
         }

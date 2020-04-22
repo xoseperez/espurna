@@ -38,6 +38,8 @@
 #if ALEXA_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1               // and switches
 #endif
 
 #if RPN_RULES_SUPPORT
@@ -45,6 +47,11 @@
 #define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1
+#endif
+
+#if RF_SUPPORT
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1
 #endif
 
 #if LED_SUPPORT
@@ -74,11 +81,20 @@
 #define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
 
+#if THERMOSTAT_SUPPORT
+#undef MQTT_USE_JSON
+#define MQTT_USE_JSON               1           // Thermostat depends on group messages in a JSON body
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Thermostat depends on switches
+#endif
+
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP to work
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Scheduler needs relays
 #endif
 
 #if LWIP_VERSION_MAJOR != 1
@@ -101,6 +117,8 @@
 #if TUYA_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Most of the time we require it
 #endif
 
 //------------------------------------------------------------------------------
@@ -174,3 +192,36 @@
 )
 #endif
 
+
+//------------------------------------------------------------------------------
+// When using Dual / Lightfox Dual, notify that Serial should be used
+
+#if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
+    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
+#if DEBUG_SERIAL_SUPPORT
+#warning "DEBUG_SERIAL_SUPPORT conflicts with the current BUTTON_EVENTS_SOURCE"
+#undef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT 0
+#endif
+#endif
+
+//------------------------------------------------------------------------------
+// It looks more natural that one click will enable display
+// and long click will switch relay
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+#undef BUTTON1_CLICK
+#define BUTTON1_CLICK           BUTTON_ACTION_DISPLAY_ON
+#undef BUTTON1_LNGCLICK
+#define BUTTON1_LNGCLICK        BUTTON_ACTION_TOGGLE
+#endif
+
+//------------------------------------------------------------------------------
+// We should always set MQTT_MAX_PACKET_SIZE
+//
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+#if not defined(MQTT_MAX_PACKET_SIZE)
+#warning "MQTT_MAX_PACKET_SIZE should be set in `build_flags = ...` of the environment! Default value is used instead."
+#endif
+#endif

@@ -25,6 +25,7 @@ from .ldscripts import ldscripts_inject_libpath
 from .lwip import lwip_inject_patcher
 from .postmortem import dummy_ets_printf
 from .git import app_inject_revision
+from .release import copy_release
 from .flags import app_inject_flags
 
 __all__ = [
@@ -36,4 +37,5 @@ __all__ = [
     "dummy_ets_printf",
     "app_inject_revision",
     "app_inject_flags",
+    "copy_release",
 ]

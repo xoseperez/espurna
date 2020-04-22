@@ -21,7 +21,7 @@ class SonarSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SonarSensor(): BaseSensor() {
+        SonarSensor() {
             _count = 1;
             _sensor_id = SENSOR_SONAR_ID;
         }

@@ -22,7 +22,7 @@ class NTCSensor : public AnalogSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        NTCSensor(): AnalogSensor() {
+        NTCSensor() {
             _count = 1;
             _sensor_id = SENSOR_NTC_ID;
         }

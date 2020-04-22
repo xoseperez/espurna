@@ -29,10 +29,10 @@ jobs:
     - stage: Test Host
     - stage: Test WebUI
     - stage: Test PlatformIO Build
-      env: TEST_ENV=travis-2_3_0
-    - env: TEST_ENV=travis-latest
+      env: TEST_ENV=esp8266-4m-base
+    - env: TEST_ENV=esp8266-4m-latest-base
     - env: >-
-        TEST_ENV=travis-git TEST_EXTRA_ARGS="-a
+        TEST_ENV=esp8266-4m-git-base TEST_EXTRA_ARGS="-a
         test/build/extra/secure_client.h"
     - stage: Release
       env: BUILDER_THREAD=0
@@ -40,6 +40,7 @@ jobs:
     - env: BUILDER_THREAD=2
     - env: BUILDER_THREAD=3
 before_deploy:
+  - mkdir -p firmware/
   - mv firmware/*/espurna-*.bin firmware/
 deploy:
   provider: releases

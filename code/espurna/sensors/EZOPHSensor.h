@@ -22,7 +22,7 @@ class EZOPHSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EZOPHSensor(): BaseSensor() {
+        EZOPHSensor() {
             _count = 1;
             _sensor_id = SENSOR_EZOPH_ID;
         }

@@ -64,7 +64,7 @@ void _lightfoxWebSocketOnConnected(JsonObject& root) {
     for (byte id=0; id<buttonsCount; id++) {
         JsonArray& node = list.createNestedArray();
         node["id"] = id;
-        node["relay"] = getSetting("btnRelay", id, "0");
+        node["relay"] = getSetting({"btnRelay", id}, 0);
     }
 }
 

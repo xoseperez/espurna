@@ -7,10 +7,16 @@ OTA MODULE
 #pragma once
 
 #include <Updater.h>
+#include <ArduinoOTA.h>
+
+#if OTA_WEB_SUPPORT
+
+void otaWebSetup();
+
+#endif // OTA_WEB_SUPPORT == 1
 
 #if OTA_ARDUINOOTA_SUPPORT
 
-#include <ArduinoOTA.h>
 void arduinoOtaSetup();
 
 #endif // OTA_ARDUINOOTA_SUPPORT == 1

@@ -53,8 +53,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ota.h"
 #include "relay.h"
 #include "rfm69.h"
+#include "rpc.h"
 #include "rpnrules.h"
 #include "rtcmem.h"
+#include "sensor.h"
 #include "thermostat.h"
 #include "tuya.h"
 #include "web.h"
@@ -183,6 +185,9 @@ void setup() {
         #if DEBUG_WEB_SUPPORT
             debugWebSetup();
         #endif
+        #if OTA_WEB_SUPPORT
+            otaWebSetup();
+        #endif
     #endif
     #if API_SUPPORT
         apiSetup();
@@ -192,7 +197,9 @@ void setup() {
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
-    relaySetup();
+    #if RELAY_SUPPORT
+        relaySetup();
+    #endif
     #if BUTTON_SUPPORT
         buttonSetup();
     #endif

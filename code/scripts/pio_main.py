@@ -17,9 +17,13 @@ from espurna_utils import (
     app_inject_revision,
     dummy_ets_printf,
     app_inject_flags,
+    copy_release,
 )
 
 Import("env", "projenv")
+
+import os
+CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
 
 # Always show warnings for project code
 projenv.ProcessUnFlags("-w")
@@ -30,7 +34,8 @@ remove_float_support(env)
 ldscripts_inject_libpath(env)
 
 # two-step update hint when using 1MB boards
-env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_printsize)
+if not CI:
+    env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_printsize)
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
 if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
@@ -50,3 +55,6 @@ app_inject_revision(projenv)
 
 # handle OTA board and flags here, since projenv is not available in pre-scripts
 app_inject_flags(projenv)
+
+# handle `-t release` when CI does a tagged build
+env.AlwaysBuild(env.Alias("release", "${BUILD_DIR}/${PROGNAME}.bin", copy_release))

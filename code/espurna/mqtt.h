@@ -17,6 +17,9 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
 using mqtt_msg_t = std::pair<String, String>; // topic, payload
 
+// TODO: need this prototype for .ino
+class AsyncMqttClientMessageProperties;
+
 #if MQTT_SUPPORT
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT

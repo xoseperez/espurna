@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 #include "web.h"
+#include "utils.h"
 #include "ws.h"
 #include "ws_internal.h"
 
@@ -259,93 +260,10 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 }
 
-void _wsUpdate(JsonObject& root) {
-    JsonObject& device = root.createNestedObject("device");
-    JsonObject& wifi = root.createNestedObject("wifi");
-
-    wifi["_rssi"] = WiFi.RSSI();
-
-    const auto stats = getHeapStats();
-
-    device["_uptime"] = getUptime();
-    device["_heapFree"] = stats.available;
-    device["_heapInit"] = getInitialFreeHeap;
-    device["_heapUsable"] = stats.usable;
-    device["_heapFrag"] = stats.frag_pct;
-    device["_loadAverage"] = systemLoadAverage();
-    #if ADC_MODE_VALUE == ADC_VCC
-        device["_vcc"] = ESP.getVcc();
-    #endif
-    #if NTP_SUPPORT
-        if (ntpSynced()) device["_now"] = now();
-    #endif
-}
-
-void _wsResetUpdateTimer() {
-    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
-}
-
-void _wsDoUpdate(const bool connected) {
-    if (!connected) return;
-    if (millis() - _ws_last_update > WS_UPDATE_INTERVAL) {
-        _ws_last_update = millis();
-        wsSend(_wsUpdate);
-    }
-}
-
-bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, "ws", 2) == 0) return true;
-    if (strncmp(key, "admin", 5) == 0) return true;
-    if (strncmp(key, "hostname", 8) == 0) return true;
-    if (strncmp(key, "desc", 4) == 0) return true;
-    if (strncmp(key, "webPort", 7) == 0) return true;
-    return false;
-}
-
 void _wsOnVisible(JsonObject& root) {
     root.createNestedObject("_modules");
 }
 
-void _wsOnConnected(JsonObject& root) {
-    char chipid[7];
-    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
-
-    root["webMode"] = WEB_MODE_NORMAL;
-
-    JsonObject& version = root.createNestedObject("_version");
-    JsonObject& device = root.createNestedObject("device");
-    JsonObject& wifi = root.createNestedObject("wifi");
-
-    version["appName"] = APP_NAME;
-    version["appVersion"] = APP_VERSION;
-    version["appBuild"] = buildTime();
-    version["sketchSize"] = ESP.getSketchSize();
-    version["sdk"] = ESP.getSdkVersion();
-    version["core"] = getCoreVersion();
-
-    #if defined(APP_REVISION)
-        version["appRevision"] = APP_REVISION;
-    #endif
-
-    device["_manufacturer"] = MANUFACTURER;
-    device["_chipId"] = String(chipid);
-    device["_name"] = DEVICE;
-    device["_freeSize"] = ESP.getFreeSketchSpace();
-    device["_totalSize"] = ESP.getFlashChipRealSize();
-    device["hostname"] = getSetting("hostname");
-    device["desc"] = getSetting("desc");
-    device["webPort"] = getSetting("webPort", WEB_PORT);
-    device["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
-    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
-    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
-
-    wifi["_rssi"] = WiFi.RSSI();
-    wifi["_mac"] = WiFi.macAddress();
-    wifi["_bssid"] = WiFi.BSSIDstr();
-    wifi["_channel"] = WiFi.channel();
-    wifi["_name"] = getNetwork();
-    wifi["_ip"] = getIP();
-}
 
 uint8_t _wsOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
 
@@ -447,6 +365,90 @@ uint8_t _wsOnAction(uint32_t client_id, const char * action, JsonObject& data, J
    return 0;
 }
 
+void _wsUpdate(JsonObject& root) {
+    JsonObject& device = root.createNestedObject("device");
+    JsonObject& wifi = root.createNestedObject("wifi");
+
+    wifi["_rssi"] = WiFi.RSSI();
+
+    const auto stats = getHeapStats();
+
+    device["_uptime"] = getUptime();
+    device["_heapFree"] = stats.available;
+    device["_heapInit"] = getInitialFreeHeap;
+    device["_heapUsable"] = stats.usable;
+    device["_heapFrag"] = stats.frag_pct;
+    device["_loadAverage"] = systemLoadAverage();
+    #if ADC_MODE_VALUE == ADC_VCC
+        device["_vcc"] = ESP.getVcc();
+    #endif
+    #if NTP_SUPPORT
+        if (ntpSynced()) device["_now"] = now();
+    #endif
+}
+
+void _wsResetUpdateTimer() {
+    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
+}
+
+void _wsDoUpdate(const bool connected) {
+    if (!connected) return;
+    if (millis() - _ws_last_update > WS_UPDATE_INTERVAL) {
+        _ws_last_update = millis();
+        wsSend(_wsUpdate);
+    }
+}
+
+bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
+    if (strncmp(key, "ws", 2) == 0) return true;
+    if (strncmp(key, "admin", 5) == 0) return true;
+    if (strncmp(key, "hostname", 8) == 0) return true;
+    if (strncmp(key, "desc", 4) == 0) return true;
+    if (strncmp(key, "webPort", 7) == 0) return true;
+    return false;
+}
+
+void _wsOnConnected(JsonObject& root) {
+    char chipid[7];
+    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
+
+    root["webMode"] = WEB_MODE_NORMAL;
+
+    JsonObject& version = root.createNestedObject("_version");
+    JsonObject& device = root.createNestedObject("device");
+    JsonObject& wifi = root.createNestedObject("wifi");
+
+    version["appName"] = APP_NAME;
+    version["appVersion"] = APP_VERSION;
+    version["appBuild"] = buildTime();
+    version["sketchSize"] = ESP.getSketchSize();
+    version["sdk"] = ESP.getSdkVersion();
+    version["core"] = getCoreVersion();
+
+    #if defined(APP_REVISION)
+        version["appRevision"] = APP_REVISION;
+    #endif
+
+    device["_manufacturer"] = getManufacturer().c_str();
+    device["_chipId"] = String(chipid);
+    device["_name"] = getDevice().c_str();;
+    device["_freeSize"] = ESP.getFreeSketchSpace();
+    device["_totalSize"] = ESP.getFlashChipRealSize();
+    device["hostname"] = getSetting("hostname");
+    device["desc"] = getSetting("desc");
+    device["webPort"] = getSetting("webPort", WEB_PORT);
+    device["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
+    device["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
+    device["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
+
+    wifi["_rssi"] = WiFi.RSSI();
+    wifi["_mac"] = WiFi.macAddress();
+    wifi["_bssid"] = WiFi.BSSIDstr();
+    wifi["_channel"] = WiFi.channel();
+    wifi["_name"] = getNetwork();
+    wifi["_ip"] = getIP();
+}
+
 void wsSend(JsonObject& root) {
     size_t len = root.measureLength(); //Serialize once but only to calculate the size and without storing the data in memory
     AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
@@ -503,19 +505,15 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
         #ifndef NOWSAUTH
             if (!_wsAuth(client)) {
-                wsSend_P(client->id(), PSTR("{\"message\":9}"));
+                wsSend_P(client->id(), PSTR("{\"message\": 10}"));
                 DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
                 client->close();
                 return;
             }
         #endif
 
-
-        #if DEBUG_SUPPORT
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
-        #endif
-
         _wsConnected(client->id());
         _wsResetUpdateTimer();
         wifiReconnectCheck();

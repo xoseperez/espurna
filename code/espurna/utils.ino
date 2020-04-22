@@ -10,6 +10,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "config/buildtime.h"
 
+#include "board.h"
 #include "mqtt.h"
 #include "ntp.h"
 #include "utils.h"
@@ -37,28 +38,37 @@ PROGMEM const char* const custom_reset_string[] = {
     custom_reset_factory
 };
 
-
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
-        setSetting("hostname", HOSTNAME);
+        setSetting("hostname", F(HOSTNAME));
     } else {
         setSetting("hostname", getIdentifier());
     }
 }
 
-void setBoardName() {
-    #ifndef ESPURNA_CORE
-        setSetting("boardName", DEVICE_NAME);
-    #endif
+const String& getDevice() {
+    static const String value(F(DEVICE));
+    return value;
+}
+
+const String& getManufacturer() {
+    static const String value(F(MANUFACTURER));
+    return value;
 }
 
 String getBoardName() {
-    static const String defaultValue(DEVICE_NAME);
+    static const String defaultValue(F(DEVICE_NAME));
     return getSetting("boardName", defaultValue);
 }
 
+void setBoardName() {
+    if (!isEspurnaCore()) {
+        setSetting("boardName", F(DEVICE_NAME));
+    }
+}
+
 String getAdminPass() {
-    static const String defaultValue(ADMIN_PASS);
+    static const String defaultValue(F(ADMIN_PASS));
     return getSetting("adminPass", defaultValue);
 }
 

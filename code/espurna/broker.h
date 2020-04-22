@@ -15,12 +15,12 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <utility>
 
 enum class TBrokerType {
-    SYSTEM,
-    STATUS,
-    SENSOR_READ,
-    SENSOR_REPORT,
-    DATETIME,
-    CONFIG
+    System,
+    Status,
+    SensorRead,
+    SensorReport,
+    Datetime,
+    Config
 };
 
 template <typename... TArgs>
@@ -49,11 +49,11 @@ TBrokerCallbacks<TArgs...> TBroker<type, TArgs...>::callbacks;
 
 // --- Some known types. Bind them here to avoid .ino screwing with order ---
 
-using StatusBroker = TBroker<TBrokerType::STATUS, const String&, unsigned char, unsigned int>;
+using StatusBroker = TBroker<TBrokerType::Status, const String&, unsigned char, unsigned int>;
 
-using SensorReadBroker = TBroker<TBrokerType::SENSOR_READ, const String&, unsigned char, double, const char*>;
-using SensorReportBroker = TBroker<TBrokerType::SENSOR_REPORT, const String&, unsigned char, double, const char*>;
+using SensorReadBroker = TBroker<TBrokerType::SensorRead, const String&, unsigned char, double, const char*>;
+using SensorReportBroker = TBroker<TBrokerType::SensorReport, const String&, unsigned char, double, const char*>;
 
-using ConfigBroker = TBroker<TBrokerType::CONFIG, const String&, const String&>;
+using ConfigBroker = TBroker<TBrokerType::Config, const String&, const String&>;
 
 #endif // BROKER_SUPPORT == 1

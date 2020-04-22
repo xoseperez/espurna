@@ -39,15 +39,6 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // -----------------------------------------------------------------------------
 
 template <typename T>
-void _otaFollowRedirects(const std::true_type&, T& instance) {
-    instance.followRedirects(true);
-}
-
-template <typename T>
-void _otaFollowRedirects(const std::false_type&, T& instance) {
-}
-
-template <typename T>
 t_httpUpdate_return _otaClientUpdate(const std::true_type&, T& instance, WiFiClient* client, const String& url) {
     return instance.update(*client, url);
 }
@@ -58,12 +49,6 @@ t_httpUpdate_return _otaClientUpdate(const std::false_type&, T& instance, WiFiCl
 }
 
 namespace ota {
-    template <typename T>
-    using has_followRedirects_t = decltype(std::declval<T>().followRedirects(std::declval<bool>()));
-
-    template <typename T>
-    using has_followRedirects = is_detected<has_followRedirects_t, T>;
-
     template <typename T>
     using has_WiFiClient_argument_t = decltype(std::declval<T>().update(std::declval<WiFiClient&>(), std::declval<const String&>()));
 
@@ -114,19 +99,16 @@ SecureClientConfig _ota_sc_config {
 // Generic update methods
 // -----------------------------------------------------------------------------
 
-void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& fp = "") {
-
-    UNUSED(client);
-    UNUSED(fp);
+void _otaClientRunUpdater(__attribute__((unused)) WiFiClient* client, const String& url, __attribute__((unused)) const String& fp = "") {
 
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
     eepromRotate(false);
 
     DEBUG_MSG_P(PSTR("[OTA] Downloading %s ...\n"), url.c_str());
 
-    // TODO: support currentVersion (string arg after 'url')
-    // NOTE: ESPhttpUpdate.update(..., fp) will **always** fail with empty fingerprint
-    _otaFollowRedirects(ota::has_followRedirects<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate);
+    #if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+        ESPhttpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    #endif
 
     ESPhttpUpdate.rebootOnUpdate(false);
     t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
@@ -139,6 +121,7 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
             result = ESPhttpUpdate.update(url);
         }
     #else
+    // TODO: support currentVersion (string arg after 'url')
     // TODO: implement through callbacks?
     //       see https://github.com/esp8266/Arduino/pull/6796
         result = _otaClientUpdate(ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate, client, url);

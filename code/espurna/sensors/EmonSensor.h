@@ -10,12 +10,15 @@
 #include <Arduino.h>
 
 #include "../debug.h"
+
+#include "BaseEmonSensor.h"
 #include "I2CSensor.h"
+
 extern "C" {
     #include "../libs/fs_math.h"
 }
 
-class EmonSensor : public I2CSensor {
+class EmonSensor : public I2CSensor<BaseEmonSensor> {
 
     public:
 
@@ -23,7 +26,7 @@ class EmonSensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonSensor(): I2CSensor() {
+        EmonSensor() {
 
             // Calculate # of magnitudes
             #if EMON_REPORT_CURRENT
@@ -48,17 +51,6 @@ class EmonSensor : public I2CSensor {
             _dirty = true;
         }
 
-        void resetEnergy() {
-            for (unsigned char i=0; i<_channels; i++) {
-                _energy[i] = 0;
-            }
-        }
-
-        void resetEnergy(unsigned char channel, double value = 0) {
-            if (channel >= _channels) return;
-            _energy[channel] = value;
-        }
-
         // ---------------------------------------------------------------------
 
         void setVoltage(double voltage) {
@@ -79,6 +71,10 @@ class EmonSensor : public I2CSensor {
             _current_ratio[channel] = current_ratio;
             calculateFactors(channel);
             _dirty = true;
+        }
+
+        void resetRatios() {
+            setCurrentRatio(0, EMON_CURRENT_RATIO);
         }
 
         // ---------------------------------------------------------------------
@@ -111,7 +107,7 @@ class EmonSensor : public I2CSensor {
 
             // Calculations
             for (unsigned char i=0; i<_channels; i++) {
-                _energy[i] = _current[i] = 0;
+                _energy[i] = _current[i] = 0.0;
                 _pivot[i] = _adc_counts >> 1;
                 calculateFactors(i);
             }
@@ -145,9 +141,6 @@ class EmonSensor : public I2CSensor {
             _multiplier = new uint16_t[_channels];
             _pivot = new double[_channels];
             _current = new double[_channels];
-            #if EMON_REPORT_ENERGY
-                _energy = new uint32_t[_channels];
-            #endif
         }
 
         virtual unsigned int readADC(unsigned char channel) = 0;
@@ -246,11 +239,6 @@ class EmonSensor : public I2CSensor {
 
         double * _pivot;                                // Moving average mid point (per channel)
         double * _current;                              // Last current reading (per channel)
-        #if EMON_REPORT_ENERGY
-            uint32_t * _energy;                         // Aggregated energy (per channel)
-        #endif
-
-
 
 };
 

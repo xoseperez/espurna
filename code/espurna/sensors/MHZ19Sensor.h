@@ -32,7 +32,7 @@ class MHZ19Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        MHZ19Sensor(): BaseSensor() {
+        MHZ19Sensor() {
             _count = 1;
             _sensor_id = SENSOR_MHZ19_ID;
         }

@@ -10,9 +10,11 @@
 #include <Arduino.h>
 
 #include "../debug.h"
-#include "BaseSensor.h"
 
-class AnalogSensor : public BaseSensor {
+#include "BaseSensor.h"
+#include "BaseAnalogSensor.h"
+
+class AnalogSensor : public BaseAnalogSensor {
 
     public:
 
@@ -20,7 +22,7 @@ class AnalogSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        AnalogSensor(): BaseSensor() {
+        AnalogSensor() {
             _count = 1;
             _sensor_id = SENSOR_ANALOG_ID;
         }
