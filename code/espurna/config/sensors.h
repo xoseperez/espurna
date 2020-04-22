@@ -1331,7 +1331,7 @@
     TMP3X_SUPPORT \
 )
 #undef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_TOUT
+#define ADC_MODE_VALUE ADC_TOUT_VALUE
 #endif
 
 // Provide generic way to detect sensor presence
