@@ -1255,9 +1255,13 @@
 // ADC
 // -----------------------------------------------------------------------------
 
+// In esp.h ADC_VCC and ADC_TOUT is not macro, so define macro.
+#define ADC_VCC_VALUE                   255
+#define ADC_TOUT_VALUE                  33
+
 // Default ADC mode is to monitor internal power supply
 #ifndef ADC_MODE_VALUE
-#define ADC_MODE_VALUE                  ADC_VCC
+#define ADC_MODE_VALUE                  ADC_VCC_VALUE
 #endif
 
 // -----------------------------------------------------------------------------
