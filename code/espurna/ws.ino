@@ -61,8 +61,6 @@ std::queue<ws_data_t> _ws_client_data;
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
 void _onAuth(AsyncWebServerRequest *request) {
-    _ws.cleanupClients();
-
     webLog(request);
     if (!webAuthenticate(request)) return request->requestAuthentication();
 

@@ -487,7 +487,7 @@ void _haWebSocketOnConnected(JsonObject& root) {
 }
 uint8_t _haWebSocketOnActionSize(const char * action) {
     if (strcmp(action, "haconfig") == 0) {
-        return JSON_ARRAY_SIZE(relayCount()) + JSON_ARRAY_SIZE()
+        return JSON_ARRAY_SIZE(relayCount()) + JSON_ARRAY_SIZE();
     }
     return 0;
 }

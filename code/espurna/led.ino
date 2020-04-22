@@ -15,6 +15,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "rpc.h"
 
 #include "led.h"
+#include "led_pattern.h"
 #include "led_config.h"
 
 // LED helper class

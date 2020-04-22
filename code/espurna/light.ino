@@ -1085,7 +1085,7 @@ uint8_t _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObj
 
     if (strcmp(action, "mireds") == 0) {
         if (_light_use_cct) {
-            if (data.containsKey("mireds"]) {
+            if (data.containsKey("mireds") {
                 _fromMireds(data["mireds"]);
                 lightUpdate(true, true);
                 return 1;

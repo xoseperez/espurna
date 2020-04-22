@@ -911,9 +911,9 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 //        schema.add("sndAllEvts");
 
 
-        config["payloadOn"] = _relay_mqtt_payload_on;
-        config["payloadOff"] = _relay_mqtt_payload_off;
-        config["payloadToggle"] = _relay_mqtt_payload_toggle;
+        config["payloadOn"] = _relay_rpc_payload_on;
+        config["payloadOff"] = _relay_rpc_payload_off;
+        config["payloadToggle"] = _relay_rpc_payload_toggle;
     #endif
 
     //config["_start"] = 0;
@@ -930,7 +930,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));               //boot
         relay.add(_relays[i].pulse);                                            //pulse
         relay.add(_relays[i].pulse_ms / 1000.0);                                //time
-        relay.add(getSetting({"relayDblDl", i}, BUTTON_DBLCLICK_DELAY));        //dblDl
+        relay.add(getSetting({"relayRepeatDl", i}, BUTTON_REPEAT_DELAY));       //dblDl
         relay.add(getSetting({"relayLngDl", i}, BUTTON_LNGCLICK_DELAY));        //lngDl
         relay.add(getSetting({"relayLngLngDl", i}, BUTTON_LNGLNGCLICK_DELAY));  //lngLngDl
 
