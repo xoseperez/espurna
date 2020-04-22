@@ -2,25 +2,18 @@
 
 SETTINGS MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM_Rotate.h>
 #include <vector>
-#include "libs/EmbedisWrap.h"
-#include <Stream.h>
-#include "libs/StreamInjector.h"
 
-StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
-EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
+#include <ArduinoJson.h>
 
-#if TERMINAL_SUPPORT
-#if SERIAL_RX_ENABLED
-    char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
-    static unsigned char _serial_rx_pointer = 0;
-#endif // SERIAL_RX_ENABLED
-#endif // TERMINAL_SUPPORT
+#include "storage_eeprom.h"
+
+#include "settings_internal.h"
+#include "settings.h"
 
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
@@ -107,261 +100,90 @@ std::vector<String> _settingsKeys() {
 }
 
 // -----------------------------------------------------------------------------
-// Commands
-// -----------------------------------------------------------------------------
-
-void _settingsHelpCommand() {
-
-    // Get sorted list of commands
-    std::vector<String> commands;
-    unsigned char size = embedis.getCommandCount();
-    for (unsigned int i=0; i<size; i++) {
-
-        String command = embedis.getCommandName(i);
-        bool inserted = false;
-        for (unsigned char j=0; j<commands.size(); j++) {
-
-            // Check if we have to insert it before the current element
-            if (commands[j].compareTo(command) > 0) {
-                commands.insert(commands.begin() + j, command);
-                inserted = true;
-                break;
-            }
-
-        }
-
-        // If we could not insert it, just push it at the end
-        if (!inserted) commands.push_back(command);
-
-    }
-
-    // Output the list
-    DEBUG_MSG_P(PSTR("Available commands:\n"));
-    for (unsigned char i=0; i<commands.size(); i++) {
-        DEBUG_MSG_P(PSTR("> %s\n"), (commands[i]).c_str());
-    }
-
-}
-
-void _settingsKeysCommand() {
-
-    // Get sorted list of keys
-    std::vector<String> keys = _settingsKeys();
-
-    // Write key-values
-    DEBUG_MSG_P(PSTR("Current settings:\n"));
-    for (unsigned int i=0; i<keys.size(); i++) {
-        String value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
-    }
-
-    unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
-    DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
-    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
-    DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
-
-}
-
-void _settingsFactoryResetCommand() {
-    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-        EEPROMr.write(i, 0xFF);
-    }
-    EEPROMr.commit();
-}
-
-void _settingsInitCommands() {
-
-    #if DEBUG_SUPPORT
-        settingsRegisterCommand(F("CRASH"), [](Embedis* e) {
-            debugDumpCrashInfo();
-            debugClearCrashInfo();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-    #endif
-
-    settingsRegisterCommand(F("COMMANDS"), [](Embedis* e) {
-        _settingsHelpCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
-        resetReason(CUSTOM_RESET_TERMINAL);
-        _eepromCommit();
-        ESP.eraseConfig();
-        *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
-    });
-
-    #if I2C_SUPPORT
-
-        settingsRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
-            i2cScan();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-
-        settingsRegisterCommand(F("I2C.CLEAR"), [](Embedis* e) {
-            i2cClearBus();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-
-    #endif
-
-    settingsRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
-        _settingsFactoryResetCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("GPIO"), [](Embedis* e) {
-        if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-            return;
-        }
-        int pin = String(e->argv[1]).toInt();
-        //if (!gpioValid(pin)) {
-        //    DEBUG_MSG_P(PSTR("-ERROR: Invalid GPIO\n"));
-        //    return;
-        //}
-        if (e->argc > 2) {
-            bool state = String(e->argv[2]).toInt() == 1;
-            digitalWrite(pin, state);
-        }
-        DEBUG_MSG_P(PSTR("GPIO %d is %s\n"), pin, digitalRead(pin) == HIGH ? "HIGH" : "LOW");
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("HEAP"), [](Embedis* e) {
-        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("STACK"), [](Embedis* e) {
-        infoMemory("Stack", 4096, getFreeStack());
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("HELP"), [](Embedis* e) {
-        _settingsHelpCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("INFO"), [](Embedis* e) {
-        info();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("KEYS"), [](Embedis* e) {
-        _settingsKeysCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("GET"), [](Embedis* e) {
-        if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-            return;
-        }
-
-        for (unsigned char i = 1; i < e->argc; i++) {
-            String key = String(e->argv[i]);
-            String value;
-            if (!Embedis::get(key, value)) {
-                DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
-                continue;
-            }
-
-            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
-        }
-
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    #if WEB_SUPPORT
-        settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
-            espurnaReload();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-    #endif
-
-    settingsRegisterCommand(F("RESET"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
-        deferredReset(100, CUSTOM_RESET_TERMINAL);
-    });
-
-    settingsRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
-        EEPROMr.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
-        DEBUG_MSG_P(PSTR("+OK\n"));
-        deferredReset(100, CUSTOM_RESET_TERMINAL);
-    });
-
-    settingsRegisterCommand(F("UPTIME"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
-        settingsGetJson(root);
-        String output;
-        root.printTo(output);
-        DEBUG_MSG(output.c_str());
-        DEBUG_MSG_P(PSTR("\n+OK\n"));
-    });
-
-    #if not SETTINGS_AUTOSAVE
-        settingsRegisterCommand(F("SAVE"), [](Embedis* e) {
-            eepromCommit();
-            DEBUG_MSG_P(PSTR("\n+OK\n"));
-        });
-    #endif
-    
-}
-
-// -----------------------------------------------------------------------------
 // Key-value API
 // -----------------------------------------------------------------------------
 
-void moveSetting(const char * from, const char * to) {
-    String value = getSetting(from);
+String settings_key_t::toString() const {
+    if (index < 0) {
+        return value;
+    } else {
+        return value + index;
+    }
+}
+
+settings_move_key_t _moveKeys(const String& from, const String& to, unsigned char index) {
+    return settings_move_key_t {{from, index}, {to, index}};
+}
+
+void moveSetting(const String& from, const String& to) {
+    const auto value = getSetting(from);
     if (value.length() > 0) setSetting(to, value);
     delSetting(from);
 }
 
-template<typename T> String getSetting(const String& key, T defaultValue) {
+void moveSetting(const String& from, const String& to, unsigned char index) {
+    const auto keys = _moveKeys(from, to, index);
+    const auto value = getSetting(keys.first);
+    if (value.length() > 0) setSetting(keys.second, value);
+
+    delSetting(keys.first);
+}
+
+void moveSettings(const String& from, const String& to) {
+    unsigned char index = 0;
+    while (index < 100) {
+        const auto keys = _moveKeys(from, to, index);
+        const auto value = getSetting(keys.first);
+        if (value.length() == 0) break;
+        setSetting(keys.second, value);
+        delSetting(keys.first);
+        ++index;
+    }
+}
+
+template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
+R getSetting(const settings_key_t& key, R defaultValue) {
     String value;
-    if (!Embedis::get(key, value)) value = String(defaultValue);
+    if (!Embedis::get(key.toString(), value)) {
+        return defaultValue;
+    }
+    return Rfunc(value);
+}
+
+template<>
+String getSetting(const settings_key_t& key, String defaultValue) {
+    String value;
+    if (!Embedis::get(key.toString(), value)) {
+        value = defaultValue;
+    }
     return value;
 }
 
-template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue) {
-    return getSetting(key + String(index), defaultValue);
+String getSetting(const settings_key_t& key) {
+    static const String defaultValue("");
+    return getSetting(key, defaultValue);
 }
 
-String getSetting(const String& key) {
-    return getSetting(key, "");
+String getSetting(const settings_key_t& key, const char* defaultValue) {
+    return getSetting(key, String(defaultValue));
 }
 
-template<typename T> bool setSetting(const String& key, T value) {
-    return Embedis::set(key, String(value));
+String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultValue) {
+    return getSetting(key, String(defaultValue));
 }
 
-template<typename T> bool setSetting(const String& key, unsigned int index, T value) {
-    return setSetting(key + String(index), value);
+template<typename T>
+bool setSetting(const settings_key_t& key, const T& value) {
+    return Embedis::set(key.toString(), String(value));
 }
 
-bool delSetting(const String& key) {
-    return Embedis::del(key);
+bool delSetting(const settings_key_t& key) {
+    return Embedis::del(key.toString());
 }
 
-bool delSetting(const String& key, unsigned int index) {
-    return delSetting(key + String(index));
-}
-
-bool hasSetting(const String& key) {
-    return getSetting(key).length() != 0;
-}
-
-bool hasSetting(const String& key, unsigned int index) {
-    return getSetting(key, index, "").length() != 0;
+bool hasSetting(const settings_key_t& key) {
+    String value;
+    return Embedis::get(key.toString(), value);
 }
 
 void saveSettings() {
@@ -371,20 +193,39 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    _settingsFactoryResetCommand();
+    for (unsigned int i = 0; i < EEPROM_SIZE; i++) {
+        EEPROMr.write(i, 0xFF);
+    }
+    EEPROMr.commit();
 }
 
 // -----------------------------------------------------------------------------
-// Settings
+// Deprecated implementation
 // -----------------------------------------------------------------------------
 
-void settingsInject(void *data, size_t len) {
-    _serial.inject((char *) data, len);
+template<typename T>
+String getSetting(const String& key, unsigned char index, T defaultValue) {
+    return getSetting({key, index}, defaultValue);
 }
 
-Stream & settingsSerial() {
-    return (Stream &) _serial;
+template<typename T>
+bool setSetting(const String& key, unsigned char index, T value) {
+    return setSetting({key, index}, value);
 }
+
+template<typename T>
+bool hasSetting(const String& key, unsigned char index) {
+    return hasSetting({key, index});
+}
+
+template<typename T>
+bool delSetting(const String& key, unsigned char index) {
+    return delSetting({key, index});
+}
+
+// -----------------------------------------------------------------------------
+// API
+// -----------------------------------------------------------------------------
 
 size_t settingsMaxSize() {
     size_t size = EEPROM_SIZE;
@@ -426,6 +267,23 @@ bool settingsRestoreJson(JsonObject& data) {
 
 }
 
+bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024) {
+
+     // XXX: as of right now, arduinojson cannot trigger callbacks for each key individually
+    // Manually separating kv pairs can allow to parse only a small chunk, since we know that there is only string type used (even with bools / ints). Can be problematic when parsing data that was not generated by us.
+    // Current parsing method is limited only by keys (~sizeof(uintptr_t) bytes per key, data is not copied when string is non-const)
+    DynamicJsonBuffer jsonBuffer(json_buffer_size);
+    JsonObject& root = jsonBuffer.parseObject((char *) json_string);
+
+    if (!root.success()) {
+        DEBUG_MSG_P(PSTR("[SETTINGS] JSON parsing error\n"));
+        return false;
+    }
+
+    return settingsRestoreJson(root);
+
+ }
+
 void settingsGetJson(JsonObject& root) {
 
     // Get sorted list of keys
@@ -439,24 +297,22 @@ void settingsGetJson(JsonObject& root) {
 
 }
 
-void settingsRegisterCommand(const String& name, void (*call)(Embedis*)) {
-    Embedis::command(name, call);
-};
+void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter) {
+    for (auto& entry : config) {
+        String value = getSetting(entry.key, entry.default_value);
+        if (filter) {
+            value = filter(value);
+        }
+        if (value.equals(entry.setting)) continue;
+        entry.setting = std::move(value);
+    }
+}
 
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
 
 void settingsSetup() {
-
-    _serial.callback([](uint8_t ch) {
-        #if TELNET_SUPPORT
-            telnetWrite(ch);
-        #endif
-        #if DEBUG_SERIAL_SUPPORT
-            DEBUG_PORT.write(ch);
-        #endif
-    });
 
     Embedis::dictionary( F("EEPROM"),
         SPI_FLASH_SEC_SIZE,
@@ -468,45 +324,5 @@ void settingsSetup() {
             []() {}
         #endif
     );
-
-    _settingsInitCommands();
-
-    #if TERMINAL_SUPPORT
-    #if SERIAL_RX_ENABLED
-        SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
-    #endif // SERIAL_RX_ENABLED
-    #endif // TERMINAL_SUPPORT
-
-    // Register loop
-    espurnaRegisterLoop(settingsLoop);
-
-}
-
-void settingsLoop() {
-
-    #if TERMINAL_SUPPORT
-
-        #if DEBUG_SERIAL_SUPPORT
-            while (DEBUG_PORT.available()) {
-                _serial.inject(DEBUG_PORT.read());
-            }
-        #endif
-
-        embedis.process();
-
-        #if SERIAL_RX_ENABLED
-
-            while (SERIAL_RX_PORT.available() > 0) {
-                char rc = Serial.read();
-                _serial_rx_buffer[_serial_rx_pointer++] = rc;
-                if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
-                    settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
-                    _serial_rx_pointer = 0;
-                }
-            }
-
-        #endif // SERIAL_RX_ENABLED
-
-    #endif // TERMINAL_SUPPORT
 
 }

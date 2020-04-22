@@ -1,20 +1,18 @@
 // -----------------------------------------------------------------------------
 // SHT3X Sensor over I2C (Wemos)
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && SHT3X_I2C_SUPPORT
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-
-#include "Arduino.h"
 #include "I2CSensor.h"
+#include "../utils.h"
 
-class SHT3XI2CSensor : public I2CSensor {
+class SHT3XI2CSensor : public I2CSensor<> {
 
     public:
 
@@ -22,7 +20,7 @@ class SHT3XI2CSensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SHT3XI2CSensor(): I2CSensor() {
+        SHT3XI2CSensor() {
             _sensor_id = SENSOR_SHT3X_I2C_ID;
             _count = 2;
         }

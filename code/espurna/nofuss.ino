@@ -2,13 +2,14 @@
 
 NOFUSS MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
 #if NOFUSS_SUPPORT
 
 #include "NoFUSSClient.h"
+#include "ws.h"
 
 unsigned long _nofussLastCheck = 0;
 unsigned long _nofussInterval = 0;
@@ -20,13 +21,16 @@ bool _nofussEnabled = false;
 
 #if WEB_SUPPORT
 
-bool _nofussWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "nofuss", 6) == 0);
 }
 
-void _nofussWebSocketOnSend(JsonObject& root) {
+void _nofussWebSocketOnVisible(JsonObject& root) {
     root["nofussVisible"] = 1;
-    root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+}
+
+void _nofussWebSocketOnConnected(JsonObject& root) {
+    root["nofussEnabled"] = getSetting("nofussEnabled", 1 == NOFUSS_ENABLED);
     root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
 
@@ -43,9 +47,9 @@ void _nofussConfigure() {
         setSetting("nofussEnabled", 0);
         _nofussEnabled = false;
     } else {
-        _nofussEnabled = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+        _nofussEnabled = getSetting("nofussEnabled", 1 == NOFUSS_ENABLED);
     }
-    _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL).toInt();
+    _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL);
     _nofussLastCheck = 0;
 
     if (!_nofussEnabled) {
@@ -54,16 +58,15 @@ void _nofussConfigure() {
 
     } else {
 
-        char buffer[20];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%s-%s"), APP_NAME, DEVICE);
-
         NoFUSSClient.setServer(nofussServer);
-        NoFUSSClient.setDevice(buffer);
+        NoFUSSClient.setDevice(APP_NAME "_" DEVICE);
         NoFUSSClient.setVersion(APP_VERSION);
+        NoFUSSClient.setBuild(String(__UNIX_TIMESTAMP__));
 
         DEBUG_MSG_P(PSTR("[NOFUSS] Server : %s\n"), nofussServer.c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Dervice: %s\n"), buffer);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Dervice: %s\n"), APP_NAME "_" DEVICE);
         DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), APP_VERSION);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), String(__UNIX_TIMESTAMP__).c_str());
         DEBUG_MSG_P(PSTR("[NOFUSS] Enabled\n"));
 
     }
@@ -74,8 +77,8 @@ void _nofussConfigure() {
 
 void _nofussInitCommands() {
 
-    settingsRegisterCommand(F("NOFUSS"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
+    terminalRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+        terminalOK();
         nofussRun();
     });
 
@@ -120,6 +123,12 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"message\": 1}"));
             #endif
+
+            // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+            eepromRotate(false);
+
+            // Force backup right now, because NoFUSS library will immediatly reset on success
+            eepromBackup(0);
         }
 
         if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
@@ -143,18 +152,24 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
+            // TODO: NoFUSS will reset the board after this callback returns.
+            //       Maybe this should be optional
+            customResetReason(CUSTOM_RESET_NOFUSS);
             nice_delay(100);
         }
 
         if (code == NOFUSS_END) {
-    	    DEBUG_MSG_P(PSTR("[NoFUSS] End\n"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] End\n"));
+            eepromRotate(true);
         }
 
     });
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_nofussWebSocketOnSend);
-        wsOnReceiveRegister(_nofussWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_nofussWebSocketOnVisible)
+            .onConnected(_nofussWebSocketOnConnected)
+            .onKeyCheck(_nofussWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT

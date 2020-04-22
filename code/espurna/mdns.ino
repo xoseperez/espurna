@@ -2,7 +2,7 @@
 
 MDNS MODULE
 
-Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -40,7 +40,7 @@ void _mdnsServerStart() {
 void mdnsServerSetup() {
 
     #if WEB_SUPPORT
-        MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
+        MDNS.addService("http", "tcp", getSetting<uint16_t>("webPort", WEB_PORT));
     #endif
 
     #if TELNET_SUPPORT
@@ -50,6 +50,7 @@ void mdnsServerSetup() {
     // Public ESPurna related txt for OTA discovery
     MDNS.addServiceTxt("arduino", "tcp", "app_name", APP_NAME);
     MDNS.addServiceTxt("arduino", "tcp", "app_version", APP_VERSION);
+    MDNS.addServiceTxt("arduino", "tcp", "build_date", buildTime());
     MDNS.addServiceTxt("arduino", "tcp", "mac", WiFi.macAddress());
     MDNS.addServiceTxt("arduino", "tcp", "target_board", getBoardName());
     {

@@ -1,17 +1,14 @@
 // -----------------------------------------------------------------------------
 // Energy Monitor Sensor using builtin ADC
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
 
 #pragma once
 
-// Set ADC to TOUT pin
-#undef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_TOUT
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "EmonSensor.h"
 
 #define EMON_ANALOG_RESOLUTION      10
@@ -25,7 +22,7 @@ class EmonAnalogSensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonAnalogSensor(): EmonSensor() {
+        EmonAnalogSensor() {
             _channels = EMON_ANALOG_CHANNELS;
             _sensor_id = SENSOR_EMON_ANALOG_ID;
             init();
@@ -90,8 +87,10 @@ class EmonAnalogSensor : public EmonSensor {
 
             #if EMON_REPORT_ENERGY
                 static unsigned long last = 0;
-                if (last > 0) {
-                    _energy[0] += (_current[0] * _voltage * (millis() - last) / 1000);
+                for (unsigned char channel = 0; channel < _channels; ++channel) {
+                    _energy[channel] += sensor::Ws {
+                        static_cast<uint32_t>(_current[channel] * _voltage * (millis() - last) / 1000)
+                    };
                 }
                 last = millis();
             #endif
@@ -111,7 +110,7 @@ class EmonAnalogSensor : public EmonSensor {
                 if (index == i++) return _current[channel] * _voltage;
             #endif
             #if EMON_REPORT_ENERGY
-                if (index == i) return _energy[channel];
+                if (index == i) return _energy[channel].asDouble();
             #endif
             return 0;
         }
@@ -119,7 +118,7 @@ class EmonAnalogSensor : public EmonSensor {
     protected:
 
         unsigned int readADC(unsigned char channel) {
-            (void) channel;
+            UNUSED(channel);
             return analogRead(0);
         }
 

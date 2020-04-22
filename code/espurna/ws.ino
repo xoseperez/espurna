@@ -2,35 +2,63 @@
 
 WEBSOCKET MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
 #if WEB_SUPPORT
 
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
-#include <Ticker.h>
 #include <vector>
+
+#include "system.h"
+#include "web.h"
+#include "utils.h"
+#include "ws.h"
+#include "ws_internal.h"
+
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");
-Ticker _web_defer;
-
-std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
-std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
-std::vector<ws_on_receive_callback_f> _ws_on_receive_callbacks;
+Ticker _ws_defer;
+uint32_t _ws_last_update = 0;
 
 // -----------------------------------------------------------------------------
-// Private methods
+// WS callbacks
 // -----------------------------------------------------------------------------
 
-typedef struct {
-    IPAddress ip;
-    unsigned long timestamp = 0;
-} ws_ticket_t;
-ws_ticket_t _ticket[WS_BUFFER_SIZE];
+ws_callbacks_t& ws_callbacks_t::onVisible(ws_on_send_callback_f cb) {
+    on_visible.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onConnected(ws_on_send_callback_f cb) {
+    on_connected.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onData(ws_on_send_callback_f cb) {
+    on_data.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onAction(ws_on_action_callback_f cb) {
+    on_action.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
+    on_keycheck.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t _ws_callbacks;
+std::queue<ws_data_t> _ws_client_data;
+
+// -----------------------------------------------------------------------------
+// WS authentication
+// -----------------------------------------------------------------------------
+
+ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
 void _onAuth(AsyncWebServerRequest *request) {
 
@@ -41,15 +69,15 @@ void _onAuth(AsyncWebServerRequest *request) {
     unsigned long now = millis();
     unsigned short index;
     for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if (_ticket[index].ip == ip) break;
-        if (_ticket[index].timestamp == 0) break;
-        if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
+        if (_ws_tickets[index].ip == ip) break;
+        if (_ws_tickets[index].timestamp == 0) break;
+        if (now - _ws_tickets[index].timestamp > WS_TIMEOUT) break;
     }
     if (index == WS_BUFFER_SIZE) {
         request->send(429);
     } else {
-        _ticket[index].ip = ip;
-        _ticket[index].timestamp = now;
+        _ws_tickets[index].ip = ip;
+        _ws_tickets[index].timestamp = now;
         request->send(200, "text/plain", "OK");
     }
 
@@ -62,12 +90,10 @@ bool _wsAuth(AsyncWebSocketClient * client) {
     unsigned short index = 0;
 
     for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if ((_ticket[index].ip == ip) && (now - _ticket[index].timestamp < WS_TIMEOUT)) break;
+        if ((_ws_tickets[index].ip == ip) && (now - _ws_tickets[index].timestamp < WS_TIMEOUT)) break;
     }
 
     if (index == WS_BUFFER_SIZE) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-        wsSend_P(client->id(), PSTR("{\"message\": 10}"));
         return false;
     }
 
@@ -76,24 +102,59 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 }
 
 // -----------------------------------------------------------------------------
+// Debug
+// -----------------------------------------------------------------------------
 
-#if MQTT_SUPPORT
-void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
-    if (type == MQTT_CONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": true}"));
-    if (type == MQTT_DISCONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": false}"));
+#if DEBUG_WEB_SUPPORT
+
+ws_debug_t _ws_debug(WS_DEBUG_MSG_BUFFER);
+
+void ws_debug_t::send(const bool connected) {
+    if (!connected && flush) {
+        clear();
+        return;
+    }
+
+    if (!flush) return;
+    // ref: http://arduinojson.org/v5/assistant/
+    // {"weblog": {"msg":[...],"pre":[...]}}
+    DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
+
+    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& weblog = root.createNestedObject("weblog");
+
+    JsonArray& msg = weblog.createNestedArray("msg");
+    JsonArray& pre = weblog.createNestedArray("pre");
+
+    for (auto& message : messages) {
+        pre.add(message.first.c_str());
+        msg.add(message.second.c_str());
+    }
+
+    wsSend(root);
+    clear();
 }
+
+bool wsDebugSend(const char* prefix, const char* message) {
+    if (!wsConnected()) return false;
+    _ws_debug.add(prefix, message);
+    return true;
+}
+
 #endif
 
-bool _wsStore(String key, String value) {
+// Check the existing setting before saving it
+// TODO: this should know of the default values, somehow?
+// TODO: move webPort handling somewhere else?
+bool _wsStore(const String& key, const String& value) {
 
-    // HTTP port
     if (key == "webPort") {
         if ((value.toInt() == 0) || (value.toInt() == 80)) {
             return delSetting(key);
         }
     }
 
-    if (value != getSetting(key)) {
+    if (!hasSetting(key) || value != getSetting(key)) {
         return setSetting(key, value);
     }
 
@@ -101,24 +162,42 @@ bool _wsStore(String key, String value) {
 
 }
 
-bool _wsStore(String key, JsonArray& value) {
+// -----------------------------------------------------------------------------
+// Store indexed key (key0, key1, etc.) from array
+// -----------------------------------------------------------------------------
+
+bool _wsStore(const String& key, JsonArray& values) {
 
     bool changed = false;
 
     unsigned char index = 0;
-    for (auto element : value) {
-        if (_wsStore(key + index, element.as<String>())) changed = true;
-        index++;
+    for (auto& element : values) {
+        const auto value = element.as<String>();
+        const auto keyobj = settings_key_t {key, index};
+        if (!hasSetting(keyobj) || value != getSetting(keyobj)) {
+            setSetting(keyobj, value);
+            changed = true;
+        }
+        ++index;
     }
 
     // Delete further values
-    for (unsigned char i=index; i<SETTINGS_MAX_LIST_COUNT; i++) {
-        if (!delSetting(key, index)) break;
+    for (unsigned char next_index=index; next_index < SETTINGS_MAX_LIST_COUNT; ++next_index) {
+        if (!delSetting({key, next_index})) break;
         changed = true;
     }
 
     return changed;
 
+}
+
+bool _wsCheckKey(const String& key, JsonVariant& value) {
+    for (auto& callback : _ws_callbacks.on_keycheck) {
+        if (callback(key.c_str(), value)) return true;
+        // TODO: remove this to call all OnKeyCheckCallbacks with the
+        // current key/value
+    }
+    return false;
 }
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
@@ -128,11 +207,22 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     // Get client ID
     uint32_t client_id = client->id();
 
+    // Check early for empty object / nothing
+    if ((length == 0) || (length == 1)) {
+        return;
+    }
+
+    if ((length == 3) && (strcmp((char*) payload, "{}") == 0)) {
+        return;
+    }
+
     // Parse JSON input
-    DynamicJsonBuffer jsonBuffer;
+    // TODO: json buffer should be pretty efficient with the non-const payload,
+    // most of the space is taken by the object key references
+    DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Error parsing data\n"));
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
         wsSend_P(client_id, PSTR("{\"message\": 3}"));
         return;
     }
@@ -142,6 +232,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     const char* action = root["action"];
     if (action) {
 
+        if (strcmp(action, "ping") == 0) {
+            wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            return;
+        }
+
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
@@ -150,7 +245,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "reconnect") == 0) {
-            _web_defer.once_ms(100, wifiDisconnect);
+            _ws_defer.once_ms(100, wifiDisconnect);
             return;
         }
 
@@ -165,8 +260,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
 
             // Callbacks
-            for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
-                (_ws_on_action_callbacks[i])(client_id, action, data);
+            for (auto& callback : _ws_callbacks.on_action) {
+                callback(client_id, action, data);
             }
 
             // Restore configuration via websockets
@@ -193,9 +288,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         String adminPass;
         bool save = false;
-        #if MQTT_SUPPORT
-            bool changedMQTT = false;
-        #endif
 
         for (auto kv: config) {
 
@@ -221,15 +313,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 continue;
             }
 
-            // Check if key has to be processed
-            bool found = false;
-            for (unsigned char i = 0; i < _ws_on_receive_callbacks.size(); i++) {
-                found |= (_ws_on_receive_callbacks[i])(key.c_str(), value);
-                // TODO: remove this to call all OnReceiveCallbacks with the
-                // current key/value
-                if (found) break;
-            }
-            if (!found) {
+            if (!_wsCheckKey(key, value)) {
                 delSetting(key);
                 continue;
             }
@@ -244,9 +328,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // Update flags if value has changed
             if (changed) {
                 save = true;
-                #if MQTT_SUPPORT
-                    if (key.startsWith("mqtt")) changedMQTT = true;
-                #endif
             }
 
         }
@@ -256,12 +337,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             // Callbacks
             espurnaReload();
-
-            // This should got to callback as well
-            // but first change management has to be in place
-            #if MQTT_SUPPORT
-                if (changedMQTT) mqttReset();
-            #endif
 
             // Persist settings
             saveSettings();
@@ -291,91 +366,123 @@ void _wsUpdate(JsonObject& root) {
     #endif
 }
 
-bool _wsOnReceive(const char * key, JsonVariant& value) {
+void _wsResetUpdateTimer() {
+    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
+}
+
+void _wsDoUpdate(const bool connected) {
+    if (!connected) return;
+    if (millis() - _ws_last_update > WS_UPDATE_INTERVAL) {
+        _ws_last_update = millis();
+        wsSend(_wsUpdate);
+    }
+}
+
+bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "ws", 2) == 0) return true;
     if (strncmp(key, "admin", 5) == 0) return true;
     if (strncmp(key, "hostname", 8) == 0) return true;
+    if (strncmp(key, "desc", 4) == 0) return true;
     if (strncmp(key, "webPort", 7) == 0) return true;
     return false;
 }
 
-void _wsOnStart(JsonObject& root) {
+void _wsOnConnected(JsonObject& root) {
+    root["webMode"] = WEB_MODE_NORMAL;
 
-    #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
-        bool changePassword = getAdminPass().equals(ADMIN_PASS);
-    #else
-        bool changePassword = false;
+    root["app_name"] = APP_NAME;
+    root["app_version"] = APP_VERSION;
+    root["app_build"] = buildTime();
+    #if defined(APP_REVISION)
+        root["app_revision"] = APP_REVISION;
     #endif
+    root["device"] = getDevice().c_str();
+    root["manufacturer"] = getManufacturer().c_str();
+    root["chipid"] = getChipId().c_str();
+    root["mac"] = WiFi.macAddress();
+    root["bssid"] = WiFi.BSSIDstr();
+    root["channel"] = WiFi.channel();
+    root["hostname"] = getSetting("hostname");
+    root["desc"] = getSetting("desc");
+    root["network"] = getNetwork();
+    root["deviceip"] = getIP();
+    root["sketch_size"] = ESP.getSketchSize();
+    root["free_size"] = ESP.getFreeSketchSpace();
+    root["sdk"] = ESP.getSdkVersion();
+    root["core"] = getCoreVersion();
 
-    if (changePassword) {
-
-        root["webMode"] = WEB_MODE_PASSWORD;
-
-    } else {
-
-        char chipid[7];
-        snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
-        uint8_t * bssid = WiFi.BSSID();
-        char bssid_str[20];
-        snprintf_P(bssid_str, sizeof(bssid_str),
-            PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
-            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
-        );
-
-        root["webMode"] = WEB_MODE_NORMAL;
-
-        root["app_name"] = APP_NAME;
-        root["app_version"] = APP_VERSION;
-        root["app_build"] = buildTime();
-        #if defined(APP_REVISION)
-            root["app_revision"] = APP_REVISION;
-        #endif
-        root["manufacturer"] = MANUFACTURER;
-        root["chipid"] = String(chipid);
-        root["mac"] = WiFi.macAddress();
-        root["bssid"] = String(bssid_str);
-        root["channel"] = WiFi.channel();
-        root["device"] = DEVICE;
-        root["hostname"] = getSetting("hostname");
-        root["network"] = getNetwork();
-        root["deviceip"] = getIP();
-        root["sketch_size"] = ESP.getSketchSize();
-        root["free_size"] = ESP.getFreeSketchSpace();
-        root["sdk"] = ESP.getSdkVersion();
-        root["core"] = getCoreVersion();
-
-        _wsUpdate(root);
-
-        root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-        root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-        root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-        #if TERMINAL_SUPPORT
-            root["cmdVisible"] = 1;
-        #endif
-
-    }
-
+    root["webPort"] = getSetting("webPort", WEB_PORT);
+    root["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
+    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
+    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
-void _wsStart(uint32_t client_id) {
-    for (unsigned char i = 0; i < _ws_on_send_callbacks.size(); i++) {
-        wsSend(client_id, _ws_on_send_callbacks[i]);
+void wsSend(JsonObject& root) {
+    // TODO: avoid serializing twice?
+    size_t len = root.measureLength();
+    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+
+    if (buffer) {
+        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        _ws.textAll(buffer);
     }
+}
+
+void wsSend(uint32_t client_id, JsonObject& root) {
+    AsyncWebSocketClient* client = _ws.client(client_id);
+    if (client == nullptr) return;
+
+    // TODO: avoid serializing twice?
+    size_t len = root.measureLength();
+    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+
+    if (buffer) {
+        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        client->text(buffer);
+    }
+}
+
+void _wsConnected(uint32_t client_id) {
+
+    const bool changePassword = (USE_PASSWORD && WEB_FORCE_PASS_CHANGE)
+        ? getAdminPass().equals(ADMIN_PASS)
+        : false;
+
+    if (changePassword) {
+        StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        root["webMode"] = WEB_MODE_PASSWORD;
+        wsSend(client_id, root);
+        return;
+    }
+
+    wsPostAll(client_id, _ws_callbacks.on_visible);
+    wsPostSequence(client_id, _ws_callbacks.on_connected);
+    wsPostSequence(client_id, _ws_callbacks.on_data);
+
 }
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
     if (type == WS_EVT_CONNECT) {
 
+        client->_tempObject = nullptr;
+
         #ifndef NOWSAUTH
-            if (!_wsAuth(client)) return;
+            if (!_wsAuth(client)) {
+                wsSend_P(client->id(), PSTR("{\"message\": 10}"));
+                DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
+                client->close();
+                return;
+            }
         #endif
 
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
-        _wsStart(client->id());
-        client->_tempObject = new WebSocketIncommingBuffer(&_wsParse, true);
+        _wsConnected(client->id());
+        _wsResetUpdateTimer();
         wifiReconnectCheck();
+        client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 
     } else if(type == WS_EVT_DISCONNECT) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
@@ -392,6 +499,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
     } else if(type == WS_EVT_DATA) {
         //DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u data(%u): %s\n"), client->id(), len, len ? (char*) data : "");
+        if (!client->_tempObject) return;
         WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *)client->_tempObject;
         AwsFrameInfo * info = (AwsFrameInfo*)arg;
         buffer->data_event(client, info, data, len);
@@ -400,13 +508,62 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
 }
 
-void _wsLoop() {
-    static unsigned long last = 0;
-    if (!wsConnected()) return;
-    if (millis() - last > WS_UPDATE_INTERVAL) {
-        last = millis();
-        wsSend(_wsUpdate);
+// TODO: make this generic loop method to queue important ws messages?
+//       or, if something uses ticker / async ctx to send messages,
+//       it needs a retry mechanism built into the callback object
+void _wsHandleClientData(const bool connected) {
+
+    if (!connected && !_ws_client_data.empty()) {
+        _ws_client_data.pop();
+        return;
     }
+
+    if (_ws_client_data.empty()) return;
+    auto& data = _ws_client_data.front();
+
+    // client_id == 0 means we need to send the message to every client
+    if (data.client_id) {
+        AsyncWebSocketClient* ws_client = _ws.client(data.client_id);
+
+        if (!ws_client) {
+            _ws_client_data.pop();
+            return;
+        }
+
+        // wait until we can send the next batch of messages
+        // XXX: enforce that callbacks send only one message per iteration
+        if (ws_client->queueIsFull()) {
+            return;
+        }
+    }
+
+    // XXX: block allocation will try to create *2 next time,
+    // likely failing and causing wsSend to reference empty objects
+    // XXX: arduinojson6 will not do this, but we may need to use per-callback buffers
+    constexpr const size_t BUFFER_SIZE = 3192;
+    DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
+    JsonObject& root = jsonBuffer.createObject();
+
+    data.send(root);
+    if (data.client_id) {
+        wsSend(data.client_id, root);
+    } else {
+        wsSend(root);
+    }
+    yield();
+
+    if (data.done()) {
+        _ws_client_data.pop();
+    }
+}
+
+void _wsLoop() {
+    const bool connected = wsConnected();
+    _wsDoUpdate(connected);
+    _wsHandleClientData(connected);
+    #if DEBUG_WEB_SUPPORT
+        _ws_debug.send(connected);
+    #endif
 }
 
 // -----------------------------------------------------------------------------
@@ -417,27 +574,21 @@ bool wsConnected() {
     return (_ws.count() > 0);
 }
 
-void wsOnSendRegister(ws_on_send_callback_f callback) {
-    _ws_on_send_callbacks.push_back(callback);
+bool wsConnected(uint32_t client_id) {
+    return _ws.hasClient(client_id);
 }
 
-void wsOnReceiveRegister(ws_on_receive_callback_f callback) {
-    _ws_on_receive_callbacks.push_back(callback);
-}
-
-void wsOnActionRegister(ws_on_action_callback_f callback) {
-    _ws_on_action_callbacks.push_back(callback);
+ws_callbacks_t& wsRegister() {
+    return _ws_callbacks;
 }
 
 void wsSend(ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
-        DynamicJsonBuffer jsonBuffer;
+        DynamicJsonBuffer jsonBuffer(512);
         JsonObject& root = jsonBuffer.createObject();
         callback(root);
-        String output;
-        root.printTo(output);
-        jsonBuffer.clear();
-        _ws.textAll((char *) output.c_str());
+
+        wsSend(root);
     }
 }
 
@@ -456,13 +607,13 @@ void wsSend_P(PGM_P payload) {
 }
 
 void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
-    DynamicJsonBuffer jsonBuffer;
+    AsyncWebSocketClient* client = _ws.client(client_id);
+    if (client == nullptr) return;
+
+    DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.createObject();
     callback(root);
-    String output;
-    root.printTo(output);
-    jsonBuffer.clear();
-    _ws.text(client_id, (char *) output.c_str());
+    wsSend(client_id, root);
 }
 
 void wsSend(uint32_t client_id, const char * payload) {
@@ -475,25 +626,52 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
     _ws.text(client_id, buffer);
 }
 
+void wsPost(const ws_on_send_callback_f& cb) {
+    _ws_client_data.emplace(cb);
+}
+
+void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb) {
+    _ws_client_data.emplace(client_id, cb);
+}
+
+void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(client_id, cbs, ws_data_t::ALL);
+}
+
+void wsPostAll(const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(0, cbs, ws_data_t::ALL);
+}
+
+void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(client_id, cbs, ws_data_t::SEQUENCE);
+}
+
+void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
+    _ws_client_data.emplace(client_id, std::forward<ws_on_send_callback_list_t>(cbs), ws_data_t::SEQUENCE);
+}
+
+void wsPostSequence(const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(0, cbs, ws_data_t::SEQUENCE);
+}
+
 void wsSetup() {
 
     _ws.onEvent(_wsEvent);
     webServer()->addHandler(&_ws);
 
     // CORS
-    #ifdef WEB_REMOTE_DOMAIN
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", WEB_REMOTE_DOMAIN);
+    const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", webDomain);
+    if (!webDomain.equals("*")) {
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
-    #endif
+    }
 
     webServer()->on("/auth", HTTP_GET, _onAuth);
 
-    #if MQTT_SUPPORT
-        mqttRegister(_wsMQTTCallback);
-    #endif
+    wsRegister()
+        .onConnected(_wsOnConnected)
+        .onKeyCheck(_wsOnKeyCheck);
 
-    wsOnSendRegister(_wsOnStart);
-    wsOnReceiveRegister(_wsOnReceive);
     espurnaRegisterLoop(_wsLoop);
 }
 

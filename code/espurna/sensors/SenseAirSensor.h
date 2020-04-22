@@ -8,10 +8,11 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <SoftwareSerial.h>
+
 #include "BaseSensor.h"
 
-#include <SoftwareSerial.h>
 
 // SenseAir sensor utils
 class SenseAir
@@ -115,7 +116,7 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         // Public
         // ---------------------------------------------------------------------
 
-        SenseAirSensor(): BaseSensor() {
+        SenseAirSensor() {
             _count = 1;
             _co2 = 0;
             _lastCo2 = 0;
@@ -202,17 +203,17 @@ class SenseAirSensor : public BaseSensor, SenseAir {
                 return;
             }
 
-            _error = SENSOR_ERROR_OK;
-
             unsigned int co2 = readCo2();
             if (co2 >= 5000 || co2 < 100)
             {
                 _co2 = _lastCo2;
+                _error = SENSOR_ERROR_OUT_OF_RANGE;
             }
             else
             {
                 _co2 = (co2 > _lastCo2 + 2000) ? _lastCo2 : co2;
                 _lastCo2 = co2;
+                _error = SENSOR_ERROR_OK;
             }
         }
 

@@ -1,17 +1,16 @@
 // -----------------------------------------------------------------------------
 // SI7021 / HTU21D Sensor over I2C
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && SI7021_SUPPORT
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "I2CSensor.h"
+#include "../utils.h"
 
 #define SI7021_SCL_FREQUENCY    200
 
@@ -26,7 +25,7 @@
 PROGMEM const char si7021_chip_si7021_name[] = "SI7021";
 PROGMEM const char si7021_chip_htu21d_name[] = "HTU21D";
 
-class SI7021Sensor : public I2CSensor {
+class SI7021Sensor : public I2CSensor<> {
 
     public:
 
@@ -34,7 +33,7 @@ class SI7021Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SI7021Sensor(): I2CSensor() {
+        SI7021Sensor() {
             _sensor_id = SENSOR_SI7021_ID;
         }
 
@@ -147,7 +146,6 @@ class SI7021Sensor : public I2CSensor {
             // When not using clock stretching (*_NOHOLD commands) delay here
             // is needed to wait for the measurement.
             // According to datasheet the max. conversion time is ~22ms
-            unsigned long start = millis();
             nice_delay(50);
 
             // Clear the last to bits of LSB to 00.

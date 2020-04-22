@@ -9,37 +9,62 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
-#include <TimeLib.h>
+#include "broker.h"
+#include "relay.h"
+#include "ntp.h"
+
+constexpr const int SchedulerDummySwitchId = 0xff;
+
+int _sch_restore = 0;
 
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
 
-bool _schWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "sch", 3) == 0);
 }
 
-void _schWebSocketOnSend(JsonObject &root){
+void _schWebSocketOnVisible(JsonObject& root) {
+    if (!relayCount()) return;
+    root["schVisible"] = 1;
+}
 
-    if (relayCount() > 0) {
+void _schWebSocketOnConnected(JsonObject &root){
 
-        root["schVisible"] = 1;
-        root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
-        JsonArray &sch = root.createNestedArray("schedule");
-        for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-            if (!hasSetting("schSwitch", i)) break;
-            JsonObject &scheduler = sch.createNestedObject();
-            scheduler["schEnabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
-            scheduler["schSwitch"] = getSetting("schSwitch", i, 0).toInt();
-            scheduler["schAction"] = getSetting("schAction", i, 0).toInt();
-            scheduler["schType"] = getSetting("schType", i, 0).toInt();
-            scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
-            scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
-            scheduler["schUTC"] = getSetting("schUTC", i, 0).toInt() == 1;
-            scheduler["schWDs"] = getSetting("schWDs", i, "");
-        }
+    if (!relayCount()) return;
 
+    JsonObject &schedules = root.createNestedObject("schedules");
+    schedules["max"] = SCHEDULER_MAX_SCHEDULES;
+
+    JsonArray& enabled = schedules.createNestedArray("schEnabled");
+    JsonArray& switch_ = schedules.createNestedArray("schSwitch");
+    JsonArray& action = schedules.createNestedArray("schAction");
+    JsonArray& type = schedules.createNestedArray("schType");
+    JsonArray& hour = schedules.createNestedArray("schHour");
+    JsonArray& minute = schedules.createNestedArray("schMinute");
+    JsonArray& utc = schedules.createNestedArray("schUTC");
+    JsonArray& weekdays = schedules.createNestedArray("schWDs");
+
+    uint8_t size = 0;
+
+    for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
+        if (!getSetting({"schSwitch", i}).length()) break;
+        ++size;
+
+        enabled.add(getSetting({"schEnabled", i}, false) ? 1 : 0);
+        utc.add(getSetting({"schUTC", i}, 0));
+
+        switch_.add(getSetting({"schSwitch", i}, 0));
+        action.add(getSetting({"schAction", i}, 0));
+        type.add(getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH));
+        hour.add(getSetting({"schHour", i}, 0));
+        minute.add(getSetting({"schMinute", i}, 0));
+        weekdays.add(getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS));
     }
+
+    schedules["size"] = size;
+    schedules["start"] = 0;
 
 }
 
@@ -53,31 +78,31 @@ void _schConfigure() {
 
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
 
-        int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
-        if (sch_switch == 0xFF) delete_flag = true;
+        int sch_switch = getSetting({"schSwitch", i}, SchedulerDummySwitchId);
+        if (sch_switch == SchedulerDummySwitchId) delete_flag = true;
 
         if (delete_flag) {
 
-            delSetting("schEnabled", i);
-            delSetting("schSwitch", i);
-            delSetting("schAction", i);
-            delSetting("schHour", i);
-            delSetting("schMinute", i);
-            delSetting("schWDs", i);
-            delSetting("schType", i);
-            delSetting("schUTC", i);
+            delSetting({"schEnabled", i});
+            delSetting({"schSwitch", i});
+            delSetting({"schAction", i});
+            delSetting({"schHour", i});
+            delSetting({"schMinute", i});
+            delSetting({"schWDs", i});
+            delSetting({"schType", i});
+            delSetting({"schUTC", i});
 
         } else {
 
             #if DEBUG_SUPPORT
 
-                bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
-                int sch_action = getSetting("schAction", i, 0).toInt();
-                int sch_hour = getSetting("schHour", i, 0).toInt();
-                int sch_minute = getSetting("schMinute", i, 0).toInt();
-                bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
-                String sch_weekdays = getSetting("schWDs", i, "");
-                unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
+                bool sch_enabled = getSetting({"schEnabled", i}, false);
+                int sch_action = getSetting({"schAction", i}, 0);
+                int sch_hour = getSetting({"schHour", i}, 0);
+                int sch_minute = getSetting({"schMinute", i}, 0);
+                bool sch_utc = getSetting({"schUTC", i}, false);
+                String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
+                int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
 
                 DEBUG_MSG_P(
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
@@ -95,10 +120,10 @@ void _schConfigure() {
 
 }
 
-bool _schIsThisWeekday(time_t t, String weekdays){
+bool _schIsThisWeekday(int day, const String& weekdays){
 
     // Convert from Sunday to Monday as day 1
-    int w = weekday(t) - 1;
+    int w = day - 1;
     if (0 == w) w = 7;
 
     char pch;
@@ -111,60 +136,124 @@ bool _schIsThisWeekday(time_t t, String weekdays){
 
 }
 
-int _schMinutesLeft(time_t t, unsigned char schedule_hour, unsigned char schedule_minute){
-    unsigned char now_hour = hour(t);
-    unsigned char now_minute = minute(t);
-    return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
+int _schMinutesLeft(int current_hour, int current_minute, int schedule_hour, int schedule_minute) {
+    return (schedule_hour - current_hour) * 60 + schedule_minute - current_minute;
 }
 
-void _schCheck() {
+void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
+    const auto sch_type = getSetting({"schType", sch_id}, SCHEDULER_TYPE_SWITCH);
 
-    time_t local_time = now();
-    time_t utc_time = ntpLocal2UTC(local_time);
+    if (SCHEDULER_TYPE_SWITCH == sch_type) {
+        DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
+        if (sch_action == 2) {
+            relayToggle(sch_switch);
+        } else {
+            relayStatus(sch_switch, sch_action);
+        }
+    }
+
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        if (SCHEDULER_TYPE_DIM == sch_type) {
+            DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
+            lightChannel(sch_switch, sch_action);
+            lightUpdate(true, true);
+        }
+    #endif
+}
+
+#if NTP_LEGACY_SUPPORT
+
+NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
+    if (daybefore > 0) {
+        timestamp = timestamp - ((hour(timestamp) * SECS_PER_HOUR) + ((minute(timestamp) + 1) * SECS_PER_MIN) + second(timestamp) + (daybefore * SECS_PER_DAY));
+    }
+
+    // XXX: no
+    time_t utc_timestamp = ntpLocal2UTC(timestamp);
+    return NtpCalendarWeekday {
+        weekday(timestamp), hour(timestamp), minute(timestamp),
+        weekday(utc_timestamp), hour(utc_timestamp), minute(utc_timestamp)
+    };
+}
+
+#else
+
+NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
+    tm utc_time;
+    tm local_time;
+
+    gmtime_r(&timestamp, &utc_time);
+    if (daybefore > 0) {
+        timestamp = timestamp - ((utc_time.tm_hour * secondsPerHour) + ((utc_time.tm_min + 1) * secondsPerMinute) + utc_time.tm_sec + (daybefore * secondsPerDay));
+        gmtime_r(&timestamp, &utc_time);
+        localtime_r(&timestamp, &local_time);
+    } else {
+        localtime_r(&timestamp, &local_time);
+    }
+
+    // TimeLib sunday is 1 instead of 0
+    return NtpCalendarWeekday {
+        local_time.tm_wday + 1, local_time.tm_hour, local_time.tm_min,
+        utc_time.tm_wday + 1, utc_time.tm_hour, utc_time.tm_min
+    };
+}
+
+#endif
+
+// If daybefore and relay is -1, check with current timestamp
+// Otherwise, modify it by moving 'daybefore' days back and only use the 'relay' id
+void _schCheck(int relay, int daybefore) {
+
+    time_t timestamp = now();
+    auto calendar_weekday = _schGetWeekday(timestamp, daybefore);
+
+    int minimum_restore_time = -(60 * 24);
+    int saved_action = -1;
+    int saved_sch = -1;
 
     // Check schedules
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
 
-        int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
-        if (sch_switch == 0xFF) break;
+        int sch_switch = getSetting({"schSwitch", i}, SchedulerDummySwitchId);
+        if (sch_switch == SchedulerDummySwitchId) break;
 
         // Skip disabled schedules
-        if (getSetting("schEnabled", i, 1).toInt() == 0) continue;
+        if (!getSetting({"schEnabled", i}, false)) continue;
 
         // Get the datetime used for the calculation
-        bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
-        time_t t = sch_utc ? utc_time : local_time;
+        const bool sch_utc = getSetting({"schUTC", i}, false);
 
-        String sch_weekdays = getSetting("schWDs", i, "");
-        if (_schIsThisWeekday(t, sch_weekdays)) {
+        String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
+        if (_schIsThisWeekday(sch_utc ? calendar_weekday.utc_wday : calendar_weekday.local_wday, sch_weekdays)) {
 
-            int sch_hour = getSetting("schHour", i, 0).toInt();
-            int sch_minute = getSetting("schMinute", i, 0).toInt();
-            int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
+            int sch_hour = getSetting({"schHour", i}, 0);
+            int sch_minute = getSetting({"schMinute", i}, 0);
+            int sch_action = getSetting({"schAction", i}, 0);
+            int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
 
-            if (minutes_to_trigger == 0) {
+            int minutes_to_trigger = _schMinutesLeft(
+                sch_utc ? calendar_weekday.utc_hour : calendar_weekday.local_hour,
+                sch_utc ? calendar_weekday.utc_minute : calendar_weekday.local_minute,
+                sch_hour, sch_minute
+            );
 
-                unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
+            if (sch_type == SCHEDULER_TYPE_SWITCH && sch_switch == relay && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+                minimum_restore_time = minutes_to_trigger;
+                saved_action = sch_action;
+                saved_sch = i;
+            }
 
-                if (SCHEDULER_TYPE_SWITCH == sch_type) {
-                    int sch_action = getSetting("schAction", i, 0).toInt();
-                    DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
-                    if (sch_action == 2) {
-                        relayToggle(sch_switch);
-                    } else {
-                        relayStatus(sch_switch, sch_action);
-                    }
+            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+                if (SCHEDULER_TYPE_DIM == sch_type && sch_switch == relay && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+                    minimum_restore_time = minutes_to_trigger;
+                    saved_action = sch_action;
+                    saved_sch = i;
                 }
+            #endif
 
-                #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                    if (SCHEDULER_TYPE_DIM == sch_type) {
-                        int sch_brightness = getSetting("schAction", i, -1).toInt();
-                        DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_brightness);
-                        lightChannel(sch_switch, sch_brightness);
-                        lightUpdate(true, true);
-                    }
-                #endif
+            if (minutes_to_trigger == 0 && relay == -1) {
 
+                _schAction(i, sch_action, sch_switch);
                 DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), i);
 
             // Show minutes to trigger every 15 minutes
@@ -172,7 +261,7 @@ void _schCheck() {
             // This only works for schedules on this same day.
             // For instance, if your scheduler is set for 00:01 you will only
             // get one notification before the trigger (at 00:00)
-            } else if (minutes_to_trigger > 0) {
+            } else if (minutes_to_trigger > 0 && relay == -1) {
 
                 #if DEBUG_SUPPORT
                     if ((minutes_to_trigger % 15 == 0) || (minutes_to_trigger < 15)) {
@@ -189,19 +278,13 @@ void _schCheck() {
 
     }
 
-}
+    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -(60 * 24) && saved_action == -1) {
+        _schCheck(relay, ++daybefore);
+        return;
+    }
 
-void _schLoop() {
-
-    // Check time has been sync'ed
-    if (!ntpSynced()) return;
-
-    // Check schedules every minute at hh:mm:00
-    static unsigned long last_minute = 60;
-    unsigned char current_minute = minute();
-    if (current_minute != last_minute) {
-        last_minute = current_minute;
-        _schCheck();
+    if (minimum_restore_time != -(60 * 24) && saved_action != -1 && saved_sch != -1) {
+        _schAction(saved_sch, saved_action, relay);
     }
 
 }
@@ -212,14 +295,28 @@ void schSetup() {
 
     _schConfigure();
 
-    // Update websocket clients
     #if WEB_SUPPORT
-        wsOnSendRegister(_schWebSocketOnSend);
-        wsOnReceiveRegister(_schWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_schWebSocketOnVisible)
+            .onConnected(_schWebSocketOnConnected)
+            .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
 
-    // Main callbacks
-    espurnaRegisterLoop(_schLoop);
+    NtpBroker::Register([](const NtpTick tick, time_t, const String&) {
+        if (NtpTick::EveryMinute != tick) return;
+
+        static bool restore_once = true;
+        if (restore_once) {
+            for (unsigned char i = 0; i < relayCount(); i++) {
+                if (getSetting({"relayLastSch", i}, 1 == SCHEDULER_RESTORE_LAST_SCHEDULE)) {
+                    _schCheck(i, 0);
+                }
+            }
+            restore_once = false;
+        }
+        _schCheck(-1, -1);
+    });
+
     espurnaRegisterReload(_schConfigure);
 
 }

@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // GUVA-S12SD UV Sensor
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 //                         by Mustafa Tufan
 // -----------------------------------------------------------------------------
 
@@ -8,12 +8,10 @@
 
 #pragma once
 
-// Set ADC to TOUT pin
-#undef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_TOUT
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "BaseSensor.h"
+#include "../utils.h"
 
 // http://www.eoc-inc.com/genicom/GUVA-S12SD.pdf
 //
@@ -38,7 +36,7 @@ class GUVAS12SDSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        GUVAS12SDSensor(): BaseSensor() {
+        GUVAS12SDSensor() {
             _count = 1;
             _sensor_id = SENSOR_GUVAS12SD_ID;
         }
@@ -104,7 +102,7 @@ class GUVAS12SDSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_UV;
+            if (index == 0) return MAGNITUDE_UVI;
             return MAGNITUDE_NONE;
         }
 

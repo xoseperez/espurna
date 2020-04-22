@@ -19,7 +19,7 @@ rm -rf $FILE
 
 function help {
     echo
-    echo "Syntax: $0 [-e <environment>] [-d <dumpfile>]"
+    echo "Syntax: $0 [-e <environment>] [-f <elf_file>] [-d <dumpfile>]"
     echo
 }
 
@@ -29,6 +29,10 @@ while [[ $# -gt 1 ]]; do
     key="$1"
 
     case $key in
+        -f)
+            ELF="$2"
+            shift
+        ;;
         -e)
             ENVIRONMENT="$2"
             shift
@@ -44,12 +48,9 @@ while [[ $# -gt 1 ]]; do
 done
 
 # check environment folder
-if [ $ENVIRONMENT == "" ]; then
-    echo "No environment defined"
-    help
-    exit 1
+if [ ! -f $ELF ]; then
+    ELF=.pio/build/$ENVIRONMENT/firmware.elf
 fi
-ELF=.pioenvs/$ENVIRONMENT/firmware.elf
 if [ ! -f $ELF ]; then
     echo "Could not find ELF file for the selected environment: $ELF"
     exit 2

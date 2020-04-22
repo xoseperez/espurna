@@ -391,7 +391,11 @@ pwm_start(void)
 		pwm_state.current_set = pwm_state.next_set = *pwm;
 		pwm_state.current_phase = phases - 1;
 		ETS_FRC1_INTR_ENABLE();
-		RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 0);
+		#if defined(TIMER_REG_WRITE)
+			TIMER_REG_WRITE(FRC1_LOAD_ADDRESS, 0);
+		#else
+			RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 0);
+		#endif
 		timer->frc1_ctrl = TIMER1_DIVIDE_BY_16 | TIMER1_ENABLE_TIMER;
 		return;
 	}

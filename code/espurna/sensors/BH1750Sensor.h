@@ -1,16 +1,14 @@
 // -----------------------------------------------------------------------------
 // BH1750 Liminosity sensor over I2C
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && BH1750_SUPPORT
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "I2CSensor.h"
 
 #define BH1750_CONTINUOUS_HIGH_RES_MODE     0x10    // Start measurement at 1lx resolution. Measurement time is approx 120ms.
@@ -23,7 +21,7 @@
 #define BH1750_ONE_TIME_LOW_RES_MODE        0x23    // Start measurement at 1lx resolution. Measurement time is approx 120ms.
                                                     // Device is automatically set to Power Down after measurement.
 
-class BH1750Sensor : public I2CSensor {
+class BH1750Sensor : public I2CSensor<> {
 
     public:
 
@@ -31,7 +29,7 @@ class BH1750Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BH1750Sensor(): I2CSensor() {
+        BH1750Sensor() {
             _sensor_id = SENSOR_BH1750_ID;
             _count = 1;
         }

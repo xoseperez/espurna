@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // CSE7766 based power monitor
-// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // http://www.chipsea.com/UploadFiles/2017/08/11144342F01B5662.pdf
 // -----------------------------------------------------------------------------
 
@@ -8,12 +8,15 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-
+#include <Arduino.h>
 #include <SoftwareSerial.h>
 
-class CSE7766Sensor : public BaseSensor {
+#include "../debug.h"
+
+#include "BaseSensor.h"
+#include "BaseEmonSensor.h"
+
+class CSE7766Sensor : public BaseEmonSensor {
 
     public:
 
@@ -21,8 +24,8 @@ class CSE7766Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        CSE7766Sensor(): BaseSensor(), _data() {
-            _count = 6;
+        CSE7766Sensor(): _data() {
+            _count = 7;
             _sensor_id = SENSOR_CSE7766_ID;
         }
 
@@ -98,12 +101,8 @@ class CSE7766Sensor : public BaseSensor {
             return _ratioP;
         };
 
-        void resetRatios() {
+        void resetCalibration() {
             _ratioC = _ratioV = _ratioP = 1.0;
-        }
-
-        void resetEnergy(double value = 0) {
-            _energy = value;
         }
 
         // ---------------------------------------------------------------------
@@ -161,9 +160,10 @@ class CSE7766Sensor : public BaseSensor {
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_POWER_APPARENT;
-            if (index == 4) return MAGNITUDE_POWER_FACTOR;
-            if (index == 5) return MAGNITUDE_ENERGY;
+            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
+            if (index == 4) return MAGNITUDE_POWER_APPARENT;
+            if (index == 5) return MAGNITUDE_POWER_FACTOR;
+            if (index == 6) return MAGNITUDE_ENERGY;
             return MAGNITUDE_NONE;
         }
 
@@ -172,9 +172,10 @@ class CSE7766Sensor : public BaseSensor {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _active;
-            if (index == 3) return _voltage * _current;
-            if (index == 4) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
-            if (index == 5) return _energy;
+            if (index == 3) return _reactive;
+            if (index == 4) return _voltage * _current;
+            if (index == 5) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
+            if (index == 6) return getEnergy();
             return 0;
         }
 
@@ -232,10 +233,10 @@ class CSE7766Sensor : public BaseSensor {
             if ((_data[0] & 0xFC) > 0xF0) {
                 _error = SENSOR_ERROR_OTHER;
                 #if SENSOR_DEBUG
-                    if (0xF1 == _data[0] & 0xF1) DEBUG_MSG("[SENSOR] CSE7766: Abnormal coefficient storage area\n");
-                    if (0xF2 == _data[0] & 0xF2) DEBUG_MSG("[SENSOR] CSE7766: Power cycle exceeded range\n");
-                    if (0xF4 == _data[0] & 0xF4) DEBUG_MSG("[SENSOR] CSE7766: Current cycle exceeded range\n");
-                    if (0xF8 == _data[0] & 0xF8) DEBUG_MSG("[SENSOR] CSE7766: Voltage cycle exceeded range\n");
+                    if (0xF1 == (_data[0] & 0xF1)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Abnormal coefficient storage area\n"));
+                    if (0xF2 == (_data[0] & 0xF2)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Power cycle exceeded range\n"));
+                    if (0xF4 == (_data[0] & 0xF4)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Current cycle exceeded range\n"));
+                    if (0xF8 == (_data[0] & 0xF8)) DEBUG_MSG_P(PSTR("[SENSOR] CSE7766: Voltage cycle exceeded range\n"));
                 #endif
                 return;
             }
@@ -273,17 +274,32 @@ class CSE7766Sensor : public BaseSensor {
                 }
             }
 
+            // Calculate reactive power
+            _reactive = 0;
+            unsigned int active = _active;
+            unsigned int apparent = _voltage * _current;
+            if (apparent > active) {
+                _reactive = sqrt(apparent * apparent - active * active);
+            } else {
+                _reactive = 0;
+            }
+
             // Calculate energy
-            unsigned int difference;
-            static unsigned int cf_pulses_last = 0;
-            unsigned int cf_pulses = _data[21] << 8 | _data[22];
+            uint32_t cf_pulses = _data[21] << 8 | _data[22];
+
+            static uint32_t cf_pulses_last = 0;
             if (0 == cf_pulses_last) cf_pulses_last = cf_pulses;
+
+            uint32_t difference;
             if (cf_pulses < cf_pulses_last) {
                 difference = cf_pulses + (0xFFFF - cf_pulses_last) + 1;
             } else {
                 difference = cf_pulses - cf_pulses_last;
             }
-            _energy += difference * (float) _coefP / 1000000.0;
+
+            _energy[0] += sensor::Ws {
+                static_cast<uint32_t>(difference * (float) _coefP / 1000000.0)
+            };
             cf_pulses_last = cf_pulses;
 
         }
@@ -367,9 +383,9 @@ class CSE7766Sensor : public BaseSensor {
         SoftwareSerial * _serial = NULL;
 
         double _active = 0;
+        double _reactive = 0;
         double _voltage = 0;
         double _current = 0;
-        double _energy = 0;
 
         double _ratioV = 1.0;
         double _ratioC = 1.0;

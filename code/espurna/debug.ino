@@ -2,19 +2,19 @@
 
 DEBUG MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
 #if DEBUG_SUPPORT
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <EEPROM_Rotate.h>
+#include <limits>
+#include <type_traits>
+#include <vector>
 
-extern "C" {
-    #include "user_interface.h"
-}
+#include "debug.h"
+#include "telnet.h"
+#include "ws.h"
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
@@ -24,22 +24,157 @@ char _udp_syslog_header[40] = {0};
 #endif
 #endif
 
-void _debugSend(char * message) {
+bool _debug_enabled = false;
+
+// -----------------------------------------------------------------------------
+// printf-like debug methods
+// -----------------------------------------------------------------------------
+
+constexpr const int DEBUG_SEND_STRING_BUFFER_SIZE = 128;
+
+void _debugSendInternal(const char * message, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
+
+// TODO: switch to newlib vsnprintf for latest Cores to support PROGMEM args
+void _debugSend(const char * format, va_list args) {
+
+    char temp[DEBUG_SEND_STRING_BUFFER_SIZE];
+    int len = ets_vsnprintf(temp, sizeof(temp), format, args);
+
+    // strlen(...) + '\0' already in temp buffer, avoid using malloc when possible
+    if (len < DEBUG_SEND_STRING_BUFFER_SIZE) {
+        _debugSendInternal(temp);
+        return;
+    }
+
+    len += 1;
+    auto* buffer = static_cast<char*>(malloc(len));
+    if (!buffer) {
+        return;
+    }
+    ets_vsnprintf(buffer, len, format, args);
+
+    _debugSendInternal(buffer);
+    free(buffer);
+
+}
+
+void debugSend(const char* format, ...) {
+
+    if (!_debug_enabled) return;
+
+    va_list args;
+    va_start(args, format);
+
+    _debugSend(format, args);
+
+    va_end(args);
+
+}
+
+void debugSend_P(const char* format_P, ...) {
+
+    if (!_debug_enabled) return;
+
+    char format[strlen_P(format_P) + 1];
+    memcpy_P(format, format_P, sizeof(format));
+
+    va_list args;
+    va_start(args, format_P);
+
+    _debugSend(format, args);
+
+    va_end(args);
+
+}
+
+// -----------------------------------------------------------------------------
+// specific debug targets
+// -----------------------------------------------------------------------------
+
+#if DEBUG_SERIAL_SUPPORT
+    void _debugSendSerial(const char* prefix, const char* data) {
+        if (prefix && (prefix[0] != '\0')) {
+            DEBUG_PORT.print(prefix);
+        }
+        DEBUG_PORT.print(data);
+    }
+#endif // DEBUG_SERIAL_SUPPORT
+
+#if DEBUG_LOG_BUFFER_SUPPORT
+
+std::vector<char> _debug_log_buffer;
+bool _debug_log_buffer_enabled = false;
+
+void _debugLogBuffer(const char* prefix, const char* data) {
+    if (!_debug_log_buffer_enabled) return;
+
+    const auto prefix_len = strlen(prefix);
+    const auto data_len = strlen(data);
+    const auto total_len = prefix_len + data_len;
+    if (total_len >= std::numeric_limits<uint16_t>::max()) {
+        return;
+    }
+    if ((_debug_log_buffer.capacity() - _debug_log_buffer.size()) <= (total_len + 3)) {
+        _debug_log_buffer_enabled = false;
+        return;
+    }
+
+    _debug_log_buffer.push_back(total_len >> 8);
+    _debug_log_buffer.push_back(total_len & 0xff);
+    if (prefix && (prefix[0] != '\0')) {
+        _debug_log_buffer.insert(_debug_log_buffer.end(), prefix, prefix + prefix_len);
+    }
+    _debug_log_buffer.insert(_debug_log_buffer.end(), data, data + data_len);
+}
+
+void _debugLogBufferDump() {
+    size_t index = 0;
+    do {
+        if (index >= _debug_log_buffer.size()) {
+            break;
+        }
+
+        size_t len = _debug_log_buffer[index] << 8;
+        len = len | _debug_log_buffer[index + 1];
+        index += 2;
+
+        auto value = _debug_log_buffer[index + len];
+        _debug_log_buffer[index + len] = '\0';
+        _debugSendInternal(_debug_log_buffer.data() + index, false);
+        _debug_log_buffer[index + len] = value;
+
+        index += len;
+    } while (true);
+
+    _debug_log_buffer.clear();
+    _debug_log_buffer.shrink_to_fit();
+}
+
+bool debugLogBuffer() {
+    return _debug_log_buffer_enabled;
+}
+
+#endif // DEBUG_LOG_BUFFER_SUPPORT
+
+// -----------------------------------------------------------------------------
+
+void _debugSendInternal(const char * message, bool add_timestamp) {
+
+    const size_t msg_len = strlen(message);
 
     bool pause = false;
+    char timestamp[10] = {0};
 
     #if DEBUG_ADD_TIMESTAMP
-        static bool add_timestamp = true;
-        char timestamp[10] = {0};
-        if (add_timestamp) snprintf_P(timestamp, sizeof(timestamp), PSTR("[%06lu] "), millis() % 1000000);
-        add_timestamp = (message[strlen(message)-1] == 10) || (message[strlen(message)-1] == 13);
+        static bool continue_timestamp = true;
+        if (add_timestamp && continue_timestamp) {
+            snprintf(timestamp, sizeof(timestamp), "[%06lu] ", millis() % 1000000);
+        }
+        continue_timestamp = add_timestamp || (message[msg_len - 1] == 10) || (message[msg_len - 1] == 13);
     #endif
 
     #if DEBUG_SERIAL_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            DEBUG_PORT.printf(timestamp);
-        #endif
-        DEBUG_PORT.printf(message);
+        _debugSendSerial(timestamp, message);
     #endif
 
     #if DEBUG_UDP_SUPPORT
@@ -51,264 +186,174 @@ void _debugSend(char * message) {
                 _udp_debug.write(_udp_syslog_header);
             #endif
             _udp_debug.write(message);
-            _udp_debug.endPacket();
-            pause = true;
+            pause = _udp_debug.endPacket() > 0;
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
     #endif
 
     #if DEBUG_TELNET_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            _telnetWrite(timestamp, strlen(timestamp));
-        #endif
-        _telnetWrite(message, strlen(message));
-        pause = true;
+        pause = telnetDebugSend(timestamp, message) || pause;
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        if (wsConnected() && (getFreeHeap() > 10000)) {
-            DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(1) + strlen(message) + 17);
-            JsonObject &root = jsonBuffer.createObject();
-            #if DEBUG_ADD_TIMESTAMP
-                char buffer[strlen(timestamp) + strlen(message) + 1];
-                snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
-                root.set("weblog", buffer);
-            #else
-                root.set("weblog", message);
-            #endif
-            String out;
-            root.printTo(out);
-            jsonBuffer.clear();
-
-            wsSend(out.c_str());
-            pause = true;
-        }
+        pause = wsDebugSend(timestamp, message) || pause;
     #endif
 
-    if (pause) optimistic_yield(100);
+    #if DEBUG_LOG_BUFFER_SUPPORT
+        _debugLogBuffer(timestamp, message);
+    #endif
+
+    if (pause) {
+        optimistic_yield(1000);
+    }
 
 }
 
 // -----------------------------------------------------------------------------
 
-void debugSend(const char * format, ...) {
-
-    va_list args;
-    va_start(args, format);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
-
-}
-
-void debugSend_P(PGM_P format_P, ...) {
-
-    char format[strlen_P(format_P)+1];
-    memcpy_P(format, format_P, sizeof(format));
-
-    va_list args;
-    va_start(args, format_P);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
-
-}
-
 #if DEBUG_WEB_SUPPORT
+
+void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+
+        #if TERMINAL_SUPPORT
+            if (strcmp(action, "dbgcmd") == 0) {
+                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
+                const char* command = data["command"];
+                if (command && strlen(command)) {
+                    auto command = data.get<const char*>("command");
+                    terminalInject((void*) command, strlen(command));
+                    terminalInject('\n');
+                }
+            }
+        #endif
+}
 
 void debugWebSetup() {
 
-    wsOnSendRegister([](JsonObject& root) {
-        root["dbgVisible"] = 1;
-    });
+    wsRegister()
+        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
+        .onAction(_debugWebSocketOnAction);
 
-    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
-        if (strcmp(action, "dbgcmd") == 0) {
-            const char* command = data.get<const char*>("command");
-            char buffer[strlen(command) + 2];
-            snprintf(buffer, sizeof(buffer), "%s\n", command);
-            settingsInject((void*) buffer, strlen(buffer));
-        }
-    });
-
+    // TODO: if hostname string changes, need to update header too
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514
         snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
     #endif
     #endif
 
-
 }
 
 #endif // DEBUG_WEB_SUPPORT
+
+// -----------------------------------------------------------------------------
 
 void debugSetup() {
 
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
-        #if DEBUG_ESP_WIFI
-            DEBUG_PORT.setDebugOutput(true);
-        #endif
     #endif
 
-}
+    #if TERMINAL_SUPPORT
 
-// -----------------------------------------------------------------------------
-// Save crash info
-// Taken from krzychb EspSaveCrash
-// https://github.com/krzychb/EspSaveCrash
-// -----------------------------------------------------------------------------
+    #if DEBUG_LOG_BUFFER_SUPPORT
 
-#define SAVE_CRASH_EEPROM_OFFSET    0x0100  // initial address for crash data
+        terminalRegisterCommand(F("DEBUG.BUFFER"), [](Embedis* e) {
+            _debug_log_buffer_enabled = false;
+            if (!_debug_log_buffer.size()) {
+                DEBUG_MSG_P(PSTR("[DEBUG] Buffer is empty\n"));
+                return;
+            }
+            DEBUG_MSG_P(PSTR("[DEBUG] Buffer size: %u / %u bytes\n"),
+                _debug_log_buffer.size(),
+                _debug_log_buffer.capacity()
+            );
 
-/**
- * Structure of the single crash data set
- *
- *  1. Crash time
- *  2. Restart reason
- *  3. Exception cause
- *  4. epc1
- *  5. epc2
- *  6. epc3
- *  7. excvaddr
- *  8. depc
- *  9. adress of stack start
- * 10. adress of stack end
- * 11. stack trace bytes
- *     ...
- */
-#define SAVE_CRASH_CRASH_TIME       0x00  // 4 bytes
-#define SAVE_CRASH_RESTART_REASON   0x04  // 1 byte
-#define SAVE_CRASH_EXCEPTION_CAUSE  0x05  // 1 byte
-#define SAVE_CRASH_EPC1             0x06  // 4 bytes
-#define SAVE_CRASH_EPC2             0x0A  // 4 bytes
-#define SAVE_CRASH_EPC3             0x0E  // 4 bytes
-#define SAVE_CRASH_EXCVADDR         0x12  // 4 bytes
-#define SAVE_CRASH_DEPC             0x16  // 4 bytes
-#define SAVE_CRASH_STACK_START      0x1A  // 4 bytes
-#define SAVE_CRASH_STACK_END        0x1E  // 4 bytes
-#define SAVE_CRASH_STACK_TRACE      0x22  // variable
+            _debugLogBufferDump();
+        });
 
-/**
- * Save crash information in EEPROM
- * This function is called automatically if ESP8266 suffers an exception
- * It should be kept quick / consise to be able to execute before hardware wdt may kick in
- */
-extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
+    #endif // DEBUG_LOG_BUFFER_SUPPORT
 
-    // Do not record crash data when resetting the board
-    if (checkNeedsReset()) {
-        return;
-    }
+    #endif // TERMINAL_SUPPORT
 
-    // This method assumes EEPROM has already been initialized
-    // which is the first thing ESPurna does
-
-    // write crash time to EEPROM
-    uint32_t crash_time = millis();
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-
-    // write reset info to EEPROM
-    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rst_info->reason);
-    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rst_info->exccause);
-
-    // write epc1, epc2, epc3, excvaddr and depc to EEPROM
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rst_info->epc1);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rst_info->epc2);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rst_info->epc3);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rst_info->depc);
-
-    // write stack start and end address to EEPROM
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
-
-    // starting address of Embedis data plus reserve
-    const uint16_t settings_start = SPI_FLASH_SEC_SIZE - settingsSize() - 0x10;
-
-    // write stack trace to EEPROM and avoid overwriting settings
-    int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
-    for (uint32_t i = stack_start; i < stack_end; i++) {
-        if (current_address >= settings_start) break;
-        byte* byteValue = (byte*) i;
-        EEPROMr.write(current_address++, *byteValue);
-    }
-
-    EEPROMr.commit();
 
 }
 
-/**
- * Clears crash info
- */
-void debugClearCrashInfo() {
-    uint32_t crash_time = 0xFFFFFFFF;
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    EEPROMr.commit();
+String _debugLogModeSerialize(DebugLogMode value) {
+    switch (value) {
+        case DebugLogMode::Disabled:
+            return "0";
+        case DebugLogMode::SkipBoot:
+            return "2";
+        default:
+        case DebugLogMode::Enabled:
+            return "1";
+    }
 }
 
-/**
- * Print out crash information that has been previusly saved in EEPROM
- */
-void debugDumpCrashInfo() {
+DebugLogMode _debugLogModeDeserialize(const String& value) {
+    switch (value.toInt()) {
+        case 0:
+            return DebugLogMode::Disabled;
+        case 2:
+            return DebugLogMode::SkipBoot;
+        case 1:
+        default:
+            return DebugLogMode::Enabled;
+    }
+}
 
-    uint32_t crash_time;
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
-        DEBUG_MSG_P(PSTR("[DEBUG] No crash info\n"));
-        return;
+void debugConfigureBoot() {
+    static_assert(
+        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value, 
+        "should be able to match DebugLogMode with int"
+    );
+
+    const auto mode = getSetting<DebugLogMode, _debugLogModeDeserialize>("dbgLogMode", DEBUG_LOG_MODE);
+    switch (mode) {
+        case DebugLogMode::SkipBoot:
+            schedule_function([]() {
+                _debug_enabled = true;
+            });
+            // fall through
+        case DebugLogMode::Disabled:
+            _debug_enabled = false;
+            break;
+        case DebugLogMode::Enabled:
+            _debug_enabled = true;
+            break;
     }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
-    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
+    debugConfigure();
+}
 
-    uint32_t epc1, epc2, epc3, excvaddr, depc;
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
+void debugConfigure() {
 
-    DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
-    DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
+    // HardwareSerial::begin() will automatically enable this when
+    // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
+    // Core debugging also depends on various DEBUG_ESP_... being defined
+    {
+        #if defined(DEBUG_ESP_PORT)
+        #if not defined(NDEBUG)
+            constexpr const bool debug_sdk = true;
+        #endif // !defined(NDEBUG)
+        #else
+            constexpr const bool debug_sdk = false;
+        #endif // defined(DEBUG_ESP_PORT)
 
-    uint32_t stack_start, stack_end;
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+        DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
+    }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] sp=0x%08x end=0x%08x\n"), stack_start, stack_end);
-
-    int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
-    int16_t stack_len = stack_end - stack_start;
-
-    uint32_t stack_trace;
-
-    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
-
-    for (int16_t i = 0; i < stack_len; i += 0x10) {
-        DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
-        for (byte j = 0; j < 4; j++) {
-            EEPROMr.get(current_address, stack_trace);
-            DEBUG_MSG_P(PSTR("%08x "), stack_trace);
-            current_address += 4;
+    #if DEBUG_LOG_BUFFER_SUPPORT
+    {
+        const auto enabled = getSetting("dbgBufEnabled", 1 == DEBUG_LOG_BUFFER_ENABLED);
+        const auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE);
+        if (enabled) {
+            _debug_log_buffer_enabled = true;
+            _debug_log_buffer.reserve(size);
         }
-        DEBUG_MSG_P(PSTR("\n[DEBUG] "));
     }
-    DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
+    #endif // DEBUG_LOG_BUFFER
 
 }
 

@@ -1,13 +1,14 @@
 // -----------------------------------------------------------------------------
 // Digital Sensor (maps to a digitalRead)
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DIGITAL_SUPPORT
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
 #include "BaseSensor.h"
 
 class DigitalSensor : public BaseSensor {
@@ -18,7 +19,7 @@ class DigitalSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        DigitalSensor(): BaseSensor() {
+        DigitalSensor() {
             _count = 1;
             _sensor_id = SENSOR_DIGITAL_ID;
         }

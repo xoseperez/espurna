@@ -2,256 +2,239 @@
 
 WIFI MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "JustWifi.h"
+#include <JustWifi.h>
 #include <Ticker.h>
 
-uint32_t _wifi_scan_client_id = 0;
+#include "ws.h"
+
+#include "wifi.h"
+#include "wifi_config.h"
+
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
-uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
+bool _wifi_smartconfig_initial = false;
+int _wifi_ap_mode = WIFI_AP_FALLBACK;
+
+#if WIFI_GRATUITOUS_ARP_SUPPORT
+unsigned long _wifi_gratuitous_arp_interval = 0;
+unsigned long _wifi_gratuitous_arp_last = 0;
+#endif
 
 // -----------------------------------------------------------------------------
 // PRIVATE
 // -----------------------------------------------------------------------------
+struct wifi_scan_info_t {
+    String ssid_scan;
+    int32_t rssi_scan;
+    uint8_t sec_scan;
+    uint8_t* BSSID_scan;
+    int32_t chan_scan;
+    bool hidden_scan;
+    char buffer[128];
+};
+
+void _wifiUpdateSoftAP() {
+    if (WiFi.softAPgetStationNum() == 0) {
+        #if USE_PASSWORD
+            jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
+        #else
+            jw.setSoftAP(getSetting("hostname").c_str());
+        #endif
+    }
+}
 
 void _wifiCheckAP() {
-
-    if ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
-        (jw.connected()) &&
-        ((WiFi.getMode() & WIFI_AP) > 0) &&
-        (WiFi.softAPgetStationNum() == 0)
+    if (
+        (WIFI_AP_FALLBACK == _wifi_ap_mode)
+        && ((WiFi.getMode() & WIFI_AP) > 0)
+        && jw.connected()
+        && (WiFi.softAPgetStationNum() == 0)
     ) {
-        jw.enableAP(false);
+         jw.enableAP(false);
     }
+}
 
+WiFiSleepType_t _wifiSleepModeConvert(const String& value) {
+    switch (value.toInt()) {
+        case 2:
+            return WIFI_MODEM_SLEEP;
+        case 1:
+            return WIFI_LIGHT_SLEEP;
+        case 0:
+        default:
+            return WIFI_NONE_SLEEP;
+    }
 }
 
 void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
-    #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
-    #else
-        jw.setSoftAP(getSetting("hostname").c_str());
-    #endif
+    _wifiUpdateSoftAP();
+
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
+
     jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
-    _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK).toInt();
+    _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK);
 
     // If system is flagged unstable we do not init wifi networks
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) return;
     #endif
 
-    // Clean settings
-    _wifiClean(WIFI_MAX_NETWORKS);
+    unsigned char index = 0;
+    for (index = 0; index < WIFI_MAX_NETWORKS; index++) {
+        const auto ssid = getSetting({"ssid", index}, _wifiSSID(index));
+        const auto pass = getSetting({"pass", index}, _wifiPass(index));
 
-    int i;
-    for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
-        if (getSetting("ssid" + String(i)).length() == 0) break;
-        if (getSetting("ip" + String(i)).length() == 0) {
-            jw.addNetwork(
-                getSetting("ssid" + String(i)).c_str(),
-                getSetting("pass" + String(i)).c_str()
-            );
-        } else {
-            jw.addNetwork(
-                getSetting("ssid" + String(i)).c_str(),
-                getSetting("pass" + String(i)).c_str(),
-                getSetting("ip" + String(i)).c_str(),
-                getSetting("gw" + String(i)).c_str(),
-                getSetting("mask" + String(i)).c_str(),
-                getSetting("dns" + String(i)).c_str()
-            );
+        if (!ssid.length()) {
+            auto current = index;
+            do {
+                delSetting({"ssid", index});
+                delSetting({"pass", index});
+                delSetting({"ip", index});
+                delSetting({"gw", index});
+                delSetting({"mask", index});
+                delSetting({"dns", index});
+            } while (++index < WIFI_MAX_NETWORKS);
+            index = current;
+            break;
         }
+
+        bool result = false;
+
+        if (ssid.length() && pass.length()) {
+            result = jw.addNetwork(
+                ssid.c_str(),
+                pass.c_str(),
+                getSetting({"ip", index}, _wifiIP(index)).c_str(),
+                getSetting({"gw", index}, _wifiGateway(index)).c_str(),
+                getSetting({"mask", index}, _wifiNetmask(index)).c_str(),
+                getSetting({"dns", index}, _wifiDNS(index)).c_str()
+            );
+        } else if (ssid.length()) {
+            result = jw.addNetwork(ssid.c_str(), pass.c_str());
+        }
+
+        if (!result) break;
     }
 
-    jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
+    #if JUSTWIFI_ENABLE_SMARTCONFIG
+        if (index == 0) _wifi_smartconfig_initial = true;
+    #endif
+
+    jw.enableScan(getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS));
+
+    const auto sleep_mode = getSetting<WiFiSleepType_t, _wifiSleepModeConvert>("wifiSleep", WIFI_SLEEP_MODE);
+    WiFi.setSleepMode(sleep_mode);
+
+    #if WIFI_GRATUITOUS_ARP_SUPPORT
+        _wifi_gratuitous_arp_last = millis();
+        _wifi_gratuitous_arp_interval = getSetting("wifiGarpIntvl", secureRandom(
+            WIFI_GRATUITOUS_ARP_INTERVAL_MIN, WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+        ));
+    #endif
+
+    const auto tx_power = getSetting("wifiTxPwr", WIFI_OUTPUT_POWER_DBM);
+    WiFi.setOutputPower(tx_power);
 
 }
 
-void _wifiScan(uint32_t client_id = 0) {
+void _wifiScan(wifi_scan_f callback = nullptr) {
 
     DEBUG_MSG_P(PSTR("[WIFI] Start scanning\n"));
-
-    #if WEB_SUPPORT
-        String output;
-    #endif
 
     unsigned char result = WiFi.scanNetworks();
 
     if (result == WIFI_SCAN_FAILED) {
         DEBUG_MSG_P(PSTR("[WIFI] Scan failed\n"));
-        #if WEB_SUPPORT
-            output = String("Failed scan");
-        #endif
+        return;
     } else if (result == 0) {
         DEBUG_MSG_P(PSTR("[WIFI] No networks found\n"));
-        #if WEB_SUPPORT
-            output = String("No networks found");
-        #endif
-    } else {
+        return;
+    }
 
-        DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
+    DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
 
-        // Populate defined networks with scan data
-        for (int8_t i = 0; i < result; ++i) {
+    // Populate defined networks with scan data
+    wifi_scan_info_t info;
 
-            String ssid_scan;
-            int32_t rssi_scan;
-            uint8_t sec_scan;
-            uint8_t* BSSID_scan;
-            int32_t chan_scan;
-            bool hidden_scan;
-            char buffer[128];
+    for (unsigned char i = 0; i < result; ++i) {
 
-            WiFi.getNetworkInfo(i, ssid_scan, sec_scan, rssi_scan, BSSID_scan, chan_scan, hidden_scan);
+        WiFi.getNetworkInfo(i, info.ssid_scan, info.sec_scan, info.rssi_scan, info.BSSID_scan, info.chan_scan, info.hidden_scan);
 
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
-                BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5], BSSID_scan[6],
-                (sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
-                rssi_scan,
-                chan_scan,
-                (char *) ssid_scan.c_str()
-            );
+        snprintf_P(info.buffer, sizeof(info.buffer),
+            PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
+            info.BSSID_scan[0], info.BSSID_scan[1], info.BSSID_scan[2], info.BSSID_scan[3], info.BSSID_scan[4], info.BSSID_scan[5],
+            (info.sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
+            info.rssi_scan,
+            info.chan_scan,
+            info.ssid_scan.c_str()
+        );
 
-            DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), buffer);
-
-            #if WEB_SUPPORT
-                if (client_id > 0) output = output + String(buffer) + String("<br />");
-            #endif
-
+        if (callback) {
+            callback(info);
+        } else {
+            DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), info.buffer);
         }
 
     }
-
-    #if WEB_SUPPORT
-        if (client_id > 0) {
-            output = String("{\"scanResult\": \"") + output + String("\"}");
-            wsSend(client_id, output.c_str());
-        }
-    #endif
 
     WiFi.scanDelete();
 
-}
-
-bool _wifiClean(unsigned char num) {
-
-    bool changed = false;
-    int i = 0;
-
-    // Clean defined settings
-    while (i < num) {
-
-        // Skip on first non-defined setting
-        if (!hasSetting("ssid", i)) {
-            delSetting("ssid", i);
-            break;
-        }
-
-        // Delete empty values
-        if (!hasSetting("pass", i)) delSetting("pass", i);
-        if (!hasSetting("ip", i)) delSetting("ip", i);
-        if (!hasSetting("gw", i)) delSetting("gw", i);
-        if (!hasSetting("mask", i)) delSetting("mask", i);
-        if (!hasSetting("dns", i)) delSetting("dns", i);
-
-        ++i;
-
-    }
-
-    // Delete all other settings
-    while (i < WIFI_MAX_NETWORKS) {
-        changed = hasSetting("ssid", i);
-        delSetting("ssid", i);
-        delSetting("pass", i);
-        delSetting("ip", i);
-        delSetting("gw", i);
-        delSetting("mask", i);
-        delSetting("dns", i);
-        ++i;
-    }
-
-    return changed;
-
-}
-
-// Inject hardcoded networks
-void _wifiInject() {
-
-    if (strlen(WIFI1_SSID)) {
-
-        if (!hasSetting("ssid", 0)) {
-            setSetting("ssid", 0, WIFI1_SSID);
-            setSetting("pass", 0, WIFI1_PASS);
-            setSetting("ip", 0, WIFI1_IP);
-            setSetting("gw", 0, WIFI1_GW);
-            setSetting("mask", 0, WIFI1_MASK);
-            setSetting("dns", 0, WIFI1_DNS);
-        }
-
-        if (strlen(WIFI2_SSID)) {
-            if (!hasSetting("ssid", 1)) {
-                setSetting("ssid", 1, WIFI2_SSID);
-                setSetting("pass", 1, WIFI2_PASS);
-                setSetting("ip", 1, WIFI2_IP);
-                setSetting("gw", 1, WIFI2_GW);
-                setSetting("mask", 1, WIFI2_MASK);
-                setSetting("dns", 1, WIFI2_DNS);
-            }
-        }
-
-    }
 }
 
 void _wifiCallback(justwifi_messages_t code, char * parameter) {
 
     if (MESSAGE_WPS_START == code) {
         _wifi_wps_running = true;
+        return;
     }
 
     if (MESSAGE_SMARTCONFIG_START == code) {
         _wifi_smartconfig_running = true;
+        return;
     }
 
     if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
-        jw.enableAP(true);
+        return;
     }
 
     if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
+        _wifi_wps_running = false;
+        _wifi_smartconfig_running = false;
 
-        String ssid = WiFi.SSID();
-        String pass = WiFi.psk();
+        const String current_ssid = WiFi.SSID();
+        const String current_pass = WiFi.psk();
 
-        // Look for the same SSID
-        uint8_t count = 0;
-        while (count < WIFI_MAX_NETWORKS) {
-            if (!hasSetting("ssid", count)) break;
-            if (ssid.equals(getSetting("ssid", count, ""))) break;
-            count++;
+        // Write current ssid & pass at the end of the networks list
+        unsigned char count;
+        for (count = 0; count < WIFI_MAX_NETWORKS; count++) {
+            const auto ssid = getSetting({"ssid", count}, _wifiSSID(count));
+            const auto pass = getSetting({"pass", count}, _wifiPass(count));
+            // Ignore existing network settings
+            if (current_ssid.equals(ssid) && current_pass.equals(pass)) {
+                return;
+            }
+            if (current_ssid.equals(ssid)) break;
+            if (!ssid.length()) break;
         }
 
         // If we have reached the max we overwrite the first one
         if (WIFI_MAX_NETWORKS == count) count = 0;
 
-        setSetting("ssid", count, ssid);
-        setSetting("pass", count, pass);
+        setSetting({"ssid", count}, current_ssid);
+        setSetting({"pass", count}, current_pass);
 
-        _wifi_wps_running = false;
-        _wifi_smartconfig_running = false;
-        jw.enableAP(true);
-
+        return;
     }
 
 }
@@ -342,6 +325,7 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
+        _wifiUpdateSoftAP();
         DEBUG_MSG_P(PSTR("[WIFI] Access point destroyed\n"));
     }
 
@@ -385,39 +369,44 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
-    settingsRegisterCommand(F("WIFI"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI"), [](Embedis* e) {
         wifiDebug();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.STA"), [](Embedis* e) {
+        wifiStartSTA();
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
         wifiStartAP();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     #if defined(JUSTWIFI_ENABLE_WPS)
-        settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
             wifiStartWPS();
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         });
     #endif // defined(JUSTWIFI_ENABLE_WPS)
 
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        settingsRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
             wifiStartSmartConfig();
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         });
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
-    settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }
@@ -430,7 +419,7 @@ void _wifiInitCommands() {
 
 #if WEB_SUPPORT
 
-bool _wifiWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _wifiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "wifi", 4) == 0) return true;
     if (strncmp(key, "ssid", 4) == 0) return true;
     if (strncmp(key, "pass", 4) == 0) return true;
@@ -441,39 +430,124 @@ bool _wifiWebSocketOnReceive(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _wifiWebSocketOnSend(JsonObject& root) {
-    root["maxNetworks"] = WIFI_MAX_NETWORKS;
-    root["wifiScan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
-    JsonArray& wifi = root.createNestedArray("wifi");
-    for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
-        if (!hasSetting("ssid", i)) break;
-        JsonObject& network = wifi.createNestedObject();
-        network["ssid"] = getSetting("ssid", i, "");
-        network["pass"] = getSetting("pass", i, "");
-        network["ip"] = getSetting("ip", i, "");
-        network["gw"] = getSetting("gw", i, "");
-        network["mask"] = getSetting("mask", i, "");
-        network["dns"] = getSetting("dns", i, "");
+void _wifiWebSocketOnConnected(JsonObject& root) {
+    root["wifiScan"] = getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS);
+
+    JsonObject& wifi = root.createNestedObject("wifi");
+    root["max"] = WIFI_MAX_NETWORKS;
+
+    const char* keys[] = {
+        "ssid", "pass", "ip", "gw", "mask", "dns", "stored"
+    };
+    JsonArray& schema = wifi.createNestedArray("schema");
+    schema.copyFrom(keys, 7);
+
+    JsonArray& networks = wifi.createNestedArray("networks");
+
+    for (unsigned char index = 0; index < WIFI_MAX_NETWORKS; ++index) {
+        if (!getSetting({"ssid", index}, _wifiSSID(index)).length()) break;
+        JsonArray& network = networks.createNestedArray();
+        network.add(getSetting({"ssid", index}, _wifiSSID(index)));
+        network.add(getSetting({"pass", index}, _wifiPass(index)));
+        network.add(getSetting({"ip", index}, _wifiIP(index)));
+        network.add(getSetting({"gw", index}, _wifiGateway(index)));
+        network.add(getSetting({"mask", index}, _wifiNetmask(index)));
+        network.add(getSetting({"dns", index}, _wifiDNS(index)));
+        network.add(_wifiHasSSID(index));
     }
 }
 
+void _wifiWebSocketScan(JsonObject& root) {
+    JsonArray& scanResult = root.createNestedArray("scanResult");
+    _wifiScan([&scanResult](wifi_scan_info_t& info) {
+        scanResult.add(info.buffer);
+    });
+}
+
 void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "scan") == 0) _wifi_scan_client_id = client_id;
+    if (strcmp(action, "scan") == 0) wsPost(client_id, _wifiWebSocketScan);
 }
 
 #endif
 
 // -----------------------------------------------------------------------------
+// SUPPORT
+// -----------------------------------------------------------------------------
+
+#if WIFI_GRATUITOUS_ARP_SUPPORT
+
+// ref: lwip src/core/netif.c netif_issue_reports(...)
+// ref: esp-lwip/core/ipv4/etharp.c garp_tmr()
+// TODO: only for ipv4, need (?) a different method with ipv6
+bool _wifiSendGratuitousArp() {
+
+    bool result = false;
+    for (netif* interface = netif_list; interface != nullptr; interface = interface->next) {
+        if (
+            (interface->flags & NETIF_FLAG_ETHARP)
+            && (interface->hwaddr_len == ETHARP_HWADDR_LEN)
+        #if LWIP_VERSION_MAJOR == 1
+            && (!ip_addr_isany(&interface->ip_addr))
+        #else
+            && (!ip4_addr_isany_val(*netif_ip4_addr(interface)))
+        #endif
+            && (interface->flags & NETIF_FLAG_LINK_UP)
+            && (interface->flags & NETIF_FLAG_UP)
+        ) {
+            etharp_gratuitous(interface);
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+void _wifiSendGratuitousArp(unsigned long interval) {
+    if (millis() - _wifi_gratuitous_arp_last > interval) {
+        _wifi_gratuitous_arp_last = millis();
+        _wifiSendGratuitousArp();
+    }
+}
+
+#endif // WIFI_GRATUITOUS_ARP_SUPPORT
+
+// -----------------------------------------------------------------------------
 // INFO
 // -----------------------------------------------------------------------------
 
+// backported WiFiAPClass methods
+
+String _wifiSoftAPSSID() {
+    struct softap_config config;
+    wifi_softap_get_config(&config);
+
+    char* name = reinterpret_cast<char*>(config.ssid);
+    char ssid[sizeof(config.ssid) + 1];
+    memcpy(ssid, name, sizeof(config.ssid));
+    ssid[sizeof(config.ssid)] = '\0';
+
+    return String(ssid);
+}
+
+String _wifiSoftAPPSK() {
+    struct softap_config config;
+    wifi_softap_get_config(&config);
+
+    char* pass = reinterpret_cast<char*>(config.password);
+    char psk[sizeof(config.password) + 1];
+    memcpy(psk, pass, sizeof(config.password));
+    psk[sizeof(config.password)] = '\0';
+
+    return String(psk);
+}
+
 void wifiDebug(WiFiMode_t modes) {
 
+    #if DEBUG_SUPPORT
     bool footer = false;
 
     if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
 
-        uint8_t * bssid = WiFi.BSSID();
         DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE STA\n"));
         DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
@@ -482,9 +556,7 @@ void wifiDebug(WiFiMode_t modes) {
         DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] HOST  http://%s.local\n"), WiFi.hostname().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
-            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
-        );
+        DEBUG_MSG_P(PSTR("[WIFI] BSSID %s\n"), WiFi.BSSIDstr().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
         DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
         footer = true;
@@ -493,8 +565,8 @@ void wifiDebug(WiFiMode_t modes) {
 
     if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getAdminPass().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), _wifiSoftAPSSID().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), _wifiSoftAPPSK().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
         footer = true;
@@ -509,6 +581,7 @@ void wifiDebug(WiFiMode_t modes) {
     if (footer) {
         DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
     }
+    #endif //DEBUG_SUPPORT
 
 }
 
@@ -540,6 +613,12 @@ bool wifiConnected() {
 
 void wifiDisconnect() {
     jw.disconnect();
+}
+
+void wifiStartSTA() {
+    jw.disconnect();
+    jw.enableSTA(true);
+    jw.enableAP(false);
 }
 
 void wifiStartAP(bool only) {
@@ -579,6 +658,7 @@ void wifiReconnectCheck() {
     #if TELNET_SUPPORT
         if (telnetConnected()) connected = true;
     #endif
+    jw.enableSTA(true);
     jw.setReconnectTimeout(connected ? 0 : WIFI_RECONNECT_INTERVAL);
 }
 
@@ -601,10 +681,11 @@ void wifiRegister(wifi_callback_f callback) {
 
 void wifiSetup() {
 
-    WiFi.setSleepMode(WIFI_SLEEP_MODE);
-
-    _wifiInject();
     _wifiConfigure();
+
+    #if JUSTWIFI_ENABLE_SMARTCONFIG
+        if (_wifi_smartconfig_initial) jw.startSmartConfig();
+    #endif
 
     // Message callbacks
     wifiRegister(_wifiCallback);
@@ -616,9 +697,10 @@ void wifiSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_wifiWebSocketOnSend);
-        wsOnReceiveRegister(_wifiWebSocketOnReceive);
-        wsOnActionRegister(_wifiWebSocketOnAction);
+        wsRegister()
+            .onAction(_wifiWebSocketOnAction)
+            .onConnected(_wifiWebSocketOnConnected)
+            .onKeyCheck(_wifiWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT
@@ -643,11 +725,12 @@ void wifiLoop() {
         }
     #endif
 
-    // Do we have a pending scan?
-    if (_wifi_scan_client_id > 0) {
-        _wifiScan(_wifi_scan_client_id);
-        _wifi_scan_client_id = 0;
-    }
+    // Only send out gra arp when in STA mode
+    #if WIFI_GRATUITOUS_ARP_SUPPORT
+        if (_wifi_gratuitous_arp_interval) {
+            _wifiSendGratuitousArp(_wifi_gratuitous_arp_interval);
+        }
+    #endif
 
     // Check if we should disable AP
     static unsigned long last = 0;

@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // HC-SR04, SRF05, SRF06, DYP-ME007, JSN-SR04T & Parallax PING)))™
-// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // Enhancements by Rui Marinho
 // -----------------------------------------------------------------------------
 
@@ -8,9 +8,10 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <NewPing.h>
+
 #include "BaseSensor.h"
-#include "NewPing.h"
 
 class SonarSensor : public BaseSensor {
 
@@ -20,7 +21,7 @@ class SonarSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SonarSensor(): BaseSensor() {
+        SonarSensor() {
             _count = 1;
             _sensor_id = SENSOR_SONAR_ID;
         }

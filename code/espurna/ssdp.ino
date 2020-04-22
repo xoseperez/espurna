@@ -2,7 +2,7 @@
 
 SSDP MODULE
 
-Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 Uses SSDP library by PawelDino (https://github.com/PawelDino)
 https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 
@@ -11,6 +11,8 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 #if SSDP_SUPPORT
 
 #include <ESP8266SSDP.h>
+
+#include "utils.h"
 
 const char _ssdp_template[] PROGMEM =
     "<?xml version=\"1.0\"?>"
@@ -54,7 +56,7 @@ void ssdpSetup() {
             APP_NAME,                           // modelName
             APP_VERSION,                        // modelNumber
             APP_WEBSITE,                        // modelURL
-            DEVICE_NAME,                        // manufacturer
+            getBoardName().c_str(),             // manufacturer
             "",                                 // manufacturerURL
             chipId                              // UUID
         );
@@ -71,7 +73,7 @@ void ssdpSetup() {
     SSDP.setModelName(APP_NAME);
     SSDP.setModelNumber(APP_VERSION);
     SSDP.setModelURL(APP_WEBSITE);
-    SSDP.setManufacturer(DEVICE_NAME);
+    SSDP.setManufacturer(getBoardName());
     SSDP.setManufacturerURL("");
     SSDP.setURL("/");
     SSDP.begin();
