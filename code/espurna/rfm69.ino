@@ -37,34 +37,52 @@ unsigned long _rfm69_packet_count;
 
 #if WEB_SUPPORT
 
-void _rfm69WebSocketOnConnected(JsonObject& root) {
+void _rfm69WebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
+    modules["rfm69"] = 1;
+}
 
-    root["rfm69Visible"] = 1;
-    root["rfm69Topic"] = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
-    root["packetCount"] = _rfm69_packet_count;
-    root["nodeCount"] = _rfm69_node_count;
-    JsonArray& mappings = root.createNestedArray("mapping");
+void _rfm69WebSocketOnConnected(JsonObject& root) {
+    JsonObject& rfm69 = root.createNestedObject("rfm69");
+
+    rfm69["topic"] = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
+    rfm69["_packetCount"] = _rfm69_packet_count;
+    rfm69["_nodeCount"] = _rfm69_node_count;
+    rfm69["_max"] = RFM69_MAX_TOPICS;
+
+    JsonArray& schema = rfm69.createNestedArray("_schema");
+
+    schema.add("node");
+    schema.add("key");
+    schema.add("topic");
+
+    JsonArray& list = rfm69.createNestedArray("list");
+
     for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
-        auto node = getSetting({"node", i}, 0);
+        auto node = getSetting({"rfm69node", i}, 0);
         if (0 == node) break;
-        JsonObject& mapping = mappings.createNestedObject();
-        mapping["node"] = node;
-        mapping["key"] = getSetting({"key", i});
-        mapping["topic"] = getSetting({"topic", i});
+        JsonObject& node = list.createNestedArray();
+        node.add(node);
+        node.add(getSetting({"rfm69Key", i}));
+        node.add(getSetting({"rfm69topic", i}));
     }
 
 }
 
 bool _rfm69WebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "rfm69", 5) == 0) return true;
-    if (strncmp(key, "node", 4) == 0) return true;
-    if (strncmp(key, "key", 3) == 0) return true;
-    if (strncmp(key, "topic", 5) == 0) return true;
+//    if (strncmp(key, "node", 4) == 0) return true;
+//    if (strncmp(key, "key", 3) == 0) return true;
+//    if (strncmp(key, "topic", 5) == 0) return true;
     return false;
 }
 
-void _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "clear-counts") == 0) _rfm69Clear();
+uint8_t _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "clear-counts") == 0) {
+        _rfm69Clear();
+        return 1;
+    }
+    return 0;
 }
 
 
@@ -75,17 +93,17 @@ void _rfm69CleanNodes(unsigned char num) {
     // Look for the last defined node
     unsigned char id = 0;
     while (id < num) {
-        if (0 == getSetting({"node", id}, 0)) break;
-        if (!getSetting({"key", id}).length()) break;
-        if (!getSetting({"topic", id}).length()) break;
+        if (0 == getSetting({"rfm69Node", id}, 0)) break;
+        if (!getSetting({"rfm69Key", id}).length()) break;
+        if (!getSetting({"rfm69Topic", id}).length()) break;
         ++id;
     }
 
     // Delete all other settings
     while (id < SETTINGS_MAX_LIST_COUNT) {
-        delSetting({"node", id});
-        delSetting({"key", id});
-        delSetting({"topic", id});
+        delSetting({"rfm69Node", id});
+        delSetting({"rfm69Key", id});
+        delSetting({"rfm69Topic", id});
         ++id;
     }
 
@@ -169,8 +187,8 @@ void _rfm69Process(packet_t * data) {
     for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
         auto node = getSetting({"node", i}, 0);
         if (0 == node) break;
-        if ((node == data->senderID) && (getSetting({"key", i}).equals(data->key))) {
-            mqttSendRaw((char *) getSetting({"topic", i}).c_str(), (char *) String(data->value).c_str());
+        if ((node == data->senderID) && (getSetting({"rfm69Key", i}).equals(data->key))) {
+            mqttSendRaw((char *) getSetting({"rfm69Topic", i}).c_str(), (char *) String(data->value).c_str());
             return;
         }
     }
@@ -272,6 +290,7 @@ void rfm69Setup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_rfm69WebSocketOnVisible)
             .onConnected(_rfm69WebSocketOnConnected)
             .onAction(_rfm69WebSocketOnAction)
             .onKeyCheck(_rfm69WebSocketOnKeyCheck);

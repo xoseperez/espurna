@@ -47,6 +47,7 @@ uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
 // We also must shim TimeLib functions until everything else is ported.
 // We can't sometimes avoid TimeLib as dependancy though, which would be really bad
 
+
 static Ticker _ntp_broker_timer;
 static bool _ntp_synced = false;
 
@@ -149,8 +150,8 @@ bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _ntpWebSocketOnVisible(JsonObject& root) {
-    root["ntpVisible"] = 1;
-    root["ntplwipVisible"] = 1;
+    JsonObject& modules = root["_modules"];
+    modules["ntp"] = 1;
 }
 
 void _ntpWebSocketOnData(JsonObject& root) {
@@ -158,8 +159,10 @@ void _ntpWebSocketOnData(JsonObject& root) {
 }
 
 void _ntpWebSocketOnConnected(JsonObject& root) {
-    root["ntpServer"] = getSetting("ntpServer", F(NTP_SERVER));
-    root["ntpTZ"] = getSetting("ntpTZ", NTP_TIMEZONE);
+    JsonObject& ntp = root.createNestedObject("ntp");
+
+    ntp["server"] = getSetting("ntpServer", NTP_SERVER);
+    ntp["TZ"] = getSetting("ntpTZ", NTP_TIMEZONE);
 }
 
 #endif
@@ -178,7 +181,7 @@ String _ntpGetServer() {
 
 void _ntpReport() {
     if (!ntpSynced()) {
-        DEBUG_MSG_P(PSTR("[NTP] Not synced\n")); 
+        DEBUG_MSG_P(PSTR("[NTP] Not synced\n"));
         return;
     }
 
@@ -211,7 +214,7 @@ void _ntpConfigure() {
         setenv("TZ", cfg_tz.c_str(), 1);
         tzset();
     }
-    
+
     const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
     const auto active_server = _ntpGetServer();
     if (cfg_tz != active_tz) {

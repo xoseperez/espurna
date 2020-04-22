@@ -238,7 +238,7 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
 void thermostatSetupMQTT() {
     mqttRegister(thermostatMQTTCallback);
 }
-#endif 
+#endif
 
 //------------------------------------------------------------------------------
 void notifyRangeChanged(bool min) {
@@ -258,7 +258,7 @@ void commonSetup() {
 
   _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE, THERMOSTAT_MODE_COOLER_BY_DEFAULT);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d\n"), _thermostat_mode_cooler);
-  
+
   _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN);
   _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
@@ -309,7 +309,7 @@ void _thermostatReload() {
   int prev_temp_range_max = _temp_range.max;
 
   commonSetup();
- 
+
   if (_temp_range.min != prev_temp_range_min)
     notifyRangeChanged(true);
   if (_temp_range.max != prev_temp_range_max)
@@ -319,31 +319,32 @@ void _thermostatReload() {
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _thermostatWebSocketOnConnected(JsonObject& root) {
-  root["thermostatEnabled"] = thermostatEnabled();
-  root["thermostatMode"] = thermostatModeCooler();
-  root["thermostatVisible"] = 1;
-  root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
-  root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
-  root[NAME_REMOTE_SENSOR_NAME] = _thermostat.remote_sensor_name;
-  root[NAME_REMOTE_TEMP_MAX_WAIT]    = _thermostat_remote_temp_max_wait / MILLIS_IN_SEC;
-  root[NAME_MAX_ON_TIME]     = _thermostat_max_on_time    / MILLIS_IN_MIN;
-  root[NAME_MIN_OFF_TIME]    = _thermostat_min_off_time   / MILLIS_IN_MIN;
-  root[NAME_ALONE_ON_TIME]   = _thermostat_alone_on_time  / MILLIS_IN_MIN;
-  root[NAME_ALONE_OFF_TIME]  = _thermostat_alone_off_time / MILLIS_IN_MIN;
-  root[NAME_BURN_TODAY]      = _thermostat_burn_today;
-  root[NAME_BURN_YESTERDAY]  = _thermostat_burn_yesterday;
-  root[NAME_BURN_THIS_MONTH] = _thermostat_burn_this_month;
-  root[NAME_BURN_PREV_MONTH] = _thermostat_burn_prev_month;
-  root[NAME_BURN_TOTAL]      = _thermostat_burn_total;
+  JsonObject& thermostat = root.createNestedObject("thermostat");
+
+  thermostat["enabled"] = thermostatEnabled();
+  thermostat["mode"] = thermostatModeCooler();
+  thermostat[NAME_TEMP_RANGE_MIN] = _temp_range.min;
+  thermostat[NAME_TEMP_RANGE_MAX] = _temp_range.max;
+  thermostat[NAME_REMOTE_SENSOR_NAME] = _thermostat.remote_sensor_name;
+  thermostat[NAME_REMOTE_TEMP_MAX_WAIT]    = _thermostat_remote_temp_max_wait / MILLIS_IN_SEC;
+  thermostat[NAME_MAX_ON_TIME]     = _thermostat_max_on_time    / MILLIS_IN_MIN;
+  thermostat[NAME_MIN_OFF_TIME]    = _thermostat_min_off_time   / MILLIS_IN_MIN;
+  thermostat[NAME_ALONE_ON_TIME]   = _thermostat_alone_on_time  / MILLIS_IN_MIN;
+  thermostat[NAME_ALONE_OFF_TIME]  = _thermostat_alone_off_time / MILLIS_IN_MIN;
+  thermostat[NAME_BURN_TODAY]      = _thermostat_burn_today;
+  thermostat[NAME_BURN_YESTERDAY]  = _thermostat_burn_yesterday;
+  thermostat[NAME_BURN_THIS_MONTH] = _thermostat_burn_this_month;
+  thermostat[NAME_BURN_PREV_MONTH] = _thermostat_burn_prev_month;
+  thermostat[NAME_BURN_TOTAL]      = _thermostat_burn_total;
   if (_thermostat.temperature_source == temp_remote) {
-    root[NAME_OPERATION_MODE] = "remote temperature";
-    root["remoteTmp"]     = _remote_temp.temp;
+    thermostat[NAME_OPERATION_MODE] = "remote temperature";
+    thermostat["remoteTmp"]     = _remote_temp.temp;
   } else if (_thermostat.temperature_source == temp_local) {
-    root[NAME_OPERATION_MODE] = "local temperature";
-    root["remoteTmp"]     = "?";
+    thermostat[NAME_OPERATION_MODE] = "local temperature";
+    thermostat["remoteTmp"]     = "?";
   } else {
-    root[NAME_OPERATION_MODE] = "autonomous";
-    root["remoteTmp"]     = "?";
+    thermostat[NAME_OPERATION_MODE] = "autonomous";
+    thermostat["remoteTmp"]     = "?";
   }
 }
 
@@ -363,8 +364,12 @@ bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 //------------------------------------------------------------------------------
-void _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "thermostat_reset_counters") == 0) resetBurnCounters();
+uint8_t _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "thermostat_reset_counters") == 0) {
+        resetBurnCounters();
+        return 1;
+    }
+    return 0;
 }
 #endif
 
@@ -589,11 +594,11 @@ void resetBurnCounters() {
 #endif // THERMOSTAT_SUPPORT
 
 //#######################################################################
-//  ___   _            _             
-// |   \ (_) ___ _ __ | | __ _  _  _ 
+//  ___   _            _
+// |   \ (_) ___ _ __ | | __ _  _  _
 // | |) || |(_-<| '_ \| |/ _` || || |
 // |___/ |_|/__/| .__/|_|\__,_| \_, |
-//              |_|             |__/ 
+//              |_|             |__/
 //#######################################################################
 
 #if THERMOSTAT_DISPLAY_SUPPORT

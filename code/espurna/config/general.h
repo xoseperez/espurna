@@ -44,7 +44,7 @@
 // Serial debug log
 
 #ifndef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT    1               // Enable serial debug log
+#define DEBUG_SERIAL_SUPPORT    0               // Enable serial debug log
 #endif
 
 #ifndef DEBUG_PORT
@@ -102,13 +102,13 @@
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_TELNET_SUPPORT
-#define DEBUG_TELNET_SUPPORT    1               // Enable telnet debug log (will only work if TELNET_SUPPORT is also 1)
+#define DEBUG_TELNET_SUPPORT    0               // Enable telnet debug log (will enable telnet if set)
 #endif
 
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT       1               // Enable web debug log (will only work if WEB_SUPPORT is also 1)
+#define DEBUG_WEB_SUPPORT       0               // Enable web debug log (will only work if WEB_SUPPORT is also 1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -387,9 +387,10 @@
 #endif
 
 #ifndef BUTTON_MQTT_SEND_ALL_EVENTS
-#define BUTTON_MQTT_SEND_ALL_EVENTS     0           // 0 - to send only events the are bound to actions
-                                                   // 1 - to send all button events to MQTT
+#define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
+                                                // 1 - to send all button events to MQTT
 #endif
+
 
 #ifndef BUTTON_MQTT_RETAIN
 #define BUTTON_MQTT_RETAIN              0
@@ -649,7 +650,7 @@
 #endif
 
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
-// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546 
+// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546
 //
 // Broadcast gratuitous ARP periodically to update ARP tables on the AP and all devices on the same network.
 // Helps to solve compatibility issues when ESP fails to timely reply to ARP requests, causing the device's ARP table entry to expire.
@@ -684,8 +685,8 @@
 #define WEB_SUPPORT                 1           // Enable web support (http, api, 121.65Kb)
 #endif
 
-#ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
+#ifndef WEB_EMBEDDED                            // Build the firmware with the web interface embedded in
+#define WEB_EMBEDDED                0           // (off by default since v2 because of the PWA)
 #endif
 
 // Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
@@ -714,7 +715,7 @@
 // there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
 // The only requirement is that the resource must be available under this domain.
 #ifndef WEB_REMOTE_DOMAIN
-#define WEB_REMOTE_DOMAIN           "http://espurna.io"
+#define WEB_REMOTE_DOMAIN           "*"
 #endif
 
 // -----------------------------------------------------------------------------
@@ -727,7 +728,7 @@
 #endif
 
 #ifndef WS_BUFFER_SIZE
-#define WS_BUFFER_SIZE              5           // Max number of secured websocket connections
+#define WS_BUFFER_SIZE              5           // Max number of websocket connections
 #endif
 
 #ifndef WS_TIMEOUT
@@ -1011,7 +1012,7 @@
 #endif
 
 #ifndef MQTT_SECURE_CLIENT_MFLN
-#define MQTT_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN  // Use global MFLN setting by default 
+#define MQTT_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN  // Use global MFLN setting by default
 #endif
 
 #ifndef MQTT_SECURE_CLIENT_INCLUDE_CA

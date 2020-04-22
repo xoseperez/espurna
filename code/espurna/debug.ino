@@ -214,26 +214,17 @@ void _debugSendInternal(const char * message, bool add_timestamp) {
 
 #if DEBUG_WEB_SUPPORT
 
-void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+void _debugWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
 
-        #if TERMINAL_SUPPORT
-            if (strcmp(action, "dbgcmd") == 0) {
-                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
-                const char* command = data["command"];
-                if (command && strlen(command)) {
-                    auto command = data.get<const char*>("command");
-                    terminalInject((void*) command, strlen(command));
-                    terminalInject('\n');
-                }
-            }
-        #endif
+    modules["dbg"] = 1;
 }
+
 
 void debugWebSetup() {
 
     wsRegister()
-        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
-        .onAction(_debugWebSocketOnAction);
+        .onVisible(_debugWebSocketOnVisible);
 
     // TODO: if hostname string changes, need to update header too
     #if DEBUG_UDP_SUPPORT
@@ -305,7 +296,7 @@ DebugLogMode _debugLogModeDeserialize(const String& value) {
 
 void debugConfigureBoot() {
     static_assert(
-        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value, 
+        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value,
         "should be able to match DebugLogMode with int"
     );
 

@@ -37,9 +37,16 @@ bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "telnet", 6) == 0);
 }
 
+void _telnetWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
+    modules["telnet"] = 1;
+}
+
 void _telnetWebSocketOnConnected(JsonObject& root) {
-    root["telnetSTA"] = getSetting("telnetSTA", 1 == TELNET_STA);
-    root["telnetAuth"] = getSetting("telnetAuth", 1 == TELNET_AUTHENTICATION);
+    JsonObject& telnet = root.createNestedObject("telnet");
+
+    telnet["STA"] = getSetting("telnetSTA", 1 == TELNET_STA);
+    telnet["auth"] = getSetting("telnetAuth", 1 == TELNET_AUTHENTICATION);
 }
 
 #endif
@@ -483,7 +490,7 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible([](JsonObject& root) { root["telnetVisible"] = 1; })
+            .onVisible(_telnetWebSocketOnVisible)
             .onConnected(_telnetWebSocketOnConnected)
             .onKeyCheck(_telnetWebSocketOnKeyCheck);
     #endif

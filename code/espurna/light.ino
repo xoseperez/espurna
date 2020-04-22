@@ -647,19 +647,19 @@ void _lightRestoreRtcmem() {
 
 void _lightSaveSettings() {
     for (unsigned char i=0; i < _light_channels.size(); ++i) {
-        setSetting({"ch", i}, _light_channels[i].inputValue);
+        setSetting({"lightCh", i}, _light_channels[i].inputValue);
     }
-    setSetting("brightness", _light_brightness);
-    setSetting("mireds", _light_mireds);
+    setSetting("lightBrightness", _light_brightness);
+    setSetting("lightMireds", _light_mireds);
     saveSettings();
 }
 
 void _lightRestoreSettings() {
     for (unsigned char i=0; i < _light_channels.size(); ++i) {
-        _light_channels[i].inputValue = getSetting({"ch", i}, (i == 0) ? Light::VALUE_MAX : 0);
+        _light_channels[i].inputValue = getSetting({"lightCh", i}, (i == 0) ? Light::VALUE_MAX : 0);
     }
-    _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX);
-    _light_mireds = getSetting("mireds", _light_mireds);
+    _light_brightness = getSetting("lightBrightness", Light::BRIGHTNESS_MAX);
+    _light_mireds = getSetting("lightMireds", _light_mireds);
 }
 
 // -----------------------------------------------------------------------------
@@ -781,13 +781,13 @@ void lightMQTT() {
         mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
 
     }
-    
+
     if (_light_has_color || _light_use_cct) {
-      
+
       // Mireds
       snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
       mqttSend(MQTT_TOPIC_MIRED, buffer);
-    
+
     }
 
     // Channels
@@ -1020,34 +1020,41 @@ bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _lightWebSocketStatus(JsonObject& root) {
+    JsonObject& light = root.createNestedObject("light");
+
     if (_light_has_color) {
         if (getSetting("useRGB", 1 == LIGHT_USE_RGB)) {
-            root["rgb"] = lightColor(true);
+            light["rgb"] = lightColor(true);
         } else {
-            root["hsv"] = lightColor(false);
+            light["hsv"] = lightColor(false);
         }
     }
     if (_light_use_cct) {
-        JsonObject& mireds = root.createNestedObject("mireds");
+        JsonObject& mireds = light.createNestedObject("mireds");
         mireds["value"] = _light_mireds;
         mireds["cold"] = _light_cold_mireds;
         mireds["warm"] = _light_warm_mireds;
-        root["useCCT"] = _light_use_cct;
+        light["useCCT"] = _light_use_cct;
     }
-    JsonArray& channels = root.createNestedArray("channels");
+    JsonArray& channels = light.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channels.size(); id++) {
         channels.add(lightChannel(id));
     }
-    root["brightness"] = lightBrightness();
+    light["brightness"] = lightBrightness();
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
-    root["colorVisible"] = 1;
+    JsonObject& modules = root["_modules"];
+    modules["light"] = 1;
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {
+    JsonObject& light = root.createNestedObject("light");
+
+
+
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
-    root["useColor"] = _light_has_color;
+    light["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
@@ -1058,26 +1065,33 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     _lightWebSocketStatus(root);
 }
 
-void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+uint8_t _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
 
-    if (_light_has_color) {
-        if (strcmp(action, "color") == 0) {
+    if (strcmp(action, "color") == 0) {
+        if (_light_has_color) {
             if (data.containsKey("rgb")) {
                 lightColor(data["rgb"], true);
                 lightUpdate(true, true);
+                return 1;
             }
             if (data.containsKey("hsv")) {
                 lightColor(data["hsv"], false);
                 lightUpdate(true, true);
+                return 1;
             }
         }
+        return 2;
     }
 
-    if (_light_use_cct) {
-      if (strcmp(action, "mireds") == 0) {
-          _fromMireds(data["mireds"]);
-          lightUpdate(true, true);
-      }
+    if (strcmp(action, "mireds") == 0) {
+        if (_light_use_cct) {
+            if (data.containsKey("mireds") {
+                _fromMireds(data["mireds"]);
+                lightUpdate(true, true);
+                return 1;
+            }
+        }
+        return 2;
     }
 
 
@@ -1085,16 +1099,21 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
         if (data.containsKey("id") && data.containsKey("value")) {
             lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
             lightUpdate(true, true);
+            return 1;
         }
+        return 2;
     }
 
     if (strcmp(action, "brightness") == 0) {
         if (data.containsKey("value")) {
             lightBrightness(data["value"].as<int>());
             lightUpdate(true, true);
+            return 1;
         }
+        return 2;
     }
 
+    return 0;
 }
 
 #endif

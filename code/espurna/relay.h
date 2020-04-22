@@ -12,7 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "rpc.h"
 #include "utils.h"
 
-constexpr size_t RELAYS_MAX = 32; 
+constexpr size_t RELAYS_MAX = 32;
 
 struct RelayMask {
 
@@ -56,9 +56,9 @@ void relayToggle(unsigned char id);
 
 unsigned char relayCount();
 
-const String& relayPayloadOn();
-const String& relayPayloadOff();
-const String& relayPayloadToggle();
+constexpr const String& relayPayloadOn();
+constexpr const String& relayPayloadOff();
+constexpr const String& relayPayloadToggle();
 
 const char* relayPayload(PayloadStatus status);
 

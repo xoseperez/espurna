@@ -372,7 +372,7 @@ void rpnSetup() {
             static const String tick_every_hour(F("tick1h"));
             static const String tick_every_minute(F("tick1m"));
 
-            const char* ptr = 
+            const char* ptr =
                 (tick == NtpTick::EveryMinute) ? tick_every_minute.c_str() :
                 (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
 

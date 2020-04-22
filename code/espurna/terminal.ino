@@ -280,14 +280,14 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer(1024);
+        DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(200));
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
         // XXX: replace with streaming
         String output;
         root.printTo(output);
         DEBUG_MSG(output.c_str());
-        
+        DEBUG_MSG_P(PSTR("[JsonBuffer] Allocated %u bytes of ram"), root.size());
     });
 
     #if not SETTINGS_AUTOSAVE
@@ -343,7 +343,7 @@ void _terminalInitCommand() {
         });
 
     #endif // LWIP_VERSION_MAJOR != 1
-    
+
 }
 
 void _terminalLoop() {
@@ -400,6 +400,26 @@ void terminalError(const String& error) {
     DEBUG_MSG_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
+void _terminalWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
+    modules["cmd"] = 1;
+}
+
+
+uint8_t _terminalWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "dbgcmd") == 0) {
+        if (!data.containsKey("command") || !data["command"].is<const char*>()) return 2;
+        const char* command = data["command"];
+        if (command && strlen(command)) {
+            auto command = data.get<const char*>("command");
+            terminalInject((void*) command, strlen(command));
+            terminalInject('\n');
+        }
+        return 1;
+    }
+    return 0;
+}
+
 void terminalSetup() {
 
     _serial.callback([](uint8_t ch) {
@@ -413,7 +433,8 @@ void terminalSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
+            .onVisible(_terminalWebSocketOnVisible)
+            .onAction(_terminalWebSocketOnAction);
     #endif
 
     _terminalInitCommand();
@@ -427,5 +448,5 @@ void terminalSetup() {
 
 }
 
-#endif // TERMINAL_SUPPORT 
+#endif // TERMINAL_SUPPORT
 

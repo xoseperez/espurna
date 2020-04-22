@@ -20,6 +20,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 #include "ws.h"
 
+
 struct sensor_magnitude_t {
 
     private:
@@ -552,29 +553,25 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 #if WEB_SUPPORT
 
 //void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
-template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+/*template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root) {
+    JsonArray& schema = root.createNestedArray("_schema");
+    JsonArray& list = root.createNestedArray("list");
 
-    // ws produces flat list <prefix>Magnitudes
-    const String ws_name = String(prefix) + "Magnitudes";
+    //root["size"] = magnitudeCount();
 
-    // config uses <prefix>Magnitude<index> (cut 's')
-    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
-
-    JsonObject& list = root.createNestedObject(ws_name);
-    list["size"] = magnitudeCount();
-
-    //JsonArray& name = list.createNestedArray("name");
-    JsonArray& type = list.createNestedArray("type");
-    JsonArray& index = list.createNestedArray("index");
-    JsonArray& idx = list.createNestedArray("idx");
+    schema.add("name");
+    schema.add("type");
+    schema.add("index");
+    schema.add("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        //name.add(magnitudeName(i));
-        type.add(magnitudeType(i));
-        index.add(magnitudeIndex(i));
-        idx.add(getSetting({conf_name, i}, 0));
+        JsonArray& magnitude = list.createNestedArray();
+        magnitude.add(magnitudeName(i));
+        magnitude.add(magnitudeType(i));
+        magnitude.add(magnitudeIndex(i));
+        magnitude.add(getSetting({conf_name, i}, 0));
     }
-}
+}*/
 
 /*
 template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
@@ -601,14 +598,15 @@ bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
 
-    root["snsVisible"] = 1;
+    modules["sns"] = 1;
 
     for (auto& magnitude : _magnitudes) {
-        if (magnitude.type == MAGNITUDE_TEMPERATURE) root["temperatureVisible"] = 1;
-        if (magnitude.type == MAGNITUDE_HUMIDITY) root["humidityVisible"] = 1;
+        if (magnitude.type == MAGNITUDE_TEMPERATURE) modules["temperature"] = 1;
+        if (magnitude.type == MAGNITUDE_HUMIDITY) modules["humidity"] = 1;
         #if MICS2710_SUPPORT || MICS5525_SUPPORT
-            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) root["micsVisible"] = 1;
+            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) modules["mics"] = 1;
         #endif
     }
 
@@ -616,33 +614,32 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
-    JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
-    uint8_t size = 0;
+    JsonObject& magnitudes = root.createNestedObject("magnitudes");
 
-    JsonArray& index = magnitudes.createNestedArray("index");
-    JsonArray& type = magnitudes.createNestedArray("type");
-    JsonArray& units = magnitudes.createNestedArray("units");
-    JsonArray& description = magnitudes.createNestedArray("description");
+    JsonArray& schema = magnitudes.createNestedArray("_schema");
+    JsonArray& list = magnitudes.createNestedArray("list");
+
+    //root["_size"] = magnitudeCount();
+
+    schema.add("index");
+    schema.add("type");
+    schema.add("unit");
+    schema.add("desc");
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
         auto& magnitude = _magnitudes[i];
         if (magnitude.type == MAGNITUDE_EVENT) continue;
-        ++size;
 
-        index.add<uint8_t>(magnitude.global);
-        type.add<uint8_t>(magnitude.type);
-        units.add(magnitudeUnits(magnitude));
+        JsonArray& magni = list.createNestedArray();
 
-        {
-            String sensor_desc = magnitude.sensor->slot(magnitude.local);
-            description.add(sensor_desc);
-        }
+        magni.add<uint8_t>(magnitude.global);
+        magni.add<uint8_t>(magnitude.type);
+        magni.add(magnitudeUnits(magnitude));
 
+        String sensor_desc = magnitude.sensor->slot(magnitude.local);
+        description.add(sensor_desc);
     }
-
-    magnitudes["size"] = size;
-
 }
 
 void _sensorWebSocketSendData(JsonObject& root) {
@@ -650,7 +647,6 @@ void _sensorWebSocketSendData(JsonObject& root) {
     char buffer[64];
 
     JsonObject& magnitudes = root.createNestedObject("magnitudes");
-    uint8_t size = 0;
 
     JsonArray& value = magnitudes.createNestedArray("value");
     JsonArray& error = magnitudes.createNestedArray("error");
@@ -660,7 +656,6 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
     for (auto& magnitude : _magnitudes) {
         if (magnitude.type == MAGNITUDE_EVENT) continue;
-        ++size;
 
         dtostrf(_magnitudeProcess(magnitude, magnitude.last), 1, magnitude.decimals, buffer);
 
@@ -678,77 +673,78 @@ void _sensorWebSocketSendData(JsonObject& root) {
         #endif
     }
 
-    magnitudes["size"] = size;
-
 }
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
+    JsonArray& sns = root.createNestedArray("sns");
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
-        BaseSensor * sensor = _sensors[i];
-        UNUSED(sensor);
+        BaseSensor * baseSensor = _sensors[i];
+
+        JsonObject& sensor = sns.createNestedObject();
 
         #if EMON_ANALOG_SUPPORT
-            if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["emonVisible"] = 1;
-                root["pwrVisible"] = 1;
-                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
+            if (baseSensor->getID() == SENSOR_EMON_ANALOG_ID) {
+                sensor["emonVisible"] = 1;
+                sensor["pwrVisible"] = 1;
+                sensor["pwrVoltage"] = ((EmonAnalogSensor *) baseSensor)->getVoltage();
             }
         #endif
 
         #if HLW8012_SUPPORT
-            if (sensor->getID() == SENSOR_HLW8012_ID) {
-                root["hlwVisible"] = 1;
-                root["pwrVisible"] = 1;
+            if (baseSensor->getID() == SENSOR_HLW8012_ID) {
+                sensor["hlwVisible"] = 1;
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if CSE7766_SUPPORT
-            if (sensor->getID() == SENSOR_CSE7766_ID) {
-                root["cseVisible"] = 1;
-                root["pwrVisible"] = 1;
+            if (baseSensor->getID() == SENSOR_CSE7766_ID) {
+                sensor["cseVisible"] = 1;
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if V9261F_SUPPORT
-            if (sensor->getID() == SENSOR_V9261F_ID) {
-                root["pwrVisible"] = 1;
+            if (baseSensor->getID() == SENSOR_V9261F_ID) {
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if ECH1560_SUPPORT
-            if (sensor->getID() == SENSOR_ECH1560_ID) {
-                root["pwrVisible"] = 1;
+            if (baseSensor->getID() == SENSOR_ECH1560_ID) {
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if PZEM004T_SUPPORT
-            if (sensor->getID() == SENSOR_PZEM004T_ID) {
-                root["pzemVisible"] = 1;
-                root["pwrVisible"] = 1;
+            if (baseSensor->getID() == SENSOR_PZEM004T_ID) {
+                sensor["pzemVisible"] = 1;
+                sensor["pwrVisible"] = 1;
             }
         #endif
 
         #if PULSEMETER_SUPPORT
-            if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                root["pmVisible"] = 1;
-                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
+            if (baseSensor->getID() == SENSOR_PULSEMETER_ID) {
+                sensor["pmVisible"] = 1;
+                sensor["pwrRatioE"] = ((PulseMeterSensor *) baseSensor)->getEnergyRatio();
             }
         #endif
 
     }
 
-    if (magnitudeCount()) {
-        //root["apiRealTime"] = _sensor_realtime;
-        root["tmpCorrection"] = _sensor_temperature_correction;
-        root["humCorrection"] = _sensor_humidity_correction;
-        root["luxCorrection"] = _sensor_lux_correction;
-        root["snsRead"] = _sensor_read_interval / 1000;
-        root["snsReport"] = _sensor_report_every;
-        root["snsSave"] = _sensor_save_every;
-        _sensorWebSocketMagnitudesConfig(root);
-    }
+
+    JsonObject& sensor = root.createNestedObject("sensor");
+
+    _sensorWebSocketMagnitudesConfig(sensor);
+
+    sensor["tmpCorrection"] = _sensor_temperature_correction;
+    sensor["humCorrection"] = _sensor_humidity_correction;
+    sensor["luxCorrection"] = _sensor_lux_correction;
+    sensor["read"] = _sensor_read_interval / 1000;
+    sensor["report"] = _sensor_report_every;
+    sensor["save"] = _sensor_save_every;
 
 }
 
@@ -1467,7 +1463,7 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
-	
+
     #if T6613_SUPPORT
     {
         T6613Sensor * sensor = new T6613Sensor();

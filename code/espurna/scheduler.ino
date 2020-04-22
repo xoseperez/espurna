@@ -25,47 +25,50 @@ bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "sch", 3) == 0);
 }
 
-void _schWebSocketOnVisible(JsonObject& root) {
+void _schWebSocketOnVisible(JsonObject &root) {
     if (!relayCount()) return;
-    root["schVisible"] = 1;
+
+    JsonObject& modules = root["_modules"];
+    modules["sch"] = 1;
 }
 
-void _schWebSocketOnConnected(JsonObject &root){
-
+void _schWebSocketOnConnected(JsonObject &root) {
     if (!relayCount()) return;
 
-    JsonObject &schedules = root.createNestedObject("schedules");
-    schedules["max"] = SCHEDULER_MAX_SCHEDULES;
+    JsonObject& module = root.createNestedObject("schedule"); // TODO check was schedules
 
-    JsonArray& enabled = schedules.createNestedArray("schEnabled");
-    JsonArray& switch_ = schedules.createNestedArray("schSwitch");
-    JsonArray& action = schedules.createNestedArray("schAction");
-    JsonArray& type = schedules.createNestedArray("schType");
-    JsonArray& hour = schedules.createNestedArray("schHour");
-    JsonArray& minute = schedules.createNestedArray("schMinute");
-    JsonArray& utc = schedules.createNestedArray("schUTC");
-    JsonArray& weekdays = schedules.createNestedArray("schWDs");
+    module["_max"] = SCHEDULER_MAX_SCHEDULES;
 
     uint8_t size = 0;
+
+
+    JsonArray& schema = module.createNestedArray("_schema");
+    JsonArray& list = module.createNestedArray("list");
+
+    schema.add("enabled");
+    schema.add("UTC");
+    schema.add("switch");
+    schema.add("action");
+    schema.add("type");
+    schema.add("hour");
+    schema.add("minute");
+    schema.add("WDs");
 
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!getSetting({"schSwitch", i}).length()) break;
         ++size;
 
-        enabled.add(getSetting({"schEnabled", i}, false) ? 1 : 0);
-        utc.add(getSetting({"schUTC", i}, 0));
+        JsonArray& schedule = list.createNestedArray();
 
-        switch_.add(getSetting({"schSwitch", i}, 0));
-        action.add(getSetting({"schAction", i}, 0));
-        type.add(getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH));
-        hour.add(getSetting({"schHour", i}, 0));
-        minute.add(getSetting({"schMinute", i}, 0));
-        weekdays.add(getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS));
+        schedule.add(getSetting({"schEnabled", i}, false) ? 1 : 0);      //enabled
+        schedule.add(getSetting({"schUTC", i}, 0));                      //UTC
+        schedule.add(getSetting({"schSwitch", i}, 0));                   //switch
+        schedule.add(getSetting({"schAction", i}, 0));                   //action
+        schedule.add(getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH)); //type
+        schedule.add(getSetting({"schHour", i}, 0));                     //hour
+        schedule.add(getSetting({"schMinute", i}, 0));                   //minute
+        schedule.add(getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS));     //weekdays
     }
-
-    schedules["size"] = size;
-    schedules["start"] = 0;
-
 }
 
 #endif // WEB_SUPPORT

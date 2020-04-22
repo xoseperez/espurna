@@ -127,16 +127,19 @@ bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _idbWebSocketOnVisible(JsonObject& root) {
-    root["idbVisible"] = 1;
+    JsonObject& modules = root["_modules"];
+    modules["idb"] = 1;
 }
 
 void _idbWebSocketOnConnected(JsonObject& root) {
-    root["idbEnabled"] = getSetting("idbEnabled", 1 == INFLUXDB_ENABLED);
-    root["idbHost"] = getSetting("idbHost", INFLUXDB_HOST);
-    root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT);
-    root["idbDatabase"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
-    root["idbUsername"] = getSetting("idbUsername", INFLUXDB_USERNAME);
-    root["idbPassword"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
+    JsonObject& idb = root.createNestedObject("idb");
+
+    idb["enabled"] = getSetting("idbEnabled", 1 == INFLUXDB_ENABLED);
+    idb["host"] = getSetting("idbHost", INFLUXDB_HOST);
+    idb["port"] = getSetting("idbPort", INFLUXDB_PORT);
+    idb["database"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
+    idb["username"] = getSetting("idbUsername", INFLUXDB_USERNAME);
+    idb["password"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
 }
 
 void _idbConfigure() {

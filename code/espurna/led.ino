@@ -204,7 +204,8 @@ bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ledWebSocketOnVisible(JsonObject& root) {
     if (ledCount() > 0) {
-        root["ledVisible"] = 1;
+        JsonObject& modules = root["_modules"];
+        modules["led"] = 1;
     }
 }
 
@@ -212,14 +213,14 @@ void _ledWebSocketOnConnected(JsonObject& root) {
     if (!ledCount()) return;
     JsonObject& module = root.createNestedObject("led");
 
-    JsonArray& schema = module.createNestedArray("schema");
+    JsonArray& schema = module.createNestedArray("_schema");
+
     schema.add("GPIO");
-    schema.add("Inv");
-    schema.add("Mode");
-    schema.add("Relay");
+    schema.add("inv");
+    schema.add("mode");
+    schema.add("relay");
 
     JsonArray& leds = module.createNestedArray("list");
-
     for (unsigned char index = 0; index < ledCount(); ++index) {
         JsonArray& led = leds.createNestedArray();
         led.add(getSetting({"ledGPIO", index}, _ledPin(index)));

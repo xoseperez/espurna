@@ -27,9 +27,15 @@ bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "alexa", 5) == 0);
 }
 
+void _alexaWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
+    modules["alexa"] = 1;
+}
+
 void _alexaWebSocketOnConnected(JsonObject& root) {
-    root["alexaEnabled"] = alexaEnabled();
-    root["alexaName"] = getSetting("alexaName");
+    JsonObject& alexa = root.createNestedObject("alexa");
+    alexa["enabled"] = alexaEnabled();
+    alexa["name"] = getSetting("alexaName");
 }
 
 void _alexaConfigure() {
@@ -49,7 +55,7 @@ void _alexaConfigure() {
 
 #if BROKER_SUPPORT
 void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
-    
+
     // Only process status messages for switches and channels
     if (!topic.equals(MQTT_TOPIC_CHANNEL)
         && !topic.equals(MQTT_TOPIC_RELAY)) {
@@ -124,7 +130,7 @@ void alexaSetup() {
         webBodyRegister(_alexaBodyCallback);
         webRequestRegister(_alexaRequestCallback);
         wsRegister()
-            .onVisible([](JsonObject& root) { root["alexaVisible"] = 1; })
+            .onVisible(_alexaWebSocketOnVisible)
             .onConnected(_alexaWebSocketOnConnected)
             .onKeyCheck(_alexaWebSocketOnKeyCheck);
     #endif

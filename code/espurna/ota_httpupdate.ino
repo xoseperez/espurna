@@ -133,11 +133,11 @@ void _otaClientRunUpdater(__attribute__((unused)) WiFiClient* client, const Stri
             eepromRotate(true);
             break;
         case HTTP_UPDATE_NO_UPDATES:
-            DEBUG_MSG_P(PSTR("[OTA] No updates"));
+            DEBUG_MSG_P(PSTR("[OTA] No updates\n"));
             eepromRotate(true);
             break;
         case HTTP_UPDATE_OK:
-            DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
+            DEBUG_MSG_P(PSTR("[OTA] Done, restarting...\n"));
             deferredReset(500, CUSTOM_RESET_OTA); // wait a bit more than usual
             break;
     }

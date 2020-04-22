@@ -149,7 +149,7 @@ unsigned long getUptime() {
 // -----------------------------------------------------------------------------
 namespace Heartbeat {
 
-    enum Report : uint32_t { 
+    enum Report : uint32_t {
         Status = 1 << 1,
         Ssid = 1 << 2,
         Ip = 1 << 3,
@@ -364,7 +364,7 @@ void heartbeat() {
 
         if ((hb_cfg & Heartbeat::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
             idbSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-                    
+
         if (hb_cfg & Heartbeat::Loadavg)
             idbSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
 
@@ -413,7 +413,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
     _info_print_memory_layout_line(name, bytes, false);
 }
 
-void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
+void infoMemory(const char * name, unsigned int total_memory, uint32_t free_memory) {
 
     DEBUG_MSG_P(
         PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
@@ -462,8 +462,7 @@ void info(bool first) {
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu\n"), __UNIX_TIMESTAMP__);
-    DEBUG_MSG_P(PSTR("\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu\n\n"), __UNIX_TIMESTAMP__);
 
     // -------------------------------------------------------------------------
 
@@ -471,8 +470,7 @@ void info(bool first) {
 
     DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
-    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
-    DEBUG_MSG_P(PSTR("\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
 
     // -------------------------------------------------------------------------
 
@@ -484,7 +482,6 @@ void info(bool first) {
     _info_print_memory_layout_line("SPIFFS size", info_filesystem_space());
     _info_print_memory_layout_line("EEPROM size", info_eeprom_space());
     _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
@@ -501,20 +498,17 @@ void info(bool first) {
         } else {
             DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
         }
-        DEBUG_MSG_P(PSTR("\n"));
     #endif
 
     // -------------------------------------------------------------------------
 
     eepromSectorsDebug();
-    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
     infoHeapStats(!first);
     infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
-    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
@@ -529,7 +523,6 @@ void info(bool first) {
         DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
         DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
     }
-    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
@@ -540,7 +533,6 @@ void info(bool first) {
         DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
     DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s\n"), getEspurnaWebUI().c_str());
-    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
@@ -564,14 +556,14 @@ void info(bool first) {
 
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) {
-            DEBUG_MSG_P(PSTR("\n"));
-            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
+            DEBUG_MSG_P(PSTR("\n[MAIN] Device is in SAFE MODE\n"));
         }
     #endif
 
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
+
 
     #endif // DEBUG_SUPPORT == 1
 
@@ -754,4 +746,14 @@ String u32toString(uint32_t value, int base) {
     result += buffer;
 
     return result;
+}
+
+
+const uint32_t calcJsonPayloadBufferSize(char * payload) {
+    uint16_t i, o = 0;
+    for (i = 0; payload[i]; i++) {
+        o += (payload[i] == ',');
+    }
+
+    return JSON_OBJECT_SIZE(o);
 }

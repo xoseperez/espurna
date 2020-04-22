@@ -141,12 +141,13 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
         if (dczTopicOut.equals(topic)) {
 
             // Parse response
-            DynamicJsonBuffer jsonBuffer(1024);
+            DynamicJsonBuffer jsonBuffer(calcJsonPayloadBufferSize(payload)); //TODO test
             JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;
             }
+            DEBUG_MSG_P(PSTR("[JsonBuffer] Allocated %u bytes of ram"), root.size());
 
             // IDX
             unsigned int idx = root["idx"];
@@ -243,24 +244,28 @@ bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _domoticzWebSocketOnVisible(JsonObject& root) {
-    root["dczVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
+    JsonObject& modules = root["_modules"];
+    modules["dcz"] = static_cast<unsigned char>(haveRelaysOrSensors());
 }
 
 void _domoticzWebSocketOnConnected(JsonObject& root) {
+    JsonObject& dcz = root.createNestedObject("dcz");
 
-    root["dczEnabled"] = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
-    root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
-    root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+    dcz["enabled"] = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
+    dcz["topicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
+    dcz["topicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
-    JsonArray& relays = root.createNestedArray("dczRelays");
+    JsonArray& relays = dcz.createNestedArray("relays");
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(_domoticzIdx(i));
     }
 
+    //Is this really needed since already done in sensor
+    /*
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(root, "dcz");
+        _sensorWebSocketMagnitudesConfig(dcz);
     #endif
-
+    */
 }
 
 #endif // WEB_SUPPORT

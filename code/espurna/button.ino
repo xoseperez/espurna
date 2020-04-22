@@ -73,11 +73,11 @@ constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const u
         ((bitmask & ButtonMask::Pushbutton)
             ? debounce_event::types::Mode::Pushbutton
             : debounce_event::types::Mode::Switch),
-        ((bitmask & ButtonMask::DefaultHigh) 
+        ((bitmask & ButtonMask::DefaultHigh)
             ? debounce_event::types::PinValue::High
             : debounce_event::types::PinValue::Low),
-        ((bitmask & ButtonMask::SetPullup) 
-            ? debounce_event::types::PinMode::InputPullup : (bitmask & ButtonMask::SetPulldown) 
+        ((bitmask & ButtonMask::SetPullup)
+            ? debounce_event::types::PinMode::InputPullup : (bitmask & ButtonMask::SetPulldown)
             ? debounce_event::types::PinMode::InputPullup : debounce_event::types::PinMode::Input)
     };
 }
@@ -220,7 +220,8 @@ void buttonMQTT(unsigned char id, button_event_t event) {
 
 void _buttonWebSocketOnVisible(JsonObject& root) {
     if (buttonCount() > 0) {
-        root["btnVisible"] = 1;
+        JsonObject& modules = root["_modules"];
+        modules["btn"] = 1;
     }
 }
 

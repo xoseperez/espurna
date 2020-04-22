@@ -832,15 +832,21 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    JsonObject& state = root.createNestedObject("relayState");
-    state["size"] = relayCount();
+    JsonObject& module = root.createNestedObject("_relaysState");
+//    JsonObject& state = module.createNestedObject("state");
 
-    JsonArray& status = state.createNestedArray("status");
-    JsonArray& lock = state.createNestedArray("lock");
+    JsonArray& schema = module.createNestedArray("_schema");
+    JsonArray& list = module.createNestedArray("list");
+
+    schema.add("status");
+    schema.add("lock");
+
+    //state["_size"] = relayCount();
 
     for (unsigned char i=0; i<relayCount(); i++) {
-        status.add<uint8_t>(_relays[i].target_status);
-        lock.add(_relays[i].lock);
+        JsonArray& relay = list.createNestedArray();
+        relay.add<uint8_t>(_relays[i].target_status);
+        relay.add(_relays[i].lock);
     }
 }
 
@@ -873,47 +879,70 @@ String _relayFriendlyName(unsigned char i) {
     return res;
 }
 
+
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& relays = root.createNestedObject("relayConfig");
+    JsonObject& config = root.createNestedObject("relay");
+    //JsonObject& config = module.createNestedObject("config");
 
-    relays["size"] = relayCount();
-    relays["start"] = 0;
+    JsonArray& schema = config.createNestedArray("_schema");
 
-    JsonArray& gpio = relays.createNestedArray("gpio");
-    JsonArray& type = relays.createNestedArray("type");
-    JsonArray& reset = relays.createNestedArray("reset");
-    JsonArray& boot = relays.createNestedArray("boot");
-    JsonArray& pulse = relays.createNestedArray("pulse");
-    JsonArray& pulse_time = relays.createNestedArray("pulse_time");
+    schema.add("pin");
+    schema.add("_gpio");
+    schema.add("type");
+    //schema.add("resetGPIO"); //This is not needed
+    schema.add("name");
+    schema.add("boot");
+    schema.add("pulse");
+    schema.add("time");
+//
+//    schema.add("dblDl");
+//    schema.add("lngDl");
+//    schema.add("lngLngDl");
+
 
     #if SCHEDULER_SUPPORT
-        JsonArray& sch_last = relays.createNestedArray("sch_last");
+        schema.add("lastSch");
     #endif
 
     #if MQTT_SUPPORT
-        JsonArray& group = relays.createNestedArray("group");
-        JsonArray& group_sync = relays.createNestedArray("group_sync");
-        JsonArray& on_disconnect = relays.createNestedArray("on_disc");
+        schema.add("group");
+        schema.add("groupSync");
+        schema.add("onDisc");
+//        schema.add("sndAllEvts");
+
+
+        config["payloadOn"] = _relay_rpc_payload_on;
+        config["payloadOff"] = _relay_rpc_payload_off;
+        config["payloadToggle"] = _relay_rpc_payload_toggle;
     #endif
 
+    //config["_start"] = 0;
+
+    JsonArray& relays = config.createNestedArray("list");
+
     for (unsigned char i=0; i<relayCount(); i++) {
-        gpio.add(_relayFriendlyName(i));
-
-        type.add(_relays[i].type);
-        reset.add(_relays[i].reset_pin);
-        boot.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));
-
-        pulse.add(_relays[i].pulse);
-        pulse_time.add(_relays[i].pulse_ms / 1000.0);
+        JsonArray& relay = relays.createNestedArray();
+        relay.add(_relays[i].pin);                                              //pin
+        relay.add(_relayFriendlyName(i));                                       //gpio, why friendly name?
+        relay.add(_relays[i].type);                                             //type
+        //relay.add(_relays[i].reset_pin);                                        //reset
+        relay.add(getSetting({"relayName", i}, _relayFriendlyName(i)));         //name
+        relay.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));               //boot
+        relay.add(_relays[i].pulse);                                            //pulse
+        relay.add(_relays[i].pulse_ms / 1000.0);                                //time
+        relay.add(getSetting({"relayRepeatDl", i}, BUTTON_REPEAT_DELAY));       //dblDl
+        relay.add(getSetting({"relayLngDl", i}, BUTTON_LNGCLICK_DELAY));        //lngDl
+        relay.add(getSetting({"relayLngLngDl", i}, BUTTON_LNGLNGCLICK_DELAY));  //lngLngDl
 
         #if SCHEDULER_SUPPORT
-            sch_last.add(getSetting({"relayLastSch", i}, SCHEDULER_RESTORE_LAST_SCHEDULE));
+            relay.add(getSetting({"relayLastSch", i}, SCHEDULER_RESTORE_LAST_SCHEDULE));
         #endif
 
         #if MQTT_SUPPORT
-            group.add(getSetting({"mqttGroup", i}));
-            group_sync.add(getSetting({"mqttGroupSync", i}, 0));
-            on_disconnect.add(getSetting({"relayOnDisc", i}, 0));
+            // TODO setting needs migration
+            relay.add(getSetting({"relayGroup", i}));             //group
+            relay.add(getSetting({"relayGroupSync", i}, 0));      //group_sync
+            relay.add(getSetting({"relayOnDisc", i}, 0));         //on_disc
         #endif
     }
 }
@@ -921,12 +950,12 @@ void _relayWebSocketSendRelays(JsonObject& root) {
 void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
+    JsonObject& modules = root["_modules"];
     if (relayCount() > 1) {
-        root["multirelayVisible"] = 1;
-        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
+        modules["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 
-    root["relayVisible"] = 1;
+    modules["relay"] = 1;
 }
 
 void _relayWebSocketOnConnected(JsonObject& root) {
@@ -938,9 +967,9 @@ void _relayWebSocketOnConnected(JsonObject& root) {
 
 }
 
-void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+uint8_t _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
 
-    if (strcmp(action, "relay") != 0) return;
+    if (strcmp(action, "relay") != 0) return 0;
 
     if (data.containsKey("status")) {
 
@@ -953,6 +982,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
     }
 
+    return 2;
 }
 
 void relaySetupWS() {
@@ -1040,15 +1070,15 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT || API_SUPPORT
 
-const String& relayPayloadOn() {
+constexpr const String& relayPayloadOn() {
     return _relay_rpc_payload_on;
 }
 
-const String& relayPayloadOff() {
+constexpr const String& relayPayloadOff() {
     return _relay_rpc_payload_off;
 }
 
-const String& relayPayloadToggle() {
+constexpr const String& relayPayloadToggle() {
     return _relay_rpc_payload_toggle;
 }
 

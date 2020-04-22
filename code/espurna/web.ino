@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "web.h"
 
 #if WEB_EMBEDDED
-
+//TODO vue image
 #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
     #include "static/index.small.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
@@ -73,12 +73,16 @@ void _onDiscover(AsyncWebServerRequest *request) {
     const String device = getBoardName();
     const String hostname = getSetting("hostname");
 
-    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
+    StaticJsonBuffer<JSON_OBJECT_SIZE(8)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
     root["device"] = device.c_str();
     root["hostname"] = hostname.c_str();
+    root["description"] = getSetting("desc");
+    root["free_size"] = ESP.getFreeSketchSpace();
+    root["wifi"] = getNetwork();
+    root["rssi"] = WiFi.RSSI();
 
     AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
     root.printTo(*response);
@@ -204,8 +208,7 @@ void _onHome(AsyncWebServerRequest *request) {
                 if (len > max) len = max;
                 if (len > 0) memcpy_P(buffer, webui_image + index, len);
 
-                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
-                if (len == 0) DEBUG_MSG_P(PSTR("\n"));
+                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\n"), int(100 * index / webui_image_len), max);
 
                 // Return the actual length of the chunk (0 for end of file)
                 return len;

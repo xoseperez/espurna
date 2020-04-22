@@ -26,12 +26,15 @@ bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _nofussWebSocketOnVisible(JsonObject& root) {
-    root["nofussVisible"] = 1;
+    JsonObject& modules = root["_modules"];
+    modules["nofuss"] = 1;
 }
 
 void _nofussWebSocketOnConnected(JsonObject& root) {
-    root["nofussEnabled"] = getSetting("nofussEnabled", 1 == NOFUSS_ENABLED);
-    root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
+    JsonObject& nofuss = root.createNestedObject("nofuss");
+
+    nofuss["enabled"] = getSetting("nofussEnabled", 1 == NOFUSS_ENABLED);
+    nofuss["server"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
 
 #endif
@@ -117,11 +120,11 @@ void nofussSetup() {
 
         if (code == NOFUSS_UPDATING) {
         	DEBUG_MSG_P(PSTR("[NoFUSS] Updating\n"));
-    	    DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
+        	DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
         	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
         	DEBUG_MSG_P(PSTR("         File System: %s\n"), (char *) NoFUSSClient.getNewFileSystem().c_str());
             #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"message\": 1}"));
+                wsSend_P(PSTR("{\"message\":1}"));
             #endif
 
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade

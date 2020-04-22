@@ -28,7 +28,7 @@ void lightfoxLearn() {
     Serial.write(LIGHTFOX_CODE_STOP);
     Serial.println();
     Serial.flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Learn comman sent\n"));
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Learn command sent\n"));
 }
 
 void lightfoxClear() {
@@ -38,7 +38,7 @@ void lightfoxClear() {
     Serial.write(LIGHTFOX_CODE_STOP);
     Serial.println();
     Serial.flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Clear comman sent\n"));
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Clear command sent\n"));
 }
 
 // -----------------------------------------------------------------------------
@@ -48,20 +48,36 @@ void lightfoxClear() {
 #if WEB_SUPPORT
 
 void _lightfoxWebSocketOnConnected(JsonObject& root) {
-    root["lightfoxVisible"] = 1;
+    JsonObject& lightfox = root.createNestedObject("lightfox");
+
+    //TODO setting
+    lightfox["enabled"] = 1;
+
     uint8_t buttonsCount = _buttons.size();
-    root["lightfoxRelayCount"] = relayCount();
-    JsonArray& rfb = root.createNestedArray("lightfoxButtons");
+
+    JsonArray& schema = root.createNestedArray("_schema");
+    JsonArray& list = root.createNestedArray("list");
+
+    schema.add("id");
+    schema.add("relay");
+
     for (byte id=0; id<buttonsCount; id++) {
-        JsonObject& node = rfb.createNestedObject();
+        JsonArray& node = list.createNestedArray();
         node["id"] = id;
         node["relay"] = getSetting({"btnRelay", id}, 0);
     }
 }
 
-void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "lightfoxLearn") == 0) lightfoxLearn();
-    if (strcmp(action, "lightfoxClear") == 0) lightfoxClear();
+uint8_t _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "lightfoxLearn") == 0) {
+        lightfoxLearn();
+        return 1;
+    }
+    if (strcmp(action, "lightfoxClear") == 0) {
+        lightfoxClear();
+        return 1;
+    }
+    return 0;
 }
 
 #endif

@@ -40,15 +40,14 @@ void _arduinoOtaOnStart() {
     DEBUG_MSG_P(PSTR("[OTA] Start\n"));
 
     #if WEB_SUPPORT
-        wsSend_P(PSTR("{\"message\": 2}"));
+        wsSend_P(PSTR("{\"message\":2}"));
     #endif
 
 }
 
 void _arduinoOtaOnEnd() {
 
-    DEBUG_MSG_P(PSTR("\n"));
-    DEBUG_MSG_P(PSTR("[OTA] Done, restarting...\n"));
+    DEBUG_MSG_P(PSTR("\n[OTA] Done, restarting...\n"));
     #if WEB_SUPPORT
         wsSend_P(PSTR("{\"action\": \"reload\"}"));
     #endif

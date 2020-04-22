@@ -39,11 +39,17 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "api", 3) == 0);
 }
 
+void _apiWebSocketOnVisible(JsonObject& root) {
+    JsonObject& modules = root["_modules"];
+    modules["api"] = 1;
+}
+
 void _apiWebSocketOnConnected(JsonObject& root) {
-    root["apiEnabled"] = _apiEnabled();
-    root["apiKey"] = _apiKey();
-    root["apiRestFul"] = _apiRestFul();
-    root["apiRealTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
+    JsonObject& api = root.createNestedObject("api");
+    api["enabled"] = _apiEnabled();
+    api["key"] = _apiKey();
+    api["restFul"] = _apiRestFul();
+    api["realTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
 }
 
 void _apiConfigure() {
@@ -99,12 +105,9 @@ void _onAPIsText(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
-constexpr const size_t API_JSON_BUFFER_SIZE = 1024;
-
 void _onAPIsJson(AsyncWebServerRequest *request) {
 
-
-    DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(_apis.size()));
     JsonObject& root = jsonBuffer.createObject();
 
     constexpr const int BUFFER_SIZE = 48;
@@ -254,7 +257,7 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 void apiSetup() {
     _apiConfigure();
     wsRegister()
-        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
+        .onVisible(_apiWebSocketOnVisible)
         .onConnected(_apiWebSocketOnConnected)
         .onKeyCheck(_apiWebSocketOnKeyCheck);
     webRequestRegister(_apiRequestCallback);

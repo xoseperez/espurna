@@ -88,8 +88,8 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 
 void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned char size) {
     JsonObject& rfb = root.createNestedObject("rfb");
-    rfb["size"] = size;
-    rfb["start"] = start;
+    rfb["_size"] = size;
+    rfb["_start"] = start;
 
     JsonArray& on = rfb.createNestedArray("on");
     JsonArray& off = rfb.createNestedArray("off");
@@ -101,23 +101,39 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
 }
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
-    root["rfbVisible"] = 1;
-}
+    JsonObject& modules = root["_modules"];
+    modules["rfb"] = 1;
 
-void _rfbWebSocketOnConnected(JsonObject& root) {
-    root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES);
-    root["rfbCount"] = relayCount();
     #if RFB_DIRECT
-        root["rfbdirectVisible"] = 1;
-        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
-        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
+        modules["rfbDirect"] = 1;
     #endif
 }
 
-void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
-    if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
-    if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+void _rfbWebSocketOnConnected(JsonObject& root) {
+    JsonObject& rfb = root.createNestedObject("rfb");
+
+    rfb["repeat"] = getSetting("rfbRepeat", RF_SEND_TIMES);
+    rfb["count"] = relayCount();
+    #if RFB_DIRECT
+        rfb["RX"] = getSetting("rfbRX", RFB_RX_PIN);
+        rfb["TX"] = getSetting("rfbTX", RFB_TX_PIN);
+    #endif
+}
+
+uint8_t _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
+    if (strcmp(action, "rfblearn") == 0) {
+        rfbLearn(data["id"], data["status"]);
+        return 1;
+    }
+    if (strcmp(action, "rfbforget") == 0) {
+        rfbForget(data["id"], data["status"]);
+        return 1
+    }
+    if (strcmp(action, "rfbsend") == 0) {
+        rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+        return 1;
+    }
+    return true;
 }
 
 bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
@@ -125,7 +141,7 @@ bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, relayCount());    
+    _rfbWebSocketSendCodeArray(root, 0, relayCount());
 }
 
 #endif // WEB_SUPPORT
@@ -289,7 +305,7 @@ void _rfbDecode() {
         unsigned char id;
         unsigned char status;
         bool matched = _rfbMatch(buffer, id, status, buffer);
-        
+
         if (matched) {
             DEBUG_MSG_P(PSTR("[RF] Matched message '%s'\n"), buffer);
             _rfbin = true;
@@ -619,7 +635,7 @@ void _rfbInitCommands() {
             terminalError(F("Wrong arguments"));
             return;
         }
-        
+
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
@@ -640,7 +656,7 @@ void _rfbInitCommands() {
             terminalError(F("Wrong arguments"));
             return;
         }
-        
+
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);

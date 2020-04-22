@@ -225,7 +225,7 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
             _haSendMagnitude(i, root);
             root["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
             root["device"] = config.deviceConfig;
-            
+
             message.reserve(root.measureLength());
             root.printTo(message);
         }
@@ -244,7 +244,9 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
 
 void _haSendSwitch(unsigned char i, JsonObject& config) {
 
-    String name = getSetting("hostname");
+    String name = getSetting({"relayName", i}, getSetting("hostname"));
+
+    //TODO
     if (relayCount() > 1) {
         name += String("_") + String(i);
     }
@@ -254,12 +256,12 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
         config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
-        config["payload_on"] = relayPayload(PayloadStatus::On);
-        config["payload_off"] = relayPayload(PayloadStatus::Off);
-        config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-        config["payload_available"] = mqttPayloadStatus(true);
-        config["payload_not_available"] = mqttPayloadStatus(false);
     }
+    config["payload_on"] = relayPayload(PayloadStatus::On);
+    config["payload_off"] = relayPayload(PayloadStatus::Off);
+    config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
+    config["payload_available"] = mqttPayloadStatus(true);
+    config["payload_not_available"] = mqttPayloadStatus(false);
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
@@ -317,22 +319,13 @@ void ha_discovery_t::prepareSwitches(ha_config_t& config) {
 
 // -----------------------------------------------------------------------------
 
-constexpr const size_t HA_YAML_BUFFER_SIZE = 1024;
-
-void _haSwitchYaml(unsigned char index, JsonObject& root) {
-
+String jsonToYaml(JsonObject& root) {
     String output;
-    output.reserve(HA_YAML_BUFFER_SIZE);
+    output.reserve(root.measurePrettyLength()); // Allocate the yaml size
 
-    JsonObject& config = root.createNestedObject("config");
-    config["platform"] = "mqtt";
-    _haSendSwitch(index, config);
-
-    if (index == 0) output += "\n\n" + switchType + ":";
-    output += "\n";
     bool first = true;
 
-    for (auto kv : config) {
+    for (auto kv : root) {
         if (first) {
             output += "  - ";
             first = false;
@@ -341,7 +334,7 @@ void _haSwitchYaml(unsigned char index, JsonObject& root) {
         }
         output += kv.key;
         output += ": ";
-        if (strncmp(kv.key, "payload_", strlen("payload_")) == 0) {
+        if (strncmp(kv.key, "payload", 7) == 0) {
             output += _haFixPayload(kv.value.as<String>());
         } else {
             output += kv.value.as<String>();
@@ -350,55 +343,59 @@ void _haSwitchYaml(unsigned char index, JsonObject& root) {
     }
     output += " ";
 
-    root.remove("config");
-    root["haConfig"] = output;
+    return output;
+}
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+#define MAX_HA_SWITCH_OBJECT_SIZE 17
+#else
+#define MAX_HA_SWITCH_OBJECT_SIZE 9
+#endif
+
+String _haSwitchYaml(unsigned char index) {
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(MAX_HA_SWITCH_OBJECT_SIZE));
+    JsonObject& root = jsonBuffer.createObject();
+
+    root["platform"] = "mqtt";
+    _haSendSwitch(index, root);
+
+
+    String res;
+    if (index == 0) {
+        res = switchType + ":\n" + jsonToYaml(root);
+    } else {
+        res = jsonToYaml(root);
+    }
+    return jsonToYaml(root);
 }
 
 #if SENSOR_SUPPORT
 
-void _haSensorYaml(unsigned char index, JsonObject& root) {
+String _haSensorYaml(unsigned char index) {
+    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(4));
+    JsonObject& root = jsonBuffer.createObject();
 
-    String output;
-    output.reserve(HA_YAML_BUFFER_SIZE);
+    root["platform"] = "mqtt";
+    _haSendMagnitude(index, root);
 
-    JsonObject& config = root.createNestedObject("config");
-    config["platform"] = "mqtt";
-    _haSendMagnitude(index, config);
-
-    if (index == 0) output += "\n\nsensor:";
-    output += "\n";
-    bool first = true;
-
-    for (auto kv : config) {
-        if (first) {
-            output += "  - ";
-            first = false;
-        } else {
-            output += "    ";
-        }
-        String value = kv.value.as<String>();
-        value.replace("%", "'%'");
-        output += kv.key;
-        output += ": ";
-        output += value;
-        output += "\n";
+    String res;
+    if (index == 0) {
+        res = "sensor:\n" + jsonToYaml(root);
+    } else {
+        res = jsonToYaml(root);
     }
-    output += " ";
-
-    root.remove("config");
-    root["haConfig"] = output;
-
+    return jsonToYaml(root);
 }
 
 #endif // SENSOR_SUPPORT
 
-void _haGetDeviceConfig(JsonObject& config) {
-    config.createNestedArray("identifiers").add(getIdentifier());
-    config["name"] = getSetting("desc", getSetting("hostname"));
-    config["manufacturer"] = getManufacturer().c_str();
-    config["model"] = getDevice().c_str();
-    config["sw_version"] = String(APP_NAME) + " " + APP_VERSION + " (" + getCoreVersion() + ")";
-}
+//void _haGetDeviceConfig(JsonObject& config) {
+//    config.createNestedArray("identifiers").add(getIdentifier());
+//    config["name"] = getSetting("desc", getSetting("hostname"));
+//    config["manufacturer"] = getManufacturer().c_str();
+//    config["model"] = getDevice().c_str();
+//    config["sw_version"] = String(APP_NAME) + " " + APP_VERSION + " (" + getCoreVersion() + ")";
+//}
 
 void _haSend() {
 
@@ -424,7 +421,7 @@ void _haSend() {
     #if SENSOR_SUPPORT
         _ha_discovery->prepareMagnitudes(config);
     #endif
-    
+
     _ha_send_flag = false;
     schedule_function(_haSendDiscovery);
 
@@ -457,40 +454,57 @@ bool _haWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _haWebSocketOnVisible(JsonObject& root) {
-    root["haVisible"] = 1;
+    JsonObject& modules = root["_modules"];
+    modules["ha"] = 1;
 }
 
 void _haWebSocketOnConnected(JsonObject& root) {
-    root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
+    JsonObject& ha = root.createNestedObject("ha");
+
+    ha["enabled"] = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
+    ha["prefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
+
+
+
+    ha["_statusTopic"] = MQTT_TOPIC_STATUS;
+    if (relayCount()) {
+        ha["_relayTopic"] = MQTT_TOPIC_RELAY;
+    }
+
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        ha["_brightnessTopic"] = MQTT_TOPIC_BRIGHTNESS;
+        if (lightHasColor()) {
+            ha["_rgbTopic"] = MQTT_TOPIC_COLOR_RGB;
+        }
+        if (lightHasColor() || lightUseCCT()) {
+            ha["_miredTopic"] = MQTT_TOPIC_MIRED;
+        }
+
+        if (lightChannels() > 3) {
+            ha["_channelTopic"] = MQTT_TOPIC_CHANNEL;
+        }
+    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+}
+uint8_t _haWebSocketOnActionSize(const char * action) {
+    if (strcmp(action, "haconfig") == 0) {
+        return JSON_ARRAY_SIZE(relayCount()) + JSON_ARRAY_SIZE();
+    }
+    return 0;
 }
 
-void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+uint8_t _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data, JsonObject& res) {
     if (strcmp(action, "haconfig") == 0) {
-        ws_on_send_callback_list_t callbacks;
-        #if SENSOR_SUPPORT
-            callbacks.reserve(magnitudeCount() + relayCount());
-        #else
-            callbacks.reserve(relayCount());
-        #endif // SENSOR_SUPPORT
-        {
-            for (unsigned char idx=0; idx<relayCount(); ++idx) {
-                callbacks.push_back([idx](JsonObject& root) {
-                    _haSwitchYaml(idx, root);
-                });
-            }
+        for (unsigned char idx=0; idx<relayCount(); ++idx) {
+            _haSwitchConfig(idx, res);
         }
         #if SENSOR_SUPPORT
-        {
-            for (unsigned char idx=0; idx<magnitudeCount(); ++idx) {
-                callbacks.push_back([idx](JsonObject& root) {
-                    _haSensorYaml(idx, root);
-                });
-            }
+        for (unsigned char idx=0; idx<magnitudeCount(); ++idx) {
+            _haSwitchConfig(idx, res);
         }
         #endif // SENSOR_SUPPORT
-        if (callbacks.size()) wsPostSequence(client_id, std::move(callbacks));
+        return 1;
     }
+    return 0;
 }
 
 #endif // WEB_SUPPORT
@@ -501,20 +515,17 @@ void _haInitCommands() {
 
     terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
         for (unsigned char idx=0; idx<relayCount(); ++idx) {
-            DynamicJsonBuffer jsonBuffer(1024);
-            JsonObject& root = jsonBuffer.createObject();
             _haSwitchYaml(idx, root);
-            DEBUG_MSG(root["haConfig"].as<String>().c_str());
+            DEBUG_MSG("\n\n"+root["haConfig"].as<String>().c_str()+"\n");
         }
         #if SENSOR_SUPPORT
             for (unsigned char idx=0; idx<magnitudeCount(); ++idx) {
-                DynamicJsonBuffer jsonBuffer(1024);
+                DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(10));
                 JsonObject& root = jsonBuffer.createObject();
                 _haSensorYaml(idx, root);
-                DEBUG_MSG(root["haConfig"].as<String>().c_str());
+                DEBUG_MSG("\n\n"+root["haConfig"].as<String>().c_str()+"\n");
             }
         #endif // SENSOR_SUPPORT
-        DEBUG_MSG("\n");
         terminalOK();
     });
 
@@ -550,7 +561,7 @@ void haSetup() {
         wsRegister()
             .onVisible(_haWebSocketOnVisible)
             .onConnected(_haWebSocketOnConnected)
-            .onAction(_haWebSocketOnAction)
+            //.onAction(_haWebSocketOnAction)
             .onKeyCheck(_haWebSocketOnKeyCheck);
     #endif
 

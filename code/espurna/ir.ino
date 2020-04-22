@@ -404,13 +404,13 @@ void irSetup() {
 
     #if defined(IR_RX_PIN)
         _ir_receiver.enableIRIn();
-        DEBUG_MSG_P(PSTR("[IR] Receiver initialized \n"));
+        DEBUG_MSG_P(PSTR("[IR] Receiver initialized\n"));
     #endif
 
     #if MQTT_SUPPORT && defined(IR_TX_PIN)
         _ir_sender.begin();
         mqttRegister(_irMqttCallback);
-        DEBUG_MSG_P(PSTR("[IR] Transmitter initialized \n"));
+        DEBUG_MSG_P(PSTR("[IR] Transmitter initialized\n"));
     #endif
 
     espurnaRegisterLoop(_irLoop);

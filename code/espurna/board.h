@@ -16,5 +16,3 @@ String getEspurnaSensors();
 String getEspurnaWebUI();
 
 bool isEspurnaCore();
-
-int getBoardId();

@@ -96,25 +96,29 @@ bool _tspkWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _tspkWebSocketOnVisible(JsonObject& root) {
-    root["tspkVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
+    JsonObject& modules = root["_modules"];
+    modules["tspk"] = static_cast<unsigned char>(haveRelaysOrSensors());
 }
 
 void _tspkWebSocketOnConnected(JsonObject& root) {
+    JsonObject& tspk = root.createNestedObject("tspk");
 
-    root["tspkEnabled"] = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
-    root["tspkKey"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
-    root["tspkClear"] = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
-    root["tspkAddress"] = getSetting("tspkAddress", THINGSPEAK_ADDRESS);
+    tspk["enabled"] = getSetting("tspkEnabled", 1 == THINGSPEAK_ENABLED);
+    tspk["key"] = getSetting("tspkKey", THINGSPEAK_APIKEY);
+    tspk["clear"] = getSetting("tspkClear", 1 == THINGSPEAK_CLEAR_CACHE);
+    tspk["address"] = getSetting("tspkAddress", THINGSPEAK_ADDRESS);
 
-    JsonArray& relays = root.createNestedArray("tspkRelays");
+    JsonArray& relays = tspk.createNestedArray("relays");
     for (byte i=0; i<relayCount(); i++) {
         relays.add(getSetting({"tspkRelay", i}, 0));
     }
 
+    //TODO Is this really needed since already done in sensor
+    /*
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(root, "tspk");
+        _sensorWebSocketMagnitudesConfig(tspk);
     #endif
-
+    */
 }
 
 #endif
@@ -338,7 +342,7 @@ void _tspkPost(const String& address) {
         auto client = std::make_unique<WiFiClient>();
         _tspkPost(*client.get(), url, false);
         return;
-    }        
+    }
 
 }
 

@@ -32,7 +32,7 @@ String buildTime();
 unsigned long getUptime();
 bool haveRelaysOrSensors();
 
-void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory);
+void infoMemory(const char * name, unsigned int total_memory, uint32_t free_memory);
 void infoUptime();
 void info(bool first = false);
 
@@ -53,3 +53,5 @@ double roundTo(double num, unsigned char positions);
 uint32_t u32fromString(const String& string, int base);
 uint32_t u32fromString(const String& string);
 String u32toString(uint32_t bitset, int base);
+
+const uint32_t calcJsonPayloadBufferSize(char * payload);

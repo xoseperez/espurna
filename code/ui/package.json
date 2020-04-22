@@ -1,0 +1,120 @@
+{
+  "name": "espurna",
+  "version": "2.0.1",
+  "private": true,
+  "author": {
+    "name": "Adrien Foulon",
+    "email": "tofandel@tukan.hu",
+    "url": "https://github.com/Tofandel"
+  },
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "serve:dev": "vue-cli-service serve --mode dev",
+    "serve:dev:pwa": "vue-cli-service serve --mode devpwa",
+    "serve:pwa": "vue-cli-service serve --mode pwa",
+    "build": "vue-cli-service build",
+    "test": "vue-cli-service test:unit",
+    "test:unit": "vue-cli-service test:unit",
+    "lint": "vue-cli-service lint",
+    "build:dev": "vue-cli-service build --mode dev",
+    "build:dev:pwa": "vue-cli-service build --mode devpwa",
+    "build:pwa": "vue-cli-service build --mode pwa"
+  },
+  "dependencies": {
+    "core-js": "^2.6.11",
+    "element-ui": "^2.13.0",
+    "vue": "^2.6.11"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^3.12.1",
+    "@vue/cli-plugin-eslint": "^3.12.1",
+    "@vue/cli-plugin-pwa": "^4.1.2",
+    "@vue/cli-plugin-unit-jest": "^4.1.2",
+    "@vue/cli-service": "^3.12.1",
+    "@vue/eslint-config-standard": "^4.0.0",
+    "@vue/test-utils": "1.0.0-beta.31",
+    "axios": "^0.19.2",
+    "babel-eslint": "^10.0.3",
+    "babel-plugin-component": "^1.1.1",
+    "compare-version": "^0.1.2",
+    "compare-versions": "^3.5.1",
+    "compression-webpack-plugin": "^3.1.0",
+    "deep-object-diff": "^1.1.0",
+    "eslint": "^5.16.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-vue": "^5.2.3",
+    "favicons-webpack-plugin": "^2.1.0",
+    "file-saver": "^2.0.2",
+    "glob-all": "^3.1.0",
+    "jest-websocket-mock": "^1.5.1",
+    "less": "^3.10.3",
+    "less-loader": "^5.0.0",
+    "lint-staged": "^8.2.1",
+    "mock-websocket": "0.0.7",
+    "purgecss-webpack-plugin": "^1.6.0",
+    "register-service-worker": "^1.6.2",
+    "sass": "^1.25.0",
+    "sass-loader": "^8.0.2",
+    "setimmediate": "^1.0.5",
+    "terser-webpack-plugin": "^2.3.2",
+    "vue-cli-plugin-element": "^1.0.1",
+    "vue-svg-loader": "^0.15.0",
+    "vue-template-compiler": "^2.6.11",
+    "webpack-preprocessor-loader": "^1.1.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/strongly-recommended",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/__tests__/*.{j,t}s?(x)",
+          "**/tests/unit/**/*.spec.{j,t}s?(x)"
+        ],
+        "env": {
+          "jest": true
+        }
+      }
+    ]
+  },
+  "browserslist": [
+    "> 20%"
+  ],
+  "background_color": "#ff952f",
+  "contributors": [
+    {
+      "name": "Xose Pérez",
+      "url": "https://github.com/xoseperez/"
+    },
+    {
+      "name": "Max Prokhorov",
+      "url": "https://github.com/mcspr/"
+    },
+    {
+      "name": "Adrien Foulon",
+      "email": "tofandel@tukan.hu",
+      "url": "https://github.com/Tofandel"
+    }
+  ],
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "license": "GPL-3.0",
+  "lint-staged": {
+    "*.{js,vue}": [
+      "vue-cli-service lint",
+      "git add"
+    ]
+  },
+  "short_name": "ESPurna",
+  "theme_color": "#479fd6"
+}

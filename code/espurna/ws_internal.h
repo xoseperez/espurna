@@ -66,6 +66,7 @@ struct ws_data_t {
         storage(new ws_on_send_callback_list_t {cb}),
         client_id(0),
         mode(ALL),
+        request_id(0),
         callbacks(*storage.get()),
         counter(0, 1)
     {}
@@ -74,6 +75,16 @@ struct ws_data_t {
         storage(new ws_on_send_callback_list_t {cb}),
         client_id(client_id),
         mode(ALL),
+        request_id(0),
+        callbacks(*storage.get()),
+        counter(0, 1)
+    {}
+
+    ws_data_t(uint32_t client_id, uint32_t request_id, const ws_on_send_callback_f& cb) :
+        storage(new ws_on_send_callback_list_t {cb}),
+        client_id(client_id),
+        mode(ALL),
+        request_id(request_id),
         callbacks(*storage.get()),
         counter(0, 1)
     {}
@@ -82,6 +93,7 @@ struct ws_data_t {
         storage(new ws_on_send_callback_list_t(std::move(callbacks))),
         client_id(client_id),
         mode(mode),
+        request_id(0),
         callbacks(*storage.get()),
         counter(0, (storage.get())->size())
     {}
@@ -89,6 +101,7 @@ struct ws_data_t {
     ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
         client_id(client_id),
         mode(mode),
+        request_id(0),
         callbacks(callbacks),
         counter(0, callbacks.size())
     {}
@@ -120,6 +133,7 @@ struct ws_data_t {
 
     const uint32_t client_id;
     const mode_t mode;
+    const uint32_t request_id;
     const ws_on_send_callback_list_t& callbacks;
     ws_counter_t counter;
 };
