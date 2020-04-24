@@ -8,42 +8,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include <bitset>
+#include "espurna.h"
 #include "rpc.h"
-#include "utils.h"
+
+#include <bitset>
 
 constexpr size_t RELAYS_MAX = 32; 
-
-struct RelayMask {
-
-    explicit RelayMask(const String& string) :
-        as_string(string),
-        as_u32(u32fromString(string))
-    {}
-
-    explicit RelayMask(String&& string) :
-        as_string(std::move(string)),
-        as_u32(u32fromString(as_string))
-    {}
-
-    explicit RelayMask(uint32_t value) :
-        as_string(std::move(u32toString(value, 2))),
-        as_u32(value)
-    {}
-
-    explicit RelayMask(std::bitset<RELAYS_MAX> bitset) :
-        RelayMask(bitset.to_ulong())
-    {}
-
-    RelayMask(String&& string, uint32_t value) :
-        as_string(std::move(string)),
-        as_u32(value)
-    {}
-
-    const String as_string;
-    uint32_t as_u32;
-
-};
 
 PayloadStatus relayParsePayload(const char * payload);
 
@@ -62,5 +32,12 @@ const String& relayPayloadToggle();
 
 const char* relayPayload(PayloadStatus status);
 
-void relaySetupDummy(size_t size, bool reconfigure = false);
+void relayMQTT(unsigned char id);
+void relayMQTT();
 
+void relayPulse(unsigned char id);
+void relaySync(unsigned char id);
+void relaySave(bool eeprom);
+
+void relaySetupDummy(size_t size, bool reconfigure = false);
+void relaySetup();

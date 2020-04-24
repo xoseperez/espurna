@@ -8,12 +8,14 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
+#include <Arduino.h>
+#include <Schedule.h>
+
 #include <memory>
 #include <list>
 
-#include <Schedule.h>
-
-#include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 
 struct AsyncBufferedClient {
@@ -56,6 +58,11 @@ struct AsyncBufferedClient {
 #endif // TELNET_SERVER_ASYNC_BUFFERED
 #endif
 
-constexpr const char TELNET_IAC = 0xFF;
-constexpr const char TELNET_XEOF = 0xEC;
+constexpr char TELNET_IAC = 0xFF;
+constexpr char TELNET_XEOF = 0xEC;
+
+bool telnetConnected();
+unsigned char telnetWrite(unsigned char ch);
+bool telnetDebugSend(const char* prefix, const char* data);
+void telnetSetup();
 

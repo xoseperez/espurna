@@ -8,9 +8,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include <functional>
+#include "espurna.h"
 
 #if WEB_SUPPORT
+
+#include <functional>
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -37,5 +39,10 @@ using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
 
 AsyncWebServer* webServer();
 
+bool webAuthenticate(AsyncWebServerRequest *request);
+void webLog(AsyncWebServerRequest *request);
+
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
+
+void webSetup();

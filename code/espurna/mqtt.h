@@ -9,6 +9,8 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #pragma once
 
+#include "espurna.h"
+
 #include <WString.h>
 
 #include <utility>
@@ -45,13 +47,37 @@ void mqttSend(const char * topic, const char * message, bool force, bool retain)
 void mqttSend(const char * topic, const char * message, bool force);
 void mqttSend(const char * topic, const char * message);
 
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain);
 void mqttSend(const char * topic, unsigned int index, const char * message, bool force);
 void mqttSend(const char * topic, unsigned int index, const char * message);
+
+void mqttSendStatus();
+void mqttFlush();
+
+int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent);
+int8_t mqttEnqueue(const char * topic, const char * message);
 
 const String& mqttPayloadOnline();
 const String& mqttPayloadOffline();
 const char* mqttPayloadStatus(bool status);
 
-void mqttSendStatus();
+void mqttSetBroker(IPAddress ip, uint16_t port);
+void mqttSetBrokerIfNone(IPAddress ip, uint16_t port);
+
+void mqttSubscribeRaw(const char * topic);
+void mqttSubscribe(const char * topic);
+
+void mqttUnsubscribeRaw(const char * topic);
+void mqttUnsubscribe(const char * topic);
+
+void mqttEnabled(bool status);
+bool mqttEnabled();
+
+bool mqttForward();
+
+bool mqttConnected();
+
+void mqttDisconnect();
+void mqttSetup();
 
 #endif // MQTT_SUPPORT == 1

@@ -7,6 +7,7 @@ NTP MODULE
 #pragma once
 
 #include "broker.h"
+#include "espurna.h"
 
 // TODO: need this prototype for .ino
 struct NtpCalendarWeekday;
@@ -44,8 +45,10 @@ struct NtpCalendarWeekday {
 
 using NtpBroker = TBroker<TBrokerType::Datetime, const NtpTick, time_t, const String&>;
 
+String ntpDateTime(tm* timestruct);
 String ntpDateTime(time_t ts);
 String ntpDateTime();
+bool ntpSynced();
 
 void ntpSetup();
 

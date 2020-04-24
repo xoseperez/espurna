@@ -8,20 +8,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#define LWIP_INTERNAL
-#include <ESP8266WiFi.h>
-#undef LWIP_INTERNAL
+#include <Arduino.h>
 
-extern "C" {
-  #include <lwip/opt.h>
-  #include <lwip/ip.h>
-  #include <lwip/tcp.h>
-  #include <lwip/inet.h> // ip_addr_t
-  #include <lwip/err.h> // ERR_x
-  #include <lwip/dns.h> // dns_gethostbyname
-  #include <lwip/ip_addr.h> // ip4/ip6 helpers
-  #include <lwip/init.h> // LWIP_VERSION_MAJOR
-};
+#include "espurna.h"
+
+//#define LWIP_INTERNAL
+#include <ESP8266WiFi.h>
+//#undef LWIP_INTERNAL
+#include <Ticker.h>
 
 #if LWIP_VERSION_MAJOR == 1
 #include <netif/etharp.h>

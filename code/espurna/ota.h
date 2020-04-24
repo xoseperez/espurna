@@ -6,7 +6,11 @@ OTA MODULE
 
 #pragma once
 
+#include <Arduino.h>
 #include <Updater.h>
+
+#include "espurna.h"
+
 #include <ArduinoOTA.h>
 
 #if OTA_WEB_SUPPORT
