@@ -52,10 +52,11 @@ total_time = 0
 
 
 def print_total_time():
+    print()
     print(
         clr(
             Color.BOLD,
-            "\n> Total time: {}".format(datetime.timedelta(seconds=total_time)),
+            "> Total time: {}".format(datetime.timedelta(seconds=total_time)),
         )
     )
 
@@ -82,6 +83,11 @@ def main(args):
         raise SystemExit(clr(Color.YELLOW, "No environment selected"))
     print(clr(Color.BOLD, "> Selected environment: {}".format(args.environment)))
 
+    cmd = ["platformio", "run"]
+    if not args.no_silent:
+        cmd.extend(["-s"])
+    cmd.extend(["-e", args.environment])
+
     for cfg in configurations:
         print(clr(Color.BOLD, "> Building {}".format(cfg)))
         with open(CUSTOM_HEADER, "w") as custom_h:
@@ -101,7 +107,6 @@ def main(args):
         os_env = os.environ.copy()
         os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = "-DUSE_CUSTOM_H"
         os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
-        cmd = ["platformio", "run", "-s", "-e", args.environment]
 
         start = time.time()
         subprocess.check_call(cmd, env=os_env)
@@ -146,6 +151,11 @@ if __name__ == "__main__":
         "--default-configurations",
         default="test/build/*.h",
         help="(glob) default configuration headers",
+    )
+    parser.add_argument(
+        "--no-silent",
+        action="store_true",
+        help="Do not silence pio-run"
     )
 
     main(parser.parse_args())
