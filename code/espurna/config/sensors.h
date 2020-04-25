@@ -1058,6 +1058,19 @@
 #endif
 
 //------------------------------------------------------------------------------
+// HDC1080 / 831R temperature & humidity sensor
+// Enable support by passing HDC1080_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef HDC1080_SUPPORT
+#define HDC1080_SUPPORT                  0
+#endif
+
+#ifndef HDC1080_ADDRESS
+#define HDC1080_ADDRESS                  0x00    // 0x00 means auto
+#endif
+
+//------------------------------------------------------------------------------
 // Sonar
 // Enable support by passing SONAR_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1310,7 +1323,8 @@
     SI1145_SUPPORT || \
     SI7021_SUPPORT || \
     VEML6075_SUPPORT || \
-    VL53L1X_SUPPORT \
+    VL53L1X_SUPPORT || \
+    HDC1080_SUPPORT \
 )
 #undef I2C_SUPPORT
 #define I2C_SUPPORT                 1
@@ -1372,7 +1386,8 @@
     TMP3X_SUPPORT || \
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
-    VL53L1X_SUPPORT \
+    VL53L1X_SUPPORT || \
+    HDC1080_SUPPORT \
 )
 #endif
 

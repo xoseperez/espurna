@@ -195,6 +195,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "sensors/SI1145Sensor.h"
 #endif
 
+#if HDC1080_SUPPORT
+    #include "sensors/HDC1080Sensor.h"
+#endif
+
 //--------------------------------------------------------------------------------
 
 
@@ -1713,6 +1717,13 @@ void _sensorLoad() {
     }
     #endif
 
+    #if HDC1080_SUPPORT
+    {
+        HDC1080Sensor * sensor = new HDC1080Sensor();
+        sensor->setAddress(HDC1080_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorReport(unsigned char index, double value) {
