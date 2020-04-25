@@ -74,4 +74,6 @@ bool lightHasColor();
 bool lightUseCCT();
 
 void lightMQTT();
+void lightSetupChannels(unsigned char size);
+
 void lightSetup();

@@ -269,7 +269,7 @@ void setup() {
         displaySetup();
     #endif
     #if TUYA_SUPPORT
-        tuyaSetup();
+        Tuya::tuyaSetup();
     #endif
 
     // 3rd party code hook

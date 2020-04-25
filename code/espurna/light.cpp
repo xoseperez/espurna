@@ -1381,7 +1381,7 @@ void lightSetup() {
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-        tuyaSetupLight();
+        Tuya::tuyaSetupLight();
     #endif
 
     DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);

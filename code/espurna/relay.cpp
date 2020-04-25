@@ -820,7 +820,7 @@ void _relayBoot() {
     _relayRecursive = false;
 
     #if TUYA_SUPPORT
-        tuyaSyncSwitchStatus();
+        Tuya::tuyaSyncSwitchStatus();
     #endif
 
 }
@@ -1309,7 +1309,7 @@ void _relaySetupProvider() {
     //       note of the function call order! relay code is initialized before tuya's, and the easiest
     //       way to accomplish that is to use ctor as a way to "register" callbacks even before setup() is called
     #if TUYA_SUPPORT
-        tuyaSetupSwitch();
+        Tuya::tuyaSetupSwitch();
     #endif
 }
 

@@ -8,8 +8,11 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 // ref: https://docs.tuya.com/en/mcu/mcu-protocol.html
 
+#include "tuya.h"
+
 #if TUYA_SUPPORT
 
+#include "broker.h"
 #include "relay.h"
 #include "light.h"
 
@@ -25,15 +28,15 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 namespace Tuya {
 
-    constexpr const size_t SERIAL_SPEED { 9600u };
+    constexpr size_t SERIAL_SPEED { 9600u };
 
-    constexpr const unsigned char SWITCH_MAX { 8u };
-    constexpr const unsigned char DIMMER_MAX { 5u };
+    constexpr unsigned char SWITCH_MAX { 8u };
+    constexpr unsigned char DIMMER_MAX { 5u };
 
-    constexpr const uint32_t DISCOVERY_TIMEOUT { 1500u };
+    constexpr uint32_t DISCOVERY_TIMEOUT { 1500u };
 
-    constexpr const uint32_t HEARTBEAT_SLOW { 9000u };
-    constexpr const uint32_t HEARTBEAT_FAST { 3000u };
+    constexpr uint32_t HEARTBEAT_SLOW { 9000u };
+    constexpr uint32_t HEARTBEAT_FAST { 3000u };
 
     // --------------------------------------------
 
