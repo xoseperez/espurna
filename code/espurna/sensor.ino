@@ -1548,6 +1548,13 @@ void _sensorLoad() {
     }
     #endif
 
+    #if HDC1080_SUPPORT
+    {
+        HDC1080Sensor * sensor = new HDC1080Sensor();
+        sensor->setAddress(HDC1080_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {

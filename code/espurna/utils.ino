@@ -248,9 +248,9 @@ void heartbeat() {
     if (serial) {
         infoUptime();
         infoHeapStats();
-        #if ADC_MODE_VALUE == ADC_VCC
+        if (ADC_MODE_VALUE == ADC_VCC) {
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
-        #endif
+        }
         #if NTP_SUPPORT
             if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
         #endif
@@ -548,9 +548,9 @@ void info(bool first) {
         DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
     }
 
-    #if ADC_MODE_VALUE == ADC_VCC
+    if (ADC_MODE_VALUE == ADC_VCC) {
         DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
-    #endif
+    }
     if (espurnaLoopDelay()) {
         DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), espurnaLoopDelay());
     }

@@ -358,9 +358,11 @@ void _wsUpdate(JsonObject& root) {
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
     root["loadaverage"] = systemLoadAverage();
-    #if ADC_MODE_VALUE == ADC_VCC
+    if (ADC_MODE_VALUE == ADC_VCC) {
         root["vcc"] = ESP.getVcc();
-    #endif
+    } else {
+        root["vcc"] = "N/A (TOUT) ";
+    }
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
