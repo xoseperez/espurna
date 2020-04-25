@@ -6,13 +6,11 @@ NTP MODULE
 
 #pragma once
 
-#include "broker.h"
 #include "espurna.h"
 
-// TODO: need this prototype for .ino
-struct NtpCalendarWeekday;
-
 #if NTP_SUPPORT
+
+#include "broker.h"
 
 #if NTP_LEGACY_SUPPORT // Use legacy TimeLib and NtpClientLib
 

@@ -10,16 +10,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if API_SUPPORT
 
+#include <vector>
+
 #include "system.h"
 #include "web.h"
 #include "rpc.h"
 #include "ws.h"
 
-typedef struct {
+struct web_api_t {
     char * key;
     api_get_callback_f getFn = NULL;
     api_put_callback_f putFn = NULL;
-} web_api_t;
+};
 std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------

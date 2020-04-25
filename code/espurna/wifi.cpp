@@ -35,6 +35,8 @@ struct wifi_scan_info_t {
     char buffer[128];
 };
 
+using wifi_scan_f = std::function<void(wifi_scan_info_t& info)>;
+
 void _wifiUpdateSoftAP() {
     if (WiFi.softAPgetStationNum() == 0) {
         #if USE_PASSWORD

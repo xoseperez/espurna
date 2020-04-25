@@ -12,9 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-//#define LWIP_INTERNAL
 #include <ESP8266WiFi.h>
-//#undef LWIP_INTERNAL
 #include <Ticker.h>
 
 #include <lwip/init.h>
@@ -32,9 +30,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #define TCP_MSS (1460)
 #endif
 
-struct wifi_scan_info_t;
-
-using wifi_scan_f = std::function<void(wifi_scan_info_t& info)>;
 using wifi_callback_f = std::function<void(justwifi_messages_t code, char * parameter)>;
 
 uint8_t wifiState();
