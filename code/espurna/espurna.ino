@@ -25,5 +25,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // See main.cpp
 //
 
-#include <Arduino.h>
+#include "espurna.h"
 

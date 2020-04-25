@@ -33,6 +33,7 @@ extern "C" {
 #include "telnet.h"
 #include "utils.h"
 #include "ws.h"
+#include "libs/URL.h"
 #include "libs/StreamInjector.h"
 
 #include <vector>

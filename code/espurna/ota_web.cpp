@@ -8,13 +8,11 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 */
 
 #include "ota.h"
-#include "settings.h"
-#include "storage_eeprom.h"
-#include "utils.h"
-#include "web.h"
-#include "ws.h"
 
 #if WEB_SUPPORT && OTA_WEB_SUPPORT
+
+#include "web.h"
+#include "ws.h"
 
 void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
 

@@ -217,58 +217,6 @@ bool _mqttConnectSyncClient(bool secure = false) {
 #endif // (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
 
 
-void _mqttConnect() {
-
-    // Do not connect if disabled
-    if (!_mqtt_enabled) return;
-
-    // Do not connect if already connected or still trying to connect
-    if (_mqtt.connected() || (_mqtt_state != AsyncClientState::Disconnected)) return;
-
-    // Check reconnect interval
-    if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
-
-    // Increase the reconnect delay
-    _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
-    if (_mqtt_reconnect_delay > MQTT_RECONNECT_DELAY_MAX) {
-        _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
-    }
-
-    #if MDNS_CLIENT_SUPPORT
-        _mqtt_server = mdnsResolve(_mqtt_server);
-    #endif
-
-    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%u\n"), _mqtt_server.c_str(), _mqtt_port);
-
-    DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
-    DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
-    DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
-    DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
-    DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
-
-    _mqtt_state = AsyncClientState::Connecting;
-
-    #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        const bool secure = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);
-    #else
-        const bool secure = false;
-    #endif
-
-    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-        _mqttSetupAsyncClient(secure);
-    #elif (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
-        if (_mqttSetupSyncClient(secure) && _mqttConnectSyncClient(secure)) {
-            _mqttOnConnect();
-        } else {
-            DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
-            _mqttOnDisconnect();
-        }
-    #else
-        #error "please check that MQTT_LIBRARY is valid"
-    #endif
-
-}
-
 void _mqttPlaceholders(String& text) {
 
     text.replace("{hostname}", getSetting("hostname"));
@@ -1015,6 +963,58 @@ void mqttSendStatus() {
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
+
+void _mqttConnect() {
+
+    // Do not connect if disabled
+    if (!_mqtt_enabled) return;
+
+    // Do not connect if already connected or still trying to connect
+    if (_mqtt.connected() || (_mqtt_state != AsyncClientState::Disconnected)) return;
+
+    // Check reconnect interval
+    if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
+
+    // Increase the reconnect delay
+    _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
+    if (_mqtt_reconnect_delay > MQTT_RECONNECT_DELAY_MAX) {
+        _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
+    }
+
+    #if MDNS_CLIENT_SUPPORT
+        _mqtt_server = mdnsResolve(_mqtt_server);
+    #endif
+
+    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%u\n"), _mqtt_server.c_str(), _mqtt_port);
+
+    DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
+    DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
+    DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
+    DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
+    DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
+
+    _mqtt_state = AsyncClientState::Connecting;
+
+    #if SECURE_CLIENT != SECURE_CLIENT_NONE
+        const bool secure = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);
+    #else
+        const bool secure = false;
+    #endif
+
+    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+        _mqttSetupAsyncClient(secure);
+    #elif (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
+        if (_mqttSetupSyncClient(secure) && _mqttConnectSyncClient(secure)) {
+            _mqttOnConnect();
+        } else {
+            DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
+            _mqttOnDisconnect();
+        }
+    #else
+        #error "please check that MQTT_LIBRARY is valid"
+    #endif
+
+}
 
 void mqttLoop() {
 

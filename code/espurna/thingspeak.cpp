@@ -345,7 +345,7 @@ void _tspkPost(const String& address) {
 
     #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
         if (url.protocol == "https") {
-            const int check = _ota_sc_config.on_check();
+            const int check = _tspk_sc_config.on_check();
             if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
                 DEBUG_MSG_P(PSTR("[THINGSPEAK] Time not synced! Cannot use CA validation\n"));
                 return;
