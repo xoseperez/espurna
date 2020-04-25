@@ -277,7 +277,7 @@ void _domoticzWebSocketOnConnected(JsonObject& root) {
     }
 
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(root, "dcz");
+        sensorWebSocketMagnitudes(root, "dcz");
     #endif
 
 }

@@ -6,18 +6,15 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 */
 
-#if THERMOSTAT_SUPPORT
+#include "thermostat.h"
 
-#include <float.h>
+#if THERMOSTAT_SUPPORT
 
 #include "ntp.h"
 #include "relay.h"
-#include "thermostat.h"
+#include "sensor.h"
+#include "mqtt.h"
 #include "ws.h"
-
-
-bool _thermostat_enabled = true;
-bool _thermostat_mode_cooler = false;
 
 const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
 const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
@@ -38,25 +35,6 @@ const char* NAME_BURN_DAY               = "burnDay";
 const char* NAME_BURN_MONTH             = "burnMonth";
 const char* NAME_OPERATION_MODE         = "thermostatOperationMode";
 
-#define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
-#define ASK_TEMP_RANGE_INTERVAL_REGULAR      60000  // ask every minute to be sure
-#define MILLIS_IN_SEC                         1000
-#define MILLIS_IN_MIN                        60000
-#define THERMOSTAT_STATE_UPDATE_INTERVAL     60000 // 1 min
-#define THERMOSTAT_RELAY                         0 // use relay 0
-#define THERMOSTAT_TEMP_RANGE_MIN               10 // grad. Celsius
-#define THERMOSTAT_TEMP_RANGE_MIN_MIN            3 // grad. Celsius
-#define THERMOSTAT_TEMP_RANGE_MIN_MAX           30 // grad. Celsius
-#define THERMOSTAT_TEMP_RANGE_MAX               20 // grad. Celsius
-#define THERMOSTAT_TEMP_RANGE_MAX_MIN            8 // grad. Celsius
-#define THERMOSTAT_TEMP_RANGE_MAX_MAX           35 // grad. Celsius
-#define THERMOSTAT_ALONE_ON_TIME                 5 //  5 min
-#define THERMOSTAT_ALONE_OFF_TIME               55 // 55 min
-#define THERMOSTAT_MAX_ON_TIME                  30 // 30 min
-#define THERMOSTAT_MIN_OFF_TIME                 10 // 10 min
-#define THERMOSTAT_ENABLED_BY_DEFAULT         true
-#define THERMOSTAT_MODE_COOLER_BY_DEFAULT     false
-
 unsigned long _thermostat_remote_temp_max_wait  = THERMOSTAT_REMOTE_TEMP_MAX_WAIT * MILLIS_IN_SEC;
 unsigned long _thermostat_alone_on_time   = THERMOSTAT_ALONE_ON_TIME  * MILLIS_IN_MIN;
 unsigned long _thermostat_alone_off_time  = THERMOSTAT_ALONE_OFF_TIME * MILLIS_IN_MIN;
@@ -71,23 +49,6 @@ unsigned int  _thermostat_burn_prev_month = 0;
 unsigned int  _thermostat_burn_day        = 0;
 unsigned int  _thermostat_burn_month      = 0;
 
-struct temp_t {
-  float temp;
-  unsigned long last_update = 0;
-  bool need_display_update = false;
-};
-temp_t _remote_temp;
-
-struct temp_range_t {
-  int min = THERMOSTAT_TEMP_RANGE_MIN;
-  int max = THERMOSTAT_TEMP_RANGE_MAX;
-  unsigned long last_update = 0;
-  unsigned long ask_time = 0;
-  unsigned long  ask_interval = ASK_TEMP_RANGE_INTERVAL_INITIAL;
-  bool need_display_update = true;
-};
-temp_range_t _temp_range;
-
 enum temperature_source_t {temp_none, temp_local, temp_remote};
 struct thermostat_t {
   unsigned long last_update = 0;
@@ -95,11 +56,27 @@ struct thermostat_t {
   String remote_sensor_name;
   unsigned int temperature_source = temp_none;
 };
+
+bool _thermostat_enabled = true;
+bool _thermostat_mode_cooler = false;
+
+temp_t _remote_temp;
+temp_range_t _temp_range;
 thermostat_t _thermostat;
 
 enum thermostat_cycle_type {cooling, heating};
 unsigned int _thermostat_cycle = heating;
 String thermostat_remote_sensor_topic;
+
+//------------------------------------------------------------------------------
+const temp_t& thermostatRemoteTemp() {
+    return _remote_temp;
+}
+
+//------------------------------------------------------------------------------
+const temp_range_t& thermostatRange() {
+    return _temp_range;
+}
 
 //------------------------------------------------------------------------------
 void thermostatEnabled(bool enabled) {
@@ -129,24 +106,6 @@ void thermostatRegister(thermostat_callback_f callback) {
 }
 
 //------------------------------------------------------------------------------
-void updateOperationMode() {
-  #if WEB_SUPPORT
-    String message;
-    if (_thermostat.temperature_source == temp_remote) {
-      message = "{\"thermostatVisible\": 1, \"thermostatOperationMode\": \"remote temperature\"}";
-      updateRemoteTemp(true);
-    } else if (_thermostat.temperature_source == temp_local) {
-      message = "{\"thermostatVisible\": 1, \"thermostatOperationMode\": \"local temperature\"}";
-      updateRemoteTemp(false);
-    } else {
-      message = "{\"thermostatVisible\": 1, \"thermostatOperationMode\": \"autonomous\"}";
-      updateRemoteTemp(false);
-    }
-    wsSend(message.c_str());
-  #endif
-}
-
-//------------------------------------------------------------------------------
 void updateRemoteTemp(bool remote_temp_actual) {
   #if WEB_SUPPORT
       char tmp_str[16];
@@ -158,6 +117,25 @@ void updateRemoteTemp(bool remote_temp_actual) {
       char buffer[128];
       snprintf_P(buffer, sizeof(buffer), PSTR("{\"thermostatVisible\": 1, \"remoteTmp\": %s}"), tmp_str);
       wsSend(buffer);
+  #endif
+}
+
+//------------------------------------------------------------------------------
+void updateOperationMode() {
+  #if WEB_SUPPORT
+    String message(F("{\"thermostatVisible\": 1, \"thermostatOperationMode\": \""));
+    if (_thermostat.temperature_source == temp_remote) {
+      message += F("remote temperature");
+      updateRemoteTemp(true);
+    } else if (_thermostat.temperature_source == temp_local) {
+      message += F("local temperature");
+      updateRemoteTemp(false);
+    } else {
+      message += F("autonomous");
+      updateRemoteTemp(false);
+    }
+    message += F("\"}");
+    wsSend(message.c_str());
   #endif
 }
 
@@ -233,13 +211,6 @@ void thermostatMQTTCallback(unsigned int type, const char * topic, const char * 
     }
 }
 
-#if MQTT_SUPPORT
-//------------------------------------------------------------------------------
-void thermostatSetupMQTT() {
-    mqttRegister(thermostatMQTTCallback);
-}
-#endif 
-
 //------------------------------------------------------------------------------
 void notifyRangeChanged(bool min) {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] notifyRangeChanged %s = %d\n"), min ? "MIN" : "MAX", min ? _temp_range.min : _temp_range.max);
@@ -275,35 +246,6 @@ void commonSetup() {
 }
 
 //------------------------------------------------------------------------------
-void thermostatSetup() {
-  commonSetup();
-
-  _thermostat.temperature_source = temp_none;
-  _thermostat_burn_total      = getSetting(NAME_BURN_TOTAL, 0);
-  _thermostat_burn_today      = getSetting(NAME_BURN_TODAY, 0);
-  _thermostat_burn_yesterday  = getSetting(NAME_BURN_YESTERDAY, 0);
-  _thermostat_burn_this_month = getSetting(NAME_BURN_THIS_MONTH, 0);
-  _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH, 0);
-  _thermostat_burn_day        = getSetting(NAME_BURN_DAY, 0);
-  _thermostat_burn_month      = getSetting(NAME_BURN_MONTH, 0);
-
-  #if MQTT_SUPPORT
-    thermostatSetupMQTT();
-  #endif
-
-  // Websockets
-  #if WEB_SUPPORT
-      wsRegister()
-          .onConnected(_thermostatWebSocketOnConnected)
-          .onKeyCheck(_thermostatWebSocketOnKeyCheck)
-          .onAction(_thermostatWebSocketOnAction);
-  #endif
-
-  espurnaRegisterLoop(thermostatLoop);
-  espurnaRegisterReload(_thermostatReload);
-}
-
-//------------------------------------------------------------------------------
 void _thermostatReload() {
   int prev_temp_range_min = _temp_range.min;
   int prev_temp_range_max = _temp_range.max;
@@ -315,58 +257,6 @@ void _thermostatReload() {
   if (_temp_range.max != prev_temp_range_max)
     notifyRangeChanged(false);
 }
-
-#if WEB_SUPPORT
-//------------------------------------------------------------------------------
-void _thermostatWebSocketOnConnected(JsonObject& root) {
-  root["thermostatEnabled"] = thermostatEnabled();
-  root["thermostatMode"] = thermostatModeCooler();
-  root["thermostatVisible"] = 1;
-  root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
-  root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
-  root[NAME_REMOTE_SENSOR_NAME] = _thermostat.remote_sensor_name;
-  root[NAME_REMOTE_TEMP_MAX_WAIT]    = _thermostat_remote_temp_max_wait / MILLIS_IN_SEC;
-  root[NAME_MAX_ON_TIME]     = _thermostat_max_on_time    / MILLIS_IN_MIN;
-  root[NAME_MIN_OFF_TIME]    = _thermostat_min_off_time   / MILLIS_IN_MIN;
-  root[NAME_ALONE_ON_TIME]   = _thermostat_alone_on_time  / MILLIS_IN_MIN;
-  root[NAME_ALONE_OFF_TIME]  = _thermostat_alone_off_time / MILLIS_IN_MIN;
-  root[NAME_BURN_TODAY]      = _thermostat_burn_today;
-  root[NAME_BURN_YESTERDAY]  = _thermostat_burn_yesterday;
-  root[NAME_BURN_THIS_MONTH] = _thermostat_burn_this_month;
-  root[NAME_BURN_PREV_MONTH] = _thermostat_burn_prev_month;
-  root[NAME_BURN_TOTAL]      = _thermostat_burn_total;
-  if (_thermostat.temperature_source == temp_remote) {
-    root[NAME_OPERATION_MODE] = "remote temperature";
-    root["remoteTmp"]     = _remote_temp.temp;
-  } else if (_thermostat.temperature_source == temp_local) {
-    root[NAME_OPERATION_MODE] = "local temperature";
-    root["remoteTmp"]     = "?";
-  } else {
-    root[NAME_OPERATION_MODE] = "autonomous";
-    root["remoteTmp"]     = "?";
-  }
-}
-
-//------------------------------------------------------------------------------
-bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
-    if (strncmp(key, NAME_THERMOSTAT_MODE,      strlen(NAME_THERMOSTAT_MODE))      == 0) return true;
-    if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
-    if (strncmp(key, NAME_TEMP_RANGE_MAX,       strlen(NAME_TEMP_RANGE_MAX))       == 0) return true;
-    if (strncmp(key, NAME_REMOTE_SENSOR_NAME,   strlen(NAME_REMOTE_SENSOR_NAME))   == 0) return true;
-    if (strncmp(key, NAME_REMOTE_TEMP_MAX_WAIT, strlen(NAME_REMOTE_TEMP_MAX_WAIT)) == 0) return true;
-    if (strncmp(key, NAME_MAX_ON_TIME,          strlen(NAME_MAX_ON_TIME))          == 0) return true;
-    if (strncmp(key, NAME_MIN_OFF_TIME,         strlen(NAME_MIN_OFF_TIME))         == 0) return true;
-    if (strncmp(key, NAME_ALONE_ON_TIME,        strlen(NAME_ALONE_ON_TIME))        == 0) return true;
-    if (strncmp(key, NAME_ALONE_OFF_TIME,       strlen(NAME_ALONE_OFF_TIME))       == 0) return true;
-    return false;
-}
-
-//------------------------------------------------------------------------------
-void _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "thermostat_reset_counters") == 0) resetBurnCounters();
-}
-#endif
 
 //------------------------------------------------------------------------------
 void sendTempRangeRequest() {
@@ -849,3 +739,84 @@ void displayLoop() {
 }
 
 #endif // THERMOSTAT_DISPLAY_SUPPORT
+
+#if WEB_SUPPORT
+//------------------------------------------------------------------------------
+void _thermostatWebSocketOnConnected(JsonObject& root) {
+  root["thermostatEnabled"] = thermostatEnabled();
+  root["thermostatMode"] = thermostatModeCooler();
+  root["thermostatVisible"] = 1;
+  root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
+  root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
+  root[NAME_REMOTE_SENSOR_NAME] = _thermostat.remote_sensor_name;
+  root[NAME_REMOTE_TEMP_MAX_WAIT]    = _thermostat_remote_temp_max_wait / MILLIS_IN_SEC;
+  root[NAME_MAX_ON_TIME]     = _thermostat_max_on_time    / MILLIS_IN_MIN;
+  root[NAME_MIN_OFF_TIME]    = _thermostat_min_off_time   / MILLIS_IN_MIN;
+  root[NAME_ALONE_ON_TIME]   = _thermostat_alone_on_time  / MILLIS_IN_MIN;
+  root[NAME_ALONE_OFF_TIME]  = _thermostat_alone_off_time / MILLIS_IN_MIN;
+  root[NAME_BURN_TODAY]      = _thermostat_burn_today;
+  root[NAME_BURN_YESTERDAY]  = _thermostat_burn_yesterday;
+  root[NAME_BURN_THIS_MONTH] = _thermostat_burn_this_month;
+  root[NAME_BURN_PREV_MONTH] = _thermostat_burn_prev_month;
+  root[NAME_BURN_TOTAL]      = _thermostat_burn_total;
+  if (_thermostat.temperature_source == temp_remote) {
+    root[NAME_OPERATION_MODE] = "remote temperature";
+    root["remoteTmp"]     = _remote_temp.temp;
+  } else if (_thermostat.temperature_source == temp_local) {
+    root[NAME_OPERATION_MODE] = "local temperature";
+    root["remoteTmp"]     = "?";
+  } else {
+    root[NAME_OPERATION_MODE] = "autonomous";
+    root["remoteTmp"]     = "?";
+  }
+}
+
+//------------------------------------------------------------------------------
+bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+    if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
+    if (strncmp(key, NAME_THERMOSTAT_MODE,      strlen(NAME_THERMOSTAT_MODE))      == 0) return true;
+    if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
+    if (strncmp(key, NAME_TEMP_RANGE_MAX,       strlen(NAME_TEMP_RANGE_MAX))       == 0) return true;
+    if (strncmp(key, NAME_REMOTE_SENSOR_NAME,   strlen(NAME_REMOTE_SENSOR_NAME))   == 0) return true;
+    if (strncmp(key, NAME_REMOTE_TEMP_MAX_WAIT, strlen(NAME_REMOTE_TEMP_MAX_WAIT)) == 0) return true;
+    if (strncmp(key, NAME_MAX_ON_TIME,          strlen(NAME_MAX_ON_TIME))          == 0) return true;
+    if (strncmp(key, NAME_MIN_OFF_TIME,         strlen(NAME_MIN_OFF_TIME))         == 0) return true;
+    if (strncmp(key, NAME_ALONE_ON_TIME,        strlen(NAME_ALONE_ON_TIME))        == 0) return true;
+    if (strncmp(key, NAME_ALONE_OFF_TIME,       strlen(NAME_ALONE_OFF_TIME))       == 0) return true;
+    return false;
+}
+
+//------------------------------------------------------------------------------
+void _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+    if (strcmp(action, "thermostat_reset_counters") == 0) resetBurnCounters();
+}
+#endif
+
+//------------------------------------------------------------------------------
+void thermostatSetup() {
+  commonSetup();
+
+  _thermostat.temperature_source = temp_none;
+  _thermostat_burn_total      = getSetting(NAME_BURN_TOTAL, 0);
+  _thermostat_burn_today      = getSetting(NAME_BURN_TODAY, 0);
+  _thermostat_burn_yesterday  = getSetting(NAME_BURN_YESTERDAY, 0);
+  _thermostat_burn_this_month = getSetting(NAME_BURN_THIS_MONTH, 0);
+  _thermostat_burn_prev_month = getSetting(NAME_BURN_PREV_MONTH, 0);
+  _thermostat_burn_day        = getSetting(NAME_BURN_DAY, 0);
+  _thermostat_burn_month      = getSetting(NAME_BURN_MONTH, 0);
+
+  #if MQTT_SUPPORT
+    mqttRegister(thermostatMQTTCallback);
+  #endif
+
+  // Websockets
+  #if WEB_SUPPORT
+      wsRegister()
+          .onConnected(_thermostatWebSocketOnConnected)
+          .onKeyCheck(_thermostatWebSocketOnKeyCheck)
+          .onAction(_thermostatWebSocketOnAction);
+  #endif
+
+  espurnaRegisterLoop(thermostatLoop);
+  espurnaRegisterReload(_thermostatReload);
+}

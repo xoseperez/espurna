@@ -16,6 +16,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
+#include "sensor.h"
 #include "utils.h"
 #include "ws.h"
 

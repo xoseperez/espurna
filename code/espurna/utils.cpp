@@ -9,10 +9,12 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <limits>
 
 #include "utils.h"
-#include "relay.h"
+
 #include "board.h"
 #include "mqtt.h"
 #include "ntp.h"
+#include "relay.h"
+#include "thermostat.h"
 
 #include "libs/TypeChecks.h"
 
@@ -394,14 +396,16 @@ void heartbeat() {
 
             #if THERMOSTAT_SUPPORT
                 if (hb_cfg & Heartbeat::Range) {
-                    mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MIN, String(_temp_range.min).c_str());
-                    mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(_temp_range.max).c_str());
+                    const auto& range = thermostatRange();
+                    mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MIN, String(range.min).c_str());
+                    mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(range.max).c_str());
                 }
 
                 if (hb_cfg & Heartbeat::RemoteTemp) {
-                    char remote_temp[16];
-                    dtostrf(_remote_temp.temp, 1, 1, remote_temp);
-                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, remote_temp);
+                    const auto& remote_temp = thermostatRemoteTemp();
+                    char buffer[16];
+                    dtostrf(remote_temp.temp, 1, 1, buffer);
+                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, buffer);
                 }
             #endif
 

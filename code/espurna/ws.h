@@ -49,6 +49,7 @@ void wsSend(uint32_t client_id, const char* data);
 void wsSend(uint32_t client_id, JsonObject& root);
 void wsSend(JsonObject& root);
 void wsSend(ws_on_send_callback_f callback);
+void wsSend(const char* data);
 
 void wsSend_P(PGM_P data);
 void wsSend_P(uint32_t client_id, PGM_P data);

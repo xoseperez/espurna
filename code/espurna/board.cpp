@@ -6,6 +6,7 @@ BOARD MODULE
 
 #include "board.h"
 #include "relay.h"
+#include "sensor.h"
 
 //--------------------------------------------------------------------------------
 

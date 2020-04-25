@@ -148,8 +148,106 @@ void Energy::reset() {
 
 } // namespace sensor
 
+// -----------------------------------------------------------------------------
+// Energy persistence
+// -----------------------------------------------------------------------------
+
+std::vector<unsigned char> _sensor_save_count;
+unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
+
 bool _sensorIsEmon(BaseSensor* sensor) {
     return sensor->type() & sensor::type::Emon;
+}
+
+sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
+    return sensor::Energy {
+        sensor::KWh { Rtcmem->energy[index].kwh },
+        sensor::Ws { Rtcmem->energy[index].ws }
+    };
+}
+
+void _sensorRtcmemSaveEnergy(unsigned char index, const sensor::Energy& source) {
+    Rtcmem->energy[index].kwh = source.kwh.value;
+    Rtcmem->energy[index].ws = source.ws.value;
+}
+
+sensor::Energy _sensorParseEnergy(const String& value) {
+    sensor::Energy result;
+
+    const bool separator = value.indexOf('+') > 0;
+    if (value.length() && (separator > 0)) {
+        const String before = value.substring(0, separator);
+        const String after = value.substring(separator + 1);
+        result.kwh = strtoul(before.c_str(), nullptr, 10);
+        result.ws = strtoul(after.c_str(), nullptr, 10);
+    }
+
+    return result;
+}
+
+void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
+    if (!payload || !strlen(payload)) return;
+    if (payload[0] != '0') return;
+
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
+    auto energy = _sensorParseEnergy(payload);
+
+    sensor->resetEnergy(magnitude.global, energy);
+}
+
+sensor::Energy _sensorEnergyTotal(unsigned char index) {
+
+    sensor::Energy result;
+
+    if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
+        result = _sensorRtcmemLoadEnergy(index);
+    } else if (_sensor_save_every > 0) {
+        result = _sensorParseEnergy(getSetting({"eneTotal", index}));
+    }
+
+    return result;
+
+}
+
+sensor::Energy sensorEnergyTotal() {
+    return _sensorEnergyTotal(0);
+}
+
+void _sensorResetEnergyTotal(unsigned char index) {
+    delSetting({"eneTotal", index});
+    delSetting({"eneTime", index});
+    if (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
+        Rtcmem->energy[index].kwh = 0;
+        Rtcmem->energy[index].ws = 0;
+    }
+}
+
+void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
+    if (magnitude.type != MAGNITUDE_ENERGY) return;
+
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
+
+    const auto energy = sensor->totalEnergy();
+
+    // Always save to RTCMEM
+    if (magnitude.global < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
+        _sensorRtcmemSaveEnergy(magnitude.global, energy);
+    }
+
+    // Save to EEPROM every '_sensor_save_every' readings
+    // Format is `<kwh>+<ws>`, value without `+` is treated as `<ws>`
+    if (persistent && _sensor_save_every) {
+        _sensor_save_count[magnitude.global] =
+            (_sensor_save_count[magnitude.global] + 1) % _sensor_save_every;
+
+        if (0 == _sensor_save_count[magnitude.global]) {
+            const String total = String(energy.kwh.value) + "+" + String(energy.ws.value);
+            setSetting({"eneTotal", magnitude.global}, total);
+            #if NTP_SUPPORT
+                if (ntpSynced()) setSetting({"eneTime", magnitude.global}, ntpDateTime());
+            #endif
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -165,10 +263,6 @@ unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
 double _sensor_lux_correction = SENSOR_LUX_CORRECTION;
-
-// Energy persistence
-std::vector<unsigned char> _sensor_save_count;
-unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
 
 // -----------------------------------------------------------------------------
 // Private
@@ -370,11 +464,11 @@ String magnitudeTopic(unsigned char type) {
 
 }
 
-String magnitudeTopic(const sensor_magnitude_t& magnitude) {
+String _magnitudeTopic(const sensor_magnitude_t& magnitude) {
     return magnitudeTopic(magnitude.type);
 }
 
-String magnitudeUnits(const sensor_magnitude_t& magnitude) {
+String _magnitudeUnits(const sensor_magnitude_t& magnitude) {
 
     const __FlashStringHelper* result = nullptr;
 
@@ -458,7 +552,7 @@ String magnitudeUnits(const sensor_magnitude_t& magnitude) {
 
 String magnitudeUnits(unsigned char index) {
     if (index >= magnitudeCount()) return String();
-    return magnitudeUnits(_magnitudes[index]);
+    return _magnitudeUnits(_magnitudes[index]);
 }
 
 // Choose unit based on type of magnitude we use
@@ -551,11 +645,12 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
 #if WEB_SUPPORT
 
-//void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
-template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+// Used by modules to generate magnitude_id<->module_id mapping for the WebUI
+
+void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
 
     // ws produces flat list <prefix>Magnitudes
-    const String ws_name = String(prefix) + "Magnitudes";
+    const String ws_name = prefix + "Magnitudes";
 
     // config uses <prefix>Magnitude<index> (cut 's')
     const String conf_name = ws_name.substring(0, ws_name.length() - 1);
@@ -563,32 +658,16 @@ template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix)
     JsonObject& list = root.createNestedObject(ws_name);
     list["size"] = magnitudeCount();
 
-    //JsonArray& name = list.createNestedArray("name");
     JsonArray& type = list.createNestedArray("type");
     JsonArray& index = list.createNestedArray("index");
     JsonArray& idx = list.createNestedArray("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        //name.add(magnitudeName(i));
         type.add(magnitudeType(i));
         index.add(magnitudeIndex(i));
         idx.add(getSetting({conf_name, i}, 0));
     }
 }
-
-/*
-template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
-
-    // ws produces flat list <prefix>Magnitudes
-    const String ws_name = String(prefix) + "Magnitudes";
-
-    // config uses <prefix>Magnitude<index> (cut 's')
-    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
-
-    _sensorWebSocketMagnitudes(root, ws_name, conf_name);
-
-}
-*/
 
 bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "pwr", 3) == 0) return true;
@@ -632,7 +711,7 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
         index.add<uint8_t>(magnitude.global);
         type.add<uint8_t>(magnitude.type);
-        units.add(magnitudeUnits(magnitude));
+        units.add(_magnitudeUnits(magnitude));
 
         {
             String sensor_desc = magnitude.sensor->slot(magnitude.local);
@@ -867,98 +946,6 @@ void _sensorPost() {
         sensor->post();
     }
 }
-
-sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
-    return sensor::Energy {
-        sensor::KWh { Rtcmem->energy[index].kwh },
-        sensor::Ws { Rtcmem->energy[index].ws }
-    };
-}
-
-void _sensorRtcmemSaveEnergy(unsigned char index, const sensor::Energy& source) {
-    Rtcmem->energy[index].kwh = source.kwh.value;
-    Rtcmem->energy[index].ws = source.ws.value;
-}
-
-sensor::Energy _sensorParseEnergy(const String& value) {
-    sensor::Energy result;
-
-    const bool separator = value.indexOf('+') > 0;
-    if (value.length() && (separator > 0)) {
-        const String before = value.substring(0, separator);
-        const String after = value.substring(separator + 1);
-        result.kwh = strtoul(before.c_str(), nullptr, 10);
-        result.ws = strtoul(after.c_str(), nullptr, 10);
-    }
-
-    return result;
-}
-
-void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
-    if (!payload || !strlen(payload)) return;
-    if (payload[0] != '0') return;
-
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
-    auto energy = _sensorParseEnergy(payload);
-
-    sensor->resetEnergy(magnitude.global, energy);
-}
-
-sensor::Energy _sensorEnergyTotal(unsigned char index) {
-
-    sensor::Energy result;
-
-    if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
-        result = _sensorRtcmemLoadEnergy(index);
-    } else if (_sensor_save_every > 0) {
-        result = _sensorParseEnergy(getSetting({"eneTotal", index}));
-    }
-
-    return result;
-
-}
-
-sensor::Energy sensorEnergyTotal() {
-    return _sensorEnergyTotal(0);
-}
-
-void _sensorResetEnergyTotal(unsigned char index) {
-    delSetting({"eneTotal", index});
-    delSetting({"eneTime", index});
-    if (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
-        Rtcmem->energy[index].kwh = 0;
-        Rtcmem->energy[index].ws = 0;
-    }
-}
-
-void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
-    if (magnitude.type != MAGNITUDE_ENERGY) return;
-
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
-
-    const auto energy = sensor->totalEnergy();
-
-    // Always save to RTCMEM
-    if (magnitude.global < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
-        _sensorRtcmemSaveEnergy(magnitude.global, energy);
-    }
-
-    // Save to EEPROM every '_sensor_save_every' readings
-    // Format is `<kwh>+<ws>`, value without `+` is treated as `<ws>`
-    if (persistent && _sensor_save_every) {
-        _sensor_save_count[magnitude.global] =
-            (_sensor_save_count[magnitude.global] + 1) % _sensor_save_every;
-
-        if (0 == _sensor_save_count[magnitude.global]) {
-            const String total = String(energy.kwh.value) + "+" + String(energy.ws.value);
-            setSetting({"eneTotal", magnitude.global}, total);
-            #if NTP_SUPPORT
-                if (ntpSynced()) setSetting({"eneTime", magnitude.global}, ntpDateTime());
-            #endif
-        }
-    }
-}
-
 
 // -----------------------------------------------------------------------------
 // Sensor initialization
@@ -1550,6 +1537,47 @@ void _sensorLoad() {
 
 }
 
+void _sensorReport(unsigned char index, double value) {
+
+    const auto& magnitude = _magnitudes.at(index);
+
+    // XXX: ensure that the received 'value' will fit here
+    // dtostrf 2nd arg only controls leading zeroes and the
+    // 3rd is only for the part after the dot
+    char buffer[64];
+    dtostrf(value, 1, magnitude.decimals, buffer);
+
+    #if BROKER_SUPPORT
+        SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
+    #endif
+
+    #if MQTT_SUPPORT
+
+        mqttSend(magnitudeTopicIndex(index).c_str(), buffer);
+
+        #if SENSOR_PUBLISH_ADDRESSES
+            char topic[32];
+            snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
+            if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
+                mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
+            } else {
+                mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
+            }
+        #endif // SENSOR_PUBLISH_ADDRESSES
+
+    #endif // MQTT_SUPPORT
+
+    #if THINGSPEAK_SUPPORT
+        tspkEnqueueMeasurement(index, buffer);
+    #endif // THINGSPEAK_SUPPORT
+
+    #if DOMOTICZ_SUPPORT
+        domoticzSendMagnitude(magnitude.type, index, value, buffer);
+    #endif // DOMOTICZ_SUPPORT
+
+}
+
+
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
 
     DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
@@ -1836,46 +1864,6 @@ void _sensorConfigure() {
 
 }
 
-void _sensorReport(unsigned char index, double value) {
-
-    const auto& magnitude = _magnitudes.at(index);
-
-    // XXX: ensure that the received 'value' will fit here
-    // dtostrf 2nd arg only controls leading zeroes and the
-    // 3rd is only for the part after the dot
-    char buffer[64];
-    dtostrf(value, 1, magnitude.decimals, buffer);
-
-    #if BROKER_SUPPORT
-        SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.global, value, buffer);
-    #endif
-
-    #if MQTT_SUPPORT
-
-        mqttSend(magnitudeTopicIndex(index).c_str(), buffer);
-
-        #if SENSOR_PUBLISH_ADDRESSES
-            char topic[32];
-            snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
-            if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
-                mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
-            } else {
-                mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
-            }
-        #endif // SENSOR_PUBLISH_ADDRESSES
-
-    #endif // MQTT_SUPPORT
-
-    #if THINGSPEAK_SUPPORT
-        tspkEnqueueMeasurement(index, buffer);
-    #endif // THINGSPEAK_SUPPORT
-
-    #if DOMOTICZ_SUPPORT
-        domoticzSendMagnitude(magnitude.type, index, value, buffer);
-    #endif // DOMOTICZ_SUPPORT
-
-}
-
 // -----------------------------------------------------------------------------
 // Public
 // -----------------------------------------------------------------------------
@@ -2111,7 +2099,7 @@ void sensorLoop() {
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
                         buffer,
-                        magnitudeUnits(magnitude).c_str()
+                        _magnitudeUnits(magnitude).c_str()
                     );
                 }
                 #endif // SENSOR_DEBUG

@@ -6,6 +6,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "i2c.h"
+
 #if I2C_SUPPORT
 
 unsigned int _i2c_locked[16] = {0};

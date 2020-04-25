@@ -14,6 +14,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "broker.h"
 #include "relay.h"
+#include "sensor.h"
 #include "ws.h"
 #include "libs/URL.h"
 #include "libs/SecureClientHelpers.h"
@@ -115,7 +116,7 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     }
 
     #if SENSOR_SUPPORT
-        _sensorWebSocketMagnitudes(root, "tspk");
+        sensorWebSocketMagnitudes(root, "tspk");
     #endif
 
 }
