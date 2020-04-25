@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <functional>
 
-#if WEB_SUPPOR && API_SUPPORT
+#if WEB_SUPPORT && API_SUPPORT
 
 #include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
