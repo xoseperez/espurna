@@ -45,4 +45,5 @@ void webLog(AsyncWebServerRequest *request);
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
 
+uint16_t webPort();
 void webSetup();

@@ -6,10 +6,11 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "rfm69.h"
+
 #if RFM69_SUPPORT
 
 #include "mqtt.h"
-#include "rfm69.h"
 #include "ws.h"
 
 #define RFM69_PACKET_SEPARATOR ':'
@@ -30,6 +31,16 @@ struct _node_t {
 _node_t _rfm69_node_info[RFM69_MAX_NODES];
 unsigned char _rfm69_node_count;
 unsigned long _rfm69_packet_count;
+
+void _rfm69Clear() {
+    for(unsigned int i=0; i<RFM69_MAX_NODES; i++) {
+        _rfm69_node_info[i].duplicates = 0;
+        _rfm69_node_info[i].missing = 0;
+        _rfm69_node_info[i].count = 0;
+    }
+    _rfm69_node_count = 0;
+    _rfm69_packet_count = 0;
+}
 
 // -----------------------------------------------------------------------------
 // WEB
@@ -236,16 +247,6 @@ void _rfm69Loop() {
 
     }
 
-}
-
-void _rfm69Clear() {
-    for(unsigned int i=0; i<RFM69_MAX_NODES; i++) {
-        _rfm69_node_info[i].duplicates = 0;
-        _rfm69_node_info[i].missing = 0;
-        _rfm69_node_info[i].count = 0;
-    }
-    _rfm69_node_count = 0;
-    _rfm69_packet_count = 0;
 }
 
 // -----------------------------------------------------------------------------

@@ -6,12 +6,16 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "influxdb.h"
+
 #if INFLUXDB_SUPPORT
 
 #include <map>
 #include <memory>
 
 #include "broker.h"
+#include "ws.h"
+#include "terminal.h"
 #include "libs/AsyncClientHelpers.h"
 
 const char InfluxDb_http_success[] = "HTTP/1.1 204";

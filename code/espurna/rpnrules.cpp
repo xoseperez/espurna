@@ -6,11 +6,16 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "rpnrules.h"
+
 #if RPN_RULES_SUPPORT
 
+#include "broker.h"
+#include "mqtt.h"
 #include "ntp.h"
 #include "relay.h"
-#include "rpnrules.h"
+#include "terminal.h"
+#include "ws.h"
 
 // -----------------------------------------------------------------------------
 // Custom commands
@@ -131,6 +136,21 @@ bool _rpnNtpFunc(rpn_context & ctxt, int (*func)(time_t)) {
 }
 
 #endif
+
+void _rpnDump() {
+    float value;
+    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
+    unsigned char num = rpn_stack_size(_rpn_ctxt);
+    if (0 == num) {
+        DEBUG_MSG_P(PSTR("      (empty)\n"));
+    } else {
+        unsigned char index = num - 1;
+        while (rpn_stack_get(_rpn_ctxt, index, value)) {
+            DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, String(value).c_str());
+        }
+    }
+}
+
 
 void _rpnInit() {
 
@@ -299,20 +319,6 @@ void _rpnInitCommands() {
 
 }
 #endif
-
-void _rpnDump() {
-    float value;
-    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
-    unsigned char num = rpn_stack_size(_rpn_ctxt);
-    if (0 == num) {
-        DEBUG_MSG_P(PSTR("      (empty)\n"));
-    } else {
-        unsigned char index = num - 1;
-        while (rpn_stack_get(_rpn_ctxt, index, value)) {
-            DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, String(value).c_str());
-        }
-    }
-}
 
 void _rpnRun() {
 

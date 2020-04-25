@@ -8,10 +8,13 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 
 */
 
+#include "ssdp.h"
+
 #if SSDP_SUPPORT
 
 #include <ESP8266SSDP.h>
 
+#include "web.h"
 #include "utils.h"
 
 const char _ssdp_template[] PROGMEM =

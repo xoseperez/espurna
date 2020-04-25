@@ -8,7 +8,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-struct packet_t;
+#include "espurna.h"
 
 #if RFM69_SUPPORT
 

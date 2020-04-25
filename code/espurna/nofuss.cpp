@@ -6,9 +6,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "nofuss.h"
+
 #if NOFUSS_SUPPORT
 
-#include "NoFUSSClient.h"
+#include "wifi.h"
+#include "mdns.h"
+#include "terminal.h"
 #include "ws.h"
 
 unsigned long _nofussLastCheck = 0;
@@ -73,6 +77,23 @@ void _nofussConfigure() {
 
 }
 
+// -----------------------------------------------------------------------------
+
+void nofussRun() {
+    NoFUSSClient.handle();
+    _nofussLastCheck = millis();
+}
+
+void _nofussLoop() {
+
+    if (!_nofussEnabled) return;
+    if (!wifiConnected()) return;
+    if ((_nofussLastCheck > 0) && ((millis() - _nofussLastCheck) < _nofussInterval)) return;
+
+    nofussRun();
+
+}
+
 #if TERMINAL_SUPPORT
 
 void _nofussInitCommands() {
@@ -85,13 +106,6 @@ void _nofussInitCommands() {
 }
 
 #endif // TERMINAL_SUPPORT
-
-// -----------------------------------------------------------------------------
-
-void nofussRun() {
-    NoFUSSClient.handle();
-    _nofussLastCheck = millis();
-}
 
 void nofussSetup() {
 
@@ -177,18 +191,8 @@ void nofussSetup() {
     #endif
 
     // Main callbacks
-    espurnaRegisterLoop(nofussLoop);
+    espurnaRegisterLoop(_nofussLoop);
     espurnaRegisterReload(_nofussConfigure);
-
-}
-
-void nofussLoop() {
-
-    if (!_nofussEnabled) return;
-    if (!wifiConnected()) return;
-    if ((_nofussLastCheck > 0) && ((millis() - _nofussLastCheck) < _nofussInterval)) return;
-
-    nofussRun();
 
 }
 

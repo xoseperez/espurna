@@ -9,6 +9,8 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
 #if UART_MQTT_SUPPORT
 
 #include <SoftwareSerial.h>

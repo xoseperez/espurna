@@ -6,9 +6,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if LLMNR_SUPPORT
+#include "llmnr.h"
 
-#include <ESP8266LLMNR.h>
+#if LLMNR_SUPPORT
 
 void llmnrSetup() {
     LLMNR.begin(getSetting("hostname").c_str());

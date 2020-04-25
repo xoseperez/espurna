@@ -6,9 +6,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if NETBIOS_SUPPORT
+#include "netbios.h"
 
-#include <ESP8266NetBIOS.h>
+#if NETBIOS_SUPPORT
 
 void netbiosSetup() {
     static WiFiEventHandler _netbios_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {

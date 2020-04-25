@@ -11,6 +11,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "utils.h"
 
 #include "board.h"
+#include "influxdb.h"
 #include "light.h"
 #include "mqtt.h"
 #include "ntp.h"
