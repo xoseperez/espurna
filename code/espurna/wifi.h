@@ -17,9 +17,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 //#undef LWIP_INTERNAL
 #include <Ticker.h>
 
+#include <lwip/init.h>
 #if LWIP_VERSION_MAJOR == 1
 #include <netif/etharp.h>
-#else // LWIP_VERSION_MAJOR >= 2
+#elif LWIP_VERSION_MAJOR >= 2
 #include <lwip/etharp.h>
 #endif
 
