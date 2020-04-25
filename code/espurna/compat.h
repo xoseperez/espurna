@@ -6,6 +6,8 @@ COMPATIBILITY BETWEEN 2.3.0 and latest versions
 
 #pragma once
 
+#include "espurna.h"
+
 // -----------------------------------------------------------------------------
 // Core version 2.4.2 and higher changed the cont_t structure to a pointer:
 // https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35

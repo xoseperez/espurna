@@ -6,6 +6,8 @@ RELAY MODULE
 
 #pragma once
 
+#include "espurna.h"
+
 constexpr const unsigned long _relayDelayOn(unsigned char index) {
     return (
         (index == 0) ? RELAY1_DELAY_ON :

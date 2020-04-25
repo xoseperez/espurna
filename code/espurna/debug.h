@@ -6,7 +6,7 @@ DEBUG MODULE
 
 #pragma once
 
-#include "config/all.h"
+#include "espurna.h"
 
 #if DEBUG_WEB_SUPPORT
 #include <ArduinoJson.h>

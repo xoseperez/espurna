@@ -6,6 +6,8 @@ LED MODULE
 
 #pragma once
 
+#include "espurna.h"
+
 constexpr const unsigned char _ledPin(unsigned char index) {
     return (
         (index == 0) ? LED1_PIN :
