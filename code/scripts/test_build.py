@@ -42,11 +42,22 @@ if os.path.exists(CUSTOM_HEADER):
 def try_remove(path):
     try:
         os.remove(path)
-    except: # pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         print_warning("Please manually remove the file `{}`".format(path))
 
 
 atexit.register(try_remove, CUSTOM_HEADER)
+
+total_time = 0
+
+
+def print_total_time():
+    print(
+        clr(
+            Color.BOLD,
+            "\n> Total time: {}".format(datetime.timedelta(seconds=total_time)),
+        )
+    )
 
 
 def main(args):
@@ -57,6 +68,9 @@ def main(args):
     configurations.extend(x for x in (args.add or []))
     if not configurations:
         raise SystemExit(clr(Color.YELLOW, "No configurations selected"))
+
+    if len(configurations) > 1:
+        atexit.register(print_total_time)
 
     print(clr(Color.BOLD, "> Selected configurations:"))
     for cfg in configurations:
@@ -91,7 +105,11 @@ def main(args):
 
         start = time.time()
         subprocess.check_call(cmd, env=os_env)
-        end = time.time()
+        diff = time.time() - start
+
+        global total_time
+        total_time += diff
+
         print(
             clr(
                 Color.BOLD,
@@ -100,7 +118,7 @@ def main(args):
                     os.stat(
                         os.path.join(".pio", "build", args.environment, "firmware.bin")
                     ).st_size,
-                    datetime.timedelta(seconds=(end - start)),
+                    datetime.timedelta(seconds=diff),
                 ),
             )
         )
