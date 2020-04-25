@@ -136,3 +136,10 @@ if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
         log("using shared library storage: {}".format(storage))
 
     subprocess_libdeps(env.GetProjectOption("lib_deps"), storage)
+
+# TODO:
+# - we still convert .ino
+# - we still build .ino (which is empty)
+# - `src_filter: -<espurna/espurna.ino>` causes PIO to loose build-dir completely
+# - `*.ino` filter does not do anything
+env.AddBuildMiddleware(lambda node: None, "*.cpp.ino.o")
