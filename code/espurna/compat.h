@@ -74,15 +74,41 @@ long  __attribute__((deprecated("Please avoid using map() with Core 2.3.0"))) ma
 #endif
 
 // -----------------------------------------------------------------------------
+// Proxy min & max same as the latest Arduino.h
+// -----------------------------------------------------------------------------
+
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+
+#undef min
+#undef max
+#undef _min
+#undef _max
+
+#include <algorithm>
+
+using std::min;
+using std::max;
+using std::isinf;
+using std::isnan;
+
+#define _min(a,b) ({ decltype(a) _a = (a); decltype(b) _b = (b); _a < _b? _a : _b; })
+#define _max(a,b) ({ decltype(a) _a = (a); decltype(b) _b = (b); _a > _b? _a : _b; })
+
+#endif
+
+// -----------------------------------------------------------------------------
 // std::make_unique backport for C++11, since we still use it
 // -----------------------------------------------------------------------------
 #if 201103L >= __cplusplus
+
+#include <memory>
 namespace std {
     template<typename T, typename... Args>
     std::unique_ptr<T> make_unique(Args&&... args) {
         return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
     }
 }
+
 #endif
 
 #define UNUSED(x) (void)(x)

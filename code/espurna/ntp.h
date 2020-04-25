@@ -17,7 +17,10 @@ struct NtpCalendarWeekday;
 #if NTP_LEGACY_SUPPORT // Use legacy TimeLib and NtpClientLib
 
 #include <TimeLib.h>
-#include "libs/NtpClientWrap.h"
+#include <WiFiUdp.h>
+#include <NtpClientLib.h>
+
+time_t ntpLocal2UTC(time_t local);
 
 #else // POSIX time functions + configTime(...)
 

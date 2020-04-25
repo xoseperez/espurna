@@ -6,19 +6,46 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "ntp.h"
+
 #if NTP_LEGACY_SUPPORT && NTP_SUPPORT
 
 #include <Ticker.h>
 
+#include "debug.h"
 #include "broker.h"
 #include "ws.h"
-#include "ntp.h"
 
 Ticker _ntp_defer;
 
 bool _ntp_report = false;
 bool _ntp_configure = false;
 bool _ntp_want_sync = false;
+
+// -----------------------------------------------------------------------------
+// NtpClient overrides to avoid triggering network sync
+// -----------------------------------------------------------------------------
+
+class NTPClientWrap : public NTPClient {
+
+public:
+
+    NTPClientWrap() : NTPClient() {
+        udp = new WiFiUDP();
+        _lastSyncd = 0;
+    }
+
+    bool setInterval(int shortInterval, int longInterval) {
+        _shortInterval = shortInterval;
+        _longInterval = longInterval;
+        return true;
+    }
+
+};
+
+// NOTE: original NTP should be discarded by the linker
+// TODO: allow NTP client object to be destroyed
+static NTPClientWrap NTPw;
 
 // -----------------------------------------------------------------------------
 // NTP
@@ -67,24 +94,6 @@ int _ntpUpdateInterval() {
     return secureRandom(NTP_UPDATE_INTERVAL, NTP_UPDATE_INTERVAL * 2);
 }
 
-void _ntpStart() {
-
-    _ntpConfigure();
-
-    // short (initial) and long (after sync) intervals
-    NTPw.setInterval(_ntpSyncInterval(), _ntpUpdateInterval());
-    DEBUG_MSG_P(PSTR("[NTP] Update intervals: %us / %us\n"),
-        NTPw.getShortInterval(), NTPw.getLongInterval());
-
-    // setSyncProvider will immediatly call given function by setting next sync time to the current time.
-    // Avoid triggering sync immediatly by canceling sync provider flag and resetting sync interval again
-    setSyncProvider(_ntpSyncProvider);
-    _ntp_want_sync = false;
-
-    setSyncInterval(NTPw.getShortInterval());
-
-}
-
 void _ntpConfigure() {
 
     _ntp_configure = false;
@@ -118,6 +127,25 @@ void _ntpConfigure() {
     NTPw.setNTPTimeout(getSetting("ntpTimeout", NTP_TIMEOUT));
 
 }
+
+void _ntpStart() {
+
+    _ntpConfigure();
+
+    // short (initial) and long (after sync) intervals
+    NTPw.setInterval(_ntpSyncInterval(), _ntpUpdateInterval());
+    DEBUG_MSG_P(PSTR("[NTP] Update intervals: %us / %us\n"),
+        NTPw.getShortInterval(), NTPw.getLongInterval());
+
+    // setSyncProvider will immediatly call given function by setting next sync time to the current time.
+    // Avoid triggering sync immediatly by canceling sync provider flag and resetting sync interval again
+    setSyncProvider(_ntpSyncProvider);
+    _ntp_want_sync = false;
+
+    setSyncInterval(NTPw.getShortInterval());
+
+}
+
 
 void _ntpReport() {
 

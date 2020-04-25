@@ -23,12 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/all.h"
 
-#include <functional>
-#include <algorithm>
-#include <limits>
-#include <vector>
-#include <memory>
-
 #include "board.h"
 #include "debug.h"
 #include "compat.h"
@@ -39,6 +33,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "system.h"
 #include "terminal.h"
 #include "utils.h"
+
+#include <functional>
+#include <algorithm>
+#include <limits>
+#include <vector>
+#include <memory>
 
 using void_callback_f = void (*)();
 
