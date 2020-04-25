@@ -11,6 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if DOMOTICZ_SUPPORT
 
 #include "broker.h"
+#include "light.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "sensor.h"

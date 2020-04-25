@@ -476,8 +476,6 @@ void resetBurnCounters() {
   _thermostat_burn_prev_month  = 0;
 }
 
-#endif // THERMOSTAT_SUPPORT
-
 //#######################################################################
 //  ___   _            _             
 // |   \ (_) ___ _ __ | | __ _  _  _ 
@@ -820,3 +818,5 @@ void thermostatSetup() {
   espurnaRegisterLoop(thermostatLoop);
   espurnaRegisterReload(_thermostatReload);
 }
+
+#endif // THERMOSTAT_SUPPORT

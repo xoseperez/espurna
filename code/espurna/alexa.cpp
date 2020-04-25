@@ -13,9 +13,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <queue>
 
 #include "broker.h"
+#include "light.h"
 #include "relay.h"
-#include "ws.h"
 #include "web.h"
+#include "ws.h"
 
 fauxmoESP _alexa;
 static std::queue<alexa_queue_element_t> _alexa_queue;

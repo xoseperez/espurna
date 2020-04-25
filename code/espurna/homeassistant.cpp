@@ -13,6 +13,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <Schedule.h>
 
+#include "light.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"

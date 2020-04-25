@@ -18,14 +18,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "api.h"
 #include "broker.h"
-#include "storage_eeprom.h"
-#include "settings.h"
+#include "light.h"
 #include "mqtt.h"
 #include "rfbridge.h"
 #include "rpc.h"
 #include "rtcmem.h"
-#include "utils.h"
+#include "settings.h"
+#include "storage_eeprom.h"
 #include "tuya.h"
+#include "utils.h"
 #include "ws.h"
 
 #include "relay_config.h"

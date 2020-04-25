@@ -46,9 +46,11 @@ Raw messages:
 --------------------------------------------------------------------------------
 */
 
+#include "ir.h"
+
 #if IR_SUPPORT
 
-#include "ir.h"
+#include "light.h"
 #include "mqtt.h"
 #include "relay.h"
 

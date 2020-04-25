@@ -12,9 +12,10 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #if SCHEDULER_SUPPORT
 
 #include "broker.h"
+#include "light.h"
+#include "ntp.h"
 #include "relay.h"
 #include "ws.h"
-#include "ntp.h"
 
 constexpr const int SchedulerDummySwitchId = 0xff;
 

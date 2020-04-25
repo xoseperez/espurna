@@ -6,14 +6,17 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "light.h"
+
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
+#include "api.h"
 #include "broker.h"
 #include "mqtt.h"
+#include "rtcmem.h"
 #include "tuya.h"
 #include "ws.h"
 
-#include "light.h"
 #include "light_config.h"
 
 #include <Ticker.h>
@@ -566,6 +569,8 @@ void _lightTransition(unsigned long step) {
 
 }
 
+void _lightProviderScheduleUpdate(unsigned long steps);
+
 void _lightProviderUpdate(unsigned long steps) {
 
     if (_light_provider_update) return;
@@ -829,6 +834,255 @@ void lightBroker() {
 // API
 // -----------------------------------------------------------------------------
 
+#if API_SUPPORT
+
+void _lightAPISetup() {
+
+    if (_light_has_color) {
+
+        apiRegister(MQTT_TOPIC_COLOR_RGB,
+            [](char * buffer, size_t len) {
+                if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
+                    _toRGB(buffer, len, true);
+                } else {
+                    _toLong(buffer, len, true);
+                }
+            },
+            [](const char * payload) {
+                lightColor(payload, true);
+                lightUpdate(true, true);
+            }
+        );
+
+        apiRegister(MQTT_TOPIC_COLOR_HSV,
+            [](char * buffer, size_t len) {
+                _toHSV(buffer, len);
+            },
+            [](const char * payload) {
+                lightColor(payload, false);
+                lightUpdate(true, true);
+            }
+        );
+
+        apiRegister(MQTT_TOPIC_KELVIN,
+            [](char * buffer, size_t len) {},
+            [](const char * payload) {
+                _lightAdjustKelvin(payload);
+                lightUpdate(true, true);
+            }
+        );
+
+        apiRegister(MQTT_TOPIC_MIRED,
+            [](char * buffer, size_t len) {},
+            [](const char * payload) {
+                _lightAdjustMireds(payload);
+                lightUpdate(true, true);
+            }
+        );
+
+    }
+
+    for (unsigned int id=0; id<_light_channels.size(); id++) {
+
+        char key[15];
+        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
+        apiRegister(key,
+            [id](char * buffer, size_t len) {
+                snprintf_P(buffer, len, PSTR("%d"), _light_channels[id].target);
+            },
+            [id](const char * payload) {
+                _lightAdjustChannel(id, payload);
+                lightUpdate(true, true);
+            }
+        );
+
+    }
+
+    apiRegister(MQTT_TOPIC_TRANSITION,
+        [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), lightTransitionTime());
+        },
+        [](const char * payload) {
+            lightTransitionTime(atol(payload));
+        }
+    );
+
+    apiRegister(MQTT_TOPIC_BRIGHTNESS,
+        [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), _light_brightness);
+        },
+        [](const char * payload) {
+            _lightAdjustBrightness(payload);
+            lightUpdate(true, true);
+        }
+    );
+
+}
+
+#endif // API_SUPPORT
+
+
+#if WEB_SUPPORT
+
+bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+    if (strncmp(key, "light", 5) == 0) return true;
+    if (strncmp(key, "use", 3) == 0) return true;
+    return false;
+}
+
+void _lightWebSocketStatus(JsonObject& root) {
+    if (_light_has_color) {
+        if (getSetting("useRGB", 1 == LIGHT_USE_RGB)) {
+            root["rgb"] = lightColor(true);
+        } else {
+            root["hsv"] = lightColor(false);
+        }
+    }
+    if (_light_use_cct) {
+        JsonObject& mireds = root.createNestedObject("mireds");
+        mireds["value"] = _light_mireds;
+        mireds["cold"] = _light_cold_mireds;
+        mireds["warm"] = _light_warm_mireds;
+        root["useCCT"] = _light_use_cct;
+    }
+    JsonArray& channels = root.createNestedArray("channels");
+    for (unsigned char id=0; id < _light_channels.size(); id++) {
+        channels.add(lightChannel(id));
+    }
+    root["brightness"] = lightBrightness();
+}
+
+void _lightWebSocketOnVisible(JsonObject& root) {
+    root["colorVisible"] = 1;
+}
+
+void _lightWebSocketOnConnected(JsonObject& root) {
+    root["mqttGroupColor"] = getSetting("mqttGroupColor");
+    root["useColor"] = _light_has_color;
+    root["useWhite"] = _light_use_white;
+    root["useGamma"] = _light_use_gamma;
+    root["useTransitions"] = _light_use_transitions;
+    root["useCSS"] = getSetting("useCSS", 1 == LIGHT_USE_CSS);
+    root["useRGB"] = getSetting("useRGB", 1 == LIGHT_USE_RGB);
+    root["lightTime"] = _light_transition_time;
+
+    _lightWebSocketStatus(root);
+}
+
+void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+
+    if (_light_has_color) {
+        if (strcmp(action, "color") == 0) {
+            if (data.containsKey("rgb")) {
+                lightColor(data["rgb"], true);
+                lightUpdate(true, true);
+            }
+            if (data.containsKey("hsv")) {
+                lightColor(data["hsv"], false);
+                lightUpdate(true, true);
+            }
+        }
+    }
+
+    if (_light_use_cct) {
+      if (strcmp(action, "mireds") == 0) {
+          _fromMireds(data["mireds"]);
+          lightUpdate(true, true);
+      }
+    }
+
+
+    if (strcmp(action, "channel") == 0) {
+        if (data.containsKey("id") && data.containsKey("value")) {
+            lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
+            lightUpdate(true, true);
+        }
+    }
+
+    if (strcmp(action, "brightness") == 0) {
+        if (data.containsKey("value")) {
+            lightBrightness(data["value"].as<int>());
+            lightUpdate(true, true);
+        }
+    }
+
+}
+
+#endif
+
+#if TERMINAL_SUPPORT
+
+void _lightChannelDebug(unsigned char id) {
+    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
+}
+
+void _lightInitCommands() {
+
+    terminalRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
+        if (e->argc > 1) {
+            _lightAdjustBrightness(e->argv[1]);
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
+        if (!lightChannels()) return;
+
+        auto id = -1;
+        if (e->argc > 1) {
+            id = String(e->argv[1]).toInt();
+        }
+
+        if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
+            for (unsigned char index = 0; index < lightChannels(); ++index) {
+                _lightChannelDebug(index);
+            }
+            return;
+        }
+
+        if (e->argc > 2) {
+            _lightAdjustChannel(id, e->argv[2]);
+            lightUpdate(true, true);
+        }
+
+        _lightChannelDebug(id);
+
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("COLOR"), [](Embedis* e) {
+        if (e->argc > 1) {
+            lightColor(e->argv[1]);
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("KELVIN"), [](Embedis* e) {
+        if (e->argc > 1) {
+            _lightAdjustKelvin(e->argv[1]);
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
+        if (e->argc > 1) {
+            _lightAdjustMireds(e->argv[1]);
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+        terminalOK();
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+
 size_t lightChannels() {
     return _light_channels.size();
 }
@@ -841,7 +1095,7 @@ bool lightUseCCT() {
     return _light_use_cct;
 }
 
-void _lightComms(const unsigned char mask) {
+void _lightComms(unsigned char mask) {
 
     // Report color and brightness to MQTT broker
     #if MQTT_SUPPORT
@@ -995,12 +1249,12 @@ unsigned int lightTransitionTime() {
     }
 }
 
-void lightTransitionTime(unsigned long m) {
-    if (0 == m) {
+void lightTransitionTime(unsigned long ms) {
+    if (0 == ms) {
         _light_use_transitions = false;
     } else {
         _light_use_transitions = true;
-        _light_transition_time = m;
+        _light_transition_time = ms;
     }
     setSetting("useTransitions", _light_use_transitions);
     setSetting("lightTime", _light_transition_time);
@@ -1010,254 +1264,6 @@ void lightTransitionTime(unsigned long m) {
 // -----------------------------------------------------------------------------
 // SETUP
 // -----------------------------------------------------------------------------
-
-#if WEB_SUPPORT
-
-bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, "light", 5) == 0) return true;
-    if (strncmp(key, "use", 3) == 0) return true;
-    return false;
-}
-
-void _lightWebSocketStatus(JsonObject& root) {
-    if (_light_has_color) {
-        if (getSetting("useRGB", 1 == LIGHT_USE_RGB)) {
-            root["rgb"] = lightColor(true);
-        } else {
-            root["hsv"] = lightColor(false);
-        }
-    }
-    if (_light_use_cct) {
-        JsonObject& mireds = root.createNestedObject("mireds");
-        mireds["value"] = _light_mireds;
-        mireds["cold"] = _light_cold_mireds;
-        mireds["warm"] = _light_warm_mireds;
-        root["useCCT"] = _light_use_cct;
-    }
-    JsonArray& channels = root.createNestedArray("channels");
-    for (unsigned char id=0; id < _light_channels.size(); id++) {
-        channels.add(lightChannel(id));
-    }
-    root["brightness"] = lightBrightness();
-}
-
-void _lightWebSocketOnVisible(JsonObject& root) {
-    root["colorVisible"] = 1;
-}
-
-void _lightWebSocketOnConnected(JsonObject& root) {
-    root["mqttGroupColor"] = getSetting("mqttGroupColor");
-    root["useColor"] = _light_has_color;
-    root["useWhite"] = _light_use_white;
-    root["useGamma"] = _light_use_gamma;
-    root["useTransitions"] = _light_use_transitions;
-    root["useCSS"] = getSetting("useCSS", 1 == LIGHT_USE_CSS);
-    root["useRGB"] = getSetting("useRGB", 1 == LIGHT_USE_RGB);
-    root["lightTime"] = _light_transition_time;
-
-    _lightWebSocketStatus(root);
-}
-
-void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-
-    if (_light_has_color) {
-        if (strcmp(action, "color") == 0) {
-            if (data.containsKey("rgb")) {
-                lightColor(data["rgb"], true);
-                lightUpdate(true, true);
-            }
-            if (data.containsKey("hsv")) {
-                lightColor(data["hsv"], false);
-                lightUpdate(true, true);
-            }
-        }
-    }
-
-    if (_light_use_cct) {
-      if (strcmp(action, "mireds") == 0) {
-          _fromMireds(data["mireds"]);
-          lightUpdate(true, true);
-      }
-    }
-
-
-    if (strcmp(action, "channel") == 0) {
-        if (data.containsKey("id") && data.containsKey("value")) {
-            lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
-            lightUpdate(true, true);
-        }
-    }
-
-    if (strcmp(action, "brightness") == 0) {
-        if (data.containsKey("value")) {
-            lightBrightness(data["value"].as<int>());
-            lightUpdate(true, true);
-        }
-    }
-
-}
-
-#endif
-
-#if API_SUPPORT
-
-void _lightAPISetup() {
-
-    if (_light_has_color) {
-
-        apiRegister(MQTT_TOPIC_COLOR_RGB,
-            [](char * buffer, size_t len) {
-                if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
-                    _toRGB(buffer, len, true);
-                } else {
-                    _toLong(buffer, len, true);
-                }
-            },
-            [](const char * payload) {
-                lightColor(payload, true);
-                lightUpdate(true, true);
-            }
-        );
-
-        apiRegister(MQTT_TOPIC_COLOR_HSV,
-            [](char * buffer, size_t len) {
-                _toHSV(buffer, len);
-            },
-            [](const char * payload) {
-                lightColor(payload, false);
-                lightUpdate(true, true);
-            }
-        );
-
-        apiRegister(MQTT_TOPIC_KELVIN,
-            [](char * buffer, size_t len) {},
-            [](const char * payload) {
-                _lightAdjustKelvin(payload);
-                lightUpdate(true, true);
-            }
-        );
-
-        apiRegister(MQTT_TOPIC_MIRED,
-            [](char * buffer, size_t len) {},
-            [](const char * payload) {
-                _lightAdjustMireds(payload);
-                lightUpdate(true, true);
-            }
-        );
-
-    }
-
-    for (unsigned int id=0; id<_light_channels.size(); id++) {
-
-        char key[15];
-        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
-        apiRegister(key,
-            [id](char * buffer, size_t len) {
-                snprintf_P(buffer, len, PSTR("%d"), _light_channels[id].target);
-            },
-            [id](const char * payload) {
-                _lightAdjustChannel(id, payload);
-                lightUpdate(true, true);
-            }
-        );
-
-    }
-
-    apiRegister(MQTT_TOPIC_TRANSITION,
-        [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("%d"), lightTransitionTime());
-        },
-        [](const char * payload) {
-            lightTransitionTime(atol(payload));
-        }
-    );
-
-    apiRegister(MQTT_TOPIC_BRIGHTNESS,
-        [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("%d"), _light_brightness);
-        },
-        [](const char * payload) {
-            _lightAdjustBrightness(payload);
-            lightUpdate(true, true);
-        }
-    );
-
-}
-
-#endif // API_SUPPORT
-
-#if TERMINAL_SUPPORT
-
-void _lightChannelDebug(unsigned char id) {
-    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
-}
-
-void _lightInitCommands() {
-
-    terminalRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
-        if (e->argc > 1) {
-            _lightAdjustBrightness(e->argv[1]);
-            lightUpdate(true, true);
-        }
-        DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
-        if (!lightChannels()) return;
-
-        auto id = -1;
-        if (e->argc > 1) {
-            id = String(e->argv[1]).toInt();
-        }
-
-        if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
-            for (unsigned char index = 0; index < lightChannels(); ++index) {
-                _lightChannelDebug(index);
-            }
-            return;
-        }
-
-        if (e->argc > 2) {
-            _lightAdjustChannel(id, e->argv[2]);
-            lightUpdate(true, true);
-        }
-
-        _lightChannelDebug(id);
-
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("COLOR"), [](Embedis* e) {
-        if (e->argc > 1) {
-            lightColor(e->argv[1]);
-            lightUpdate(true, true);
-        }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("KELVIN"), [](Embedis* e) {
-        if (e->argc > 1) {
-            _lightAdjustKelvin(e->argv[1]);
-            lightUpdate(true, true);
-        }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
-        if (e->argc > 1) {
-            _lightAdjustMireds(e->argv[1]);
-            lightUpdate(true, true);
-        }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
-    });
-
-}
-
-#endif // TERMINAL_SUPPORT
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 const unsigned long _light_iomux[16] PROGMEM = {
