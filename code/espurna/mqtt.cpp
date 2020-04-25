@@ -1162,10 +1162,4 @@ void mqttSetup() {
 
 }
 
-#else
-
-bool mqttForward() {
-    return false;
-}
-
 #endif // MQTT_SUPPORT

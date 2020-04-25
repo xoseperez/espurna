@@ -602,7 +602,11 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    return relayStatus(id, status, mqttForward(), true);
+    #if MQTT_SUPPORT
+        return relayStatus(id, status, mqttForward(), true);
+    #else
+        return relayStatus(id, status, false, true);
+    #endif
 }
 
 bool relayStatus(unsigned char id) {
@@ -711,7 +715,11 @@ void relayToggle(unsigned char id, bool report, bool group_report) {
 }
 
 void relayToggle(unsigned char id) {
-    relayToggle(id, mqttForward(), true);
+    #if MQTT_SUPPORT
+        relayToggle(id, mqttForward(), true);
+    #else
+        relayToggle(id, false, true);
+    #endif
 }
 
 unsigned char relayCount() {
@@ -1153,12 +1161,17 @@ void relayMQTT() {
 }
 
 void relayStatusWrap(unsigned char id, PayloadStatus value, bool is_group_topic) {
+    #if MQTT_SUPPORT
+        const auto forward = mqttForward();
+    #else
+        const auto forward = false;
+    #endif
     switch (value) {
         case PayloadStatus::Off:
-            relayStatus(id, false, mqttForward(), !is_group_topic);
+            relayStatus(id, false, forward, !is_group_topic);
             break;
         case PayloadStatus::On:
-            relayStatus(id, true, mqttForward(), !is_group_topic);
+            relayStatus(id, true, forward, !is_group_topic);
             break;
         case PayloadStatus::Toggle:
             relayToggle(id, true, true);
