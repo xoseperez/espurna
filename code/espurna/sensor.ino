@@ -1634,25 +1634,32 @@ void _sensorInit() {
             break;
         }
 
+        // TODO: compatibility proxy, fetch global key before indexed
+        auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
+            return getSetting({key, index}, getSetting(key, default_value));
+        };
+
         if (_sensorIsEmon(_sensors[i])) {
 
             auto* sensor = static_cast<BaseEmonSensor*>(_sensors[i]);
 
-            sensor->setCurrentRatio(
-                getSetting("pwrRatioC", sensor->getCurrentRatio())
-            );
-            sensor->setVoltageRatio(
-                getSetting("pwrRatioV", sensor->getVoltageRatio())
-            );
-            sensor->setPowerRatio(
-                getSetting("pwrRatioP", sensor->getPowerRatio())
-            );
-            sensor->setEnergyRatio(
-                getSetting("pwrRatioE", sensor->getEnergyRatio())
-            );
-
             for (size_t index = 0; index < sensor->countDevices(); ++index) {
                 sensor->resetEnergy(index, _sensorEnergyTotal(index));
+                sensor->setCurrentRatio(
+                    get_ratio("pwrRatioC", index, sensor->getCurrentRatio(index))
+                );
+                sensor->setVoltageRatio(
+                    get_ratio("pwrRatioV", index, sensor->getVoltageRatio(index))
+                );
+                sensor->setPowerRatio(
+                    get_ratio("pwrRatioP", index, sensor->getPowerRatio(index))
+                );
+                sensor->setEnergyRatio(
+                    get_ratio("pwrRatioE", index, sensor->getEnergyRatio(index))
+                );
+                sensor->setVoltage(
+                    get_ratio("pwrVoltage", index, sensor->getVoltage(index))
+                );
             }
 
         }
