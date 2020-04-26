@@ -25,18 +25,16 @@ import subprocess
 import os
 import sys
 import datetime
+import pathlib
+import tempfile
+from shutil import copyfileobj
 from espurna_utils.display import Color, clr, print_warning
 
-CUSTOM_HEADER = "espurna/config/custom.h"
-if os.path.exists(CUSTOM_HEADER):
-    raise SystemExit(
-        clr(
-            Color.YELLOW,
-            "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(
-                CUSTOM_HEADER
-            ),
-        )
-    )
+def restore_source_tree(files):
+    os.remove("espurna/espurna.cpp")
+    cmd = ["git", "checkout", "-f", "--"]
+    cmd.extend(files)
+    subprocess.check_call(cmd)
 
 
 def try_remove(path):
@@ -45,8 +43,6 @@ def try_remove(path):
     except:  # pylint: disable=bare-except
         print_warning("Please manually remove the file `{}`".format(path))
 
-
-atexit.register(try_remove, CUSTOM_HEADER)
 
 total_time = 0
 
@@ -61,28 +57,37 @@ def print_total_time():
     )
 
 
-def main(args):
-    configurations = []
-    if not args.no_default:
-        configurations = list(glob.glob(args.default_configurations))
+def prepare_source_tree():
+    to_restore = []
 
-    configurations.extend(x for x in (args.add or []))
-    if not configurations:
-        raise SystemExit(clr(Color.YELLOW, "No configurations selected"))
+    with tempfile.TemporaryFile() as tmp:
+        tmp.write(b"#include \"espurna.h\"\n")
+        for source in pathlib.Path("./espurna/").iterdir():
+            # emulate .ino concatenation to speed up compilation times
+            if source.suffix == ".cpp":
+                to_restore.append(str(source))
+                print("- copying {}".format(source))
+                with source.open(mode="rb") as source_file:
+                    copyfileobj(source_file, tmp)
+                print(tmp.tell())
 
-    if len(configurations) > 1:
-        atexit.register(print_total_time)
+                source.unlink()
+            # unlink main .ino file to avoid PIO converting it before the build
+            # saves very little time, but might as well do it
+            elif source.suffix == ".ino":
+                if source.name == "espurna.ino":
+                    to_restore.append(str(source))
+                    source.unlink()
+                continue
 
-    print(clr(Color.BOLD, "> Selected configurations:"))
-    for cfg in configurations:
-        print(cfg)
-    if args.list:
-        return
+        tmp.seek(0)
+        with open("espurna/espurna.cpp", "wb") as result:
+            copyfileobj(tmp, result)
 
-    if not args.environment:
-        raise SystemExit(clr(Color.YELLOW, "No environment selected"))
-    print(clr(Color.BOLD, "> Selected environment: {}".format(args.environment)))
+    atexit.register(restore_source_tree, to_restore)
 
+
+def run_configurations(args, configurations):
     cmd = ["platformio", "run"]
     if not args.no_silent:
         cmd.extend(["-s"])
@@ -90,7 +95,7 @@ def main(args):
 
     for cfg in configurations:
         print(clr(Color.BOLD, "> Building {}".format(cfg)))
-        with open(CUSTOM_HEADER, "w") as custom_h:
+        with open(args.custom_h, "w") as custom_h:
 
             def write(line):
                 sys.stdout.write(line)
@@ -129,10 +134,48 @@ def main(args):
         )
 
 
+def main(args):
+    if os.path.exists(args.custom_h):
+        raise SystemExit(
+            clr(
+                Color.YELLOW,
+                "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(args.custom_h),
+            )
+        )
+
+    configurations = []
+    if not args.no_default:
+        configurations = list(glob.glob(args.default_configurations))
+
+    configurations.extend(x for x in (args.add or []))
+    if not configurations:
+        raise SystemExit(clr(Color.YELLOW, "No configurations selected"))
+
+    if len(configurations) > 1:
+        atexit.register(print_total_time)
+
+    print(clr(Color.BOLD, "> Selected configurations:"))
+    for cfg in configurations:
+        print(cfg)
+    if args.list:
+        return
+
+    if not args.environment:
+        raise SystemExit(clr(Color.YELLOW, "No environment selected"))
+    print(clr(Color.BOLD, "> Selected environment: {}".format(args.environment)))
+
+    atexit.register(try_remove, args.custom_h)
+
+    prepare_source_tree()
+    run_configurations(args, configurations)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l", "--list", action="store_true", help="List selected configurations"
+    )
+    parser.add_argument(
+        "--custom-h", default="espurna/config/custom.h", help="Header that will be included in by the config/all.h"
     )
     parser.add_argument(
         "-n",
