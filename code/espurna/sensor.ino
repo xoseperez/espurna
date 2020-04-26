@@ -508,7 +508,7 @@ sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::U
 double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
-    switch (magnitude.sensor->units(magnitude.type)) {
+    switch (magnitude.sensor->units(magnitude.local)) {
         case sensor::Unit::Celcius:
             if (magnitude.units == sensor::Unit::Farenheit) {
                 value = (value * 1.8) + 32.0;
@@ -1817,7 +1817,7 @@ void _sensorConfigure() {
                     magnitude.correction = getSetting({"luxCorrection", magnitude.global}, luxCorrection);
                     break;
                 default:
-                    magnitude.units = magnitude.sensor->units(magnitude.type);
+                    magnitude.units = magnitude.sensor->units(magnitude.local);
                     break;
             }
 
