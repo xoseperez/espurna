@@ -338,10 +338,10 @@ void debugConfigure() {
     {
         #if defined(DEBUG_ESP_PORT)
         #if not defined(NDEBUG)
-            constexpr const bool debug_sdk = true;
+            constexpr bool debug_sdk = true;
         #endif // !defined(NDEBUG)
         #else
-            constexpr const bool debug_sdk = false;
+            constexpr bool debug_sdk = false;
         #endif // defined(DEBUG_ESP_PORT)
 
         DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));

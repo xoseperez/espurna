@@ -304,6 +304,9 @@ String getSetting(const settings_key_t& key, String defaultValue) {
 }
 
 template
+bool getSetting(const settings_key_t& key, bool defaultValue);
+
+template
 int getSetting(const settings_key_t& key, int defaultValue);
 
 template

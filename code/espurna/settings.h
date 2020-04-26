@@ -114,6 +114,11 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, unsigned int index);
 void moveSettings(const String& from, const String& to);
 
+#if 1
+template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
+R getSetting(const settings_key_t& key, R defaultValue) __attribute__((noinline));
+#endif
+
 template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) {
     String value;
@@ -129,32 +134,6 @@ String getSetting(const settings_key_t& key, String defaultValue);
 String getSetting(const settings_key_t& key);
 String getSetting(const settings_key_t& key, const char* defaultValue);
 String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultValue);
-
-#if 0
-template<>
-int getSetting(const settings_key_t& key, int defaultValue);
-
-template<>
-long getSetting(const settings_key_t& key, long defaultValue);
-
-template<>
-unsigned char getSetting(const settings_key_t& key, unsigned char defaultValue);
-
-template<>
-unsigned short getSetting(const settings_key_t& key, unsigned short defaultValue);
-
-template<>
-unsigned int getSetting(const settings_key_t& key, unsigned int defaultValue);
-
-template<>
-unsigned long getSetting(const settings_key_t& key, unsigned long defaultValue);
-
-template<>
-float getSetting(const settings_key_t& key, float defaultValue);
-
-template<>
-double getSetting(const settings_key_t& key, double defaultValue);
-#endif
 
 template<typename T>
 bool setSetting(const settings_key_t& key, const T& value) {
