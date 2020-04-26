@@ -16,6 +16,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <memory>
 #include <list>
 
+#if TELNET_SERVER == TELNET_SERVER_ASYNC
+
 #include <ESPAsyncTCP.h>
 
 struct AsyncBufferedClient {
@@ -46,20 +48,25 @@ struct AsyncBufferedClient {
         std::list<buffer_t> _buffers;
 };
 
-#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-    using TTelnetServer = WiFiServer;
-    using TTelnetClient = WiFiClient;
-#elif TELNET_SERVER == TELNET_SERVER_ASYNC
-    using TTelnetServer = AsyncServer;
+using TTelnetServer = AsyncServer;
+
 #if TELNET_SERVER_ASYNC_BUFFERED
     using TTelnetClient = AsyncBufferedClient;
 #else
     using TTelnetClient = AsyncClient;
 #endif // TELNET_SERVER_ASYNC_BUFFERED
+
+#elif TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
+using TTelnetServer = WiFiServer;
+using TTelnetClient = WiFiClient;
+
+#else
+#error "TELNET_SERVER value was not properly set"
 #endif
 
-constexpr char TELNET_IAC = 0xFF;
-constexpr char TELNET_XEOF = 0xEC;
+constexpr unsigned char TELNET_IAC = 0xFF;
+constexpr unsigned char TELNET_XEOF = 0xEC;
 
 bool telnetConnected();
 unsigned char telnetWrite(unsigned char ch);
