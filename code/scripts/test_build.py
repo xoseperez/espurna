@@ -30,8 +30,8 @@ import tempfile
 from shutil import copyfileobj
 from espurna_utils.display import Color, clr, print_warning
 
+
 def restore_source_tree(files):
-    os.remove("espurna/espurna.cpp")
     cmd = ["git", "checkout", "-f", "--"]
     cmd.extend(files)
     subprocess.check_call(cmd)
@@ -59,17 +59,16 @@ def print_total_time():
 
 def prepare_source_tree():
     to_restore = []
+    result_path = "espurna/espurna.cpp"
 
     with tempfile.TemporaryFile() as tmp:
-        tmp.write(b"#include \"espurna.h\"\n")
+        tmp.write(b'#include "espurna.h"\n')
         for source in pathlib.Path("./espurna/").iterdir():
             # emulate .ino concatenation to speed up compilation times
             if source.suffix == ".cpp":
                 to_restore.append(str(source))
-                print("- copying {}".format(source))
                 with source.open(mode="rb") as source_file:
                     copyfileobj(source_file, tmp)
-                print(tmp.tell())
 
                 source.unlink()
             # unlink main .ino file to avoid PIO converting it before the build
@@ -81,8 +80,11 @@ def prepare_source_tree():
                 continue
 
         tmp.seek(0)
-        with open("espurna/espurna.cpp", "wb") as result:
+
+        print(clr(Color.BOLD, "> Creating {}".format(result_path)))
+        with open(result_path, "wb") as result:
             copyfileobj(tmp, result)
+        atexit.register(try_remove, result_path)
 
     atexit.register(restore_source_tree, to_restore)
 
@@ -139,7 +141,9 @@ def main(args):
         raise SystemExit(
             clr(
                 Color.YELLOW,
-                "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(args.custom_h),
+                "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(
+                    args.custom_h
+                ),
             )
         )
 
@@ -169,13 +173,16 @@ def main(args):
     prepare_source_tree()
     run_configurations(args, configurations)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l", "--list", action="store_true", help="List selected configurations"
     )
     parser.add_argument(
-        "--custom-h", default="espurna/config/custom.h", help="Header that will be included in by the config/all.h"
+        "--custom-h",
+        default="espurna/config/custom.h",
+        help="Header that will be included in by the config/all.h",
     )
     parser.add_argument(
         "-n",
@@ -196,9 +203,7 @@ if __name__ == "__main__":
         help="(glob) default configuration headers",
     )
     parser.add_argument(
-        "--no-silent",
-        action="store_true",
-        help="Do not silence pio-run"
+        "--no-silent", action="store_true", help="Do not silence pio-run"
     )
 
     main(parser.parse_args())
