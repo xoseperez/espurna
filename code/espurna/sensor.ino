@@ -518,8 +518,8 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
             }
             value = value + _sensor_temperature_correction;
             break;
-        case sensor::Unit::Hectopascal:
-            value = constrain(value + _sensor_humidity_correction, 0.0, 100.0);
+        case sensor::Unit::Percentage:
+            value = constrain(value, 0.0, 100.0);
             break;
         case sensor::Unit::Watt:
         case sensor::Unit::Voltampere:
