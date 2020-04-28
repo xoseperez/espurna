@@ -159,4 +159,4 @@ if os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE"):
             path = os.path.join(root, name)
             env.AddBuildMiddleware(lambda node: None, "*?/{}".format(path))
             cpp_files.append(path)
-    merge_cpp(cpp_files, "espurna/espurna.cpp")
+    merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
