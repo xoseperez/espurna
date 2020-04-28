@@ -49,6 +49,7 @@ struct sensor_magnitude_t {
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
     double max_change;          // Maximum value change to report
+    double correction;          // Value correction (applied when processing)
 
 };
 
@@ -162,10 +163,6 @@ bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 
-double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
-double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
-double _sensor_lux_correction = SENSOR_LUX_CORRECTION;
-
 // Energy persistence
 std::vector<unsigned char> _sensor_save_count;
 unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
@@ -185,7 +182,8 @@ sensor_magnitude_t::sensor_magnitude_t() :
     last(0.0),
     reported(0.0),
     min_change(0.0),
-    max_change(0.0)
+    max_change(0.0),
+    correction(0.0)
 {}
 
 sensor_magnitude_t::sensor_magnitude_t(unsigned char type, unsigned char local, sensor::Unit units, BaseSensor* sensor) :
@@ -199,7 +197,8 @@ sensor_magnitude_t::sensor_magnitude_t(unsigned char type, unsigned char local, 
     last(0.0),
     reported(0.0),
     min_change(0.0),
-    max_change(0.0)
+    max_change(0.0),
+    correction(0.0)
 {
     ++_counts[type];
 
@@ -509,17 +508,16 @@ sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::U
 double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
-    switch (magnitude.sensor->units(magnitude.type)) {
+    switch (magnitude.sensor->units(magnitude.local)) {
         case sensor::Unit::Celcius:
             if (magnitude.units == sensor::Unit::Farenheit) {
                 value = (value * 1.8) + 32.0;
             } else if (magnitude.units == sensor::Unit::Kelvin) {
                 value = value + 273.15;
             }
-            value = value + _sensor_temperature_correction;
             break;
-        case sensor::Unit::Hectopascal:
-            value = constrain(value + _sensor_humidity_correction, 0.0, 100.0);
+        case sensor::Unit::Percentage:
+            value = constrain(value, 0.0, 100.0);
             break;
         case sensor::Unit::Watt:
         case sensor::Unit::Voltampere:
@@ -536,12 +534,11 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
                 value = value * 3.6e+6;
             }
             break;
-        case sensor::Unit::Lux:
-            value = value + _sensor_lux_correction;
-            break;
         default:
             break;
     }
+
+    value = value + magnitude.correction;
 
     return roundTo(value, magnitude.decimals);
 
@@ -739,11 +736,19 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
     }
 
+    if (sensor_magnitude_t::counts(MAGNITUDE_TEMPERATURE)) {
+        root["tmpCorrection"] = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION);
+    }
+
+    if (sensor_magnitude_t::counts(MAGNITUDE_HUMIDITY)) {
+        root["humCorrection"] = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION);
+    }
+
+    if (sensor_magnitude_t::counts(MAGNITUDE_LUX)) {
+        root["luxCorrection"] = getSetting("luxCorrection", SENSOR_LUX_CORRECTION);
+    }
+
     if (magnitudeCount()) {
-        //root["apiRealTime"] = _sensor_realtime;
-        root["tmpCorrection"] = _sensor_temperature_correction;
-        root["humCorrection"] = _sensor_humidity_correction;
-        root["luxCorrection"] = _sensor_lux_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
         root["snsSave"] = _sensor_save_every;
@@ -1317,6 +1322,9 @@ void _sensorLoad() {
         sensor->setSEL(getSetting("snsHlw8012SelGPIO", HLW8012_SEL_PIN));
         sensor->setCF(getSetting("snsHlw8012CfGPIO", HLW8012_CF_PIN));
         sensor->setCF1(getSetting("snsHlw8012Cf1GPIO", HLW8012_CF1_PIN));
+        sensor->setCurrentRatio(HLW8012_CURRENT_RATIO);
+        sensor->setVoltageRatio(HLW8012_VOLTAGE_RATIO);
+        sensor->setPowerRatio(HLW8012_POWER_RATIO);
         sensor->setSELCurrent(HLW8012_SEL_CURRENT);
         _sensors.push_back(sensor);
     }
@@ -1631,25 +1639,32 @@ void _sensorInit() {
             break;
         }
 
+        // TODO: compatibility proxy, fetch global key before indexed
+        auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
+            return getSetting({key, index}, getSetting(key, default_value));
+        };
+
         if (_sensorIsEmon(_sensors[i])) {
 
             auto* sensor = static_cast<BaseEmonSensor*>(_sensors[i]);
 
-            sensor->setCurrentRatio(
-                getSetting("pwrRatioC", sensor->getCurrentRatio())
-            );
-            sensor->setVoltageRatio(
-                getSetting("pwrRatioV", sensor->getVoltageRatio())
-            );
-            sensor->setPowerRatio(
-                getSetting("pwrRatioP", sensor->getPowerRatio())
-            );
-            sensor->setEnergyRatio(
-                getSetting("pwrRatioE", sensor->getEnergyRatio())
-            );
-
             for (size_t index = 0; index < sensor->countDevices(); ++index) {
                 sensor->resetEnergy(index, _sensorEnergyTotal(index));
+                sensor->setCurrentRatio(
+                    get_ratio("pwrRatioC", index, sensor->getCurrentRatio(index))
+                );
+                sensor->setVoltageRatio(
+                    get_ratio("pwrRatioV", index, sensor->getVoltageRatio(index))
+                );
+                sensor->setPowerRatio(
+                    get_ratio("pwrRatioP", index, sensor->getPowerRatio(index))
+                );
+                sensor->setEnergyRatio(
+                    get_ratio("pwrRatioE", index, sensor->getEnergyRatio(index))
+                );
+                sensor->setVoltage(
+                    get_ratio("pwrVoltage", index, sensor->getVoltage(index))
+                );
             }
 
         }
@@ -1683,12 +1698,7 @@ void _sensorConfigure() {
 
     _sensor_realtime = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
 
-    // Corrections are applied for every magnitude atm, assuming there is no more than one magnitude per type present
-    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION);
-    _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION);
-    _sensor_lux_correction = getSetting("luxCorrection", SENSOR_LUX_CORRECTION);
-
-    // ... same for delta values
+    // Per-magnitude min & max delta settings
     // - min controls whether we report at all when report_count overflows
     // - max will trigger report as soon as read value is greater than the specified delta
     //   (atm this works best for accumulated magnitudes, like energy)
@@ -1766,22 +1776,30 @@ void _sensorConfigure() {
     // Update magnitude config, filter sizes and reset energy if needed
     {
 
-        // Proxy legacy global setting
+        // TODO: instead of using global enum, have a local mapping?
         const auto tmpUnits = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS);
         const auto pwrUnits = getSetting("pwrUnits", SENSOR_POWER_UNITS);
         const auto eneUnits = getSetting("eneUnits", SENSOR_ENERGY_UNITS);
+
+        // TODO: map MAGNITUDE_... type to a specific string? nvm the preprocessor flags, just focus on settings
+        const auto tmpCorrection = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION);
+        const auto humCorrection = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION);
+        const auto luxCorrection = getSetting("luxCorrection", SENSOR_LUX_CORRECTION);
 
         for (unsigned char index = 0; index < _magnitudes.size(); ++index) {
 
             auto& magnitude = _magnitudes.at(index);
 
-            // update units based either on hard-coded defaults or runtime settings
             switch (magnitude.type) {
                 case MAGNITUDE_TEMPERATURE:
                     magnitude.units = _magnitudeUnitFilter(
                         magnitude,
                         getSetting({"tmpUnits", magnitude.global}, tmpUnits)
                     );
+                    magnitude.correction = getSetting({"tmpCorrection", magnitude.global}, tmpCorrection);
+                    break;
+                case MAGNITUDE_HUMIDITY:
+                    magnitude.correction = getSetting({"humCorrection", magnitude.global}, humCorrection);
                     break;
                 case MAGNITUDE_POWER_ACTIVE:
                     magnitude.units = _magnitudeUnitFilter(
@@ -1795,8 +1813,11 @@ void _sensorConfigure() {
                         getSetting({"eneUnits", magnitude.global}, eneUnits)
                     );
                     break;
+                case MAGNITUDE_LUX:
+                    magnitude.correction = getSetting({"luxCorrection", magnitude.global}, luxCorrection);
+                    break;
                 default:
-                    magnitude.units = magnitude.sensor->units(magnitude.type);
+                    magnitude.units = magnitude.sensor->units(magnitude.local);
                     break;
             }
 

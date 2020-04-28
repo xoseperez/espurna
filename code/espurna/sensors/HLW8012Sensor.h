@@ -143,11 +143,9 @@ class HLW8012Sensor : public BaseEmonSensor {
             _hlw8012->setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
 
             // Handle interrupts
-            #if HLW8012_USE_INTERRUPTS
-                #if HLW8012_WAIT_FOR_WIFI == 0
-                    _enableInterrupts(false);
-                    _enableInterrupts(true);
-                #endif
+            #if HLW8012_USE_INTERRUPTS && (!HLW8012_WAIT_FOR_WIFI)
+                _enableInterrupts(false);
+                _enableInterrupts(true);
             #endif
 
             _ready = true;
@@ -187,10 +185,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         double getEnergyDelta() {
-            const auto result = _hlw8012->getEnergy();
-            _energy[0] += sensor::Ws { result };
-            _hlw8012->resetEnergy();
-            return result;
+            return _energy_last;
         }
 
         // Current value for slot # index
@@ -207,18 +202,21 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        #if HLW8012_USE_INTERRUPTS
-        #if HLW8012_WAIT_FOR_WIFI
         void pre() {
-            _enableInterrupts(wifiConnected());
-        }
-        #endif
-        #endif
+            #if HLW8012_USE_INTERRUPTS && HLW8012_WAIT_FOR_WIFI
+                _enableInterrupts(wifiConnected());
+            #endif
 
-        // Toggle between current and voltage monitoring
-        #if HLW8012_USE_INTERRUPTS == 0
-        // Post-read hook (usually to reset things)
-        void post() { _hlw8012->toggleMode(); }
+            _energy_last = _hlw8012->getEnergy();
+            _energy[0] += sensor::Ws { _energy_last };
+            _hlw8012->resetEnergy();
+        }
+
+        #if !HLW8012_USE_INTERRUPTS
+        // Toggle between current and voltage monitoring after reading
+        void post() {
+            _hlw8012->toggleMode();
+        }
         #endif // HLW8012_USE_INTERRUPTS == 0
 
         // Handle interrupt calls
@@ -277,6 +275,8 @@ class HLW8012Sensor : public BaseEmonSensor {
         unsigned char _cf = GPIO_NONE;
         unsigned char _cf1 = GPIO_NONE;
         bool _sel_current = true;
+
+        uint32_t _energy_last = 0;
 
         HLW8012 * _hlw8012 = NULL;
 

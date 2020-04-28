@@ -25,6 +25,8 @@ class BaseEmonSensor : public BaseSensor {
             return sensor::type::Emon;
         }
 
+        // --- energy monitoring --
+
         virtual void resizeDevices(size_t devices) {
             _energy.resize(devices);
             _devices = devices;
@@ -64,10 +66,24 @@ class BaseEmonSensor : public BaseSensor {
             return getEnergy(0);
         }
 
+        // --- configuration ---
+        
+        // when sensor needs explicit mains voltage value
+        virtual void setVoltage(double) {}
+        virtual double getVoltage() { return 0.0; }
+        virtual double getVoltage(unsigned char index) { return getVoltage(); }
+
+        // when sensor implements ratios / multipliers
         virtual void setCurrentRatio(double) {}
         virtual void setVoltageRatio(double) {}
         virtual void setPowerRatio(double) {}
         virtual void setEnergyRatio(double) {}
+
+        // when sensor implements ratios / multipliers
+        virtual void setCurrentRatio(unsigned char index, double) {}
+        virtual void setVoltageRatio(unsigned char index, double) {}
+        virtual void setPowerRatio(unsigned char index, double) {}
+        virtual void setEnergyRatio(unsigned char index, double) {}
 
         // when sensor implements a single device
         virtual double getCurrentRatio() { return 0.0; }

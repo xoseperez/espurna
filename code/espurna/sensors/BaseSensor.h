@@ -88,8 +88,8 @@ class BaseSensor {
         void onEvent(TSensorCallback fn) { _callback = fn; };
 
         // Specify units attached to magnitudes
-        virtual sensor::Unit units(unsigned char type) {
-            switch (type) {
+        virtual sensor::Unit units(unsigned char index) {
+            switch (type(index)) {
                 case MAGNITUDE_TEMPERATURE:
                     return sensor::Unit::Celcius;
                 case MAGNITUDE_HUMIDITY:
