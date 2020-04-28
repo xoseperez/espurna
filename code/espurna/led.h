@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <memory>
 
-constexpr const size_t LedsMax = 8;
+constexpr size_t LedsMax = 8;
 
 enum class LedMode {
     NetworkAutoconfig,

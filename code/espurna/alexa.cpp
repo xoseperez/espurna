@@ -18,8 +18,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "web.h"
 #include "ws.h"
 
-fauxmoESP _alexa;
+struct alexa_queue_element_t {
+    unsigned char device_id;
+    bool state;
+    unsigned char value;
+};
+
 static std::queue<alexa_queue_element_t> _alexa_queue;
+
+fauxmoESP _alexa;
 
 // -----------------------------------------------------------------------------
 // ALEXA

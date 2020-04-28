@@ -27,21 +27,6 @@ namespace Light {
     };
 }
 
-struct channel_t {
-
-    channel_t();
-    channel_t(unsigned char pin, bool inverse);
-
-    unsigned char pin;           // real GPIO pin
-    bool inverse;                // whether we should invert the value before using it
-    bool state;                  // is the channel ON
-    unsigned char inputValue;    // raw value, without the brightness
-    unsigned char value;         // normalized value, including brightness
-    unsigned char target;        // target value
-    double current;              // transition value
-
-};
-
 size_t lightChannels();
 unsigned int lightTransitionTime();
 void lightTransitionTime(unsigned long ms);

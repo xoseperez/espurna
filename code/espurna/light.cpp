@@ -28,7 +28,6 @@ extern "C" {
     #include "libs/fs_math.h"
 }
 
-#define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
 // default is 8, we only need up to 5
@@ -40,6 +39,21 @@ extern "C" {
 #endif
 
 // -----------------------------------------------------------------------------
+
+struct channel_t {
+
+    channel_t();
+    channel_t(unsigned char pin, bool inverse);
+
+    unsigned char pin;           // real GPIO pin
+    bool inverse;                // whether we should invert the value before using it
+    bool state;                  // is the channel ON
+    unsigned char inputValue;    // raw value, without the brightness
+    unsigned char value;         // normalized value, including brightness
+    unsigned char target;        // target value
+    double current;              // transition value
+
+};
 
 Ticker _light_comms_ticker;
 Ticker _light_save_ticker;
@@ -77,7 +91,9 @@ light_brightness_func_t* _light_brightness_func = nullptr;
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 my92xx * _my92xx;
-ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
+unsigned char _light_channel_map[] {
+    MY92XX_MAPPING
+};
 #endif
 
 // UI hint about channel distribution

@@ -9,13 +9,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #pragma once
 
 #include "espurna.h"
-#include "web.h"
-
-struct alexa_queue_element_t {
-    unsigned char device_id;
-    bool state;
-    unsigned char value;
-};
 
 #if ALEXA_SUPPORT
 

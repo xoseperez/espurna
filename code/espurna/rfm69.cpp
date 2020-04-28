@@ -19,7 +19,15 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // Locals
 // -----------------------------------------------------------------------------
 
-RFM69Wrap * _rfm69_radio;
+struct packet_t {
+    unsigned long messageID;
+    unsigned char packetID;
+    unsigned char senderID;
+    unsigned char targetID;
+    char * key;
+    char * value;
+    int16_t rssi;
+};
 
 struct _node_t {
     unsigned long count = 0;
@@ -41,6 +49,48 @@ void _rfm69Clear() {
     _rfm69_node_count = 0;
     _rfm69_packet_count = 0;
 }
+
+// -----------------------------------------------------------------------------
+
+class RFM69Wrap: public RFM69_ATC {
+
+    public:
+
+        RFM69Wrap(uint8_t slaveSelectPin=RF69_SPI_CS, uint8_t interruptPin=RF69_IRQ_PIN, bool isRFM69HW=false, uint8_t interruptNum=0):
+            RFM69_ATC(slaveSelectPin, interruptPin, isRFM69HW, interruptNum) {};
+
+    protected:
+
+        // overriding SPI_CLOCK for ESP8266
+        void select() {
+
+            noInterrupts();
+
+            #if defined (SPCR) && defined (SPSR)
+                // save current SPI settings
+                _SPCR = SPCR;
+                _SPSR = SPSR;
+            #endif
+
+            // set RFM69 SPI settings
+            SPI.setDataMode(SPI_MODE0);
+            SPI.setBitOrder(MSBFIRST);
+
+            #if defined(__arm__)
+            	SPI.setClockDivider(SPI_CLOCK_DIV16);
+            #elif defined(ARDUINO_ARCH_ESP8266)
+                SPI.setClockDivider(SPI_CLOCK_DIV2); // speeding it up for the ESP8266
+            #else
+                SPI.setClockDivider(SPI_CLOCK_DIV4);
+            #endif
+
+            digitalWrite(_slaveSelectPin, LOW);
+
+        }
+
+};
+
+RFM69Wrap * _rfm69_radio;
 
 // -----------------------------------------------------------------------------
 // WEB

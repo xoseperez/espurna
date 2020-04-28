@@ -53,8 +53,8 @@ ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
     return *this;
 }
 
-ws_callbacks_t _ws_callbacks;
-std::queue<ws_data_t> _ws_client_data;
+static ws_callbacks_t _ws_callbacks;
+static std::queue<ws_data_t> _ws_client_data;
 
 // -----------------------------------------------------------------------------
 // WS authentication

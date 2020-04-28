@@ -12,17 +12,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
-#include "libs/RFM69Wrap.h"
-
-struct packet_t {
-    unsigned long messageID;
-    unsigned char packetID;
-    unsigned char senderID;
-    unsigned char targetID;
-    char * key;
-    char * value;
-    int16_t rssi;
-};
+#include <RFM69.h>
+#include <RFM69_ATC.h>
+#include <SPI.h>
 
 void rfm69Setup();
 
