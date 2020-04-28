@@ -10,7 +10,7 @@ elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test WebUI" ]; then
     ./build.sh -f environments
 elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test PlatformIO Build" ]; then
     # shellcheck disable=SC2086
-    scripts/test_build.py -e "$TEST_ENV" $TEST_EXTRA_ARGS
+    scripts/test_build.py --no-silent -e "$TEST_ENV" $TEST_EXTRA_ARGS
 elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Release" ]; then
     ./build.sh -r
 else
