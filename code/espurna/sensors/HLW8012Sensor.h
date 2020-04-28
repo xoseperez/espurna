@@ -212,13 +212,12 @@ class HLW8012Sensor : public BaseEmonSensor {
             _hlw8012->resetEnergy();
         }
 
-        // Post-read hook (usually to reset things)
+        #if !HLW8012_USE_INTERRUPTS
+        // Toggle between current and voltage monitoring after reading
         void post() {
-            // Toggle between current and voltage monitoring
-            #if !HLW8012_USE_INTERRUPTS
-                _hlw8012->toggleMode();
-            #endif // HLW8012_USE_INTERRUPTS == 0
+            _hlw8012->toggleMode();
         }
+        #endif // HLW8012_USE_INTERRUPTS == 0
 
         // Handle interrupt calls
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
