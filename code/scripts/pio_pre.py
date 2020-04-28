@@ -137,9 +137,11 @@ if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
 
     subprocess_libdeps(env.GetProjectOption("lib_deps"), storage)
 
-# TODO:
-# - we still convert .ino
-# - we still build .ino (which is empty)
-# - `src_filter: -<espurna/espurna.ino>` causes PIO to loose build-dir completely
-# - `*.ino` filter does not do anything
-env.AddBuildMiddleware(lambda node: None, "*.cpp.ino.o")
+# tweak build system to ignore espurna.ino, but include user code
+# ref: platformio-core/platformio/tools/piomisc.py::ConvertInoToCpp()
+def ConvertInoToCpp(env):
+    pass
+
+ino = env.Glob("$PROJECT_DIR/espurna/*.ino") + env.Glob("$PROJECT_DIR/espurna/*.pde")
+if len(ino) == 1 and ino[0].name == "espurna.ino":
+    env.AddMethod(ConvertInoToCpp)
