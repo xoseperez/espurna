@@ -25,9 +25,6 @@ import subprocess
 import os
 import sys
 import datetime
-import pathlib
-import tempfile
-from shutil import copyfileobj
 
 from espurna_utils.display import clr, print_warning, Color
 
