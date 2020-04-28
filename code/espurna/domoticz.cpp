@@ -238,6 +238,7 @@ void domoticzSendMagnitude(unsigned char type, unsigned char index, double value
         int nvalue = (buffer[0] >= 48) ? (buffer[0] - 48) : 0;
         domoticzSend(key, nvalue, buffer);
     // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Humidity
+    // nvalue contains HUM (relative humidity)
     // svalue contains HUM_STAT, one of consts below
     } else if (MAGNITUDE_HUMIDITY == type) {
         const char status = 48 + (
@@ -247,7 +248,7 @@ void domoticzSendMagnitude(unsigned char type, unsigned char index, double value
             HUMIDITY_DRY
         );
         char svalue[2] = {status, '\0'};
-        domoticzSend(key, buffer, svalue);
+        domoticzSend(key, static_cast<int>(value), svalue);
     // Otherwise, send char string (nvalue is only for integers)
     } else {
         domoticzSend(key, 0, buffer);
