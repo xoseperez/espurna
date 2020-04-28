@@ -151,12 +151,12 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
 
 # merge every .cpp into a single file and **only** build that single file
 if os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE"):
-    for root, dirs, sources in os.walk("./espurna"):
-        for source in sources:
-            if not source.endswith(".cpp"):
+    cpp_files = []
+    for root, dirs, filenames in os.walk("espurna"):
+        for name in filenames:
+            if not name.endswith(".cpp"):
                 continue
-            # XXX: middleware puts relative path under the `.pio/build/<env>/src/<filename>`
-            path = os.path.join(env.subst("$BUILD_SRC_DIR"), source)
-            print("- {}".format(path))
-            env.AddBuildMiddleware(lambda node: None, path)
-    merge_cpp("./espurna", "espurna.cpp")
+            path = os.path.join(root, name)
+            env.AddBuildMiddleware(lambda node: None, "*?/{}".format(path))
+            cpp_files.append(path)
+    merge_cpp(cpp_files, "espurna/espurna.cpp")

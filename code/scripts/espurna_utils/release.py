@@ -1,6 +1,5 @@
 import atexit
 import os
-import pathlib
 import shutil
 import tempfile
 
@@ -34,21 +33,17 @@ def copy_release(target, source, env):
     shutil.copy(src, dest)
 
 
-def merge_cpp(srcdir, result_file):
-    to_restore = []
-    result_path = os.path.join(srcdir, result_file)
-
+# emulate .ino concatenation to speed up compilation times
+def merge_cpp(sources, output):
     with tempfile.TemporaryFile() as tmp:
+        tmp.write(b"// !!! Automatically generated file; DO NOT EDIT !!! \n")
         tmp.write(b'#include "espurna.h"\n')
-        for source in pathlib.Path(srcdir).iterdir():
-            # emulate .ino concatenation to speed up compilation times
-            if source.suffix == ".cpp":
-                to_restore.append(str(source))
-                with source.open(mode="rb") as source_file:
-                    shutil.copyfileobj(source_file, tmp)
+        for source in sources:
+            with open(source, "rb") as fobj:
+                shutil.copyfileobj(fobj, tmp)
 
         tmp.seek(0)
 
-        with open(result_path, "wb") as result:
-            shutil.copyfileobj(tmp, result)
-        atexit.register(try_remove, result_path)
+        with open(output, "wb") as fobj:
+            shutil.copyfileobj(tmp, fobj)
+        atexit.register(try_remove, output)
