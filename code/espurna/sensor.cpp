@@ -443,10 +443,6 @@ bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 
-// Energy persistence
-std::vector<unsigned char> _sensor_save_count;
-unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
-
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
