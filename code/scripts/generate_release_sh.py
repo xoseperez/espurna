@@ -97,6 +97,7 @@ def generate_lines(builds, ignore):
         if build.src_build_flags:
             flags.append('ESPURNA_FLAGS="{}"'.format(build.src_build_flags))
         flags.append('ESPURNA_RELEASE_NAME="{env}"'.format(env=build.env))
+        flags.append("ESPURNA_BUILD_SINGLE_SOURCE=1")
 
         cmd = ["env"]
         cmd.extend(flags)

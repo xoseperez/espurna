@@ -19,6 +19,8 @@ import sys
 
 from SCons.Script import ARGUMENTS
 
+from espurna_utils.release import merge_cpp
+
 
 CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
 PIO_PLATFORM = env.PioPlatform()
@@ -99,7 +101,7 @@ def ensure_platform_updated():
 env.Append(
     ESPURNA_BOARD=os.environ.get("ESPURNA_BOARD", ""),
     ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH", ""),
-    ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", "")
+    ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", ""),
 )
 
 ESPURNA_OTA_PORT = os.environ.get("ESPURNA_IP")
@@ -115,7 +117,7 @@ if CI:
     env.Append(
         ESPURNA_RELEASE_NAME=os.environ.get("ESPURNA_RELEASE_NAME", ""),
         ESPURNA_RELEASE_VERSION=os.environ.get("ESPURNA_RELEASE_VERSION", ""),
-        ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", "")
+        ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", ""),
     )
 
 # updates arduino core git to the latest master commit
@@ -142,6 +144,19 @@ if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
 def ConvertInoToCpp(env):
     pass
 
+
 ino = env.Glob("$PROJECT_DIR/espurna/*.ino") + env.Glob("$PROJECT_DIR/espurna/*.pde")
 if len(ino) == 1 and ino[0].name == "espurna.ino":
     env.AddMethod(ConvertInoToCpp)
+
+# merge every .cpp into a single file and **only** build that single file
+if os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE"):
+    for root, dirs, sources in os.walk("./espurna"):
+        for source in sources:
+            if not source.endswith(".cpp"):
+                continue
+            # XXX: middleware puts relative path under the `.pio/build/<env>/src/<filename>`
+            path = os.path.join(env.subst("$BUILD_SRC_DIR"), source)
+            print("- {}".format(path))
+            env.AddBuildMiddleware(lambda node: None, path)
+    merge_cpp("./espurna", "espurna.cpp")

@@ -28,7 +28,8 @@ import datetime
 import pathlib
 import tempfile
 from shutil import copyfileobj
-from espurna_utils.display import Color, clr, print_warning
+
+from espurna_utils.display import clr, print_warning, Color
 
 
 def restore_source_tree(files):
@@ -57,38 +58,6 @@ def print_total_time():
     )
 
 
-def prepare_source_tree():
-    to_restore = []
-    result_path = "espurna/espurna.cpp"
-
-    with tempfile.TemporaryFile() as tmp:
-        tmp.write(b'#include "espurna.h"\n')
-        for source in pathlib.Path("./espurna/").iterdir():
-            # emulate .ino concatenation to speed up compilation times
-            if source.suffix == ".cpp":
-                to_restore.append(str(source))
-                with source.open(mode="rb") as source_file:
-                    copyfileobj(source_file, tmp)
-
-                source.unlink()
-            # unlink main .ino file to avoid PIO converting it before the build
-            # saves very little time, but might as well do it
-            elif source.suffix == ".ino":
-                if source.name == "espurna.ino":
-                    to_restore.append(str(source))
-                    source.unlink()
-                continue
-
-        tmp.seek(0)
-
-        print(clr(Color.BOLD, "> Creating {}".format(result_path)))
-        with open(result_path, "wb") as result:
-            copyfileobj(tmp, result)
-        atexit.register(try_remove, result_path)
-
-    atexit.register(restore_source_tree, to_restore)
-
-
 def run_configurations(args, configurations):
     cmd = ["platformio", "run"]
     if not args.no_silent:
@@ -114,6 +83,7 @@ def run_configurations(args, configurations):
         os_env = os.environ.copy()
         os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = "-DUSE_CUSTOM_H"
         os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
+        os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
         start = time.time()
         subprocess.check_call(cmd, env=os_env)
@@ -170,7 +140,6 @@ def main(args):
 
     atexit.register(try_remove, args.custom_h)
 
-    prepare_source_tree()
     run_configurations(args, configurations)
 
 
