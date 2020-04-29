@@ -25,6 +25,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "relay_config.h"
 
+#ifndef MIN_CURRENT_CHECK_COUNT 
+#define MIN_CURRENT_CHECK_COUNT    5
+#endif
+
 struct relay_t {
 
     // Default to dummy (virtual) relay configuration
@@ -37,6 +41,7 @@ struct relay_t {
         delay_off(0),
         pulse(RELAY_PULSE_NONE),
         pulse_ms(0),
+        min_current(0.0f),
         current_status(false),
         target_status(false),
         lock(RELAY_LOCK_DISABLED),
@@ -67,6 +72,8 @@ struct relay_t {
     unsigned long delay_off;     // Delay to turn relay OFF
     unsigned char pulse;         // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
     unsigned long pulse_ms;      // Pulse length in millis
+    double        min_current;   // Pulse with -ve == pulse ON, then repeat testing until current < this figure - then OFF
+    unsigned char check_count;    // When using min current require MIN_CURRENT_CHECK_COUNT consecutive < set current checks
 
     // Status variables
 
@@ -113,6 +120,31 @@ String _relay_rpc_payload_off;
 String _relay_rpc_payload_toggle;
 
 #endif // MQTT_SUPPORT || API_SUPPORT
+
+void checkCurrent(const String& magnitude, unsigned char global, double value, const char* stringValue)
+{
+    if( strcmp(magnitude.c_str(), "current") || _relays[global].min_current == 0)
+    {
+        return;
+    }
+
+    DEBUG_MSG_P(PSTR("[Relay] reporting current against %d as %s, for threshold %s\n"), global, stringValue, String(_relays[global].min_current,3).c_str());
+
+    if( value <= _relays[global].min_current)
+    {
+        if( ++_relays[global].check_count >= MIN_CURRENT_CHECK_COUNT)
+        {
+            _relays[global].min_current = 0.0;  // Reset 
+            _relayStatusLock(global, false);                 
+            relayStatus(global, false, true, false);
+        }
+    }    
+    else
+    {
+        _relays[global].check_count = 0;    // Start again!
+    }
+    
+}
 
 // -----------------------------------------------------------------------------
 // UTILITY
@@ -794,6 +826,9 @@ void _relayConfigure() {
         _relays[i].delay_on = getSetting({"relayDelayOn", i}, _relayDelayOn(i));
         _relays[i].delay_off = getSetting({"relayDelayOff", i}, _relayDelayOff(i));
 
+        _relays[i].min_current = 0.0;
+        _relays[i].check_count = 0;
+
         if (GPIO_NONE == _relays[i].pin) continue;
 
         pinMode(_relays[i].pin, OUTPUT);
@@ -819,6 +854,8 @@ void _relayConfigure() {
             {_relay_rpc_payload_toggle, "relayPayloadToggle", RELAY_MQTT_TOGGLE},
         });
     #endif // MQTT_SUPPORT
+
+    SensorReadBroker::Register( checkCurrent);
 }
 
 //------------------------------------------------------------------------------
@@ -1177,19 +1214,34 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 return;
             }
 
-            unsigned long pulse = 1000 * atof(payload);
-            if (0 == pulse) return;
+            double pulseWidth = atof(payload);
 
-            if (RELAY_PULSE_NONE != _relays[id].pulse) {
-                DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), id);
+            DEBUG_MSG_P(PSTR("[RELAY] Pulse duration: %s\n"), String(pulseWidth).c_str());
+
+            if (0.0 == pulseWidth) return;
+
+            if( pulseWidth > 0.0f)  // Normal pulse
+            {
+                unsigned long pulse = 1000 * abs(atof(payload));
+
+                if (RELAY_PULSE_NONE != _relays[id].pulse) {
+                    DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), id);
+                }
+
+                _relays[id].pulse_ms = pulse;
+                _relays[id].pulse = relayStatus(id) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
+                relayToggle(id, true, false);
+
+                return;
             }
-
-            _relays[id].pulse_ms = pulse;
-            _relays[id].pulse = relayStatus(id) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
-            relayToggle(id, true, false);
-
+            // Else this is a min current Off value
+            double absCurrent = pulseWidth < 0 ? pulseWidth * -1 : pulseWidth; // Abuse the variable import .. now a current!
+            DEBUG_MSG_P(PSTR("[JWB] Setting min current OFF for relay (%d) to (%s)A\n"), id, String(absCurrent,3).c_str());
+            _relays[id].min_current = absCurrent;  
+            _relays[id].check_count = 0;
+            relayStatus(id, true, true, false);
+            _relayStatusLock(id, true);                 // No override permitted
             return;
-
         }
 
         // magnitude is relay/#
