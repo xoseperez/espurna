@@ -691,6 +691,9 @@ void _buttonLoopGeneric() {
         auto event = _buttons[id].loop();
         if (event != button_event_t::None) {
             buttonEvent(id, event);
+            #if BROKER_SUPPORT
+                StatusBroker::Publish(MQTT_TOPIC_BUTTON, id, _buttonEventNumber(event));
+            #endif
         }
     }
 }
