@@ -76,14 +76,6 @@ unsigned char _rfb_repeat = RF_SEND_TIMES;
 // PRIVATES
 // -----------------------------------------------------------------------------
 
-// From a byte array to an hexa char array ("A220EE...", double the size)
-static bool _rfbToChar(uint8_t * in, char * out, int n = RF_MESSAGE_SIZE) {
-    for (unsigned char p = 0; p<n; p++) {
-        sprintf_P(&out[p*2], PSTR("%02X"), in[p]);
-    }
-    return true;
-}
-
 #if WEB_SUPPORT
 
 void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned char size) {
@@ -130,23 +122,62 @@ void _rfbWebSocketOnData(JsonObject& root) {
 
 #endif // WEB_SUPPORT
 
-// From an hexa char array ("A220EE...") to a byte array (half the size)
-static int _rfbToArray(const char * in, uint8_t * out, int length = RF_MESSAGE_SIZE * 2) {
-    int n = strlen(in);
-    if (n > RF_MAX_MESSAGE_SIZE*2 || (length > 0 && n != length)) return 0;
-    char tmp[3] = {0,0,0};
-    n /= 2;
-    for (unsigned char p = 0; p<n; p++) {
-        memcpy(tmp, &in[p*2], 2);
-        out[p] = strtol(tmp, NULL, 16);
+// From a byte array to an hexa char array ("A220EE...", double the size)
+static bool _rfbHexFromBytearray(uint8_t * in, size_t in_size, char * out, size_t out_size) {
+    if ((2 * in_size + 1) > (out_size)) return false;
+
+    static const char base16[] = "0123456789ABCDEF";
+    unsigned char index = 0;
+
+    for (;;) {
+        if (index >= in_size) break;
+        out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
+        out[(index*2)+1] = base16[(in[index] & 0xf)];
+        ++index;
     }
-    return n;
+
+    out[2*index] = '\0';
+
+    return index <= out_size;
 }
 
-void _rfbAck();
+
+// From an hexa char array ("A220EE...") to a byte array (half the size)
+static bool _rfbBytearrayFromHex(const char* in, size_t in_size, uint8_t* out, uint8_t out_size) {
+    if (out_size < (in_size / 2)) return false;
+
+    unsigned char index = 0;
+    unsigned char out_index = 0;
+
+    auto char2byte = [](char ch) -> uint8_t {
+        if ((ch >= '0') && (ch <= '9')) {
+            return (ch - '0');
+        } else if ((ch >= 'a') && (ch <= 'f')) {
+            return 10 + (ch - 'a');
+        } else if ((ch >= 'A') && (ch <= 'F')) {
+            return 10 + (ch - 'A');
+        } else {
+            return 0;
+        }
+    };
+
+    for (;;) {
+        if (index >= in_size) break;
+
+        out[out_index] = char2byte(in[index]) << 4;
+        out[out_index] += char2byte(in[index + 1]);
+
+        index += 2;
+        out_index += 1;
+    }
+
+    return true;
+}
+
+void _rfbAckImpl();
 void _rfbLearnImpl();
-void _rfbSend(uint8_t * message);
-void _rfbReceive();
+void _rfbSendImpl(uint8_t * message);
+void _rfbReceiveImpl();
 
 bool _rfbMatch(char* code, unsigned char& relayID, unsigned char& value, char* buffer = NULL) {
 
@@ -197,16 +228,16 @@ void _rfbDecode() {
     DEBUG_MSG_P(PSTR("[RF] Action 0x%02X\n"), action);
 
     if (action == RF_CODE_LEARN_KO) {
-        _rfbAck();
+        _rfbAckImpl();
         DEBUG_MSG_P(PSTR("[RF] Learn timeout\n"));
     }
 
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
 
-        _rfbAck();
-        _rfbToChar(&_uartbuf[1], buffer);
-
-        DEBUG_MSG_P(PSTR("[RF] Received message '%s'\n"), buffer);
+        _rfbAckImpl();
+        if (_rfbHexFromBytearray(&_uartbuf[1], RF_MESSAGE_SIZE, buffer, sizeof(buffer))) {
+            DEBUG_MSG_P(PSTR("[RF] Received message '%s'\n"), buffer);
+        }
 
     }
 
@@ -259,7 +290,11 @@ void _rfbDecode() {
 
 #if !RFB_DIRECT // Default for ITEAD SONOFF RFBRIDGE
 
-void _rfbAck() {
+void _rfbSendRaw(const uint8_t *message, unsigned char size) {
+    Serial.write(message, size);
+}
+
+void _rfbAckImpl() {
     DEBUG_MSG_P(PSTR("[RF] Sending ACK\n"));
     Serial.println();
     Serial.write(RF_CODE_START);
@@ -279,17 +314,17 @@ void _rfbLearnImpl() {
     Serial.println();
 }
 
-void _rfbSend(uint8_t * message) {
+void _rfbSendImpl(uint8_t * message) {
     Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_RFOUT);
-    _rfbSendRaw(message);
+    _rfbSendRaw(message, RF_MESSAGE_SIZE);
     Serial.write(RF_CODE_STOP);
     Serial.flush();
     Serial.println();
 }
 
-void _rfbReceive() {
+void _rfbReceiveImpl() {
 
     static bool receiving = false;
 
@@ -318,16 +353,28 @@ void _rfbReceive() {
 
 }
 
+void _rfbParseRaw(char * raw) {
+    int rawlen = strlen(raw);
+    if (rawlen > (RF_MAX_MESSAGE_SIZE * 2)) return;
+    if ((rawlen < 2) || (rawlen & 1)) return;
+
+    DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE '%s'\n"), raw);
+
+    uint8_t message[RF_MAX_MESSAGE_SIZE];
+    _rfbBytearrayFromHex(raw, (size_t)rawlen, message, sizeof(message));
+    _rfbSendRaw(message, (rawlen / 2));
+}
+
 #else // RFB_DIRECT
 
-void _rfbAck() {}
+void _rfbAckImpl() {}
 
 void _rfbLearnImpl() {
     DEBUG_MSG_P(PSTR("[RF] Entering LEARN mode\n"));
     _learning = true;
 }
 
-void _rfbSend(uint8_t * message) {
+void _rfbSendImpl(uint8_t * message) {
 
     if (!_rfb_transmit) return;
 
@@ -350,7 +397,7 @@ void _rfbSend(uint8_t * message) {
 
 }
 
-void _rfbReceive() {
+void _rfbReceiveImpl() {
 
     if (!_rfb_receive) return;
 
@@ -405,13 +452,7 @@ void _rfbReceive() {
 
 #endif // RFB_DIRECT
 
-void _rfbSendRaw(const uint8_t *message, const unsigned char n = RF_MESSAGE_SIZE) {
-    for (unsigned char j=0; j<n; j++) {
-        Serial.write(message[j]);
-    }
-}
-
-void _rfbSend(uint8_t * code, unsigned char times) {
+void _rfbEnqueue(uint8_t * code, unsigned char times) {
 
     if (!_rfb_transmit) return;
 
@@ -421,7 +462,7 @@ void _rfbSend(uint8_t * code, unsigned char times) {
     #endif
 
     char buffer[RF_MESSAGE_SIZE];
-    _rfbToChar(code, buffer);
+    _rfbHexFromBytearray(code, RF_MESSAGE_SIZE, buffer, sizeof(buffer));
     DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%s' %d time(s)\n"), buffer, times);
 
     rfb_message_t message;
@@ -431,7 +472,7 @@ void _rfbSend(uint8_t * code, unsigned char times) {
 
 }
 
-void _rfbSend() {
+void _rfbSendQueued() {
 
     if (!_rfb_transmit) return;
 
@@ -445,7 +486,7 @@ void _rfbSend() {
     // Pop the first message and send it
     rfb_message_t message = _rfb_message_queue.front();
     _rfb_message_queue.pop();
-    _rfbSend(message.code);
+    _rfbSendImpl(message.code);
 
     // Push it to the stack again if we need to send it more than once
     if (message.times > 1) {
@@ -457,27 +498,12 @@ void _rfbSend() {
 
 }
 
-void _rfbSendRawOnce(uint8_t *code, unsigned char length) {
-    char buffer[length*2];
-    _rfbToChar(code, buffer, length);
-    DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE '%s'\n"), buffer);
-    _rfbSendRaw(code, length);
-}
-
 bool _rfbCompare(const char * code1, const char * code2) {
     return strcmp(&code1[12], &code2[12]) == 0;
 }
 
 bool _rfbSameOnOff(unsigned char id) {
     return _rfbCompare(rfbRetrieve(id, true).c_str(), rfbRetrieve(id, false).c_str());
-}
-
-void _rfbParseRaw(char * raw) {
-    uint8_t message[RF_MAX_MESSAGE_SIZE];
-    int len = _rfbToArray(raw, message, 0);
-    if (len > 0) {
-        _rfbSendRawOnce(message, len);
-    }
 }
 
 void _rfbParseCode(char * code) {
@@ -499,18 +525,17 @@ void _rfbParseCode(char * code) {
     }
 
     uint8_t message[RF_MESSAGE_SIZE];
-    int len = _rfbToArray(tok, message, 0);
-    if (len) {
-        tok = strtok(NULL, ",");
-        uint8_t times = (tok != NULL) ? atoi(tok) : 1;
-        _rfbSend(message, times);
+    if (_rfbBytearrayFromHex(tok, strlen(tok), message, sizeof(message))) {
+        tok = strtok(nullptr, ",");
+        uint8_t times = (tok != nullptr) ? atoi(tok) : 1;
+        _rfbEnqueue(message, times);
     }
 
 }
 
 #if MQTT_SUPPORT
 
-void _rfbMqttCallback(unsigned int type, const char * topic, const char * payload) {
+void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
 
@@ -548,12 +573,12 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         }
 
         if (t.equals(MQTT_TOPIC_RFOUT)) {
-            _rfbParseCode((char *) payload);
+            _rfbParseCode(payload);
         }
 
         #if !RFB_DIRECT
             if (t.equals(MQTT_TOPIC_RFRAW)) {
-                _rfbParseRaw((char *) payload);
+                _rfbParseRaw(payload);
             }
         #endif
 
@@ -688,10 +713,8 @@ void rfbStatus(unsigned char id, bool status) {
     String value = rfbRetrieve(id, status);
     if (value.length() > 0) {
 
-        bool same = _rfbSameOnOff(id);
-
         uint8_t message[RF_MAX_MESSAGE_SIZE];
-        int len = _rfbToArray(value.c_str(), message, 0);
+        int len = _rfbBytearrayFromHex(value.c_str(), value.length(), message, sizeof(message));
 
         if (len == RF_MESSAGE_SIZE &&               // probably a standard msg
                 (message[0] != RF_CODE_START        ||  // raw would start with 0xAA
@@ -700,12 +723,13 @@ void rfbStatus(unsigned char id, bool status) {
                  message[len-1] != RF_CODE_STOP)) {     // and finish with 0x55
 
             if (!_rfbin) {
-                unsigned char times = same ? 1 : _rfb_repeat;
-                _rfbSend(message, times);
+                _rfbEnqueue(message, _rfbSameOnOff(id) ? 1 : _rfb_repeat);
             }
 
         } else {
-            _rfbSendRawOnce(message, len);          // send a raw message
+            #if !RFB_DIRECT
+                _rfbSendRaw(message, len);          // send a raw message
+            #endif
         }
 
     }
@@ -792,8 +816,8 @@ void rfbSetup() {
 
     // Register loop only when properly configured
     espurnaRegisterLoop([]() -> void {
-        _rfbReceive();
-        _rfbSend();
+        _rfbReceiveImpl();
+        _rfbSendQueued();
     });
 
 }
