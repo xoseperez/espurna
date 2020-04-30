@@ -45,5 +45,7 @@ using void_callback_f = void (*)();
 void espurnaRegisterLoop(void_callback_f callback);
 void espurnaRegisterReload(void_callback_f callback);
 void espurnaReload();
+
 unsigned long espurnaLoopDelay();
 
+void extraSetup();
