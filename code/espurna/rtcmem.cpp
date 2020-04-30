@@ -8,6 +8,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "rtcmem.h"
 
+volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RTCMEM_ADDR);
+
 bool _rtcmem_status = false;
 
 void _rtcmemErase() {

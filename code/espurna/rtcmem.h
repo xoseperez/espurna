@@ -61,7 +61,7 @@ struct RtcmemData {
 static_assert(sizeof(RtcmemData) <= (RTCMEM_BLOCKS * 4u), "RTCMEM struct is too big");
 constexpr uint8_t RtcmemSize = (sizeof(RtcmemData) / 4u);
 
-volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RTCMEM_ADDR);
+extern volatile RtcmemData* Rtcmem;
 
 bool rtcmemStatus();
 void rtcmemSetup();
