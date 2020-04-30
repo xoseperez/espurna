@@ -8,7 +8,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#if BROKER_SUPPORT
+#include "espurna.h"
 
 #include <functional>
 #include <vector>
@@ -46,14 +46,9 @@ struct TBroker {
 template <TBrokerType type, typename... TArgs>
 TBrokerCallbacks<TArgs...> TBroker<type, TArgs...>::callbacks;
 
-
-// --- Some known types. Bind them here to avoid .ino screwing with order ---
-
 using StatusBroker = TBroker<TBrokerType::Status, const String&, unsigned char, unsigned int>;
 
 using SensorReadBroker = TBroker<TBrokerType::SensorRead, const String&, unsigned char, double, const char*>;
 using SensorReportBroker = TBroker<TBrokerType::SensorReport, const String&, unsigned char, double, const char*>;
 
 using ConfigBroker = TBroker<TBrokerType::Config, const String&, const String&>;
-
-#endif // BROKER_SUPPORT == 1

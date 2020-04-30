@@ -11,6 +11,8 @@ EEPROM MODULE
 
 #include <EEPROM_Rotate.h>
 
+#include "espurna.h"
+
 extern EEPROM_Rotate EEPROMr;
 
 void eepromSectorsDebug();

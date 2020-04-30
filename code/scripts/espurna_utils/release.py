@@ -1,5 +1,17 @@
+import atexit
 import os
 import shutil
+import tempfile
+
+from .display import print_warning
+
+
+def try_remove(path):
+    try:
+        os.remove(path)
+    except:  # pylint: disable=bare-except
+        print_warning("Please manually remove the file `{}`".format(path))
+
 
 def copy_release(target, source, env):
     # target filename and subdir for release files
@@ -20,3 +32,18 @@ def copy_release(target, source, env):
 
     shutil.copy(src, dest)
 
+
+# emulate .ino concatenation to speed up compilation times
+def merge_cpp(sources, output):
+    with tempfile.TemporaryFile() as tmp:
+        tmp.write(b"// !!! Automatically generated file; DO NOT EDIT !!! \n")
+        tmp.write(b'#include "espurna.h"\n')
+        for source in sources:
+            with open(source, "rb") as fobj:
+                shutil.copyfileobj(fobj, tmp)
+
+        tmp.seek(0)
+
+        with open(output, "wb") as fobj:
+            shutil.copyfileobj(tmp, fobj)
+        atexit.register(try_remove, output)

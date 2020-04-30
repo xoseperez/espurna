@@ -6,6 +6,11 @@
 
 #pragma once
 
+#include "espurna.h"
+
+#include <Arduino.h>
+#include <cstdint>
+
 #define SAVE_CRASH_EEPROM_OFFSET    0x0100  // initial address for crash data
 
 /**
@@ -41,7 +46,6 @@
 constexpr size_t crashUsedSpace() {
     return (SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_SIZE + 2);
 }
-
 
 void crashClear();
 void crashDump();

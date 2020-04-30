@@ -8,6 +8,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
 #if I2C_SUPPORT
 
 #if I2C_USE_BRZO
@@ -38,5 +40,9 @@ bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
 
 unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
+unsigned char i2cFind(size_t size, unsigned char * addresses, unsigned char &start);
+unsigned char i2cFind(size_t size, unsigned char * addresses);
+
+void i2cSetup();
 
 #endif // I2C_SUPPORT == 1

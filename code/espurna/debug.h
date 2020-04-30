@@ -6,7 +6,11 @@ DEBUG MODULE
 
 #pragma once
 
-#include <pgmspace.h>
+#include "espurna.h"
+
+#if DEBUG_WEB_SUPPORT
+#include <ArduinoJson.h>
+#endif
 
 extern "C" {
     void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
@@ -25,7 +29,7 @@ bool debugLogBuffer();
 
 void debugWebSetup();
 void debugConfigure();
-void debugConfigueBoot();
+void debugConfigureBoot();
 void debugSetup();
 
 void debugSend(const char* format, ...);

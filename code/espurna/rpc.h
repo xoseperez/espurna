@@ -6,6 +6,8 @@ Part of MQTT and API modules
 
 #pragma once
 
+#include "espurna.h"
+
 #include <vector>
 #include <utility>
 

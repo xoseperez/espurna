@@ -9,7 +9,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
-struct sensor_magnitude_t;
+#include "espurna.h"
 
 //--------------------------------------------------------------------------------
 
@@ -133,9 +133,6 @@ unsigned char magnitudeType(unsigned char index);
 //      consider using index instead of type or adding stronger param type
 String magnitudeTopic(unsigned char type);
 
-String magnitudeTopic(const sensor_magnitude_t& magnitude);
-String magnitudeUnits(const sensor_magnitude_t& magnitude);
-
 unsigned char sensorCount();
 unsigned char magnitudeCount();
 
@@ -144,179 +141,8 @@ double magnitudeValue(unsigned char index);
 unsigned char magnitudeIndex(unsigned char index);
 String magnitudeTopicIndex(unsigned char index);
 
+void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix);
+
 void sensorSetup();
 void sensorLoop();
-
-//--------------------------------------------------------------------------------
-
-#include "filters/LastFilter.h"
-#include "filters/MaxFilter.h"
-#include "filters/MedianFilter.h"
-#include "filters/MovingAverageFilter.h"
-#include "filters/SumFilter.h"
-
-#include "sensors/BaseSensor.h"
-#include "sensors/BaseEmonSensor.h"
-#include "sensors/BaseAnalogSensor.h"
-
-#if AM2320_SUPPORT
-    #include "sensors/AM2320Sensor.h"
-#endif
-
-#if ANALOG_SUPPORT
-    #include "sensors/AnalogSensor.h"
-#endif
-
-#if BH1750_SUPPORT
-    #include "sensors/BH1750Sensor.h"
-#endif
-
-#if BMP180_SUPPORT
-    #include "sensors/BMP180Sensor.h"
-#endif
-
-#if BMX280_SUPPORT
-    #include "sensors/BMX280Sensor.h"
-#endif
-
-#if CSE7766_SUPPORT
-    #include "sensors/CSE7766Sensor.h"
-#endif
-
-#if DALLAS_SUPPORT
-    #include "sensors/DallasSensor.h"
-#endif
-
-#if DHT_SUPPORT
-    #include "sensors/DHTSensor.h"
-#endif
-
-#if DIGITAL_SUPPORT
-    #include "sensors/DigitalSensor.h"
-#endif
-
-#if ECH1560_SUPPORT
-    #include "sensors/ECH1560Sensor.h"
-#endif
-
-#if EMON_ADC121_SUPPORT
-    #include "sensors/EmonADC121Sensor.h"
-#endif
-
-#if EMON_ADS1X15_SUPPORT
-    #include "sensors/EmonADS1X15Sensor.h"
-#endif
-
-#if EMON_ANALOG_SUPPORT
-    #include "sensors/EmonAnalogSensor.h"
-#endif
-
-#if EVENTS_SUPPORT
-    #include "sensors/EventSensor.h"
-#endif
-
-#if EZOPH_SUPPORT
-    #include "sensors/EZOPHSensor.h"
-#endif
-
-#if GEIGER_SUPPORT
-    #include "sensors/GeigerSensor.h"
-#endif
-
-#if GUVAS12SD_SUPPORT
-    #include "sensors/GUVAS12SDSensor.h"
-#endif
-
-#if HLW8012_SUPPORT
-    #include "sensors/HLW8012Sensor.h"
-#endif
-
-#if LDR_SUPPORT
-    #include "sensors/LDRSensor.h"
-#endif
-
-#if MAX6675_SUPPORT
-    #include "sensors/MAX6675Sensor.h"
-#endif 
-
-#if MICS2710_SUPPORT
-    #include "sensors/MICS2710Sensor.h"
-#endif
-
-#if MICS5525_SUPPORT
-    #include "sensors/MICS5525Sensor.h"
-#endif
-
-#if MHZ19_SUPPORT
-    #include "sensors/MHZ19Sensor.h"
-#endif
-
-#if NTC_SUPPORT
-    #include "sensors/NTCSensor.h"
-#endif
-
-#if SDS011_SUPPORT
-    #include "sensors/SDS011Sensor.h"
-#endif
-
-#if SENSEAIR_SUPPORT
-    #include "sensors/SenseAirSensor.h"
-#endif
-
-#if PMSX003_SUPPORT
-    #include "sensors/PMSX003Sensor.h"
-#endif
-
-#if PULSEMETER_SUPPORT
-    #include "sensors/PulseMeterSensor.h"
-#endif
-
-#if PZEM004T_SUPPORT
-    #include "sensors/PZEM004TSensor.h"
-#endif
-
-#if SHT3X_I2C_SUPPORT
-    #include "sensors/SHT3XI2CSensor.h"
-#endif
-
-#if SI7021_SUPPORT
-    #include "sensors/SI7021Sensor.h"
-#endif
-
-#if SONAR_SUPPORT
-    #include "sensors/SonarSensor.h"
-#endif
-
-#if T6613_SUPPORT
-    #include "sensors/T6613Sensor.h"
-#endif
-
-#if TMP3X_SUPPORT
-    #include "sensors/TMP3XSensor.h"
-#endif
-
-#if V9261F_SUPPORT
-    #include "sensors/V9261FSensor.h"
-#endif
-
-#if VEML6075_SUPPORT
-    #include "sensors/VEML6075Sensor.h"
-#endif
-
-#if VL53L1X_SUPPORT
-    #include "sensors/VL53L1XSensor.h"
-#endif
-
-#if ADE7953_SUPPORT
-    #include "sensors/ADE7953Sensor.h"
-#endif
-
-#if SI1145_SUPPORT
-    #include "sensors/SI1145Sensor.h"
-#endif
-
-#if HDC1080_SUPPORT
-    #include "sensors/HDC1080Sensor.h"
-#endif
-//--------------------------------------------------------------------------------
 

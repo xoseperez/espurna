@@ -6,6 +6,8 @@ BUTTON MODULE
 
 #pragma once
 
+#include "espurna.h"
+
 namespace ButtonMask {
 
 enum {

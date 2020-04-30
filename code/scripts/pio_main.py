@@ -20,9 +20,11 @@ from espurna_utils import (
     copy_release,
 )
 
+
 Import("env", "projenv")
 
 import os
+
 CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
 
 # Always show warnings for project code

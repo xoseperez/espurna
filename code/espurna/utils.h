@@ -8,6 +8,14 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
+struct heap_stats_t {
+    uint32_t available;
+    uint16_t usable;
+    uint8_t frag_pct;
+};
+
 PROGMEM const char pstr_unknown[] = "UNKNOWN";
 
 #define INLINE inline __attribute__((always_inline))
@@ -28,10 +36,21 @@ int getHeartbeatMode();
 unsigned long getHeartbeatInterval();
 void heartbeat();
 
+String getAdminPass();
+String getBoardName();
 String buildTime();
 unsigned long getUptime();
 bool haveRelaysOrSensors();
 
+void getHeapStats(heap_stats_t& stats);
+heap_stats_t getHeapStats();
+void wtfHeap(bool value);
+unsigned int getFreeHeap();
+void setInitialFreeHeap();
+unsigned int getInitialFreeHeap();
+
+void infoHeapStats(const char* name, const heap_stats_t& stats);
+void infoHeapStats(bool show_frag_stats = true);
 void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory);
 void infoUptime();
 void info(bool first = false);
@@ -49,7 +68,3 @@ bool isNumber(const char * s);
 void nice_delay(unsigned long ms);
 
 double roundTo(double num, unsigned char positions);
-
-uint32_t u32fromString(const String& string, int base);
-uint32_t u32fromString(const String& string);
-String u32toString(uint32_t bitset, int base);

@@ -8,8 +8,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-// TODO: need this prototype for .ino
-struct rpn_context;
+#include "espurna.h"
 
 #if RPN_RULES_SUPPORT
 

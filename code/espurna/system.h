@@ -8,10 +8,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include <Ticker.h>
-#include <Schedule.h>
-
-#include <cstdint>
+#include "espurna.h"
 
 extern "C" {
     #include "user_interface.h"
@@ -31,3 +28,8 @@ void customResetReason(unsigned char reason);
 
 void deferredReset(unsigned long delay, unsigned char reason);
 bool checkNeedsReset();
+
+unsigned long systemLoadAverage();
+bool systemGetHeartbeat();
+void systemSendHeartbeat();
+void systemSetup();

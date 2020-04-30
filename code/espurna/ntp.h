@@ -6,17 +6,19 @@ NTP MODULE
 
 #pragma once
 
-#include "broker.h"
-
-// TODO: need this prototype for .ino
-struct NtpCalendarWeekday;
+#include "espurna.h"
 
 #if NTP_SUPPORT
+
+#include "broker.h"
 
 #if NTP_LEGACY_SUPPORT // Use legacy TimeLib and NtpClientLib
 
 #include <TimeLib.h>
-#include "libs/NtpClientWrap.h"
+#include <WiFiUdp.h>
+#include <NtpClientLib.h>
+
+time_t ntpLocal2UTC(time_t local);
 
 #else // POSIX time functions + configTime(...)
 
@@ -44,8 +46,10 @@ struct NtpCalendarWeekday {
 
 using NtpBroker = TBroker<TBrokerType::Datetime, const NtpTick, time_t, const String&>;
 
+String ntpDateTime(tm* timestruct);
 String ntpDateTime(time_t ts);
 String ntpDateTime();
+bool ntpSynced();
 
 void ntpSetup();
 

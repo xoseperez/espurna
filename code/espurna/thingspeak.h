@@ -8,6 +8,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
 #if THINGSPEAK_SUPPORT
 
 #if THINGSPEAK_USE_ASYNC
