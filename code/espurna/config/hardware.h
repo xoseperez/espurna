@@ -3281,7 +3281,7 @@
 
 // -----------------------------------------------------------------------------
 // The Gosund WP3 is based on ESP8285, so 1 MB internal flash (DOUT required)
-// The module has no-connect:  TX, RX, RST, AD, GPIO5, (and GPIO0, 
+// The module has no-connect:  TX, RX, RST, AD, GPIO5, (and GPIO0,
 //     GPIO2 via test points on the back of the module)
 // and these are wired to devices:
 // GPIO4: /BTN
@@ -3617,6 +3617,45 @@
     #define ADE7953_SUPPORT     1
     #define I2C_SDA_PIN         12
     #define I2C_SCL_PIN         14
+
+// -----------------------------------------------------------------------------
+// This device has teh same behaviour as the GOSUND WP3, but with different GPIO pin values
+// GPIO equivalents extracted from https://templates.blakadder.com/aoycocr_X5P.html
+
+#elif defined(AOYCOCR_X5P)
+
+    // Info
+    #define MANUFACTURER                "AOYCOCR"
+    #define DEVICE                      "X5P"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+    // the defaults are reasonable, but you can change them as desired
+    //#define BUTTON1_PRESS               BUTTON_ACTION_NONE
+    //#define BUTTON1_CLICK               BUTTON_ACTION_TOGGLE
+    //#define BUTTON1_DBLCLICK            BUTTON_ACTION_AP
+    //#define BUTTON1_LNGCLICK            BUTTON_ACTION_RESET
+    //#define BUTTON1_LNGLNGCLICK         BUTTON_ACTION_FACTORY
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+
+    // LED1 (red) indicates on/off state; you could use LED_MODE_FOLLOW_INVERSE
+    // so that the LED lights the button when 'off' so it can be found easily.
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_FOLLOW
+    #define LED1_RELAY                  1
+
+    // LED2 (blue) indicates wifi activity
+    #define LED2_PIN                    2
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_WIFI
 
 // -----------------------------------------------------------------------------
 

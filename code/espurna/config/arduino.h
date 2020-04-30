@@ -15,6 +15,7 @@
 //#define ALLTERCO_SHELLY1PM
 //#define ALLTERCO_SHELLY2
 //#define ALLTERCO_SHELLY25
+//#define AOYCOCR_X5P
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC02
 //#define ARILUX_AL_LC02_V14
