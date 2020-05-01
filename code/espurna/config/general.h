@@ -1162,6 +1162,7 @@
 #define MQTT_TOPIC_IROUT            "irout"
 #define MQTT_TOPIC_OTA              "ota"
 #define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
+#define MQTT_TOPIC_CURTAIN          "curtain"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"

@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "broker.h"
 #include "button.h"
 #include "crash.h"
+#include "curtain_kingart.h"
 #include "debug.h"
 #include "domoticz.h"
 #include "encoder.h"
@@ -278,6 +279,9 @@ void setup() {
     #endif
     #if TUYA_SUPPORT
         Tuya::tuyaSetup();
+    #endif
+    #if KINGART_CURTAIN_SUPPORT
+        kingartCurtainSetup();
     #endif
 
     // 3rd party code hook

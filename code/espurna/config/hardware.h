@@ -4551,6 +4551,23 @@
     #define SENSOR_POWER_UNITS          POWER_WATTS
 
 // -----------------------------------------------------------------------------
+// KINGART_CURTAIN_SWITCH
+// -----------------------------------------------------------------------------
+#elif defined(KINGART_CURTAIN_SWITCH)
+
+    // Info
+    #define MANUFACTURER            "KINGART"
+    #define DEVICE                  "CURTAIN_SWITCH"
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
+
+    // KINGART module handles the UART, can't print any debug messages
+    #define KINGART_CURTAIN_SUPPORT     1
+    #define DEBUG_SERIAL_SUPPORT        0
+
+// -----------------------------------------------------------------------------
 // LSC Smart LED Light Strip (Smart CXonnect Series) available ACTION (Germany)
 // https://www.action.com/de-de/p/lsc-smart-connect-intelligenter-multicolor-led-strip-/
 // Reflashing from original Tuya firmware
@@ -4641,4 +4658,3 @@
     #error "UNSUPPORTED HARDWARE!!"
 
 #endif
-
