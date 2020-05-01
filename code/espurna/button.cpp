@@ -79,9 +79,9 @@ constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const u
         ((bitmask & ButtonMask::DefaultHigh) 
             ? debounce_event::types::PinValue::High
             : debounce_event::types::PinValue::Low),
-        ((bitmask & ButtonMask::SetPullup) 
-            ? debounce_event::types::PinMode::InputPullup : (bitmask & ButtonMask::SetPulldown) 
-            ? debounce_event::types::PinMode::InputPullup : debounce_event::types::PinMode::Input)
+        ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup 
+            : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown 
+            : debounce_event::types::PinMode::Input)
     };
 }
 
