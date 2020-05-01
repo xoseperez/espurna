@@ -142,6 +142,11 @@ class HLW8012Sensor : public BaseEmonSensor {
             // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
             _hlw8012->setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
 
+            // Also, adjust with ratio values that could be set in hardware profile
+            if (HLW8012_CURRENT_RATIO > 0.0) _hlw8012->setCurrentMultiplier(HLW8012_CURRENT_RATIO);
+            if (HLW8012_VOLTAGE_RATIO > 0.0) _hlw8012->setVoltageMultiplier(HLW8012_VOLTAGE_RATIO);
+            if (HLW8012_POWER_RATIO > 0.0) _hlw8012->setPowerMultiplier(HLW8012_POWER_RATIO);
+
             // Handle interrupts
             #if HLW8012_USE_INTERRUPTS && (!HLW8012_WAIT_FOR_WIFI)
                 _enableInterrupts(false);
