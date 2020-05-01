@@ -123,14 +123,13 @@ void _rfbWebSocketOnData(JsonObject& root) {
 #endif // WEB_SUPPORT
 
 // From a byte array to an hexa char array ("A220EE...", double the size)
-static bool _rfbHexFromBytearray(uint8_t * in, size_t in_size, char * out, size_t out_size) {
-    if ((2 * in_size + 1) > (out_size)) return false;
+static size_t _rfbHexFromBytearray(uint8_t * in, size_t in_size, char * out, size_t out_size) {
+    if ((2 * in_size + 1) > (out_size)) return 0;
 
     static const char base16[] = "0123456789ABCDEF";
     unsigned char index = 0;
 
-    for (;;) {
-        if (index >= in_size) break;
+    while (index < in_size) {
         out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
         out[(index*2)+1] = base16[(in[index] & 0xf)];
         ++index;
@@ -138,13 +137,13 @@ static bool _rfbHexFromBytearray(uint8_t * in, size_t in_size, char * out, size_
 
     out[2*index] = '\0';
 
-    return index <= out_size;
+    return index ? (1 + (2 * index)) : 0;
 }
 
 
 // From an hexa char array ("A220EE...") to a byte array (half the size)
-static bool _rfbBytearrayFromHex(const char* in, size_t in_size, uint8_t* out, uint8_t out_size) {
-    if (out_size < (in_size / 2)) return false;
+static size_t _rfbBytearrayFromHex(const char* in, size_t in_size, uint8_t* out, uint8_t out_size) {
+    if (out_size < (in_size / 2)) return 0;
 
     unsigned char index = 0;
     unsigned char out_index = 0;
@@ -161,9 +160,7 @@ static bool _rfbBytearrayFromHex(const char* in, size_t in_size, uint8_t* out, u
         }
     };
 
-    for (;;) {
-        if (index >= in_size) break;
-
+    while (index < in_size) {
         out[out_index] = char2byte(in[index]) << 4;
         out[out_index] += char2byte(in[index + 1]);
 
@@ -171,7 +168,7 @@ static bool _rfbBytearrayFromHex(const char* in, size_t in_size, uint8_t* out, u
         out_index += 1;
     }
 
-    return true;
+    return out_index ? (1 + out_index) : 0;
 }
 
 void _rfbAckImpl();
@@ -361,8 +358,8 @@ void _rfbParseRaw(char * raw) {
     DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE '%s'\n"), raw);
 
     uint8_t message[RF_MAX_MESSAGE_SIZE];
-    _rfbBytearrayFromHex(raw, (size_t)rawlen, message, sizeof(message));
-    _rfbSendRaw(message, (rawlen / 2));
+    size_t bytes = _rfbBytearrayFromHex(raw, (size_t)rawlen, message, sizeof(message));
+    _rfbSendRaw(message, bytes);
 }
 
 #else // RFB_DIRECT
@@ -683,6 +680,18 @@ void _rfbInitCommands() {
 
     });
 
+    #if !RFB_DIRECT
+        terminalRegisterCommand(F("RFB.WRITE"), [](Embedis* e) {
+            if (e->argc != 2) return;
+            String arg(e->argv[1]);
+            uint8_t data[RF_MAX_MESSAGE_SIZE];
+            size_t bytes = _rfbBytearrayFromHex(arg.c_str(), arg.length(), data, sizeof(data));
+            if (bytes) {
+                _rfbSendRaw(data, bytes);
+            }
+        });
+    #endif
+
 }
 
 #endif // TERMINAL_SUPPORT
@@ -711,25 +720,18 @@ String rfbRetrieve(unsigned char id, bool status) {
 void rfbStatus(unsigned char id, bool status) {
 
     String value = rfbRetrieve(id, status);
-    if (value.length() > 0) {
+    if (value.length() && !(value.length() & 1)) {
 
         uint8_t message[RF_MAX_MESSAGE_SIZE];
-        int len = _rfbBytearrayFromHex(value.c_str(), value.length(), message, sizeof(message));
-
-        if (len == RF_MESSAGE_SIZE &&               // probably a standard msg
-                (message[0] != RF_CODE_START        ||  // raw would start with 0xAA
-                 message[1] != RF_CODE_RFOUT_BUCKET ||  // followed by 0xB0,
-                 message[2] + 4 != len              ||  // needs a valid length,
-                 message[len-1] != RF_CODE_STOP)) {     // and finish with 0x55
-
-            if (!_rfbin) {
+        size_t bytes = _rfbBytearrayFromHex(value.c_str(), value.length(), message, sizeof(message));
+        if (bytes && !_rfbin) {
+            if (value.length() == (RF_MESSAGE_SIZE * 2)) {
                 _rfbEnqueue(message, _rfbSameOnOff(id) ? 1 : _rfb_repeat);
+            } else {
+                #if !RFB_DIRECT
+                    _rfbSendRaw(message, bytes);
+                #endif
             }
-
-        } else {
-            #if !RFB_DIRECT
-                _rfbSendRaw(message, len);          // send a raw message
-            #endif
         }
 
     }
