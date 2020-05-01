@@ -6,10 +6,9 @@ Copyright (C) 2018-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+#include "encoder.h"
 
-#include "libs/Encoder.h"
-#include <vector>
+#if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
 
 struct encoder_t {
     Encoder * encoder;
