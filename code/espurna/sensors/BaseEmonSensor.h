@@ -70,8 +70,15 @@ class BaseEmonSensor : public BaseSensor {
         
         // when sensor needs explicit mains voltage value
         virtual void setVoltage(double) {}
-        virtual double getVoltage() { return 0.0; }
-        virtual double getVoltage(unsigned char index) { return getVoltage(); }
+        virtual void setVoltage(unsigned char index, double value) {
+            setVoltage(value);
+        }
+        virtual double getVoltage() {
+            return 0.0;
+        }
+        virtual double getVoltage(unsigned char index) {
+            return getVoltage();
+        }
 
         // when sensor implements ratios / multipliers
         virtual void setCurrentRatio(double) {}
@@ -80,22 +87,46 @@ class BaseEmonSensor : public BaseSensor {
         virtual void setEnergyRatio(double) {}
 
         // when sensor implements ratios / multipliers
-        virtual void setCurrentRatio(unsigned char index, double) {}
-        virtual void setVoltageRatio(unsigned char index, double) {}
-        virtual void setPowerRatio(unsigned char index, double) {}
-        virtual void setEnergyRatio(unsigned char index, double) {}
+        virtual void setCurrentRatio(unsigned char index, double value) {
+            setCurrentRatio(value);
+        }
+        virtual void setVoltageRatio(unsigned char index, double value) {
+            setVoltageRatio(value);
+        }
+        virtual void setPowerRatio(unsigned char index, double value) {
+            setPowerRatio(value);
+        }
+        virtual void setEnergyRatio(unsigned char index, double value) {
+            setEnergyRatio(value);
+        }
 
         // when sensor implements a single device
-        virtual double getCurrentRatio() { return 0.0; }
-        virtual double getVoltageRatio() { return 0.0; }
-        virtual double getPowerRatio() { return 0.0; }
-        virtual double getEnergyRatio() { return 0.0; }
+        virtual double getCurrentRatio() {
+            return 0.0;
+        }
+        virtual double getVoltageRatio() {
+            return 0.0;
+        }
+        virtual double getPowerRatio() {
+            return 0.0;
+        }
+        virtual double getEnergyRatio() {
+            return 0.0;
+        }
 
         // when sensor implements more than one device
-        virtual double getCurrentRatio(unsigned char index) { return getCurrentRatio(); }
-        virtual double getVoltageRatio(unsigned char index) { return getCurrentRatio(); }
-        virtual double getPowerRatio(unsigned char index) { return getCurrentRatio(); }
-        virtual double getEnergyRatio(unsigned char index) { return getCurrentRatio(); }
+        virtual double getCurrentRatio(unsigned char index) {
+            return getCurrentRatio();
+        }
+        virtual double getVoltageRatio(unsigned char index) {
+            return getVoltageRatio();
+        }
+        virtual double getPowerRatio(unsigned char index) {
+            return getPowerRatio();
+        }
+        virtual double getEnergyRatio(unsigned char index) {
+            return getEnergyRatio();
+        }
 
         virtual void expectedCurrent(double value) {}
         virtual void expectedVoltage(unsigned int value) {}
