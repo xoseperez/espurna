@@ -118,14 +118,6 @@ void _KACurtainResult() {
     }
 }
   
-void _KACurtainActionSelect(const char * message) {
-    if (strcmp(message, "pause") == 0) {
-        _KACurtainPause(message);
-    } else {
-        _KACurtainSetclose(message);
-    }
-}
-
 // %d   = now() / time_t / NTP timestamp in seconds
 // %03u = millis() / uint32_t / we need last 3 digits
 // %s   = char strings for various actions
@@ -155,6 +147,14 @@ void _KACurtainSetclose(const char * message) {
 }
   
 #if MQTT_SUPPORT
+
+void _KACurtainActionSelect(const char * message) {
+    if (strcmp(message, "pause") == 0) {
+        _KACurtainPause(message);
+    } else {
+        _KACurtainSetclose(message);
+    }
+}
 
 void _KACurtainCallback(unsigned int type, const char * topic, char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
