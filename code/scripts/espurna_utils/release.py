@@ -40,6 +40,7 @@ def merge_cpp(sources, output):
         tmp.write(b'#include "espurna.h"\n')
         for source in sources:
             with open(source, "rb") as fobj:
+                tmp.write('# 1 "{}"\n'.format(source.replace("\\", "/")).encode('utf-8'));
                 shutil.copyfileobj(fobj, tmp)
 
         tmp.seek(0)
