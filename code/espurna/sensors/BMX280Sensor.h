@@ -7,11 +7,10 @@
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "I2CSensor.h"
+#include "../utils.h"
 
 #define BMX280_CHIP_BMP280              0x58
 #define BMX280_CHIP_BME280              0x60
@@ -50,7 +49,7 @@
 #define BMX280_REGISTER_TEMPDATA        0xFA
 #define BMX280_REGISTER_HUMIDDATA       0xFD
 
-class BMX280Sensor : public I2CSensor {
+class BMX280Sensor : public I2CSensor<> {
 
     public:
 
@@ -60,7 +59,7 @@ class BMX280Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BMX280Sensor(): I2CSensor() {
+        BMX280Sensor() {
             _sensor_id = SENSOR_BMX280_ID;
         }
 
@@ -98,16 +97,21 @@ class BMX280Sensor : public I2CSensor {
             #endif
             return MAGNITUDE_NONE;
         }
-	// Number of decimals for a magnitude (or -1 for default)
-	signed char decimals(unsigned char type) { 
-	    // These numbers of decimals correspond to maximum sensor resolution settings
-	    switch (type) {  
-	    case MAGNITUDE_TEMPERATURE: return 3;
-	    case MAGNITUDE_PRESSURE:    return 4;
-	    case MAGNITUDE_HUMIDITY:    return 2;
-	    }
-	    return -1;
-	}
+
+        // Number of decimals for a magnitude (or -1 for default)
+        // These numbers of decimals correspond to maximum sensor resolution settings
+        signed char decimals(sensor::Unit unit) {
+            switch (unit) {
+                case sensor::Unit::Celcius:
+                    return 3;
+                case sensor::Unit::Hectopascal:
+                    return 4;
+                case sensor::Unit::Percentage:
+                    return 2;
+                default:
+                    return -1;
+            }
+        }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         virtual void pre() {

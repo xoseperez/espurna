@@ -8,10 +8,12 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-#include <vector>
+#include <Arduino.h>
 #include <MAX6675.h>
+
+#include <vector>
+
+#include "BaseSensor.h"
 
 #define MAX6675_READ_INTERVAL 3000
 
@@ -23,7 +25,7 @@ class MAX6675Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        MAX6675Sensor(): BaseSensor() {
+        MAX6675Sensor() {
             _sensor_id = SENSOR_MAX6675_ID;
             _count = 1;
         }

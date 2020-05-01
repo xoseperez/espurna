@@ -47,3 +47,54 @@
 #if MQTT_SUPPORT && MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTT_CLIENT && ASYNC_TCP_SSL_ENABLED
 #warning "Current implementation of AsyncMqttClient with axTLS is no longer supported. Consider switching to the SECURE_CLIENT configuration with MQTT_LIBRARY_ARDUINOMQTT or MQTT_LIBRARY_PUBSUBCLIENT. See: https://github.com/xoseperez/espurna/issues/1465"
 #endif
+
+// 1.14.2 changes preprocessor var name
+#ifdef BUTTON_DBLCLICK_DELAY
+#warning "BUTTON_DBLCLICK_DELAY is deprecated! Please use BUTTON_REPEAT_DELAY instead"
+#define BUTTON_REPEAT_DELAY BUTTON_DBLCLICK_DELAY
+#endif
+
+#ifdef BUTTON1_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON1_CONFIG BUTTON1_MODE
+#endif
+
+#ifdef BUTTON2_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON2_CONFIG BUTTON2_MODE
+#endif
+
+#ifdef BUTTON3_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON3_CONFIG BUTTON3_MODE
+#endif
+
+#ifdef BUTTON4_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON4_CONFIG BUTTON4_MODE
+#endif
+
+#ifdef BUTTON4_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON4_CONFIG BUTTON4_MODE
+#endif
+
+#ifdef BUTTON5_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON5_CONFIG BUTTON5_MODE
+#endif
+
+#ifdef BUTTON6_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON6_CONFIG BUTTON6_MODE
+#endif
+
+#ifdef BUTTON7_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON7_CONFIG BUTTON7_MODE
+#endif
+
+#ifdef BUTTON8_MODE
+#warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
+#define BUTTON8_CONFIG BUTTON8_MODE
+#endif

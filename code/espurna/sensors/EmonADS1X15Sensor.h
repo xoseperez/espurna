@@ -7,8 +7,10 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
 #include "EmonSensor.h"
+
 
 #define ADS1X15_CHANNELS                (4)
 
@@ -91,6 +93,7 @@
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
+
 class EmonADS1X15Sensor : public EmonSensor {
 
     public:
@@ -99,7 +102,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonADS1X15Sensor(): EmonSensor() {
+        EmonADS1X15Sensor() {
             _channels = ADS1X15_CHANNELS;
             _sensor_id = SENSOR_EMON_ADS1X15_ID;
             init();
@@ -160,6 +163,8 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (mask & 0x01) ++_ports;
                 mask = mask >> 1;
             }
+
+            resizeDevices(_ports);
             _count = _ports * _magnitudes;
 
             // Bit depth
@@ -226,7 +231,9 @@ class EmonADS1X15Sensor : public EmonSensor {
                 unsigned char channel = getChannel(port);
                 _current[port] = getCurrent(channel);
                 #if EMON_REPORT_ENERGY
-                    _energy[port] += (_current[port] * _voltage * (millis() - last) / 1000);
+                    _energy[port] += sensor::Ws {
+                        static_cast<uint32_t>(_current[port] * _voltage * (millis() - last) / 1000)
+                    };
                 #endif
             }
             last = millis();
@@ -245,7 +252,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (magnitude == i++) return _current[port] * _voltage;
             #endif
             #if EMON_REPORT_ENERGY
-                if (magnitude == i) return _energy[port];
+                if (magnitude == i) return _energy[port].asDouble();
             #endif
             return 0;
         }

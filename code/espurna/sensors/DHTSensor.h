@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
+#include "../utils.h"
 #include "BaseSensor.h"
 
 constexpr const double DHT_DUMMY_VALUE = -255;
@@ -57,7 +59,7 @@ class DHTSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        DHTSensor(): BaseSensor() {
+        DHTSensor() {
             _count = 2;
             _sensor_id = SENSOR_DHTXX_ID;
         }

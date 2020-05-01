@@ -4,7 +4,11 @@
 
 #pragma once
 
+#include "../espurna.h"
+
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
+
+#include "../ntp.h"
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 #include <WiFiClientSecureBearSSL.h>
@@ -20,7 +24,8 @@ using fp_callback_f = std::function<String()>;
 using cert_callback_f = std::function<const char*()>;
 using mfln_callback_f = std::function<uint16_t()>;
 
-const char * _secureClientCheckAsString(int check) {
+// TODO: workaround for `multiple definition of `SecureClientHelpers::_secureClientCheckAsString(int);'
+inline const char * _secureClientCheckAsString(int check) {
     switch (check) {
         case SECURE_CLIENT_CHECK_NONE: return "no validation";
         case SECURE_CLIENT_CHECK_FINGERPRINT: return "fingerprint validation";
@@ -185,7 +190,11 @@ struct SecureClientChecks {
                 client.setFingerprint(_buffer);
             }
         } else if (check == SECURE_CLIENT_CHECK_CA) {
-            client.setX509Time(ntpLocal2UTC(now()));
+            #if NTP_LEGACY_SUPPORT
+                client.setX509Time(ntpLocal2UTC(now()));
+            #else
+                client.setX509Time(now());
+            #endif
             if (!certs.getCount()) {
                 if (config.on_certificate) certs.append(config.on_certificate());
             }

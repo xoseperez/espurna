@@ -14,6 +14,7 @@ import re
 import shutil
 import socket
 import subprocess
+import functools
 import sys
 import time
 
@@ -21,7 +22,7 @@ import zeroconf
 
 # -------------------------------------------------------------------------------
 
-__version__ = (0, 4)
+__version__ = (0, 4, 1)
 
 DESCRIPTION = "ESPurna OTA Manager v{}".format(".".join(str(x) for x in __version__))
 DISCOVERY_TIMEOUT = 10
@@ -312,10 +313,21 @@ def run(device, env):
 def parse_commandline_args():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
-        "-c", "--core", help="flash ESPurna core", action="store_true", default=False
+        "-c",
+        "--core",
+        help="Use ESPurna core configuration",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
-        "-f", "--flash", help="flash device", action="store_true", default=False
+        "-f", "--flash", help="Flash device", action="store_true", default=False
+    )
+    parser.add_argument(
+        "-a",
+        "--arduino-core",
+        help="Arduino ESP8266 Core version",
+        default="2_3_0",
+        choices=["2_3_0", "latest", "git"],
     )
     parser.add_argument("-o", "--flags", help="extra flags", default="")
     parser.add_argument("-p", "--password", help="auth password", default="")
@@ -386,6 +398,21 @@ def discover_devices(args):
     return devices
 
 
+@functools.lru_cache(maxsize=None)
+def get_platformio_env(arduino_core, size):
+    # todo: eventually 2_3_0 is dropped
+    # todo: naming
+    prefix = "esp8266"
+    if not size in [1, 2, 4]:
+        raise ValueError(
+            "Board memory size can only be one of: 1 for 1M, 2 for 2M, 4 for 4M"
+        )
+    core = ""
+    if arduino_core != "2_3_0":
+        core = "-{}".format(arduino_core)
+    return "{prefix}-{size:d}m{core}-base".format(prefix=prefix, core=core, size=size)
+
+
 def main(args):
 
     print()
@@ -431,7 +458,7 @@ def main(args):
             if args.core:
                 board["flags"] = "-DESPURNA_CORE " + board["flags"]
 
-            env = "esp8266-{:d}m-ota".format(board["size"])
+            env = get_platformio_env(args.arduino_core, board["size"])
 
             # Summary
             print()

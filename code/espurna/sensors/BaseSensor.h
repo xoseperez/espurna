@@ -3,25 +3,16 @@
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#define SENSOR_ERROR_OK             0       // No error
-#define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
-#define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
-#define SENSOR_ERROR_TIMEOUT        3       // Response from sensor timed out
-#define SENSOR_ERROR_UNKNOWN_ID     4       // Sensor did not report a known ID
-#define SENSOR_ERROR_CRC            5       // Sensor data corrupted
-#define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
-#define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
-#define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
-#define SENSOR_ERROR_OTHER          99      // Any other error
+#include <functional>
 
-typedef std::function<void(unsigned char, double)> TSensorCallback;
+#include "../sensor.h"
+
+using TSensorCallback = std::function<void(unsigned char, double)>;
 
 class BaseSensor {
 
@@ -54,14 +45,20 @@ class BaseSensor {
         // Descriptive name of the slot # index
         virtual String slot(unsigned char index) = 0;
 
+        // Type of sensor
+        virtual unsigned char type() { return sensor::type::Base; }
+
         // Type for slot # index
         virtual unsigned char type(unsigned char index) = 0;
 
-	    // Number of decimals for a magnitude (or -1 for default)
-	    virtual signed char decimals(unsigned char type) { return -1; }
+	    // Number of decimals for a unit (or -1 for default)
+	    virtual signed char decimals(sensor::Unit) { return -1; }
 
         // Current value for slot # index
         virtual double value(unsigned char index) = 0;
+
+        // Generic calibration
+        virtual void calibrate() {};
 
         // Retrieve current instance configuration
         virtual void getConfig(JsonObject& root) {};
@@ -90,6 +87,54 @@ class BaseSensor {
         // Hook for event callback
         void onEvent(TSensorCallback fn) { _callback = fn; };
 
+        // Specify units attached to magnitudes
+        virtual sensor::Unit units(unsigned char index) {
+            switch (type(index)) {
+                case MAGNITUDE_TEMPERATURE:
+                    return sensor::Unit::Celcius;
+                case MAGNITUDE_HUMIDITY:
+                case MAGNITUDE_POWER_FACTOR:
+                    return sensor::Unit::Percentage;
+                case MAGNITUDE_PRESSURE:
+                    return sensor::Unit::Hectopascal;
+                case MAGNITUDE_CURRENT:
+                    return sensor::Unit::Ampere;
+                case MAGNITUDE_VOLTAGE:
+                    return sensor::Unit::Volt;
+                case MAGNITUDE_POWER_ACTIVE:
+                    return sensor::Unit::Watt;
+                case MAGNITUDE_POWER_APPARENT:
+                    return sensor::Unit::Voltampere;
+                case MAGNITUDE_POWER_REACTIVE:
+                    return sensor::Unit::VoltampereReactive;
+                case MAGNITUDE_ENERGY_DELTA:
+                    return sensor::Unit::Joule;
+                case MAGNITUDE_ENERGY:
+                    return sensor::Unit::KilowattHour;
+                case MAGNITUDE_PM1dot0:
+                case MAGNITUDE_PM2dot5:
+                    return sensor::Unit::MicrogrammPerCubicMeter;
+                case MAGNITUDE_CO2:
+                case MAGNITUDE_NO2:
+                case MAGNITUDE_CO:
+                    return sensor::Unit::PartsPerMillion;
+                case MAGNITUDE_LUX:
+                    return sensor::Unit::Lux;
+                case MAGNITUDE_RESISTANCE:
+                    return sensor::Unit::Ohm;
+                case MAGNITUDE_HCHO:
+                    return sensor::Unit::MilligrammPerCubicMeter;
+                case MAGNITUDE_GEIGER_CPM:
+                    return sensor::Unit::CountsPerMinute;
+                case MAGNITUDE_GEIGER_SIEVERT:
+                    return sensor::Unit::MicrosievertPerHour;
+                case MAGNITUDE_DISTANCE:
+                    return sensor::Unit::Meter;
+                default:
+                    return sensor::Unit::None;
+            }
+        }
+
     protected:
 
         TSensorCallback _callback = NULL;
@@ -100,5 +145,3 @@ class BaseSensor {
         bool _ready = false;
 
 };
-
-#endif

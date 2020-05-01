@@ -11,3 +11,4 @@ custom.h
 .vscode/launch.json
 .pio
 libraries/
+espurna/espurna.ino.cpp

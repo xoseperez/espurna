@@ -4,13 +4,15 @@
 
 #pragma once
 
-#include "Embedis.h"
+#include <Embedis.h>
 
 class EmbedisWrap : public Embedis {
 
     public:
 
-        EmbedisWrap(Stream& stream, size_t buflen = 128, size_t argvlen = 8): Embedis(stream, buflen, argvlen) {}
+        EmbedisWrap(Stream& stream, size_t buflen = 128, size_t argvlen = 8) :
+            Embedis(stream, buflen, argvlen)
+        {}
 
         unsigned char getCommandCount() {
             return commands.size();

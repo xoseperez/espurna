@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "Arduino.h"
+#include <Arduino.h>
+
+#include "../debug.h"
 #include "BaseSensor.h"
 
 // we are bound by usable GPIOs
@@ -21,7 +23,7 @@ class EventSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EventSensor(): BaseSensor() {
+        EventSensor() {
             _count = 1;
             _sensor_id = SENSOR_EVENTS_ID;
         }

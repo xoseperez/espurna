@@ -25,3 +25,17 @@ from .ldscripts import ldscripts_inject_libpath
 from .lwip import lwip_inject_patcher
 from .postmortem import dummy_ets_printf
 from .git import app_inject_revision
+from .release import copy_release
+from .flags import app_inject_flags
+
+__all__ = [
+    "check_cppcheck",
+    "check_printsize",
+    "remove_float_support",
+    "ldscripts_inject_libpath",
+    "lwip_inject_patcher",
+    "dummy_ets_printf",
+    "app_inject_revision",
+    "app_inject_flags",
+    "copy_release",
+]

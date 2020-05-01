@@ -8,12 +8,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
 #include <ArduinoJson.h>
 
 #include <queue>
 #include <functional>
 #include <vector>
 
+#include "web.h"
 #include "utils.h"
 
 using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
@@ -46,22 +49,23 @@ void wsSend(uint32_t client_id, const char* data);
 void wsSend(uint32_t client_id, JsonObject& root);
 void wsSend(JsonObject& root);
 void wsSend(ws_on_send_callback_f callback);
+void wsSend(const char* data);
 
 void wsSend_P(PGM_P data);
 void wsSend_P(uint32_t client_id, PGM_P data);
 
-void INLINE wsPost(const ws_on_send_callback_f& callback);
-void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_f& callback);
-void INLINE wsPost(const ws_on_send_callback_list_t& callbacks);
-void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+void wsPost(const ws_on_send_callback_f& callback);
+void wsPost(uint32_t client_id, const ws_on_send_callback_f& callback);
+void wsPost(const ws_on_send_callback_list_t& callbacks);
+void wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
 
-void INLINE wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-void INLINE wsPostAll(const ws_on_send_callback_list_t& callbacks);
+void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+void wsPostAll(const ws_on_send_callback_list_t& callbacks);
 
-void INLINE wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-void INLINE wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
-void INLINE wsPostSequence(const ws_on_send_callback_list_t& callbacks);
+void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
+void wsPostSequence(const ws_on_send_callback_list_t& callbacks);
 
-bool INLINE wsConnected();
-bool INLINE wsConnected(uint32_t client_id);
+bool wsConnected();
+bool wsConnected(uint32_t client_id);
 bool wsDebugSend(const char* prefix, const char* message);

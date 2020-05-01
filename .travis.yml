@@ -1,44 +1,52 @@
+os: linux
 language: python
 python:
-- '2.7'
+  - '3.8'
 cache:
   directories:
-  - "~/.npm"
-  - "~/.platformio"
-install:
-- ./travis_install.sh
+    - ~/.npm
+    - ~/.platformio
 env:
   global:
-  - BUILDER_TOTAL_THREADS=4
-  - ESPURNA_PIO_PATCH_ISSUE_1610=y
-  - ESPURNA_PIO_SHARED_LIBRARIES=y
+    - BUILDER_TOTAL_THREADS=4
+    - ESPURNA_PIO_PATCH_ISSUE_1610=y
+    - ESPURNA_PIO_SHARED_LIBRARIES=y
+install:
+  - ./travis_install.sh
 script:
-- ./travis_script.sh
+  - ./travis_script.sh
 stages:
-- name: Test WebUI
-  if: tag IS NOT present
-- name: Test PlatformIO Build
-  if: tag IS NOT present
-- name: Release
-  if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
+  - name: Test Host
+    if: tag IS NOT present
+  - name: Test WebUI
+    if: tag IS NOT present
+  - name: Test PlatformIO Build
+    if: tag IS NOT present
+  - name: Release
+    if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
-  - stage: Test WebUI
-  - stage: Test PlatformIO Build
-    env: TEST_ENV=travis-2_3_0
-  - env: TEST_ENV=travis-latest
-  - env: TEST_ENV=travis-git TEST_EXTRA_ARGS="-a test/build/extra/secure_client.h"
-  - stage: Release
-    env: BUILDER_THREAD=0
-  - env: BUILDER_THREAD=1
-  - env: BUILDER_THREAD=2
-  - env: BUILDER_THREAD=3
+    - stage: Test Host
+    - stage: Test WebUI
+    - stage: Test PlatformIO Build
+      env: TEST_ENV=esp8266-4m-base
+    - env: TEST_ENV=esp8266-4m-latest-base
+    - env: >-
+        TEST_ENV=esp8266-4m-git-base TEST_EXTRA_ARGS="-a
+        test/build/extra/secure_client.h"
+    - stage: Release
+      env: BUILDER_THREAD=0
+    - env: BUILDER_THREAD=1
+    - env: BUILDER_THREAD=2
+    - env: BUILDER_THREAD=3
 before_deploy:
-- mv firmware/*/espurna-*.bin firmware/
+  - mkdir -p firmware/
+  - mv firmware/*/espurna-*.bin firmware/
 deploy:
   provider: releases
   api_key:
-    secure: LMCdaQnCxSQ5EuKhqcFR6VTfDCWc06jwD4fdHfkmBaeWBMMzdoZEqN26AwdTnoLLlQJTR9l21NypgGybssBr69Md/ZinMahWCJJ4gVzPe9Adr9ijRbzj/wckirLBVZjRWn8fxTjJgjpu1ten2CgBfNcc/roN3fI6DV/1Fvv1REfihND4EeIermsxIVRXOyluu1vnPV9ZM28XBNch9XfkKwIpLEaHNNtkzlSEua39U34WpZShrxxEVoZhiF/R1ZF+NiAnursPcPsn5hdrXyHFLFT2dVDnlpdIp79c6SGkCZ636//5erB6hgBHshbwuT9TYXxtwLyL7AeN/MfCg0gtZSsDII8mLKzytW1tl7r1W9l7s21z/55tljSz2Z6dcbJC3bxucgcLxM9R6PrsPdDrPQTd0QwYqYalMNlfuA8KGcesZueqI9Q4uw7uHFUwIp7FIaoKhwhjTKe/ZHZ75zU4wdBTXof4dnSQOudoGGjRyyj7V0eR/Mhuni45N2Bldy9hDaldgtWMuEdx3ABW1IrPXtPDVTXM6QjUHm0nj5zzCgoCvQEw3jycA7Wlgbzo8MQkKH3u4MtupJcEGHJAqMbk+JlRpIfdWTiqtI697CReRGYSWT6YxF68TeJo77JPPph724BIBMtKtIk2+4RkHxz5RqM8O2vt+AFNjnWNIvVQtY8=
+    secure: >-
+      LMCdaQnCxSQ5EuKhqcFR6VTfDCWc06jwD4fdHfkmBaeWBMMzdoZEqN26AwdTnoLLlQJTR9l21NypgGybssBr69Md/ZinMahWCJJ4gVzPe9Adr9ijRbzj/wckirLBVZjRWn8fxTjJgjpu1ten2CgBfNcc/roN3fI6DV/1Fvv1REfihND4EeIermsxIVRXOyluu1vnPV9ZM28XBNch9XfkKwIpLEaHNNtkzlSEua39U34WpZShrxxEVoZhiF/R1ZF+NiAnursPcPsn5hdrXyHFLFT2dVDnlpdIp79c6SGkCZ636//5erB6hgBHshbwuT9TYXxtwLyL7AeN/MfCg0gtZSsDII8mLKzytW1tl7r1W9l7s21z/55tljSz2Z6dcbJC3bxucgcLxM9R6PrsPdDrPQTd0QwYqYalMNlfuA8KGcesZueqI9Q4uw7uHFUwIp7FIaoKhwhjTKe/ZHZ75zU4wdBTXof4dnSQOudoGGjRyyj7V0eR/Mhuni45N2Bldy9hDaldgtWMuEdx3ABW1IrPXtPDVTXM6QjUHm0nj5zzCgoCvQEw3jycA7Wlgbzo8MQkKH3u4MtupJcEGHJAqMbk+JlRpIfdWTiqtI697CReRGYSWT6YxF68TeJo77JPPph724BIBMtKtIk2+4RkHxz5RqM8O2vt+AFNjnWNIvVQtY8=
   file_glob: true
   file: firmware/espurna-*.bin
   skip_cleanup: true
@@ -49,6 +57,8 @@ deploy:
 notifications:
   pushover:
     api_key:
-      secure: wtAleSibUqDOH7KskYMIFXwNqqZMA/2flCJzu835hSFWDFTjdXGeYLmQxCI7FGTWHcvWgf5pt3KR3OXtABVDfwqLj0HZjEubIypm56mZKsEaP32JlQiAw+Qz1KSU/5gEKEI3NU5MuL1rIebSEo9iVgwVDMn51GI9qv0LbjLKfXpxBmJXL/OmBRggVMswScCppXJLVlyMSRj9qT0Ds/lz+SL1g6vZHPO8r3z1BSOMA0eWNUYd/Huhe1XAHYzS4mS3aybPsPKldpv0igsvE5BHT37rb43QA0pHxv2M09QlBRNBI6kHgxzCw2OJ4uz5/K2U/4LBMDJrAj6rUGAhKn8Wuiw4B/kZb+WsvRCcCTHGYTc20KWrrV4aOojQRLht1FgNg7Ub+NNm5T9LBG+XKKHARTv1Kv09nCpPVD8NvF5YPRsSb7ZL6s/wUGSNuu365aVs3BnnazXb+ha33Hg0bCBEwmlW6FKdQ7S8OYsoIobTUcporRs8p089EQ8vNxN0osHnKPX5M0ZOxbBOIt5fQO2B+Cdn+m4hx/DETM5HMLZ/GpsbY9eiN7HWaaQPicSrSLprY6tzfvcHePk9Y6t8rjCKzehwlYtrfiMRvrPhZuOLcB4s3OmJngxvOCGxdWkh/6F2CY6sDslyviaK0ZwX93Gn7uNThAviFpZNUlPWP6jHIkA=
+      secure: >-
+        wtAleSibUqDOH7KskYMIFXwNqqZMA/2flCJzu835hSFWDFTjdXGeYLmQxCI7FGTWHcvWgf5pt3KR3OXtABVDfwqLj0HZjEubIypm56mZKsEaP32JlQiAw+Qz1KSU/5gEKEI3NU5MuL1rIebSEo9iVgwVDMn51GI9qv0LbjLKfXpxBmJXL/OmBRggVMswScCppXJLVlyMSRj9qT0Ds/lz+SL1g6vZHPO8r3z1BSOMA0eWNUYd/Huhe1XAHYzS4mS3aybPsPKldpv0igsvE5BHT37rb43QA0pHxv2M09QlBRNBI6kHgxzCw2OJ4uz5/K2U/4LBMDJrAj6rUGAhKn8Wuiw4B/kZb+WsvRCcCTHGYTc20KWrrV4aOojQRLht1FgNg7Ub+NNm5T9LBG+XKKHARTv1Kv09nCpPVD8NvF5YPRsSb7ZL6s/wUGSNuu365aVs3BnnazXb+ha33Hg0bCBEwmlW6FKdQ7S8OYsoIobTUcporRs8p089EQ8vNxN0osHnKPX5M0ZOxbBOIt5fQO2B+Cdn+m4hx/DETM5HMLZ/GpsbY9eiN7HWaaQPicSrSLprY6tzfvcHePk9Y6t8rjCKzehwlYtrfiMRvrPhZuOLcB4s3OmJngxvOCGxdWkh/6F2CY6sDslyviaK0ZwX93Gn7uNThAviFpZNUlPWP6jHIkA=
     users:
-      secure: atCRvGYPuAT1DH5UupNIV80sqrIgwdYrxO69tq+lIBfi3BIJ4LLlvUQwigWak6otfJbEqAQKVNi8I8J4g7ASHx1wn335vpAqLAbhJqfbLznAcU9nZ+bdc8+NJ57qY66ZZJNpljbMC0HWgw2kgyiCLJ1wS3zsQAyuzyGuMcmc43zFOQMA7QUaefE6LGlHPn0i6Ub04QgQ1413IEu2/FR5i4hVXrgRQzaPy07pSPbvFTvoxfWDgWjTQM+R2AG8uStesO+2yzeb8Nu2pJDvFf3R1N8P2e3zg5YN86DLNRQ+Kxl7M1FJ/txbJ/4D1jdNwAmtUzEoYnsKCcCnMHWGuSlJF8fgXSVBDi9KVH7Y6rlWXzMcqesR5lzNTlD7JQ01yw2WrO6Nj7fvan+QNGp3d5F4Kf3WE+5rkmM5Sbo5rb9YOGt688i1qJ3Xf1MTkQNCzDiAg3qf1hu8j+AALblY73gNSAgv4F+/SnmnfKy5Cz/oRQQfboiC/VphNa25Fzq3s3uahQfLha4tyHrc1LltSM6bztErRSPqDp96qVTQORVHr6jqJhl6c9R0XXrnc0Pc5lpBoPKOqug1yPp15k9AAssGxtXZqg2loHjwmS+Qm1i77mNGKNhzqDpmLHEzmIejc4n4lIZmze+dLucStiNnkN6TF3nvIh37CNjH6slT5t7WfJg=
+      secure: >-
+        atCRvGYPuAT1DH5UupNIV80sqrIgwdYrxO69tq+lIBfi3BIJ4LLlvUQwigWak6otfJbEqAQKVNi8I8J4g7ASHx1wn335vpAqLAbhJqfbLznAcU9nZ+bdc8+NJ57qY66ZZJNpljbMC0HWgw2kgyiCLJ1wS3zsQAyuzyGuMcmc43zFOQMA7QUaefE6LGlHPn0i6Ub04QgQ1413IEu2/FR5i4hVXrgRQzaPy07pSPbvFTvoxfWDgWjTQM+R2AG8uStesO+2yzeb8Nu2pJDvFf3R1N8P2e3zg5YN86DLNRQ+Kxl7M1FJ/txbJ/4D1jdNwAmtUzEoYnsKCcCnMHWGuSlJF8fgXSVBDi9KVH7Y6rlWXzMcqesR5lzNTlD7JQ01yw2WrO6Nj7fvan+QNGp3d5F4Kf3WE+5rkmM5Sbo5rb9YOGt688i1qJ3Xf1MTkQNCzDiAg3qf1hu8j+AALblY73gNSAgv4F+/SnmnfKy5Cz/oRQQfboiC/VphNa25Fzq3s3uahQfLha4tyHrc1LltSM6bztErRSPqDp96qVTQORVHr6jqJhl6c9R0XXrnc0Pc5lpBoPKOqug1yPp15k9AAssGxtXZqg2loHjwmS+Qm1i77mNGKNhzqDpmLHEzmIejc4n4lIZmze+dLucStiNnkN6TF3nvIh37CNjH6slT5t7WfJg=

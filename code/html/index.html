@@ -374,16 +374,16 @@
                                 </div>
 
                                 <div class="pure-g module module-btn">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Double click delay</label>
-                                    <input name="btnDelay" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Click repeat delay</label>
+                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
-                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
-                                        Increase this number if you are having trouble to double click the button.
-                                        Set this value to 0 to disable double click. You won't be able to set the device in AP mode manually but your device will respond immediately to button clicks.<br />
-                                        You will have to <strong>reboot the device</strong> after updating for this setting to apply.
+                                        Delay in milliseconds to detect a double or triple click (from 0 to 1000ms).<br />
+                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get the expected event.
+                                        Increase this number if you are having trouble triggering the event.
+                                        Set this value to 0 to disable repeat detection, device will respond immediately to a single button click. When using default configuration, consider that this will disable the SoftAP button action.<br />
+                                        You will have to <strong>reboot the device</strong> to apply this setting.
                                     </div>
                                 </div>
 
@@ -419,22 +419,28 @@
 
                         <div class="page">
 
-                            <fieldset>
+                            <details>
 
-                                <legend class="module module-led">Modes</legend>
-                                <div class="pure-g module module-led">
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        <li><strong>WiFi status</strong> will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.</li>
-                                        <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (you must define which switch to follow in the side field).</li>
-                                        <li><strong>Inverse switch</strong> will force the LED to not-follow the status of a given switch (you must define which switch to follow in the side field).</li>
-                                        <li><strong>Find me</strong> will turn the LED ON when all switches are OFF. This is meant to locate switches at night.</li>
-                                        <li><strong>Find me &amp; WiFi</strong> will follow the WiFi status but will stay mostly on when switches are OFF, and mostly OFF when any of them is ON.</li>
-                                        <li><strong>Switches status</strong> will turn the LED ON whenever any switch is ON, and OFF otherwise. This is global status notification.</li>
-                                        <li><strong>Switches status &amp; WiFi</strong> will follow the WiFi status but will stay mostly off when switches are OFF, and mostly ON when any of them is ON.</li>
-                                        <li><strong>MQTT managed</strong> will let you manage the LED status via MQTT by sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).</li>
-                                        <li><strong>Always ON</strong> and <strong>Always OFF</strong> modes are self-explanatory.</li>
-                                    </div>
+                            <summary><legend class="module module-led">Available modes</legend></summary>
+
+                            <br/>
+                            <div class="pure-g module module-led">
+                                <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                    <li><strong>WiFi status</strong> will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.</li>
+                                    <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (you must define which switch to follow in the side field).</li>
+                                    <li><strong>Inverse switch</strong> will force the LED to not-follow the status of a given switch (you must define which switch to follow in the side field).</li>
+                                    <li><strong>Find me</strong> will turn the LED ON when all switches are OFF. This is meant to locate switches at night.</li>
+                                    <li><strong>Find me &amp; WiFi</strong> will follow the WiFi status but will stay mostly on when switches are OFF, and mostly OFF when any of them is ON.</li>
+                                    <li><strong>Switches status</strong> will turn the LED ON whenever any switch is ON, and OFF otherwise. This is global status notification.</li>
+                                    <li><strong>Switches status &amp; WiFi</strong> will follow the WiFi status but will stay mostly off when switches are OFF, and mostly ON when any of them is ON.</li>
+                                    <li><strong>Manually managed</strong> will let you manage the LED status via MQTT by sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).</li>
+                                    <li><strong>Always ON</strong> and <strong>Always OFF</strong> modes are self-explanatory.</li>
                                 </div>
+                            </div>
+
+                            </details>
+
+                            <fieldset>
 
                                 <div id="ledConfig"></div>
 
@@ -701,7 +707,7 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ota">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
                                     <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
@@ -779,7 +785,7 @@
 
                             <fieldset>
 
-                                <div id="schedules" class="group-settings" data-settings-target="schSwitch" ></div>
+                                <div id="schedules" class="group-settings" data-settings-max="10" data-settings-target="schSwitch" ></div>
 
                                 <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
                                 <!-- removeIf(!light) -->
@@ -1046,17 +1052,22 @@
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer" type="text" tabindex="41" />
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ntplwip">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpTZ" type="text" tabindex="42" />
+                                </div>
+
+                                <div class="pure-g module module-ntplegacy">
                                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
                                     <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ntplegacy">
                                     <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ntpDST" /></div>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ntplegacy">
                                     <label class="pure-u-1 pure-u-lg-1-4">DST Region</label>
                                     <select class="pure-u-1 pure-u-lg-1-4" name="ntpRegion">
                                         <option value="0">Europe</option>
@@ -1340,8 +1351,13 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak address</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkAddress" type="text" tabindex="32" />
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="33" />
                                 </div>
 
                                 <legend>Sensors &amp; actuators</legend>
@@ -1567,24 +1583,25 @@
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Power units</label>
                                     <select name="pwrUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Watts (W)</option>
-                                        <option value="1">Kilowatts (kW)</option>
+                                        <option value="13">Watts (W)</option>
+                                        <option value="14">Kilowatts (kW)</option>
                                     </select>
                                 </div>
 
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
                                     <select name="eneUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Joules (J)</option>
-                                        <option value="1">Kilowatts·hour (kWh)</option>
+                                        <option value="15">Joules (J)</option>
+                                        <option value="16">Kilowatts·hour (kWh)</option>
                                     </select>
                                 </div>
 
                                 <div class="pure-g module module-temperature">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
                                     <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Celsius (&deg;C)</option>
-                                        <option value="1">Fahrenheit (&deg;F)</option>
+                                        <option value="2">Celsius (&deg;C)</option>
+                                        <option value="3">Fahrenheit (&deg;F)</option>
+                                        <option value="4">Kelvin (K)</option>
                                     </select>
                                 </div>
 
@@ -1765,22 +1782,31 @@
         <!-- Templates -->
 
         <div id="ledConfigTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">LED #<span class="id"></span> mode</label>
-                <select name="ledMode" class="pure-u-1-4">
-                    <option value="1">WiFi status</option>
-                    <option value="2">Follow switch #</option>
-                    <option value="3">Inverse switch #</option>
-                    <option value="4">Find me</option>
-                    <option value="5">Find me &amp; WiFi</option>
-                    <option value="8">Switches status</option>
-                    <option value="9">Switches &amp; WiFi</option>
-                    <option value="0">MQTT managed</option>
-                    <option value="6">Always ON</option>
-                    <option value="7">Always OFF</option>
-                </select>
-                &nbsp;
-                <div class="pure-u-1-4"><input class="pure-u-23-24" name="ledRelay" type="number" min="0" data="0" /></div>
+            <div class="pure-form pure-form-aligned">
+                <legend class="pure-u-1 pure-u-lg-1-4">LED #<span class="id"></span></legend>
+                <div class="pure-control-group">
+                    <label>GPIO</label>
+                    <select class="pure-input-2-3 gpio-select" name="ledGPIO" action="reboot"></select>
+                </div>
+                <div class="pure-control-group">
+                    <label>Mode</label>
+                    <select class="pure-input-2-3" name="ledMode">
+                        <option value="1">WiFi status</option>
+                        <option value="2">Follow switch #</option>
+                        <option value="3">Inverse switch #</option>
+                        <option value="4">Find me</option>
+                        <option value="5">Find me &amp; WiFi</option>
+                        <option value="8">Switches status</option>
+                        <option value="9">Switches &amp; WiFi</option>
+                        <option value="0">Manual</option>
+                        <option value="6">Always ON</option>
+                        <option value="7">Always OFF</option>
+                    </select>
+                </div>
+                <div class="pure-control-group">
+                    <label>Relay ID</label>
+                    <input class="pure-input-2-3" name="ledRelay" type="number" min="0" data="0"></input>
+                </div>
             </div>
         </div>
 
@@ -2051,7 +2077,9 @@
                 <div class="pure-u-1 pure-u-lg-1-4">
                     <input class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude" data="256" readonly />
                 </div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center sns-desc"></div>
+                <div class="pure-u-1 pure-u-lg-1 hint sns-info">
+                </div>
             </div>
         </div>
         <!-- endRemoveIf(!sensor) -->

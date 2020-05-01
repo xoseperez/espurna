@@ -7,18 +7,14 @@
 
 #pragma once
 
-// Set ADC to TOUT pin
-#undef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_TOUT
+#include <Arduino.h>
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-
+#include "BaseAnalogSensor.h"
 extern "C" {
     #include "../libs/fs_math.h"
 }
 
-class MICS5525Sensor : public BaseSensor {
+class MICS5525Sensor : public BaseAnalogSensor {
 
     public:
 
@@ -26,7 +22,7 @@ class MICS5525Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        MICS5525Sensor(): BaseSensor() {
+        MICS5525Sensor() {
             _count = 2;
             _sensor_id = SENSOR_MICS5525_ID;
         }
@@ -43,22 +39,6 @@ class MICS5525Sensor : public BaseSensor {
 
         unsigned char getAnalogGPIO() {
             return _redGPIO;
-        }
-
-        void setRL(unsigned long Rl) {
-            if (Rl > 0) _Rl = Rl;
-        }
-
-        unsigned long getRL() {
-            return _Rl;
-        }
-
-        void setR0(unsigned long R0) {
-            if (R0 > 0) _R0 = R0;
-        }
-
-        unsigned long getR0() {
-            return _R0;
         }
 
         // ---------------------------------------------------------------------
@@ -134,9 +114,6 @@ class MICS5525Sensor : public BaseSensor {
 
         }
 
-        unsigned long _R0 = MICS5525_R0;            // R0, calibration value at 25º on air
-        unsigned long _Rl = MICS5525_RL;            // RL, load resistance
-        unsigned long _Rs = 0;                      // cached resistance
         unsigned char _redGPIO = MICS5525_RED_PIN;
 
 };

@@ -7,11 +7,8 @@
 
 #pragma once
 
-// Set ADC to TOUT pin
-#undef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_TOUT
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "BaseSensor.h"
 
 #define TMP3X_TMP35                 35
@@ -26,7 +23,7 @@ class TMP3XSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        TMP3XSensor(): BaseSensor() {
+        TMP3XSensor() {
             _count = 1;
             _sensor_id = SENSOR_TMP3X_ID;
         }

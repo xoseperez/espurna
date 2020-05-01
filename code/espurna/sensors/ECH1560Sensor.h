@@ -7,10 +7,14 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
+#include <Arduino.h>
 
-class ECH1560Sensor : public BaseSensor {
+#include "../debug.h"
+
+#include "BaseSensor.h"
+#include "BaseEmonSensor.h"
+
+class ECH1560Sensor : public BaseEmonSensor {
 
     public:
 
@@ -18,7 +22,7 @@ class ECH1560Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        ECH1560Sensor(): BaseSensor(), _data() {
+        ECH1560Sensor(): _data() {
             _count = 3;
             _sensor_id = SENSOR_ECH1560_ID;
         }
@@ -57,12 +61,6 @@ class ECH1560Sensor : public BaseSensor {
 
         bool getInverted() {
             return _inverted;
-        }
-
-        // ---------------------------------------------------------------------
-
-        void resetEnergy(double value = 0) {
-            _energy = value;
         }
 
         // ---------------------------------------------------------------------
@@ -121,7 +119,7 @@ class ECH1560Sensor : public BaseSensor {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _apparent;
-            if (index == 3) return _energy;
+            if (index == 3) return getEnergy();
             return 0;
         }
 
@@ -270,7 +268,9 @@ class ECH1560Sensor : public BaseSensor {
 
                 static unsigned long last = 0;
                 if (last > 0) {
-                    _energy += (_apparent * (millis() - last) / 1000);
+                    _energy[0] += sensor::Ws {
+                        static_cast<uint32_t>(_apparent * (millis() - last) / 1000)
+                    };
                 }
                 last = millis();
 
@@ -301,7 +301,6 @@ class ECH1560Sensor : public BaseSensor {
         double _apparent = 0;
         double _voltage = 0;
         double _current = 0;
-        double _energy = 0;
 
         unsigned char _data[24];
 

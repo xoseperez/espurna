@@ -9,9 +9,10 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "BaseSensor.h"
 
 class EZOPHSensor : public BaseSensor {
 
@@ -21,7 +22,7 @@ class EZOPHSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EZOPHSensor(): BaseSensor() {
+        EZOPHSensor() {
             _count = 1;
             _sensor_id = SENSOR_EZOPH_ID;
         }

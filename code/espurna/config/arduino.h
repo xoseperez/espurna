@@ -3,6 +3,8 @@
 // Uncomment the appropiate line(s) to build from the Arduino IDE
 //--------------------------------------------------------------------------------
 
+#pragma once
+
 //--------------------------------------------------------------------------------
 // Hardware
 //--------------------------------------------------------------------------------
@@ -13,6 +15,7 @@
 //#define ALLTERCO_SHELLY1PM
 //#define ALLTERCO_SHELLY2
 //#define ALLTERCO_SHELLY25
+//#define AOYCOCR_X5P
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC02
 //#define ARILUX_AL_LC02_V14
@@ -21,17 +24,22 @@
 //#define ARILUX_E27
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
+//#define AVATTO_NAS_WR01W
 //#define BESTEK_MRJ1011
 //#define BH_ONOFRE
 //#define BLITZWOLF_BWSHP5
 //#define BLITZWOLF_BWSHPX
 //#define BLITZWOLF_BWSHPX_V23
+//#define DELTACO_SH_LEXXRGB
+//#define DELTACO_SH_LEXXW
+//#define DELTACO_SH_P01
+//#define DELTACO_SH_P03USB
 //#define DIGOO_NX_SP202
 //#define EHOMEDIY_WT02
 //#define EHOMEDIY_WT03
 //#define ELECTRODRAGON_WIFI_IOT
-//#define ESPURNA_BASE
 //#define ESPURNA_CORE
+//#define ESPURNA_CORE_WEBUI
 //#define ETEKCITY_ESW01_USA
 //#define EUROMATE_WIFI_STECKER_SCHUKO
 //#define EUROMATE_WIFI_STECKER_SCHUKO_V2
@@ -49,9 +57,11 @@
 //#define GENERIC_ESP01S_DS18B20_V10
 //#define GENERIC_ESP01S_RELAY_V40
 //#define GENERIC_ESP01S_RGBLED_V10
+//#define GENERIC_ESP01_512KB
 //#define GENERIC_GU10
 //#define GENERIC_V9261F
 //#define GIZWITS_WITTY_CLOUD
+//#define GOSUND_WP3
 //#define GOSUND_WS1
 //#define GREEN_ESP8266RELAY
 //#define HAMA_WIFI_STECKDOSE_00176533
@@ -97,6 +107,7 @@
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define KINGART_CURTAIN_SWITCH
 //#define KMC_70011
+//#define KOGAN_SMARTER_HOME_PLUG_W_POW
 //#define LINGAN_SWA1
 //#define LINKSPRITE_LINKNODE_R4
 //#define LITESUN_LA_WF3
@@ -104,16 +115,19 @@
 //#define LOHAS_E27_9W
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
+//#define LSC_SMART_LED_LIGHT_STRIP
 //#define LUANI_HVIO
 //#define LYASI_LIGHT
 //#define MAGICHOME_LED_CONTROLLER
 //#define MAGICHOME_LED_CONTROLLER_20
 //#define MAGICHOME_ZJ_ESPM_5CH_B_13
+//#define MAGICHOME_ZJ_LB_RGBWW_L
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
 //#define MAGICHOME_ZJ_WFMN_C_11
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
+//#define MAXCIO_WUK007S
 //#define MAXCIO_WUS002S
 //#define MUVIT_IO_MIOBULB001
 //#define NEO_COOLCAM_NAS_WR01W
@@ -130,9 +144,11 @@
 //#define PSH_WIFI_SENSOR
 //#define SMARTLIFE_MINI_SMART_SOCKET
 //#define STM_RELAY
+//#define TECKIN_SB53
 //#define TECKIN_SP20
 //#define TECKIN_SP21
 //#define TECKIN_SP22_V14
+//#define TECKIN_SP23_V13
 //#define TFLAG_NX_SMX00
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
@@ -240,3 +256,4 @@
 //#define V9261F_SUPPORT         1
 //#define VEML6075_SUPPORT       1
 //#define VL53L1X_SUPPORT        1
+//#define HDC1080_SUPPORT        1

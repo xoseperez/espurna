@@ -2,6 +2,8 @@
 // WEB UI IMAGE
 // -----------------------------------------------------------------------------
 
+#pragma once
+
 #define WEBUI_IMAGE_SMALL      0
 #define WEBUI_IMAGE_LIGHT      1
 #define WEBUI_IMAGE_SENSOR     2
@@ -67,31 +69,3 @@
     #define WEBUI_IMAGE        WEBUI_IMAGE_SMALL
 #endif
 
-#include <pgmspace.h>
-
-PROGMEM const char espurna_webui[] =
-    #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
-        "SMALL"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
-        "LIGHT"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
-        "SENSOR"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
-        "RFBRIDGE"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_RFM69
-        "RFM69"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
-        "LIGHTFOX"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
-        "THERMOSTAT"
-    #endif
-    #if WEBUI_IMAGE == WEBUI_IMAGE_FULL
-        "FULL"
-    #endif
-    "";

@@ -9,10 +9,11 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
-
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "../debug.h"
+#include "BaseSensor.h"
 
 // Generic data
 #define PMS_BAUD_RATE       9600
@@ -158,7 +159,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
-        PMSX003Sensor(): BaseSensor() {
+        PMSX003Sensor() {
             _count = pms_specs[_type].slot_count;
             _sensor_id = SENSOR_PMSX003_ID;
         }

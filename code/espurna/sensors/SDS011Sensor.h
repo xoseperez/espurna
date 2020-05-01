@@ -10,9 +10,10 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "BaseSensor.h"
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
+#include "BaseSensor.h"
 
 
 class SDS011Sensor : public BaseSensor {
@@ -23,7 +24,7 @@ class SDS011Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SDS011Sensor(): BaseSensor() {
+        SDS011Sensor() {
             _count = 2;
             _sensor_id = SENSOR_SDS011_ID;
         }
@@ -125,7 +126,7 @@ class SDS011Sensor : public BaseSensor {
             int len = 0;
             int pm10_serial = 0;
             int pm25_serial = 0;
-            int checksum_is;
+            int checksum_is = 0;
             int checksum_ok = 0;
 
             while ((_serial->available() > 0) && (_serial->available() >= (10-len))) {

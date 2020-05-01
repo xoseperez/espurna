@@ -7,11 +7,10 @@
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
+#include <Arduino.h>
 
-#include "Arduino.h"
 #include "I2CSensor.h"
+#include "../utils.h"
 
 #define SI7021_SCL_FREQUENCY    200
 
@@ -26,7 +25,7 @@
 PROGMEM const char si7021_chip_si7021_name[] = "SI7021";
 PROGMEM const char si7021_chip_htu21d_name[] = "HTU21D";
 
-class SI7021Sensor : public I2CSensor {
+class SI7021Sensor : public I2CSensor<> {
 
     public:
 
@@ -34,7 +33,7 @@ class SI7021Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SI7021Sensor(): I2CSensor() {
+        SI7021Sensor() {
             _sensor_id = SENSOR_SI7021_ID;
         }
 

@@ -8,6 +8,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
+#include <cstdint>
+
 #include "tuya_dataframe.h"
 #include "tuya_types.h"
 #include "tuya_transport.h"
