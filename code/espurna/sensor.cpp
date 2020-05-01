@@ -1858,19 +1858,19 @@ void _sensorInit() {
             for (size_t index = 0; index < sensor->countDevices(); ++index) {
                 sensor->resetEnergy(index, _sensorEnergyTotal(index));
                 sensor->setCurrentRatio(
-                    get_ratio("pwrRatioC", index, sensor->getCurrentRatio(index))
+                    index, get_ratio("pwrRatioC", index, sensor->getCurrentRatio(index))
                 );
                 sensor->setVoltageRatio(
-                    get_ratio("pwrRatioV", index, sensor->getVoltageRatio(index))
+                    index, get_ratio("pwrRatioV", index, sensor->getVoltageRatio(index))
                 );
                 sensor->setPowerRatio(
-                    get_ratio("pwrRatioP", index, sensor->getPowerRatio(index))
+                    index, get_ratio("pwrRatioP", index, sensor->getPowerRatio(index))
                 );
                 sensor->setEnergyRatio(
-                    get_ratio("pwrRatioE", index, sensor->getEnergyRatio(index))
+                    index, get_ratio("pwrRatioE", index, sensor->getEnergyRatio(index))
                 );
                 sensor->setVoltage(
-                    get_ratio("pwrVoltage", index, sensor->getVoltage(index))
+                    index, get_ratio("pwrVoltage", index, sensor->getVoltage(index))
                 );
             }
 
