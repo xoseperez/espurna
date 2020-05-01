@@ -9,40 +9,6 @@ Copyright (C) 2019 by Albert Weterings
 
 #include "curtain_kingart.h"
 
-/*
-Buttons on the device will move Cover/Shutter/Blind/Curtain up/open or down/close On the end of
-every movement the unit reports the last action and posiston over MQTT topic {hostname}/curtain
-
-RAW paylod format looks like:
-AT+UPDATE="switch":"on","setclose":13
-AT+UPDATE="switch":"off","setclose":38
-AT+UPDATE="switch":"pause","setclose":75
-
-The device is listening to MQTT topic {hostname}/curtain/set, to which you can send:
-- position value, in range from 0 to 100
-- "pause", to stop the movement.
-The device will determine the direction all by itself.
-
-# Set the Cover / Shutter / Blind / Curtain run time
-
-The factory default Open and Close run time for the switch is 50 seconds, and it must be set to 
-an accurate run time for smooth working. Some motors do not have the resistance stop function,
-so when the Cover/Shutter/Blind/Curtain track open or close to the maximum length, but the motor keeps on running.
-This might cause damage on the motor and the switch, it also wastes a lot of energy. In order
-to protect the motor, this switch designed with a time setting function. After setting up the run time,
-the switch will automaticly stop when the track reaches its limits. The run time setting is also helpful
-for the accurate control when manually controlling the device via the touch panel.
-
-After installing the switch and connecting the switch for the very first time:
-- First, it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
-- Press and hold the touch interface pause button for around 4 seconds until the red background
-  led lights up and starts blinking. Then, press the open touch button so start the opening process.
-- When cover is fully open, press the Open or Close button to stop the timer and save the calculated run time.
-
-To configure the device:
-- Press up/down for 5 seconds to bring device into AP mode. After pressing up/down again, device will restart in normal mode.
-*/
-
 #if KINGART_CURTAIN_SUPPORT
 
 #include "ntp.h"
@@ -86,7 +52,41 @@ void _KACurtainReceiveUART() {
         }
     }
 }
-  
+
+/*
+Buttons on the device will move Cover/Shutter/Blind/Curtain up/open or down/close On the end of
+every movement the unit reports the last action and posiston over MQTT topic {hostname}/curtain
+
+RAW paylod format looks like:
+AT+UPDATE="switch":"on","setclose":13
+AT+UPDATE="switch":"off","setclose":38
+AT+UPDATE="switch":"pause","setclose":75
+
+The device is listening to MQTT topic {hostname}/curtain/set, to which you can send:
+- position value, in range from 0 to 100
+- "pause", to stop the movement.
+The device will determine the direction all by itself.
+
+# Set the Cover / Shutter / Blind / Curtain run time
+
+The factory default Open and Close run time for the switch is 50 seconds, and it must be set to 
+an accurate run time for smooth working. Some motors do not have the resistance stop function,
+so when the Cover/Shutter/Blind/Curtain track open or close to the maximum length, but the motor keeps on running.
+This might cause damage on the motor and the switch, it also wastes a lot of energy. In order
+to protect the motor, this switch designed with a time setting function. After setting up the run time,
+the switch will automaticly stop when the track reaches its limits. The run time setting is also helpful
+for the accurate control when manually controlling the device via the touch panel.
+
+After installing the switch and connecting the switch for the very first time:
+- First, it will automatically close the Cover/Shutter/Blind/Curtain to the maximum.
+- Press and hold the touch interface pause button for around 4 seconds until the red background
+  led lights up and starts blinking. Then, press the open touch button so start the opening process.
+- When cover is fully open, press the Open or Close button to stop the timer and save the calculated run time.
+
+To configure the device:
+- Press up/down for 5 seconds to bring device into AP mode. After pressing up/down again, device will restart in normal mode.
+*/
+
 void _KACurtainResult() {
     if (_KACurtainNewData) {
 
