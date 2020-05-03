@@ -43,7 +43,7 @@ void _debugSendInternal(const char * message, bool add_timestamp = DEBUG_ADD_TIM
 void _debugSend(const char * format, va_list args) {
 
     char temp[DEBUG_SEND_STRING_BUFFER_SIZE];
-    int len = ets_vsnprintf(temp, sizeof(temp), format, args);
+    int len = vsnprintf(temp, sizeof(temp), format, args);
 
     // strlen(...) + '\0' already in temp buffer, avoid using malloc when possible
     if (len < DEBUG_SEND_STRING_BUFFER_SIZE) {
@@ -56,7 +56,7 @@ void _debugSend(const char * format, va_list args) {
     if (!buffer) {
         return;
     }
-    ets_vsnprintf(buffer, len, format, args);
+    vsnprintf(buffer, len, format, args);
 
     _debugSendInternal(buffer);
     free(buffer);
