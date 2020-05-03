@@ -131,7 +131,7 @@ void setup() {
 
     // Return bogus free heap value for broken devices
     // XXX: device is likely to trigger other bugs! tread carefuly
-    wtfHeap(getSetting<int>("wtfHeap", 0));
+    wtfHeap(getSetting("wtfHeap", 0));
 
     // Init Serial, SPIFFS and system check
     systemSetup();

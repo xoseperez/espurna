@@ -210,7 +210,7 @@ void _idbFlush() {
     if (!wifiConnected()) return;
 
     const auto host = getSetting("idbHost", INFLUXDB_HOST);
-    const auto port = getSetting<uint16_t>("idbPort", INFLUXDB_PORT);
+    const auto port = getSetting("idbPort", static_cast<uint16_t>(INFLUXDB_PORT));
 
     // TODO: should we always store specific pairs like tspk keeps relay / sensor readings?
     //       note that we also send heartbeat data, persistent values should be flagged

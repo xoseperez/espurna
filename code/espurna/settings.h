@@ -105,6 +105,14 @@ unsigned short convert(const String& value);
 template <>
 unsigned char convert(const String& value);
 
+template<typename T>
+String serialize(const T& value);
+
+template<typename T>
+String serialize(const T& value) {
+    return String(value);
+}
+
 } // namespace settings::internal
 } // namespace settings
 
@@ -114,10 +122,8 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, unsigned int index);
 void moveSettings(const String& from, const String& to);
 
-#if 1
 template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) __attribute__((noinline));
-#endif
 
 template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) {

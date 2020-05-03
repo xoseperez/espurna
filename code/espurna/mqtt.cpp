@@ -127,7 +127,7 @@ SecureClientConfig _mqtt_sc_config {
         return getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     },
     []() -> uint16_t {
-        return getSetting<uint16_t>("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN);
+        return getSetting("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN);
     },
     true
 };
@@ -258,7 +258,7 @@ void _mqttConfigure() {
     // Enable only when server is set
     {
         const String server = getSetting("mqttServer", MQTT_SERVER);
-        const auto port = getSetting<uint16_t>("mqttPort", MQTT_PORT);
+        const auto port = getSetting("mqttPort", static_cast<uint16_t>(MQTT_PORT));
         bool enabled = false;
         if (server.length()) {
             enabled = getSetting("mqttEnabled", 1 == MQTT_ENABLED);

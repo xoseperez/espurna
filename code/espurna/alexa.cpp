@@ -82,7 +82,7 @@ void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int va
 // -----------------------------------------------------------------------------
 
 bool alexaEnabled() {
-    return getSetting<bool>("alexaEnabled", 1 == ALEXA_ENABLED);
+    return getSetting("alexaEnabled", 1 == ALEXA_ENABLED);
 }
 
 void alexaLoop() {

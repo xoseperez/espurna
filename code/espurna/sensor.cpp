@@ -1206,7 +1206,7 @@ void _sensorLoad() {
     #if BMX280_SUPPORT
     {
         // Support up to two sensors with full auto-discovery.
-        const unsigned char number = constrain(getSetting<int>("bmx280Number", BMX280_NUMBER), 1, 2);
+        const unsigned char number = constrain(getSetting("bmx280Number", BMX280_NUMBER), 1, 2);
 
         // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
         // otherwise choose the other unnamed sensor address
@@ -1867,6 +1867,11 @@ sensor::Unit convert(const String& string) {
     }
 
     return sensor::Unit::None;
+}
+
+template <>
+String serialize(const sensor::Unit& unit) {
+    return String(static_cast<int>(unit));
 }
 
 } // ns settings::internal

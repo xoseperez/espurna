@@ -25,6 +25,7 @@ unsigned long _wifi_gratuitous_arp_last = 0;
 // -----------------------------------------------------------------------------
 // PRIVATE
 // -----------------------------------------------------------------------------
+
 struct wifi_scan_info_t {
     String ssid_scan;
     int32_t rssi_scan;
@@ -58,7 +59,11 @@ void _wifiCheckAP() {
     }
 }
 
-WiFiSleepType_t _wifiSleepModeConvert(const String& value) {
+namespace settings {
+namespace internal {
+
+template<>
+WiFiSleepType_t convert(const String& value) {
     switch (value.toInt()) {
         case 2:
             return WIFI_MODEM_SLEEP;
@@ -68,6 +73,9 @@ WiFiSleepType_t _wifiSleepModeConvert(const String& value) {
         default:
             return WIFI_NONE_SLEEP;
     }
+}
+
+}
 }
 
 void _wifiConfigure() {
@@ -131,7 +139,7 @@ void _wifiConfigure() {
 
     jw.enableScan(getSetting("wifiScan", 1 == WIFI_SCAN_NETWORKS));
 
-    const auto sleep_mode = getSetting<WiFiSleepType_t, _wifiSleepModeConvert>("wifiSleep", WIFI_SLEEP_MODE);
+    const auto sleep_mode = getSetting("wifiSleep", WIFI_SLEEP_MODE);
     WiFi.setSleepMode(sleep_mode);
 
     #if WIFI_GRATUITOUS_ARP_SUPPORT
