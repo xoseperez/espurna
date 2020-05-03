@@ -201,7 +201,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 //--------------------------------------------------------------------------------
 
-
 struct sensor_magnitude_t {
 
     private:
@@ -1846,34 +1845,11 @@ void _sensorInit() {
             break;
         }
 
-        // TODO: compatibility proxy, fetch global key before indexed
-        auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
-            return getSetting({key, index}, getSetting(key, default_value));
-        };
-
         if (_sensorIsEmon(_sensors[i])) {
-
             auto* sensor = static_cast<BaseEmonSensor*>(_sensors[i]);
-
-            for (size_t index = 0; index < sensor->countDevices(); ++index) {
-                sensor->resetEnergy(index, _sensorEnergyTotal(index));
-                sensor->setCurrentRatio(
-                    index, get_ratio("pwrRatioC", index, sensor->getCurrentRatio(index))
-                );
-                sensor->setVoltageRatio(
-                    index, get_ratio("pwrRatioV", index, sensor->getVoltageRatio(index))
-                );
-                sensor->setPowerRatio(
-                    index, get_ratio("pwrRatioP", index, sensor->getPowerRatio(index))
-                );
-                sensor->setEnergyRatio(
-                    index, get_ratio("pwrRatioE", index, sensor->getEnergyRatio(index))
-                );
-                sensor->setVoltage(
-                    index, get_ratio("pwrVoltage", index, sensor->getVoltage(index))
-                );
+            for (size_t device = 0; device < sensor->countDevices(); ++device) {
+                sensor->resetEnergy(device, _sensorEnergyTotal(device));
             }
-
         }
 
     }
@@ -1974,7 +1950,28 @@ void _sensorConfigure() {
                 sensor->resetRatios();
             }
 
-            sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()));
+            // TODO: compatibility proxy, fetch global key before indexed
+            auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
+                return getSetting({key, index}, getSetting(key, default_value));
+            };
+
+            for (size_t device = 0; device < sensor->countDevices(); ++device) {
+                sensor->setCurrentRatio(
+                    device, get_ratio("pwrRatioC", device, sensor->defaultCurrentRatio())
+                );
+                sensor->setVoltageRatio(
+                    device, get_ratio("pwrRatioV", device, sensor->defaultVoltageRatio())
+                );
+                sensor->setPowerRatio(
+                    device, get_ratio("pwrRatioP", device, sensor->defaultPowerRatio())
+                );
+                sensor->setEnergyRatio(
+                    device, get_ratio("pwrRatioE", device, sensor->defaultEnergyRatio())
+                );
+                sensor->setVoltage(
+                    device, get_ratio("pwrVoltage", device, sensor->defaultVoltage())
+                );
+            }
 
         } // is emon?
 

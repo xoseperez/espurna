@@ -65,6 +65,10 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
             _dirty = true;
         }
 
+        double defaultCurrentRatio() const {
+            return EMON_CURRENT_RATIO;
+        }
+
         void setCurrentRatio(unsigned char channel, double current_ratio) {
             if (channel >= _channels) return;
             if (_current_ratio[channel] == current_ratio) return;
@@ -74,7 +78,9 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
         }
 
         void resetRatios() {
-            setCurrentRatio(0, EMON_CURRENT_RATIO);
+            for (unsigned char channel = 0; channel < _channels; ++channel) {
+                setCurrentRatio(channel, defaultCurrentRatio());
+            }
         }
 
         // ---------------------------------------------------------------------

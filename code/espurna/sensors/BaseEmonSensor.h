@@ -67,6 +67,10 @@ class BaseEmonSensor : public BaseSensor {
         }
 
         // --- configuration ---
+
+        virtual double defaultVoltage() {
+            return 0.0;
+        }
         
         // when sensor needs explicit mains voltage value
         virtual void setVoltage(double) {}
@@ -74,7 +78,7 @@ class BaseEmonSensor : public BaseSensor {
             setVoltage(value);
         }
         virtual double getVoltage() {
-            return 0.0;
+            return defaultVoltage();
         }
         virtual double getVoltage(unsigned char index) {
             return getVoltage();
@@ -100,18 +104,33 @@ class BaseEmonSensor : public BaseSensor {
             setEnergyRatio(value);
         }
 
+        // Generic ratio configuration, default is a
+        // no-op and must be implemented by the sensor class
+        virtual double defaultCurrentRatio() const {
+            return 0.0;
+        }
+        virtual double defaultVoltageRatio() const {
+            return 0.0;
+        }
+        virtual double defaultPowerRatio() const {
+            return 0.0;
+        }
+        virtual double defaultEnergyRatio() const {
+            return 0.0;
+        }
+
         // when sensor implements a single device
         virtual double getCurrentRatio() {
-            return 0.0;
+            return defaultCurrentRatio();
         }
         virtual double getVoltageRatio() {
-            return 0.0;
+            return defaultVoltageRatio();
         }
         virtual double getPowerRatio() {
-            return 0.0;
+            return defaultPowerRatio();
         }
         virtual double getEnergyRatio() {
-            return 0.0;
+            return defaultEnergyRatio();
         }
 
         // when sensor implements more than one device

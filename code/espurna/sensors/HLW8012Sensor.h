@@ -46,7 +46,9 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         void resetRatios() {
-            _hlw8012->resetMultipliers();
+            _hlw8012->setCurrentMultiplier(_initialRatioC);
+            _hlw8012->setVoltageMultiplier(_initialRatioV);
+            _hlw8012->setPowerMultiplier(_initialRatioP);
         }
 
         // ---------------------------------------------------------------------
@@ -135,17 +137,9 @@ class HLW8012Sensor : public BaseEmonSensor {
                 _hlw8012->begin(_cf, _cf1, _sel, _sel_current, false, 1000000);
             #endif
 
-            // These values are used to calculate current, voltage and power factors as per datasheet formula
-            // These are the nominal values for the Sonoff POW resistors:
-            // * The CURRENT_RESISTOR is the 1milliOhm copper-manganese resistor in series with the main line
-            // * The VOLTAGE_RESISTOR_UPSTREAM are the 5 470kOhm resistors in the voltage divider that feeds the V2P pin in the HLW8012
-            // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
-            _hlw8012->setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
 
-            // Also, adjust with ratio values that could be set in hardware profile
-            if (HLW8012_CURRENT_RATIO > 0.0) _hlw8012->setCurrentMultiplier(HLW8012_CURRENT_RATIO);
-            if (HLW8012_VOLTAGE_RATIO > 0.0) _hlw8012->setVoltageMultiplier(HLW8012_VOLTAGE_RATIO);
-            if (HLW8012_POWER_RATIO > 0.0) _hlw8012->setPowerMultiplier(HLW8012_POWER_RATIO);
+            // Also, adjust with ratio values that could be set in the hardware profile
+            _defaultRatios();
 
             // Handle interrupts
             #if HLW8012_USE_INTERRUPTS && (!HLW8012_WAIT_FOR_WIFI)
@@ -230,7 +224,38 @@ class HLW8012Sensor : public BaseEmonSensor {
             if (gpio == _cf1) _hlw8012->cf1_interrupt();
         }
 
+        double defaultCurrentRatio() const override {
+            return HLW8012_CURRENT_RATIO;
+        }
+
+        double defaultVoltageRatio() const override {
+            return HLW8012_VOLTAGE_RATIO;
+        }
+
+        double defaultPowerRatio() const override {
+            return HLW8012_POWER_RATIO;
+        }
+
     protected:
+
+        void _defaultRatios() {
+            // These values are used to calculate current, voltage and power factors as per datasheet formula
+            // These are the nominal values for the Sonoff POW resistors:
+            // * The CURRENT_RESISTOR is the 1milliOhm copper-manganese resistor in series with the main line
+            // * The VOLTAGE_RESISTOR_UPSTREAM are the 5 470kOhm resistors in the voltage divider that feeds the V2P pin in the HLW8012
+            // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
+            _hlw8012->setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
+
+            // Multipliers are already set, but we might have changed default values via the hardware profile
+            if (defaultCurrentRatio() > 0.0) _hlw8012->setCurrentMultiplier(defaultCurrentRatio());
+            if (defaultVoltageRatio() > 0.0) _hlw8012->setVoltageMultiplier(defaultVoltageRatio());
+            if (defaultPowerRatio() > 0.0) _hlw8012->setPowerMultiplier(defaultPowerRatio());
+
+            // Preserve ratios as a fallback
+            _initialRatioC = getCurrentRatio();
+            _initialRatioV = getVoltageRatio();
+            _initialRatioP = getPowerRatio();
+        }
 
         // ---------------------------------------------------------------------
         // Interrupt management
@@ -275,6 +300,10 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // ---------------------------------------------------------------------
+
+        double _initialRatioC;
+        double _initialRatioV;
+        double _initialRatioP;
 
         unsigned char _sel = GPIO_NONE;
         unsigned char _cf = GPIO_NONE;
