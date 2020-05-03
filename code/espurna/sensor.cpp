@@ -821,7 +821,48 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
 // -----------------------------------------------------------------------------
 
+bool _sensorMatchKeyPrefix(const char * key) {
+    if (strncmp(key, "pwr", 3) == 0) return true;
+    if (strncmp(key, "sns", 3) == 0) return true;
+    if (strncmp(key, "tmp", 3) == 0) return true;
+    if (strncmp(key, "hum", 3) == 0) return true;
+    if (strncmp(key, "ene", 3) == 0) return true;
+    if (strncmp(key, "lux", 3) == 0) return true;
+    return false;
+}
+
+const String _sensorQueryDefault(const String& key) {
+    for (unsigned char index = 0; index < _sensors.size(); ++index) {
+        if (!_sensorIsEmon(_sensors[index])) continue;
+        auto* sensor = static_cast<BaseEmonSensor*>(_sensors[index]);
+        for (unsigned char device = 0; device < sensor->countDevices(); ++device) {
+            {
+                settings_key_t ratioKey {"pwrRatioC", device};
+                if (ratioKey.match(key)) return String(sensor->defaultCurrentRatio());
+            }
+            {
+                settings_key_t ratioKey {"pwrRatioV", device};
+                if (ratioKey.match(key)) return String(sensor->defaultVoltageRatio());
+            }
+            {
+                settings_key_t ratioKey {"pwrRatioP", device};
+                if (ratioKey.match(key)) return String(sensor->defaultPowerRatio());
+            }
+            {
+                settings_key_t ratioKey {"pwrRatioE", device};
+                if (ratioKey.match(key)) return String(sensor->defaultEnergyRatio());
+            }
+        }
+    }
+
+    return String();
+}
+
 #if WEB_SUPPORT
+
+bool _sensorWebSocketOnKeyCheck(const char* key, JsonVariant&) {
+    return _sensorMatchKeyPrefix(key);
+}
 
 // Used by modules to generate magnitude_id<->module_id mapping for the WebUI
 
@@ -845,16 +886,6 @@ void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
         index.add(magnitudeIndex(i));
         idx.add(getSetting({conf_name, i}, 0));
     }
-}
-
-bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, "pwr", 3) == 0) return true;
-    if (strncmp(key, "sns", 3) == 0) return true;
-    if (strncmp(key, "tmp", 3) == 0) return true;
-    if (strncmp(key, "hum", 3) == 0) return true;
-    if (strncmp(key, "ene", 3) == 0) return true;
-    if (strncmp(key, "lux", 3) == 0) return true;
-    return false;
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
@@ -2166,6 +2197,15 @@ void sensorSetup() {
 
     // Configure based on settings
     _sensorConfigure();
+
+    // Allow us to query key default
+    settingsRegisterDefaults({
+        [](const char* key) -> bool {
+            if (strncmp(key, "pwr", 3) == 0) return true;
+            return false;
+        },
+        _sensorQueryDefault
+    });
 
     // Websockets integration, send sensor readings and configuration
     #if WEB_SUPPORT

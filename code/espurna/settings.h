@@ -39,6 +39,14 @@ class settings_key_t {
             value(value), index(-1)
         {}
 
+        bool match(const char* _value) const {
+            return (value == _value) || (toString() == _value);
+        }
+
+        bool match(const String& _value) const {
+            return (value == _value) || (toString() == _value);
+        }
+
         String toString() const;
 
         explicit operator String () const {
@@ -115,6 +123,19 @@ String serialize(const T& value) {
 
 } // namespace settings::internal
 } // namespace settings
+
+// --------------------------------------------------------------------------
+
+struct settings_key_match_t {
+    using match_f = bool(*)(const char* key);
+    using key_f = const String(*)(const String& key);
+
+    match_f match;
+    key_f key;
+};
+
+void settingsRegisterDefaults(const settings_key_match_t& matcher);
+String settingsQueryDefaults(const String& key);
 
 // --------------------------------------------------------------------------
 
