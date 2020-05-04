@@ -59,50 +59,64 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        void expectedCurrent(double expected) {
+        void expectedCurrent(double expected) override {
             if ((expected > 0) && (_current > 0)) {
                 _ratioC = _ratioC * (expected / _current);
             }
         }
 
-        void expectedVoltage(unsigned int expected) {
+        void expectedVoltage(unsigned int expected) override {
             if ((expected > 0) && (_voltage > 0)) {
                 _ratioV = _ratioV * (expected / _voltage);
             }
         }
 
-        void expectedPower(unsigned int expected) {
+        void expectedPower(unsigned int expected) override {
             if ((expected > 0) && (_active > 0)) {
                 _ratioP = _ratioP * (expected / _active);
             }
         }
 
-        void setCurrentRatio(double value) {
+        double defaultCurrentRatio() const override {
+            return 1.0;
+        }
+
+        double defaultVoltageRatio() const override {
+            return 1.0;
+        }
+
+        double defaultPowerRatio() const override {
+            return 1.0;
+        }
+
+        void setCurrentRatio(double value) override {
             _ratioC = value;
         };
 
-        void setVoltageRatio(double value) {
+        void setVoltageRatio(double value) override {
             _ratioV = value;
         };
 
-        void setPowerRatio(double value) {
+        void setPowerRatio(double value) override {
             _ratioP = value;
         };
 
-        double getCurrentRatio() {
+        double getCurrentRatio() override {
             return _ratioC;
         };
 
-        double getVoltageRatio() {
+        double getVoltageRatio() override {
             return _ratioV;
         };
 
-        double getPowerRatio() {
+        double getPowerRatio() override {
             return _ratioP;
         };
 
-        void resetCalibration() {
-            _ratioC = _ratioV = _ratioP = 1.0;
+        void resetRatios() override {
+            _ratioC = defaultCurrentRatio();
+            _ratioV = defaultVoltageRatio();
+            _ratioP = defaultPowerRatio();
         }
 
         // ---------------------------------------------------------------------
@@ -111,6 +125,8 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // Initialization method, must be idempotent
         void begin() {
+
+            resetRatios();
 
             if (!_dirty) return;
 
@@ -387,9 +403,9 @@ class CSE7766Sensor : public BaseEmonSensor {
         double _voltage = 0;
         double _current = 0;
 
-        double _ratioV = 1.0;
-        double _ratioC = 1.0;
-        double _ratioP = 1.0;
+        double _ratioV;
+        double _ratioC;
+        double _ratioP;
 
         unsigned char _data[24];
 

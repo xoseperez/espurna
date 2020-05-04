@@ -33,24 +33,6 @@ class HLW8012Sensor : public BaseEmonSensor {
             delete _hlw8012;
         }
 
-        void expectedCurrent(double expected) {
-            _hlw8012->expectedCurrent(expected);
-        }
-
-        void expectedVoltage(unsigned int expected) {
-            _hlw8012->expectedVoltage(expected);
-        }
-
-        void expectedPower(unsigned int expected) {
-            _hlw8012->expectedActivePower(expected);
-        }
-
-        void resetRatios() {
-            _hlw8012->setCurrentMultiplier(_initialRatioC);
-            _hlw8012->setVoltageMultiplier(_initialRatioV);
-            _hlw8012->setPowerMultiplier(_initialRatioP);
-        }
-
         // ---------------------------------------------------------------------
 
         void setSEL(unsigned char sel) {
@@ -75,16 +57,60 @@ class HLW8012Sensor : public BaseEmonSensor {
             _sel_current = value;
         }
 
-        void setCurrentRatio(double value) {
+        // ---------------------------------------------------------------------
+
+        void expectedCurrent(double expected) override {
+            _hlw8012->expectedCurrent(expected);
+        }
+
+        void expectedVoltage(unsigned int expected) override {
+            _hlw8012->expectedVoltage(expected);
+        }
+
+        void expectedPower(unsigned int expected) override {
+            _hlw8012->expectedActivePower(expected);
+        }
+
+        double defaultCurrentRatio() const override {
+            return HLW8012_CURRENT_RATIO;
+        }
+
+        double defaultVoltageRatio() const override {
+            return HLW8012_VOLTAGE_RATIO;
+        }
+
+        double defaultPowerRatio() const override {
+            return HLW8012_POWER_RATIO;
+        }
+
+        void resetRatios() override {
+            _hlw8012->setCurrentMultiplier(_initialRatioC);
+            _hlw8012->setVoltageMultiplier(_initialRatioV);
+            _hlw8012->setPowerMultiplier(_initialRatioP);
+        }
+
+        void setCurrentRatio(double value) override {
             _hlw8012->setCurrentMultiplier(value);
         };
 
-        void setVoltageRatio(double value) {
+        void setVoltageRatio(double value) override {
             _hlw8012->setVoltageMultiplier(value);
         };
 
-        void setPowerRatio(double value) {
+        void setPowerRatio(double value) override {
             _hlw8012->setPowerMultiplier(value);
+        };
+
+        double getCurrentRatio() override {
+            return _hlw8012->getCurrentMultiplier();
+        };
+
+        double getVoltageRatio() override {
+            return _hlw8012->getVoltageMultiplier();
+        };
+
+        double getPowerRatio() override {
+            return _hlw8012->getPowerMultiplier();
         };
 
         // ---------------------------------------------------------------------
@@ -104,18 +130,6 @@ class HLW8012Sensor : public BaseEmonSensor {
         unsigned char getSELCurrent() {
             return _sel_current;
         }
-
-        double getCurrentRatio() {
-            return _hlw8012->getCurrentMultiplier();
-        };
-
-        double getVoltageRatio() {
-            return _hlw8012->getVoltageMultiplier();
-        };
-
-        double getPowerRatio() {
-            return _hlw8012->getPowerMultiplier();
-        };
 
         // ---------------------------------------------------------------------
         // Sensors API
@@ -137,8 +151,7 @@ class HLW8012Sensor : public BaseEmonSensor {
                 _hlw8012->begin(_cf, _cf1, _sel, _sel_current, false, 1000000);
             #endif
 
-
-            // Also, adjust with ratio values that could be set in the hardware profile
+            // Adjust with ratio values that could be set in the hardware profile
             _defaultRatios();
 
             // Handle interrupts
@@ -222,18 +235,6 @@ class HLW8012Sensor : public BaseEmonSensor {
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
             if (gpio == _cf) _hlw8012->cf_interrupt();
             if (gpio == _cf1) _hlw8012->cf1_interrupt();
-        }
-
-        double defaultCurrentRatio() const override {
-            return HLW8012_CURRENT_RATIO;
-        }
-
-        double defaultVoltageRatio() const override {
-            return HLW8012_VOLTAGE_RATIO;
-        }
-
-        double defaultPowerRatio() const override {
-            return HLW8012_POWER_RATIO;
         }
 
     protected:

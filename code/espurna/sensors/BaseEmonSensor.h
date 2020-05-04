@@ -151,7 +151,16 @@ class BaseEmonSensor : public BaseSensor {
         virtual void expectedVoltage(unsigned int value) {}
         virtual void expectedPower(unsigned int value) {}
 
-        virtual void resetCalibration(double value) {}
+        virtual void expectedCurrent(unsigned char index, double value) {
+            expectedCurrent(value);
+        }
+        virtual void expectedVoltage(unsigned char index, unsigned int value) {
+            expectedVoltage(value);
+        }
+        virtual void expectedPower(unsigned char index, unsigned int value) {
+            expectedPower(value);
+        }
+
         virtual void resetRatios() {}
 
     protected:
