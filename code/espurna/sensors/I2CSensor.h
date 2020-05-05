@@ -47,7 +47,7 @@ class I2CSensor : public T {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return static_cast<T*>(this)->description();
         };
 

@@ -38,6 +38,9 @@ class settings_key_t {
         settings_key_t(const __FlashStringHelper* value) :
             value(value), index(-1)
         {}
+        settings_key_t() :
+            value(), index(-1)
+        {}
 
         bool match(const char* _value) const {
             return (value == _value) || (toString() == _value);

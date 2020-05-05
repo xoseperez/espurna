@@ -119,7 +119,7 @@ class EmonADC121Sensor : public EmonSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            unsigned char channel = index / _magnitudes;
+            unsigned char channel = local(index);
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return _current[channel];

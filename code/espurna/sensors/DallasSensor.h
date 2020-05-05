@@ -239,7 +239,7 @@ class DallasSensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             if (index < _count) {
                 char buffer[40];
                 uint8_t * address = _devices[index].address;

@@ -89,21 +89,23 @@ class PZEM004TSensor : public BaseEmonSensor {
             return PZEM004TSensor::instance;
         }
 
+        // ---------------------------------------------------------------------
+
         // We can't modify PZEM values, just ignore this
-        void resetEnergy() {}
-        void resetEnergy(unsigned char) {}
-        void resetEnergy(unsigned char, sensor::Energy) {}
+        void resetEnergy() override {}
+        void resetEnergy(unsigned char) override {}
+        void resetEnergy(unsigned char, sensor::Energy) override {}
 
         // Override Base methods that deal with _energy[]
-        size_t countDevices() {
+        size_t countDevices() override {
             return _addresses.size();
         }
 
-        double getEnergy(unsigned char index) {
+        double getEnergy(unsigned char index) override {
             return _readings[index].energy;
         }
 
-        sensor::Energy totalEnergy(unsigned char index) {
+        sensor::Energy totalEnergy(unsigned char index) override {
             return getEnergy(index);
         }
 
@@ -210,8 +212,8 @@ class PZEM004TSensor : public BaseEmonSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            int dev = index / PZ_MAGNITUDE_COUNT;
+        String description(unsigned char index) {
+            auto dev = local(index);
             char buffer[25];
             snprintf(buffer, sizeof(buffer), "(%u/%s)", dev, getAddress(dev).c_str());
             return description() + String(buffer);
@@ -219,14 +221,17 @@ class PZEM004TSensor : public BaseEmonSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            int dev = index / PZ_MAGNITUDE_COUNT;
-            return _addresses[dev].toString();
+            return _addresses[local(index)].toString();
+        }
+
+        // Convert slot # to a magnitude #
+        unsigned char local(unsigned char index) override {
+            return index / PZ_MAGNITUDE_COUNT;
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            int dev = index / PZ_MAGNITUDE_COUNT;
-            index = index - (dev * PZ_MAGNITUDE_COUNT);
+            index = index - (local(index) * PZ_MAGNITUDE_COUNT);
             if (index == PZ_MAGNITUDE_CURRENT_INDEX)      return MAGNITUDE_CURRENT;
             if (index == PZ_MAGNITUDE_VOLTAGE_INDEX)      return MAGNITUDE_VOLTAGE;
             if (index == PZ_MAGNITUDE_POWER_ACTIVE_INDEX) return MAGNITUDE_POWER_ACTIVE;

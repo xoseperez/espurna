@@ -146,6 +146,11 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        // Convert slot # index to a magnitude # index
+        unsigned char local(unsigned char index) override {
+            return (_ports) ? (index / _ports) : 0u;
+        }
+
         // Initialization method, must be idempotent
         void begin() {
 
@@ -194,7 +199,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             char buffer[35];
             unsigned char channel = getChannel(index % _ports);
             snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 (A%d) @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, channel, _address);

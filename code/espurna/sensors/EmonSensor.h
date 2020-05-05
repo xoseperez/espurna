@@ -134,6 +134,11 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
 
         }
 
+        // Convert slot # index to a magnitude # index
+        unsigned char local(unsigned char index) override {
+            return (_magnitudes) ? (index / _magnitudes) : 0u;
+        }
+
     protected:
 
         // ---------------------------------------------------------------------
