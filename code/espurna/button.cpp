@@ -26,6 +26,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/DebounceEvent.h"
 
+BrokerBind(ButtonBroker);
+
 // TODO: if we are using such conversion helpers across the codebase, should convert() be in internal ns?
 
 namespace settings {
@@ -454,6 +456,10 @@ void buttonEvent(unsigned char id, button_event_t event) {
 
     auto& button = _buttons[id];
     auto action = _buttonDecodeEventAction(button.actions, event);
+
+    #if BROKER_SUPPORT
+        ButtonBroker::Publish(id, event);
+    #endif
 
     #if MQTT_SUPPORT
         if (action || _buttons_mqtt_send_all[id]) {

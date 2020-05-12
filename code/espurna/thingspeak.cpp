@@ -14,6 +14,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "broker.h"
 #include "relay.h"
+#include "rpc.h"
 #include "sensor.h"
 #include "ws.h"
 #include "libs/URL.h"

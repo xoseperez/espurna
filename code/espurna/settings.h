@@ -16,7 +16,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 #include "espurna.h"
+#include "broker.h"
 #include "libs/EmbedisWrap.h"
+
+BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
 
 // --------------------------------------------------------------------------
 

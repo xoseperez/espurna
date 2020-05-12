@@ -14,6 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "light.h"
 #include "mqtt.h"
 #include "relay.h"
+#include "rpc.h"
 #include "sensor.h"
 #include "ws.h"
 
@@ -191,8 +192,6 @@ void _domoticzConfigure() {
     _dcz_enabled = enabled;
 }
 
-#if BROKER_SUPPORT
-
 void _domoticzConfigCallback(const String& key, const String& value) {
     if (key.equals("relayDummy")) {
         _domoticzRelayConfigure(value.toInt());
@@ -212,8 +211,6 @@ void _domoticzBrokerCallback(const String& topic, unsigned char id, unsigned int
     domoticzSendRelay(id, value);
 
 }
-
-#endif // BROKER_SUPPORT
 
 #if SENSOR_SUPPORT
 
@@ -328,10 +325,8 @@ void domoticzSetup() {
             .onKeyCheck(_domoticzWebSocketOnKeyCheck);
     #endif
 
-    #if BROKER_SUPPORT
-        StatusBroker::Register(_domoticzBrokerCallback);
-        ConfigBroker::Register(_domoticzConfigCallback);
-    #endif
+    StatusBroker::Register(_domoticzBrokerCallback);
+    ConfigBroker::Register(_domoticzConfigCallback);
 
     // Callbacks
     mqttRegister(_domoticzMqtt);

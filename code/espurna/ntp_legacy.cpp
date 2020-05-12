@@ -16,6 +16,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "broker.h"
 #include "ws.h"
 
+BrokerBind(NtpBroker);
+
 Ticker _ntp_defer;
 
 bool _ntp_report = false;
