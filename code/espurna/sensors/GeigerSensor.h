@@ -94,7 +94,7 @@ String description() {
 }
 
 // Descriptive name of the slot # index
-String slot(unsigned char index) {
+String description(unsigned char index) {
         char buffer[30];
         unsigned char i=0;
             #if GEIGER_REPORT_CPM

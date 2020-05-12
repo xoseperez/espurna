@@ -41,7 +41,9 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
 
         }
 
-        void expectedPower(unsigned char channel, unsigned int expected) {
+        // ---------------------------------------------------------------------
+
+        void expectedPower(unsigned char channel, unsigned int expected) override {
             if (channel >= _channels) return;
             unsigned int actual = _current[channel] * _voltage;
             if (actual == 0) return;
@@ -51,9 +53,7 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
             _dirty = true;
         }
 
-        // ---------------------------------------------------------------------
-
-        void setVoltage(double voltage) {
+        void setVoltage(double voltage) override {
             if (_voltage == voltage) return;
             _voltage = voltage;
             _dirty = true;
@@ -65,7 +65,11 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
             _dirty = true;
         }
 
-        void setCurrentRatio(unsigned char channel, double current_ratio) {
+        double defaultCurrentRatio() const override {
+            return EMON_CURRENT_RATIO;
+        }
+
+        void setCurrentRatio(unsigned char channel, double current_ratio) override {
             if (channel >= _channels) return;
             if (_current_ratio[channel] == current_ratio) return;
             _current_ratio[channel] = current_ratio;
@@ -73,13 +77,15 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
             _dirty = true;
         }
 
-        void resetRatios() {
-            setCurrentRatio(0, EMON_CURRENT_RATIO);
+        void resetRatios() override {
+            for (unsigned char channel = 0; channel < _channels; ++channel) {
+                setCurrentRatio(channel, defaultCurrentRatio());
+            }
         }
 
         // ---------------------------------------------------------------------
 
-        double getVoltage() {
+        double getVoltage() override {
             return _voltage;
         }
 
@@ -87,12 +93,12 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
             return _reference;
         }
 
-        double getCurrentRatio(unsigned char channel) {
+        double getCurrentRatio(unsigned char channel) override {
             if (channel >= _channels) return 0;
             return _current_ratio[channel];
         }
 
-        unsigned char getChannels() {
+        size_t countDevices() override {
             return _channels;
         }
 
@@ -126,6 +132,11 @@ class EmonSensor : public I2CSensor<BaseEmonSensor> {
             _dirty = false;
 
 
+        }
+
+        // Convert slot # index to a magnitude # index
+        unsigned char local(unsigned char index) override {
+            return (_magnitudes) ? (index / _magnitudes) : 0u;
         }
 
     protected:

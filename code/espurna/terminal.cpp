@@ -254,7 +254,12 @@ void _terminalInitCommand() {
             String key = String(e->argv[i]);
             String value;
             if (!Embedis::get(key, value)) {
-                DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
+                const auto maybeDefault = settingsQueryDefaults(key);
+                if (maybeDefault.length()) {
+                    DEBUG_MSG_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeDefault.c_str());
+                } else {
+                    DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
+                }
                 continue;
             }
 

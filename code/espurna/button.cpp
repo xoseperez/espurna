@@ -43,6 +43,21 @@ debounce_event::types::Mode convert(const String& value) {
 }
 
 template<>
+String serialize(const debounce_event::types::Mode& value) {
+    String result;
+    switch (value) {
+        case debounce_event::types::Mode::Switch:
+            result = "1";
+            break;
+        case debounce_event::types::Mode::Pushbutton:
+        default:
+            result = "0";
+            break;
+    }
+    return result;
+}
+
+template<>
 debounce_event::types::PinValue convert(const String& value) {
     switch (value.toInt()) {
         case 0:
@@ -51,6 +66,21 @@ debounce_event::types::PinValue convert(const String& value) {
         default:
             return debounce_event::types::PinValue::High;
     }
+}
+
+template<>
+String serialize(const debounce_event::types::PinValue& value) {
+    String result;
+    switch (value) {
+        case debounce_event::types::PinValue::Low:
+            result = "0";
+            break;
+        case debounce_event::types::PinValue::High:
+        default:
+            result = "1";
+            break;
+    }
+    return result;
 }
 
 template<>
@@ -64,6 +94,24 @@ debounce_event::types::PinMode convert(const String& value) {
         default:
             return debounce_event::types::PinMode::Input;
     }
+}
+
+template<>
+String serialize(const debounce_event::types::PinMode& mode) {
+    String result;
+    switch (mode) {
+        case debounce_event::types::PinMode::InputPullup:
+            result = "1";
+            break;
+        case debounce_event::types::PinMode::InputPulldown:
+            result = "2";
+            break;
+        case debounce_event::types::PinMode::Input:
+        default:
+            result = "0";
+            break;
+    }
+    return result;
 }
 
 } // namespace settings::internal

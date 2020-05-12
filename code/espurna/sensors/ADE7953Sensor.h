@@ -75,10 +75,9 @@ class ADE7953Sensor : public I2CSensor<BaseEmonSensor> {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
-
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
@@ -148,6 +147,12 @@ class ADE7953Sensor : public I2CSensor<BaseEmonSensor> {
             if (index == 1) return _readings[relay].current;
             if (index == 2) return _readings[relay].power;
             return 0;
+        }
+
+        // Convert slot # to a magnitude #
+        unsigned char local(unsigned char index) override {
+            if (index == 0) { return 0; }        // common voltage
+            return (index - 1) / countDevices(); // device { energy, current, active power }
         }
 
         // Type for slot # index

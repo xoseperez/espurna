@@ -84,7 +84,7 @@ class V9261FSensor : public BaseEmonSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

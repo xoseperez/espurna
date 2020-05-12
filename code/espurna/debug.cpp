@@ -29,6 +29,8 @@ char _udp_syslog_header[40] = {0};
 
 bool _debug_enabled = false;
 
+
+
 // -----------------------------------------------------------------------------
 // printf-like debug methods
 // -----------------------------------------------------------------------------
@@ -41,7 +43,7 @@ void _debugSendInternal(const char * message, bool add_timestamp = DEBUG_ADD_TIM
 void _debugSend(const char * format, va_list args) {
 
     char temp[DEBUG_SEND_STRING_BUFFER_SIZE];
-    int len = ets_vsnprintf(temp, sizeof(temp), format, args);
+    int len = vsnprintf(temp, sizeof(temp), format, args);
 
     // strlen(...) + '\0' already in temp buffer, avoid using malloc when possible
     if (len < DEBUG_SEND_STRING_BUFFER_SIZE) {
@@ -54,7 +56,7 @@ void _debugSend(const char * format, va_list args) {
     if (!buffer) {
         return;
     }
-    ets_vsnprintf(buffer, len, format, args);
+    vsnprintf(buffer, len, format, args);
 
     _debugSendInternal(buffer);
     free(buffer);
@@ -282,19 +284,29 @@ void debugSetup() {
 
 }
 
-String _debugLogModeSerialize(DebugLogMode value) {
+namespace settings {
+namespace internal {
+
+template<>
+String serialize(const DebugLogMode& value) {
+    String result;
     switch (value) {
         case DebugLogMode::Disabled:
-            return "0";
+            result = "0";
+            break;
         case DebugLogMode::SkipBoot:
-            return "2";
+            result = "2";
+            break;
         default:
         case DebugLogMode::Enabled:
-            return "1";
+            result = "1";
+            break;
     }
+    return result;
 }
 
-DebugLogMode _debugLogModeDeserialize(const String& value) {
+template<>
+DebugLogMode convert(const String& value) {
     switch (value.toInt()) {
         case 0:
             return DebugLogMode::Disabled;
@@ -306,13 +318,16 @@ DebugLogMode _debugLogModeDeserialize(const String& value) {
     }
 }
 
+}
+}
+
 void debugConfigureBoot() {
     static_assert(
         std::is_same<int, std::underlying_type<DebugLogMode>::type>::value, 
         "should be able to match DebugLogMode with int"
     );
 
-    const auto mode = getSetting<DebugLogMode, _debugLogModeDeserialize>("dbgLogMode", DEBUG_LOG_MODE);
+    const auto mode = getSetting("dbgLogMode", DEBUG_LOG_MODE);
     switch (mode) {
         case DebugLogMode::SkipBoot:
             schedule_function([]() {

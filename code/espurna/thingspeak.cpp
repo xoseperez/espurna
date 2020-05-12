@@ -404,7 +404,7 @@ void _tspkFlush() {
     // POST data if any
     if (_tspk_data.length()) {
         _tspk_data.concat("&api_key=");
-        _tspk_data.concat(getSetting<String>("tspkKey", THINGSPEAK_APIKEY));
+        _tspk_data.concat(getSetting("tspkKey", THINGSPEAK_APIKEY));
         --_tspk_tries;
         _tspkPost(getSetting("tspkAddress", THINGSPEAK_ADDRESS));
     }

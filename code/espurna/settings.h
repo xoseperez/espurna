@@ -38,6 +38,17 @@ class settings_key_t {
         settings_key_t(const __FlashStringHelper* value) :
             value(value), index(-1)
         {}
+        settings_key_t() :
+            value(), index(-1)
+        {}
+
+        bool match(const char* _value) const {
+            return (value == _value) || (toString() == _value);
+        }
+
+        bool match(const String& _value) const {
+            return (value == _value) || (toString() == _value);
+        }
 
         String toString() const;
 
@@ -105,8 +116,29 @@ unsigned short convert(const String& value);
 template <>
 unsigned char convert(const String& value);
 
+template<typename T>
+String serialize(const T& value);
+
+template<typename T>
+String serialize(const T& value) {
+    return String(value);
+}
+
 } // namespace settings::internal
 } // namespace settings
+
+// --------------------------------------------------------------------------
+
+struct settings_key_match_t {
+    using match_f = bool(*)(const char* key);
+    using key_f = const String(*)(const String& key);
+
+    match_f match;
+    key_f key;
+};
+
+void settingsRegisterDefaults(const settings_key_match_t& matcher);
+String settingsQueryDefaults(const String& key);
 
 // --------------------------------------------------------------------------
 
@@ -114,10 +146,8 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, unsigned int index);
 void moveSettings(const String& from, const String& to);
 
-#if 1
 template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) __attribute__((noinline));
-#endif
 
 template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) {

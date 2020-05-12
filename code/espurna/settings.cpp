@@ -241,6 +241,22 @@ std::vector<String> settingsKeys() {
     return keys;
 }
 
+
+static std::vector<settings_key_match_t> _settings_matchers;
+
+void settingsRegisterDefaults(const settings_key_match_t& matcher) {
+    _settings_matchers.push_back(matcher);
+}
+
+String settingsQueryDefaults(const String& key) {
+    for (auto& matcher : _settings_matchers) {
+        if (matcher.match(key.c_str())) {
+            return matcher.key(key);
+        }
+    }
+    return String();
+}
+
 // -----------------------------------------------------------------------------
 // Key-value API
 // -----------------------------------------------------------------------------
