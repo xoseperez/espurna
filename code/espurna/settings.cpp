@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "settings.h"
 
+#include "terminal.h"
+
 #include <ArduinoJson.h>
 #include <vector>
 
@@ -487,5 +489,106 @@ void settingsSetup() {
             []() {}
         #endif
     );
+
+    terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext&) {
+        DynamicJsonBuffer jsonBuffer(1024);
+        JsonObject& root = jsonBuffer.createObject();
+        settingsGetJson(root);
+        // XXX: replace with streaming
+        String output;
+        root.printTo(output);
+        DEBUG_MSG(output.c_str());
+        
+    });
+
+    terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext&) {
+        // Get sorted list of keys
+        auto keys = settingsKeys();
+
+        // Write key-values
+        DEBUG_MSG_P(PSTR("Current settings:\n"));
+        for (unsigned int i=0; i<keys.size(); i++) {
+            const auto value = getSetting(keys[i]);
+            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
+        }
+
+        unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
+        DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
+        DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
+        DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
+
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 2) {
+            terminalError(F("del <key> [<key>...]"));
+            return;
+        }
+
+        int result = 0;
+        for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
+            result += Embedis::del(*it);
+        }
+
+        DEBUG_MSG_P(PSTR(":%d\n"), result);
+    });
+
+    terminalRegisterCommand(F("SET"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 3) {
+            terminalError(F("set <key> <value>"));
+            return;
+        }
+
+        if (Embedis::set(ctx.argv[1], ctx.argv[2])) {
+            terminalOK();
+            return;
+        }
+
+        terminalError(F("could not set the key"));
+    });
+
+    terminalRegisterCommand(F("GET"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc < 2) {
+            terminalError(F("Wrong arguments"));
+            return;
+        }
+
+        for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
+            const String& key = *it;
+            String value;
+            if (!Embedis::get(key, value)) {
+                const auto maybeDefault = settingsQueryDefaults(key);
+                if (maybeDefault.length()) {
+                    DEBUG_MSG_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeDefault.c_str());
+                } else {
+                    DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
+                }
+                continue;
+            }
+
+            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
+        }
+
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext&) {
+        espurnaReload();
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext&) {
+        resetSettings();
+        terminalOK();
+    });
+
+    #if not SETTINGS_AUTOSAVE
+        terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext&) {
+            eepromCommit();
+            terminalOK();
+        });
+    #endif
+
 
 }

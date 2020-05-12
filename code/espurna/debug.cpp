@@ -263,7 +263,7 @@ void debugSetup() {
 
     #if DEBUG_LOG_BUFFER_SUPPORT
 
-        terminalRegisterCommand(F("DEBUG.BUFFER"), [](Embedis* e) {
+        terminalRegisterCommand(F("DEBUG.BUFFER"), [](const terminal::CommandContext&) {
             _debug_log_buffer_enabled = false;
             if (!_debug_log_buffer.size()) {
                 DEBUG_MSG_P(PSTR("[DEBUG] Buffer is empty\n"));

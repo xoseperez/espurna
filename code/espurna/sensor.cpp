@@ -1156,7 +1156,7 @@ void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
 #if TERMINAL_SUPPORT
 
 void _sensorInitCommands() {
-    terminalRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
+    terminalRegisterCommand(F("MAGNITUDES"), [](const terminal::CommandContext&) {
         char last[64];
         char reported[64];
         for (size_t index = 0; index < _magnitudes.size(); ++index) {

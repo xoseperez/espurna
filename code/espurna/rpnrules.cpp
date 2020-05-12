@@ -280,7 +280,7 @@ void _rpnInit() {
 
 void _rpnInitCommands() {
 
-    terminalRegisterCommand(F("RPN.VARS"), [](Embedis* e) {
+    terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext&) {
         unsigned char num = rpn_variables_size(_rpn_ctxt);
         if (0 == num) {
             DEBUG_MSG_P(PSTR("[RPN] No variables\n"));
@@ -296,7 +296,7 @@ void _rpnInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("RPN.OPS"), [](Embedis* e) {
+    terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext&) {
         unsigned char num = _rpn_ctxt.operators.size();
         DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
         for (unsigned char i=0; i<num; i++) {
@@ -305,10 +305,10 @@ void _rpnInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("RPN.TEST"), [](Embedis* e) {
-        if (e->argc == 2) {
-            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), e->argv[1]);
-            rpn_process(_rpn_ctxt, e->argv[1], true);
+    terminalRegisterCommand(F("RPN.TEST"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc == 2) {
+            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), ctx.argv[1].c_str());
+            rpn_process(_rpn_ctxt, ctx.argv[1].c_str(), true);
             _rpnDump();
             rpn_stack_clear(_rpn_ctxt);
             terminalOK();

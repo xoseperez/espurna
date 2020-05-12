@@ -98,7 +98,7 @@ void _nofussLoop() {
 
 void _nofussInitCommands() {
 
-    terminalRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+    terminalRegisterCommand(F("NOFUSS"), [](const terminal::CommandContext&) {
         terminalOK();
         nofussRun();
     });

@@ -363,12 +363,12 @@ void i2cScan() {
 
 void _i2cInitCommands() {
 
-    terminalRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
+    terminalRegisterCommand(F("I2C.SCAN"), [](const terminal::CommandContext&) {
         i2cScan();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("I2C.CLEAR"), [](Embedis* e) {
+    terminalRegisterCommand(F("I2C.CLEAR"), [](const terminal::CommandContext&) {
         i2cClearBus();
         terminalOK();
     });

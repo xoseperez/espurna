@@ -473,13 +473,13 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
 
 void _mqttInitCommands() {
 
-    terminalRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("MQTT.RESET"), [](const terminal::CommandContext&) {
         _mqttConfigure();
         mqttDisconnect();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("MQTT.INFO"), [](Embedis* e) {
+    terminalRegisterCommand(F("MQTT.INFO"), [](const terminal::CommandContext&) {
         _mqttInfo();
         terminalOK();
     });

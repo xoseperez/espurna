@@ -3,11 +3,10 @@
 TERMINAL MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-// (HACK) allow us to use internal lwip struct.
-// esp8266 re-defines enum values from tcp header... include them first
 #include "terminal.h"
 
 #if TERMINAL_SUPPORT
@@ -21,11 +20,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/URL.h"
 #include "libs/StreamInjector.h"
 
+#include <algorithm>
 #include <vector>
+#include <utility>
 #include <Stream.h>
 
 StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
-EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
+terminal::Terminal _terminal(_serial, TERMINAL_BUFFER_SIZE);
 
 #if SERIAL_RX_ENABLED
     char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
@@ -39,52 +40,16 @@ EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 void _terminalHelpCommand() {
 
     // Get sorted list of commands
-    std::vector<String> commands;
-    unsigned char size = embedis.getCommandCount();
-    for (unsigned int i=0; i<size; i++) {
+    auto commands = _terminal.commandNames();
+    std::sort(commands.begin(), commands.end(), [](const String& rhs, const String& lhs) -> bool {
+        return rhs.compareTo(lhs) > 0;
+    });
 
-        String command = embedis.getCommandName(i);
-        bool inserted = false;
-        for (unsigned char j=0; j<commands.size(); j++) {
-
-            // Check if we have to insert it before the current element
-            if (commands[j].compareTo(command) > 0) {
-                commands.insert(commands.begin() + j, command);
-                inserted = true;
-                break;
-            }
-
-        }
-
-        // If we could not insert it, just push it at the end
-        if (!inserted) commands.push_back(command);
-
-    }
-
-    // Output the list
+    // Output the list asap
     DEBUG_MSG_P(PSTR("Available commands:\n"));
-    for (unsigned char i=0; i<commands.size(); i++) {
-        DEBUG_MSG_P(PSTR("> %s\n"), (commands[i]).c_str());
+    for (auto& command : commands) {
+        DEBUG_MSG_P(PSTR("> %s\n"), command.c_str());
     }
-
-}
-
-void _terminalKeysCommand() {
-
-    // Get sorted list of keys
-    auto keys = settingsKeys();
-
-    // Write key-values
-    DEBUG_MSG_P(PSTR("Current settings:\n"));
-    for (unsigned int i=0; i<keys.size(); i++) {
-        const auto value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
-    }
-
-    unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
-    DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
-    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
-    DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
 }
 
@@ -175,37 +140,32 @@ void _terminalDnsFound(const char* name, const ip_addr_t* result, void*) {
 
 void _terminalInitCommand() {
 
-    terminalRegisterCommand(F("COMMANDS"), [](Embedis* e) {
+    terminalRegisterCommand(F("COMMANDS"), [](const terminal::CommandContext&) {
         _terminalHelpCommand();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
+    terminalRegisterCommand(F("ERASE.CONFIG"), [](const terminal::CommandContext&) {
         terminalOK();
         customResetReason(CUSTOM_RESET_TERMINAL);
         eraseSDKConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
 
-    terminalRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
-        resetSettings();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("GPIO"), [](Embedis* e) {
+    terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
         int pin = -1;
 
-        if (e->argc < 2) {
+        if (ctx.argc < 2) {
             DEBUG_MSG("Printing all GPIO pins:\n");
         } else {
-            pin = String(e->argv[1]).toInt();
+            pin = ctx.argv[1].toInt();
             if (!gpioValid(pin)) {
                 terminalError(F("Invalid GPIO pin"));
                 return;
             }
 
-            if (e->argc > 2) {
-                bool state = String(e->argv[2]).toInt() == 1;
+            if (ctx.argc > 2) {
+                bool state = String(ctx.argv[2]).toInt() == 1;
                 digitalWrite(pin, state);
             }
         }
@@ -219,104 +179,51 @@ void _terminalInitCommand() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("HEAP"), [](Embedis* e) {
+    terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext&) {
         infoHeapStats();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("STACK"), [](Embedis* e) {
+    terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext&) {
         infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
         terminalOK();
     });
 
-    terminalRegisterCommand(F("HELP"), [](Embedis* e) {
+    terminalRegisterCommand(F("HELP"), [](const terminal::CommandContext&) {
         _terminalHelpCommand();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("INFO"), [](Embedis* e) {
+    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext&) {
         info();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("KEYS"), [](Embedis* e) {
-        _terminalKeysCommand();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("GET"), [](Embedis* e) {
-        if (e->argc < 2) {
-            terminalError(F("Wrong arguments"));
-            return;
-        }
-
-        for (unsigned char i = 1; i < e->argc; i++) {
-            String key = String(e->argv[i]);
-            String value;
-            if (!Embedis::get(key, value)) {
-                const auto maybeDefault = settingsQueryDefaults(key);
-                if (maybeDefault.length()) {
-                    DEBUG_MSG_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeDefault.c_str());
-                } else {
-                    DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
-                }
-                continue;
-            }
-
-            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
-        }
-
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("RELOAD"), [](Embedis* e) {
-        espurnaReload();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext&) {
         terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
-    terminalRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
+    terminalRegisterCommand(F("RESET.SAFE"), [](const terminal::CommandContext&) {
         systemStabilityCounter(SYSTEM_CHECK_MAX);
         terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
-    terminalRegisterCommand(F("UPTIME"), [](Embedis* e) {
+    terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext&) {
         infoUptime();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer(1024);
-        JsonObject& root = jsonBuffer.createObject();
-        settingsGetJson(root);
-        // XXX: replace with streaming
-        String output;
-        root.printTo(output);
-        DEBUG_MSG(output.c_str());
-        
-    });
-
-    #if not SETTINGS_AUTOSAVE
-        terminalRegisterCommand(F("SAVE"), [](Embedis* e) {
-            eepromCommit();
-            terminalOK();
-        });
-    #endif
-
     #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-        terminalRegisterCommand(F("MFLN.PROBE"), [](Embedis* e) {
-            if (e->argc != 3) {
+        terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 3) {
                 terminalError(F("[url] [value]"));
                 return;
             }
 
-            URL _url(e->argv[1]);
-            uint16_t requested_mfln = atol(e->argv[2]);
+            URL _url(ctx.argv[1]);
+            uint16_t requested_mfln = atol(ctx.argv[2].c_str());
 
             auto client = std::make_unique<BearSSL::WiFiClientSecure>();
             client->setInsecure();
@@ -330,16 +237,16 @@ void _terminalInitCommand() {
     #endif
 
     #if LWIP_VERSION_MAJOR != 1
-        terminalRegisterCommand(F("HOST"), [](Embedis* e) {
-            if (e->argc != 2) {
+        terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 2) {
                 terminalError(F("HOST [hostname]"));
                 return;
             }
 
             ip_addr_t result;
-            auto error = dns_gethostbyname(e->argv[1], &result, _terminalDnsFound, nullptr);
+            auto error = dns_gethostbyname(ctx.argv[1].c_str(), &result, _terminalDnsFound, nullptr);
             if (error == ERR_OK) {
-                _terminalPrintDnsResult(e->argv[1], &result);
+                _terminalPrintDnsResult(ctx.argv[1].c_str(), &result);
                 terminalOK();
                 return;
             } else if (error != ERR_INPROGRESS) {
@@ -349,7 +256,7 @@ void _terminalInitCommand() {
 
         });
 
-        terminalRegisterCommand(F("NETSTAT"), [](Embedis*) {
+        terminalRegisterCommand(F("NETSTAT"), [](const terminal::CommandContext&) {
             _terminalPrintTcpPcbs();
         });
 
@@ -365,7 +272,33 @@ void _terminalLoop() {
         }
     #endif
 
-    embedis.process();
+    _terminal.process([](terminal::Terminal::Result result) {
+        bool out = false;
+        switch (result) {
+            case terminal::Terminal::Result::CommandNotFound:
+                DEBUG_MSG_P(PSTR("[TERMINAL] Command not found\n"));
+                out = true;
+                break;
+            case terminal::Terminal::Result::BufferOverflow:
+                DEBUG_MSG_P(PSTR("[TERMINAL] Command line buffer overflow\n"));
+                out = true;
+                break;
+            case terminal::Terminal::Result::Command:
+                out = true;
+                break;
+            case terminal::Terminal::Result::Pending:
+                out = false;
+                break;
+            case terminal::Terminal::Result::Error:
+                DEBUG_MSG_P(PSTR("[TERMINAL] Unexpected error when parsing command line\n"));
+                out = false;
+                break;
+            case terminal::Terminal::Result::NoInput:
+                out = false;
+                break;
+        }
+        return out;
+    });
 
     #if SERIAL_RX_ENABLED
 
@@ -399,8 +332,8 @@ Stream & terminalSerial() {
     return (Stream &) _serial;
 }
 
-void terminalRegisterCommand(const String& name, embedis_command_f command) {
-    Embedis::command(name, command);
+void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func) {
+    terminal::Terminal::addCommand(name, func);
 };
 
 void terminalOK() {

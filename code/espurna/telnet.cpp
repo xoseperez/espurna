@@ -497,17 +497,14 @@ void telnetSetup() {
         #endif
 
         #if TERMINAL_SUPPORT
-            terminalRegisterCommand(F("TELNET.REVERSE"), [](Embedis* e) {
-                if (e->argc < 3) {
+            terminalRegisterCommand(F("TELNET.REVERSE"), [](const terminal::CommandContext& ctx) {
+                if (ctx.argc < 3) {
                     terminalError(F("Wrong arguments. Usage: TELNET.REVERSE <host> <port>"));
                     return;
                 }
 
-                String host = String(e->argv[1]);
-                uint16_t port = String(e->argv[2]).toInt();
-
                 terminalOK();
-                _telnetReverse(host.c_str(), port);
+                _telnetReverse(ctx.argv[1].c_str(), ctx.argv[2].toInt());
             });
         #endif
     #endif

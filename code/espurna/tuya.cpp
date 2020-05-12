@@ -509,7 +509,7 @@ namespace Tuya {
 
         #if TERMINAL_SUPPORT
 
-            terminalRegisterCommand(F("TUYA.SHOW"), [](Embedis* e) {
+            terminalRegisterCommand(F("TUYA.SHOW"), [](const terminal::CommandContext&) {
                 static const char fmt[] PROGMEM = "%12s%u => dp=%u value=%u\n";
                 showProduct();
 
@@ -524,7 +524,7 @@ namespace Tuya {
                 #endif
             });
 
-            terminalRegisterCommand(F("TUYA.SAVE"), [](Embedis* e) {
+            terminalRegisterCommand(F("TUYA.SAVE"), [](const terminal::CommandContext&) {
                 DEBUG_MSG_P(PSTR("[TUYA] Saving current configuration ...\n"));
                 for (unsigned char n=0; n < switchStates.size(); ++n) {
                     setSetting({"tuyaSwitch", n}, switchStates[n].dp);

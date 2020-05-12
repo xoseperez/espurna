@@ -17,6 +17,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <lwip/etharp.h>
 #endif
 
+// (HACK) allow us to use internal lwip struct.
+// esp8266 re-defines enum values from tcp header... include them first
 #define LWIP_INTERNAL
 #include <JustWifi.h>
 #include <Ticker.h>
