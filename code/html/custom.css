@@ -131,6 +131,31 @@ div.state {
 }
 
 /* -----------------------------------------------------------------------------
+    Curtains
+   -------------------------------------------------------------------------- */
+
+  .curtain-div {
+    text-align: center;
+}
+
+.curtain-roller {
+    width: 300px;
+    height: 200px;
+    display: inline-block;
+}
+
+.curtain-button{
+    margin-left: 10px;
+    margin-right: 10px;
+    text-align: center;
+
+}
+
+.reverse-range {
+    direction: rtl;
+}
+
+/* -----------------------------------------------------------------------------
     Buttons
    -------------------------------------------------------------------------- */
 
@@ -202,6 +227,9 @@ div.state {
     background: rgb(255, 128, 0); /* orange */
 }
 
+.button-curtain-open,
+.button-curtain-pause,
+.button-curtain-close,
 .button-generate-password {
     background: rgb(66, 184, 221); /* blue */
 }

@@ -1273,6 +1273,49 @@ function initMagnitudes(data) {
 <!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
+// Curtains
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!curtain)-->
+
+//Create the controls for one curtain. It is called when curtain is updated (so created the first time)
+//Let this there as we plan to have more than one curtain per switch
+function initCurtain(data) {
+
+    var current = $("#curtains > div").length;
+    if (current > 0) { return; }
+  
+    // add curtain template (prepare multi switches)
+    var template = $("#curtainTemplate").children();
+    var line = $(template).clone();
+    // init curtain button
+    $(line).find(".button-curtain-open").on("click", function() {
+        sendAction("curtainAction", {button: 1});
+        $(this).css('background', 'red');
+    });    
+    $(line).find(".button-curtain-pause").on("click", function() {
+        sendAction("curtainAction", {button: 0});
+        $(this).css('background', 'red');
+    });    
+    $(line).find(".button-curtain-close").on("click", function() {
+        sendAction("curtainAction", {button: 2});
+        $(this).css('background', 'red');
+    });    
+    line.appendTo("#curtains");
+
+    // init curtain slider
+    $("#curtainSet").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("curtainAction", {position: value});
+    });
+
+}
+
+<!-- endRemoveIf(!curtain)-->
+
+// -----------------------------------------------------------------------------
 // Lights
 // -----------------------------------------------------------------------------
 
@@ -1690,6 +1733,49 @@ function processData(data) {
         }
         
         if (key == "rpnNames") return;
+
+        // ---------------------------------------------------------------------
+        // Curtains
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!curtain)-->
+        
+        if ("curtainState" === key) {
+            initCurtain();
+            switch(value.curtainType) {
+                case '0': //Roller
+                default:
+                    $("#curtainGetPicture").css('background', 'linear-gradient(180deg, black ' + value.curtainGet + '%, #a0d6ff ' + value.curtainGet + '%)');
+                    break;
+                case '1': //One side left to right
+                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.curtainGet + '%, #a0d6ff ' + value.curtainGet + '%)');
+                break;
+                case '2': //One side right to left
+                    $("#curtainGetPicture").css('background', 'linear-gradient(270deg, black ' + value.curtainGet + '%, #a0d6ff ' + value.curtainGet + '%)');
+                break;
+                case '3': //Two sides
+                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.curtainGet/2 + '%, #a0d6ff ' + value.curtainGet/2 + '% ' + (100 - value.curtainGet/2) + '%, black ' + (100 - value.curtainGet/2) + '%)');
+                break;
+            }
+            $("#curtainSet").val(value.curtainSet); //Update sliders
+            if(value.curtainMoving == "Idle") { //When idle, all buttons are off (blue)
+                $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
+            } else { //If moving, adapt the color depending on the button active
+                if(value.curtainButton == 1) {
+                    $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)'); //Close back to blue
+                    $("button.button-curtain-open").css('background', 'rgb(192, 0, 0)');
+                }
+                else if(value.curtainButton == 0)
+                    $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
+                else if(value.curtainButton == 2) {
+                    $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)'); //Open back to blue
+                    $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
+                    
+                }
+            }
+            return;
+        }
+        <!-- endRemoveIf(!curtain)-->
 
         // ---------------------------------------------------------------------
         // Lights
