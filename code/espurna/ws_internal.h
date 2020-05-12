@@ -31,32 +31,6 @@ struct ws_ticket_t {
 // WS callbacks
 // -----------------------------------------------------------------------------
 
-struct ws_counter_t {
-
-    ws_counter_t() : current(0), start(0), stop(0) {}
-
-    ws_counter_t(uint32_t start, uint32_t stop) :
-        current(start), start(start), stop(stop) {}
-
-    void reset() {
-        current = start;
-    }
-
-    void next() {
-        if (current < stop) {
-            ++current;
-        }
-    }
-
-    bool done() {
-        return (current >= stop);
-    }
-
-    uint32_t current;
-    uint32_t start;
-    uint32_t stop;
-};
-
 struct ws_data_t {
 
     enum mode_t {
@@ -69,7 +43,7 @@ struct ws_data_t {
         client_id(0),
         mode(ALL),
         callbacks(*storage.get()),
-        counter(0, 1)
+        current(callbacks.begin())
     {}
 
     ws_data_t(uint32_t client_id, const ws_on_send_callback_f& cb) :
@@ -77,7 +51,7 @@ struct ws_data_t {
         client_id(client_id),
         mode(ALL),
         callbacks(*storage.get()),
-        counter(0, 1)
+        current(callbacks.begin())
     {}
 
     ws_data_t(const uint32_t client_id, ws_on_send_callback_list_t&& callbacks, mode_t mode = SEQUENCE) :
@@ -85,30 +59,31 @@ struct ws_data_t {
         client_id(client_id),
         mode(mode),
         callbacks(*storage.get()),
-        counter(0, (storage.get())->size())
+        current(callbacks.begin())
     {}
 
     ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
         client_id(client_id),
         mode(mode),
         callbacks(callbacks),
-        counter(0, callbacks.size())
+        current(callbacks.begin())
     {}
 
     bool done() {
-        return counter.done();
+        return current == callbacks.end();
     }
 
     void sendAll(JsonObject& root) {
-        while (!counter.done()) counter.next();
+        current = callbacks.end();
         for (auto& callback : callbacks) {
             callback(root);
         }
     }
 
     void sendCurrent(JsonObject& root) {
-        callbacks[counter.current](root);
-        counter.next();
+        if (current == callbacks.end()) return;
+        (*current)(root);
+        ++current;
     }
 
     void send(JsonObject& root) {
@@ -123,7 +98,7 @@ struct ws_data_t {
     const uint32_t client_id;
     const mode_t mode;
     const ws_on_send_callback_list_t& callbacks;
-    ws_counter_t counter;
+    ws_on_send_callback_list_t::const_iterator current;
 };
 
 // -----------------------------------------------------------------------------
