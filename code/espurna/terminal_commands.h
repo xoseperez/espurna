@@ -27,29 +27,29 @@ struct CommandContext {
 
 	std::vector<String> argv;
 	size_t argc;
-    const Print& output;
+    Print& output;
 
     private:
 
-    CommandContext(parsing::CommandLine& cl, const Stream& stream) :
+    CommandContext(parsing::CommandLine& cl, Stream& stream) :
         argv(cl.argv),
         argc(cl.argc),
         output(stream)
     {}
 
-    CommandContext(parsing::CommandLine&& cl, const Stream& stream) :
+    CommandContext(parsing::CommandLine&& cl, Stream& stream) :
         argv(std::move(cl.argv)),
         argc(std::move(cl.argc)),
         output(stream)
     {}
 
-    CommandContext(std::vector<String> const& argv, size_t argc, const Stream& stream) :
+    CommandContext(std::vector<String> const& argv, size_t argc, Stream& stream) :
         argv(argv),
         argc(argc),
         output(stream)
     {}
 
-    CommandContext(std::vector<String>&& argv, size_t argc, const Stream& stream) :
+    CommandContext(std::vector<String>&& argv, size_t argc, Stream& stream) :
         argv(std::move(argv)),
         argc(argc),
         output(stream)

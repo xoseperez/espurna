@@ -242,6 +242,25 @@ void test_case_insensitive() {
     
 }
 
+// We can use command ctx.output to send something back into the stream
+
+void test_output() {
+
+    terminal::Terminal::addCommand("test.output", [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 2) return;
+        ctx.output.print(ctx.argv[1]);
+    });
+
+    IOStreamString str;
+    terminal::Terminal handler(str);
+
+    char match[] = "test1234567890";
+    str.out += String("test.output ") + String(match) + String("\r\n");
+    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
+    TEST_ASSERT_EQUAL_STRING(match, str.in.c_str());
+
+}
+
 // When adding test functions, don't forget to add RUN_TEST(...) in the main()
 
 int main(int argc, char** argv) {
@@ -253,5 +272,6 @@ int main(int argc, char** argv) {
     RUN_TEST(test_buffer);
     RUN_TEST(test_quotes);
     RUN_TEST(test_case_insensitive);
+    RUN_TEST(test_output);
     UNITY_END();
 }
