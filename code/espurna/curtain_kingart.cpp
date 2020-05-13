@@ -250,8 +250,8 @@ void _KACurtainResult() {
     
     if(buffer.indexOf("AT+RESULT") == 0) { //AT+RESULT is an acquitment of our command (MQTT or GUI)
         //Set the status on what we kown
-        if( _curtain_last_button == CURTAIN_BUTTON_OPEN && _curtain_last_position == 0 ||
-            _curtain_last_button == CURTAIN_BUTTON_CLOSE && _curtain_last_position == 100 ||
+        if( ( _curtain_last_button == CURTAIN_BUTTON_OPEN && _curtain_last_position == 0 ) ||
+            ( _curtain_last_button == CURTAIN_BUTTON_CLOSE && _curtain_last_position == 100 ) ||
             _curtain_last_button == CURTAIN_BUTTON_PAUSE) //The curtain is max opened, closed or pause
             _KAStopMoving();
         else { //Else it is probably moving
