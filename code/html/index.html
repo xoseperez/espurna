@@ -1562,6 +1562,9 @@
                                 <div class="pure-g module module-cmd">
                                     <div class="pure-u-1 hint">
                                         Write a command and click send to execute it on the device. The output will be shown in the debug text area below.
+                                        <!-- removeIf(!curtain) -->
+                                        Type "debug" to display MCU serial exchanges. Any other command is sent to MCU serial as is.
+                                        <!-- endRemoveIf(!curtain) -->
                                     </div>
                                     <input name="dbgcmd" class="pure-u-3-4" type="text" tabindex="2" />
                                     <div class="pure-u-1-4 pure-u-lg-1-4"><button type="button" class="pure-button button-dbgcmd pure-u-23-24">Send</button></div>

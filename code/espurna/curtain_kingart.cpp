@@ -359,7 +359,7 @@ void _curtainMQTTCallback(unsigned int type, const char * topic, char * payload)
             else  if (strcmp(payload, "off") == 0)
                 _KACurtainSet(CURTAIN_BUTTON_CLOSE);
             else {
-                _curtain_position_set = t.toInt();
+                _curtain_position_set = String(payload).toInt();
                 _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, _curtain_position_set);
                 
             }
