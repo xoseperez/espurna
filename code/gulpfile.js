@@ -167,7 +167,7 @@ var buildWebUI = function(module) {
             minifyJS: true
         })).
         pipe(replace('pure-', 'p-')).
-        pipe(gzip()).
+        pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(rename('index.' + module + '.html.gz')).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader('webui_image', true)).
