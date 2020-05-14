@@ -158,7 +158,7 @@ void _KAStopMoving() {
     else if( _curtain_last_position != CURTAIN_POSITION_UNKNOWN)
         _curtain_position_set = _curtain_last_position;
 
-    if(_curtain_initial_position_set == false) {//The curtain stopped moving for the first time, set the position back to 
+    if (!_curtain_initial_position_set) { //The curtain stopped moving for the first time, set the position back to 
         int init_position = getSetting("curtainInitialBehaviour", 0);
         DEBUG_MSG_P(PSTR("[CURTAIN] curtainInitialBehaviour : %d, curtainInitialPosition : %d\n"), init_position, getSetting("curtainInitialPosition", 100));
         if (init_position == 1)
