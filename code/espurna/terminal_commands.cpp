@@ -61,7 +61,7 @@ Terminal::Result Terminal::processLine() {
 			if (cmdline.argc >= 1) {
 				auto command = commands.find(cmdline.argv[0]);
 				if (command == commands.end()) return Result::CommandNotFound;
-                (*command).second(CommandContext(std::move(cmdline), stream));
+                (*command).second(CommandContext{std::move(cmdline.argv), cmdline.argc, stream});
                 return Result::Command;
 			}
 		}

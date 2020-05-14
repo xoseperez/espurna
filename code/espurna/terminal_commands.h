@@ -22,39 +22,9 @@ struct Terminal;
 // We need to be able to pass arbitrary Args structure into the command function
 // Like Embedis implementation, we only pass things that we actually use instead of complete obj instance
 struct CommandContext {
-
-    friend class Terminal;
-
-	std::vector<String> argv;
-	size_t argc;
+    std::vector<String> argv;
+    size_t argc;
     Print& output;
-
-    private:
-
-    CommandContext(parsing::CommandLine& cl, Stream& stream) :
-        argv(cl.argv),
-        argc(cl.argc),
-        output(stream)
-    {}
-
-    CommandContext(parsing::CommandLine&& cl, Stream& stream) :
-        argv(std::move(cl.argv)),
-        argc(std::move(cl.argc)),
-        output(stream)
-    {}
-
-    CommandContext(std::vector<String> const& argv, size_t argc, Stream& stream) :
-        argv(argv),
-        argc(argc),
-        output(stream)
-    {}
-
-    CommandContext(std::vector<String>&& argv, size_t argc, Stream& stream) :
-        argv(std::move(argv)),
-        argc(argc),
-        output(stream)
-    {}
-
 };
 
 struct Terminal {
