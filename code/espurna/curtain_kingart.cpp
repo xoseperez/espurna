@@ -58,11 +58,12 @@ bool _curtain_initial_position_set  = false; //Flag to detect if we manage to se
 bool _curtain_moving                = true;
 
 //Enable more traces, true as a default and stopped when curtain is setup.
-bool _debug_flag = true;
+bool _curtain_debug_flag = true;
 
 #if WEB_SUPPORT
 bool _curtain_report_ws = true; //This will init curtain control and flag the web ui update
 #endif // WEB_SUPPORT
+
 
 //------------------------------------------------------------------------------
 void curtainUpdateUI() {
@@ -110,7 +111,7 @@ void _KACurtainSend(const char * tx_buffer) {
     KINGART_CURTAIN_PORT.print(tx_buffer);
     KINGART_CURTAIN_PORT.print(KINGART_CURTAIN_TERMINATION);
     KINGART_CURTAIN_PORT.flush();
-    if(_debug_flag) DEBUG_MSG_P(PSTR("[KAUART] Send : %s\n"), tx_buffer);
+    if(_curtain_debug_flag) DEBUG_MSG_P(PSTR("[KAUART] Send : %s\n"), tx_buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -173,7 +174,7 @@ void _KAStopMoving() {
                 DEBUG_MSG_P(PSTR("[CURTAIN] No need to update bootup position\n"));
         }
         _curtain_initial_position_set = true;
-        _debug_flag = false; //Disable debug - user has could ask for it
+        _curtain_debug_flag = false; //Disable debug - user has could ask for it
     }
 }
 
@@ -193,7 +194,7 @@ bool _KACurtainReceiveUART() {
         }
     }
     if(_KACurtainNewData) {
-        if(_debug_flag) DEBUG_MSG_P(PSTR("[KAUART] Received : %s\n"), _KACurtainBuffer);
+        if(_curtain_debug_flag) DEBUG_MSG_P(PSTR("[KAUART] Received : %s\n"), _KACurtainBuffer);
         _KACurtainNewData = false;
         return true;
     }
@@ -379,6 +380,7 @@ void _curtainMQTTCallback(unsigned int type, const char * topic, char * payload)
 void _curtainWebSocketOnConnected(JsonObject& root) {
     root["curtainType"] = getSetting("curtainType", "0");
     root["curtainInitialBehaviour"] = getSetting("curtainInitialBehaviour", "0");
+    root["curtainConfig"] = 1;
 }
 
 //------------------------------------------------------------------------------
@@ -418,7 +420,7 @@ void _curtainWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
         }
     } else if (strcmp(action, "dbgcmd") == 0) { //Directly send our buffer to the KA serial
             if(data["command"] == "debug") {
-                _debug_flag = true;
+                _curtain_debug_flag = true;
             } else
                 _KACurtainSend(data["command"]);
     }
@@ -456,6 +458,10 @@ void _KACurtainLoop() {
  #endif
 }
 
+// -----------------------------------------------------------------------------
+// Public
+// -----------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 void kingartCurtainSetup() {
 
@@ -482,5 +488,16 @@ void kingartCurtainSetup() {
     espurnaRegisterLoop(_KACurtainLoop);
 
 }
+
+//------------------------------------------------------------------------------
+void curtainSetPosition(unsigned char id, long value) {
+    if (id > 1) return;
+    _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, constrain(value, 0, 100));
+}
+
+unsigned char curtainCount() {
+    return 1;
+}
+
   
 #endif // KINGART_CURTAIN_SUPPORT
