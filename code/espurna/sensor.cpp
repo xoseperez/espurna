@@ -484,17 +484,22 @@ sensor_magnitude_t::sensor_magnitude_t(unsigned char slot, unsigned char index_l
     switch (type) {
         case MAGNITUDE_ENERGY:
             filter = new LastFilter();
+            break;
         case MAGNITUDE_ENERGY_DELTA:
             filter = new SumFilter();
+            break;
         case MAGNITUDE_DIGITAL:
             filter = new MaxFilter();
+            break;
         // For geiger counting moving average filter is the most appropriate if needed at all.
         case MAGNITUDE_COUNT:
         case MAGNITUDE_GEIGER_CPM:
         case MAGNITUDE_GEIGER_SIEVERT:
             filter = new MovingAverageFilter();
+            break;
         default:
             filter = new MedianFilter();
+            break;
     }
 
     filter->resize(_sensor_report_every);

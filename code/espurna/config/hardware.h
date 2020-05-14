@@ -1488,6 +1488,42 @@
     #define LIGHT_CH4_PIN       15      // WHITE
 
 // -----------------------------------------------------------------------------
+// HUGOAI AWP02L-N
+// Pin equivalence extracted from https://templates.blakadder.com/hugoai_awp02l-n.html
+//
+// It follows almost same structure as AOYCOCR X5P with only 1 LED on GPIO02
+//
+// -----------------------------------------------------------------------------
+
+#elif defined(HUGOAI_AWP02L_N)
+    #define MANUFACTURER                "HUGOAI"
+    #define DEVICE                      "AWP02L-N"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_CONFIG              BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+    // the defaults are reasonable, but you can change them as desired
+    //#define BUTTON1_PRESS               BUTTON_ACTION_NONE
+    //#define BUTTON1_CLICK               BUTTON_ACTION_TOGGLE
+    //#define BUTTON1_DBLCLICK            BUTTON_ACTION_AP
+    //#define BUTTON1_LNGCLICK            BUTTON_ACTION_RESET
+    //#define BUTTON1_LNGLNGCLICK         BUTTON_ACTION_FACTORY
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+
+    // LED1 (blue) indicates on/off state; you could use LED_MODE_FOLLOW_INVERSE
+    // so that the LED lights the button when 'off' so it can be found easily.
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_FOLLOW
+    #define LED1_RELAY                  1
+
+// -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
 // https://github.com/JanGoe/esp8266-wifi-relay
 // -----------------------------------------------------------------------------

@@ -192,6 +192,10 @@ void setup() {
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
+    // rpnSetup must be called before relaySetup
+    #if RPN_RULES_SUPPORT
+        rpnSetup();
+    #endif
     #if RELAY_SUPPORT
         relaySetup();
     #endif
@@ -261,9 +265,6 @@ void setup() {
     #endif
     #if SCHEDULER_SUPPORT
         schSetup();
-    #endif
-    #if RPN_RULES_SUPPORT
-        rpnSetup();
     #endif
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
