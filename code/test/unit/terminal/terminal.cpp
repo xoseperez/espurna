@@ -35,18 +35,17 @@ struct IOStreamString : public Stream {
     }
 };
 
-static bool test_hex_codes_flag = false;
-
 // We need to make sure that our changes to split_args actually worked
 
-#include <cstdio>
 void test_hex_codes() {
+
+    static bool abc_done = false;
 
     terminal::Terminal::addCommand("abc", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argc);
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
-        test_hex_codes_flag = true;
+        abc_done = true;
     });
 
     IOStreamString str;
@@ -58,32 +57,31 @@ void test_hex_codes() {
         terminal::Terminal::Result::Command,
         handler.processLine()
     );
-    TEST_ASSERT(test_hex_codes_flag);
+    TEST_ASSERT(abc_done);
 }
 
 // Ensure that we can register multiple commands (at least 3, might want to test much more in the future?)
 // Ensure that registered commands can be called and they are called in order
 
-static int test_multiple_commands_call = 0;
-static int test_multiple_commands_process = 0;
-
 void test_multiple_commands() {
 
     // set up counter to be chained between commands
+    static int command_calls = 0;
+
     terminal::Terminal::addCommand("test1", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
-        TEST_ASSERT_EQUAL(0, test_multiple_commands_call);
-        test_multiple_commands_call = 1;
+        TEST_ASSERT_EQUAL(0, command_calls);
+        command_calls = 1;
     });
     terminal::Terminal::addCommand("test2", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
-        TEST_ASSERT_EQUAL(1, test_multiple_commands_call);
-        test_multiple_commands_call = 2;
+        TEST_ASSERT_EQUAL(1, command_calls);
+        command_calls = 2;
     });
     terminal::Terminal::addCommand("test3", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
-        TEST_ASSERT_EQUAL(2, test_multiple_commands_call);
-        test_multiple_commands_call = 3;
+        TEST_ASSERT_EQUAL(2, command_calls);
+        command_calls = 3;
     });
 
     IOStreamString str;
@@ -92,30 +90,32 @@ void test_multiple_commands() {
     terminal::Terminal handler(str);
 
     // each processing step only executes a single command
+    static int process_counter = 0;
+
     handler.process([](terminal::Terminal::Result result) -> bool {
-        if (test_multiple_commands_process == 3) {
+        if (process_counter == 3) {
             TEST_ASSERT_EQUAL(result, terminal::Terminal::Result::NoInput);
             return false;
         } else {
             TEST_ASSERT_EQUAL(result, terminal::Terminal::Result::Command);
-            ++test_multiple_commands_process;
+            ++process_counter;
             return true;
         }
         TEST_FAIL_MESSAGE("Should not be reached");
         return false;
     });
-    TEST_ASSERT_EQUAL(3, test_multiple_commands_call);
-    TEST_ASSERT_EQUAL(3, test_multiple_commands_process);
+    TEST_ASSERT_EQUAL(3, command_calls);
+    TEST_ASSERT_EQUAL(3, process_counter);
 
 }
 
-static int test_command_counter = 0;
-
 void test_command() {
+
+    static int counter = 0;
 
     terminal::Terminal::addCommand("test.command", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
-        ++test_command_counter;
+        ++counter;
     });
 
     IOStreamString str;
@@ -128,62 +128,51 @@ void test_command() {
 
     str.out += String("test.command\r\n");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(
-        1, test_command_counter,
-        "At this time `test.command` was called just once"
-    );
+    TEST_ASSERT_EQUAL_MESSAGE(1, counter, "At this time `test.command` was called just once");
 
     str.out += String("test.command");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Pending, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(
-        1, test_command_counter,
-        "We are waiting for either \\r\\n or \\n, handler still has data buffered"
-    );
+    TEST_ASSERT_EQUAL_MESSAGE(1, counter, "We are waiting for either \\r\\n or \\n, handler still has data buffered");
 
     str.out += String("\r\n");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(
-        2, test_command_counter,
-        "We should call `test.command` the second time"
-    );
+    TEST_ASSERT_EQUAL_MESSAGE(2, counter, "We should call `test.command` the second time");
 
     str.out += String("test.command\n");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(
-        3, test_command_counter,
-        "We should call `test.command` the third time, with just LF"
-    );
+    TEST_ASSERT_EQUAL_MESSAGE(3, counter, "We should call `test.command` the third time, with just LF");
+
 }
 
 // Ensure that we can properly handle arguments
 
-static volatile bool test_command_args_flag = false;
-
 void test_command_args() {
+
+    static bool waiting = false;
 
     terminal::Terminal::addCommand("test.command.arg1", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argc);
-        test_command_args_flag = false;
+        waiting = false;
     });
 
     terminal::Terminal::addCommand("test.command.arg1_empty", [](const terminal::CommandContext& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argc);
         TEST_ASSERT(!ctx.argv[1].length());
-        test_command_args_flag = false;
+        waiting = false;
     });
 
     IOStreamString str;
     terminal::Terminal handler(str);
 
-    test_command_args_flag = true;
+    waiting = true;
     str.out += String("test.command.arg1 test\r\n");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT(!test_command_args_flag);
+    TEST_ASSERT(!waiting);
 
-    test_command_args_flag = true;
+    waiting = true;
     str.out += String("test.command.arg1_empty \"\"\r\n");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT(!test_command_args_flag);
+    TEST_ASSERT(!waiting);
 
 }
 
