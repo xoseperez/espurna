@@ -36,6 +36,11 @@ Copyright (C) 2020 - Eric Chauvet
 #define CURTAIN_BUTTON_OPEN          1
 #define CURTAIN_BUTTON_CLOSE         2
 
+
+#define CURTAIN_INIT_CLOSE          1
+#define CURTAIN_INIT_OPEN           2
+#define CURTAIN_INIT_POSITION       3
+
 #define CURTAIN_POSITION_UNKNOWN     -1
 // <--
 
@@ -164,11 +169,11 @@ void _KAStopMoving() {
     if (!_curtain_initial_position_set) { //The curtain stopped moving for the first time, set the position back to 
         int init_position = getSetting("curtainBoot", 0);
         KINGART_DEBUG_MSG_P(PSTR("[KA] curtainBoot : %d, curtainBootPos : %d\n"), init_position, getSetting("curtainBootPos", 100));
-        if (init_position == 1)
+        if (init_position == CURTAIN_INIT_CLOSE)
              _KACurtainSet(CURTAIN_BUTTON_CLOSE);
-        else if (init_position == 2) 
+        else if (init_position == CURTAIN_INIT_OPEN) 
              _KACurtainSet(CURTAIN_BUTTON_OPEN);
-        else if (init_position == 3) {
+        else if (init_position == CURTAIN_INIT_POSITION) {
             int pos = getSetting("curtainBootPos", 100); //Set closed if we do not have initial position set.
             if (_curtain_position_set != pos) {
                 _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, pos);
