@@ -1099,7 +1099,18 @@ function addSchedule(values) {
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = (1 === values.schType) ? "switch" : "light";
+    var type = "none";
+    switch(values.schType) {
+        case 1:
+            type = "switch";
+            break;
+        case 2:
+            type = "light";
+            break;
+        case 3:
+            type = "curtain";
+            break;
+    }
 
     template = $("#" + type + "ActionTemplate").children();
     $(line).find("#schActionDiv").append(template.clone());
@@ -1311,6 +1322,19 @@ function initCurtain(data) {
         sendAction("curtainAction", {position: value});
     });
 
+}
+
+function initCurtainConfig(data) {
+
+    var current = $("#curtainConfig > legend").length; // there is a legend per relay
+    if (current > 0) { return; }
+
+    // Populate the curtain select
+    $("select.iscurtain").append(
+        $("<option></option>")
+            .attr("value", "0")
+            .text("Curtain #" + "0")
+    );
 }
 
 <!-- endRemoveIf(!curtain)-->
@@ -1742,32 +1766,32 @@ function processData(data) {
         
         if ("curtainState" === key) {
             initCurtain();
-            switch(value.curtainType) {
+            switch(value.type) {
                 case '0': //Roller
                 default:
-                    $("#curtainGetPicture").css('background', 'linear-gradient(180deg, black ' + value.curtainGet + '%, #a0d6ff ' + value.curtainGet + '%)');
+                    $("#curtainGetPicture").css('background', 'linear-gradient(180deg, black ' + value.get + '%, #a0d6ff ' + value.get + '%)');
                     break;
                 case '1': //One side left to right
-                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.curtainGet + '%, #a0d6ff ' + value.curtainGet + '%)');
+                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get + '%, #a0d6ff ' + value.get + '%)');
                 break;
                 case '2': //One side right to left
-                    $("#curtainGetPicture").css('background', 'linear-gradient(270deg, black ' + value.curtainGet + '%, #a0d6ff ' + value.curtainGet + '%)');
+                    $("#curtainGetPicture").css('background', 'linear-gradient(270deg, black ' + value.get + '%, #a0d6ff ' + value.get + '%)');
                 break;
                 case '3': //Two sides
-                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.curtainGet/2 + '%, #a0d6ff ' + value.curtainGet/2 + '% ' + (100 - value.curtainGet/2) + '%, black ' + (100 - value.curtainGet/2) + '%)');
+                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get/2 + '%, #a0d6ff ' + value.get/2 + '% ' + (100 - value.get/2) + '%, black ' + (100 - value.get/2) + '%)');
                 break;
             }
-            $("#curtainSet").val(value.curtainSet); //Update sliders
-            if(value.curtainMoving == "Idle") { //When idle, all buttons are off (blue)
+            $("#curtainSet").val(value.set); //Update sliders
+            if(!value.moving) { //When idle, all buttons are off (blue)
                 $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
             } else { //If moving, adapt the color depending on the button active
-                if(value.curtainButton == 1) {
+                if(!value.button)
+                    $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
+                else if(value.button == 1) {
                     $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)'); //Close back to blue
                     $("button.button-curtain-open").css('background', 'rgb(192, 0, 0)');
                 }
-                else if(value.curtainButton == 0)
-                    $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
-                else if(value.curtainButton == 2) {
+                else if(value.button == 2) {
                     $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)'); //Open back to blue
                     $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
                     
@@ -1936,6 +1960,22 @@ function processData(data) {
             initRelayConfig(value);
             return;
         }
+
+        // ---------------------------------------------------------------------
+        // Curtain(s)
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!curtain)-->
+
+        // Relay configuration
+        if ("curtainConfig" === key) {
+            initCurtainConfig(value);
+            return;
+        }
+
+        <!-- endRemoveIf(!curtain)-->
+
+
 
         // ---------------------------------------------------------------------
         // LEDs
@@ -2319,6 +2359,12 @@ $(function() {
         addSchedule({schType: 2, schSwitch: -1});
     });
     <!-- endRemoveIf(!light)-->
+
+    <!-- removeIf(!curtain)-->
+    $(".button-add-curtain-schedule").on("click", function() {
+        addSchedule({schType: 3, schSwitch: -1});
+    });
+    <!-- endRemoveIf(!curtain)-->
 
     $(".button-add-rpnrule").on('click', addRPNRule);
     $(".button-add-rpntopic").on('click', addRPNTopic);

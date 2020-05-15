@@ -39,6 +39,8 @@ Copyright (C) 2020 - Eric Chauvet
 #define CURTAIN_POSITION_UNKNOWN     -1
 // <--
 
+#define KINGART_DEBUG_MSG_P(...) do { if (_curtain_debug_flag) { DEBUG_MSG_P(__VA_ARGS__); } } while(0)
+
 char _KACurtainBuffer[KINGART_CURTAIN_BUFFER_SIZE];
 bool _KACurtainNewData = false;
 
@@ -111,7 +113,7 @@ void _KACurtainSend(const char * tx_buffer) {
     KINGART_CURTAIN_PORT.print(tx_buffer);
     KINGART_CURTAIN_PORT.print(KINGART_CURTAIN_TERMINATION);
     KINGART_CURTAIN_PORT.flush();
-    if(_curtain_debug_flag) DEBUG_MSG_P(PSTR("[KAUART] Send : %s\n"), tx_buffer);
+    KINGART_DEBUG_MSG_P(PSTR("[KA] UART OUT %s\n"), tx_buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +121,7 @@ void _KACurtainSend(const char * tx_buffer) {
 void _KACurtainSet(int button, int position = CURTAIN_POSITION_UNKNOWN) {
 
    if(_curtain_waiting_ack) {
-        DEBUG_MSG_P(PSTR("[KAUART] MCU BUSY : Request ignored!\n"));
+        KINGART_DEBUG_MSG_P(PSTR("[KA] UART ACK not received : Request ignored!\n"));
         return;
    }
 
@@ -160,22 +162,22 @@ void _KAStopMoving() {
         _curtain_position_set = _curtain_last_position;
 
     if (!_curtain_initial_position_set) { //The curtain stopped moving for the first time, set the position back to 
-        int init_position = getSetting("curtainInitialBehaviour", 0);
-        DEBUG_MSG_P(PSTR("[CURTAIN] curtainInitialBehaviour : %d, curtainInitialPosition : %d\n"), init_position, getSetting("curtainInitialPosition", 100));
+        int init_position = getSetting("curtainBoot", 0);
+        KINGART_DEBUG_MSG_P(PSTR("[KA] curtainBoot : %d, curtainBootPos : %d\n"), init_position, getSetting("curtainBootPos", 100));
         if (init_position == 1)
              _KACurtainSet(CURTAIN_BUTTON_CLOSE);
         else if (init_position == 2) 
              _KACurtainSet(CURTAIN_BUTTON_OPEN);
         else if (init_position == 3) {
-            int pos = getSetting("curtainInitialPosition", 100); //Set closed if we do not have initial position set.
+            int pos = getSetting("curtainBootPos", 100); //Set closed if we do not have initial position set.
             if (_curtain_position_set != pos) {
                 _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, pos);
-            } else
-                DEBUG_MSG_P(PSTR("[CURTAIN] No need to update bootup position\n"));
+            }
         }
         _curtain_initial_position_set = true;
         _curtain_debug_flag = false; //Disable debug - user has could ask for it
-    }
+    } else if(_curtain_position_set != CURTAIN_POSITION_UNKNOWN && _curtain_position_set != getSetting("curtainBootPos", _curtain_position_set))
+           setSetting("curtainBootPos", _curtain_last_position); //Remeber last position in case of power loss
 }
 
 //------------------------------------------------------------------------------
@@ -194,7 +196,7 @@ bool _KACurtainReceiveUART() {
         }
     }
     if(_KACurtainNewData) {
-        if(_curtain_debug_flag) DEBUG_MSG_P(PSTR("[KAUART] Received : %s\n"), _KACurtainBuffer);
+        KINGART_DEBUG_MSG_P(PSTR("[KA] Serial received : %s\n"), _KACurtainBuffer);
         _KACurtainNewData = false;
         return true;
     }
@@ -296,7 +298,7 @@ void _KACurtainResult() {
                 _curtain_position = position.toInt();
         }
     } else {
-        DEBUG_MSG_P(PSTR("[KAUART] ERROR : Unknown message : %s\n"), _KACurtainBuffer);
+        KINGART_DEBUG_MSG_P(PSTR("[KA] ERROR : Serial unknown message : %s\n"), _KACurtainBuffer);
     }
 
     //Check if curtain is moving or not
@@ -315,8 +317,7 @@ void _KACurtainResult() {
     //Update last position and transmit to MQTT (GUI is at the end)
     if(_curtain_position != CURTAIN_POSITION_UNKNOWN && _curtain_last_position != _curtain_position) {
         _curtain_last_position = _curtain_position;
-        if(_curtain_initial_position_set) //Update initial position - TDOD : maybe only when move is finished to avoid to write too frequently
-            setSetting("curtainInitialPosition", _curtain_last_position); //Remeber last position in case of power loss
+
         #if MQTT_SUPPORT
         const String pos = String(_curtain_last_position);
         mqttSend(MQTT_TOPIC_CURTAIN, pos.c_str());
@@ -379,7 +380,7 @@ void _curtainMQTTCallback(unsigned int type, const char * topic, char * payload)
 //------------------------------------------------------------------------------
 void _curtainWebSocketOnConnected(JsonObject& root) {
     root["curtainType"] = getSetting("curtainType", "0");
-    root["curtainInitialBehaviour"] = getSetting("curtainInitialBehaviour", "0");
+    root["curtainBoot"] = getSetting("curtainBoot", "0");
     root["curtainConfig"] = 1;
 }
 
@@ -392,18 +393,17 @@ bool _curtainWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 //------------------------------------------------------------------------------
 void _curtainWebSocketUpdate(JsonObject& root) {
     JsonObject& state = root.createNestedObject("curtainState");
-    state["curtainGet"] = _curtain_last_position;
+    state["get"] = _curtain_last_position;
     if(_curtain_position_set == CURTAIN_POSITION_UNKNOWN)
         _curtain_position_set = _curtain_last_position;
-    state["curtainSet"] = _curtain_position_set;
-    state["curtainButton"] = _curtain_last_button;
-    state["curtainMoving"] = _curtain_moving ? "Moving" : "Idle";
-    state["curtainType"] = getSetting("curtainType", "0");
+    state["set"] = _curtain_position_set;
+    state["button"] = _curtain_last_button;
+    state["moving"] = _curtain_moving;
+    state["type"] = getSetting("curtainType", "0");
 }
 
 //------------------------------------------------------------------------------
 void _curtainWebSocketStatus(JsonObject& root) {
-    root["curtainVisible"] = 1;
     _curtainWebSocketUpdate(root);
 }
 

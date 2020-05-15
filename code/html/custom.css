@@ -134,7 +134,7 @@ div.state {
     Curtains
    -------------------------------------------------------------------------- */
 
-  .curtain-div {
+.curtain-div {
     text-align: center;
 }
 
@@ -215,7 +215,8 @@ div.state {
 }
 
 .button-add-switch-schedule,
-.button-add-light-schedule {
+.button-add-light-schedule,
+.button-add-curtain-schedule {
     background: rgb(0, 192, 0); /* green */
     display: none;
 }
