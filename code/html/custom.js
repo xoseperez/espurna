@@ -1763,36 +1763,42 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         <!-- removeIf(!curtain)-->
-        
+
+
+        function applyCurtain(a, b) {
+            $("#curtainGetPicture").css('background', 'linear-gradient(' + a + ', black ' + b + '%, #a0d6ff ' + b + '%)');
+        }
+
         if ("curtainState" === key) {
             initCurtain();
             switch(value.type) {
                 case '0': //Roller
                 default:
-                    $("#curtainGetPicture").css('background', 'linear-gradient(180deg, black ' + value.get + '%, #a0d6ff ' + value.get + '%)');
+                    applyCurtain('180deg', value.get);
                     break;
                 case '1': //One side left to right
-                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get + '%, #a0d6ff ' + value.get + '%)');
+                    applyCurtain('90deg', value.get);
                 break;
                 case '2': //One side right to left
-                    $("#curtainGetPicture").css('background', 'linear-gradient(270deg, black ' + value.get + '%, #a0d6ff ' + value.get + '%)');
+                    applyCurtain('270deg', value.get);
                 break;
                 case '3': //Two sides
                     $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get/2 + '%, #a0d6ff ' + value.get/2 + '% ' + (100 - value.get/2) + '%, black ' + (100 - value.get/2) + '%)');
                 break;
             }
-            $("#curtainSet").val(value.set); //Update sliders
-            if(!value.moving) { //When idle, all buttons are off (blue)
+            $("#curtainSet").val(value.set);
+
+            if(!value.moving) { 
                 $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
-            } else { //If moving, adapt the color depending on the button active
+            } else {
                 if(!value.button)
                     $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
                 else if(value.button == 1) {
-                    $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)'); //Close back to blue
+                    $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)');
                     $("button.button-curtain-open").css('background', 'rgb(192, 0, 0)');
                 }
                 else if(value.button == 2) {
-                    $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)'); //Open back to blue
+                    $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)');
                     $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
                     
                 }
