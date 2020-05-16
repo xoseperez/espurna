@@ -84,9 +84,11 @@ void _eepromInitCommands() {
         }
     });
 
-    terminalRegisterCommand(F("EEPROM.DUMP"), [](const terminal::CommandContext&) {
-        EEPROMr.dump(terminalIO());
-        terminalOK();
+    terminalRegisterCommand(F("EEPROM.DUMP"), [](const terminal::CommandContext& ctx) {
+        // XXX: like Update::printError, dump only accepts Stream
+        //      this should be safe, since we expect read-only stream
+        EEPROMr.dump(reinterpret_cast<Stream&>(ctx.output));
+        terminalOK(ctx.output);
     });
 
     terminalRegisterCommand(F("FLASH.DUMP"), [](const terminal::CommandContext& ctx) {
@@ -100,8 +102,8 @@ void _eepromInitCommands() {
             terminalError(F("Sector out of range"));
             return;
         }
-        EEPROMr.dump(terminalIO(), sector);
-        terminalOK();
+        EEPROMr.dump(reinterpret_cast<Stream&>(ctx.output), sector);
+        terminalOK(ctx.output);
     });
 
 }

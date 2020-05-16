@@ -152,12 +152,12 @@ void _terminalHelpCommand(const terminal::CommandContext& ctx) {
     });
 
     // Output the list asap
-    ctx.output.printf_P(PSTR("Available commands:\n"));
+    ctx.output.print(F("Available commands:\n"));
     for (auto& command : commands) {
-        ctx.output.printf_P(PSTR("> %s\n"), command.c_str());
+        ctx.output.printf("> %s\n", command.c_str());
     }
 
-    terminalOK();
+    terminalOK(ctx.output);
 
 }
 
@@ -415,6 +415,10 @@ void _terminalLoop() {
 // Pubic API
 // -----------------------------------------------------------------------------
 
+Stream & terminalDefaultStream() {
+    return (Stream &) _io;
+}
+
 void terminalInject(void *data, size_t len) {
     _io.inject((char *) data, len);
 }
@@ -423,21 +427,24 @@ void terminalInject(char ch) {
     _io.inject(ch);
 }
 
-
-Stream & terminalIO() {
-    return (Stream &) _io;
-}
-
 void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func) {
     terminal::Terminal::addCommand(name, func);
 };
 
+void terminalOK(Print& print) {
+    print.print(F("+OK\n"));
+}
+
+void terminalError(Print& print, const String& error) {
+    print.printf("-ERROR: %s\n", error.c_str());
+}
+
 void terminalOK() {
-    _io.print(F("+OK\n"));
+    terminalOK(_io);
 }
 
 void terminalError(const String& error) {
-    _io.printf_P(PSTR("-ERROR: %s\n"), error.c_str());
+    terminalError(_io, error);
 }
 
 void terminalSetup() {

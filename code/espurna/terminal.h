@@ -23,10 +23,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 void terminalOK();
 void terminalError(const String& error);
 
+void terminalOK(Print&);
+void terminalError(Print&, const String& error);
+
 void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func);
 void terminalInject(void *data, size_t len);
 void terminalInject(char ch);
-Stream& terminalIO();
+Stream& terminalDefaultStream();
 
 void terminalSetup();
 
