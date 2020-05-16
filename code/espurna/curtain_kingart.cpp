@@ -429,12 +429,6 @@ void _curtainWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
             _curtain_last_button = data["button"].as<int>();
              _KACurtainSet(_curtain_last_button);
         }
-    } else if (strcmp(action, "dbgcmd") == 0) { //Directly send our buffer to the KA serial
-            if(data["command"] == "debug") {
-                _curtain_debug_flag = true;
-            } else {
-                _KACurtainSend(data["command"]);
-            }
     }
 }
 
