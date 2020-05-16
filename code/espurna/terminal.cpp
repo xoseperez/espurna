@@ -25,6 +25,19 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <utility>
 #include <Stream.h>
 
+#if LWIP_VERSION_MAJOR != 1
+
+// not yet CONNECTING or LISTENING
+extern struct tcp_pcb *tcp_bound_pcbs;
+// accepting or sending data
+extern struct tcp_pcb *tcp_active_pcbs;
+// // TIME-WAIT status
+extern struct tcp_pcb *tcp_tw_pcbs;
+
+#endif
+
+namespace {
+
 StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
 terminal::Terminal _terminal(_serial, TERMINAL_BUFFER_SIZE);
 
@@ -54,13 +67,6 @@ void _terminalHelpCommand() {
 }
 
 #if LWIP_VERSION_MAJOR != 1
-
-// not yet CONNECTING or LISTENING
-extern struct tcp_pcb *tcp_bound_pcbs;
-// accepting or sending data
-extern struct tcp_pcb *tcp_active_pcbs;
-// // TIME-WAIT status
-extern struct tcp_pcb *tcp_tw_pcbs;
 
 String _terminalPcbStateToString(const unsigned char state) {
     switch (state) {
@@ -312,6 +318,8 @@ void _terminalLoop() {
         }
 
     #endif // SERIAL_RX_ENABLED
+
+}
 
 }
 
