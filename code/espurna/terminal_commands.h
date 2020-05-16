@@ -13,6 +13,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "terminal_parsing.h"
 
 #include <unordered_map>
+#include <functional>
 #include <vector>
 
 namespace terminal {
@@ -38,8 +39,8 @@ struct Terminal {
         NoInput          // We got nothing in the buffer and stream read() returns -1
     };
 
-    using CommandFunc = void(*)(const CommandContext& ctx);
-    using process_f = bool(*)(Result);
+    using CommandFunc = void(*)(const CommandContext&);
+    using ProcessFunc = bool(*)(Result);
 
     // stream      - see `stream` description below
     // buffer_size - set internal limit for the total command line length
@@ -61,7 +62,7 @@ struct Terminal {
     // Blocks until the stream no longer has any data available.
     // `process_f` will return each individual processLine() Result,
     // and we can either stop (false) or continue (true) the function.
-    void process(process_f = defaultProcessFunc);
+    void process(ProcessFunc = defaultProcessFunc);
 
     private:
 
@@ -79,7 +80,10 @@ struct Terminal {
 
     // TODO: every command is shared, instance should probably also have an
     //       option to add 'private' commands list?
-    static std::unordered_map<String, CommandFunc, parsing::LowercaseFnv1Hash<String>, parsing::LowercaseEquals<String>> commands;
+    // Note: we can save ~2.5KB by using std::vector<std::pair<String, CommandFunc>>
+    static std::unordered_map<String, CommandFunc,
+        parsing::LowercaseFnv1Hash<String>,
+        parsing::LowercaseEquals<String>> commands;
 
 };
 }

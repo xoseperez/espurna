@@ -17,6 +17,10 @@ Heavily inspired by the Embedis design:
 
 namespace terminal {
 
+std::unordered_map<String, Terminal::CommandFunc,
+    parsing::LowercaseFnv1Hash<String>,
+    parsing::LowercaseEquals<String>> Terminal::commands;
+
 void Terminal::addCommand(const String& name, CommandFunc func) {
 	if (!func) return;
 	commands.emplace(std::make_pair(name, func));
@@ -34,8 +38,6 @@ std::vector<String> Terminal::commandNames() {
     }
     return out;
 }
-
-std::unordered_map<String, Terminal::CommandFunc, parsing::LowercaseFnv1Hash<String>, parsing::LowercaseEquals<String>> Terminal::commands;
 
 Terminal::Result Terminal::processLine() {
 
@@ -83,8 +85,8 @@ bool Terminal::defaultProcessFunc(Result result) {
     return (result != Result::Error) && (result != Result::NoInput);
 }
 
-void Terminal::process(process_f callback) {
-    while (callback(processLine())) {
+void Terminal::process(ProcessFunc func) {
+    while (func(processLine())) {
     }    
 }
 

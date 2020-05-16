@@ -18,7 +18,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "wifi.h"
 #include "ws.h"
 #include "libs/URL.h"
-#include "libs/StreamInjector.h"
 
 #include <algorithm>
 #include <vector>
@@ -38,9 +37,103 @@ extern struct tcp_pcb *tcp_tw_pcbs;
 
 namespace {
 
-StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
-terminal::Terminal _terminal(_serial, TERMINAL_BUFFER_SIZE);
+// Based on libs/StreamInjector.h by Xose Pérez <xose dot perez at gmail dot com> (see git-log for more info)
+// Instead of custom write(uint8_t) callback, we provide writer implementation in-place
 
+struct TerminalIO : public Stream {
+
+    TerminalIO(size_t size = 128) :
+        _buffer(new char[size]),
+        _size(size),
+        _write(0),
+        _read(0)
+    {}
+
+    ~TerminalIO() {
+        delete[] _buffer;
+    }
+
+    // ---------------------------------------------------------------------
+    // Injects data into the internal buffer so we can read() it
+    // ---------------------------------------------------------------------
+
+    size_t inject(char ch) {
+        _buffer[_write] = ch;
+        _write = (_write + 1) % _size;
+        return 1;
+    }
+
+    size_t inject(char *data, size_t len) {
+        for (size_t index = 0; index < len; ++index) {
+            inject(data[index]);
+        }
+        return len;
+    }
+
+    // ---------------------------------------------------------------------
+    // XXX: We are only supporting part of the Print & Stream interfaces
+    //      But, we need to be have all pure virtual methods implemented
+    // ---------------------------------------------------------------------
+
+    // Return data from the internal buffer
+    int available() override {
+        unsigned int bytes = 0;
+        if (_read > _write) {
+            bytes += (_write - _read + _size);
+        } else if (_read < _write) {
+            bytes += (_write - _read);
+        }
+        return bytes;
+    }
+
+    int peek() override {
+        int ch = -1;
+        if (_read != _write) {
+            ch = _buffer[_read];
+        }
+        return ch;
+    }
+
+    int read() override {
+        int ch = -1;
+        if (_read != _write) {
+            ch = _buffer[_read];
+            _read = (_read + 1) % _size;
+        }
+        return ch;
+    }
+
+    // flush() is a generic method for both in and out
+    // reset reader position so that we return -1 until we have new data
+    // writer is implemented below, we don't need to flush anything there
+    void flush() override {
+        _read = _write;
+    }
+
+    // TODO: print warning when used?
+    size_t write(uint8_t) override {
+        return 0;
+    }
+
+    size_t write(const uint8_t* buffer, size_t size) override {
+        if (!size) return 0;
+        DEBUG_MSG("%.*s", size, (const char*)buffer);
+        return size;
+    }
+
+    private:
+
+    char * _buffer;
+    unsigned char _size;
+    unsigned char _write;
+    unsigned char _read;
+
+};
+
+auto _io = TerminalIO(TERMINAL_BUFFER_SIZE);
+terminal::Terminal _terminal(_io, TERMINAL_BUFFER_SIZE);
+
+// TODO: re-evaluate how and why this is used
 #if SERIAL_RX_ENABLED
     char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
     static unsigned char _serial_rx_pointer = 0;
@@ -50,7 +143,7 @@ terminal::Terminal _terminal(_serial, TERMINAL_BUFFER_SIZE);
 // Commands
 // -----------------------------------------------------------------------------
 
-void _terminalHelpCommand() {
+void _terminalHelpCommand(const terminal::CommandContext& ctx) {
 
     // Get sorted list of commands
     auto commands = _terminal.commandNames();
@@ -59,10 +152,12 @@ void _terminalHelpCommand() {
     });
 
     // Output the list asap
-    DEBUG_MSG_P(PSTR("Available commands:\n"));
+    ctx.output.printf_P(PSTR("Available commands:\n"));
     for (auto& command : commands) {
-        DEBUG_MSG_P(PSTR("> %s\n"), command.c_str());
+        ctx.output.printf_P(PSTR("> %s\n"), command.c_str());
     }
+
+    terminalOK();
 
 }
 
@@ -144,12 +239,10 @@ void _terminalDnsFound(const char* name, const ip_addr_t* result, void*) {
 
 #endif // LWIP_VERSION_MAJOR != 1
 
-void _terminalInitCommand() {
+void _terminalInitCommands() {
 
-    terminalRegisterCommand(F("COMMANDS"), [](const terminal::CommandContext&) {
-        _terminalHelpCommand();
-        terminalOK();
-    });
+    terminalRegisterCommand(F("COMMANDS"), _terminalHelpCommand);
+    terminalRegisterCommand(F("HELP"), _terminalHelpCommand);
 
     terminalRegisterCommand(F("ERASE.CONFIG"), [](const terminal::CommandContext&) {
         terminalOK();
@@ -192,11 +285,6 @@ void _terminalInitCommand() {
 
     terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext&) {
         infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("HELP"), [](const terminal::CommandContext&) {
-        _terminalHelpCommand();
         terminalOK();
     });
 
@@ -274,7 +362,7 @@ void _terminalLoop() {
 
     #if DEBUG_SERIAL_SUPPORT
         while (DEBUG_PORT.available()) {
-            _serial.inject(DEBUG_PORT.read());
+            _io.inject(DEBUG_PORT.read());
         }
     #endif
 
@@ -328,16 +416,16 @@ void _terminalLoop() {
 // -----------------------------------------------------------------------------
 
 void terminalInject(void *data, size_t len) {
-    _serial.inject((char *) data, len);
+    _io.inject((char *) data, len);
 }
 
 void terminalInject(char ch) {
-    _serial.inject(ch);
+    _io.inject(ch);
 }
 
 
-Stream & terminalSerial() {
-    return (Stream &) _serial;
+Stream & terminalIO() {
+    return (Stream &) _io;
 }
 
 void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func) {
@@ -345,30 +433,21 @@ void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc
 };
 
 void terminalOK() {
-    DEBUG_MSG_P(PSTR("+OK\n"));
+    _io.print(F("+OK\n"));
 }
 
 void terminalError(const String& error) {
-    DEBUG_MSG_P(PSTR("-ERROR: %s\n"), error.c_str());
+    _io.printf_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
 void terminalSetup() {
-
-    _serial.callback([](uint8_t ch) {
-        #if TELNET_SUPPORT
-            telnetWrite(ch);
-        #endif
-        #if DEBUG_SERIAL_SUPPORT
-            DEBUG_PORT.write(ch);
-        #endif
-    });
 
     #if WEB_SUPPORT
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
     #endif
 
-    _terminalInitCommand();
+    _terminalInitCommands();
 
     #if SERIAL_RX_ENABLED
         SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);

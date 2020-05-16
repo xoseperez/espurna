@@ -85,7 +85,7 @@ void _eepromInitCommands() {
     });
 
     terminalRegisterCommand(F("EEPROM.DUMP"), [](const terminal::CommandContext&) {
-        EEPROMr.dump(terminalSerial());
+        EEPROMr.dump(terminalIO());
         terminalOK();
     });
 
@@ -100,7 +100,7 @@ void _eepromInitCommands() {
             terminalError(F("Sector out of range"));
             return;
         }
-        EEPROMr.dump(terminalSerial(), sector);
+        EEPROMr.dump(terminalIO(), sector);
         terminalOK();
     });
 

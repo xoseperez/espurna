@@ -26,7 +26,7 @@ void terminalError(const String& error);
 void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func);
 void terminalInject(void *data, size_t len);
 void terminalInject(char ch);
-Stream& terminalSerial();
+Stream& terminalIO();
 
 void terminalSetup();
 
