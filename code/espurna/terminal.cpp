@@ -110,18 +110,31 @@ struct TerminalIO : public Stream {
         _read = _write;
     }
 
-    // TODO: print warning when used?
     size_t write(uint8_t) override {
         return 0;
     }
 
     size_t write(const uint8_t* buffer, size_t size) override {
         if (!size) return 0;
-        DEBUG_MSG("%.*s", size, (const char*)buffer);
+        if (size && (buffer[size-1] == '\0')) return 0;
+        if (_output.capacity() < (size + 2)) {
+            _output.reserve(_output.size() + size + 2);
+        }
+        _output.insert(_output.end(),
+            reinterpret_cast<const char*>(buffer),
+            reinterpret_cast<const char*>(buffer) + size
+        );
+        if (_output.end() != std::find(_output.begin(), _output.end(), '\n')) {
+            _output.push_back('\0');
+            debugSendRaw(_output.data());
+            _output.clear();
+        }
         return size;
     }
 
     private:
+
+    std::vector<char> _output;
 
     char * _buffer;
     unsigned char _size;

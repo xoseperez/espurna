@@ -63,6 +63,11 @@ void _debugSend(const char * format, va_list args) {
 
 }
 
+void debugSendRaw(const char* line, bool timestamp) {
+    if (!_debug_enabled) return;
+    _debugSendInternal(line, timestamp);
+}
+
 void debugSend(const char* format, ...) {
 
     if (!_debug_enabled) return;
