@@ -11,6 +11,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #if TERMINAL_SUPPORT
 
+#include "debug.h"
 #include "settings.h"
 #include "system.h"
 #include "telnet.h"
@@ -115,6 +116,7 @@ struct TerminalIO : public Stream {
     }
 
     size_t write(const uint8_t* buffer, size_t size) override {
+#if DEBUG_SUPPORT
         if (!size) return 0;
         if (buffer[size-1] == '\0') return 0;
         if (_output.capacity() < (size + 2)) {
@@ -129,12 +131,15 @@ struct TerminalIO : public Stream {
             debugSendRaw(_output.data());
             _output.clear();
         }
+#endif
         return size;
     }
 
     private:
 
+#if DEBUG_SUPPORT
     std::vector<char> _output;
+#endif
 
     char * _buffer;
     unsigned char _size;
