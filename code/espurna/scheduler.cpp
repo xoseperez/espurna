@@ -16,10 +16,19 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #include "ntp.h"
 #include "relay.h"
 #include "ws.h"
+#include "curtain_kingart.h"
 
 constexpr const int SchedulerDummySwitchId = 0xff;
 
 int _sch_restore = 0;
+
+unsigned char schedulableCount() {
+    return relayCount()
+#ifdef CURTAIN_SUPPORT
+            + curtainCount()
+#endif
+    ;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -30,13 +39,13 @@ bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _schWebSocketOnVisible(JsonObject& root) {
-    if (!relayCount()) return;
+    if (!schedulableCount()) return;
     root["schVisible"] = 1;
 }
 
 void _schWebSocketOnConnected(JsonObject &root){
 
-    if (!relayCount()) return;
+    if (!schedulableCount()) return;
 
     JsonObject &schedules = root.createNestedObject("schedules");
     schedules["max"] = SCHEDULER_MAX_SCHEDULES;
@@ -106,11 +115,16 @@ void _schConfigure() {
                 int sch_minute = getSetting({"schMinute", i}, 0);
                 bool sch_utc = getSetting({"schUTC", i}, false);
                 String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
-                int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+
+                int type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+                const auto sch_type =
+                    (SCHEDULER_TYPE_SWITCH == type) ? "switch" :
+                    (SCHEDULER_TYPE_CURTAIN == type) ? "curtain" :
+                    (SCHEDULER_TYPE_DIM == type) ? "channel" : "unknown";
 
                 DEBUG_MSG_P(
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
-                    i, SCHEDULER_TYPE_SWITCH == sch_type ? "switch" : "channel", sch_switch,
+                    i, sch_type, sch_switch,
                     sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
                     (char *) sch_weekdays.c_str(),
                     sch_enabled ? "" : " (disabled)"
@@ -161,6 +175,13 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
             DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
             lightChannel(sch_switch, sch_action);
             lightUpdate(true, true);
+        }
+    #endif
+
+    #if CURTAIN_SUPPORT == 1
+        if (SCHEDULER_TYPE_CURTAIN == sch_type) {
+            DEBUG_MSG_P(PSTR("[SCH] Set curtain %d value to %d\n"), sch_switch, sch_action);
+            curtainSetPosition(sch_switch, sch_action);
         }
     #endif
 }
@@ -255,6 +276,16 @@ void _schCheck(int relay, int daybefore) {
                 }
             #endif
 
+             #if CURTAIN_SUPPORT == 1
+                if (SCHEDULER_TYPE_CURTAIN == sch_type && sch_switch == relay && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
+                    minimum_restore_time = minutes_to_trigger;
+                    saved_action = sch_action;
+                    saved_sch = i;
+                }
+            #endif
+
+
+
             if (minutes_to_trigger == 0 && relay == -1) {
 
                 _schAction(i, sch_action, sch_switch);
@@ -311,7 +342,7 @@ void schSetup() {
 
         static bool restore_once = true;
         if (restore_once) {
-            for (unsigned char i = 0; i < relayCount(); i++) {
+            for (unsigned char i = 0; i < schedulableCount(); i++) {
                 if (getSetting({"relayLastSch", i}, 1 == SCHEDULER_RESTORE_LAST_SCHEDULE)) {
                     _schCheck(i, 0);
                 }

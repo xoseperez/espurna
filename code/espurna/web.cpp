@@ -30,6 +30,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "static/index.lightfox.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
     #include "static/index.thermostat.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN
+    #include "static/index.curtain.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.gz.h"
 #endif

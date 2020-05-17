@@ -118,7 +118,8 @@ var buildWebUI = function(module) {
         'rfbridge': false,
         'rfm69': false,
         'thermostat': false,
-        'lightfox': false
+        'lightfox': false,
+        'curtain': false
     };
 
     // Note: only build these when specified as module arg
@@ -166,7 +167,7 @@ var buildWebUI = function(module) {
             minifyJS: true
         })).
         pipe(replace('pure-', 'p-')).
-        pipe(gzip()).
+        pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(rename('index.' + module + '.html.gz')).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader('webui_image', true)).
@@ -218,6 +219,10 @@ gulp.task('webui_thermostat', function() {
     return buildWebUI('thermostat');
 });
 
+gulp.task('webui_curtain', function() {
+    return buildWebUI('curtain');
+});
+
 gulp.task('webui_all', function() {
     return buildWebUI('all');
 });
@@ -231,6 +236,7 @@ gulp.task('webui',
         'webui_rfm69',
         'webui_lightfox',
         'webui_thermostat',
+        'webui_curtain',
         'webui_all'
     )
 );

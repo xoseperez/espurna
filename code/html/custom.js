@@ -1099,7 +1099,18 @@ function addSchedule(values) {
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = (1 === values.schType) ? "switch" : "light";
+    var type = "none";
+    switch(values.schType) {
+        case 1:
+            type = "switch";
+            break;
+        case 2:
+            type = "light";
+            break;
+        case 3:
+            type = "curtain";
+            break;
+    }
 
     template = $("#" + type + "ActionTemplate").children();
     $(line).find("#schActionDiv").append(template.clone());
@@ -1271,6 +1282,62 @@ function initMagnitudes(data) {
 
 }
 <!-- endRemoveIf(!sensor)-->
+
+// -----------------------------------------------------------------------------
+// Curtains
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!curtain)-->
+
+//Create the controls for one curtain. It is called when curtain is updated (so created the first time)
+//Let this there as we plan to have more than one curtain per switch
+function initCurtain(data) {
+
+    var current = $("#curtains > div").length;
+    if (current > 0) { return; }
+  
+    // add curtain template (prepare multi switches)
+    var template = $("#curtainTemplate").children();
+    var line = $(template).clone();
+    // init curtain button
+    $(line).find(".button-curtain-open").on("click", function() {
+        sendAction("curtainAction", {button: 1});
+        $(this).css('background', 'red');
+    });    
+    $(line).find(".button-curtain-pause").on("click", function() {
+        sendAction("curtainAction", {button: 0});
+        $(this).css('background', 'red');
+    });    
+    $(line).find(".button-curtain-close").on("click", function() {
+        sendAction("curtainAction", {button: 2});
+        $(this).css('background', 'red');
+    });    
+    line.appendTo("#curtains");
+
+    // init curtain slider
+    $("#curtainSet").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("curtainAction", {position: value});
+    });
+
+}
+
+function initCurtainConfig(data) {
+
+    var current = $("#curtainConfig > legend").length; // there is a legend per relay
+    if (current > 0) { return; }
+
+    // Populate the curtain select
+    $("select.iscurtain").append(
+        $("<option></option>")
+            .attr("value", "0")
+            .text("Curtain #" + "0")
+    );
+}
+
+<!-- endRemoveIf(!curtain)-->
 
 // -----------------------------------------------------------------------------
 // Lights
@@ -1692,6 +1759,54 @@ function processData(data) {
         if (key == "rpnNames") return;
 
         // ---------------------------------------------------------------------
+        // Curtains
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!curtain)-->
+
+        function applyCurtain(a, b) {
+            $("#curtainGetPicture").css('background', 'linear-gradient(' + a + ', black ' + b + '%, #a0d6ff ' + b + '%)');
+        }
+
+        if ("curtainState" === key) {
+            initCurtain();
+            switch(value.type) {
+                case '0': //Roller
+                default:
+                    applyCurtain('180deg', value.get);
+                    break;
+                case '1': //One side left to right
+                    applyCurtain('90deg', value.get);
+                    break;
+                case '2': //One side right to left
+                    applyCurtain('270deg', value.get);
+                    break;
+                case '3': //Two sides
+                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get/2 + '%, #a0d6ff ' + value.get/2 + '% ' + (100 - value.get/2) + '%, black ' + (100 - value.get/2) + '%)');
+                    break;
+            }
+            $("#curtainSet").val(value.set);
+
+            if(!value.moving) { 
+                $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
+            } else {
+                if(!value.button)
+                    $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
+                else if(value.button == 1) {
+                    $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)');
+                    $("button.button-curtain-open").css('background', 'rgb(192, 0, 0)');
+                }
+                else if(value.button == 2) {
+                    $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)');
+                    $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
+
+                }
+            }
+            return;
+        }
+        <!-- endRemoveIf(!curtain)-->
+
+        // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
@@ -1850,6 +1965,22 @@ function processData(data) {
             initRelayConfig(value);
             return;
         }
+
+        // ---------------------------------------------------------------------
+        // Curtain(s)
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!curtain)-->
+
+        // Relay configuration
+        if ("curtainConfig" === key) {
+            initCurtainConfig(value);
+            return;
+        }
+
+        <!-- endRemoveIf(!curtain)-->
+
+
 
         // ---------------------------------------------------------------------
         // LEDs
@@ -2234,6 +2365,12 @@ $(function() {
     });
     <!-- endRemoveIf(!light)-->
 
+    <!-- removeIf(!curtain)-->
+    $(".button-add-curtain-schedule").on("click", function() {
+        addSchedule({schType: 3, schSwitch: -1});
+    });
+    <!-- endRemoveIf(!curtain)-->
+
     $(".button-add-rpnrule").on('click', addRPNRule);
     $(".button-add-rpntopic").on('click', addRPNTopic);
 
@@ -2271,8 +2408,6 @@ $(function() {
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
         processData({"webMode": 0});
-        processData({"hlwVisible":1,"pwrVisible":1,"tmpCorrection":0,"humCorrection":0,"luxCorrection":0,"snsRead":5,"snsReport":10,"snsSave":2,"magnitudesConfig":{"index":[0,0,0,0,0,0,0,0],"type":[4,5,6,8,7,9,11,10],"units":["A","V","W","VAR","VA","%","J","kWh"],"description":["HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)","HLW8012 @ GPIO(5,14,13)"],"size":8}});
-        processData({"magnitudes":{"value":["0.079","218","37","0","17","100","96","0.001"],"error":[0,0,0,0,0,0,0,0],"info":[0,0,0,0,0,0,0,"Last saved: 2020-04-07 21:10:15"],"size":8}});
         return;
     }
 
