@@ -1764,7 +1764,6 @@ function processData(data) {
 
         <!-- removeIf(!curtain)-->
 
-
         function applyCurtain(a, b) {
             $("#curtainGetPicture").css('background', 'linear-gradient(' + a + ', black ' + b + '%, #a0d6ff ' + b + '%)');
         }
@@ -1778,13 +1777,13 @@ function processData(data) {
                     break;
                 case '1': //One side left to right
                     applyCurtain('90deg', value.get);
-                break;
+                    break;
                 case '2': //One side right to left
                     applyCurtain('270deg', value.get);
-                break;
+                    break;
                 case '3': //Two sides
                     $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get/2 + '%, #a0d6ff ' + value.get/2 + '% ' + (100 - value.get/2) + '%, black ' + (100 - value.get/2) + '%)');
-                break;
+                    break;
             }
             $("#curtainSet").val(value.set);
 
@@ -1800,7 +1799,7 @@ function processData(data) {
                 else if(value.button == 2) {
                     $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)');
                     $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
-                    
+
                 }
             }
             return;

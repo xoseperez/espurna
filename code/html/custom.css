@@ -134,6 +134,8 @@ div.state {
     Curtains
    -------------------------------------------------------------------------- */
 
+/* removeIf(!curtain) */
+
 .curtain-div {
     text-align: center;
 }
@@ -154,6 +156,8 @@ div.state {
 .reverse-range {
     direction: rtl;
 }
+
+/* endRemoveIf(!curtain) */
 
 /* -----------------------------------------------------------------------------
     Buttons
