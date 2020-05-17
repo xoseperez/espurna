@@ -44,7 +44,7 @@ struct NtpCalendarWeekday {
     int utc_minute;
 };
 
-using NtpBroker = TBroker<TBrokerType::Datetime, const NtpTick, time_t, const String&>;
+BrokerDeclare(NtpBroker, void(const NtpTick, time_t, const String&));
 
 String ntpDateTime(tm* timestruct);
 String ntpDateTime(time_t ts);

@@ -11,6 +11,8 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "espurna.h"
 
+#include "broker.h"
+
 //--------------------------------------------------------------------------------
 
 namespace sensor {
@@ -124,6 +126,9 @@ struct Energy {
 };
 
 }
+
+BrokerDeclare(SensorReadBroker, void(const String&, unsigned char, double, const char*));
+BrokerDeclare(SensorReportBroker, void(const String&, unsigned char, double, const char*));
 
 String magnitudeName(unsigned char index);
 String magnitudeUnits(unsigned char index);

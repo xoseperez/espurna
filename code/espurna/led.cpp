@@ -234,7 +234,6 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 
 #endif
 
-#if BROKER_SUPPORT
 void _ledBrokerCallback(const String& topic, unsigned char, unsigned int) {
 
     // Only process status messages for switches
@@ -243,7 +242,6 @@ void _ledBrokerCallback(const String& topic, unsigned char, unsigned int) {
     }
 
 }
-#endif // BROKER_SUPPORT
 
 #if MQTT_SUPPORT
 void _ledMQTTCallback(unsigned int type, const char * topic, const char * payload) {
@@ -488,10 +486,7 @@ void ledSetup() {
             .onKeyCheck(_ledWebSocketOnKeyCheck);
     #endif
 
-    #if BROKER_SUPPORT
-        StatusBroker::Register(_ledBrokerCallback);
-    #endif
-
+    StatusBroker::Register(_ledBrokerCallback);
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 

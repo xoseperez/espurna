@@ -436,6 +436,9 @@ void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
 
 // ---------------------------------------------------------------------------
 
+BrokerBind(SensorReadBroker);
+BrokerBind(SensorReportBroker);
+
 std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
 bool _sensors_ready = false;

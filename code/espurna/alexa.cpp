@@ -15,6 +15,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "broker.h"
 #include "light.h"
 #include "relay.h"
+#include "rpc.h"
 #include "web.h"
 #include "ws.h"
 
@@ -56,7 +57,6 @@ void _alexaConfigure() {
     }
 #endif
 
-#if BROKER_SUPPORT
 void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
     
     // Only process status messages for switches and channels
@@ -77,7 +77,6 @@ void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int va
     }
 
 }
-#endif // BROKER_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -181,9 +180,7 @@ void alexaSetup() {
     });
 
     // Register main callbacks
-    #if BROKER_SUPPORT
-        StatusBroker::Register(_alexaBrokerCallback);
-    #endif
+    StatusBroker::Register(_alexaBrokerCallback);
     espurnaRegisterReload(_alexaConfigure);
     espurnaRegisterLoop(alexaLoop);
 

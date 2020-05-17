@@ -10,6 +10,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
+#include "broker.h"
+
 #include "libs/BasePin.h"
 #include "libs/DebounceEvent.h"
 
@@ -66,6 +68,8 @@ struct button_t {
     const unsigned char relayID;
 
 };
+
+BrokerDeclare(ButtonBroker, void(unsigned char id, button_event_t event));
 
 bool buttonState(unsigned char id);
 button_action_t buttonAction(unsigned char id, const button_event_t event);
