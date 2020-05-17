@@ -71,7 +71,7 @@ void _schWebSocketOnConnected(JsonObject &root){
         switch_.add(getSetting({"schSwitch", i}, 0));
         action.add(getSetting({"schAction", i}, 0));
         type.add(getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH));
-        hour.add(getSetting({"schHour", i}, 12));
+        hour.add(getSetting({"schHour", i}, 0));
         minute.add(getSetting({"schMinute", i}, 0));
         weekdays.add(getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS));
     }
@@ -111,15 +111,20 @@ void _schConfigure() {
 
                 bool sch_enabled = getSetting({"schEnabled", i}, false);
                 int sch_action = getSetting({"schAction", i}, 0);
-                int sch_hour = getSetting({"schHour", i}, 12);
+                int sch_hour = getSetting({"schHour", i}, 0);
                 int sch_minute = getSetting({"schMinute", i}, 0);
                 bool sch_utc = getSetting({"schUTC", i}, false);
                 String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
-                int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+
+                int type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+                const auto sch_type =
+                    (SCHEDULER_TYPE_SWITCH == type) ? "switch" :
+                    (SCHEDULER_TYPE_CURTAIN == type) ? "curtain" :
+                    (SCHEDULER_TYPE_DIM == type) ? "channel" : "unknown";
 
                 DEBUG_MSG_P(
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
-                    i, SCHEDULER_TYPE_SWITCH == sch_type ? "switch" : (SCHEDULER_TYPE_CURTAIN == sch_type ? "curtain" : "channel"), sch_switch,
+                    i, sch_type, sch_switch,
                     sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
                     (char *) sch_weekdays.c_str(),
                     sch_enabled ? "" : " (disabled)"
@@ -246,7 +251,7 @@ void _schCheck(int relay, int daybefore) {
         String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
         if (_schIsThisWeekday(sch_utc ? calendar_weekday.utc_wday : calendar_weekday.local_wday, sch_weekdays)) {
 
-            int sch_hour = getSetting({"schHour", i}, 12);
+            int sch_hour = getSetting({"schHour", i}, 0);
             int sch_minute = getSetting({"schMinute", i}, 0);
             int sch_action = getSetting({"schAction", i}, 0);
             int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
