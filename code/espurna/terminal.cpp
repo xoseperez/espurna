@@ -148,7 +148,7 @@ void _terminalHelpCommand(const terminal::CommandContext& ctx) {
     // Get sorted list of commands
     auto commands = _terminal.commandNames();
     std::sort(commands.begin(), commands.end(), [](const String& rhs, const String& lhs) -> bool {
-        return rhs.compareTo(lhs) > 0;
+        return lhs.compareTo(rhs) > 0;
     });
 
     // Output the list asap
