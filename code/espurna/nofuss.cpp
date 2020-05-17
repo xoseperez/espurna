@@ -68,7 +68,7 @@ void _nofussConfigure() {
         NoFUSSClient.setBuild(String(__UNIX_TIMESTAMP__));
 
         DEBUG_MSG_P(PSTR("[NOFUSS] Server : %s\n"), nofussServer.c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Dervice: %s\n"), APP_NAME "_" DEVICE);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), APP_NAME "_" DEVICE);
         DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), APP_VERSION);
         DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), String(__UNIX_TIMESTAMP__).c_str());
         DEBUG_MSG_P(PSTR("[NOFUSS] Enabled\n"));

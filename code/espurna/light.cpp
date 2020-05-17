@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "api.h"
 #include "broker.h"
 #include "mqtt.h"
+#include "rpc.h"
 #include "rtcmem.h"
 #include "tuya.h"
 #include "ws.h"

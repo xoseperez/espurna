@@ -177,6 +177,9 @@ PROGMEM const char espurna_webui[] =
     #if WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
         "THERMOSTAT"
     #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN
+        "CURTAIN"
+    #endif
     #if WEBUI_IMAGE == WEBUI_IMAGE_FULL
         "FULL"
     #endif

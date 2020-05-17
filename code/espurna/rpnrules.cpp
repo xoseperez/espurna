@@ -14,6 +14,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "mqtt.h"
 #include "ntp.h"
 #include "relay.h"
+#include "rpc.h"
+#include "sensor.h"
 #include "terminal.h"
 #include "ws.h"
 
@@ -391,7 +393,10 @@ void rpnSetup() {
     #endif
 
     StatusBroker::Register(_rpnBrokerStatus);
-    SensorReadBroker::Register(_rpnBrokerCallback);
+
+    #if SENSOR_SUPPORT
+        SensorReadBroker::Register(_rpnBrokerCallback);
+    #endif
 
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);

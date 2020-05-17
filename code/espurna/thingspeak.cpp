@@ -14,6 +14,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "broker.h"
 #include "relay.h"
+#include "rpc.h"
 #include "sensor.h"
 #include "ws.h"
 #include "libs/URL.h"
@@ -78,7 +79,6 @@ AsyncClientState _tspk_state = AsyncClientState::Disconnected;
 
 // -----------------------------------------------------------------------------
 
-#if BROKER_SUPPORT
 void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
 
     // Only process status messages for switches
@@ -90,8 +90,6 @@ void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int val
     tspkFlush();
 
 }
-#endif // BROKER_SUPPORT
-
 
 #if WEB_SUPPORT
 
@@ -458,9 +456,7 @@ void tspkSetup() {
             .onKeyCheck(_tspkWebSocketOnKeyCheck);
     #endif
 
-    #if BROKER_SUPPORT
-        StatusBroker::Register(_tspkBrokerCallback);
-    #endif
+    StatusBroker::Register(_tspkBrokerCallback);
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
         THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",

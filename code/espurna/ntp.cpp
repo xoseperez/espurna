@@ -29,6 +29,8 @@ static_assert(
 #include "broker.h"
 #include "ws.h"
 
+BrokerBind(NtpBroker);
+
 // Arduino/esp8266 lwip2 custom functions that can be redefined
 // Must return time in milliseconds, legacy settings are in seconds.
 

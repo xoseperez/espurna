@@ -8,8 +8,11 @@ Part of MQTT and API modules
 
 #include "espurna.h"
 
-#include <vector>
-#include <utility>
+#include "broker.h"
+
+BrokerDeclare(StatusBroker, void(const String& topic, unsigned char id, unsigned int status));
+
+// --------------------------------------------------------------------------
 
 enum class PayloadStatus {
     Off = 0,

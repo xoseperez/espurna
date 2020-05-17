@@ -8,15 +8,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include <Arduino.h>
+#include "espurna.h"
 
 #include <functional>
 #include <utility>
 #include <vector>
-#include <ArduinoJson.h>
 
-#include "espurna.h"
-#include "Embedis.h"
+#include <ArduinoJson.h>
+#include <Embedis.h>
+
+#include "broker.h"
+
+BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
 
 // --------------------------------------------------------------------------
 
