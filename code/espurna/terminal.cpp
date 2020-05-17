@@ -116,7 +116,7 @@ struct TerminalIO : public Stream {
 
     size_t write(const uint8_t* buffer, size_t size) override {
         if (!size) return 0;
-        if (size && (buffer[size-1] == '\0')) return 0;
+        if (buffer[size-1] == '\0') return 0;
         if (_output.capacity() < (size + 2)) {
             _output.reserve(_output.size() + size + 2);
         }
