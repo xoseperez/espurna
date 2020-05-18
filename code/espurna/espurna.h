@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 
 #include "compat.h"
+
 #include "board.h"
 #include "debug.h"
 #include "gpio.h"
