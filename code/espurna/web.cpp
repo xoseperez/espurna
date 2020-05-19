@@ -48,7 +48,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 AsyncWebPrint::AsyncWebPrint(AsyncWebServerRequest* request) :
     _request(request),
     _state(State::None)
-{}
+{
+    // ensure we can detect disconnection
+    auto capture = shared_from_this();
+    _request->onDisconnect([capture]() {
+        capture->setState(AsyncWebPrint::State::Done);
+    });
+}
 
 void AsyncWebPrint::_addBuffer() {
     // Note: c++17, emplace returns created object reference,
@@ -93,16 +99,12 @@ void AsyncWebPrint::_prepareRequest() {
     _request->send(response);
 }
 
-void AsyncWebPrint::end() {
-    _state = State::Done;
+void AsyncWebPrint::setState(State state) {
+    _state = state;
 }
 
-bool AsyncWebPrint::begin() {
-    if (_state != State::None) {
-        return false;
-    }
-
-    return true;
+AsyncWebPrint::State AsyncWebPrint::getState() {
+    return _state;
 }
 
 size_t AsyncWebPrint::write(uint8_t b) {
@@ -111,6 +113,9 @@ size_t AsyncWebPrint::write(uint8_t b) {
 }
 
 void AsyncWebPrint::_exhaustBuffers() {
+    // XXX: espasyncwebserver will trigger write callback if we setup response too early
+    //      exploring code, callback handler responds to a special return value RESPONSE_TRY_AGAIN
+    //      but, it seemingly breaks chunked response logic
     if (_state == State::None) {
         _prepareRequest();
     }

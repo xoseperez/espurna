@@ -11,6 +11,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #if TERMINAL_SUPPORT
 
+#include "api.h"
 #include "debug.h"
 #include "settings.h"
 #include "system.h"
@@ -23,6 +24,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <algorithm>
 #include <vector>
 #include <utility>
+
 #include <Stream.h>
 
 #if LWIP_VERSION_MAJOR != 1
@@ -527,32 +529,37 @@ void terminalSetup() {
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
 
+        // TODO: each command needs to be re-wired to output into ctx.output
+        // TODO: 2.3.0 Print::printf_P is missing (there is Print::println(F(...)) though)
         webRequestRegister([](AsyncWebServerRequest* request) {
             const auto url = request->url();
             if (!url.equals("/cmd")) return false;
 
             webLog(request);
-            if (!apiAuthenticate(request)) return false;
+            if (!apiAuthenticate(request)) return true;
 
+            // TODO: batch requests?
             auto* cmd_param = request->getParam("line");
-            if (!cmd_param) return false;
+            if (!cmd_param) {
+                request->send(500);
+                return true;
+            }
 
             auto cmd = cmd_param->value();
+            if (!cmd.length()) {
+                request->send(500);
+                return true;
+            }
+
+            auto print = std::make_shared<AsyncWebPrint>(request);
             if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
                 cmd += '\n';
             }
 
-            auto print = std::make_shared<AsyncWebPrint>(request);
-
-            // TODO: we need to make sure print is removed when request dies
-            //       https://en.cppreference.com/w/cpp/memory/enable_shared_from_this ?
-            //       and place this inside of ctor of webprint
-            request->onDisconnect([print]() {
-                print->end();
-            });
-
             schedule_function([cmd, print]() {
-                if (!print->begin()) return;
+                // XXX: i.e. 'we have not started, yet'
+                //      only possible state variation is Done via onDisconnect callback
+                if (AsyncWebPrint::State::None != print->getState()) return;
                 StreamAdapter<const char*> stream(*print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
                 terminal::Terminal handler(stream);
                 handler.processLine();

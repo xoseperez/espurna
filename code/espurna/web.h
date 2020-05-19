@@ -13,9 +13,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if WEB_SUPPORT
 
 #include <functional>
-#include <vector>
 #include <list>
+#include <memory>
+#include <vector>
 
+#include <Print.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <Hash.h>
@@ -23,7 +25,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 
-struct AsyncWebPrint : public Print {
+struct AsyncWebPrint : public Print, public std::enable_shared_from_this<AsyncWebPrint> {
 
     enum class State {
         None,
@@ -36,9 +38,9 @@ struct AsyncWebPrint : public Print {
     using BufferType = std::vector<uint8_t>;
 
     AsyncWebPrint(AsyncWebServerRequest* req);
-    ~AsyncWebPrint() { Serial.printf("- %p is done\n", this); }
-    bool begin();
-    void end();
+
+    State getState();
+    void setState(State);
 
     void flush() final override;
     size_t write(uint8_t) final override;
