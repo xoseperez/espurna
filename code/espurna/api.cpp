@@ -57,7 +57,7 @@ void _apiConfigure() {
 // API
 // -----------------------------------------------------------------------------
 
-bool _authAPI(AsyncWebServerRequest *request) {
+bool apiAuthenticate(AsyncWebServerRequest *request) {
 
     const auto key = _apiKey();
     if (!key.length() || !_apiEnabled()) {
@@ -130,7 +130,7 @@ void _onAPIsJson(AsyncWebServerRequest *request) {
 void _onAPIs(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authAPI(request)) return;
+    if (!apiAuthenticate(request)) return;
 
     bool asJson = _asJson(request);
 
@@ -146,7 +146,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
 void _onRPC(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authAPI(request)) return;
+    if (!apiAuthenticate(request)) return;
 
     //bool asJson = _asJson(request);
     int response = 404;
@@ -195,7 +195,7 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
         // Log and check credentials
         webLog(request);
-        if (!_authAPI(request)) return false;
+        if (!apiAuthenticate(request)) return false;
 
         // Check if its a PUT
         if (api.putFn != NULL) {

@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if WEB_SUPPORT
 
 #include <functional>
+#include <vector>
+#include <list>
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -20,6 +22,41 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <FS.h>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
+
+struct AsyncWebPrint : public Print {
+
+    enum class State {
+        None,
+        Sending,
+        Done,
+        Error
+    };
+
+    constexpr static size_t BacklogMax = 2;
+    using BufferType = std::vector<uint8_t>;
+
+    AsyncWebPrint(AsyncWebServerRequest* req);
+    ~AsyncWebPrint() { Serial.printf("- %p is done\n", this); }
+    bool begin();
+    void end();
+
+    void flush() final override;
+    size_t write(uint8_t) final override;
+    size_t write(const uint8_t *buffer, size_t size) final override;
+
+    protected:
+
+    std::list<BufferType> _buffers;
+    AsyncWebServerRequest* const _request;
+    State _state;
+    bool _ready;
+    bool _done;
+
+    void _exhaustBuffers();
+    void _addBuffer();
+    void _prepareRequest();
+
+};
 
 using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t* data, size_t len, size_t index, size_t total)>;
 using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;

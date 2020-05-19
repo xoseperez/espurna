@@ -10,6 +10,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+#include <algorithm>
+
 #include "system.h"
 #include "utils.h"
 #include "ntp.h"
@@ -42,6 +44,121 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/server.cer.h"
 #include "static/server.key.h"
 #endif // WEB_SSL_ENABLED
+
+AsyncWebPrint::AsyncWebPrint(AsyncWebServerRequest* request) :
+    _request(request),
+    _state(State::None)
+{}
+
+void AsyncWebPrint::_addBuffer() {
+    // Note: c++17, emplace returns created object reference,
+    //       c++11, we need to use .back()
+    _buffers.emplace_back(TCP_MSS, 0);
+    _buffers.back().clear();
+}
+
+void AsyncWebPrint::_prepareRequest() {
+    _state = State::Sending;
+
+    auto *response = _request->beginChunkedResponse("text/plain", [this](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        switch (_state) {
+        case State::None:
+            return RESPONSE_TRY_AGAIN;
+        case State::Error:
+        case State::Done:
+            return 0;
+        case State::Sending:
+            break;
+        }
+
+        size_t written = 0;
+        while ((written < maxLen) && !_buffers.empty()) {
+            auto& chunk =_buffers.front();
+            auto have = maxLen - written;
+            if (chunk.size() > have) {
+                std::copy(chunk.data(), chunk.data() + have, buffer + written);
+                chunk.erase(chunk.begin(), chunk.begin() + have);
+                written += have;
+            } else {
+                std::copy(chunk.data(), chunk.data() + chunk.size(), buffer + written);
+                _buffers.pop_front();
+                written += chunk.size();
+            }
+        }
+
+        return written;
+    });
+
+    response->addHeader("Connection", "close");
+    _request->send(response);
+}
+
+void AsyncWebPrint::end() {
+    _state = State::Done;
+}
+
+bool AsyncWebPrint::begin() {
+    if (_state != State::None) {
+        return false;
+    }
+
+    return true;
+}
+
+size_t AsyncWebPrint::write(uint8_t b) {
+    const uint8_t tmp[1] {b};
+    return write(tmp, 1);
+}
+
+void AsyncWebPrint::_exhaustBuffers() {
+    if (_state == State::None) {
+        _prepareRequest();
+    }
+
+    const auto start = millis();
+    do {
+        delay(200);
+    } while ((millis() - start <= 5000) && (_state == State::Sending) && !_buffers.empty());
+}
+
+void AsyncWebPrint::flush() {
+    _exhaustBuffers();
+    _state = State::Done;
+}
+
+size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
+    if (_state == State::Error) {
+        return 0;
+    }
+
+    if (_buffers.size() > BacklogMax) {
+        _exhaustBuffers();
+        if (!_buffers.empty()) {
+            _state = State::Error;
+            return 0;
+        }
+    }
+
+    const size_t full_size = size;
+    auto* data_ptr = data;
+
+    while (size) {
+        if (_buffers.empty()) _addBuffer();
+        auto& current = _buffers.back();
+        const auto have = current.capacity() - current.size();
+        if (have >= size) {
+            current.insert(current.end(), data_ptr, data_ptr + size);
+            size = 0;
+        } else {
+            current.insert(current.end(), data_ptr, data_ptr + have);
+            _addBuffer();
+            data_ptr += have;
+            size -= have;
+        }
+    }
+
+    return full_size;
+}
 
 // -----------------------------------------------------------------------------
 

@@ -23,6 +23,7 @@ using api_put_callback_f = std::function<void(const char * payload)> ;
 
 void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = nullptr);
 
+bool apiAuthenticate(AsyncWebServerRequest*);
 void apiSetup();
 
 #endif // API_SUPPORT == 1

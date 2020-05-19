@@ -505,28 +505,28 @@ void settingsSetup() {
         
     });
 
-    terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
         // Get sorted list of keys
         auto keys = settingsKeys();
 
         // Write key-values
-        DEBUG_MSG_P(PSTR("Current settings:\n"));
+        ctx.output.println(F("Current settings:"));
         for (unsigned int i=0; i<keys.size(); i++) {
             const auto value = getSetting(keys[i]);
-            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
+            ctx.output.printf("> %s => \"%s\"\n", (keys[i]).c_str(), value.c_str());
         }
 
         unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
-        DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
-        DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
-        DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
+        ctx.output.printf("Number of keys: %u\n", keys.size());
+        ctx.output.printf("Current EEPROM sector: %u\n", EEPROMr.current());
+        ctx.output.printf("Free EEPROM: %lu bytes (%lu%%)\n", freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
         terminalOK();
     });
 
     terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc != 2) {
-            terminalError(F("del <key> [<key>...]"));
+            terminalError(ctx, F("del <key> [<key>...]"));
             return;
         }
 
@@ -535,26 +535,26 @@ void settingsSetup() {
             result += Embedis::del(*it);
         }
 
-        DEBUG_MSG_P(PSTR(":%d\n"), result);
+        ctx.output.printf(":%d\n", result);
     });
 
     terminalRegisterCommand(F("SET"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc != 3) {
-            terminalError(F("set <key> <value>"));
+            terminalError(ctx, F("set <key> <value>"));
             return;
         }
 
         if (Embedis::set(ctx.argv[1], ctx.argv[2])) {
-            terminalOK();
+            terminalOK(ctx);
             return;
         }
 
-        terminalError(F("could not set the key"));
+        terminalError(ctx, F("could not set the key"));
     });
 
     terminalRegisterCommand(F("GET"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc < 2) {
-            terminalError(F("Wrong arguments"));
+            terminalError(ctx, F("Wrong arguments"));
             return;
         }
 
@@ -564,17 +564,17 @@ void settingsSetup() {
             if (!Embedis::get(key, value)) {
                 const auto maybeDefault = settingsQueryDefaults(key);
                 if (maybeDefault.length()) {
-                    DEBUG_MSG_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeDefault.c_str());
+                    ctx.output.printf("> %s => %s (default)\n", key.c_str(), maybeDefault.c_str());
                 } else {
-                    DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
+                    ctx.output.printf("> %s =>\n", key.c_str());
                 }
                 continue;
             }
 
-            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
+            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), value.c_str());
         }
 
-        terminalOK();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext&) {

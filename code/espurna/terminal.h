@@ -26,6 +26,9 @@ void terminalError(const String& error);
 void terminalOK(Print&);
 void terminalError(Print&, const String& error);
 
+void terminalOK(const terminal::CommandContext&);
+void terminalError(const terminal::CommandContext&, const String&);
+
 void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func);
 void terminalInject(void *data, size_t len);
 void terminalInject(char ch);

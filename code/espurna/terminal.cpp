@@ -457,6 +457,14 @@ void terminalError(Print& print, const String& error) {
     print.printf("-ERROR: %s\n", error.c_str());
 }
 
+void terminalOK(const terminal::CommandContext& ctx) {
+    terminalOK(ctx.output);
+}
+
+void terminalError(const terminal::CommandContext& ctx, const String& error) {
+    terminalError(ctx.output, error);
+}
+
 void terminalOK() {
     terminalOK(_io);
 }
@@ -465,11 +473,94 @@ void terminalError(const String& error) {
     terminalError(_io, error);
 }
 
+template <typename T>
+struct StreamAdapter : public Stream {
+    StreamAdapter(Print& writer, T&& begin, T&& end) :
+        _writer(writer),
+        _current(std::forward<T>(begin)),
+        _begin(std::forward<T>(begin)),
+        _end(std::forward<T>(end))
+    {}
+
+    int available() override {
+        return (_end - _current);
+    }
+
+    int peek() override {
+        if (available() && (_end != (1 + _current))) {
+            return *(1 + _current);
+        }
+        return -1;
+    }
+
+    int read() override {
+        if (_end != _current) {
+            return *(_current++);
+        }
+        return -1;
+    }
+
+    void flush() override {
+        _writer.flush();
+    }
+
+    size_t write(const uint8_t* buffer, size_t size) override {
+        return _writer.write(buffer, size);
+    }
+
+    size_t write(uint8_t ch) override {
+        return _writer.write(ch);
+    }
+
+    protected:
+
+    Print& _writer;
+
+    T _current;
+    T const _begin;
+    T const _end;
+};
+
 void terminalSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
+
+        webRequestRegister([](AsyncWebServerRequest* request) {
+            const auto url = request->url();
+            if (!url.equals("/cmd")) return false;
+
+            webLog(request);
+            if (!apiAuthenticate(request)) return false;
+
+            auto* cmd_param = request->getParam("line");
+            if (!cmd_param) return false;
+
+            auto cmd = cmd_param->value();
+            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+                cmd += '\n';
+            }
+
+            auto print = std::make_shared<AsyncWebPrint>(request);
+
+            // TODO: we need to make sure print is removed when request dies
+            //       https://en.cppreference.com/w/cpp/memory/enable_shared_from_this ?
+            //       and place this inside of ctor of webprint
+            request->onDisconnect([print]() {
+                print->end();
+            });
+
+            schedule_function([cmd, print]() {
+                if (!print->begin()) return;
+                StreamAdapter<const char*> stream(*print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+                terminal::Terminal handler(stream);
+                handler.processLine();
+                print->flush();
+            });
+
+            return true;
+        });
     #endif
 
     _terminalInitCommands();
