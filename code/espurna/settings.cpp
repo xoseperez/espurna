@@ -10,12 +10,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "terminal.h"
 
-#include <ArduinoJson.h>
 #include <vector>
-
 #include <cstdlib>
 
-// -----------------------------------------------------------------------------
+#include <ArduinoJson.h>
+
+#include "storage_eeprom.h"
 
 BrokerBind(ConfigBroker);
 
