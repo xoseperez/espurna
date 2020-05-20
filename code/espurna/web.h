@@ -42,7 +42,12 @@ struct AsyncWebPrint : public Print, public std::enable_shared_from_this<AsyncWe
     State getState();
     void setState(State);
 
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+    void flush();
+#else
     void flush() final override;
+#endif
+
     size_t write(uint8_t) final override;
     size_t write(const uint8_t *buffer, size_t size) final override;
 
