@@ -24,16 +24,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 
-struct AsyncWebPrintBacklogConfig {
-    const size_t countMax;
-    const size_t sizeMax;
-    const decltype(millis()) timeout;
+struct AsyncWebPrintConfig {
+    const char* const mimeType;
+    const size_t backlogCountMax;
+    const size_t backlogSizeMax;
+    const decltype(millis()) backlogTimeout;
 };
 
-constexpr AsyncWebPrintBacklogConfig AsyncWebPrintBacklogDefaults {
-    /*countMax=*/ 2,
-    /*sizeMax= */ TCP_MSS,
-    /*timeout= */ 5000
+constexpr AsyncWebPrintConfig AsyncWebPrintDefaults {
+    /*mimeType       =*/ "text/plain",
+    /*backlogCountMax=*/ 2,
+    /*backlogSizeMax= */ TCP_MSS,
+    /*backlogTimeout= */ 5000
 };
 
 struct AsyncWebPrint : public Print {
@@ -47,11 +49,11 @@ struct AsyncWebPrint : public Print {
 
     using BufferType = std::vector<uint8_t>;
 
-    // to be able to safely output data right from the request callback
+    // To be able to safely output data right from the request callback,
+    // we schedule a 'printer' task that will print into the request response buffer as chunked request
     template<typename CallbackType>
-    static void scheduleFromRequest(const AsyncWebPrintBacklogConfig& config, AsyncWebServerRequest*, CallbackType);
+    static void scheduleFromRequest(const AsyncWebPrintConfig& config, AsyncWebServerRequest*, CallbackType);
 
-    // to be able to safely output data right from the request callback
     template<typename CallbackType>
     static void scheduleFromRequest(AsyncWebServerRequest*, CallbackType);
 
@@ -68,6 +70,7 @@ struct AsyncWebPrint : public Print {
     size_t write(uint8_t) final override;
     size_t write(const uint8_t *buffer, size_t size) final override;
 
+    const char* const mimeType;
     const size_t backlogCountMax;
     const size_t backlogSizeMax;
     const decltype(millis()) backlogTimeout;
@@ -80,7 +83,7 @@ struct AsyncWebPrint : public Print {
     bool _ready;
     bool _done;
 
-    AsyncWebPrint(const AsyncWebPrintBacklogConfig&, AsyncWebServerRequest* req);
+    AsyncWebPrint(const AsyncWebPrintConfig&, AsyncWebServerRequest* req);
 
     bool _addBuffer();
     bool _exhaustBuffers();

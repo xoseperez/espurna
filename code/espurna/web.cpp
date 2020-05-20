@@ -62,7 +62,7 @@ using has_Print_argument = is_detected<has_Print_argument_t, T>;
 }
 
 template<typename CallbackType>
-void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintBacklogConfig& config, AsyncWebServerRequest* request, CallbackType callback) {
+void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintConfig& config, AsyncWebServerRequest* request, CallbackType callback) {
     static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
     // because of async nature of the server, we need to make sure we outlive 'request' object
     auto print = std::shared_ptr<AsyncWebPrint>(new AsyncWebPrint(config, request));
@@ -83,13 +83,14 @@ void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintBacklogConfig& config
 template<typename CallbackType>
 void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, CallbackType callback) {
     static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
-    AsyncWebPrint::scheduleFromRequest(AsyncWebPrintBacklogDefaults, request, callback);
+    AsyncWebPrint::scheduleFromRequest(AsyncWebPrintDefaults, request, callback);
 }
 
-AsyncWebPrint::AsyncWebPrint(const AsyncWebPrintBacklogConfig& config, AsyncWebServerRequest* request) :
-    backlogCountMax(config.countMax),
-    backlogSizeMax(config.sizeMax),
-    backlogTimeout(config.timeout),
+AsyncWebPrint::AsyncWebPrint(const AsyncWebPrintConfig& config, AsyncWebServerRequest* request) :
+    mimeType(config.mimeType),
+    backlogCountMax(config.backlogCountMax),
+    backlogSizeMax(config.backlogSizeMax),
+    backlogTimeout(config.backlogTimeout),
     _request(request),
     _state(State::None)
 {}
@@ -113,7 +114,7 @@ bool AsyncWebPrint::_addBuffer() {
 void AsyncWebPrint::_prepareRequest() {
     _state = State::Sending;
 
-    auto *response = _request->beginChunkedResponse("text/plain", [this](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+    auto *response = _request->beginChunkedResponse(mimeType, [this](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
         switch (_state) {
         case State::None:
             return RESPONSE_TRY_AGAIN;
