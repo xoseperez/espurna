@@ -62,10 +62,10 @@ using has_Print_argument = is_detected<has_Print_argument_t, T>;
 }
 
 template<typename CallbackType>
-void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, CallbackType callback) {
+void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintBacklogConfig& config, AsyncWebServerRequest* request, CallbackType callback) {
     static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
     // because of async nature of the server, we need to make sure we outlive 'request' object
-    auto print = std::shared_ptr<AsyncWebPrint>(new AsyncWebPrint(request));
+    auto print = std::shared_ptr<AsyncWebPrint>(new AsyncWebPrint(config, request));
 
     // attach one ptr to onDisconnect capture, so we can detect disconnection before scheduled function runs
     request->onDisconnect([print]() {
@@ -80,16 +80,34 @@ void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, Callback
     });
 }
 
-AsyncWebPrint::AsyncWebPrint(AsyncWebServerRequest* request) :
+template<typename CallbackType>
+void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, CallbackType callback) {
+    static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
+    AsyncWebPrint::scheduleFromRequest(AsyncWebPrintBacklogDefaults, request, callback);
+}
+
+AsyncWebPrint::AsyncWebPrint(const AsyncWebPrintBacklogConfig& config, AsyncWebServerRequest* request) :
+    backlogCountMax(config.countMax),
+    backlogSizeMax(config.sizeMax),
+    backlogTimeout(config.timeout),
     _request(request),
     _state(State::None)
 {}
 
-void AsyncWebPrint::_addBuffer() {
+bool AsyncWebPrint::_addBuffer() {
+    if ((_buffers.size() + 1) > backlogCountMax) {
+        if (!_exhaustBuffers()) {
+            _state = State::Error;
+            return false;
+        }
+    }
+
     // Note: c++17, emplace returns created object reference
     //       c++11, we need to use .back()
-    _buffers.emplace_back(TCP_MSS, 0);
+    _buffers.emplace_back(backlogSizeMax, 0);
     _buffers.back().clear();
+
+    return true;
 }
 
 void AsyncWebPrint::_prepareRequest() {
@@ -143,7 +161,7 @@ size_t AsyncWebPrint::write(uint8_t b) {
     return write(tmp, 1);
 }
 
-void AsyncWebPrint::_exhaustBuffers() {
+bool AsyncWebPrint::_exhaustBuffers() {
     // XXX: espasyncwebserver will trigger write callback if we setup response too early
     //      exploring code, callback handler responds to a special return value RESPONSE_TRY_AGAIN
     //      but, it seemingly breaks chunked response logic
@@ -159,6 +177,8 @@ void AsyncWebPrint::_exhaustBuffers() {
         }
         yield();
     } while (!_buffers.empty());
+
+    return _buffers.empty();
 }
 
 void AsyncWebPrint::flush() {
@@ -171,19 +191,14 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
         return 0;
     }
 
-    if (_buffers.size() > BacklogMax) {
-        _exhaustBuffers();
-        if (!_buffers.empty()) {
-            _state = State::Error;
-            return 0;
-        }
-    }
-
-    const size_t full_size = size;
+    size_t full_size = size;
     auto* data_ptr = data;
 
     while (size) {
-        if (_buffers.empty()) _addBuffer();
+        if (_buffers.empty() && !_addBuffer()) {
+            full_size = 0;
+            break;
+        }
         auto& current = _buffers.back();
         const auto have = current.capacity() - current.size();
         if (have >= size) {
@@ -191,7 +206,10 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
             size = 0;
         } else {
             current.insert(current.end(), data_ptr, data_ptr + have);
-            _addBuffer();
+            if (!_addBuffer()) {
+                full_size = 0;
+                break;
+            }
             data_ptr += have;
             size -= have;
         }

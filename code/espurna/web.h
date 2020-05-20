@@ -24,6 +24,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 
+struct AsyncWebPrintBacklogConfig {
+    const size_t countMax;
+    const size_t sizeMax;
+    const decltype(millis()) timeout;
+};
+
+constexpr AsyncWebPrintBacklogConfig AsyncWebPrintBacklogDefaults {
+    /*countMax=*/ 2,
+    /*sizeMax= */ TCP_MSS,
+    /*timeout= */ 5000
+};
+
 struct AsyncWebPrint : public Print {
 
     enum class State {
@@ -33,8 +45,11 @@ struct AsyncWebPrint : public Print {
         Error
     };
 
-    constexpr static size_t BacklogMax = 2;
     using BufferType = std::vector<uint8_t>;
+
+    // to be able to safely output data right from the request callback
+    template<typename CallbackType>
+    static void scheduleFromRequest(const AsyncWebPrintBacklogConfig& config, AsyncWebServerRequest*, CallbackType);
 
     // to be able to safely output data right from the request callback
     template<typename CallbackType>
@@ -53,6 +68,10 @@ struct AsyncWebPrint : public Print {
     size_t write(uint8_t) final override;
     size_t write(const uint8_t *buffer, size_t size) final override;
 
+    const size_t backlogCountMax;
+    const size_t backlogSizeMax;
+    const decltype(millis()) backlogTimeout;
+
     protected:
 
     std::list<BufferType> _buffers;
@@ -61,10 +80,10 @@ struct AsyncWebPrint : public Print {
     bool _ready;
     bool _done;
 
-    AsyncWebPrint(AsyncWebServerRequest* req);
+    AsyncWebPrint(const AsyncWebPrintBacklogConfig&, AsyncWebServerRequest* req);
 
-    void _exhaustBuffers();
-    void _addBuffer();
+    bool _addBuffer();
+    bool _exhaustBuffers();
     void _prepareRequest();
 
 };
