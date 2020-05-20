@@ -11,6 +11,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if WEB_SUPPORT
 
 #include <algorithm>
+#include <functional>
+#include <memory>
+
+#include <Schedule.h>
 
 #include "system.h"
 #include "utils.h"
@@ -45,19 +49,30 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/server.key.h"
 #endif // WEB_SSL_ENABLED
 
-AsyncWebPrint::AsyncWebPrint(AsyncWebServerRequest* request) :
-    _request(request),
-    _state(State::None)
-{
-    // ensure we can detect disconnection
-    auto capture = shared_from_this();
-    _request->onDisconnect([capture]() {
-        capture->setState(AsyncWebPrint::State::Done);
+void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, std::function<void(Print&)> callback) {
+    // because of async nature of the server, we need to make sure we outlive 'request' object
+    auto print = std::shared_ptr<AsyncWebPrint>(new AsyncWebPrint(request));
+
+    // attach one ptr to onDisconnect capture, so we can detect disconnection before scheduled function runs
+    request->onDisconnect([print]() {
+        print->setState(AsyncWebPrint::State::Done);
+    });
+
+    // attach another capture to the scheduled function, so we execute as soon as we exit next loop()
+    schedule_function([callback, print]() {
+        if (State::None != print->getState()) return;
+        callback(*print.get());
+        print->flush();
     });
 }
 
+AsyncWebPrint::AsyncWebPrint(AsyncWebServerRequest* request) :
+    _request(request),
+    _state(State::None)
+{}
+
 void AsyncWebPrint::_addBuffer() {
-    // Note: c++17, emplace returns created object reference,
+    // Note: c++17, emplace returns created object reference
     //       c++11, we need to use .back()
     _buffers.emplace_back(TCP_MSS, 0);
     _buffers.back().clear();
@@ -92,6 +107,8 @@ void AsyncWebPrint::_prepareRequest() {
             }
         }
 
+        if (written) esp_schedule();
+
         return written;
     });
 
@@ -122,8 +139,12 @@ void AsyncWebPrint::_exhaustBuffers() {
 
     const auto start = millis();
     do {
-        delay(200);
-    } while ((millis() - start <= 5000) && (_state == State::Sending) && !_buffers.empty());
+        if (millis() - start > 5000) {
+            _buffers.clear();
+            break;
+        }
+        yield();
+    } while (!_buffers.empty());
 }
 
 void AsyncWebPrint::flush() {

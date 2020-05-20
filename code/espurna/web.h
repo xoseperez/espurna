@@ -14,7 +14,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <functional>
 #include <list>
-#include <memory>
 #include <vector>
 
 #include <Print.h>
@@ -25,7 +24,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 
-struct AsyncWebPrint : public Print, public std::enable_shared_from_this<AsyncWebPrint> {
+struct AsyncWebPrint : public Print {
 
     enum class State {
         None,
@@ -37,7 +36,8 @@ struct AsyncWebPrint : public Print, public std::enable_shared_from_this<AsyncWe
     constexpr static size_t BacklogMax = 2;
     using BufferType = std::vector<uint8_t>;
 
-    AsyncWebPrint(AsyncWebServerRequest* req);
+    // to be able to safely output data right from the request callback
+    static void scheduleFromRequest(AsyncWebServerRequest*, std::function<void(Print&)>);
 
     State getState();
     void setState(State);
@@ -58,6 +58,8 @@ struct AsyncWebPrint : public Print, public std::enable_shared_from_this<AsyncWe
     State _state;
     bool _ready;
     bool _done;
+
+    AsyncWebPrint(AsyncWebServerRequest* req);
 
     void _exhaustBuffers();
     void _addBuffer();

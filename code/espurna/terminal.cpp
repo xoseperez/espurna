@@ -551,19 +551,14 @@ void terminalSetup() {
                 return true;
             }
 
-            auto print = std::make_shared<AsyncWebPrint>(request);
             if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
                 cmd += '\n';
             }
 
-            schedule_function([cmd, print]() {
-                // XXX: i.e. 'we have not started, yet'
-                //      only possible state variation is Done via onDisconnect callback
-                if (AsyncWebPrint::State::None != print->getState()) return;
-                StreamAdapter<const char*> stream(*print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+            AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
+                StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
                 terminal::Terminal handler(stream);
                 handler.processLine();
-                print->flush();
             });
 
             return true;
