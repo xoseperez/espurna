@@ -494,12 +494,12 @@ void settingsSetup() {
         #endif
     );
 
-    terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext& ctx) {
         // TODO: enough of a buffer?
         DynamicJsonBuffer jsonBuffer(1024);
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
-        root.prettyPrintTo(terminalDefaultStream());
+        root.prettyPrintTo(ctx.output);
     });
 
     terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
