@@ -37,11 +37,13 @@ struct AsyncWebPrint : public Print {
     using BufferType = std::vector<uint8_t>;
 
     // to be able to safely output data right from the request callback
-    static void scheduleFromRequest(AsyncWebServerRequest*, std::function<void(Print&)>);
+    template<typename CallbackType>
+    static void scheduleFromRequest(AsyncWebServerRequest*, CallbackType);
 
     State getState();
     void setState(State);
 
+    // note: existing implementation only expects this to be available via AsyncWebPrint
 #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
     void flush();
 #else

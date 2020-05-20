@@ -20,6 +20,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "utils.h"
 #include "ntp.h"
 
+#include "libs/TypeChecks.h"
+
 #if WEB_EMBEDDED
 
 #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
@@ -49,7 +51,19 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/server.key.h"
 #endif // WEB_SSL_ENABLED
 
-void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, std::function<void(Print&)> callback) {
+namespace web_type_traits {
+
+template <typename T>
+using has_Print_argument_t = decltype(std::declval<T>()(std::declval<Print&>()));
+
+template <typename T>
+using has_Print_argument = is_detected<has_Print_argument_t, T>;
+
+}
+
+template<typename CallbackType>
+void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, CallbackType callback) {
+    static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
     // because of async nature of the server, we need to make sure we outlive 'request' object
     auto print = std::shared_ptr<AsyncWebPrint>(new AsyncWebPrint(request));
 
