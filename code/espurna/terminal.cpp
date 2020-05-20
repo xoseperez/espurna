@@ -118,10 +118,6 @@ struct TerminalIO : public Stream {
         _read = _write;
     }
 
-    size_t write(uint8_t) final override {
-        return 0;
-    }
-
     size_t write(const uint8_t* buffer, size_t size) final override {
     // Buffer data until we encounter line break, then flush via Raw debug method
     // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
@@ -142,6 +138,11 @@ struct TerminalIO : public Stream {
         }
 #endif
         return size;
+    }
+
+    size_t write(uint8_t ch) final override {
+        uint8_t buffer[1] {ch};
+        return write(buffer, 1);
     }
 
     private:
