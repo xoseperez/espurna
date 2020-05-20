@@ -79,7 +79,7 @@ struct TerminalIO : public Stream {
     // ---------------------------------------------------------------------
 
     // Return data from the internal buffer
-    int available() override {
+    int available() final override {
         unsigned int bytes = 0;
         if (_read > _write) {
             bytes += (_write - _read + _size);
@@ -89,7 +89,7 @@ struct TerminalIO : public Stream {
         return bytes;
     }
 
-    int peek() override {
+    int peek() final override {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
@@ -97,7 +97,7 @@ struct TerminalIO : public Stream {
         return ch;
     }
 
-    int read() override {
+    int read() final override {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
@@ -106,18 +106,25 @@ struct TerminalIO : public Stream {
         return ch;
     }
 
-    // flush() is a generic method for both in and out
-    // reset reader position so that we return -1 until we have new data
-    // writer is implemented below, we don't need to flush anything there
-    void flush() override {
+    // {Stream,Print}::flush(), see:
+    // - https://github.com/esp8266/Arduino/blob/master/cores/esp8266/Print.h
+    // - https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Print.h
+    // - https://github.com/arduino/ArduinoCore-API/issues/102
+    // Old 2.3.0 expects flush() on Stream, latest puts in in Print
+    // We may have to cheat the system and implement everything as Stream to have it available.
+    void flush() final override {
+        // Here, reset reader position so that we return -1 until we have new data
+        // writer flushing is implemented below, we don't need it here atm
         _read = _write;
     }
 
-    size_t write(uint8_t) override {
+    size_t write(uint8_t) final override {
         return 0;
     }
 
-    size_t write(const uint8_t* buffer, size_t size) override {
+    size_t write(const uint8_t* buffer, size_t size) final override {
+    // Buffer data until we encounter line break, then flush via Raw debug method
+    // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
 #if DEBUG_SUPPORT
         if (!size) return 0;
         if (buffer[size-1] == '\0') return 0;
@@ -484,33 +491,37 @@ struct StreamAdapter : public Stream {
         _end(std::forward<T>(end))
     {}
 
-    int available() override {
+    int available() final override {
         return (_end - _current);
     }
 
-    int peek() override {
+    int peek() final override {
         if (available() && (_end != (1 + _current))) {
             return *(1 + _current);
         }
         return -1;
     }
 
-    int read() override {
+    int read() final override {
         if (_end != _current) {
             return *(_current++);
         }
         return -1;
     }
 
-    void flush() override {
+    void flush() final override {
+// 2.3.0  - Stream::flush()
+// latest - Print::flush()
+#if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
         _writer.flush();
+#endif
     }
 
-    size_t write(const uint8_t* buffer, size_t size) override {
+    size_t write(const uint8_t* buffer, size_t size) final override {
         return _writer.write(buffer, size);
     }
 
-    size_t write(uint8_t ch) override {
+    size_t write(uint8_t ch) final override {
         return _writer.write(ch);
     }
 
