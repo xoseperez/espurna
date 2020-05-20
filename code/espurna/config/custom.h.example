@@ -12,18 +12,18 @@
 
 // Example of a Sonoff Basic board with some options disabled to reduce firmware size.
 
-#if defined(MY_SONOFF_BUILD01)    // This matches the 'src_build_flags = -DMY_SONOFF_BUILD01'
-                                  // in 'platformio_override.ini'
+#if defined(MY_SONOFF_BUILD01)    // This section will be used when src_build_flags contains
+                                  //  -DMY_SONOFF_BUILD01 in 'platformio_override.ini'
 
-    #define MANUFACTURER        	"ITEAD"
-    #define DEVICE              	"SONOFF_BASIC_BUILD01"
+    #define MANUFACTURER               "ITEAD"
+    #define DEVICE                     "SONOFF_BASIC_BUILD01"
 
     // Disable these
-    #define DEBUG_SERIAL_SUPPORT    0
-    #define ALEXA_SUPPORT           0
-    #define DOMOTICZ_SUPPORT        0
-    #define HOMEASSISTANT_SUPPORT   0
-    #define THINGSPEAK_SUPPORT      0
+    #define DEBUG_SERIAL_SUPPORT       0
+    #define ALEXA_SUPPORT              0
+    #define DOMOTICZ_SUPPORT           0
+    #define HOMEASSISTANT_SUPPORT      0
+    #define THINGSPEAK_SUPPORT         0
 	
     // Buttons
     #define BUTTON1_PIN         	0
@@ -45,14 +45,15 @@
 // the 'DOUBLE CLICK, LONG CLICK OR LONG-LONG CLICK' trigger. A BMX280 environment
 // sensor is also connected using I2C on GPIO 1 and 3.
 
-#elif defined(MY_SONOFF_BUILD02)
+#elif defined(MY_SONOFF_BUILD02)    // This section will be used when src_build_flags contains
+                                    //  -DMY_SONOFF_BUILD02 in 'platformio_override.ini
 
     // Info - Custom Basic with BMX280 I2C on GPIO 1 and 3
-    #define MANUFACTURER        	"ITEAD"
-    #define DEVICE              	"SONOFF_BASIC_BMX280" // Your own name here
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_BASIC_BMX280"    // You can use your own name here
 
     // Disable these
-    #define DEBUG_SERIAL_SUPPORT 	0
+    #define DEBUG_SERIAL_SUPPORT    0
     #define ALEXA_SUPPORT           0
     #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
@@ -87,9 +88,9 @@
     #define LED1_PIN_INVERSE    	1
     
     // Extras	
-    #define BMX280_SUPPORT 			1
-    #define BMX280_ADDRESS 			0x76
-    #define I2C_SDA_PIN 			1  //TX PIN **DISABLE DEBUG_SERIAL_SUPPORT**
-    #define I2C_SCL_PIN 			3  //RX PIN	**DISABLE DEBUG_SERIAL_SUPPORT**
+    #define BMX280_SUPPORT 		1
+    #define BMX280_ADDRESS 		0x76
+    #define I2C_SDA_PIN 		1  //TX PIN    **DISABLE DEBUG_SERIAL_SUPPORT**
+    #define I2C_SCL_PIN 		3  //RX PIN    **DISABLE DEBUG_SERIAL_SUPPORT**
 	
 #endif
