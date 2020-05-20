@@ -118,6 +118,16 @@ bool AsyncWebPrint::_addBuffer() {
     return true;
 }
 
+// Creates response object that will handle the data written into the Print& interface.
+//
+// This API expects a **very** careful approach to context switching between SYS and CONT:
+// - Returning RESPONSE_TRY_AGAIN before buffers are filled will result in invalid size marker being sent on the wire.
+//   HTTP client (curl, python requests etc., as discovered in testing) will then drop the connection
+// - Returning 0 will immediatly close the connection from our side
+// - Calling _prepareRequest() **before** _buffers are filled will result in returning 0
+// - Calling yield() / delay() while request AsyncWebPrint is active **may** trigger this callback out of sequence
+//   (e.g. Serial.print(..), DEBUG_MSG(...), or any other API trying to switch contexts)
+// - Receiving data (tcp ack from the previous packet) **will** trigger the callback.
 void AsyncWebPrint::_prepareRequest() {
     _state = State::Sending;
 
@@ -173,6 +183,7 @@ bool AsyncWebPrint::_exhaustBuffers() {
     // XXX: espasyncwebserver will trigger write callback if we setup response too early
     //      exploring code, callback handler responds to a special return value RESPONSE_TRY_AGAIN
     //      but, it seemingly breaks chunked response logic
+    // XXX: this should be **the only place** that can trigger yield() while we stay in CONT
     if (_state == State::None) {
         _prepareRequest();
     }

@@ -43,7 +43,7 @@ struct AsyncWebPrint : public Print {
     using BufferType = std::vector<uint8_t>;
 
     // To be able to safely output data right from the request callback,
-    // we schedule a 'printer' task that will print into the request response buffer as chunked request
+    // we schedule a 'printer' task that will print into the request response buffer via AsyncChunkedResponse
     template<typename CallbackType>
     static void scheduleFromRequest(const AsyncWebPrintConfig& config, AsyncWebServerRequest*, CallbackType);
 
