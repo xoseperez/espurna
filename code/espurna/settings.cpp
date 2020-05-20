@@ -495,14 +495,11 @@ void settingsSetup() {
     );
 
     terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext&) {
+        // TODO: enough of a buffer?
         DynamicJsonBuffer jsonBuffer(1024);
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
-        // XXX: replace with streaming
-        String output;
-        root.printTo(output);
-        DEBUG_MSG(output.c_str());
-        
+        root.prettyPrintTo(terminalDefaultStream());
     });
 
     terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
@@ -521,7 +518,7 @@ void settingsSetup() {
         ctx.output.printf("Current EEPROM sector: %u\n", EEPROMr.current());
         ctx.output.printf("Free EEPROM: %lu bytes (%lu%%)\n", freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
-        terminalOK();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
@@ -535,7 +532,11 @@ void settingsSetup() {
             result += Embedis::del(*it);
         }
 
-        ctx.output.printf(":%d\n", result);
+        if (result) {
+            terminalOK(ctx);
+        } else {
+            terminalError(ctx, F("no keys were removed"));
+        }
     });
 
     terminalRegisterCommand(F("SET"), [](const terminal::CommandContext& ctx) {
