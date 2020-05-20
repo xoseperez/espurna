@@ -157,7 +157,6 @@ void AsyncWebPrint::_prepareRequest() {
             }
         }
 
-        if (written) esp_schedule();
 
         return written;
     });
