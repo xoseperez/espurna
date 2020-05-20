@@ -80,6 +80,13 @@ void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintConfig& config, Async
     });
 }
 
+constexpr AsyncWebPrintConfig AsyncWebPrintDefaults {
+    /*mimeType       =*/ "text/plain",
+    /*backlogCountMax=*/ 2,
+    /*backlogSizeMax= */ TCP_MSS,
+    /*backlogTimeout= */ 5000
+};
+
 template<typename CallbackType>
 void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, CallbackType callback) {
     static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");

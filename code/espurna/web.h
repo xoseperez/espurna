@@ -31,13 +31,6 @@ struct AsyncWebPrintConfig {
     const decltype(millis()) backlogTimeout;
 };
 
-constexpr AsyncWebPrintConfig AsyncWebPrintDefaults {
-    /*mimeType       =*/ "text/plain",
-    /*backlogCountMax=*/ 2,
-    /*backlogSizeMax= */ TCP_MSS,
-    /*backlogTimeout= */ 5000
-};
-
 struct AsyncWebPrint : public Print {
 
     enum class State {
