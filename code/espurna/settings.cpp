@@ -500,6 +500,7 @@ void settingsSetup() {
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
         root.prettyPrintTo(ctx.output);
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
