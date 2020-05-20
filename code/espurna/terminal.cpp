@@ -398,11 +398,11 @@ void _terminalLoop() {
         bool out = false;
         switch (result) {
             case terminal::Terminal::Result::CommandNotFound:
-                DEBUG_MSG_P(PSTR("[TERMINAL] Command not found\n"));
+                terminalError(terminalDefaultStream(), F("Command not found"));
                 out = true;
                 break;
             case terminal::Terminal::Result::BufferOverflow:
-                DEBUG_MSG_P(PSTR("[TERMINAL] Command line buffer overflow\n"));
+                terminalError(terminalDefaultStream(), F("Command line buffer overflow"));
                 out = true;
                 break;
             case terminal::Terminal::Result::Command:
@@ -412,7 +412,7 @@ void _terminalLoop() {
                 out = false;
                 break;
             case terminal::Terminal::Result::Error:
-                DEBUG_MSG_P(PSTR("[TERMINAL] Unexpected error when parsing command line\n"));
+                terminalError(terminalDefaultStream(), F("Unexpected error when parsing command line"));
                 out = false;
                 break;
             case terminal::Terminal::Result::NoInput:
