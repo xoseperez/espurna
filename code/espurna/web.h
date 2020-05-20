@@ -73,8 +73,6 @@ struct AsyncWebPrint : public Print {
     std::list<BufferType> _buffers;
     AsyncWebServerRequest* const _request;
     State _state;
-    bool _ready;
-    bool _done;
 
     AsyncWebPrint(const AsyncWebPrintConfig&, AsyncWebServerRequest* req);
 
