@@ -1,0 +1,96 @@
+// ------------------------------------------------------------------------------
+// Example file for custom.h 
+// Either copy and paste this file then rename removing the .example or create your
+// own file: 'custom.h'
+// This file allows users to create their own configurations.
+// See 'code/espurna/config/general.h' for default settings.
+//
+// See: https://github.com/xoseperez/espurna/wiki/Software-features#enabling-features
+// and 'code/platformio_override.ini.example' for more details.
+// ------------------------------------------------------------------------------
+
+
+// Example of a Sonoff Basic board with some options disabled to reduce firmware size.
+
+#if defined(MY_SONOFF_BUILD01)    // This section will be used when src_build_flags contains
+                                  //  -DMY_SONOFF_BUILD01 in 'platformio_override.ini'
+
+    #define MANUFACTURER               "ITEAD"
+    #define DEVICE                     "SONOFF_BASIC_BUILD01"
+
+    // Disable these
+    #define DEBUG_SERIAL_SUPPORT       0
+    #define ALEXA_SUPPORT              0
+    #define DOMOTICZ_SUPPORT           0
+    #define HOMEASSISTANT_SUPPORT      0
+    #define THINGSPEAK_SUPPORT         0
+	
+    // Buttons
+    #define BUTTON1_PIN         	0
+    #define BUTTON1_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       	1
+
+    // Relays
+    #define RELAY1_PIN          	12
+    #define RELAY1_TYPE         	RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            	13
+    #define LED1_PIN_INVERSE    	1
+
+
+// Example of the Sonoff Basic board above but with two buttons on different GPIOs.
+// The two buttons both toggle the one RELAY but ALL button events send MQTT values.
+// An MQTT based system can then carry out differnt functions depending on
+// the 'DOUBLE CLICK, LONG CLICK OR LONG-LONG CLICK' trigger. A BMX280 environment
+// sensor is also connected using I2C on GPIO 1 and 3.
+
+#elif defined(MY_SONOFF_BUILD02)    // This section will be used when src_build_flags contains
+                                    //  -DMY_SONOFF_BUILD02 in 'platformio_override.ini
+
+    // Info - Custom Basic with BMX280 I2C on GPIO 1 and 3
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_BASIC_BMX280"    // You can use your own name here
+
+    // Disable these
+    #define DEBUG_SERIAL_SUPPORT    0
+    #define ALEXA_SUPPORT           0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define THINGSPEAK_SUPPORT      0
+	
+	
+    // Buttons
+    #define BUTTON_MQTT_SEND_ALL_EVENTS		1
+    #define BUTTON1_PIN         	0    // Built in button.
+    #define BUTTON1_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       	1
+    #define BUTTON1_PRESS       	BUTTON_MODE_NONE
+    #define BUTTON1_CLICK       	BUTTON_MODE_TOGGLE
+    #define BUTTON1_DBLCLICK    	BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    	BUTTON_MODE_OFF
+    #define BUTTON1_LNGLNGCLICK 	BUTTON_MODE_NONE
+    #define BUTTON2_PIN         	2    // External push button connected between IO2 and GND. 
+    #define BUTTON2_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_RELAY       	1
+    #define BUTTON2_PRESS       	BUTTON_MODE_NONE
+    #define BUTTON2_CLICK       	BUTTON_MODE_TOGGLE
+    #define BUTTON2_DBLCLICK    	BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK    	BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK 	BUTTON_MODE_NONE
+
+    // Relays
+    #define RELAY1_PIN          	12
+    #define RELAY1_TYPE         	RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            	13
+    #define LED1_PIN_INVERSE    	1
+    
+    // Extras	
+    #define BMX280_SUPPORT 		1
+    #define BMX280_ADDRESS 		0x76
+    #define I2C_SDA_PIN 		1  //TX PIN    **DISABLE DEBUG_SERIAL_SUPPORT**
+    #define I2C_SCL_PIN 		3  //RX PIN    **DISABLE DEBUG_SERIAL_SUPPORT**
+	
+#endif
