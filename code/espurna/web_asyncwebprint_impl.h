@@ -9,24 +9,26 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #pragma once
 
 #include "web.h"
+#include "libs/TypeChecks.h"
+
+#include <Schedule.h>
 
 #if WEB_SUPPORT
 
-#include "libs/TypeChecks.h"
-
-namespace web_type_traits {
+namespace asyncwebprint_traits {
 
 template <typename T>
-using has_Print_argument_t = decltype(std::declval<T>()(std::declval<Print&>()));
+using print_callable_t = decltype(std::declval<T>()(std::declval<Print&>()));
 
 template <typename T>
-using has_Print_argument = is_detected<has_Print_argument_t, T>;
+using is_print_callable = is_detected<print_callable_t, T>;
 
 }
 
 template<typename CallbackType>
 void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintConfig& config, AsyncWebServerRequest* request, CallbackType callback) {
-    static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
+    static_assert(asyncwebprint_traits::is_print_callable<CallbackType>::value, "CallbackType needs to be a callable with void(Print&)");
+
     // because of async nature of the server, we need to make sure we outlive 'request' object
     auto print = std::shared_ptr<AsyncWebPrint>(new AsyncWebPrint(config, request));
 
@@ -52,7 +54,6 @@ constexpr AsyncWebPrintConfig AsyncWebPrintDefaults {
 
 template<typename CallbackType>
 void AsyncWebPrint::scheduleFromRequest(AsyncWebServerRequest* request, CallbackType callback) {
-    static_assert(web_type_traits::has_Print_argument<CallbackType>::value, "CallbackType signature needs to match R(Print&)");
     AsyncWebPrint::scheduleFromRequest(AsyncWebPrintDefaults, request, callback);
 }
 

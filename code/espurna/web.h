@@ -83,9 +83,6 @@ struct AsyncWebPrint : public Print {
 
 };
 
-// Implementation of tempated constructors
-#include "web_asyncwebprint.h"
-
 using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t* data, size_t len, size_t index, size_t total)>;
 using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
 
