@@ -15,7 +15,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #pragma once
 
 template <typename T>
-struct StreamAdapter : public Stream {
+struct StreamAdapter final : public Stream {
     StreamAdapter(Print& writer, T&& begin, T&& end) :
         _writer(writer),
         _current(std::forward<T>(begin)),
@@ -23,25 +23,25 @@ struct StreamAdapter : public Stream {
         _end(std::forward<T>(end))
     {}
 
-    int available() final override {
+    int available() override {
         return (_end - _current);
     }
 
-    int peek() final override {
+    int peek() override {
         if (available() && (_end != (1 + _current))) {
             return *(1 + _current);
         }
         return -1;
     }
 
-    int read() final override {
+    int read() override {
         if (_end != _current) {
             return *(_current++);
         }
         return -1;
     }
 
-    void flush() final override {
+    void flush() override {
 // 2.3.0  - Stream::flush()
 // latest - Print::flush()
 #if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
@@ -49,15 +49,15 @@ struct StreamAdapter : public Stream {
 #endif
     }
 
-    size_t write(const uint8_t* buffer, size_t size) final override {
+    size_t write(const uint8_t* buffer, size_t size) override {
         return _writer.write(buffer, size);
     }
 
-    size_t write(uint8_t ch) final override {
+    size_t write(uint8_t ch) override {
         return _writer.write(ch);
     }
 
-    protected:
+    private:
 
     Print& _writer;
 

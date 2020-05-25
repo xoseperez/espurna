@@ -46,7 +46,7 @@ namespace {
 // Based on libs/StreamInjector.h by Xose Pérez <xose dot perez at gmail dot com> (see git-log for more info)
 // Instead of custom write(uint8_t) callback, we provide writer implementation in-place
 
-struct TerminalIO : public Stream {
+struct TerminalIO final : public Stream {
 
     TerminalIO(size_t size = 128) :
         _buffer(new char[size]),
@@ -82,7 +82,7 @@ struct TerminalIO : public Stream {
     // ---------------------------------------------------------------------
 
     // Return data from the internal buffer
-    int available() final override {
+    int available() override {
         unsigned int bytes = 0;
         if (_read > _write) {
             bytes += (_write - _read + _size);
@@ -92,7 +92,7 @@ struct TerminalIO : public Stream {
         return bytes;
     }
 
-    int peek() final override {
+    int peek() override {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
@@ -100,7 +100,7 @@ struct TerminalIO : public Stream {
         return ch;
     }
 
-    int read() final override {
+    int read() override {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
@@ -115,13 +115,13 @@ struct TerminalIO : public Stream {
     // - https://github.com/arduino/ArduinoCore-API/issues/102
     // Old 2.3.0 expects flush() on Stream, latest puts in in Print
     // We may have to cheat the system and implement everything as Stream to have it available.
-    void flush() final override {
+    void flush() override {
         // Here, reset reader position so that we return -1 until we have new data
         // writer flushing is implemented below, we don't need it here atm
         _read = _write;
     }
 
-    size_t write(const uint8_t* buffer, size_t size) final override {
+    size_t write(const uint8_t* buffer, size_t size) override {
     // Buffer data until we encounter line break, then flush via Raw debug method
     // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
 #if DEBUG_SUPPORT
@@ -143,7 +143,7 @@ struct TerminalIO : public Stream {
         return size;
     }
 
-    size_t write(uint8_t ch) final override {
+    size_t write(uint8_t ch) override {
         uint8_t buffer[1] {ch};
         return write(buffer, 1);
     }
