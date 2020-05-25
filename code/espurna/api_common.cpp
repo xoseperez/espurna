@@ -10,9 +10,32 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "espurna.h"
 
 #include "api.h"
+
+#include "ws.h"
 #include "web.h"
 
+// -----------------------------------------------------------------------------
+
 #if WEB_SUPPORT
+
+namespace {
+
+bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+    return (strncmp(key, "api", 3) == 0);
+}
+
+void _apiWebSocketOnConnected(JsonObject& root) {
+    root["apiEnabled"] = apiEnabled();
+    root["apiKey"] = apiKey();
+    root["apiRestFul"] = apiRestFul();
+    root["apiRealTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
+}
+
+}
+
+// -----------------------------------------------------------------------------
+// Public API
+// -----------------------------------------------------------------------------
 
 bool apiEnabled() {
     return getSetting("apiEnabled", 1 == API_ENABLED);
@@ -44,6 +67,13 @@ bool apiAuthenticate(AsyncWebServerRequest *request) {
 
     return true;
 
+}
+
+void apiCommonSetup() {
+    wsRegister()
+        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
+        .onConnected(_apiWebSocketOnConnected)
+        .onKeyCheck(_apiWebSocketOnKeyCheck);
 }
 
 #endif // WEB_SUPPORT == 1

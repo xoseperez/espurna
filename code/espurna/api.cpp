@@ -17,7 +17,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "system.h"
 #include "web.h"
 #include "rpc.h"
-#include "ws.h"
 
 struct web_api_t {
     explicit web_api_t(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) :
@@ -32,19 +31,6 @@ struct web_api_t {
     api_put_callback_f putFn;
 };
 std::vector<web_api_t> _apis;
-
-// -----------------------------------------------------------------------------
-
-bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "api", 3) == 0);
-}
-
-void _apiWebSocketOnConnected(JsonObject& root) {
-    root["apiEnabled"] = apiEnabled();
-    root["apiKey"] = apiKey();
-    root["apiRestFul"] = apiRestFul();
-    root["apiRealTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
-}
 
 // -----------------------------------------------------------------------------
 // API
@@ -78,7 +64,6 @@ void _onAPIsText(AsyncWebServerRequest *request) {
 constexpr size_t ApiJsonBufferSize = 1024;
 
 void _onAPIsJson(AsyncWebServerRequest *request) {
-
 
     DynamicJsonBuffer jsonBuffer(ApiJsonBufferSize);
     JsonObject& root = jsonBuffer.createObject();
@@ -220,14 +205,7 @@ void apiRegister(const String& key, api_get_callback_f getFn, api_put_callback_f
 }
 
 void apiSetup() {
-    wsRegister()
-        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
-        .onConnected(_apiWebSocketOnConnected)
-        .onKeyCheck(_apiWebSocketOnKeyCheck);
-    
-    #if not API_TERMINAL_SUPPORT
-        webRequestRegister(_apiRequestCallback);
-    #endif
+    webRequestRegister(_apiRequestCallback);
 }
 
 #endif // API_SUPPORT
