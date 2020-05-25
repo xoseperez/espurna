@@ -3,90 +3,36 @@
 TERMINAL MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-// (HACK) allow us to use internal lwip struct.
-// esp8266 re-defines enum values from tcp header... include them first
 #include "terminal.h"
 
 #if TERMINAL_SUPPORT
 
+#include "api.h"
+#include "debug.h"
 #include "settings.h"
 #include "system.h"
 #include "telnet.h"
 #include "utils.h"
+#include "mqtt.h"
 #include "wifi.h"
 #include "ws.h"
+
 #include "libs/URL.h"
-#include "libs/StreamInjector.h"
+#include "libs/StreamAdapter.h"
+#include "libs/PrintString.h"
 
+#include "web_asyncwebprint_impl.h"
+
+#include <algorithm>
 #include <vector>
+#include <utility>
+
+#include <Schedule.h>
 #include <Stream.h>
-
-StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
-EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
-
-#if SERIAL_RX_ENABLED
-    char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
-    static unsigned char _serial_rx_pointer = 0;
-#endif // SERIAL_RX_ENABLED
-
-// -----------------------------------------------------------------------------
-// Commands
-// -----------------------------------------------------------------------------
-
-void _terminalHelpCommand() {
-
-    // Get sorted list of commands
-    std::vector<String> commands;
-    unsigned char size = embedis.getCommandCount();
-    for (unsigned int i=0; i<size; i++) {
-
-        String command = embedis.getCommandName(i);
-        bool inserted = false;
-        for (unsigned char j=0; j<commands.size(); j++) {
-
-            // Check if we have to insert it before the current element
-            if (commands[j].compareTo(command) > 0) {
-                commands.insert(commands.begin() + j, command);
-                inserted = true;
-                break;
-            }
-
-        }
-
-        // If we could not insert it, just push it at the end
-        if (!inserted) commands.push_back(command);
-
-    }
-
-    // Output the list
-    DEBUG_MSG_P(PSTR("Available commands:\n"));
-    for (unsigned char i=0; i<commands.size(); i++) {
-        DEBUG_MSG_P(PSTR("> %s\n"), (commands[i]).c_str());
-    }
-
-}
-
-void _terminalKeysCommand() {
-
-    // Get sorted list of keys
-    auto keys = settingsKeys();
-
-    // Write key-values
-    DEBUG_MSG_P(PSTR("Current settings:\n"));
-    for (unsigned int i=0; i<keys.size(); i++) {
-        const auto value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
-    }
-
-    unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
-    DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
-    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
-    DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
-
-}
 
 #if LWIP_VERSION_MAJOR != 1
 
@@ -97,7 +43,169 @@ extern struct tcp_pcb *tcp_active_pcbs;
 // // TIME-WAIT status
 extern struct tcp_pcb *tcp_tw_pcbs;
 
-String _terminalPcbStateToString(const unsigned char state) {
+#endif
+
+namespace {
+
+// Based on libs/StreamInjector.h by Xose Pérez <xose dot perez at gmail dot com> (see git-log for more info)
+// Instead of custom write(uint8_t) callback, we provide writer implementation in-place
+
+struct TerminalIO final : public Stream {
+
+    TerminalIO(size_t capacity = 128) :
+        _buffer(new char[capacity]),
+        _capacity(capacity),
+        _write(0),
+        _read(0)
+    {}
+
+    ~TerminalIO() {
+        delete[] _buffer;
+    }
+
+    // ---------------------------------------------------------------------
+    // Injects data into the internal buffer so we can read() it
+    // ---------------------------------------------------------------------
+
+    size_t capacity() {
+        return _capacity;
+    }
+
+    size_t inject(char ch) {
+        _buffer[_write] = ch;
+        _write = (_write + 1) % _capacity;
+        return 1;
+    }
+
+    size_t inject(char *data, size_t len) {
+        for (size_t index = 0; index < len; ++index) {
+            inject(data[index]);
+        }
+        return len;
+    }
+
+    // ---------------------------------------------------------------------
+    // XXX: We are only supporting part of the Print & Stream interfaces
+    //      But, we need to be have all pure virtual methods implemented
+    // ---------------------------------------------------------------------
+
+    // Return data from the internal buffer
+    int available() override {
+        unsigned int bytes = 0;
+        if (_read > _write) {
+            bytes += (_write - _read + _capacity);
+        } else if (_read < _write) {
+            bytes += (_write - _read);
+        }
+        return bytes;
+    }
+
+    int peek() override {
+        int ch = -1;
+        if (_read != _write) {
+            ch = _buffer[_read];
+        }
+        return ch;
+    }
+
+    int read() override {
+        int ch = -1;
+        if (_read != _write) {
+            ch = _buffer[_read];
+            _read = (_read + 1) % _capacity;
+        }
+        return ch;
+    }
+
+    // {Stream,Print}::flush(), see:
+    // - https://github.com/esp8266/Arduino/blob/master/cores/esp8266/Print.h
+    // - https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Print.h
+    // - https://github.com/arduino/ArduinoCore-API/issues/102
+    // Old 2.3.0 expects flush() on Stream, latest puts in in Print
+    // We may have to cheat the system and implement everything as Stream to have it available.
+    void flush() override {
+        // Here, reset reader position so that we return -1 until we have new data
+        // writer flushing is implemented below, we don't need it here atm
+        _read = _write;
+    }
+
+    size_t write(const uint8_t* buffer, size_t size) override {
+    // Buffer data until we encounter line break, then flush via Raw debug method
+    // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
+#if DEBUG_SUPPORT
+        if (!size) return 0;
+        if (buffer[size-1] == '\0') return 0;
+        if (_output.capacity() < (size + 2)) {
+            _output.reserve(_output.size() + size + 2);
+        }
+        _output.insert(_output.end(),
+            reinterpret_cast<const char*>(buffer),
+            reinterpret_cast<const char*>(buffer) + size
+        );
+        if (_output.end() != std::find(_output.begin(), _output.end(), '\n')) {
+            _output.push_back('\0');
+            debugSendRaw(_output.data());
+            _output.clear();
+        }
+#endif
+        return size;
+    }
+
+    size_t write(uint8_t ch) override {
+        uint8_t buffer[1] {ch};
+        return write(buffer, 1);
+    }
+
+    private:
+
+#if DEBUG_SUPPORT
+    std::vector<char> _output;
+#endif
+
+    char * _buffer;
+    unsigned char _capacity;
+    unsigned char _write;
+    unsigned char _read;
+
+};
+
+auto _io = TerminalIO(TERMINAL_SHARED_BUFFER_SIZE);
+terminal::Terminal _terminal(_io, _io.capacity());
+
+// TODO: re-evaluate how and why this is used
+#if SERIAL_RX_ENABLED
+
+constexpr size_t SerialRxBufferSize { 128u };
+char _serial_rx_buffer[SerialRxBufferSize];
+static unsigned char _serial_rx_pointer = 0;
+
+#endif // SERIAL_RX_ENABLED
+
+// -----------------------------------------------------------------------------
+// Commands
+// -----------------------------------------------------------------------------
+
+void _terminalHelpCommand(const terminal::CommandContext& ctx) {
+
+    // Get sorted list of commands
+    auto commands = _terminal.commandNames();
+    std::sort(commands.begin(), commands.end(), [](const String& rhs, const String& lhs) -> bool {
+        return lhs.compareTo(rhs) > 0;
+    });
+
+    // Output the list asap
+    ctx.output.print(F("Available commands:\n"));
+    for (auto& command : commands) {
+        ctx.output.printf("> %s\n", command.c_str());
+    }
+
+    terminalOK(ctx.output);
+
+}
+
+#if LWIP_VERSION_MAJOR != 1
+
+String _terminalPcbStateToString(unsigned char state) {
     switch (state) {
         case 0: return F("CLOSED");
         case 1: return F("LISTEN");
@@ -173,39 +281,32 @@ void _terminalDnsFound(const char* name, const ip_addr_t* result, void*) {
 
 #endif // LWIP_VERSION_MAJOR != 1
 
-void _terminalInitCommand() {
+void _terminalInitCommands() {
 
-    terminalRegisterCommand(F("COMMANDS"), [](Embedis* e) {
-        _terminalHelpCommand();
-        terminalOK();
-    });
+    terminalRegisterCommand(F("COMMANDS"), _terminalHelpCommand);
+    terminalRegisterCommand(F("HELP"), _terminalHelpCommand);
 
-    terminalRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
+    terminalRegisterCommand(F("ERASE.CONFIG"), [](const terminal::CommandContext&) {
         terminalOK();
         customResetReason(CUSTOM_RESET_TERMINAL);
         eraseSDKConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
 
-    terminalRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
-        resetSettings();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("GPIO"), [](Embedis* e) {
+    terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
         int pin = -1;
 
-        if (e->argc < 2) {
+        if (ctx.argc < 2) {
             DEBUG_MSG("Printing all GPIO pins:\n");
         } else {
-            pin = String(e->argv[1]).toInt();
+            pin = ctx.argv[1].toInt();
             if (!gpioValid(pin)) {
                 terminalError(F("Invalid GPIO pin"));
                 return;
             }
 
-            if (e->argc > 2) {
-                bool state = String(e->argv[2]).toInt() == 1;
+            if (ctx.argc > 2) {
+                bool state = String(ctx.argv[2]).toInt() == 1;
                 digitalWrite(pin, state);
             }
         }
@@ -219,104 +320,46 @@ void _terminalInitCommand() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("HEAP"), [](Embedis* e) {
+    terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext&) {
         infoHeapStats();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("STACK"), [](Embedis* e) {
+    terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext&) {
         infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
         terminalOK();
     });
 
-    terminalRegisterCommand(F("HELP"), [](Embedis* e) {
-        _terminalHelpCommand();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("INFO"), [](Embedis* e) {
+    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext&) {
         info();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("KEYS"), [](Embedis* e) {
-        _terminalKeysCommand();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("GET"), [](Embedis* e) {
-        if (e->argc < 2) {
-            terminalError(F("Wrong arguments"));
-            return;
-        }
-
-        for (unsigned char i = 1; i < e->argc; i++) {
-            String key = String(e->argv[i]);
-            String value;
-            if (!Embedis::get(key, value)) {
-                const auto maybeDefault = settingsQueryDefaults(key);
-                if (maybeDefault.length()) {
-                    DEBUG_MSG_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeDefault.c_str());
-                } else {
-                    DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
-                }
-                continue;
-            }
-
-            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
-        }
-
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("RELOAD"), [](Embedis* e) {
-        espurnaReload();
-        terminalOK();
-    });
-
-    terminalRegisterCommand(F("RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext&) {
         terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
-    terminalRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
+    terminalRegisterCommand(F("RESET.SAFE"), [](const terminal::CommandContext&) {
         systemStabilityCounter(SYSTEM_CHECK_MAX);
         terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
-    terminalRegisterCommand(F("UPTIME"), [](Embedis* e) {
+    terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext&) {
         infoUptime();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer(1024);
-        JsonObject& root = jsonBuffer.createObject();
-        settingsGetJson(root);
-        // XXX: replace with streaming
-        String output;
-        root.printTo(output);
-        DEBUG_MSG(output.c_str());
-        
-    });
-
-    #if not SETTINGS_AUTOSAVE
-        terminalRegisterCommand(F("SAVE"), [](Embedis* e) {
-            eepromCommit();
-            terminalOK();
-        });
-    #endif
-
     #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-        terminalRegisterCommand(F("MFLN.PROBE"), [](Embedis* e) {
-            if (e->argc != 3) {
+        terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 3) {
                 terminalError(F("[url] [value]"));
                 return;
             }
 
-            URL _url(e->argv[1]);
-            uint16_t requested_mfln = atol(e->argv[2]);
+            URL _url(ctx.argv[1]);
+            uint16_t requested_mfln = atol(ctx.argv[2].c_str());
 
             auto client = std::make_unique<BearSSL::WiFiClientSecure>();
             client->setInsecure();
@@ -330,16 +373,16 @@ void _terminalInitCommand() {
     #endif
 
     #if LWIP_VERSION_MAJOR != 1
-        terminalRegisterCommand(F("HOST"), [](Embedis* e) {
-            if (e->argc != 2) {
+        terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 2) {
                 terminalError(F("HOST [hostname]"));
                 return;
             }
 
             ip_addr_t result;
-            auto error = dns_gethostbyname(e->argv[1], &result, _terminalDnsFound, nullptr);
+            auto error = dns_gethostbyname(ctx.argv[1].c_str(), &result, _terminalDnsFound, nullptr);
             if (error == ERR_OK) {
-                _terminalPrintDnsResult(e->argv[1], &result);
+                _terminalPrintDnsResult(ctx.argv[1].c_str(), &result);
                 terminalOK();
                 return;
             } else if (error != ERR_INPROGRESS) {
@@ -349,30 +392,56 @@ void _terminalInitCommand() {
 
         });
 
-        terminalRegisterCommand(F("NETSTAT"), [](Embedis*) {
+        terminalRegisterCommand(F("NETSTAT"), [](const terminal::CommandContext&) {
             _terminalPrintTcpPcbs();
         });
 
     #endif // LWIP_VERSION_MAJOR != 1
-    
+
 }
 
 void _terminalLoop() {
 
     #if DEBUG_SERIAL_SUPPORT
         while (DEBUG_PORT.available()) {
-            _serial.inject(DEBUG_PORT.read());
+            _io.inject(DEBUG_PORT.read());
         }
     #endif
 
-    embedis.process();
+    _terminal.process([](terminal::Terminal::Result result) {
+        bool out = false;
+        switch (result) {
+            case terminal::Terminal::Result::CommandNotFound:
+                terminalError(terminalDefaultStream(), F("Command not found"));
+                out = true;
+                break;
+            case terminal::Terminal::Result::BufferOverflow:
+                terminalError(terminalDefaultStream(), F("Command line buffer overflow"));
+                out = true;
+                break;
+            case terminal::Terminal::Result::Command:
+                out = true;
+                break;
+            case terminal::Terminal::Result::Pending:
+                out = false;
+                break;
+            case terminal::Terminal::Result::Error:
+                terminalError(terminalDefaultStream(), F("Unexpected error when parsing command line"));
+                out = false;
+                break;
+            case terminal::Terminal::Result::NoInput:
+                out = false;
+                break;
+        }
+        return out;
+    });
 
     #if SERIAL_RX_ENABLED
 
         while (SERIAL_RX_PORT.available() > 0) {
             char rc = SERIAL_RX_PORT.read();
             _serial_rx_buffer[_serial_rx_pointer++] = rc;
-            if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
+            if ((_serial_rx_pointer == SerialRxBufferSize) || (rc == 10)) {
                 terminalInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
                 _serial_rx_pointer = 0;
             }
@@ -382,52 +451,176 @@ void _terminalLoop() {
 
 }
 
+#if WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+
+bool _terminalWebApiMatchPath(AsyncWebServerRequest* request) {
+    const String api_path = getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
+    return request->url().equals(api_path);
+}
+
+void _terminalWebApiSetup() {
+
+    webRequestRegister([](AsyncWebServerRequest* request) {
+        // continue to the next handler if path does not match
+        if (!_terminalWebApiMatchPath(request)) return false;
+
+        // return 'true' after this point, since we did handle the request
+        webLog(request);
+        if (!apiAuthenticate(request)) return true;
+
+        auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
+        if (!cmd_param) {
+            request->send(500);
+            return true;
+        }
+
+        auto cmd = cmd_param->value();
+        if (!cmd.length()) {
+            request->send(500);
+            return true;
+        }
+
+        if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+            cmd += '\n';
+        }
+
+        // TODO: batch requests? processLine() -> process(...)
+        AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
+            StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+            terminal::Terminal handler(stream);
+            handler.processLine();
+        });
+
+        return true;
+    });
+
+}
+
+#endif // WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+
+
+#if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+
+void _terminalMqttSetup() {
+
+    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+        if (type == MQTT_CONNECT_EVENT) {
+            mqttSubscribe(MQTT_TOPIC_CMD);
+            return;
+        }
+
+        if (type == MQTT_MESSAGE_EVENT) {
+            String t = mqttMagnitude((char *) topic);
+            if (!t.startsWith(MQTT_TOPIC_CMD)) return;
+            if (!strlen(payload)) return;
+
+            String cmd(payload);
+            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+                cmd += '\n';
+            }
+
+            // TODO: unlike http handler, we have only one output stream
+            //       and **must** have a fixed-size output buffer
+            //       (wishlist: MQTT client does some magic and we don't buffer twice)
+            schedule_function([cmd]() {
+                PrintString buffer(TCP_MSS);
+                StreamAdapter<const char*> stream(buffer, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+
+                String out;
+                terminal::Terminal handler(stream);
+                switch (handler.processLine()) {
+                case terminal::Terminal::Result::CommandNotFound:
+                    out += F("Command not found");
+                    break;
+                case terminal::Terminal::Result::Command:
+                    out = std::move(buffer);
+                default:
+                    break;
+                }
+
+                if (out.length()) {
+                    mqttSendRaw(mqttTopic(MQTT_TOPIC_CMD, false).c_str(), out.c_str(), false);
+                }
+            });
+
+            return;
+        }
+    });
+
+}
+
+#endif // MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+
+}
+
 // -----------------------------------------------------------------------------
 // Pubic API
 // -----------------------------------------------------------------------------
 
+Stream & terminalDefaultStream() {
+    return (Stream &) _io;
+}
+
+size_t terminalCapacity() {
+    return _io.capacity();
+}
+
 void terminalInject(void *data, size_t len) {
-    _serial.inject((char *) data, len);
+    _io.inject((char *) data, len);
 }
 
 void terminalInject(char ch) {
-    _serial.inject(ch);
+    _io.inject(ch);
 }
 
-
-Stream & terminalSerial() {
-    return (Stream &) _serial;
-}
-
-void terminalRegisterCommand(const String& name, embedis_command_f command) {
-    Embedis::command(name, command);
+void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func) {
+    terminal::Terminal::addCommand(name, func);
 };
 
+void terminalOK(Print& print) {
+    print.print(F("+OK\n"));
+}
+
+void terminalError(Print& print, const String& error) {
+    print.printf("-ERROR: %s\n", error.c_str());
+}
+
+void terminalOK(const terminal::CommandContext& ctx) {
+    terminalOK(ctx.output);
+}
+
+void terminalError(const terminal::CommandContext& ctx, const String& error) {
+    terminalError(ctx.output, error);
+}
+
 void terminalOK() {
-    DEBUG_MSG_P(PSTR("+OK\n"));
+    terminalOK(_io);
 }
 
 void terminalError(const String& error) {
-    DEBUG_MSG_P(PSTR("-ERROR: %s\n"), error.c_str());
+    terminalError(_io, error);
 }
 
 void terminalSetup() {
 
-    _serial.callback([](uint8_t ch) {
-        #if TELNET_SUPPORT
-            telnetWrite(ch);
-        #endif
-        #if DEBUG_SERIAL_SUPPORT
-            DEBUG_PORT.write(ch);
-        #endif
-    });
-
+    // Show DEBUG panel with input
     #if WEB_SUPPORT
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
     #endif
 
-    _terminalInitCommand();
+    // Run terminal command and send back the result. Depends on the terminal command using ctx.output
+    #if WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+        _terminalWebApiSetup();
+    #endif
+
+    // Similar to the above, but we allow only very small and in-place outputs.
+    #if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+        _terminalMqttSetup();
+    #endif
+
+    // Initialize default commands
+    _terminalInitCommands();
 
     #if SERIAL_RX_ENABLED
         SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);

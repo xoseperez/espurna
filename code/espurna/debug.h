@@ -32,8 +32,10 @@ void debugConfigure();
 void debugConfigureBoot();
 void debugSetup();
 
+void debugSendRaw(const char* line, bool timestamp = false);
+
 void debugSend(const char* format, ...);
-void debugSend_P(PGM_P format, ...); // PGM_P is `const char*`
+void debugSend_P(const char* format, ...);
 
 #if DEBUG_SUPPORT
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)

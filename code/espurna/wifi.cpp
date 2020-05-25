@@ -377,42 +377,42 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
-    terminalRegisterCommand(F("WIFI"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI"), [](const terminal::CommandContext&) {
         wifiDebug();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.RESET"), [](const terminal::CommandContext&) {
         _wifiConfigure();
         wifiDisconnect();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("WIFI.STA"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.STA"), [](const terminal::CommandContext&) {
         wifiStartSTA();
         terminalOK();
     });
 
-    terminalRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.AP"), [](const terminal::CommandContext&) {
         wifiStartAP();
         terminalOK();
     });
 
     #if defined(JUSTWIFI_ENABLE_WPS)
-        terminalRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.WPS"), [](const terminal::CommandContext&) {
             wifiStartWPS();
             terminalOK();
         });
     #endif // defined(JUSTWIFI_ENABLE_WPS)
 
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        terminalRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.SMARTCONFIG"), [](const terminal::CommandContext&) {
             wifiStartSmartConfig();
             terminalOK();
         });
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
-    terminalRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.SCAN"), [](const terminal::CommandContext&) {
         _wifiScan();
         terminalOK();
     });

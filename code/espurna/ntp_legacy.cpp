@@ -250,7 +250,7 @@ void ntpSetup() {
     _ntpBackwards();
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("NTP"), [](Embedis* e) {
+        terminalRegisterCommand(F("NTP"), [](const terminal::CommandContext&) {
             if (ntpSynced()) {
                 _ntpReport();
                 terminalOK();
@@ -259,7 +259,7 @@ void ntpSetup() {
             }
         });
 
-        terminalRegisterCommand(F("NTP.SYNC"), [](Embedis* e) {
+        terminalRegisterCommand(F("NTP.SYNC"), [](const terminal::CommandContext&) {
             _ntpWantSync();
             terminalOK();
         });

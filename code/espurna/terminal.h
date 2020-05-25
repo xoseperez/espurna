@@ -12,17 +12,29 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if TERMINAL_SUPPORT
 
-#include "libs/EmbedisWrap.h"
+#include <functional>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
-using embedis_command_f = void (*)(Embedis*);
+#include "terminal_parsing.h"
+#include "terminal_commands.h"
 
 void terminalOK();
 void terminalError(const String& error);
 
-void terminalRegisterCommand(const String& name, embedis_command_f func);
+void terminalOK(Print&);
+void terminalError(Print&, const String& error);
+
+void terminalOK(const terminal::CommandContext&);
+void terminalError(const terminal::CommandContext&, const String&);
+
+void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func);
+
+size_t terminalCapacity();
 void terminalInject(void *data, size_t len);
 void terminalInject(char ch);
-Stream& terminalSerial();
+Stream& terminalDefaultStream();
 
 void terminalSetup();
 

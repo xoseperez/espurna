@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "api.h"
 
+// -----------------------------------------------------------------------------
+
 #if API_SUPPORT
 
 #include <vector>
@@ -15,67 +17,24 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "system.h"
 #include "web.h"
 #include "rpc.h"
-#include "ws.h"
 
 struct web_api_t {
-    char * key;
-    api_get_callback_f getFn = NULL;
-    api_put_callback_f putFn = NULL;
+    explicit web_api_t(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) :
+        key(key),
+        getFn(getFn),
+        putFn(putFn)
+    {}
+    web_api_t() = delete;
+
+    const String key;
+    api_get_callback_f getFn;
+    api_put_callback_f putFn;
 };
 std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
-
-bool _apiEnabled() {
-    return getSetting("apiEnabled", 1 == API_ENABLED);
-}
-
-bool _apiRestFul() {
-    return getSetting("apiRestFul", 1 == API_RESTFUL);
-}
-
-String _apiKey() {
-    return getSetting("apiKey", API_KEY);
-}
-
-bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "api", 3) == 0);
-}
-
-void _apiWebSocketOnConnected(JsonObject& root) {
-    root["apiEnabled"] = _apiEnabled();
-    root["apiKey"] = _apiKey();
-    root["apiRestFul"] = _apiRestFul();
-    root["apiRealTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
-}
-
-void _apiConfigure() {
-    // Nothing to do
-}
-
-// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
-
-bool _authAPI(AsyncWebServerRequest *request) {
-
-    const auto key = _apiKey();
-    if (!key.length() || !_apiEnabled()) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
-        request->send(403);
-        return false;
-    }
-
-    AsyncWebParameter* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
-    if (!keyParam || !keyParam->value().equals(key)) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
-        request->send(403);
-        return false;
-    }
-
-    return true;
-
-}
 
 bool _asJson(AsyncWebServerRequest *request) {
     bool asJson = false;
@@ -102,19 +61,18 @@ void _onAPIsText(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
-constexpr const size_t API_JSON_BUFFER_SIZE = 1024;
+constexpr size_t ApiJsonBufferSize = 1024;
 
 void _onAPIsJson(AsyncWebServerRequest *request) {
 
-
-    DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
+    DynamicJsonBuffer jsonBuffer(ApiJsonBufferSize);
     JsonObject& root = jsonBuffer.createObject();
 
     constexpr const int BUFFER_SIZE = 48;
 
     for (unsigned int i=0; i < _apis.size(); i++) {
         char buffer[BUFFER_SIZE] = {0};
-        int res = snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key);
+        int res = snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key.c_str());
         if ((res < 0) || (res > (BUFFER_SIZE - 1))) {
             request->send(500);
             return;
@@ -130,7 +88,7 @@ void _onAPIsJson(AsyncWebServerRequest *request) {
 void _onAPIs(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authAPI(request)) return;
+    if (!apiAuthenticate(request)) return;
 
     bool asJson = _asJson(request);
 
@@ -146,7 +104,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
 void _onRPC(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authAPI(request)) return;
+    if (!apiAuthenticate(request)) return;
 
     //bool asJson = _asJson(request);
     int response = 404;
@@ -187,19 +145,18 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
     // Not API request
     if (!url.startsWith("/api/")) return false;
 
-    for (unsigned char i=0; i < _apis.size(); i++) {
+    for (auto& api : _apis) {
 
-        // Search API url
-        web_api_t api = _apis[i];
+        // Search API url for the exact match
         if (!url.endsWith(api.key)) continue;
 
         // Log and check credentials
         webLog(request);
-        if (!_authAPI(request)) return false;
+        if (!apiAuthenticate(request)) return false;
 
         // Check if its a PUT
         if (api.putFn != NULL) {
-            if (!_apiRestFul() || (request->method() == HTTP_PUT)) {
+            if (!apiRestFul() || (request->method() == HTTP_PUT)) {
                 if (request->hasParam("value", request->method() == HTTP_PUT)) {
                     AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
                     (api.putFn)((p->value()).c_str());
@@ -224,9 +181,9 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
         if (_asJson(request)) {
             char buffer[64];
             if (isNumber(value)) {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key.c_str(), value);
             } else {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key, value);
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key.c_str(), value);
             }
             request->send(200, "application/json", buffer);
         } else {
@@ -243,25 +200,13 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
 // -----------------------------------------------------------------------------
 
-void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn) {
-
-    // Store it
-    web_api_t api;
-    api.key = strdup(key);
-    api.getFn = getFn;
-    api.putFn = putFn;
-    _apis.push_back(api);
-
+void apiRegister(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) {
+    _apis.emplace_back(key, std::move(getFn), std::move(putFn));
 }
 
 void apiSetup() {
-    _apiConfigure();
-    wsRegister()
-        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
-        .onConnected(_apiWebSocketOnConnected)
-        .onKeyCheck(_apiWebSocketOnKeyCheck);
     webRequestRegister(_apiRequestCallback);
-    espurnaRegisterReload(_apiConfigure);
 }
 
 #endif // API_SUPPORT
+

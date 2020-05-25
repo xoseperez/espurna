@@ -368,19 +368,19 @@ PZEM004TSensor* PZEM004TSensor::instance = nullptr;
 
 void pzem004tInitCommands() {
 
-    terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
         if (!PZEM004TSensor::instance) return;
 
-        if (e->argc == 1) {
+        if (ctx.argc == 1) {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             unsigned char dev_count = PZEM004TSensor::instance->countDevices();
             for(unsigned char dev = 0; dev < dev_count; dev++) {
                 DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, PZEM004TSensor::instance->getAddress(dev).c_str());
             }
             terminalOK();
-        } else if(e->argc == 2) {
+        } else if(ctx.argc == 2) {
             IPAddress addr;
-            if (addr.fromString(String(e->argv[1]))) {
+            if (addr.fromString(ctx.argv[1])) {
                 if(PZEM004TSensor::instance->setDeviceAddress(&addr)) {
                     terminalOK();
                 }
@@ -392,12 +392,12 @@ void pzem004tInitCommands() {
         }
     });
 
-    terminalRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
-        if(e->argc > 2) {
+    terminalRegisterCommand(F("PZ.RESET"), [](const terminal::CommandContext& ctx) {
+        if(ctx.argc > 2) {
             terminalError(F("Wrong arguments"));
         } else {
-            unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
-            unsigned char limit = e->argc == 2 ? init +1 : PZEM004TSensor::instance->countDevices();
+            unsigned char init = ctx.argc == 2 ? ctx.argv[1].toInt() : 0;
+            unsigned char limit = ctx.argc == 2 ? init +1 : PZEM004TSensor::instance->countDevices();
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             for(unsigned char dev = init; dev < limit; dev++) {
                 PZEM004TSensor::instance->resetEnergy(dev);
@@ -406,12 +406,12 @@ void pzem004tInitCommands() {
         }
     });
 
-    terminalRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
-        if(e->argc > 2) {
+    terminalRegisterCommand(F("PZ.VALUE"), [](const terminal::CommandContext& ctx) {
+        if(ctx.argc > 2) {
             terminalError(F("Wrong arguments"));
         } else {
-            unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
-            unsigned char limit = e->argc == 2 ? init +1 : PZEM004TSensor::instance->countDevices();
+            unsigned char init = ctx.argc == 2 ? ctx.argv[1].toInt() : 0;
+            unsigned char limit = ctx.argc == 2 ? init +1 : PZEM004TSensor::instance->countDevices();
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             for(unsigned char dev = init; dev < limit; dev++) {
                 DEBUG_MSG_P(PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s\n"), //

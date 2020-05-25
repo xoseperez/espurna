@@ -106,6 +106,7 @@ struct ws_data_t {
 // -----------------------------------------------------------------------------
 
 using ws_debug_msg_t = std::pair<String, String>;
+using ws_debug_messages_t = std::vector<ws_debug_msg_t>;
 
 struct ws_debug_t {
 
@@ -139,6 +140,6 @@ struct ws_debug_t {
     bool flush;
     size_t current;
     const size_t capacity;
-    std::vector<ws_debug_msg_t> messages;
+    ws_debug_messages_t messages;
 
 };

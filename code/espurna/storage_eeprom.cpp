@@ -65,7 +65,7 @@ void eepromBackup(uint32_t index){
 
 void _eepromInitCommands() {
 
-    terminalRegisterCommand(F("EEPROM"), [](Embedis* e) {
+    terminalRegisterCommand(F("EEPROM"), [](const terminal::CommandContext&) {
         infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
         eepromSectorsDebug();
         if (_eeprom_commit_count > 0) {
@@ -75,7 +75,7 @@ void _eepromInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("EEPROM.COMMIT"), [](Embedis* e) {
+    terminalRegisterCommand(F("EEPROM.COMMIT"), [](const terminal::CommandContext&) {
         const bool res = _eepromCommit();
         if (res) {
             terminalOK();
@@ -84,24 +84,26 @@ void _eepromInitCommands() {
         }
     });
 
-    terminalRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
-        EEPROMr.dump(terminalSerial());
-        terminalOK();
+    terminalRegisterCommand(F("EEPROM.DUMP"), [](const terminal::CommandContext& ctx) {
+        // XXX: like Update::printError, dump only accepts Stream
+        //      this should be safe, since we expect read-only stream
+        EEPROMr.dump(reinterpret_cast<Stream&>(ctx.output));
+        terminalOK(ctx.output);
     });
 
-    terminalRegisterCommand(F("FLASH.DUMP"), [](Embedis* e) {
-        if (e->argc < 2) {
+    terminalRegisterCommand(F("FLASH.DUMP"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc < 2) {
             terminalError(F("Wrong arguments"));
             return;
         }
-        uint32_t sector = String(e->argv[1]).toInt();
+        uint32_t sector = ctx.argv[1].toInt();
         uint32_t max = ESP.getFlashChipSize() / SPI_FLASH_SEC_SIZE;
         if (sector >= max) {
             terminalError(F("Sector out of range"));
             return;
         }
-        EEPROMr.dump(terminalSerial(), sector);
-        terminalOK();
+        EEPROMr.dump(reinterpret_cast<Stream&>(ctx.output), sector);
+        terminalOK(ctx.output);
     });
 
 }

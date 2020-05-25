@@ -268,17 +268,13 @@ void idbSetup() {
     espurnaRegisterLoop(_idbFlush);
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("IDB.SEND"), [](Embedis* e) {
-            if (e->argc != 4) {
+        terminalRegisterCommand(F("IDB.SEND"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 4) {
                 terminalError(F("idb.send <topic> <id> <value>"));
                 return;
             }
 
-            const String topic = e->argv[1];
-            const auto id = atoi(e->argv[2]);
-            const String value = e->argv[3];
-
-            idbSend(topic.c_str(), id, value.c_str());
+            idbSend(ctx.argv[1].c_str(), ctx.argv[2].toInt(), ctx.argv[3].c_str());
         });
     #endif
 

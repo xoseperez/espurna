@@ -184,8 +184,10 @@ void setup() {
             otaWebSetup();
         #endif
     #endif
-    #if API_SUPPORT
-        apiSetup();
+
+    // Multiple modules depend on the generic 'API' services
+    #if API_SUPPORT || TERMINAL_WEB_API_SUPPORT
+        apiCommonSetup();
     #endif
 
     // lightSetup must be called before relaySetup

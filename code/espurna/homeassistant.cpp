@@ -502,7 +502,7 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 
 void _haInitCommands() {
 
-    terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.CONFIG"), [](const terminal::CommandContext&) {
         for (unsigned char idx=0; idx<relayCount(); ++idx) {
             DynamicJsonBuffer jsonBuffer(1024);
             JsonObject& root = jsonBuffer.createObject();
@@ -521,7 +521,7 @@ void _haInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("HA.SEND"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.SEND"), [](const terminal::CommandContext&) {
         setSetting("haEnabled", "1");
         _haConfigure();
         #if WEB_SUPPORT
@@ -530,7 +530,7 @@ void _haInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.CLEAR"), [](const terminal::CommandContext&) {
         setSetting("haEnabled", "0");
         _haConfigure();
         #if WEB_SUPPORT

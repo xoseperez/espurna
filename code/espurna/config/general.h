@@ -175,7 +175,23 @@
 #define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
 #endif
 
-#define TERMINAL_BUFFER_SIZE     128            // Max size for commands commands
+#ifndef TERMINAL_SHARED_BUFFER_SIZE
+#define TERMINAL_SHARED_BUFFER_SIZE     128     // Maximum size for command line, shared by the WebUI, Telnet and Serial
+#endif
+
+#ifndef TERMINAL_MQTT_SUPPORT
+#define TERMINAL_MQTT_SUPPORT       0       // MQTT Terminal support built in
+                                            // Depends on MQTT_SUPPORT and TERMINAL_SUPPORT commands being available
+#endif
+
+#ifndef TERMINAL_WEB_API_SUPPORT
+#define TERMINAL_WEB_API_SUPPORT    0       // Web server API Terminal support built in
+                                            // Depends on WEB_SUPPORT and TERMINAL_SUPPORT commands being available
+#endif
+
+#ifndef TERMINAL_WEB_API_PATH
+#define TERMINAL_WEB_API_PATH       "/api/cmd"
+#endif
 
 //------------------------------------------------------------------------------
 // SYSTEM CHECK
@@ -768,7 +784,6 @@
 #define API_REAL_TIME_VALUES        0           // Show filtered/median values by default (0 => median, 1 => real time)
 #endif
 
-
 // -----------------------------------------------------------------------------
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
@@ -1163,6 +1178,7 @@
 #define MQTT_TOPIC_OTA              "ota"
 #define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
 #define MQTT_TOPIC_CURTAIN          "curtain"
+#define MQTT_TOPIC_CMD              "cmd"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"

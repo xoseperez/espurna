@@ -12,7 +12,7 @@ OTA MODULE COMMON FUNCTIONS
 void otaPrintError() {
     if (Update.hasError()) {
         #if TERMINAL_SUPPORT
-            Update.printError(terminalSerial());
+            Update.printError(terminalDefaultStream());
         #elif DEBUG_SERIAL_SUPPORT && defined(DEBUG_PORT)
             Update.printError(DEBUG_PORT);
         #endif

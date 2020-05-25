@@ -142,7 +142,7 @@ void crashDump() {
 void crashSetup() {
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("CRASH"), [](Embedis* e) {
+        terminalRegisterCommand(F("CRASH"), [](const terminal::CommandContext&) {
             crashDump();
             crashClear();
             terminalOK();

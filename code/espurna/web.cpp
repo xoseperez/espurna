@@ -10,6 +10,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+#include <algorithm>
+#include <functional>
+#include <memory>
+
+#include <Schedule.h>
+
 #include "system.h"
 #include "utils.h"
 #include "ntp.h"
@@ -42,6 +48,151 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/server.cer.h"
 #include "static/server.key.h"
 #endif // WEB_SSL_ENABLED
+
+
+AsyncWebPrint::AsyncWebPrint(const AsyncWebPrintConfig& config, AsyncWebServerRequest* request) :
+    mimeType(config.mimeType),
+    backlogCountMax(config.backlogCountMax),
+    backlogSizeMax(config.backlogSizeMax),
+    backlogTimeout(config.backlogTimeout),
+    _request(request),
+    _state(State::None)
+{}
+
+bool AsyncWebPrint::_addBuffer() {
+    if ((_buffers.size() + 1) > backlogCountMax) {
+        if (!_exhaustBuffers()) {
+            _state = State::Error;
+            return false;
+        }
+    }
+
+    // Note: c++17, emplace returns created object reference
+    //       c++11, we need to use .back()
+    _buffers.emplace_back(backlogSizeMax, 0);
+    _buffers.back().clear();
+
+    return true;
+}
+
+// Creates response object that will handle the data written into the Print& interface.
+//
+// This API expects a **very** careful approach to context switching between SYS and CONT:
+// - Returning RESPONSE_TRY_AGAIN before buffers are filled will result in invalid size marker being sent on the wire.
+//   HTTP client (curl, python requests etc., as discovered in testing) will then drop the connection
+// - Returning 0 will immediatly close the connection from our side
+// - Calling _prepareRequest() **before** _buffers are filled will result in returning 0
+// - Calling yield() / delay() while request AsyncWebPrint is active **may** trigger this callback out of sequence
+//   (e.g. Serial.print(..), DEBUG_MSG(...), or any other API trying to switch contexts)
+// - Receiving data (tcp ack from the previous packet) **will** trigger the callback when switching contexts.
+
+void AsyncWebPrint::_prepareRequest() {
+    _state = State::Sending;
+
+    auto *response = _request->beginChunkedResponse(mimeType, [this](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        switch (_state) {
+        case State::None:
+            return RESPONSE_TRY_AGAIN;
+        case State::Error:
+        case State::Done:
+            return 0;
+        case State::Sending:
+            break;
+        }
+
+        size_t written = 0;
+        while ((written < maxLen) && !_buffers.empty()) {
+            auto& chunk =_buffers.front();
+            auto have = maxLen - written;
+            if (chunk.size() > have) {
+                std::copy(chunk.data(), chunk.data() + have, buffer + written);
+                chunk.erase(chunk.begin(), chunk.begin() + have);
+                written += have;
+            } else {
+                std::copy(chunk.data(), chunk.data() + chunk.size(), buffer + written);
+                _buffers.pop_front();
+                written += chunk.size();
+            }
+        }
+
+
+        return written;
+    });
+
+    response->addHeader("Connection", "close");
+    _request->send(response);
+}
+
+void AsyncWebPrint::setState(State state) {
+    _state = state;
+}
+
+AsyncWebPrint::State AsyncWebPrint::getState() {
+    return _state;
+}
+
+size_t AsyncWebPrint::write(uint8_t b) {
+    const uint8_t tmp[1] {b};
+    return write(tmp, 1);
+}
+
+bool AsyncWebPrint::_exhaustBuffers() {
+    // XXX: espasyncwebserver will trigger write callback if we setup response too early
+    //      exploring code, callback handler responds to a special return value RESPONSE_TRY_AGAIN
+    //      but, it seemingly breaks chunked response logic
+    // XXX: this should be **the only place** that can trigger yield() while we stay in CONT
+    if (_state == State::None) {
+        _prepareRequest();
+    }
+
+    const auto start = millis();
+    do {
+        if (millis() - start > 5000) {
+            _buffers.clear();
+            break;
+        }
+        yield();
+    } while (!_buffers.empty());
+
+    return _buffers.empty();
+}
+
+void AsyncWebPrint::flush() {
+    _exhaustBuffers();
+    _state = State::Done;
+}
+
+size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
+    if (_state == State::Error) {
+        return 0;
+    }
+
+    size_t full_size = size;
+    auto* data_ptr = data;
+
+    while (size) {
+        if (_buffers.empty() && !_addBuffer()) {
+            full_size = 0;
+            break;
+        }
+        auto& current = _buffers.back();
+        const auto have = current.capacity() - current.size();
+        if (have >= size) {
+            current.insert(current.end(), data_ptr, data_ptr + size);
+            size = 0;
+        } else {
+            current.insert(current.end(), data_ptr, data_ptr + have);
+            if (!_addBuffer()) {
+                full_size = 0;
+                break;
+            }
+            data_ptr += have;
+            size -= have;
+        }
+    }
+
+    return full_size;
+}
 
 // -----------------------------------------------------------------------------
 

@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "settings.h"
 
+#include "terminal.h"
+
 #include <vector>
 #include <cstdlib>
 
@@ -491,5 +493,108 @@ void settingsSetup() {
             []() {}
         #endif
     );
+
+    terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext& ctx) {
+        // TODO: enough of a buffer?
+        DynamicJsonBuffer jsonBuffer(1024);
+        JsonObject& root = jsonBuffer.createObject();
+        settingsGetJson(root);
+        root.prettyPrintTo(ctx.output);
+        terminalOK(ctx);
+    });
+
+    terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
+        // Get sorted list of keys
+        auto keys = settingsKeys();
+
+        // Write key-values
+        ctx.output.println(F("Current settings:"));
+        for (unsigned int i=0; i<keys.size(); i++) {
+            const auto value = getSetting(keys[i]);
+            ctx.output.printf("> %s => \"%s\"\n", (keys[i]).c_str(), value.c_str());
+        }
+
+        unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
+        ctx.output.printf("Number of keys: %u\n", keys.size());
+        ctx.output.printf("Current EEPROM sector: %u\n", EEPROMr.current());
+        ctx.output.printf("Free EEPROM: %lu bytes (%lu%%)\n", freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
+
+        terminalOK(ctx);
+    });
+
+    terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 2) {
+            terminalError(ctx, F("del <key> [<key>...]"));
+            return;
+        }
+
+        int result = 0;
+        for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
+            result += Embedis::del(*it);
+        }
+
+        if (result) {
+            terminalOK(ctx);
+        } else {
+            terminalError(ctx, F("no keys were removed"));
+        }
+    });
+
+    terminalRegisterCommand(F("SET"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 3) {
+            terminalError(ctx, F("set <key> <value>"));
+            return;
+        }
+
+        if (Embedis::set(ctx.argv[1], ctx.argv[2])) {
+            terminalOK(ctx);
+            return;
+        }
+
+        terminalError(ctx, F("could not set the key"));
+    });
+
+    terminalRegisterCommand(F("GET"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc < 2) {
+            terminalError(ctx, F("Wrong arguments"));
+            return;
+        }
+
+        for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
+            const String& key = *it;
+            String value;
+            if (!Embedis::get(key, value)) {
+                const auto maybeDefault = settingsQueryDefaults(key);
+                if (maybeDefault.length()) {
+                    ctx.output.printf("> %s => %s (default)\n", key.c_str(), maybeDefault.c_str());
+                } else {
+                    ctx.output.printf("> %s =>\n", key.c_str());
+                }
+                continue;
+            }
+
+            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), value.c_str());
+        }
+
+        terminalOK(ctx);
+    });
+
+    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext&) {
+        espurnaReload();
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext&) {
+        resetSettings();
+        terminalOK();
+    });
+
+    #if not SETTINGS_AUTOSAVE
+        terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext&) {
+            eepromCommit();
+            terminalOK();
+        });
+    #endif
+
 
 }

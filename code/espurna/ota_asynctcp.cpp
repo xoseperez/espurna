@@ -219,11 +219,11 @@ void _otaClientFrom(const String& url) {
 
 void _otaClientInitCommands() {
 
-    terminalRegisterCommand(F("OTA"), [](Embedis* e) {
-        if (e->argc < 2) {
+    terminalRegisterCommand(F("OTA"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc < 2) {
             terminalError(F("OTA <url>"));
         } else {
-            _otaClientFrom(String(e->argv[1]));
+            _otaClientFrom(ctx.argv[1]);
             terminalOK();
         }
     });

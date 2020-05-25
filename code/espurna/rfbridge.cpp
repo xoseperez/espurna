@@ -638,54 +638,53 @@ void _rfbAPISetup() {
 
 void _rfbInitCommands() {
 
-    terminalRegisterCommand(F("LEARN"), [](Embedis* e) {
+    terminalRegisterCommand(F("LEARN"), [](const terminal::CommandContext& ctx) {
 
-        if (e->argc < 3) {
+        if (ctx.argc != 3) {
             terminalError(F("Wrong arguments"));
             return;
         }
         
-        int id = String(e->argv[1]).toInt();
+        // 1st argument is relayID
+        int id = ctx.argv[1].toInt();
         if (id >= relayCount()) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
             return;
         }
 
-        int status = String(e->argv[2]).toInt();
-
-        rfbLearn(id, status == 1);
+        // 2nd argument is status
+        rfbLearn(id, (ctx.argv[2].toInt()) == 1);
 
         terminalOK();
 
     });
 
-    terminalRegisterCommand(F("FORGET"), [](Embedis* e) {
+    terminalRegisterCommand(F("FORGET"), [](const terminal::CommandContext& ctx) {
 
-        if (e->argc < 3) {
+        if (ctx.argc != 3) {
             terminalError(F("Wrong arguments"));
             return;
         }
         
-        int id = String(e->argv[1]).toInt();
+        // 1st argument is relayID
+        int id = ctx.argv[1].toInt();
         if (id >= relayCount()) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
             return;
         }
 
-        int status = String(e->argv[2]).toInt();
-
-        rfbForget(id, status == 1);
+        // 2nd argument is status
+        rfbForget(id, (ctx.argv[2].toInt()) == 1);
 
         terminalOK();
 
     });
 
     #if !RFB_DIRECT
-        terminalRegisterCommand(F("RFB.WRITE"), [](Embedis* e) {
-            if (e->argc != 2) return;
-            String arg(e->argv[1]);
+        terminalRegisterCommand(F("RFB.WRITE"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 2) return;
             uint8_t data[RF_MAX_MESSAGE_SIZE];
-            size_t bytes = _rfbBytearrayFromHex(arg.c_str(), arg.length(), data, sizeof(data));
+            size_t bytes = _rfbBytearrayFromHex(ctx.argv[1].c_str(), ctx.argv[1].length(), data, sizeof(data));
             if (bytes) {
                 _rfbSendRaw(data, bytes);
             }
