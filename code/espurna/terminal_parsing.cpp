@@ -220,21 +220,7 @@ size_t LowercaseFnv1Hash<String>::operator()(const String& str) const {
 
 template<>
 bool LowercaseEquals<String>::operator()(const String& lhs, const String& rhs) const {
-    if (lhs == rhs) {
-        return true;
-    }
-
-    String _lhs(lhs);
-    _lhs.toLowerCase();
-
-    String _rhs(rhs);
-    _rhs.toLowerCase();
-
-    if (_lhs == _rhs) {
-        return true;
-    }
-
-    return false;
+    return lhs.equalsIgnoreCase(rhs);
 }
 
 
