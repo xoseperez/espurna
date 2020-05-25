@@ -20,9 +20,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 
 struct web_api_t {
-    char * key;
-    api_get_callback_f getFn = NULL;
-    api_put_callback_f putFn = NULL;
+    explicit web_api_t(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) :
+        key(key),
+        getFn(getFn),
+        putFn(putFn)
+    {}
+    web_api_t() = delete;
+
+    const String key;
+    api_get_callback_f getFn;
+    api_put_callback_f putFn;
 };
 std::vector<web_api_t> _apis;
 
@@ -80,7 +87,7 @@ void _onAPIsJson(AsyncWebServerRequest *request) {
 
     for (unsigned int i=0; i < _apis.size(); i++) {
         char buffer[BUFFER_SIZE] = {0};
-        int res = snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key);
+        int res = snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key.c_str());
         if ((res < 0) || (res > (BUFFER_SIZE - 1))) {
             request->send(500);
             return;
@@ -189,9 +196,9 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
         if (_asJson(request)) {
             char buffer[64];
             if (isNumber(value)) {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key.c_str(), value);
             } else {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key, value);
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key.c_str(), value);
             }
             request->send(200, "application/json", buffer);
         } else {
@@ -208,18 +215,9 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
 // -----------------------------------------------------------------------------
 
-#if API_TERMINAL_SUPPORT
-void apiRegister(const char*, api_get_callback_f, api_put_callback_f) {
+void apiRegister(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) {
+    _apis.emplace_back(key, std::move(getFn), std::move(putFn));
 }
-#else
-void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn) {
-    _apis.emplace_back(
-        strdup(key),
-        std::move(getFn),
-        std::move(putFn)
-    );
-}
-#endif
 
 void apiSetup() {
     wsRegister()
