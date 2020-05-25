@@ -61,7 +61,7 @@ namespace parsing {
 
 // Helper functions to handle \xHH codes
 static bool is_hex_digit(char c) {
-	return (c >= '0' && c <= '9') \
+    return (c >= '0' && c <= '9') \
          ||(c >= 'a' && c <= 'f') \
          ||(c >= 'A' && c <= 'F');
 }
@@ -92,10 +92,10 @@ static char hex_digit_to_int(char c) {
 CommandLine parse_commandline(const char *line) {
     const char *p = line;
 
-	CommandLine result {{}, 0};
+    CommandLine result {{}, 0};
     result.argv.reserve(4);
 
-	String current;
+    String current;
 
     while(1) {
         /* skip blanks */
@@ -142,7 +142,7 @@ CommandLine parse_commandline(const char *line) {
                         /* unterminated quotes */
                         goto err;
                     } else {
-						char buf[2] {*p, '\0'};
+                        char buf[2] {*p, '\0'};
                         current += buf;
                     }
                 } else if (insq) {
@@ -158,7 +158,7 @@ CommandLine parse_commandline(const char *line) {
                         /* unterminated quotes */
                         goto err;
                     } else {
-						char buf[2] {*p, '\0'};
+                        char buf[2] {*p, '\0'};
                         current += buf;
                     }
                 } else {
@@ -177,17 +177,17 @@ CommandLine parse_commandline(const char *line) {
                         insq=1;
                         break;
                     default: {
-						char buf[2] {*p, '\0'};
+                        char buf[2] {*p, '\0'};
                         current += buf;
                         break;
-					}
+                    }
                     }
                 }
                 if (*p) p++;
             }
             /* add the token to the vector */
             result.argv.emplace_back(std::move(current));
-			++result.argc;
+            ++result.argc;
         } else {
             /* Even on empty input string return something not NULL. */
             return result;
@@ -195,8 +195,8 @@ CommandLine parse_commandline(const char *line) {
     }
 
 err:
-	result.argc = 0;
-	result.argv.clear();
+    result.argc = 0;
+    result.argv.clear();
     return result;
 }
 

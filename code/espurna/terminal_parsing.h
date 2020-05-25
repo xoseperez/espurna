@@ -19,8 +19,8 @@ namespace parsing {
 // - split each arg from the input line and put them into the argv array
 // - argc is expected to be equal to the argv
 struct CommandLine {
-	std::vector<String> argv;
-	size_t argc;
+    std::vector<String> argv;
+    size_t argc;
 };
 
 CommandLine parse_commandline(const char *line);

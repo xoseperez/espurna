@@ -75,12 +75,13 @@ struct Terminal {
     Stream& stream;
 
     // buffer for the input stream, fixed in size
-	std::vector<char> buffer;
+    std::vector<char> buffer;
     const size_t buffer_size;
 
     // TODO: every command is shared, instance should probably also have an
     //       option to add 'private' commands list?
     // Note: we can save ~2.5KB by using std::vector<std::pair<String, CommandFunc>>
+    //       https://github.com/xoseperez/espurna/pull/2247#issuecomment-633689741
     static std::unordered_map<String, CommandFunc,
         parsing::LowercaseFnv1Hash<String>,
         parsing::LowercaseEquals<String>> commands;
