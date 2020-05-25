@@ -455,7 +455,7 @@ void _terminalLoop() {
 
 bool _terminalWebApiMatchPath(AsyncWebServerRequest* request) {
     const String api_path = getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
-    return request->url().equals(path);
+    return request->url().equals(api_path);
 }
 
 void _terminalWebApiSetup() {

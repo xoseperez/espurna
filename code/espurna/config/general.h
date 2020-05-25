@@ -784,11 +784,6 @@
 #define API_REAL_TIME_VALUES        0           // Show filtered/median values by default (0 => median, 1 => real time)
 #endif
 
-#ifndef API_TERMINAL_SUPPORT
-#define API_TERMINAL_SUPPORT        0           // API Terminal (REST) support built in
-                                                // Depends on TERMINAL_SUPPORT commands being available
-#endif
-
 // -----------------------------------------------------------------------------
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
