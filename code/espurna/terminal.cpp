@@ -444,6 +444,106 @@ void _terminalLoop() {
 
 }
 
+#if WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+
+bool _terminalWebApiMatchPath(AsyncWebServerRequest* request) {
+    const String api_path = getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
+    return request->url().equals(path);
+}
+
+void _terminalWebApiSetup() {
+
+    webRequestRegister([](AsyncWebServerRequest* request) {
+        // continue to the next handler if path does not match
+        if (!_terminalWebApiMatchPath(request)) return false;
+
+        // return 'true' after this point, since we did handle the request
+        webLog(request);
+        if (!apiAuthenticate(request)) return true;
+
+        auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
+        if (!cmd_param) {
+            request->send(500);
+            return true;
+        }
+
+        auto cmd = cmd_param->value();
+        if (!cmd.length()) {
+            request->send(500);
+            return true;
+        }
+
+        if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+            cmd += '\n';
+        }
+
+        // TODO: batch requests? processLine() -> process(...)
+        AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
+            StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+            terminal::Terminal handler(stream);
+            handler.processLine();
+        });
+
+        return true;
+    });
+
+}
+
+#endif // WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+
+
+#if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+
+void _terminalMqttSetup() {
+
+    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+        if (type == MQTT_CONNECT_EVENT) {
+            mqttSubscribe(MQTT_TOPIC_CMD);
+            return;
+        }
+
+        if (type == MQTT_MESSAGE_EVENT) {
+            String t = mqttMagnitude((char *) topic);
+            if (!t.startsWith(MQTT_TOPIC_CMD)) return;
+            if (!strlen(payload)) return;
+
+            String cmd(payload);
+            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+                cmd += '\n';
+            }
+
+            // TODO: unlike http handler, we have only one output stream
+            //       and **must** have a fixed-size output buffer
+            //       (wishlist: MQTT client does some magic and we don't buffer twice)
+            schedule_function([cmd]() {
+                PrintString buffer(TCP_MSS);
+                StreamAdapter<const char*> stream(buffer, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+
+                String out;
+                terminal::Terminal handler(stream);
+                switch (handler.processLine()) {
+                case terminal::Terminal::Result::CommandNotFound:
+                    out += F("Command not found");
+                    break;
+                case terminal::Terminal::Result::Command:
+                    out = std::move(buffer);
+                default:
+                    break;
+                }
+
+                if (out.length()) {
+                    mqttSendRaw(mqttTopic(MQTT_TOPIC_CMD, false).c_str(), out.c_str(), false);
+                }
+            });
+
+            return;
+        }
+    });
+
+}
+
+#endif // MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+
 }
 
 // -----------------------------------------------------------------------------
@@ -499,91 +599,16 @@ void terminalSetup() {
     #endif
 
     // Run terminal command and send back the result. Depends on the terminal command using ctx.output
-    #if API_TERMINAL_SUPPORT
-
-        webRequestRegister([](AsyncWebServerRequest* request) {
-            const auto url = request->url();
-            if (!url.equals("/api/cmd")) return false;
-
-            webLog(request);
-            if (!apiAuthenticate(request)) return true;
-
-            auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
-            if (!cmd_param) {
-                request->send(500);
-                return true;
-            }
-
-            auto cmd = cmd_param->value();
-            if (!cmd.length()) {
-                request->send(500);
-                return true;
-            }
-
-            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                cmd += '\n';
-            }
-
-            // TODO: batch requests? processLine() -> process(...)
-            AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
-                StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
-                terminal::Terminal handler(stream);
-                handler.processLine();
-            });
-
-            return true;
-        });
-
+    #if WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+        _terminalWebApiSetup();
     #endif
 
     // Similar to the above, but we allow only very small and in-place outputs.
-    #if MQTT_TERMINAL_SUPPORT
-
-        mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-            if (type == MQTT_CONNECT_EVENT) {
-                mqttSubscribe(MQTT_TOPIC_CMD);
-                return;
-            }
-
-            if (type == MQTT_MESSAGE_EVENT) {
-                String t = mqttMagnitude((char *) topic);
-                if (!t.startsWith(MQTT_TOPIC_CMD)) return;
-                if (!strlen(payload)) return;
-
-                String cmd(payload);
-                if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                    cmd += '\n';
-                }
-
-                schedule_function([cmd]() {
-                    // TODO: unlike http handler, we have only one output stream
-                    //       and **must** have a fixed-size output buffer
-                    PrintString buffer(TCP_MSS);
-                    StreamAdapter<const char*> stream(buffer, cmd.c_str(), cmd.c_str() + cmd.length());
-
-                    String out;
-                    terminal::Terminal handler(stream);
-                    switch (handler.processLine()) {
-                        case terminal::Terminal::Result::CommandNotFound:
-                            out += F("Command not found");
-                            break;
-                        case terminal::Terminal::Result::Command:
-                            out = std::move(buffer);
-                        default:
-                            break;
-                    }
-
-                    if (out.length()) {
-                        mqttSendRaw(mqttTopic(MQTT_TOPIC_CMD, false).c_str(), out.c_str(), false);
-                    }
-                });
-
-                return;
-            }
-        });
-
+    #if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+        _terminalMqttSetup();
     #endif
 
+    // Initialize default commands
     _terminalInitCommands();
 
     #if SERIAL_RX_ENABLED

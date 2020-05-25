@@ -175,7 +175,23 @@
 #define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
 #endif
 
-#define TERMINAL_BUFFER_SIZE     128            // Max size for commands commands
+#ifndef TERMINAL_BUFFER_SIZE
+#define TERMINAL_BUFFER_SIZE     128            // Max size for command line (WebUI, Telnet, Serial)
+#endif
+
+#ifndef TERMINAL_MQTT_SUPPORT
+#define TERMINAL_MQTT_SUPPORT       0       // MQTT Terminal support built in
+                                            // Depends on MQTT_SUPPORT and TERMINAL_SUPPORT commands being available
+#endif
+
+#ifndef TERMINAL_WEB_API_SUPPORT
+#define TERMINAL_WEB_API_SUPPORT    0       // Web server API Terminal support built in
+                                            // Depends on WEB_SUPPORT and TERMINAL_SUPPORT commands being available
+#endif
+
+#ifndef TERMINAL_WEB_API_PATH
+#define TERMINAL_WEB_API_PATH       "/api/cmd"
+#endif
 
 //------------------------------------------------------------------------------
 // SYSTEM CHECK
@@ -1124,10 +1140,6 @@
 
 #ifndef MQTT_ENQUEUE_MESSAGE_ID
 #define MQTT_ENQUEUE_MESSAGE_ID     1
-#endif
-
-#ifndef MQTT_TERMINAL_SUPPORT
-#define MQTT_TERMINAL_SUPPORT       1
 #endif
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic

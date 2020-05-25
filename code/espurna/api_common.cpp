@@ -12,7 +12,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "api.h"
 #include "web.h"
 
-// -----------------------------------------------------------------------------
+#if WEB_SUPPORT
 
 bool apiEnabled() {
     return getSetting("apiEnabled", 1 == API_ENABLED);
@@ -46,3 +46,4 @@ bool apiAuthenticate(AsyncWebServerRequest *request) {
 
 }
 
+#endif // WEB_SUPPORT == 1
