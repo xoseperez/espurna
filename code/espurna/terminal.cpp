@@ -491,18 +491,18 @@ void terminalSetup() {
     #if WEB_SUPPORT
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
+    #endif
 
-        // TODO: each command needs to be re-wired to output into ctx.output
-        // TODO: 2.3.0 Print::printf_P is missing (there is Print::println(F(...)) though)
+    #if API_TERMINAL_SUPPORT
+
         webRequestRegister([](AsyncWebServerRequest* request) {
             const auto url = request->url();
-            if (!url.equals("/cmd")) return false;
+            if (!url.equals("/api/cmd")) return false;
 
             webLog(request);
             if (!apiAuthenticate(request)) return true;
 
-            // TODO: batch requests?
-            auto* cmd_param = request->getParam("line");
+            auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
             if (!cmd_param) {
                 request->send(500);
                 return true;
@@ -518,6 +518,8 @@ void terminalSetup() {
                 cmd += '\n';
             }
 
+            // TODO: batch requests? processLine() -> process(...)
+            // TODO: each command needs to be re-wired to output into ctx.output
             AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
                 StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
                 terminal::Terminal handler(stream);
@@ -526,6 +528,7 @@ void terminalSetup() {
 
             return true;
         });
+
     #endif
 
     _terminalInitCommands();

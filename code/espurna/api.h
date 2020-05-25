@@ -11,9 +11,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "espurna.h"
 #include "web.h"
 
-#include <functional>
+#if WEB_SUPPORT
+
+bool apiAuthenticate(AsyncWebServerRequest*);
+bool apiEnabled();
+bool apiRestFul();
+String apiKey();
+
+#endif // WEB_SUPPORT == 1
 
 #if WEB_SUPPORT && API_SUPPORT
+
+#include <functional>
 
 #include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
@@ -23,7 +32,6 @@ using api_put_callback_f = std::function<void(const char * payload)> ;
 
 void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = nullptr);
 
-bool apiAuthenticate(AsyncWebServerRequest*);
 void apiSetup();
 
 #endif // API_SUPPORT == 1

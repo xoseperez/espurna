@@ -84,7 +84,8 @@ bool AsyncWebPrint::_addBuffer() {
 // - Calling _prepareRequest() **before** _buffers are filled will result in returning 0
 // - Calling yield() / delay() while request AsyncWebPrint is active **may** trigger this callback out of sequence
 //   (e.g. Serial.print(..), DEBUG_MSG(...), or any other API trying to switch contexts)
-// - Receiving data (tcp ack from the previous packet) **will** trigger the callback.
+// - Receiving data (tcp ack from the previous packet) **will** trigger the callback when switching contexts.
+
 void AsyncWebPrint::_prepareRequest() {
     _state = State::Sending;
 
