@@ -769,7 +769,7 @@
 #endif
 
 #ifndef API_TERMINAL_SUPPORT
-#define API_TERMINAL_SUPPORT        1           // API Terminal (REST) support built in
+#define API_TERMINAL_SUPPORT        0           // API Terminal (REST) support built in
                                                 // Depends on TERMINAL_SUPPORT commands being available
 #endif
 
@@ -1126,6 +1126,10 @@
 #define MQTT_ENQUEUE_MESSAGE_ID     1
 #endif
 
+#ifndef MQTT_TERMINAL_SUPPORT
+#define MQTT_TERMINAL_SUPPORT       1
+#endif
+
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
 #define MQTT_TOPIC_JSON             "data"
 #define MQTT_TOPIC_ACTION           "action"
@@ -1167,6 +1171,7 @@
 #define MQTT_TOPIC_OTA              "ota"
 #define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
 #define MQTT_TOPIC_CURTAIN          "curtain"
+#define MQTT_TOPIC_CMD              "cmd"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"

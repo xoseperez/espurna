@@ -17,17 +17,21 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "system.h"
 #include "telnet.h"
 #include "utils.h"
+#include "mqtt.h"
 #include "wifi.h"
 #include "ws.h"
 
 #include "libs/URL.h"
 #include "libs/StreamAdapter.h"
+#include "libs/PrintString.h"
+
 #include "web_asyncwebprint_impl.h"
 
 #include <algorithm>
 #include <vector>
 #include <utility>
 
+#include <Schedule.h>
 #include <Stream.h>
 
 #if LWIP_VERSION_MAJOR != 1
@@ -386,7 +390,7 @@ void _terminalInitCommands() {
         });
 
     #endif // LWIP_VERSION_MAJOR != 1
-    
+
 }
 
 void _terminalLoop() {
@@ -488,11 +492,13 @@ void terminalError(const String& error) {
 
 void terminalSetup() {
 
+    // Show DEBUG panel with input
     #if WEB_SUPPORT
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
     #endif
 
+    // Run terminal command and send back the result. Depends on the terminal command using ctx.output
     #if API_TERMINAL_SUPPORT
 
         webRequestRegister([](AsyncWebServerRequest* request) {
@@ -519,7 +525,6 @@ void terminalSetup() {
             }
 
             // TODO: batch requests? processLine() -> process(...)
-            // TODO: each command needs to be re-wired to output into ctx.output
             AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
                 StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
                 terminal::Terminal handler(stream);
@@ -527,6 +532,54 @@ void terminalSetup() {
             });
 
             return true;
+        });
+
+    #endif
+
+    // Similar to the above, but we allow only very small and in-place outputs.
+    #if MQTT_TERMINAL_SUPPORT
+
+        mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+            if (type == MQTT_CONNECT_EVENT) {
+                mqttSubscribe(MQTT_TOPIC_CMD);
+                return;
+            }
+
+            if (type == MQTT_MESSAGE_EVENT) {
+                String t = mqttMagnitude((char *) topic);
+                if (!t.startsWith(MQTT_TOPIC_CMD)) return;
+                if (!strlen(payload)) return;
+
+                String cmd(payload);
+                if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+                    cmd += '\n';
+                }
+
+                schedule_function([cmd]() {
+                    // TODO: unlike http handler, we have only one output stream
+                    //       and **must** have a fixed-size output buffer
+                    PrintString buffer(TCP_MSS);
+                    StreamAdapter<const char*> stream(buffer, cmd.c_str(), cmd.c_str() + cmd.length());
+
+                    String out;
+                    terminal::Terminal handler(stream);
+                    switch (handler.processLine()) {
+                        case terminal::Terminal::Result::CommandNotFound:
+                            out += F("Command not found");
+                            break;
+                        case terminal::Terminal::Result::Command:
+                            out = std::move(buffer);
+                        default:
+                            break;
+                    }
+
+                    if (out.length()) {
+                        mqttSendRaw(mqttTopic(MQTT_TOPIC_CMD, false).c_str(), out.c_str(), false);
+                    }
+                });
+
+                return;
+            }
         });
 
     #endif
