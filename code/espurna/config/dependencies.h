@@ -121,11 +121,18 @@
 #define RELAY_SUPPORT               1           // Most of the time we require it
 #endif
 
-#if API_TERMINAL_SUPPORT
+#if TERMINAL_WEB_API_SUPPORT
 #undef TERMINAL_SUPPORT
 #define TERMINAL_SUPPORT            1           // Need terminal command line parser and commands
 #undef WEB_SUPPORT
 #define WEB_SUPPORT                 1           // Registered as web server request handler
+#endif
+
+#if TERMINAL_MQTT_SUPPORT
+#undef TERMINAL_SUPPORT
+#define TERMINAL_SUPPORT            1           // Need terminal command line parser and commands
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1           // Subscribe and publish things
 #endif
 
 //------------------------------------------------------------------------------

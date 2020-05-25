@@ -175,8 +175,8 @@
 #define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
 #endif
 
-#ifndef TERMINAL_BUFFER_SIZE
-#define TERMINAL_BUFFER_SIZE     128            // Max size for command line (WebUI, Telnet, Serial)
+#ifndef TERMINAL_SHARED_BUFFER_SIZE
+#define TERMINAL_SHARED_BUFFER_SIZE     128     // Maximum size for command line, shared by the WebUI, Telnet and Serial
 #endif
 
 #ifndef TERMINAL_MQTT_SUPPORT

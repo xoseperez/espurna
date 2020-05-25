@@ -20,6 +20,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #if TELNET_SUPPORT
 
 #include <memory>
+#include <vector>
 
 #include "board.h"
 #include "ws.h"
@@ -106,6 +107,8 @@ void _telnetReverseMQTTCallback(unsigned int type, const char * topic, const cha
 #endif // TELNET_REVERSE_SUPPORT
 
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
+static std::vector<char> _telnet_data_buffer;
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->stop();
@@ -370,11 +373,10 @@ void _telnetLoop() {
             } else {
                 // Read data from clients
                 while (_telnetClients[i] && _telnetClients[i]->available()) {
-                    char data[TERMINAL_BUFFER_SIZE];
                     size_t len = _telnetClients[i]->available();
-                    unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
+                    unsigned int r = _telnetClients[i]->readBytes(_telnet_data_buffer.data(), min(_telnet_data_buffer.capacity(), len));
 
-                    _telnetData(i, data, r);
+                    _telnetData(i, _telnet_data_buffer.data(), r);
                 }
             }
         }
@@ -474,9 +476,10 @@ void _telnetConfigure() {
 void telnetSetup() {
 
     #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-        espurnaRegisterLoop(_telnetLoop);
+        _telnet_data_buffer.reserve(terminalCapacity());
         _telnetServer.setNoDelay(true);
         _telnetServer.begin();
+        espurnaRegisterLoop(_telnetLoop);
     #else
         _telnetServer.onClient([](void *s, AsyncClient* c) {
             _telnetNewClient(c);

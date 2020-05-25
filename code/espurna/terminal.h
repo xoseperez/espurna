@@ -30,6 +30,8 @@ void terminalOK(const terminal::CommandContext&);
 void terminalError(const terminal::CommandContext&, const String&);
 
 void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func);
+
+size_t terminalCapacity();
 void terminalInject(void *data, size_t len);
 void terminalInject(char ch);
 Stream& terminalDefaultStream();

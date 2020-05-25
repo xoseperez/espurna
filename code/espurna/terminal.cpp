@@ -52,9 +52,9 @@ namespace {
 
 struct TerminalIO final : public Stream {
 
-    TerminalIO(size_t size = 128) :
-        _buffer(new char[size]),
-        _size(size),
+    TerminalIO(size_t capacity = 128) :
+        _buffer(new char[capacity]),
+        _capacity(capacity),
         _write(0),
         _read(0)
     {}
@@ -67,9 +67,13 @@ struct TerminalIO final : public Stream {
     // Injects data into the internal buffer so we can read() it
     // ---------------------------------------------------------------------
 
+    size_t capacity() {
+        return _capacity;
+    }
+
     size_t inject(char ch) {
         _buffer[_write] = ch;
-        _write = (_write + 1) % _size;
+        _write = (_write + 1) % _capacity;
         return 1;
     }
 
@@ -89,7 +93,7 @@ struct TerminalIO final : public Stream {
     int available() override {
         unsigned int bytes = 0;
         if (_read > _write) {
-            bytes += (_write - _read + _size);
+            bytes += (_write - _read + _capacity);
         } else if (_read < _write) {
             bytes += (_write - _read);
         }
@@ -108,7 +112,7 @@ struct TerminalIO final : public Stream {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
-            _read = (_read + 1) % _size;
+            _read = (_read + 1) % _capacity;
         }
         return ch;
     }
@@ -159,19 +163,22 @@ struct TerminalIO final : public Stream {
 #endif
 
     char * _buffer;
-    unsigned char _size;
+    unsigned char _capacity;
     unsigned char _write;
     unsigned char _read;
 
 };
 
-auto _io = TerminalIO(TERMINAL_BUFFER_SIZE);
-terminal::Terminal _terminal(_io, TERMINAL_BUFFER_SIZE);
+auto _io = TerminalIO(TERMINAL_SHARED_BUFFER_SIZE);
+terminal::Terminal _terminal(_io, _io.capacity());
 
 // TODO: re-evaluate how and why this is used
 #if SERIAL_RX_ENABLED
-    char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
-    static unsigned char _serial_rx_pointer = 0;
+
+constexpr size_t SerialRxBufferSize { 128u };
+char _serial_rx_buffer[SerialRxBufferSize];
+static unsigned char _serial_rx_pointer = 0;
+
 #endif // SERIAL_RX_ENABLED
 
 // -----------------------------------------------------------------------------
@@ -198,7 +205,7 @@ void _terminalHelpCommand(const terminal::CommandContext& ctx) {
 
 #if LWIP_VERSION_MAJOR != 1
 
-String _terminalPcbStateToString(const unsigned char state) {
+String _terminalPcbStateToString(unsigned char state) {
     switch (state) {
         case 0: return F("CLOSED");
         case 1: return F("LISTEN");
@@ -434,7 +441,7 @@ void _terminalLoop() {
         while (SERIAL_RX_PORT.available() > 0) {
             char rc = SERIAL_RX_PORT.read();
             _serial_rx_buffer[_serial_rx_pointer++] = rc;
-            if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
+            if ((_serial_rx_pointer == SerialRxBufferSize) || (rc == 10)) {
                 terminalInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
                 _serial_rx_pointer = 0;
             }
@@ -552,6 +559,10 @@ void _terminalMqttSetup() {
 
 Stream & terminalDefaultStream() {
     return (Stream &) _io;
+}
+
+size_t terminalCapacity() {
+    return _io.capacity();
 }
 
 void terminalInject(void *data, size_t len) {
