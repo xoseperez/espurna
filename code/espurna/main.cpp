@@ -189,6 +189,9 @@ void setup() {
     #if API_SUPPORT || TERMINAL_WEB_API_SUPPORT
         apiCommonSetup();
     #endif
+    #if API_SUPPORT
+        apiSetup();
+    #endif
 
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
