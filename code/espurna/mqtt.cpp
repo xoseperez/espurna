@@ -1148,7 +1148,9 @@ void mqttSetup() {
             .onKeyCheck(_mqttWebSocketOnKeyCheck);
 
         mqttRegister([](unsigned int type, const char*, const char*) {
-            if ((type == MQTT_CONNECT_EVENT) || (type == MQTT_DISCONNECT_EVENT)) wsPost(_mqttWebSocketOnData);
+            if ((type == MQTT_CONNECT_EVENT) || (type == MQTT_DISCONNECT_EVENT)) {
+                wsPost(_mqttWebSocketOnData);
+            }
         });
     #endif
 
