@@ -10,6 +10,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #pragma once
 
 #include "espurna.h"
+#include "ws.h"
 
 #include <IPAddress.h>
 
@@ -148,15 +149,20 @@ struct WsDebug {
         _flush = false;
     }
 
-    void add(const char* prefix, const char* message) {
+    template <typename T = Message>
+    void add(T&& message) {
         if (_current >= _capacity) {
             _flush = true;
             send(wsConnected());
         }
 
-        _messages.emplace(_messages.begin() + _current, std::make_pair(prefix, message));
+        _messages.emplace(_messages.begin() + _current, std::forward<T>(message));
         _flush = true;
         ++_current;
+    }
+
+    void add(const char* prefix, const char* message) {
+        add(std::move(std::make_pair(prefix, message)));
     }
 
     void send(bool connected);
