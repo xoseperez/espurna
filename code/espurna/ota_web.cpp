@@ -70,9 +70,9 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
 
     // We set this after we are done with the request
     // It is still possible to re-enter this callback even after connection is already closed
-    // 1.14.2: TODO: see https://github.com/me-no-dev/ESPAsyncWebServer/pull/660
+    // 1.15.0: TODO: see https://github.com/me-no-dev/ESPAsyncWebServer/pull/660
     // remote close or request sending some data before finishing parsing of the body will leak 1460 bytes
-    // waiting a bit for upstream. fork and point to the fixed version if not resolved before 1.14.2
+    // waiting a bit for upstream. looks more and more we need to fork the server
     if (request->_tempObject) {
         return;
     }

@@ -48,7 +48,7 @@
 #warning "Current implementation of AsyncMqttClient with axTLS is no longer supported. Consider switching to the SECURE_CLIENT configuration with MQTT_LIBRARY_ARDUINOMQTT or MQTT_LIBRARY_PUBSUBCLIENT. See: https://github.com/xoseperez/espurna/issues/1465"
 #endif
 
-// 1.14.2 changes preprocessor var name
+// 1.15.0 changes preprocessor var name
 #ifdef BUTTON_DBLCLICK_DELAY
 #warning "BUTTON_DBLCLICK_DELAY is deprecated! Please use BUTTON_REPEAT_DELAY instead"
 #define BUTTON_REPEAT_DELAY BUTTON_DBLCLICK_DELAY

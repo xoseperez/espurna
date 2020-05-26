@@ -160,7 +160,7 @@ void _rpnInit() {
     rpn_init(_rpn_ctxt);
 
     // Time functions need NTP support
-    // TODO: since 1.14.2, timelib+ntpclientlib are no longer used with latest Cores
+    // TODO: since 1.15.0, timelib+ntpclientlib are no longer used with latest Cores
     //       `now` is always in UTC, `utc_...` functions to be used instead to convert time
     #if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
         rpn_operator_set(_rpn_ctxt, "utc", 0, _rpnNtpNow);
