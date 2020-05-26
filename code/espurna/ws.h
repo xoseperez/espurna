@@ -66,6 +66,11 @@ bool wsDebugSend(const char* prefix, const char* message);
 // - All will use the same JsonObject for each callback
 // - Sequence will use a different JsonObject for each callback
 // Default is All
+//
+// WARNING: callback lists are taken by reference! make sure that list is ether:
+// - std::move(...)'ed to give control of the callback list to us
+// - persistent and will be available after the current block ends (global, heap-allocated, etc.)
+//   de-allocation is not expected e.g. ws_callbacks_t from wsRegister() is never destroyed
 
 void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb);
 void wsPost(ws_on_send_callback_f&& cb);
