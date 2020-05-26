@@ -78,6 +78,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - WebUI: alert when WS closes ([#2131](https://github.com/xoseperez/espurna/issues/2131), thanks to **[@foxman69](https://github.com/foxman69)**)
 - Optional Web(UI) OTA ([#2190](https://github.com/xoseperez/espurna/issues/2190))
 - Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
+- Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
 
 ### Changed
 #### Build
