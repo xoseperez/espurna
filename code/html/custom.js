@@ -26,7 +26,10 @@ var filters = [];
 <!-- endRemoveIf(!rfm69)-->
 
 <!-- removeIf(!sensor)-->
-var magnitudes = [];
+var Magnitudes = [];
+var MagnitudeNames = {};
+var MagnitudeTypePrefixes = {};
+var MagnitudePrefixTypes = {};
 <!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
@@ -58,23 +61,6 @@ function sensorName(id) {
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
-    }
-    return null;
-}
-
-function magnitudeType(type) {
-    var types = [
-        "Temperature", "Humidity", "Pressure",
-        "Current", "Voltage", "Active Power", "Apparent Power",
-        "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
-        "Analog", "Digital", "Event",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance" , "HCHO",
-        "Local Dose Rate", "Local Dose Rate",
-        "Count",
-        "NO2", "CO", "Resistance", "pH"
-    ];
-    if (1 <= type && type <= types.length) {
-        return types[type - 1];
     }
     return null;
 }
@@ -451,6 +437,15 @@ function getJson(str) {
     } catch (e) {
         return false;
     }
+}
+
+function moduleVisible(module) {
+    if (module == "sch") {
+        $("li.module-" + module).css("display", "inherit");
+        $("div.module-" + module).css("display", "flex");
+        return;
+    }
+    $(".module-" + module).css("display", "inherit");
 }
 
 <!-- removeIf(!thermostat)-->
@@ -943,8 +938,8 @@ function createMagnitudeList(data, container, template_name) {
 
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(magnitudes[i].description);
+        $("label", line).html(MagnitudeTypes(data.type[i]) + " #" + parseInt(data.index[i], 10));
+        $("div.hint", line).html(Magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
@@ -1266,11 +1261,11 @@ function initMagnitudes(data) {
 
     for (var i=0; i<size; ++i) {
         var magnitude = {
-            "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "name": MagnitudeNames(data.type[i]) + " #" + parseInt(data.index[i], 10),
             "units": data.units[i],
             "description": data.description[i]
         };
-        magnitudes.push(magnitude);
+        Magnitudes.push(magnitude);
 
         var line = $(template).clone();
         $("label", line).html(magnitude.name);
@@ -1866,6 +1861,34 @@ function processData(data) {
 
         <!-- removeIf(!sensor)-->
 
+        {
+            var position = key.indexOf("Correction");
+            if (position > 0 && position === key.length - 10) {
+                var template = $("#magnitudeCorrectionTemplate > div")[0];
+                var elem = $(template).clone();
+
+                var prefix = key.slice(0, position);
+                $("label", elem).html(MagnitudeNames[MagnitudePrefixTypes[prefix]]);
+                $("input", elem).attr("name", key);
+
+                setOriginalsFromValues($("input", elem));
+                elem.appendTo("#magnitude-corrections");
+                moduleVisible("corrections");
+            }
+        }
+
+        if ("magnitudesVisible" === key) {
+            for (var index in value) {
+                var type = value[index][0];
+                var prefix = value[index][1];
+                var desc = value[index][2];
+                MagnitudeNames[type] = desc;
+                MagnitudeTypePrefixes[type] = name;
+                MagnitudePrefixTypes[name] = type;
+                moduleVisible(name);
+            }
+        }
+
         if ("magnitudesConfig" === key) {
             initMagnitudes(value);
         }
@@ -1877,7 +1900,7 @@ function processData(data) {
 
                 var error = value.error[i] || 0;
                 var text = (0 === error)
-                    ? value.value[i] + magnitudes[i].units
+                    ? value.value[i] + Magnitudes[i].units
                     : magnitudeError(error);
                 inputElem.val(text);
 
@@ -2102,12 +2125,7 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
-            if (module == "sch") {
-                $("li.module-" + module).css("display", "inherit");
-                $("div.module-" + module).css("display", "flex");
-                return;
-            }
-            $(".module-" + module).css("display", "inherit");
+            moduleVisible(module);
             return;
         }
 

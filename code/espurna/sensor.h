@@ -137,6 +137,7 @@ unsigned char magnitudeType(unsigned char index);
 // XXX: without param name it is kind of vague what exactly unsigned char is
 //      consider using index instead of type or adding stronger param type
 String magnitudeTopic(unsigned char type);
+String magnitudeDescription(unsigned char type);
 
 unsigned char sensorCount();
 unsigned char magnitudeCount();
