@@ -934,7 +934,8 @@ bool _sensorMatchKeyPrefix(const char * key) {
     if (strncmp(key, "pwr", 3) == 0) return true;
 
     return _magnitudeForEachCountedCheck([key](unsigned char type) {
-        return (strcmp(key, _magnitudeSettingsPrefix(type)) == 0);
+        const char* const prefix { _magnitudeSettingsPrefix(type) };
+        return (strncmp(prefix, key, strlen(prefix)) == 0);
     });
 
 }
