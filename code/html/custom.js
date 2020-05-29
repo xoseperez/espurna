@@ -910,7 +910,7 @@ function createMagnitudeList(data, container, template_name) {
 
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
-        $("label", line).html(MagnitudeTypes(data.type[i]) + " #" + parseInt(data.index[i], 10));
+        $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(Magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
@@ -1233,7 +1233,7 @@ function initMagnitudes(data) {
 
     for (var i=0; i<size; ++i) {
         var magnitude = {
-            "name": MagnitudeNames(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "name": MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10),
             "units": data.units[i],
             "description": data.description[i]
         };
@@ -1841,7 +1841,7 @@ function processData(data) {
 
                 var prefix = key.slice(0, position);
                 $("label", elem).html(MagnitudeNames[MagnitudePrefixTypes[prefix]]);
-                $("input", elem).attr("name", key);
+                $("input", elem).attr("name", key).val(value);
 
                 setOriginalsFromValues($("input", elem));
                 elem.appendTo("#magnitude-corrections");
@@ -1863,11 +1863,11 @@ function processData(data) {
             for (var index in value) {
                 var type = value[index][0];
                 var prefix = value[index][1];
-                var desc = value[index][2];
+                var name = value[index][2];
                 MagnitudeNames[type] = name;
-                MagnitudeTypePrefixes[type] = name;
-                MagnitudePrefixTypes[name] = type;
-                moduleVisible(name);
+                MagnitudeTypePrefixes[type] = prefix;
+                MagnitudePrefixTypes[prefix] = type;
+                moduleVisible(prefix);
             }
             return;
         }

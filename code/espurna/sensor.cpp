@@ -1182,6 +1182,7 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
 
     root["snsVisible"] = 1;
 
+    // prepare available magnitude types
     JsonArray& magnitudes = root.createNestedArray("snsMagnitudes");
     _magnitudeForEachCounted([&magnitudes](unsigned char type) {
         JsonArray& tuple = magnitudes.createNestedArray();
@@ -1190,6 +1191,7 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
         tuple.add(magnitudeName(type));
     });
 
+    // and available error types
     JsonArray& errors = root.createNestedArray("snsErrors");
     _sensorForEachError([&errors](unsigned char error) {
         JsonArray& tuple = errors.createNestedArray();
