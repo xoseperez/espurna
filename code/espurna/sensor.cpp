@@ -857,6 +857,28 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
 // -----------------------------------------------------------------------------
 
+// do `callback(type)` for each present magnitude
+template<typename T>
+void _magnitudeForEachCounted(T callback) {
+    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
+        if (sensor_magnitude_t::counts(type)) {
+            callback(type);
+        }
+    }
+}
+
+// check if `callback(type)` returns `true` at least once
+template<typename T>
+bool _magnitudeForEachCountedCheck(T callback) {
+    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
+        if (sensor_magnitude_t::counts(type) && callback(type)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 const char * const _magnitudeSettingsPrefix(unsigned char type) {
     switch (type) {
     case MAGNITUDE_TEMPERATURE: return "tmp";
@@ -899,14 +921,9 @@ bool _sensorMatchKeyPrefix(const char * key) {
     if (strncmp(key, "sns", 3) == 0) return true;
     if (strncmp(key, "pwr", 3) == 0) return true;
 
-    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (!sensor_magnitude_t::counts(type)) continue;
-
-        const auto* prefix = _magnitudeSettingsPrefix(type);
-        if (strncmp(key, prefix, strlen(prefix)) == 0) return true;
-    }
-
-    return false;
+    return _magnitudeForEachCountedCheck([key](unsigned char type) {
+        return (strcmp(key, _magnitudeSettingsPrefix(type)) == 0);
+    });
 
 }
 
@@ -1112,26 +1129,24 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
     root["snsVisible"] = 1;
 
     JsonArray& magnitudes = root.createNestedArray("magnitudesVisible");
-    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (sensor_magnitude_t::counts(type)) {
-            JsonArray& tuple = magnitudes.createNestedArray();
-            tuple.add(type);
-            tuple.add(_magnitudeSettingsPrefix(type));
-            tuple.add(magnitudeDescription(type));
-        }
-    }
+    _magnitudeForEachCounted([&magnitudes](unsigned char type) {
+        JsonArray& tuple = magnitudes.createNestedArray();
+        tuple.add(type);
+        tuple.add(_magnitudeSettingsPrefix(type));
+        tuple.add(magnitudeDescription(type));
+    });
 
 }
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
     // retrieve per-type ...Correction settings, when available
-    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (sensor_magnitude_t::counts(type) && _magnitudeCanUseCorrection(type)) {
+    _magnitudeForEachCounted([&root](unsigned char type) {
+        if (_magnitudeCanUseCorrection(type)) {
             auto key = String(_magnitudeSettingsPrefix(type)) + F("Correction");
             root[key] = getSetting(key, _magnitudeCorrection(type));
         }
-    }
+    });
 
     JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
     uint8_t size = 0;
@@ -1197,10 +1212,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
 
-    for (unsigned char i=0; i<_sensors.size(); i++) {
-
-        BaseSensor * sensor = _sensors[i];
-        UNUSED(sensor);
+    for (auto* sensor [[gnu::unused]] : _sensors) {
 
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
@@ -1278,9 +1290,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
 void _sensorAPISetup() {
 
-    for (unsigned char magnitude_id=0; magnitude_id<_magnitudes.size(); magnitude_id++) {
-
-        auto& magnitude = _magnitudes.at(magnitude_id);
+    for (auto& magnitude : _magnitudes) {
 
         String topic = magnitudeTopic(magnitude.type);
         if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) topic = topic + "/" + String(magnitude.index_global);
