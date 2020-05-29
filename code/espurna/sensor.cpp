@@ -2058,6 +2058,7 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+
 }
 
 void _sensorReport(unsigned char index, double value) {
