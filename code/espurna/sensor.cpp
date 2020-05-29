@@ -855,6 +855,10 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
 }
 
+String _magnitudeDescription(const sensor_magnitude_t& magnitude) {
+    return magnitude.sensor->description(magnitude.slot);
+}
+
 // -----------------------------------------------------------------------------
 
 // do `callback(type)` for each present magnitude
@@ -877,6 +881,14 @@ bool _magnitudeForEachCountedCheck(T callback) {
     }
 
     return false;
+}
+
+// do `callback(type)` for each error type
+template<typename T>
+void _sensorForEachError(T callback) {
+    for (unsigned char error = SENSOR_ERROR_OK; error < SENSOR_ERROR_MAX; ++error) {
+        callback(error);
+    }
 }
 
 const char * const _magnitudeSettingsPrefix(unsigned char type) {
@@ -1019,7 +1031,49 @@ void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
     }
 }
 
-String magnitudeDescription(unsigned char type) {
+String sensorError(unsigned char error) {
+
+    const __FlashStringHelper* result = nullptr;
+
+    switch (error) {
+        case SENSOR_ERROR_OK:
+            result = F("OK");
+            break;
+        case SENSOR_ERROR_OUT_OF_RANGE:
+            result = F("Out of Range");
+            break;
+        case SENSOR_ERROR_WARM_UP:
+            result = F("Warming Up");
+            break;
+        case SENSOR_ERROR_TIMEOUT:
+            result = F("Timeout");
+            break;
+        case SENSOR_ERROR_UNKNOWN_ID:
+            result = F("Unknown ID");
+            break;
+        case SENSOR_ERROR_CRC:
+            result = F("CRC / Data Error");
+            break;
+        case SENSOR_ERROR_I2C:
+            result = F("I2C Error");
+            break;
+        case SENSOR_ERROR_GPIO_USED:
+            result = F("GPIO Already Used");
+            break;
+        case SENSOR_ERROR_CALIBRATION:
+            result = F("Calibration Error");
+            break;
+        default:
+        case SENSOR_ERROR_OTHER:
+            result = F("Other / Unknown Error");
+            break;
+    }
+
+    return result;
+
+}
+
+String magnitudeName(unsigned char type) {
 
     const __FlashStringHelper* result = nullptr;
 
@@ -1128,12 +1182,19 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
 
     root["snsVisible"] = 1;
 
-    JsonArray& magnitudes = root.createNestedArray("magnitudesVisible");
+    JsonArray& magnitudes = root.createNestedArray("snsMagnitudes");
     _magnitudeForEachCounted([&magnitudes](unsigned char type) {
         JsonArray& tuple = magnitudes.createNestedArray();
         tuple.add(type);
         tuple.add(_magnitudeSettingsPrefix(type));
-        tuple.add(magnitudeDescription(type));
+        tuple.add(magnitudeName(type));
+    });
+
+    JsonArray& errors = root.createNestedArray("snsErrors");
+    _sensorForEachError([&errors](unsigned char error) {
+        JsonArray& tuple = errors.createNestedArray();
+        tuple.add(error);
+        tuple.add(sensorError(error));
     });
 
 }
@@ -1165,7 +1226,7 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
         index.add<uint8_t>(magnitude.index_global);
         type.add<uint8_t>(magnitude.type);
         units.add(_magnitudeUnits(magnitude));
-        description.add(magnitude.sensor->description(magnitude.slot));
+        description.add(_magnitudeDescription(magnitude));
 
     }
 
@@ -1363,8 +1424,9 @@ void _sensorInitCommands() {
             dtostrf(magnitude.reported, 1, magnitude.decimals, reported);
             DEBUG_MSG_P(PSTR("[SENSOR] %2u * %s/%u @ %s (last:%s, reported:%s)\n"),
                 index,
-                magnitudeTopic(magnitude.type).c_str(), magnitude.index_global,
-                magnitude.sensor->description(magnitude.slot).c_str(),
+                magnitudeTopic(magnitude.type).c_str(),
+                magnitude.index_global,
+                _magnitudeDescription(magnitude).c_str(),
                 last, reported
             );
         }
@@ -2362,17 +2424,9 @@ unsigned char magnitudeCount() {
     return _magnitudes.size();
 }
 
-String magnitudeName(unsigned char index) {
-    if (index < _magnitudes.size()) {
-        sensor_magnitude_t magnitude = _magnitudes[index];
-        return magnitude.sensor->description(magnitude.slot);
-    }
-    return String();
-}
-
 unsigned char magnitudeType(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return int(_magnitudes[index].type);
+        return _magnitudes[index].type;
     }
     return MAGNITUDE_NONE;
 }
@@ -2386,9 +2440,16 @@ double magnitudeValue(unsigned char index) {
 
 unsigned char magnitudeIndex(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return int(_magnitudes[index].index_global);
+        return _magnitudes[index].index_global;
     }
     return 0;
+}
+
+String magnitudeDescription(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        return _magnitudeDescription(_magnitudes[index]);
+    }
+    return String();
 }
 
 String magnitudeTopicIndex(unsigned char index) {
@@ -2591,7 +2652,7 @@ void sensorLoop() {
                     char buffer[64];
                     dtostrf(value_show, 1, magnitude.decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
-                        magnitude.sensor->description(magnitude.slot).c_str(),
+                        _magnitudeDescription(magnitude).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
                         buffer,
                         _magnitudeUnits(magnitude).c_str()

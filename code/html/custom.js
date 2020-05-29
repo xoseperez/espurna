@@ -27,6 +27,7 @@ var filters = [];
 
 <!-- removeIf(!sensor)-->
 var Magnitudes = [];
+var MagnitudeErrors = {};
 var MagnitudeNames = {};
 var MagnitudeTypePrefixes = {};
 var MagnitudePrefixTypes = {};
@@ -47,35 +48,6 @@ function initMessages() {
     messages[9]  = "No changes detected";
     messages[10] = "Session expired, please reload page...";
 }
-
-<!-- removeIf(!sensor)-->
-function sensorName(id) {
-    var names = [
-        "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
-        "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
-        "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
-        "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "T6613", "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
-        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075",
-        "EZOPH"
-    ];
-    if (1 <= id && id <= names.length) {
-        return names[id - 1];
-    }
-    return null;
-}
-
-function magnitudeError(error) {
-    var errors = [
-        "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
-        "Data Error", "I2C Error", "GPIO Error", "Calibration error"
-    ];
-    if (0 <= error && error < errors.length) {
-        return errors[error];
-    }
-    return "Error " + error;
-}
-<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -1873,24 +1845,36 @@ function processData(data) {
 
                 setOriginalsFromValues($("input", elem));
                 elem.appendTo("#magnitude-corrections");
-                moduleVisible("corrections");
+                moduleVisible("magnitude-corrections");
+                return;
             }
         }
 
-        if ("magnitudesVisible" === key) {
+        if ("snsErrors" === key) {
+            for (var index in value) {
+                var type = value[index][0];
+                var name = value[index][1];
+                MagnitudeErrors[type] = name;
+            }
+            return;
+        }
+
+        if ("snsMagnitudes" === key) {
             for (var index in value) {
                 var type = value[index][0];
                 var prefix = value[index][1];
                 var desc = value[index][2];
-                MagnitudeNames[type] = desc;
+                MagnitudeNames[type] = name;
                 MagnitudeTypePrefixes[type] = name;
                 MagnitudePrefixTypes[name] = type;
                 moduleVisible(name);
             }
+            return;
         }
 
         if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+            return;
         }
 
         if ("magnitudes" === key) {
@@ -1901,7 +1885,7 @@ function processData(data) {
                 var error = value.error[i] || 0;
                 var text = (0 === error)
                     ? value.value[i] + Magnitudes[i].units
-                    : magnitudeError(error);
+                    : MagnitudeErrors[error];
                 inputElem.val(text);
 
                 if (value.info !== undefined) {
