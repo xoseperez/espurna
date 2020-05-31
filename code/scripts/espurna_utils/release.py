@@ -39,9 +39,8 @@ def merge_cpp(sources, output):
         tmp.write(b"// !!! Automatically generated file; DO NOT EDIT !!! \n")
         tmp.write(b'#include "espurna.h"\n')
         for source in sources:
-            with open(source, "rb") as fobj:
-                tmp.write('# 1 "{}"\n'.format(source.replace("\\", "/")).encode('utf-8'));
-                shutil.copyfileobj(fobj, tmp)
+            src_include = '#include "{}"\n'.format(source)
+            tmp.write(src_include.encode('utf-8'))
 
         tmp.seek(0)
 
