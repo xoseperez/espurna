@@ -87,13 +87,13 @@ class BMX280Sensor : public I2CSensor<> {
             #if BMX280_TEMPERATURE > 0
                 if (index == i++) return MAGNITUDE_TEMPERATURE;
             #endif
-            #if BMX280_PRESSURE > 0
-                if (index == i++) return MAGNITUDE_PRESSURE;
-            #endif
             #if BMX280_HUMIDITY > 0
                 if (_chip == BMX280_CHIP_BME280) {
-                    if (index == i) return MAGNITUDE_HUMIDITY;
+                    if (index == i++) return MAGNITUDE_HUMIDITY;
                 }
+            #endif
+            #if BMX280_PRESSURE > 0
+                if (index == i) return MAGNITUDE_PRESSURE;
             #endif
             return MAGNITUDE_NONE;
         }
@@ -145,13 +145,13 @@ class BMX280Sensor : public I2CSensor<> {
             #if BMX280_TEMPERATURE > 0
                 if (index == i++) return _temperature;
             #endif
-            #if BMX280_PRESSURE > 0
-                if (index == i++) return _pressure / 100;
-            #endif
             #if BMX280_HUMIDITY > 0
                 if (_chip == BMX280_CHIP_BME280) {
-                    if (index == i) return _humidity;
+                    if (index == i++) return _humidity;
                 }
+            #endif
+            #if BMX280_PRESSURE > 0
+                if (index == i) return _pressure / 100;
             #endif
             return 0;
         }
@@ -231,11 +231,11 @@ class BMX280Sensor : public I2CSensor<> {
             #if BMX280_TEMPERATURE > 0
                 ++_count;
             #endif
-            #if BMX280_PRESSURE > 0
-                ++_count;
-            #endif
             #if BMX280_HUMIDITY > 0
                 if (_chip == BMX280_CHIP_BME280) ++_count;
+            #endif
+            #if BMX280_PRESSURE > 0
+                ++_count;
             #endif
 
             _readCoefficients();
@@ -297,13 +297,13 @@ class BMX280Sensor : public I2CSensor<> {
             #if BMX280_TEMPERATURE > 0
                 t += (2.3 * BMX280_TEMPERATURE);
             #endif
-            #if BMX280_PRESSURE > 0
-                t += (2.3 * BMX280_PRESSURE + 0.575);
-            #endif
             #if BMX280_HUMIDITY > 0
                 if (_chip == BMX280_CHIP_BME280) {
                     t += (2.4 * BMX280_HUMIDITY + 0.575);
                 }
+            #endif
+            #if BMX280_PRESSURE > 0
+                t += (2.3 * BMX280_PRESSURE + 0.575);
             #endif
 
             return round(t + 1); // round up
@@ -416,8 +416,8 @@ class BMX280Sensor : public I2CSensor<> {
         unsigned long _measurement_delay;
         bool _run_init = false;
         double _temperature = 0;
-        double _pressure = 0;
         double _humidity = 0;
+        double _pressure = 0;
 
         typedef struct {
 
