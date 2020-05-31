@@ -384,6 +384,9 @@
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
 #define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
 #define SENSOR_ERROR_OTHER          99      // Any other error
+
+#define SENSOR_ERROR_MAX            9
+
 //------------------------------------------------------------------------------
 // Telnet server
 //------------------------------------------------------------------------------

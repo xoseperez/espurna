@@ -45,16 +45,8 @@
 #define SENSOR_POWER_CHECK_STATUS           1               // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
 #endif
 
-#ifndef SENSOR_TEMPERATURE_CORRECTION
-#define SENSOR_TEMPERATURE_CORRECTION       0.0             // Offset correction
-#endif
-
 #ifndef TEMPERATURE_MIN_CHANGE
 #define TEMPERATURE_MIN_CHANGE              0.0             // Minimum temperature change to report
-#endif
-
-#ifndef SENSOR_HUMIDITY_CORRECTION
-#define SENSOR_HUMIDITY_CORRECTION          0.0             // Offset correction
 #endif
 
 #ifndef HUMIDITY_MIN_CHANGE
@@ -89,6 +81,25 @@
 #define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
 #endif
 
+// -----------------------------------------------------------------------------
+// Magnitude offset correction
+// -----------------------------------------------------------------------------
+
+#ifndef SENSOR_TEMPERATURE_CORRECTION
+#define SENSOR_TEMPERATURE_CORRECTION       0.0
+#endif
+
+#ifndef SENSOR_HUMIDITY_CORRECTION
+#define SENSOR_HUMIDITY_CORRECTION          0.0
+#endif
+
+#ifndef SENSOR_PRESSURE_CORRECTION
+#define SENSOR_PRESSURE_CORRECTION          0.0
+#endif
+
+#ifndef SENSOR_LUX_CORRECTION
+#define SENSOR_LUX_CORRECTION               0.0
+#endif
 
 // =============================================================================
 // Specific data for each sensor
@@ -771,10 +782,6 @@
 // Enable support by passing LDR_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
  
-#ifndef SENSOR_LUX_CORRECTION
-#define SENSOR_LUX_CORRECTION           0.0     // Offset correction
-#endif
-
 #ifndef LDR_SUPPORT
 #define LDR_SUPPORT                     0
 #endif

@@ -236,7 +236,7 @@ struct sensor_magnitude_t {
 
 };
 
-unsigned char sensor_magnitude_t::_counts[MAGNITUDE_MAX];
+unsigned char sensor_magnitude_t::_counts[MAGNITUDE_MAX] = {0};
 
 namespace sensor {
 
@@ -331,6 +331,30 @@ void Energy::reset() {
 }
 
 } // namespace sensor
+
+// -----------------------------------------------------------------------------
+// Configuration
+// -----------------------------------------------------------------------------
+
+constexpr double _magnitudeCorrection(unsigned char type) {
+    return (
+        (MAGNITUDE_TEMPERATURE == type) ? (SENSOR_TEMPERATURE_CORRECTION) :
+        (MAGNITUDE_HUMIDITY == type) ? (SENSOR_HUMIDITY_CORRECTION) :
+        (MAGNITUDE_LUX == type) ? (SENSOR_LUX_CORRECTION) :
+        (MAGNITUDE_PRESSURE == type) ? (SENSOR_PRESSURE_CORRECTION) :
+        0.0
+    );
+}
+
+constexpr bool _magnitudeCanUseCorrection(unsigned char type) {
+    return (
+        (MAGNITUDE_TEMPERATURE == type) ? (true) :
+        (MAGNITUDE_HUMIDITY == type) ? (true) :
+        (MAGNITUDE_LUX == type) ? (true) :
+        (MAGNITUDE_PRESSURE == type) ? (true) :
+        false
+    );
+}
 
 // -----------------------------------------------------------------------------
 // Energy persistence
@@ -831,16 +855,89 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
 }
 
+String _magnitudeDescription(const sensor_magnitude_t& magnitude) {
+    return magnitude.sensor->description(magnitude.slot);
+}
+
 // -----------------------------------------------------------------------------
 
-bool _sensorMatchKeyPrefix(const char * key) {
-    if (strncmp(key, "pwr", 3) == 0) return true;
-    if (strncmp(key, "sns", 3) == 0) return true;
-    if (strncmp(key, "tmp", 3) == 0) return true;
-    if (strncmp(key, "hum", 3) == 0) return true;
-    if (strncmp(key, "ene", 3) == 0) return true;
-    if (strncmp(key, "lux", 3) == 0) return true;
+// do `callback(type)` for each present magnitude
+template<typename T>
+void _magnitudeForEachCounted(T callback) {
+    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
+        if (sensor_magnitude_t::counts(type)) {
+            callback(type);
+        }
+    }
+}
+
+// check if `callback(type)` returns `true` at least once
+template<typename T>
+bool _magnitudeForEachCountedCheck(T callback) {
+    for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
+        if (sensor_magnitude_t::counts(type) && callback(type)) {
+            return true;
+        }
+    }
+
     return false;
+}
+
+// do `callback(type)` for each error type
+template<typename T>
+void _sensorForEachError(T callback) {
+    for (unsigned char error = SENSOR_ERROR_OK; error < SENSOR_ERROR_MAX; ++error) {
+        callback(error);
+    }
+}
+
+const char * const _magnitudeSettingsPrefix(unsigned char type) {
+    switch (type) {
+    case MAGNITUDE_TEMPERATURE: return "tmp";
+    case MAGNITUDE_HUMIDITY: return "hum";
+    case MAGNITUDE_PRESSURE: return "press";
+    case MAGNITUDE_CURRENT: return "curr";
+    case MAGNITUDE_VOLTAGE: return "volt";
+    case MAGNITUDE_POWER_ACTIVE: return "pwrP";
+    case MAGNITUDE_POWER_APPARENT: return "pwrQ";
+    case MAGNITUDE_POWER_REACTIVE: return "pwrModS";
+    case MAGNITUDE_POWER_FACTOR: return "pwrPF";
+    case MAGNITUDE_ENERGY: return "ene";
+    case MAGNITUDE_ENERGY_DELTA: return "eneDelta";
+    case MAGNITUDE_ANALOG: return "analog";
+    case MAGNITUDE_DIGITAL: return "digital";
+    case MAGNITUDE_EVENT: return "event";
+    case MAGNITUDE_PM1dot0: return "pm1dot0";
+    case MAGNITUDE_PM2dot5: return "pm1dot5";
+    case MAGNITUDE_PM10: return "pm10";
+    case MAGNITUDE_CO2: return "co2";
+    case MAGNITUDE_LUX: return "lux";
+    case MAGNITUDE_UVA: return "uva";
+    case MAGNITUDE_UVB: return "uvb";
+    case MAGNITUDE_UVI: return "uvi";
+    case MAGNITUDE_DISTANCE: return "distance";
+    case MAGNITUDE_HCHO: return "hcho";
+    case MAGNITUDE_GEIGER_CPM: return "gcpm";
+    case MAGNITUDE_GEIGER_SIEVERT: return "gsiev";
+    case MAGNITUDE_COUNT: return "count";
+    case MAGNITUDE_NO2: return "no2";
+    case MAGNITUDE_CO: return "co";
+    case MAGNITUDE_RESISTANCE: return "res";
+    case MAGNITUDE_PH: return "ph";
+    default: return nullptr;
+    }
+}
+
+bool _sensorMatchKeyPrefix(const char * key) {
+
+    if (strncmp(key, "sns", 3) == 0) return true;
+    if (strncmp(key, "pwr", 3) == 0) return true;
+
+    return _magnitudeForEachCountedCheck([key](unsigned char type) {
+        const char* const prefix { _magnitudeSettingsPrefix(type) };
+        return (strncmp(prefix, key, strlen(prefix)) == 0);
+    });
+
 }
 
 const String _sensorQueryDefault(const String& key) {
@@ -935,21 +1032,185 @@ void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
     }
 }
 
+String sensorError(unsigned char error) {
+
+    const __FlashStringHelper* result = nullptr;
+
+    switch (error) {
+        case SENSOR_ERROR_OK:
+            result = F("OK");
+            break;
+        case SENSOR_ERROR_OUT_OF_RANGE:
+            result = F("Out of Range");
+            break;
+        case SENSOR_ERROR_WARM_UP:
+            result = F("Warming Up");
+            break;
+        case SENSOR_ERROR_TIMEOUT:
+            result = F("Timeout");
+            break;
+        case SENSOR_ERROR_UNKNOWN_ID:
+            result = F("Unknown ID");
+            break;
+        case SENSOR_ERROR_CRC:
+            result = F("CRC / Data Error");
+            break;
+        case SENSOR_ERROR_I2C:
+            result = F("I2C Error");
+            break;
+        case SENSOR_ERROR_GPIO_USED:
+            result = F("GPIO Already Used");
+            break;
+        case SENSOR_ERROR_CALIBRATION:
+            result = F("Calibration Error");
+            break;
+        default:
+        case SENSOR_ERROR_OTHER:
+            result = F("Other / Unknown Error");
+            break;
+    }
+
+    return result;
+
+}
+
+String magnitudeName(unsigned char type) {
+
+    const __FlashStringHelper* result = nullptr;
+
+    switch (type) {
+        case MAGNITUDE_TEMPERATURE:
+            result = F("Temperature");
+            break;
+        case MAGNITUDE_HUMIDITY:
+            result = F("Humidity");
+            break;
+        case MAGNITUDE_PRESSURE:
+            result = F("Pressure");
+            break;
+        case MAGNITUDE_CURRENT:
+            result = F("Current");
+            break;
+        case MAGNITUDE_VOLTAGE:
+            result = F("Voltage");
+            break;
+        case MAGNITUDE_POWER_ACTIVE:
+            result = F("Active Power");
+            break;
+        case MAGNITUDE_POWER_APPARENT:
+            result = F("Apparent Power");
+            break;
+        case MAGNITUDE_POWER_REACTIVE:
+            result = F("Reactive Power");
+            break;
+        case MAGNITUDE_POWER_FACTOR:
+            result = F("Power Factor");
+            break;
+        case MAGNITUDE_ENERGY:
+            result = F("Energy");
+            break;
+        case MAGNITUDE_ENERGY_DELTA:
+            result = F("Energy (delta)");
+            break;
+        case MAGNITUDE_ANALOG:
+            result = F("Analog");
+            break;
+        case MAGNITUDE_DIGITAL:
+            result = F("Digital");
+            break;
+        case MAGNITUDE_EVENT:
+            result = F("Event");
+            break;
+        case MAGNITUDE_PM1dot0:
+            result = F("PM1.0");
+            break;
+        case MAGNITUDE_PM2dot5:
+            result = F("PM2.5");
+            break;
+        case MAGNITUDE_PM10:
+            result = F("PM10");
+            break;
+        case MAGNITUDE_CO2:
+            result = F("CO2");
+            break;
+        case MAGNITUDE_LUX:
+            result = F("Lux");
+            break;
+        case MAGNITUDE_UVA:
+            result = F("UVA");
+            break;
+        case MAGNITUDE_UVB:
+            result = F("UVB");
+            break;
+        case MAGNITUDE_UVI:
+            result = F("UVI");
+            break;
+        case MAGNITUDE_DISTANCE:
+            result = F("Distance");
+            break;
+        case MAGNITUDE_HCHO:
+            result = F("HCHO");
+            break;
+        case MAGNITUDE_GEIGER_CPM:
+        case MAGNITUDE_GEIGER_SIEVERT:
+            result = F("Local Dose Rate");
+            break;
+        case MAGNITUDE_COUNT:
+            result = F("Count");
+            break;
+        case MAGNITUDE_NO2:
+            result = F("NO2");
+            break;
+        case MAGNITUDE_CO:
+            result = F("CO");
+            break;
+        case MAGNITUDE_RESISTANCE:
+            result = F("Resistance");
+            break;
+        case MAGNITUDE_PH:
+            result = F("pH");
+            break;
+        case MAGNITUDE_NONE:
+        default:
+            break;
+    }
+            
+
+    return String(result);
+}
+
 void _sensorWebSocketOnVisible(JsonObject& root) {
 
     root["snsVisible"] = 1;
 
-    for (auto& magnitude : _magnitudes) {
-        if (magnitude.type == MAGNITUDE_TEMPERATURE) root["temperatureVisible"] = 1;
-        if (magnitude.type == MAGNITUDE_HUMIDITY) root["humidityVisible"] = 1;
-        #if MICS2710_SUPPORT || MICS5525_SUPPORT
-            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) root["micsVisible"] = 1;
-        #endif
-    }
+    // prepare available magnitude types
+    JsonArray& magnitudes = root.createNestedArray("snsMagnitudes");
+    _magnitudeForEachCounted([&magnitudes](unsigned char type) {
+        JsonArray& tuple = magnitudes.createNestedArray();
+        tuple.add(type);
+        tuple.add(_magnitudeSettingsPrefix(type));
+        tuple.add(magnitudeName(type));
+    });
+
+    // and available error types
+    JsonArray& errors = root.createNestedArray("snsErrors");
+    _sensorForEachError([&errors](unsigned char error) {
+        JsonArray& tuple = errors.createNestedArray();
+        tuple.add(error);
+        tuple.add(sensorError(error));
+    });
 
 }
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
+
+    // retrieve per-type ...Correction settings, when available
+    _magnitudeForEachCounted([&root](unsigned char type) {
+        if (_magnitudeCanUseCorrection(type)) {
+            auto key = String(_magnitudeSettingsPrefix(type)) + F("Correction");
+            root[key] = getSetting(key, _magnitudeCorrection(type));
+        }
+    });
 
     JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
     uint8_t size = 0;
@@ -959,17 +1220,16 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
     JsonArray& units = magnitudes.createNestedArray("units");
     JsonArray& description = magnitudes.createNestedArray("description");
 
-    for (unsigned char i=0; i<magnitudeCount(); i++) {
+    for (auto& magnitude : _magnitudes) {
 
-        auto& magnitude = _magnitudes[i];
+        // TODO: we don't display event for some reason?
         if (magnitude.type == MAGNITUDE_EVENT) continue;
         ++size;
 
-        // Note: we use int instead of bool to ever so slightly compress json output
         index.add<uint8_t>(magnitude.index_global);
         type.add<uint8_t>(magnitude.type);
         units.add(_magnitudeUnits(magnitude));
-        description.add(magnitude.sensor->description(magnitude.slot));
+        description.add(_magnitudeDescription(magnitude));
 
     }
 
@@ -1016,10 +1276,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
 
-    for (unsigned char i=0; i<_sensors.size(); i++) {
-
-        BaseSensor * sensor = _sensors[i];
-        UNUSED(sensor);
+    for (auto* sensor [[gnu::unused]] : _sensors) {
 
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
@@ -1069,18 +1326,17 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             }
         #endif
 
-    }
+        #if MICS2710_SUPPORT || MICS5525_SUPPORT
+            switch (sensor->getID()) {
+                case SENSOR_MICS2710_ID:
+                case SENSOR_MICS5525_ID:
+                    root["micsVisible"] = 1;
+                    break;
+                default:
+                    break;
+            }
+        #endif
 
-    if (sensor_magnitude_t::counts(MAGNITUDE_TEMPERATURE)) {
-        root["tmpCorrection"] = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION);
-    }
-
-    if (sensor_magnitude_t::counts(MAGNITUDE_HUMIDITY)) {
-        root["humCorrection"] = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION);
-    }
-
-    if (sensor_magnitude_t::counts(MAGNITUDE_LUX)) {
-        root["luxCorrection"] = getSetting("luxCorrection", SENSOR_LUX_CORRECTION);
     }
 
     if (magnitudeCount()) {
@@ -1098,9 +1354,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
 void _sensorAPISetup() {
 
-    for (unsigned char magnitude_id=0; magnitude_id<_magnitudes.size(); magnitude_id++) {
-
-        auto& magnitude = _magnitudes.at(magnitude_id);
+    for (auto& magnitude : _magnitudes) {
 
         String topic = magnitudeTopic(magnitude.type);
         if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) topic = topic + "/" + String(magnitude.index_global);
@@ -1173,8 +1427,9 @@ void _sensorInitCommands() {
             dtostrf(magnitude.reported, 1, magnitude.decimals, reported);
             DEBUG_MSG_P(PSTR("[SENSOR] %2u * %s/%u @ %s (last:%s, reported:%s)\n"),
                 index,
-                magnitudeTopic(magnitude.type).c_str(), magnitude.index_global,
-                magnitude.sensor->description(magnitude.slot).c_str(),
+                magnitudeTopic(magnitude.type).c_str(),
+                magnitude.index_global,
+                _magnitudeDescription(magnitude).c_str(),
                 last, reported
             );
         }
@@ -1803,6 +2058,7 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+
 }
 
 void _sensorReport(unsigned char index, double value) {
@@ -1874,7 +2130,7 @@ void _sensorInit() {
         if (!_sensors[i]->ready()) {
             if (_sensors[i]->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
             _sensors_ready = false;
-            continue;
+            break;
         }
 
         // Initialize sensor magnitudes
@@ -2039,11 +2295,6 @@ void _sensorConfigure() {
         const auto pwrUnits = getSetting("pwrUnits", SENSOR_POWER_UNITS);
         const auto eneUnits = getSetting("eneUnits", SENSOR_ENERGY_UNITS);
 
-        // TODO: map MAGNITUDE_... type to a specific string? nvm the preprocessor flags, just focus on settings
-        const auto tmpCorrection = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION);
-        const auto humCorrection = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION);
-        const auto luxCorrection = getSetting("luxCorrection", SENSOR_LUX_CORRECTION);
-
         for (unsigned char index = 0; index < _magnitudes.size(); ++index) {
 
             auto& magnitude = _magnitudes.at(index);
@@ -2093,10 +2344,8 @@ void _sensorConfigure() {
                         magnitude,
                         getSetting({"tmpUnits", magnitude.index_global}, tmpUnits)
                     );
-                    magnitude.correction = getSetting({"tmpCorrection", magnitude.index_global}, tmpCorrection);
                     break;
                 case MAGNITUDE_HUMIDITY:
-                    magnitude.correction = getSetting({"humCorrection", magnitude.index_global}, humCorrection);
                     break;
                 case MAGNITUDE_POWER_ACTIVE:
                     magnitude.units = _magnitudeUnitFilter(
@@ -2110,12 +2359,17 @@ void _sensorConfigure() {
                         getSetting({"eneUnits", magnitude.index_global}, eneUnits)
                     );
                     break;
-                case MAGNITUDE_LUX:
-                    magnitude.correction = getSetting({"luxCorrection", magnitude.index_global}, luxCorrection);
-                    break;
                 default:
                     magnitude.units = magnitude.sensor->units(magnitude.slot);
                     break;
+            }
+
+            // some magnitudes allow to be corrected with an offset
+            {
+                if (_magnitudeCanUseCorrection(magnitude.type)) {
+                    auto key = String(_magnitudeSettingsPrefix(magnitude.type)) + F("Correction");
+                    magnitude.correction = getSetting({key, magnitude.index_global}, getSetting(key, _magnitudeCorrection(magnitude.type)));
+                }
             }
 
             // some sensors can override decimal values if sensor has more precision than default
@@ -2174,17 +2428,9 @@ unsigned char magnitudeCount() {
     return _magnitudes.size();
 }
 
-String magnitudeName(unsigned char index) {
-    if (index < _magnitudes.size()) {
-        sensor_magnitude_t magnitude = _magnitudes[index];
-        return magnitude.sensor->description(magnitude.slot);
-    }
-    return String();
-}
-
 unsigned char magnitudeType(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return int(_magnitudes[index].type);
+        return _magnitudes[index].type;
     }
     return MAGNITUDE_NONE;
 }
@@ -2198,9 +2444,16 @@ double magnitudeValue(unsigned char index) {
 
 unsigned char magnitudeIndex(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return int(_magnitudes[index].index_global);
+        return _magnitudes[index].index_global;
     }
     return 0;
+}
+
+String magnitudeDescription(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        return _magnitudeDescription(_magnitudes[index]);
+    }
+    return String();
 }
 
 String magnitudeTopicIndex(unsigned char index) {
@@ -2403,7 +2656,7 @@ void sensorLoop() {
                     char buffer[64];
                     dtostrf(value_show, 1, magnitude.decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
-                        magnitude.sensor->description(magnitude.slot).c_str(),
+                        _magnitudeDescription(magnitude).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
                         buffer,
                         _magnitudeUnits(magnitude).c_str()

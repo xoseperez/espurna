@@ -26,7 +26,11 @@ var filters = [];
 <!-- endRemoveIf(!rfm69)-->
 
 <!-- removeIf(!sensor)-->
-var magnitudes = [];
+var Magnitudes = [];
+var MagnitudeErrors = {};
+var MagnitudeNames = {};
+var MagnitudeTypePrefixes = {};
+var MagnitudePrefixTypes = {};
 <!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
@@ -44,52 +48,6 @@ function initMessages() {
     messages[9]  = "No changes detected";
     messages[10] = "Session expired, please reload page...";
 }
-
-<!-- removeIf(!sensor)-->
-function sensorName(id) {
-    var names = [
-        "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
-        "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
-        "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
-        "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "T6613", "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
-        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075",
-        "EZOPH"
-    ];
-    if (1 <= id && id <= names.length) {
-        return names[id - 1];
-    }
-    return null;
-}
-
-function magnitudeType(type) {
-    var types = [
-        "Temperature", "Humidity", "Pressure",
-        "Current", "Voltage", "Active Power", "Apparent Power",
-        "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
-        "Analog", "Digital", "Event",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance" , "HCHO",
-        "Local Dose Rate", "Local Dose Rate",
-        "Count",
-        "NO2", "CO", "Resistance", "pH"
-    ];
-    if (1 <= type && type <= types.length) {
-        return types[type - 1];
-    }
-    return null;
-}
-
-function magnitudeError(error) {
-    var errors = [
-        "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
-        "Data Error", "I2C Error", "GPIO Error", "Calibration error"
-    ];
-    if (0 <= error && error < errors.length) {
-        return errors[error];
-    }
-    return "Error " + error;
-}
-<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -451,6 +409,15 @@ function getJson(str) {
     } catch (e) {
         return false;
     }
+}
+
+function moduleVisible(module) {
+    if (module == "sch") {
+        $("li.module-" + module).css("display", "inherit");
+        $("div.module-" + module).css("display", "flex");
+        return;
+    }
+    $(".module-" + module).css("display", "inherit");
 }
 
 <!-- removeIf(!thermostat)-->
@@ -943,8 +910,8 @@ function createMagnitudeList(data, container, template_name) {
 
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(magnitudes[i].description);
+        $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
+        $("div.hint", line).html(Magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
@@ -1266,11 +1233,11 @@ function initMagnitudes(data) {
 
     for (var i=0; i<size; ++i) {
         var magnitude = {
-            "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "name": MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10),
             "units": data.units[i],
             "description": data.description[i]
         };
-        magnitudes.push(magnitude);
+        Magnitudes.push(magnitude);
 
         var line = $(template).clone();
         $("label", line).html(magnitude.name);
@@ -1866,8 +1833,48 @@ function processData(data) {
 
         <!-- removeIf(!sensor)-->
 
+        {
+            var position = key.indexOf("Correction");
+            if (position > 0 && position === key.length - 10) {
+                var template = $("#magnitudeCorrectionTemplate > div")[0];
+                var elem = $(template).clone();
+
+                var prefix = key.slice(0, position);
+                $("label", elem).html(MagnitudeNames[MagnitudePrefixTypes[prefix]]);
+                $("input", elem).attr("name", key).val(value);
+
+                setOriginalsFromValues($("input", elem));
+                elem.appendTo("#magnitude-corrections");
+                moduleVisible("magnitude-corrections");
+                return;
+            }
+        }
+
+        if ("snsErrors" === key) {
+            for (var index in value) {
+                var type = value[index][0];
+                var name = value[index][1];
+                MagnitudeErrors[type] = name;
+            }
+            return;
+        }
+
+        if ("snsMagnitudes" === key) {
+            for (var index in value) {
+                var type = value[index][0];
+                var prefix = value[index][1];
+                var name = value[index][2];
+                MagnitudeNames[type] = name;
+                MagnitudeTypePrefixes[type] = prefix;
+                MagnitudePrefixTypes[prefix] = type;
+                moduleVisible(prefix);
+            }
+            return;
+        }
+
         if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+            return;
         }
 
         if ("magnitudes" === key) {
@@ -1877,8 +1884,8 @@ function processData(data) {
 
                 var error = value.error[i] || 0;
                 var text = (0 === error)
-                    ? value.value[i] + magnitudes[i].units
-                    : magnitudeError(error);
+                    ? value.value[i] + Magnitudes[i].units
+                    : MagnitudeErrors[error];
                 inputElem.val(text);
 
                 if (value.info !== undefined) {
@@ -2102,12 +2109,7 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
-            if (module == "sch") {
-                $("li.module-" + module).css("display", "inherit");
-                $("div.module-" + module).css("display", "flex");
-                return;
-            }
-            $(".module-" + module).css("display", "inherit");
+            moduleVisible(module);
             return;
         }
 

@@ -1663,33 +1663,13 @@
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-temperature">
+                                <div class="pure-g module module-tmp">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
                                     <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="2">Celsius (&deg;C)</option>
                                         <option value="3">Fahrenheit (&deg;F)</option>
                                         <option value="4">Kelvin (K)</option>
                                     </select>
-                                </div>
-
-                                <div class="pure-g module module-temperature">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Temperature correction</label>
-                                    <input name="tmpCorrection" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Temperature correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g module module-humidity">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Humidity correction</label>
-                                    <input name="humCorrection" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Humidity correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
-                                    </div>
                                 </div>
 
                                 <div class="pure-g module module-mics">
@@ -1751,6 +1731,15 @@
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to set energy count to 0.</div>
+                                </div>
+
+                                <div class="pure-g module module-magnitude-corrections">
+                                    <legend>Value corrections</legend>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint more">
+                                        Correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
+                                    </div>
+                                    <div class="pure-form pure-form-aligned" id="magnitude-corrections">
+                                    </div>
                                 </div>
 
                             </fieldset>
@@ -1847,6 +1836,16 @@
         </div> <!-- layout -->
 
         <!-- Templates -->
+
+        <div id="magnitudeCorrectionTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4"></label>
+                <input name="correction" class="pure-u-1 pure-u-lg-1-4" type="number" step="0.1" data="0"></input>
+                <div class="pure-u-0 pure-u-lg-1-2"></div>
+                <div class="pure-u-0 pure-u-lg-1-4"></div>
+                <div class="pure-u-1 pure-u-lg-3-4 hint"></div>
+            </div>
+        </div>
 
         <div id="ledConfigTemplate" class="template">
             <div class="pure-form pure-form-aligned">

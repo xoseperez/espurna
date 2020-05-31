@@ -885,6 +885,7 @@ void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& status = state.createNestedArray("status");
     JsonArray& lock = state.createNestedArray("lock");
 
+    // Note: we use byte instead of bool to ever so slightly compress json output
     for (unsigned char i=0; i<relayCount(); i++) {
         status.add<uint8_t>(_relays[i].target_status);
         lock.add(_relays[i].lock);

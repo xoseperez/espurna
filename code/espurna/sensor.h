@@ -130,24 +130,26 @@ struct Energy {
 BrokerDeclare(SensorReadBroker, void(const String&, unsigned char, double, const char*));
 BrokerDeclare(SensorReportBroker, void(const String&, unsigned char, double, const char*));
 
-String magnitudeName(unsigned char index);
 String magnitudeUnits(unsigned char index);
+String magnitudeDescription(unsigned char index);
 unsigned char magnitudeType(unsigned char index);
-
-// XXX: without param name it is kind of vague what exactly unsigned char is
-//      consider using index instead of type or adding stronger param type
-String magnitudeTopic(unsigned char type);
-
-unsigned char sensorCount();
-unsigned char magnitudeCount();
-
-double magnitudeValue(unsigned char index);
 
 unsigned char magnitudeIndex(unsigned char index);
 String magnitudeTopicIndex(unsigned char index);
 
+unsigned char magnitudeCount();
+double magnitudeValue(unsigned char index);
+
+// XXX: without param name it is kind of vague what exactly unsigned char is
+//      consider adding stronger param type e.g. enum class
+String magnitudeTopic(unsigned char type);
+String magnitudeName(unsigned char type);
+
+String sensorError(unsigned char error);
+
 void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix);
 
+unsigned char sensorCount();
 void sensorSetup();
 void sensorLoop();
 
