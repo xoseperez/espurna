@@ -156,7 +156,7 @@ if os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE"):
         for name in filenames:
             if not name.endswith(".cpp"):
                 continue
-            path = os.path.join(root, name)
+            path = os.path.relpath(os.path.join(root, name), "espurna")
             env.AddBuildMiddleware(lambda node: None, "*?/{}".format(path))
             cpp_files.append(path)
     merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
