@@ -243,9 +243,10 @@ void _rpnInit() {
             float status, id;
             rpn_stack_pop(ctxt, id);
             rpn_stack_pop(ctxt, status);
+
             if (int(status) == 2) {
                 relayToggle(int(id));
-            } else {
+            } else if (relayStatusTarget(int(id)) != (int(status) == 1)) {
                 relayStatus(int(id), int(status) == 1);
             }
             return true;
