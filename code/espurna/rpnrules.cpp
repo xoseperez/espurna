@@ -139,6 +139,23 @@ bool _rpnNtpFunc(rpn_context & ctxt, int (*func)(time_t)) {
 
 #endif
 
+#if RELAY_SUPPORT
+
+bool _rpnRelayStatus(rpn_context & ctxt, bool force) {
+    float status, id;
+    rpn_stack_pop(ctxt, id);
+    rpn_stack_pop(ctxt, status);
+
+    if (int(status) == 2) {
+        relayToggle(int(id));
+    } else if (force || (relayStatusTarget(int(id)) != (int(status) == 1))) {
+        relayStatus(int(id), int(status) == 1);
+    }
+    return true;
+}
+
+#endif
+
 void _rpnDump() {
     float value;
     DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
@@ -239,17 +256,14 @@ void _rpnInit() {
     // Accept relay number and numeric API status value (0, 1 and 2)
     #if RELAY_SUPPORT
 
-        rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
-            float status, id;
-            rpn_stack_pop(ctxt, id);
-            rpn_stack_pop(ctxt, status);
+        // apply status and reset timers when called
+        rpn_operator_set(_rpn_ctxt, "relay_reset", 2, [](rpn_context & ctxt) {
+            return _rpnRelayStatus(ctxt, true);
+        });
 
-            if (int(status) == 2) {
-                relayToggle(int(id));
-            } else if (relayStatusTarget(int(id)) != (int(status) == 1)) {
-                relayStatus(int(id), int(status) == 1);
-            }
-            return true;
+        // only update status when target status differs, keep running timers
+        rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
+            return _rpnRelayStatus(ctxt, false);
         });
 
     #endif // RELAY_SUPPORT == 1
