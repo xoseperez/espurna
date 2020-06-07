@@ -619,6 +619,11 @@ bool relayStatus(unsigned char id) {
 
 }
 
+bool relayStatusTarget(unsigned char id) {
+    if (id >= _relays.size()) return false;
+    return _relays[id].target_status;
+}
+
 void relaySync(unsigned char id) {
 
     // No sync if none or only one relay
