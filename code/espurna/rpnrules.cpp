@@ -193,8 +193,8 @@ void _rpnDump() {
         return;
     }
 
-    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_type::Type, const rpn_value& value) {
-        DEBUG_MSG_P(PSTR("      %02u: %s\n"), index-- _rpnValueToString(value).c_str());
+    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_value::Type, const rpn_value& value) {
+        DEBUG_MSG_P(PSTR("      %02u: %s\n"), index--, _rpnValueToString(value).c_str());
     });
 }
 
