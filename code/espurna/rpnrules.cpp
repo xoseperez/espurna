@@ -252,7 +252,7 @@ void _rpnInit() {
     #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
         rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) -> rpn_error {
             if (!ntpSynced()) return rpn_operator_error::CannotContinue;
-            rpn_value ts { rpn_int_t(ntpLocal2UTC(now()) };
+            rpn_value ts { rpn_int_t(ntpLocal2UTC(now())) };
             rpn_stack_push(ctxt, ts);
             return 0;
         });
