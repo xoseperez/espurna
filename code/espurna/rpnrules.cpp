@@ -86,7 +86,8 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
             if (rpn_topic.equals(topic)) {
                 String rpn_name = getSetting({"rpnName", i});
                 if (rpn_name.length()) {
-                    rpn_variable_set(_rpn_ctxt, rpn_name.c_str(), atof(payload));
+                    rpn_value value { atof(payload) };
+                    rpn_variable_set(_rpn_ctxt, rpn_name, value);
                     _rpn_last = millis();
                     _rpn_run = true;
                     break;
@@ -109,9 +110,10 @@ void _rpnConfigure() {
 void _rpnBrokerCallback(const String& topic, unsigned char id, double value, const char*) {
 
     char name[32] = {0};
-
     snprintf(name, sizeof(name), "%s%u", topic.c_str(), id);
-    rpn_variable_set(_rpn_ctxt, name, value);
+
+    rpn_value variable { value };
+    rpn_variable_set(_rpn_ctxt, name, variable);
 
     _rpn_last = millis();
     _rpn_run = true;
@@ -124,49 +126,77 @@ void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value)
 
 #if NTP_SUPPORT
 
-bool _rpnNtpNow(rpn_context & ctxt) {
-    if (!ntpSynced()) return false;
-    rpn_stack_push(ctxt, now());
-    return true;
+rpn_error _rpnNtpNow(rpn_context & ctxt) {
+    if (!ntpSynced()) return rpn_operator_error::CannotContinue;
+    rpn_value ts { rpn_int_t(now()) };
+    rpn_stack_push(ctxt, ts);
+    return 0;
 }
 
-bool _rpnNtpFunc(rpn_context & ctxt, int (*func)(time_t)) {
-    float timestamp;
-    rpn_stack_pop(ctxt, timestamp);
-    rpn_stack_push(ctxt, func(time_t(timestamp)));
-    return true;
+rpn_error _rpnNtpFunc(rpn_context & ctxt, rpn_int_t (*func)(time_t)) {
+    rpn_value value;
+    rpn_stack_pop(ctxt, value);
+
+    value = rpn_value(func(value.toInt()));
+    rpn_stack_push(ctxt, value);
+
+    return 0;
 }
 
-#endif
+#endif // NTP_SUPPORT
+
+String _rpnValueToString(const rpn_value& value) {
+    String out;
+    if (value.isString()) {
+        out = value.toString();
+    } else if (value.isFloat()) {
+        out = String(value.toFloat(), 10);
+    } else if (value.isInt()) {
+        out = String(value.toInt(), 10);
+    } else if (value.isUint()) {
+        out = String(value.toUint(), 10);
+    } else if (value.isBoolean()) {
+        out = String(value.toBoolean() ? "true" : "false");
+    } else if (value.isNull()) {
+        out = F("(null)");
+    }
+    return out;
+}
 
 #if RELAY_SUPPORT
 
-bool _rpnRelayStatus(rpn_context & ctxt, bool force) {
-    float status, id;
+rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
+    rpn_value id;
+    rpn_value status;
+
     rpn_stack_pop(ctxt, id);
     rpn_stack_pop(ctxt, status);
 
-    if (int(status) == 2) {
-        relayToggle(int(id));
-    } else if (force || (relayStatusTarget(int(id)) != (int(status) == 1))) {
-        relayStatus(int(id), int(status) == 1);
+    rpn_int_t value = status.toUint();
+    if (value == 2) {
+        relayToggle(id.toUint());
+    } else if (relayStatusTarget(id.toUint()) != (value == 1)) {
+        relayStatus(id.toUint(), value == 1);
     }
-    return true;
+
+    return 0;
 }
 
-#endif
+#endif // RELAY_SUPPORT
 
 void _rpnDump() {
-    float value;
     DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
     unsigned char num = rpn_stack_size(_rpn_ctxt);
-    if (0 == num) {
+    if (!num) {
         DEBUG_MSG_P(PSTR("      (empty)\n"));
-    } else {
-        unsigned char index = num - 1;
-        while (rpn_stack_get(_rpn_ctxt, index, value)) {
-            DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, String(value).c_str());
-        }
+        return;
+    }
+
+    rpn_value value;
+    String out;
+    unsigned char index = num - 1;
+    while (rpn_stack_get(_rpn_ctxt, index, value)) {
+        DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, _rpnValueToString(value).c_str());
     }
 }
 
@@ -223,10 +253,11 @@ void _rpnInit() {
     //       using classic Sunday as first, but instead of 0 it is 1
     //       Implementation above also uses 1 for Sunday, staying compatible with TimeLib
     #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
-            if (!ntpSynced()) return false;
-            rpn_stack_push(ctxt, ntpLocal2UTC(now()));
-            return true;
+        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) -> rpn_error {
+            if (!ntpSynced()) return rpn_operator_error::CannotContinue;
+            rpn_value ts { rpn_int_t(ntpLocal2UTC(now()) };
+            rpn_stack_push(ctxt, ts);
+            return 0;
         });
         rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
 
@@ -248,9 +279,9 @@ void _rpnInit() {
     #endif
 
     // Dumps RPN stack contents
-    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) {
+    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
         _rpnDump();
-        return true;
+        return 0;
     });
 
     // Accept relay number and numeric API status value (0, 1 and 2)
@@ -271,22 +302,23 @@ void _rpnInit() {
     // Channel operators
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
-        rpn_operator_set(_rpn_ctxt, "update", 0, [](rpn_context & ctxt) {
+        rpn_operator_set(_rpn_ctxt, "update", 0, [](rpn_context & ctxt) -> rpn_error {
             lightUpdate(true, true);
-            return true;
+            return 0;
         });
 
-        rpn_operator_set(_rpn_ctxt, "black", 0, [](rpn_context & ctxt) {
+        rpn_operator_set(_rpn_ctxt, "black", 0, [](rpn_context & ctxt) -> rpn_error {
             lightColor((unsigned long) 0);
-            return true;
+            return 0;
         });
 
-        rpn_operator_set(_rpn_ctxt, "channel", 2, [](rpn_context & ctxt) {
-            float value, id;
+        rpn_operator_set(_rpn_ctxt, "channel", 2, [](rpn_context & ctxt) -> rpn_error {
+            rpn_value value;
+            rpn_value id;
             rpn_stack_pop(ctxt, id);
             rpn_stack_pop(ctxt, value);
-            lightChannel(int(id), int(value));
-            return true;
+            lightChannel(id.toUint(), id.toInt());
+            return 0;
         });
 
     #endif
@@ -303,12 +335,9 @@ void _rpnInitCommands() {
             DEBUG_MSG_P(PSTR("[RPN] No variables\n"));
         } else {
             DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
-            for (unsigned char i=0; i<num; i++) {
-                char * name = rpn_variable_name(_rpn_ctxt, i);
-                float value;
-                rpn_variable_get(_rpn_ctxt, name, value);
-                DEBUG_MSG_P(PSTR("   %s: %s\n"), name, String(value).c_str());
-            }
+            rpn_variable_foreach(_rpn_ctxt, [](const String& name, const rpn_value& value) {
+                DEBUG_MSG_P(PSTR("   %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
+            });
         }
         terminalOK();
     });
@@ -317,7 +346,7 @@ void _rpnInitCommands() {
         unsigned char num = _rpn_ctxt.operators.size();
         DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
         for (unsigned char i=0; i<num; i++) {
-            DEBUG_MSG_P(PSTR("   %s (%d)\n"), _rpn_ctxt.operators[i].name, _rpn_ctxt.operators[i].argc);
+            DEBUG_MSG_P(PSTR("   %s (%d)\n"), _rpn_ctxt.operators[i].name.c_str(), _rpn_ctxt.operators[i].argc);
         }
         terminalOK();
     });
@@ -400,7 +429,8 @@ void rpnSetup() {
                 (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
 
             if (ptr != nullptr) {
-                rpn_variable_set(_rpn_ctxt, ptr, timestamp);
+                rpn_value value { rpn_int_t(timestamp) };
+                rpn_variable_set(_rpn_ctxt, ptr, value);
                 _rpn_last = millis();
                 _rpn_run = true;
             }
