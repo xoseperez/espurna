@@ -1255,7 +1255,7 @@
 
     // Info
     #define MANUFACTURER        "LYASI"
-    #define DEVICE              "RGB-LED"
+    #define DEVICE              "RGB_LED"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
     #define DUMMY_RELAY_COUNT   1
@@ -1497,7 +1497,7 @@
 
 #elif defined(HUGOAI_AWP02L_N)
     #define MANUFACTURER                "HUGOAI"
-    #define DEVICE                      "AWP02L-N"
+    #define DEVICE                      "AWP02L_N"
 
     // Buttons
     #define BUTTON1_PIN                 13
@@ -4364,7 +4364,7 @@
 
     // Info
     #define MANUFACTURER                "ETEKCITY"
-    #define DEVICE                      "ESW01-USA"
+    #define DEVICE                      "ESW01_USA"
 
     // Buttons
     #define BUTTON1_PIN                 14
@@ -4688,6 +4688,36 @@
     #define RELAY2_TYPE             RELAY_TYPE_NORMAL
     #define RELAY3_TYPE             RELAY_TYPE_NORMAL
     #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+
+// -----------------------------------------------------------------------------
+// NEDIS WIFIP310FWT Wi-Fi Smart Extension Socket
+// 3x Schuko Type F, 4x USB, 16 A
+// https://nedis.com/en-us/product/smart-living/smart-home/energy/550672299/wi-fi-smart-extension-socket-3x-schuko-type-f-4x-usb-16-a
+// -----------------------------------------------------------------------------
+
+#elif defined(NEDIS_WIFIP310FWT)
+
+    // Info
+    #define MANUFACTURER            "NEDIS"
+    #define DEVICE                  "WIFIP310FWT"
+
+    // Based on the reporter, this product uses GPIO1 and 3 for the button
+    // and onboard LED, so hardware serial should be disabled...
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN             3
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN              5
+    #define RELAY2_PIN              4
+    #define RELAY3_PIN              13
+    #define RELAY4_PIN              14
+
+    // LEDs
+    #define LED1_PIN                1
+    #define LED1_PIN_INVERSE        1
 
 // -----------------------------------------------------------------------------
 

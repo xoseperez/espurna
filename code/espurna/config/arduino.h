@@ -131,6 +131,7 @@
 //#define MAXCIO_WUK007S
 //#define MAXCIO_WUS002S
 //#define MUVIT_IO_MIOBULB001
+//#define NEDIS_WIFIP310FWT
 //#define NEO_COOLCAM_NAS_WR01W
 //#define NEXETE_A19
 //#define NODEMCU_BASIC
