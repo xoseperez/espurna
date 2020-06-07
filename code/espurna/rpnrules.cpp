@@ -186,13 +186,14 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
 
 void _rpnDump() {
     DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
-    if (!rpn_stack_size(_rpn_ctxt)) {
+
+    auto index = rpn_stack_size(_rpn_ctxt);
+    if (!index) {
         DEBUG_MSG_P(PSTR("      (empty)\n"));
         return;
     }
 
-    auto index = rpn_stack_size(ctxt);
-    rpn_stack_foreach(ctxt, [&index](rpn_stack_type::Type, const rpn_value& value) {
+    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_type::Type, const rpn_value& value) {
         DEBUG_MSG_P(PSTR("      %02u: %s\n"), index-- _rpnValueToString(value).c_str());
     });
 }
