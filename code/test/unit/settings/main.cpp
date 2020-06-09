@@ -1,3 +1,5 @@
+#pragma GCC diagnostic warning "-Wall"
+
 #include <unity.h>
 #include <Arduino.h>
 
@@ -34,28 +36,109 @@ struct StaticArraySource final : public RawStorage::SourceBase {
 } // namespace embedis
 } // namespace settings
 
-struct TestStorageHandler {
-    TestStorageHandler() :
+template <size_t Size>
+struct StorageHandler {
+    StorageHandler() :
         storage(source)
     {}
 
+    settings::embedis::StaticArraySource<Size> source;
     settings::embedis::RawStorage storage;
-    settings::embedis::StaticArraySource<1024> source;
 };
+
+struct TestSequentialKvGenerator {
+
+    using kv = std::pair<String, String>;
+
+    kv next() {
+        auto index = _index++;
+        auto res = std::make_pair(
+            String("key") + String(index),
+            String("val") + String(index)
+        );
+        TEST_ASSERT(_last.first != res.first);
+        TEST_ASSERT(_last.second != res.second);
+        return (_last = res);
+    }
+
+    std::vector<kv> make(size_t size) {;
+        std::vector<kv> res;
+        for (size_t index = 0; index < size; ++index) {
+            res.push_back(next());
+        }
+        return res;
+    }
+
+    kv _last;
+    size_t _index { 0 };
+
+};
+
+// ----------------------------------------------------------------------------
+
+using TestStorageHandler = StorageHandler<1024>;
+
+template <typename T>
+void check_kv(T& instance, const String& key, const String& value) {
+    auto result = instance.storage.get(key);
+    TEST_ASSERT_MESSAGE(static_cast<bool>(result), key.c_str());
+    TEST_ASSERT(result.value.length());
+    TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
+};
+
+void test_overflow() {
+
+    StorageHandler<16> instance;
+
+    TEST_ASSERT(instance.storage.set("a", "b"));
+    TEST_ASSERT(instance.storage.set("c", "d"));
+    TEST_ASSERT_FALSE(instance.storage.set("e", "f"));
+
+    check_kv(instance, "a", "b");
+    check_kv(instance, "c", "d");
+
+}
+
+void test_small_gaps() {
+
+    TestStorageHandler instance;
+
+    TEST_ASSERT(instance.storage.set("key", "value"));
+    TEST_ASSERT(instance.storage.set("empty", ""));
+    TEST_ASSERT(instance.storage.set("empty_again", ""));
+    TEST_ASSERT(instance.storage.set("finally", "avalue"));
+
+    auto check_empty = [&instance](const String& key) {
+        auto result = instance.storage.get(key);
+        TEST_ASSERT(static_cast<bool>(result));
+        TEST_ASSERT_FALSE(result.value.length());
+    };
+
+    check_empty("empty_again");
+    check_empty("empty");
+    check_empty("empty_again");
+    check_empty("empty");
+
+    auto check_value = [&instance](const String& key, const String& value) {
+        auto result = instance.storage.get(key);
+        TEST_ASSERT(static_cast<bool>(result));
+        TEST_ASSERT(result.value.length());
+        TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
+    };
+
+    check_value("finally", "avalue");
+    check_value("key", "value");
+
+}
 
 void test_remove_randomized() {
 
     // ensure we can remove keys in any order
-    // 5 -> 120 combinations
-    constexpr size_t KeysNumber = 5;
+    // 5 -> 120 combinations, be careful increasing
+    constexpr size_t KeysNumber = 9;
 
-    std::vector<std::pair<String, String>> kvs;
-    for (size_t index = 0; index < KeysNumber; ++index) {
-        kvs.push_back(std::make_pair(
-            String("key") + String(index),
-            String("val") + String(index)
-        ));
-    }
+    TestSequentialKvGenerator generator;
+    auto kvs = generator.make(KeysNumber);
 
     // generate indexes array to allow us to reference keys at random
     TestStorageHandler instance;
@@ -64,6 +147,7 @@ void test_remove_randomized() {
 
     // - insert keys sequentially
     // - remove keys based on the order provided by next_permutation()
+    size_t index = 0;
     do {
         instance.storage._cursor.position = 1024;
         instance.storage._cursor.end = 1024;
@@ -77,7 +161,14 @@ void test_remove_randomized() {
             auto result = instance.storage.get(key);
             TEST_ASSERT_FALSE(static_cast<bool>(result));
         }
+        index++;
     } while (std::next_permutation(indexes.begin(), indexes.end()));
+
+    String message("- keys: ");
+    message += KeysNumber;
+    message += ", permutations: ";
+    message += index;
+    TEST_MESSAGE(message.c_str());
 
 }
 
@@ -87,18 +178,14 @@ void test_basic() {
     constexpr size_t KeysNumber = 5;
 
     // ensure insert works
-    std::vector<std::pair<String, String>> kvs;
-    for (size_t index = 0; index < KeysNumber; ++index) {
-        kvs.push_back(std::make_pair(
-            String("key") + String(index),
-            String("val") + String(index)
-        ));
-    }
+    TestSequentialKvGenerator generator;
+    auto kvs = generator.make(KeysNumber);
 
     for (auto& kv : kvs) {
         instance.storage.set(kv.first, kv.second);
     }
 
+    // and we can retrieve keys back
     for (auto& kv : kvs) {
         auto result = instance.storage.get(kv.first);
         TEST_ASSERT(static_cast<bool>(result));
@@ -111,5 +198,7 @@ int main(int argc, char** argv) {
     UNITY_BEGIN();
     RUN_TEST(test_basic);
     RUN_TEST(test_remove_randomized);
+    RUN_TEST(test_small_gaps);
+    RUN_TEST(test_overflow);
     UNITY_END();
 }
