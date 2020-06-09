@@ -87,9 +87,7 @@ ValueResult RawStorage::get(const String& key) {
         }
 
         auto key_result = kv.key.read();
-        trace("found %s\n", key_result.c_str());
         if (key_result == key) {
-            trace("found a %s!\n", "match");
             out.value = kv.value.read();
             out.result = true;
             break;
@@ -123,7 +121,7 @@ bool RawStorage::set(const String& key, const String& value) {
         }
 
         start = kv.value.cursor.position - 1;
-        trace("start is now %u, found key=%u:%u value=%u:%u\n",
+        trace("::set start is now %u, found key=%u:%u value=%u:%u\n",
             start,
             kv.key.cursor.position,
             kv.key.cursor.end,
@@ -176,9 +174,7 @@ bool RawStorage::del(const String& key) {
     if (!key_len) return false;
 
     // Removes key from the storage by overwriting the key with left-most data
-    // TODO: ensure that there are no duplicates by having a stack of 'to_erase'?
-    std::vector<Cursor> to_erase;
-    to_erase.reserve(2);
+    Cursor to_erase(_source);
 
     size_t start = _cursor_rewind();
 
@@ -192,34 +188,39 @@ bool RawStorage::del(const String& key) {
         // when matching, record { value ... key } range + 4 bytes for length
         // continue searching for the leftmost boundary
         if ((kv.key.dataLength == key_len) && (kv.key.read() == key)) {
-            to_erase.emplace_back(
-                _source,
-                kv.value.cursor.position,
-                kv.value.cursor.position + kv.key.length + kv.value.length
-            );
+            to_erase.position = kv.value.cursor.position;
+            to_erase.end = to_erase.position + kv.key.length + kv.value.length;
+            trace("need to erase @blob between %u:%u\n", to_erase.position, to_erase.end);
             continue;
         }
     } while (_state != State::End);
 
-    if (!to_erase.size()) {
+    if (!to_erase) {
         return false;
     }
 
     // we either end up to the left or to the right of the boundary
-    for (auto it = to_erase.rbegin(); it != to_erase.rend(); ++it) {
-        auto& range = *it;
-        if (start < range.position) {
-            // overwrite key with data that is to the left of it
-            size_t pos = range.position;
-            do {
-                _source.write(pos + range.length(), _source.read(pos));
-                _source.write(pos, 0);
-            } while (pos-- != start);
-        } else {
-            // just null the lenght, since we at the last key
-           _source.write(range.end - 1, 0);
-           _source.write(range.end - 2, 0);
-        }
+    if (start < to_erase.position) {
+        trace("::del moving available range  @%u:%u to @%u:%u\n",
+            start,
+            start + to_erase.length(),
+            to_erase.position,
+            to_erase.position + to_erase.length()
+        );
+        // overwrite key with data that is to the left of it
+        size_t to = to_erase.end - 1;
+        size_t from = to_erase.position - 1;
+        do {
+            _source.write(to, _source.read(from));
+            _source.write(from--, 0);
+        } while (to-- != start);
+    } else {
+        trace("::del invalidating blob  @%u:%u\n",
+            to_erase.position, to_erase.end
+        );
+        // just null the lenght, since we at the last key
+       _source.write(to_erase.end - 1, 0);
+       _source.write(to_erase.end - 2, 0);
     }
 
     return true;
@@ -260,7 +261,7 @@ RawStorage::ReadResult RawStorage::_raw_read() {
     ReadResult out(_source);
 
     do {
-        trace("read_raw pos=%u end=%u state=%s\n", _cursor.position, _cursor.end, _state_describe().c_str());
+        //trace("read_raw pos=%u end=%u state=%s\n", _cursor.position, _cursor.end, _state_describe().c_str());
 
         // storage is written right-to-left, cursor is always decreasing
         switch (_state) {

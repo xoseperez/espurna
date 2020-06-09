@@ -44,6 +44,7 @@ struct TestStorageHandler {
 void test_basic() {
     TestStorageHandler instance;
 
+    // ensure insert works
     std::vector<std::pair<String, String>> kvs;
     for (size_t index = 0; index < 5; ++index) {
         kvs.push_back(std::make_pair(
@@ -61,6 +62,17 @@ void test_basic() {
         TEST_ASSERT(static_cast<bool>(result));
         TEST_ASSERT_EQUAL_STRING(kv.second.c_str(), result.value.c_str());
     }
+
+    // ensure we can remove keys (TODO: randomize this?)
+    do {
+        auto key = kvs.front().first;
+        kvs.erase(kvs.begin());
+        TEST_ASSERT(instance.storage.del(key));
+
+        auto result = instance.storage.get(key);
+        TEST_ASSERT_FALSE(static_cast<bool>(result));
+    } while (kvs.size());
+
 }
 
 int main(int argc, char** argv) {
