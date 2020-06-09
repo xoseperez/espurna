@@ -20,7 +20,7 @@ struct ValueResult {
     operator bool() {
         return result;
     }
-    bool result;
+    bool result { false };
     String value;
 };
 
@@ -78,6 +78,10 @@ class RawStorage {
             Cursor(source, source.size(), source.size())
         {}
 
+        Cursor() = delete;
+//        explicit Cursor(const Cursor&) = default;
+//        explicit Cursor(Cursor&&) = default;
+
         void rewind() {
             position = end;
         }
@@ -93,14 +97,6 @@ class RawStorage {
         void reset(uint16_t start, uint16_t end) {
             this->position = start;
             this->end = end;
-        }
-
-        Cursor& operator =(const Cursor& other) {
-            if (&source == &other.source) {
-                position = other.position;
-                end = other.end;
-            }
-            return *this;
         }
 
         uint8_t operator[](size_t pos) const {

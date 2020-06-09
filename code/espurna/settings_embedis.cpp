@@ -12,21 +12,16 @@ namespace embedis {
 #endif
 
 struct RawStorage::ReadResult {
-    bool result;
-    Cursor cursor;
-    uint16_t length;
-    uint16_t dataLength;
-
-    ReadResult(Cursor cursor) :
+    ReadResult(const Cursor& cursor_) :
+        cursor(cursor_),
         result(false),
-        cursor(std::move(cursor)),
         length(0),
         dataLength(0)
     {}
 
     ReadResult(SourceBase& source) :
+        cursor(source),
         result(false),
-        cursor(source, 0, 0),
         length(0),
         dataLength(0)
     {}
@@ -51,6 +46,12 @@ struct RawStorage::ReadResult {
 
         return out;
     }
+
+    Cursor cursor;
+    bool result;
+    uint16_t length;
+    uint16_t dataLength;
+
 };
 
 struct RawStorage::KeyValueResult {
@@ -62,8 +63,15 @@ struct RawStorage::KeyValueResult {
         return !(bool(*this));
     }
 
+    template <typename T = ReadResult>
+    KeyValueResult(T&& key_, T&& value_) :
+        key(std::forward<T>(key_)),
+        value(std::forward<T>(value_))
+    {}
+
     KeyValueResult(SourceBase& source) :
-        key(source), value(source)
+        key(source),
+        value(source)
     {}
 
     ReadResult key;
@@ -111,12 +119,11 @@ bool RawStorage::set(const String& key, const String& value) {
     size_t need = key_len + ((value_len > 0) ? value_len : 2) + 4;
 
     size_t start = _cursor_rewind();
-    trace("start default = %u\n", start);
+    trace("::set start default = %u @%u:%u\n", start, _cursor.position, _cursor.end);
 
     do {
         auto kv = _read_kv();
         if (!kv) {
-            start = kv.key.cursor.end - 1;
             break;
         }
 
@@ -129,14 +136,13 @@ bool RawStorage::set(const String& key, const String& value) {
             kv.value.cursor.end
         );
 
-
         // in case we match with the existing key, remove it from the storage and place ours at the end
         if ((kv.key.dataLength == key_len) && (kv.key.read() == key)) {
             del(key);
         }
     } while (_state != State::End);
 
-    trace("need=%u start=%u\n", need, start);
+    trace("::set need=%u start=%u\n", need, start);
 
     // we should only insert when possition is still within possible size
     if (start > need) {
@@ -241,19 +247,19 @@ size_t RawStorage::keys() {
 }
 
 RawStorage::KeyValueResult RawStorage::_read_kv() {
-    KeyValueResult result(_source);
+    KeyValueResult defaultResult(_source);
 
-    result.key = _raw_read();
-    if (!result.key) {
-        return result;
+    auto key = _raw_read();
+    if (!key) {
+        return defaultResult;
     }
-    if (!result.key.dataLength) {
-        return result;
+    if (!key.dataLength) {
+        return defaultResult;
     }
 
-    result.value = _raw_read();
+    auto value = _raw_read();
 
-    return result;
+    return {key, value};
 };
 
 RawStorage::ReadResult RawStorage::_raw_read() {
