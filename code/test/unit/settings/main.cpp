@@ -134,7 +134,8 @@ void test_small_gaps() {
 void test_remove_randomized() {
 
     // ensure we can remove keys in any order
-    // 5 -> 120 combinations, be careful increasing
+    // 8 seems like a good number to stop on, 9 will spend ~10seconds
+    // TODO: seems like a good start benchmarking read / write performance?
     constexpr size_t KeysNumber = 9;
 
     TestSequentialKvGenerator generator;
@@ -149,8 +150,7 @@ void test_remove_randomized() {
     // - remove keys based on the order provided by next_permutation()
     size_t index = 0;
     do {
-        instance.storage._cursor.position = 1024;
-        instance.storage._cursor.end = 1024;
+        TEST_ASSERT(0 == instance.storage.keys());
         for (auto& kv : kvs) {
             TEST_ASSERT(instance.storage.set(kv.first, kv.second));
         }
