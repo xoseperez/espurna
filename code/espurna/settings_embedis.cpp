@@ -301,9 +301,16 @@ RawStorage::ReadResult RawStorage::_raw_read() {
         // storage is written right-to-left, cursor is always decreasing
         switch (_state) {
         case State::Begin:
-            --_cursor;
-            _state = State::LenByte1;
+            if (_cursor.position > 2) {
+                --_cursor;
+                _state = State::LenByte1;
+            } else {
+                _state = State::End;
+            }
             continue;
+        // len is 16 bit uint (bigendian)
+        // special case is 0, which is valid and should be returned when encountered
+        // another special case is 0xffff, meaning we just hit an empty space
         case State::LenByte1:
             len = _cursor.read();
             --_cursor;
