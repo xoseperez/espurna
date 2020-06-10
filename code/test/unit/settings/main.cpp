@@ -19,10 +19,12 @@ struct StaticArraySource final : public RawStorage::SourceBase {
     }
 
     uint8_t read(size_t index) override {
+        TEST_ASSERT_LESS_THAN(Size, index);
         return blob[index];
     }
 
     void write(size_t index, uint8_t value) override {
+        TEST_ASSERT_LESS_THAN(Size, index);
         blob[index] = value;
     }
 
