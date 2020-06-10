@@ -392,7 +392,7 @@ return_result:
 uint16_t RawStorage::_cursor_rewind() {
     _cursor.rewind();
     _state = State::Begin;
-    return _cursor.end - 1;
+    return _cursor.end;
 }
 
 String RawStorage::_state_describe() {
