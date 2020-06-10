@@ -91,12 +91,6 @@ void check_kv(T& instance, const String& key, const String& value) {
 void test_longkey() {
 
     TestStorageHandler instance;
-    auto print = [&instance]() {
-        for (auto b : instance.source.blob) {
-            printf("%03u ", b);
-        }
-        printf("\n");
-    };
     const auto estimate = instance.source.blob.size() - 6;
 
     String key;
@@ -106,7 +100,6 @@ void test_longkey() {
     }
 
     TEST_ASSERT(instance.storage.set(key, ""));
-    print();
     auto result = instance.storage.get(key);
     TEST_ASSERT(static_cast<bool>(result));
 
@@ -157,27 +150,35 @@ void test_perseverance() {
     }
 }
 
+template <size_t Size>
+struct test_overflow_runner {
+    void operator ()() const {
+        StorageHandler<Size> instance;
+
+        TEST_ASSERT(instance.storage.set("a", "b"));
+        TEST_ASSERT(instance.storage.set("c", "d"));
+
+        TEST_ASSERT_EQUAL(2, instance.storage.keys());
+        TEST_ASSERT_FALSE(instance.storage.set("e", "f"));
+
+        TEST_ASSERT(instance.storage.del("a"));
+
+        TEST_ASSERT_EQUAL(1, instance.storage.keys());
+        TEST_ASSERT(instance.storage.set("e", "f"));
+
+        TEST_ASSERT_EQUAL(2, instance.storage.keys());
+
+        check_kv(instance, "e", "f");
+        check_kv(instance, "c", "d");
+    }
+};
+
 void test_overflow() {
+    // slightly more that available, but we cannot fit the key
+    test_overflow_runner<16>();
 
-    // ensure we don't blow up when trying to manipulate filled up kv storage
-    StorageHandler<16> instance;
-
-    TEST_ASSERT(instance.storage.set("a", "b"));
-    TEST_ASSERT(instance.storage.set("c", "d"));
-
-    TEST_ASSERT_EQUAL(2, instance.storage.keys());
-    TEST_ASSERT_FALSE(instance.storage.set("e", "f"));
-
-    TEST_ASSERT(instance.storage.del("a"));
-
-    TEST_ASSERT_EQUAL(1, instance.storage.keys());
-    TEST_ASSERT(instance.storage.set("e", "f"));
-
-    TEST_ASSERT_EQUAL(2, instance.storage.keys());
-
-    check_kv(instance, "e", "f");
-    check_kv(instance, "c", "d");
-
+    // no more space
+    test_overflow_runner<12>();
 }
 
 void test_small_gaps() {
