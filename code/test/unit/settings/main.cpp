@@ -15,7 +15,7 @@ namespace embedis {
 template <size_t Size>
 struct StaticArraySource final : public RawStorage::SourceBase {
     StaticArraySource() {
-        blob.fill(0);
+        blob.fill(0xff);
     }
 
     uint8_t read(size_t index) override {
@@ -86,21 +86,77 @@ void check_kv(T& instance, const String& key, const String& value) {
     TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
 };
 
+void test_perseverance() {
+
+    // ensure we can handle setting the same key
+    using storage_type = StorageHandler<128>;
+    using blob_type = decltype(std::declval<storage_type>().source.blob);
+
+    // xxx: implementation detail?
+    // can we avoid blob modification when value is the same as the existing one
+    {
+        storage_type instance;
+
+        TEST_ASSERT(instance.storage.set("key", "value"));
+        TEST_ASSERT(instance.storage.set("another", "keyvalue"));
+        blob_type snapshot(instance.source.blob);
+
+        TEST_ASSERT(instance.storage.set("key", "value"));
+        TEST_ASSERT(snapshot == instance.source.blob);
+    }
+
+    // xxx: pointless implementation detail?
+    // can we re-use existing 'value' storage and avoid data-shift
+    {
+        storage_type instance;
+
+        // insert in a specific order, change middle
+        TEST_ASSERT(instance.storage.set("aaa", "bbb"));
+        TEST_ASSERT(instance.storage.set("cccc", "dd"));
+        TEST_ASSERT(instance.storage.set("ee", "fffff"));
+        TEST_ASSERT(instance.storage.set("cccc", "ff"));
+        blob_type before(instance.source.blob);
+
+        // purge, insert again with updated values
+        TEST_ASSERT(instance.storage.del("aaa"));
+        TEST_ASSERT(instance.storage.del("cccc"));
+        TEST_ASSERT(instance.storage.del("ee"));
+
+        TEST_ASSERT(instance.storage.set("aaa", "bbb"));
+        TEST_ASSERT(instance.storage.set("cccc", "ff"));
+        TEST_ASSERT(instance.storage.set("ee", "fffff"));
+        blob_type after(instance.source.blob);
+
+        TEST_ASSERT(before == after);
+    }
+}
+
 void test_overflow() {
 
+    // ensure we don't blow up when trying to manipulate filled up kv storage
     StorageHandler<16> instance;
 
     TEST_ASSERT(instance.storage.set("a", "b"));
     TEST_ASSERT(instance.storage.set("c", "d"));
+
+    TEST_ASSERT_EQUAL(2, instance.storage.keys());
     TEST_ASSERT_FALSE(instance.storage.set("e", "f"));
 
-    check_kv(instance, "a", "b");
+    TEST_ASSERT(instance.storage.del("a"));
+
+    TEST_ASSERT_EQUAL(1, instance.storage.keys());
+    TEST_ASSERT(instance.storage.set("e", "f"));
+
+    TEST_ASSERT_EQUAL(2, instance.storage.keys());
+
+    check_kv(instance, "e", "f");
     check_kv(instance, "c", "d");
 
 }
 
 void test_small_gaps() {
 
+    // ensure we can intemix empty and non-empty values
     TestStorageHandler instance;
 
     TEST_ASSERT(instance.storage.set("key", "value"));
@@ -136,7 +192,7 @@ void test_remove_randomized() {
     // ensure we can remove keys in any order
     // 8 seems like a good number to stop on, 9 will spend ~10seconds
     // TODO: seems like a good start benchmarking read / write performance?
-    constexpr size_t KeysNumber = 9;
+    constexpr size_t KeysNumber = 8;
 
     TestSequentialKvGenerator generator;
     auto kvs = generator.make(KeysNumber);
@@ -200,5 +256,6 @@ int main(int argc, char** argv) {
     RUN_TEST(test_remove_randomized);
     RUN_TEST(test_small_gaps);
     RUN_TEST(test_overflow);
+    RUN_TEST(test_perseverance);
     UNITY_END();
 }
