@@ -192,8 +192,6 @@ bool RawStorage::set(const String& key, const String& value) {
             }
         }
 
-        trace("::set wrote up to %u\n", pos);
-
         return true;
     }
 
@@ -227,7 +225,7 @@ bool RawStorage::del(const String& key) {
         if (!to_erase && (kv.key.dataLength == key_len) && (kv.key.read() == key)) {
             to_erase.position = kv.value.cursor.position;
             to_erase.end = to_erase.position + kv.key.length + kv.value.length;
-            trace("need to erase @blob between %u:%u\n", to_erase.position, to_erase.end);
+            trace("need to erase kv @%u:%u\n", to_erase.position, to_erase.end);
         }
     } while (_state != State::End);
 
@@ -237,21 +235,21 @@ bool RawStorage::del(const String& key) {
 
     // we either end up to the left or to the right of the boundary
     if (start_pos < to_erase.position) {
-        trace("::del moving available range  @%u:%u to @%u:%u\n",
+        trace("::del moving  @%u:%u to @%u:%u\n",
             start_pos,
-            start_pos + to_erase.length(),
+            to_erase.position,
             to_erase.position,
             to_erase.end
         );
         // overwrite key with data that is to the left of it
-        auto from = start_pos + to_erase.length() - 1;
+        auto from = to_erase.position - 1;
         auto to = to_erase.end - 1;
         do {
             _source.write(to--, _source.read(from));
             _source.write(from--, 0xff);
-        } while (to >= to_erase.position);
+        } while (from >= start_pos);
     } else {
-        trace("::del invalidating blob  @%u:%u\n",
+        trace("::del marking key as empty @%u:%u\n",
             to_erase.position, to_erase.end
         );
         // just null the lenght, since we at the last key
@@ -294,6 +292,8 @@ RawStorage::KeyValueResult RawStorage::_read_kv() {
 RawStorage::ReadResult RawStorage::_raw_read() {
     uint16_t len = 0;
     ReadResult out(_source);
+
+    trace("::_raw_read()\n");
 
     do {
         //trace("read_raw pos=%u end=%u state=%s\n", _cursor.position, _cursor.end, _state_describe().c_str());
@@ -365,7 +365,7 @@ RawStorage::ReadResult RawStorage::_raw_read() {
                 _cursor.position,
                 _cursor.position + out.length
             );
-            trace("found blob @%u:%u len=%u data=%u\n", out.cursor.position, out.cursor.end, out.length, out.dataLength);
+            trace("found blob @%u:%u (left=%u) len=%u data=%u\n", out.cursor.position, out.cursor.end, left, out.length, out.dataLength);
 
             // might as well break now, since we won't be able to read any further
             if (_cursor.position > 2) {
