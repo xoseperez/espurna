@@ -56,7 +56,7 @@ struct RawStorage::ReadResult {
 
 struct RawStorage::KeyValueResult {
     operator bool() {
-        return (key) && (value) && (key.dataLength);
+        return (key) && (value) && (key.dataLength > 0);
     }
 
     bool operator !() {
@@ -86,7 +86,9 @@ ValueResult RawStorage::get(const String& key) {
 
     do {
         auto kv = _read_kv();
-        if (!kv) break;
+        if (!kv) {
+            break;
+        }
 
         // no point in comparing keys when length does not match
         // (and we also don't want to allocate the string)
@@ -110,7 +112,9 @@ bool RawStorage::set(const String& key, const String& value) {
 
     // we can't save empty keys
     size_t key_len = key.length();
-    if (!key_len) return false;
+    if (!key_len) {
+        return false;
+    }
 
     size_t value_len = value.length();
 
@@ -191,7 +195,9 @@ bool RawStorage::set(const String& key, const String& value) {
 
 bool RawStorage::del(const String& key) {
     size_t key_len = key.length();
-    if (!key_len) return false;
+    if (!key_len) {
+        return false;
+    }
 
     // Removes key from the storage by overwriting the key with left-most data
     Cursor to_erase(_source);
@@ -200,7 +206,9 @@ bool RawStorage::del(const String& key) {
 
     do {
         auto kv = _read_kv();
-        if (!kv) break;
+        if (!kv) {
+            break;
+        }
 
         start = kv.value.cursor.position;
 
@@ -255,19 +263,20 @@ size_t RawStorage::keys() {
 
     do {
         auto kv = _read_kv();
-        if (!kv) break;
+        if (!kv) {
+            break;
+        }
          ++result;
     } while (_state != State::End);
 
     return result;
 }
 
+// implementation quirk is that `Cursor::operator=` won't work because of the `SourceBase&` member
+// right now, just construct in place and assume that compiler will inline things
 RawStorage::KeyValueResult RawStorage::_read_kv() {
     auto key = _raw_read();
-    if (!key) {
-        return {_source};
-    }
-    if (!key.dataLength) {
+    if (!key || !key.dataLength) {
         return {_source};
     }
 
@@ -362,7 +371,7 @@ RawStorage::ReadResult RawStorage::_raw_read() {
 
     } while (_state != State::End);
 
-    return_result:
+return_result:
 
     return out;
 }
