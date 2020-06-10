@@ -115,8 +115,8 @@ bool RawStorage::set(const String& key, const String& value) {
     size_t value_len = value.length();
 
     // ...but can save empty values as 0x00 0x00 0x00 0x00
-    // total sum is 4 length bytes for 2 values + byte-length of values themselves
-    size_t need = key_len + ((value_len > 0) ? value_len : 2) + 4;
+    // total sum is 6 length bytes for 2 values + byte-length of values themselves + gap
+    size_t need = key_len + ((value_len > 0) ? value_len : 2) + 6;
 
     size_t start = _cursor_rewind();
     trace("::set start default = %u @%u:%u\n", start, _cursor.position, _cursor.end);
@@ -136,8 +136,16 @@ bool RawStorage::set(const String& key, const String& value) {
             kv.value.cursor.end
         );
 
-        // in case we match with the existing key, remove it from the storage and place ours at the end
+        // trying to compare the existing keys with the ones we've got
         if ((kv.key.dataLength == key_len) && (kv.key.read() == key)) {
+            if (kv.value.dataLength == value.length()) {
+                if (kv.value.read() == value) {
+                    return true;
+                }
+                start = kv.key.cursor.end - 1;
+                break;
+            }
+            // but we need remove it from the storage when changing contents
             del(key);
         }
     } while (_state != State::End);
@@ -162,6 +170,12 @@ bool RawStorage::set(const String& key, const String& value) {
         if (value_len) {
             while (value_len--) {
                 _source.write(pos--, value[value_len]);
+            }
+            // XXX: just remove me and do the same thing. fk the copy
+            // overwriting existing value
+            if (_state == State::End) {
+                _source.write(pos--, 0);
+                _source.write(pos--, 0);
             }
         // when value is empty, we just store some padding
         } else {
@@ -214,12 +228,14 @@ bool RawStorage::del(const String& key) {
             to_erase.position + to_erase.length()
         );
         // overwrite key with data that is to the left of it
-        size_t to = to_erase.end - 1;
-        size_t from = to_erase.position - 1;
+        auto to = to_erase.end;
+        auto from = to_erase.position;
         do {
+            --to;
+            --from;
             _source.write(to, _source.read(from));
             _source.write(from--, 0);
-        } while (to-- != start);
+        } while (from != start);
     } else {
         trace("::del invalidating blob  @%u:%u\n",
             to_erase.position, to_erase.end
@@ -247,14 +263,12 @@ size_t RawStorage::keys() {
 }
 
 RawStorage::KeyValueResult RawStorage::_read_kv() {
-    KeyValueResult defaultResult(_source);
-
     auto key = _raw_read();
     if (!key) {
-        return defaultResult;
+        return {_source};
     }
     if (!key.dataLength) {
-        return defaultResult;
+        return {_source};
     }
 
     auto value = _raw_read();
