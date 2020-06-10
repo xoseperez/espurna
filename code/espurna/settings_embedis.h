@@ -114,7 +114,7 @@ class RawStorage {
         }
 
         operator bool() {
-            return end != position;
+            return position < end;
         }
 
         SourceBase& source;
