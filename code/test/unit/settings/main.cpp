@@ -88,6 +88,30 @@ void check_kv(T& instance, const String& key, const String& value) {
     TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
 };
 
+void test_longkey() {
+
+    TestStorageHandler instance;
+    auto print = [&instance]() {
+        for (auto b : instance.source.blob) {
+            printf("%03u ", b);
+        }
+        printf("\n");
+    };
+    const auto estimate = instance.source.blob.size() - 6;
+
+    String key;
+    key.reserve(estimate);
+    for (size_t n = 0; n < estimate; ++n) {
+        key += 'a';
+    }
+
+    TEST_ASSERT(instance.storage.set(key, ""));
+    print();
+    auto result = instance.storage.get(key);
+    TEST_ASSERT(static_cast<bool>(result));
+
+}
+
 void test_perseverance() {
 
     // ensure we can handle setting the same key
@@ -259,5 +283,6 @@ int main(int argc, char** argv) {
     RUN_TEST(test_small_gaps);
     RUN_TEST(test_overflow);
     RUN_TEST(test_perseverance);
+    RUN_TEST(test_longkey);
     UNITY_END();
 }
