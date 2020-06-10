@@ -234,7 +234,7 @@ bool RawStorage::del(const String& key) {
             --to;
             --from;
             _source.write(to, _source.read(from));
-            _source.write(from--, 0);
+            _source.write(from, 0xff);
         } while (from != start);
     } else {
         trace("::del invalidating blob  @%u:%u\n",
