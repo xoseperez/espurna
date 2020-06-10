@@ -118,12 +118,8 @@ bool RawStorage::set(const String& key, const String& value) {
 
     size_t value_len = value.length();
 
-    // ...but can save empty values as 0x00 0x00 0x00 0x00
-    // total sum is 6 length bytes for 2 values + byte-length of values themselves + gap
-    size_t need = key_len + ((value_len > 0) ? value_len : 2) + 6;
-
-    size_t start = _cursor_rewind();
-    trace("::set start default = %u @%u:%u\n", start, _cursor.position, _cursor.end);
+    size_t available = _cursor_rewind();
+    trace("::set(%s,%s) starting available = %u @%u:%u\n", key.c_str(), value.c_str(), available, _cursor.position, _cursor.end);
 
     do {
         auto kv = _read_kv();
@@ -131,9 +127,9 @@ bool RawStorage::set(const String& key, const String& value) {
             break;
         }
 
-        start = kv.value.cursor.position - 1;
-        trace("::set start is now %u, found key=%u:%u value=%u:%u\n",
-            start,
+        available = kv.value.cursor.position;
+        trace("::set available after kv %u, found key=%u:%u value=%u:%u\n",
+            available,
             kv.key.cursor.position,
             kv.key.cursor.end,
             kv.value.cursor.position,
@@ -146,7 +142,7 @@ bool RawStorage::set(const String& key, const String& value) {
                 if (kv.value.read() == value) {
                     return true;
                 }
-                start = kv.key.cursor.end - 1;
+                available = kv.key.cursor.end;
                 break;
             }
             // but we need remove it from the storage when changing contents
@@ -154,41 +150,54 @@ bool RawStorage::set(const String& key, const String& value) {
         }
     } while (_state != State::End);
 
-    trace("::set need=%u start=%u\n", need, start);
+    // ...but can save empty values as 0x00 0x00 0x00 0x00
+    // total sum is:
+    // - 2 bytes gap at the end (will be re-used by the next value length byte)
+    // - 4 bytes to store length of 2 values
+    // - byte-length of values themselves
+    size_t need = 4 + key_len + ((value_len > 0) ? value_len : 2);
+
+    trace("::set need=%u available=%u\n", need, available);
 
     // we should only insert when possition is still within possible size
-    if (start > need) {
-        size_t pos = start;
+    if (available && (available >= need)) {
+        size_t pos = available - 1;
 
-        // put the length of the value as 2 bytes and then write the string
-        _source.write(pos--, (key_len & 0xf));
-        _source.write(pos--, ((key_len >> 8) & 0xf));
+        // put the length of the value as 2 bytes and then write the data
+        _source.write(pos--, (key_len & 0xff));
+        _source.write(pos--, ((key_len >> 8) & 0xff));
         while (key_len--) {
             _source.write(pos--, key[key_len]);
         }
 
-        _source.write(pos--, (value_len & 0xf));
-        _source.write(pos--, ((value_len >> 8) & 0xf));
+        _source.write(pos--, (value_len & 0xff));
+        _source.write(pos--, ((value_len >> 8) & 0xff));
 
-        // value is placed the same way as the key
         if (value_len) {
             while (value_len--) {
                 _source.write(pos--, value[value_len]);
             }
-            // XXX: just remove me and do the same thing. fk the copy
-            // overwriting existing value
-            if (_state == State::End) {
-                _source.write(pos--, 0);
-                _source.write(pos--, 0);
-            }
-        // when value is empty, we just store some padding
         } else {
             _source.write(pos--, 0);
             _source.write(pos--, 0);
         }
 
+        // we also need to pad the space *after* the value
+        // when we still have some space left
+        if (pos >= 1) {
+            auto next_kv = _read_kv();
+            if (!next_kv) {
+                _source.write(pos--, 0);
+                _source.write(pos--, 0);
+            }
+        }
+
+        trace("::set wrote up to %u\n", pos);
+
         return true;
     }
+
+    trace("::set can't\n");
 
     return false;
 }
@@ -202,7 +211,7 @@ bool RawStorage::del(const String& key) {
     // Removes key from the storage by overwriting the key with left-most data
     Cursor to_erase(_source);
 
-    size_t start = _cursor_rewind();
+    size_t start_pos = _cursor_rewind() - 1;
 
     do {
         auto kv = _read_kv();
@@ -210,16 +219,15 @@ bool RawStorage::del(const String& key) {
             break;
         }
 
-        start = kv.value.cursor.position;
+        start_pos = kv.value.cursor.position;
 
         // we should only compare strings of equal length.
         // when matching, record { value ... key } range + 4 bytes for length
         // continue searching for the leftmost boundary
-        if ((kv.key.dataLength == key_len) && (kv.key.read() == key)) {
+        if (!to_erase && (kv.key.dataLength == key_len) && (kv.key.read() == key)) {
             to_erase.position = kv.value.cursor.position;
             to_erase.end = to_erase.position + kv.key.length + kv.value.length;
             trace("need to erase @blob between %u:%u\n", to_erase.position, to_erase.end);
-            continue;
         }
     } while (_state != State::End);
 
@@ -228,22 +236,20 @@ bool RawStorage::del(const String& key) {
     }
 
     // we either end up to the left or to the right of the boundary
-    if (start < to_erase.position) {
+    if (start_pos < to_erase.position) {
         trace("::del moving available range  @%u:%u to @%u:%u\n",
-            start,
-            start + to_erase.length(),
+            start_pos,
+            start_pos + to_erase.length(),
             to_erase.position,
-            to_erase.position + to_erase.length()
+            to_erase.end
         );
         // overwrite key with data that is to the left of it
-        auto to = to_erase.end;
-        auto from = to_erase.position;
+        auto from = start_pos + to_erase.length() - 1;
+        auto to = to_erase.end - 1;
         do {
-            --to;
-            --from;
-            _source.write(to, _source.read(from));
-            _source.write(from, 0xff);
-        } while (from != start);
+            _source.write(to--, _source.read(from));
+            _source.write(from--, 0xff);
+        } while (to >= to_erase.position);
     } else {
         trace("::del invalidating blob  @%u:%u\n",
             to_erase.position, to_erase.end
@@ -307,11 +313,11 @@ RawStorage::ReadResult RawStorage::_raw_read() {
         {
             uint8_t len2 = _cursor.read();
             --_cursor;
-            // special case when we encounter 0
-            if (!len && !len2) {
+            if ((0 == len) && (0 == len2)) {
                 len = 2;
                 _state = State::EmptyValue;
-                // otherwise, merge both values
+            } else if ((0xff == len) && (0xff == len2)) {
+                _state = State::End;
             } else {
                 len |= len2 << 8;
                 _state = State::Value;
@@ -344,7 +350,7 @@ RawStorage::ReadResult RawStorage::_raw_read() {
                 break;
             }
 
-            // set cursor to the discovered value
+            // set the resulting cursor as [pos:len+2)
             out.result = true;
             out.dataLength = (_state == State::EmptyValue) ? 0 : len;
             out.length = len + 2;
@@ -354,7 +360,7 @@ RawStorage::ReadResult RawStorage::_raw_read() {
             );
             trace("found blob @%u:%u len=%u data=%u\n", out.cursor.position, out.cursor.end, out.length, out.dataLength);
 
-            // probe that we can read next 2 bytes
+            // might as well break now, since we won't be able to read any further
             if (_cursor.position > 2) {
                 _state = State::LenByte1;
             } else {
