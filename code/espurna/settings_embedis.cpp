@@ -367,13 +367,7 @@ RawStorage::ReadResult RawStorage::_raw_read() {
             );
             trace("found blob @%u:%u (left=%u) len=%u data=%u\n", out.cursor.position, out.cursor.end, left, out.length, out.dataLength);
 
-            // might as well break now, since we won't be able to read any further
-            if (_cursor.position > 2) {
-                _state = State::LenByte1;
-            } else {
-                _state = State::End;
-            }
-            --_cursor;
+            _state = State::Begin;
 
             goto return_result;
         }
