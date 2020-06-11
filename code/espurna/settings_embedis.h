@@ -67,6 +67,9 @@ class RawStorage {
     // Pointer to the region of data that we are using
     // Note: Implementation is here b/c c++ won't allow us
     //       to have a plain member (not a ptr or ref) of unknown size
+    // Note2: There was a considiration to implement this as forward_iterator,
+    //        but it icreases the size considerably (although, mostly b/c of stl alg usage)
+    //        and has higher memory requirements.
     struct Cursor {
         Cursor(SourceBase& source, uint16_t start, uint16_t end) :
             source(source),
@@ -79,8 +82,6 @@ class RawStorage {
         {}
 
         Cursor() = delete;
-//        explicit Cursor(const Cursor&) = default;
-//        explicit Cursor(Cursor&&) = default;
 
         void rewind() {
             position = end;
