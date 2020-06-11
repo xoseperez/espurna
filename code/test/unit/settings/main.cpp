@@ -51,16 +51,43 @@ struct StorageHandler {
 struct TestSequentialKvGenerator {
 
     using kv = std::pair<String, String>;
+    enum class Mode {
+        Indexed,
+        IncreasingLength
+    };
 
-    kv next() {
+    TestSequentialKvGenerator() = default;
+    TestSequentialKvGenerator(Mode mode) :
+        _mode(mode)
+    {}
+
+    const kv& next() {
         auto index = _index++;
-        auto res = std::make_pair(
-            String("key") + String(index),
-            String("val") + String(index)
-        );
-        TEST_ASSERT(_last.first != res.first);
-        TEST_ASSERT(_last.second != res.second);
-        return (_last = res);
+
+        _current.first = "";
+        _current.second = "";
+
+        switch (_mode) {
+        case Mode::Indexed:
+            _current.first = String("key") + String(index);
+            _current.second = String("val") + String(index);
+            break;
+        case Mode::IncreasingLength: {
+            size_t sizes = _index;
+            _current.first.reserve(sizes);
+            _current.second.reserve(sizes);
+
+            do {
+                _current.first += "k";
+                _current.second += "v";
+            } while (--sizes);
+            break;
+        }
+        }
+        TEST_ASSERT(_last.first != _current.first);
+        TEST_ASSERT(_last.second != _current.second);
+
+        return (_last = _current);
     }
 
     std::vector<kv> make(size_t size) {;
@@ -71,7 +98,10 @@ struct TestSequentialKvGenerator {
         return res;
     }
 
+    kv _current;
     kv _last;
+
+    Mode _mode { Mode::Indexed };
     size_t _index { 0 };
 
 };
@@ -87,6 +117,15 @@ void check_kv(T& instance, const String& key, const String& value) {
     TEST_ASSERT(result.value.length());
     TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
 };
+
+void test_sizes() {
+
+    StorageHandler<0> instance;
+    TEST_ASSERT_EQUAL(0, instance.storage.keys());
+    TEST_ASSERT_FALSE(instance.storage.set("cannot", "happen"));
+    TEST_ASSERT_FALSE(static_cast<bool>(instance.storage.get("cannot")));
+
+}
 
 void test_longkey() {
 
@@ -221,7 +260,7 @@ void test_remove_randomized() {
     // TODO: seems like a good start benchmarking read / write performance?
     constexpr size_t KeysNumber = 8;
 
-    TestSequentialKvGenerator generator;
+    TestSequentialKvGenerator generator(TestSequentialKvGenerator::Mode::IncreasingLength);
     auto kvs = generator.make(KeysNumber);
 
     // generate indexes array to allow us to reference keys at random
@@ -240,10 +279,11 @@ void test_remove_randomized() {
 
         for (auto index : indexes) {
             auto key = kvs[index].first;
+            TEST_ASSERT(static_cast<bool>(instance.storage.get(key)));
             TEST_ASSERT(instance.storage.del(key));
-            auto result = instance.storage.get(key);
-            TEST_ASSERT_FALSE(static_cast<bool>(result));
+            TEST_ASSERT_FALSE(static_cast<bool>(instance.storage.get(key)));
         }
+
         index++;
     } while (std::next_permutation(indexes.begin(), indexes.end()));
 
@@ -285,5 +325,6 @@ int main(int argc, char** argv) {
     RUN_TEST(test_overflow);
     RUN_TEST(test_perseverance);
     RUN_TEST(test_longkey);
+    RUN_TEST(test_sizes);
     UNITY_END();
 }
