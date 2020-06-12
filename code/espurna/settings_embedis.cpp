@@ -167,34 +167,34 @@ bool RawStorage::set(const String& key, const String& value) {
 
     // we should only insert when possition is still within possible size
     if (available && (available >= need)) {
-        size_t pos = available - 1;
+        auto writer = Cursor::fromEnd(_source, available - need, available);
 
         // put the length of the value as 2 bytes and then write the data
-        _source.write(pos--, (key_len & 0xff));
-        _source.write(pos--, ((key_len >> 8) & 0xff));
+        (--writer).write(key_len & 0xff);
+        (--writer).write((key_len >> 8) & 0xff);
         while (key_len--) {
-            _source.write(pos--, key[key_len]);
+            (--writer).write(key[key_len]);
         }
 
-        _source.write(pos--, (value_len & 0xff));
-        _source.write(pos--, ((value_len >> 8) & 0xff));
+        (--writer).write(value_len & 0xff);
+        (--writer).write((value_len >> 8) & 0xff);
 
         if (value_len) {
             while (value_len--) {
-                _source.write(pos--, value[value_len]);
+                (--writer).write(value[value_len]);
             }
         } else {
-            _source.write(pos--, 0);
-            _source.write(pos--, 0);
+            (--writer).write(0);
+            (--writer).write(0);
         }
 
         // we also need to pad the space *after* the value
         // when we still have some space left
-        if (pos >= 1) {
+        if (writer.position > 1) {
             auto next_kv = _read_kv();
             if (!next_kv) {
-                _source.write(pos--, 0);
-                _source.write(pos--, 0);
+                (--writer).write(0);
+                (--writer).write(0);
             }
         }
 
@@ -252,10 +252,10 @@ bool RawStorage::del(const String& key) {
         auto from = Cursor::fromEnd(_source, start_pos, offset_pos);
         auto to = Cursor::fromEnd(_source, start_pos + offset, offset_pos + offset);
 
-        do {
+        while (--from && --to) {
             to.write(from.read());
             from.write(0xff);
-        } while (--from && --to);
+        };
     } else {
         trace("::del marking key as empty @%u:%u\n", offset_pos, offset);
         // just null the lenght, since we at the last key

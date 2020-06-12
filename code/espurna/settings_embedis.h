@@ -93,7 +93,7 @@ class RawStorage {
         {}
 
         static Cursor fromEnd(SourceBase& source, uint16_t begin, uint16_t end) {
-            return Cursor(source, end - begin - 1, begin, end);
+            return Cursor(source, end - begin, begin, end);
         }
 
         Cursor() = delete;
