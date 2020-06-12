@@ -1,3 +1,11 @@
+/*
+
+Part of the SETTINGS MODULE
+
+Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 #pragma once
 
 #include <Arduino.h>
@@ -11,11 +19,7 @@
 namespace settings {
 namespace embedis {
 
-enum class Result {
-    Success,
-    None
-};
-
+// 'optional' type for byte range
 struct ValueResult {
     operator bool() {
         return result;
@@ -28,19 +32,15 @@ class RawStorage {
 
     public:
 
+    // IO source, functional redirects for raw byte storage.
+    // TODO: provide actual benchmark comparison with 'lambda'-list-as-vtable (old Embedis dict style)
+    // TODO: consider overrides for bulk operations like move (see ::del method)
+    // TODO: implementation without virtual calls would be nice...
+    //       we need to move things into a header (all the things, if we want to keep nested classes readable)
     struct SourceBase {
         virtual void write(size_t index, uint8_t value) = 0;
         virtual uint8_t read(size_t index) = 0;
         virtual size_t size() = 0;
-    };
-
-    enum class State {
-        Begin,
-        End,
-        LenByte1,
-        LenByte2,
-        EmptyValue,
-        Value
     };
 
     RawStorage(SourceBase& source) :
@@ -56,7 +56,7 @@ class RawStorage {
     // set or update key with value contents. ensure 'key' isn't empty, 'value' can be empty
     bool set(const String& key, const String& value);
 
-    // remove key from the storage. ensure 'key' isn't empty
+    // remove key from the storage. will check that 'key' argument isn't empty
     bool del(const String& key);
 
     // Simply count key-value pairs that we could parse
@@ -65,43 +65,85 @@ class RawStorage {
     protected:
 
     // Pointer to the region of data that we are using
-    // Note: Implementation is here b/c c++ won't allow us
-    //       to have a plain member (not a ptr or ref) of unknown size
-    // Note2: There was a considiration to implement this as forward_iterator,
-    //        but it icreases the size considerably (although, mostly b/c of stl alg usage)
-    //        and has higher memory requirements.
+    //
+    // XXX:  It does not matter right now, but we **will** overflow position when using sizes >= (2^16) - 1
+    // Note: Implementation is in the header b/c c++ won't allow us
+    //       to have a plain member (not a ptr or ref) of unknown size.
+    // Note: There was a considiration to implement this as 'stashing iterator' to be compatible with stl algorithms.
+    //       In such implementation, we would store intermediate index and allow the user to receive a `value_proxy`,
+    //       temporary returned by `value_proxy& operator*()' that is bound to Cursor instance.
+    //       This **will** cause problems with 'reverse_iterator' or anything like it, as it expects reference to
+    //       outlive the iterator object (specifically, result of `return *--tmp`, where `tmp` is created inside of a function block)
+
     struct Cursor {
-        Cursor(SourceBase& source, uint16_t start, uint16_t end) :
-            source(source),
-            position(start),
-            end(end)
+
+        Cursor(SourceBase& source, uint16_t position_, uint16_t begin_, uint16_t end_) :
+            position(position_),
+            begin(begin_),
+            end(end_),
+            _source(source)
+        {}
+
+        Cursor(SourceBase& source, uint16_t begin_, uint16_t end_) :
+            Cursor(source, 0, begin_, end_)
         {}
 
         explicit Cursor(SourceBase& source) :
-            Cursor(source, source.size(), source.size())
+            Cursor(source, 0, 0, source.size())
         {}
+
+        static Cursor fromEnd(SourceBase& source, uint16_t begin, uint16_t end) {
+            return Cursor(source, end - begin - 1, begin, end);
+        }
 
         Cursor() = delete;
 
-        void rewind() {
-            position = end;
+        void reset(uint16_t begin_, uint16_t end_) {
+            position = 0;
+            begin = begin_;
+            end = end_;
         }
 
         uint8_t read() {
-            return source.read(position);
+            return _source.read(begin + position);
         }
 
-        size_t length() {
-            return (end - position);
+        void write(uint8_t value) {
+            _source.write(begin + position, value);
         }
 
-        void reset(uint16_t start, uint16_t end) {
-            this->position = start;
-            this->end = end;
+        void resetBeginning() {
+            position = 0;
         }
 
-        uint8_t operator[](size_t pos) const {
-            return source.read(pos);
+        void resetEnd() {
+            position = end - begin;
+        }
+
+        size_t size() {
+            return (end - begin);
+        }
+
+        bool inRange(uint16_t position_) {
+            return (position_ < (end - begin));
+        }
+
+        operator bool() {
+            return inRange(position);
+        }
+
+        uint8_t operator[](size_t position_) const {
+            return _source.read(begin + position_);
+        }
+
+        bool operator ==(const Cursor& other) {
+            return ((begin == other.begin)
+                   && (end == other.end)
+                   && (position == other.position));
+        }
+
+        bool operator !=(const Cursor& other) {
+            return !(*this == other);
         }
 
         Cursor& operator++() {
@@ -109,38 +151,37 @@ class RawStorage {
             return *this;
         }
 
+        Cursor operator++(int) {
+            Cursor other(*this);
+            ++*this;
+            return other;
+        }
+
         Cursor& operator--() {
             --position;
             return *this;
         }
 
-        operator bool() {
-            return position < end;
+        Cursor operator--(int) {
+            Cursor other(*this);
+            --*this;
+            return other;
         }
 
-        SourceBase& source;
         uint16_t position;
+        uint16_t begin;
         uint16_t end;
+
+        private:
+
+        SourceBase& _source;
+
     };
 
     // Store value location in a more reasonable forward-iterator-style manner
     // Allows us to skip string creation when just searching for specific values
-    // XXX: be cautious that cursor **will** break when underlying storage changes
+    // XXX: be cautious that cursor positions **will** break when underlying storage changes
     struct ReadResult;
-
-    // we goind to end up using this pattern all the time here.
-    // - read possible key, bail when not found or empty
-    // - read possible value, bail when not found
-    // - when both conditions pass, read the value and store in the output buffer
-    struct KeyValueResult;
-
-    // Return key-value pair cursors as a single object.
-    // This way we can validate that both exist in a single call.
-    KeyValueResult _read_kv();
-        
-    // Place cursor at the `end` and reset parser to expect length byte
-    // Returns position at `end - 1`
-    uint16_t _cursor_rewind();
 
     // Returns Cursor to the region that holds the data
     // Result object does not hold any data, we need to explicitly request read()
@@ -157,8 +198,28 @@ class RawStorage {
     // Position will be 0, end will be 5. Total length is 4, data length is 0
     ReadResult _raw_read();
 
+    // Internal storage consists of sequences of <byte-range><length>
+    // We going be using this pattern all the time here, because we need 2 consecutive **valid** ranges
+    struct KeyValueResult;
+
+    // Return key-value pair cursors as a single object.
+    // This way we can validate that both exist in a single call.
+    KeyValueResult _read_kv();
+
+    // Place cursor at the `end` and resets the parser to expect length byte
+    uint16_t _cursor_reset_end();
+
     // explain the internal state value
     String _state_describe();
+
+    enum class State {
+        Begin,
+        End,
+        LenByte1,
+        LenByte2,
+        EmptyValue,
+        Value
+    };
 
     SourceBase& _source;
     Cursor _cursor;

@@ -1,3 +1,11 @@
+/*
+
+Part of the SETTINGS MODULE
+
+Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 #include "settings_embedis.h"
 
 namespace settings {
@@ -15,15 +23,13 @@ struct RawStorage::ReadResult {
     ReadResult(const Cursor& cursor_) :
         cursor(cursor_),
         result(false),
-        length(0),
-        dataLength(0)
+        length(0)
     {}
 
     ReadResult(SourceBase& source) :
         cursor(source),
         result(false),
-        length(0),
-        dataLength(0)
+        length(0)
     {}
 
     operator bool() {
@@ -32,17 +38,18 @@ struct RawStorage::ReadResult {
 
     String read() {
         String out;
-        out.reserve(dataLength);
-        if (!dataLength) {
+        out.reserve(length);
+        if (!length) {
             return out;
         }
 
-        cursor.end -= 2;
-        while (cursor) {
+        uint16_t index = 0;
+        cursor.resetBeginning();
+        while (index < length) {
             out += static_cast<char>(cursor.read());
             ++cursor;
+            ++index;
         }
-        cursor.end += 2;
 
         return out;
     }
@@ -50,13 +57,12 @@ struct RawStorage::ReadResult {
     Cursor cursor;
     bool result;
     uint16_t length;
-    uint16_t dataLength;
 
 };
 
 struct RawStorage::KeyValueResult {
     operator bool() {
-        return (key) && (value) && (key.dataLength > 0);
+        return (key) && (value) && (key.length > 0);
     }
 
     bool operator !() {
@@ -82,7 +88,7 @@ ValueResult RawStorage::get(const String& key) {
     ValueResult out;
     auto len = key.length();
 
-    _cursor_rewind();
+    _cursor_reset_end();
 
     do {
         auto kv = _read_kv();
@@ -92,7 +98,7 @@ ValueResult RawStorage::get(const String& key) {
 
         // no point in comparing keys when length does not match
         // (and we also don't want to allocate the string)
-        if (kv.key.dataLength != len) {
+        if (kv.key.length != len) {
             continue;
         }
 
@@ -118,8 +124,8 @@ bool RawStorage::set(const String& key, const String& value) {
 
     size_t value_len = value.length();
 
-    size_t available = _cursor_rewind();
-    trace("::set(%s,%s) starting available = %u @%u:%u\n", key.c_str(), value.c_str(), available, _cursor.position, _cursor.end);
+    size_t available = _cursor_reset_end();
+    trace("::set(%s,%s) starting available = %u @%u:%u\n", key.c_str(), value.c_str(), available, _cursor.begin, _cursor.end);
 
     do {
         auto kv = _read_kv();
@@ -127,18 +133,18 @@ bool RawStorage::set(const String& key, const String& value) {
             break;
         }
 
-        available = kv.value.cursor.position;
+        available = kv.value.cursor.begin;
         trace("::set available after kv %u, found key=%u:%u value=%u:%u\n",
             available,
-            kv.key.cursor.position,
+            kv.key.cursor.begin,
             kv.key.cursor.end,
-            kv.value.cursor.position,
+            kv.value.cursor.begin,
             kv.value.cursor.end
         );
 
         // trying to compare the existing keys with the ones we've got
-        if ((kv.key.dataLength == key_len) && (kv.key.read() == key)) {
-            if (kv.value.dataLength == value.length()) {
+        if ((kv.key.length == key_len) && (kv.key.read() == key)) {
+            if (kv.value.length == value.length()) {
                 if (kv.value.read() == value) {
                     return true;
                 }
@@ -207,9 +213,10 @@ bool RawStorage::del(const String& key) {
     }
 
     // Removes key from the storage by overwriting the key with left-most data
-    Cursor to_erase(_source);
+    uint16_t offset = 0;
 
-    size_t start_pos = _cursor_rewind() - 1;
+    size_t start_pos = _cursor_reset_end() - 1;
+    size_t offset_pos = start_pos;
 
     do {
         auto kv = _read_kv();
@@ -217,44 +224,43 @@ bool RawStorage::del(const String& key) {
             break;
         }
 
-        start_pos = kv.value.cursor.position;
+        start_pos = kv.value.cursor.begin;
 
         // we should only compare strings of equal length.
         // when matching, record { value ... key } range + 4 bytes for length
         // continue searching for the leftmost boundary
-        if (!to_erase && (kv.key.dataLength == key_len) && (kv.key.read() == key)) {
-            to_erase.position = kv.value.cursor.position;
-            to_erase.end = to_erase.position + kv.key.length + kv.value.length;
-            trace("need to erase kv @%u:%u\n", to_erase.position, to_erase.end);
+        if (!offset && (kv.key.length == key_len) && (kv.key.read() == key)) {
+            offset = kv.key.cursor.size() + kv.value.cursor.size();
+            offset_pos = kv.value.cursor.begin;
+            trace("need to erase kv @%u:%u\n", offset_pos, offset_pos + offset);
         }
     } while (_state != State::End);
 
-    if (!to_erase) {
+    if (!offset) {
         return false;
     }
 
     // we either end up to the left or to the right of the boundary
-    if (start_pos < to_erase.position) {
+    if (start_pos < offset_pos) {
         trace("::del moving  @%u:%u to @%u:%u\n",
             start_pos,
-            to_erase.position,
-            to_erase.position,
-            to_erase.end
+            offset_pos,
+            start_pos + offset,
+            offset_pos + offset
         );
-        // overwrite key with data that is to the left of it
-        auto from = to_erase.position - 1;
-        auto to = to_erase.end - 1;
+
+        auto from = Cursor::fromEnd(_source, start_pos, offset_pos);
+        auto to = Cursor::fromEnd(_source, start_pos + offset, offset_pos + offset);
+
         do {
-            _source.write(to--, _source.read(from));
-            _source.write(from--, 0xff);
-        } while (from >= start_pos);
+            to.write(from.read());
+            from.write(0xff);
+        } while (--from && --to);
     } else {
-        trace("::del marking key as empty @%u:%u\n",
-            to_erase.position, to_erase.end
-        );
+        trace("::del marking key as empty @%u:%u\n", offset_pos, offset);
         // just null the lenght, since we at the last key
-       _source.write(to_erase.end - 1, 0);
-       _source.write(to_erase.end - 2, 0);
+       _source.write(offset_pos + offset - 1, 0);
+       _source.write(offset_pos + offset - 2, 0);
     }
 
     return true;
@@ -263,7 +269,7 @@ bool RawStorage::del(const String& key) {
 size_t RawStorage::keys() {
     size_t result = 0;
 
-    _cursor_rewind();
+    _cursor_reset_end();
 
     do {
         auto kv = _read_kv();
@@ -280,7 +286,7 @@ size_t RawStorage::keys() {
 // right now, just construct in place and assume that compiler will inline things
 RawStorage::KeyValueResult RawStorage::_read_kv() {
     auto key = _raw_read();
-    if (!key || !key.dataLength) {
+    if (!key || !key.length) {
         return {_source};
     }
 
@@ -359,13 +365,12 @@ RawStorage::ReadResult RawStorage::_raw_read() {
 
             // set the resulting cursor as [pos:len+2)
             out.result = true;
-            out.dataLength = (_state == State::EmptyValue) ? 0 : len;
-            out.length = len + 2;
+            out.length = (_state == State::EmptyValue) ? 0 : len;
             out.cursor.reset(
                 _cursor.position,
-                _cursor.position + out.length
+                _cursor.position + len + 2
             );
-            trace("found blob @%u:%u (left=%u) len=%u data=%u\n", out.cursor.position, out.cursor.end, left, out.length, out.dataLength);
+            trace("found blob @%u:%u (left=%u) datalength=%u\n", out.cursor.begin, out.cursor.end, left, out.length);
 
             _state = State::Begin;
 
@@ -383,8 +388,8 @@ return_result:
     return out;
 }
 
-uint16_t RawStorage::_cursor_rewind() {
-    _cursor.rewind();
+uint16_t RawStorage::_cursor_reset_end() {
+    _cursor.resetEnd();
     _state = State::Begin;
     return _cursor.end;
 }
