@@ -120,10 +120,23 @@ void check_kv(T& instance, const String& key, const String& value) {
 
 void test_sizes() {
 
-    StorageHandler<0> instance;
-    TEST_ASSERT_EQUAL(0, instance.storage.keys());
-    TEST_ASSERT_FALSE(instance.storage.set("cannot", "happen"));
-    TEST_ASSERT_FALSE(static_cast<bool>(instance.storage.get("cannot")));
+    // empty storage is still manageble, it just does not work :)
+    {
+        StorageHandler<0> empty;
+        TEST_ASSERT_EQUAL(0, empty.storage.keys());
+        TEST_ASSERT_FALSE(empty.storage.set("cannot", "happen"));
+        TEST_ASSERT_FALSE(static_cast<bool>(empty.storage.get("cannot")));
+    }
+
+    // some hard-coded estimates to notify us about internal changes
+    {
+        StorageHandler<16> instance;
+        TEST_ASSERT_EQUAL(0, instance.storage.keys());
+        TEST_ASSERT_EQUAL(16, instance.storage.available());
+        TEST_ASSERT_EQUAL(16, instance.storage.estimate("123456", "123456"));
+        TEST_ASSERT_EQUAL(10, instance.storage.estimate("123", "123"));
+        TEST_ASSERT_EQUAL(9, instance.storage.estimate("345", ""));
+    }
 
 }
 

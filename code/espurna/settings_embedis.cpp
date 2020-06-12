@@ -395,6 +395,32 @@ uint16_t RawStorage::_cursor_reset_end() {
     return _cursor.end;
 }
 
+size_t RawStorage::estimate(const String& key, const String& value) {
+    if (!key.length()) {
+        return 0;
+    }
+
+    const auto key_len = key.length();
+    const auto value_len = value.length();
+
+    return (4 + key_len + ((value_len > 0) ? value_len : 2));
+}
+
+size_t RawStorage::available() {
+    _cursor_reset_end();
+
+    size_t result = _cursor.end;
+    do {
+        auto kv = _read_kv();
+        if (!kv) {
+            break;
+        }
+        result = kv.value.cursor.begin;
+    } while (_state != State::End);
+
+    return result;
+}
+
 String RawStorage::_state_describe() {
     switch (_state) {
     case State::Begin: return "Begin";

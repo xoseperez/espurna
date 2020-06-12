@@ -62,6 +62,10 @@ class RawStorage {
     // Simply count key-value pairs that we could parse
     size_t keys();
 
+    // Internal storage info, to allow us to know the kv size requirements
+    size_t estimate(const String& key, const String& value);
+    size_t available();
+
     protected:
 
     // Pointer to the region of data that we are using
