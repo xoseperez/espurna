@@ -259,8 +259,9 @@ bool RawStorage::del(const String& key) {
     } else {
         trace("::del marking key as empty @%u:%u\n", offset_pos, offset);
         // just null the lenght, since we at the last key
-       _source.write(offset_pos + offset - 1, 0);
-       _source.write(offset_pos + offset - 2, 0);
+        auto writer = Cursor::fromEnd(_source, offset_pos, offset_pos + offset);
+        (--writer).write(0);
+        (--writer).write(0);
     }
 
     return true;
