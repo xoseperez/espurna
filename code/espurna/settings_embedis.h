@@ -4,6 +4,9 @@ Part of the SETTINGS MODULE
 
 Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
+Reimplementation of the Embedis storage format:
+- https://github.com/thingSoC/embedis
+
 */
 
 #pragma once
@@ -33,7 +36,7 @@ class RawStorage {
     public:
 
     // IO source, functional redirects for raw byte storage.
-    // TODO: provide actual benchmark comparison with 'lambda'-list-as-vtable (old Embedis dict style)
+    // TODO: provide actual benchmark comparison with 'lambda'-list-as-vtable (old Embedis style)
     // TODO: consider overrides for bulk operations like move (see ::del method)
     // TODO: implementation without virtual calls would be nice...
     //       we need to move things into a header (all the things, if we want to keep nested classes readable)
@@ -141,9 +144,7 @@ class RawStorage {
         }
 
         bool operator ==(const Cursor& other) {
-            return ((begin == other.begin)
-                   && (end == other.end)
-                   && (position == other.position));
+            return (begin == other.begin) && (end == other.end);
         }
 
         bool operator !=(const Cursor& other) {
@@ -187,6 +188,16 @@ class RawStorage {
     // XXX: be cautious that cursor positions **will** break when underlying storage changes
     struct ReadResult;
 
+    // Tracking state of the parser inside of _raw_read()
+    enum class State {
+        Begin,
+        End,
+        LenByte1,
+        LenByte2,
+        EmptyValue,
+        Value
+    };
+
     // Returns Cursor to the region that holds the data
     // Result object does not hold any data, we need to explicitly request read()
     //
@@ -201,29 +212,14 @@ class RawStorage {
     //     data data len2 len1
     // Position will be 0, end will be 5. Total length is 4, data length is 0
     ReadResult _raw_read();
+    void _raw_erase(size_t start_pos, Cursor& to_erase);
 
     // Internal storage consists of sequences of <byte-range><length>
     // We going be using this pattern all the time here, because we need 2 consecutive **valid** ranges
     struct KeyValueResult;
 
-    // Return key-value pair cursors as a single object.
-    // This way we can validate that both exist in a single call.
     KeyValueResult _read_kv();
-
-    // Place cursor at the `end` and resets the parser to expect length byte
     uint16_t _cursor_reset_end();
-
-    // explain the internal state value
-    String _state_describe();
-
-    enum class State {
-        Begin,
-        End,
-        LenByte1,
-        LenByte2,
-        EmptyValue,
-        Value
-    };
 
     SourceBase& _source;
     Cursor _cursor;

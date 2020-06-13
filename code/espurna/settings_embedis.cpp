@@ -4,20 +4,15 @@ Part of the SETTINGS MODULE
 
 Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
+Reimplementation of the Embedis storage format:
+- https://github.com/thingSoC/embedis
+
 */
 
 #include "settings_embedis.h"
 
 namespace settings {
 namespace embedis {
-
-#define SETTINGS_EMBEDIS_TRACING 1
-
-#if SETTINGS_EMBEDIS_TRACING
-#define trace(...) do { printf("%s:%d ", __FILE__, __LINE__); printf(__VA_ARGS__); } while(false)
-#else
-#define trace(...)
-#endif
 
 struct RawStorage::ReadResult {
     ReadResult(const Cursor& cursor_) :
@@ -43,7 +38,7 @@ struct RawStorage::ReadResult {
             return out;
         }
 
-        uint16_t index = 0;
+        decltype(length) index = 0;
         cursor.resetBeginning();
         while (index < length) {
             out += static_cast<char>(cursor.read());
@@ -116,16 +111,19 @@ ValueResult RawStorage::get(const String& key) {
 bool RawStorage::set(const String& key, const String& value) {
     bool result = false;
 
-    // we can't save empty keys
-    size_t key_len = key.length();
-    if (!key_len) {
+    // ref. 'estimate()' implementation in regards to the storage calculation
+    auto need = estimate(key, value);
+    if (!need) {
         return false;
     }
 
-    size_t value_len = value.length();
+    auto start_pos = _cursor_reset_end();
 
-    size_t available = _cursor_reset_end();
-    trace("::set(%s,%s) starting available = %u @%u:%u\n", key.c_str(), value.c_str(), available, _cursor.begin, _cursor.end);
+    auto key_len = key.length();
+    auto value_len = value.length();
+
+    Cursor to_erase(_source);
+    bool need_erase = false;
 
     do {
         auto kv = _read_kv();
@@ -133,41 +131,31 @@ bool RawStorage::set(const String& key, const String& value) {
             break;
         }
 
-        available = kv.value.cursor.begin;
-        trace("::set available after kv %u, found key=%u:%u value=%u:%u\n",
-            available,
-            kv.key.cursor.begin,
-            kv.key.cursor.end,
-            kv.value.cursor.begin,
-            kv.value.cursor.end
-        );
+        start_pos = kv.value.cursor.begin;
 
-        // trying to compare the existing keys with the ones we've got
+        // in the very special case we match the existing key, we either
         if ((kv.key.length == key_len) && (kv.key.read() == key)) {
             if (kv.value.length == value.length()) {
                 if (kv.value.read() == value) {
                     return true;
                 }
-                available = kv.key.cursor.end;
+                start_pos = kv.key.cursor.end;
                 break;
             }
+            to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
+            need_erase = true;
             // but we need remove it from the storage when changing contents
-            del(key);
         }
     } while (_state != State::End);
 
-    // ...but can save empty values as 0x00 0x00 0x00 0x00
-    // total sum is:
-    // - 2 bytes gap at the end (will be re-used by the next value length byte)
-    // - 4 bytes to store length of 2 values
-    // - byte-length of values themselves
-    size_t need = 4 + key_len + ((value_len > 0) ? value_len : 2);
-
-    trace("::set need=%u available=%u\n", need, available);
+    if (need_erase) {
+        _raw_erase(start_pos, to_erase);
+        start_pos += to_erase.size();
+    }
 
     // we should only insert when possition is still within possible size
-    if (available && (available >= need)) {
-        auto writer = Cursor::fromEnd(_source, available - need, available);
+    if (start_pos && (start_pos >= need)) {
+        auto writer = Cursor::fromEnd(_source, start_pos - need, start_pos);
 
         // put the length of the value as 2 bytes and then write the data
         (--writer).write(key_len & 0xff);
@@ -201,8 +189,6 @@ bool RawStorage::set(const String& key, const String& value) {
         return true;
     }
 
-    trace("::set can't\n");
-
     return false;
 }
 
@@ -216,7 +202,7 @@ bool RawStorage::del(const String& key) {
     uint16_t offset = 0;
 
     size_t start_pos = _cursor_reset_end() - 1;
-    size_t offset_pos = start_pos;
+    auto to_erase = Cursor::fromEnd(_source, _source.size(), _source.size());
 
     do {
         auto kv = _read_kv();
@@ -230,39 +216,15 @@ bool RawStorage::del(const String& key) {
         // when matching, record { value ... key } range + 4 bytes for length
         // continue searching for the leftmost boundary
         if (!offset && (kv.key.length == key_len) && (kv.key.read() == key)) {
-            offset = kv.key.cursor.size() + kv.value.cursor.size();
-            offset_pos = kv.value.cursor.begin;
-            trace("need to erase kv @%u:%u\n", offset_pos, offset_pos + offset);
+            to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
         }
     } while (_state != State::End);
 
-    if (!offset) {
+    if (!to_erase) {
         return false;
     }
 
-    // we either end up to the left or to the right of the boundary
-    if (start_pos < offset_pos) {
-        trace("::del moving  @%u:%u to @%u:%u\n",
-            start_pos,
-            offset_pos,
-            start_pos + offset,
-            offset_pos + offset
-        );
-
-        auto from = Cursor::fromEnd(_source, start_pos, offset_pos);
-        auto to = Cursor::fromEnd(_source, start_pos + offset, offset_pos + offset);
-
-        while (--from && --to) {
-            to.write(from.read());
-            from.write(0xff);
-        };
-    } else {
-        trace("::del marking key as empty @%u:%u\n", offset_pos, offset);
-        // just null the lenght, since we at the last key
-        auto writer = Cursor::fromEnd(_source, offset_pos, offset_pos + offset);
-        (--writer).write(0);
-        (--writer).write(0);
-    }
+    _raw_erase(start_pos, to_erase);
 
     return true;
 }
@@ -271,7 +233,6 @@ size_t RawStorage::keys() {
     size_t result = 0;
 
     _cursor_reset_end();
-
     do {
         auto kv = _read_kv();
         if (!kv) {
@@ -282,6 +243,47 @@ size_t RawStorage::keys() {
 
     return result;
 }
+
+// We can't save empty keys but can save empty values as 0x00 0x00 0x00 0x00
+// total sum is:
+// - 2 bytes gap at the end (will be re-used by the next value length byte)
+// - 4 bytes to store length of 2 values (stored as big-endian)
+// - N bytes of values themselves
+size_t RawStorage::estimate(const String& key, const String& value) {
+    if (!key.length()) {
+        return 0;
+    }
+
+    const auto key_len = key.length();
+    const auto value_len = value.length();
+
+    return (4 + key_len + ((value_len > 0) ? value_len : 2));
+}
+
+// Do exactly the same thing as 'keys' does, but return the amount
+// of bytes to the left of the last kv
+size_t RawStorage::available() {
+    _cursor_reset_end();
+
+    size_t result = _cursor.end;
+    do {
+        auto kv = _read_kv();
+        if (!kv) {
+            break;
+        }
+        result = kv.value.cursor.begin;
+    } while (_state != State::End);
+
+    return result;
+}
+
+// Place cursor at the `end` and resets the parser to expect length byte
+uint16_t RawStorage::_cursor_reset_end() {
+    _cursor.resetEnd();
+    _state = State::Begin;
+    return _cursor.end;
+}
+
 
 // implementation quirk is that `Cursor::operator=` won't work because of the `SourceBase&` member
 // right now, just construct in place and assume that compiler will inline things
@@ -296,15 +298,29 @@ RawStorage::KeyValueResult RawStorage::_read_kv() {
     return {key, value};
 };
 
+void RawStorage::_raw_erase(size_t start_pos, Cursor& to_erase) {
+    // we either end up to the left or to the right of the boundary
+    if (start_pos < to_erase.begin) {
+        auto from = Cursor::fromEnd(_source, start_pos, to_erase.begin);
+        auto to = Cursor::fromEnd(_source, start_pos + to_erase.size(), to_erase.end);
+
+        while (--from && --to) {
+            to.write(from.read());
+            from.write(0xff);
+        };
+    } else {
+        // just null the length bytes, since we at the last key
+        to_erase.resetEnd();
+        (--to_erase).write(0);
+        (--to_erase).write(0);
+    }
+}
+
 RawStorage::ReadResult RawStorage::_raw_read() {
     uint16_t len = 0;
     ReadResult out(_source);
 
-    trace("::_raw_read()\n");
-
     do {
-        //trace("read_raw pos=%u end=%u state=%s\n", _cursor.position, _cursor.end, _state_describe().c_str());
-
         // storage is written right-to-left, cursor is always decreasing
         switch (_state) {
         case State::Begin:
@@ -371,7 +387,6 @@ RawStorage::ReadResult RawStorage::_raw_read() {
                 _cursor.position,
                 _cursor.position + len + 2
             );
-            trace("found blob @%u:%u (left=%u) datalength=%u\n", out.cursor.begin, out.cursor.end, left, out.length);
 
             _state = State::Begin;
 
@@ -387,49 +402,6 @@ RawStorage::ReadResult RawStorage::_raw_read() {
 return_result:
 
     return out;
-}
-
-uint16_t RawStorage::_cursor_reset_end() {
-    _cursor.resetEnd();
-    _state = State::Begin;
-    return _cursor.end;
-}
-
-size_t RawStorage::estimate(const String& key, const String& value) {
-    if (!key.length()) {
-        return 0;
-    }
-
-    const auto key_len = key.length();
-    const auto value_len = value.length();
-
-    return (4 + key_len + ((value_len > 0) ? value_len : 2));
-}
-
-size_t RawStorage::available() {
-    _cursor_reset_end();
-
-    size_t result = _cursor.end;
-    do {
-        auto kv = _read_kv();
-        if (!kv) {
-            break;
-        }
-        result = kv.value.cursor.begin;
-    } while (_state != State::End);
-
-    return result;
-}
-
-String RawStorage::_state_describe() {
-    switch (_state) {
-    case State::Begin: return "Begin";
-    case State::End: return "End";
-    case State::LenByte1: return "LenByte1";
-    case State::LenByte2: return "LenByte2";
-    case State::EmptyValue: return "EmptyValue";
-    case State::Value: return "Value";
-    }
 }
 
 } // namespace embedis
