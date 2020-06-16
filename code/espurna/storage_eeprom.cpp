@@ -5,7 +5,6 @@ EEPROM MODULE
 */
 
 #include "storage_eeprom.h"
-#include "settings.h"
 
 EEPROM_Rotate EEPROMr;
 bool _eeprom_commit = false;
@@ -66,11 +65,10 @@ void eepromBackup(uint32_t index){
 void _eepromInitCommands() {
 
     terminalRegisterCommand(F("EEPROM"), [](const terminal::CommandContext&) {
-        infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
         eepromSectorsDebug();
         if (_eeprom_commit_count > 0) {
             DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
-            DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
+            DEBUG_MSG_P(PSTR("[MAIN] Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
         }
         terminalOK();
     });
@@ -136,7 +134,7 @@ void eepromSetup() {
     #endif
 
     EEPROMr.offset(EepromRotateOffset);
-    EEPROMr.begin(EEPROM_SIZE);
+    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
 
     #if TERMINAL_SUPPORT
         _eepromInitCommands();

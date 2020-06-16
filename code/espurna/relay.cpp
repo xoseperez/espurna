@@ -747,17 +747,6 @@ PayloadStatus relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
-    #if defined(EEPROM_RELAY_STATUS)
-    {
-        uint8_t mask = EEPROMr.read(EEPROM_RELAY_STATUS);
-        if (mask != 0xff) {
-            _relayMaskSettings(static_cast<uint32_t>(mask));
-            EEPROMr.write(EEPROM_RELAY_STATUS, 0xff);
-            eepromCommit();
-        }
-    }
-    #endif
-
     for (unsigned char id = 0; id < _relays.size(); ++id) {
         const settings_key_t key {"mqttGroupInv", id};
         if (!hasSetting(key)) continue;

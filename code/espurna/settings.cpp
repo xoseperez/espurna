@@ -10,6 +10,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "terminal.h"
 
+#include <algorithm>
 #include <vector>
 #include <cstdlib>
 
@@ -48,6 +49,7 @@ EepromStorage eeprom_storage;
 
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
+// XXX: slightly hacky, because we EEPROMr.length() is 0 before we enter setup() code
 embedis::KeyValueStore kv_store(
     embedis::eeprom_storage,
 #if DEBUG_SUPPORT
@@ -347,9 +349,8 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    for (unsigned int i = 0; i < EEPROM_SIZE; i++) {
-        EEPROMr.write(i, 0xFF);
-    }
+    auto* ptr = EEPROMr.getDataPtr();
+    std::fill(ptr + EepromReservedSize, ptr + SPI_FLASH_SEC_SIZE, 0xFF);
     EEPROMr.commit();
 }
 
@@ -369,9 +370,7 @@ bool settingsRestoreJson(JsonObject& data) {
     // Clear settings
     bool is_backup = data["backup"];
     if (is_backup) {
-        for (unsigned int i = EepromReservedSize; i < SPI_FLASH_SEC_SIZE; i++) {
-            EEPROMr.write(i, 0xFF);
-        }
+        resetSettings();
     }
 
     // Dump settings to memory buffer
@@ -447,20 +446,17 @@ void settingsSetup() {
     });
 
     terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
-        // Get sorted list of keys
         auto keys = settingsKeys();
 
-        // Write key-values
         ctx.output.println(F("Current settings:"));
         for (unsigned int i=0; i<keys.size(); i++) {
             const auto value = getSetting(keys[i]);
             ctx.output.printf("> %s => \"%s\"\n", (keys[i]).c_str(), value.c_str());
         }
 
-        unsigned long freeEEPROM [[gnu::unused]] = SPI_FLASH_SEC_SIZE - settingsSize();
+        auto available [[gnu::unused]] = settings::kv_store.available();
         ctx.output.printf("Number of keys: %u\n", keys.size());
-        ctx.output.printf("Current EEPROM sector: %u\n", EEPROMr.current());
-        ctx.output.printf("Free EEPROM: %lu bytes (%lu%%)\n", freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
+        ctx.output.printf("Available: %u bytes (%u%%)\n", available, (100 * available) / settings::kv_store.size());
 
         terminalOK(ctx);
     });
