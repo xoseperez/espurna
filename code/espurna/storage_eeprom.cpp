@@ -139,7 +139,7 @@ void eepromSetup() {
     #endif
 
     EEPROMr.offset(EepromRotateOffset);
-    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
+    EEPROMr.begin(EepromSize);
 
     #if TERMINAL_SUPPORT
         _eepromInitCommands();

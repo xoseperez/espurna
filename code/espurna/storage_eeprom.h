@@ -22,6 +22,8 @@ constexpr size_t EepromReservedSize = 14;
 constexpr int EepromRotateOffset = 11;
 constexpr size_t EepromRotateReservedSize = 3;
 
+constexpr size_t EepromSize = SPI_FLASH_SEC_SIZE;
+
 extern EEPROM_Rotate EEPROMr;
 
 bool eepromReady();

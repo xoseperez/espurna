@@ -57,7 +57,7 @@ embedis::KeyValueStore kv_store(
 #else
     EepromReservedSize,
 #endif
-    SPI_FLASH_SEC_SIZE
+    EepromSize
 );
 
 } // namespace settings
@@ -350,7 +350,7 @@ void saveSettings() {
 
 void resetSettings() {
     auto* ptr = EEPROMr.getDataPtr();
-    std::fill(ptr + EepromReservedSize, ptr + SPI_FLASH_SEC_SIZE, 0xFF);
+    std::fill(ptr + EepromReservedSize, ptr + EepromSize, 0xFF);
     EEPROMr.commit();
 }
 
@@ -360,20 +360,19 @@ void resetSettings() {
 
 bool settingsRestoreJson(JsonObject& data) {
 
-    // Check this is an ESPurna configuration file (must have "app":"ESPURNA")
+    // Note: we try to match what /config generates, expect {"app":"ESPURNA",...}
     const char* app = data["app"];
     if (!app || strcmp(app, APP_NAME) != 0) {
         DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key\n"));
         return false;
     }
 
-    // Clear settings
-    bool is_backup = data["backup"];
-    if (is_backup) {
+    // .../config will add this key, but it is optional
+    if (data["backup"].as<bool>()) {
         resetSettings();
     }
 
-    // Dump settings to memory buffer
+    // These three are just metadata, no need to actually store them
     for (auto element : data) {
         if (strcmp(element.key, "app") == 0) continue;
         if (strcmp(element.key, "version") == 0) continue;
@@ -381,7 +380,6 @@ bool settingsRestoreJson(JsonObject& data) {
         setSetting(element.key, element.value.as<char*>());
     }
 
-    // Persist to EEPROM
     saveSettings();
 
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
