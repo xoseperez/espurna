@@ -330,8 +330,47 @@ void test_basic() {
 
 }
 
+void test_storage() {
+    constexpr size_t Size = 32;
+
+    settings::embedis::StaticArrayStorage<Size> storage;
+
+    settings::embedis::KeyValueStore kvs(storage, 0, Size);
+
+    TEST_ASSERT(kvs.set("key1", "value1"));
+    TEST_ASSERT(kvs.set("key2", "value2"));
+
+    auto kvsize = kvs.estimate("key1", "value1");
+    TEST_ASSERT_EQUAL((Size - (2 * kvsize)), kvs.available());
+
+    // checking keys one by one
+
+    // ensure we can operate with storage offsets
+    {
+        settings::embedis::KeyValueStore slice(storage, (Size - kvsize), Size);
+        TEST_ASSERT_EQUAL(1, slice.count());
+        TEST_ASSERT_EQUAL(kvsize, slice.size());
+        TEST_ASSERT_EQUAL(0, slice.available());
+        auto result = slice.get("key1");
+        TEST_ASSERT(static_cast<bool>(result));
+        TEST_ASSERT_EQUAL_STRING("value1", result.value.c_str());
+    }
+
+    // ensure that right offset also works
+    {
+        settings::embedis::KeyValueStore slice(storage, 0, (Size - kvsize));
+        TEST_ASSERT_EQUAL(1, slice.count());
+        TEST_ASSERT_EQUAL((Size - kvsize), slice.size());
+        TEST_ASSERT_EQUAL((Size - kvsize - kvsize), slice.available());
+        auto result = slice.get("key2");
+        TEST_ASSERT(static_cast<bool>(result));
+        TEST_ASSERT_EQUAL_STRING("value2", result.value.c_str());
+    }
+}
+
 int main(int argc, char** argv) {
     UNITY_BEGIN();
+    RUN_TEST(test_storage);
     RUN_TEST(test_basic);
     RUN_TEST(test_remove_randomized);
     RUN_TEST(test_small_gaps);
