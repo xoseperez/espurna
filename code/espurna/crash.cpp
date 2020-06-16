@@ -24,7 +24,6 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "storage_eeprom.h"
 
 bool _save_crash_enabled = true;
-bool _save_crash_ready = false;
 
 size_t crashReservedSize() {
     if (!_save_crash_enabled) return 0;
