@@ -50,10 +50,10 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #define SAVE_CRASH_STACK_SIZE       0x22  // 2 bytes
 #define SAVE_CRASH_STACK_TRACE      0x24  // variable, 4 bytes per value
 
-constexpr int EepromCrashStart = EepromReservedSize;
+constexpr int EepromCrashBegin = EepromReservedSize;
 constexpr int EepromCrashEnd = 256;
 
-constexpr size_t CrashReservedSize = EepromCrashEnd - EepromCrashStart;
+constexpr size_t CrashReservedSize = EepromCrashEnd - EepromCrashBegin;
 constexpr size_t CrashTraceReservedSize = CrashReservedSize - SAVE_CRASH_STACK_TRACE;
 
 size_t crashReservedSize();
