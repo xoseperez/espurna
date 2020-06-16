@@ -4,7 +4,8 @@ EEPROM MODULE
 
 */
 
-#include "storage_eeprom.h"
+// XXX: including storage_eeprom.h here directly causes dependency issue with settings
+#include "espurna.h"
 
 EEPROM_Rotate EEPROMr;
 bool _eeprom_commit = false;

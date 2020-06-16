@@ -4,7 +4,7 @@ BOARD MODULE
 
 */
 
-#include "board.h"
+#include "espurna.h"
 #include "relay.h"
 #include "sensor.h"
 

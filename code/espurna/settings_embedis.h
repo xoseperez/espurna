@@ -9,6 +9,8 @@ Reimplementation of the Embedis storage format:
 
 */
 
+#pragma once
+
 #include <Arduino.h>
 
 #include <algorithm>
