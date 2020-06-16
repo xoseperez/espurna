@@ -23,35 +23,12 @@ BrokerBind(ConfigBroker);
 // -----------------------------------------------------------------------------
 
 namespace settings {
-namespace embedis {
-
-struct EepromStorage : public KeyValueStore::RawStorageBase {
-
-    uint8_t read(size_t pos) {
-        return EEPROMr.read(pos);
-    }
-
-    void write(size_t pos, uint8_t value) {
-        EEPROMr.write(pos, value);
-    }
-
-    void commit() {
-#if SETTINGS_AUTOSAVE
-        eepromCommit();
-#endif
-    }
-
-};
-
-EepromStorage eeprom_storage;
-
-} // namespace embedis
 
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
 // XXX: slightly hacky, because we EEPROMr.length() is 0 before we enter setup() code
-embedis::KeyValueStore kv_store(
-    embedis::eeprom_storage,
+kvs_type kv_store(
+    EepromStorage{},
 #if DEBUG_SUPPORT
     EepromReservedSize + CrashReservedSize,
 #else

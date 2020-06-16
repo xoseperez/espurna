@@ -12,27 +12,30 @@
 namespace settings {
 namespace embedis {
 
-template <size_t Size>
-struct StaticArrayStorage final : public KeyValueStore::RawStorageBase {
+template <typename T>
+struct StaticArrayStorage {
 
-    StaticArrayStorage() {
-        blob.fill(0xff);
+    StaticArrayStorage(T& blob) :
+        _blob(blob),
+        _size(blob.size())
+    {}
+
+    uint8_t read(size_t index) {
+        TEST_ASSERT_LESS_THAN(_size, index);
+        return _blob[index];
     }
 
-    uint8_t read(size_t index) override {
-        TEST_ASSERT_LESS_THAN(Size, index);
-        return blob[index];
-    }
-
-    void write(size_t index, uint8_t value) override {
-        TEST_ASSERT_LESS_THAN(Size, index);
-        blob[index] = value;
+    void write(size_t index, uint8_t value) {
+        TEST_ASSERT_LESS_THAN(_size, index);
+        _blob[index] = value;
     }
 
     void commit() {
     }
 
-    std::array<uint8_t, Size> blob;
+    T& _blob;
+    const size_t _size;
+
 };
 
 } // namespace embedis
@@ -40,14 +43,23 @@ struct StaticArrayStorage final : public KeyValueStore::RawStorageBase {
 
 template <size_t Size>
 struct StorageHandler {
-    StorageHandler() :
-        kvs(storage, 0, storage.blob.size())
-    {}
+    using array_type = std::array<uint8_t, Size>;
+    using storage_type = settings::embedis::StaticArrayStorage<array_type>;
+    using kvs_type = settings::embedis::KeyValueStore<storage_type>;
 
-    settings::embedis::StaticArrayStorage<Size> storage;
-    settings::embedis::KeyValueStore kvs;
+    StorageHandler() :
+        kvs(std::move(storage_type{blob}), 0, Size)
+    {
+        blob.fill(0xff);
+    }
+
+    array_type blob;
+    kvs_type kvs;
 };
 
+// generate stuff depending on the mode
+// - Indexed: key1:val1, key2:val2, ...
+// - IncreasingLength: k:v, kk:vv, ...
 struct TestSequentialKvGenerator {
 
     using kv = std::pair<String, String>;
@@ -143,7 +155,7 @@ void test_sizes() {
 void test_longkey() {
 
     TestStorageHandler instance;
-    const auto estimate = instance.storage.blob.size() - 6;
+    const auto estimate = instance.kvs.size() - 6;
 
     String key;
     key.reserve(estimate);
@@ -161,32 +173,36 @@ void test_perseverance() {
 
     // ensure we can handle setting the same key
     using storage_type = StorageHandler<128>;
-    using blob_type = decltype(std::declval<storage_type>().storage.blob);
+    using blob_type = decltype(std::declval<storage_type>().blob);
 
     // xxx: implementation detail?
     // can we avoid blob modification when value is the same as the existing one
     {
         storage_type instance;
+        blob_type original(instance.blob);
 
         TEST_ASSERT(instance.kvs.set("key", "value"));
         TEST_ASSERT(instance.kvs.set("another", "keyvalue"));
-        blob_type snapshot(instance.storage.blob);
+        TEST_ASSERT(original != instance.blob);
+        blob_type snapshot(instance.blob);
 
         TEST_ASSERT(instance.kvs.set("key", "value"));
-        TEST_ASSERT(snapshot == instance.storage.blob);
+        TEST_ASSERT(snapshot == instance.blob);
     }
 
     // xxx: pointless implementation detail?
     // can we re-use existing 'value' storage and avoid data-shift
     {
         storage_type instance;
+        blob_type original(instance.blob);
 
         // insert in a specific order, change middle
         TEST_ASSERT(instance.kvs.set("aaa", "bbb"));
         TEST_ASSERT(instance.kvs.set("cccc", "dd"));
         TEST_ASSERT(instance.kvs.set("ee", "fffff"));
         TEST_ASSERT(instance.kvs.set("cccc", "ff"));
-        blob_type before(instance.storage.blob);
+        TEST_ASSERT(original != instance.blob);
+        blob_type before(instance.blob);
 
         // purge, insert again with updated values
         TEST_ASSERT(instance.kvs.del("aaa"));
@@ -196,8 +212,10 @@ void test_perseverance() {
         TEST_ASSERT(instance.kvs.set("aaa", "bbb"));
         TEST_ASSERT(instance.kvs.set("cccc", "ff"));
         TEST_ASSERT(instance.kvs.set("ee", "fffff"));
-        blob_type after(instance.storage.blob);
+        blob_type after(instance.blob);
 
+        TEST_ASSERT(original != before);
+        TEST_ASSERT(original != after);
         TEST_ASSERT(before == after);
     }
 }
@@ -333,9 +351,12 @@ void test_basic() {
 void test_storage() {
     constexpr size_t Size = 32;
 
-    settings::embedis::StaticArrayStorage<Size> storage;
+    using array_type = std::array<uint8_t, Size>;
+    using storage_type = settings::embedis::StaticArrayStorage<array_type>;
+    using kvs_type = settings::embedis::KeyValueStore<storage_type>;
 
-    settings::embedis::KeyValueStore kvs(storage, 0, Size);
+    array_type blob;
+    kvs_type kvs(storage_type(blob), 0, blob.size());
 
     TEST_ASSERT(kvs.set("key1", "value1"));
     TEST_ASSERT(kvs.set("key2", "value2"));
@@ -347,7 +368,7 @@ void test_storage() {
 
     // ensure we can operate with storage offsets
     {
-        settings::embedis::KeyValueStore slice(storage, (Size - kvsize), Size);
+        kvs_type slice(storage_type(blob), (Size - kvsize), Size);
         TEST_ASSERT_EQUAL(1, slice.count());
         TEST_ASSERT_EQUAL(kvsize, slice.size());
         TEST_ASSERT_EQUAL(0, slice.available());
@@ -358,7 +379,7 @@ void test_storage() {
 
     // ensure that right offset also works
     {
-        settings::embedis::KeyValueStore slice(storage, 0, (Size - kvsize));
+        kvs_type slice(storage_type(blob), 0, (Size - kvsize));
         TEST_ASSERT_EQUAL(1, slice.count());
         TEST_ASSERT_EQUAL((Size - kvsize), slice.size());
         TEST_ASSERT_EQUAL((Size - kvsize - kvsize), slice.available());
