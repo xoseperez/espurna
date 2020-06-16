@@ -13,8 +13,9 @@ namespace settings {
 namespace embedis {
 
 template <size_t Size>
-struct StaticArraySource final : public RawStorage::SourceBase {
-    StaticArraySource() {
+struct StaticArrayStorage final : public KeyValueStore::RawStorageBase {
+
+    StaticArrayStorage() {
         blob.fill(0xff);
     }
 
@@ -28,8 +29,7 @@ struct StaticArraySource final : public RawStorage::SourceBase {
         blob[index] = value;
     }
 
-    size_t size() override {
-        return Size;
+    void commit() {
     }
 
     std::array<uint8_t, Size> blob;
@@ -41,11 +41,11 @@ struct StaticArraySource final : public RawStorage::SourceBase {
 template <size_t Size>
 struct StorageHandler {
     StorageHandler() :
-        storage(source)
+        kvs(storage, 0, storage.blob.size())
     {}
 
-    settings::embedis::StaticArraySource<Size> source;
-    settings::embedis::RawStorage storage;
+    settings::embedis::StaticArrayStorage<Size> storage;
+    settings::embedis::KeyValueStore kvs;
 };
 
 struct TestSequentialKvGenerator {
@@ -112,7 +112,7 @@ using TestStorageHandler = StorageHandler<1024>;
 
 template <typename T>
 void check_kv(T& instance, const String& key, const String& value) {
-    auto result = instance.storage.get(key);
+    auto result = instance.kvs.get(key);
     TEST_ASSERT_MESSAGE(static_cast<bool>(result), key.c_str());
     TEST_ASSERT(result.value.length());
     TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
@@ -123,19 +123,19 @@ void test_sizes() {
     // empty storage is still manageble, it just does not work :)
     {
         StorageHandler<0> empty;
-        TEST_ASSERT_EQUAL(0, empty.storage.keys());
-        TEST_ASSERT_FALSE(empty.storage.set("cannot", "happen"));
-        TEST_ASSERT_FALSE(static_cast<bool>(empty.storage.get("cannot")));
+        TEST_ASSERT_EQUAL(0, empty.kvs.count());
+        TEST_ASSERT_FALSE(empty.kvs.set("cannot", "happen"));
+        TEST_ASSERT_FALSE(static_cast<bool>(empty.kvs.get("cannot")));
     }
 
     // some hard-coded estimates to notify us about internal changes
     {
         StorageHandler<16> instance;
-        TEST_ASSERT_EQUAL(0, instance.storage.keys());
-        TEST_ASSERT_EQUAL(16, instance.storage.available());
-        TEST_ASSERT_EQUAL(16, instance.storage.estimate("123456", "123456"));
-        TEST_ASSERT_EQUAL(10, instance.storage.estimate("123", "123"));
-        TEST_ASSERT_EQUAL(9, instance.storage.estimate("345", ""));
+        TEST_ASSERT_EQUAL(0, instance.kvs.count());
+        TEST_ASSERT_EQUAL(16, instance.kvs.available());
+        TEST_ASSERT_EQUAL(16, instance.kvs.estimate("123456", "123456"));
+        TEST_ASSERT_EQUAL(10, instance.kvs.estimate("123", "123"));
+        TEST_ASSERT_EQUAL(9, instance.kvs.estimate("345", ""));
     }
 
 }
@@ -143,7 +143,7 @@ void test_sizes() {
 void test_longkey() {
 
     TestStorageHandler instance;
-    const auto estimate = instance.source.blob.size() - 6;
+    const auto estimate = instance.storage.blob.size() - 6;
 
     String key;
     key.reserve(estimate);
@@ -151,8 +151,8 @@ void test_longkey() {
         key += 'a';
     }
 
-    TEST_ASSERT(instance.storage.set(key, ""));
-    auto result = instance.storage.get(key);
+    TEST_ASSERT(instance.kvs.set(key, ""));
+    auto result = instance.kvs.get(key);
     TEST_ASSERT(static_cast<bool>(result));
 
 }
@@ -161,19 +161,19 @@ void test_perseverance() {
 
     // ensure we can handle setting the same key
     using storage_type = StorageHandler<128>;
-    using blob_type = decltype(std::declval<storage_type>().source.blob);
+    using blob_type = decltype(std::declval<storage_type>().storage.blob);
 
     // xxx: implementation detail?
     // can we avoid blob modification when value is the same as the existing one
     {
         storage_type instance;
 
-        TEST_ASSERT(instance.storage.set("key", "value"));
-        TEST_ASSERT(instance.storage.set("another", "keyvalue"));
-        blob_type snapshot(instance.source.blob);
+        TEST_ASSERT(instance.kvs.set("key", "value"));
+        TEST_ASSERT(instance.kvs.set("another", "keyvalue"));
+        blob_type snapshot(instance.storage.blob);
 
-        TEST_ASSERT(instance.storage.set("key", "value"));
-        TEST_ASSERT(snapshot == instance.source.blob);
+        TEST_ASSERT(instance.kvs.set("key", "value"));
+        TEST_ASSERT(snapshot == instance.storage.blob);
     }
 
     // xxx: pointless implementation detail?
@@ -182,21 +182,21 @@ void test_perseverance() {
         storage_type instance;
 
         // insert in a specific order, change middle
-        TEST_ASSERT(instance.storage.set("aaa", "bbb"));
-        TEST_ASSERT(instance.storage.set("cccc", "dd"));
-        TEST_ASSERT(instance.storage.set("ee", "fffff"));
-        TEST_ASSERT(instance.storage.set("cccc", "ff"));
-        blob_type before(instance.source.blob);
+        TEST_ASSERT(instance.kvs.set("aaa", "bbb"));
+        TEST_ASSERT(instance.kvs.set("cccc", "dd"));
+        TEST_ASSERT(instance.kvs.set("ee", "fffff"));
+        TEST_ASSERT(instance.kvs.set("cccc", "ff"));
+        blob_type before(instance.storage.blob);
 
         // purge, insert again with updated values
-        TEST_ASSERT(instance.storage.del("aaa"));
-        TEST_ASSERT(instance.storage.del("cccc"));
-        TEST_ASSERT(instance.storage.del("ee"));
+        TEST_ASSERT(instance.kvs.del("aaa"));
+        TEST_ASSERT(instance.kvs.del("cccc"));
+        TEST_ASSERT(instance.kvs.del("ee"));
 
-        TEST_ASSERT(instance.storage.set("aaa", "bbb"));
-        TEST_ASSERT(instance.storage.set("cccc", "ff"));
-        TEST_ASSERT(instance.storage.set("ee", "fffff"));
-        blob_type after(instance.source.blob);
+        TEST_ASSERT(instance.kvs.set("aaa", "bbb"));
+        TEST_ASSERT(instance.kvs.set("cccc", "ff"));
+        TEST_ASSERT(instance.kvs.set("ee", "fffff"));
+        blob_type after(instance.storage.blob);
 
         TEST_ASSERT(before == after);
     }
@@ -207,18 +207,18 @@ struct test_overflow_runner {
     void operator ()() const {
         StorageHandler<Size> instance;
 
-        TEST_ASSERT(instance.storage.set("a", "b"));
-        TEST_ASSERT(instance.storage.set("c", "d"));
+        TEST_ASSERT(instance.kvs.set("a", "b"));
+        TEST_ASSERT(instance.kvs.set("c", "d"));
 
-        TEST_ASSERT_EQUAL(2, instance.storage.keys());
-        TEST_ASSERT_FALSE(instance.storage.set("e", "f"));
+        TEST_ASSERT_EQUAL(2, instance.kvs.count());
+        TEST_ASSERT_FALSE(instance.kvs.set("e", "f"));
 
-        TEST_ASSERT(instance.storage.del("a"));
+        TEST_ASSERT(instance.kvs.del("a"));
 
-        TEST_ASSERT_EQUAL(1, instance.storage.keys());
-        TEST_ASSERT(instance.storage.set("e", "f"));
+        TEST_ASSERT_EQUAL(1, instance.kvs.count());
+        TEST_ASSERT(instance.kvs.set("e", "f"));
 
-        TEST_ASSERT_EQUAL(2, instance.storage.keys());
+        TEST_ASSERT_EQUAL(2, instance.kvs.count());
 
         check_kv(instance, "e", "f");
         check_kv(instance, "c", "d");
@@ -238,13 +238,13 @@ void test_small_gaps() {
     // ensure we can intemix empty and non-empty values
     TestStorageHandler instance;
 
-    TEST_ASSERT(instance.storage.set("key", "value"));
-    TEST_ASSERT(instance.storage.set("empty", ""));
-    TEST_ASSERT(instance.storage.set("empty_again", ""));
-    TEST_ASSERT(instance.storage.set("finally", "avalue"));
+    TEST_ASSERT(instance.kvs.set("key", "value"));
+    TEST_ASSERT(instance.kvs.set("empty", ""));
+    TEST_ASSERT(instance.kvs.set("empty_again", ""));
+    TEST_ASSERT(instance.kvs.set("finally", "avalue"));
 
     auto check_empty = [&instance](const String& key) {
-        auto result = instance.storage.get(key);
+        auto result = instance.kvs.get(key);
         TEST_ASSERT(static_cast<bool>(result));
         TEST_ASSERT_FALSE(result.value.length());
     };
@@ -255,7 +255,7 @@ void test_small_gaps() {
     check_empty("empty");
 
     auto check_value = [&instance](const String& key, const String& value) {
-        auto result = instance.storage.get(key);
+        auto result = instance.kvs.get(key);
         TEST_ASSERT(static_cast<bool>(result));
         TEST_ASSERT(result.value.length());
         TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
@@ -285,16 +285,16 @@ void test_remove_randomized() {
     // - remove keys based on the order provided by next_permutation()
     size_t index = 0;
     do {
-        TEST_ASSERT(0 == instance.storage.keys());
+        TEST_ASSERT(0 == instance.kvs.count());
         for (auto& kv : kvs) {
-            TEST_ASSERT(instance.storage.set(kv.first, kv.second));
+            TEST_ASSERT(instance.kvs.set(kv.first, kv.second));
         }
 
         for (auto index : indexes) {
             auto key = kvs[index].first;
-            TEST_ASSERT(static_cast<bool>(instance.storage.get(key)));
-            TEST_ASSERT(instance.storage.del(key));
-            TEST_ASSERT_FALSE(static_cast<bool>(instance.storage.get(key)));
+            TEST_ASSERT(static_cast<bool>(instance.kvs.get(key)));
+            TEST_ASSERT(instance.kvs.del(key));
+            TEST_ASSERT_FALSE(static_cast<bool>(instance.kvs.get(key)));
         }
 
         index++;
@@ -318,12 +318,12 @@ void test_basic() {
     auto kvs = generator.make(KeysNumber);
 
     for (auto& kv : kvs) {
-        instance.storage.set(kv.first, kv.second);
+        instance.kvs.set(kv.first, kv.second);
     }
 
     // and we can retrieve keys back
     for (auto& kv : kvs) {
-        auto result = instance.storage.get(kv.first);
+        auto result = instance.kvs.get(kv.first);
         TEST_ASSERT(static_cast<bool>(result));
         TEST_ASSERT_EQUAL_STRING(kv.second.c_str(), result.value.c_str());
     }

@@ -266,9 +266,8 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     #endif
 
     // Write the keys line by line (not sorted)
-    unsigned long count = settingsKeyCount();
-    for (unsigned int i=0; i<count; i++) {
-        String key = settingsKeyName(i);
+    auto keys = settingsKeys();
+    for (auto& key : keys) {
         String value = getSetting(key);
         response->printf(",\n\"%s\": \"%s\"", key.c_str(), value.c_str());
     }

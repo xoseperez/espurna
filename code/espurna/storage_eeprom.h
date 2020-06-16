@@ -13,6 +13,15 @@ EEPROM MODULE
 
 #include "espurna.h"
 
+// Note: backwards compatibility requires us to reserve these much bytes at the start.
+//       main reason right now is EEPROM_Rotate crc bytes
+constexpr size_t EepromReservedSize = 14;
+
+// "The library uses 3 bytes to track last valid sector, so there must be at least 3"
+// Reserve addresses 11, 12 and 13 for EEPROM_Rotate
+constexpr int EepromRotateOffset = 11;
+constexpr size_t EepromRotateReservedSize = 3;
+
 extern EEPROM_Rotate EEPROMr;
 
 void eepromSectorsDebug();

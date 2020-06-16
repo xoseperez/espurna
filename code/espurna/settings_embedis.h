@@ -17,8 +17,6 @@ Reimplementation of the Embedis storage format:
 #include <vector>
 #include <memory>
 
-#include "libs/TypeChecks.h"
-
 namespace settings {
 namespace embedis {
 
@@ -31,30 +29,33 @@ struct ValueResult {
     String value;
 };
 
-class RawStorage {
+class KeyValueStore {
 
     public:
 
-    // IO source, functional redirects for raw byte storage.
+    // IO raw storage
     // TODO: provide actual benchmark comparison with 'lambda'-list-as-vtable (old Embedis style)
     // TODO: consider overrides for bulk operations like move (see ::del method)
     // TODO: implementation without virtual calls would be nice...
     //       we need to move things into a header (all the things, if we want to keep nested classes readable)
-    struct SourceBase {
+    struct RawStorageBase {
         virtual void write(size_t index, uint8_t value) = 0;
         virtual uint8_t read(size_t index) = 0;
-        virtual size_t size() = 0;
+        virtual void commit() = 0;
     };
 
-    RawStorage(SourceBase& source) :
-        _source(source),
-        _cursor(source)
+    KeyValueStore(RawStorageBase& storage, uint16_t begin, uint16_t end) :
+        _storage(storage),
+        _cursor(storage, begin, end)
     {}
 
     // Try to find the matching key. Datastructure that we use does not specify
     // any value 'type' inside of it. We expect 'key' to be the first non-empty string,
     // 'value' can be empty.
     ValueResult get(const String& key);
+
+    // Similar to the above, but only returns the 'result' boolean
+    ValueResult has(const String& key);
 
     // set or update key with value contents. ensure 'key' isn't empty, 'value' can be empty
     bool set(const String& key, const String& value);
@@ -63,10 +64,18 @@ class RawStorage {
     bool del(const String& key);
 
     // Simply count key-value pairs that we could parse
-    size_t keys();
+    size_t count();
+
+    // Return current keys set
+    std::vector<String> keys();
 
     // Internal storage info, to allow us to know the kv size requirements
     size_t estimate(const String& key, const String& value);
+
+    // How much bytes can be used
+    size_t size();
+
+    // size() - space taken by the kvs
     size_t available();
 
     protected:
@@ -84,23 +93,27 @@ class RawStorage {
 
     struct Cursor {
 
-        Cursor(SourceBase& source, uint16_t position_, uint16_t begin_, uint16_t end_) :
+        Cursor(RawStorageBase& storage, uint16_t position_, uint16_t begin_, uint16_t end_) :
             position(position_),
             begin(begin_),
             end(end_),
-            _source(source)
+            _storage(storage)
         {}
 
-        Cursor(SourceBase& source, uint16_t begin_, uint16_t end_) :
-            Cursor(source, 0, begin_, end_)
+        Cursor(RawStorageBase& storage, uint16_t begin_, uint16_t end_) :
+            Cursor(storage, 0, begin_, end_)
         {}
 
-        explicit Cursor(SourceBase& source) :
-            Cursor(source, 0, 0, source.size())
+        explicit Cursor(RawStorageBase& storage) :
+            Cursor(storage, 0, 0, 0)
         {}
 
-        static Cursor fromEnd(SourceBase& source, uint16_t begin, uint16_t end) {
-            return Cursor(source, end - begin, begin, end);
+        static Cursor merge(RawStorageBase& storage, const Cursor& key, const Cursor& value) {
+            return Cursor(storage, key.begin, value.end);
+        }
+
+        static Cursor fromEnd(RawStorageBase& storage, uint16_t begin, uint16_t end) {
+            return Cursor(storage, end - begin, begin, end);
         }
 
         Cursor() = delete;
@@ -112,11 +125,11 @@ class RawStorage {
         }
 
         uint8_t read() {
-            return _source.read(begin + position);
+            return _storage.read(begin + position);
         }
 
         void write(uint8_t value) {
-            _source.write(begin + position, value);
+            _storage.write(begin + position, value);
         }
 
         void resetBeginning() {
@@ -140,7 +153,7 @@ class RawStorage {
         }
 
         uint8_t operator[](size_t position_) const {
-            return _source.read(begin + position_);
+            return _storage.read(begin + position_);
         }
 
         bool operator ==(const Cursor& other) {
@@ -179,7 +192,7 @@ class RawStorage {
 
         private:
 
-        SourceBase& _source;
+        RawStorageBase& _storage;
 
     };
 
@@ -219,9 +232,12 @@ class RawStorage {
     struct KeyValueResult;
 
     KeyValueResult _read_kv();
+
+    ValueResult _get(const String& key, bool read_value);
+        
     uint16_t _cursor_reset_end();
 
-    SourceBase& _source;
+    RawStorageBase& _storage;
     Cursor _cursor;
     State _state { State::Begin };
 

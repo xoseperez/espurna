@@ -135,7 +135,7 @@ void eepromSetup() {
         }
     #endif
 
-    EEPROMr.offset(EEPROM_ROTATE_DATA);
+    EEPROMr.offset(EepromRotateOffset);
     EEPROMr.begin(EEPROM_SIZE);
 
     #if TERMINAL_SUPPORT

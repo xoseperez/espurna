@@ -20,16 +20,48 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 BrokerBind(ConfigBroker);
 
 // -----------------------------------------------------------------------------
-// (HACK) Embedis storage format, reverse engineered
-// -----------------------------------------------------------------------------
 
-unsigned long settingsSize() {
-    unsigned pos = SPI_FLASH_SEC_SIZE - 1;
-    while (size_t len = EEPROMr.read(pos)) {
-        if (0xFF == len) break;
-        pos = pos - len - 2;
+namespace settings {
+namespace embedis {
+
+struct EepromStorage : public KeyValueStore::RawStorageBase {
+
+    uint8_t read(size_t pos) {
+        return EEPROMr.read(pos);
     }
-    return SPI_FLASH_SEC_SIZE - pos + EEPROM_DATA_END;
+
+    void write(size_t pos, uint8_t value) {
+        EEPROMr.write(pos, value);
+    }
+
+    void commit() {
+#if SETTINGS_AUTOSAVE
+        eepromCommit();
+#endif
+    }
+
+};
+
+EepromStorage eeprom_storage;
+
+} // namespace embedis
+
+// Depending on features enabled, we may end up with different left boundary
+// Settings are written right-to-left, so we only have issues when there are a lot of key-values
+embedis::KeyValueStore kv_store(
+    embedis::eeprom_storage,
+#if DEBUG_SUPPORT
+    EepromReservedSize + CrashReservedSize,
+#else
+    EepromReservedSize,
+#endif
+    SPI_FLASH_SEC_SIZE
+);
+
+} // namespace settings
+
+size_t settingsSize() {
+    return settings::kv_store.size() - settings::kv_store.available();
 }
 
 // --------------------------------------------------------------------------
@@ -119,44 +151,6 @@ unsigned char convert(const String& value) {
 
 // -----------------------------------------------------------------------------
 
-size_t settingsKeyCount() {
-    unsigned count = 0;
-    unsigned pos = SPI_FLASH_SEC_SIZE - 1;
-    while (size_t len = EEPROMr.read(pos)) {
-        if (0xFF == len) break;
-        pos = pos - len - 2;
-        len = EEPROMr.read(pos);
-        pos = pos - len - 2;
-        count ++;
-    }
-    return count;
-}
-
-String settingsKeyName(unsigned int index) {
-
-    String s;
-
-    unsigned count = 0;
-    unsigned pos = SPI_FLASH_SEC_SIZE - 1;
-    while (size_t len = EEPROMr.read(pos)) {
-        if (0xFF == len) break;
-        pos = pos - len - 2;
-        if (count == index) {
-            s.reserve(len);
-            for (unsigned char i = 0 ; i < len; i++) {
-                s += (char) EEPROMr.read(pos + i + 1);
-            }
-            break;
-        }
-        count++;
-        len = EEPROMr.read(pos);
-        pos = pos - len - 2;
-    }
-
-    return s;
-
-}
-
 /*
 struct SettingsKeys {
 
@@ -216,33 +210,12 @@ struct SettingsKeys {
 };
 */
 
+// Note: we prefer things sorted via this function, not kv_store.keys() directly
 std::vector<String> settingsKeys() {
-
-    // Get sorted list of keys
-    std::vector<String> keys;
-
-    //unsigned int size = settingsKeyCount();
-    auto size = settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-
-        //String key = settingsKeyName(i);
-        String key = settingsKeyName(i);
-        bool inserted = false;
-        for (unsigned char j=0; j<keys.size(); j++) {
-
-            // Check if we have to insert it before the current element
-            if (keys[j].compareTo(key) > 0) {
-                keys.insert(keys.begin() + j, key);
-                inserted = true;
-                break;
-            }
-
-        }
-
-        // If we could not insert it, just push it at the end
-        if (!inserted) keys.push_back(key);
-
-    }
+    auto keys = settings::kv_store.keys();
+    std::sort(keys.begin(), keys.end(), [](const String& rhs, const String& lhs) -> bool {
+        return lhs.compareTo(rhs) > 0;
+    });
 
     return keys;
 }
@@ -305,24 +278,13 @@ void moveSettings(const String& from, const String& to) {
     }
 }
 
-#if 0
-template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
-R getSetting(const settings_key_t& key, R defaultValue) {
-    String value;
-    if (!Embedis::get(key.toString(), value)) {
-        return defaultValue;
-    }
-    return Rfunc(value);
-}
-#endif
-
 template<>
 String getSetting(const settings_key_t& key, String defaultValue) {
-    String value;
-    if (!Embedis::get(key.toString(), value)) {
-        value = defaultValue;
+    auto result = settings::kv_store.get(key.toString());
+    if (!result) {
+        return defaultValue;
     }
-    return value;
+    return result.value;
 }
 
 template
@@ -367,16 +329,15 @@ String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultV
 
 template<>
 bool setSetting(const settings_key_t& key, const String& value) {
-    return Embedis::set(key.toString(), value);
+    return settings::kv_store.set(key.toString(), value);
 }
 
 bool delSetting(const settings_key_t& key) {
-    return Embedis::del(key.toString());
+    return settings::kv_store.del(key.toString());
 }
 
 bool hasSetting(const settings_key_t& key) {
-    String value;
-    return Embedis::get(key.toString(), value);
+    return settings::kv_store.has(key.toString());
 }
 
 void saveSettings() {
@@ -396,13 +357,6 @@ void resetSettings() {
 // API
 // -----------------------------------------------------------------------------
 
-size_t settingsMaxSize() {
-    size_t size = EEPROM_SIZE;
-    if (size > SPI_FLASH_SEC_SIZE) size = SPI_FLASH_SEC_SIZE;
-    size = (size + 3) & (~3);
-    return size;
-}
-
 bool settingsRestoreJson(JsonObject& data) {
 
     // Check this is an ESPurna configuration file (must have "app":"ESPURNA")
@@ -415,7 +369,7 @@ bool settingsRestoreJson(JsonObject& data) {
     // Clear settings
     bool is_backup = data["backup"];
     if (is_backup) {
-        for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
+        for (unsigned int i = EepromReservedSize; i < SPI_FLASH_SEC_SIZE; i++) {
             EEPROMr.write(i, 0xFF);
         }
     }
@@ -483,17 +437,6 @@ void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t 
 
 void settingsSetup() {
 
-    Embedis::dictionary( F("EEPROM"),
-        SPI_FLASH_SEC_SIZE,
-        [](size_t pos) -> char { return EEPROMr.read(pos); },
-        [](size_t pos, char value) { EEPROMr.write(pos, value); },
-        #if SETTINGS_AUTOSAVE
-            []() { eepromCommit(); }
-        #else
-            []() {}
-        #endif
-    );
-
     terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext& ctx) {
         // TODO: enough of a buffer?
         DynamicJsonBuffer jsonBuffer(1024);
@@ -530,7 +473,7 @@ void settingsSetup() {
 
         int result = 0;
         for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
-            result += Embedis::del(*it);
+            result += settings::kv_store.del(*it);
         }
 
         if (result) {
@@ -546,7 +489,7 @@ void settingsSetup() {
             return;
         }
 
-        if (Embedis::set(ctx.argv[1], ctx.argv[2])) {
+        if (settings::kv_store.set(ctx.argv[1], ctx.argv[2])) {
             terminalOK(ctx);
             return;
         }
@@ -562,8 +505,8 @@ void settingsSetup() {
 
         for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
             const String& key = *it;
-            String value;
-            if (!Embedis::get(key, value)) {
+            auto result = settings::kv_store.get(key);
+            if (!result) {
                 const auto maybeDefault = settingsQueryDefaults(key);
                 if (maybeDefault.length()) {
                     ctx.output.printf("> %s => %s (default)\n", key.c_str(), maybeDefault.c_str());
@@ -573,7 +516,7 @@ void settingsSetup() {
                 continue;
             }
 
-            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), value.c_str());
+            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), result.value.c_str());
         }
 
         terminalOK(ctx);

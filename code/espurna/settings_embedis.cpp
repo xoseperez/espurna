@@ -14,15 +14,15 @@ Reimplementation of the Embedis storage format:
 namespace settings {
 namespace embedis {
 
-struct RawStorage::ReadResult {
+struct KeyValueStore::ReadResult {
     ReadResult(const Cursor& cursor_) :
         cursor(cursor_),
         result(false),
         length(0)
     {}
 
-    ReadResult(SourceBase& source) :
-        cursor(source),
+    ReadResult(RawStorageBase& storage) :
+        cursor(storage),
         result(false),
         length(0)
     {}
@@ -55,7 +55,7 @@ struct RawStorage::ReadResult {
 
 };
 
-struct RawStorage::KeyValueResult {
+struct KeyValueStore::KeyValueResult {
     operator bool() {
         return (key) && (value) && (key.length > 0);
     }
@@ -70,16 +70,16 @@ struct RawStorage::KeyValueResult {
         value(std::forward<T>(value_))
     {}
 
-    KeyValueResult(SourceBase& source) :
-        key(source),
-        value(source)
+    KeyValueResult(RawStorageBase& storage) :
+        key(storage),
+        value(storage)
     {}
 
     ReadResult key;
     ReadResult value;
 };
 
-ValueResult RawStorage::get(const String& key) {
+ValueResult KeyValueStore::_get(const String& key, bool read_value) {
     ValueResult out;
     auto len = key.length();
 
@@ -99,7 +99,9 @@ ValueResult RawStorage::get(const String& key) {
 
         auto key_result = kv.key.read();
         if (key_result == key) {
-            out.value = kv.value.read();
+            if (read_value) {
+                out.value = kv.value.read();
+            }
             out.result = true;
             break;
         }
@@ -108,8 +110,32 @@ ValueResult RawStorage::get(const String& key) {
     return out;
 }
 
-bool RawStorage::set(const String& key, const String& value) {
-    bool result = false;
+ValueResult KeyValueStore::get(const String& key) {
+    return _get(key, true);
+}
+
+ValueResult KeyValueStore::has(const String& key) {
+    return _get(key, false);
+}
+
+std::vector<String> KeyValueStore::keys() {
+    std::vector<String> out;
+    out.reserve(count());
+
+    _cursor_reset_end();
+
+    do {
+        auto kv = _read_kv();
+        if (!kv) {
+            break;
+        }
+        out.push_back(kv.key.read());
+    } while (_state != State::End);
+
+    return out;
+}
+
+bool KeyValueStore::set(const String& key, const String& value) {
 
     // ref. 'estimate()' implementation in regards to the storage calculation
     auto need = estimate(key, value);
@@ -122,7 +148,7 @@ bool RawStorage::set(const String& key, const String& value) {
     auto key_len = key.length();
     auto value_len = value.length();
 
-    Cursor to_erase(_source);
+    Cursor to_erase(_storage);
     bool need_erase = false;
 
     do {
@@ -155,7 +181,7 @@ bool RawStorage::set(const String& key, const String& value) {
 
     // we should only insert when possition is still within possible size
     if (start_pos && (start_pos >= need)) {
-        auto writer = Cursor::fromEnd(_source, start_pos - need, start_pos);
+        auto writer = Cursor::fromEnd(_storage, start_pos - need, start_pos);
 
         // put the length of the value as 2 bytes and then write the data
         (--writer).write(key_len & 0xff);
@@ -186,13 +212,15 @@ bool RawStorage::set(const String& key, const String& value) {
             }
         }
 
+        _storage.commit();
+
         return true;
     }
 
     return false;
 }
 
-bool RawStorage::del(const String& key) {
+bool KeyValueStore::del(const String& key) {
     size_t key_len = key.length();
     if (!key_len) {
         return false;
@@ -202,7 +230,7 @@ bool RawStorage::del(const String& key) {
     uint16_t offset = 0;
 
     size_t start_pos = _cursor_reset_end() - 1;
-    auto to_erase = Cursor::fromEnd(_source, _source.size(), _source.size());
+    auto to_erase = Cursor::fromEnd(_storage, _cursor.begin, _cursor.end);
 
     do {
         auto kv = _read_kv();
@@ -229,7 +257,8 @@ bool RawStorage::del(const String& key) {
     return true;
 }
 
-size_t RawStorage::keys() {
+// Number of available keys
+size_t KeyValueStore::count() {
     size_t result = 0;
 
     _cursor_reset_end();
@@ -249,7 +278,7 @@ size_t RawStorage::keys() {
 // - 2 bytes gap at the end (will be re-used by the next value length byte)
 // - 4 bytes to store length of 2 values (stored as big-endian)
 // - N bytes of values themselves
-size_t RawStorage::estimate(const String& key, const String& value) {
+size_t KeyValueStore::estimate(const String& key, const String& value) {
     if (!key.length()) {
         return 0;
     }
@@ -262,35 +291,40 @@ size_t RawStorage::estimate(const String& key, const String& value) {
 
 // Do exactly the same thing as 'keys' does, but return the amount
 // of bytes to the left of the last kv
-size_t RawStorage::available() {
+size_t KeyValueStore::available() {
     _cursor_reset_end();
 
-    size_t result = _cursor.end;
+    size_t result = _cursor.size();
     do {
         auto kv = _read_kv();
         if (!kv) {
             break;
         }
-        result = kv.value.cursor.begin;
+        result -= kv.key.cursor.size();
+        result -= kv.value.cursor.size();
     } while (_state != State::End);
 
     return result;
 }
 
+size_t KeyValueStore::size() {
+    return _cursor.size();
+}
+
 // Place cursor at the `end` and resets the parser to expect length byte
-uint16_t RawStorage::_cursor_reset_end() {
+uint16_t KeyValueStore::_cursor_reset_end() {
     _cursor.resetEnd();
     _state = State::Begin;
     return _cursor.end;
 }
 
-
-// implementation quirk is that `Cursor::operator=` won't work because of the `SourceBase&` member
+// implementation quirk is that `Cursor::operator=` won't work because of the `RawStorageBase&` member
 // right now, just construct in place and assume that compiler will inline things
-RawStorage::KeyValueResult RawStorage::_read_kv() {
+// on one hand, we can implement it. but, we can't specifically 
+KeyValueStore::KeyValueResult KeyValueStore::_read_kv() {
     auto key = _raw_read();
     if (!key || !key.length) {
-        return {_source};
+        return {_storage};
     }
 
     auto value = _raw_read();
@@ -298,11 +332,11 @@ RawStorage::KeyValueResult RawStorage::_read_kv() {
     return {key, value};
 };
 
-void RawStorage::_raw_erase(size_t start_pos, Cursor& to_erase) {
+void KeyValueStore::_raw_erase(size_t start_pos, Cursor& to_erase) {
     // we either end up to the left or to the right of the boundary
     if (start_pos < to_erase.begin) {
-        auto from = Cursor::fromEnd(_source, start_pos, to_erase.begin);
-        auto to = Cursor::fromEnd(_source, start_pos + to_erase.size(), to_erase.end);
+        auto from = Cursor::fromEnd(_storage, start_pos, to_erase.begin);
+        auto to = Cursor::fromEnd(_storage, start_pos + to_erase.size(), to_erase.end);
 
         while (--from && --to) {
             to.write(from.read());
@@ -314,11 +348,13 @@ void RawStorage::_raw_erase(size_t start_pos, Cursor& to_erase) {
         (--to_erase).write(0);
         (--to_erase).write(0);
     }
+
+    _storage.commit();
 }
 
-RawStorage::ReadResult RawStorage::_raw_read() {
+KeyValueStore::ReadResult KeyValueStore::_raw_read() {
     uint16_t len = 0;
-    ReadResult out(_source);
+    ReadResult out(_storage);
 
     do {
         // storage is written right-to-left, cursor is always decreasing
@@ -384,8 +420,8 @@ RawStorage::ReadResult RawStorage::_raw_read() {
             out.result = true;
             out.length = (_state == State::EmptyValue) ? 0 : len;
             out.cursor.reset(
-                _cursor.position,
-                _cursor.position + len + 2
+                _cursor.begin + _cursor.position,
+                _cursor.begin + _cursor.position + len + 2
             );
 
             _state = State::Begin;
