@@ -24,6 +24,7 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "storage_eeprom.h"
 
 bool _save_crash_enabled = true;
+bool _save_crash_ready = false;
 
 size_t crashReservedSize() {
     if (!_save_crash_enabled) return 0;
@@ -39,7 +40,7 @@ size_t crashReservedSize() {
 extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
 
     // Small safeguard to protect from calling crash handler very early on boot.
-    if (!EEPROMr.length()) {
+    if (!eepromReady()) {
         return;
     }
 

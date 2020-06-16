@@ -24,6 +24,8 @@ constexpr size_t EepromRotateReservedSize = 3;
 
 extern EEPROM_Rotate EEPROMr;
 
+bool eepromReady();
+
 void eepromSectorsDebug();
 void eepromRotate(bool value);
 uint32_t eepromCurrent();

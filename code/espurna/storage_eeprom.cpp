@@ -11,6 +11,11 @@ bool _eeprom_commit = false;
 
 uint32_t _eeprom_commit_count = 0;
 bool _eeprom_last_commit_result = false;
+bool _eeprom_ready = false;
+
+bool eepromReady() {
+    return _eeprom_ready;
+}
 
 void eepromRotate(bool value) {
     // Enable/disable EEPROM rotation only if we are using more sectors than the
@@ -141,5 +146,7 @@ void eepromSetup() {
     #endif
 
     espurnaRegisterLoop(eepromLoop);
+
+    _eeprom_ready = true;
 
 }
