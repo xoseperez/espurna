@@ -36,7 +36,7 @@ struct ValueResult {
 // - 2 bytes gap at the end (will be re-used by the next value length byte)
 // - 4 bytes to store length of 2 values (stored as big-endian)
 // - N bytes of values themselves
-size_t estimate(const String& key, const String& value) {
+inline size_t estimate(const String& key, const String& value) {
     if (!key.length()) {
         return 0;
     }
