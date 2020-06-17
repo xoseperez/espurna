@@ -391,11 +391,14 @@ class KeyValueStore {
 
             // we also need to pad the space *after* the value
             // when we still have some space left
-            if (writer.position > 1) {
+            if ((start_pos - need) >= 2) {
+                _state = State::Begin;
+                _cursor.position = writer.begin;
                 auto next_kv = _read_kv();
                 if (!next_kv) {
-                    (--writer).write(0);
-                    (--writer).write(0);
+                    _cursor.position = writer.begin;
+                    (--_cursor).write(0);
+                    (--_cursor).write(0);
                 }
             }
 
