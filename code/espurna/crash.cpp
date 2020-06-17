@@ -43,6 +43,11 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
         return;
     }
 
+    // If we crash more than once in a row, don't store (similar) crash log every time
+    if (systemStabilityCounter() > 1) {
+        return;
+    }
+
     // Do not record crash data when doing a normal reboot or when crash trace was disabled
     if (checkNeedsReset()) {
         return;
