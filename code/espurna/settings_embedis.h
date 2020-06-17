@@ -31,6 +31,22 @@ struct ValueResult {
     String value;
 };
 
+// We can't save empty keys but can save empty values as 0x00 0x00 0x00 0x00
+// total sum is:
+// - 2 bytes gap at the end (will be re-used by the next value length byte)
+// - 4 bytes to store length of 2 values (stored as big-endian)
+// - N bytes of values themselves
+size_t estimate(const String& key, const String& value) {
+    if (!key.length()) {
+        return 0;
+    }
+
+    const auto key_len = key.length();
+    const auto value_len = value.length();
+
+    return (4 + key_len + ((value_len > 0) ? value_len : 2));
+}
+
 // Note:  KeyValueStore is templated to avoid having to provide RawStorageBase via virtual inheritance.
 
 template <typename RawStorageBase>
@@ -330,7 +346,7 @@ class KeyValueStore {
 
             start_pos = kv.value.cursor.begin;
 
-            // in the very special case we match the existing key, we either
+            // in the very special case we can match the existing key
             if ((kv.key.length == key_len) && (kv.key.read() == key)) {
                 if (kv.value.length == value.length()) {
                     if (kv.value.read() == value) {
@@ -339,9 +355,9 @@ class KeyValueStore {
                     start_pos = kv.key.cursor.end;
                     break;
                 }
+                // but we may need to write over it, when contents are different
                 to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
                 need_erase = true;
-                // but we need remove it from the storage when changing contents
             }
         } while (_state != State::End);
 
@@ -443,22 +459,6 @@ class KeyValueStore {
         } while (_state != State::End);
 
         return result;
-    }
-
-    // We can't save empty keys but can save empty values as 0x00 0x00 0x00 0x00
-    // total sum is:
-    // - 2 bytes gap at the end (will be re-used by the next value length byte)
-    // - 4 bytes to store length of 2 values (stored as big-endian)
-    // - N bytes of values themselves
-    size_t estimate(const String& key, const String& value) {
-        if (!key.length()) {
-            return 0;
-        }
-
-        const auto key_len = key.length();
-        const auto value_len = value.length();
-
-        return (4 + key_len + ((value_len > 0) ? value_len : 2));
     }
 
     // Do exactly the same thing as 'keys' does, but return the amount

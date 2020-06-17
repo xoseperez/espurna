@@ -145,9 +145,10 @@ void test_sizes() {
         StorageHandler<16> instance;
         TEST_ASSERT_EQUAL(0, instance.kvs.count());
         TEST_ASSERT_EQUAL(16, instance.kvs.available());
-        TEST_ASSERT_EQUAL(16, instance.kvs.estimate("123456", "123456"));
-        TEST_ASSERT_EQUAL(10, instance.kvs.estimate("123", "123"));
-        TEST_ASSERT_EQUAL(9, instance.kvs.estimate("345", ""));
+        TEST_ASSERT_EQUAL(0, settings::embedis::estimate("", "123456"));
+        TEST_ASSERT_EQUAL(16, settings::embedis::estimate("123456", "123456"));
+        TEST_ASSERT_EQUAL(10, settings::embedis::estimate("123", "123"));
+        TEST_ASSERT_EQUAL(9, settings::embedis::estimate("345", ""));
     }
 
 }
@@ -358,10 +359,21 @@ void test_storage() {
     array_type blob;
     kvs_type kvs(storage_type(blob), 0, blob.size());
 
+    // empty keys are invalid
+    TEST_ASSERT_FALSE(kvs.set("", "value1"));
+    TEST_ASSERT_FALSE(kvs.del(""));
+
+    // ...and both keys are not yet set
+    TEST_ASSERT_FALSE(kvs.del("key1"));
+    TEST_ASSERT_FALSE(kvs.del("key2"));
+
+    // some different ways to set keys
+    TEST_ASSERT(kvs.set("key1", "value0"));
     TEST_ASSERT(kvs.set("key1", "value1"));
+    TEST_ASSERT(kvs.set("key2", "value_old"));
     TEST_ASSERT(kvs.set("key2", "value2"));
 
-    auto kvsize = kvs.estimate("key1", "value1");
+    auto kvsize = settings::embedis::estimate("key1", "value1");
     TEST_ASSERT_EQUAL((Size - (2 * kvsize)), kvs.available());
 
     // checking keys one by one
@@ -399,5 +411,5 @@ int main(int argc, char** argv) {
     RUN_TEST(test_perseverance);
     RUN_TEST(test_longkey);
     RUN_TEST(test_sizes);
-    UNITY_END();
+    return UNITY_END();
 }
