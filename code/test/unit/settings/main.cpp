@@ -421,7 +421,7 @@ void test_keys_iterator() {
 
     // ensure we get the same order of keys when iterating via foreach
     std::vector<String> keys;
-    instance.kvs.foreach([&keys](decltype(storage)::kvs_type::KeyValueResult&& kv) {
+    instance.kvs.foreach([&keys](decltype(instance)::kvs_type::KeyValueResult&& kv) {
         keys.push_back(kv.key.read());
     });
 
