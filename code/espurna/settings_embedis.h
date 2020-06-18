@@ -343,13 +343,13 @@ class KeyValueStore {
             return false;
         }
 
-        auto start_pos = _cursor_reset_end();
-
         auto key_len = key.length();
         auto value_len = value.length();
 
         Cursor to_erase(_storage);
         bool need_erase = false;
+
+        auto start_pos = _cursor_reset_end();
 
         do {
             auto kv = _read_kv();
