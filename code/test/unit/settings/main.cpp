@@ -401,9 +401,36 @@ void test_storage() {
     }
 }
 
+void test_keys_iterator() {
+
+    constexpr size_t Size = 32;
+
+    using array_type = std::array<uint8_t, Size>;
+    using storage_type = settings::embedis::StaticArrayStorage<array_type>;
+    using kvs_type = settings::embedis::KeyValueStore<storage_type>;
+
+    array_type blob;
+    std::fill(blob.begin(), blob.end(), 0xff);
+    kvs_type kvs(storage_type(blob), 0, blob.size());
+
+    TEST_ASSERT_EQUAL(Size, kvs.available());
+    TEST_ASSERT(kvs.size());
+    TEST_ASSERT(kvs.set("key", "value"));
+    TEST_ASSERT(kvs.set("another", "thing"));
+
+    // ensure we get the same order of keys when iterating via foreach
+    std::vector<String> keys;
+    kvs.foreach([&keys](kvs_type::KeyValueResult&& kv) {
+        keys.push_back(kv.key.read());
+    });
+
+    TEST_ASSERT(kvs.keys() == keys);
+}
+
 int main(int argc, char** argv) {
     UNITY_BEGIN();
     RUN_TEST(test_storage);
+    RUN_TEST(test_keys_iterator);
     RUN_TEST(test_basic);
     RUN_TEST(test_remove_randomized);
     RUN_TEST(test_small_gaps);

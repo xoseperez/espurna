@@ -211,20 +211,25 @@ class KeyValueStore {
 
     };
 
+    public:
+
     // Store value location in a more reasonable forward-iterator-style manner
     // Allows us to skip string creation when just searching for specific values
     // XXX: be cautious that cursor positions **will** break when underlying storage changes
     struct ReadResult {
+
+        friend class KeyValueStore<RawStorageBase>;
+
         ReadResult(const Cursor& cursor_) :
+            length(0),
             cursor(cursor_),
-            result(false),
-            length(0)
+            result(false)
         {}
 
         ReadResult(RawStorageBase& storage) :
+            length(0),
             cursor(storage),
-            result(false),
-            length(0)
+            result(false)
         {}
 
         operator bool() {
@@ -249,21 +254,23 @@ class KeyValueStore {
             return out;
         }
 
+        uint16_t length;
+
+        private:
+
         Cursor cursor;
         bool result;
-        uint16_t length;
 
     };
 
     // Internal storage consists of sequences of <byte-range><length>
-    // We going be using this pattern all the time here, because we need 2 consecutive **valid** ranges
     struct KeyValueResult {
         operator bool() {
             return (key) && (value) && (key.length > 0);
         }
 
         bool operator !() {
-            return !(bool(*this));
+            return !(static_cast<bool>(*this));
         }
 
         template <typename T = ReadResult>
@@ -280,8 +287,6 @@ class KeyValueStore {
         ReadResult key;
         ReadResult value;
     };
-
-    public:
 
     // one and only possible constructor, simply move the class object into the
     // member variable to avoid forcing the user of the API to keep 2 objects alive.
@@ -302,21 +307,29 @@ class KeyValueStore {
         return static_cast<bool>(_get(key, false));
     }
 
-    // read every key into a vector
-    // TODO: also provide something like foreach and pass key string into a callable?
-    std::vector<String> keys() {
-        std::vector<String> out;
-        out.reserve(count());
-
+    // We going be using this pattern all the time here, because we need 2 consecutive **valid** ranges
+    // TODO: expose _read_kv() and _cursor_reset_end() so we can have 'break' here?
+    //       perhaps as a wrapper object, allow something like next() and seekBegin()
+    template <typename CallbackType>
+    void foreach(CallbackType callback) {
         _cursor_reset_end();
-
         do {
             auto kv = _read_kv();
             if (!kv) {
                 break;
             }
-            out.push_back(kv.key.read());
+            callback(std::move(kv));
         } while (_state != State::End);
+    }
+
+    // read every key into a vector
+    std::vector<String> keys() {
+        std::vector<String> out;
+        out.reserve(count());
+
+        foreach([&](KeyValueResult&& kv) {
+            out.push_back(kv.key.read());
+        });
 
         return out;
     }
@@ -359,6 +372,7 @@ class KeyValueStore {
                 to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
                 need_erase = true;
             }
+
         } while (_state != State::End);
 
         if (need_erase) {
@@ -390,15 +404,14 @@ class KeyValueStore {
             }
 
             // we also need to pad the space *after* the value
-            // when we still have some space left
+            // but, only when we still have some space left
             if ((start_pos - need) >= 2) {
-                _state = State::Begin;
-                _cursor.position = writer.begin;
+                _cursor_set_position(writer.begin);
                 auto next_kv = _read_kv();
                 if (!next_kv) {
-                    _cursor.position = writer.begin;
-                    (--_cursor).write(0);
-                    (--_cursor).write(0);
+                    auto padding = Cursor::fromEnd(_storage, writer.begin - 2, writer.begin);
+                    (--padding).write(0);
+                    (--padding).write(0);
                 }
             }
 
@@ -418,26 +431,18 @@ class KeyValueStore {
         }
 
         // Removes key from the storage by overwriting the key with left-most data
-        uint16_t offset = 0;
-
         size_t start_pos = _cursor_reset_end() - 1;
         auto to_erase = Cursor::fromEnd(_storage, _cursor.begin, _cursor.end);
 
-        do {
-            auto kv = _read_kv();
-            if (!kv) {
-                break;
-            }
-
+        // we should only compare strings of equal length.
+        // when matching, record { value ... key } range + 4 bytes for length
+        // continue searching for the leftmost boundary
+        foreach([&](KeyValueResult&& kv) {
             start_pos = kv.value.cursor.begin;
-
-            // we should only compare strings of equal length.
-            // when matching, record { value ... key } range + 4 bytes for length
-            // continue searching for the leftmost boundary
-            if (!offset && (kv.key.length == key_len) && (kv.key.read() == key)) {
+            if (!to_erase && (kv.key.length == key_len) && (kv.key.read() == key)) {
                 to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
             }
-        } while (_state != State::End);
+        });
 
         if (!to_erase) {
             return false;
@@ -451,15 +456,9 @@ class KeyValueStore {
     // Simply count key-value pairs that we could parse
     size_t count() {
         size_t result = 0;
-
-        _cursor_reset_end();
-        do {
-            auto kv = _read_kv();
-            if (!kv) {
-                break;
-            }
-             ++result;
-        } while (_state != State::End);
+        foreach([&result](KeyValueResult&&) {
+            ++result;
+        });
 
         return result;
     }
@@ -467,17 +466,11 @@ class KeyValueStore {
     // Do exactly the same thing as 'keys' does, but return the amount
     // of bytes to the left of the last kv
     size_t available() {
-        _cursor_reset_end();
-
         size_t result = _cursor.size();
-        do {
-            auto kv = _read_kv();
-            if (!kv) {
-                break;
-            }
+        foreach([&result](KeyValueResult&& kv) {
             result -= kv.key.cursor.size();
             result -= kv.value.cursor.size();
-        } while (_state != State::End);
+        });
 
         return result;
     }
@@ -524,12 +517,17 @@ class KeyValueStore {
         return out;
     }
 
-
     // Place cursor at the `end` and resets the parser to expect length byte
     uint16_t _cursor_reset_end() {
         _cursor.resetEnd();
         _state = State::Begin;
         return _cursor.end;
+    }
+
+    uint16_t _cursor_set_position(uint16_t position) {
+        _state = State::Begin;
+        _cursor.position = position;
+        return _cursor.position;
     }
 
     // implementation quirk is that `Cursor::operator=` won't work because of the `RawStorageBase&` member
