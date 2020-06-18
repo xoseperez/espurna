@@ -1,7 +1,11 @@
-#pragma GCC diagnostic warning "-Wall"
-
 #include <unity.h>
 #include <Arduino.h>
+
+#pragma GCC diagnostic warning "-Wall"
+#pragma GCC diagnostic warning "-Wextra"
+#pragma GCC diagnostic warning "-Wstrict-aliasing"
+#pragma GCC diagnostic warning "-Wpointer-arith"
+#pragma GCC diagnostic warning "-Wstrict-overflow=5"
 
 #include <settings_embedis.h>
 
@@ -350,37 +354,40 @@ void test_basic() {
 }
 
 void test_storage() {
+
     constexpr size_t Size = 32;
-
-    using array_type = std::array<uint8_t, Size>;
-    using storage_type = settings::embedis::StaticArrayStorage<array_type>;
-    using kvs_type = settings::embedis::KeyValueStore<storage_type>;
-
-    array_type blob;
-    kvs_type kvs(storage_type(blob), 0, blob.size());
+    StorageHandler<Size> instance;
 
     // empty keys are invalid
-    TEST_ASSERT_FALSE(kvs.set("", "value1"));
-    TEST_ASSERT_FALSE(kvs.del(""));
+    TEST_ASSERT_FALSE(instance.kvs.set("", "value1"));
+    TEST_ASSERT_FALSE(instance.kvs.del(""));
 
     // ...and both keys are not yet set
-    TEST_ASSERT_FALSE(kvs.del("key1"));
-    TEST_ASSERT_FALSE(kvs.del("key2"));
+    TEST_ASSERT_FALSE(instance.kvs.del("key1"));
+    TEST_ASSERT_FALSE(instance.kvs.del("key2"));
 
     // some different ways to set keys
-    TEST_ASSERT(kvs.set("key1", "value0"));
-    TEST_ASSERT(kvs.set("key1", "value1"));
-    TEST_ASSERT(kvs.set("key2", "value_old"));
-    TEST_ASSERT(kvs.set("key2", "value2"));
+    TEST_ASSERT(instance.kvs.set("key1", "value0"));
+    TEST_ASSERT_EQUAL(1, instance.kvs.count());
+    TEST_ASSERT(instance.kvs.set("key1", "value1"));
+    TEST_ASSERT_EQUAL(1, instance.kvs.count());
+
+    TEST_ASSERT(instance.kvs.set("key2", "value_old"));
+    TEST_ASSERT_EQUAL(2, instance.kvs.count());
+    TEST_ASSERT(instance.kvs.set("key2", "value2"));
+    TEST_ASSERT_EQUAL(2, instance.kvs.count());
 
     auto kvsize = settings::embedis::estimate("key1", "value1");
-    TEST_ASSERT_EQUAL((Size - (2 * kvsize)), kvs.available());
+    TEST_ASSERT_EQUAL((Size - (2 * kvsize)), instance.kvs.available());
 
-    // checking keys one by one
+    // checking keys one by one by using a separate kvs object,
+    // working on the same underlying data-store
+    using storage_type = decltype(instance)::storage_type;
+    using kvs_type = decltype(instance)::kvs_type;
 
     // ensure we can operate with storage offsets
     {
-        kvs_type slice(storage_type(blob), (Size - kvsize), Size);
+        kvs_type slice(storage_type(instance.blob), (Size - kvsize), Size);
         TEST_ASSERT_EQUAL(1, slice.count());
         TEST_ASSERT_EQUAL(kvsize, slice.size());
         TEST_ASSERT_EQUAL(0, slice.available());
@@ -391,7 +398,7 @@ void test_storage() {
 
     // ensure that right offset also works
     {
-        kvs_type slice(storage_type(blob), 0, (Size - kvsize));
+        kvs_type slice(storage_type(instance.blob), 0, (Size - kvsize));
         TEST_ASSERT_EQUAL(1, slice.count());
         TEST_ASSERT_EQUAL((Size - kvsize), slice.size());
         TEST_ASSERT_EQUAL((Size - kvsize - kvsize), slice.available());
@@ -399,32 +406,31 @@ void test_storage() {
         TEST_ASSERT(static_cast<bool>(result));
         TEST_ASSERT_EQUAL_STRING("value2", result.value.c_str());
     }
+
 }
 
 void test_keys_iterator() {
 
     constexpr size_t Size = 32;
+    StorageHandler<Size> instance;
 
-    using array_type = std::array<uint8_t, Size>;
-    using storage_type = settings::embedis::StaticArrayStorage<array_type>;
-    using kvs_type = settings::embedis::KeyValueStore<storage_type>;
-
-    array_type blob;
-    std::fill(blob.begin(), blob.end(), 0xff);
-    kvs_type kvs(storage_type(blob), 0, blob.size());
-
-    TEST_ASSERT_EQUAL(Size, kvs.available());
-    TEST_ASSERT(kvs.size());
-    TEST_ASSERT(kvs.set("key", "value"));
-    TEST_ASSERT(kvs.set("another", "thing"));
+    TEST_ASSERT_EQUAL(Size, instance.kvs.available());
+    TEST_ASSERT_EQUAL(Size, instance.kvs.size());
+    TEST_ASSERT(instance.kvs.set("key", "value"));
+    TEST_ASSERT(instance.kvs.set("another", "thing"));
 
     // ensure we get the same order of keys when iterating via foreach
     std::vector<String> keys;
-    kvs.foreach([&keys](kvs_type::KeyValueResult&& kv) {
+    instance.kvs.foreach([&keys](decltype(storage)::kvs_type::KeyValueResult&& kv) {
         keys.push_back(kv.key.read());
     });
 
-    TEST_ASSERT(kvs.keys() == keys);
+    TEST_ASSERT(instance.kvs.keys() == keys);
+    TEST_ASSERT_EQUAL(2, keys.size());
+    TEST_ASSERT_EQUAL(2, instance.kvs.count());
+    TEST_ASSERT_EQUAL_STRING("key", keys[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("another", keys[1].c_str());
+
 }
 
 int main(int argc, char** argv) {
