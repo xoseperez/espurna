@@ -2079,7 +2079,7 @@ void _sensorLoad() {
         sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
 
         uint8_t tx = getSetting("pzemv30TX", PZEM004TV30_SOFTWARE_SERIAL_TX);
-        uint8_t rx = getSetting("pzemv30RX", PZEM004TV30_SOFTWARE_SERIAL_TX);
+        uint8_t rx = getSetting("pzemv30RX", PZEM004TV30_SOFTWARE_SERIAL_RX);
         if ((tx != GPIO_NONE) && (rx != GPIO_NONE)) {
             auto* ptr = new SoftwareSerial(rx, tx);
             sensor->setStream(ptr); // we don't care about lifetime
