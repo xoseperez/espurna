@@ -133,6 +133,8 @@ class BaseSensor {
                     return sensor::Unit::MicrosievertPerHour;
                 case MAGNITUDE_DISTANCE:
                     return sensor::Unit::Meter;
+                case MAGNITUDE_FREQUENCY:
+                    return sensor::Unit::Hertz;
                 default:
                     return sensor::Unit::None;
             }

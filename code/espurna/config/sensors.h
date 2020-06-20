@@ -1005,6 +1005,29 @@
 #endif
 
 //------------------------------------------------------------------------------
+// PZEM004T **V3.0** based power monitor
+// Enable support by passing PZEM004TV30_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PZEM004TV30_SUPPORT
+#define PZEM004TV30_SUPPORT                0
+#endif
+
+#ifndef PZEM004TV30_ADDRESS
+#define PZEM004TV30_ADDRESS                0xF8          // Default: broadcast address. When multiple devices are connected, each one will respond to our requests.
+                                                         // In case we need multiple devices, we need to manually set each one with an unique address.
+                                                         // And in theory, we already can create multiple sensor objects (with a small caveat, we need to make sure to only have 1 SwSerial object)
+#endif
+
+#ifndef PZEM004TV30_SOFTWARE_SERIAL_TX
+#define PZEM004TV30_SOFTWARE_SERIAL_TX     GPIO_NONE     // In case both TX and RX are invalid, use Hardware Serial
+#endif
+
+#ifndef PZEM004TV30_SOFTWARE_SERIAL_RX
+#define PZEM004TV30_SOFTWARE_SERIAL_RX     GPIO_NONE
+#endif
+
+//------------------------------------------------------------------------------
 // SDS011 particulates sensor
 // Enable support by passing SDS011_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1394,7 +1417,8 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
-    HDC1080_SUPPORT \
+    HDC1080_SUPPORT || \
+    PZEM004TV30_SUPPORT \
 )
 #endif
 

@@ -199,6 +199,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "sensors/HDC1080Sensor.h"
 #endif
 
+#if PZEM004TV30_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/PZEM004TV30Sensor.h"
+#endif
+
 //--------------------------------------------------------------------------------
 
 struct sensor_magnitude_t {
@@ -564,6 +569,8 @@ unsigned char _sensorUnitDecimals(sensor::Unit unit) {
             return 4;
         case sensor::Unit::Meter:
             return 3;
+        case sensor::Unit::Hertz:
+            return 1;
         case sensor::Unit::UltravioletIndex:
             return 3;
         case sensor::Unit::None:
@@ -670,6 +677,9 @@ String magnitudeTopic(unsigned char type) {
         case MAGNITUDE_PH:
             result = F("ph");
             break;
+        case MAGNITUDE_FREQUENCY:
+            result = F("frequency");
+            break;
         case MAGNITUDE_NONE:
         default:
             result = F("unknown");
@@ -755,6 +765,9 @@ String _magnitudeUnits(const sensor_magnitude_t& magnitude) {
             break;
         case sensor::Unit::Meter:
             result = F("m");
+            break;
+        case sensor::Unit::Hertz:
+            result = F("Hz");
             break;
         case sensor::Unit::None:
         default:
@@ -924,6 +937,7 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     case MAGNITUDE_CO: return "co";
     case MAGNITUDE_RESISTANCE: return "res";
     case MAGNITUDE_PH: return "ph";
+    case MAGNITUDE_FREQUENCY: return "freq";
     default: return nullptr;
     }
 }
@@ -1170,6 +1184,9 @@ String magnitudeName(unsigned char type) {
         case MAGNITUDE_PH:
             result = F("pH");
             break;
+        case MAGNITUDE_FREQUENCY:
+            result = F("Frequency");
+            break;
         case MAGNITUDE_NONE:
         default:
             break;
@@ -1278,10 +1295,13 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
     for (auto* sensor [[gnu::unused]] : _sensors) {
 
+        if (_sensorIsEmon(sensor)) {
+            root["emonVisible"] = 1;
+            root["pwrVisible"] = 1;
+        }
+
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["emonVisible"] = 1;
-                root["pwrVisible"] = 1;
                 root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
             }
         #endif
@@ -1289,33 +1309,23 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
                 root["hlwVisible"] = 1;
-                root["pwrVisible"] = 1;
             }
         #endif
 
         #if CSE7766_SUPPORT
             if (sensor->getID() == SENSOR_CSE7766_ID) {
                 root["cseVisible"] = 1;
-                root["pwrVisible"] = 1;
             }
         #endif
 
-        #if V9261F_SUPPORT
-            if (sensor->getID() == SENSOR_V9261F_ID) {
-                root["pwrVisible"] = 1;
-            }
-        #endif
-
-        #if ECH1560_SUPPORT
-            if (sensor->getID() == SENSOR_ECH1560_ID) {
-                root["pwrVisible"] = 1;
-            }
-        #endif
-
-        #if PZEM004T_SUPPORT
-            if (sensor->getID() == SENSOR_PZEM004T_ID) {
+        #if PZEM004T_SUPPORT || PZEM004TV30_SUPPORT
+            switch (sensor->getID()) {
+            case SENSOR_PZEM004T_ID:
+            case SENSOR_PZEM004TV30_ID:
                 root["pzemVisible"] = 1;
-                root["pwrVisible"] = 1;
+                break;
+            default:
+                break;
             }
         #endif
 
@@ -1328,12 +1338,12 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
         #if MICS2710_SUPPORT || MICS5525_SUPPORT
             switch (sensor->getID()) {
-                case SENSOR_MICS2710_ID:
-                case SENSOR_MICS5525_ID:
-                    root["micsVisible"] = 1;
-                    break;
-                default:
-                    break;
+            case SENSOR_MICS2710_ID:
+            case SENSOR_MICS5525_ID:
+                root["micsVisible"] = 1;
+                break;
+            default:
+                break;
             }
         #endif
 
@@ -2056,6 +2066,28 @@ void _sensorLoad() {
         HDC1080Sensor * sensor = new HDC1080Sensor();
         sensor->setAddress(HDC1080_ADDRESS);
         _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PZEM004TV30_SUPPORT
+    {
+        PZEM004TV30Sensor * sensor = new PZEM004TV30Sensor();
+        _sensors.push_back(sensor);
+
+        // TODO: we need an equivalent to the `pzem.address` command
+        sensor->setAddress(getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress));
+        sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
+
+        uint8_t tx = getSetting("pzemv30TX", PZEM004TV30_SOFTWARE_SERIAL_TX);
+        uint8_t rx = getSetting("pzemv30RX", PZEM004TV30_SOFTWARE_SERIAL_TX);
+        if ((tx != GPIO_NONE) && (rx != GPIO_NONE)) {
+            auto* ptr = new SoftwareSerial(rx, tx);
+            sensor->setStream(ptr); // we don't care about lifetime
+            ptr->begin(PZEM004TV30Sensor::Baudrate);
+        } else {
+            sensor->setStream(&Serial); // note that Serial1 does not support rx
+            Serial.begin(PZEM004TV30Sensor::Baudrate);
+        }
     }
     #endif
 

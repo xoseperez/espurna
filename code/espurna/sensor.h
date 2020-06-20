@@ -56,6 +56,7 @@ enum class Unit : int {
     CountsPerMinute,           // Unit of local dose rate (Geiger counting)
     MicrosievertPerHour,       // 2nd unit of local dose rate (Geiger counting)
     Meter,
+    Hertz,
     Max_
 };
 
