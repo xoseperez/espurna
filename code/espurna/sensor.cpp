@@ -2077,6 +2077,7 @@ void _sensorLoad() {
         // TODO: we need an equivalent to the `pzem.address` command
         sensor->setAddress(getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress));
         sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
+        sensor->setDebug(getSetting("pzemv30Debug", true));
 
         uint8_t tx = getSetting("pzemv30TX", PZEM004TV30_SOFTWARE_SERIAL_TX);
         uint8_t rx = getSetting("pzemv30RX", PZEM004TV30_SOFTWARE_SERIAL_RX);
@@ -2089,6 +2090,10 @@ void _sensorLoad() {
             sensor->setDescription("HwSerial");
             sensor->setStream(&Serial); // note that Serial1 does not receive any data
             Serial.begin(PZEM004TV30Sensor::Baudrate);
+            // Core's internals want us to begin() first and then swap b/c reasons
+            if (getSetting("pzemv30HwsSwap", 1 == PZEM004TV30_HARDWARE_SERIAL_SWAP)) {
+                Serial.swap();
+            }
         }
         //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
         //      may not be relevant, but some sources claim we need 8N2
