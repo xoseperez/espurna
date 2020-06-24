@@ -2090,8 +2090,11 @@ void _sensorLoad() {
             sensor->setDescription("HwSerial");
             sensor->setStream(&Serial); // note that Serial1 does not receive any data
             Serial.begin(PZEM004TV30Sensor::Baudrate);
-            // Core's internals want us to begin() first and then swap b/c reasons
+            // Core does not allow us to begin(baud, cfg, rx, tx) / pins(rx, tx) before begin(baud)
+            // b/c internal UART handler does not exist yet
+            // Also see https://github.com/esp8266/Arduino/issues/2380 as to why there is flush()
             if (getSetting("pzemv30HwsSwap", 1 == PZEM004TV30_HARDWARE_SERIAL_SWAP)) {
+                Serial.flush();
                 Serial.swap();
             }
         }
