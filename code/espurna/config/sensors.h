@@ -1025,6 +1025,9 @@
 
 #ifndef PZEM004TV30_SOFTWARE_SERIAL_RX
 #define PZEM004TV30_SOFTWARE_SERIAL_RX     GPIO_NONE
+
+#ifndef PZEM004TV30_HARDWARE_SERIAL_SWAP
+#define PZEM004TV30_HARDWARE_SERIAL_SWAP   0      // Swap to UART2 at GPIO13(RX) & GPIO15(TX)
 #endif
 
 //------------------------------------------------------------------------------
