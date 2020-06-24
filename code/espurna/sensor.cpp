@@ -117,7 +117,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MAX6675_SUPPORT
     #include "sensors/MAX6675Sensor.h"
-#endif 
+#endif
 
 #if MICS2710_SUPPORT
     #include "sensors/MICS2710Sensor.h"
@@ -200,6 +200,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #endif
 
 #if PZEM004TV30_SUPPORT
+// TODO: this is temporary, until we have external API giving us swserial stream objects
     #include <SoftwareSerial.h>
     #include "sensors/PZEM004TV30Sensor.h"
 #endif
@@ -1191,7 +1192,6 @@ String magnitudeName(unsigned char type) {
         default:
             break;
     }
-            
 
     return String(result);
 }
@@ -2082,12 +2082,16 @@ void _sensorLoad() {
         uint8_t rx = getSetting("pzemv30RX", PZEM004TV30_SOFTWARE_SERIAL_RX);
         if ((tx != GPIO_NONE) && (rx != GPIO_NONE)) {
             auto* ptr = new SoftwareSerial(rx, tx);
+            sensor->setDescription("SwSerial");
             sensor->setStream(ptr); // we don't care about lifetime
             ptr->begin(PZEM004TV30Sensor::Baudrate);
         } else {
-            sensor->setStream(&Serial); // note that Serial1 does not support rx
+            sensor->setDescription("HwSerial");
+            sensor->setStream(&Serial); // note that Serial1 does not receive any data
             Serial.begin(PZEM004TV30Sensor::Baudrate);
         }
+        //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
+        //      may not be relevant, but some sources claim we need 8N2
     }
     #endif
 

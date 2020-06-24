@@ -17,6 +17,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 #include "mqtt.h"
 #include "ws.h"
+#include "utils.h"
 
 // -----------------------------------------------------------------------------
 // DEFINITIONS
@@ -122,55 +123,6 @@ void _rfbWebSocketOnData(JsonObject& root) {
 
 #endif // WEB_SUPPORT
 
-// From a byte array to an hexa char array ("A220EE...", double the size)
-static size_t _rfbHexFromBytearray(uint8_t * in, size_t in_size, char * out, size_t out_size) {
-    if ((2 * in_size + 1) > (out_size)) return 0;
-
-    static const char base16[] = "0123456789ABCDEF";
-    unsigned char index = 0;
-
-    while (index < in_size) {
-        out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
-        out[(index*2)+1] = base16[(in[index] & 0xf)];
-        ++index;
-    }
-
-    out[2*index] = '\0';
-
-    return index ? (1 + (2 * index)) : 0;
-}
-
-
-// From an hexa char array ("A220EE...") to a byte array (half the size)
-static size_t _rfbBytearrayFromHex(const char* in, size_t in_size, uint8_t* out, uint8_t out_size) {
-    if (out_size < (in_size / 2)) return 0;
-
-    unsigned char index = 0;
-    unsigned char out_index = 0;
-
-    auto char2byte = [](char ch) -> uint8_t {
-        if ((ch >= '0') && (ch <= '9')) {
-            return (ch - '0');
-        } else if ((ch >= 'a') && (ch <= 'f')) {
-            return 10 + (ch - 'a');
-        } else if ((ch >= 'A') && (ch <= 'F')) {
-            return 10 + (ch - 'A');
-        } else {
-            return 0;
-        }
-    };
-
-    while (index < in_size) {
-        out[out_index] = char2byte(in[index]) << 4;
-        out[out_index] += char2byte(in[index + 1]);
-
-        index += 2;
-        out_index += 1;
-    }
-
-    return out_index ? (1 + out_index) : 0;
-}
-
 void _rfbAckImpl();
 void _rfbLearnImpl();
 void _rfbSendImpl(uint8_t * message);
@@ -232,7 +184,7 @@ void _rfbDecode() {
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
 
         _rfbAckImpl();
-        if (_rfbHexFromBytearray(&_uartbuf[1], RF_MESSAGE_SIZE, buffer, sizeof(buffer))) {
+        if (hexEncode(&_uartbuf[1], RF_MESSAGE_SIZE, buffer, sizeof(buffer))) {
             DEBUG_MSG_P(PSTR("[RF] Received message '%s'\n"), buffer);
         }
 
@@ -358,7 +310,7 @@ void _rfbParseRaw(char * raw) {
     DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE '%s'\n"), raw);
 
     uint8_t message[RF_MAX_MESSAGE_SIZE];
-    size_t bytes = _rfbBytearrayFromHex(raw, (size_t)rawlen, message, sizeof(message));
+    size_t bytes = hexDecode(raw, (size_t)rawlen, message, sizeof(message));
     _rfbSendRaw(message, bytes);
 }
 
@@ -459,7 +411,7 @@ void _rfbEnqueue(uint8_t * code, unsigned char times) {
     #endif
 
     char buffer[RF_MESSAGE_SIZE];
-    _rfbHexFromBytearray(code, RF_MESSAGE_SIZE, buffer, sizeof(buffer));
+    hexEncode(code, RF_MESSAGE_SIZE, buffer, sizeof(buffer));
     DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%s' %d time(s)\n"), buffer, times);
 
     rfb_message_t message;
@@ -522,7 +474,7 @@ void _rfbParseCode(char * code) {
     }
 
     uint8_t message[RF_MESSAGE_SIZE];
-    if (_rfbBytearrayFromHex(tok, strlen(tok), message, sizeof(message))) {
+    if (hexDecode(tok, strlen(tok), message, sizeof(message))) {
         tok = strtok(nullptr, ",");
         uint8_t times = (tok != nullptr) ? atoi(tok) : 1;
         _rfbEnqueue(message, times);
@@ -684,7 +636,7 @@ void _rfbInitCommands() {
         terminalRegisterCommand(F("RFB.WRITE"), [](const terminal::CommandContext& ctx) {
             if (ctx.argc != 2) return;
             uint8_t data[RF_MAX_MESSAGE_SIZE];
-            size_t bytes = _rfbBytearrayFromHex(ctx.argv[1].c_str(), ctx.argv[1].length(), data, sizeof(data));
+            size_t bytes = hexDecode(ctx.argv[1].c_str(), ctx.argv[1].length(), data, sizeof(data));
             if (bytes) {
                 _rfbSendRaw(data, bytes);
             }
@@ -722,7 +674,7 @@ void rfbStatus(unsigned char id, bool status) {
     if (value.length() && !(value.length() & 1)) {
 
         uint8_t message[RF_MAX_MESSAGE_SIZE];
-        size_t bytes = _rfbBytearrayFromHex(value.c_str(), value.length(), message, sizeof(message));
+        size_t bytes = hexDecode(value.c_str(), value.length(), message, sizeof(message));
         if (bytes && !_rfbin) {
             if (value.length() == (RF_MESSAGE_SIZE * 2)) {
                 _rfbEnqueue(message, _rfbSameOnOff(id) ? 1 : _rfb_repeat);

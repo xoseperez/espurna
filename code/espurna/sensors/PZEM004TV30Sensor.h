@@ -13,10 +13,13 @@ Adapted for ESPurna by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "BaseEmonSensor.h"
 
 #include "../debug.h"
+#include "../utils.h"
 #include "../libs/crc16.h"
 
 #include <cstdint>
 #include <array>
+
+#define PZEM_DEBUG_MSG_P(...) if (_debug) DEBUG_MSG_P(__VA_ARGS__)
 
 
 class PZEM004TV30Sensor : public BaseEmonSensor {
@@ -39,7 +42,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     // - 0x41 (Calibration) (NOT IMPLEMENTED)
     // - 0x42 (Reset energy) (NOT IMPLEMENTED)
     static constexpr uint8_t ReadInputRegister = 0x04;
-    static constexpr uint8_t AbnormalCode = 0x84;
+    static constexpr uint8_t ErrorMask = 0x80;
 
     PZEM004TV30Sensor() {
         _error = SENSOR_ERROR_OK;
@@ -94,7 +97,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         if (request.size() == _stream->readBytes(response.data(), response.size())) {
             return response == request;
         }
-        
+
         return false;
     }
 
@@ -117,7 +120,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
             ptr = F("Unknown");
             break;
         }
-        
+
         return ptr;
     }
 
@@ -182,11 +185,11 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     // - addr, 0x04, rhigh, rlow, rnumhigh, rnumlow, crchigh, crclow
     // Reply can be one of:
     // - addr, 0x04, nbytes, rndatahigh, rndatalow, rndata..., crchigh, crclow (on success)
-    // - addr, 0x84, error_code, crchigh, crclow (on error)
+    // - addr, 0x84, error_code, crchigh, crclow (on error. modbus rtu sets high bit to 1 i.e. 0b00000100 becomes 0b10000100)
     void updateValues() {
         _error = SENSOR_ERROR_OK;
         sendCommand(_address, ReadInputRegister, 0, 10);
-        
+
         std::array<uint8_t, 25> buffer = {0};
         size_t bytes = 0;
 
@@ -195,60 +198,84 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
             int c = _stream->read();
             if (c >= 0) {
                 if ((0 == bytes) && (_address != c)) {
+                    PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Address does not match! Received 0x%02X, but configured with 0x%02X\n"), static_cast<uint8_t>(c), _address);
+                    _error = SENSOR_ERROR_UNKNOWN_ID;
                     break;
                 }
-                if ((1 == bytes) && ((AbnormalCode != c) && (ReadInputRegister != c))) {
+                if ((1 == bytes) && (0 == (ReadInputRegister & c))) {
+                    PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Received unknown code %d\n"), c);
+                    _error = SENSOR_ERROR_OTHER; // TODO: more error codes
                     break;
                 }
                 buffer[bytes++] = static_cast<uint8_t>(c);
             }
         }
 
-        // Cannot do anything about 'error' response, just wait for the next one
-        if ((5 == bytes) && (AbnormalCode == buffer[1])) {
-            if (calculateCrc16Modbus<3>(buffer.data()) != (static_cast<uint16_t>(buffer[3] << 8) | static_cast<uint16_t>(buffer[4]))) {
-                _error = SENSOR_ERROR_CRC;
+        if (_debug) {
+            char payload_hex[52] = {0};
+            if (bytes) {
+                hexEncode(buffer.data(), bytes, payload_hex, sizeof(payload_hex));
+                PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Received %u bytes: %s\n"), bytes, payload_hex);
+            } else {
+                PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] No response\n"));
+                _error = SENSOR_ERROR_OTHER; // TODO: more error codes
                 return;
             }
-            DEBUG_MSG_P(PSTR("[PZEM004TV3] Cannot get measurements: %s\n"), errorToString(buffer[1]).c_str());
-            _error = SENSOR_ERROR_OTHER;
-            return;
         }
 
-        // Make sure that:
+        // Last 2 bytes are always checksum
+        auto check_crc = [&](uint16_t calculated) -> bool {
+            uint16_t received = static_cast<uint32_t>(buffer[bytes - 1] << 8) | static_cast<uint32_t>(buffer[bytes - 2]);
+            const bool match = received == calculated;
+            if (!match) {
+                PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Calculated CRC %04X does not match the received %04X\n"), calculated, received);
+                _error = SENSOR_ERROR_CRC;
+            }
+            return match;
+        };
+
+        // Cannot do anything about 'error' response, just wait for the next one
+        if ((5 == bytes) && (ErrorMask & buffer[1])) {
+            uint16_t crc = calculateCrc16Modbus<3>(buffer.data());
+            if (!check_crc(crc)) {
+                return;
+            }
+            PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Cannot get measurements: %s\n"), errorToString(buffer[1]).c_str());
+            _error = SENSOR_ERROR_OTHER;
+            return;
+        // Otherwise, make sure that:
         // - we read the expected amount of bytes
         // - 3rd byte is 20
         //   (i.e. sum of the registers we specified before that,
         //    2 + 2 + 2 + 2 + 4 + 4 + 4; ref parseMeasurements())
         // - last 2 bytes as crc16 match our expectations
-        if ((buffer.size() != bytes) || (20 != buffer[2])) {
-            _error = SENSOR_ERROR_TIMEOUT;
+        } else if (buffer.size() == bytes) {
+            uint16_t crc = calculateCrc16Modbus<buffer.size() - 2>(buffer.data());
+            if (!check_crc(crc)) {
+                return;
+            }
+            if ((20 != buffer[2])) {
+                PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Expected 20 bytes of payload\n"));
+                _error = SENSOR_ERROR_OTHER;
+                return;
+            }
+
+            parseMeasurements(buffer.data() + 3);
             return;
         }
 
-        uint16_t buffer_crc =
-            (static_cast<uint16_t>(buffer[buffer.size() - 2]) << 8)
-            | (static_cast<uint16_t>(buffer[buffer.size() - 1]));
-        if (calculateCrc16Modbus<buffer.size() - 2>(buffer.data()) != buffer_crc) {
-            _error = SENSOR_ERROR_CRC;
-            return;
-        }
-
-        parseMeasurements(buffer.data() + 3);
+        // Should not be reached
+        _error = SENSOR_ERROR_OTHER;
     }
 
     void begin() override {
         _ready = (_stream != nullptr);
-        if (_ready) {
-            _last_reading = millis();
-        }
+        _last_reading = millis() - _update_interval;
     }
 
-    // TODO: we don't implement multiple devices.
-    //       in case we need to, follow the original PZEM004T indexing method
     String description() override {
-        static const String base(F("PZEM004T V3.0 @ "));
-        return base + String(_address, 10);
+        static const String base(F("PZEM004T V3.0"));
+        return base + " @ " + _description + ", 0x" + String(_address, 16);
     }
 
     String description(unsigned char) override {
@@ -256,7 +283,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     }
 
     String address(unsigned char) override {
-        return String(_address, 10);
+        return String(_address, 16);
     }
 
     unsigned char type(unsigned char index) override {
@@ -292,8 +319,15 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         }
     }
 
+    // Note that the device (aka slave) address is supposed to be manually set via
+    // - some external tool. For example, via USB2TTL adapter and a PC app
+    // - (TODO) `pzem.setaddr` with **only** one device on the line
     void setAddress(uint8_t address) {
         _address = address;
+    }
+
+    void setDebug(bool debug) {
+        _debug = debug;
     }
 
     void setStream(Stream* stream) {
@@ -309,8 +343,16 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         _update_interval = value;
     }
 
+    template <typename T>
+    void setDescription(T&& description) {
+        _description = std::forward<T>(description);
+    }
+
     private:
 
+    String _description;
+
+    bool _debug { false };
     Stream* _stream { nullptr };
     uint8_t _address { DefaultAddress };
 
@@ -328,3 +370,4 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
 };
 
+#undef PZEM_DEBUG_MSG_P
