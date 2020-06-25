@@ -48,10 +48,4 @@ inline uint16_t crc16_common(uint8_t *data, uint8_t len, uint16_t poly, uint16_t
     return (crc ^ doXor);
 }
 
-// We need this one for some sensors
-template <size_t Size>
-uint16_t calculateCrc16Modbus(uint8_t* buffer) {
-   return crc16_common(buffer, Size, 0x8005, 0xffff, 0x0000, true, true);
-}
-
 #pragma GCC optimize ("Os")

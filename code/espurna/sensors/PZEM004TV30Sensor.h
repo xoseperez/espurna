@@ -40,8 +40,10 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     // - 0x04 (Read Input Register) (measurements readout)
     // - 0x06 (Write Single Register) (set device address, set alarm; NOT IMPLEMENTED)
     // - 0x41 (Calibration) (NOT IMPLEMENTED)
-    // - 0x42 (Reset energy) (NOT IMPLEMENTED)
-    static constexpr uint8_t ReadInputRegister = 0x04;
+    // - 0x42 (Reset energy) (can only reset to 0)
+    static constexpr uint8_t ReadInputCode = 0x04;
+    static constexpr uint8_t ResetEnergyCode = 0x42;
+
     static constexpr uint8_t ErrorMask = 0x80;
 
     PZEM004TV30Sensor() {
@@ -51,9 +53,15 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
     // We **can** reset PZEM energy, unlike the original PZEM004T
     // However, we can't set it to a specific value, we can only start from 0
-    void resetEnergy() override {}
-    void resetEnergy(unsigned char) override {}
     void resetEnergy(unsigned char, sensor::Energy) override {}
+
+    void resetEnergy() override {
+        _reset_energy = true;
+    }
+
+    void resetEnergy(unsigned char) override {
+        _reset_energy = true;
+    }
 
     double getEnergy(unsigned char index) override {
         return _energy;
@@ -65,37 +73,75 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
     // ---------------------------------------------------------------------
 
-    using command_buffer_type = std::array<uint8_t, 8>;
-
-    command_buffer_type sendCommand(uint8_t device_address, uint8_t command, uint16_t register_address, uint16_t register_value) {
-        command_buffer_type buffer {
-            device_address,
-            command,
-            static_cast<uint8_t>((register_address >> 8) & 0xff),
-            static_cast<uint8_t>(register_address & 0xff),
-            static_cast<uint8_t>((register_value >> 8) & 0xff),
-            static_cast<uint8_t>(register_value & 0xff),
-            0,
-            0
-        };
-
-        uint16_t crc = calculateCrc16Modbus<buffer.size() - 2>(buffer.data());
-        buffer[buffer.size() - 2] = (crc & 0xff);
-        buffer[buffer.size() - 1] = ((crc >> 8) & 0xff);
-        _stream->write(buffer.data(), buffer.size());
-
-        return buffer;
+    static uint16_t crc16modbus(uint8_t* data, size_t len, uint16_t init = 0xffff) {
+        return crc16_common(data, len, 0x8005, init, 0x0000, true, true);
     }
 
-    // Notice: original library implements 'echo' check right after the write as a common operation
-    // nontheless, implement as a separate method as an example of how to check whether the response matches the request
-    // pzem 'manuall' seems to describe this as "Set up correctly, the slave return to the data which is sent from the master."
-    bool sendCommandWithEcho(uint8_t device_address, uint8_t command, uint16_t register_address, uint16_t register_value) {
-        auto request = sendCommand(device_address, command, register_address, register_value);
-        decltype(request) response = {0};
+    struct adu_builder {
+        // per http://www.modbus.org/docs/Modbus_Application_Protocol_V1_1b3.pdf
+        // > 4.1 Protocol description
+        // > ...
+        // > The size of the MODBUS PDU is limited by the size constraint inherited from the first
+        // > MODBUS implementation on Serial Line network (max. RS485 ADU = 256 bytes).
+        // > Therefore:
+        // > MODBUS PDU for serial line communication = 256 - Server address (1 byte) - CRC (2
+        // > bytes) = 253 bytes.
+        using buffer_type = std::array<uint8_t, 255>;
 
-        if (request.size() == _stream->readBytes(response.data(), response.size())) {
-            return response == request;
+        adu_builder(uint8_t device_address, uint8_t fcode) :
+            buffer({device_address, fcode}),
+            size(2)
+        {}
+
+        adu_builder& add(uint8_t value) {
+            if (!locked && (size < buffer.size())) {
+                buffer[size] = value;
+                size += 1;
+            }
+            return *this;
+        }
+
+        adu_builder& add(uint16_t value) {
+            if (!locked && ((size + 1) < buffer.size())) {
+                buffer[size] = static_cast<uint8_t>((value >> 8) & 0xff);
+                buffer[size + 1] = static_cast<uint8_t>(value & 0xff);
+                size += 2;
+            }
+            return *this;
+        }
+
+        adu_builder& send(Stream& stream) {
+            if (!locked) {
+                add(crc16modbus(buffer.data(), size));
+                stream.write(buffer.data(), size);
+                locked = true;
+            }
+            return *this;
+        }
+
+        bool locked = false;
+        buffer_type buffer;
+        size_t size { 0 };
+    };
+
+    // Reading measurements is a standard modbus function:
+    // - addr, 0x04, rhigh, rlow, rnumhigh, rnumlow, crchigh, crclow
+    adu_builder modbusReadInput(uint16_t register_address, uint16_t register_value) {
+        auto request = adu_builder(_address, ReadInputCode)
+            .add(register_address)
+            .add(register_value);
+        return request.send(*_stream);
+    }
+
+    // Energy reset is a 'custom' function, and it does not take any function params
+    // pzem 'manual' seems to describe this as "Set up correctly, the slave return to the data which is sent from the master.", which also applies to some handful of other functions
+    bool modbusResetEnergy() {
+        auto request = adu_builder(_address, ResetEnergyCode)
+            .send(*_stream);
+
+        decltype(request)::buffer_type response_buffer = {0};
+        if (request.size == _stream->readBytes(response_buffer.data(), response_buffer.size())) {
+            return request.buffer == response_buffer;
         }
 
         return false;
@@ -181,14 +227,12 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         _alarm = (0xff == *ptr) && (0xff == *(ptr + 1));
     }
 
-    // Reading measurements:
-    // - addr, 0x04, rhigh, rlow, rnumhigh, rnumlow, crchigh, crclow
-    // Reply can be one of:
+    // ReadInput reply can be one of:
     // - addr, 0x04, nbytes, rndatahigh, rndatalow, rndata..., crchigh, crclow (on success)
     // - addr, 0x84, error_code, crchigh, crclow (on error. modbus rtu sets high bit to 1 i.e. 0b00000100 becomes 0b10000100)
     void updateValues() {
         _error = SENSOR_ERROR_OK;
-        sendCommand(_address, ReadInputRegister, 0, 10);
+        modbusReadInput(0, 10);
 
         std::array<uint8_t, 25> buffer = {0};
         size_t bytes = 0;
@@ -202,7 +246,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
                     _error = SENSOR_ERROR_UNKNOWN_ID;
                     break;
                 }
-                if ((1 == bytes) && (0 == (ReadInputRegister & c))) {
+                if ((1 == bytes) && (0 == (ReadInputCode & c))) {
                     PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Received unknown code %d\n"), c);
                     _error = SENSOR_ERROR_OTHER; // TODO: more error codes
                     break;
@@ -236,7 +280,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
         // Cannot do anything about 'error' response, just wait for the next one
         if ((5 == bytes) && (ErrorMask & buffer[1])) {
-            uint16_t crc = calculateCrc16Modbus<3>(buffer.data());
+            uint16_t crc = crc16modbus(buffer.data(), 3);
             if (!check_crc(crc)) {
                 return;
             }
@@ -244,13 +288,11 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
             _error = SENSOR_ERROR_OTHER;
             return;
         // Otherwise, make sure that:
-        // - we read the expected amount of bytes
-        // - 3rd byte is 20
-        //   (i.e. sum of the registers we specified before that,
-        //    2 + 2 + 2 + 2 + 4 + 4 + 4; ref parseMeasurements())
-        // - last 2 bytes as crc16 match our expectations
+        // - we read the expected size of the reply (3 bytes header, 20 bytes payload, 2 bytes crc)
+        // - 3rd byte is 20, as we requested 10 16bit registers
+        // - last 2 bytes match crc16modbus(...) calculation
         } else if (buffer.size() == bytes) {
-            uint16_t crc = calculateCrc16Modbus<buffer.size() - 2>(buffer.data());
+            uint16_t crc =  crc16modbus(buffer.data(), buffer.size() - 2);
             if (!check_crc(crc)) {
                 return;
             }
@@ -310,8 +352,19 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         return 0.0;
     }
 
-    void pre() override {
+    void flush() {
         while (_stream->read() >= 0) {
+        }
+    }
+
+    void pre() override {
+        flush();
+        if (_reset_energy) {
+            if (!modbusResetEnergy()) {
+                PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Energy reset failed\n"));
+            }
+            _reset_energy = false;
+            flush();
         }
         if (millis() - _last_reading >= _update_interval) {
             updateValues();
@@ -355,6 +408,8 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     bool _debug { false };
     Stream* _stream { nullptr };
     uint8_t _address { DefaultAddress };
+
+    bool _reset_energy { false };
 
     unsigned long _read_timeout { DefaultReadTimeout };
     unsigned long _update_interval { DefaultUpdateInterval };

@@ -401,12 +401,11 @@ sensor::Energy _sensorParseEnergy(const String& value) {
 
 void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
     if (!payload || !strlen(payload)) return;
-    if (payload[0] != '0') return;
 
     auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
     auto energy = _sensorParseEnergy(payload);
 
-    sensor->resetEnergy(magnitude.index_global, energy);
+    sensor->resetEnergy(magnitude.index_local, energy);
 }
 
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
