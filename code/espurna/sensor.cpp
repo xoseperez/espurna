@@ -2070,8 +2070,7 @@ void _sensorLoad() {
 
     #if PZEM004TV30_SUPPORT
     {
-        PZEM004TV30Sensor * sensor = new PZEM004TV30Sensor();
-        _sensors.push_back(sensor);
+        PZEM004TV30Sensor * sensor = PZEM004TV30Sensor::create();
 
         // TODO: we need an equivalent to the `pzem.address` command
         sensor->setAddress(getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress));
@@ -2099,6 +2098,8 @@ void _sensorLoad() {
         }
         //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
         //      may not be relevant, but some sources claim we need 8N2
+
+        _sensors.push_back(sensor);
     }
     #endif
 

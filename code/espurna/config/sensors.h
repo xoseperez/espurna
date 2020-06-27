@@ -1014,9 +1014,8 @@
 #endif
 
 #ifndef PZEM004TV30_ADDRESS
-#define PZEM004TV30_ADDRESS                0xF8          // Default: broadcast address. When multiple devices are connected, each one will respond to our requests.
-                                                         // In case we need multiple devices, we need to manually set each one with an unique address.
-                                                         // And in theory, we already can create multiple sensor objects (with a small caveat, we need to make sure to only have 1 SwSerial object)
+#define PZEM004TV30_ADDRESS                0xF8          // Default: broadcast address. When multiple devices are connected with the
+                                                         // same address, each one will respond to our requests.
 #endif
 
 #ifndef PZEM004TV30_SOFTWARE_SERIAL_TX

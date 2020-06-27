@@ -22,7 +22,7 @@ class BaseSensor {
         BaseSensor() {}
 
         // Destructor
-        ~BaseSensor() {}
+        virtual ~BaseSensor() {}
 
         // Initialization method, must be idempotent
         virtual void begin() {}
