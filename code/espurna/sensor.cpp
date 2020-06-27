@@ -1930,11 +1930,10 @@ void _sensorLoad() {
 
         PZEM004TSensor * sensor = PZEM004TSensor::create();
         sensor->setAddresses(addresses.c_str());
+        sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
+        sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
 
-        if (getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
-            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
-            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
-        } else {
+        if (!getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
             sensor->setSerial(& PZEM004T_HW_PORT);
         }
 
@@ -2077,25 +2076,30 @@ void _sensorLoad() {
         sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
         sensor->setDebug(getSetting("pzemv30Debug", true));
 
-        uint8_t tx = getSetting("pzemv30TX", PZEM004TV30_SOFTWARE_SERIAL_TX);
-        uint8_t rx = getSetting("pzemv30RX", PZEM004TV30_SOFTWARE_SERIAL_RX);
-        if ((tx != GPIO_NONE) && (rx != GPIO_NONE)) {
-            auto* ptr = new SoftwareSerial(rx, tx);
-            sensor->setDescription("SwSerial");
-            sensor->setStream(ptr); // we don't care about lifetime
-            ptr->begin(PZEM004TV30Sensor::Baudrate);
-        } else {
+        bool soft = getSetting("pzemv30Soft", 1 == PZEM004TV30_USE_SOFT);
+
+        int tx = getSetting("pzemv30TX", PZEM004TV30_TX_PIN);
+        int rx = getSetting("pzemv30RX", PZEM004TV30_RX_PIN);
+
+        // we operate only with Serial, as Serial1 cannot not receive any data
+        if (!soft) {
+            sensor->setStream(&Serial);
             sensor->setDescription("HwSerial");
-            sensor->setStream(&Serial); // note that Serial1 does not receive any data
             Serial.begin(PZEM004TV30Sensor::Baudrate);
             // Core does not allow us to begin(baud, cfg, rx, tx) / pins(rx, tx) before begin(baud)
             // b/c internal UART handler does not exist yet
             // Also see https://github.com/esp8266/Arduino/issues/2380 as to why there is flush()
-            if (getSetting("pzemv30HwsSwap", 1 == PZEM004TV30_HARDWARE_SERIAL_SWAP)) {
+            if ((tx == 15) && (rx == 13)) {
                 Serial.flush();
                 Serial.swap();
             }
+        } else {
+            auto* ptr = new SoftwareSerial(rx, tx);
+            sensor->setDescription("SwSerial");
+            sensor->setStream(ptr); // we don't care about lifetime
+            ptr->begin(PZEM004TV30Sensor::Baudrate);
         }
+
         //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
         //      may not be relevant, but some sources claim we need 8N2
 

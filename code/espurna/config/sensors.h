@@ -977,19 +977,20 @@
 #endif
 
 #ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
+#define PZEM004T_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
 #endif
 
 #ifndef PZEM004T_RX_PIN
-#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
+#define PZEM004T_RX_PIN                 13      // Serial RX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
 #endif
 
 #ifndef PZEM004T_TX_PIN
-#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
+#define PZEM004T_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
 #endif
 
 #ifndef PZEM004T_HW_PORT
 #define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+                                                // ESP8266: Serial1 does not allow receiving data, no point in changing this setting
 #endif
 
 #ifndef PZEM004T_ADDRESSES
@@ -1018,15 +1019,16 @@
                                                          // same address, each one will respond to our requests.
 #endif
 
-#ifndef PZEM004TV30_SOFTWARE_SERIAL_TX
-#define PZEM004TV30_SOFTWARE_SERIAL_TX     GPIO_NONE     // In case both TX and RX are invalid, use Hardware Serial
+#ifndef PZEM004TV30_USE_SOFT
+#define PZEM004TV30_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
 #endif
 
-#ifndef PZEM004TV30_SOFTWARE_SERIAL_RX
-#define PZEM004TV30_SOFTWARE_SERIAL_RX     GPIO_NONE
+#ifndef PZEM004TV30_RX_PIN
+#define PZEM004TV30_RX_PIN                 13      // Serial RX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
+#endif
 
-#ifndef PZEM004TV30_HARDWARE_SERIAL_SWAP
-#define PZEM004TV30_HARDWARE_SERIAL_SWAP   0      // Swap to UART2 at GPIO13(RX) & GPIO15(TX)
+#ifndef PZEM004TV30_TX_PIN
+#define PZEM004TV30_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
 #endif
 
 //------------------------------------------------------------------------------
