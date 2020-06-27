@@ -475,7 +475,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
                     terminalError(ctx.output, F("PZ.ADDRESS <ADDRESS>"));
                     return;
                 }
-                uint16_t updated = settings::internal::convert<uint16_t>(ctx.argv[1]);
+                uint8_t updated = settings::internal::convert<uint8_t>(ctx.argv[1]);
 
                 PZEM004TV30Sensor::instance->flush();
                 if (PZEM004TV30Sensor::instance->modbusChangeAddress(updated)) {
