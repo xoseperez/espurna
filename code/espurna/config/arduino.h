@@ -22,6 +22,8 @@
 //#define ARILUX_AL_LC06
 //#define ARILUX_AL_LC11
 //#define ARILUX_E27
+//#define ARLEC_PB89HA
+//#define ARLEC_PC190HA
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
 //#define AVATTO_NAS_WR01W

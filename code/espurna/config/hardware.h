@@ -4764,6 +4764,57 @@
     #define LED1_PIN_INVERSE        1
 
 // -----------------------------------------------------------------------------
+// Arlec Smart PC190HA Plug
+// https://templates.blakadder.com/arlec_PC190HA.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ARLEC_PC190HA)
+
+    // Info
+    #define MANUFACTURER        "ARLEC"
+    #define DEVICE              "PC190HA"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4   // blue LED
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            13  // red LED
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Arlec Smart PB89HA Power Strip
+// https://templates.blakadder.com/arlec_PB89HA.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ARLEC_PB89HA)
+
+    // Info
+    #define MANUFACTURER        "ARLEC"
+    #define DEVICE              "PB89HA"
+
+    // Buttons
+    #define BUTTON1_PIN         3
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY2_PIN          4
+    #define RELAY3_PIN          13
+    #define RELAY4_PIN          12
+
+    // LEDs
+    #define LED1_PIN            1
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 
 #else
 
