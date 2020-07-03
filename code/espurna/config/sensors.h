@@ -1031,6 +1031,10 @@
 #define PZEM004TV30_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
 #endif
 
+#ifndef PZEM004TV30_DEBUG
+#define PZEM004TV30_DEBUG                  0
+#endif
+
 //------------------------------------------------------------------------------
 // SDS011 particulates sensor
 // Enable support by passing SDS011_SUPPORT=1 build flag
