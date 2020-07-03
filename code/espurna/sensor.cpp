@@ -117,7 +117,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MAX6675_SUPPORT
     #include "sensors/MAX6675Sensor.h"
-#endif 
+#endif
 
 #if MICS2710_SUPPORT
     #include "sensors/MICS2710Sensor.h"
@@ -233,6 +233,7 @@ struct sensor_magnitude_t {
     double min_change;          // Minimum value change to report
     double max_change;          // Maximum value change to report
     double correction;          // Value correction (applied when processing)
+    double zero_threshold;      // Reset value to zero when below threshold (applied when reading)
 
 };
 
@@ -395,12 +396,11 @@ sensor::Energy _sensorParseEnergy(const String& value) {
 
 void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
     if (!payload || !strlen(payload)) return;
-    if (payload[0] != '0') return;
 
     auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
     auto energy = _sensorParseEnergy(payload);
 
-    sensor->resetEnergy(magnitude.index_global, energy);
+    sensor->resetEnergy(magnitude.index_local, energy);
 }
 
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
@@ -928,6 +928,11 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     }
 }
 
+template <typename T>
+String _magnitudeSettingsKey(sensor_magnitude_t& magnitude, T&& suffix) {
+    return String(_magnitudeSettingsPrefix(magnitude.type)) + suffix;
+}
+
 bool _sensorMatchKeyPrefix(const char * key) {
 
     if (strncmp(key, "sns", 3) == 0) return true;
@@ -1278,10 +1283,13 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
     for (auto* sensor [[gnu::unused]] : _sensors) {
 
+        if (_sensorIsEmon(sensor)) {
+            root["emonVisible"] = 1;
+            root["pwrVisible"] = 1;
+        }
+
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["emonVisible"] = 1;
-                root["pwrVisible"] = 1;
                 root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
             }
         #endif
@@ -1289,33 +1297,18 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
                 root["hlwVisible"] = 1;
-                root["pwrVisible"] = 1;
             }
         #endif
 
         #if CSE7766_SUPPORT
             if (sensor->getID() == SENSOR_CSE7766_ID) {
                 root["cseVisible"] = 1;
-                root["pwrVisible"] = 1;
-            }
-        #endif
-
-        #if V9261F_SUPPORT
-            if (sensor->getID() == SENSOR_V9261F_ID) {
-                root["pwrVisible"] = 1;
-            }
-        #endif
-
-        #if ECH1560_SUPPORT
-            if (sensor->getID() == SENSOR_ECH1560_ID) {
-                root["pwrVisible"] = 1;
             }
         #endif
 
         #if PZEM004T_SUPPORT
             if (sensor->getID() == SENSOR_PZEM004T_ID) {
                 root["pzemVisible"] = 1;
-                root["pwrVisible"] = 1;
             }
         #endif
 
@@ -1328,12 +1321,12 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
         #if MICS2710_SUPPORT || MICS5525_SUPPORT
             switch (sensor->getID()) {
-                case SENSOR_MICS2710_ID:
-                case SENSOR_MICS5525_ID:
-                    root["micsVisible"] = 1;
-                    break;
-                default:
-                    break;
+            case SENSOR_MICS2710_ID:
+            case SENSOR_MICS5525_ID:
+                root["micsVisible"] = 1;
+                break;
+            default:
+                break;
             }
         #endif
 
@@ -2214,10 +2207,7 @@ void _sensorConfigure() {
 
     _sensor_realtime = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
 
-    // Per-magnitude min & max delta settings
-    // - min controls whether we report at all when report_count overflows
-    // - max will trigger report as soon as read value is greater than the specified delta
-    //   (atm this works best for accumulated magnitudes, like energy)
+    // pre-load some settings that are controlled via old build flags
     const auto tmp_min_delta = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE);
     const auto hum_min_delta = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE);
     const auto ene_max_delta = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE);
@@ -2345,8 +2335,6 @@ void _sensorConfigure() {
                         getSetting({"tmpUnits", magnitude.index_global}, tmpUnits)
                     );
                     break;
-                case MAGNITUDE_HUMIDITY:
-                    break;
                 case MAGNITUDE_POWER_ACTIVE:
                     magnitude.units = _magnitudeUnitFilter(
                         magnitude,
@@ -2379,9 +2367,10 @@ void _sensorConfigure() {
                 magnitude.decimals = (unsigned char) decimals;
             }
 
-            // adjust min & max change delta value to trigger report
-            // TODO: find a proper way to extend this to min/max of any magnitude
-            // TODO: we can't use index_global b/c we don't specify type in the setting
+            // Per-magnitude min & max delta settings
+            // - min controls whether we report at all when report_count overflows
+            // - max will trigger report as soon as read value is greater than the specified delta
+            //   (atm this works best for accumulated magnitudes, like energy)
             {
                 auto min_default = 0.0;
                 auto max_default = 0.0;
@@ -2400,8 +2389,22 @@ void _sensorConfigure() {
                         break;
                 }
 
-                magnitude.min_change = getSetting({"snsMinDelta", index}, min_default);
-                magnitude.max_change = getSetting({"snsMaxDelta", index}, max_default);
+                magnitude.min_change = getSetting(
+                    {_magnitudeSettingsKey(magnitude, F("MinDelta")), magnitude.index_global},
+                    min_default
+                );
+                magnitude.max_change = getSetting(
+                    {_magnitudeSettingsKey(magnitude, F("MaxDelta")), magnitude.index_global},
+                    max_default
+                );
+            }
+
+            // Sometimes we want to ensure the value is above certain threshold before reporting
+            {
+                magnitude.zero_threshold = getSetting(
+                    {_magnitudeSettingsKey(magnitude, F("ZeroThreshold")), magnitude.index_global},
+                    std::numeric_limits<double>::quiet_NaN()
+                );
             }
 
             // in case we don't save energy periodically, purge existing value in ram & settings
@@ -2614,6 +2617,11 @@ void sensorLoop() {
                             break;
                     }
                 #endif
+
+                // In addition to that, we also check that value is above a certain threshold
+                if ((!std::isnan(magnitude.zero_threshold)) && ((value_raw < magnitude.zero_threshold))) {
+                    value_raw = 0.0;
+                }
 
                 _magnitudes[i].last = value_raw;
 
