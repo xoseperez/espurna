@@ -59,7 +59,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     // However, we only ever expect very small payloads. Maximum being 10 registers at the same time.
     static constexpr size_t BufferSize = 25u;
 
-    // 'Broadcast' address, cannot be used with multiple devices on the line
+    // stock address, cannot be used with multiple devices on the line
     static constexpr uint8_t DefaultAddress = 0xf8;
 
     // XXX: pzem manual does not specify anything, these are arbitrary values (ms)

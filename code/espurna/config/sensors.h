@@ -1015,12 +1015,12 @@
 #endif
 
 #ifndef PZEM004TV30_ADDRESS
-#define PZEM004TV30_ADDRESS                0xF8          // Default: broadcast address. When multiple devices are connected with the
-                                                         // same address, each one will respond to our requests.
+#define PZEM004TV30_ADDRESS                0xF8    // Default: factory value
 #endif
 
 #ifndef PZEM004TV30_USE_SOFT
 #define PZEM004TV30_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
+                                                   // (but, make sure that DEBUG_SERIAL_SUPPORT is set to 0)
 #endif
 
 #ifndef PZEM004TV30_RX_PIN
