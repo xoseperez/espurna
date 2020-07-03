@@ -22,6 +22,8 @@
 //#define ARILUX_AL_LC06
 //#define ARILUX_AL_LC11
 //#define ARILUX_E27
+//#define ARLEC_PB89HA
+//#define ARLEC_PC190HA
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
 //#define AVATTO_NAS_WR01W
@@ -51,6 +53,7 @@
 //#define GBLIFE_RGBW_SOCKET
 //#define GENERIC_8CH
 //#define GENERIC_AG_L4
+//#define GENERIC_AG_L4_V3
 //#define GENERIC_E14
 //#define GENERIC_ECH1560
 //#define GENERIC_ESP01S_DHT11_V10
