@@ -199,6 +199,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "sensors/HDC1080Sensor.h"
 #endif
 
+#if PZEM004TV30_SUPPORT
+// TODO: this is temporary, until we have external API giving us swserial stream objects
+    #include <SoftwareSerial.h>
+    #include "sensors/PZEM004TV30Sensor.h"
+#endif
+
 //--------------------------------------------------------------------------------
 
 struct sensor_magnitude_t {
@@ -564,6 +570,8 @@ unsigned char _sensorUnitDecimals(sensor::Unit unit) {
             return 4;
         case sensor::Unit::Meter:
             return 3;
+        case sensor::Unit::Hertz:
+            return 1;
         case sensor::Unit::UltravioletIndex:
             return 3;
         case sensor::Unit::None:
@@ -670,6 +678,9 @@ String magnitudeTopic(unsigned char type) {
         case MAGNITUDE_PH:
             result = F("ph");
             break;
+        case MAGNITUDE_FREQUENCY:
+            result = F("frequency");
+            break;
         case MAGNITUDE_NONE:
         default:
             result = F("unknown");
@@ -755,6 +766,9 @@ String _magnitudeUnits(const sensor_magnitude_t& magnitude) {
             break;
         case sensor::Unit::Meter:
             result = F("m");
+            break;
+        case sensor::Unit::Hertz:
+            result = F("Hz");
             break;
         case sensor::Unit::None:
         default:
@@ -924,6 +938,7 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     case MAGNITUDE_CO: return "co";
     case MAGNITUDE_RESISTANCE: return "res";
     case MAGNITUDE_PH: return "ph";
+    case MAGNITUDE_FREQUENCY: return "freq";
     default: return nullptr;
     }
 }
@@ -1175,11 +1190,13 @@ String magnitudeName(unsigned char type) {
         case MAGNITUDE_PH:
             result = F("pH");
             break;
+        case MAGNITUDE_FREQUENCY:
+            result = F("Frequency");
+            break;
         case MAGNITUDE_NONE:
         default:
             break;
     }
-            
 
     return String(result);
 }
@@ -1306,9 +1323,14 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             }
         #endif
 
-        #if PZEM004T_SUPPORT
-            if (sensor->getID() == SENSOR_PZEM004T_ID) {
+        #if PZEM004T_SUPPORT || PZEM004TV30_SUPPORT
+            switch (sensor->getID()) {
+            case SENSOR_PZEM004T_ID:
+            case SENSOR_PZEM004TV30_ID:
                 root["pzemVisible"] = 1;
+                break;
+            default:
+                break;
             }
         #endif
 
@@ -1914,11 +1936,10 @@ void _sensorLoad() {
 
         PZEM004TSensor * sensor = PZEM004TSensor::create();
         sensor->setAddresses(addresses.c_str());
+        sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
+        sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
 
-        if (getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
-            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
-            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
-        } else {
+        if (!getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
             sensor->setSerial(& PZEM004T_HW_PORT);
         }
 
@@ -2048,6 +2069,46 @@ void _sensorLoad() {
     {
         HDC1080Sensor * sensor = new HDC1080Sensor();
         sensor->setAddress(HDC1080_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PZEM004TV30_SUPPORT
+    {
+        PZEM004TV30Sensor * sensor = PZEM004TV30Sensor::create();
+
+        // TODO: we need an equivalent to the `pzem.address` command
+        sensor->setAddress(getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress));
+        sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
+        sensor->setDebug(getSetting("pzemv30Debug", 1 == PZEM004TV30_DEBUG));
+
+        bool soft = getSetting("pzemv30Soft", 1 == PZEM004TV30_USE_SOFT);
+
+        int tx = getSetting("pzemv30TX", PZEM004TV30_TX_PIN);
+        int rx = getSetting("pzemv30RX", PZEM004TV30_RX_PIN);
+
+        // we operate only with Serial, as Serial1 cannot not receive any data
+        if (!soft) {
+            sensor->setStream(&Serial);
+            sensor->setDescription("HwSerial");
+            Serial.begin(PZEM004TV30Sensor::Baudrate);
+            // Core does not allow us to begin(baud, cfg, rx, tx) / pins(rx, tx) before begin(baud)
+            // b/c internal UART handler does not exist yet
+            // Also see https://github.com/esp8266/Arduino/issues/2380 as to why there is flush()
+            if ((tx == 15) && (rx == 13)) {
+                Serial.flush();
+                Serial.swap();
+            }
+        } else {
+            auto* ptr = new SoftwareSerial(rx, tx);
+            sensor->setDescription("SwSerial");
+            sensor->setStream(ptr); // we don't care about lifetime
+            ptr->begin(PZEM004TV30Sensor::Baudrate);
+        }
+
+        //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
+        //      may not be relevant, but some sources claim we need 8N2
+
         _sensors.push_back(sensor);
     }
     #endif

@@ -790,3 +790,52 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
 
   return nullptr;
 }
+
+// From a byte array to an hexa char array ("A220EE...", double the size)
+size_t hexEncode(uint8_t * in, size_t in_size, char * out, size_t out_size) {
+    if ((2 * in_size + 1) > (out_size)) return 0;
+
+    static const char base16[] = "0123456789ABCDEF";
+    unsigned char index = 0;
+
+    while (index < in_size) {
+        out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
+        out[(index*2)+1] = base16[(in[index] & 0xf)];
+        ++index;
+    }
+
+    out[2*index] = '\0';
+
+    return index ? (1 + (2 * index)) : 0;
+}
+
+
+// From an hexa char array ("A220EE...") to a byte array (half the size)
+size_t hexDecode(const char* in, size_t in_size, uint8_t* out, uint8_t out_size) {
+    if (out_size < (in_size / 2)) return 0;
+
+    unsigned char index = 0;
+    unsigned char out_index = 0;
+
+    auto char2byte = [](char ch) -> uint8_t {
+        if ((ch >= '0') && (ch <= '9')) {
+            return (ch - '0');
+        } else if ((ch >= 'a') && (ch <= 'f')) {
+            return 10 + (ch - 'a');
+        } else if ((ch >= 'A') && (ch <= 'F')) {
+            return 10 + (ch - 'A');
+        } else {
+            return 0;
+        }
+    };
+
+    while (index < in_size) {
+        out[out_index] = char2byte(in[index]) << 4;
+        out[out_index] += char2byte(in[index + 1]);
+
+        index += 2;
+        out_index += 1;
+    }
+
+    return out_index ? (1 + out_index) : 0;
+}

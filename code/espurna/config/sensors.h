@@ -977,19 +977,20 @@
 #endif
 
 #ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
+#define PZEM004T_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
 #endif
 
 #ifndef PZEM004T_RX_PIN
-#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
+#define PZEM004T_RX_PIN                 13      // Serial RX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
 #endif
 
 #ifndef PZEM004T_TX_PIN
-#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
+#define PZEM004T_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
 #endif
 
 #ifndef PZEM004T_HW_PORT
 #define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+                                                // ESP8266: Serial1 does not allow receiving data, no point in changing this setting
 #endif
 
 #ifndef PZEM004T_ADDRESSES
@@ -1002,6 +1003,36 @@
 
 #ifndef PZEM004T_MAX_DEVICES
 #define PZEM004T_MAX_DEVICES            3
+#endif
+
+//------------------------------------------------------------------------------
+// PZEM004T **V3.0** based power monitor
+// Enable support by passing PZEM004TV30_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PZEM004TV30_SUPPORT
+#define PZEM004TV30_SUPPORT                0
+#endif
+
+#ifndef PZEM004TV30_ADDRESS
+#define PZEM004TV30_ADDRESS                0xF8    // Default: factory value
+#endif
+
+#ifndef PZEM004TV30_USE_SOFT
+#define PZEM004TV30_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
+                                                   // (but, make sure that DEBUG_SERIAL_SUPPORT is set to 0)
+#endif
+
+#ifndef PZEM004TV30_RX_PIN
+#define PZEM004TV30_RX_PIN                 13      // Serial RX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
+#endif
+
+#ifndef PZEM004TV30_TX_PIN
+#define PZEM004TV30_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
+#endif
+
+#ifndef PZEM004TV30_DEBUG
+#define PZEM004TV30_DEBUG                  0
 #endif
 
 //------------------------------------------------------------------------------
@@ -1394,7 +1425,8 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
-    HDC1080_SUPPORT \
+    HDC1080_SUPPORT || \
+    PZEM004TV30_SUPPORT \
 )
 #endif
 
