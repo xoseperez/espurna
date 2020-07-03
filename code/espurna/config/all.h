@@ -24,6 +24,7 @@
 #include <Arduino.h>
 #include <core_version.h>
 #include <pgmspace.h>
+#include <spi_flash.h>
 
 #ifdef USE_CUSTOM_H
 #include "custom.h"

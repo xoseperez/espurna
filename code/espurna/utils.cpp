@@ -6,9 +6,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <limits>
-
-#include "utils.h"
+#include "espurna.h"
 
 #include "board.h"
 #include "influxdb.h"
@@ -20,6 +18,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/TypeChecks.h"
 
+#include <limits>
 
 //--------------------------------------------------------------------------------
 // Reset reasons

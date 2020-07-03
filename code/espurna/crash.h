@@ -1,6 +1,15 @@
+/*
+
+Part of the DEBUG MODULE
+
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 // -----------------------------------------------------------------------------
 // Save crash info
-// Taken from krzychb EspSaveCrash
+// Original code by @krzychb
 // https://github.com/krzychb/EspSaveCrash
 // -----------------------------------------------------------------------------
 
@@ -10,8 +19,6 @@
 
 #include <Arduino.h>
 #include <cstdint>
-
-#define SAVE_CRASH_EEPROM_OFFSET    0x0100  // initial address for crash data
 
 /**
  * Structure of the single crash data set
@@ -41,12 +48,18 @@
 #define SAVE_CRASH_STACK_START      0x1A  // 4 bytes
 #define SAVE_CRASH_STACK_END        0x1E  // 4 bytes
 #define SAVE_CRASH_STACK_SIZE       0x22  // 2 bytes
-#define SAVE_CRASH_STACK_TRACE      0x24  // variable
+#define SAVE_CRASH_STACK_TRACE      0x24  // variable, 4 bytes per value
 
-constexpr size_t crashUsedSpace() {
-    return (SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_SIZE + 2);
-}
+constexpr int EepromCrashBegin = EepromReservedSize;
+constexpr int EepromCrashEnd = 256;
 
+constexpr size_t CrashReservedSize = EepromCrashEnd - EepromCrashBegin;
+constexpr size_t CrashTraceReservedSize = CrashReservedSize - SAVE_CRASH_STACK_TRACE;
+
+size_t crashReservedSize();
+
+void crashForceDump(Print&);
+void crashDump(Print&);
 void crashClear();
-void crashDump();
+
 void crashSetup();

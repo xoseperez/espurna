@@ -15,11 +15,40 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #include <ArduinoJson.h>
-#include <Embedis.h>
 
 #include "broker.h"
+#include "storage_eeprom.h"
+#include "settings_embedis.h"
 
 BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
+
+// --------------------------------------------------------------------------
+
+namespace settings {
+
+struct EepromStorage {
+
+    uint8_t read(size_t pos) {
+        return EEPROMr.read(pos);
+    }
+
+    void write(size_t pos, uint8_t value) {
+        EEPROMr.write(pos, value);
+    }
+
+    void commit() {
+#if SETTINGS_AUTOSAVE
+        eepromCommit();
+#endif
+    }
+
+};
+
+using kvs_type = embedis::KeyValueStore<EepromStorage>;
+
+extern kvs_type kv_store;
+
+} // namespace settings
 
 // --------------------------------------------------------------------------
 
@@ -154,11 +183,11 @@ R getSetting(const settings_key_t& key, R defaultValue) __attribute__((noinline)
 
 template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
 R getSetting(const settings_key_t& key, R defaultValue) {
-    String value;
-    if (!Embedis::get(key.toString(), value)) {
+    auto result = settings::kv_store.get(key.toString());
+    if (!result) {
         return defaultValue;
     }
-    return Rfunc(value);
+    return Rfunc(result.value);
 }
 
 template<>
@@ -170,7 +199,7 @@ String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultV
 
 template<typename T>
 bool setSetting(const settings_key_t& key, const T& value) {
-    return Embedis::set(key.toString(), String(value));
+    return settings::kv_store.set(key.toString(), String(value));
 }
 
 template<>
@@ -187,12 +216,11 @@ bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024);
 bool settingsRestoreJson(JsonObject& data);
 
 size_t settingsKeyCount();
-String settingsKeyName(unsigned int index);
 std::vector<String> settingsKeys();
 
 void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 
-unsigned long settingsSize();
+size_t settingsSize();
 
 void migrate();
 void settingsSetup();

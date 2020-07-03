@@ -4,14 +4,19 @@ EEPROM MODULE
 
 */
 
-#include "storage_eeprom.h"
-#include "settings.h"
+// XXX: including storage_eeprom.h here directly causes dependency issue with settings
+#include "espurna.h"
 
 EEPROM_Rotate EEPROMr;
 bool _eeprom_commit = false;
 
 uint32_t _eeprom_commit_count = 0;
 bool _eeprom_last_commit_result = false;
+bool _eeprom_ready = false;
+
+bool eepromReady() {
+    return _eeprom_ready;
+}
 
 void eepromRotate(bool value) {
     // Enable/disable EEPROM rotation only if we are using more sectors than the
@@ -66,11 +71,10 @@ void eepromBackup(uint32_t index){
 void _eepromInitCommands() {
 
     terminalRegisterCommand(F("EEPROM"), [](const terminal::CommandContext&) {
-        infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
         eepromSectorsDebug();
         if (_eeprom_commit_count > 0) {
             DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
-            DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
+            DEBUG_MSG_P(PSTR("[MAIN] Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
         }
         terminalOK();
     });
@@ -135,13 +139,15 @@ void eepromSetup() {
         }
     #endif
 
-    EEPROMr.offset(EEPROM_ROTATE_DATA);
-    EEPROMr.begin(EEPROM_SIZE);
+    EEPROMr.offset(EepromRotateOffset);
+    EEPROMr.begin(EepromSize);
 
     #if TERMINAL_SUPPORT
         _eepromInitCommands();
     #endif
 
     espurnaRegisterLoop(eepromLoop);
+
+    _eeprom_ready = true;
 
 }
