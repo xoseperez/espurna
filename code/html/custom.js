@@ -1897,6 +1897,14 @@ function processData(data) {
             return;
         }
 
+        if ("pzemVisible" === key) {
+            $("input[name='snsSave']").prop("disabled", true);
+            $("input[name='snsSave']")
+                .parent().parent().find(".hint")
+                .text("PZEM004 module saves the energy data on it's own")
+            return;
+        }
+
         <!-- endRemoveIf(!sensor)-->
 
         // ---------------------------------------------------------------------
