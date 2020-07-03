@@ -144,6 +144,7 @@
 //#define OUKITEL_P1
 //#define PHYX_ESP12_RGB
 //#define PILOTAK_ESP_DIN_V1
+//#define PRODINO_WIFI
 //#define PSH_RGBW_CONTROLLER
 //#define PSH_WIFI_PLUG
 //#define PSH_WIFI_SENSOR

@@ -60,6 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "uartmqtt.h"
 #include "web.h"
 #include "ws.h"
+#include "mcp23s08.h"
 
 std::vector<void_callback_f> _loop_callbacks;
 std::vector<void_callback_f> _reload_callbacks;
@@ -288,6 +289,10 @@ void setup() {
     #endif
     #if KINGART_CURTAIN_SUPPORT
         kingartCurtainSetup();
+    #endif
+
+    #if MCP23S08_SUPPORT
+        MCP23S08Setup();
     #endif
 
     // 3rd party code hook

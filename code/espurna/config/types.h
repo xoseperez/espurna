@@ -64,6 +64,7 @@
 #define BUTTON_EVENTS_SOURCE_GENERIC               0
 #define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL     1
 #define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL   2
+#define BUTTON_EVENTS_SOURCE_MCP23S08              3
 
 //------------------------------------------------------------------------------
 // ENCODER
@@ -103,6 +104,7 @@
 #define RELAY_PROVIDER_LIGHT        2
 #define RELAY_PROVIDER_RFBRIDGE     3
 #define RELAY_PROVIDER_STM          4
+#define RELAY_PROVIDER_MCP23S08     5
 
 #define RELAY_GROUP_SYNC_NORMAL      0
 #define RELAY_GROUP_SYNC_INVERSE     1
