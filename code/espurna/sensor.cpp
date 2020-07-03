@@ -2074,7 +2074,7 @@ void _sensorLoad() {
         // TODO: we need an equivalent to the `pzem.address` command
         sensor->setAddress(getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress));
         sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
-        sensor->setDebug(getSetting("pzemv30Debug", true));
+        sensor->setDebug(getSetting("pzemv30Debug", false));
 
         bool soft = getSetting("pzemv30Soft", 1 == PZEM004TV30_USE_SOFT);
 
