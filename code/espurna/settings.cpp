@@ -220,10 +220,10 @@ String settingsQueryDefaults(const String& key) {
 // -----------------------------------------------------------------------------
 
 String settings_key_t::toString() const {
-    if (index < 0) {
-        return value;
+    if (_index < 0) {
+        return _value;
     } else {
-        return value + index;
+        return _value + _index;
     }
 }
 

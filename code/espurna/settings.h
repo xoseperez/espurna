@@ -56,30 +56,33 @@ class settings_key_t {
 
     public:
         settings_key_t(const char* value, unsigned char index) :
-            value(value), index(index)
+            _value(value), _index(index)
         {}
         settings_key_t(const String& value, unsigned char index) :
-            value(value), index(index)
+            _value(value), _index(index)
+        {}
+        settings_key_t(String&& value, unsigned char index) :
+            _value(std::move(value)), _index(index)
         {}
         settings_key_t(const char* value) :
-            value(value), index(-1)
+            _value(value), _index(-1)
         {}
         settings_key_t(const String& value) :
-            value(value), index(-1)
+            _value(value), _index(-1)
         {}
         settings_key_t(const __FlashStringHelper* value) :
-            value(value), index(-1)
+            _value(value), _index(-1)
         {}
         settings_key_t() :
-            value(), index(-1)
+            _value(), _index(-1)
         {}
 
-        bool match(const char* _value) const {
-            return (value == _value) || (toString() == _value);
+        bool match(const char* value) const {
+            return (_value == value) || (toString() == value);
         }
 
-        bool match(const String& _value) const {
-            return (value == _value) || (toString() == _value);
+        bool match(const String& value) const {
+            return (_value == value) || (toString() == value);
         }
 
         String toString() const;
@@ -89,8 +92,8 @@ class settings_key_t {
         }
 
     private:
-        const String value;
-        int index;
+        const String _value;
+        int _index;
 };
 
 using settings_move_key_t = std::pair<settings_key_t, settings_key_t>;
