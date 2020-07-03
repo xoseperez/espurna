@@ -19,7 +19,7 @@ namespace embedis {
 template <typename T>
 struct StaticArrayStorage {
 
-    StaticArrayStorage(T& blob) :
+    explicit StaticArrayStorage(T& blob) :
         _blob(blob),
         _size(blob.size())
     {}
@@ -73,7 +73,7 @@ struct TestSequentialKvGenerator {
     };
 
     TestSequentialKvGenerator() = default;
-    TestSequentialKvGenerator(Mode mode) :
+    explicit TestSequentialKvGenerator(Mode mode) :
         _mode(mode)
     {}
 
