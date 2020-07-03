@@ -385,7 +385,11 @@ void test_storage() {
     using storage_type = decltype(instance)::storage_type;
     using kvs_type = decltype(instance)::kvs_type;
 
-    // ensure we can operate with storage offsets
+    // - ensure we can operate with storage offsets
+    // - test for internal length optimization that will overwrite the key in-place
+    // - make sure we did not break the storage above
+    // storage_type accepts reference to the blob, so we can seamlessly use the same
+    // underlying data storage and share it between kvs instances
     {
         kvs_type slice(storage_type(instance.blob), (Size - kvsize), Size);
         TEST_ASSERT_EQUAL(1, slice.count());
@@ -405,6 +409,41 @@ void test_storage() {
         auto result = slice.get("key2");
         TEST_ASSERT(static_cast<bool>(result));
         TEST_ASSERT_EQUAL_STRING("value2", result.value.c_str());
+    }
+
+    // ensure offset does not introduce offset bugs
+    // for instance, test in-place key overwrite by moving left boundary 2 bytes to the right
+    {
+        const auto available = instance.kvs.available();
+        const auto offset = 2;
+
+        TEST_ASSERT_GREATER_OR_EQUAL(offset, available);
+
+        kvs_type slice(storage_type(instance.blob), offset, Size);
+        TEST_ASSERT_EQUAL(2, slice.count());
+
+        auto key1 = slice.get("key1");
+        TEST_ASSERT(static_cast<bool>(key1));
+
+        String updated(key1.value);
+        for (size_t index = 0; index < key1.value.length(); ++index) {
+            updated[index] = 'A';
+        }
+
+        TEST_ASSERT(slice.set("key1", updated));
+        TEST_ASSERT(slice.set("key2", updated));
+
+        TEST_ASSERT_EQUAL(2, slice.count());
+
+        auto check_key1 = slice.get("key1");
+        TEST_ASSERT(static_cast<bool>(check_key1));
+        TEST_ASSERT_EQUAL_STRING(updated.c_str(), check_key1.value.c_str());
+
+        auto check_key2 = slice.get("key2");
+        TEST_ASSERT(static_cast<bool>(check_key2));
+        TEST_ASSERT_EQUAL_STRING(updated.c_str(), check_key2.value.c_str());
+
+        TEST_ASSERT_EQUAL(available - offset, slice.available());
     }
 
 }

@@ -406,7 +406,7 @@ class KeyValueStore {
             // we also need to pad the space *after* the value
             // but, only when we still have some space left
             if ((start_pos - need) >= 2) {
-                _cursor_set_position(writer.begin);
+                _cursor_set_position(writer.begin - _cursor.begin);
                 auto next_kv = _read_kv();
                 if (!next_kv) {
                     auto padding = Cursor::fromEnd(_storage, writer.begin - 2, writer.begin);
