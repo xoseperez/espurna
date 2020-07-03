@@ -16,13 +16,12 @@
 
 #define HDC1080_SCL_FREQUENCY    200
 
-// Middle byte of Device Serial ID. May be diffirent on your chip (see debug i2c.scan)
-#define HDC1080_CHIP_HDC1080     0x2C
+// ref. http://www.ti.com/lit/ds/symlink/hdc1080.pdf
+// Device ID. Should be the same for every device.
+#define HDC1080_DEVICE_ID   0x1050
 
 #define HDC1080_CMD_TMP     0x00
 #define HDC1080_CMD_HUM     0x01
-
-PROGMEM const char hdc1080_chip_hdc1080_name[] = "HDC1080";
 
 class HDC1080Sensor : public I2CSensor<> {
 
@@ -49,10 +48,8 @@ class HDC1080Sensor : public I2CSensor<> {
 
         // Descriptive name of the sensor
         String description() {
-            char name[10];
-            strncpy_P(name, hdc1080_chip_hdc1080_name, sizeof(name));
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", name, _address);
+            snprintf_P(buffer, sizeof(buffer), PSTR("HDC1080 @ I2C (0x%02X)"), _address);
             return String(buffer);
         }
 
@@ -70,9 +67,6 @@ class HDC1080Sensor : public I2CSensor<> {
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
-
-            _error = SENSOR_ERROR_UNKNOWN_ID;
-            if (_chip == 0) return;
             _error = SENSOR_ERROR_OK;
 
             double value;
@@ -107,27 +101,31 @@ class HDC1080Sensor : public I2CSensor<> {
             _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
-            // Check device
-            i2c_write_uint8(_address, 0xFC, 0xC9);
-            _chip = i2c_read_uint8(_address);
+            // Check device ID before doing anything else
+            // ref. https://github.com/xoseperez/espurna/issues/2270#issuecomment-639239944
+            // > Also there are clones of HDC1080 and they may have different Device ID
+            // > values. You need to check it by reading and debug output this bytes.
+            i2c_write_uint8(_address, 0xFF);
+            _device_id = i2c_read_uint16(_address);
 
-            if (_chip != HDC1080_CHIP_HDC1080) {
-
-                _count = 0;
-                i2cReleaseLock(_address);
-                _previous_address = 0;
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-
-                // Setting _address to 0 forces auto-discover
-                // This might be necessary at this stage if there is a
-                // different sensor in the hardcoded address
-                _address = 0;
-
-            } else {
+            if (_device_id == HDC1080_DEVICE_ID) {
+                _ready = true;
                 _count = 2;
+                return;
             }
 
-            _ready = true;
+            DEBUG_MSG_P(PSTR("[HDC1080] ERROR: Expected Device ID %04X, received %04X\n"), HDC1080_DEVICE_ID, _device_id);
+
+            _count = 0;
+            i2cReleaseLock(_address);
+            _previous_address = 0;
+            _error = SENSOR_ERROR_UNKNOWN_ID;
+
+            // Setting _address to 0 forces auto-discover
+            // This might be necessary at this stage if there is a
+            // different sensor in the hardcoded address
+            _address = 0;
+            _ready = false;
 
         }
 
@@ -153,7 +151,7 @@ class HDC1080Sensor : public I2CSensor<> {
 
         }
 
-        unsigned char _chip;
+        uint16_t _device_id = 0;
         double _temperature = 0;
         double _humidity = 0;
 
