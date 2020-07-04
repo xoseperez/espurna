@@ -549,7 +549,7 @@
     #ifndef CSE7766_SUPPORT
     #define CSE7766_SUPPORT     1
     #endif
-    #define CSE7766_PIN         1
+    #define CSE7766_RX_PIN      3
 
 #elif defined(ITEAD_SONOFF_DUAL)
 
@@ -975,7 +975,7 @@
 
     // CSE7766
     #define CSE7766_SUPPORT         1
-    #define CSE7766_PIN             1
+    #define CSE7766_RX_PIN          3
 
 #elif defined(ITEAD_SONOFF_S31_LITE)
 
@@ -3201,7 +3201,7 @@
     #ifndef CSE7766_SUPPORT
     #define CSE7766_SUPPORT     1
     #endif
-    #define CSE7766_PIN         1
+    #define CSE7766_RX_PIN      3
 
 // -----------------------------------------------------------------------------
 // Teckin SP21

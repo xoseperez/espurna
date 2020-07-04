@@ -1571,7 +1571,7 @@ void _sensorLoad() {
     #if CSE7766_SUPPORT
     {
         CSE7766Sensor * sensor = new CSE7766Sensor();
-        sensor->setRX(CSE7766_PIN);
+        sensor->setRX(CSE7766_RX_PIN);
         _sensors.push_back(sensor);
     }
     #endif

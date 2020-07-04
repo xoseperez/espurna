@@ -284,8 +284,9 @@
 #define CSE7766_SUPPORT                 0
 #endif
 
-#ifndef CSE7766_PIN
-#define CSE7766_PIN                     1       // TX pin from the CSE7766
+#ifndef CSE7766_RX_PIN
+#define CSE7766_RX_PIN                  3      // RX pin connected to the CSE7766
+                                               // As we never transmit anything, this is the only pin used
 #endif
 
 #ifndef CSE7766_PIN_INVERSE
