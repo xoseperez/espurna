@@ -217,7 +217,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
             if (_soft) {
                 if (_serial) removeSerial();
-                _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
+                _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
                 static_cast<SoftwareSerial*>(_serial)->enableIntTx(false);
             }
 
