@@ -221,3 +221,12 @@
 #warning "MQTT_MAX_PACKET_SIZE should be set in `build_flags = ...` of the environment! Default value is used instead."
 #endif
 #endif
+
+//------------------------------------------------------------------------------
+// Disable BME680 support if using Core version 2.3.0 due to memory constraints.
+
+#if BME680_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#warning "BME680_SUPPORT is not available when using Arduino Core 2.3.0 due to memory constraints. Please use Arduino Core 2.6.3+ instead (or set `platform = ${common.platform_latest}` for the latest version)."
+#undef BME680_SUPPORT
+#define BME680_SUPPORT 0
+#endif

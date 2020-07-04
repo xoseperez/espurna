@@ -93,6 +93,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Environment
         * **DHT11 / DHT12 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP180**, **BMP280** and **BME280** pressure, humidity (BME280) and temperature (BMP280 & BME280) sensor by Bosch
+        * **BME680** pressure, humidity, temperature and gas sensor by Bosch with support for Bosch's proprietary library BSEC for accurate Indoor Air Quality (IAQ) monitoring (⚠️ [learn more](https://github.com/xoseperez/espurna/wiki/Sensors#bme680-environmental-sensor))
         * **TMP35** and **TMP36** analog temperature sensors
         * **MAX6675** temperature sensor
         * **NTC** temperature sensors
