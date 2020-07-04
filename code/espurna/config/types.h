@@ -15,9 +15,6 @@
 #define WIFI_STATE_WPS              4
 #define WIFI_STATE_SMARTCONFIG      8
 
-#define WIFI_AP_ALLWAYS             1
-#define WIFI_AP_FALLBACK            2
-
 //------------------------------------------------------------------------------
 // BUTTONS
 //------------------------------------------------------------------------------
