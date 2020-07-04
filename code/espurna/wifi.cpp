@@ -15,7 +15,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
 bool _wifi_smartconfig_initial = false;
-int _wifi_ap_mode = WIFI_AP_FALLBACK;
+WiFiApMode _wifi_ap_mode = WiFiApMode::Fallback;
 
 #if WIFI_GRATUITOUS_ARP_SUPPORT
 unsigned long _wifi_gratuitous_arp_interval = 0;
@@ -26,41 +26,21 @@ unsigned long _wifi_gratuitous_arp_last = 0;
 // PRIVATE
 // -----------------------------------------------------------------------------
 
-struct wifi_scan_info_t {
-    String ssid_scan;
-    int32_t rssi_scan;
-    uint8_t sec_scan;
-    uint8_t* BSSID_scan;
-    int32_t chan_scan;
-    bool hidden_scan;
-    char buffer[128];
-};
-
-using wifi_scan_f = std::function<void(wifi_scan_info_t& info)>;
-
-void _wifiUpdateSoftAP() {
-    if (WiFi.softAPgetStationNum() == 0) {
-        #if USE_PASSWORD
-            jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
-        #else
-            jw.setSoftAP(getSetting("hostname").c_str());
-        #endif
-    }
-}
-
-void _wifiCheckAP() {
-    if (
-        (WIFI_AP_FALLBACK == _wifi_ap_mode)
-        && ((WiFi.getMode() & WIFI_AP) > 0)
-        && jw.connected()
-        && (WiFi.softAPgetStationNum() == 0)
-    ) {
-         jw.enableAP(false);
-    }
-}
-
 namespace settings {
 namespace internal {
+
+template <>
+WiFiApMode convert(const String& value) {
+    switch (value.toInt()) {
+    case 0:
+        return WiFiApMode::Disabled;
+    case 1:
+        return WiFiApMode::Enabled;
+    default:
+    case 2:
+        return WiFiApMode::Fallback;
+    }
+}
 
 template<>
 WiFiSleepType_t convert(const String& value) {
@@ -75,21 +55,58 @@ WiFiSleepType_t convert(const String& value) {
     }
 }
 
+} // namespace internal
+} // namespace settings
+
+String _wifiSettingsSoftApSsid() {
+    return getSetting("wifiApSsid", strlen(WIFI_AP_SSID)
+        ? F(WIFI_AP_SSID)
+        : getSetting("hostname", getIdentifier()));
 }
+
+String _wifiSettingsSoftApPass() {
+    return getSetting("wifiApPass", strlen(WIFI_AP_PASS)
+        ? F(WIFI_AP_PASS)
+        : getAdminPass());
+}
+
+void _wifiUpdateSoftAP() {
+    if (!WiFi.softAPgetStationNum()) {
+        // Note: we know that c_str() will be copied, no need to persist it ourselves
+        jw.setSoftAP(
+            _wifiSettingsSoftApSsid().c_str(),
+        #if USE_PASSWORD
+            _wifiSettingsSoftApPass().c_str()
+        #else
+            nullptr
+        #endif
+        );
+    }
+}
+
+void _wifiCheckAP() {
+    if (
+        (WiFiApMode::Fallback == _wifi_ap_mode)
+        && ((WiFi.getMode() & WIFI_AP) > 0)
+        && jw.connected()
+        && (WiFi.softAPgetStationNum() == 0)
+    ) {
+         jw.enableAP(false);
+    }
 }
 
 void _wifiConfigure() {
 
-    jw.setHostname(getSetting("hostname").c_str());
+    jw.setHostname(getSetting("hostname", getIdentifier()).c_str());
     _wifiUpdateSoftAP();
 
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
 
-    jw.enableAPFallback(WIFI_FALLBACK_APMODE);
-    jw.cleanNetworks();
+    _wifi_ap_mode = getSetting("wifiApMode", WIFI_AP_MODE);
 
-    _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK);
+    jw.enableAPFallback(_wifi_ap_mode != WiFiApMode::Disabled);
+    jw.cleanNetworks();
 
     // If system is flagged unstable we do not init wifi networks
     #if SYSTEM_CHECK_ENABLED
@@ -154,28 +171,45 @@ void _wifiConfigure() {
 
 }
 
-void _wifiScan(wifi_scan_f callback = nullptr) {
+struct wifi_scan_info_t {
+    String ssid_scan;
+    int32_t rssi_scan;
+    uint8_t sec_scan;
+    uint8_t* BSSID_scan;
+    int32_t chan_scan;
+    bool hidden_scan;
+    char buffer[128];
+};
 
+template <typename WiFiScanCallback>
+void _wifiScan(WiFiScanCallback callback) {
     DEBUG_MSG_P(PSTR("[WIFI] Start scanning\n"));
 
-    unsigned char result = WiFi.scanNetworks();
-
-    if (result == WIFI_SCAN_FAILED) {
+    auto networks = WiFi.scanNetworks();
+    if (networks == WIFI_SCAN_FAILED) {
         DEBUG_MSG_P(PSTR("[WIFI] Scan failed\n"));
         return;
-    } else if (result == 0) {
+    } else if (0 == networks) {
         DEBUG_MSG_P(PSTR("[WIFI] No networks found\n"));
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
+    DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), networks);
 
-    // Populate defined networks with scan data
+    // SDK pre-allocates a memory region with the scan data, but the only API to get them is through this 'getter' method.
+    // Pick them one by one and pass into the callback as our custom struct.
     wifi_scan_info_t info;
 
-    for (unsigned char i = 0; i < result; ++i) {
+    for (int i = 0; i < networks; ++i) {
 
-        WiFi.getNetworkInfo(i, info.ssid_scan, info.sec_scan, info.rssi_scan, info.BSSID_scan, info.chan_scan, info.hidden_scan);
+        WiFi.getNetworkInfo(i,
+            info.ssid_scan,
+            info.sec_scan,
+            info.rssi_scan,
+            info.BSSID_scan,
+            info.chan_scan,
+            info.hidden_scan
+        );
 
         snprintf_P(info.buffer, sizeof(info.buffer),
             PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
@@ -186,11 +220,7 @@ void _wifiScan(wifi_scan_f callback = nullptr) {
             info.ssid_scan.c_str()
         );
 
-        if (callback) {
-            callback(info);
-        } else {
-            DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), info.buffer);
-        }
+        callback(info);
 
     }
 
@@ -377,6 +407,35 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
+    terminalRegisterCommand(F("WIFI.STATIONS"), [](const terminal::CommandContext& ctx) {
+        char buffer[64];
+
+        size_t stations = 0;
+
+        auto* station = wifi_softap_get_station_info();
+
+        while (station) {
+            sprintf_P(buffer,
+                PSTR("[WIFI] %02X:%02X:%02X:%02X:%02X:%02X %s"),
+                MAC2STR(station->bssid),
+                IPAddress(station->ip.addr).toString().c_str()
+            );
+            ctx.output.println(buffer);
+            station = STAILQ_NEXT(station, next);
+            ++stations;
+        }
+
+        wifi_softap_free_station_info();
+
+        if (!stations) {
+            terminalError(ctx, F("No stations connected"));
+            return;
+        }
+
+
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("WIFI"), [](const terminal::CommandContext&) {
         wifiDebug();
         terminalOK();
@@ -413,7 +472,9 @@ void _wifiInitCommands() {
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
     terminalRegisterCommand(F("WIFI.SCAN"), [](const terminal::CommandContext&) {
-        _wifiScan();
+        _wifiScan([](wifi_scan_info_t& info) {
+            DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), info.buffer);
+        });
         terminalOK();
     });
 
@@ -525,7 +586,7 @@ void _wifiSendGratuitousArp(unsigned long interval) {
 
 // backported WiFiAPClass methods
 
-String _wifiSoftAPSSID() {
+String _wifiRuntimeSoftApSsid() {
     struct softap_config config;
     wifi_softap_get_config(&config);
 
@@ -537,7 +598,7 @@ String _wifiSoftAPSSID() {
     return String(ssid);
 }
 
-String _wifiSoftAPPSK() {
+String _wifiRuntimeSoftApPass() {
     struct softap_config config;
     wifi_softap_get_config(&config);
 
@@ -573,8 +634,8 @@ void wifiDebug(WiFiMode_t modes) {
 
     if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), _wifiSoftAPSSID().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), _wifiSoftAPPSK().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), _wifiRuntimeSoftApSsid().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), _wifiRuntimeSoftApPass().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
         footer = true;
@@ -683,13 +744,25 @@ void wifiRegister(wifi_callback_f callback) {
     jw.subscribe(callback);
 }
 
+WiFiApMode wifiApMode() {
+    return _wifi_ap_mode;
+}
+
 // -----------------------------------------------------------------------------
 // INITIALIZATION
 // -----------------------------------------------------------------------------
 
 void wifiSetup() {
 
+    // Backwards compat, we need to specify namespace
+    moveSetting("apmode", "wifiApMode");
+
     _wifiConfigure();
+
+    if (WiFiApMode::Enabled ==_wifi_ap_mode) {
+        jw.enableAP(true);
+        jw.enableSTA(true);
+    }
 
     #if JUSTWIFI_ENABLE_SMARTCONFIG
         if (_wifi_smartconfig_initial) jw.startSmartConfig();
