@@ -1443,15 +1443,6 @@ void relaySetupDummy(size_t size, bool reconfigure) {
 
 }
 
-template <typename T>
-relay_t _relayFromConfiguration(unsigned char id) { 
-    return {
-        std::make_unique<T>(_relayPin(id)),
-        _relayType(id),
-        std::make_unique<T>(_relayResetPin(id))
-    };
-}
-
 void _relaySetupAdhoc() {
 
     size_t relays [[gnu::unused]] = 0;
@@ -1483,9 +1474,9 @@ void _relaySetupAdhoc() {
 
     _relays.reserve(relays);
 
-    #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY)
         using gpio_type = GpioPin;
-    #elif RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08
+    #elif (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
         using gpio_type = McpGpioPin;
     #endif
 
