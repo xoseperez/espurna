@@ -18,12 +18,10 @@ Copyright (C) 2016-2017 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimi
 
 #if MCP23S08_SUPPORT
 
-#include <SPI.h>
-
-constexpr const size_t McpGpioPins = MCP23S08_OPTOIN_COUNT;
+constexpr size_t McpGpioPins = 8;
 
 // real hardware pin
-class McpGpioPin final : virtual public BasePin {
+class McpGpioPin final : public BasePin {
     public:
         McpGpioPin(unsigned char pin);
 
@@ -32,18 +30,14 @@ class McpGpioPin final : virtual public BasePin {
         int digitalRead();
 };
 
-// Inputs and outputs count.
-#define MCP23S08_OPTOIN_COUNT 4
-
 void MCP23S08Setup();
-void MCP23S08InitGPIO(); 
-void MCP23S08SetDirection(uint8_t pinNumber, uint8_t mode);
+
 uint8_t MCP23S08ReadRegister(uint8_t address);
 void MCP23S08WriteRegister(uint8_t address, uint8_t data);
+
+void MCP23S08SetDirection(uint8_t pinNumber, uint8_t mode);
 void MCP23S08SetPin(uint8_t pinNumber, bool state);
 bool MCP23S08GetPin(uint8_t pinNumber);
-void MCP23S08SetRelayState(uint8_t relayNumber, bool state);
-bool MCP23S08GetOptoInState(uint8_t optoInNumber);
 
 bool mcpGpioValid(unsigned char gpio);
 

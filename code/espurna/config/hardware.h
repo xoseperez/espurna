@@ -4828,47 +4828,36 @@
     // MCP23S08
     #define MCP23S08_SUPPORT        1
 
-    #define MCP23S08_OPTOIN_COUNT   4
-
-    // Opto input pins
-    #define MCP23S08_IN1PIN         0
-    #define MCP23S08_IN2PIN         1
-    #define MCP23S08_IN3PIN         2
-    #define MCP23S08_IN4PIN         3
-
-    // Relay pins
-    #define MCP23S08_REL1PIN        4
-    #define MCP23S08_REL2PIN        5
-    #define MCP23S08_REL3PIN        6
-    #define MCP23S08_REL4PIN        7
-
     // Relays
-    #define DUMMY_RELAY_COUNT       4
     #define RELAY_PROVIDER          RELAY_PROVIDER_MCP23S08
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              5
+    #define RELAY3_PIN              6
+    #define RELAY4_PIN              7
 
     // Buttons
-    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON
-    #define BUTTON1_PIN             MCP23S08_IN1PIN
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PIN             0
 
-    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON
-    #define BUTTON2_PIN             MCP23S08_IN2PIN
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PIN             1
 
-    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON
-    #define BUTTON3_PIN             MCP23S08_IN3PIN
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PIN             2
 
-    #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON
-    #define BUTTON4_PIN             MCP23S08_IN4PIN
+    #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_PIN             3
 
-    #define BUTTON1_RELAY       1
-    #define BUTTON2_RELAY       2
-    #define BUTTON3_RELAY       3
-    #define BUTTON4_RELAY       4
+    #define BUTTON1_RELAY           1
+    #define BUTTON2_RELAY           2
+    #define BUTTON3_RELAY           3
+    #define BUTTON4_RELAY           4
 
     #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_MCP23S08
 
     // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
 
 // -----------------------------------------------------------------------------
 

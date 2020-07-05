@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <bitset>
 
-constexpr size_t RELAYS_MAX = 32; 
+constexpr size_t RelaysMax = 32;
 
 PayloadStatus relayParsePayload(const char * payload);
 

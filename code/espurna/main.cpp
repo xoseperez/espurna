@@ -194,6 +194,11 @@ void setup() {
         apiSetup();
     #endif
 
+    // Hardware GPIO expander, needs to be available for modules down below
+    #if MCP23S08_SUPPORT
+        MCP23S08Setup();
+    #endif
+
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
@@ -289,10 +294,6 @@ void setup() {
     #endif
     #if KINGART_CURTAIN_SUPPORT
         kingartCurtainSetup();
-    #endif
-
-    #if MCP23S08_SUPPORT
-        MCP23S08Setup();
     #endif
 
     // 3rd party code hook

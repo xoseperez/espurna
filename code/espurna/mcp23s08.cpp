@@ -12,14 +12,15 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 #if MCP23S08_SUPPORT
 
+#include <SPI.h>
+
 #include <bitset>
 
-
-#define MCP23S08_CS 15
-
+// Known commands
 #define READ_CMD  0x41
 #define WRITE_CMD 0x40
 
+// Registers
 #define IODIR   0x00
 #define IPOL    0x01
 #define GPINTEN 0x02
@@ -32,21 +33,8 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 #define GPIO    0x09
 #define OLAT    0x0A
 
-/**
- * @brief Relay pins.
- */
-const uint8_t RELAY_PINS[DUMMY_RELAY_COUNT] =
-{ MCP23S08_REL1PIN, MCP23S08_REL2PIN, MCP23S08_REL3PIN, MCP23S08_REL4PIN };
-
-/**
- * @brief Input pins.
- */
-const int OPTOIN_PINS[MCP23S08_OPTOIN_COUNT] =
-{ MCP23S08_IN1PIN, MCP23S08_IN2PIN, MCP23S08_IN3PIN, MCP23S08_IN4PIN };
-
-uint8_t  _expTxData[16]  __attribute__((aligned(4)));
-uint8_t  _expRxData[16]  __attribute__((aligned(4))); 
-
+static uint8_t  _mcp23s08TxData[16]  __attribute__((aligned(4)));
+static uint8_t  _mcp23s08RxData[16]  __attribute__((aligned(4)));
 
 McpGpioPin::McpGpioPin(unsigned char pin) :
     BasePin(pin)
@@ -57,44 +45,26 @@ inline void McpGpioPin::pinMode(int8_t mode) {
 }
 
 inline void McpGpioPin::digitalWrite(int8_t val) {
-    ::MCP23S08SetRelayState(this->pin, val);
+    ::MCP23S08SetPin(this->pin, val);
 }
 
 inline int McpGpioPin::digitalRead() {
-    return ::MCP23S08GetOptoInState(this->pin);
+    return ::MCP23S08GetPin(this->pin);
 }
 
 void MCP23S08Setup()
 {
-    DEBUG_MSG_P(PSTR("[MCP23S08] Initialize SPI bus\n"));
-    // Expander settings.
+    // Expander SPI settings
+    DEBUG_MSG_P(PSTR("[MCP23S08] Pin=%u SPI bus %u Hz\n"),
+        MCP23S08_CS_PIN, MCP23S08_SPI_FREQUENCY);
+
     SPI.begin();
-    SPI.setHwCs(MCP23S08_CS);
-    SPI.setFrequency(1000000);
+    SPI.setHwCs(MCP23S08_CS_PIN);
+    SPI.setFrequency(MCP23S08_SPI_FREQUENCY);
     SPI.setDataMode(SPI_MODE0);
 
-    pinMode(MCP23S08_CS, OUTPUT);
-    digitalWrite(MCP23S08_CS, HIGH);
-    MCP23S08InitGPIO();
-}
-
-/**
- * @brief Set a expander MCP23S08 the pin direction.
- *
- * @param pinNumber Pin number for set.
- * @param mode direction mode. 0 - INPUT, 1 - OUTPUT.
- *
- * @return void
- */
-void MCP23S08InitGPIO()
-{
-    // Relays.
-    for (uint8_t i = 0; i < DUMMY_RELAY_COUNT; i++)
-    {
-        DEBUG_MSG_P(PSTR("[MCP23S08] Initialize output GPIO %d\n"), i);
-        MCP23S08SetDirection(RELAY_PINS[i], OUTPUT);
-    }
-
+    pinMode(MCP23S08_CS_PIN, OUTPUT);
+    digitalWrite(MCP23S08_CS_PIN, HIGH);
 }
 
 /**
@@ -120,7 +90,7 @@ void MCP23S08SetDirection(uint8_t pinNumber, uint8_t mode)
 
     MCP23S08WriteRegister(IODIR, registerData);
 }
- 
+
 /**
  * @brief Read an expander MCP23S08 a register.
  *
@@ -130,15 +100,15 @@ void MCP23S08SetDirection(uint8_t pinNumber, uint8_t mode)
  */
 uint8_t MCP23S08ReadRegister(uint8_t address)
 {
-    _expTxData[0] = READ_CMD;
-    _expTxData[1] = address;
+    _mcp23s08TxData[0] = READ_CMD;
+    _mcp23s08TxData[1] = address;
 
-    digitalWrite(MCP23S08_CS, LOW);
-    SPI.transferBytes(_expTxData, _expRxData, 3);
-    digitalWrite(MCP23S08_CS, HIGH);
+    digitalWrite(MCP23S08_CS_PIN, LOW);
+    SPI.transferBytes(_mcp23s08TxData, _mcp23s08RxData, 3);
+    digitalWrite(MCP23S08_CS_PIN, HIGH);
 
-    return _expRxData[2];
-} 
+    return _mcp23s08RxData[2];
+}
 
 /**
  * @brief Write data in expander MCP23S08 register.
@@ -150,14 +120,14 @@ uint8_t MCP23S08ReadRegister(uint8_t address)
  */
 void MCP23S08WriteRegister(uint8_t address, uint8_t data)
 {
-    _expTxData[0] = WRITE_CMD;
-    _expTxData[1] = address;
-    _expTxData[2] = data;
+    _mcp23s08TxData[0] = WRITE_CMD;
+    _mcp23s08TxData[1] = address;
+    _mcp23s08TxData[2] = data;
 
-    digitalWrite(MCP23S08_CS, LOW);
-    SPI.transferBytes(_expTxData, _expRxData, 3);
-    digitalWrite(MCP23S08_CS, HIGH);
-} 
+    digitalWrite(MCP23S08_CS_PIN, LOW);
+    SPI.transferBytes(_mcp23s08TxData, _mcp23s08RxData, 3);
+    digitalWrite(MCP23S08_CS_PIN, HIGH);
+}
 
 /**
  * @brief Set expander MCP23S08 pin state.
@@ -186,7 +156,7 @@ void MCP23S08SetPin(uint8_t pinNumber, bool state)
 /**
  * @brief Get MCP23S08 pin state.
  *
- * @param pinNumber The number of pin to be get.
+ * @param pinNumber The number of pin to get.
  *
  * @return State true - 1, false - 0.
  */
@@ -196,43 +166,17 @@ bool MCP23S08GetPin(uint8_t pinNumber)
 
     return registerData & (1 << pinNumber);
 }
- 
-/**
- * @brief Set relay new state.
- *
- * @param relayNumber Number of relay from 0 to RELAY_COUNT - 1. 0 - Relay1, 1 - Relay2 ...
- * @param state New state of relay, true - On, false = Off.
- *
- * @return void
- */
-void MCP23S08SetRelayState(uint8_t relayNumber, bool state)
-{
-    // Check if relayNumber is out of range - return.
-    if (relayNumber > DUMMY_RELAY_COUNT - 1)
-    {
-        return;
-    }
-    
-    MCP23S08SetPin(RELAY_PINS[relayNumber], state);
-}
 
 /**
- * @brief Get opto in state.
+ * @brief Ensure pin number is valid.
  *
- * @param optoInNumber OptoIn number from 0 to MCP23S08_OPTOIN_COUNT - 1
+ * @param pinNumber The number of pin to be get.
  *
- * @return bool true - opto in is On, false is Off. If number is out of range - return false.
+ * @return State true - 1, false - 0.
  */
-bool MCP23S08GetOptoInState(uint8_t optoInNumber)
+bool mcpGpioValid(unsigned char gpio)
 {
-
-    // Check if optoInNumber is out of range - return false.
-    if (optoInNumber > MCP23S08_OPTOIN_COUNT - 1)
-    {
-        return false;
-    }
-
-    return !MCP23S08GetPin(optoInNumber);
+    return gpio < McpGpioPins;
 }
 
 #endif // MCP23S08_SUPPORT
