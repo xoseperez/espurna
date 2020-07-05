@@ -16,6 +16,9 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 #include <bitset>
 
+// TODO: check if this needed for SPI operation
+#define MCP23S08_CS_PIN 15
+
 // Known commands
 #define READ_CMD  0x41
 #define WRITE_CMD 0x40
