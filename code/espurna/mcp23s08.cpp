@@ -54,13 +54,12 @@ inline int McpGpioPin::digitalRead() {
 
 void MCP23S08Setup()
 {
-    // Expander SPI settings
-    DEBUG_MSG_P(PSTR("[MCP23S08] Pin=%u SPI bus %u Hz\n"),
-        MCP23S08_CS_PIN, MCP23S08_SPI_FREQUENCY);
+    DEBUG_MSG_P(PSTR("[MCP23S08] Initialize SPI bus\n"));
 
+    // Expander SPI settings
     SPI.begin();
-    SPI.setHwCs(MCP23S08_CS_PIN);
-    SPI.setFrequency(MCP23S08_SPI_FREQUENCY);
+    SPI.setHwCs(true);
+    SPI.setFrequency(1000000);
     SPI.setDataMode(SPI_MODE0);
 
     pinMode(MCP23S08_CS_PIN, OUTPUT);

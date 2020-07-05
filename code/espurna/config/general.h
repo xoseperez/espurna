@@ -1784,14 +1784,6 @@
 #define MCP23S08_SUPPORT            0
 #endif
 
-#ifndef MCP23S08_CS_PIN
-#define MCP23S08_CS_PIN             15
-#endif
-
-#ifndef MCP23S08_SPI_FREQUENCY
-#define MCP23S08_SPI_FREQUENCY      1000000
-#endif
-
 // =============================================================================
 // Configuration helpers
 // =============================================================================
