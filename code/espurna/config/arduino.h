@@ -22,6 +22,8 @@
 //#define ARILUX_AL_LC06
 //#define ARILUX_AL_LC11
 //#define ARILUX_E27
+//#define ARLEC_PB89HA
+//#define ARLEC_PC190HA
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
 //#define AVATTO_NAS_WR01W
@@ -51,6 +53,7 @@
 //#define GBLIFE_RGBW_SOCKET
 //#define GENERIC_8CH
 //#define GENERIC_AG_L4
+//#define GENERIC_AG_L4_V3
 //#define GENERIC_E14
 //#define GENERIC_ECH1560
 //#define GENERIC_ESP01S_DHT11_V10
@@ -131,6 +134,7 @@
 //#define MAXCIO_WUK007S
 //#define MAXCIO_WUS002S
 //#define MUVIT_IO_MIOBULB001
+//#define NEDIS_WIFIP310FWT
 //#define NEO_COOLCAM_NAS_WR01W
 //#define NEXETE_A19
 //#define NODEMCU_BASIC

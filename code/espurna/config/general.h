@@ -214,20 +214,9 @@
 // EEPROM
 //------------------------------------------------------------------------------
 
-#define EEPROM_SIZE             SPI_FLASH_SEC_SIZE  // EEPROM size in bytes (1 sector = 4096 bytes)
-
 //#define EEPROM_RORATE_SECTORS   2             // Number of sectors to use for EEPROM rotation
                                                 // If not defined the firmware will use a number based
                                                 // on the number of available sectors
-
-#define EEPROM_RELAY_STATUS     0               // Address for the relay status (1 byte)
-#define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
-#define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
-#define EEPROM_CRASH_COUNTER    6               // Address for the crash counter (1 byte)
-#define EEPROM_MESSAGE_ID       7               // Address for the MQTT message id (4 bytes)
-#define EEPROM_ROTATE_DATA      11              // Reserved for the EEPROM_ROTATE library (3 bytes)
-#define EEPROM_DATA_END         14              // End of custom EEPROM data block
-
 
 #ifndef SAVE_CRASH_ENABLED
 #define SAVE_CRASH_ENABLED          1           // Save stack trace to EEPROM by default
@@ -508,31 +497,43 @@
 // -----------------------------------------------------------------------------
 
 #ifndef WIFI_CONNECT_TIMEOUT
-#define WIFI_CONNECT_TIMEOUT        60000               // Connecting timeout for WIFI in ms
+#define WIFI_CONNECT_TIMEOUT        60000                  // Connecting timeout for WIFI in ms
 #endif
 
 #ifndef WIFI_RECONNECT_INTERVAL
-#define WIFI_RECONNECT_INTERVAL     180000              // If could not connect to WIFI, retry after this time in ms
+#define WIFI_RECONNECT_INTERVAL     180000                 // If could not connect to WIFI, retry after this time in ms
 #endif
 
 #ifndef WIFI_MAX_NETWORKS
-#define WIFI_MAX_NETWORKS           5                   // Max number of WIFI connection configurations
+#define WIFI_MAX_NETWORKS           5                      // Max number of WIFI connection configurations
 #endif
 
 #ifndef WIFI_AP_CAPTIVE
-#define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
+#define WIFI_AP_CAPTIVE             1                      // Captive portal enabled when in AP mode
 #endif
 
-#ifndef WIFI_FALLBACK_APMODE
-#define WIFI_FALLBACK_APMODE        1                   // Fallback to AP mode if no STA connection
+#ifndef WIFI_AP_MODE
+#define WIFI_AP_MODE                WiFiApMode::Fallback   // By default, fallback to AP mode if no STA connection
+                                                           // Use WiFiApMode::Enabled to start it when the device boots
+                                                           // Use WiFiApMode::Disabled to disable AP mode completely
+#endif
+
+#ifndef WIFI_AP_SSID
+#define WIFI_AP_SSID                ""                     // (optional) Specify softAp SSID.
+                                                           // By default or when empty, hostname (or device identifier) is used instead.
+#endif
+
+#ifndef WIFI_AP_PASS
+#define WIFI_AP_PASS                ""                     // (optional) Specify softAp passphrase
+                                                           // By default or when empty, admin password is used instead.
 #endif
 
 #ifndef WIFI_SLEEP_MODE
-#define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
+#define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP        // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
 #endif
 
 #ifndef WIFI_SCAN_NETWORKS
-#define WIFI_SCAN_NETWORKS          1                   // Perform a network scan before connecting
+#define WIFI_SCAN_NETWORKS          1                      // Perform a network scan before connecting
 #endif
 
 // Optional hardcoded configuration (up to 5 networks, depending on WIFI_MAX_NETWORKS and espurna/wifi_config.h)

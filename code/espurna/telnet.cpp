@@ -306,9 +306,8 @@ void _telnetNotifyConnected(unsigned char i) {
     // If there is no terminal support automatically dump info and crash data
     #if DEBUG_SUPPORT
     #if not TERMINAL_SUPPORT
-        info();
         wifiDebug();
-        crashDump();
+        crashDump(terminalDefaultStream());
         crashClear();
     #endif
     #endif

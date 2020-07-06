@@ -7,7 +7,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "terminal.h"
+#include "espurna.h"
 
 #if TERMINAL_SUPPORT
 

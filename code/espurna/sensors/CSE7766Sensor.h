@@ -132,10 +132,14 @@ class CSE7766Sensor : public BaseEmonSensor {
 
             if (_serial) delete _serial;
 
-            if (1 == _pin_rx) {
+            if (3 == _pin_rx) {
                 Serial.begin(CSE7766_BAUDRATE);
+            } else if (13 == _pin_rx) {
+                Serial.begin(CSE7766_BAUDRATE);
+                Serial.flush();
+                Serial.swap();
             } else {
-                _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32);
+                _serial = new SoftwareSerial(_pin_rx, -1, _inverted);
                 _serial->enableIntTx(false);
                 _serial->begin(CSE7766_BAUDRATE);
             }
@@ -148,7 +152,7 @@ class CSE7766Sensor : public BaseEmonSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            if (1 == _pin_rx) {
+            if (_serial_is_hardware()) {
                 snprintf(buffer, sizeof(buffer), "CSE7766 @ HwSerial");
             } else {
                 snprintf(buffer, sizeof(buffer), "CSE7766 @ SwSerial(%u,NULL)", _pin_rx);
@@ -368,8 +372,12 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
+        bool _serial_is_hardware() {
+            return (3 == _pin_rx) || (13 == _pin_rx);
+        }
+
         bool _serial_available() {
-            if (1 == _pin_rx) {
+            if (_serial_is_hardware()) {
                 return Serial.available();
             } else {
                 return _serial->available();
@@ -377,7 +385,7 @@ class CSE7766Sensor : public BaseEmonSensor {
         }
 
         void _serial_flush() {
-            if (1 == _pin_rx) {
+            if (_serial_is_hardware()) {
                 return Serial.flush();
             } else {
                 return _serial->flush();
@@ -385,7 +393,7 @@ class CSE7766Sensor : public BaseEmonSensor {
         }
 
         uint8_t _serial_read() {
-            if (1 == _pin_rx) {
+            if (_serial_is_hardware()) {
                 return Serial.read();
             } else {
                 return _serial->read();
@@ -394,7 +402,7 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned int _pin_rx = CSE7766_PIN;
+        int _pin_rx = CSE7766_RX_PIN;
         bool _inverted = CSE7766_PIN_INVERSE;
         SoftwareSerial * _serial = NULL;
 

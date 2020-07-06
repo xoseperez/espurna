@@ -117,7 +117,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MAX6675_SUPPORT
     #include "sensors/MAX6675Sensor.h"
-#endif 
+#endif
 
 #if MICS2710_SUPPORT
     #include "sensors/MICS2710Sensor.h"
@@ -199,6 +199,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "sensors/HDC1080Sensor.h"
 #endif
 
+#if PZEM004TV30_SUPPORT
+// TODO: this is temporary, until we have external API giving us swserial stream objects
+    #include <SoftwareSerial.h>
+    #include "sensors/PZEM004TV30Sensor.h"
+#endif
+
 //--------------------------------------------------------------------------------
 
 struct sensor_magnitude_t {
@@ -233,6 +239,7 @@ struct sensor_magnitude_t {
     double min_change;          // Minimum value change to report
     double max_change;          // Maximum value change to report
     double correction;          // Value correction (applied when processing)
+    double zero_threshold;      // Reset value to zero when below threshold (applied when reading)
 
 };
 
@@ -395,12 +402,11 @@ sensor::Energy _sensorParseEnergy(const String& value) {
 
 void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
     if (!payload || !strlen(payload)) return;
-    if (payload[0] != '0') return;
 
     auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
     auto energy = _sensorParseEnergy(payload);
 
-    sensor->resetEnergy(magnitude.index_global, energy);
+    sensor->resetEnergy(magnitude.index_local, energy);
 }
 
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
@@ -564,6 +570,8 @@ unsigned char _sensorUnitDecimals(sensor::Unit unit) {
             return 4;
         case sensor::Unit::Meter:
             return 3;
+        case sensor::Unit::Hertz:
+            return 1;
         case sensor::Unit::UltravioletIndex:
             return 3;
         case sensor::Unit::None:
@@ -670,6 +678,9 @@ String magnitudeTopic(unsigned char type) {
         case MAGNITUDE_PH:
             result = F("ph");
             break;
+        case MAGNITUDE_FREQUENCY:
+            result = F("frequency");
+            break;
         case MAGNITUDE_NONE:
         default:
             result = F("unknown");
@@ -755,6 +766,9 @@ String _magnitudeUnits(const sensor_magnitude_t& magnitude) {
             break;
         case sensor::Unit::Meter:
             result = F("m");
+            break;
+        case sensor::Unit::Hertz:
+            result = F("Hz");
             break;
         case sensor::Unit::None:
         default:
@@ -924,8 +938,14 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     case MAGNITUDE_CO: return "co";
     case MAGNITUDE_RESISTANCE: return "res";
     case MAGNITUDE_PH: return "ph";
+    case MAGNITUDE_FREQUENCY: return "freq";
     default: return nullptr;
     }
+}
+
+template <typename T>
+String _magnitudeSettingsKey(sensor_magnitude_t& magnitude, T&& suffix) {
+    return String(_magnitudeSettingsPrefix(magnitude.type)) + suffix;
 }
 
 bool _sensorMatchKeyPrefix(const char * key) {
@@ -1170,11 +1190,13 @@ String magnitudeName(unsigned char type) {
         case MAGNITUDE_PH:
             result = F("pH");
             break;
+        case MAGNITUDE_FREQUENCY:
+            result = F("Frequency");
+            break;
         case MAGNITUDE_NONE:
         default:
             break;
     }
-            
 
     return String(result);
 }
@@ -1278,10 +1300,13 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
     for (auto* sensor [[gnu::unused]] : _sensors) {
 
+        if (_sensorIsEmon(sensor)) {
+            root["emonVisible"] = 1;
+            root["pwrVisible"] = 1;
+        }
+
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["emonVisible"] = 1;
-                root["pwrVisible"] = 1;
                 root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
             }
         #endif
@@ -1289,33 +1314,23 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
                 root["hlwVisible"] = 1;
-                root["pwrVisible"] = 1;
             }
         #endif
 
         #if CSE7766_SUPPORT
             if (sensor->getID() == SENSOR_CSE7766_ID) {
                 root["cseVisible"] = 1;
-                root["pwrVisible"] = 1;
             }
         #endif
 
-        #if V9261F_SUPPORT
-            if (sensor->getID() == SENSOR_V9261F_ID) {
-                root["pwrVisible"] = 1;
-            }
-        #endif
-
-        #if ECH1560_SUPPORT
-            if (sensor->getID() == SENSOR_ECH1560_ID) {
-                root["pwrVisible"] = 1;
-            }
-        #endif
-
-        #if PZEM004T_SUPPORT
-            if (sensor->getID() == SENSOR_PZEM004T_ID) {
+        #if PZEM004T_SUPPORT || PZEM004TV30_SUPPORT
+            switch (sensor->getID()) {
+            case SENSOR_PZEM004T_ID:
+            case SENSOR_PZEM004TV30_ID:
                 root["pzemVisible"] = 1;
-                root["pwrVisible"] = 1;
+                break;
+            default:
+                break;
             }
         #endif
 
@@ -1328,12 +1343,12 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
         #if MICS2710_SUPPORT || MICS5525_SUPPORT
             switch (sensor->getID()) {
-                case SENSOR_MICS2710_ID:
-                case SENSOR_MICS5525_ID:
-                    root["micsVisible"] = 1;
-                    break;
-                default:
-                    break;
+            case SENSOR_MICS2710_ID:
+            case SENSOR_MICS5525_ID:
+                root["micsVisible"] = 1;
+                break;
+            default:
+                break;
             }
         #endif
 
@@ -1556,7 +1571,7 @@ void _sensorLoad() {
     #if CSE7766_SUPPORT
     {
         CSE7766Sensor * sensor = new CSE7766Sensor();
-        sensor->setRX(CSE7766_PIN);
+        sensor->setRX(CSE7766_RX_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -1921,11 +1936,10 @@ void _sensorLoad() {
 
         PZEM004TSensor * sensor = PZEM004TSensor::create();
         sensor->setAddresses(addresses.c_str());
+        sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
+        sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
 
-        if (getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
-            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
-            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
-        } else {
+        if (!getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
             sensor->setSerial(& PZEM004T_HW_PORT);
         }
 
@@ -2055,6 +2069,46 @@ void _sensorLoad() {
     {
         HDC1080Sensor * sensor = new HDC1080Sensor();
         sensor->setAddress(HDC1080_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PZEM004TV30_SUPPORT
+    {
+        PZEM004TV30Sensor * sensor = PZEM004TV30Sensor::create();
+
+        // TODO: we need an equivalent to the `pzem.address` command
+        sensor->setAddress(getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress));
+        sensor->setReadTimeout(getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
+        sensor->setDebug(getSetting("pzemv30Debug", 1 == PZEM004TV30_DEBUG));
+
+        bool soft = getSetting("pzemv30Soft", 1 == PZEM004TV30_USE_SOFT);
+
+        int tx = getSetting("pzemv30TX", PZEM004TV30_TX_PIN);
+        int rx = getSetting("pzemv30RX", PZEM004TV30_RX_PIN);
+
+        // we operate only with Serial, as Serial1 cannot not receive any data
+        if (!soft) {
+            sensor->setStream(&Serial);
+            sensor->setDescription("HwSerial");
+            Serial.begin(PZEM004TV30Sensor::Baudrate);
+            // Core does not allow us to begin(baud, cfg, rx, tx) / pins(rx, tx) before begin(baud)
+            // b/c internal UART handler does not exist yet
+            // Also see https://github.com/esp8266/Arduino/issues/2380 as to why there is flush()
+            if ((tx == 15) && (rx == 13)) {
+                Serial.flush();
+                Serial.swap();
+            }
+        } else {
+            auto* ptr = new SoftwareSerial(rx, tx);
+            sensor->setDescription("SwSerial");
+            sensor->setStream(ptr); // we don't care about lifetime
+            ptr->begin(PZEM004TV30Sensor::Baudrate);
+        }
+
+        //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
+        //      may not be relevant, but some sources claim we need 8N2
+
         _sensors.push_back(sensor);
     }
     #endif
@@ -2214,10 +2268,7 @@ void _sensorConfigure() {
 
     _sensor_realtime = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
 
-    // Per-magnitude min & max delta settings
-    // - min controls whether we report at all when report_count overflows
-    // - max will trigger report as soon as read value is greater than the specified delta
-    //   (atm this works best for accumulated magnitudes, like energy)
+    // pre-load some settings that are controlled via old build flags
     const auto tmp_min_delta = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE);
     const auto hum_min_delta = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE);
     const auto ene_max_delta = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE);
@@ -2345,8 +2396,6 @@ void _sensorConfigure() {
                         getSetting({"tmpUnits", magnitude.index_global}, tmpUnits)
                     );
                     break;
-                case MAGNITUDE_HUMIDITY:
-                    break;
                 case MAGNITUDE_POWER_ACTIVE:
                     magnitude.units = _magnitudeUnitFilter(
                         magnitude,
@@ -2379,9 +2428,10 @@ void _sensorConfigure() {
                 magnitude.decimals = (unsigned char) decimals;
             }
 
-            // adjust min & max change delta value to trigger report
-            // TODO: find a proper way to extend this to min/max of any magnitude
-            // TODO: we can't use index_global b/c we don't specify type in the setting
+            // Per-magnitude min & max delta settings
+            // - min controls whether we report at all when report_count overflows
+            // - max will trigger report as soon as read value is greater than the specified delta
+            //   (atm this works best for accumulated magnitudes, like energy)
             {
                 auto min_default = 0.0;
                 auto max_default = 0.0;
@@ -2400,8 +2450,22 @@ void _sensorConfigure() {
                         break;
                 }
 
-                magnitude.min_change = getSetting({"snsMinDelta", index}, min_default);
-                magnitude.max_change = getSetting({"snsMaxDelta", index}, max_default);
+                magnitude.min_change = getSetting(
+                    {_magnitudeSettingsKey(magnitude, F("MinDelta")), magnitude.index_global},
+                    min_default
+                );
+                magnitude.max_change = getSetting(
+                    {_magnitudeSettingsKey(magnitude, F("MaxDelta")), magnitude.index_global},
+                    max_default
+                );
+            }
+
+            // Sometimes we want to ensure the value is above certain threshold before reporting
+            {
+                magnitude.zero_threshold = getSetting(
+                    {_magnitudeSettingsKey(magnitude, F("ZeroThreshold")), magnitude.index_global},
+                    std::numeric_limits<double>::quiet_NaN()
+                );
             }
 
             // in case we don't save energy periodically, purge existing value in ram & settings
@@ -2614,6 +2678,11 @@ void sensorLoop() {
                             break;
                     }
                 #endif
+
+                // In addition to that, we also check that value is above a certain threshold
+                if ((!std::isnan(magnitude.zero_threshold)) && ((value_raw < magnitude.zero_threshold))) {
+                    value_raw = 0.0;
+                }
 
                 _magnitudes[i].last = value_raw;
 

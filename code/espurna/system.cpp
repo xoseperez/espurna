@@ -6,7 +6,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "system.h"
+#include "espurna.h"
 
 #include <Ticker.h>
 #include <Schedule.h>

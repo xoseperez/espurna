@@ -98,3 +98,13 @@
 #warning "BUTTON[1-8]_MODE is deprecated! Please use BUTTON[1-8]_CONFIG instead"
 #define BUTTON8_CONFIG BUTTON8_MODE
 #endif
+
+#ifdef CSE7766_PIN
+#warning "CSE7766_PIN is deprecated! Please use CSE7766_RX_PIN instead"
+#define CSE7766_RX_PIN CSE7766_PIN
+#endif
+
+#ifdef WIFI_FALLBACK_APMODE
+#warning "WIFI_FALLBACK_APMODE is deprecated! Please use WIFI_AP_MODE instead"
+#define WIFI_AP_MODE ((1 == WIFI_FALLBACK_APMODE) ? WiFiApMode::Fallback : WiFiApMode::Disabled)
+#endif

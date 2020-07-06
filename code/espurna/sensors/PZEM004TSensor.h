@@ -191,6 +191,10 @@ class PZEM004TSensor : public BaseEmonSensor {
             if (_pzem) delete _pzem;
             if (_serial) {
                 _pzem = new PZEM004T(_serial);
+                if ((_pin_tx == 15) && (_pin_rx == 13)) {
+                    _serial->flush();
+                    _serial->swap();
+                }
             } else {
                 _pzem = new PZEM004T(_pin_rx, _pin_tx);
             }
