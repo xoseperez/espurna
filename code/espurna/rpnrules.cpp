@@ -128,12 +128,12 @@ void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value)
 
 rpn_error _rpnNtpNow(rpn_context & ctxt) {
     if (!ntpSynced()) return rpn_operator_error::CannotContinue;
-    rpn_value ts { rpn_int_t(now()) };
+    rpn_value ts { static_cast<rpn_int>(now()) };
     rpn_stack_push(ctxt, ts);
     return 0;
 }
 
-rpn_error _rpnNtpFunc(rpn_context & ctxt, rpn_int_t (*func)(time_t)) {
+rpn_error _rpnNtpFunc(rpn_context & ctxt, rpn_int (*func)(time_t)) {
     rpn_value value;
     rpn_stack_pop(ctxt, value);
 
@@ -172,7 +172,7 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
     rpn_stack_pop(ctxt, id);
     rpn_stack_pop(ctxt, status);
 
-    rpn_int_t value = status.toUint();
+    rpn_uint value = status.toUint();
     if (value == 2) {
         relayToggle(id.toUint());
     } else if (relayStatusTarget(id.toUint()) != (value == 1)) {
@@ -253,7 +253,7 @@ void _rpnInit() {
     #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
         rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) -> rpn_error {
             if (!ntpSynced()) return rpn_operator_error::CannotContinue;
-            rpn_value ts { rpn_int_t(ntpLocal2UTC(now())) };
+            rpn_value ts { static_cast<rpn_int>(ntpLocal2UTC(now())) };
             rpn_stack_push(ctxt, ts);
             return 0;
         });
@@ -427,7 +427,7 @@ void rpnSetup() {
                 (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
 
             if (ptr != nullptr) {
-                rpn_value value { rpn_int_t(timestamp) };
+                rpn_value value { static_cast<rpn_int>(timestamp) };
                 rpn_variable_set(_rpn_ctxt, ptr, value);
                 _rpn_last = millis();
                 _rpn_run = true;
