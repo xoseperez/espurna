@@ -163,6 +163,20 @@ String _rpnValueToString(const rpn_value& value) {
     return out;
 }
 
+char _rpnStackTypeTag(rpn_stack_value::Type type) {
+    switch (type) {
+    case rpn_stack_value::None:
+        return 'N';
+    case rpn_stack_value::Variable:
+        return '$';
+    case rpn_stack_value::Array:
+        return 'A';
+    case rpn_stack_value::Value:
+    default:
+        return ' ';
+    }
+}
+
 #if RELAY_SUPPORT
 
 rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
@@ -193,8 +207,11 @@ void _rpnDump() {
         return;
     }
 
-    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_value::Type, const rpn_value& value) {
-        DEBUG_MSG_P(PSTR("      %02u: %s\n"), index--, _rpnValueToString(value).c_str());
+    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_value::Type type, const rpn_value& value) {
+        DEBUG_MSG_P(PSTR("%c      %02u: %s\n"),
+            _rpnStackTypeTag(type), index--,
+            _rpnValueToString(value).c_str()
+        );
     });
 }
 
