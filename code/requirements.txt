@@ -1,2 +1,2 @@
 ifaddr==0.1.6
-zeroconf==0.24.0
+zeroconf==0.26.0
