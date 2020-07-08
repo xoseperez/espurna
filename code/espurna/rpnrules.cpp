@@ -88,7 +88,6 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
                 if (rpn_name.length()) {
                     rpn_value value { atof(payload) };
                     rpn_variable_set(_rpn_ctxt, rpn_name, value);
-                    _rpn_last = millis();
                     _rpn_run = true;
                     break;
                 }
@@ -112,10 +111,12 @@ void _rpnBrokerCallback(const String& topic, unsigned char id, double value, con
     char name[32] = {0};
     snprintf(name, sizeof(name), "%s%u", topic.c_str(), id);
 
-    rpn_value variable { value };
-    rpn_variable_set(_rpn_ctxt, name, variable);
+    if (topic == MQTT_TOPIC_RELAY) {
+        rpn_variable_set(_rpn_ctxt, name, rpn_value(static_cast<bool>(value)));
+    } else {
+        rpn_variable_set(_rpn_ctxt, name, rpn_value(value));
+    }
 
-    _rpn_last = millis();
     _rpn_run = true;
 
 }
@@ -165,13 +166,13 @@ String _rpnValueToString(const rpn_value& value) {
 
 char _rpnStackTypeTag(rpn_stack_value::Type type) {
     switch (type) {
-    case rpn_stack_value::None:
+    case rpn_stack_value::Type::None:
         return 'N';
-    case rpn_stack_value::Variable:
+    case rpn_stack_value::Type::Variable:
         return '$';
-    case rpn_stack_value::Array:
+    case rpn_stack_value::Type::Array:
         return 'A';
-    case rpn_stack_value::Value:
+    case rpn_stack_value::Type::Value:
     default:
         return ' ';
     }
@@ -293,12 +294,6 @@ void _rpnInit() {
         });
     #endif
 
-    // Dumps RPN stack contents
-    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
-        _rpnDump();
-        return 0;
-    });
-
     // Accept relay number and numeric API status value (0, 1 and 2)
     #if RELAY_SUPPORT
 
@@ -338,6 +333,28 @@ void _rpnInit() {
 
     #endif
 
+    // Some debugging. Dump stack contents
+    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
+        _rpnDump();
+        return 0;
+    });
+
+    // And, simple string logging
+    #if DEBUG_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "log", 1, [](rpn_context & ctxt) -> rpn_error {
+            rpn_value message;
+            rpn_stack_pop(ctxt, message);
+
+            DEBUG_MSG_P(PSTR("[RPN] %s\n"), message.toString().c_str());
+
+            return 0;
+        });
+    #endif
+
+    rpn_operator_set(_rpn_ctxt, "millis", 0, [](rpn_context & ctxt) -> rpn_error {
+        rpn_stack_push(ctxt, rpn_value(static_cast<uint32_t>(millis())));
+        return 0;
+    });
 }
 
 #if TERMINAL_SUPPORT
@@ -345,31 +362,25 @@ void _rpnInit() {
 void _rpnInitCommands() {
 
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext&) {
-        unsigned char num = rpn_variables_size(_rpn_ctxt);
-        if (0 == num) {
-            DEBUG_MSG_P(PSTR("[RPN] No variables\n"));
-        } else {
-            DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
-            rpn_variable_foreach(_rpn_ctxt, [](const String& name, const rpn_value& value) {
-                DEBUG_MSG_P(PSTR("   %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
-            });
-        }
+        DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
+        rpn_variables_foreach(_rpn_ctxt, [](const String& name, const rpn_value& value) {
+            DEBUG_MSG_P(PSTR("   %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
+        });
         terminalOK();
     });
 
     terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext&) {
-        unsigned char num = _rpn_ctxt.operators.size();
         DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
-        for (unsigned char i=0; i<num; i++) {
-            DEBUG_MSG_P(PSTR("   %s (%d)\n"), _rpn_ctxt.operators[i].name.c_str(), _rpn_ctxt.operators[i].argc);
-        }
+        rpn_operators_foreach(_rpn_ctxt, [](const String& name, size_t argc, rpn_operator_callback_f ptr) {
+            DEBUG_MSG_P(PSTR("   %s (%d) -> %p\n"), name.c_str(), argc, ptr);
+        });
         terminalOK();
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc == 2) {
             DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), ctx.argv[1].c_str());
-            rpn_process(_rpn_ctxt, ctx.argv[1].c_str(), true);
+            rpn_process(_rpn_ctxt, ctx.argv[1].c_str());
             _rpnDump();
             rpn_stack_clear(_rpn_ctxt);
             terminalOK();
@@ -383,11 +394,22 @@ void _rpnInitCommands() {
 
 void _rpnRun() {
 
+    if (!_rpn_run) {
+        return;
+    }
+
+    if (millis() - _rpn_last <= _rpn_delay) {
+        return;
+    }
+
+    _rpn_last = millis();
+    _rpn_run = false;
+
     unsigned char i = 0;
     String rule = getSetting({"rpnRule", i});
     while (rule.length()) {
         //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
-        rpn_process(_rpn_ctxt, rule.c_str(), true);
+        rpn_process(_rpn_ctxt, rule.c_str());
         //_rpnDump();
         rule = getSetting({"rpnRule", ++i});
         rpn_stack_clear(_rpn_ctxt);
@@ -401,10 +423,7 @@ void _rpnRun() {
 
 void _rpnLoop() {
 
-    if (_rpn_run && (millis() - _rpn_last > _rpn_delay)) {
-        _rpnRun();
-        _rpn_run = false;
-    }
+    _rpnRun();
 
 }
 
@@ -439,14 +458,13 @@ void rpnSetup() {
             static const String tick_every_hour(F("tick1h"));
             static const String tick_every_minute(F("tick1m"));
 
-            const char* ptr = 
+            const char* ptr =
                 (tick == NtpTick::EveryMinute) ? tick_every_minute.c_str() :
                 (tick == NtpTick::EveryHour) ? tick_every_hour.c_str() : nullptr;
 
             if (ptr != nullptr) {
                 rpn_value value { static_cast<rpn_int>(timestamp) };
                 rpn_variable_set(_rpn_ctxt, ptr, value);
-                _rpn_last = millis();
                 _rpn_run = true;
             }
         });
@@ -460,6 +478,9 @@ void rpnSetup() {
 
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);
+
+    _rpn_last = millis();
+    _rpn_run = true;
 
 }
 
