@@ -22,7 +22,7 @@ import zeroconf
 
 # -------------------------------------------------------------------------------
 
-__version__ = (0, 4, 1)
+__version__ = (0, 4, 2)
 
 DESCRIPTION = "ESPurna OTA Manager v{}".format(".".join(str(x) for x in __version__))
 DISCOVERY_TIMEOUT = 10
