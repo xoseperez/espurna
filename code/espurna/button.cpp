@@ -716,17 +716,25 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
+        // TODO: allow to change gpio pin type based on config?
+        #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC)
+            using gpio_type = GpioPin;
+        #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
+            using gpio_type = McpGpioPin;
+        #endif
+
         for (unsigned char index = 0; index < ButtonsMax; ++index) {
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
-            #if (BUTTON_EVENTS_SOURCE != BUTTON_EVENTS_SOURCE_MCP23S08)
-            if (!gpioValid(pin)) {
-                break;
-            }
-            #else
-            if (pin > 4) {
-                break;
-            }
+            #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC)
+                if (!gpioValid(pin)) {
+                    break;
+                }
+            #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
+                if (!mcpGpioValid(pin)) {
+                    break;
+                }
             #endif
+
             const auto relayID = getSetting({"btnRelay", index}, _buttonRelay(index));
 
             // TODO: compatibility proxy, fetch global key before indexed
@@ -748,19 +756,10 @@ void buttonSetup() {
 
             const auto config = _buttonConfig(index);
 
-            #if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08
-            // TODO: allow to change McpGpioPin to something else based on config?
             _buttons.emplace_back(
-                std::make_shared<McpGpioPin>(pin), config,
+                std::make_shared<gpio_type>(pin), config,
                 relayID, actions, delays
             );
-            #else
-            // TODO: allow to change GpioPin to something else based on config?
-            _buttons.emplace_back(
-                std::make_shared<GpioPin>(pin), config,
-                relayID, actions, delays
-            );
-            #endif
         }
 
     #endif

@@ -11,15 +11,18 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 
 // base interface for generic pin handler. 
-class BasePin {
-    public:
-        BasePin(unsigned char pin) :
-            pin(pin)
-        {}
+struct BasePin {
+    BasePin(unsigned char pin) :
+        pin(pin)
+    {}
 
-        virtual void pinMode(int8_t mode) = 0;
-        virtual void digitalWrite(int8_t val) = 0;
-        virtual int digitalRead() = 0;
+    virtual operator bool() {
+        return GPIO_NONE != pin;
+    }
 
-        const unsigned char pin;
+    virtual void pinMode(int8_t mode) = 0;
+    virtual void digitalWrite(int8_t val) = 0;
+    virtual int digitalRead() = 0;
+
+    const unsigned char pin;
 };

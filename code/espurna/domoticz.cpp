@@ -19,7 +19,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 
 bool _dcz_enabled = false;
-std::bitset<RELAYS_MAX> _dcz_relay_state;
+std::bitset<RelaysMax> _dcz_relay_state;
 
 //------------------------------------------------------------------------------
 // Private methods
