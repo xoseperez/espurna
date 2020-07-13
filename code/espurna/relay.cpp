@@ -1474,7 +1474,7 @@ void _relaySetupAdhoc() {
 
     _relays.reserve(relays);
 
-    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY)
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
         using gpio_type = GpioPin;
     #elif (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
         using gpio_type = McpGpioPin;
