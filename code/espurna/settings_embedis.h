@@ -31,20 +31,16 @@ struct ValueResult {
     String value;
 };
 
-// We can't save empty keys but can save empty values as 0x00 0x00 0x00 0x00
-// total sum is:
-// - 2 bytes gap at the end (will be re-used by the next value length byte)
+// Sum total is calculated from:
 // - 4 bytes to store length of 2 values (stored as big-endian)
 // - N bytes of values themselves
+// We can't save empty keys but can save empty values as just 2 length bytes
 inline size_t estimate(const String& key, const String& value) {
     if (!key.length()) {
         return 0;
     }
 
-    const auto key_len = key.length();
-    const auto value_len = value.length();
-
-    return (4 + key_len + ((value_len > 0) ? value_len : 2));
+    return (4 + key.length() + value.length());
 }
 
 // Note:  KeyValueStore is templated to avoid having to provide RawStorageBase via virtual inheritance.
@@ -92,7 +88,6 @@ class KeyValueStore {
         End,
         LenByte1,
         LenByte2,
-        EmptyValue,
         Value
     };
 
@@ -349,6 +344,7 @@ class KeyValueStore {
         Cursor to_erase(_storage);
         bool need_erase = false;
 
+        // we need the position at the 'end' of the free space
         auto start_pos = _cursor_reset_end();
 
         do {
@@ -359,16 +355,18 @@ class KeyValueStore {
 
             start_pos = kv.value.cursor.begin;
 
-            // in the very special case we can match the existing key
+            // in the very special case we can match the existing key, we either
             if ((kv.key.length == key_len) && (kv.key.read() == key)) {
                 if (kv.value.length == value.length()) {
+                    // - do nothing, as the value is already set
                     if (kv.value.read() == value) {
                         return true;
                     }
+                    // - overwrite the space again, with the new kv of the same length
                     start_pos = kv.key.cursor.end;
                     break;
                 }
-                // but we may need to write over it, when contents are different
+                // - or, erase the existing kv and place new kv at the end
                 to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
                 need_erase = true;
             }
@@ -394,24 +392,19 @@ class KeyValueStore {
             (--writer).write(value_len & 0xff);
             (--writer).write((value_len >> 8) & 0xff);
 
-            if (value_len) {
-                while (value_len--) {
-                    (--writer).write(value[value_len]);
-                }
-            } else {
-                (--writer).write(0);
-                (--writer).write(0);
+            while (value_len--) {
+                (--writer).write(value[value_len]);
             }
 
-            // we also need to pad the space *after* the value
+            // we also need to add an empty key *after* the value
             // but, only when we still have some space left
-            if ((start_pos - need) >= 2) {
+            if (writer.begin >= 2) {
                 _cursor_set_position(writer.begin - _cursor.begin);
                 auto next_kv = _read_kv();
                 if (!next_kv) {
-                    auto padding = Cursor::fromEnd(_storage, writer.begin - 2, writer.begin);
-                    (--padding).write(0);
-                    (--padding).write(0);
+                    auto empty = Cursor::fromEnd(_storage, writer.begin - 2, writer.begin);
+                    (--empty).write(0);
+                    (--empty).write(0);
                 }
             }
 
@@ -430,13 +423,12 @@ class KeyValueStore {
             return false;
         }
 
-        // Removes key from the storage by overwriting the key with left-most data
-        size_t start_pos = _cursor_reset_end() - 1;
-        auto to_erase = Cursor::fromEnd(_storage, _cursor.begin, _cursor.end);
-
         // we should only compare strings of equal length.
         // when matching, record { value ... key } range + 4 bytes for length
-        // continue searching for the leftmost boundary
+        // continue searching for available keys and set start_pos and the 'end' of the free space
+        size_t start_pos = _cursor_reset_end();
+        auto to_erase = Cursor::fromEnd(_storage, _cursor.begin, _cursor.end);
+
         foreach([&](KeyValueResult&& kv) {
             start_pos = kv.value.cursor.begin;
             if (!to_erase && (kv.key.length == key_len) && (kv.key.read() == key)) {
@@ -444,13 +436,12 @@ class KeyValueStore {
             }
         });
 
-        if (!to_erase) {
-            return false;
+        if (to_erase) {
+            _raw_erase(start_pos, to_erase);
+            return true;
         }
 
-        _raw_erase(start_pos, to_erase);
-
-        return true;
+        return false;
     }
 
     // Simply count key-value pairs that we could parse
@@ -546,37 +537,48 @@ class KeyValueStore {
 
     void _raw_erase(size_t start_pos, Cursor& to_erase) {
         // we either end up to the left or to the right of the boundary
+
+        size_t new_pos = (start_pos < to_erase.begin)
+            ? (start_pos + to_erase.size())
+            : (to_erase.end);
+
         if (start_pos < to_erase.begin) {
+            // shift storage to the right, overwriting over the now empty space
             auto from = Cursor::fromEnd(_storage, start_pos, to_erase.begin);
             auto to = Cursor::fromEnd(_storage, start_pos + to_erase.size(), to_erase.end);
 
             while (--from && --to) {
                 to.write(from.read());
                 from.write(0xff);
-            };
+            }
         } else {
-            // just null the length bytes, since we at the last key
+            // overwrite the now empty space with 0xff
             to_erase.resetEnd();
-            (--to_erase).write(0);
-            (--to_erase).write(0);
+            while (--to_erase) {
+                to_erase.write(0xff);
+            }
         }
+
+        // same as set(), add empty key as padding
+        auto empty = Cursor::fromEnd(_storage, new_pos - 2, new_pos);
+        (--empty).write(0);
+        (--empty).write(0);
 
         _storage.commit();
     }
 
     // Returns Cursor to the region that holds the data
-    // Result object does not hold any data, we need to explicitly request read()
+    // Result object itself does not contain any data, we need to explicitly request it by calling read()
     //
     // Cursor object is always expected to point to something, e.g. minimum:
+    //     0x00 0x00
+    //     len2 len1
+    // Position will be 0, end will be 2. Total length is 2, data length is 0
+    //
+    // Or, non-empty value:
     //     0x01 0x00 0x01
     //     data len2 len1
-    // Position will be 0, end will be 4. Total length is 3, data length is 1
-    //
-    // Note the distinction between real length and data length. For example,
-    // special-case for empty 'value' (as 'key' can never be empty and will be rejected):
-    //     0x00 0x00 0x00 0x00
-    //     data data len2 len1
-    // Position will be 0, end will be 5. Total length is 4, data length is 0
+    // Position will be 0, end will be 3. Total length is 3, data length is 1
     ReadResult _raw_read() {
         uint16_t len = 0;
         ReadResult out(_storage);
@@ -585,29 +587,24 @@ class KeyValueStore {
             // storage is written right-to-left, cursor is always decreasing
             switch (_state) {
             case State::Begin:
-                if (_cursor.position > 2) {
+                if (_cursor.position >= 2) {
                     --_cursor;
                     _state = State::LenByte1;
                 } else {
                     _state = State::End;
                 }
-                continue;
+                break;
             // len is 16 bit uint (bigendian)
             // special case is 0, which is valid and should be returned when encountered
             // another special case is 0xffff, meaning we just hit an empty space
             case State::LenByte1:
                 len = _cursor.read();
-                --_cursor;
                 _state = State::LenByte2;
                 break;
             case State::LenByte2:
             {
-                uint8_t len2 = _cursor.read();
-                --_cursor;
-                if ((0 == len) && (0 == len2)) {
-                    len = 2;
-                    _state = State::EmptyValue;
-                } else if ((0xff == len) && (0xff == len2)) {
+                uint8_t len2 = (--_cursor).read();
+                if ((0xff == len) && (0xff == len2)) {
                     _state = State::End;
                 } else {
                     len |= len2 << 8;
@@ -615,39 +612,20 @@ class KeyValueStore {
                 }
                 break;
             }
-            case State::EmptyValue:
             case State::Value: {
-                uint16_t left = len;
-
                 // ensure we don't go out-of-bounds
-                switch (_state) {
-                case State::Value:
-                    while (_cursor && --left) {
-                        --_cursor;
-                    }
-                    break;
-                // ...and only read 0's
-                case State::EmptyValue:
-                    while (_cursor && (_cursor.read() == 0) && --left) {
-                        --_cursor;
-                    }
-                    break;
-                default:
-                    break;
-                }
-
-                if (left) {
+                if (len && _cursor.position < len) {
                     _state = State::End;
                     break;
                 }
 
-                // set the resulting cursor as [pos:len+2)
+                // and point at the beginning of the value
+                _cursor.position -= len;
+                auto value_start = (_cursor.begin + _cursor.position);
+
+                out.cursor.reset(value_start, value_start + len + 2);
+                out.length = len;
                 out.result = true;
-                out.length = (_state == State::EmptyValue) ? 0 : len;
-                out.cursor.reset(
-                    _cursor.begin + _cursor.position,
-                    _cursor.begin + _cursor.position + len + 2
-                );
 
                 _state = State::Begin;
 
