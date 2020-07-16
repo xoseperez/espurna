@@ -19,6 +19,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "utils.h"
 
+BrokerBind(RfbridgeBroker);
+
 // -----------------------------------------------------------------------------
 // DEFINITIONS
 // -----------------------------------------------------------------------------
@@ -226,6 +228,10 @@ void _rfbDecode() {
 
         #if MQTT_SUPPORT
             mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
+        #endif
+
+        #if BROKER_SUPPORT
+            RfbridgeBroker::Publish(buffer);
         #endif
 
     }

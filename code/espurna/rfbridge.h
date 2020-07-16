@@ -6,9 +6,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#pragma once
+
 #include "espurna.h"
 
 #if RF_SUPPORT
+
+#include "broker.h"
+
+BrokerDeclare(RfbridgeBroker, void(const char* code));
 
 #if RFB_DIRECT
 #include <RCSwitch.h>

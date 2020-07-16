@@ -16,8 +16,12 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "rpc.h"
 #include "sensor.h"
+#include "rfbridge.h"
 #include "terminal.h"
 #include "ws.h"
+
+#include <vector>
+#include <Ticker.h>
 
 // -----------------------------------------------------------------------------
 // Custom commands
@@ -27,6 +31,15 @@ rpn_context _rpn_ctxt;
 bool _rpn_run = false;
 unsigned long _rpn_delay = RPN_DELAY;
 unsigned long _rpn_last = 0;
+
+struct RpnRunner {
+    uint32_t every;
+    uint32_t last;
+    bool expired;
+};
+
+std::vector<RpnRunner> _rpn_runners;
+
 
 // -----------------------------------------------------------------------------
 
@@ -199,6 +212,126 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
 
 #endif // RELAY_SUPPORT
 
+#if RF_SUPPORT
+
+struct rpn_rfbridge_code {
+    String raw;
+    uint32_t hits;
+    decltype(millis()) last;
+    decltype(millis()) triggered;
+};
+
+static std::list<rpn_rfbridge_code> _rfb_codes;
+
+rpn_error _rpnRfbSequence(rpn_context& ctxt) {
+    rpn_value second;
+    rpn_stack_pop(ctxt, second);
+
+    rpn_value first;
+    rpn_stack_pop(ctxt, first);
+
+    String raw[2] {first.toString(), second.toString()};
+    rpn_rfbridge_code* refs[2] {nullptr, nullptr};
+
+    for (auto& recent : _rfb_codes) {
+        for (int index = 0; index < 2; ++index) {
+            refs[index] = (raw[index] == recent.raw) ? &recent : nullptr;
+        }
+    }
+
+    if ((refs[0] == nullptr) || (refs[1] == nullptr)) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    // purge codes to avoid matching again on the next rules run
+    // 'triggered' would be kind of quirky here, since we don't limit ourselves with any window
+    if ((millis() - refs[0]->last) > (millis() - refs[1]->last)) {
+        _rfb_codes.remove_if([&refs](rpn_rfbridge_code& code) {
+            return (refs[0] == &code) || (refs[1] == &code);
+        });
+        return rpn_operator_error::Ok;
+    }
+
+    return rpn_operator_error::CannotContinue;
+}
+
+rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
+    rpn_value code;
+    rpn_stack_pop(ctxt, code);
+
+    rpn_value hits;
+    rpn_stack_pop(ctxt, hits);
+
+    String raw_code = code.toString();
+    auto result = std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [&raw_code](const rpn_rfbridge_code& code) {
+        return code.raw == raw_code;
+    });
+
+    if (result == _rfb_codes.end()) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    // only process recent codes, ignore when rule is processing outside of this small window
+    if (millis() - (*result).last >= 2000) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    // hits == 1 is a single click, hits == 5 is long click
+    // we sort-of can distinguish single and double via timestamp, but it has a **very** unreliable timing
+    if ((*result).hits > hits.toUint()) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    // avoid re-triggering immediatly based on something running rules engine again
+    if ((*result).triggered && (millis() - (*result).triggered <= 1000)) {
+        return rpn_operator_error::CannotContinue;
+    }
+    (*result).triggered = millis();
+
+    return rpn_operator_error::Ok;
+}
+
+void _rpnBrokerRfbridgeCallback(const char* raw_code) {
+
+#if RFB_DIRECT
+    raw_code = (raw_code + strlen(raw_code) - 8);
+#else
+    raw_code = (raw_code + strlen(raw_code) - 6);
+#endif
+
+    // expire really old codes to avoid memory exhaustion
+    auto ts = millis();
+    auto old = std::remove_if(_rfb_codes.begin(), _rfb_codes.end(), [ts](rpn_rfbridge_code& code) {
+        return (ts - code.last) >= 10000u;
+    });
+
+    if (old != _rfb_codes.end()) {
+        _rfb_codes.erase(old, _rfb_codes.end());
+    }
+
+    auto result = std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [raw_code](rpn_rfbridge_code& code) {
+        return code.raw == raw_code;
+    });
+
+    if (result != _rfb_codes.end()) {
+        // we also need to reset hits at a certain point to allow repeats to go through
+        // number is arbitrary time, just about 3-4 times more than it takes for a code to repeat when holding
+        if (millis() - (*result).last >= 2000u) {
+            (*result).hits = 0;
+        }
+        (*result).last = millis();
+        (*result).hits += 1u;
+        DEBUG_MSG_P(PSTR("[RPN] refresh code=%s hits=%u last=%u\n"), raw_code, (*result).hits, (*result).last);
+    } else {
+        DEBUG_MSG_P(PSTR("[RPN] new code: %s\n"), raw_code);
+        _rfb_codes.push_back({raw_code, 1u, millis(), 0u});
+    }
+
+    _rpn_run = true;
+}
+
+#endif // RF_SUPPORT
+
 void _rpnDump() {
     DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
 
@@ -215,7 +348,6 @@ void _rpnDump() {
         );
     });
 }
-
 
 void _rpnInit() {
 
@@ -333,6 +465,25 @@ void _rpnInit() {
 
     #endif
 
+    #if RF_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "rfb_match", 2, _rpnRfbMatcher);
+        rpn_operator_set(_rpn_ctxt, "rfb_sequence", 2, _rpnRfbSequence);
+    #endif
+
+    #if MQTT_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "mqtt_send", 2, [](rpn_context & ctxt) -> rpn_error {
+            rpn_value message;
+            rpn_stack_pop(ctxt, message);
+
+            rpn_value topic;
+            rpn_stack_pop(ctxt, topic);
+
+            return mqttSendRaw(topic.toString().c_str(), message.toString().c_str())
+                ? rpn_operator_error::Ok
+                : rpn_operator_error::CannotContinue;
+        });
+    #endif
+
     // Some debugging. Dump stack contents
     rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
         _rpnDump();
@@ -355,11 +506,35 @@ void _rpnInit() {
         rpn_stack_push(ctxt, rpn_value(static_cast<uint32_t>(millis())));
         return 0;
     });
+
+    rpn_operator_set(_rpn_ctxt, "run_every_ms", 1, [](rpn_context & ctxt) -> rpn_error {
+        rpn_value every_;
+        rpn_stack_pop(ctxt, every_);
+
+        auto every = every_.toUint();
+        for (auto& runner : _rpn_runners) {
+            if (every == runner.every) {
+                return runner.expired
+                    ? rpn_operator_error::Ok
+                    : rpn_operator_error::CannotContinue;
+            }
+        }
+
+        _rpn_runners.push_back({every, millis(), false});
+        return rpn_operator_error::CannotContinue;
+    });
+
 }
 
 #if TERMINAL_SUPPORT
 
 void _rpnInitCommands() {
+
+    terminalRegisterCommand(F("RPN.RUNNERS"), [](const terminal::CommandContext&) {
+        for (auto& runner : _rpn_runners) {
+            DEBUG_MSG_P(PSTR("[RPN] %p Every %u ms\n"), &runner, runner.every);
+        }
+    });
 
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext&) {
         DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
@@ -392,6 +567,25 @@ void _rpnInitCommands() {
 }
 #endif
 
+// enables us to use rules without any events firing
+// notice: requires rpnRun to trigger at least once so that we can install runners
+void _rpnRunnersCheck() {
+    auto ts = millis();
+    for (auto& runner : _rpn_runners) {
+        if (ts - runner.last >= runner.every) {
+            runner.expired = true;
+            runner.last = ts;
+            _rpn_run = true;
+        }
+    }
+}
+
+void _rpnRunnersReset() {
+    for (auto& runner : _rpn_runners) {
+        runner.expired = false;
+    }
+}
+
 void _rpnRun() {
 
     if (!_rpn_run) {
@@ -423,7 +617,9 @@ void _rpnRun() {
 
 void _rpnLoop() {
 
+    _rpnRunnersCheck();
     _rpnRun();
+    _rpnRunnersReset();
 
 }
 
@@ -471,6 +667,10 @@ void rpnSetup() {
     #endif
 
     StatusBroker::Register(_rpnBrokerStatus);
+
+    #if RF_SUPPORT
+        RfbridgeBroker::Register(_rpnBrokerRfbridgeCallback);
+    #endif
 
     #if SENSOR_SUPPORT
         SensorReadBroker::Register(_rpnBrokerCallback);
