@@ -80,7 +80,8 @@ def run_configurations(args, configurations):
         os_env = os.environ.copy()
         os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = "-DUSE_CUSTOM_H"
         os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
-        os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
+        if not args.no_single_source:
+            os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
         start = time.time()
         subprocess.check_call(cmd, env=os_env)
@@ -170,6 +171,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--no-silent", action="store_true", help="Do not silence pio-run"
+    )
+    parser.add_argument(
+        "--no-single-source", action="store_true", help="Disable 'unity' build"
     )
 
     main(parser.parse_args())
