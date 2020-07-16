@@ -26,7 +26,7 @@ constexpr size_t McpGpioPins = 8;
 // real hardware pin
 class McpGpioPin final : public BasePin {
     public:
-        McpGpioPin(unsigned char pin);
+        explicit McpGpioPin(unsigned char pin);
 
         void pinMode(int8_t mode);
         void digitalWrite(int8_t val);

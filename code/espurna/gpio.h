@@ -18,7 +18,7 @@ constexpr const size_t GpioPins = 17;
 // real hardware pin
 class GpioPin final : virtual public BasePin {
     public:
-        GpioPin(unsigned char pin);
+        explicit GpioPin(unsigned char pin);
 
         void pinMode(int8_t mode);
         void digitalWrite(int8_t val);

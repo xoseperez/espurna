@@ -34,7 +34,7 @@ struct AsyncBufferedClient {
         constexpr static const size_t BUFFERS_MAX = 5;
         using buffer_t = std::vector<uint8_t>;
 
-        AsyncBufferedClient(AsyncClient* client);
+        explicit AsyncBufferedClient(AsyncClient* client);
 
         size_t write(char c);
         size_t write(const char* data, size_t size=0);
