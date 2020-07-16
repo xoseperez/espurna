@@ -14,11 +14,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 #include <memory>
 
-#include <Schedule.h>
-
 #include "system.h"
 #include "utils.h"
 #include "ntp.h"
+
+#include <Schedule.h>
+#include <Print.h>
+#include <Hash.h>
+#include <FS.h>
+
+#include <ArduinoJson.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
 
 #if WEB_EMBEDDED
 

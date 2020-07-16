@@ -12,9 +12,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if ALEXA_SUPPORT
 
-#include <fauxmoESP.h>
-#include <ArduinoJson.h>
-
 bool alexaEnabled();
 void alexaSetup();
 

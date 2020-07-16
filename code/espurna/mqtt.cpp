@@ -27,6 +27,17 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include "libs/SecureClientHelpers.h"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    #include <ESPAsyncTCP.h>
+    #include <AsyncMqttClient.h>
+#elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
+    #include <MQTTClient.h>
+#elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+    #include <PubSubClient.h>
+#endif
+
+// -----------------------------------------------------------------------------
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
     AsyncMqttClient _mqtt;
 

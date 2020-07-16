@@ -20,6 +20,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "libs/AsyncClientHelpers.h"
 
+#include <ESPAsyncTCP.h>
+
 const char InfluxDb_http_success[] = "HTTP/1.1 204";
 const char InfluxDb_http_template[] PROGMEM = "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%u\r\nContent-Length: %d\r\n\r\n";
 
