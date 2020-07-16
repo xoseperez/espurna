@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "system.h"
 #include "ws.h"
 
+#include <ArduinoOTA.h>
+
 // TODO: allocate ArduinoOTAClass on-demand, stop using global instance
 
 void _arduinoOtaConfigure() {

@@ -18,6 +18,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "web.h"
 #include "rpc.h"
 
+#include <ESPAsyncTCP.h>
+#include <ArduinoJson.h>
+
 struct web_api_t {
     explicit web_api_t(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) :
         key(key),
