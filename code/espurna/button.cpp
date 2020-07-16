@@ -21,6 +21,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "light.h"
 #include "ws.h"
+#include "mcp23s08.h"
 
 #include "button_config.h"
 
@@ -282,7 +283,8 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
 }
 
 #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
+    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL) || \
+    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
 
 void _buttonWebSocketOnConnected(JsonObject& root) {
     root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
@@ -623,7 +625,8 @@ void _buttonLoopGeneric() {
 
 void buttonLoop() {
 
-    #if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
+    #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC) || \
+        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
         _buttonLoopGeneric();
     #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
         (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
@@ -642,7 +645,6 @@ void buttonSetup() {
     // Special hardware cases
     #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
         (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
-
         size_t buttons = 0;
         #if BUTTON1_RELAY != RELAY_NONE
             ++buttons;
@@ -677,11 +679,13 @@ void buttonSetup() {
                 actions,
                 delays
             );
+            
         }
 
     // Generic GPIO input handlers
 
-    #elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
+    #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC) || \
+        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
 
         size_t buttons = 0;
 
@@ -712,11 +716,25 @@ void buttonSetup() {
 
         _buttons.reserve(buttons);
 
+        // TODO: allow to change gpio pin type based on config?
+        #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC)
+            using gpio_type = GpioPin;
+        #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
+            using gpio_type = McpGpioPin;
+        #endif
+
         for (unsigned char index = 0; index < ButtonsMax; ++index) {
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
-            if (!gpioValid(pin)) {
-                break;
-            }
+            #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC)
+                if (!gpioValid(pin)) {
+                    break;
+                }
+            #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
+                if (!mcpGpioValid(pin)) {
+                    break;
+                }
+            #endif
+
             const auto relayID = getSetting({"btnRelay", index}, _buttonRelay(index));
 
             // TODO: compatibility proxy, fetch global key before indexed
@@ -738,9 +756,8 @@ void buttonSetup() {
 
             const auto config = _buttonConfig(index);
 
-            // TODO: allow to change GpioPin to something else based on config?
             _buttons.emplace_back(
-                std::make_shared<GpioPin>(pin), config,
+                std::make_shared<gpio_type>(pin), config,
                 relayID, actions, delays
             );
         }
