@@ -150,7 +150,7 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
     env.AddMethod(ConvertInoToCpp)
 
 # merge every .cpp into a single file and **only** build that single file
-if os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE"):
+if "1" == os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
     cpp_files = []
     for root, dirs, filenames in os.walk("espurna"):
         for name in filenames:
