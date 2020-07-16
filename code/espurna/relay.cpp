@@ -1467,6 +1467,8 @@ void _relaySetupAdhoc() {
         using gpio_type = GpioPin;
     #elif (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
         using gpio_type = McpGpioPin;
+    #else
+        using gpio_type = DummyPin;
     #endif
 
     for (unsigned char id = 0; id < RelaysMax; ++id) {

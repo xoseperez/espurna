@@ -283,8 +283,7 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
 }
 
 #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL) || \
-    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
+    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
 
 void _buttonWebSocketOnConnected(JsonObject& root) {
     root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
