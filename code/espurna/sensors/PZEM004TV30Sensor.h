@@ -402,7 +402,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
         // - Power Factor: 2 bytes in 0.1% (we return %)
         _power_factor = take_2();
-        _power_factor /= 10.0;
+        _power_factor /= 100.0;
 
         // - Alarms: 2 bytes, (NOT IMPLEMENTED)
         // XXX: it seems it can only be either 0xffff or 0 for ON and OFF respectively

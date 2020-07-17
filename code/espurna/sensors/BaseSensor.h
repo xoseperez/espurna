@@ -95,8 +95,7 @@ class BaseSensor {
             switch (type(index)) {
                 case MAGNITUDE_TEMPERATURE:
                     return sensor::Unit::Celcius;
-                case MAGNITUDE_HUMIDITY:
-                case MAGNITUDE_POWER_FACTOR:
+		case MAGNITUDE_HUMIDITY:
                     return sensor::Unit::Percentage;
                 case MAGNITUDE_PRESSURE:
                     return sensor::Unit::Hectopascal;
