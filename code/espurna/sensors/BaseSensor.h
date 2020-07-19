@@ -135,6 +135,8 @@ class BaseSensor {
                     return sensor::Unit::Meter;
                 case MAGNITUDE_FREQUENCY:
                     return sensor::Unit::Hertz;
+                case MAGNITUDE_PH:
+                    return sensor::Unit::Ph;
                 default:
                     return sensor::Unit::None;
             }
