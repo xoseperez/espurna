@@ -1473,15 +1473,13 @@ void _relaySetupAdhoc() {
 
     for (unsigned char id = 0; id < RelaysMax; ++id) {
         const auto pin = _relayPin(id);
-        #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-            if (!gpioValid(pin)) {
-                break;
-            }
-        #elif (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
+        #if (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
             if (!mcpGpioValid(pin)) {
+        #else
+            if (!gpioValid(pin)) {
+        #endif
                 break;
             }
-        #endif
 
         _relays.emplace_back(
             std::make_unique<gpio_type>(_relayPin(id)),
