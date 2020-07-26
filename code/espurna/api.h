@@ -24,9 +24,6 @@ String apiKey();
 
 #include <functional>
 
-#include <ESPAsyncTCP.h>
-#include <ArduinoJson.h>
-
 using api_get_callback_f = std::function<void(char * buffer, size_t size)>;
 using api_put_callback_f = std::function<void(const char * payload)> ;
 

@@ -4815,6 +4815,51 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// Prodino WIFI
+// https://kmpelectronics.eu/products/prodino-wifi-v1/
+// -------------------------------------
+
+#elif defined(PRODINO_WIFI)
+
+    // Info
+    #define MANUFACTURER        "PRODINO"
+    #define DEVICE              "WIFI"
+
+    // MCP23S08
+    #define MCP23S08_SUPPORT        1
+
+    // Relays
+    #define RELAY_PROVIDER          RELAY_PROVIDER_MCP23S08
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              5
+    #define RELAY3_PIN              6
+    #define RELAY4_PIN              7
+
+    // Buttons
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PIN             0
+
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PIN             1
+
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PIN             2
+
+    #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_PIN             3
+
+    #define BUTTON1_RELAY           1
+    #define BUTTON2_RELAY           2
+    #define BUTTON3_RELAY           3
+    #define BUTTON4_RELAY           4
+
+    #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_MCP23S08
+
+    // LEDs
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
 
 #else
 

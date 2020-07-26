@@ -21,15 +21,6 @@ using mqtt_msg_t = std::pair<String, String>; // topic, payload
 
 #if MQTT_SUPPORT
 
-#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-    #include <ESPAsyncTCP.h>
-    #include <AsyncMqttClient.h>
-#elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-    #include <MQTTClient.h>
-#elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
-    #include <PubSubClient.h>
-#endif
-
 void mqttRegister(mqtt_callback_f callback);
 
 String mqttTopic(const char * magnitude, bool is_set);

@@ -70,4 +70,4 @@ void nice_delay(unsigned long ms);
 double roundTo(double num, unsigned char positions);
 
 size_t hexEncode(uint8_t* in, size_t in_size, char* out, size_t out_size);
-size_t hexDecode(const char* in, size_t in_size, uint8_t* out, uint8_t out_size);
+size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size);

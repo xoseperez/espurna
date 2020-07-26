@@ -362,8 +362,8 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
             if (std::distance(it, end) >= 2) {
                 value = (static_cast<uint32_t>(*(it)) << 8)
                       | static_cast<uint32_t>(*(it + 1));
+                it += 2;
             }
-            it += 2;
             return value;
         };
 
@@ -375,8 +375,8 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
                      | (static_cast<uint32_t>(*(it + 3)) << 16))
                     | ((static_cast<uint32_t>(*it) << 8)
                      | static_cast<uint32_t>(*(it + 1))));
+                it += 4;
             }
-            it += 4;
             return value;
         };
 
@@ -400,9 +400,8 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         _frequency = take_2();
         _frequency /= 10.0;
 
-        // - Power Factor: 2 bytes in 0.1% (we return %)
+        // - Power Factor: 2 bytes in 0.01 (we return %)
         _power_factor = take_2();
-        _power_factor /= 10.0;
 
         // - Alarms: 2 bytes, (NOT IMPLEMENTED)
         // XXX: it seems it can only be either 0xffff or 0 for ON and OFF respectively

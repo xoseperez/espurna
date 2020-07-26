@@ -405,6 +405,7 @@
                                                                        // BUTTON_EVENTS_SOURCE_GENERIC - GPIOs (virtual or real)
                                                                        // BUTTON_EVENTS_SOURCE_SONOFF_DUAL - hardware specific, drive buttons through serial connection
                                                                        // BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL - similar to Itead Sonoff Dual, hardware specific
+                                                                       // BUTTON_EVENTS_SOURCE_MCP23S08 - activate virtual button connected to gpio expander
 #endif
 
 //------------------------------------------------------------------------------
@@ -1774,6 +1775,14 @@
 
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
+#endif
+
+//--------------------------------------------------------------------------------
+// Support expander MCP23S08
+//--------------------------------------------------------------------------------
+
+#ifndef MCP23S08_SUPPORT
+#define MCP23S08_SUPPORT            0
 #endif
 
 // =============================================================================

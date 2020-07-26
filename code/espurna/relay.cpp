@@ -28,17 +28,32 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "tuya.h"
 #include "utils.h"
 #include "ws.h"
+#include "mcp23s08.h"
+
+#include "libs/BasePin.h"
 
 #include "relay_config.h"
 
+struct DummyPin final : public BasePin {
+    DummyPin(unsigned char pin) :
+        BasePin(pin)
+    {}
+
+    void pinMode(int8_t) override {}
+    void digitalWrite(int8_t) override {}
+    int digitalRead() override { return 0; }
+};
+
 struct relay_t {
 
-    // Default to dummy (virtual) relay configuration
+    using pin_type = std::unique_ptr<BasePin>;
 
-    relay_t(unsigned char pin, unsigned char type, unsigned char reset_pin) :
-        pin(pin),
+    // Default to empty relay configuration, as we allow switches to exist without real GPIOs
+
+    relay_t(pin_type&& pin, unsigned char type, pin_type&& reset_pin) :
+        pin(std::move(pin)),
+        reset_pin(std::move(reset_pin)),
         type(type),
-        reset_pin(reset_pin),
         delay_on(0),
         delay_off(0),
         pulse(RELAY_PULSE_NONE),
@@ -55,20 +70,13 @@ struct relay_t {
     {}
 
     relay_t() :
-        relay_t(GPIO_NONE, RELAY_TYPE_NORMAL, GPIO_NONE)
+        relay_t(std::make_unique<DummyPin>(GPIO_NONE), RELAY_TYPE_NORMAL, std::make_unique<DummyPin>(GPIO_NONE))
     {}
 
-    // ... unless there are pre-configured values
+    pin_type pin;                // GPIO pin for the relay
+    pin_type reset_pin;          // GPIO to reset the relay if RELAY_TYPE_LATCHED
 
-    relay_t(unsigned char id) :
-        relay_t(_relayPin(id), _relayType(id), _relayResetPin(id))
-    {}
-
-    // Configuration variables
-
-    unsigned char pin;           // GPIO pin for the relay
     unsigned char type;          // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-    unsigned char reset_pin;     // GPIO to reset the relay if RELAY_TYPE_LATCHED
     unsigned long delay_on;      // Delay to turn relay ON
     unsigned long delay_off;     // Delay to turn relay OFF
     unsigned char pulse;         // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
@@ -300,27 +308,33 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #endif
 
-    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || \
+        (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT) || \
+        (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
 
         // If this is a light, all dummy relays have already been processed above
         // we reach here if the user has toggled a physical relay
 
         if (_relays[id].type == RELAY_TYPE_NORMAL) {
-            digitalWrite(_relays[id].pin, status);
+            _relays[id].pin->digitalWrite(status);
         } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
-            digitalWrite(_relays[id].pin, !status);
+            _relays[id].pin->digitalWrite(!status);
         } else if (_relays[id].type == RELAY_TYPE_LATCHED || _relays[id].type == RELAY_TYPE_LATCHED_INVERSE) {
             bool pulse = (_relays[id].type == RELAY_TYPE_LATCHED) ? HIGH : LOW;
-            digitalWrite(_relays[id].pin, !pulse);
-            if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
-            if (status || (GPIO_NONE == _relays[id].reset_pin)) {
-                digitalWrite(_relays[id].pin, pulse);
+            _relays[id].pin->digitalWrite(!pulse);
+            if (GPIO_NONE != _relays[id].reset_pin->pin) {
+                _relays[id].reset_pin->digitalWrite(!pulse);
+            }
+            if (status || (GPIO_NONE == _relays[id].reset_pin->pin)) {
+                _relays[id].pin->digitalWrite(pulse);
             } else {
-                digitalWrite(_relays[id].reset_pin, pulse);
+                _relays[id].reset_pin->digitalWrite(pulse);
             }
             nice_delay(RELAY_LATCHING_PULSE);
-            digitalWrite(_relays[id].pin, !pulse);
-            if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
+            _relays[id].pin->digitalWrite(!pulse);
+            if (GPIO_NONE != _relays[id].reset_pin->pin) {
+                _relays[id].reset_pin->digitalWrite(!pulse);
+            }
         }
 
     #endif
@@ -471,7 +485,7 @@ void INLINE _relayMaskRtcmem(const RelayMask& mask) {
     _relayMaskRtcmem(mask.as_u32);
 }
 
-void INLINE _relayMaskRtcmem(const std::bitset<RELAYS_MAX>& bitset) {
+void INLINE _relayMaskRtcmem(const std::bitset<RelaysMax>& bitset) {
     _relayMaskRtcmem(bitset.to_ulong());
 }
 
@@ -489,7 +503,7 @@ void INLINE _relayMaskSettings(const RelayMask& mask) {
     setSetting("relayBootMask", mask.as_string);
 }
 
-void INLINE _relayMaskSettings(const std::bitset<RELAYS_MAX>& bitset) {
+void INLINE _relayMaskSettings(const std::bitset<RelaysMax>& bitset) {
     _relayMaskSettings(bitset.to_ulong());
 }
 
@@ -682,9 +696,9 @@ void relaySync(unsigned char id) {
 
 void relaySave(bool eeprom) {
 
-    const unsigned char count = constrain(relayCount(), 0, RELAYS_MAX);
+    const unsigned char count = constrain(relayCount(), 0, RelaysMax);
 
-    auto statuses = std::bitset<RELAYS_MAX>(0);
+    auto statuses = std::bitset<RelaysMax>(0);
     for (unsigned int id = 0; id < count; ++id) {
         statuses.set(id, relayStatus(id));
     }
@@ -766,7 +780,7 @@ void _relayBoot() {
 
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %s\n"), stored_mask.as_string.c_str());
 
-    auto mask = std::bitset<RELAYS_MAX>(stored_mask.as_u32);
+    auto mask = std::bitset<RelaysMax>(stored_mask.as_u32);
 
     // Walk the relays
     unsigned char lock;
@@ -835,15 +849,17 @@ void _relayConfigure() {
         _relays[i].delay_on = getSetting({"relayDelayOn", i}, _relayDelayOn(i));
         _relays[i].delay_off = getSetting({"relayDelayOff", i}, _relayDelayOff(i));
 
-        if (GPIO_NONE == _relays[i].pin) continue;
+        // make sure pin is valid before continuing with writes
+        if (!static_cast<bool>(*_relays[i].pin)) continue;
 
-        pinMode(_relays[i].pin, OUTPUT);
-        if (GPIO_NONE != _relays[i].reset_pin) {
-            pinMode(_relays[i].reset_pin, OUTPUT);
+        _relays[i].pin->pinMode(OUTPUT);
+        if (static_cast<bool>(*_relays[i].reset_pin)) {
+            _relays[i].reset_pin->pinMode(OUTPUT);
         }
+
         if (_relays[i].type == RELAY_TYPE_INVERSE) {
             //set to high to block short opening of relay
-            digitalWrite(_relays[i].pin, HIGH);
+            _relays[i].pin->digitalWrite(HIGH);
         }
     }
 
@@ -887,9 +903,9 @@ void _relayWebSocketUpdate(JsonObject& root) {
 }
 
 String _relayFriendlyName(unsigned char i) {
-    String res = String("GPIO") + String(_relays[i].pin);
+    String res = String("GPIO") + String(_relays[i].pin->pin);
 
-    if (GPIO_NONE == _relays[i].pin) {
+    if (GPIO_NONE == _relays[i].pin->pin) {
         #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
             uint8_t physical = _relays.size() - _relayDummy;
             if (i >= physical) {
@@ -942,7 +958,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         gpio.add(_relayFriendlyName(i));
 
         type.add(_relays[i].type);
-        reset.add(_relays[i].reset_pin);
+        reset.add(_relays[i].reset_pin->pin);
         boot.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));
 
         pulse.add(_relays[i].pulse);
@@ -1401,7 +1417,7 @@ void relaySetupDummy(size_t size, bool reconfigure) {
     if (size == _relayDummy) return;
 
     const size_t new_size = ((_relays.size() - _relayDummy) + size);
-    if (new_size > RELAYS_MAX) return;
+    if (new_size > RelaysMax) return;
 
     _relayDummy = size;
     _relays.resize(new_size);
@@ -1418,7 +1434,7 @@ void relaySetupDummy(size_t size, bool reconfigure) {
 
 void _relaySetupAdhoc() {
 
-    size_t relays = 0;
+    size_t relays [[gnu::unused]] = 0;
 
     #if RELAY1_PIN != GPIO_NONE
         ++relays;
@@ -1446,8 +1462,30 @@ void _relaySetupAdhoc() {
     #endif
 
     _relays.reserve(relays);
-    for (unsigned char id = 0; id < relays; ++id) {
-        _relays.emplace_back(id);
+
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+        using gpio_type = GpioPin;
+    #elif (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
+        using gpio_type = McpGpioPin;
+    #else
+        using gpio_type = DummyPin;
+    #endif
+
+    for (unsigned char id = 0; id < RelaysMax; ++id) {
+        const auto pin = _relayPin(id);
+        #if (RELAY_PROVIDER == RELAY_PROVIDER_MCP23S08)
+            if (!mcpGpioValid(pin)) {
+        #else
+            if (!gpioValid(pin)) {
+        #endif
+                break;
+            }
+
+        _relays.emplace_back(
+            std::make_unique<gpio_type>(_relayPin(id)),
+            _relayType(id),
+            std::make_unique<gpio_type>(_relayResetPin(id))
+        );
     }
 
 }

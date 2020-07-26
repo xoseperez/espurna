@@ -8,9 +8,6 @@ OTA MODULE
 
 #include "espurna.h"
 
-#include <ArduinoOTA.h>
-#include <Updater.h>
-
 #if OTA_WEB_SUPPORT
 
 void otaWebSetup();
@@ -25,7 +22,6 @@ void arduinoOtaSetup();
 
 #if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
 
-#include <ESPAsyncTCP.h>
 void otaClientSetup();
 
 #endif // OTA_CLIENT == OTA_CLIENT_ASYNCTCP

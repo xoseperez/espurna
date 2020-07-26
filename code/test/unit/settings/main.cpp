@@ -16,6 +16,9 @@
 namespace settings {
 namespace embedis {
 
+// TODO: either
+// - throw exception and print backtrace to signify which method caused the out-of-bounds read or write
+// - use a custom macro to supply (instance?) object with the correct line number
 template <typename T>
 struct StaticArrayStorage {
 
@@ -152,7 +155,9 @@ void test_sizes() {
         TEST_ASSERT_EQUAL(0, settings::embedis::estimate("", "123456"));
         TEST_ASSERT_EQUAL(16, settings::embedis::estimate("123456", "123456"));
         TEST_ASSERT_EQUAL(10, settings::embedis::estimate("123", "123"));
-        TEST_ASSERT_EQUAL(9, settings::embedis::estimate("345", ""));
+        TEST_ASSERT_EQUAL(7, settings::embedis::estimate("345", ""));
+        TEST_ASSERT_EQUAL(0, settings::embedis::estimate("", ""));
+        TEST_ASSERT_EQUAL(5, settings::embedis::estimate("1", ""));
     }
 
 }
@@ -308,7 +313,8 @@ void test_remove_randomized() {
     // - remove keys based on the order provided by next_permutation()
     size_t index = 0;
     do {
-        TEST_ASSERT(0 == instance.kvs.count());
+        TEST_ASSERT_EQUAL(0, instance.kvs.count());
+
         for (auto& kv : kvs) {
             TEST_ASSERT(instance.kvs.set(kv.first, kv.second));
         }

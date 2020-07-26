@@ -796,7 +796,7 @@ size_t hexEncode(uint8_t * in, size_t in_size, char * out, size_t out_size) {
     if ((2 * in_size + 1) > (out_size)) return 0;
 
     static const char base16[] = "0123456789ABCDEF";
-    unsigned char index = 0;
+    size_t index = 0;
 
     while (index < in_size) {
         out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
@@ -811,11 +811,11 @@ size_t hexEncode(uint8_t * in, size_t in_size, char * out, size_t out_size) {
 
 
 // From an hexa char array ("A220EE...") to a byte array (half the size)
-size_t hexDecode(const char* in, size_t in_size, uint8_t* out, uint8_t out_size) {
+size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) {
     if (out_size < (in_size / 2)) return 0;
 
-    unsigned char index = 0;
-    unsigned char out_index = 0;
+    size_t index = 0;
+    size_t out_index = 0;
 
     auto char2byte = [](char ch) -> uint8_t {
         if ((ch >= '0') && (ch <= '9')) {

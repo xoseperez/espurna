@@ -20,7 +20,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
 #include <Schedule.h>
-#include <ESPAsyncTCP.h>
 
 #include "mqtt.h"
 #include "system.h"
@@ -28,6 +27,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 
 #include "libs/URL.h"
+
+#include <Updater.h>
+
+#include <ESPAsyncTCP.h>
 
 const char OTA_REQUEST_TEMPLATE[] PROGMEM =
     "GET %s HTTP/1.1\r\n"

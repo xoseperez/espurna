@@ -16,13 +16,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <list>
 #include <vector>
 
-#include <Print.h>
-#include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include <Hash.h>
-#include <FS.h>
-#include <AsyncJson.h>
-#include <ArduinoJson.h>
 
 struct AsyncWebPrintConfig {
     const char* const mimeType;

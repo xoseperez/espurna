@@ -22,7 +22,7 @@ import zeroconf
 
 # -------------------------------------------------------------------------------
 
-__version__ = (0, 4, 1)
+__version__ = (0, 4, 2)
 
 DESCRIPTION = "ESPurna OTA Manager v{}".format(".".join(str(x) for x in __version__))
 DISCOVERY_TIMEOUT = 10
@@ -113,9 +113,11 @@ class Listener:
             return
 
         hostname = info.server.split(".")[0]
+        addresses = info.parsed_addresses()
+
         device = {
             "hostname": hostname.upper(),
-            "ip": socket.inet_ntoa(info.address),
+            "ip": addresses[0] if addresses else info.host,
             "mac": "",
             "app_name": "",
             "app_version": "",
