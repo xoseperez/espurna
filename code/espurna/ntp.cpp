@@ -181,7 +181,7 @@ String _ntpGetServer() {
 
 void _ntpReport() {
     if (!ntpSynced()) {
-        DEBUG_MSG_P(PSTR("[NTP] Not synced\n")); 
+        DEBUG_MSG_P(PSTR("[NTP] Not synced\n"));
         return;
     }
 
@@ -214,7 +214,7 @@ void _ntpConfigure() {
         setenv("TZ", cfg_tz.c_str(), 1);
         tzset();
     }
-    
+
     const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
     const auto active_server = _ntpGetServer();
     if (cfg_tz != active_tz) {

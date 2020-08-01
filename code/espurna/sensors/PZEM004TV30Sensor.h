@@ -342,11 +342,11 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
     // Quoting the README.md of the original library repo and datasheet, we have:
     // (name, measuring range, resolution, accuracy)
-    // 1. Voltage         80~260V       0.1V      0.5%    
-    // 2. Current         0~10A or      0~100A*   0.01A or 0.02A* 0.5%    
-    // 3. Active power    0~2.3kW or    0~23kW*   0.1W    0.5%    
-    // 4. Active energy   0~9999.99kWh  1Wh       0.5%    
-    // 5. Frequency       45~65Hz       0.1Hz     0.5%    
+    // 1. Voltage         80~260V       0.1V      0.5%
+    // 2. Current         0~10A or      0~100A*   0.01A or 0.02A* 0.5%
+    // 3. Active power    0~2.3kW or    0~23kW*   0.1W    0.5%
+    // 4. Active energy   0~9999.99kWh  1Wh       0.5%
+    // 5. Frequency       45~65Hz       0.1Hz     0.5%
     // 6. Power factor    0.00~1.00     0.01      1%
     void parseMeasurements(buffer_type&& buffer, size_t size) {
         if (25 != size) {

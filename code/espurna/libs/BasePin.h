@@ -11,7 +11,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 #include "config/types.h"
 
-// base interface for generic pin handler. 
+// base interface for generic pin handler.
 struct BasePin {
     explicit BasePin(unsigned char pin) :
         pin(pin)
