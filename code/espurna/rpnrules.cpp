@@ -216,9 +216,8 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
 
 struct rpn_rfbridge_code {
     String raw;
-    uint32_t hits;
+    size_t hits;
     decltype(millis()) last;
-    decltype(millis()) triggered;
 };
 
 static std::list<rpn_rfbridge_code> _rfb_codes;
@@ -234,9 +233,13 @@ rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     rpn_rfbridge_code* refs[2] {nullptr, nullptr};
 
     for (auto& recent : _rfb_codes) {
-        for (int index = 0; index < 2; ++index) {
-            refs[index] = (raw[index] == recent.raw) ? &recent : nullptr;
+        if ((refs[0] != nullptr) && (refs[1] != nullptr)) {
+            break;
         }
+        refs[0] = ((raw[0] == nullptr) && (raw[0] == recent.raw))
+            ? &recent : nullptr;
+        refs[1] = ((raw[1] == nullptr) && (raw[1] == recent.raw))
+            ? &recent : nullptr;
     }
 
     if ((refs[0] == nullptr) || (refs[1] == nullptr)) {
@@ -244,7 +247,6 @@ rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     }
 
     // purge codes to avoid matching again on the next rules run
-    // 'triggered' would be kind of quirky here, since we don't limit ourselves with any window
     if ((millis() - refs[0]->last) > (millis() - refs[1]->last)) {
         _rfb_codes.remove_if([&refs](rpn_rfbridge_code& code) {
             return (refs[0] == &code) || (refs[1] == &code);
@@ -278,15 +280,12 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
 
     // hits == 1 is a single click, hits == 5 is long click
     // we sort-of can distinguish single and double via timestamp, but it has a **very** unreliable timing
-    if ((*result).hits > hits.toUint()) {
+    if ((*result).hits != hits.toUint()) {
         return rpn_operator_error::CannotContinue;
     }
 
-    // avoid re-triggering immediatly based on something running rules engine again
-    if ((*result).triggered && (millis() - (*result).triggered <= 1000)) {
-        return rpn_operator_error::CannotContinue;
-    }
-    (*result).triggered = millis();
+    // purge code to avoid matching again on the next rules run
+    _rfb_codes.erase(result);
 
     return rpn_operator_error::Ok;
 }
@@ -324,7 +323,7 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
         DEBUG_MSG_P(PSTR("[RPN] refresh code=%s hits=%u last=%u\n"), raw_code, (*result).hits, (*result).last);
     } else {
         DEBUG_MSG_P(PSTR("[RPN] new code: %s\n"), raw_code);
-        _rfb_codes.push_back({raw_code, 1u, millis(), 0u});
+        _rfb_codes.push_back({raw_code, 1u, millis()});
     }
 
     _rpn_run = true;
