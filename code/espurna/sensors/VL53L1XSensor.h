@@ -36,13 +36,13 @@ class VL53L1XSensor : public I2CSensor<> {
           _vl53l1x->setDistanceMode(mode);
         }
 
-        void setMeasurementTimingBudget(uint32_t budget_us) {
-          _vl53l1x->setMeasurementTimingBudget(budget_us);
+        void setMeasurementTimingBudget(uint16_t budget_ms) {
+          _vl53l1x->setMeasurementTimingBudget(budget_ms * 1000);
         }
 
-        void setInterMeasurementPeriod(unsigned int period) {
-          if (_inter_measurement_period == period) return;
-          _inter_measurement_period = period;
+        void setInterMeasurementPeriod(uint16_t period_ms) {
+          if (_inter_measurement_period == period_ms) return;
+          _inter_measurement_period = period_ms;
           _dirty = true;
         }
 
@@ -108,7 +108,7 @@ class VL53L1XSensor : public I2CSensor<> {
     protected:
 
         VL53L1X * _vl53l1x = NULL;
-        unsigned int _inter_measurement_period;
+        uint16_t _inter_measurement_period;
         double _distance = 0;
 
 };
