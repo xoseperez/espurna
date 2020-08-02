@@ -38,6 +38,12 @@ struct RpnRunner {
         Periodic
     };
 
+    RpnRunner(Policy policy_, uint32_t period_) :
+        policy(policy_),
+        period(period_),
+        last(millis())
+    {}
+
     Policy policy { Policy::Periodic };
 
     uint32_t period { 0ul };
@@ -57,7 +63,7 @@ rpn_operator_error _rpnRunnerHandler(rpn_context & ctxt, RpnRunner::Policy polic
         }
     }
 
-    _rpn_runners.push_back({policy, time, millis()});
+    _rpn_runners.emplace_back(policy, time);
 
     return rpn_operator_error::CannotContinue;
 }
