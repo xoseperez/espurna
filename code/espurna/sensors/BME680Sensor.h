@@ -85,8 +85,6 @@ const uint8_t bsec_config_iaq[] = {
   #endif
 };
 
-Bsec iaqSensor;
-
 class BME680Sensor : public I2CSensor<> {
 
     public:
@@ -338,6 +336,8 @@ class BME680Sensor : public I2CSensor<> {
         uint8_t _bsecState[BSEC_MAX_STATE_BLOB_SIZE] = {0};
         uint8_t _iaqAccuracy = 0;
         float _iaqStatic = 0;
+
+        Bsec iaqSensor;
 
 };
 
