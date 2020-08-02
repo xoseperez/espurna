@@ -583,12 +583,12 @@ void _rpnInit() {
         return 0;
     });
 
-    rpn_operator_set(_rpn_ctxt, "run_oneshot_ms", 1, [](rpn_context & ctxt) -> rpn_error {
+    rpn_operator_set(_rpn_ctxt, "oneshot_ms", 1, [](rpn_context & ctxt) -> rpn_error {
         auto every = rpn_stack_pop(ctxt);
         return _rpnRunnerHandler(ctxt, RpnRunner::Policy::OneShot, every.toUint());
     });
 
-    rpn_operator_set(_rpn_ctxt, "run_every_ms", 1, [](rpn_context & ctxt) -> rpn_error {
+    rpn_operator_set(_rpn_ctxt, "every_ms", 1, [](rpn_context & ctxt) -> rpn_error {
         auto every = rpn_stack_pop(ctxt);
         return _rpnRunnerHandler(ctxt, RpnRunner::Policy::Periodic, every.toUint());
     });
