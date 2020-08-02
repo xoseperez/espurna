@@ -328,7 +328,7 @@ DebugLogMode convert(const String& value) {
 
 void debugConfigureBoot() {
     static_assert(
-        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value, 
+        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value,
         "should be able to match DebugLogMode with int"
     );
 

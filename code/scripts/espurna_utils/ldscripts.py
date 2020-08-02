@@ -1,6 +1,5 @@
 import os
 
-
 def ldscripts_inject_libpath(env):
 
     platform = env.PioPlatform()

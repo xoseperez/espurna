@@ -203,6 +203,9 @@ PROGMEM const char espurna_sensors[] =
     #if BMX280_SUPPORT
         "BMX280 "
     #endif
+    #if BME680_SUPPORT
+        "BME680 "
+    #endif
     #if CSE7766_SUPPORT
         "CSE7766 "
     #endif

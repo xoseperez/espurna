@@ -59,6 +59,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "sensors/BMX280Sensor.h"
 #endif
 
+#if BME680_SUPPORT
+    #include "sensors/BME680Sensor.h"
+#endif
+
 #if CSE7766_SUPPORT
     #include "sensors/CSE7766Sensor.h"
 #endif
@@ -515,6 +519,8 @@ sensor_magnitude_t::sensor_magnitude_t(unsigned char slot, unsigned char index_l
     ++_counts[type];
 
     switch (type) {
+        case MAGNITUDE_IAQ:
+        case MAGNITUDE_IAQ_STATIC:
         case MAGNITUDE_ENERGY:
             filter = new LastFilter();
             break;
@@ -640,6 +646,18 @@ String magnitudeTopic(unsigned char type) {
             break;
         case MAGNITUDE_CO2:
             result = F("co2");
+            break;
+        case MAGNITUDE_VOC:
+            result = F("voc");
+            break;
+        case MAGNITUDE_IAQ:
+            result = F("iaq");
+            break;
+        case MAGNITUDE_IAQ_ACCURACY:
+            result = F("iaq_accuracy");
+            break;
+        case MAGNITUDE_IAQ_STATIC:
+            result = F("iaq_static");
             break;
         case MAGNITUDE_LUX:
             result = F("lux");
@@ -927,6 +945,10 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     case MAGNITUDE_PM2dot5: return "pm1dot5";
     case MAGNITUDE_PM10: return "pm10";
     case MAGNITUDE_CO2: return "co2";
+    case MAGNITUDE_VOC: return "voc";
+    case MAGNITUDE_IAQ: return "iaq";
+    case MAGNITUDE_IAQ_ACCURACY: return "iaqAccuracy";
+    case MAGNITUDE_IAQ_STATIC: return "iaqStatic";
     case MAGNITUDE_LUX: return "lux";
     case MAGNITUDE_UVA: return "uva";
     case MAGNITUDE_UVB: return "uvb";
@@ -1154,6 +1176,18 @@ String magnitudeName(unsigned char type) {
             break;
         case MAGNITUDE_CO2:
             result = F("CO2");
+            break;
+        case MAGNITUDE_VOC:
+            result = F("VOC");
+            break;
+        case MAGNITUDE_IAQ_STATIC:
+            result = F("IAQ (Static)");
+            break;
+        case MAGNITUDE_IAQ:
+            result = F("IAQ");
+            break;
+        case MAGNITUDE_IAQ_ACCURACY:
+            result = F("IAQ Accuracy");
             break;
         case MAGNITUDE_LUX:
             result = F("Lux");
@@ -1567,6 +1601,14 @@ void _sensorLoad() {
             sensor->setAddress(address_map[n]);
             _sensors.push_back(sensor);
         }
+    }
+    #endif
+
+    #if BME680_SUPPORT
+    {
+        BME680Sensor * sensor = new BME680Sensor();
+        sensor->setAddress(BME680_I2C_ADDRESS);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -1986,7 +2028,7 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
-	
+
     #if T6613_SUPPORT
     {
         T6613Sensor * sensor = new T6613Sensor();

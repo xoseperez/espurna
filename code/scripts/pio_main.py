@@ -13,6 +13,7 @@ from espurna_utils import (
     check_printsize,
     remove_float_support,
     ldscripts_inject_libpath,
+    libalgobsec_inject_patcher,
     lwip_inject_patcher,
     app_inject_revision,
     dummy_ets_printf,
@@ -47,6 +48,9 @@ if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
     env.AddPostAction(
         "$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf
     )
+
+# place bsec's libalgobsec.a sections in the flash to avoid "section ‘.text' will not fit in region 'iram1_0_seg'" error
+libalgobsec_inject_patcher(env)
 
 # patch lwip1 sources conditionally:
 # https://github.com/xoseperez/espurna/issues/1610

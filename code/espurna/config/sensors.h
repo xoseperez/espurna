@@ -782,39 +782,39 @@
 // LDR sensor
 // Enable support by passing LDR_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
- 
+
 #ifndef LDR_SUPPORT
 #define LDR_SUPPORT                     0
 #endif
- 
+
 #ifndef LDR_SAMPLES
 #define LDR_SAMPLES                     10      // Number of samples
 #endif
- 
+
 #ifndef LDR_DELAY
 #define LDR_DELAY                       0       // Delay between samples in micros
 #endif
- 
+
 #ifndef LDR_TYPE
 #define LDR_TYPE                        LDR_GL5528
 #endif
- 
+
 #ifndef LDR_ON_GROUND
 #define LDR_ON_GROUND                   true
 #endif
- 
+
 #ifndef LDR_RESISTOR
 #define LDR_RESISTOR                    10000   // Resistance
 #endif
- 
+
 #ifndef LDR_MULTIPLICATION
 #define LDR_MULTIPLICATION              32017200
 #endif
- 
+
 #ifndef LDR_POWER
 #define LDR_POWER                       1.5832
 #endif
- 
+
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
 // Enable support by passing MHZ19_SUPPORT=1 build flag
@@ -1303,6 +1303,29 @@
 #define SI1145_ADDRESS                   0x60
 #endif
 
+//------------------------------------------------------------------------------
+// BME680
+// Enable support by passing BME680_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef BME680_SUPPORT
+#define BME680_SUPPORT                              0
+#endif
+
+#ifndef BME680_I2C_ADDRESS
+#define BME680_I2C_ADDRESS                          0x00                                   // 0x00 means auto
+#endif
+
+#ifndef BME680_BSEC_CONFIG
+#define BME680_BSEC_CONFIG                          BME680_BSEC_CONFIG_GENERIC_33V_3S_4D   // BSEC config config value. By default, 3.3V as supply voltage,
+#endif                                                                                     // 3 seconds as maximum time between bsec_sensor_control` calls
+                                                                                           // and 4 days as the time considered for background calibration.
+
+#ifndef BME680_STATE_SAVE_INTERVAL
+#define BME680_STATE_SAVE_INTERVAL                  0                                      // How frequently (in milliseconds) should state be stored in
+#endif                                                                                     // non-volatile memory. A common value would be every 6h or
+                                                                                           // 360 * 60 * 1000 milliseconds. By default, this is disabled.
+
 // -----------------------------------------------------------------------------
 // ADC
 // -----------------------------------------------------------------------------
@@ -1356,6 +1379,7 @@
     BH1750_SUPPORT || \
     BMP180_SUPPORT || \
     BMX280_SUPPORT || \
+    BME680_SUPPORT || \
     EMON_ADC121_SUPPORT || \
     EMON_ADS1X15_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
@@ -1391,6 +1415,7 @@
     ANALOG_SUPPORT || \
     BH1750_SUPPORT || \
     BMP180_SUPPORT || \
+    BME680_SUPPORT || \
     BMX280_SUPPORT || \
     CSE7766_SUPPORT || \
     DALLAS_SUPPORT || \
