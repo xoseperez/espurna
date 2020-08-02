@@ -56,7 +56,7 @@ std::vector<RpnRunner> _rpn_runners;
 
 rpn_operator_error _rpnRunnerHandler(rpn_context & ctxt, RpnRunner::Policy policy, uint32_t time) {
     for (auto& runner : _rpn_runners) {
-        if (time == runner.period) {
+        if ((policy == runner.policy) && (time == runner.period)) {
             return runner.expired
                 ? rpn_operator_error::Ok
                 : rpn_operator_error::CannotContinue;
