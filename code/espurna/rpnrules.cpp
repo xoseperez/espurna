@@ -33,13 +33,34 @@ unsigned long _rpn_delay = RPN_DELAY;
 unsigned long _rpn_last = 0;
 
 struct RpnRunner {
-    uint32_t every;
-    uint32_t last;
-    bool expired;
+    enum class Policy {
+        OneShot,
+        Periodic
+    };
+
+    Policy policy { Policy::Periodic };
+
+    uint32_t period { 0ul };
+    uint32_t last { 0ul };
+
+    bool expired { false };
 };
 
 std::vector<RpnRunner> _rpn_runners;
 
+rpn_operator_error _rpnRunnerHandler(rpn_context & ctxt, RpnRunner::Policy policy, uint32_t time) {
+    for (auto& runner : _rpn_runners) {
+        if (time == runner.period) {
+            return runner.expired
+                ? rpn_operator_error::Ok
+                : rpn_operator_error::CannotContinue;
+        }
+    }
+
+    _rpn_runners.push_back({policy, time, millis()});
+
+    return rpn_operator_error::CannotContinue;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -257,6 +278,63 @@ rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
+decltype(_rfb_codes)::iterator _rpnRfbFindCode(const String& match) {
+    return std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [&match](const rpn_rfbridge_code& code) {
+        return code.raw == match;
+    });
+}
+
+rpn_error _rpnRfbPop(rpn_context& ctxt) {
+    auto code = rpn_stack_pop(ctxt);
+    
+    auto result = _rpnRfbFindCode(code.toString());
+    if (result == _rfb_codes.end()) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    _rfb_codes.erase(result);
+    return rpn_operator_error::Ok;
+}
+
+rpn_error _rpnRfbInfo(rpn_context& ctxt) {
+    auto code = rpn_stack_pop(ctxt);
+
+    auto result = _rpnRfbFindCode(code.toString());
+    if (result == _rfb_codes.end()) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    rpn_stack_push(ctxt, rpn_value(
+        static_cast<rpn_uint>((*result).hits)));
+    rpn_stack_push(ctxt, rpn_value(
+        static_cast<rpn_uint>((*result).last)));
+
+    return rpn_operator_error::Ok;
+}
+
+rpn_error _rpnRfbWaitMatch(rpn_context& ctxt) {
+    auto code = rpn_stack_pop(ctxt);
+    auto hits = rpn_stack_pop(ctxt);
+    auto time = rpn_stack_pop(ctxt);
+
+    auto result = _rpnRfbFindCode(code.toString());
+    if (result == _rfb_codes.end()) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    if ((*result).hits < hits.toUint()) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    // purge code to avoid matching again on the next rules run
+    if (rpn_operator_error::Ok == _rpnRunnerHandler(ctxt, RpnRunner::Policy::OneShot, time.toUint())) {
+        _rfb_codes.erase(result);
+        return rpn_operator_error::Ok;
+    }
+
+    return rpn_operator_error::CannotContinue;
+}
+
 rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     rpn_value code;
     rpn_stack_pop(ctxt, code);
@@ -264,11 +342,7 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     rpn_value hits;
     rpn_stack_pop(ctxt, hits);
 
-    String raw_code = code.toString();
-    auto result = std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [&raw_code](const rpn_rfbridge_code& code) {
-        return code.raw == raw_code;
-    });
-
+    auto result = _rpnRfbFindCode(code.toString());
     if (result == _rfb_codes.end()) {
         return rpn_operator_error::CannotContinue;
     }
@@ -278,16 +352,13 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
         return rpn_operator_error::CannotContinue;
     }
 
-    // hits == 1 is a single click, hits == 5 is long click
-    // we sort-of can distinguish single and double via timestamp, but it has a **very** unreliable timing
-    if ((*result).hits != hits.toUint()) {
-        return rpn_operator_error::CannotContinue;
+    // purge code to avoid matching again on the next rules run
+    if ((*result).hits == hits.toUint()) {
+        _rfb_codes.erase(result);
+        return rpn_operator_error::Ok;
     }
 
-    // purge code to avoid matching again on the next rules run
-    _rfb_codes.erase(result);
-
-    return rpn_operator_error::Ok;
+    return rpn_operator_error::CannotContinue;
 }
 
 void _rpnBrokerRfbridgeCallback(const char* raw_code) {
@@ -308,10 +379,7 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
         _rfb_codes.erase(old, _rfb_codes.end());
     }
 
-    auto result = std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [raw_code](rpn_rfbridge_code& code) {
-        return code.raw == raw_code;
-    });
-
+    auto result = _rpnRfbFindCode(raw_code);
     if (result != _rfb_codes.end()) {
         // we also need to reset hits at a certain point to allow repeats to go through
         // number is arbitrary time, just about 3-4 times more than it takes for a code to repeat when holding
@@ -331,17 +399,17 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
 
 #endif // RF_SUPPORT
 
-void _rpnDump() {
-    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
+void _rpnDump(Print& print) {
+    print.println(F("[RPN] Stack:"));
 
     auto index = rpn_stack_size(_rpn_ctxt);
     if (!index) {
-        DEBUG_MSG_P(PSTR("      (empty)\n"));
+        print.println(F("      (empty)"));
         return;
     }
 
-    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_value::Type type, const rpn_value& value) {
-        DEBUG_MSG_P(PSTR("%c      %02u: %s\n"),
+    rpn_stack_foreach(_rpn_ctxt, [&index, &print](rpn_stack_value::Type type, const rpn_value& value) {
+        print.printf("%c      %02u: %s\n",
             _rpnStackTypeTag(type), index--,
             _rpnValueToString(value).c_str()
         );
@@ -465,8 +533,11 @@ void _rpnInit() {
     #endif
 
     #if RF_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "rfb_match", 2, _rpnRfbMatcher);
+        rpn_operator_set(_rpn_ctxt, "rfb_pop", 1, _rpnRfbPop);
+        rpn_operator_set(_rpn_ctxt, "rfb_info", 1, _rpnRfbInfo);
         rpn_operator_set(_rpn_ctxt, "rfb_sequence", 2, _rpnRfbSequence);
+        rpn_operator_set(_rpn_ctxt, "rfb_match", 2, _rpnRfbMatcher);
+        rpn_operator_set(_rpn_ctxt, "rfb_match_wait", 3, _rpnRfbWaitMatch);
     #endif
 
     #if MQTT_SUPPORT
@@ -485,7 +556,7 @@ void _rpnInit() {
 
     // Some debugging. Dump stack contents
     rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
-        _rpnDump();
+        _rpnDump(terminalDefaultStream());
         return 0;
     });
 
@@ -506,21 +577,14 @@ void _rpnInit() {
         return 0;
     });
 
+    rpn_operator_set(_rpn_ctxt, "run_oneshot_ms", 1, [](rpn_context & ctxt) -> rpn_error {
+        auto every = rpn_stack_pop(ctxt);
+        return _rpnRunnerHandler(ctxt, RpnRunner::Policy::OneShot, every.toUint());
+    });
+
     rpn_operator_set(_rpn_ctxt, "run_every_ms", 1, [](rpn_context & ctxt) -> rpn_error {
-        rpn_value every_;
-        rpn_stack_pop(ctxt, every_);
-
-        auto every = every_.toUint();
-        for (auto& runner : _rpn_runners) {
-            if (every == runner.every) {
-                return runner.expired
-                    ? rpn_operator_error::Ok
-                    : rpn_operator_error::CannotContinue;
-            }
-        }
-
-        _rpn_runners.push_back({every, millis(), false});
-        return rpn_operator_error::CannotContinue;
+        auto every = rpn_stack_pop(ctxt);
+        return _rpnRunnerHandler(ctxt, RpnRunner::Policy::Periodic, every.toUint());
     });
 
 }
@@ -529,38 +593,49 @@ void _rpnInit() {
 
 void _rpnInitCommands() {
 
-    terminalRegisterCommand(F("RPN.RUNNERS"), [](const terminal::CommandContext&) {
-        for (auto& runner : _rpn_runners) {
-            DEBUG_MSG_P(PSTR("[RPN] %p Every %u ms\n"), &runner, runner.every);
+    terminalRegisterCommand(F("RPN.RUNNERS"), [](const terminal::CommandContext& ctx) {
+        if (!_rpn_runners.size()) {
+            ctx.output.print(F("[RPN] No active runners:\n"));
+            return;
         }
+
+        for (auto& runner : _rpn_runners) {
+            ctx.output.printf("[RPN] %p %s %u ms, last %u ms\n",
+                &runner, (RpnRunner::Policy::Periodic == runner.policy) ? "every" : "one-shot in ",
+                runner.period, runner.last
+            );
+        }
+
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext&) {
-        DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
-        rpn_variables_foreach(_rpn_ctxt, [](const String& name, const rpn_value& value) {
-            DEBUG_MSG_P(PSTR("   %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
+    terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext& ctx) {
+        rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
+            ctx.output.printf("   %s: %s\n", name.c_str(), _rpnValueToString(value).c_str());
         });
-        terminalOK();
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext&) {
-        DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
-        rpn_operators_foreach(_rpn_ctxt, [](const String& name, size_t argc, rpn_operator_callback_f ptr) {
-            DEBUG_MSG_P(PSTR("   %s (%d) -> %p\n"), name.c_str(), argc, ptr);
+    terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext& ctx) {
+        rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator_callback_f ptr) {
+            ctx.output.printf("   %s (%d) -> %p\n", name.c_str(), argc, ptr);
         });
-        terminalOK();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc == 2) {
-            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), ctx.argv[1].c_str());
-            rpn_process(_rpn_ctxt, ctx.argv[1].c_str());
-            _rpnDump();
+            ctx.output.printf("[RPN] Running \"%s\"\n", ctx.argv[1].c_str());
+            if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
+                ctx.output.printf("[RPN] Error category=%d code=%d\n",
+                        static_cast<int>(_rpn_ctxt.error.category), _rpn_ctxt.error.code);
+            }
+            _rpnDump(ctx.output);
             rpn_stack_clear(_rpn_ctxt);
-            terminalOK();
-        } else {
-            terminalError(F("Wrong arguments"));
+            terminalOK(ctx);
         }
+
+        terminalError(ctx, F("Wrong arguments"));
     });
 
 }
@@ -571,7 +646,7 @@ void _rpnInitCommands() {
 void _rpnRunnersCheck() {
     auto ts = millis();
     for (auto& runner : _rpn_runners) {
-        if (ts - runner.last >= runner.every) {
+        if (ts - runner.last >= runner.period) {
             runner.expired = true;
             runner.last = ts;
             _rpn_run = true;
@@ -580,6 +655,14 @@ void _rpnRunnersCheck() {
 }
 
 void _rpnRunnersReset() {
+    auto old = std::remove_if(_rpn_runners.begin(), _rpn_runners.end(), [](RpnRunner& runner) {
+        return (RpnRunner::Policy::OneShot == runner.policy) && runner.expired;
+    });
+
+    if (old != _rpn_runners.end()) {
+        _rpn_runners.erase(old, _rpn_runners.end());
+    }
+
     for (auto& runner : _rpn_runners) {
         runner.expired = false;
     }
