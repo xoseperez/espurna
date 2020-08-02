@@ -49,7 +49,7 @@ if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
         "$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf
     )
 
-# properly place bsec's libalgobsec.a in memory to avoid "section ‘.text' will not fit in region 'iram1_0_seg'" error
+# place bsec's libalgobsec.a sections in the flash to avoid "section ‘.text' will not fit in region 'iram1_0_seg'" error
 libalgobsec_inject_patcher(env)
 
 # patch lwip1 sources conditionally:
