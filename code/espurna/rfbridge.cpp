@@ -132,6 +132,7 @@ void _rfbReceiveImpl();
 
 bool _rfbMatch(char* code, unsigned char& relayID, unsigned char& value, char* buffer = NULL) {
 
+    if (!relayCount()) return false;
     if (strlen(code) != 18) return false;
 
     bool found = false;
