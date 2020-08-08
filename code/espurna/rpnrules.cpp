@@ -572,14 +572,14 @@ void _rpnInit() {
     #endif
 
     // Some debugging. Dump stack contents
-    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
+    rpn_operator_set(_rpn_ctxt, "showstack", 0, [](rpn_context & ctxt) -> rpn_error {
         _rpnDump(terminalDefaultStream());
         return 0;
     });
 
     // And, simple string logging
     #if DEBUG_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "log", 1, [](rpn_context & ctxt) -> rpn_error {
+        rpn_operator_set(_rpn_ctxt, "dbgmsg", 1, [](rpn_context & ctxt) -> rpn_error {
             rpn_value message;
             rpn_stack_pop(ctxt, message);
 
