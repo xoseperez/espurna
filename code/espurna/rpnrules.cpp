@@ -367,13 +367,26 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
+const char* _rpnRfbCodeNormalize(const char* p) {
+    while (*p != '\0' && *p == '0') {
+        if ((*p == '0')
+            && (*(p + 1) != '\0')
+            && (*(p + 1) == '0'))
+        {
+            p += 2;
+            continue;
+        }
+        break;
+    }
+
+    return p;
+}
+
 void _rpnBrokerRfbridgeCallback(const char* raw_code) {
 
-#if RFB_DIRECT
-    raw_code = (raw_code + strlen(raw_code) - 8);
-#else
-    raw_code = (raw_code + strlen(raw_code) - 6);
-#endif
+    // TODO: pass String() from the broker cb?
+    // TODO: 'normalize' from the rfbridge side?
+    raw_code = _rpnRfbCodeNormalize(raw_code);
 
     // expire really old codes to avoid memory exhaustion
     auto ts = millis();
