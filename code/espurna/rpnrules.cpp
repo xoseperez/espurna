@@ -579,7 +579,7 @@ void _rpnInit() {
 
     // Some debugging. Dump stack contents
     rpn_operator_set(_rpn_ctxt, "showstack", 0, [](rpn_context & ctxt) -> rpn_error {
-        _rpnDump(terminalDefaultStream());
+        _rpnShowStack(terminalDefaultStream());
         return 0;
     });
 
@@ -666,7 +666,7 @@ void _rpnInitCommands() {
                 return;
             }
 
-            _rpnDump(ctx.output);
+            _rpnShowStack(ctx.output);
             rpn_stack_clear(_rpn_ctxt);
 
             terminalOK(ctx);
