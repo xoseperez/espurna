@@ -385,6 +385,12 @@ const char* _rpnRfbCodeNormalize(const char* p) {
 void _rpnBrokerRfbridgeCallback(const char* raw_code) {
 
     // TODO: pass String() from the broker cb?
+#if RFB_DIRECT
+    raw_code = (raw_code + strlen(raw_code) - 8);
+#else
+    raw_code = (raw_code + strlen(raw_code) - 6);
+#endif
+
     // TODO: 'normalize' from the rfbridge side?
     raw_code = _rpnRfbCodeNormalize(raw_code);
 
