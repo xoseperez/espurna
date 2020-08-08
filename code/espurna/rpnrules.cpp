@@ -407,9 +407,7 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
         }
         (*result).last = millis();
         (*result).hits += 1u;
-        DEBUG_MSG_P(PSTR("[RPN] refresh code=%s hits=%u last=%u\n"), raw_code, (*result).hits, (*result).last);
     } else {
-        DEBUG_MSG_P(PSTR("[RPN] new code: %s\n"), raw_code);
         _rfb_codes.push_back({raw_code, 1u, millis()});
     }
 
@@ -418,8 +416,8 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
 
 #endif // RF_SUPPORT
 
-void _rpnDump(Print& print) {
-    print.println(F("[RPN] Stack:"));
+void _rpnShowStack(Print& print) {
+    print.println(F("Stack:"));
 
     auto index = rpn_stack_size(_rpn_ctxt);
     if (!index) {
@@ -614,15 +612,17 @@ void _rpnInitCommands() {
 
     terminalRegisterCommand(F("RPN.RUNNERS"), [](const terminal::CommandContext& ctx) {
         if (!_rpn_runners.size()) {
-            ctx.output.print(F("[RPN] No active runners:\n"));
+            terminalError(ctx, F("No active runners"));
             return;
         }
 
         for (auto& runner : _rpn_runners) {
-            ctx.output.printf("[RPN] %p %s %u ms, last %u ms\n",
-                &runner, (RpnRunner::Policy::Periodic == runner.policy) ? "every" : "one-shot in ",
+            char buffer[128] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms"),
+                &runner, (RpnRunner::Policy::Periodic == runner.policy) ? "every" : "one-shot",
                 runner.period, runner.last
             );
+            ctx.output.println(buffer);
         }
 
         terminalOK(ctx);
@@ -630,28 +630,41 @@ void _rpnInitCommands() {
 
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext& ctx) {
         rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
-            ctx.output.printf("   %s: %s\n", name.c_str(), _rpnValueToString(value).c_str());
+            char buffer[256] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("\t%s: %s"), name.c_str(), _rpnValueToString(value).c_str());
+            ctx.output.println(buffer);
         });
         terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext& ctx) {
-        rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator_callback_f ptr) {
-            ctx.output.printf("   %s (%d) -> %p\n", name.c_str(), argc, ptr);
+        rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
+            char buffer[128] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("\t%s (%d)"), name.c_str(), argc);
+            ctx.output.println(buffer);
         });
         terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc == 2) {
-            ctx.output.printf("[RPN] Running \"%s\"\n", ctx.argv[1].c_str());
+            ctx.output.print(F("Running RPN expression: "));
+            ctx.output.println(ctx.argv[1].c_str());
+
             if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
-                ctx.output.printf("[RPN] Error category=%d code=%d\n",
-                        static_cast<int>(_rpn_ctxt.error.category), _rpn_ctxt.error.code);
+                rpn_stack_clear(_rpn_ctxt);
+                char buffer[64] = {0};
+                snprintf_P(buffer, sizeof(buffer), PSTR("position=%u category=%d code=%d"),
+                    _rpn_ctxt.error.position, static_cast<int>(_rpn_ctxt.error.category), _rpn_ctxt.error.code);
+                terminalError(ctx, buffer);
+                return;
             }
+
             _rpnDump(ctx.output);
             rpn_stack_clear(_rpn_ctxt);
+
             terminalOK(ctx);
+            return;
         }
 
         terminalError(ctx, F("Wrong arguments"));
@@ -700,13 +713,10 @@ void _rpnRun() {
     _rpn_last = millis();
     _rpn_run = false;
 
+    String rule;
     unsigned char i = 0;
-    String rule = getSetting({"rpnRule", i});
-    while (rule.length()) {
-        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
+    while ((rule = getSetting({"rpnRule", i++})).length()) {
         rpn_process(_rpn_ctxt, rule.c_str());
-        //_rpnDump();
-        rule = getSetting({"rpnRule", ++i});
         rpn_stack_clear(_rpn_ctxt);
     }
 
