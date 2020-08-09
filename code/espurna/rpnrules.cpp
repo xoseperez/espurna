@@ -415,10 +415,8 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
         }
         (*result).last = millis();
         (*result).count += 1u;
-        DEBUG_MSG_P(PSTR("[rpn] update code %s\n"), raw_code);
     } else {
         _rfb_codes.push_back({raw_code, 1u, millis()});
-        DEBUG_MSG_P(PSTR("[rpn] new code %s\n"), raw_code);
     }
 
     _rpn_run = true;
@@ -428,7 +426,8 @@ void _rpnRfbSetup() {
     // - Repeat window is an arbitrary time, just about 3-4 more times it takes for
     //   a code to be sent again when holding a generic remote button
     //   Code counter is reset to 0 when outside of the window.
-    // - Stale delay allows broker callback to remove really old codes, while nothing
+    // - Stale delay allows broker callback to remove really old codes.
+    //   (TODO: can this happen in loop() cb instead?)
     _rfb_code_repeat_window = getSetting("rfbRepeatWindow", 2000ul);
     _rfb_code_stale_delay = getSetting("rfbStaleDelay", 10000ul);
 
