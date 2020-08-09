@@ -243,11 +243,14 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
 
 struct rpn_rfbridge_code {
     String raw;
-    size_t hits;
+    size_t count;
     decltype(millis()) last;
 };
 
 static std::list<rpn_rfbridge_code> _rfb_codes;
+
+static uint32_t _rfb_code_repeat_window;
+static uint32_t _rfb_code_stale_delay;
 
 rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     rpn_value second;
@@ -292,7 +295,7 @@ decltype(_rfb_codes)::iterator _rpnRfbFindCode(const String& match) {
 
 rpn_error _rpnRfbPop(rpn_context& ctxt) {
     auto code = rpn_stack_pop(ctxt);
-    
+
     auto result = _rpnRfbFindCode(code.toString());
     if (result == _rfb_codes.end()) {
         return rpn_operator_error::CannotContinue;
@@ -311,7 +314,7 @@ rpn_error _rpnRfbInfo(rpn_context& ctxt) {
     }
 
     rpn_stack_push(ctxt, rpn_value(
-        static_cast<rpn_uint>((*result).hits)));
+        static_cast<rpn_uint>((*result).count)));
     rpn_stack_push(ctxt, rpn_value(
         static_cast<rpn_uint>((*result).last)));
 
@@ -320,7 +323,7 @@ rpn_error _rpnRfbInfo(rpn_context& ctxt) {
 
 rpn_error _rpnRfbWaitMatch(rpn_context& ctxt) {
     auto code = rpn_stack_pop(ctxt);
-    auto hits = rpn_stack_pop(ctxt);
+    auto count = rpn_stack_pop(ctxt);
     auto time = rpn_stack_pop(ctxt);
 
     auto result = _rpnRfbFindCode(code.toString());
@@ -328,7 +331,7 @@ rpn_error _rpnRfbWaitMatch(rpn_context& ctxt) {
         return rpn_operator_error::CannotContinue;
     }
 
-    if ((*result).hits < hits.toUint()) {
+    if ((*result).count < count.toUint()) {
         return rpn_operator_error::CannotContinue;
     }
 
@@ -345,8 +348,8 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     rpn_value code;
     rpn_stack_pop(ctxt, code);
 
-    rpn_value hits;
-    rpn_stack_pop(ctxt, hits);
+    rpn_value count;
+    rpn_stack_pop(ctxt, count);
 
     auto result = _rpnRfbFindCode(code.toString());
     if (result == _rfb_codes.end()) {
@@ -359,7 +362,7 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     }
 
     // purge code to avoid matching again on the next rules run
-    if ((*result).hits == hits.toUint()) {
+    if ((*result).count == count.toUint()) {
         _rfb_codes.erase(result);
         return rpn_operator_error::Ok;
     }
@@ -394,10 +397,10 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
     // TODO: 'normalize' from the rfbridge side?
     raw_code = _rpnRfbCodeNormalize(raw_code);
 
-    // expire really old codes to avoid memory exhaustion
+    // remove really old codes that we have not seen in a while to avoid memory exhaustion
     auto ts = millis();
     auto old = std::remove_if(_rfb_codes.begin(), _rfb_codes.end(), [ts](rpn_rfbridge_code& code) {
-        return (ts - code.last) >= 10000u;
+        return (ts - code.last) >= _rfb_code_stale_delay;
     });
 
     if (old != _rfb_codes.end()) {
@@ -406,18 +409,46 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
 
     auto result = _rpnRfbFindCode(raw_code);
     if (result != _rfb_codes.end()) {
-        // we also need to reset hits at a certain point to allow repeats to go through
-        // number is arbitrary time, just about 3-4 times more than it takes for a code to repeat when holding
-        if (millis() - (*result).last >= 2000u) {
-            (*result).hits = 0;
+        // we also need to reset the counter at a certain point to allow next batch of repeats to go through
+        if (millis() - (*result).last >= _rfb_code_repeat_window) {
+            (*result).count = 0;
         }
         (*result).last = millis();
-        (*result).hits += 1u;
+        (*result).count += 1u;
+        DEBUG_MSG_P(PSTR("[rpn] update code %s\n"), raw_code);
     } else {
         _rfb_codes.push_back({raw_code, 1u, millis()});
+        DEBUG_MSG_P(PSTR("[rpn] new code %s\n"), raw_code);
     }
 
     _rpn_run = true;
+}
+
+void _rpnRfbSetup() {
+    // - Repeat window is an arbitrary time, just about 3-4 more times it takes for
+    //   a code to be sent again when holding a generic remote button
+    //   Code counter is reset to 0 when outside of the window.
+    // - Stale delay allows broker callback to remove really old codes, while nothing
+    _rfb_code_repeat_window = getSetting("rfbRepeatWindow", 2000ul);
+    _rfb_code_stale_delay = getSetting("rfbStaleDelay", 10000ul);
+
+#if TERMINAL_SUPPORT
+    terminalRegisterCommand(F("RFB.CODES"), [](const terminal::CommandContext& ctx) {
+        for (auto& code : _rfb_codes) {
+            char buffer[128] = {0};
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("\"%s\" count=%u last=%u"),
+                code.raw.c_str(),
+                code.count,
+                code.last
+            );
+            ctx.output.println(buffer);
+        }
+    });
+#endif
+
+    // Main bulk of the processing goes on in here
+    RfbridgeBroker::Register(_rpnBrokerRfbridgeCallback);
 }
 
 #endif // RF_SUPPORT
@@ -637,7 +668,7 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext& ctx) {
         rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
             char buffer[256] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("\t%s: %s"), name.c_str(), _rpnValueToString(value).c_str());
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s"), name.c_str(), _rpnValueToString(value).c_str());
             ctx.output.println(buffer);
         });
         terminalOK(ctx);
@@ -646,7 +677,7 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext& ctx) {
         rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
             char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("\t%s (%d)"), name.c_str(), argc);
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)"), name.c_str(), argc);
             ctx.output.println(buffer);
         });
         terminalOK(ctx);
@@ -786,7 +817,7 @@ void rpnSetup() {
     StatusBroker::Register(_rpnBrokerStatus);
 
     #if RF_SUPPORT
-        RfbridgeBroker::Register(_rpnBrokerRfbridgeCallback);
+        _rpnRfbSetup();
     #endif
 
     #if SENSOR_SUPPORT
