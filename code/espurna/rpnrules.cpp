@@ -252,6 +252,8 @@ static std::list<rpn_rfbridge_code> _rfb_codes;
 static uint32_t _rfb_code_repeat_window;
 static uint32_t _rfb_code_stale_delay;
 
+static uint32_t _rfb_code_match_window;
+
 rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     rpn_value second;
     rpn_stack_pop(ctxt, second);
@@ -357,7 +359,7 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     }
 
     // only process recent codes, ignore when rule is processing outside of this small window
-    if (millis() - (*result).last >= 2000) {
+    if (millis() - (*result).last >= _rfb_code_match_window) {
         return rpn_operator_error::CannotContinue;
     }
 
@@ -429,6 +431,7 @@ void _rpnRfbSetup() {
     // - Stale delay allows broker callback to remove really old codes.
     //   (TODO: can this happen in loop() cb instead?)
     _rfb_code_repeat_window = getSetting("rfbRepeatWindow", 2000ul);
+    _rfb_code_match_window = getSetting("rfbMatchWindow", 2000ul);
     _rfb_code_stale_delay = getSetting("rfbStaleDelay", 10000ul);
 
 #if TERMINAL_SUPPORT
