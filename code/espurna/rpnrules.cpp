@@ -21,7 +21,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 
 #include <vector>
-#include <Ticker.h>
 
 // -----------------------------------------------------------------------------
 // Custom commands
@@ -686,27 +685,27 @@ void _rpnInitCommands() {
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 2) {
-            ctx.output.print(F("Running RPN expression: "));
-            ctx.output.println(ctx.argv[1].c_str());
-
-            if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
-                rpn_stack_clear(_rpn_ctxt);
-                char buffer[64] = {0};
-                snprintf_P(buffer, sizeof(buffer), PSTR("position=%u category=%d code=%d"),
-                    _rpn_ctxt.error.position, static_cast<int>(_rpn_ctxt.error.category), _rpn_ctxt.error.code);
-                terminalError(ctx, buffer);
-                return;
-            }
-
-            _rpnShowStack(ctx.output);
-            rpn_stack_clear(_rpn_ctxt);
-
-            terminalOK(ctx);
+        if (ctx.argc != 2) {
+            terminalError(F("Wrong arguments"));
             return;
         }
 
-        terminalError(ctx, F("Wrong arguments"));
+        ctx.output.print(F("Running RPN expression: "));
+        ctx.output.println(ctx.argv[1].c_str());
+
+        if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
+            rpn_stack_clear(_rpn_ctxt);
+            char buffer[64] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("position=%u category=%d code=%d"),
+                _rpn_ctxt.error.position, static_cast<int>(_rpn_ctxt.error.category), _rpn_ctxt.error.code);
+            terminalError(ctx, buffer);
+            return;
+        }
+
+        _rpnShowStack(ctx.output);
+        rpn_stack_clear(_rpn_ctxt);
+
+        terminalOK(ctx);
     });
 
 }
