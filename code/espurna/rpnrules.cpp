@@ -440,7 +440,7 @@ void _rpnInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext& ctx) {
         rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
             char buffer[256] = {0};
             snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s"), name.c_str(), _rpnValueToString(value).c_str());
@@ -449,7 +449,7 @@ void _rpnInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext& ctx) {
         rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)"), name.c_str(), argc);
