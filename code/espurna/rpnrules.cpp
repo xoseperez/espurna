@@ -19,6 +19,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 #include "ws.h"
 
+#include <vector>
 // -----------------------------------------------------------------------------
 // Custom commands
 // -----------------------------------------------------------------------------
@@ -27,6 +28,42 @@ rpn_context _rpn_ctxt;
 bool _rpn_run = false;
 unsigned long _rpn_delay = RPN_DELAY;
 unsigned long _rpn_last = 0;
+
+struct RpnRunner {
+    enum class Policy {
+        OneShot,
+        Periodic
+    };
+
+    RpnRunner(Policy policy_, uint32_t period_) :
+        policy(policy_),
+        period(period_),
+        last(millis())
+    {}
+
+    Policy policy { Policy::Periodic };
+
+    uint32_t period { 0ul };
+    uint32_t last { 0ul };
+
+    bool expired { false };
+};
+
+std::vector<RpnRunner> _rpn_runners;
+
+rpn_operator_error _rpnRunnerHandler(rpn_context & ctxt, RpnRunner::Policy policy, uint32_t time) {
+    for (auto& runner : _rpn_runners) {
+        if ((policy == runner.policy) && (time == runner.period)) {
+            return runner.expired
+                ? rpn_operator_error::Ok
+                : rpn_operator_error::CannotContinue;
+        }
+    }
+
+    _rpn_runners.emplace_back(policy, time);
+
+    return rpn_operator_error::CannotContinue;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -199,23 +236,22 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
 
 #endif // RELAY_SUPPORT
 
-void _rpnDump() {
-    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
+void _rpnShowStack(Print& print) {
+    print.println(F("Stack:"));
 
     auto index = rpn_stack_size(_rpn_ctxt);
     if (!index) {
-        DEBUG_MSG_P(PSTR("      (empty)\n"));
+        print.println(F("      (empty)"));
         return;
     }
 
-    rpn_stack_foreach(_rpn_ctxt, [&index](rpn_stack_value::Type type, const rpn_value& value) {
-        DEBUG_MSG_P(PSTR("%c      %02u: %s\n"),
+    rpn_stack_foreach(_rpn_ctxt, [&index, &print](rpn_stack_value::Type type, const rpn_value& value) {
+        print.printf("%c      %02u: %s\n",
             _rpnStackTypeTag(type), index--,
             _rpnValueToString(value).c_str()
         );
     });
 }
-
 
 void _rpnInit() {
 
@@ -333,15 +369,29 @@ void _rpnInit() {
 
     #endif
 
+    #if MQTT_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "mqtt_send", 2, [](rpn_context & ctxt) -> rpn_error {
+            rpn_value message;
+            rpn_stack_pop(ctxt, message);
+
+            rpn_value topic;
+            rpn_stack_pop(ctxt, topic);
+
+            return mqttSendRaw(topic.toString().c_str(), message.toString().c_str())
+                ? rpn_operator_error::Ok
+                : rpn_operator_error::CannotContinue;
+        });
+    #endif
+
     // Some debugging. Dump stack contents
-    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) -> rpn_error {
-        _rpnDump();
+    rpn_operator_set(_rpn_ctxt, "showstack", 0, [](rpn_context & ctxt) -> rpn_error {
+        _rpnShowStack(terminalDefaultStream());
         return 0;
     });
 
     // And, simple string logging
     #if DEBUG_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "log", 1, [](rpn_context & ctxt) -> rpn_error {
+        rpn_operator_set(_rpn_ctxt, "dbgmsg", 1, [](rpn_context & ctxt) -> rpn_error {
             rpn_value message;
             rpn_stack_pop(ctxt, message);
 
@@ -355,42 +405,112 @@ void _rpnInit() {
         rpn_stack_push(ctxt, rpn_value(static_cast<uint32_t>(millis())));
         return 0;
     });
+
+    rpn_operator_set(_rpn_ctxt, "oneshot_ms", 1, [](rpn_context & ctxt) -> rpn_error {
+        auto every = rpn_stack_pop(ctxt);
+        return _rpnRunnerHandler(ctxt, RpnRunner::Policy::OneShot, every.toUint());
+    });
+
+    rpn_operator_set(_rpn_ctxt, "every_ms", 1, [](rpn_context & ctxt) -> rpn_error {
+        auto every = rpn_stack_pop(ctxt);
+        return _rpnRunnerHandler(ctxt, RpnRunner::Policy::Periodic, every.toUint());
+    });
+
 }
 
 #if TERMINAL_SUPPORT
 
 void _rpnInitCommands() {
 
+    terminalRegisterCommand(F("RPN.RUNNERS"), [](const terminal::CommandContext& ctx) {
+        if (!_rpn_runners.size()) {
+            terminalError(ctx, F("No active runners"));
+            return;
+        }
+
+        for (auto& runner : _rpn_runners) {
+            char buffer[128] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms"),
+                &runner, (RpnRunner::Policy::Periodic == runner.policy) ? "every" : "one-shot",
+                runner.period, runner.last
+            );
+            ctx.output.println(buffer);
+        }
+
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext&) {
-        DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
-        rpn_variables_foreach(_rpn_ctxt, [](const String& name, const rpn_value& value) {
-            DEBUG_MSG_P(PSTR("   %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
+        rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
+            char buffer[256] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s"), name.c_str(), _rpnValueToString(value).c_str());
+            ctx.output.println(buffer);
         });
-        terminalOK();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext&) {
-        DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
-        rpn_operators_foreach(_rpn_ctxt, [](const String& name, size_t argc, rpn_operator_callback_f ptr) {
-            DEBUG_MSG_P(PSTR("   %s (%d) -> %p\n"), name.c_str(), argc, ptr);
+        rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
+            char buffer[128] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)"), name.c_str(), argc);
+            ctx.output.println(buffer);
         });
-        terminalOK();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 2) {
-            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), ctx.argv[1].c_str());
-            rpn_process(_rpn_ctxt, ctx.argv[1].c_str());
-            _rpnDump();
-            rpn_stack_clear(_rpn_ctxt);
-            terminalOK();
-        } else {
+        if (ctx.argc != 2) {
             terminalError(F("Wrong arguments"));
+            return;
         }
+
+        ctx.output.print(F("Running RPN expression: "));
+        ctx.output.println(ctx.argv[1].c_str());
+
+        if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
+            rpn_stack_clear(_rpn_ctxt);
+            char buffer[64] = {0};
+            snprintf_P(buffer, sizeof(buffer), PSTR("position=%u category=%d code=%d"),
+                _rpn_ctxt.error.position, static_cast<int>(_rpn_ctxt.error.category), _rpn_ctxt.error.code);
+            terminalError(ctx, buffer);
+            return;
+        }
+
+        _rpnShowStack(ctx.output);
+        rpn_stack_clear(_rpn_ctxt);
+
+        terminalOK(ctx);
     });
 
 }
 #endif
+
+// enables us to use rules without any events firing
+// notice: requires rpnRun to trigger at least once so that we can install runners
+void _rpnRunnersCheck() {
+    auto ts = millis();
+    for (auto& runner : _rpn_runners) {
+        if (ts - runner.last >= runner.period) {
+            runner.expired = true;
+            runner.last = ts;
+            _rpn_run = true;
+        }
+    }
+}
+
+void _rpnRunnersReset() {
+    auto old = std::remove_if(_rpn_runners.begin(), _rpn_runners.end(), [](RpnRunner& runner) {
+        return (RpnRunner::Policy::OneShot == runner.policy) && runner.expired;
+    });
+
+    if (old != _rpn_runners.end()) {
+        _rpn_runners.erase(old, _rpn_runners.end());
+    }
+
+    for (auto& runner : _rpn_runners) {
+        runner.expired = false;
+    }
+}
 
 void _rpnRun() {
 
@@ -405,13 +525,10 @@ void _rpnRun() {
     _rpn_last = millis();
     _rpn_run = false;
 
+    String rule;
     unsigned char i = 0;
-    String rule = getSetting({"rpnRule", i});
-    while (rule.length()) {
-        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
+    while ((rule = getSetting({"rpnRule", i++})).length()) {
         rpn_process(_rpn_ctxt, rule.c_str());
-        //_rpnDump();
-        rule = getSetting({"rpnRule", ++i});
         rpn_stack_clear(_rpn_ctxt);
     }
 
@@ -423,7 +540,9 @@ void _rpnRun() {
 
 void _rpnLoop() {
 
+    _rpnRunnersCheck();
     _rpnRun();
+    _rpnRunnersReset();
 
 }
 
