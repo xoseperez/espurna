@@ -22,20 +22,19 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
-#if DEBUG_UDP_PORT == 514
-char _udp_syslog_header[40] = {0};
-#endif
+
+constexpr bool _udp_syslog_enabled = (514 == DEBUG_UDP_PORT);
+char _udp_syslog_header[64];
 #endif
 
 bool _debug_enabled = false;
-
 
 
 // -----------------------------------------------------------------------------
 // printf-like debug methods
 // -----------------------------------------------------------------------------
 
-constexpr const int DEBUG_SEND_STRING_BUFFER_SIZE = 128;
+constexpr int DEBUG_SEND_STRING_BUFFER_SIZE = 128;
 
 void _debugSendInternal(const char * message, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
 
@@ -192,9 +191,9 @@ void _debugSendInternal(const char * message, bool add_timestamp) {
         if (systemCheck()) {
         #endif
             _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            #if DEBUG_UDP_PORT == 514
+            if (_udp_syslog_enabled) {
                 _udp_debug.write(_udp_syslog_header);
-            #endif
+            }
             _udp_debug.write(message);
             pause = _udp_debug.endPacket() > 0;
         #if SYSTEM_CHECK_ENABLED
@@ -245,16 +244,27 @@ void debugWebSetup() {
         .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
         .onAction(_debugWebSocketOnAction);
 
-    // TODO: if hostname string changes, need to update header too
-    #if DEBUG_UDP_SUPPORT
-    #if DEBUG_UDP_PORT == 514
-        snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
-    #endif
-    #endif
+}
+
+#endif // DEBUG_WEB_SUPPOR
+
+#if DEBUG_UDP_SUPPORT
+
+// We use the syslog header as defined in RFC5424 (The Syslog Protocol), ref:
+// - https://tools.ietf.org/html/rfc5424
+// - https://github.com/xoseperez/espurna/issues/2312/
+
+void debugUdpSyslogConfigure() {
+
+    snprintf_P(
+        _udp_syslog_header, sizeof(_udp_syslog_header),
+        PSTR("<%u>1 - %s ESPurna - - - "), DEBUG_UDP_FAC_PRI,
+        getSetting("hostname", getIdentifier()).c_str()
+    );
 
 }
 
-#endif // DEBUG_WEB_SUPPORT
+#endif // DEBUG_UDP_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -262,6 +272,13 @@ void debugSetup() {
 
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
+    #endif
+
+    #if DEBUG_UDP_SUPPORT
+        if (_udp_syslog_enabled) {
+            debugUdpSyslogConfigure();
+            espurnaRegisterReload(debugUdpSyslogConfigure);
+        }
     #endif
 
     #if TERMINAL_SUPPORT
