@@ -64,53 +64,52 @@ void _domoticzStatus(unsigned char id, bool status) {
 
 void _domoticzLight(unsigned int idx, const JsonObject& root) {
 
-    if (!lightHasColor()) return;
-
     JsonObject& color = root["Color"];
-    if (!color.success()) return;
+    if (color.success()) {
 
-    // for ColorMode... see:
-    // https://github.com/domoticz/domoticz/blob/development/hardware/ColorSwitch.h
-    // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Set_a_light_to_a_certain_color_or_color_temperature
+        // for ColorMode... see:
+        // https://github.com/domoticz/domoticz/blob/development/hardware/ColorSwitch.h
+        // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Set_a_light_to_a_certain_color_or_color_temperature
 
-    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u t:%u brightness:%u for IDX %u\n"),
-        color["r"].as<unsigned char>(),
-        color["g"].as<unsigned char>(),
-        color["b"].as<unsigned char>(),
-        color["ww"].as<unsigned char>(),
-        color["cw"].as<unsigned char>(),
-        color["t"].as<unsigned char>(),
-        color["Level"].as<unsigned char>(),
-        idx
-    );
+        DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u t:%u brightness:%u for IDX %u\n"),
+            color["r"].as<unsigned char>(),
+            color["g"].as<unsigned char>(),
+            color["b"].as<unsigned char>(),
+            color["ww"].as<unsigned char>(),
+            color["cw"].as<unsigned char>(),
+            color["t"].as<unsigned char>(),
+            color["Level"].as<unsigned char>(),
+            idx
+        );
 
-    // m field contains information about color mode (enum ColorMode from domoticz ColorSwitch.h):
-    unsigned int cmode = color["m"];
+        // m field contains information about color mode (enum ColorMode from domoticz ColorSwitch.h):
+        unsigned int cmode = color["m"];
 
-    if (cmode == 2) { // ColorModeWhite - WW,CW,temperature (t unused for now)
+        if (cmode == 2) { // ColorModeWhite - WW,CW,temperature (t unused for now)
 
-        if (lightChannels() < 2) return;
+            if (lightChannels() < 2) return;
 
-        lightChannel(0, color["ww"]);
-        lightChannel(1, color["cw"]);
+            lightChannel(0, color["ww"]);
+            lightChannel(1, color["cw"]);
 
-    } else if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom
+        } else if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom
 
-        if (lightChannels() < 3) return;
+            if (lightChannels() < 3) return;
 
-        lightChannel(0, color["r"]);
-        lightChannel(1, color["g"]);
-        lightChannel(2, color["b"]);
+            lightChannel(0, color["r"]);
+            lightChannel(1, color["g"]);
+            lightChannel(2, color["b"]);
 
-        // WARM WHITE (or MONOCHROME WHITE) and COLD WHITE are always sent.
-        // Apply only when supported.
-        if (lightChannels() > 3) {
-            lightChannel(3, color["ww"]);
+            // WARM WHITE (or MONOCHROME WHITE) and COLD WHITE are always sent.
+            // Apply only when supported.
+            if (lightChannels() > 3) {
+                lightChannel(3, color["ww"]);
+            }
+            if (lightChannels() > 4) {
+                lightChannel(4, color["cw"]);
+            }
+
         }
-        if (lightChannels() > 4) {
-            lightChannel(4, color["cw"]);
-        }
-
     }
 
     // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (unsigned char)
@@ -155,9 +154,10 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
             // IDX
             unsigned int idx = root["idx"];
             String stype = root["stype"];
+            String switchType = root["switchType"];
 
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                if (stype.startsWith("RGB") && (_domoticzIdx(0) == idx)) {
+                if ((_domoticzIdx(0) == idx) && (stype.startsWith("RGB") || (switchType.equals("Dimmer")))) {
                     _domoticzLight(idx, root);
                 }
             #endif
