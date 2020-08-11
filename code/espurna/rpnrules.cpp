@@ -616,10 +616,12 @@ void _rpnInit() {
     #endif
 
     // Some debugging. Dump stack contents
-    rpn_operator_set(_rpn_ctxt, "showstack", 0, [](rpn_context & ctxt) -> rpn_error {
-        _rpnShowStack(terminalDefaultStream());
-        return 0;
-    });
+    #if TERMINAL_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "showstack", 0, [](rpn_context & ctxt) -> rpn_error {
+            _rpnShowStack(terminalDefaultStream());
+            return 0;
+        });
+    #endif
 
     // And, simple string logging
     #if DEBUG_SUPPORT
