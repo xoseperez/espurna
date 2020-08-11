@@ -20,6 +20,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 #include "ws.h"
 
+#include <list>
 #include <vector>
 
 // -----------------------------------------------------------------------------
@@ -246,6 +247,8 @@ struct rpn_rfbridge_code {
     decltype(millis()) last;
 };
 
+// TODO: in theory, we could do with forward_list. however, this would require a more complicated removal process,
+//       as we would no longer know the previous element and would need to track 2 elements at a time
 static std::list<rpn_rfbridge_code> _rfb_codes;
 
 static uint32_t _rfb_code_repeat_window;
@@ -260,6 +263,7 @@ rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     rpn_value first;
     rpn_stack_pop(ctxt, first);
 
+    // find 2 codes in the same order and save pointers
     String raw[2] {first.toString(), second.toString()};
     rpn_rfbridge_code* refs[2] {nullptr, nullptr};
 
@@ -267,10 +271,12 @@ rpn_error _rpnRfbSequence(rpn_context& ctxt) {
         if ((refs[0] != nullptr) && (refs[1] != nullptr)) {
             break;
         }
-        refs[0] = ((raw[0] == nullptr) && (raw[0] == recent.raw))
-            ? &recent : nullptr;
-        refs[1] = ((raw[1] == nullptr) && (raw[1] == recent.raw))
-            ? &recent : nullptr;
+        if ((refs[0] == nullptr) && (raw[0] == recent.raw)) {
+            refs[0] = &recent;
+        }
+        if ((refs[1] == nullptr) && (raw[1] == recent.raw)) {
+            refs[1] = &recent;
+        }
     }
 
     if ((refs[0] == nullptr) || (refs[1] == nullptr)) {
