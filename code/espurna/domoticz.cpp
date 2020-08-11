@@ -25,7 +25,7 @@ std::bitset<RelaysMax> _dcz_relay_state;
 // Private methods
 //------------------------------------------------------------------------------
 
-unsigned char _domoticzIdx(unsigned char relayID, unsigned char defaultValue = 0) {
+unsigned int _domoticzIdx(unsigned char relayID, unsigned int defaultValue = 0) {
     return getSetting({"dczRelayIdx", relayID}, defaultValue);
 }
 
