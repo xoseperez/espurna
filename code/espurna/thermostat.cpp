@@ -586,14 +586,12 @@ void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
 void display_wifi_status(bool on) {
   _display_wifi_status = on;
   drawIco(0, 0, wifi_on_bits, on);
-  drawIco(34, 0, server_bits, on);
 }
 
 //------------------------------------------------------------------------------
 void display_mqtt_status(bool on) {
   _display_mqtt_status = on;
   drawIco(17, 0, mqtt_bits, on);
-  drawIco(51, 0, remote_temp_bits, on);
 }
 
 //------------------------------------------------------------------------------
@@ -616,7 +614,6 @@ void display_temp_range() {
   display.setTextColor(ST77XX_WHITE);
   display.setTextWrap(true);
   display.setCursor(90, 0 + 13); 
-  //display.setFont(&TomThumb);
   display.setFont(&Roboto_Thin9pt8b);
   String temp_range = String(_temp_range.min) + "\xB0- " + String(_temp_range.max) + "\xB0";
   display.print(temp_range);
@@ -640,7 +637,6 @@ void display_remote_temp() {
   
   display.setTextColor(ST77XX_WHITE);
   display.setTextWrap(true);
-  //display.setFont(&TomThumb);
   display.setFont(&Roboto_Thin9pt8b);
   
   display.setCursor(0, 16 + 13);
@@ -672,7 +668,6 @@ void display_local_temp() {
   display.fillRect(0, 32, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
   display.setTextColor(ST77XX_WHITE);
   display.setTextWrap(true);
-  //display.setFont(&TomThumb);
   display.setFont(&Roboto_Thin9pt8b);
   
   display.setCursor(0, 32 + 13);
@@ -682,7 +677,6 @@ void display_local_temp() {
   display.setCursor(75, 32 + 13);
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "\xB0";
   display.print(local_temp_vol);
-//FIXME
 #else
   display.setColor(BLACK);
   display.fillRect(0, 32, 128, 16);
@@ -714,7 +708,6 @@ void display_local_humidity() {
   display.setCursor(75, 48 + 13);
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
   display.print(local_hum_vol);
-//FIXME
 #else
   display.setColor(BLACK);
   display.fillRect(0, 48, 128, 16);
