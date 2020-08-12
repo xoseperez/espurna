@@ -8,13 +8,26 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #pragma once
 
+#ifndef THERMOSTAT_H
+#define THERMOSTAT_H
+
 #include "espurna.h"
+
+#if THERMOSTAT_SUPPORT
 
 #include <ArduinoJson.h>
 #include <float.h>
 
 #if THERMOSTAT_DISPLAY_SUPPORT
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+#define TOMTHUMB_USE_EXTENDED 1
+#include <gfxfont.h>
+#include <Roboto_Thin9pt8b.h>
+#include "Adafruit_GFX.h"
+#include <Adafruit_ST7735.h>
+#else
 #include <SSD1306.h> // alias for `#include "SSD1306Wire.h"`
+#endif
 #endif
 
 #define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
@@ -64,3 +77,13 @@ void thermostatModeCooler(bool cooler);
 bool thermostatModeCooler();
 
 void thermostatSetup();
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+void displayOn();
+void displaySetup();
+void displayLoop();
+#endif
+
+#endif
+
+#endif
