@@ -46,59 +46,49 @@ struct DummyPin final : public BasePin {
 
 struct relay_t {
 
-    using pin_type = std::unique_ptr<BasePin>;
+    using pin_type = BasePin;
+
+    // Share the same dummy pin between different relays, no need to duplicate
+
+    static pin_type* DummyPinInstance;
 
     // Default to empty relay configuration, as we allow switches to exist without real GPIOs
 
-    relay_t(pin_type&& pin, unsigned char type, pin_type&& reset_pin) :
-        pin(std::move(pin)),
-        reset_pin(std::move(reset_pin)),
-        type(type),
-        delay_on(0),
-        delay_off(0),
-        pulse(RELAY_PULSE_NONE),
-        pulse_ms(0),
-        current_status(false),
-        target_status(false),
-        lock(RELAY_LOCK_DISABLED),
-        fw_start(0),
-        fw_count(0),
-        change_start(0),
-        change_delay(0),
-        report(false),
-        group_report(false)
+    relay_t() = default;
+    relay_t(pin_type* pin_, unsigned char type_, pin_type* reset_pin_) :
+        pin(pin_),
+        reset_pin(reset_pin_),
+        type(type_)
     {}
 
-    relay_t() :
-        relay_t(std::make_unique<DummyPin>(GPIO_NONE), RELAY_TYPE_NORMAL, std::make_unique<DummyPin>(GPIO_NONE))
-    {}
+    pin_type* pin { DummyPinInstance };            // GPIO pin for the relay
+    pin_type* reset_pin { DummyPinInstance };      // GPIO to reset the relay if RELAY_TYPE_LATCHED
 
-    pin_type pin;                // GPIO pin for the relay
-    pin_type reset_pin;          // GPIO to reset the relay if RELAY_TYPE_LATCHED
-
-    unsigned char type;          // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-    unsigned long delay_on;      // Delay to turn relay ON
-    unsigned long delay_off;     // Delay to turn relay OFF
-    unsigned char pulse;         // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
-    unsigned long pulse_ms;      // Pulse length in millis
+    unsigned char type { RELAY_TYPE_NORMAL };      // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+    unsigned long delay_on { 0ul };                // Delay to turn relay ON
+    unsigned long delay_off { 0ul };               // Delay to turn relay OFF
+    unsigned char pulse { RELAY_PULSE_NONE };      // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    unsigned long pulse_ms { 0ul };                // Pulse length in millis
 
     // Status variables
 
-    bool current_status;         // Holds the current (physical) status of the relay
-    bool target_status;          // Holds the target status
-    unsigned char lock;          // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
-    unsigned long fw_start;      // Flood window start time
-    unsigned char fw_count;      // Number of changes within the current flood window
-    unsigned long change_start;  // Time when relay was scheduled to change
-    unsigned long change_delay;  // Delay until the next change
-    bool report;                 // Whether to report to own topic
-    bool group_report;           // Whether to report to group topic
+    bool current_status { false };                 // Holds the current (physical) status of the relay
+    bool target_status { false };                  // Holds the target status
+    unsigned char lock { RELAY_LOCK_DISABLED };    // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
+    unsigned long fw_start { 0ul };                // Flood window start time
+    unsigned char fw_count { 0u };                 // Number of changes within the current flood window
+    unsigned long change_start { 0ul };            // Time when relay was scheduled to change
+    unsigned long change_delay { 0ul };            // Delay until the next change
+    bool report { false };                         // Whether to report to own topic
+    bool group_report { false };                   // Whether to report to group topic
 
-    // Helping objects
+    // Helper objects
 
-    Ticker pulseTicker;          // Holds the pulse back timer
+    Ticker pulseTicker;                            // Holds the pulse back timer
 
 };
+
+BasePin* relay_t::DummyPinInstance = new DummyPin(GPIO_NONE);
 
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
@@ -1482,9 +1472,9 @@ void _relaySetupAdhoc() {
             }
 
         _relays.emplace_back(
-            std::make_unique<gpio_type>(_relayPin(id)),
+            new gpio_type(pin),
             _relayType(id),
-            std::make_unique<gpio_type>(_relayResetPin(id))
+            new gpio_type(_relayResetPin(id))
         );
     }
 
