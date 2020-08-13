@@ -153,10 +153,10 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
 
             // IDX
             unsigned int idx = root["idx"];
-            String stype = root["stype"];
-            String switchType = root["switchType"];
 
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+                String stype = root["stype"];
+                String switchType = root["switchType"];
                 if ((_domoticzIdx(0) == idx) && (stype.startsWith("RGB") || (switchType.equals("Dimmer")))) {
                     _domoticzLight(idx, root);
                 }
