@@ -21,19 +21,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
 
-struct web_api_t {
-    explicit web_api_t(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) :
-        key(key),
-        getFn(getFn),
-        putFn(putFn)
-    {}
-    web_api_t() = delete;
-
-    const String key;
-    api_get_callback_f getFn;
-    api_put_callback_f putFn;
-};
-std::vector<web_api_t> _apis;
+constexpr size_t ApiPathSizeMax { 64ul };
+std::vector<Api> _apis;
 
 // -----------------------------------------------------------------------------
 // API
@@ -50,16 +39,10 @@ bool _asJson(AsyncWebServerRequest *request) {
 
 void _onAPIsText(AsyncWebServerRequest *request) {
     AsyncResponseStream *response = request->beginResponseStream("text/plain");
-    String output;
-    output.reserve(48);
+    char buffer[ApiPathSizeMax] = {0};
     for (auto& api : _apis) {
-        output = "";
-        output += api.key;
-        output += " -> ";
-        output += "/api/";
-        output += api.key;
-        output += '\n';
-        response->write(output.c_str());
+        sprintf_P(buffer, PSTR("/api/%s\n"), api.path.c_str());
+        response->write(buffer);
     }
     request->send(response);
 }
@@ -69,19 +52,14 @@ constexpr size_t ApiJsonBufferSize = 1024;
 void _onAPIsJson(AsyncWebServerRequest *request) {
 
     DynamicJsonBuffer jsonBuffer(ApiJsonBufferSize);
-    JsonObject& root = jsonBuffer.createObject();
+    JsonArray& root = jsonBuffer.createArray();
 
-    constexpr const int BUFFER_SIZE = 48;
-
-    for (unsigned int i=0; i < _apis.size(); i++) {
-        char buffer[BUFFER_SIZE] = {0};
-        int res = snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key.c_str());
-        if ((res < 0) || (res > (BUFFER_SIZE - 1))) {
-            request->send(500);
-            return;
-        }
-        root[_apis[i].key] = buffer;
+    char buffer[ApiPathSizeMax] = {0};
+    for (auto& api : _apis) {
+        sprintf(buffer, "/api/%s", api.path.c_str());
+        root.add(buffer);
     }
+
     AsyncResponseStream *response = request->beginResponseStream("application/json");
     root.printTo(*response);
     request->send(response);
@@ -129,86 +107,158 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 }
 
-bool _apiRequestCallback(AsyncWebServerRequest *request) {
+struct ApiMatch {
+    Api* api { nullptr };
+    Api::Type type { Api::Type::Basic };
+};
 
-    String url = request->url();
+ApiMatch _apiMatch(const String& url, AsyncWebServerRequest* request) {
 
-    // Main API entry point
-    if (url.equals("/api") || url.equals("/apis")) {
-        _onAPIs(request);
+    ApiMatch result;
+    char buffer[ApiPathSizeMax] = {0};
+
+    for (auto& api : _apis) {
+        sprintf_P(buffer, PSTR("/api/%s"), api.path.c_str());
+        if (url != buffer) {
+            continue;
+        }
+
+        auto type = _asJson(request)
+            ? Api::Type::Json
+            : Api::Type::Basic;
+
+        result.api = &api;
+        result.type = type;
+        break;
+    }
+
+    return result;
+}
+
+bool _apiDispatchRequest(const String& url, AsyncWebServerRequest* request) {
+
+    auto match = _apiMatch(url, request);
+    if (!match.api) {
+        return false;
+    }
+
+    if (match.type != match.api->type) {
+        DEBUG_MSG_P(PSTR("[API] Cannot handle the request type\n"));
+        request->send(404);
         return true;
     }
 
-    // Main RPC entry point
+    const bool is_put = (
+        (!apiRestFul() || (request->method() == HTTP_PUT))
+        && request->hasParam("value", request->method() == HTTP_PUT)
+    );
+
+    ApiBuffer buffer;
+
+    switch (match.api->type) {
+
+    case Api::Type::Basic: {
+        if (!match.api->get.basic) {
+            break;
+        }
+
+        if (is_put) {
+            if (!match.api->put.basic) {
+                break;
+            }
+            auto value = request->getParam("value", request->method() == HTTP_PUT)->value();
+            //memcpy(buffer.data, value.c_str(), value.length());
+            std::copy(value.c_str(), value.c_str() + value.length(), buffer.data);
+            match.api->get.basic(*match.api, buffer);
+            buffer.erase();
+        }
+
+        match.api->get.basic(*match.api, buffer);
+        request->send(200, "text/plain", buffer.data);
+
+        return true;
+    }
+
+    // TODO: pass the body instead of `value` param
+    // TODO: handle HTTP_PUT
+    case Api::Type::Json: {
+        if (!match.api->get.json || is_put) {
+            break;
+        }
+
+        DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
+        JsonObject& root = jsonBuffer.createObject();
+
+        match.api->get.json(*match.api, root);
+
+        AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
+        root.printTo(*response);
+        request->send(response);
+
+        return true;
+    }
+
+    }
+
+    DEBUG_MSG_P(PSTR("[API] Method not supported\n"));
+    request->send(405);
+
+    return true;
+
+}
+
+bool _apiRequestCallback(AsyncWebServerRequest* request) {
+
+    String url = request->url();
+
     if (url.equals("/rpc")) {
         _onRPC(request);
         return true;
     }
 
-    // Not API request
-    if (!url.startsWith("/api/")) return false;
-
-    for (auto& api : _apis) {
-
-        // Search API url for the exact match
-        if (!url.endsWith(api.key)) continue;
-
-        // Log and check credentials
-        webLog(request);
-        if (!apiAuthenticate(request)) return false;
-
-        // Check if its a PUT
-        if (api.putFn != NULL) {
-            if (!apiRestFul() || (request->method() == HTTP_PUT)) {
-                if (request->hasParam("value", request->method() == HTTP_PUT)) {
-                    AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
-                    (api.putFn)((p->value()).c_str());
-                }
-            }
-        }
-
-        // Get response from callback
-        char value[API_BUFFER_SIZE] = {0};
-        (api.getFn)(value, API_BUFFER_SIZE);
-
-        // The response will be a 404 NOT FOUND if the resource is not available
-        if (0 == value[0]) {
-            DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
-            request->send(404);
-            return false;
-        }
-
-        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), value);
-
-        // Format response according to the Accept header
-        if (_asJson(request)) {
-            char buffer[64];
-            if (isNumber(value)) {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key.c_str(), value);
-            } else {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key.c_str(), value);
-            }
-            request->send(200, "application/json", buffer);
-        } else {
-            request->send(200, "text/plain", value);
-        }
-
+    if (url.equals("/api") || url.equals("/apis")) {
+        _onAPIs(request);
         return true;
-
     }
 
-    return false;
+    if (!url.startsWith("/api/")) return false;
+    if (!apiAuthenticate(request)) return false;
+
+    return _apiDispatchRequest(url, request);
 
 }
 
 // -----------------------------------------------------------------------------
 
-void apiRegister(const String& key, api_get_callback_f getFn, api_put_callback_f putFn) {
-    _apis.emplace_back(key, std::move(getFn), std::move(putFn));
+void apiReserve(size_t size) {
+    _apis.reserve(_apis.size() + size);
+}
+
+void apiRegister(const Api& api) {
+    if (api.path.length() >= (ApiPathSizeMax - strlen("/api/") - 1ul)) {
+        return;
+    }
+    _apis.push_back(api);
 }
 
 void apiSetup() {
     webRequestRegister(_apiRequestCallback);
+}
+
+void apiOk(const Api&, ApiBuffer& buffer) {
+    buffer.data[0] = 'O';
+    buffer.data[1] = 'K';
+    buffer.data[2] = '\0';
+}
+
+void apiError(const Api&, ApiBuffer& buffer) {
+    buffer.data[0] = '-';
+    buffer.data[1] = 'E';
+    buffer.data[2] = 'R';
+    buffer.data[3] = 'R';
+    buffer.data[4] = 'O';
+    buffer.data[5] = 'R';
+    buffer.data[6] = '\0';
 }
 
 #endif // API_SUPPORT

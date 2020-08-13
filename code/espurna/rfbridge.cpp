@@ -539,47 +539,60 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 
 #if API_SUPPORT
 
-void _rfbAPISetup() {
+void _rfbApiSetup() {
 
-    apiRegister(MQTT_TOPIC_RFOUT,
-        [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("OK"));
-        },
-        [](const char * payload) {
-            _rfbParseCode((char *) payload);
+    apiReserve(3u);
+
+    apiRegister({
+        MQTT_TOPIC_RFOUT, Api::Type::Basic, ApiUnusedArg,
+        apiOk, // just a stub, nothing to return
+        [](const Api&, ApiBuffer& buffer) {
+            _rfbParseCode(buffer.data);
         }
-    );
+    });
 
-    apiRegister(MQTT_TOPIC_RFLEARN,
-        [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("OK"));
-        },
-        [](const char * payload) {
+    apiRegister({
+        MQTT_TOPIC_RFLEARN, Api::Type::Basic, ApiUnusedArg,
+        apiOk, // just a stub, nothing to return
+        [](const Api&, ApiBuffer& buffer) {
             // The payload must be the relayID plus the mode (0 or 1)
-            char * tok = strtok((char *) payload, ",");
-            if (NULL == tok) return;
-            if (!isNumber(tok)) return;
-            _learnId = atoi(tok);
+            char* sep = strchr(buffer.data, ',');
+            if (NULL == sep) {
+                return;
+            }
+
+            char relay[3] {0, 0, 0};
+            if ((sep - buffer) > 2) {
+                return;
+            }
+
+            std::copy(buffer.data, sep, relay);
+            if (!isNumber(relay)) {
+                return;
+            }
+
+            _learnId = atoi(relay);
             if (_learnId >= relayCount()) {
                 DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
                 return;
             }
-            tok = strtok(NULL, ",");
-            if (NULL == tok) return;
-            _learnStatus = (char) tok[0] != '0';
-            _rfbLearnImpl();
-        }
-    );
 
-    #if !RFB_DIRECT
-        apiRegister(MQTT_TOPIC_RFRAW,
-            [](char * buffer, size_t len) {
-                snprintf_P(buffer, len, PSTR("OK"));
-            },
-            [](const char * payload) {
-                _rfbParseRaw((char *)payload);
+            ++sep;
+            if ((*sep == '0') || (*sep == '1')) {
+                _learnStatus = (*sep != '0');
+                _rfbLearnImpl();
             }
-        );
+        }
+    });
+
+    #if not RFB_DIRECT
+        apiRegister({
+            MQTT_TOPIC_RFRAW, Api::Type::Basic, ApiUnusedArg,
+            apiOk, // just a stub, nothing to return
+            [](const Api&, ApiBuffer& buffer) {
+                _rfbParseRaw(buffer.data);
+            }
+        });
     #endif
 
 }
@@ -723,7 +736,7 @@ void rfbSetup() {
     #endif
 
     #if API_SUPPORT
-        _rfbAPISetup();
+        _rfbApiSetup();
     #endif
 
     #if WEB_SUPPORT

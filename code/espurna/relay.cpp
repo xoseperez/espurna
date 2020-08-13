@@ -1022,60 +1022,72 @@ void relaySetupWS() {
 
 void relaySetupAPI() {
 
-    char key[20];
+    // Note that we expect a fixed number of entries.
+    // Otherwise, underlying vector will reserve more than we need (likely, *2 of the current size)
+    apiReserve(2u + (relayCount() * 2u));
 
-    // API entry points (protected with apikey)
-    for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
+    apiRegister({
+        MQTT_TOPIC_RELAY, Api::Type::Json, ApiUnusedArg,
+        [](const Api&, JsonObject& root) {
+            JsonArray& relays = root.createNestedArray("relayStatus");
+            for (unsigned char id = 0; id < relayCount(); ++id) {
+                relays.add(_relays[id].target_status ? 1 : 0);
+            }
+        }
+    });
 
-        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
-        apiRegister(key,
-            [relayID](char * buffer, size_t len) {
-				snprintf_P(buffer, len, PSTR("%d"), _relays[relayID].target_status ? 1 : 0);
+    #if defined(ITEAD_SONOFF_IFAN02)
+        apiRegister({
+            MQTT_TOPIC_SPEED, Api::Type::Basic, ApiUnusedArg,
+            [](const Api&, ApiBuffer& buffer) {
+                snprintf(buffer.data, buffer.size, "%u", getSpeed());
             },
-            [relayID](const char * payload) {
+            [](const Api&, ApiBuffer& buffer) {
+                setSpeed(atoi(buffer.data));
+                snprintf(buffer.data, buffer.size, "%u", getSpeed());
+            }
+        });
+    #endif
 
-                if (!_relayHandlePayload(relayID, payload)) {
-                    DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
+    char path[64] = {0};
+    for (unsigned char id = 0; id < relayCount(); ++id) {
+        sprintf_P(path, PSTR(MQTT_TOPIC_RELAY "/%u"), id);
+        apiRegister({
+            path, Api::Type::Basic, id,
+            [](const Api& api, ApiBuffer& buffer) {
+                snprintf_P(buffer.data, buffer.size, PSTR("%d"), _relays[api.arg].target_status ? 1 : 0);
+            },
+            [](const Api& api, ApiBuffer& buffer) {
+                if (!_relayHandlePayload(api.arg, buffer.data)) {
+                    DEBUG_MSG_P(PSTR("[RELAY] Invalid API payload (%s)\n"), buffer.data);
+                    return;
+                }
+            }
+        });
+
+        sprintf_P(path, PSTR(MQTT_TOPIC_PULSE "/%u"), id);
+        apiRegister({
+            path, Api::Type::Basic, id,
+            [](const Api& api, ApiBuffer& buffer) {
+                dtostrf((double) _relays[api.arg].pulse_ms / 1000, 1, 3, buffer.data);
+            },
+            [](const Api& api, ApiBuffer& buffer) {
+                unsigned long pulse = 1000 * atof(buffer.data);
+                if (0 == pulse) {
                     return;
                 }
 
-            }
-        );
-
-        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_PULSE, relayID);
-        apiRegister(key,
-            [relayID](char * buffer, size_t len) {
-                dtostrf((double) _relays[relayID].pulse_ms / 1000, 1, 3, buffer);
-            },
-            [relayID](const char * payload) {
-
-                unsigned long pulse = 1000 * atof(payload);
-                if (0 == pulse) return;
-
-                if (RELAY_PULSE_NONE != _relays[relayID].pulse) {
-                    DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), relayID);
+                if (RELAY_PULSE_NONE != _relays[api.arg].pulse) {
+                    DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), api.arg);
                 }
 
-                _relays[relayID].pulse_ms = pulse;
-                _relays[relayID].pulse = relayStatus(relayID) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
-                relayToggle(relayID, true, false);
-
+                _relays[api.arg].pulse_ms = pulse;
+                _relays[api.arg].pulse = relayStatus(api.arg)
+                    ? RELAY_PULSE_ON
+                    : RELAY_PULSE_OFF;
+                relayToggle(api.arg, true, false);
             }
-        );
-
-        #if defined(ITEAD_SONOFF_IFAN02)
-
-            apiRegister(MQTT_TOPIC_SPEED,
-                [relayID](char * buffer, size_t len) {
-                    snprintf(buffer, len, "%u", getSpeed());
-                },
-                [relayID](const char * payload) {
-                    setSpeed(atoi(payload));
-                }
-            );
-
-        #endif
-
+        });
     }
 
 }
