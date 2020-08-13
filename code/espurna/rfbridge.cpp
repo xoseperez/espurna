@@ -55,7 +55,13 @@ unsigned char _uartbuf[RF_MESSAGE_SIZE+3] = {0};
 unsigned char _uartpos = 0;
 unsigned char _learnId = 0;
 
-bool _learnStatus = true;
+enum class RfbLearn {
+    Disabled,
+    On,
+    Off
+};
+
+RfbLearn _learnStatus = RfbLearn::Disabled;
 bool _rfbin = false;
 
 struct rfb_message_t {
@@ -66,7 +72,6 @@ static std::queue<rfb_message_t> _rfb_message_queue;
 
 #if RFB_DIRECT
     RCSwitch * _rfModem;
-    bool _learning = false;
 #endif
 
 bool _rfb_receive = false;
@@ -118,7 +123,7 @@ bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, relayCount());    
+    _rfbWebSocketSendCodeArray(root, 0, relayCount());
 }
 
 #endif // WEB_SUPPORT
@@ -190,10 +195,10 @@ void _rfbDecode() {
 
     }
 
-    if (action == RF_CODE_LEARN_OK) {
+    if ((action == RF_CODE_LEARN_OK) && (_learnStatus != RfbLearn::Disabled)) {
 
         DEBUG_MSG_P(PSTR("[RF] Learn success\n"));
-        rfbStore(_learnId, _learnStatus, buffer);
+        rfbStore(_learnId, (_learnStatus == RfbLearn::On), buffer);
 
         // Websocket update
         #if WEB_SUPPORT
@@ -213,7 +218,7 @@ void _rfbDecode() {
         unsigned char id;
         unsigned char status;
         bool matched = _rfbMatch(buffer, id, status, buffer);
-        
+
         if (matched) {
             DEBUG_MSG_P(PSTR("[RF] Matched message '%s'\n"), buffer);
             _rfbin = true;
@@ -320,7 +325,6 @@ void _rfbAckImpl() {}
 
 void _rfbLearnImpl() {
     DEBUG_MSG_P(PSTR("[RF] Entering LEARN mode\n"));
-    _learning = true;
 }
 
 void _rfbSendImpl(uint8_t * message) {
@@ -351,10 +355,10 @@ void _rfbReceiveImpl() {
     if (!_rfb_receive) return;
 
     static long learn_start = 0;
-    if (!_learning && learn_start) {
+    if ((_learnStatus == RfbLearn::Disabled) && learn_start) {
         learn_start = 0;
     }
-    if (_learning) {
+    if (_learnStatus != RfbLearn::Disabled) {
         if (!learn_start) {
             DEBUG_MSG_P(PSTR("[RF] Arming learn timeout\n"));
             learn_start = millis();
@@ -364,7 +368,7 @@ void _rfbReceiveImpl() {
             memset(_uartbuf, 0, sizeof(_uartbuf));
             _uartbuf[0] = RF_CODE_LEARN_KO;
             _rfbDecode();
-            _learning = false;
+            _learnStatus = RfbLearn::Disabled;
         }
     }
 
@@ -378,7 +382,7 @@ void _rfbReceiveImpl() {
                 unsigned int timing = _rfModem->getReceivedDelay();
                 memset(_uartbuf, 0, sizeof(_uartbuf));
                 unsigned char *msgbuf = _uartbuf + 1;
-                _uartbuf[0] = _learning ? RF_CODE_LEARN_OK: RF_CODE_RFIN;
+                _uartbuf[0] = (_learnStatus != RfbLearn::Disabled) ? RF_CODE_LEARN_OK: RF_CODE_RFIN;
                 msgbuf[0] = 0xC0;
                 msgbuf[1] = _rfModem->getReceivedProtocol();
                 msgbuf[2] = timing  >>  8;
@@ -389,7 +393,7 @@ void _rfbReceiveImpl() {
                 msgbuf[7] = rf_code >>  8;
                 msgbuf[8] = rf_code >>  0;
                 _rfbDecode();
-                _learning = false;
+                _learnStatus = RfbLearn::Disabled;
             }
         }
         _rfModem->resetAvailable();
@@ -482,6 +486,37 @@ void _rfbParseCode(char * code) {
 
 }
 
+void _rfbLearnFromPayload(const char* payload) {
+    // The payload must be the `relayID,mode` (where mode is either 0 or 1)
+    const char* sep = strchr(payload, ',');
+    if (NULL == sep) {
+        return;
+    }
+
+    // ref. RelaysMax, we only have up to 2 digits
+    char relay[3] {0, 0, 0};
+    if ((sep - payload) > 2) {
+        return;
+    }
+
+    std::copy(payload, sep, relay);
+    if (!isNumber(relay)) {
+        return;
+    }
+
+    _learnId = atoi(relay);
+    if (_learnId >= relayCount()) {
+        DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
+        return;
+    }
+
+    ++sep;
+    if ((*sep == '0') || (*sep == '1')) {
+        _learnStatus = (*sep != '0') ? RfbLearn::On : RfbLearn::Off;
+        _rfbLearnImpl();
+    }
+}
+
 #if MQTT_SUPPORT
 
 void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
@@ -504,30 +539,22 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 
     if (type == MQTT_MESSAGE_EVENT) {
 
-        // Match topic
         String t = mqttMagnitude((char *) topic);
 
-        // Check if should go into learn mode
         if (t.startsWith(MQTT_TOPIC_RFLEARN)) {
-
-            _learnId = t.substring(strlen(MQTT_TOPIC_RFLEARN)+1).toInt();
-            if (_learnId >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
-                return;
-            }
-            _learnStatus = (char)payload[0] != '0';
-            _rfbLearnImpl();
+            _rfbLearnFromPayload(payload);
             return;
-
         }
 
         if (t.equals(MQTT_TOPIC_RFOUT)) {
             _rfbParseCode(payload);
+            return;
         }
 
         #if !RFB_DIRECT
             if (t.equals(MQTT_TOPIC_RFRAW)) {
                 _rfbParseRaw(payload);
+                return;
             }
         #endif
 
@@ -553,39 +580,21 @@ void _rfbApiSetup() {
 
     apiRegister({
         MQTT_TOPIC_RFLEARN, Api::Type::Basic, ApiUnusedArg,
-        apiOk, // just a stub, nothing to return
         [](const Api&, ApiBuffer& buffer) {
-            // The payload must be the relayID plus the mode (0 or 1)
-            char* sep = strchr(buffer.data, ',');
-            if (NULL == sep) {
-                return;
+            if (_learnStatus == RfbLearn::Disabled) {
+                snprintf_P(buffer.data, buffer.size, PSTR("waiting"));
+            } else {
+                snprintf_P(buffer.data, buffer.size, PSTR("id:%u,status:%c"),
+                    _learnId, (_learnStatus == RfbLearn::On) ? 'y' : 'n'
+                );
             }
-
-            char relay[3] {0, 0, 0};
-            if ((sep - buffer) > 2) {
-                return;
-            }
-
-            std::copy(buffer.data, sep, relay);
-            if (!isNumber(relay)) {
-                return;
-            }
-
-            _learnId = atoi(relay);
-            if (_learnId >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
-                return;
-            }
-
-            ++sep;
-            if ((*sep == '0') || (*sep == '1')) {
-                _learnStatus = (*sep != '0');
-                _rfbLearnImpl();
-            }
+        },
+        [](const Api&, ApiBuffer& buffer) {
+            _rfbLearnFromPayload(buffer.data);
         }
     });
 
-    #if not RFB_DIRECT
+    #if !RFB_DIRECT
         apiRegister({
             MQTT_TOPIC_RFRAW, Api::Type::Basic, ApiUnusedArg,
             apiOk, // just a stub, nothing to return
@@ -609,7 +618,7 @@ void _rfbInitCommands() {
             terminalError(F("Wrong arguments"));
             return;
         }
-        
+
         // 1st argument is relayID
         int id = ctx.argv[1].toInt();
         if (id >= relayCount()) {
@@ -630,7 +639,7 @@ void _rfbInitCommands() {
             terminalError(F("Wrong arguments"));
             return;
         }
-        
+
         // 1st argument is relayID
         int id = ctx.argv[1].toInt();
         if (id >= relayCount()) {
@@ -706,7 +715,7 @@ void rfbStatus(unsigned char id, bool status) {
 
 void rfbLearn(unsigned char id, bool status) {
     _learnId = id;
-    _learnStatus = status;
+    _learnStatus = status ? RfbLearn::On : RfbLearn::Off;
     _rfbLearnImpl();
 }
 
