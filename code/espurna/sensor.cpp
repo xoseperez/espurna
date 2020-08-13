@@ -1403,27 +1403,50 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
 #if API_SUPPORT
 
-void _sensorAPISetup() {
+String _sensorApiMagnitudeName(sensor_magnitude_t& magnitude) {
+    String name = magnitudeTopic(magnitude.type);
+    if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) name = name + "/" + String(magnitude.index_global);
 
+    return name;
+}
+
+void _sensorApiJsonCallback(const Api&, JsonObject& root) {
+    JsonArray& magnitudes = root.createNestedArray("magnitudes");
     for (auto& magnitude : _magnitudes) {
+        JsonArray& data = magnitudes.createNestedArray();
+        data.add(_sensorApiMagnitudeName(magnitude));
+        data.add(magnitude.last);
+        data.add(magnitude.reported);
+    }
+}
 
-        String topic = magnitudeTopic(magnitude.type);
-        if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) topic = topic + "/" + String(magnitude.index_global);
+void _sensorApiGetValue(const Api& api, ApiBuffer& buffer) {
+    auto& magnitude = _magnitudes[api.arg];
+    double value = _sensor_realtime ? magnitude.last : magnitude.reported;
+    dtostrf(value, 1, magnitude.decimals, buffer.data);
+}
 
-        api_get_callback_f get_cb = [&magnitude](char * buffer, size_t len) {
-            double value = _sensor_realtime ? magnitude.last : magnitude.reported;
-            dtostrf(value, 1, magnitude.decimals, buffer);
-        };
-        api_put_callback_f put_cb = nullptr;
+void _sensorApiResetEnergyPutCallback(const Api& api, ApiBuffer& buffer) {
+    _sensorApiResetEnergy(_magnitudes[api.arg], buffer.data);
+}
 
-        if (magnitude.type == MAGNITUDE_ENERGY) {
-            put_cb = [&magnitude](const char* payload) {
-                _sensorApiResetEnergy(magnitude, payload);
-            };
-        }
+void _sensorApiSetup() {
 
-        apiRegister(topic.c_str(), get_cb, put_cb);
+    apiReserve(
+        _magnitudes.size() + sensor_magnitude_t::counts(MAGNITUDE_ENERGY) + 1u
+    );
 
+    apiRegister({"magnitudes", Api::Type::Json, ApiUnusedArg, _sensorApiJsonCallback});
+
+    for (unsigned char id = 0; id < _magnitudes.size(); ++id) {
+        apiRegister({
+            _sensorApiMagnitudeName(_magnitudes[id]).c_str(),
+            Api::Type::Basic, id,
+            _sensorApiGetValue,
+            (_magnitudes[id].type == MAGNITUDE_ENERGY)
+                ? _sensorApiResetEnergyPutCallback
+                : nullptr
+        });
     }
 
 }
@@ -2642,7 +2665,7 @@ void sensorSetup() {
 
     // API
     #if API_SUPPORT
-        _sensorAPISetup();
+        _sensorApiSetup();
     #endif
 
     // Terminal

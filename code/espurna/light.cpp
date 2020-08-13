@@ -853,86 +853,101 @@ void lightBroker() {
 
 #if API_SUPPORT
 
-void _lightAPISetup() {
+void _lightApiSetup() {
+
+    // Note that we expect a fixed number of entries.
+    // Otherwise, underlying vector will reserve more than we need (likely, *2 of the current size)
+    apiReserve(
+        (_light_has_color ? 4u : 0u) + 2u + _light_channels.size()
+    );
 
     if (_light_has_color) {
 
-        apiRegister(MQTT_TOPIC_COLOR_RGB,
-            [](char * buffer, size_t len) {
+        apiRegister({
+            MQTT_TOPIC_COLOR_RGB, Api::Type::Basic, ApiUnusedArg,
+            [](const Api&, ApiBuffer& buffer) {
                 if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
-                    _toRGB(buffer, len, true);
+                    _toRGB(buffer.data, buffer.size, true);
                 } else {
-                    _toLong(buffer, len, true);
+                    _toLong(buffer.data, buffer.size, true);
                 }
             },
-            [](const char * payload) {
-                lightColor(payload, true);
+            [](const Api&, ApiBuffer& buffer) {
+                lightColor(buffer.data, true);
                 lightUpdate(true, true);
             }
-        );
+        });
 
-        apiRegister(MQTT_TOPIC_COLOR_HSV,
-            [](char * buffer, size_t len) {
-                _toHSV(buffer, len);
+        apiRegister({
+            MQTT_TOPIC_COLOR_HSV, Api::Type::Basic, ApiUnusedArg,
+            [](const Api&, ApiBuffer& buffer) {
+                _toHSV(buffer.data, buffer.size);
             },
-            [](const char * payload) {
-                lightColor(payload, false);
+            [](const Api&, ApiBuffer& buffer) {
+                lightColor(buffer.data, false);
                 lightUpdate(true, true);
             }
-        );
+        });
 
-        apiRegister(MQTT_TOPIC_KELVIN,
-            [](char * buffer, size_t len) {},
-            [](const char * payload) {
-                _lightAdjustKelvin(payload);
+        apiRegister({
+            MQTT_TOPIC_MIRED, Api::Type::Basic, ApiUnusedArg,
+            [](const Api&, ApiBuffer& buffer) {
+                sprintf(buffer.data, PSTR("%d"), _light_mireds);
+            },
+            [](const Api&, ApiBuffer& buffer) {
+                _lightAdjustMireds(buffer.data);
                 lightUpdate(true, true);
             }
-        );
+        });
 
-        apiRegister(MQTT_TOPIC_MIRED,
-            [](char * buffer, size_t len) {},
-            [](const char * payload) {
-                _lightAdjustMireds(payload);
+        apiRegister({
+            MQTT_TOPIC_KELVIN, Api::Type::Basic, ApiUnusedArg,
+            [](const Api&, ApiBuffer& buffer) {
+                sprintf(buffer.data, PSTR("%d"), _toKelvin(_light_mireds));
+            },
+            [](const Api&, ApiBuffer& buffer) {
+                _lightAdjustKelvin(buffer.data);
                 lightUpdate(true, true);
             }
-        );
+        });
 
     }
 
-    for (unsigned int id=0; id<_light_channels.size(); id++) {
-
-        char key[15];
-        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
-        apiRegister(key,
-            [id](char * buffer, size_t len) {
-                snprintf_P(buffer, len, PSTR("%d"), _light_channels[id].target);
-            },
-            [id](const char * payload) {
-                _lightAdjustChannel(id, payload);
-                lightUpdate(true, true);
-            }
-        );
-
-    }
-
-    apiRegister(MQTT_TOPIC_TRANSITION,
-        [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("%d"), lightTransitionTime());
+    apiRegister({
+        MQTT_TOPIC_TRANSITION, Api::Type::Basic, ApiUnusedArg,
+        [](const Api&, ApiBuffer& buffer) {
+            snprintf_P(buffer.data, buffer.size, PSTR("%u"), lightTransitionTime());
         },
-        [](const char * payload) {
-            lightTransitionTime(atol(payload));
+        [](const Api&, ApiBuffer& buffer) {
+            lightTransitionTime(atol(buffer.data));
         }
-    );
+    });
 
-    apiRegister(MQTT_TOPIC_BRIGHTNESS,
-        [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("%d"), _light_brightness);
+    apiRegister({
+        MQTT_TOPIC_BRIGHTNESS, Api::Type::Basic, ApiUnusedArg,
+        [](const Api&, ApiBuffer& buffer) {
+            snprintf_P(buffer.data, buffer.size, PSTR("%u"), _light_brightness);
         },
-        [](const char * payload) {
-            _lightAdjustBrightness(payload);
+        [](const Api&, ApiBuffer& buffer) {
+            _lightAdjustBrightness(buffer.data);
             lightUpdate(true, true);
         }
-    );
+    });
+
+    char path[32] = {0};
+    for (unsigned char id = 0; id < _light_channels.size(); ++id) {
+        snprintf_P(path, sizeof(path), PSTR(MQTT_TOPIC_CHANNEL "/%u"), id);
+        apiRegister({
+            path, Api::Type::Basic, id,
+            [](const Api& api, ApiBuffer& buffer) {
+                snprintf_P(buffer.data, buffer.size, PSTR("%u"), _light_channels[api.arg].target);
+            },
+            [](const Api& api, ApiBuffer& buffer) {
+                _lightAdjustChannel(api.arg, buffer.data);
+                lightUpdate(true, true);
+            }
+        });
+    }
 
 }
 
@@ -1421,7 +1436,7 @@ void lightSetup() {
     #endif
 
     #if API_SUPPORT
-        _lightAPISetup();
+        _lightApiSetup();
     #endif
 
     #if MQTT_SUPPORT
