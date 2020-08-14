@@ -17,6 +17,17 @@ https://github.com/xoseperez/espurna/pull/1603#issuecomment-469256254
 #include "mqtt.h"
 #include "ws.h"
 
+#if THERMOSTAT_DISPLAY_SUPPORT
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+#include <gfxfont.h>
+#include <static/Roboto_Thin9pt8b.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
+#else
+#include <SSD1306.h> // alias for `#include "SSD1306Wire.h"`
+#endif
+#endif
+
 const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
 const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
 const char* NAME_TEMP_RANGE_MIN         = "tempRangeMin";

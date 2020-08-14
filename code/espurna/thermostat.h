@@ -15,17 +15,6 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include <ArduinoJson.h>
 #include <float.h>
 
-#if THERMOSTAT_DISPLAY_SUPPORT
-#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
-#include <gfxfont.h>
-#include <static/Roboto_Thin9pt8b.h>
-#include "Adafruit_GFX.h"
-#include <Adafruit_ST7735.h>
-#else
-#include <SSD1306.h> // alias for `#include "SSD1306Wire.h"`
-#endif
-#endif
-
 #define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
 #define ASK_TEMP_RANGE_INTERVAL_REGULAR      60000  // ask every minute to be sure
 #define MILLIS_IN_SEC                         1000
