@@ -8,9 +8,6 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #pragma once
 
-#ifndef THERMOSTAT_H
-#define THERMOSTAT_H
-
 #include "espurna.h"
 
 #if THERMOSTAT_SUPPORT
@@ -82,8 +79,6 @@ void thermostatSetup();
 void displayOn();
 void displaySetup();
 void displayLoop();
-#endif
-
 #endif
 
 #endif
