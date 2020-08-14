@@ -17,7 +17,6 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #if THERMOSTAT_DISPLAY_SUPPORT
 #if THERMOSTAT_DISPLAY_ST7735_SUPPORT
-#define TOMTHUMB_USE_EXTENDED 1
 #include <gfxfont.h>
 #include <static/Roboto_Thin9pt8b.h>
 #include "Adafruit_GFX.h"
