@@ -247,7 +247,7 @@ void _irTXLoop() {
         #if IR_USE_RAW
             _ir_sender.sendRaw(_ir_raw, _ir_repeat_size, _ir_freq);
         #else
-            _ir_sender.send(_ir_type, _ir_code, _ir_bits);
+            _ir_sender.send((decode_type_t)_ir_type, _ir_code, _ir_bits);
         #endif
 
         // Update repeat count
