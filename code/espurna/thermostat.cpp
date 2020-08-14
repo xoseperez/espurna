@@ -583,15 +583,21 @@ bool _display_need_refresh  = true;
 bool _temp_range_need_update = true;
 
 //------------------------------------------------------------------------------
-void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
 #if THERMOSTAT_DISPLAY_ST7735_SUPPORT
-  uint16_t color;
+
+void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
   display.drawBitmap(x, y, (const uint8_t*) ico, 16, 16, ((on == true) ? ST7735_WHITE : ST77XX_BLACK));
-#else
-  display.drawIco16x16(x, y, ico, !on); //FIXME
-#endif
   _display_need_refresh = true;
 }
+
+#else
+
+void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
+  display.drawIco16x16(x, y, ico, !on); //FIXME
+  _display_need_refresh = true;
+}
+
+#endif
 
 //------------------------------------------------------------------------------
 void display_wifi_status(bool on) {
@@ -618,9 +624,10 @@ void display_remote_temp_status(bool on) {
 }
 
 //------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
 void display_temp_range() {
   _temp_range.need_display_update = false;
-#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
   display.fillRect(68, 0, ST7735_TFTHEIGHT_160 - 60, 16, ST7735_BLACK);
   display.setTextColor(ST77XX_WHITE);
   display.setTextWrap(true);
@@ -628,7 +635,13 @@ void display_temp_range() {
   display.setFont(&Roboto_Thin9pt8b);
   String temp_range = String(_temp_range.min) + "\xB0- " + String(_temp_range.max) + "\xB0";
   display.print(temp_range);
+  _display_need_refresh = true;
+}
+
 #else
+
+void display_temp_range() {
+  _temp_range.need_display_update = false;
   display.setColor(BLACK);
   display.fillRect(68, 0, 60, 16);
   display.setColor(WHITE);
@@ -636,14 +649,16 @@ void display_temp_range() {
   display.setFont(ArialMT_Plain_16);
   String temp_range = String(_temp_range.min) + "°- " + String(_temp_range.max) + "°";
   display.drawString(128 /*x*/, 0/*y*/, temp_range);
-#endif
   _display_need_refresh = true;
 }
 
+#endif
+
 //------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
 void display_remote_temp() {
   _remote_temp.need_display_update = false;
-#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
   display.fillRect(0, 16, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
   
   display.setTextColor(ST77XX_WHITE);
@@ -657,8 +672,13 @@ void display_remote_temp() {
   display.setCursor(75, 16 + 13);
   String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "\xB0";
   display.print(temp_range_vol);
-//FIXME
+  _display_need_refresh = true;
+}
+
 #else
+
+void display_remote_temp() {
+  _remote_temp.need_display_update = false;
   display.setColor(BLACK);
   display.fillRect(0, 16, 128, 16);
   display.setColor(WHITE);
@@ -669,14 +689,16 @@ void display_remote_temp() {
 
   String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "°";
   display.drawString(75, 16, temp_range_vol);
-#endif
   _display_need_refresh = true;
 }
+#endif
 
 //------------------------------------------------------------------------------
-void display_local_temp() {
 #if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void display_local_temp() {
   display.fillRect(0, 32, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
+
   display.setTextColor(ST77XX_WHITE);
   display.setTextWrap(true);
   display.setFont(&Roboto_Thin9pt8b);
@@ -688,7 +710,12 @@ void display_local_temp() {
   display.setCursor(75, 32 + 13);
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "\xB0";
   display.print(local_temp_vol);
+  _display_need_refresh = true;
+}
+
 #else
+
+void display_local_temp() {
   display.setColor(BLACK);
   display.fillRect(0, 32, 128, 16);
   display.setColor(WHITE);
@@ -700,15 +727,16 @@ void display_local_temp() {
 
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "°";
   display.drawString(75, 32, local_temp_vol);
-#endif
-
   _display_need_refresh = true;
 }
+#endif
 
 //------------------------------------------------------------------------------
-void display_local_humidity() {
 #if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void display_local_humidity() {
   display.fillRect(0, 48, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
+
   display.setTextColor(ST77XX_WHITE);
   display.setTextWrap(true);
   
@@ -719,7 +747,12 @@ void display_local_humidity() {
   display.setCursor(75, 48 + 13);
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
   display.print(local_hum_vol);
+  _display_need_refresh = true;
+}
+
 #else
+
+void display_local_humidity() {
   display.setColor(BLACK);
   display.fillRect(0, 48, 128, 16);
   display.setColor(WHITE);
@@ -731,9 +764,9 @@ void display_local_humidity() {
 
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
   display.drawString(75, 48, local_hum_vol);
-#endif
   _display_need_refresh = true;
 }
+#endif
 
 //------------------------------------------------------------------------------
 void displayOn() {
@@ -754,21 +787,30 @@ void displayOn() {
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
-void displaySetup() {
 #if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void displaySetup() {
   display.initR(INITR_BLACKTAB);        // Initialize ST7735R screen
   display.setRotation(1);
   display.fillScreen(ST77XX_BLACK);
   display.cp437(true);
-#else
-  display.init();
-  display.flipScreenVertically();
-#endif
 
   displayOn();
 
   espurnaRegisterLoop(displayLoop);
 }
+
+#else
+
+void displaySetup() {
+  display.init();
+  display.flipScreenVertically();
+
+  displayOn();
+
+  espurnaRegisterLoop(displayLoop);
+}
+#endif
 
 //------------------------------------------------------------------------------
 void displayLoop() {
