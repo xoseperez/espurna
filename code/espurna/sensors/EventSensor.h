@@ -138,8 +138,6 @@ class EventSensor : public BaseSensor {
 
         // Handle interrupt calls from isr[GPIO] functions
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-            UNUSED(gpio);
-
             // clock count in 32bit value, overflowing:
             // ~53s when F_CPU is 80MHz
             // ~26s when F_CPU is 160MHz

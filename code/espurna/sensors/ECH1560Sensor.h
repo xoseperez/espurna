@@ -123,10 +123,7 @@ class ECH1560Sensor : public BaseEmonSensor {
             return 0;
         }
 
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-
-            UNUSED(gpio);
-
+        void ICACHE_RAM_ATTR handleInterrupt(unsigned char) {
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
             if (_dosync == false) {
 
