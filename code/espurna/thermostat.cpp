@@ -666,8 +666,7 @@ void display_remote_temp() {
   display.setFont(&Roboto_Thin9pt8b);
   
   display.setCursor(0, 16 + 13);
-  String temp_range_title = String(F("Remote t"));
-  display.print(temp_range_title);
+  display.print(F("Remote t"));
 
   display.setCursor(75, 16 + 13);
   String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "\xB0";
@@ -684,8 +683,7 @@ void display_remote_temp() {
   display.setColor(WHITE);
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  String temp_range_title = String(F("Remote  t"));
-  display.drawString(0, 16, temp_range_title);
+  display.drawString(0, 16, F("Remote  t"));
 
   String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "°";
   display.drawString(75, 16, temp_range_vol);
@@ -704,8 +702,7 @@ void display_local_temp() {
   display.setFont(&Roboto_Thin9pt8b);
   
   display.setCursor(0, 32 + 13);
-  String local_temp_title = String(F("Local      t"));
-  display.print(local_temp_title);
+  display.print(F("Local      t"));
 
   display.setCursor(75, 32 + 13);
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "\xB0";
@@ -722,8 +719,7 @@ void display_local_temp() {
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-  String local_temp_title = String(F("Local      t"));
-  display.drawString(0, 32, local_temp_title);
+  display.drawString(0, 32, F("Local      t"));
 
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "°";
   display.drawString(75, 32, local_temp_vol);
@@ -741,8 +737,7 @@ void display_local_humidity() {
   display.setTextWrap(true);
   
   display.setCursor(0, 48 + 13);
-  String local_hum_title = String(F("Local      h "));
-  display.print(local_hum_title);
+  display.print(F("Local      h "));
 
   display.setCursor(75, 48 + 13);
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
@@ -759,8 +754,7 @@ void display_local_humidity() {
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-  String local_hum_title = String(F("Local      h "));
-  display.drawString(0, 48, local_hum_title);
+  display.drawString(0, 48, F("Local      h "));
 
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
   display.drawString(75, 48, local_hum_vol);
