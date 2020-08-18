@@ -82,8 +82,8 @@ struct ha_config_t {
         deviceConfig.createNestedArray("identifiers").add(identifier.c_str());
         deviceConfig["name"] = name.c_str();
         deviceConfig["sw_version"] = version.c_str();
-        deviceConfig["manufacturer"] = getDevice().c_str();
-        deviceConfig["model"] = getManufacturer().c_str();
+        deviceConfig["manufacturer"] = getManufacturer().c_str();
+        deviceConfig["model"] = getDevice().c_str();
     }
 
     ha_config_t() : ha_config_t(DEFAULT_BUFFER_SIZE) {}

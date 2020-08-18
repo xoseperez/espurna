@@ -111,5 +111,3 @@ namespace std {
 
 #endif
 
-#define UNUSED(x) (void)(x)
-

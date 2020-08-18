@@ -169,8 +169,7 @@ double value(unsigned char index) {
 
 
 // Handle interrupt calls
-void handleInterrupt(unsigned char gpio) {
-        UNUSED(gpio);
+void handleInterrupt(unsigned char) {
         static unsigned long last = 0;
         if (millis() - last > _debounce) {
                 _events = _events + 1;
