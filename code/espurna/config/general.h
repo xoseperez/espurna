@@ -239,6 +239,26 @@
 #define THERMOSTAT_DISPLAY_SUPPORT  0
 #endif
 
+#ifndef THERMOSTAT_DISPLAY_SSD1306_SDA
+#define THERMOSTAT_DISPLAY_SSD1306_SDA   1
+#endif
+
+#ifndef THERMOSTAT_DISPLAY_SSD1306_SCL
+#define THERMOSTAT_DISPLAY_SSD1306_SCL   3
+#endif
+
+#ifndef THERMOSTAT_DISPLAY_ST7735_CS
+#define THERMOSTAT_DISPLAY_ST7735_CS    15
+#endif
+
+#ifndef THERMOSTAT_DISPLAY_ST7735_DC
+#define THERMOSTAT_DISPLAY_ST7735_DC     2
+#endif
+
+#ifndef THERMOSTAT_DISPLAY_ST7735_RST
+#define THERMOSTAT_DISPLAY_ST7735_RST   -1
+#endif
+
 #ifndef THERMOSTAT_DISPLAY_OFF_INTERVAL         // Interval in seconds after which display will be switched off
 #define THERMOSTAT_DISPLAY_OFF_INTERVAL  0      // This will prevent it from burnout
 #endif                                          // 0 - newer switch display off

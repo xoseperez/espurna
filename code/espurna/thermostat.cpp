@@ -559,15 +559,9 @@ const char server_bits[] PROGMEM = {
 #define LOCAL_HUM_UPDATE_INTERVAL  61000
 
 #if THERMOSTAT_DISPLAY_ST7735_SUPPORT
-/*#define cs   D8
-#define dc   D3
-#define rst  D4*/
-#define cs   D8
-#define dc   D4
-#define rst  -1
-Adafruit_ST7735 display = Adafruit_ST7735(cs, dc, rst);
+Adafruit_ST7735 display = Adafruit_ST7735(THERMOSTAT_DISPLAY_ST7735_CS, THERMOSTAT_DISPLAY_ST7735_DC, THERMOSTAT_DISPLAY_ST7735_RST);
 #else
-SSD1306  display(0x3c, 1, 3);
+SSD1306  display(0x3c, THERMOSTAT_DISPLAY_SSD1306_SDA, THERMOSTAT_DISPLAY_SSD1306_SCL);
 #endif
 
 unsigned long _local_temp_last_update = 0xFFFF;
