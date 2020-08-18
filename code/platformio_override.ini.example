@@ -35,3 +35,22 @@ src_build_flags = -DMY_SONOFF_BUILD01 -DUSE_CUSTOM_H
 [env:my-sonoff-build02]
 extends = env:esp8266-1m-latest-base
 src_build_flags = -DMY_SONOFF_BUILD02 -DUSE_CUSTOM_H
+
+
+# Example for an environment based on 4M byte esp8266 board used as thermostat.
+# if you choose the latest environment remember to remove the legacy_lib_deps
+# This example add support for DS18B2x on a custom pin, the display  support for thermostat and the usage of the ST7735 display model.
+# The display used is this one in the photo at the url https://github.com/xoseperez/espurna/pull/2319
+
+[env:my-lolin-thermostat]
+extends = env:esp8266-4m-base
+src_build_flags = -DNODEMCU_LOLIN -DNOWSAUTH 
+                  -DDALLAS_SUPPORT=1 -DDALLAS_PIN=D3 
+                  -DTHERMOSTAT_SUPPORT=1 -DTHERMOSTAT_DISPLAY_SUPPORT=1 -DTHERMOSTAT_DISPLAY_ST7735_SUPPORT=1
+lib_deps =
+    ${common.display_lib_deps}
+    ${common.legacy_lib_deps}
+    ${common.lib_deps}
+lib_ignore =
+    ${common.display_lib_ignore}
+
