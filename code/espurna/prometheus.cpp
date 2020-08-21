@@ -46,7 +46,7 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
 }
 
 bool _prometheusRequestCallback(AsyncWebServerRequest* request) {
-    if (request->url().equals(F("/metrics"))) {
+    if (request->url().equals(F("/api/metrics"))) {
         webLog(request);
         if (apiAuthenticate(request)) {
             _prometheusRequestHandler(request);

@@ -469,10 +469,11 @@ void _onRequest(AsyncWebServerRequest *request){
 
     if (!_onAPModeRequest(request)) return;
 
-    // Send request to subscribers
-    for (unsigned char i = 0; i < _web_request_callbacks.size(); i++) {
-        bool response = (_web_request_callbacks[i])(request);
-        if (response) return;
+    // Send request to subscribers, break when request is 'handled' by the callback
+    for (auto& callback : _web_request_callbacks) {
+        if (callback(request)) {
+            return;
+        }
     }
 
     // No subscriber handled the request, return a 404 with implicit "Connection: close"
