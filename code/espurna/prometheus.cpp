@@ -12,6 +12,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "prometheus.h"
 
+#include "api.h"
 #include "relay.h"
 #include "sensor.h"
 #include "web.h"
@@ -46,7 +47,10 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
 
 bool _prometheusRequestCallback(AsyncWebServerRequest* request) {
     if (request->url().equals(F("/metrics"))) {
-        _prometheusRequestHandler(request);
+        webLog(request);
+        if (apiAuthenticate(request)) {
+            _prometheusRequestHandler(request);
+        }
         return true;
     }
 
