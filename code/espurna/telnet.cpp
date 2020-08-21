@@ -31,7 +31,13 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 struct AsyncBufferedClient {
     public:
-        constexpr static const size_t BUFFERS_MAX = 5;
+        constexpr static size_t BuffersMax =
+#if (TCP_MSS == 1460)
+            2ul;
+#else
+            5ul;
+#endif
+
         using buffer_t = std::vector<uint8_t>;
 
         explicit AsyncBufferedClient(AsyncClient* client);
@@ -221,8 +227,9 @@ void AsyncBufferedClient::_addBuffer() {
 
 size_t AsyncBufferedClient::write(const char* data, size_t size) {
 
-    if (_buffers.size() > AsyncBufferedClient::BUFFERS_MAX) return 0;
+    if (_buffers.size() > AsyncBufferedClient::BuffersMax) return 0;
 
+    // TODO: just waiting for onPoll is insufficient, we need to push data asap
     size_t written = 0;
     if (_buffers.empty()) {
         written = _client->add(data, size);
