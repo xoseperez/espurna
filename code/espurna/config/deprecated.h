@@ -119,7 +119,27 @@
 #endif
 #endif
 
-// TODO: RF_... -> RFB_...
+#ifdef RF_LEARN_TIMEOUT
+#warning "RF_LEARN_TIMEOUT is deprecated! Please use RFB_LEARN_TIMEOUT"
+#undef RFB_LEARN_TIMEOUT
+#define RFB_LEARN_TIMEOUT RF_LEARN_TIMEOUT
+#endif
+
+#ifdef RF_SEND_TIMES
+#warning "RF_SEND_TIMES is deprecated! Please use RFB_SEND_TIMES"
+#undef RFB_SEND_TIMES
+#define RFB_SEND_TIMES RF_SEND_TIMES
+#endif
+
+#ifdef RF_SEND_DELAY
+#warning "RF_SEND_DELAY is deprecated! Please use RFB_SEND_DELAY"
+#undef RFB_SEND_DELAY RF_SEND_DELAY
+#endif
+
+#ifdef RF_RECEIVE_DELAY
+#warning "RF_RECEIVE_DELAY is deprecated! Please use RFB_RECEIVE_DELAY"
+#undef RFB_RECEIVE_DELAY RF_RECEIVE_DELAY
+#endif
 
 #ifdef RF_SUPPORT
 #warning "RF_SUPPORT is deprecated! Please use RFB_SUPPORT"
