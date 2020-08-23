@@ -125,7 +125,7 @@ struct RfbParser {
     RfbParser() = delete;
     RfbParser(const RfbParser&) = delete;
 
-    RfbParser(callback_type* callback) :
+    explicit RfbParser(callback_type* callback) :
         _callback(callback)
     {}
 
@@ -292,8 +292,7 @@ struct RfbMessage {
 struct RfbMessage {
     using code_type = decltype(std::declval<RCSwitch>().getReceivedValue());
 
-    static constexpr size_t CodeSize = sizeof(code_type);
-    static constexpr size_t BufferSize = CodeSize + 4;
+    static constexpr size_t BufferSize = sizeof(code_type) + 4;
 
     uint8_t protocol;
     uint16_t timing;
@@ -705,6 +704,7 @@ void _rfbSendImpl(const RfbMessage& message) {
 
     // TODO: note that this seems to be setting global setting
     //       if code for some reason forgets this, we end up with the previous value
+    _rfb_modem->setProtocol(message.protocol);
     if (message.timing) {
         _rfb_modem->setPulseLength(message.timing);
     }
