@@ -20,8 +20,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 BrokerBind(RfbridgeBroker);
 
 #include <algorithm>
-#include <memory>
+#include <cstring>
 #include <list>
+#include <memory>
 
 // -----------------------------------------------------------------------------
 // GLOBALS TO THE MODULE
