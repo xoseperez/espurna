@@ -133,12 +133,14 @@
 
 #ifdef RF_SEND_DELAY
 #warning "RF_SEND_DELAY is deprecated! Please use RFB_SEND_DELAY"
-#undef RFB_SEND_DELAY RF_SEND_DELAY
+#undef RFB_SEND_DELAY
+#define RFB_SEND_DELAY RF_SEND_DELAY
 #endif
 
 #ifdef RF_RECEIVE_DELAY
 #warning "RF_RECEIVE_DELAY is deprecated! Please use RFB_RECEIVE_DELAY"
-#undef RFB_RECEIVE_DELAY RF_RECEIVE_DELAY
+#undef RFB_RECEIVE_DELAY
+#define RFB_RECEIVE_DELAY RF_RECEIVE_DELAY
 #endif
 
 #ifdef RF_SUPPORT
