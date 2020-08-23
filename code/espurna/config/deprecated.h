@@ -108,3 +108,21 @@
 #warning "WIFI_FALLBACK_APMODE is deprecated! Please use WIFI_AP_MODE instead"
 #define WIFI_AP_MODE ((1 == WIFI_FALLBACK_APMODE) ? WiFiApMode::Fallback : WiFiApMode::Disabled)
 #endif
+
+#ifdef RFB_DIRECT
+#warning "RFB_DIRECT is deprecated! Please use RFB_PROVIDER=RFB_PROVIDER_..."
+#undef RFB_PROVIDER
+#if RFB_DIRECT
+#define RFB_PROVIDER RFB_PROVIDER_RCSWITCH
+#else
+#define RFB_PROVIDER RFB_PROVIDER_EFM8BB1
+#endif
+#endif
+
+// TODO: RF_... -> RFB_...
+
+#ifdef RF_SUPPORT
+#warning "RF_SUPPORT is deprecated! Please use RFB_SUPPORT"
+#undef RFB_SUPPORT
+#define RFB_SUPPORT RF_SUPPORT
+#endif

@@ -1621,40 +1621,26 @@
 
 
 // -----------------------------------------------------------------------------
-// MQTT RF BRIDGE
+// RF BRIDGE
 // -----------------------------------------------------------------------------
 
-#ifndef RF_SUPPORT
-#define RF_SUPPORT                  0
+#ifndef RFB_SUPPORT
+#define RFB_SUPPORT                  0
 #endif
 
-#ifndef RF_DEBOUNCE
-#define RF_DEBOUNCE                 500
+#ifndef RFB_SEND_TIMES
+#define RFB_SEND_TIMES               1               // How many times to send the message
 #endif
 
-#ifndef RF_LEARN_TIMEOUT
-#define RF_LEARN_TIMEOUT            60000
-#endif
-
-#ifndef RF_SEND_TIMES
-#define RF_SEND_TIMES               4               // How many times to send the message
-#endif
-
-#ifndef RF_SEND_DELAY
-#define RF_SEND_DELAY               500             // Interval between sendings in ms
-#endif
-
-#ifndef RF_RECEIVE_DELAY
-#define RF_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid debouncing)
-#endif
-
-// Enable RCSwitch support
+// - RFB_PROVIDER_EFM8BB1
+// Default option for the ITEAD_SONOFF_RFBRIDGE or any custom firmware implementing the protocol
+// - RFB_PROVIDER_RCSWITCH
 // Originally implemented for SONOFF BASIC
 // https://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
 // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
-#ifndef RFB_DIRECT
-#define RFB_DIRECT                  0
+#ifndef RFB_PROVIDER
+#define RFB_PROVIDER                RFB_PROVIDER_RCSWITCH
 #endif
 
 #ifndef RFB_RX_PIN
@@ -1665,6 +1651,21 @@
 #define RFB_TX_PIN                  GPIO_NONE
 #endif
 
+#ifndef RFB_LEARN_TIMEOUT
+#define RFB_LEARN_TIMEOUT            15000
+#endif
+
+#ifndef RFB_SEND_DELAY
+#define RFB_SEND_DELAY               500             // Interval between sendings in ms
+#endif
+
+#ifndef RFB_RECEIVE_DELAY
+#define RFB_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid bouncing)
+#endif
+
+#ifndef RFB_TRANSMIT_TIMES
+#define RFB_TRANSMIT_TIMES          5                // How many times RCSwitch will repeat the message
+#endif
 
 // -----------------------------------------------------------------------------
 // IR Bridge

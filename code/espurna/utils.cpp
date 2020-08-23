@@ -792,7 +792,7 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
 }
 
 // From a byte array to an hexa char array ("A220EE...", double the size)
-size_t hexEncode(uint8_t * in, size_t in_size, char * out, size_t out_size) {
+size_t hexEncode(const uint8_t * in, size_t in_size, char * out, size_t out_size) {
     if ((2 * in_size + 1) > (out_size)) return 0;
 
     static const char base16[] = "0123456789ABCDEF";
