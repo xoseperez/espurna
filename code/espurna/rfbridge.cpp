@@ -336,7 +336,7 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_TIMES);
     root["rfbCount"] = relayCount();
-    #if RFB_DIRECT
+    #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
         root["rfbdirectVisible"] = 1;
         root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
         root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
