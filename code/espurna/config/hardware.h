@@ -789,19 +789,23 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-    #define RFB_SUPPORT          1
-
-    // only used when RFB_PROVIDER is RCSWITCH
-    #define RFB_RX_PIN          4
-    #define RFB_TX_PIN          5
+    #define RFB_SUPPORT         1
 
     // When using un-modified harware, ESPurna communicates with the secondary
     // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
     // the port and remove UART noise on serial line
+    #ifndef RFB_PROVIDER
+    #define RFB_PROVIDER        RFB_PROVIDER_EFM8BB1
+    #endif
+
     #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
     #define SERIAL_BAUDRATE         19200
     #define DEBUG_SERIAL_SUPPORT    0
     #endif
+
+    // Only used when RFB_PROVIDER is RCSWITCH
+    #define RFB_RX_PIN          4
+    #define RFB_TX_PIN          5
 
 #elif defined(ITEAD_SONOFF_B1)
 
