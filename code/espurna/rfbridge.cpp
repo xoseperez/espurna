@@ -102,8 +102,8 @@ constexpr uint8_t CodeAck { 0xA0u };
 constexpr uint8_t CodeLearn { 0xA1u };
 
 // receiving:
-constexpr uint8_t CodeLearnOk { 0xA2u };
-constexpr uint8_t CodeLearnTimeout { 0xA3u };
+constexpr uint8_t CodeLearnTimeout { 0xA2u };
+constexpr uint8_t CodeLearnOk { 0xA3u };
 constexpr uint8_t CodeRecvBasic = { 0xA4u };
 constexpr uint8_t CodeSendBasic = { 0xA5u };
 
