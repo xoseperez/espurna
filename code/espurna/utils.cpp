@@ -831,11 +831,9 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
     size_t index = 0;
     size_t out_index = 0;
 
-    uint8_t lhs, rhs;
-
     while (index < in_size) {
-        lhs = char2byte(in[index]) << 4;
-        rhs = char2byte(in[index + 1]);
+        const uint8_t lhs = char2byte(in[index]) << 4;
+        const uint8_t rhs = char2byte(in[index + 1]);
         if (lhs || rhs) {
             out[out_index++] = lhs | rhs;
             index += 2;

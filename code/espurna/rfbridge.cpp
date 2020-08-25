@@ -77,7 +77,9 @@ struct RfbRelayMatch {
 };
 
 struct RfbLearn {
+#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
     unsigned long ts;
+#endif
     unsigned char id;
     bool status;
 };
