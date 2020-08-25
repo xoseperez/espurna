@@ -188,14 +188,10 @@ struct RfbParser {
     }
 
     void read_end(uint8_t c) {
-        _state = (CodeEnd == c)
-            ? &RfbParser::start
-            : &RfbParser::stop;
-        if (_state != &RfbParser::stop) {
+        if (CodeEnd == c) {
             _callback(_payload_code, _payload);
-            _payload.clear();
-            return;
         }
+        _state = &RfbParser::stop;
     }
 
     void read_until_length(uint8_t c) {
@@ -574,7 +570,7 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
         }
 
         char buffer[(RfbParser::PayloadSizeBasic * 2) + 1] = {0};
-        if (!hexEncode(payload.data(), payload.size(), buffer, sizeof(buffer))) {
+        if (hexEncode(payload.data(), payload.size(), buffer, sizeof(buffer))) {
             DEBUG_MSG_P(PSTR("[RF] Received code: %s\n"), buffer);
 
 #if RELAY_SUPPORT
@@ -1042,12 +1038,12 @@ void _rfbInitCommands() {
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
     terminalRegisterCommand(F("RFB.WRITE"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) return;
-        uint8_t data[RfbParser::MessageSizeBasic];
-        size_t bytes = hexDecode(ctx.argv[1].c_str(), ctx.argv[1].length(), data, sizeof(data));
-        if (bytes) {
-            _rfbSendRaw(data, bytes);
+        if (ctx.argc != 2) {
+            terminalError(ctx, F("RFB.WRITE <PAYLOAD>"));
+            return;
         }
+        _rfbSendRawFromPayload(ctx.argv[1].c_str());
+        terminalOK(ctx);
     });
 #endif
 
