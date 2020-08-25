@@ -77,9 +77,7 @@ struct RfbRelayMatch {
 };
 
 struct RfbLearn {
-#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
     unsigned long ts;
-#endif
     unsigned char id;
     bool status;
 };
@@ -278,10 +276,12 @@ struct RfbMessage {
     RfbMessage(const RfbMessage&) = default;
     RfbMessage(RfbMessage&&) = default;
 
-    explicit RfbMessage(uint8_t* ptr, size_t size, unsigned char repeats_) :
+    template <size_t Size>
+    explicit RfbMessage(uint8_t (&data)[Size], unsigned char repeats_) :
         repeats(repeats_)
     {
-        std::copy(ptr, ptr + size, code);
+        static_assert(Size == RfbParser::PayloadSizeBasic, "");
+        std::copy(data, data + Size, code);
     }
 
     uint8_t code[RfbParser::PayloadSizeBasic] { 0u };
@@ -458,7 +458,7 @@ RfbRelayMatch _rfbMatch(const char* code) {
 void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
     if (!learn) return;
 
-    DEBUG_MSG_P(PSTR("[RF] Learned %s for relay ID %u\n"), buffer, learn->id);
+    DEBUG_MSG_P(PSTR("[RF] Learned %s for relay ID %u after %u ms\n"), buffer, learn->id, millis() - learn->ts);
     rfbStore(learn->id, learn->status, buffer);
 
     // Websocket update needs to happen right here, since the only time
@@ -509,15 +509,15 @@ bool _rfbRelayHandler(const char* buffer, bool locked = false) {
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
 
-void _rfbEnqueue(uint8_t* code, size_t size, unsigned char repeats = 1u) {
+void _rfbEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
-    _rfb_message_queue.push_back(RfbMessage(code, size, repeats));
+    _rfb_message_queue.push_back(RfbMessage(code, repeats));
 }
 
 bool _rfbEnqueue(const char* code, unsigned char repeats = 1u) {
     uint8_t buffer[RfbParser::PayloadSizeBasic] { 0u };
     if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
-        _rfbEnqueue(buffer, sizeof(buffer), repeats);
+        _rfbEnqueue(buffer, repeats);
         return true;
     }
 
@@ -567,9 +567,9 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
     case CodeLearnTimeout:
         _rfbAckImpl();
 #if RELAY_SUPPORT
+        DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - _rfb_learn->ts);
         _rfb_learn.reset(nullptr);
 #endif
-        DEBUG_MSG_P(PSTR("[RF] Learn timeout\n"));
         break;
 
     case CodeLearnOk:
@@ -748,7 +748,7 @@ void _rfbSendImpl(const RfbMessage& message) {
 // TODO: both 'protocol' and 'bitlength' fit in a byte, despite being declared as 'unsigned int'
 
 template <size_t Size>
-size_t _rfbModemPack(unsigned int protocol, unsigned int timing, unsigned int bits, RfbMessage::code_type code, uint8_t(&out)[Size]) {
+size_t _rfbModemPack(uint8_t(&out)[Size], RfbMessage::code_type code, unsigned int protocol, unsigned int timing, unsigned int bits) {
     static_assert((sizeof(decltype(code)) == 4) || (sizeof(decltype(code)) == 8), "");
 
     size_t index = 0;
@@ -779,7 +779,7 @@ size_t _rfbModemPack(unsigned int protocol, unsigned int timing, unsigned int bi
 
 void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
     if (millis() - learn->ts > RFB_LEARN_TIMEOUT) {
-        DEBUG_MSG_P(PSTR("[RF] Learn timeout\n"));
+        DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - learn->ts);
         learn.reset(nullptr);
         return;
     }
@@ -802,11 +802,11 @@ void _rfbReceiveImpl() {
 
     uint8_t message[RfbMessage::BufferSize];
     auto real_msgsize = _rfbModemPack(
+        message,
+        rf_code,
         _rfb_modem->getReceivedProtocol(),
         _rfb_modem->getReceivedDelay(),
-        _rfb_modem->getReceivedBitlength(),
-        rf_code,
-        message
+        _rfb_modem->getReceivedBitlength()
     );
 
     char buffer[(sizeof(message) * 2) + 1] = {0};
@@ -1108,7 +1108,7 @@ void rfbStatus(unsigned char id, bool status) {
 }
 
 void rfbLearn(unsigned char id, bool status) {
-    _rfb_learn.reset(new RfbLearn{ millis(), id, status });
+    _rfb_learn.reset(new RfbLearn { millis(), id, status });
     _rfbLearnImpl();
 }
 
