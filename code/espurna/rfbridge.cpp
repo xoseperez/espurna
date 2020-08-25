@@ -624,7 +624,7 @@ void _rfbReceiveImpl() {
 void _rfbSendRawFromPayload(const char * raw) {
     auto rawlen = strlen(raw);
     if (rawlen > (RfbParser::MessageSizeMax * 2)) return;
-    if ((rawlen < 2) || (rawlen & 1)) return;
+    if ((rawlen < 6) || (rawlen & 1)) return;
 
     DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE \"%s\"\n"), raw);
 
