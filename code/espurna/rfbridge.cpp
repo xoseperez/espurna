@@ -514,7 +514,7 @@ void _rfbEnqueue(const char* code, unsigned char times) {
     if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
         _rfbEnqueue(buffer, sizeof(buffer), times);
     } else {
-        DEBUG_MSG_P(PSTR("[RF] Message size exceeds the available buffer (%u vs. %u)\n"), strlen(code), sizeof(buffer));
+        DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
     }
 }
 
@@ -686,7 +686,7 @@ void _rfbEnqueue(const char* code, unsigned char times) {
 
         _rfbEnqueue(buffer[1], (buffer[3] << 8) | buffer[2], buffer[4], code, times);
     } else {
-        DEBUG_MSG_P(PSTR("[RF] Message size exceeds the available buffer (%u vs. %u)\n"), strlen(code), sizeof(buffer));
+        DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
     }
 }
 
