@@ -509,15 +509,15 @@ bool _rfbRelayHandler(const char* buffer, bool locked = false) {
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
 
-void _rfbEnqueue(uint8_t* code, size_t size, unsigned char times) {
+void _rfbEnqueue(uint8_t* code, size_t size, unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
-    _rfb_message_queue.push_back(RfbMessage(code, size, times));
+    _rfb_message_queue.push_back(RfbMessage(code, size, repeats));
 }
 
-bool _rfbEnqueue(const char* code, unsigned char times) {
+bool _rfbEnqueue(const char* code, unsigned char repeats = 1u) {
     uint8_t buffer[RfbParser::PayloadSizeBasic] { 0u };
     if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
-        _rfbEnqueue(buffer, sizeof(buffer), times);
+        _rfbEnqueue(buffer, sizeof(buffer), repeats);
         return true;
     }
 
@@ -559,9 +559,11 @@ void _rfbSendImpl(const RfbMessage& message) {
 
 void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
     switch (code) {
+
     case CodeAck:
         DEBUG_MSG_P(PSTR("[RF] Received ACK\n"));
         break;
+
     case CodeLearnTimeout:
         _rfbAckImpl();
 #if RELAY_SUPPORT
@@ -569,6 +571,7 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 #endif
         DEBUG_MSG_P(PSTR("[RF] Learn timeout\n"));
         break;
+
     case CodeLearnOk:
     case CodeRecvBasic: {
         _rfbAckImpl();
@@ -699,19 +702,19 @@ template <>
 
 }
 
-void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats) {
+void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
     _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
 }
 
-void _rfbEnqueue(const char* code, unsigned char times) {
+void _rfbEnqueue(const char* code, unsigned char repeats = 1u) {
     uint8_t buffer[RfbMessage::BufferSize] { 0u };
     if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
         RfbMessage::code_type code;
         std::memcpy(&code, &buffer[5], _rfb_bits_for_bytes(buffer[4]));
         code = _rfb_bswap(code);
 
-        _rfbEnqueue(buffer[1], (buffer[3] << 8) | buffer[2], buffer[4], code, times);
+        _rfbEnqueue(buffer[1], (buffer[3] << 8) | buffer[2], buffer[4], code, repeats);
     } else {
         DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
     }
@@ -761,7 +764,7 @@ size_t _rfbModemPack(unsigned int protocol, unsigned int timing, unsigned int bi
     }
 
     // manually overload each bswap, since we can't use ternary here
-    // (and if constexpr is only available in Arduino Core 3.0.0)
+    // (and `if constexpr (...)` is only available starting from Arduino Core 3.x.x)
     decltype(code) swapped = _rfb_bswap(code);
 
     uint8_t raw[sizeof(swapped)];
@@ -857,16 +860,16 @@ void _rfbSendQueued() {
 
 }
 
-// Check if the payload looks like a HEX code (plus comma, specifying the 'times' arg for the queue)
+// Check if the payload looks like a HEX code (plus comma, specifying the 'repeats' arg for the queue)
 void _rfbSendFromPayload(const char * payload) {
 
-    size_t times { 1ul };
+    size_t repeats { 1ul };
     size_t len { strlen(payload) };
 
     const char* sep { strchr(payload, ',') };
     if (sep && (*(sep + 1) != '\0')) {
         char *endptr = nullptr;
-        times = strtoul(sep, &endptr, 10);
+        repeats = strtoul(sep, &endptr, 10);
         if (endptr == payload || endptr[0] != '\0') {
             return;
         }
@@ -879,7 +882,7 @@ void _rfbSendFromPayload(const char * payload) {
 
     // We postpone the actual sending until the loop, as we may've been called from MQTT or HTTP API
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
-    _rfbEnqueue(payload, times);
+    _rfbEnqueue(payload, repeats);
 
 }
 
