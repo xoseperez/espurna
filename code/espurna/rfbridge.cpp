@@ -458,7 +458,7 @@ RfbRelayMatch _rfbMatch(const char* code) {
 void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
     if (!learn) return;
 
-    DEBUG_MSG_P(PSTR("[RF] Learned %s for relay ID %u after %u ms\n"), buffer, learn->id, millis() - learn->ts);
+    DEBUG_MSG_P(PSTR("[RF] Learned relay ID %u after %u ms\n"), learn->id, millis() - learn->ts);
     rfbStore(learn->id, learn->status, buffer);
 
     // Websocket update needs to happen right here, since the only time
@@ -567,17 +567,16 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
     case CodeLearnTimeout:
         _rfbAckImpl();
 #if RELAY_SUPPORT
-        DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - _rfb_learn->ts);
-        _rfb_learn.reset(nullptr);
+        if (_rfb_learn) {
+            DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - _rfb_learn->ts);
+            _rfb_learn.reset(nullptr);
+        }
 #endif
         break;
 
     case CodeLearnOk:
     case CodeRecvBasic: {
         _rfbAckImpl();
-        if (payload.size() != RfbParser::PayloadSizeBasic) {
-            break;
-        }
 
         char buffer[(RfbParser::PayloadSizeBasic * 2) + 1] = {0};
         if (hexEncode(payload.data(), payload.size(), buffer, sizeof(buffer))) {
@@ -878,6 +877,8 @@ void _rfbSendFromPayload(const char * payload) {
     if (!len || (len & 1)) {
         return;
     }
+
+    DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%s' %u time(s)\n"), payload, repeats);
 
     // We postpone the actual sending until the loop, as we may've been called from MQTT or HTTP API
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
