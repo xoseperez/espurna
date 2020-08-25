@@ -201,6 +201,7 @@ struct RfbParser {
         _payload.push_back(c);
         if ((_payload_offset + _payload_length) == _payload.size()) {
             switch (_payload_code) {
+            case CodeLearnOk:
             case CodeRecvBasic:
             case CodeRecvProto:
                 _state = &RfbParser::read_end;
@@ -209,6 +210,7 @@ struct RfbParser {
                 _state = &RfbParser::read_until_end;
                 break;
             default:
+                _state = &RfbParser::stop;
                 break;
             }
 
