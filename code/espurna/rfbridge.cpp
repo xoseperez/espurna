@@ -180,18 +180,19 @@ struct RfbParser {
         }
     }
 
-    void read_until_end(uint8_t c) {
-        _payload.push_back(c);
-        if (CodeEnd == c) {
-            read_end(c);
-        }
-    }
-
     void read_end(uint8_t c) {
         if (CodeEnd == c) {
             _callback(_payload_code, _payload);
         }
         _state = &RfbParser::stop;
+    }
+
+    void read_until_end(uint8_t c) {
+        if (CodeEnd == c) {
+            read_end(c);
+            return;
+        }
+        _payload.push_back(c);
     }
 
     void read_until_length(uint8_t c) {
@@ -509,13 +510,15 @@ void _rfbEnqueue(uint8_t* code, size_t size, unsigned char times) {
     _rfb_message_queue.push_back(RfbMessage(code, size, times));
 }
 
-void _rfbEnqueue(const char* code, unsigned char times) {
+bool _rfbEnqueue(const char* code, unsigned char times) {
     uint8_t buffer[RfbParser::PayloadSizeBasic] { 0u };
     if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
         _rfbEnqueue(buffer, sizeof(buffer), times);
-    } else {
-        DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
+        return true;
     }
+
+    DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
+    return false;
 }
 
 void _rfbSendRaw(const uint8_t* message, unsigned char size) {
@@ -592,10 +595,21 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
         break;
     }
     case CodeRecvProto:
-    case CodeRecvBucket:
+    case CodeRecvBucket: {
         _rfbAckImpl();
-        DEBUG_MSG_P(PSTR("[RF] CANNOT HANDLE 0x%02X, NOT IMPLEMENTED\n"), code);
+        char buffer[(RfbParser::MessageSizeMax * 2) + 1] = {0};
+        if (hexEncode(payload.data(), payload.size(), buffer, sizeof(buffer))) {
+            DEBUG_MSG_P(PSTR("[RF] Received %s code: %s\n"),
+                (CodeRecvProto == code) ? "advanced" : "bucket", buffer
+            );
+#if MQTT_SUPPORT
+            mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
+#endif
+        } else {
+            DEBUG_MSG_P(PSTR("[RF] Received code %02X (%u bytes)\n"), code, payload.size());
+        }
         break;
+    }
     }
 }
 
