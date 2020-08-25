@@ -276,12 +276,10 @@ struct RfbMessage {
     RfbMessage(const RfbMessage&) = default;
     RfbMessage(RfbMessage&&) = default;
 
-    template <size_t Size>
-    explicit RfbMessage(uint8_t (&data)[Size], unsigned char repeats_) :
+    explicit RfbMessage(uint8_t (&data)[RfbParser::PayloadSizeBasic], unsigned char repeats_) :
         repeats(repeats_)
     {
-        static_assert(Size == RfbParser::PayloadSizeBasic, "");
-        std::copy(data, data + Size, code);
+        std::copy(data, data + sizeof(data), code);
     }
 
     uint8_t code[RfbParser::PayloadSizeBasic] { 0u };
@@ -747,8 +745,7 @@ void _rfbSendImpl(const RfbMessage& message) {
 //       since it's original intent was to be used with 16bit ints
 // TODO: both 'protocol' and 'bitlength' fit in a byte, despite being declared as 'unsigned int'
 
-template <size_t Size>
-size_t _rfbModemPack(uint8_t(&out)[Size], RfbMessage::code_type code, unsigned int protocol, unsigned int timing, unsigned int bits) {
+size_t _rfbModemPack(uint8_t (&out)[RfbMessage::BufferSize], RfbMessage::code_type code, unsigned int protocol, unsigned int timing, unsigned int bits) {
     static_assert((sizeof(decltype(code)) == 4) || (sizeof(decltype(code)) == 8), "");
 
     size_t index = 0;
@@ -759,7 +756,7 @@ size_t _rfbModemPack(uint8_t(&out)[Size], RfbMessage::code_type code, unsigned i
     out[index++] = static_cast<uint8_t>(bits);
 
     auto bytes = _rfb_bits_for_bytes(bits);
-    if (bytes > (Size - index)) {
+    if (bytes > (sizeof(out) - index)) {
         return 0;
     }
 
