@@ -92,6 +92,8 @@ static std::unique_ptr<RfbLearn> _rfb_learn;
 // EFM8BB1 PROTOCOL PARSING
 // -----------------------------------------------------------------------------
 
+constexpr uint8_t RfbDefaultProtocol { 0u };
+
 constexpr uint8_t CodeStart { 0xAAu };
 constexpr uint8_t CodeEnd { 0x55u };
 
@@ -591,11 +593,12 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 #endif
 
 #if BROKER_SUPPORT
-            RfbridgeBroker::Publish(buffer + 6);
+            RfbridgeBroker::Publish(RfbDefaultProtocol, buffer + 6);
 #endif
         }
         break;
     }
+
     case CodeRecvProto:
     case CodeRecvBucket: {
         _rfbAckImpl();
@@ -604,14 +607,21 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
             DEBUG_MSG_P(PSTR("[RF] Received %s code: %s\n"),
                 (CodeRecvProto == code) ? "advanced" : "bucket", buffer
             );
+
 #if MQTT_SUPPORT
             mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
+
+#if BROKER_SUPPORT
+            // ref. https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/0xA6#example-of-a-received-decoded-protocol
+            RfbridgeBroker::Publish(payload[0], buffer + 2);
+#endif
         } else {
-            DEBUG_MSG_P(PSTR("[RF] Received code %02X (%u bytes)\n"), code, payload.size());
+            DEBUG_MSG_P(PSTR("[RF] Received 0x%02X (%u bytes)\n"), code, payload.size());
         }
         break;
     }
+
     }
 }
 
@@ -625,6 +635,7 @@ void _rfbReceiveImpl() {
             continue;
         }
 
+        // narrowing is justified, as `c` can only contain byte-sized value
         if (!_rfb_parser.loop(static_cast<uint8_t>(c))) {
             _rfb_parser.reset();
         }
@@ -665,7 +676,7 @@ size_t _rfb_bits_for_bytes(size_t bits) {
     return bytes;
 }
 
-// TODO: 'Code' long unsigned int != uint32_t, thus the specialization
+// TODO: RCSwitch code type: long unsigned int != uint32_t, thus the specialization
 static_assert(sizeof(uint32_t) == sizeof(long unsigned int), "");
 
 template <typename T>
@@ -1172,7 +1183,7 @@ void rfbSetup() {
 
     _rfb_repeat = getSetting("rfbRepeat", RFB_SEND_TIMES);
 
-    // Note: as rfbridge protocol is simplictic enough, we rely on Serial queue to deliver timely updates
+    // Note: as rfbridge protocol is simplistic enough, we rely on Serial queue to deliver timely updates
     //       learn / command acks / etc. are not queued, only RF messages are
     espurnaRegisterLoop([]() {
         _rfbReceiveImpl();
