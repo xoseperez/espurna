@@ -225,8 +225,14 @@ void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t 
 
 size_t settingsSize();
 
-void migrate();
 void settingsSetup();
+
+// -----------------------------------------------------------------------------
+// Configuration updates
+// -----------------------------------------------------------------------------
+
+int migrateVersion();
+void migrate();
 
 // -----------------------------------------------------------------------------
 // Deprecated implementation
