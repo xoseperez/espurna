@@ -798,15 +798,26 @@ void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer)
 void _rfbReceiveImpl() {
 
     if (!_rfb_receive) return;
-    if (!_rfb_modem->available()) return;
 
-    static unsigned long last = 0;
-    if (millis() - last < RFB_RECEIVE_DELAY) return;
-
-    last = millis();
+    // TODO: rc-switch isr handler sets 4 variables at the same time and never checks their existence before overwriting them
+    //       thus, we can't *really* trust that all 4 are from the same reading :/
+    // TODO: in theory, we may also expirience memory tearing while doing 2 separate 32bit reads on the 64bit code value,
+    //       while isr handler *may* write into it at the same time
 
     auto rf_code = _rfb_modem->getReceivedValue();
-    if (!rf_code) return;
+    if (!rf_code) {
+        return;
+    }
+
+#if RFB_RECEIVE_DELAY
+    static unsigned long last = 0;
+    if (millis() - last < RFB_RECEIVE_DELAY) {
+        _rfb_modem->resetAvailable();
+        return;
+    }
+
+    last = millis();
+#endif
 
     uint8_t message[RfbMessage::BufferSize];
     auto real_msgsize = _rfbModemPack(
