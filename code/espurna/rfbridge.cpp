@@ -600,7 +600,7 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 #endif
 
 #if BROKER_SUPPORT
-            RfbridgeBroker::Publish(RfbDefaultProtocol, buffer + 6);
+            RfbridgeBroker::Publish(RfbDefaultProtocol, buffer + 12);
 #endif
         }
         break;
