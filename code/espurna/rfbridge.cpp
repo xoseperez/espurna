@@ -709,17 +709,22 @@ void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::co
     _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
 }
 
-void _rfbEnqueue(const char* code, unsigned char repeats = 1u) {
+void _rfbEnqueue(const char* message, unsigned char repeats = 1u) {
     uint8_t buffer[RfbMessage::BufferSize] { 0u };
-    if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
-        RfbMessage::code_type code;
-        std::memcpy(&code, &buffer[5], _rfb_bits_for_bytes(buffer[4]));
-        code = _rfb_bswap(code);
+    if (hexDecode(message, strlen(message), buffer, sizeof(buffer))) {
+        const auto bytes = _rfb_bytes_for_bits(buffer[4]);
 
-        _rfbEnqueue(buffer[1], (buffer[3] << 8) | buffer[2], buffer[4], code, repeats);
-    } else {
-        DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
+        uint8_t raw_code[sizeof(RfbMessage::code_type)] { 0u };
+        std::memcpy(&raw_code[sizeof(raw_code) - bytes], &buffer[5], bytes);
+
+        RfbMessage::code_type code;
+        std::memcpy(&code, raw_code, sizeof(code));
+
+        _rfbEnqueue(buffer[1], (buffer[2] << 8) | buffer[3], buffer[4], _rfb_bswap(code), repeats);
+        return;
     }
+
+    DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
 }
 
 void _rfbLearnImpl() {
@@ -736,6 +741,8 @@ void _rfbSendImpl(const RfbMessage& message) {
     if (message.timing) {
         _rfb_modem->setPulseLength(message.timing);
     }
+
+    yield();
 
     _rfb_modem->send(message.code, message.bits);
     _rfb_modem->resetAvailable();
