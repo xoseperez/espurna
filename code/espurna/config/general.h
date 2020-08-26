@@ -1098,12 +1098,8 @@
 #endif
 
 
-#ifndef MQTT_SKIP_RETAINED
-#define MQTT_SKIP_RETAINED          1               // Skip retained messages on connection
-#endif
-
 #ifndef MQTT_SKIP_TIME
-#define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
+#define MQTT_SKIP_TIME              0               // Skip messages for N ms after connection. Disabled by default
 #endif
 
 #ifndef MQTT_USE_JSON
