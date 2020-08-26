@@ -199,6 +199,7 @@ struct RfbParser {
 
     void read_until_length(uint8_t c) {
         _payload.push_back(c);
+
         if ((_payload_offset + _payload_length) == _payload.size()) {
             switch (_payload_code) {
             case CodeLearnOk:
@@ -243,6 +244,8 @@ struct RfbParser {
 
     void reset() {
         _payload.clear();
+        _payload_length = 0u;
+        _payload_offset = 0u;
         _payload_code = 0u;
         _state = &RfbParser::start;
     }
