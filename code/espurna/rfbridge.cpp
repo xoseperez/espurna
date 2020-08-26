@@ -669,7 +669,7 @@ void _rfbSendRawFromPayload(const char * raw) {
 
 namespace {
 
-size_t _rfb_bits_for_bytes(size_t bits) {
+size_t _rfb_bytes_for_bits(size_t bits) {
     decltype(bits) bytes = 0;
     decltype(bits) need = 0;
 
@@ -759,7 +759,7 @@ size_t _rfbModemPack(uint8_t (&out)[RfbMessage::BufferSize], RfbMessage::code_ty
     out[index++] = static_cast<uint8_t>(timing);
     out[index++] = static_cast<uint8_t>(bits);
 
-    auto bytes = _rfb_bits_for_bytes(bits);
+    auto bytes = _rfb_bytes_for_bits(bits);
     if (bytes > (sizeof(out) - index)) {
         return 0;
     }
@@ -1082,61 +1082,6 @@ void _rfbInitCommands() {
     });
 #endif
 
-#if RELAY_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_RCSWITCH)
-    // TODO: remove this in 1.16.0
-    //       atm this func is ~608 bytes in ROM + undetermined RAM for 1 more command for the terminal
-    terminalRegisterCommand(F("RFB.MIGRATE"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
-            ctx.output.println(F("+INFO: Migrates rfbON# / rfbOFF# codes for versions below 1.15.0 to the new format"));
-            return;
-        }
-
-        if (*ctx.argv[1].c_str() != '1') {
-            terminalError(ctx, F("Use `RFB.MIGRATE 1` to continue"));
-            return;
-        }
-
-        // we don't particulary care about the speed here, unlike rfbMatch
-        // simply fetch the code strings for each ID and remove leading zeroes
-        // (always remove the full byte, never just one leading zero)
-
-        auto migrate_code = [](const String& in, String& out) -> bool {
-            out = "";
-
-            if (18 == in.length()) {
-                out = in.substring(0, 10);
-
-                auto* ptr = in.c_str() + 10;
-                while ((*ptr == '0') && (*(ptr + 1) == '0')) {
-                    ptr += 2;
-                }
-                out += ptr;
-
-                return in != out;
-            }
-
-            return false;
-        };
-
-        String buffer;
-
-        for (unsigned char index = 0; index < relayCount(); ++index) {
-            const settings_key_t on_key {F("rfbON"), index};
-            if (migrate_code(getSetting(on_key), buffer)) {
-                setSetting(on_key, buffer);
-            }
-
-            const settings_key_t off_key {F("rfbOFF"), index};
-            if (migrate_code(getSetting(off_key), buffer)) {
-                setSetting(off_key, buffer);
-            }
-        }
-
-        terminalOK(ctx);
-
-    });
-#endif
-
 }
 
 #endif // TERMINAL_SUPPORT
@@ -1190,6 +1135,51 @@ void rfbForget(unsigned char id, bool status) {
 // SETUP & LOOP
 // -----------------------------------------------------------------------------
 
+#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+
+// TODO: remove this in 1.16.0
+
+void _rfbSettingsMigrate(int version) {
+    if (!version || (version > 4)) {
+        return;
+    }
+
+    auto migrate_code = [](const String& in, String& out) -> bool {
+        out = "";
+
+        if (18 == in.length()) {
+            uint8_t bits { 0u };
+            if (!hexDecode(in.c_str() + 8, 2, &bits, 1)) {
+                return false;
+            }
+
+            auto bytes = _rfb_bytes_for_bits(bits);
+            out = in.substring(0, 10);
+            out += (in.c_str() + in.length() - (2 * bytes));
+
+            return in != out;
+        }
+
+        return false;
+    };
+
+    String buffer;
+
+    for (unsigned char index = 0; index < relayCount(); ++index) {
+        const settings_key_t on_key {F("rfbON"), index};
+        if (migrate_code(getSetting(on_key), buffer)) {
+            setSetting(on_key, buffer);
+        }
+
+        const settings_key_t off_key {F("rfbOFF"), index};
+        if (migrate_code(getSetting(off_key), buffer)) {
+            setSetting(off_key, buffer);
+        }
+    }
+}
+
+#endif
+
 void rfbSetup() {
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
@@ -1197,6 +1187,9 @@ void rfbSetup() {
     _rfb_parser.reserve(RfbParser::MessageSizeBasic);
 
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+
+    _rfbSettingsMigrate(migrateVersion());
+
     {
         auto rx = getSetting("rfbRX", RFB_RX_PIN);
         auto tx = getSetting("rfbTX", RFB_TX_PIN);
@@ -1221,6 +1214,7 @@ void rfbSetup() {
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
         }
     }
+
 #endif
 
 #if MQTT_SUPPORT
