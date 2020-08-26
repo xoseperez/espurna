@@ -20,6 +20,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 BrokerBind(RfbridgeBroker);
 
 #include <algorithm>
+#include <bitset>
 #include <cstring>
 #include <list>
 #include <memory>
@@ -82,7 +83,13 @@ struct RfbLearn {
     bool status;
 };
 
+// Usage depends on the implementation. Will either:
+// - efm8bb1: wait until learn OK / TIMEOUT code
+// - rc-switch: receiver loop will check `ts` vs RFB_LEARN_TIMEOUT
 static std::unique_ptr<RfbLearn> _rfb_learn;
+
+// Individual lock for the relay, prevent rfbStatus from re-sending the code we just received
+static std::bitset<RelaysMax> _rfb_relay_status_lock;
 
 #endif // RELAY_SUPPORT
 
@@ -388,8 +395,6 @@ bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
 
 #if RELAY_SUPPORT
 
-static bool _rfb_status_lock = false;
-
 // try to find the 'code' saves as either rfbON# or rfbOFF#
 //
 // **always** expect full length code as input to simplify comparison
@@ -477,13 +482,12 @@ void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
 }
 
 bool _rfbRelayHandler(const char* buffer, bool locked = false) {
-    _rfb_status_lock = locked;
-
     bool result { false };
 
     auto match = _rfbMatch(buffer);
     if (match.ok()) {
         DEBUG_MSG_P(PSTR("[RF] Matched with the relay ID %u\n"), match.id);
+        _rfb_relay_status_lock.set(match.id, locked);
 
         switch (match.status) {
         case PayloadStatus::On:
@@ -498,8 +502,6 @@ bool _rfbRelayHandler(const char* buffer, bool locked = false) {
             break;
         }
     }
-
-    _rfb_status_lock = false;
 
     return result;
 }
@@ -589,7 +591,7 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
             if (CodeLearnOk == code) {
                 _rfbLearnFromString(_rfb_learn, buffer);
             } else {
-                _rfbRelayHandler(buffer);
+                _rfbRelayHandler(buffer, true);
             }
 #endif
 
@@ -836,7 +838,7 @@ void _rfbReceiveImpl() {
         if (_rfb_learn) {
             _rfbLearnFromReceived(_rfb_learn, buffer);
         } else {
-            _rfbRelayHandler(buffer);
+            _rfbRelayHandler(buffer, true);
         }
 #endif
 
@@ -973,8 +975,8 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
             // we *sometimes* want to check the code against available rfbON / rfbOFF
             // e.g. in case we want to control some external device and have an external remote.
             // - when remote press happens, relays stay in sync when we receive the code via the processing loop
-            // - when we send the code here, we never register it as *sent*,, thus relays need to be made in sync manually
-            if (!_rfbRelayHandler(payload, /* locked = */ true)) {
+            // - when we send the code here, we never register it as *sent*, thus relays need to be made in sync manually
+            if (!_rfbRelayHandler(payload)) {
 #endif
                 _rfbSendFromPayload(payload);
 #if RELAY_SUPPORT
@@ -1119,15 +1121,19 @@ String rfbRetrieve(unsigned char id, bool status) {
 }
 
 void rfbStatus(unsigned char id, bool status) {
-    // ref. receiver loop, we need to protect ourselves from re-sending the code we received to turn this relay ID on / off
-    if (_rfb_status_lock) {
-        return;
+    // TODO: This is a left-over from the old implementation. Right now we set this lock when relay handler
+    //       is called within the receiver, while this is called from either relayStatus or relay loop calling
+    //       this via provider callback. This prevents us from re-sending the code we just received.
+    // TODO: Consider having 'origin' of the relay change. Either supply relayStatus with an additional arg,
+    //       or track these statuses directly.
+    if (!_rfb_relay_status_lock[id]) {
+        String value = rfbRetrieve(id, status);
+        if (value.length() && !(value.length() & 1)) {
+            _rfbSendFromPayload(value.c_str());
+        }
     }
 
-    String value = rfbRetrieve(id, status);
-    if (value.length() && !(value.length() & 1)) {
-        _rfbSendFromPayload(value.c_str());
-    }
+    _rfb_relay_status_lock[id] = false;
 }
 
 void rfbLearn(unsigned char id, bool status) {
