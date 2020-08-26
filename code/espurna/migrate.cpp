@@ -46,7 +46,7 @@ void migrate() {
 
     if (!version) return;
 
-    switch (migrateVersion()) {
+    switch (version) {
         // migrate old version with 1-based indices
         case 2:
             _cmpMoveIndexDown("ledGPIO");
