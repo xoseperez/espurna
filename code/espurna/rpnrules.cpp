@@ -239,9 +239,10 @@ rpn_error _rpnRelayStatus(rpn_context & ctxt, bool force) {
 
 #endif // RELAY_SUPPORT
 
-#if RF_SUPPORT
+#if RFB_SUPPORT
 
 struct rpn_rfbridge_code {
+    unsigned char protocol;
     String raw;
     size_t count;
     decltype(millis()) last;
@@ -256,26 +257,35 @@ static uint32_t _rfb_code_stale_delay;
 
 static uint32_t _rfb_code_match_window;
 
-rpn_error _rpnRfbSequence(rpn_context& ctxt) {
-    rpn_value second;
-    rpn_stack_pop(ctxt, second);
+struct rpn_rfbridge_match {
+    unsigned char protocol;
+    String raw;
+};
 
-    rpn_value first;
-    rpn_stack_pop(ctxt, first);
+rpn_error _rpnRfbSequence(rpn_context& ctxt) {
+    auto raw_second = rpn_stack_pop(ctxt);
+    auto proto_second = rpn_stack_pop(ctxt);
+
+    auto raw_first = rpn_stack_pop(ctxt);
+    auto proto_first = rpn_stack_pop(ctxt);
 
     // find 2 codes in the same order and save pointers
-    String raw[2] {first.toString(), second.toString()};
+    rpn_rfbridge_match match[2] {
+        {static_cast<unsigned char>(proto_first.toUint()), raw_first.toString()},
+        {static_cast<unsigned char>(proto_second.toUint()), raw_second.toString()}
+    };
     rpn_rfbridge_code* refs[2] {nullptr, nullptr};
 
     for (auto& recent : _rfb_codes) {
         if ((refs[0] != nullptr) && (refs[1] != nullptr)) {
             break;
         }
-        if ((refs[0] == nullptr) && (raw[0] == recent.raw)) {
-            refs[0] = &recent;
-        }
-        if ((refs[1] == nullptr) && (raw[1] == recent.raw)) {
-            refs[1] = &recent;
+        for (int index = 0; index < 2; ++index) {
+            if ((refs[index] == nullptr)
+             && (match[index].protocol == recent.protocol)
+             && (match[index].raw == recent.raw)) {
+                refs[index] = &recent;
+            }
         }
     }
 
@@ -294,16 +304,17 @@ rpn_error _rpnRfbSequence(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
-decltype(_rfb_codes)::iterator _rpnRfbFindCode(const String& match) {
-    return std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [&match](const rpn_rfbridge_code& code) {
-        return code.raw == match;
+decltype(_rfb_codes)::iterator _rpnRfbFindCode(unsigned char protocol, const String& match) {
+    return std::find_if(_rfb_codes.begin(), _rfb_codes.end(), [protocol, &match](const rpn_rfbridge_code& code) {
+        return (code.protocol == protocol) && (code.raw == match);
     });
 }
 
 rpn_error _rpnRfbPop(rpn_context& ctxt) {
     auto code = rpn_stack_pop(ctxt);
+    auto proto = rpn_stack_pop(ctxt);
 
-    auto result = _rpnRfbFindCode(code.toString());
+    auto result = _rpnRfbFindCode(proto.toUint(), code.toString());
     if (result == _rfb_codes.end()) {
         return rpn_operator_error::CannotContinue;
     }
@@ -314,8 +325,9 @@ rpn_error _rpnRfbPop(rpn_context& ctxt) {
 
 rpn_error _rpnRfbInfo(rpn_context& ctxt) {
     auto code = rpn_stack_pop(ctxt);
+    auto proto = rpn_stack_pop(ctxt);
 
-    auto result = _rpnRfbFindCode(code.toString());
+    auto result = _rpnRfbFindCode(proto.toUint(), code.toString());
     if (result == _rfb_codes.end()) {
         return rpn_operator_error::CannotContinue;
     }
@@ -330,10 +342,11 @@ rpn_error _rpnRfbInfo(rpn_context& ctxt) {
 
 rpn_error _rpnRfbWaitMatch(rpn_context& ctxt) {
     auto code = rpn_stack_pop(ctxt);
+    auto proto = rpn_stack_pop(ctxt);
     auto count = rpn_stack_pop(ctxt);
     auto time = rpn_stack_pop(ctxt);
 
-    auto result = _rpnRfbFindCode(code.toString());
+    auto result = _rpnRfbFindCode(proto.toUint(), code.toString());
     if (result == _rfb_codes.end()) {
         return rpn_operator_error::CannotContinue;
     }
@@ -352,13 +365,11 @@ rpn_error _rpnRfbWaitMatch(rpn_context& ctxt) {
 }
 
 rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
-    rpn_value code;
-    rpn_stack_pop(ctxt, code);
+    auto code = rpn_stack_pop(ctxt);
+    auto proto = rpn_stack_pop(ctxt);
+    auto count = rpn_stack_pop(ctxt);
 
-    rpn_value count;
-    rpn_stack_pop(ctxt, count);
-
-    auto result = _rpnRfbFindCode(code.toString());
+    auto result = _rpnRfbFindCode(proto.toUint(), code.toString());
     if (result == _rfb_codes.end()) {
         return rpn_operator_error::CannotContinue;
     }
@@ -377,32 +388,7 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
-const char* _rpnRfbCodeNormalize(const char* p) {
-    while (*p != '\0' && *p == '0') {
-        if ((*p == '0')
-            && (*(p + 1) != '\0')
-            && (*(p + 1) == '0'))
-        {
-            p += 2;
-            continue;
-        }
-        break;
-    }
-
-    return p;
-}
-
-void _rpnBrokerRfbridgeCallback(const char* raw_code) {
-
-    // TODO: pass String() from the broker cb?
-#if RFB_DIRECT
-    raw_code = (raw_code + strlen(raw_code) - 8);
-#else
-    raw_code = (raw_code + strlen(raw_code) - 6);
-#endif
-
-    // TODO: 'normalize' from the rfbridge side?
-    raw_code = _rpnRfbCodeNormalize(raw_code);
+void _rpnBrokerRfbridgeCallback(unsigned char protocol, const char* raw_code) {
 
     // remove really old codes that we have not seen in a while to avoid memory exhaustion
     auto ts = millis();
@@ -414,7 +400,7 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
         _rfb_codes.erase(old, _rfb_codes.end());
     }
 
-    auto result = _rpnRfbFindCode(raw_code);
+    auto result = _rpnRfbFindCode(protocol, raw_code);
     if (result != _rfb_codes.end()) {
         // we also need to reset the counter at a certain point to allow next batch of repeats to go through
         if (millis() - (*result).last >= _rfb_code_repeat_window) {
@@ -423,7 +409,7 @@ void _rpnBrokerRfbridgeCallback(const char* raw_code) {
         (*result).last = millis();
         (*result).count += 1u;
     } else {
-        _rfb_codes.push_back({raw_code, 1u, millis()});
+        _rfb_codes.push_back({protocol, raw_code, 1u, millis()});
     }
 
     _rpn_run = true;
@@ -444,7 +430,8 @@ void _rpnRfbSetup() {
         for (auto& code : _rfb_codes) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("\"%s\" count=%u last=%u"),
+                PSTR("\"%s\" proto=%u count=%u last=%u"),
+                code.protocol,
                 code.raw.c_str(),
                 code.count,
                 code.last
@@ -458,7 +445,7 @@ void _rpnRfbSetup() {
     RfbridgeBroker::Register(_rpnBrokerRfbridgeCallback);
 }
 
-#endif // RF_SUPPORT
+#endif // RFB_SUPPORT
 
 void _rpnShowStack(Print& print) {
     print.println(F("Stack:"));
@@ -593,12 +580,12 @@ void _rpnInit() {
 
     #endif
 
-    #if RF_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "rfb_pop", 1, _rpnRfbPop);
-        rpn_operator_set(_rpn_ctxt, "rfb_info", 1, _rpnRfbInfo);
-        rpn_operator_set(_rpn_ctxt, "rfb_sequence", 2, _rpnRfbSequence);
-        rpn_operator_set(_rpn_ctxt, "rfb_match", 2, _rpnRfbMatcher);
-        rpn_operator_set(_rpn_ctxt, "rfb_match_wait", 3, _rpnRfbWaitMatch);
+    #if RFB_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "rfb_pop", 2, _rpnRfbPop);
+        rpn_operator_set(_rpn_ctxt, "rfb_info", 2, _rpnRfbInfo);
+        rpn_operator_set(_rpn_ctxt, "rfb_sequence", 4, _rpnRfbSequence);
+        rpn_operator_set(_rpn_ctxt, "rfb_match", 3, _rpnRfbMatcher);
+        rpn_operator_set(_rpn_ctxt, "rfb_match_wait", 4, _rpnRfbWaitMatch);
     #endif
 
     #if MQTT_SUPPORT
@@ -825,7 +812,7 @@ void rpnSetup() {
 
     StatusBroker::Register(_rpnBrokerStatus);
 
-    #if RF_SUPPORT
+    #if RFB_SUPPORT
         _rpnRfbSetup();
     #endif
 

@@ -9,7 +9,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #pragma once
 
 #include <cstdint>
-#include "config/types.h"
+#include "../config/types.h"
 
 // base interface for generic pin handler. 
 struct BasePin {
