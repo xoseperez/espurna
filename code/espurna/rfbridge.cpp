@@ -1027,6 +1027,7 @@ void _rfbApiSetup() {
 
 void _rfbInitCommands() {
 
+#if RELAY_SUPPORT
     terminalRegisterCommand(F("RFB.LEARN"), [](const terminal::CommandContext& ctx) {
 
         if (ctx.argc != 3) {
@@ -1068,6 +1069,7 @@ void _rfbInitCommands() {
 
         terminalOK(ctx);
     });
+#endif // if RELAY_SUPPORT
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
     terminalRegisterCommand(F("RFB.WRITE"), [](const terminal::CommandContext& ctx) {
@@ -1077,6 +1079,61 @@ void _rfbInitCommands() {
         }
         _rfbSendRawFromPayload(ctx.argv[1].c_str());
         terminalOK(ctx);
+    });
+#endif
+
+#if RELAY_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_RCSWITCH)
+    // TODO: remove this in 1.16.0
+    //       atm this func is ~608 bytes in ROM + undetermined RAM for 1 more command for the terminal
+    terminalRegisterCommand(F("RFB.MIGRATE"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 2) {
+            ctx.output.println(F("+INFO: Migrates rfbON# / rfbOFF# codes for versions below 1.15.0 to the new format"));
+            return;
+        }
+
+        if (*ctx.argv[1].c_str() != '1') {
+            terminalError(ctx, F("Use `RFB.MIGRATE 1` to continue"));
+            return;
+        }
+
+        // we don't particulary care about the speed here, unlike rfbMatch
+        // simply fetch the code strings for each ID and remove leading zeroes
+        // (always remove the full byte, never just one leading zero)
+
+        auto migrate_code = [](const String& in, String& out) -> bool {
+            out = "";
+
+            if (18 == in.length()) {
+                out = in.substring(0, 10);
+
+                auto* ptr = in.c_str() + 10;
+                while ((*ptr == '0') && (*(ptr + 1) == '0')) {
+                    ptr += 2;
+                }
+                out += ptr;
+
+                return in != out;
+            }
+
+            return false;
+        };
+
+        String buffer;
+
+        for (unsigned char index = 0; index < relayCount(); ++index) {
+            const settings_key_t on_key {F("rfbON"), index};
+            if (migrate_code(getSetting(on_key), buffer)) {
+                setSetting(on_key, buffer);
+            }
+
+            const settings_key_t off_key {F("rfbOFF"), index};
+            if (migrate_code(getSetting(off_key), buffer)) {
+                setSetting(off_key, buffer);
+            }
+        }
+
+        terminalOK(ctx);
+
     });
 #endif
 
