@@ -6,13 +6,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#pragma once
+
 #include "espurna.h"
 
-#if RF_SUPPORT
+#if RFB_SUPPORT
 
-#if RFB_DIRECT
-#include <RCSwitch.h>
-#endif
+#include "broker.h"
+
+BrokerDeclare(RfbridgeBroker, void(unsigned char protocol, const char* code));
 
 void rfbStatus(unsigned char id, bool status);
 void rfbLearn(unsigned char id, bool status);
@@ -23,4 +25,4 @@ void rfbStore(unsigned char id, bool status, const char * code);
 void rfbForget(unsigned char id, bool status);
 void rfbSetup();
 
-#endif // RF_SUPPORT == 1
+#endif // RFB_SUPPORT == 1

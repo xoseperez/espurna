@@ -244,7 +244,7 @@ void setup() {
     #if I2C_SUPPORT
         i2cSetup();
     #endif
-    #if RF_SUPPORT
+    #if RFB_SUPPORT
         rfbSetup();
     #endif
     #if ALEXA_SUPPORT

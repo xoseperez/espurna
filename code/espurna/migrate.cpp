@@ -26,6 +26,7 @@ void _cmpMoveIndexDown(const char * key, int offset = 0) {
 // 2: based on Embedis, with board definitions 1-based
 // 3: based on Embedis, with board definitions 0-based
 // 4: based on Embedis, no board definitions
+// 5: based on Embedis, updated rfb codes format
 
 int migrateVersion() {
     const static auto version = getSetting("cfg", CFG_VERSION);
@@ -38,7 +39,8 @@ int migrateVersion() {
 
 void migrate() {
 
-    // Update if not on the latest version
+    // We either get 0, when version did not change
+    // Or, the version we migrate from
     const auto version = migrateVersion();
     setSetting("cfg", CFG_VERSION);
 

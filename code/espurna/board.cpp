@@ -84,8 +84,8 @@ PROGMEM const char espurna_modules[] =
     #if RFM69_SUPPORT
         "RFM69 "
     #endif
-    #if RF_SUPPORT
-        "RF "
+    #if RFB_SUPPORT
+        "RFB "
     #endif
     #if RPN_RULES_SUPPORT
         "RPN_RULES "
