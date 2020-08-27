@@ -4,6 +4,7 @@ THERMOSTAT MODULE
 
 Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
+https://github.com/xoseperez/espurna/pull/1603#issuecomment-469256254
 */
 
 #include "thermostat.h"
@@ -15,6 +16,17 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include "sensor.h"
 #include "mqtt.h"
 #include "ws.h"
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+#include <gfxfont.h>
+#include <static/Roboto_Thin9pt8b.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
+#else
+#include <SSD1306.h> // alias for `#include "SSD1306Wire.h"`
+#endif
+#endif
 
 const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
 const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
@@ -488,36 +500,69 @@ void resetBurnCounters() {
 
 #define wifi_on_width 16
 #define wifi_on_height 16
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+const char wifi_on_bits[] PROGMEM = {
+  0x00, 0x00, 0x70, 0x00, 0x7E, 0x00, 0x7F, 0x80, 0x07, 0xC0, 0x01, 0xE0,
+  0x40, 0xF0, 0x78, 0x78, 0x7C, 0x38, 0x1E, 0x1C, 0x07, 0x1C, 0x03, 0x8C,
+  0x63, 0x8E, 0x71, 0x8E, 0x71, 0xCE, 0x00, 0x00, };
+#else
 const char wifi_on_bits[] PROGMEM = {
   0x00, 0x00, 0x0E, 0x00, 0x7E, 0x00, 0xFE, 0x01, 0xE0, 0x03, 0x80, 0x07,
   0x02, 0x0F, 0x1E, 0x1E, 0x3E, 0x1C, 0x78, 0x38, 0xE0, 0x38, 0xC0, 0x31,
   0xC6, 0x71, 0x8E, 0x71, 0x8E, 0x73, 0x00, 0x00, };
+#endif
 
 #define mqtt_width 16
 #define mqtt_height 16
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+const char mqtt_bits[] PROGMEM = {
+  0x00, 0x00, 0x00, 0x10, 0x00, 0x18, 0x00, 0x1C, 0x57, 0xFE, 0x57, 0xFE,
+  0x00, 0x1C, 0x08, 0x18, 0x18, 0x10, 0x38, 0x00, 0x7F, 0xEA, 0x7F, 0xEA,
+  0x38, 0x00, 0x18, 0x00, 0x08, 0x00, 0x00, 0x00, };
+#else
 const char mqtt_bits[] PROGMEM = {
   0x00, 0x00, 0x00, 0x08, 0x00, 0x18, 0x00, 0x38, 0xEA, 0x7F, 0xEA, 0x7F,
   0x00, 0x38, 0x10, 0x18, 0x18, 0x08, 0x1C, 0x00, 0xFE, 0x57, 0xFE, 0x57,
   0x1C, 0x00, 0x18, 0x00, 0x10, 0x00, 0x00, 0x00, };
+#endif
 
 #define remote_temp_width 16
 #define remote_temp_height 16
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+const char remote_temp_bits[] PROGMEM = {
+  0x00, 0x00, 0x07, 0x18, 0x08, 0xA4, 0x08, 0xA4, 0x09, 0x98, 0x0A, 0x80,
+  0x0A, 0x80, 0x0B, 0x80, 0x0A, 0x80, 0x0A, 0x80, 0x0B, 0x80, 0x0A, 0x80,
+  0x07, 0x00, 0x07, 0x00, 0x07, 0x00, 0x00, 0x00
+};
+#else
 const char remote_temp_bits[] PROGMEM = {
   0x00, 0x00, 0xE0, 0x18, 0x10, 0x25, 0x10, 0x25, 0x90, 0x19, 0x50, 0x01,
   0x50, 0x01, 0xD0, 0x01, 0x50, 0x01, 0x50, 0x01, 0xD0, 0x01, 0x50, 0x01,
   0xE0, 0x00, 0xE0, 0x00, 0xE0, 0x00, 0x00, 0x00, };
+#endif
 
 #define server_width 16
 #define server_height 16
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+const char server_bits[] PROGMEM = {
+  0x00, 0x00, 0x1F, 0xF8, 0x3F, 0xFC, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x0C,
+  0x30, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x1F, 0xF8, 0x3F, 0xFC, 0x7F, 0xFE,
+  0x78, 0x1E, 0x7F, 0xFE, 0x3F, 0xFC, 0x00, 0x00, };
+#else
 const char server_bits[] PROGMEM = {
   0x00, 0x00, 0xF8, 0x1F, 0xFC, 0x3F, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30,
   0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0xF8, 0x1F, 0xFC, 0x3F, 0xFE, 0x7F,
   0x1E, 0x78, 0xFE, 0x7F, 0xFC, 0x3F, 0x00, 0x00, };
+#endif
 
 #define LOCAL_TEMP_UPDATE_INTERVAL 60000
 #define LOCAL_HUM_UPDATE_INTERVAL  61000
 
-SSD1306  display(0x3c, 1, 3);
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+Adafruit_ST7735 display = Adafruit_ST7735(THERMOSTAT_DISPLAY_ST7735_CS, THERMOSTAT_DISPLAY_ST7735_DC, THERMOSTAT_DISPLAY_ST7735_RST);
+#else
+SSD1306  display(0x3c, THERMOSTAT_DISPLAY_SSD1306_SDA, THERMOSTAT_DISPLAY_SSD1306_SCL);
+#endif
 
 unsigned long _local_temp_last_update = 0xFFFF;
 unsigned long _local_hum_last_update = 0xFFFF;
@@ -532,10 +577,21 @@ bool _display_need_refresh  = true;
 bool _temp_range_need_update = true;
 
 //------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
 void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
-  display.drawIco16x16(x, y, ico, !on);
+  display.drawBitmap(x, y, (const uint8_t*) ico, 16, 16, ((on == true) ? ST7735_WHITE : ST77XX_BLACK));
   _display_need_refresh = true;
 }
+
+#else
+
+void drawIco(int16_t x, int16_t y, const char *ico, bool on = true) {
+  display.drawIco16x16(x, y, ico, !on); //FIXME
+  _display_need_refresh = true;
+}
+
+#endif
 
 //------------------------------------------------------------------------------
 void display_wifi_status(bool on) {
@@ -562,6 +618,22 @@ void display_remote_temp_status(bool on) {
 }
 
 //------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void display_temp_range() {
+  _temp_range.need_display_update = false;
+  display.fillRect(68, 0, ST7735_TFTHEIGHT_160 - 60, 16, ST7735_BLACK);
+  display.setTextColor(ST77XX_WHITE);
+  display.setTextWrap(true);
+  display.setCursor(90, 0 + 13); 
+  display.setFont(&Roboto_Thin9pt8b);
+  String temp_range = String(_temp_range.min) + "\xB0- " + String(_temp_range.max) + "\xB0";
+  display.print(temp_range);
+  _display_need_refresh = true;
+}
+
+#else
+
 void display_temp_range() {
   _temp_range.need_display_update = false;
   display.setColor(BLACK);
@@ -570,11 +642,34 @@ void display_temp_range() {
   display.setTextAlignment(TEXT_ALIGN_RIGHT);
   display.setFont(ArialMT_Plain_16);
   String temp_range = String(_temp_range.min) + "°- " + String(_temp_range.max) + "°";
-  display.drawString(128, 0, temp_range);
+  display.drawString(128 /*x*/, 0/*y*/, temp_range);
   _display_need_refresh = true;
 }
 
+#endif
+
 //------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void display_remote_temp() {
+  _remote_temp.need_display_update = false;
+  display.fillRect(0, 16, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
+  
+  display.setTextColor(ST77XX_WHITE);
+  display.setTextWrap(true);
+  display.setFont(&Roboto_Thin9pt8b);
+  
+  display.setCursor(0, 16 + 13);
+  display.print(F("Remote t"));
+
+  display.setCursor(75, 16 + 13);
+  String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "\xB0";
+  display.print(temp_range_vol);
+  _display_need_refresh = true;
+}
+
+#else
+
 void display_remote_temp() {
   _remote_temp.need_display_update = false;
   display.setColor(BLACK);
@@ -582,16 +677,35 @@ void display_remote_temp() {
   display.setColor(WHITE);
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  String temp_range_title = String("Remote  t");
-  display.drawString(0, 16, temp_range_title);
+  display.drawString(0, 16, F("Remote  t"));
 
   String temp_range_vol = String("= ") + (_display_remote_temp_status ? String(_remote_temp.temp, 1) : String("?")) + "°";
   display.drawString(75, 16, temp_range_vol);
+  _display_need_refresh = true;
+}
+#endif
 
+//------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void display_local_temp() {
+  display.fillRect(0, 32, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
+
+  display.setTextColor(ST77XX_WHITE);
+  display.setTextWrap(true);
+  display.setFont(&Roboto_Thin9pt8b);
+  
+  display.setCursor(0, 32 + 13);
+  display.print(F("Local      t"));
+
+  display.setCursor(75, 32 + 13);
+  String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "\xB0";
+  display.print(local_temp_vol);
   _display_need_refresh = true;
 }
 
-//------------------------------------------------------------------------------
+#else
+
 void display_local_temp() {
   display.setColor(BLACK);
   display.fillRect(0, 32, 128, 16);
@@ -599,16 +713,34 @@ void display_local_temp() {
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-  String local_temp_title = String("Local      t");
-  display.drawString(0, 32, local_temp_title);
+  display.drawString(0, 32, F("Local      t"));
 
   String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "°";
   display.drawString(75, 32, local_temp_vol);
+  _display_need_refresh = true;
+}
+#endif
 
+//------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void display_local_humidity() {
+  display.fillRect(0, 48, ST7735_TFTHEIGHT_160, 16, ST77XX_BLACK);
+
+  display.setTextColor(ST77XX_WHITE);
+  display.setTextWrap(true);
+  
+  display.setCursor(0, 48 + 13);
+  display.print(F("Local      h "));
+
+  display.setCursor(75, 48 + 13);
+  String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
+  display.print(local_hum_vol);
   _display_need_refresh = true;
 }
 
-//------------------------------------------------------------------------------
+#else
+
 void display_local_humidity() {
   display.setColor(BLACK);
   display.fillRect(0, 48, 128, 16);
@@ -616,14 +748,13 @@ void display_local_humidity() {
   display.setFont(ArialMT_Plain_16);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
-  String local_hum_title = String("Local      h ");
-  display.drawString(0, 48, local_hum_title);
+  display.drawString(0, 48, F("Local      h "));
 
   String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
   display.drawString(75, 48, local_hum_vol);
-
   _display_need_refresh = true;
 }
+#endif
 
 //------------------------------------------------------------------------------
 void displayOn() {
@@ -644,6 +775,21 @@ void displayOn() {
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+
+void displaySetup() {
+  display.initR(INITR_BLACKTAB);        // Initialize ST7735R screen
+  display.setRotation(1);
+  display.fillScreen(ST77XX_BLACK);
+  display.cp437(true);
+
+  displayOn();
+
+  espurnaRegisterLoop(displayLoop);
+}
+
+#else
+
 void displaySetup() {
   display.init();
   display.flipScreenVertically();
@@ -652,6 +798,7 @@ void displaySetup() {
 
   espurnaRegisterLoop(displayLoop);
 }
+#endif
 
 //------------------------------------------------------------------------------
 void displayLoop() {
@@ -659,7 +806,11 @@ void displayLoop() {
     if (_thermostat_display_is_on) {
       DEBUG_MSG_P(PSTR("[THERMOSTAT] Display Off by timeout\n"));
       _thermostat_display_is_on = false;
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+//FIXME
+#else
       display.resetDisplay();
+#endif
     }
     return;
   }
@@ -731,7 +882,11 @@ void displayLoop() {
   //------------------------------------------------------------------------------
   if (_display_need_refresh) {
     yield();
+#if THERMOSTAT_DISPLAY_ST7735_SUPPORT
+//FIXME
+#else
     display.display();
+#endif
     _display_need_refresh = false;
   }
 }

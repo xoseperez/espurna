@@ -10,12 +10,10 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #include "espurna.h"
 
+#if THERMOSTAT_SUPPORT
+
 #include <ArduinoJson.h>
 #include <float.h>
-
-#if THERMOSTAT_DISPLAY_SUPPORT
-#include <SSD1306.h> // alias for `#include "SSD1306Wire.h"`
-#endif
 
 #define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
 #define ASK_TEMP_RANGE_INTERVAL_REGULAR      60000  // ask every minute to be sure
@@ -64,3 +62,11 @@ void thermostatModeCooler(bool cooler);
 bool thermostatModeCooler();
 
 void thermostatSetup();
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+void displayOn();
+void displaySetup();
+void displayLoop();
+#endif
+
+#endif
