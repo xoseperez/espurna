@@ -29,7 +29,7 @@ BrokerBind(RfbridgeBroker);
 // GLOBALS TO THE MODULE
 // -----------------------------------------------------------------------------
 
-unsigned char _rfb_repeat = RFB_SEND_TIMES;
+unsigned char _rfb_repeats = RFB_SEND_TIMES;
 
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
@@ -884,7 +884,7 @@ void _rfbSendQueued() {
 // Check if the payload looks like a HEX code (plus comma, specifying the 'repeats' arg for the queue)
 void _rfbSendFromPayload(const char * payload) {
 
-    size_t repeats { 1ul };
+    decltype(_rfb_repeats) repeats { _rfb_repeats };
     size_t len { strlen(payload) };
 
     const char* sep { strchr(payload, ',') };
@@ -1262,7 +1262,7 @@ void rfbSetup() {
     _rfbInitCommands();
 #endif
 
-    _rfb_repeat = getSetting("rfbRepeat", RFB_SEND_TIMES);
+    _rfb_repeats = getSetting("rfbRepeat", RFB_SEND_TIMES);
 
     // Note: as rfbridge protocol is simplistic enough, we rely on Serial queue to deliver timely updates
     //       learn / command acks / etc. are not queued, only RF messages are
