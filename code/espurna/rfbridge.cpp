@@ -952,28 +952,30 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
 
-        char buffer[strlen(MQTT_TOPIC_RFLEARN) + 3];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
-        mqttSubscribe(buffer);
-
-        if (_rfb_transmit) {
-            mqttSubscribe(MQTT_TOPIC_RFOUT);
-        }
+#if RELAY_SUPPORT
+        mqttSubscribe(MQTT_TOPIC_RFLEARN);
+#endif
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
         mqttSubscribe(MQTT_TOPIC_RFRAW);
 #endif
+        if (_rfb_transmit) {
+            mqttSubscribe(MQTT_TOPIC_RFOUT);
+        }
 
+        return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         String t = mqttMagnitude((char *) topic);
 
-        if (t.startsWith(MQTT_TOPIC_RFLEARN)) {
+#if RELAY_SUPPORT
+        if (t.equals(MQTT_TOPIC_RFLEARN)) {
             _rfbLearnStartFromPayload(payload);
             return;
         }
+#endif
 
         if (t.equals(MQTT_TOPIC_RFOUT)) {
 #if RELAY_SUPPORT
@@ -998,6 +1000,8 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
         }
 #endif
 
+        return;
+
     }
 
 }
@@ -1018,6 +1022,7 @@ void _rfbApiSetup() {
         }
     });
 
+#if RELAY_SUPPORT
     apiRegister({
         MQTT_TOPIC_RFLEARN, Api::Type::Basic, ApiUnusedArg,
         [](const Api&, ApiBuffer& buffer) {
@@ -1033,6 +1038,7 @@ void _rfbApiSetup() {
             _rfbLearnStartFromPayload(buffer.data);
         }
     });
+#endif
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
     apiRegister({
