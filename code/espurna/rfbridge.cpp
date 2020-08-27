@@ -519,9 +519,9 @@ void _rfbEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char rep
     _rfb_message_queue.push_back(RfbMessage(code, repeats));
 }
 
-bool _rfbEnqueue(const char* code, unsigned char repeats = 1u) {
+bool _rfbEnqueue(const char* code, size_t length, unsigned char repeats = 1u) {
     uint8_t buffer[RfbParser::PayloadSizeBasic] { 0u };
-    if (hexDecode(code, strlen(code), buffer, sizeof(buffer))) {
+    if (hexDecode(code, length, buffer, sizeof(buffer))) {
         _rfbEnqueue(buffer, repeats);
         return true;
     }
@@ -711,9 +711,9 @@ void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::co
     _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
 }
 
-void _rfbEnqueue(const char* message, unsigned char repeats = 1u) {
+void _rfbEnqueue(const char* message, size_t length, unsigned char repeats = 1u) {
     uint8_t buffer[RfbMessage::BufferSize] { 0u };
-    if (hexDecode(message, strlen(message), buffer, sizeof(buffer))) {
+    if (hexDecode(message, length, buffer, sizeof(buffer))) {
         const auto bytes = _rfb_bytes_for_bits(buffer[4]);
 
         uint8_t raw_code[sizeof(RfbMessage::code_type)] { 0u };
@@ -888,13 +888,18 @@ void _rfbSendFromPayload(const char * payload) {
     size_t len { strlen(payload) };
 
     const char* sep { strchr(payload, ',') };
-    if (sep && (*(sep + 1) != '\0')) {
+    if (sep) {
+        len -= strlen(sep);
+
+        sep += 1;
+        if ('\0' == *sep) return;
+        if ('-' == *sep) return;
+
         char *endptr = nullptr;
         repeats = strtoul(sep, &endptr, 10);
         if (endptr == payload || endptr[0] != '\0') {
             return;
         }
-        len -= strlen(sep);
     }
 
     if (!len || (len & 1)) {
@@ -905,7 +910,7 @@ void _rfbSendFromPayload(const char * payload) {
 
     // We postpone the actual sending until the loop, as we may've been called from MQTT or HTTP API
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
-    _rfbEnqueue(payload, repeats);
+    _rfbEnqueue(payload, len, repeats);
 
 }
 
