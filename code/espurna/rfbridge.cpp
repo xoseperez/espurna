@@ -29,7 +29,7 @@ BrokerBind(RfbridgeBroker);
 // GLOBALS TO THE MODULE
 // -----------------------------------------------------------------------------
 
-unsigned char _rfb_repeat = RFB_SEND_TIMES;
+unsigned char _rfb_repeats = RFB_SEND_REPEATS;
 
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
@@ -345,7 +345,7 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 }
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
-    root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_TIMES);
+    root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_REPEATS);
     root["rfbCount"] = relayCount();
     #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
         root["rfbdirectVisible"] = 1;
@@ -884,7 +884,7 @@ void _rfbSendQueued() {
 // Check if the payload looks like a HEX code (plus comma, specifying the 'repeats' arg for the queue)
 void _rfbSendFromPayload(const char * payload) {
 
-    size_t repeats { 1ul };
+    decltype(_rfb_repeats) repeats { _rfb_repeats };
     size_t len { strlen(payload) };
 
     const char* sep { strchr(payload, ',') };
@@ -1168,7 +1168,7 @@ void _rfbSettingsMigrate(int version) {
         return;
     }
 
-    auto migrate_code = [](const String& in, String& out) -> bool {
+    auto migrate_code = [](String& out, const String& in) -> bool {
         out = "";
 
         if (18 == in.length()) {
@@ -1191,12 +1191,12 @@ void _rfbSettingsMigrate(int version) {
 
     for (unsigned char index = 0; index < relayCount(); ++index) {
         const settings_key_t on_key {F("rfbON"), index};
-        if (migrate_code(getSetting(on_key), buffer)) {
+        if (migrate_code(buffer, getSetting(on_key))) {
             setSetting(on_key, buffer);
         }
 
         const settings_key_t off_key {F("rfbOFF"), index};
-        if (migrate_code(getSetting(off_key), buffer)) {
+        if (migrate_code(buffer, getSetting(off_key))) {
             setSetting(off_key, buffer);
         }
     }
@@ -1232,7 +1232,7 @@ void rfbSetup() {
             DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
         }
         if (_rfb_transmit) {
-            auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_TIMES);
+            auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
             _rfb_modem->enableTransmit(tx);
             _rfb_modem->setRepeatTransmit(transmit);
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
@@ -1262,7 +1262,7 @@ void rfbSetup() {
     _rfbInitCommands();
 #endif
 
-    _rfb_repeat = getSetting("rfbRepeat", RFB_SEND_TIMES);
+    _rfb_repeats = getSetting("rfbRepeat", RFB_SEND_REPEATS);
 
     // Note: as rfbridge protocol is simplistic enough, we rely on Serial queue to deliver timely updates
     //       learn / command acks / etc. are not queued, only RF messages are

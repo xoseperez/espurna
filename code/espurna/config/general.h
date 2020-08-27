@@ -1624,8 +1624,8 @@
 #define RFB_SUPPORT                  0
 #endif
 
-#ifndef RFB_SEND_TIMES
-#define RFB_SEND_TIMES               1               // How many times to send the message
+#ifndef RFB_SEND_REPEATS
+#define RFB_SEND_REPEATS             1               // How many times to send the message
 #endif
 
 // - RFB_PROVIDER_EFM8BB1
@@ -1648,19 +1648,19 @@
 #endif
 
 #ifndef RFB_LEARN_TIMEOUT
-#define RFB_LEARN_TIMEOUT            15000
+#define RFB_LEARN_TIMEOUT           15000
 #endif
 
 #ifndef RFB_SEND_DELAY
-#define RFB_SEND_DELAY               500             // Interval between sendings in ms
+#define RFB_SEND_DELAY              500             // Interval between sendings in ms
 #endif
 
 #ifndef RFB_RECEIVE_DELAY
-#define RFB_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid bouncing)
+#define RFB_RECEIVE_DELAY           500             // Interval between recieving in ms (avoid bouncing)
 #endif
 
-#ifndef RFB_TRANSMIT_TIMES
-#define RFB_TRANSMIT_TIMES          5                // How many times RCSwitch will repeat the message
+#ifndef RFB_TRANSMIT_REPEATS
+#define RFB_TRANSMIT_REPEATS        5               // How many times RCSwitch will repeat the message
 #endif
 
 // -----------------------------------------------------------------------------
