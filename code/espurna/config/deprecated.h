@@ -109,6 +109,8 @@
 #define WIFI_AP_MODE ((1 == WIFI_FALLBACK_APMODE) ? WiFiApMode::Fallback : WiFiApMode::Disabled)
 #endif
 
+// 1.15.0 uses RFB_... instead of RF_...
+
 #ifdef RFB_DIRECT
 #warning "RFB_DIRECT is deprecated! Please use RFB_PROVIDER=RFB_PROVIDER_..."
 #undef RFB_PROVIDER
@@ -126,9 +128,9 @@
 #endif
 
 #ifdef RF_SEND_TIMES
-#warning "RF_SEND_TIMES is deprecated! Please use RFB_SEND_TIMES"
-#undef RFB_SEND_TIMES
-#define RFB_SEND_TIMES RF_SEND_TIMES
+#warning "RF_SEND_TIMES is deprecated! Please use RFB_SEND_REPEATS"
+#undef RFB_SEND_REPEATS
+#define RFB_SEND_REPEATS RF_SEND_TIMES
 #endif
 
 #ifdef RF_SEND_DELAY

@@ -29,7 +29,7 @@ BrokerBind(RfbridgeBroker);
 // GLOBALS TO THE MODULE
 // -----------------------------------------------------------------------------
 
-unsigned char _rfb_repeats = RFB_SEND_TIMES;
+unsigned char _rfb_repeats = RFB_SEND_REPEATS;
 
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
@@ -345,7 +345,7 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 }
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
-    root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_TIMES);
+    root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_REPEATS);
     root["rfbCount"] = relayCount();
     #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
         root["rfbdirectVisible"] = 1;
@@ -1232,7 +1232,7 @@ void rfbSetup() {
             DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
         }
         if (_rfb_transmit) {
-            auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_TIMES);
+            auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
             _rfb_modem->enableTransmit(tx);
             _rfb_modem->setRepeatTransmit(transmit);
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
@@ -1262,7 +1262,7 @@ void rfbSetup() {
     _rfbInitCommands();
 #endif
 
-    _rfb_repeats = getSetting("rfbRepeat", RFB_SEND_TIMES);
+    _rfb_repeats = getSetting("rfbRepeat", RFB_SEND_REPEATS);
 
     // Note: as rfbridge protocol is simplistic enough, we rely on Serial queue to deliver timely updates
     //       learn / command acks / etc. are not queued, only RF messages are
