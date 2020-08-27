@@ -1168,7 +1168,7 @@ void _rfbSettingsMigrate(int version) {
         return;
     }
 
-    auto migrate_code = [](const String& in, String& out) -> bool {
+    auto migrate_code = [](String& out, const String& in) -> bool {
         out = "";
 
         if (18 == in.length()) {
@@ -1191,12 +1191,12 @@ void _rfbSettingsMigrate(int version) {
 
     for (unsigned char index = 0; index < relayCount(); ++index) {
         const settings_key_t on_key {F("rfbON"), index};
-        if (migrate_code(getSetting(on_key), buffer)) {
+        if (migrate_code(buffer, getSetting(on_key))) {
             setSetting(on_key, buffer);
         }
 
         const settings_key_t off_key {F("rfbOFF"), index};
-        if (migrate_code(getSetting(off_key), buffer)) {
+        if (migrate_code(buffer, getSetting(off_key))) {
             setSetting(off_key, buffer);
         }
     }
