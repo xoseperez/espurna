@@ -70,12 +70,13 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
 
 
-bool _mqtt_enabled = MQTT_ENABLED;
-bool _mqtt_use_json = false;
-unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned long _mqtt_last_connection = 0;
 AsyncClientState _mqtt_state = AsyncClientState::Disconnected;
-bool _mqtt_retain_skipped = false;
+bool _mqtt_skip_messages = false;
+unsigned long _mqtt_skip_time = MQTT_SKIP_TIME;
+unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
+bool _mqtt_enabled = MQTT_ENABLED;
+bool _mqtt_use_json = false;
 bool _mqtt_retain = MQTT_RETAIN;
 int _mqtt_qos = MQTT_QOS;
 int _mqtt_keepalive = MQTT_KEEPALIVE;
@@ -343,6 +344,9 @@ void _mqttConfigure() {
         _mqttApplyTopic(_mqtt_topic_json, MQTT_TOPIC_JSON);
     }
 
+    // Skip messages in a small window right after the connection
+    _mqtt_skip_time = getSetting("mqttSkipTime", MQTT_SKIP_TIME);
+
     // Custom payload strings
     settingsProcessConfig({
         {_mqtt_payload_online,  "mqttPayloadOnline",  MQTT_STATUS_ONLINE},
@@ -433,6 +437,7 @@ void _mqttInfo() {
             );
         }
     }
+
 }
 
 // -----------------------------------------------------------------------------
@@ -535,7 +540,6 @@ void _mqttOnConnect() {
 
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Connected;
-    _mqtt_retain_skipped = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 
@@ -554,7 +558,6 @@ void _mqttOnDisconnect() {
     // Reset reconnection delay
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Disconnected;
-    _mqtt_retain_skipped = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
@@ -568,14 +571,12 @@ void _mqttOnDisconnect() {
 // Force-skip everything received in a short window right after connecting to avoid syncronization issues.
 
 bool _mqttMaybeSkipRetained(char* topic) {
-    #if MQTT_SKIP_RETAINED
-        if (!_mqtt_retain_skipped && (millis() - _mqtt_last_connection < MQTT_SKIP_TIME)) {
-            DEBUG_MSG_P(PSTR("[MQTT] Received %s - SKIPPED\n"), topic);
-            return true;
-        }
-    #endif
+    if (_mqtt_skip_messages && (millis() - _mqtt_last_connection < _mqtt_skip_time)) {
+        DEBUG_MSG_P(PSTR("[MQTT] Received %s - SKIPPED\n"), topic);
+        return true;
+    }
 
-    _mqtt_retain_skipped = true;
+    _mqtt_skip_messages = false;
     return false;
 }
 
@@ -1005,6 +1006,8 @@ void _mqttConnect() {
     DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
 
     _mqtt_state = AsyncClientState::Connecting;
+
+    _mqtt_skip_messages = (_mqtt_skip_time > 0);
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
         const bool secure = getSetting("mqttUseSSL", 1 == MQTT_SSL_ENABLED);

@@ -108,3 +108,45 @@
 #warning "WIFI_FALLBACK_APMODE is deprecated! Please use WIFI_AP_MODE instead"
 #define WIFI_AP_MODE ((1 == WIFI_FALLBACK_APMODE) ? WiFiApMode::Fallback : WiFiApMode::Disabled)
 #endif
+
+// 1.15.0 uses RFB_... instead of RF_...
+
+#ifdef RFB_DIRECT
+#warning "RFB_DIRECT is deprecated! Please use RFB_PROVIDER=RFB_PROVIDER_..."
+#undef RFB_PROVIDER
+#if RFB_DIRECT
+#define RFB_PROVIDER RFB_PROVIDER_RCSWITCH
+#else
+#define RFB_PROVIDER RFB_PROVIDER_EFM8BB1
+#endif
+#endif
+
+#ifdef RF_LEARN_TIMEOUT
+#warning "RF_LEARN_TIMEOUT is deprecated! Please use RFB_LEARN_TIMEOUT"
+#undef RFB_LEARN_TIMEOUT
+#define RFB_LEARN_TIMEOUT RF_LEARN_TIMEOUT
+#endif
+
+#ifdef RF_SEND_TIMES
+#warning "RF_SEND_TIMES is deprecated! Please use RFB_SEND_REPEATS"
+#undef RFB_SEND_REPEATS
+#define RFB_SEND_REPEATS RF_SEND_TIMES
+#endif
+
+#ifdef RF_SEND_DELAY
+#warning "RF_SEND_DELAY is deprecated! Please use RFB_SEND_DELAY"
+#undef RFB_SEND_DELAY
+#define RFB_SEND_DELAY RF_SEND_DELAY
+#endif
+
+#ifdef RF_RECEIVE_DELAY
+#warning "RF_RECEIVE_DELAY is deprecated! Please use RFB_RECEIVE_DELAY"
+#undef RFB_RECEIVE_DELAY
+#define RFB_RECEIVE_DELAY RF_RECEIVE_DELAY
+#endif
+
+#ifdef RF_SUPPORT
+#warning "RF_SUPPORT is deprecated! Please use RFB_SUPPORT"
+#undef RFB_SUPPORT
+#define RFB_SUPPORT RF_SUPPORT
+#endif

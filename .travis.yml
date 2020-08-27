@@ -5,6 +5,7 @@ python:
 cache:
   directories:
     - ~/.npm
+    - ~/.platformio
 env:
   global:
     - BUILDER_TOTAL_THREADS=4

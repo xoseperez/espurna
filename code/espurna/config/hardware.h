@@ -789,19 +789,23 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-    #define RF_SUPPORT          1
-
-    // Only used when RFB_DIRECT=1
-    #define RFB_RX_PIN          4
-    #define RFB_TX_PIN          5
+    #define RFB_SUPPORT         1
 
     // When using un-modified harware, ESPurna communicates with the secondary
     // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
     // the port and remove UART noise on serial line
-    #if not RFB_DIRECT
+    #ifndef RFB_PROVIDER
+    #define RFB_PROVIDER        RFB_PROVIDER_EFM8BB1
+    #endif
+
+    #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
     #define SERIAL_BAUDRATE         19200
     #define DEBUG_SERIAL_SUPPORT    0
     #endif
+
+    // Only used when RFB_PROVIDER is RCSWITCH
+    #define RFB_RX_PIN          4
+    #define RFB_TX_PIN          5
 
 #elif defined(ITEAD_SONOFF_B1)
 
@@ -1373,9 +1377,9 @@
     #define LIGHT_CH4_PIN       13      // WHITE
 
     // RF
-    #define RF_SUPPORT          1
-    #define RFB_DIRECT          1
-    #define RFB_RX_PIN          4
+    #define RFB_SUPPORT          1
+    #define RFB_PROVIDER         RFB_PROVIDER_RCSWITCH
+    #define RFB_RX_PIN           4
 
 #elif defined(MAGICHOME_ZJ_WFMN_C_11)
 
@@ -1765,6 +1769,9 @@
     #define OTA_ARDUINOOTA_SUPPORT   0
     #define OTA_CLIENT               OTA_CLIENT_NONE
 
+    // Web UI blob & MDNS are pretty large
+    #define WEB_EMBEDDED             0
+    #define MDNS_SERVER_SUPPORT      0
 
 // -----------------------------------------------------------------------------
 // ESPLive
@@ -2683,9 +2690,9 @@
     #endif
     #define DALLAS_PIN          2
 
-    #define RF_SUPPORT          1
-    #define RFB_DIRECT          1
-    #define RFB_RX_PIN          14
+    #define RFB_SUPPORT          1
+    #define RFB_PROVIDER         RFB_PROVIDER_RCSWITCH
+    #define RFB_RX_PIN           14
 
     #ifndef DIGITAL_SUPPORT
     #define DIGITAL_SUPPORT      1
