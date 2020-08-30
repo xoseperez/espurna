@@ -89,16 +89,6 @@ class EventSensor : public BaseSensor {
             _ready = true;
         }
 
-        void tick() {
-            if (!_trigger || !_callback) return;
-            if (!_trigger_flag) return;
-
-            noInterrupts();
-            _callback(MAGNITUDE_EVENT, _trigger_value);
-            _trigger_flag = false;
-            interrupts();
-        }
-
         // Descriptive name of the sensor
         String description() {
             char buffer[20];

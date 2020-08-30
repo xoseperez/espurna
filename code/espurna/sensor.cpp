@@ -226,18 +226,13 @@ struct sensor_magnitude_t {
         return _counts[type];
     }
 
-    sensor_magnitude_t() = default;
+    sensor_magnitude_t() = delete;
 
     sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
     sensor_magnitude_t(const sensor_magnitude_t&) = default;
-
     sensor_magnitude_t(sensor_magnitude_t&& other) {
         *this = other;
         other.filter = nullptr;
-    }
-
-    ~sensor_magnitude_t() {
-        delete filter;
     }
 
     sensor_magnitude_t(unsigned char slot, unsigned char index_local, unsigned char type, sensor::Unit units, BaseSensor* sensor);
@@ -502,40 +497,47 @@ unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 // Private
 // -----------------------------------------------------------------------------
 
-sensor_magnitude_t::sensor_magnitude_t(unsigned char slot, unsigned char index_local, unsigned char type, sensor::Unit units, BaseSensor* sensor) :
-    sensor(sensor),
-    slot(slot),
-    type(type),
-    index_local(index_local),
-    index_global(_counts[type]),
-    units(units)
-{
-    ++_counts[type];
+BaseFilter* _magnitudeCreateFilter(unsigned char type, size_t size) {
+    BaseFilter* filter { nullptr };
 
     switch (type) {
-        case MAGNITUDE_IAQ:
-        case MAGNITUDE_IAQ_STATIC:
-        case MAGNITUDE_ENERGY:
-            filter = new LastFilter();
-            break;
-        case MAGNITUDE_ENERGY_DELTA:
-            filter = new SumFilter();
-            break;
-        case MAGNITUDE_DIGITAL:
-            filter = new MaxFilter();
-            break;
-        // For geiger counting moving average filter is the most appropriate if needed at all.
-        case MAGNITUDE_COUNT:
-        case MAGNITUDE_GEIGER_CPM:
-        case MAGNITUDE_GEIGER_SIEVERT:
-            filter = new MovingAverageFilter();
-            break;
-        default:
-            filter = new MedianFilter();
-            break;
+    case MAGNITUDE_IAQ:
+    case MAGNITUDE_IAQ_STATIC:
+    case MAGNITUDE_ENERGY:
+        filter = new LastFilter();
+        break;
+    case MAGNITUDE_ENERGY_DELTA:
+        filter = new SumFilter();
+        break;
+    case MAGNITUDE_DIGITAL:
+        filter = new MaxFilter();
+        break;
+    // For geiger counting moving average filter is the most appropriate if needed at all.
+    case MAGNITUDE_COUNT:
+    case MAGNITUDE_GEIGER_CPM:
+    case MAGNITUDE_GEIGER_SIEVERT:
+        filter = new MovingAverageFilter();
+        break;
+    default:
+        filter = new MedianFilter();
+        break;
     }
 
-    filter->resize(_sensor_report_every);
+    filter->resize(size);
+
+    return filter;
+}
+
+sensor_magnitude_t::sensor_magnitude_t(unsigned char slot_, unsigned char index_local_, unsigned char type_, sensor::Unit units_, BaseSensor* sensor_) :
+    sensor(sensor_),
+    filter(_magnitudeCreateFilter(type_, _sensor_report_every)),
+    slot(slot_),
+    type(type_),
+    index_local(index_local_),
+    index_global(_counts[type]),
+    units(units_)
+{
+    ++_counts[type];
 }
 
 // Hardcoded decimals for each magnitude
@@ -2176,57 +2178,59 @@ void _sensorLoad() {
 
 }
 
-void _sensorReport(unsigned char index, double value) {
+String _magnitudeTopicIndex(const sensor_magnitude_t& magnitude) {
+    char buffer[32] = {0};
 
-    auto& magnitude = _magnitudes.at(index);
+    String topic { magnitudeTopic(magnitude.type) };
+    if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
+        snprintf(buffer, sizeof(buffer), "%s/%u", topic.c_str(), magnitude.index_global);
+    } else {
+        snprintf(buffer, sizeof(buffer), "%s", topic.c_str());
+    }
 
-    // XXX: ensure that the received 'value' will fit here
-    // dtostrf 2nd arg only controls leading zeroes and the
-    // 3rd is only for the part after the dot
-    char buffer[64];
-    dtostrf(value, 1, magnitude.decimals, buffer);
-
-    #if BROKER_SUPPORT
-        SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.index_global, value, buffer);
-    #endif
-
-    #if MQTT_SUPPORT
-
-        mqttSend(magnitudeTopicIndex(index).c_str(), buffer);
-
-        #if SENSOR_PUBLISH_ADDRESSES
-            char topic[32];
-            snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
-            if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
-                mqttSend(topic, magnitude.index_global, magnitude.sensor->address(magnitude.slot).c_str());
-            } else {
-                mqttSend(topic, magnitude.sensor->address(magnitude.slot).c_str());
-            }
-        #endif // SENSOR_PUBLISH_ADDRESSES
-
-    #endif // MQTT_SUPPORT
-
-    #if THINGSPEAK_SUPPORT
-        tspkEnqueueMeasurement(index, buffer);
-    #endif // THINGSPEAK_SUPPORT
-
-    #if DOMOTICZ_SUPPORT
-        domoticzSendMagnitude(magnitude.type, index, value, buffer);
-    #endif // DOMOTICZ_SUPPORT
-
+    return String(buffer);
 }
 
+void _sensorReport(unsigned char index, const sensor_magnitude_t& magnitude) {
 
-void _sensorCallback(unsigned char i, unsigned char type, double value) {
+    // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
+    //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
+    char buffer[64];
+    dtostrf(magnitude.reported, 1, magnitude.decimals, buffer);
 
-    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
+#if BROKER_SUPPORT
+    SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.index_global, magnitude.reported, buffer);
+#endif
 
-    for (unsigned char k=0; k<_magnitudes.size(); k++) {
-        if ((_sensors[i] == _magnitudes[k].sensor) && (type == _magnitudes[k].type)) {
-            _sensorReport(k, value);
-            return;
-        }
+#if MQTT_SUPPORT
+    {
+        const String topic(_magnitudeTopicIndex(magnitude));
+        mqttSend(topic.c_str(), buffer);
+
+#if SENSOR_PUBLISH_ADDRESSES
+        String address_topic;
+        address_topic.reserve(topic.length() + 1 + strlen(SENSOR_ADDRESS_TOPIC));
+
+        address_topic += F(SENSOR_ADDRESS_TOPIC);
+        address_topic += '/';
+        address_topic += topic;
+
+        mqttSend(address_topic.c_str(), magnitude.sensor->address(magnitude.slot).c_str());
+#endif // SENSOR_PUBLISH_ADDRESSES
+
     }
+#endif // MQTT_SUPPORT
+
+    // TODO: both integrations depend on the absolute index instead of specific type
+    //       so, we still need to pass / know the 'global' index inside of _magnitudes[]
+
+#if THINGSPEAK_SUPPORT
+    tspkEnqueueMeasurement(index, buffer);
+#endif // THINGSPEAK_SUPPORT
+
+#if DOMOTICZ_SUPPORT
+    domoticzSendMagnitude(magnitude.type, index, magnitude.reported, buffer);
+#endif // DOMOTICZ_SUPPORT
 
 }
 
@@ -2234,37 +2238,39 @@ void _sensorInit() {
 
     _sensors_ready = true;
 
-    for (unsigned char i=0; i<_sensors.size(); i++) {
+    for (auto& sensor : _sensors) {
 
         // Do not process an already initialized sensor
-        if (_sensors[i]->ready()) continue;
-        DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
+        if (sensor->ready()) continue;
+        DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s\n"), sensor->description().c_str());
 
         // Force sensor to reload config
-        _sensors[i]->begin();
-        if (!_sensors[i]->ready()) {
-            if (_sensors[i]->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
+        sensor->begin();
+        if (!sensor->ready()) {
+            if (0 != sensor->error()) {
+                DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), sensor->error());
+            }
             _sensors_ready = false;
             break;
         }
 
         // Initialize sensor magnitudes
-        for (unsigned char magnitude_index = 0; magnitude_index < _sensors[i]->count(); ++magnitude_index) {
+        for (unsigned char magnitude_index = 0; magnitude_index < sensor->count(); ++magnitude_index) {
 
-            const auto magnitude_type = _sensors[i]->type(magnitude_index);
-            const auto magnitude_local = _sensors[i]->local(magnitude_type);
+            const auto magnitude_type = sensor->type(magnitude_index);
+            const auto magnitude_local = sensor->local(magnitude_type);
             _magnitudes.emplace_back(
                 magnitude_index,     // id of the magnitude, unique to the sensor
                 magnitude_local,     // index_local, # of the magnitude
                 magnitude_type,      // specific type of the magnitude
                 sensor::Unit::None,  // set up later, in configuration
-                _sensors[i]          // bind the sensor to allow us to reference it later
+                sensor               // bind the sensor to allow us to reference it later
             );
 
-            if (_sensorIsEmon(_sensors[i]) && (MAGNITUDE_ENERGY == magnitude_type)) {
+            if (_sensorIsEmon(sensor) && (MAGNITUDE_ENERGY == magnitude_type)) {
                 const auto index_global = _magnitudes.back().index_global;
-                auto* sensor = static_cast<BaseEmonSensor*>(_sensors[i]);
-                sensor->resetEnergy(magnitude_local, _sensorEnergyTotal(index_global));
+                auto* ptr = static_cast<BaseEmonSensor*>(sensor);
+                ptr->resetEnergy(magnitude_local, _sensorEnergyTotal(index_global));
                 _sensor_save_count.push_back(0);
             }
 
@@ -2275,20 +2281,15 @@ void _sensorInit() {
 
         }
 
-        // Hook callback
-        _sensors[i]->onEvent([i](unsigned char type, double value) {
-            _sensorCallback(i, type, value);
-        });
+        // Custom initializations are based on IDs
 
-        // Custom initializations, based on IDs
-
-        switch (_sensors[i]->getID()) {
+        switch (sensor->getID()) {
         case SENSOR_MICS2710_ID:
         case SENSOR_MICS5525_ID: {
-            auto* sensor = static_cast<BaseAnalogSensor*>(_sensors[i]);
-            sensor->setR0(getSetting("snsR0", sensor->getR0()));
-            sensor->setRS(getSetting("snsRS", sensor->getRS()));
-            sensor->setRL(getSetting("snsRL", sensor->getRL()));
+            auto* ptr = static_cast<BaseAnalogSensor*>(sensor);
+            ptr->setR0(getSetting("snsR0", ptr->getR0()));
+            ptr->setRS(getSetting("snsRS", ptr->getRS()));
+            ptr->setRL(getSetting("snsRL", ptr->getRL()));
             break;
         }
         default:
@@ -2607,16 +2608,10 @@ String magnitudeDescription(unsigned char index) {
 }
 
 String magnitudeTopicIndex(unsigned char index) {
-    char topic[32] = {0};
     if (index < _magnitudes.size()) {
-        auto& magnitude = _magnitudes[index];
-        if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
-            snprintf(topic, sizeof(topic), "%s/%u", magnitudeTopic(magnitude.type).c_str(), magnitude.index_global);
-        } else {
-            snprintf(topic, sizeof(topic), "%s", magnitudeTopic(magnitude.type).c_str());
-        }
+        return _magnitudeTopicIndex(_magnitudes[index]);
     }
-    return String(topic);
+    return String();
 }
 
 // -----------------------------------------------------------------------------
@@ -2730,144 +2725,141 @@ void sensorLoop() {
         _sensorPre();
 
         // Get the first relay state
-        #if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
-            const bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
-        #endif
+#if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
+        const bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
+#endif
 
         // Get readings
-        for (unsigned char i=0; i<_magnitudes.size(); i++) {
+        for (unsigned char magnitude_index = 0; magnitude_index < _magnitudes.size(); ++magnitude_index) {
 
-            auto& magnitude = _magnitudes[i];
+            auto& magnitude = _magnitudes[magnitude_index];
 
-            if (magnitude.sensor->status()) {
+            if (!magnitude.sensor->status()) continue;
 
-                // -------------------------------------------------------------
-                // Instant value
-                // -------------------------------------------------------------
+            // -------------------------------------------------------------
+            // Instant value
+            // -------------------------------------------------------------
 
-                value_raw = magnitude.sensor->value(magnitude.slot);
+            value_raw = magnitude.sensor->value(magnitude.slot);
 
-                // Completely remove spurious values if relay is OFF
-                #if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
-                    switch (magnitude.type) {
-                        case MAGNITUDE_POWER_ACTIVE:
-                        case MAGNITUDE_POWER_REACTIVE:
-                        case MAGNITUDE_POWER_APPARENT:
-                        case MAGNITUDE_POWER_FACTOR:
-                        case MAGNITUDE_CURRENT:
-                        case MAGNITUDE_ENERGY_DELTA:
-                            if (relay_off) {
-                                value_raw = 0.0;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                #endif
-
-                // In addition to that, we also check that value is above a certain threshold
-                if ((!std::isnan(magnitude.zero_threshold)) && ((value_raw < magnitude.zero_threshold))) {
+            // Completely remove spurious values if relay is OFF
+#if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
+            switch (magnitude.type) {
+            case MAGNITUDE_POWER_ACTIVE:
+            case MAGNITUDE_POWER_REACTIVE:
+            case MAGNITUDE_POWER_APPARENT:
+            case MAGNITUDE_POWER_FACTOR:
+            case MAGNITUDE_CURRENT:
+            case MAGNITUDE_ENERGY_DELTA:
+                if (relay_off) {
                     value_raw = 0.0;
                 }
+                break;
+            default:
+                break;
+            }
+#endif
 
-                _magnitudes[i].last = value_raw;
+            // In addition to that, we also check that value is above a certain threshold
+            if ((!std::isnan(magnitude.zero_threshold)) && ((value_raw < magnitude.zero_threshold))) {
+                value_raw = 0.0;
+            }
 
-                // -------------------------------------------------------------
-                // Processing (filters)
-                // -------------------------------------------------------------
+            magnitude.last = value_raw;
 
-                magnitude.filter->add(value_raw);
+            // -------------------------------------------------------------
+            // Processing (filters)
+            // -------------------------------------------------------------
 
-                // Special case for MovingAverageFilter
-                switch (magnitude.type) {
-                    case MAGNITUDE_COUNT:
-                    case MAGNITUDE_GEIGER_CPM:
-                    case MAGNITUDE_GEIGER_SIEVERT:
-                        value_raw = magnitude.filter->result();
-                        break;
-                    default:
-                        break;
+            magnitude.filter->add(value_raw);
+
+            // Special case for MovingAverageFilter
+            switch (magnitude.type) {
+                case MAGNITUDE_COUNT:
+                case MAGNITUDE_GEIGER_CPM:
+                case MAGNITUDE_GEIGER_SIEVERT:
+                    value_raw = magnitude.filter->result();
+                    break;
+                default:
+                    break;
+            }
+
+            // -------------------------------------------------------------
+            // Procesing (units and decimals)
+            // -------------------------------------------------------------
+
+            value_show = _magnitudeProcess(magnitude, value_raw);
+#if BROKER_SUPPORT
+            {
+                char buffer[64];
+                dtostrf(value_show, 1, magnitude.decimals, buffer);
+                SensorReadBroker::Publish(magnitudeTopic(magnitude.type), magnitude.index_global, value_show, buffer);
+            }
+#endif
+
+            // -------------------------------------------------------------
+            // Debug
+            // -------------------------------------------------------------
+
+#if SENSOR_DEBUG
+            {
+                char buffer[64];
+                dtostrf(value_show, 1, magnitude.decimals, buffer);
+                DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
+                    _magnitudeDescription(magnitude).c_str(),
+                    magnitudeTopic(magnitude.type).c_str(),
+                    buffer,
+                    _magnitudeUnits(magnitude).c_str()
+                );
+            }
+#endif
+
+            // -------------------------------------------------------------------
+            // Report when
+            // - report_count overflows after reaching _sensor_report_every
+            // - when magnitude specifies max_change and we greater or equal to it
+            // -------------------------------------------------------------------
+
+            bool report = (0 == report_count);
+
+            if (!std::isnan(magnitude.reported) && (magnitude.max_change > 0)) {
+                report = (std::abs(value_show - magnitude.reported) >= magnitude.max_change);
+            }
+
+            // Special case for energy, save readings to RAM and EEPROM
+            if (MAGNITUDE_ENERGY == magnitude.type) {
+                _magnitudeSaveEnergyTotal(magnitude, report);
+            }
+
+            if (report) {
+                value_filtered = _magnitudeProcess(magnitude, magnitude.filter->result());
+
+                magnitude.filter->reset();
+                if (magnitude.filter->size() != _sensor_report_every) {
+                    magnitude.filter->resize(_sensor_report_every);
                 }
 
-                // -------------------------------------------------------------
-                // Procesing (units and decimals)
-                // -------------------------------------------------------------
-
-                value_show = _magnitudeProcess(magnitude, value_raw);
-                #if BROKER_SUPPORT
-                {
-                    char buffer[64];
-                    dtostrf(value_show, 1, magnitude.decimals, buffer);
-                    SensorReadBroker::Publish(magnitudeTopic(magnitude.type), magnitude.index_global, value_show, buffer);
-                }
-                #endif
-
-                // -------------------------------------------------------------
-                // Debug
-                // -------------------------------------------------------------
-
-                #if SENSOR_DEBUG
-                {
-                    char buffer[64];
-                    dtostrf(value_show, 1, magnitude.decimals, buffer);
-                    DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
-                        _magnitudeDescription(magnitude).c_str(),
-                        magnitudeTopic(magnitude.type).c_str(),
-                        buffer,
-                        _magnitudeUnits(magnitude).c_str()
-                    );
-                }
-                #endif // SENSOR_DEBUG
-
-                // -------------------------------------------------------------------
-                // Report when
-                // - report_count overflows after reaching _sensor_report_every
-                // - when magnitude specifies max_change and we greater or equal to it
-                // -------------------------------------------------------------------
-
-                bool report = (0 == report_count);
-
-                if (magnitude.max_change > 0) {
-                    report = (fabs(value_show - magnitude.reported) >= magnitude.max_change);
+                // Check if there is a minimum change threshold to report
+                if (std::isnan(magnitude.reported) || (std::abs(value_filtered - magnitude.reported) >= magnitude.min_change)) {
+                    magnitude.reported = value_filtered;
+                    _sensorReport(magnitude_index, magnitude);
                 }
 
-                // Special case for energy, save readings to RAM and EEPROM
-                if (MAGNITUDE_ENERGY == magnitude.type) {
-                    _magnitudeSaveEnergyTotal(magnitude, report);
-                }
+            } // if (report_count == 0)
 
-                if (report) {
-
-                    value_filtered = magnitude.filter->result();
-                    value_filtered = _magnitudeProcess(magnitude, value_filtered);
-
-                    magnitude.filter->reset();
-                    if (magnitude.filter->size() != _sensor_report_every) {
-                        magnitude.filter->resize(_sensor_report_every);
-                    }
-
-                    // Check if there is a minimum change threshold to report
-                    if (fabs(value_filtered - magnitude.reported) >= magnitude.min_change) {
-                        _magnitudes[i].reported = value_filtered;
-                        _sensorReport(i, value_filtered);
-                    } // if (fabs(value_filtered - magnitude.reported) >= magnitude.min_change)
-
-                } // if (report_count == 0)
-
-            } // if (magnitude.sensor->status())
-        } // for (unsigned char i=0; i<_magnitudes.size(); i++)
+        }
 
         // Post-read hook, called every reading
         _sensorPost();
 
         // And report data to modules that don't specifically track them
-        #if WEB_SUPPORT
-            wsPost(_sensorWebSocketSendData);
-        #endif
+#if WEB_SUPPORT
+        wsPost(_sensorWebSocketSendData);
+#endif
 
-        #if THINGSPEAK_SUPPORT
-            if (report_count == 0) tspkFlush();
-        #endif
+#if THINGSPEAK_SUPPORT
+        if (report_count == 0) tspkFlush();
+#endif
 
     }
 

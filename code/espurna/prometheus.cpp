@@ -17,6 +17,8 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "sensor.h"
 #include "web.h"
 
+#include <cmath>
+
 void _prometheusRequestHandler(AsyncWebServerRequest* request) {
     static_assert(RELAY_SUPPORT || SENSOR_SUPPORT, "");
 
@@ -35,10 +37,15 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
     #if SENSOR_SUPPORT
         char buffer[64] { 0 };
         for (unsigned char index = 0; index < magnitudeCount(); ++index) {
+            auto value = magnitudeValue(index);
+            if (std::isnan(value.get()) || std::isinf(value.get())) {
+                continue;
+            }
+
             String topic(magnitudeTopicIndex(index));
             topic.replace("/", "");
 
-            magnitudeFormat(magnitudeValue(index), buffer, sizeof(buffer));
+            magnitudeFormat(value, buffer, sizeof(buffer));
             response->printf("%s %s\n", topic.c_str(), buffer);
         }
     #endif

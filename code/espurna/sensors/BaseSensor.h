@@ -12,8 +12,6 @@
 
 #include "../sensor.h"
 
-using TSensorCallback = std::function<void(unsigned char, double)>;
-
 class BaseSensor {
 
     public:
@@ -87,9 +85,6 @@ class BaseSensor {
         // Convert slot # index to a magnitude # index
         virtual unsigned char local(unsigned char slot) { return 0; }
 
-        // Hook for event callback
-        void onEvent(TSensorCallback fn) { _callback = fn; };
-
         // Specify units attached to magnitudes
         virtual sensor::Unit units(unsigned char index) {
             switch (type(index)) {
@@ -145,7 +140,6 @@ class BaseSensor {
 
     protected:
 
-        TSensorCallback _callback = NULL;
         unsigned char _sensor_id = 0x00;
         int _error = 0;
         bool _dirty = true;
