@@ -81,6 +81,12 @@ PROGMEM const char espurna_modules[] =
     #if NTP_SUPPORT
         "NTP "
     #endif
+    #if PROMETHEUS_SUPPORT
+        "METRICS "
+    #endif
+    #if RELAY_SUPPORT
+        "RELAY "
+    #endif
     #if RFM69_SUPPORT
         "RFM69 "
     #endif
