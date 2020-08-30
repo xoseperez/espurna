@@ -375,9 +375,8 @@ double getLocalTemperature() {
   #if SENSOR_SUPPORT
       for (byte i=0; i<magnitudeCount(); i++) {
           if (magnitudeType(i) == MAGNITUDE_TEMPERATURE) {
-              double temp = magnitudeValue(i);
               char tmp_str[16];
-              dtostrf(temp, 1, 1, tmp_str);
+              magnitudeFormat(magnitudeValue(i), tmp_str, sizeof(tmp_str));
               DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalTemperature temp: %s\n"), tmp_str);
               return temp > -0.1 && temp < 0.1 ? DBL_MIN : temp;
           }
@@ -391,9 +390,8 @@ double getLocalHumidity() {
   #if SENSOR_SUPPORT
       for (byte i=0; i<magnitudeCount(); i++) {
           if (magnitudeType(i) == MAGNITUDE_HUMIDITY) {
-              double hum = magnitudeValue(i);
               char tmp_str[16];
-              dtostrf(hum, 1, 0, tmp_str);
+              magnitudeFormat(magnitudeValue(i), tmp_str, sizeof(tmp_str));
               DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalHumidity hum: %s\%\n"), tmp_str);
               return hum > -0.1 && hum < 0.1 ? DBL_MIN : hum;
           }

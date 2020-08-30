@@ -20,6 +20,10 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 void _prometheusRequestHandler(AsyncWebServerRequest* request) {
     static_assert(RELAY_SUPPORT || SENSOR_SUPPORT, "");
 
+    // TODO: Add more stuff?
+    // Note: Response 'stream' backing buffer is customizable. Default is 1460 bytes (see ESPAsyncWebServer.h)
+    //       In case printf overflows, memory of CurrentSize+N{overflow} will be allocated to replace
+    //       the existing buffer. Previous buffer will be copied into the new and destroyed after that.
     AsyncResponseStream *response = request->beginResponseStream("text/plain");
 
     #if RELAY_SUPPORT
@@ -34,8 +38,7 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
             String topic(magnitudeTopicIndex(index));
             topic.replace("/", "");
 
-            dtostrf(magnitudeValue(index), 1, 3, buffer);
-
+            magnitudeFormat(magnitudeValue(index), buffer, sizeof(buffer));
             response->printf("%s %s\n", topic.c_str(), buffer);
         }
     #endif

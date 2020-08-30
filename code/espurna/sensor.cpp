@@ -2566,11 +2566,32 @@ unsigned char magnitudeType(unsigned char index) {
     return MAGNITUDE_NONE;
 }
 
-double magnitudeValue(unsigned char index) {
-    if (index < _magnitudes.size()) {
-        return _sensor_realtime ? _magnitudes[index].last : _magnitudes[index].reported;
+sensor::Value magnitudeValue(unsigned char index) {
+    sensor::Value result;
+
+    if (index >= _magnitudes.size()) {
+        result.last = std::numeric_limits<double>::quiet_NaN(),
+        result.reported = std::numeric_limits<double>::quiet_NaN(),
+        result.decimals = 0u;
+        return result;
     }
-    return DBL_MIN;
+
+    auto& magnitude = _magnitudes[index];
+    result.last = magnitude.last;
+    result.reported = magnitude.reported;
+    result.decimals = magnitude.decimals;
+
+    return result;
+}
+
+void magnitudeFormat(const sensor::Value& value, char* out, size_t) {
+    // TODO: 'size' does not do anything, since dtostrf used here is expected to be 'sane', but
+    //       it does not allow any size arguments besides for digits after the decimal point
+    dtostrf(
+        _sensor_realtime ? value.last : value.reported,
+        1, value.decimals,
+        out
+    );
 }
 
 unsigned char magnitudeIndex(unsigned char index) {
