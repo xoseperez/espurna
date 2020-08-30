@@ -188,14 +188,15 @@ void setup() {
     #endif
 
     // Multiple modules depend on the generic 'API' services
-    #if API_SUPPORT || TERMINAL_WEB_API_SUPPORT
+    #if API_SUPPORT || TERMINAL_WEB_API_SUPPORT || PROMETHEUS_SUPPORT
         apiCommonSetup();
     #endif
+
     #if API_SUPPORT
         apiSetup();
     #endif
 
-    #if WEB_SUPPORT && PROMETHEUS_SUPPORT
+    #if PROMETHEUS_SUPPORT
         prometheusSetup();
     #endif
 
