@@ -46,6 +46,9 @@ struct Api {
 
     Api() = delete;
 
+    // TODO:
+    // - bind to multiple paths, dispatch specific path in the callback
+    // - allow index to be passed through path argument (/{arg1}/{arg2} syntax, for example)
     Api(const String& path_, Type type_, unsigned char arg_, BasicHandler get_, BasicHandler put_ = nullptr) :
         path(path_),
         type(type_),
