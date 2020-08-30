@@ -16,6 +16,9 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include "mqtt.h"
 #include "ws.h"
 
+#include <limits>
+#include <cmath>
+
 const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
 const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
 const char* NAME_TEMP_RANGE_MIN         = "tempRangeMin";
@@ -371,35 +374,28 @@ void updateCounters() {
 }
 
 //------------------------------------------------------------------------------
-double getLocalTemperature() {
-  #if SENSOR_SUPPORT
-      for (byte i=0; i<magnitudeCount(); i++) {
-          if (magnitudeType(i) == MAGNITUDE_TEMPERATURE) {
-              double temp = magnitudeValue(i);
-              char tmp_str[16];
-              dtostrf(temp, 1, 1, tmp_str);
-              DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalTemperature temp: %s\n"), tmp_str);
-              return temp > -0.1 && temp < 0.1 ? DBL_MIN : temp;
-          }
-      }
-  #endif
-  return DBL_MIN;
+double _getLocalValue(const char* description, unsigned char type) {
+#if SENSOR_SUPPORT
+    for (unsigned char index = 0; index < magnitudeCount(); ++index) {
+        if (magnitudeType(index) != type) continue;
+        auto value = magnitudeValue(index);
+
+        char tmp_str[16];
+        magnitudeFormat(value, tmp_str, sizeof(tmp_str));
+        DEBUG_MSG_P(PSTR("[THERMOSTAT] %s: %s\n"), description, tmp_str);
+
+        return value.get();
+    }
+#endif
+  return std::numeric_limits<double>::quiet_NaN();
 }
 
-//------------------------------------------------------------------------------
+double getLocalTemperature() {
+    return _getLocalValue("getLocalTemperature", MAGNITUDE_TEMPERATURE);
+}
+
 double getLocalHumidity() {
-  #if SENSOR_SUPPORT
-      for (byte i=0; i<magnitudeCount(); i++) {
-          if (magnitudeType(i) == MAGNITUDE_HUMIDITY) {
-              double hum = magnitudeValue(i);
-              char tmp_str[16];
-              dtostrf(hum, 1, 0, tmp_str);
-              DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalHumidity hum: %s\%\n"), tmp_str);
-              return hum > -0.1 && hum < 0.1 ? DBL_MIN : hum;
-          }
-      }
-  #endif
-  return DBL_MIN;
+    return _getLocalValue("getLocalHumidity", MAGNITUDE_HUMIDITY);
 }
 
 //------------------------------------------------------------------------------
@@ -428,7 +424,7 @@ void thermostatLoop(void) {
       _thermostat.temperature_source = temp_remote;
       DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by remote temperature\n"));
       checkTempAndAdjustRelay(_remote_temp.temp);
-    } else if (getLocalTemperature() != DBL_MIN) {
+    } else if (!std::isnan(getLocalTemperature())) {
       // we have local temp
       _thermostat.temperature_source = temp_local;
       DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by local temperature\n"));
@@ -602,7 +598,7 @@ void display_local_temp() {
   String local_temp_title = String("Local      t");
   display.drawString(0, 32, local_temp_title);
 
-  String local_temp_vol = String("= ") + (getLocalTemperature() != DBL_MIN ? String(getLocalTemperature(), 1) : String("?")) + "°";
+  String local_temp_vol = String("= ") + (!std::isnan(getLocalTemperature()) ? String(getLocalTemperature(), 1) : String("?")) + "°";
   display.drawString(75, 32, local_temp_vol);
 
   _display_need_refresh = true;
@@ -619,7 +615,7 @@ void display_local_humidity() {
   String local_hum_title = String("Local      h ");
   display.drawString(0, 48, local_hum_title);
 
-  String local_hum_vol = String("= ") + (getLocalHumidity() != DBL_MIN ? String(getLocalHumidity(), 0) : String("?")) + "%";
+  String local_hum_vol = String("= ") + (!std::isnan(getLocalHumidity()) ? String(getLocalHumidity(), 0) : String("?")) + "%";
   display.drawString(75, 48, local_hum_vol);
 
   _display_need_refresh = true;

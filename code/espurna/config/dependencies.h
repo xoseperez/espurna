@@ -209,7 +209,6 @@
 
 //------------------------------------------------------------------------------
 // We should always set MQTT_MAX_PACKET_SIZE
-//
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
 #if not defined(MQTT_MAX_PACKET_SIZE)
@@ -224,4 +223,12 @@
 #warning "BME680_SUPPORT is not available when using Arduino Core 2.3.0 due to memory constraints. Please use Arduino Core 2.6.3+ instead (or set `platform = ${common.platform_latest}` for the latest version)."
 #undef BME680_SUPPORT
 #define BME680_SUPPORT 0
+#endif
+
+//------------------------------------------------------------------------------
+// Prometheus needs web server + request handler API
+
+#if PROMETHEUS_SUPPORT
+#undef WEB_SUPPORT
+#define WEB_SUPPORT 1
 #endif

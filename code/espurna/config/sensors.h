@@ -1244,6 +1244,11 @@
 // MAX6675
 // Enable support by passing MAX6675_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
+
+#ifndef MAX6675_SUPPORT
+#define MAX6675_SUPPORT                              0
+#endif
+
 #ifndef MAX6675_CS_PIN
 #define MAX6675_CS_PIN                               13
 #endif
