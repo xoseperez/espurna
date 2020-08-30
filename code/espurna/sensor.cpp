@@ -227,6 +227,19 @@ struct sensor_magnitude_t {
     }
 
     sensor_magnitude_t() = default;
+
+    sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
+    sensor_magnitude_t(const sensor_magnitude_t&) = default;
+
+    sensor_magnitude_t(sensor_magnitude_t&& other) {
+        *this = other;
+        other.filter = nullptr;
+    }
+
+    ~sensor_magnitude_t() {
+        delete filter;
+    }
+
     sensor_magnitude_t(unsigned char slot, unsigned char index_local, unsigned char type, sensor::Unit units, BaseSensor* sensor);
 
     BaseSensor * sensor { nullptr }; // Sensor object
@@ -2165,7 +2178,7 @@ void _sensorLoad() {
 
 void _sensorReport(unsigned char index, double value) {
 
-    const auto& magnitude = _magnitudes.at(index);
+    auto& magnitude = _magnitudes.at(index);
 
     // XXX: ensure that the received 'value' will fit here
     // dtostrf 2nd arg only controls leading zeroes and the
@@ -2596,7 +2609,7 @@ String magnitudeDescription(unsigned char index) {
 String magnitudeTopicIndex(unsigned char index) {
     char topic[32] = {0};
     if (index < _magnitudes.size()) {
-        sensor_magnitude_t magnitude = _magnitudes[index];
+        auto& magnitude = _magnitudes[index];
         if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
             snprintf(topic, sizeof(topic), "%s/%u", magnitudeTopic(magnitude.type).c_str(), magnitude.index_global);
         } else {
@@ -2724,7 +2737,7 @@ void sensorLoop() {
         // Get readings
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
 
-            sensor_magnitude_t magnitude = _magnitudes[i];
+            auto& magnitude = _magnitudes[i];
 
             if (magnitude.sensor->status()) {
 
