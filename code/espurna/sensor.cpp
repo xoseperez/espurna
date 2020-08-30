@@ -10,9 +10,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SENSOR_SUPPORT
 
-#include <vector>
-#include <float.h>
-
 #include "api.h"
 #include "broker.h"
 #include "domoticz.h"
@@ -24,6 +21,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "thingspeak.h"
 #include "rtcmem.h"
 #include "ws.h"
+
+#include <cfloat>
+#include <cmath>
+#include <limits>
+#include <vector>
 
 //--------------------------------------------------------------------------------
 
@@ -215,6 +217,7 @@ struct sensor_magnitude_t {
 
     private:
 
+    constexpr static double _unset = std::numeric_limits<double>::quiet_NaN();
     static unsigned char _counts[MAGNITUDE_MAX];
 
     public:
@@ -223,27 +226,28 @@ struct sensor_magnitude_t {
         return _counts[type];
     }
 
-    sensor_magnitude_t();
+    sensor_magnitude_t() = default;
     sensor_magnitude_t(unsigned char slot, unsigned char index_local, unsigned char type, sensor::Unit units, BaseSensor* sensor);
 
-    BaseSensor * sensor;        // Sensor object
-    BaseFilter * filter;        // Filter object
+    BaseSensor * sensor { nullptr }; // Sensor object
+    BaseFilter * filter { nullptr }; // Filter object
 
-    unsigned char slot;         // Sensor slot # taken by the magnitude, used to access the measurement
-    unsigned char type;         // Type of measurement, returned by the BaseSensor::type(slot)
+    unsigned char slot { 0u }; // Sensor slot # taken by the magnitude, used to access the measurement
+    unsigned char type { MAGNITUDE_NONE }; // Type of measurement, returned by the BaseSensor::type(slot)
 
-    unsigned char index_local;  // N'th magnitude of it's type, local to the sensor
-    unsigned char index_global; // ... and across all of the active sensors
+    unsigned char index_local { 0u };  // N'th magnitude of it's type, local to the sensor
+    unsigned char index_global { 0u }; // ... and across all of the active sensors
 
-    sensor::Unit units;         // Units of measurement
-    unsigned char decimals;     // Number of decimals in textual representation
+    sensor::Unit units { sensor::Unit::None }; // Units of measurement
+    unsigned char decimals { 0u }; // Number of decimals in textual representation
 
-    double last;                // Last raw value from sensor (unfiltered)
-    double reported;            // Last reported value
-    double min_change;          // Minimum value change to report
-    double max_change;          // Maximum value change to report
-    double correction;          // Value correction (applied when processing)
-    double zero_threshold;      // Reset value to zero when below threshold (applied when reading)
+    double last { _unset };     // Last raw value from sensor (unfiltered)
+    double reported { _unset }; // Last reported value
+    double min_change { 0.0 };  // Minimum value change to report
+    double max_change { 0.0 };  // Maximum value change to report
+    double correction { 0.0 };  // Value correction (applied when processing)
+
+    double zero_threshold { _unset }; // Reset value to zero when below threshold (applied when reading)
 
 };
 
@@ -485,36 +489,13 @@ unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 // Private
 // -----------------------------------------------------------------------------
 
-sensor_magnitude_t::sensor_magnitude_t() :
-    sensor(nullptr),
-    filter(nullptr),
-    slot(0),
-    type(0),
-    index_local(0),
-    index_global(0),
-    units(sensor::Unit::None),
-    decimals(0),
-    last(0.0),
-    reported(0.0),
-    min_change(0.0),
-    max_change(0.0),
-    correction(0.0)
-{}
-
 sensor_magnitude_t::sensor_magnitude_t(unsigned char slot, unsigned char index_local, unsigned char type, sensor::Unit units, BaseSensor* sensor) :
     sensor(sensor),
-    filter(nullptr),
     slot(slot),
     type(type),
     index_local(index_local),
     index_global(_counts[type]),
-    units(units),
-    decimals(0),
-    last(0.0),
-    reported(0.0),
-    min_change(0.0),
-    max_change(0.0),
-    correction(0.0)
+    units(units)
 {
     ++_counts[type];
 
@@ -2564,6 +2545,10 @@ unsigned char magnitudeType(unsigned char index) {
         return _magnitudes[index].type;
     }
     return MAGNITUDE_NONE;
+}
+
+double sensor::Value::get() {
+    return _sensor_realtime ? last : reported;
 }
 
 sensor::Value magnitudeValue(unsigned char index) {

@@ -130,6 +130,8 @@ struct Energy {
 struct Value {
     constexpr static size_t BufferSize { 33u };
 
+    double get();
+
     double last;
     double reported;
     unsigned char decimals;
