@@ -326,6 +326,12 @@ void _rfbSendImpl(const RfbMessage& message);
 
 #if WEB_SUPPORT
 
+void _rfbWebSocketOnVisible(JsonObject& root) {
+    root["rfbVisible"] = 1;
+}
+
+#if RELAY_SUPPORT
+
 void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned char size) {
     JsonObject& rfb = root.createNestedObject("rfb");
     rfb["size"] = size;
@@ -340,32 +346,34 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
     }
 }
 
-void _rfbWebSocketOnVisible(JsonObject& root) {
-    root["rfbVisible"] = 1;
+void _rfbWebSocketOnData(JsonObject& root) {
+    _rfbWebSocketSendCodeArray(root, 0, relayCount());
 }
+
+#endif // RELAY_SUPPORT
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_REPEATS);
+#if RELAY_SUPPORT
     root["rfbCount"] = relayCount();
-    #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-        root["rfbdirectVisible"] = 1;
-        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
-        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
-    #endif
+#endif
+#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+    root["rfbdirectVisible"] = 1;
+    root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
+    root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
+#endif
 }
 
 void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+#if RELAY_SUPPORT
     if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
     if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+#endif
 }
 
 bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "rfb", 3) == 0);
-}
-
-void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, relayCount());
 }
 
 #endif // WEB_SUPPORT
@@ -787,6 +795,40 @@ size_t _rfbModemPack(uint8_t (&out)[RfbMessage::BufferSize], RfbMessage::code_ty
     return index;
 }
 
+#if RELAY_SUPPORT
+
+void _rfbLearnStartFromPayload(const char* payload) {
+    // The payload must be the `relayID,mode` (where mode is either 0 or 1)
+    const char* sep = strchr(payload, ',');
+    if (nullptr == sep) {
+        return;
+    }
+
+    // ref. RelaysMax, we only have up to 2 digits
+    char relay[3] {0, 0, 0};
+    if ((sep - payload) > 2) {
+        return;
+    }
+
+    std::copy(payload, sep, relay);
+
+    char *endptr = nullptr;
+    const auto id = strtoul(relay, &endptr, 10);
+    if (endptr == &relay[0] || endptr[0] != '\0') {
+        return;
+    }
+
+    if (id >= relayCount()) {
+        DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
+        return;
+    }
+
+    ++sep;
+    if ((*sep == '0') || (*sep == '1')) {
+        rfbLearn(id, (*sep != '0'));
+    }
+}
+
 void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
     if (millis() - learn->ts > RFB_LEARN_TIMEOUT) {
         DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - learn->ts);
@@ -796,6 +838,8 @@ void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer)
 
     _rfbLearnFromString(learn, buffer);
 }
+
+#endif // RELAY_SUPPORT
 
 void _rfbReceiveImpl() {
 
@@ -912,38 +956,6 @@ void _rfbSendFromPayload(const char * payload) {
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
     _rfbEnqueue(payload, len, repeats);
 
-}
-
-void _rfbLearnStartFromPayload(const char* payload) {
-    // The payload must be the `relayID,mode` (where mode is either 0 or 1)
-    const char* sep = strchr(payload, ',');
-    if (nullptr == sep) {
-        return;
-    }
-
-    // ref. RelaysMax, we only have up to 2 digits
-    char relay[3] {0, 0, 0};
-    if ((sep - payload) > 2) {
-        return;
-    }
-
-    std::copy(payload, sep, relay);
-
-    char *endptr = nullptr;
-    const auto id = strtoul(relay, &endptr, 10);
-    if (endptr == &relay[0] || endptr[0] != '\0') {
-        return;
-    }
-
-    if (id >= relayCount()) {
-        DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
-        return;
-    }
-
-    ++sep;
-    if ((*sep == '0') || (*sep == '1')) {
-        rfbLearn(id, (*sep != '0'));
-    }
 }
 
 #if MQTT_SUPPORT
@@ -1131,6 +1143,8 @@ String rfbRetrieve(unsigned char id, bool status) {
     return getSetting({ status ? F("rfbON") : F("rfbOFF"), id });
 }
 
+#if RELAY_SUPPORT
+
 void rfbStatus(unsigned char id, bool status) {
     // TODO: This is a left-over from the old implementation. Right now we set this lock when relay handler
     //       is called within the receiver, while this is called from either relayStatus or relay loop calling
@@ -1166,11 +1180,13 @@ void rfbForget(unsigned char id, bool status) {
 
 }
 
+#endif // RELAY_SUPPORT
+
 // -----------------------------------------------------------------------------
 // SETUP & LOOP
 // -----------------------------------------------------------------------------
 
-#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+#if RELAY_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_RCSWITCH)
 
 // TODO: remove this in 1.16.0
 
@@ -1223,7 +1239,9 @@ void rfbSetup() {
 
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
+#if RELAY_SUPPORT
     _rfbSettingsMigrate(migrateVersion());
+#endif
 
     {
         auto rx = getSetting("rfbRX", RFB_RX_PIN);
@@ -1262,10 +1280,12 @@ void rfbSetup() {
 
 #if WEB_SUPPORT
     wsRegister()
-        .onVisible(_rfbWebSocketOnVisible)
-        .onConnected(_rfbWebSocketOnConnected)
+#if RELAY_SUPPORT
         .onData(_rfbWebSocketOnData)
         .onAction(_rfbWebSocketOnAction)
+#endif
+        .onConnected(_rfbWebSocketOnConnected)
+        .onVisible(_rfbWebSocketOnVisible)
         .onKeyCheck(_rfbWebSocketOnKeyCheck);
 #endif
 

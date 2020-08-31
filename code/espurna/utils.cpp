@@ -378,8 +378,10 @@ void heartbeat() {
             if (hb_cfg & Heartbeat::Freeheap)
                 mqttSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
+            #if RELAY_SUPPORT
             if (hb_cfg & Heartbeat::Relay)
                 relayMQTT();
+            #endif
 
             #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
                 if (hb_cfg & Heartbeat::Light)
