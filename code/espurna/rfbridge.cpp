@@ -514,6 +514,48 @@ bool _rfbRelayHandler(const char* buffer, bool locked = false) {
     return result;
 }
 
+void _rfbLearnStartFromPayload(const char* payload) {
+    // The payload must be the `relayID,mode` (where mode is either 0 or 1)
+    const char* sep = strchr(payload, ',');
+    if (nullptr == sep) {
+        return;
+    }
+
+    // ref. RelaysMax, we only have up to 2 digits
+    char relay[3] {0, 0, 0};
+    if ((sep - payload) > 2) {
+        return;
+    }
+
+    std::copy(payload, sep, relay);
+
+    char *endptr = nullptr;
+    const auto id = strtoul(relay, &endptr, 10);
+    if (endptr == &relay[0] || endptr[0] != '\0') {
+        return;
+    }
+
+    if (id >= relayCount()) {
+        DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
+        return;
+    }
+
+    ++sep;
+    if ((*sep == '0') || (*sep == '1')) {
+        rfbLearn(id, (*sep != '0'));
+    }
+}
+
+void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
+    if (millis() - learn->ts > RFB_LEARN_TIMEOUT) {
+        DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - learn->ts);
+        learn.reset(nullptr);
+        return;
+    }
+
+    _rfbLearnFromString(learn, buffer);
+}
+
 #endif // RELAY_SUPPORT
 
 // -----------------------------------------------------------------------------
@@ -794,52 +836,6 @@ size_t _rfbModemPack(uint8_t (&out)[RfbMessage::BufferSize], RfbMessage::code_ty
 
     return index;
 }
-
-#if RELAY_SUPPORT
-
-void _rfbLearnStartFromPayload(const char* payload) {
-    // The payload must be the `relayID,mode` (where mode is either 0 or 1)
-    const char* sep = strchr(payload, ',');
-    if (nullptr == sep) {
-        return;
-    }
-
-    // ref. RelaysMax, we only have up to 2 digits
-    char relay[3] {0, 0, 0};
-    if ((sep - payload) > 2) {
-        return;
-    }
-
-    std::copy(payload, sep, relay);
-
-    char *endptr = nullptr;
-    const auto id = strtoul(relay, &endptr, 10);
-    if (endptr == &relay[0] || endptr[0] != '\0') {
-        return;
-    }
-
-    if (id >= relayCount()) {
-        DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
-        return;
-    }
-
-    ++sep;
-    if ((*sep == '0') || (*sep == '1')) {
-        rfbLearn(id, (*sep != '0'));
-    }
-}
-
-void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
-    if (millis() - learn->ts > RFB_LEARN_TIMEOUT) {
-        DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - learn->ts);
-        learn.reset(nullptr);
-        return;
-    }
-
-    _rfbLearnFromString(learn, buffer);
-}
-
-#endif // RELAY_SUPPORT
 
 void _rfbReceiveImpl() {
 
