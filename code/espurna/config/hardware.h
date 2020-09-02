@@ -4867,6 +4867,22 @@
     #define LED1_PIN_INVERSE        1
 
 // -----------------------------------------------------------------------------
+// Zhilde ZLD-64EU-W
+// -----------------------------------------------------------------------------
+
+#elif defined(ZHILDE_ZLD_64EU_W)
+
+    // Info
+    #define MANUFACTURER            "ZHILDE"
+    #define DEVICE                  "ZLD_64EU_W"
+    #define BUTTON1_PIN             0
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS           BUTTON_MODE_NONE
+    #define BUTTON1_RELAY           3
+    #define RELAY3_PIN              14
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
 
 #else
 
