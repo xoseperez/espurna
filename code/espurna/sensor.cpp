@@ -227,12 +227,16 @@ struct sensor_magnitude_t {
     }
 
     sensor_magnitude_t() = delete;
-
     sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
-    sensor_magnitude_t(const sensor_magnitude_t&) = default;
-    sensor_magnitude_t(sensor_magnitude_t&& other) {
+
+    sensor_magnitude_t(const sensor_magnitude_t&) = delete;
+    sensor_magnitude_t(sensor_magnitude_t&& other) noexcept {
         *this = other;
         other.filter = nullptr;
+    }
+
+    ~sensor_magnitude_t() {
+        delete filter;
     }
 
     sensor_magnitude_t(unsigned char slot, unsigned char index_local, unsigned char type, sensor::Unit units, BaseSensor* sensor);
@@ -258,6 +262,16 @@ struct sensor_magnitude_t {
     double zero_threshold { _unset }; // Reset value to zero when below threshold (applied when reading)
 
 };
+
+static_assert(
+    std::is_nothrow_move_constructible<sensor_magnitude_t>::value,
+    "std::vector<sensor_magnitude_t> should be able to work with resize()"
+);
+
+static_assert(
+    !std::is_copy_constructible<sensor_magnitude_t>::value,
+    "std::vector<sensor_magnitude_t> should only use move ctor"
+);
 
 unsigned char sensor_magnitude_t::_counts[MAGNITUDE_MAX] = {0};
 
