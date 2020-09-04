@@ -167,9 +167,11 @@ bool _apiDispatchRequest(const String& url, AsyncWebServerRequest* request) {
                 break;
             }
             auto value = request->getParam("value", request->method() == HTTP_PUT)->value();
-            //memcpy(buffer.data, value.c_str(), value.length());
-            std::copy(value.c_str(), value.c_str() + value.length(), buffer.data);
-            match.api->get.basic(*match.api, buffer);
+            if (buffer.size < (value.length() + 1ul)) {
+                break;
+            }
+            std::copy(value.c_str(), value.c_str() + value.length() + 1, buffer.data);
+            match.api->put.basic(*match.api, buffer);
             buffer.erase();
         }
 
