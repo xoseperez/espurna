@@ -2758,6 +2758,32 @@
     #define LED1_PIN_INVERSE        1
 
 // -----------------------------------------------------------------------------
+// Zhilde ZLD-64EU-W
+// -----------------------------------------------------------------------------
+
+#elif defined(ZHILDE_64EU_W)
+
+    // Info
+    #define MANUFACTURER            "ZHILDE"
+    #define DEVICE                  "64EU_W"
+
+    // Based on https://templates.blakadder.com/ZLD64-EU-W.html ,
+    // This product uses GPIO1 for LED and 3 for the button, so hardware serial should be disabled...
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    #define BUTTON1_PIN             3
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS           BUTTON_ACTION_NONE
+    #define BUTTON1_RELAY           3
+
+    #define RELAY1_PIN              5
+    #define RELAY2_PIN              4
+    #define RELAY3_PIN              14
+
+    #define LED1_PIN                1
+    #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
 // Allnet 4duino ESP8266-UP-Relais
 // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
 // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
@@ -4865,24 +4891,6 @@
     // LEDs
     #define LED1_PIN                2
     #define LED1_PIN_INVERSE        1
-
-// -----------------------------------------------------------------------------
-// Zhilde ZLD-64EU-W
-// -----------------------------------------------------------------------------
-
-#elif defined(ZHILDE_ZLD_64EU_W)
-
-    // Info
-    #define MANUFACTURER            "ZHILDE"
-    #define DEVICE                  "ZLD_64EU_W"
-    #define BUTTON1_PIN             0
-    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_PRESS           BUTTON_MODE_NONE
-    #define BUTTON1_RELAY           3
-    #define RELAY3_PIN              14
-    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
-    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
-    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
 
 #else
 
