@@ -164,9 +164,9 @@ function validateFormHostname(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
     if ("true" !== hostname.attr("hasChanged")) {
