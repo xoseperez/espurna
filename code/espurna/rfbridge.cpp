@@ -35,13 +35,9 @@ unsigned char _rfb_repeats = RFB_SEND_REPEATS;
 
 #include <RCSwitch.h>
 RCSwitch * _rfb_modem;
-bool _rfb_receive { false };
-bool _rfb_transmit { false };
 
-#else
-
-constexpr bool _rfb_receive { true };
-constexpr bool _rfb_transmit { true };
+int _rfb_receiver { GPIO_NONE };
+int _rfb_transmitter { GPIO_NONE };
 
 #endif
 
@@ -565,7 +561,6 @@ void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer)
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
 
 void _rfbEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char repeats = 1u) {
-    if (!_rfb_transmit) return;
     _rfb_message_queue.push_back(RfbMessage(code, repeats));
 }
 
@@ -757,7 +752,7 @@ template <>
 }
 
 void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
-    if (!_rfb_transmit) return;
+    if (GPIO_NONE == _rfb_transmitter) return;
     _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
 }
 
@@ -785,7 +780,9 @@ void _rfbLearnImpl() {
 
 void _rfbSendImpl(const RfbMessage& message) {
 
-    if (!_rfb_transmit) return;
+    if (GPIO_NONE == _rfb_transmitter) return;
+
+    _rfb_modem->disableReceive();
 
     // TODO: note that this seems to be setting global setting
     //       if code for some reason forgets this, we end up with the previous value
@@ -798,6 +795,8 @@ void _rfbSendImpl(const RfbMessage& message) {
 
     _rfb_modem->send(message.code, message.bits);
     _rfb_modem->resetAvailable();
+
+    _rfb_modem->enableReceive((GPIO_NONE == _rfb_receiver) ? -1 : _rfb_receiver);
 
 }
 
@@ -839,7 +838,7 @@ size_t _rfbModemPack(uint8_t (&out)[RfbMessage::BufferSize], RfbMessage::code_ty
 
 void _rfbReceiveImpl() {
 
-    if (!_rfb_receive) return;
+    if (GPIO_NONE == _rfb_receiver) return;
 
     // TODO: rc-switch isr handler sets 4 variables at the same time and never checks their existence before overwriting them
     //       thus, we can't *really* trust that all 4 are from the same reading :/
@@ -899,7 +898,6 @@ void _rfbReceiveImpl() {
 
 void _rfbSendQueued() {
 
-    if (!_rfb_transmit) return;
     if (_rfb_message_queue.empty()) return;
 
     static unsigned long last = 0;
@@ -1240,27 +1238,27 @@ void rfbSetup() {
 #endif
 
     {
-        auto rx = getSetting("rfbRX", RFB_RX_PIN);
-        auto tx = getSetting("rfbTX", RFB_TX_PIN);
+        _rfb_receiver = getSetting("rfbRX", RFB_RX_PIN);
+        _rfb_transmitter = getSetting("rfbTX", RFB_TX_PIN);
 
         // TODO: tag gpioGetLock with a NAME string, skip log here
-        _rfb_receive = gpioValid(rx);
-        _rfb_transmit = gpioValid(tx);
-        if (!_rfb_transmit && !_rfb_receive) {
+        auto receive = gpioValid(rx);
+        auto transmit = gpioValid(tx);
+        if (!receive && !transmit) {
             DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
             return;
         }
 
         _rfb_modem = new RCSwitch();
-        if (_rfb_receive) {
-            _rfb_modem->enableReceive(rx);
-            DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
+        if (receive) {
+            _rfb_modem->enableReceive(_rfb_receiver);
+            DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %d\n"), _rfb_receiver);
         }
-        if (_rfb_transmit) {
-            auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
-            _rfb_modem->enableTransmit(tx);
-            _rfb_modem->setRepeatTransmit(transmit);
-            DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
+        if (transmit) {
+            auto repeats = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
+            _rfb_modem->enableTransmit(_rfb_transmitter);
+            _rfb_modem->setRepeatTransmit(repeats);
+            DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %d\n"), _rfb_transmitter);
         }
     }
 
