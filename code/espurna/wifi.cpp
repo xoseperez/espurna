@@ -757,6 +757,7 @@ void wifiSetup() {
     // Backwards compat, we need to specify namespace
     moveSetting("apmode", "wifiApMode");
 
+    jw.begin();
     _wifiConfigure();
 
     // Note that maximum amount of stations is set by `WiFi.softAP(...)` call, but justwifi handles that.
