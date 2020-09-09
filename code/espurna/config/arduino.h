@@ -177,8 +177,8 @@
 //#define YJZK_SWITCH_1CH
 //#define YJZK_SWITCH_2CH
 //#define YJZK_SWITCH_3CH
-//#define ZHILDE_EU44_W
-//#define ZHILDE_EU64_W
+//#define ZHILDE_44EU_W
+//#define ZHILDE_64EU_W
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
