@@ -39,6 +39,24 @@ RCSwitch * _rfb_modem;
 int _rfb_receiver { GPIO_NONE };
 int _rfb_transmitter { GPIO_NONE };
 
+bool _rfbCanReceive() {
+    return (GPIO_NONE != _rfb_receiver);
+}
+
+bool _rfbCanTransmit() {
+    return (GPIO_NONE != _rfb_transmitter);
+}
+
+#else
+
+constexpr bool _rfbCanReceive() {
+    return true;
+}
+
+constexpr bool _rfbCanTransmit() {
+    return true;
+}
+
 #endif
 
 // -----------------------------------------------------------------------------
@@ -752,7 +770,7 @@ template <>
 }
 
 void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
-    if (GPIO_NONE == _rfb_transmitter) return;
+    if (!_rfbCanTransmit()) return;
     _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
 }
 
@@ -780,7 +798,7 @@ void _rfbLearnImpl() {
 
 void _rfbSendImpl(const RfbMessage& message) {
 
-    if (GPIO_NONE == _rfb_transmitter) return;
+    if (!_rfbCanTransmit()) return;
 
     _rfb_modem->disableReceive();
 
@@ -796,7 +814,9 @@ void _rfbSendImpl(const RfbMessage& message) {
     _rfb_modem->send(message.code, message.bits);
     _rfb_modem->resetAvailable();
 
-    _rfb_modem->enableReceive((GPIO_NONE == _rfb_receiver) ? -1 : _rfb_receiver);
+    if (_rfbCanReceive()) {
+        _rfb_modem->enableReceive(_rfb_receiver);
+    }
 
 }
 
@@ -838,7 +858,7 @@ size_t _rfbModemPack(uint8_t (&out)[RfbMessage::BufferSize], RfbMessage::code_ty
 
 void _rfbReceiveImpl() {
 
-    if (GPIO_NONE == _rfb_receiver) return;
+    if (!_rfbCanReceive()) return;
 
     // TODO: rc-switch isr handler sets 4 variables at the same time and never checks their existence before overwriting them
     //       thus, we can't *really* trust that all 4 are from the same reading :/
@@ -965,7 +985,8 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
         mqttSubscribe(MQTT_TOPIC_RFRAW);
 #endif
-        if (_rfb_transmit) {
+
+        if (_rfbCanTransmit()) {
             mqttSubscribe(MQTT_TOPIC_RFOUT);
         }
 
@@ -1242,19 +1263,19 @@ void rfbSetup() {
         _rfb_transmitter = getSetting("rfbTX", RFB_TX_PIN);
 
         // TODO: tag gpioGetLock with a NAME string, skip log here
-        auto receive = gpioValid(_rfb_receiver);
-        auto transmit = gpioValid(_rfb_transmitter);
-        if (!receive && !transmit) {
+        auto can_receive = gpioValid(_rfb_receiver);
+        auto can_ = gpioValid(_rfb_transmitter);
+        if (!can_receive && !can_transmit) {
             DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
             return;
         }
 
         _rfb_modem = new RCSwitch();
-        if (receive) {
+        if (can_receive) {
             _rfb_modem->enableReceive(_rfb_receiver);
             DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %d\n"), _rfb_receiver);
         }
-        if (transmit) {
+        if (can_transmit) {
             auto repeats = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
             _rfb_modem->enableTransmit(_rfb_transmitter);
             _rfb_modem->setRepeatTransmit(repeats);
