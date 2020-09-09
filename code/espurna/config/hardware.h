@@ -2723,15 +2723,15 @@
 
 
 // -----------------------------------------------------------------------------
-// Zhilde ZLD-EU44-W
+// Zhilde ZLD-44EU-W
 // http://www.zhilde.com/product/60705150109-805652505/EU_WiFi_Surge_Protector_Extension_Socket_4_Outlets_works_with_Amazon_Echo_Smart_Power_Strip.html
 // -----------------------------------------------------------------------------
 
-#elif defined(ZHILDE_EU44_W)
+#elif defined(ZHILDE_44EU_W)
 
     // Info
     #define MANUFACTURER            "ZHILDE"
-    #define DEVICE                  "EU44_W"
+    #define DEVICE                  "44EU_W"
 
     // Based on the reporter, this product uses GPIO1 and 3 for the button
     // and onboard LED, so hardware serial should be disabled...

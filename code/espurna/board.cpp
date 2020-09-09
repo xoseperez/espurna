@@ -568,7 +568,7 @@ int getBoardId() {
         return 96;
     #elif defined(HELTEC_TOUCHRELAY)
         return 97;
-    #elif defined(ZHILDE_EU44_W)
+    #elif defined(ZHILDE_44EU_W)
         return 98;
     #elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
         return 99;
