@@ -430,7 +430,7 @@ void _rpnRfbSetup() {
         for (auto& code : _rfb_codes) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("\"%s\" proto=%u count=%u last=%u"),
+                PSTR("proto=%u raw=\"%s\" count=%u last=%u"),
                 code.protocol,
                 code.raw.c_str(),
                 code.count,
