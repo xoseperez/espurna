@@ -818,6 +818,9 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
         return 0;
     }
 
+    // We can only return small values
+    constexpr uint8_t InvalidByte { 255u };
+
     auto char2byte = [](char ch) -> uint8_t {
         if ((ch >= '0') && (ch <= '9')) {
             return (ch - '0');
@@ -826,7 +829,7 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
         } else if ((ch >= 'A') && (ch <= 'F')) {
             return 10 + (ch - 'A');
         } else {
-            return 0;
+            return InvalidByte;
         }
     };
 
@@ -836,7 +839,7 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
     while (index < in_size) {
         const uint8_t lhs = char2byte(in[index]) << 4;
         const uint8_t rhs = char2byte(in[index + 1]);
-        if (lhs || rhs) {
+        if ((InvalidByte != lhs) && (InvalidByte != rhs)) {
             out[out_index++] = lhs | rhs;
             index += 2;
             continue;
