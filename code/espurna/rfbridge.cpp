@@ -1264,7 +1264,7 @@ void rfbSetup() {
 
         // TODO: tag gpioGetLock with a NAME string, skip log here
         auto can_receive = gpioValid(_rfb_receiver);
-        auto can_ = gpioValid(_rfb_transmitter);
+        auto can_transmit = gpioValid(_rfb_transmitter);
         if (!can_receive && !can_transmit) {
             DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
             return;
