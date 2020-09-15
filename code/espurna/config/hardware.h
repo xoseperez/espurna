@@ -4850,7 +4850,7 @@
 // -----------------------------------------------------------------------------
 // Prodino WIFI
 // https://kmpelectronics.eu/products/prodino-wifi-v1/
-// -------------------------------------
+// -----------------------------------------------------------------------------
 
 #elif defined(PRODINO_WIFI)
 
@@ -4891,6 +4891,27 @@
     // LEDs
     #define LED1_PIN                2
     #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
+// Fcmila E27 7W RGB+W Bulb
+// https://www.aliexpress.com/item/32925895199.html
+// -----------------------------------------------------------------------------
+
+#elif defined(FCMILA_E27_7W_RGBW)
+
+    // Info
+    #define MANUFACTURER        "FCMILA"
+    #define DEVICE              "E27_7W_RGBW"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       5       // WHITE
 
 #else
 

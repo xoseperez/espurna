@@ -179,6 +179,7 @@
 //#define YJZK_SWITCH_3CH
 //#define ZHILDE_44EU_W
 //#define ZHILDE_64EU_W
+//#define FCMILA_E27_7W_RGBW
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
