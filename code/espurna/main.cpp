@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "curtain_kingart.h"
 #include "debug.h"
 #include "domoticz.h"
+#include "e131.h"
 #include "encoder.h"
 #include "homeassistant.h"
 #include "i2c.h"
@@ -301,7 +302,10 @@ void setup() {
     #if KINGART_CURTAIN_SUPPORT
         kingartCurtainSetup();
     #endif
-
+    #if E131_SUPPORT
+        e131Setup();
+    #endif
+    
     // 3rd party code hook
     #if USE_EXTRA
         extraSetup();

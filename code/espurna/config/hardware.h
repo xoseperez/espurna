@@ -60,6 +60,7 @@
     #define DEBUG_TELNET_SUPPORT    0
     #define DEBUG_WEB_SUPPORT       0
     #define DOMOTICZ_SUPPORT        0
+    #define E131_SUPPORT            0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
@@ -96,6 +97,7 @@
     #define DEBUG_SERIAL_SUPPORT    0
     //#define DEBUG_TELNET_SUPPORT    0
     //#define DEBUG_WEB_SUPPORT       0
+    #define E131_SUPPORT            0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
