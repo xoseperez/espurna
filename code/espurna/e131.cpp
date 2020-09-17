@@ -15,11 +15,13 @@ Copyright (C) 2020 by Adam Honse <calcprogrammer1 at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #include "light.h"
+#include "wifi.h"
 #include "web.h"
 #include "ws.h"
 
 #include <ESPAsyncE131.h>
 
+bool         _e131_wifi_connected  = false;
 bool         _e131_enabled         = false;
 bool         _e131_multicast       = false;
 unsigned int _e131_universe        = 1;
@@ -73,12 +75,25 @@ void _e131WebSocketOnConnected(JsonObject& root) {
 
 #endif // WEB_SUPPORT
 
+void _e131WifiCallback(justwifi_messages_t code, char * parameter) {
+
+    if (MESSAGE_CONNECTED == code) {
+        _e131_wifi_connected = true;
+        return;
+    }
+
+    if (MESSAGE_DISCONNECTED == code) {
+        _e131_wifi_connected = false;
+        return;
+    }
+}
+
 void _e131Loop() {
-    if (_e131_enabled != 1) return;
+    if (!_e131_enabled) return;
 
     //* Initializing multicast mode must be done when the WiFi is connected, so
     //* set a flag to track when WiFi is connected and disconnected
-    if (WiFi.status() == WL_CONNECTED) {
+    if (_e131_wifi_connected) {
         if(_e131_initialized == 0) {
             if(_e131_multicast) {
                 e131.begin(E131_MULTICAST, _e131_universe, 1);
@@ -152,6 +167,8 @@ void e131Setup() {
             .onData(_e131WebSocketOnData)
             .onKeyCheck(_e131WebSocketOnKeyCheck);
     #endif
+
+    jw.subscribe(_e131WifiCallback);
 
     DEBUG_MSG_P(PSTR("[E131] E131 setup code finished \n"));
 }
