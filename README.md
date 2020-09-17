@@ -59,6 +59,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Supports NetBIOS, LLMNR and Netbios (when built with Arduino Core >= 2.4.0) and SSDP (experimental)
 * Switch management
     * Support for **push buttons** and **toggle switches**
+    * Support for **digital** and [**analog**](https://en.wikipedia.org/wiki/Resistor_ladder) buttons
     * Configurable **status on boot** per switch (always ON, always OFF, same as before or toggle)
     * Support for **pulse mode** per switch (normally ON or normally OFF) with configurable time
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)

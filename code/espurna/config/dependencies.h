@@ -187,8 +187,8 @@
 //------------------------------------------------------------------------------
 // When using Dual / Lightfox Dual, notify that Serial should be used
 
-#if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
+#if (BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT) || \
+    (BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL_SUPPORT)
 #if DEBUG_SERIAL_SUPPORT
 #warning "DEBUG_SERIAL_SUPPORT conflicts with the current BUTTON_EVENTS_SOURCE"
 #undef DEBUG_SERIAL_SUPPORT
@@ -231,4 +231,20 @@
 #if PROMETHEUS_SUPPORT
 #undef WEB_SUPPORT
 #define WEB_SUPPORT 1
+#endif
+
+//------------------------------------------------------------------------------
+// Provide support for the Mcp23S08 GPIOs
+
+#if MCP23S08_SUPPORT
+#undef BUTTON_EVENTS_SOURCE_MCP23S08_SUPPORT
+#define BUTTON_EVENTS_SOURCE_MCP23S08_SUPPORT 1
+#endif
+
+//------------------------------------------------------------------------------
+// Analog pin needs to use default TOUT
+
+#if BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
 #endif

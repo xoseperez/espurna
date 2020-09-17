@@ -230,3 +230,29 @@ constexpr const bool _buttonMqttRetain(unsigned char index) {
         (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
     );
 }
+
+constexpr int _buttonEventsSource(unsigned char index) {
+    return (
+        (index == 0) ? (BUTTON1_EVENTS_SOURCE) :
+        (index == 1) ? (BUTTON2_EVENTS_SOURCE) :
+        (index == 2) ? (BUTTON3_EVENTS_SOURCE) :
+        (index == 3) ? (BUTTON4_EVENTS_SOURCE) :
+        (index == 4) ? (BUTTON5_EVENTS_SOURCE) :
+        (index == 5) ? (BUTTON6_EVENTS_SOURCE) :
+        (index == 6) ? (BUTTON7_EVENTS_SOURCE) :
+        (index == 7) ? (BUTTON8_EVENTS_SOURCE) : BUTTON_EVENTS_SOURCE_GENERIC
+    );
+}
+
+constexpr int _buttonAnalogLevel(unsigned char index) {
+    return (
+        (index == 0) ? (BUTTON1_ANALOG_LEVEL) :
+        (index == 1) ? (BUTTON2_ANALOG_LEVEL) :
+        (index == 2) ? (BUTTON3_ANALOG_LEVEL) :
+        (index == 3) ? (BUTTON4_ANALOG_LEVEL) :
+        (index == 4) ? (BUTTON5_ANALOG_LEVEL) :
+        (index == 5) ? (BUTTON6_ANALOG_LEVEL) :
+        (index == 6) ? (BUTTON7_ANALOG_LEVEL) :
+        (index == 7) ? (BUTTON8_ANALOG_LEVEL) : 0
+    );
+}
