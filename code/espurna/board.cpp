@@ -23,7 +23,6 @@ PROGMEM const char espurna_modules[] =
     #if BUTTON_SUPPORT
         "BUTTON "
     #endif
-    #endif
     #if DEBUG_SERIAL_SUPPORT
         "DEBUG_SERIAL "
     #endif
