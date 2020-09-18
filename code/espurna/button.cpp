@@ -630,7 +630,7 @@ void buttonLoop() {
 
 #if BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
 
-class AnalogPin : public BasePin {
+class AnalogPin final : public BasePin {
 
     public:
 

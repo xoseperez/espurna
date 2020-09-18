@@ -20,8 +20,8 @@ class GpioPin final : virtual public BasePin {
 
     // We need to explicitly call the constructor, because we need to set the const `pin`:
     // https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
-    explicit GpioPin(unsigned char pin) :
-        BasePin(pin)
+    explicit GpioPin(unsigned char pin_) :
+        BasePin(pin_)
     {}
 
     void pinMode(int8_t mode) override {
