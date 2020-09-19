@@ -795,7 +795,7 @@ std::shared_ptr<BasePin> _buttonNewPinForSource(int source, unsigned char index,
         if (!mcpGpioValid(pin)) {
             break;
         }
-        return std::shared_ptr<McpGpioPin>(new McpGpioPin(pin));
+        return std::shared_ptr<BasePin>(new McpGpioPin(pin));
 #endif
 
 #if BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
@@ -817,7 +817,7 @@ std::shared_ptr<BasePin> _buttonNewPinForSource(int source, unsigned char index,
         break;
     }
 
-    return nullptr;
+    return {};
 }
 
 void buttonSetup() {
