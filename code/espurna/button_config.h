@@ -256,3 +256,16 @@ constexpr int _buttonAnalogLevel(unsigned char index) {
         (index == 7) ? (BUTTON8_ANALOG_LEVEL) : 0
     );
 }
+
+constexpr unsigned char _buttonPreconfigured() {
+    return (
+        (GPIO_NONE != _buttonPin(0))
+      + (GPIO_NONE != _buttonPin(1))
+      + (GPIO_NONE != _buttonPin(2))
+      + (GPIO_NONE != _buttonPin(3))
+      + (GPIO_NONE != _buttonPin(4))
+      + (GPIO_NONE != _buttonPin(5))
+      + (GPIO_NONE != _buttonPin(6))
+      + (GPIO_NONE != _buttonPin(7))
+    );
+}

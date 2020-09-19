@@ -738,12 +738,11 @@ class AnalogPin final : public BasePin {
                 ? pins[index + 1]->_expected
                 : RangeTo;
 
+            pins[index]->_from = last
+                ? last->_to
+                : RangeFrom;
             pins[index]->_to = (pins[index]->_expected + edge) / 2;
-            if (!last) {
-                pins[index]->_from = RangeFrom;
-            } else {
-                pins[index]->_from = last->_to;
-            }
+
             last = pins[index];
         }
     }
@@ -752,36 +751,7 @@ class AnalogPin final : public BasePin {
 
 std::vector<AnalogPin*> AnalogPin::pins;
 
-#endif // analogpin
-
-constexpr size_t _buttonPreconfigured() {
-    return 0u
-#if BUTTON1_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON2_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON3_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON4_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON5_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON6_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON7_PIN != GPIO_NONE
-        + 1
-#endif
-#if BUTTON8_PIN != GPIO_NONE
-        + 1
-#endif
-        ;
-}
+#endif // BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
 
 std::shared_ptr<BasePin> _buttonNewPinForSource(int source, unsigned char index, unsigned char pin) {
     switch (source) {
