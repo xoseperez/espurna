@@ -21,11 +21,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "light.h"
 #include "ws.h"
-#include "mcp23s08.h"
+
+#include "libs/BasePin.h"
+#include "libs/DebounceEvent.h"
+#include "gpio_pin.h"
+#include "mcp23s08_pin.h"
 
 #include "button_config.h"
-
-#include "libs/DebounceEvent.h"
 
 BrokerBind(ButtonBroker);
 
