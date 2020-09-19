@@ -293,36 +293,40 @@ void _terminalInitCommands() {
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
 
+    terminalRegisterCommand(F("ADC"), [](const terminal::CommandContext& ctx) {
+        const int pin = (ctx.argc == 2)
+            ? ctx.argv[1].toInt()
+            : A0;
+
+        ctx.output.println(analogRead(pin));
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
         const int pin = (ctx.argc >= 2)
             ? ctx.argv[1].toInt()
             : -1;
+
+        if ((pin >= 0) && !gpioValid(pin)) {
+            terminalError(ctx, F("Invalid pin number"));
+            return;
+        }
 
         int start = 0;
         int end = GpioPins;
 
         switch (ctx.argc) {
         case 3:
-            if (gpioValid(pin)) {
-                bool state = ctx.argv[2].toInt() == 1;
-                pinMode(pin, OUTPUT);
-                digitalWrite(pin, state);
-                terminalOK(ctx);
-            }
+            pinMode(pin, OUTPUT);
+            digitalWrite(pin, (1 == ctx.argv[2].toInt()));
             break;
         case 2:
             start = pin;
             end = pin + 1;
-            if ((pin != 17) && !gpioValid(pin)) {
-                terminalError(ctx, F("Invalid pin number"));
-            }
             // fallthrough into print
         case 1:
             for (auto current = start; current < end; ++current) {
-                if (current == 17) {
-                    ctx.output.printf_P(PSTR("INPUT  @ ANALOG0 (%d)\n"), analogRead(PIN_A0));
-
-                } else if (gpioValid(current)) {
+                if (gpioValid(current)) {
                     ctx.output.printf_P(PSTR("%s @ GPIO%d (%s)\n"),
                         GPEP(current) ? "OUTPUT" : " INPUT",
                         current,

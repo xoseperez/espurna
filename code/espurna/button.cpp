@@ -772,7 +772,7 @@ std::shared_ptr<BasePin> _buttonNewPinForSource(int source, unsigned char index,
 
 #if BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
     case BUTTON_EVENTS_SOURCE_ANALOG: {
-        if (PIN_A0 != pin) {
+        if (A0 != pin) {
             break;
         }
 
