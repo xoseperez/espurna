@@ -172,7 +172,7 @@ button_actions_t _buttonConstructActions(unsigned char index) {
     };
 }
 
-debounce_event::types::Config _buttonConfig(unsigned char index) {
+debounce_event::types::Config _buttonRuntimeConfig(unsigned char index) {
     const auto config = _buttonDecodeConfigBitmask(_buttonConfigBitmask(index));
     return {
         getSetting({"btnMode", index}, config.mode),
@@ -294,19 +294,19 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     JsonObject& module = root.createNestedObject("btn");
 
-    // TODO: hardware can sometimes use a different event source
+    // TODO: hardware can sometimes use a different providers
     //       e.g. Sonoff Dual does not need `Pin`, `Mode` or any of `Del`
     // TODO: schema names are uppercase to easily match settings?
     // TODO: schema name->type map to generate WebUI elements?
 
     JsonArray& schema = module.createNestedArray("_schema");
 
+    schema.add("Prov");
+
     schema.add("GPIO");
     schema.add("Mode");
     schema.add("DefVal");
     schema.add("PinMode");
-
-    schema.add("Relay");
 
     schema.add("Press");
     schema.add("Click");
@@ -320,10 +320,14 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     schema.add("LclkDel");
     schema.add("LLclkDel");
 
-    #if MQTT_SUPPORT
-        schema.add("MqttSendAll");
-        schema.add("MqttRetain");
-    #endif
+#if RELAY_SUPPORT
+    schema.add("Relay");
+#endif
+
+#if MQTT_SUPPORT
+    schema.add("MqttSendAll");
+    schema.add("MqttRetain");
+#endif
 
     JsonArray& buttons = module.createNestedArray("list");
 
@@ -331,9 +335,10 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         JsonArray& button = buttons.createNestedArray();
 
         // TODO: configure PIN object instead of button specifically, link PIN<->BUTTON
+        button.add(getSetting({"btnProv", index}, _buttonProvider(index)));
         if (_buttons[i].getPin()) {
             button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
-            const auto config = _buttonConfig(index);
+            const auto config = _buttonRuntimeConfig(index);
             button.add(static_cast<int>(config.mode));
             button.add(static_cast<int>(config.default_value));
             button.add(static_cast<int>(config.pin_mode));
@@ -344,8 +349,6 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
             button.add(0);
             button.add(0);
         }
-
-        button.add(_buttons[i].relayID);
 
         button.add(_buttons[i].actions.pressed);
         button.add(_buttons[i].actions.click);
@@ -359,11 +362,15 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         button.add(_buttons[i].event_delays.lngclick);
         button.add(_buttons[i].event_delays.lnglngclick);
 
+#if RELAY_SUPPORT
+        button.add(_buttons[i].relayID);
+#endif
+
         // TODO: send bitmask as number?
-        #if MQTT_SUPPORT
-            button.add(_buttons_mqtt_send_all[i] ? 1 : 0);
-            button.add(_buttons_mqtt_retain[i] ? 1 : 0);
-        #endif
+#if MQTT_SUPPORT
+        button.add(_buttons_mqtt_send_all[i] ? 1 : 0);
+        button.add(_buttons_mqtt_retain[i] ? 1 : 0);
+#endif
     }
 #endif
 }
@@ -561,7 +568,7 @@ void _buttonLoopSonoffDual() {
 
     const unsigned char value [[gnu::unused]] = bytes[2];
 
-#if BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT
+#if BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
 
     // RELAYs and BUTTONs are synchonized in the SIL F330
     // The on-board BUTTON2 should toggle RELAY0 value
@@ -590,7 +597,7 @@ void _buttonLoopSonoffDual() {
 
     }
 
-#elif BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL_SUPPORT
+#elif BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT
 
     DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %u\n"), value);
 
@@ -600,7 +607,7 @@ void _buttonLoopSonoffDual() {
         }
     }
 
-#endif // BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+#endif // BUTTON_PROVIDER_ITEAD_SONOFF_DUAL
 
 }
 
@@ -618,7 +625,7 @@ void buttonLoop() {
     _buttonLoopGeneric();
 
     // Unconditionally call these. By default, generic loop will discard everything without the configured events emmiter
-    #if BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+    #if BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
         _buttonLoopSonoffDual();
     #endif
 
@@ -630,7 +637,7 @@ void buttonLoop() {
 // - https://github.com/bxparks/AceButton/blob/develop/src/ace_button/LadderButtonConfig.cpp
 // - https://github.com/dxinteractive/AnalogMultiButton
 
-#if BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
+#if BUTTON_PROVIDER_ANALOG_SUPPORT
 
 class AnalogPin final : public BasePin {
 
@@ -751,27 +758,27 @@ class AnalogPin final : public BasePin {
 
 std::vector<AnalogPin*> AnalogPin::pins;
 
-#endif // BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
+#endif // BUTTON_PROVIDER_ANALOG_SUPPORT
 
-std::shared_ptr<BasePin> _buttonNewPinForSource(int source, unsigned char index, unsigned char pin) {
-    switch (source) {
+std::shared_ptr<BasePin> _buttonFromProvider(int provider, unsigned char index, unsigned char pin) {
+    switch (provider) {
 
-    case BUTTON_EVENTS_SOURCE_GENERIC:
+    case BUTTON_PROVIDER_GENERIC:
         if (!gpioValid(pin)) {
             break;
         }
         return std::shared_ptr<BasePin>(new GpioPin(pin));
 
-#if BUTTON_EVENTS_SOURCE_MCP23S08_SUPPORT
-    case BUTTON_EVENTS_SOURCE_MCP23S08:
+#if BUTTON_PROVIDER_MCP23S08_SUPPORT
+    case BUTTON_PROVIDER_MCP23S08:
         if (!mcpGpioValid(pin)) {
             break;
         }
         return std::shared_ptr<BasePin>(new McpGpioPin(pin));
 #endif
 
-#if BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
-    case BUTTON_EVENTS_SOURCE_ANALOG: {
+#if BUTTON_PROVIDER_ANALOG_SUPPORT
+    case BUTTON_PROVIDER_ANALOG: {
         if (A0 != pin) {
             break;
         }
@@ -798,7 +805,7 @@ void buttonSetup() {
     moveSetting("btnDelay", "btnRepDel");
 
     // Special hardware cases
-#if BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+#if BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
     {
         size_t buttons = 0;
         #if BUTTON1_RELAY != RELAY_NONE
@@ -837,19 +844,19 @@ void buttonSetup() {
             
         }
     }
-#endif // BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+#endif // BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
 
-#if BUTTON_EVENTS_SOURCE_GENERIC_SUPPORT
+#if BUTTON_PROVIDER_GENERIC_SUPPORT
 
     // Generic GPIO input handlers
     {
-        _buttons.reserve(_buttonPreconfigured());
+        _buttons.reserve(_buttonPreconfiguredPins());
 
         for (unsigned char index = _buttons.size(); index < ButtonsMax; ++index) {
-            const auto source = getSetting({"btnEvtSrc", index}, _buttonEventsSource(index));
+            const auto provider = getSetting({"btnProv", index}, _buttonProvider(index));
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
 
-            auto managed_pin = _buttonNewPinForSource(source, index, pin);
+            auto managed_pin = _buttonFromProvider(provider, index, pin);
             if (!managed_pin) {
                 break;
             }
@@ -873,7 +880,7 @@ void buttonSetup() {
                 getSetting({"btnTclk", index}, _buttonTripleClick(index))
             };
 
-            const auto config = _buttonConfig(index);
+            const auto config = _buttonRuntimeConfig(index);
 
             _buttons.emplace_back(
                 managed_pin, config,

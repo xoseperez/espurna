@@ -57,10 +57,10 @@
 #define BUTTON_SET_PULLUP           ButtonMask::SetPullup
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
 
-// configure which type of event emitter is used
-#define BUTTON_EVENTS_SOURCE_GENERIC               0
-#define BUTTON_EVENTS_SOURCE_MCP23S08              1
-#define BUTTON_EVENTS_SOURCE_ANALOG                2
+// configure where do we get the button events
+#define BUTTON_PROVIDER_GENERIC               0
+#define BUTTON_PROVIDER_MCP23S08              1
+#define BUTTON_PROVIDER_ANALOG                2
 
 //------------------------------------------------------------------------------
 // ENCODER

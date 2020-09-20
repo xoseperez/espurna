@@ -402,32 +402,33 @@
 
 // Generic digital pin support
 
-#ifndef BUTTON_EVENTS_SOURCE_GENERIC_SUPPORT
-#define BUTTON_EVENTS_SOURCE_GENERIC_SUPPORT                1
+#ifndef BUTTON_PROVIDER_GENERIC_SUPPORT
+#define BUTTON_PROVIDER_GENERIC_SUPPORT                1
 #endif
 
 // Hardware specific, drive buttons through serial connection
 // (mutually exclusive)
 
-#ifndef BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT
-#define BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL_SUPPORT      0
+#ifndef BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
+#define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT      0
 #endif
 
-#ifndef BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
-#define BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL            0
+#ifndef BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
+#define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL            0
 #endif
 
-// Support MCP23S08 8-Bit I/O Expander with Serial Interface as button events source
+// Support MCP23S08 8-Bit I/O Expander via the SPI interface
 
-#ifndef BUTTON_EVENTS_SOURCE_MCP23S08_SUPPORT
-#define BUTTON_EVENTS_SOURCE_MCP23S08_SUPPORT               MCP23S08_SUPPORT
+#ifndef BUTTON_PROVIDER_MCP23S08_SUPPORT
+#define BUTTON_PROVIDER_MCP23S08_SUPPORT               MCP23S08_SUPPORT
 #endif
 
-// Resistor ladder support, generate digital events when analog reading is in a certain range
+// Resistor ladder support. Poll analog pin and return digital LOW when analog reading is in a certain range
 // ref. https://github.com/bxparks/AceButton/tree/develop/docs/resistor_ladder
+// Uses BUTTON#_ANALOG_LEVEL for the individual button level configuration
 
-#ifndef BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT
-#define BUTTON_EVENTS_SOURCE_ANALOG_SUPPORT                 0
+#ifndef BUTTON_PROVIDER_ANALOG_SUPPORT
+#define BUTTON_PROVIDER_ANALOG_SUPPORT                 0
 #endif
 
 //------------------------------------------------------------------------------

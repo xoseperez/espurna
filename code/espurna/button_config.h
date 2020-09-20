@@ -231,16 +231,16 @@ constexpr const bool _buttonMqttRetain(unsigned char index) {
     );
 }
 
-constexpr int _buttonEventsSource(unsigned char index) {
+constexpr int _buttonProvider(unsigned char index) {
     return (
-        (index == 0) ? (BUTTON1_EVENTS_SOURCE) :
-        (index == 1) ? (BUTTON2_EVENTS_SOURCE) :
-        (index == 2) ? (BUTTON3_EVENTS_SOURCE) :
-        (index == 3) ? (BUTTON4_EVENTS_SOURCE) :
-        (index == 4) ? (BUTTON5_EVENTS_SOURCE) :
-        (index == 5) ? (BUTTON6_EVENTS_SOURCE) :
-        (index == 6) ? (BUTTON7_EVENTS_SOURCE) :
-        (index == 7) ? (BUTTON8_EVENTS_SOURCE) : BUTTON_EVENTS_SOURCE_GENERIC
+        (index == 0) ? (BUTTON1_PROVIDER) :
+        (index == 1) ? (BUTTON2_PROVIDER) :
+        (index == 2) ? (BUTTON3_PROVIDER) :
+        (index == 3) ? (BUTTON4_PROVIDER) :
+        (index == 4) ? (BUTTON5_PROVIDER) :
+        (index == 5) ? (BUTTON6_PROVIDER) :
+        (index == 6) ? (BUTTON7_PROVIDER) :
+        (index == 7) ? (BUTTON8_PROVIDER) : BUTTON_PROVIDER_GENERIC
     );
 }
 
@@ -257,7 +257,7 @@ constexpr int _buttonAnalogLevel(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonPreconfigured() {
+constexpr unsigned char _buttonPreconfiguredPins() {
     return (
         (GPIO_NONE != _buttonPin(0))
       + (GPIO_NONE != _buttonPin(1))
