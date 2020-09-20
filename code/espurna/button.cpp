@@ -375,7 +375,7 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 #endif
 }
 
-bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "btn", 3) == 0);
 }
 
@@ -760,7 +760,7 @@ std::vector<AnalogPin*> AnalogPin::pins;
 
 #endif // BUTTON_PROVIDER_ANALOG_SUPPORT
 
-std::shared_ptr<BasePin> _buttonFromProvider(int provider, unsigned char index, unsigned char pin) {
+std::shared_ptr<BasePin> _buttonFromProvider([[gnu::unused]] unsigned char index, int provider, unsigned char pin) {
     switch (provider) {
 
     case BUTTON_PROVIDER_GENERIC:
@@ -856,7 +856,7 @@ void buttonSetup() {
             const auto provider = getSetting({"btnProv", index}, _buttonProvider(index));
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
 
-            auto managed_pin = _buttonFromProvider(provider, index, pin);
+            auto managed_pin = _buttonFromProvider(index, provider, pin);
             if (!managed_pin) {
                 break;
             }
