@@ -223,11 +223,6 @@ class BME680Sensor : public I2CSensor<> {
         void tick() {
             _error = SENSOR_ERROR_OK;
 
-            if (!_isSensorOk()) {
-              _error = SENSOR_ERROR_OTHER;
-              return;
-            }
-
             if (iaqSensor.run()) {
               _rawTemperature = iaqSensor.rawTemperature;
               _rawHumidity = iaqSensor.rawHumidity;
@@ -240,8 +235,9 @@ class BME680Sensor : public I2CSensor<> {
               _iaqStatic = iaqSensor.staticIaq;
               _co2Equivalent = iaqSensor.co2Equivalent;
               _breathVocEquivalent = iaqSensor.breathVocEquivalent;
-
               _saveState();
+            } else if (!_isSensorOk()) {
+              _error = SENSOR_ERROR_OTHER;
             }
         }
 
