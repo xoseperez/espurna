@@ -94,6 +94,7 @@ class BME680Sensor : public I2CSensor<> {
         // ---------------------------------------------------------------------
 
         BME680Sensor() {
+            _error = SENSOR_ERROR_OK;
             _sensor_id = SENSOR_BME680_ID;
             _count = 9;
         }
@@ -114,16 +115,15 @@ class BME680Sensor : public I2CSensor<> {
 
             iaqSensor.begin(_address, Wire);
 
-            #if SENSOR_DEBUG
-                DEBUG_MSG("[BME680] BSEC library version v%u.%u.%u.%u\n",
-                  iaqSensor.version.major,
-                  iaqSensor.version.minor,
-                  iaqSensor.version.major_bugfix,
-                  iaqSensor.version.minor_bugfix
-                );
-            #endif
+            DEBUG_MSG_P(PSTR("[BME680] BSEC library version v%u.%u.%u.%u\n"),
+                iaqSensor.version.major,
+                iaqSensor.version.minor,
+                iaqSensor.version.major_bugfix,
+                iaqSensor.version.minor_bugfix
+            );
 
-            if (!_isSensorOk()) {
+            if (!_isOk()) {
+              _showSensorErrors();
               _error = SENSOR_ERROR_OTHER;
               return;
             }
@@ -146,11 +146,13 @@ class BME680Sensor : public I2CSensor<> {
 
             iaqSensor.updateSubscription(sensorList, 12, sampleRate);
 
-            if (!_isSensorOk()) {
+            if (!_isOk()) {
+              _showSensorErrors();
               _error = SENSOR_ERROR_OTHER;
               return;
             }
 
+            _error = SENSOR_ERROR_OK;
             _ready = true;
             _dirty = false;
         }
@@ -177,57 +179,9 @@ class BME680Sensor : public I2CSensor<> {
             return MAGNITUDE_NONE;
         }
 
-        void _loadState() {
-            String storedState = getSetting("bsecState");
-
-            if (storedState.length() == 0) {
-              #if SENSOR_DEBUG
-                  DEBUG_MSG("[BME680] Previous state not found\n");
-              #endif
-
-              return;
-            }
-
-            hexDecode(storedState.c_str(), storedState.length(), _bsecState, sizeof(_bsecState));
-
-            iaqSensor.setState(_bsecState);
-
-            #if SENSOR_DEBUG
-                DEBUG_MSG("[BME680] Loaded previous state %s\n", storedState.c_str());
-            #endif
-        }
-
-        void _saveState() {
-            if (BME680_STATE_SAVE_INTERVAL == 0) {
-                return;
-            }
-
-            static unsigned long last_millis = 0;
-
-            if (_iaqAccuracy < 3 || (millis() - last_millis < BME680_STATE_SAVE_INTERVAL)) {
-                return;
-            }
-
-            iaqSensor.getState(_bsecState);
-
-            char storedState[BSEC_MAX_STATE_BLOB_SIZE * 2 + 1] = {0};
-            hexEncode(_bsecState, BSEC_MAX_STATE_BLOB_SIZE, storedState, sizeof(storedState));
-
-            setSetting("bsecState", storedState);
-
-            last_millis = millis();
-        }
-
         // The maximum allowed time between two `bsec_sensor_control` calls depends on
         // configuration profile `bsec_config_iaq` below.
         void tick() {
-            _error = SENSOR_ERROR_OK;
-
-            if (!_isSensorOk()) {
-              _error = SENSOR_ERROR_OTHER;
-              return;
-            }
-
             if (iaqSensor.run()) {
               _rawTemperature = iaqSensor.rawTemperature;
               _rawHumidity = iaqSensor.rawHumidity;
@@ -240,9 +194,16 @@ class BME680Sensor : public I2CSensor<> {
               _iaqStatic = iaqSensor.staticIaq;
               _co2Equivalent = iaqSensor.co2Equivalent;
               _breathVocEquivalent = iaqSensor.breathVocEquivalent;
-
               _saveState();
+              _error = SENSOR_ERROR_OK;
+            } else if (_isError()) {
+              _error = SENSOR_ERROR_OTHER;
             }
+        }
+
+        // Ensure we show any possible issues with the sensor, post() is called regardless of sensor status() / error() codes
+        void post() override {
+            _showSensorErrors();
         }
 
         // Current value for slot # index
@@ -262,32 +223,79 @@ class BME680Sensor : public I2CSensor<> {
 
     protected:
 
-        bool _isSensorOk() {
-            if (iaqSensor.status == BSEC_OK && iaqSensor.bme680Status == BME680_OK) {
-                return true;
+        void _loadState() {
+            String storedState = getSetting("bsecState");
+            if (!storedState.length()) {
+              return;
             }
 
-            #if SENSOR_DEBUG
+            DEBUG_MSG_P(PSTR("[BME680] Restoring previous state\n"));
+
+            hexDecode(storedState.c_str(), storedState.length(), _bsecState, sizeof(_bsecState));
+
+            iaqSensor.setState(_bsecState);
+            _showSensorErrors();
+        }
+
+        void _saveState() {
+            if (!BME680_STATE_SAVE_INTERVAL) return;
+
+            static unsigned long last_millis = 0;
+            if (_iaqAccuracy < 3 || (millis() - last_millis < BME680_STATE_SAVE_INTERVAL)) {
+              return;
+            }
+
+            iaqSensor.getState(_bsecState);
+
+            char storedState[BSEC_MAX_STATE_BLOB_SIZE * 2 + 1] = {0};
+            hexEncode(_bsecState, BSEC_MAX_STATE_BLOB_SIZE, storedState, sizeof(storedState));
+
+            setSetting("bsecState", storedState);
+
+            last_millis = millis();
+        }
+
+        bool _isError() {
+            return (iaqSensor.status < BSEC_OK) || (iaqSensor.bme680Status < BME680_OK);
+        }
+
+        bool _isOk() {
+            return (iaqSensor.status == BSEC_OK) && (iaqSensor.bme680Status == BME680_OK);
+        }
+
+        void _showSensorErrors() {
+            // see `enum { ... } bsec_library_return_t` values & description at:
+            // BSEC Software Library/src/inc/bsec_datatypes.h
             if (iaqSensor.status != BSEC_OK) {
               if (iaqSensor.status < BSEC_OK) {
-                DEBUG_MSG("[BME680] BSEC error code %d\n", iaqSensor.status);
+                DEBUG_MSG_P(PSTR("[BME680] BSEC error code (%d)\n"), iaqSensor.status);
               } else {
-                DEBUG_MSG("[BME680] BSEC warning code %d\n", iaqSensor.status);
+                DEBUG_MSG_P(PSTR("[BME680] BSEC warning code (%d)\n"), iaqSensor.status);
               }
             }
-            #endif
 
-            #if SENSOR_DEBUG
-            if (iaqSensor.bme680Status != BME680_OK) {
+            // see `BME680_{W,E}_...` at:
+            // BSEC Software Library/src/bme680/bme680_defs.h
+            switch (iaqSensor.bme680Status) {
+            case BME680_OK:
+              break;
+            case BME680_E_COM_FAIL:
+            case BME680_E_DEV_NOT_FOUND:
+              DEBUG_MSG_P(PSTR("[BME680] Communication error / device not found (%d)\n"), iaqSensor.bme680Status);
+            case BME680_W_DEFINE_PWR_MODE:
+              DEBUG_MSG_P(PSTR("[BME680] Power mode not defined (%d)\n"), iaqSensor.bme680Status);
+              break;
+            case BME680_W_NO_NEW_DATA:
+              DEBUG_MSG_P(PSTR("[BME680] No new data (%d)\n"), iaqSensor.bme680Status);
+              break;
+            default:
               if (iaqSensor.bme680Status < BME680_OK) {
-                DEBUG_MSG("[BME680] Error code %d\n", iaqSensor.bme680Status);
+                DEBUG_MSG_P(PSTR("[BME680] Error code (%d)\n"), iaqSensor.bme680Status);
               } else {
-                DEBUG_MSG("[BME680] Warning code %d\n", iaqSensor.bme680Status);
+                DEBUG_MSG_P(PSTR("[BME680] Warning code (%d)\n"), iaqSensor.bme680Status);
               }
+              break;
             }
-            #endif
-
-            return false;
         }
 
         bsec_virtual_sensor_t sensorList[12] = {
