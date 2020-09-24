@@ -230,3 +230,42 @@ constexpr const bool _buttonMqttRetain(unsigned char index) {
         (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
     );
 }
+
+constexpr int _buttonProvider(unsigned char index) {
+    return (
+        (index == 0) ? (BUTTON1_PROVIDER) :
+        (index == 1) ? (BUTTON2_PROVIDER) :
+        (index == 2) ? (BUTTON3_PROVIDER) :
+        (index == 3) ? (BUTTON4_PROVIDER) :
+        (index == 4) ? (BUTTON5_PROVIDER) :
+        (index == 5) ? (BUTTON6_PROVIDER) :
+        (index == 6) ? (BUTTON7_PROVIDER) :
+        (index == 7) ? (BUTTON8_PROVIDER) : BUTTON_PROVIDER_GENERIC
+    );
+}
+
+constexpr int _buttonAnalogLevel(unsigned char index) {
+    return (
+        (index == 0) ? (BUTTON1_ANALOG_LEVEL) :
+        (index == 1) ? (BUTTON2_ANALOG_LEVEL) :
+        (index == 2) ? (BUTTON3_ANALOG_LEVEL) :
+        (index == 3) ? (BUTTON4_ANALOG_LEVEL) :
+        (index == 4) ? (BUTTON5_ANALOG_LEVEL) :
+        (index == 5) ? (BUTTON6_ANALOG_LEVEL) :
+        (index == 6) ? (BUTTON7_ANALOG_LEVEL) :
+        (index == 7) ? (BUTTON8_ANALOG_LEVEL) : 0
+    );
+}
+
+constexpr unsigned char _buttonPreconfiguredPins() {
+    return (
+        (GPIO_NONE != _buttonPin(0))
+      + (GPIO_NONE != _buttonPin(1))
+      + (GPIO_NONE != _buttonPin(2))
+      + (GPIO_NONE != _buttonPin(3))
+      + (GPIO_NONE != _buttonPin(4))
+      + (GPIO_NONE != _buttonPin(5))
+      + (GPIO_NONE != _buttonPin(6))
+      + (GPIO_NONE != _buttonPin(7))
+    );
+}

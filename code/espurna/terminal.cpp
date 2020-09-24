@@ -293,31 +293,51 @@ void _terminalInitCommands() {
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
 
+    terminalRegisterCommand(F("ADC"), [](const terminal::CommandContext& ctx) {
+        const int pin = (ctx.argc == 2)
+            ? ctx.argv[1].toInt()
+            : A0;
+
+        ctx.output.println(analogRead(pin));
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
-        int pin = -1;
+        const int pin = (ctx.argc >= 2)
+            ? ctx.argv[1].toInt()
+            : -1;
 
-        if (ctx.argc < 2) {
-            DEBUG_MSG("Printing all GPIO pins:\n");
-        } else {
-            pin = ctx.argv[1].toInt();
-            if (!gpioValid(pin)) {
-                terminalError(F("Invalid GPIO pin"));
-                return;
-            }
-
-            if (ctx.argc > 2) {
-                bool state = String(ctx.argv[2]).toInt() == 1;
-                digitalWrite(pin, state);
-            }
+        if ((pin >= 0) && !gpioValid(pin)) {
+            terminalError(ctx, F("Invalid pin number"));
+            return;
         }
 
-        for (int i = 0; i <= 15; i++) {
-            if (gpioValid(i) && (pin == -1 || pin == i)) {
-                DEBUG_MSG_P(PSTR("GPIO %s pin %d is %s\n"), GPEP(i) ? "output" : "input", i, digitalRead(i) == HIGH ? "HIGH" : "LOW");
+        int start = 0;
+        int end = GpioPins;
+
+        switch (ctx.argc) {
+        case 3:
+            pinMode(pin, OUTPUT);
+            digitalWrite(pin, (1 == ctx.argv[2].toInt()));
+            break;
+        case 2:
+            start = pin;
+            end = pin + 1;
+            // fallthrough into print
+        case 1:
+            for (auto current = start; current < end; ++current) {
+                if (gpioValid(current)) {
+                    ctx.output.printf_P(PSTR("%s @ GPIO%02d (%s)\n"),
+                        GPEP(current) ? "OUTPUT" : " INPUT",
+                        current,
+                        (HIGH == digitalRead(current)) ? "HIGH" : "LOW"
+                    );
+                }
             }
+            break;
         }
 
-        terminalOK();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext&) {

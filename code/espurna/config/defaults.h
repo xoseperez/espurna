@@ -397,6 +397,56 @@
 #define BUTTON8_MQTT_RETAIN    BUTTON_MQTT_RETAIN
 #endif
 
+#ifndef BUTTON1_PROVIDER
+#define BUTTON1_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON2_PROVIDER
+#define BUTTON2_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON3_PROVIDER
+#define BUTTON3_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON4_PROVIDER
+#define BUTTON4_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON5_PROVIDER
+#define BUTTON5_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON6_PROVIDER
+#define BUTTON6_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON7_PROVIDER
+#define BUTTON7_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+#ifndef BUTTON8_PROVIDER
+#define BUTTON8_PROVIDER    BUTTON_PROVIDER_GENERIC
+#endif
+
+#ifndef BUTTON1_ANALOG_LEVEL
+#define BUTTON1_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON2_ANALOG_LEVEL
+#define BUTTON2_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON3_ANALOG_LEVEL
+#define BUTTON3_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON4_ANALOG_LEVEL
+#define BUTTON4_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON5_ANALOG_LEVEL
+#define BUTTON5_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON6_ANALOG_LEVEL
+#define BUTTON6_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON7_ANALOG_LEVEL
+#define BUTTON7_ANALOG_LEVEL     0
+#endif
+#ifndef BUTTON8_ANALOG_LEVEL
+#define BUTTON8_ANALOG_LEVEL     0
+#endif
+
 // -----------------------------------------------------------------------------
 // Encoders
 // -----------------------------------------------------------------------------

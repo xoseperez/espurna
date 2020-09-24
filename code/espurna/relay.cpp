@@ -28,20 +28,32 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "tuya.h"
 #include "utils.h"
 #include "ws.h"
-#include "mcp23s08.h"
 
 #include "libs/BasePin.h"
+#include "gpio_pin.h"
+#include "mcp23s08_pin.h"
 
 #include "relay_config.h"
 
-struct DummyPin final : public BasePin {
+class DummyPin final : public BasePin {
+public:
     DummyPin(unsigned char pin) :
         BasePin(pin)
     {}
 
-    void pinMode(int8_t) override {}
-    void digitalWrite(int8_t) override {}
-    int digitalRead() override { return 0; }
+    void pinMode(int8_t) override {
+    }
+
+    void digitalWrite(int8_t) override {
+    }
+
+    int digitalRead() override {
+        return 0;
+    }
+
+    String description() const override {
+        return F("DummyPin");
+    }
 };
 
 struct relay_t {

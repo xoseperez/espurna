@@ -566,7 +566,7 @@
     #define BUTTON2_RELAY       2
     #define BUTTON3_RELAY       1
 
-    #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+    #define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT    1
 
     // LEDs
     #define LED1_PIN            13
@@ -4266,7 +4266,7 @@
     #define BUTTON3_RELAY           2
     #define BUTTON4_RELAY           1
 
-    #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+    #define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT    1
 
 // -----------------------------------------------------------------------------
 // Teckin SP20
@@ -4869,15 +4869,19 @@
     #define RELAY4_PIN              7
 
     // Buttons
+    #define BUTTON1_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_PIN             0
 
+    #define BUTTON2_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_PIN             1
 
+    #define BUTTON3_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON3_PIN             2
 
+    #define BUTTON4_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON4_PIN             3
 
@@ -4885,8 +4889,6 @@
     #define BUTTON2_RELAY           2
     #define BUTTON3_RELAY           3
     #define BUTTON4_RELAY           4
-
-    #define BUTTON_EVENTS_SOURCE    BUTTON_EVENTS_SOURCE_MCP23S08
 
     // LEDs
     #define LED1_PIN                2

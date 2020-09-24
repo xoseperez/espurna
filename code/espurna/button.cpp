@@ -21,11 +21,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "light.h"
 #include "ws.h"
-#include "mcp23s08.h"
+
+#include "libs/BasePin.h"
+#include "libs/DebounceEvent.h"
+#include "gpio_pin.h"
+#include "mcp23s08_pin.h"
 
 #include "button_config.h"
-
-#include "libs/DebounceEvent.h"
 
 BrokerBind(ButtonBroker);
 
@@ -170,7 +172,7 @@ button_actions_t _buttonConstructActions(unsigned char index) {
     };
 }
 
-debounce_event::types::Config _buttonConfig(unsigned char index) {
+debounce_event::types::Config _buttonRuntimeConfig(unsigned char index) {
     const auto config = _buttonDecodeConfigBitmask(_buttonConfigBitmask(index));
     return {
         getSetting({"btnMode", index}, config.mode),
@@ -282,15 +284,6 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
     }
 }
 
-#if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
-
-void _buttonWebSocketOnConnected(JsonObject& root) {
-    root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
-}
-
-#else
-
 void _buttonWebSocketOnConnected(JsonObject& root) {
     root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
 
@@ -301,19 +294,19 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 
     JsonObject& module = root.createNestedObject("btn");
 
-    // TODO: hardware can sometimes use a different event source
+    // TODO: hardware can sometimes use a different providers
     //       e.g. Sonoff Dual does not need `Pin`, `Mode` or any of `Del`
     // TODO: schema names are uppercase to easily match settings?
     // TODO: schema name->type map to generate WebUI elements?
 
     JsonArray& schema = module.createNestedArray("_schema");
 
+    schema.add("Prov");
+
     schema.add("GPIO");
     schema.add("Mode");
     schema.add("DefVal");
     schema.add("PinMode");
-
-    schema.add("Relay");
 
     schema.add("Press");
     schema.add("Click");
@@ -327,10 +320,14 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     schema.add("LclkDel");
     schema.add("LLclkDel");
 
-    #if MQTT_SUPPORT
-        schema.add("MqttSendAll");
-        schema.add("MqttRetain");
-    #endif
+#if RELAY_SUPPORT
+    schema.add("Relay");
+#endif
+
+#if MQTT_SUPPORT
+    schema.add("MqttSendAll");
+    schema.add("MqttRetain");
+#endif
 
     JsonArray& buttons = module.createNestedArray("list");
 
@@ -338,9 +335,10 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         JsonArray& button = buttons.createNestedArray();
 
         // TODO: configure PIN object instead of button specifically, link PIN<->BUTTON
+        button.add(getSetting({"btnProv", index}, _buttonProvider(index)));
         if (_buttons[i].getPin()) {
             button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
-            const auto config = _buttonConfig(index);
+            const auto config = _buttonRuntimeConfig(index);
             button.add(static_cast<int>(config.mode));
             button.add(static_cast<int>(config.default_value));
             button.add(static_cast<int>(config.pin_mode));
@@ -351,8 +349,6 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
             button.add(0);
             button.add(0);
         }
-
-        button.add(_buttons[i].relayID);
 
         button.add(_buttons[i].actions.pressed);
         button.add(_buttons[i].actions.click);
@@ -366,22 +362,24 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
         button.add(_buttons[i].event_delays.lngclick);
         button.add(_buttons[i].event_delays.lnglngclick);
 
+#if RELAY_SUPPORT
+        button.add(_buttons[i].relayID);
+#endif
+
         // TODO: send bitmask as number?
-        #if MQTT_SUPPORT
-            button.add(_buttons_mqtt_send_all[i] ? 1 : 0);
-            button.add(_buttons_mqtt_retain[i] ? 1 : 0);
-        #endif
+#if MQTT_SUPPORT
+        button.add(_buttons_mqtt_send_all[i] ? 1 : 0);
+        button.add(_buttons_mqtt_retain[i] ? 1 : 0);
+#endif
     }
 #endif
 }
 
-#endif // BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC
-
-bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "btn", 3) == 0);
 }
 
-#endif
+#endif // WEB_SUPPORT
 
 bool buttonState(unsigned char id) {
     if (id >= _buttons.size()) return false;
@@ -570,7 +568,7 @@ void _buttonLoopSonoffDual() {
 
     const unsigned char value [[gnu::unused]] = bytes[2];
 
-#if BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+#if BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
 
     // RELAYs and BUTTONs are synchonized in the SIL F330
     // The on-board BUTTON2 should toggle RELAY0 value
@@ -599,7 +597,7 @@ void _buttonLoopSonoffDual() {
 
     }
 
-#elif BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL
+#elif BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT
 
     DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %u\n"), value);
 
@@ -609,7 +607,7 @@ void _buttonLoopSonoffDual() {
         }
     }
 
-#endif // BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL
+#endif // BUTTON_PROVIDER_ITEAD_SONOFF_DUAL
 
 }
 
@@ -624,16 +622,181 @@ void _buttonLoopGeneric() {
 
 void buttonLoop() {
 
-    #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC) || \
-        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
-        _buttonLoopGeneric();
-    #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
+    _buttonLoopGeneric();
+
+    // Unconditionally call these. By default, generic loop will discard everything without the configured events emmiter
+    #if BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
         _buttonLoopSonoffDual();
-    #else
-        #warning "Unknown value for BUTTON_EVENTS_SOURCE"
     #endif
 
+}
+
+// Resistor ladder buttons. Inspired by:
+// - https://gitter.im/tinkerman-cat/espurna?at=5f5d44c8df4af236f902e25d
+// - https://github.com/bxparks/AceButton/tree/develop/docs/resistor_ladder (especially thx @bxparks for the great documentation!)
+// - https://github.com/bxparks/AceButton/blob/develop/src/ace_button/LadderButtonConfig.cpp
+// - https://github.com/dxinteractive/AnalogMultiButton
+
+#if BUTTON_PROVIDER_ANALOG_SUPPORT
+
+class AnalogPin final : public BasePin {
+
+    public:
+
+    static constexpr int RangeFrom { 0 };
+    static constexpr int RangeTo { 1023 };
+
+    AnalogPin() = delete;
+    AnalogPin(unsigned char) = delete;
+
+    AnalogPin(unsigned char pin_, int expected_) :
+        BasePin(pin_),
+        _expected(expected_)
+    {
+        pins.reserve(ButtonsPresetMax);
+        pins.push_back(this);
+        adjustPinRanges();
+    }
+
+    ~AnalogPin() {
+        pins.erase(std::remove(pins.begin(), pins.end(), this), pins.end());
+        adjustPinRanges();
+    }
+
+    // Notice that 'static' method vars are shared between instances
+    // This way we will throttle every invocation (which should be safe to do, since we only read things through the button loop)
+    int analogRead() {
+        static unsigned long ts { ESP.getCycleCount() };
+        static int last { ::analogRead(pin) };
+
+        // Cannot hammer analogRead() all the time:
+        // https://github.com/esp8266/Arduino/issues/1634
+        if (ESP.getCycleCount() - ts >= _read_interval) {
+            ts = ESP.getCycleCount();
+            last = ::analogRead(pin);
+        }
+
+        return last;
+    }
+
+    // XXX: make static ctor and call this implicitly?
+    static bool checkExpectedLevel(int expected) {
+        if (expected > RangeTo) {
+            return false;
+        }
+
+        for (auto pin : pins) {
+            if (expected == pin->_expected) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    String description() const override {
+        char buffer[64] {0};
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("AnalogPin @ GPIO%u, expected %d (%d, %d)"),
+            pin, _expected, _from, _to
+        );
+
+        return String(buffer);
+    }
+
+    // Simulate LOW level when the range matches and HIGH when it does not
+    int digitalRead() override {
+        const auto reading = analogRead();
+        return !((_from < reading) && (reading < _to));
+    }
+
+    void pinMode(int8_t) override {
+    }
+
+    void digitalWrite(int8_t val) override {
+    }
+
+    private:
+
+    // ref. https://github.com/bxparks/AceButton/tree/develop/docs/resistor_ladder#level-matching-tolerance-range
+    // fuzzy matching instead of directly comparing with the `_expected` level and / or specifying tolerance manually
+    // for example, for pins with expected values 0, 327, 512 and 844 we match analogRead() when:
+    // - 0..163 for 0
+    // - 163..419 for 327
+    // - 419..678 for 512
+    // - 678..933 for 844
+    // - 933..1024 is ignored
+    static std::vector<AnalogPin*> pins;
+
+    unsigned long _read_interval { microsecondsToClockCycles(200u) };
+
+    int _expected { 0u };
+    int _from { RangeFrom };
+    int _to { RangeTo };
+
+    static void adjustPinRanges() {
+        std::sort(pins.begin(), pins.end(), [](const AnalogPin* lhs, const AnalogPin* rhs) -> bool {
+            return lhs->_expected < rhs->_expected;
+        });
+
+        AnalogPin* last { nullptr };
+        for (unsigned index = 0; index < pins.size(); ++index) {
+            int edge = (index + 1 != pins.size())
+                ? pins[index + 1]->_expected
+                : RangeTo;
+
+            pins[index]->_from = last
+                ? last->_to
+                : RangeFrom;
+            pins[index]->_to = (pins[index]->_expected + edge) / 2;
+
+            last = pins[index];
+        }
+    }
+
+};
+
+std::vector<AnalogPin*> AnalogPin::pins;
+
+#endif // BUTTON_PROVIDER_ANALOG_SUPPORT
+
+std::shared_ptr<BasePin> _buttonFromProvider([[gnu::unused]] unsigned char index, int provider, unsigned char pin) {
+    switch (provider) {
+
+    case BUTTON_PROVIDER_GENERIC:
+        if (!gpioValid(pin)) {
+            break;
+        }
+        return std::shared_ptr<BasePin>(new GpioPin(pin));
+
+#if BUTTON_PROVIDER_MCP23S08_SUPPORT
+    case BUTTON_PROVIDER_MCP23S08:
+        if (!mcpGpioValid(pin)) {
+            break;
+        }
+        return std::shared_ptr<BasePin>(new McpGpioPin(pin));
+#endif
+
+#if BUTTON_PROVIDER_ANALOG_SUPPORT
+    case BUTTON_PROVIDER_ANALOG: {
+        if (A0 != pin) {
+            break;
+        }
+
+        const auto level = getSetting({"btnLevel", index}, _buttonAnalogLevel(index));
+        if (!AnalogPin::checkExpectedLevel(level)) {
+            break;
+        }
+
+        return std::shared_ptr<BasePin>(new AnalogPin(pin, level));
+    }
+#endif
+
+    default:
+        break;
+    }
+
+    return {};
 }
 
 void buttonSetup() {
@@ -642,8 +805,8 @@ void buttonSetup() {
     moveSetting("btnDelay", "btnRepDel");
 
     // Special hardware cases
-    #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
+#if BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
+    {
         size_t buttons = 0;
         #if BUTTON1_RELAY != RELAY_NONE
             ++buttons;
@@ -680,59 +843,23 @@ void buttonSetup() {
             );
             
         }
+    }
+#endif // BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
+
+#if BUTTON_PROVIDER_GENERIC_SUPPORT
 
     // Generic GPIO input handlers
+    {
+        _buttons.reserve(_buttonPreconfiguredPins());
 
-    #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC) || \
-        (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
-
-        size_t buttons = 0;
-
-        #if BUTTON1_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON2_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON3_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON4_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON5_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON6_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON7_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-        #if BUTTON8_PIN != GPIO_NONE
-            ++buttons;
-        #endif
-
-        _buttons.reserve(buttons);
-
-        // TODO: allow to change gpio pin type based on config?
-        #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC)
-            using gpio_type = GpioPin;
-        #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
-            using gpio_type = McpGpioPin;
-        #endif
-
-        for (unsigned char index = 0; index < ButtonsMax; ++index) {
+        for (unsigned char index = _buttons.size(); index < ButtonsMax; ++index) {
+            const auto provider = getSetting({"btnProv", index}, _buttonProvider(index));
             const auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
-            #if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_GENERIC)
-                if (!gpioValid(pin)) {
-                    break;
-                }
-            #elif (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_MCP23S08)
-                if (!mcpGpioValid(pin)) {
-                    break;
-                }
-            #endif
+
+            auto managed_pin = _buttonFromProvider(index, provider, pin);
+            if (!managed_pin) {
+                break;
+            }
 
             const auto relayID = getSetting({"btnRelay", index}, _buttonRelay(index));
 
@@ -753,15 +880,36 @@ void buttonSetup() {
                 getSetting({"btnTclk", index}, _buttonTripleClick(index))
             };
 
-            const auto config = _buttonConfig(index);
+            const auto config = _buttonRuntimeConfig(index);
 
             _buttons.emplace_back(
-                std::make_shared<gpio_type>(pin), config,
+                managed_pin, config,
                 relayID, actions, delays
             );
         }
 
-    #endif
+    }
+
+#endif
+
+#if TERMINAL_SUPPORT
+    if (_buttons.size()) {
+        terminalRegisterCommand(F("BUTTON"), [](const terminal::CommandContext& ctx) {
+            unsigned index { 0u };
+            for (auto& button : _buttons) {
+                ctx.output.printf("%u - ", index++);
+                if (button.event_emitter) {
+                    auto pin = button.event_emitter->getPin();
+                    ctx.output.println(pin->description());
+                } else {
+                    ctx.output.println(F("Virtual"));
+                }
+            }
+
+            terminalOK(ctx);
+        });
+    }
+#endif
 
     _buttonConfigure();
 

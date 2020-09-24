@@ -185,12 +185,13 @@
 #endif
 
 //------------------------------------------------------------------------------
-// When using Dual / Lightfox Dual, notify that Serial should be used
+// Remove serial debug support completely in case hardware does not support it
+// TODO: provide runtime check as well?
 
-#if (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_ITEAD_SONOFF_DUAL) || \
-    (BUTTON_EVENTS_SOURCE == BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL)
+#if (BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT) || \
+    (BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT)
 #if DEBUG_SERIAL_SUPPORT
-#warning "DEBUG_SERIAL_SUPPORT conflicts with the current BUTTON_EVENTS_SOURCE"
+#warning "DEBUG_SERIAL_SUPPORT will be disabled because it conflicts with the BUTTON_PROVIDER_{ITEAD_SONOFF_DUAL,FOXEL_LIGHTFOX_DUAL}"
 #undef DEBUG_SERIAL_SUPPORT
 #define DEBUG_SERIAL_SUPPORT 0
 #endif
@@ -231,4 +232,12 @@
 #if PROMETHEUS_SUPPORT
 #undef WEB_SUPPORT
 #define WEB_SUPPORT 1
+#endif
+
+//------------------------------------------------------------------------------
+// Analog pin needs ADC_TOUT mode set up at compile time
+
+#if BUTTON_PROVIDER_ANALOG_SUPPORT
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
 #endif

@@ -42,22 +42,6 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 static uint8_t  _mcp23s08TxData[16]  __attribute__((aligned(4)));
 static uint8_t  _mcp23s08RxData[16]  __attribute__((aligned(4)));
 
-McpGpioPin::McpGpioPin(unsigned char pin) :
-    BasePin(pin)
-{}
-
-inline void McpGpioPin::pinMode(int8_t mode) {
-    ::MCP23S08SetDirection(this->pin, mode);
-}
-
-inline void McpGpioPin::digitalWrite(int8_t val) {
-    ::MCP23S08SetPin(this->pin, val);
-}
-
-inline int McpGpioPin::digitalRead() {
-    return ::MCP23S08GetPin(this->pin);
-}
-
 void MCP23S08Setup()
 {
     DEBUG_MSG_P(PSTR("[MCP23S08] Initialize SPI bus\n"));

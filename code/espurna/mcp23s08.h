@@ -13,25 +13,9 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 #pragma once
 
-#ifndef MCP23S08_H
-#define MCP23S08_H
-
 #include "espurna.h"
-#include "libs/BasePin.h"
-
-#if MCP23S08_SUPPORT
 
 constexpr size_t McpGpioPins = 8;
-
-// real hardware pin
-class McpGpioPin final : public BasePin {
-    public:
-        explicit McpGpioPin(unsigned char pin);
-
-        void pinMode(int8_t mode);
-        void digitalWrite(int8_t val);
-        int digitalRead();
-};
 
 void MCP23S08Setup();
 
@@ -43,7 +27,3 @@ void MCP23S08SetPin(uint8_t pinNumber, bool state);
 bool MCP23S08GetPin(uint8_t pinNumber);
 
 bool mcpGpioValid(unsigned char gpio);
-
-#endif // MCP23S08_SUPPORT == 1
-
-#endif

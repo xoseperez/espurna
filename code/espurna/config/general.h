@@ -393,19 +393,42 @@
 
 #ifndef BUTTON_MQTT_SEND_ALL_EVENTS
 #define BUTTON_MQTT_SEND_ALL_EVENTS     0           // 0 - to send only events the are bound to actions
-                                                   // 1 - to send all button events to MQTT
+                                                    // 1 - to send all button events to MQTT
 #endif
 
 #ifndef BUTTON_MQTT_RETAIN
 #define BUTTON_MQTT_RETAIN              0
 #endif
 
-#ifndef BUTTON_EVENTS_SOURCE
-#define BUTTON_EVENTS_SOURCE            BUTTON_EVENTS_SOURCE_GENERIC   // Type of button event source. One of:
-                                                                       // BUTTON_EVENTS_SOURCE_GENERIC - GPIOs (virtual or real)
-                                                                       // BUTTON_EVENTS_SOURCE_SONOFF_DUAL - hardware specific, drive buttons through serial connection
-                                                                       // BUTTON_EVENTS_SOURCE_FOXEL_LIGHTFOX_DUAL - similar to Itead Sonoff Dual, hardware specific
-                                                                       // BUTTON_EVENTS_SOURCE_MCP23S08 - activate virtual button connected to gpio expander
+// Generic digital pin support
+
+#ifndef BUTTON_PROVIDER_GENERIC_SUPPORT
+#define BUTTON_PROVIDER_GENERIC_SUPPORT                1
+#endif
+
+// Hardware specific, drive buttons through serial connection
+// (mutually exclusive)
+
+#ifndef BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
+#define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT      0
+#endif
+
+#ifndef BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
+#define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL            0
+#endif
+
+// Support MCP23S08 8-Bit I/O Expander via the SPI interface
+
+#ifndef BUTTON_PROVIDER_MCP23S08_SUPPORT
+#define BUTTON_PROVIDER_MCP23S08_SUPPORT               MCP23S08_SUPPORT
+#endif
+
+// Resistor ladder support. Poll analog pin and return digital LOW when analog reading is in a certain range
+// ref. https://github.com/bxparks/AceButton/tree/develop/docs/resistor_ladder
+// Uses BUTTON#_ANALOG_LEVEL for the individual button level configuration
+
+#ifndef BUTTON_PROVIDER_ANALOG_SUPPORT
+#define BUTTON_PROVIDER_ANALOG_SUPPORT                 0
 #endif
 
 //------------------------------------------------------------------------------
