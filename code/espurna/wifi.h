@@ -62,6 +62,8 @@ WiFiApMode wifiApMode();
 void wifiStartAP();
 void wifiStartSTA();
 void wifiDisconnect();
+void wifiTurnOff();
+void wifiTurnOn();
 
 void wifiStartWPS();
 void wifiStartSmartConfig();
