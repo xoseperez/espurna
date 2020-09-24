@@ -12,6 +12,8 @@
 #include "../debug.h"
 #include "BaseSensor.h"
 
+#include <atomic>
+
 // we are bound by usable GPIOs
 #define EVENTS_SENSORS_MAX 10
 
@@ -38,10 +40,6 @@ class EventSensor : public BaseSensor {
             _gpio = gpio;
         }
 
-        void setTrigger(bool trigger) {
-            _trigger = trigger;
-        }
-
         void setPinMode(unsigned char pin_mode) {
             _pin_mode = pin_mode;
         }
@@ -51,17 +49,13 @@ class EventSensor : public BaseSensor {
         }
 
         void setDebounceTime(unsigned long ms) {
-            _debounce = microsecondsToClockCycles(ms * 1000);
+            _isr_debounce = microsecondsToClockCycles(ms * 1000);
         }
 
         // ---------------------------------------------------------------------
 
         unsigned char getGPIO() {
             return _gpio;
-        }
-
-        bool getTrigger() {
-            return _trigger;
         }
 
         unsigned char getPinMode() {
@@ -73,7 +67,7 @@ class EventSensor : public BaseSensor {
         }
 
         unsigned long getDebounceTime() {
-            return _debounce;
+            return _isr_debounce;
         }
 
         // ---------------------------------------------------------------------
@@ -84,8 +78,10 @@ class EventSensor : public BaseSensor {
         // Defined outside the class body
         void begin() {
             pinMode(_gpio, _pin_mode);
+            _value = digitalRead(_gpio);
+            _counter = 0;
             _enableInterrupts(true);
-            _count = _trigger ? 2 : 1;
+            _count = 2;
             _ready = true;
         }
 
@@ -116,14 +112,14 @@ class EventSensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             if (index == 0) {
-                double value = _counter;
-                _counter = 0;
-                return value;
-            };
-            if (index == 1) {
-                return _value;
+                auto copy = _counter.load();
+                _counter = 0ul;
+                return copy;
+            } else if (index == 1) {
+                return _value.load();
             }
-            return 0;
+
+            return 0.0;
         }
 
         // Handle interrupt calls from isr[GPIO] functions
@@ -139,17 +135,12 @@ class EventSensor : public BaseSensor {
             // - clockCyclesToMicroseconds(cycles)
             // Since the division operation on this chip is pretty slow,
             // avoid doing the conversion here
-            unsigned long cycles = ESP.getCycleCount();
+            auto cycles = ESP.getCycleCount();
 
-            if (cycles - _last > _debounce) {
-                _last = cycles;
+            if (cycles - _isr_last > _isr_debounce) {
+                _isr_last = cycles;
+                _value = digitalRead(_gpio);
                 _counter += 1;
-
-                // we are handling callbacks in tick()
-                if (_trigger) {
-                    _trigger_value = digitalRead(gpio);
-                    _trigger_flag = true;
-                }
             }
         }
 
@@ -163,28 +154,24 @@ class EventSensor : public BaseSensor {
         void _detach(unsigned char gpio);
 
         void _enableInterrupts(bool value) {
-
             if (value) {
                 _detach(_gpio);
                 _attach(_gpio, _interrupt_mode);
             } else {
                 _detach(_gpio);
             }
-
         }
 
         // ---------------------------------------------------------------------
         // Protected
         // ---------------------------------------------------------------------
 
-        volatile unsigned long _counter = 0;
-        unsigned char _value = 0;
-        unsigned long _last = 0;
-        unsigned long _debounce = microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000);
+        // XXX: cannot have default values with GCC 4.8
+        std::atomic<unsigned long> _counter;
+        std::atomic<int> _value;
 
-        bool _trigger = false;
-        bool _trigger_flag = false;
-        unsigned char _trigger_value = false;
+        unsigned long _isr_last = 0;
+        unsigned long _isr_debounce = microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000);
 
         unsigned char _gpio = GPIO_NONE;
         unsigned char _pin_mode = INPUT;

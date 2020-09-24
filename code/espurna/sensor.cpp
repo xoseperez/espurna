@@ -1777,101 +1777,73 @@ void _sensorLoad() {
 
     #if EVENTS_SUPPORT
     {
-        #if (EVENTS1_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS1_PIN);
-            sensor->setTrigger(EVENTS1_TRIGGER);
-            sensor->setPinMode(EVENTS1_PIN_MODE);
-            sensor->setDebounceTime(EVENTS1_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS1_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
+        auto getPin = [](unsigned char index) -> int {
+            switch (index) {
+            case 0: return EVENTS1_PIN;
+            case 1: return EVENTS2_PIN;
+            case 2: return EVENTS3_PIN;
+            case 3: return EVENTS4_PIN;
+            case 4: return EVENTS5_PIN;
+            case 5: return EVENTS6_PIN;
+            case 6: return EVENTS7_PIN;
+            case 7: return EVENTS8_PIN;
+            default: return GPIO_NONE;
+            }
+        };
 
-        #if (EVENTS2_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS2_PIN);
-            sensor->setTrigger(EVENTS2_TRIGGER);
-            sensor->setPinMode(EVENTS2_PIN_MODE);
-            sensor->setDebounceTime(EVENTS2_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS2_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
+        auto getMode = [](unsigned char index) -> int {
+            switch (index) {
+            case 0: return EVENTS1_PIN_MODE;
+            case 1: return EVENTS2_PIN_MODE;
+            case 2: return EVENTS3_PIN_MODE;
+            case 3: return EVENTS4_PIN_MODE;
+            case 4: return EVENTS5_PIN_MODE;
+            case 5: return EVENTS6_PIN_MODE;
+            case 6: return EVENTS7_PIN_MODE;
+            case 7: return EVENTS8_PIN_MODE;
+            default: return INPUT;
+            }
+        };
 
-        #if (EVENTS3_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS3_PIN);
-            sensor->setTrigger(EVENTS3_TRIGGER);
-            sensor->setPinMode(EVENTS3_PIN_MODE);
-            sensor->setDebounceTime(EVENTS3_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS3_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
+        auto getDebounce = [](unsigned char index) -> unsigned long {
+            switch (index) {
+            case 0: return EVENTS1_DEBOUNCE;
+            case 1: return EVENTS2_DEBOUNCE;
+            case 2: return EVENTS3_DEBOUNCE;
+            case 3: return EVENTS4_DEBOUNCE;
+            case 4: return EVENTS5_DEBOUNCE;
+            case 5: return EVENTS6_DEBOUNCE;
+            case 6: return EVENTS7_DEBOUNCE;
+            case 7: return EVENTS8_DEBOUNCE;
+            default: return 50;
+            }
+        };
 
-        #if (EVENTS4_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS4_PIN);
-            sensor->setTrigger(EVENTS4_TRIGGER);
-            sensor->setPinMode(EVENTS4_PIN_MODE);
-            sensor->setDebounceTime(EVENTS4_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS4_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
+        auto getIsrMode = [](unsigned char index) -> int {
+            switch (index) {
+            case 0: return EVENTS1_INTERRUPT_MODE;
+            case 1: return EVENTS2_INTERRUPT_MODE;
+            case 2: return EVENTS3_INTERRUPT_MODE;
+            case 3: return EVENTS4_INTERRUPT_MODE;
+            case 4: return EVENTS5_INTERRUPT_MODE;
+            case 5: return EVENTS6_INTERRUPT_MODE;
+            case 6: return EVENTS7_INTERRUPT_MODE;
+            case 7: return EVENTS8_INTERRUPT_MODE;
+            default: return RISING;
+            }
+        };
 
-        #if (EVENTS5_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS5_PIN);
-            sensor->setTrigger(EVENTS5_TRIGGER);
-            sensor->setPinMode(EVENTS5_PIN_MODE);
-            sensor->setDebounceTime(EVENTS5_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS5_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
+        for (unsigned char index = 0; index < GpioPins; ++index) {
+            const auto pin = getPin(index);
+            if (pin == GPIO_NONE) break;
 
-        #if (EVENTS6_PIN != GPIO_NONE)
-        {
             EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS6_PIN);
-            sensor->setTrigger(EVENTS6_TRIGGER);
-            sensor->setPinMode(EVENTS6_PIN_MODE);
-            sensor->setDebounceTime(EVENTS6_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS6_INTERRUPT_MODE);
+            sensor->setGPIO(pin);
+            sensor->setPinMode(getMode(index));
+            sensor->setDebounceTime(getDebounce(index));
+            sensor->setInterruptMode(getIsrMode(index));
             _sensors.push_back(sensor);
         }
-        #endif
-
-        #if (EVENTS7_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS7_PIN);
-            sensor->setTrigger(EVENTS7_TRIGGER);
-            sensor->setPinMode(EVENTS7_PIN_MODE);
-            sensor->setDebounceTime(EVENTS7_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS7_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (EVENTS8_PIN != GPIO_NONE)
-        {
-            EventSensor * sensor = new EventSensor();
-            sensor->setGPIO(EVENTS8_PIN);
-            sensor->setTrigger(EVENTS8_TRIGGER);
-            sensor->setPinMode(EVENTS8_PIN_MODE);
-            sensor->setDebounceTime(EVENTS8_DEBOUNCE);
-            sensor->setInterruptMode(EVENTS8_INTERRUPT_MODE);
-            _sensors.push_back(sensor);
-        }
-        #endif
     }
     #endif
 
