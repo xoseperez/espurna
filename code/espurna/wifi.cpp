@@ -748,6 +748,14 @@ WiFiApMode wifiApMode() {
     return _wifi_ap_mode;
 }
 
+void wifiTurnOff() {
+    jw.turnOff();
+}
+
+void wifiTurnOn() {
+    jw.turnOn();
+}
+
 // -----------------------------------------------------------------------------
 // INITIALIZATION
 // -----------------------------------------------------------------------------

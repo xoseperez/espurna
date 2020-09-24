@@ -14,10 +14,12 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "mqtt.h"
 #include "ntp.h"
 #include "relay.h"
-#include "rpc.h"
-#include "sensor.h"
 #include "rfbridge.h"
+#include "rpc.h"
+#include "rtcmem.h"
+#include "sensor.h"
 #include "terminal.h"
+#include "wifi.h"
 #include "ws.h"
 
 #include <list>
@@ -622,6 +624,100 @@ void _rpnInit() {
         });
     #endif
 
+    rpn_operator_set(_rpn_ctxt, "mem?", 0, [](rpn_context & ctxt) -> rpn_error {
+        rpn_stack_push(ctxt, rpn_value(rtcmemStatus()));
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "mem_write", 2, [](rpn_context & ctxt) -> rpn_error {
+        auto addr = rpn_stack_pop(ctxt).toUint();
+        auto value = rpn_stack_pop(ctxt).toUint();
+
+        if (addr < RTCMEM_BLOCKS) {
+            auto* rtcmem = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+            *(rtcmem + addr) = value;
+            return 0;
+        }
+
+        return rpn_operator_error::InvalidArgument;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "mem_read", 1, [](rpn_context & ctxt) -> rpn_error {
+        auto addr = rpn_stack_pop(ctxt).toUint();
+
+        if (addr < RTCMEM_BLOCKS) {
+            auto* rtcmem = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+            rpn_uint result = *(rtcmem + addr);
+            rpn_stack_push(ctxt, rpn_value(result));
+            return 0;
+        }
+
+        return rpn_operator_error::InvalidArgument;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "sleep", 2, [](rpn_context & ctxt) -> rpn_error {
+        static bool once { false };
+        if (once) return rpn_operator_error::CannotContinue;
+
+        auto value = rpn_stack_pop(ctxt).checkedToUint();
+        if (!value.ok()) {
+            return value.error();
+        }
+
+        uint64_t duration = value.value();
+        if (!duration) {
+            return rpn_operator_error::CannotContinue;
+        }
+
+        auto mode = rpn_stack_pop(ctxt).toUint();
+
+        once = true;
+        schedule_function([duration, mode]() {
+            wifiTurnOff();
+            ESP.deepSleep(duration * 1000000ull, static_cast<RFMode>(mode));
+        });
+
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "stations", 0, [](rpn_context & ctxt) -> rpn_error {
+        if (!(WiFi.getMode() & WIFI_AP)) return rpn_operator_error::CannotContinue;
+        rpn_stack_push(ctxt, rpn_value(static_cast<rpn_uint>(WiFi.softAPgetStationNum())));
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "disconnect", 0, [](rpn_context & ctxt) -> rpn_error {
+        wifiDisconnect();
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "rssi", 0, [](rpn_context & ctxt) -> rpn_error {
+        if (!wifiConnected()) return rpn_operator_error::CannotContinue;
+        rpn_stack_push(ctxt, rpn_value(static_cast<rpn_int>(WiFi.RSSI())));
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "delay", 1, [](rpn_context & ctxt) -> rpn_error {
+        auto ms = rpn_stack_pop(ctxt);
+        delay(ms.toUint());
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "yield", 0, [](rpn_context & ctxt) -> rpn_error {
+        yield();
+        return 0;
+    });
+
+    rpn_operator_set(_rpn_ctxt, "reset", 0, [](rpn_context & ctxt) -> rpn_error {
+        static bool once = ([]() {
+            deferredReset(100, CUSTOM_RESET_TERMINAL);
+            return true;
+        })();
+        return once
+            ? rpn_operator_error::CannotContinue
+            : rpn_operator_error::Ok;
+    });
+
     rpn_operator_set(_rpn_ctxt, "millis", 0, [](rpn_context & ctxt) -> rpn_error {
         rpn_stack_push(ctxt, rpn_value(static_cast<uint32_t>(millis())));
         return 0;
@@ -636,6 +732,11 @@ void _rpnInit() {
         auto every = rpn_stack_pop(ctxt);
         return _rpnRunnerHandler(ctxt, RpnRunner::Policy::Periodic, every.toUint());
     });
+
+    // XXX: workaround for the vector 2x growth on push. will need to fix this in the rpnlib
+    _rpn_ctxt.operators.shrink_to_fit();
+
+    DEBUG_MSG_P(PSTR("[RPN] Registered %u operators\n"), _rpn_ctxt.operators.size());
 
 }
 
