@@ -682,7 +682,7 @@
 #endif
 
 #ifndef GEIGER_PIN
-#define GEIGER_PIN                      D1       // GPIO to monitor "D1" => "GPIO5"
+#define GEIGER_PIN                      5       // D1
 #endif
 
 #ifndef GEIGER_PIN_MODE
