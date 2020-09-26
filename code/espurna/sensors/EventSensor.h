@@ -107,37 +107,41 @@ class EventSensor : public BaseSensor {
             return MAGNITUDE_NONE;
         }
 
-        // Current value for slot # index
-        double value(unsigned char index) {
-            auto copy = _counter.load();
-            if (index == 0) {
-                _counter = 0ul;
-                return copy;
-            } else if (index == 1) {
-                return (copy > 0) ? 1.0 : 0.0;
-            }
+        // Note: it seems atomic fetch & exchange are not implemented for the arch,
+        // resort to manual load() + store() each time
+        void pre() override {
+            _current = _counter.load();
+            _counter.store(0ul);
+        }
 
-            return 0.0;
+        double value(unsigned char index) override {
+            switch (index) {
+            case 0:
+                return _current;
+            case 1:
+                return (_current > 0) ? 1.0 : 0.0;
+            default:
+                return 0.0;
+            }
         }
 
         // Handle interrupt calls from isr[GPIO] functions
+        // Debounce is based around ccount (32bit value), overflowing every:
+        // ~53s when F_CPU is 80MHz
+        // ~26s when F_CPU is 160MHz
+        // see: cores/esp8266/Arduino.h definitions
+        //
+        // To convert to / from normal time values, use:
+        // - microsecondsToClockCycles(microseconds)
+        // - clockCyclesToMicroseconds(cycles)
+        // Since the division operation on this chip is pretty slow,
+        // avoid doing the conversion here and instead do that at initialization
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-            // clock count in 32bit value, overflowing:
-            // ~53s when F_CPU is 80MHz
-            // ~26s when F_CPU is 160MHz
-            // see: cores/esp8266/Arduino.h definitions
-            //
-            // Note:
-            // To convert to / from normal time values, use:
-            // - microsecondsToClockCycles(microseconds)
-            // - clockCyclesToMicroseconds(cycles)
-            // Since the division operation on this chip is pretty slow,
-            // avoid doing the conversion here
             auto cycles = ESP.getCycleCount();
 
             if (cycles - _isr_last > _isr_debounce) {
-                auto counter = _counter.load();
-                _counter.store(counter + 1ul);
+                auto counter = _counter.load(std::memory_order_relaxed);
+                _counter.store(counter + 1ul, std::memory_order_relaxed);
                 _isr_last = cycles;
             }
         }
@@ -164,8 +168,8 @@ class EventSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        // XXX: cannot have default values with GCC 4.8
         std::atomic<unsigned long> _counter;
+        unsigned long _current { 0ul };
 
         unsigned long _isr_last = 0;
         unsigned long _isr_debounce = microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000);
