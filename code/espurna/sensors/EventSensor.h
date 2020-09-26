@@ -26,7 +26,7 @@ class EventSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         EventSensor() {
-            _count = 1;
+            _count = 2;
             _sensor_id = SENSOR_EVENTS_ID;
         }
 
@@ -78,10 +78,8 @@ class EventSensor : public BaseSensor {
         // Defined outside the class body
         void begin() {
             pinMode(_gpio, _pin_mode);
-            _value = digitalRead(_gpio);
             _counter = 0;
             _enableInterrupts(true);
-            _count = 2;
             _ready = true;
         }
 
@@ -111,12 +109,12 @@ class EventSensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
+            auto copy = _counter.load();
             if (index == 0) {
-                auto copy = _counter.load();
                 _counter = 0ul;
                 return copy;
             } else if (index == 1) {
-                return _value.load();
+                return (copy > 0) ? 1.0 : 0.0;
             }
 
             return 0.0;
@@ -138,9 +136,9 @@ class EventSensor : public BaseSensor {
             auto cycles = ESP.getCycleCount();
 
             if (cycles - _isr_last > _isr_debounce) {
+                auto counter = _counter.load();
+                _counter.store(counter + 1ul);
                 _isr_last = cycles;
-                _value = digitalRead(_gpio);
-                _counter += 1;
             }
         }
 
@@ -168,7 +166,6 @@ class EventSensor : public BaseSensor {
 
         // XXX: cannot have default values with GCC 4.8
         std::atomic<unsigned long> _counter;
-        std::atomic<int> _value;
 
         unsigned long _isr_last = 0;
         unsigned long _isr_debounce = microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000);
