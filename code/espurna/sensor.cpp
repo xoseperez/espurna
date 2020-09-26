@@ -220,6 +220,13 @@ struct sensor_magnitude_t {
     constexpr static double _unset = std::numeric_limits<double>::quiet_NaN();
     static unsigned char _counts[MAGNITUDE_MAX];
 
+    sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
+
+    void move(sensor_magnitude_t&& other) noexcept {
+        *this = other;
+        other.filter = nullptr;
+    }
+
     public:
 
     static unsigned char counts(unsigned char type) {
@@ -227,15 +234,18 @@ struct sensor_magnitude_t {
     }
 
     sensor_magnitude_t() = delete;
-    sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
-
     sensor_magnitude_t(const sensor_magnitude_t&) = delete;
     sensor_magnitude_t(sensor_magnitude_t&& other) noexcept {
         *this = other;
         other.filter = nullptr;
     }
 
-    ~sensor_magnitude_t() {
+    sensor_magnitude_t& operator=(sensor_magnitude_t&& other) noexcept {
+        move(std::move(other));
+        return *this;
+    }
+
+    ~sensor_magnitude_t() noexcept {
         delete filter;
     }
 
