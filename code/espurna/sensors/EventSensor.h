@@ -12,8 +12,6 @@
 #include "../debug.h"
 #include "BaseSensor.h"
 
-#include <atomic>
-
 // we are bound by usable GPIOs
 #define EVENTS_SENSORS_MAX 10
 
@@ -78,7 +76,6 @@ class EventSensor : public BaseSensor {
         // Defined outside the class body
         void begin() {
             pinMode(_gpio, _pin_mode);
-            _counter = 0;
             _enableInterrupts(true);
             _ready = true;
         }
@@ -107,11 +104,11 @@ class EventSensor : public BaseSensor {
             return MAGNITUDE_NONE;
         }
 
-        // Note: it seems atomic fetch & exchange are not implemented for the arch,
-        // resort to manual load() + store() each time
         void pre() override {
-            _current = _counter.load();
-            _counter.store(0ul);
+            ETS_GPIO_INTR_DISABLE();
+            _current = _counter;
+            _counter = 0ul;
+            ETS_GPIO_INTR_ENABLE();
         }
 
         double value(unsigned char index) override {
@@ -126,24 +123,28 @@ class EventSensor : public BaseSensor {
         }
 
         // Handle interrupt calls from isr[GPIO] functions
-        // Debounce is based around ccount (32bit value), overflowing every:
-        // ~53s when F_CPU is 80MHz
-        // ~26s when F_CPU is 160MHz
-        // see: cores/esp8266/Arduino.h definitions
-        //
-        // To convert to / from normal time values, use:
-        // - microsecondsToClockCycles(microseconds)
-        // - clockCyclesToMicroseconds(cycles)
-        // Since the division operation on this chip is pretty slow,
-        // avoid doing the conversion here and instead do that at initialization
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-            auto cycles = ESP.getCycleCount();
+        // Cannot be nested, since the esp8266/Arduino Core already masks all GPIO handlers before calling this function
 
+        void ICACHE_RAM_ATTR handleDebouncedInterrupt() {
+            // Debounce is based around ccount (32bit value), overflowing every:
+            // ~53s when F_CPU is 80MHz
+            // ~26s when F_CPU is 160MHz
+            // see: cores/esp8266/Arduino.h definitions
+            //
+            // To convert to / from normal time values, use:
+            // - microsecondsToClockCycles(microseconds)
+            // - clockCyclesToMicroseconds(cycles)
+            // Since the division operation on this chip is pretty slow,
+            // avoid doing the conversion here and instead do that at initialization
+            auto cycles = ESP.getCycleCount();
             if (cycles - _isr_last > _isr_debounce) {
-                auto counter = _counter.load(std::memory_order_relaxed);
-                _counter.store(counter + 1ul, std::memory_order_relaxed);
                 _isr_last = cycles;
+                ++_counter;
             }
+        }
+
+        void ICACHE_RAM_ATTR handleInterrupt() {
+            ++_counter;
         }
 
     protected:
@@ -168,15 +169,15 @@ class EventSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        std::atomic<unsigned long> _counter;
+        unsigned long _counter { 0ul };
         unsigned long _current { 0ul };
 
-        unsigned long _isr_last = 0;
-        unsigned long _isr_debounce = microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000);
+        unsigned long _isr_last { 0ul };
+        unsigned long _isr_debounce { microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000) };
 
-        unsigned char _gpio = GPIO_NONE;
-        unsigned char _pin_mode = INPUT;
-        unsigned char _interrupt_mode = RISING;
+        int _gpio { GPIO_NONE };
+        int _pin_mode { INPUT };
+        int _interrupt_mode { RISING };
 
 };
 
@@ -186,23 +187,24 @@ class EventSensor : public BaseSensor {
 
 EventSensor * _event_sensor_instance[EVENTS_SENSORS_MAX] = {nullptr};
 
-void ICACHE_RAM_ATTR _event_sensor_isr(unsigned char gpio) {
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_event_sensor_instance[index]) {
-        _event_sensor_instance[index]->handleInterrupt(gpio);
+void ICACHE_RAM_ATTR _event_sensor_isr(EventSensor* instance) {
+    if (instance->getDebounceTime()) {
+        instance->handleDebouncedInterrupt();
+    } else {
+        instance->handleInterrupt();
     }
 }
 
-void ICACHE_RAM_ATTR _event_sensor_isr_0() { _event_sensor_isr(0); }
-void ICACHE_RAM_ATTR _event_sensor_isr_1() { _event_sensor_isr(1); }
-void ICACHE_RAM_ATTR _event_sensor_isr_2() { _event_sensor_isr(2); }
-void ICACHE_RAM_ATTR _event_sensor_isr_3() { _event_sensor_isr(3); }
-void ICACHE_RAM_ATTR _event_sensor_isr_4() { _event_sensor_isr(4); }
-void ICACHE_RAM_ATTR _event_sensor_isr_5() { _event_sensor_isr(5); }
-void ICACHE_RAM_ATTR _event_sensor_isr_12() { _event_sensor_isr(12); }
-void ICACHE_RAM_ATTR _event_sensor_isr_13() { _event_sensor_isr(13); }
-void ICACHE_RAM_ATTR _event_sensor_isr_14() { _event_sensor_isr(14); }
-void ICACHE_RAM_ATTR _event_sensor_isr_15() { _event_sensor_isr(15); }
+void ICACHE_RAM_ATTR _event_sensor_isr_0() { _event_sensor_isr(_event_sensor_instance[0]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_1() { _event_sensor_isr(_event_sensor_instance[1]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_2() { _event_sensor_isr(_event_sensor_instance[2]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_3() { _event_sensor_isr(_event_sensor_instance[3]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_4() { _event_sensor_isr(_event_sensor_instance[4]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_5() { _event_sensor_isr(_event_sensor_instance[5]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_12() { _event_sensor_isr(_event_sensor_instance[6]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_13() { _event_sensor_isr(_event_sensor_instance[7]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_14() { _event_sensor_isr(_event_sensor_instance[8]); }
+void ICACHE_RAM_ATTR _event_sensor_isr_15() { _event_sensor_isr(_event_sensor_instance[9]); }
 
 static void (*_event_sensor_isr_list[10])() = {
     _event_sensor_isr_0, _event_sensor_isr_1, _event_sensor_isr_2,
