@@ -821,64 +821,6 @@
 #endif
 
 // -----------------------------------------------------------------------------
-// Digital Inputs
-// -----------------------------------------------------------------------------
-
-#ifndef DIGITAL1_PIN
-#define DIGITAL1_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL2_PIN
-#define DIGITAL2_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL3_PIN
-#define DIGITAL3_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL4_PIN
-#define DIGITAL4_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL5_PIN
-#define DIGITAL5_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL6_PIN
-#define DIGITAL6_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL7_PIN
-#define DIGITAL7_PIN         GPIO_NONE
-#endif
-#ifndef DIGITAL8_PIN
-#define DIGITAL8_PIN         GPIO_NONE
-#endif
-
-// -----------------------------------------------------------------------------
-// Events
-// -----------------------------------------------------------------------------
-
-#ifndef EVENTS1_PIN
-#define EVENTS1_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS2_PIN
-#define EVENTS2_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS3_PIN
-#define EVENTS3_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS4_PIN
-#define EVENTS4_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS5_PIN
-#define EVENTS5_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS6_PIN
-#define EVENTS6_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS7_PIN
-#define EVENTS7_PIN         GPIO_NONE
-#endif
-#ifndef EVENTS8_PIN
-#define EVENTS8_PIN         GPIO_NONE
-#endif
-
-// -----------------------------------------------------------------------------
 // Lights
 // -----------------------------------------------------------------------------
 
