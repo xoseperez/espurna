@@ -64,6 +64,7 @@
 //#define GENERIC_GU10
 //#define GENERIC_V9261F
 //#define GIZWITS_WITTY_CLOUD
+//#define GOSUND_SP111
 //#define GOSUND_WP3
 //#define GOSUND_WS1
 //#define GREEN_ESP8266RELAY
