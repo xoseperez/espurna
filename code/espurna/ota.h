@@ -38,6 +38,7 @@ void otaClientSetup();
 #include <WiFiClientSecure.h>
 #endif
 
+void otaSetup();
 void otaPrintError();
 bool otaFinalize(size_t size, int reason, bool evenIfRemaining = false);
 
