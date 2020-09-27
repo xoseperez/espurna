@@ -153,14 +153,10 @@ void setup() {
     info(true);
 
     wifiSetup();
-    #if OTA_ARDUINOOTA_SUPPORT
-        arduinoOtaSetup();
-    #endif
+    otaSetup();
+
     #if TELNET_SUPPORT
         telnetSetup();
-    #endif
-    #if OTA_CLIENT != OTA_CLIENT_NONE
-        otaClientSetup();
     #endif
 
     // -------------------------------------------------------------------------
