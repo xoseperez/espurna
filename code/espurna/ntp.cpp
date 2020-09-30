@@ -153,7 +153,6 @@ bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _ntpWebSocketOnVisible(JsonObject& root) {
     root["ntpVisible"] = 1;
-    root["ntplwipVisible"] = 1;
 }
 
 void _ntpWebSocketOnData(JsonObject& root) {
@@ -179,30 +178,44 @@ String _ntpGetServer() {
     return server;
 }
 
+NtpInfo ntpInfo() {
+    NtpInfo result;
+
+    auto ts = now();
+    result.now = ts;
+
+    tm sync_tm;
+    gmtime_r(&_ntp_last, &sync_tm);
+    result.sync = ntpDateTime(&sync_tm);
+
+    tm utc_tm;
+    gmtime_r(&ts, &utc_tm);
+    result.utc = ntpDateTime(&utc_tm);
+
+    const char* cfg_tz = getenv("TZ");
+    if ((cfg_tz != nullptr) && (strcmp(cfg_tz, "UTC0") != 0)) {
+        tm local_tm;
+        localtime_r(&ts, &local_tm);
+        result.local = ntpDateTime(&local_tm);
+        result.tz = cfg_tz;
+    }
+
+    return result;
+}
+
 void _ntpReport() {
     if (!ntpSynced()) {
         DEBUG_MSG_P(PSTR("[NTP] Not synced\n"));
         return;
     }
 
-    tm utc_tm;
-    tm sync_tm;
-
-    auto ts = now();
-    gmtime_r(&ts, &utc_tm);
-    gmtime_r(&_ntp_last, &sync_tm);
-
+    auto info = ntpInfo();
     DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntp_server.c_str());
-    DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), ntpDateTime(&sync_tm).c_str());
-    DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), ntpDateTime(&utc_tm).c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), info.sync.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), info.utc.c_str());
 
-    const char* cfg_tz = getenv("TZ");
-    if ((cfg_tz != nullptr) && (strcmp(cfg_tz, "UTC0") != 0)) {
-        tm local_tm;
-        localtime_r(&ts, &local_tm);
-        DEBUG_MSG_P(PSTR("[NTP] Local Time : %s (%s)\n"),
-            ntpDateTime(&local_tm).c_str(), cfg_tz
-        );
+    if (info.tz.length()) {
+        DEBUG_MSG_P(PSTR("[NTP] Local Time : %s (%s)\n"), info.local.c_str(), info.tz.c_str());
     }
 }
 
@@ -334,6 +347,57 @@ void _ntpSetTimestamp(time_t ts) {
 
 // -----------------------------------------------------------------------------
 
+void _ntpConvertLegacyOffsets() {
+    bool found { false };
+
+    bool europe { true };
+    bool dst { false };
+    int offset { 0 };
+
+    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+        const auto key = kv.key.read();
+        if (key == F("ntpOffset")) {
+            offset = kv.value.read().toInt();
+            found = true;
+        } else if (key == F("ntpDST")) {
+            dst = (1 == kv.value.read().toInt());
+            found = true;
+        } else if (key == F("ntpRegion")) {
+            europe = (0 == kv.value.read().toInt());
+            found = true;
+        }
+    });
+
+    if (!found) {
+        return;
+    }
+
+    // XXX: only expect offsets in hours
+    String custom { europe ? F("CET") : F("CST") };
+    custom.reserve(16);
+
+    if (offset > 0) {
+        custom += '-';
+    }
+    custom += offset / 60;
+
+    if (dst) {
+        custom += europe ? F("CEST") : F("EDT");
+        if (europe) {
+            custom += F(",M3.5.0,M10.5.0/3");
+        } else {
+            custom += F(",M3.2.0,M11.1.0");
+        }
+    }
+
+    delSetting("ntpOffset");
+    delSetting("ntpDST");
+    delSetting("ntpRegion");
+
+    setSetting("ntpTZ", custom);
+
+}
+
 void ntpSetup() {
 
     // Randomized in time to avoid clogging the server with simultaneous requests from multiple devices
@@ -358,6 +422,7 @@ void ntpSetup() {
 
     // generic configuration, always handled
     espurnaRegisterReload(_ntpConfigure);
+    _ntpConvertLegacyOffsets();
     _ntpConfigure();
 
     // make sure our logic does know about the actual server

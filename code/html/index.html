@@ -1099,7 +1099,7 @@
 
                         <div class="header">
                             <h1>NTP</h1>
-                            <h2>Configure your NTP (Network Time Protocol) servers and local configuration to keep your device time up to the second for your location.</h2>
+                            <h2>Synchronize the device time with the remote server</h2>
                         </div>
 
                         <div class="page">
@@ -1107,8 +1107,13 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Device Current Time</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="now" type="text" readonly />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Device Time</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="nowString" type="text" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Device Local Time</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="nowLocalString" type="text" readonly />
                                 </div>
 
                                 <div class="pure-g">
@@ -1116,27 +1121,11 @@
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer" type="text" tabindex="41" />
                                 </div>
 
-                                <div class="pure-g module module-ntplwip">
+                                <div class="pure-g module module-ntp">
                                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpTZ" type="text" tabindex="42" />
-                                </div>
-
-                                <div class="pure-g module module-ntplegacy">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
-                                </div>
-
-                                <div class="pure-g module module-ntplegacy">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ntpDST" /></div>
-                                </div>
-
-                                <div class="pure-g module module-ntplegacy">
-                                    <label class="pure-u-1 pure-u-lg-1-4">DST Region</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpRegion">
-                                        <option value="0">Europe</option>
-                                        <option value="1">USA</option>
-                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">POSIX TZ variable, defaults to <code>UTC0</code><br/>For the list of possible options, <a rel="noopener" href="https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h">see esp8266/Arduino's TZ.h (use the value inside of F("..."))</a>. For the complete documentation, <a rel="noopener" href="https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html">see libc tzset(3) manual page</a></div>
                                 </div>
 
                             </fieldset>

@@ -44,7 +44,17 @@ struct NtpCalendarWeekday {
     int utc_minute;
 };
 
+struct NtpInfo {
+    String local;
+    String utc;
+    String sync;
+    String tz;
+    time_t now;
+};
+
 BrokerDeclare(NtpBroker, void(const NtpTick, time_t, const String&));
+
+NtpInfo ntpInfo();
 
 String ntpDateTime(tm* timestruct);
 String ntpDateTime(time_t ts);

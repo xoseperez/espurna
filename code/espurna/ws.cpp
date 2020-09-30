@@ -22,7 +22,46 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 AsyncWebSocket _ws("/ws");
 Ticker _ws_defer;
+
+// -----------------------------------------------------------------------------
+// Periodic updates
+// -----------------------------------------------------------------------------
+
 uint32_t _ws_last_update = 0;
+
+void _wsResetUpdateTimer() {
+    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
+}
+
+void _wsUpdate(JsonObject& root) {
+    root["heap"] = getFreeHeap();
+    root["uptime"] = getUptime();
+    root["rssi"] = WiFi.RSSI();
+    root["loadaverage"] = systemLoadAverage();
+    if (ADC_MODE_VALUE == ADC_VCC) {
+        root["vcc"] = ESP.getVcc();
+    } else {
+        root["vcc"] = "N/A (TOUT) ";
+    }
+#if NTP_SUPPORT
+    if (ntpSynced()) {
+        auto info { ntpInfo() };
+        root["now"] = info.now;
+        root["nowString"] = info.utc;
+        root["nowLocalString"] = info.local.length()
+            ? info.local
+            : info.utc;
+    }
+#endif
+}
+
+void _wsDoUpdate(const bool connected) {
+    if (!connected) return;
+    if (millis() - _ws_last_update > WS_UPDATE_INTERVAL) {
+        _ws_last_update = millis();
+        wsSend(_wsUpdate);
+    }
+}
 
 // -----------------------------------------------------------------------------
 // WS callbacks
@@ -354,7 +393,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             String key = kv.key;
             JsonVariant& value = kv.value;
 
-            // Check password
             if (key == "adminPass") {
                 if (!value.is<JsonArray&>()) continue;
                 JsonArray& values = value.as<JsonArray&>();
@@ -371,6 +409,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 }
                 continue;
             }
+#if NTP_SUPPORT
+            else if (key == "ntpTZ") {
+                _wsResetUpdateTimer();
+            }
+#endif
 
             if (!_wsCheckKey(key, value)) {
                 delSetting(key);
@@ -410,33 +453,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     }
 
-}
-
-void _wsUpdate(JsonObject& root) {
-    root["heap"] = getFreeHeap();
-    root["uptime"] = getUptime();
-    root["rssi"] = WiFi.RSSI();
-    root["loadaverage"] = systemLoadAverage();
-    if (ADC_MODE_VALUE == ADC_VCC) {
-        root["vcc"] = ESP.getVcc();
-    } else {
-        root["vcc"] = "N/A (TOUT) ";
-    }
-    #if NTP_SUPPORT
-        if (ntpSynced()) root["now"] = now();
-    #endif
-}
-
-void _wsResetUpdateTimer() {
-    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
-}
-
-void _wsDoUpdate(const bool connected) {
-    if (!connected) return;
-    if (millis() - _ws_last_update > WS_UPDATE_INTERVAL) {
-        _ws_last_update = millis();
-        wsSend(_wsUpdate);
-    }
 }
 
 bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
