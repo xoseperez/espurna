@@ -69,18 +69,6 @@
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
 
 
-#ifndef SENSOR_TEMPERATURE_UNITS
-#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
-#endif
-
-#ifndef SENSOR_ENERGY_UNITS
-#define SENSOR_ENERGY_UNITS                 ENERGY_JOULES   // Energy units (ENERGY_JOULES | ENERGY_KWH)
-#endif
-
-#ifndef SENSOR_POWER_UNITS
-#define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
-#endif
-
 // -----------------------------------------------------------------------------
 // Magnitude offset correction
 // -----------------------------------------------------------------------------

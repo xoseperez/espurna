@@ -4655,9 +4655,6 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
-    #define SENSOR_ENERGY_UNITS         ENERGY_KWH
-    #define SENSOR_POWER_UNITS          POWER_WATTS
-
 // -----------------------------------------------------------------------------
 // Kogan Smarter Home Plug with Energy Meter (Australia)
 // Product code: KASPEMHA
@@ -4702,9 +4699,6 @@
     #define HLW8012_VOLTAGE_RATIO       282060
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
-
-    #define SENSOR_ENERGY_UNITS         ENERGY_KWH
-    #define SENSOR_POWER_UNITS          POWER_WATTS
 
 // -----------------------------------------------------------------------------
 // KINGART_CURTAIN_SWITCH

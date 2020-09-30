@@ -829,40 +829,48 @@ sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::U
     auto result = magnitude.units;
 
     switch (magnitude.type) {
-        case MAGNITUDE_TEMPERATURE: {
-            switch (updated) {
-                case sensor::Unit::Celcius:
-                case sensor::Unit::Farenheit:
-                case sensor::Unit::Kelvin:
-                    result = updated;
-                    break;
-                default:
-                    break;
-            }
+
+    case MAGNITUDE_TEMPERATURE: {
+        switch (updated) {
+        case sensor::Unit::Celcius:
+        case sensor::Unit::Farenheit:
+        case sensor::Unit::Kelvin:
+            result = updated;
+            break;
+        default:
             break;
         }
-        case MAGNITUDE_POWER_ACTIVE: {
-            switch (updated) {
-                case sensor::Unit::Kilowatt:
-                case sensor::Unit::Watt:
-                    result = updated;
-                    break;
-                default:
-                    break;
-            }
+        break;
+    }
+
+    case MAGNITUDE_POWER_ACTIVE: {
+        switch (updated) {
+        case sensor::Unit::Kilowatt:
+        case sensor::Unit::Watt:
+            result = updated;
+            break;
+        default:
             break;
         }
-        case MAGNITUDE_ENERGY: {
-            switch (updated) {
-                case sensor::Unit::KilowattHour:
-                case sensor::Unit::Joule:
-                    result = updated;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
+        break;
+    }
+
+    case MAGNITUDE_ENERGY: {
+       switch (updated) {
+       case sensor::Unit::KilowattHour:
+       case sensor::Unit::Joule:
+           result = updated;
+           break;
+       default:
+           break;
+       }
+       break;
+    }
+
+    default:
+        result = updated;
+        break;
+
     }
 
     return result;
@@ -2396,12 +2404,6 @@ void _sensorConfigure() {
 
     // Update magnitude config, filter sizes and reset energy if needed
     {
-
-        // TODO: instead of using global enum, have a local mapping?
-        const auto tmpUnits = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS);
-        const auto pwrUnits = getSetting("pwrUnits", SENSOR_POWER_UNITS);
-        const auto eneUnits = getSetting("eneUnits", SENSOR_ENERGY_UNITS);
-
         for (unsigned char index = 0; index < _magnitudes.size(); ++index) {
 
             auto& magnitude = _magnitudes.at(index);
@@ -2444,29 +2446,16 @@ void _sensorConfigure() {
                 }
             }
 
-            // adjust type-specific units (TODO: try to adjust settings to use type prefixes?)
-            switch (magnitude.type) {
-                case MAGNITUDE_TEMPERATURE:
-                    magnitude.units = _magnitudeUnitFilter(
-                        magnitude,
-                        getSetting({"tmpUnits", magnitude.index_global}, tmpUnits)
-                    );
-                    break;
-                case MAGNITUDE_POWER_ACTIVE:
-                    magnitude.units = _magnitudeUnitFilter(
-                        magnitude,
-                        getSetting({"pwrUnits", magnitude.index_global}, pwrUnits)
-                    );
-                    break;
-                case MAGNITUDE_ENERGY:
-                    magnitude.units = _magnitudeUnitFilter(
-                        magnitude,
-                        getSetting({"eneUnits", magnitude.index_global}, eneUnits)
-                    );
-                    break;
-                default:
-                    magnitude.units = magnitude.sensor->units(magnitude.slot);
-                    break;
+            // adjust type-specific units
+            {
+                const sensor::Unit default_unit { magnitude.sensor->units(magnitude.slot) };
+                const settings_key_t key {
+                    String(_magnitudeSettingsPrefix(magnitude.type)) + F("Units") + String(magnitude.index_global, 10) };
+
+                magnitude.units = _magnitudeUnitFilter(
+                    magnitude,
+                    getSetting(key, default_unit)
+                );
             }
 
             // some magnitudes allow to be corrected with an offset

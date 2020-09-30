@@ -275,20 +275,6 @@
 #define UV_INDEX_EXTREME            4       // 11 or more means extreme risk of harm from unprotected sun exposure.
                                             // Take all precautions because unprotected skin and eyes can burn in minutes.
 
-//------------------------------------------------------------------------------
-// UNITS
-//------------------------------------------------------------------------------
-
-#define POWER_WATTS                 sensor::Unit::Watt
-#define POWER_KILOWATTS             sensor::Unit::Kilowatt
-
-#define ENERGY_JOULES               sensor::Unit::Joule
-#define ENERGY_KWH                  sensor::Unit::KilowattHour
-
-#define TMP_CELSIUS                 sensor::Unit::Celcius
-#define TMP_FAHRENHEIT              sensor::Unit::Farenheit
-#define TMP_KELVIN                  sensor::Unit::Kelvin
-
 //--------------------------------------------------------------------------------
 // Sensor ID
 // These should remain over time, do not modify them, only add new ones at the end
