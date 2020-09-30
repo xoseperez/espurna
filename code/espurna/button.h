@@ -54,7 +54,7 @@ struct button_event_delays_t {
 struct button_t {
 
     button_t(unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
-    button_t(std::shared_ptr<BasePin> pin, const debounce_event::types::Config& config, 
+    button_t(std::shared_ptr<BasePin> pin, const debounce_event::types::Config& config,
         unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
 
     bool state();

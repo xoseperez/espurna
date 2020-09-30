@@ -68,7 +68,7 @@ class AnalogSensor : public BaseAnalogSensor {
         // ---------------------------------------------------------------------
 
         // Initialization method, must be idempotent
-        void begin() {            
+        void begin() {
             _ready = true;
         }
 

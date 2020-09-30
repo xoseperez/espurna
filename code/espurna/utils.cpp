@@ -220,7 +220,7 @@ unsigned int getInitialFreeHeap() {
 // -----------------------------------------------------------------------------
 namespace Heartbeat {
 
-    enum Report : uint32_t { 
+    enum Report : uint32_t {
         Status = 1 << 1,
         Ssid = 1 << 2,
         Ip = 1 << 3,
@@ -434,7 +434,7 @@ void heartbeat() {
 
         if ((hb_cfg & Heartbeat::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
             idbSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-                    
+
         if (hb_cfg & Heartbeat::Loadavg)
             idbSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
 

@@ -23,7 +23,7 @@ class SI1145Sensor : public I2CSensor<> {
              _si1145 = new Adafruit_SI1145();
          }
 
-         void begin() { 
+         void begin() {
              static unsigned char addresses[1] = { SI1145_ADDRESS };
              _address = _begin_i2c(_address, sizeof(addresses), addresses);
              if (_address == 0) return;
@@ -68,13 +68,13 @@ class SI1145Sensor : public I2CSensor<> {
 
          // Current value for slot # index
          double value(unsigned char index) {
-             if (index == 0) return _uvi; 
+             if (index == 0) return _uvi;
              return 0.0;
          }
 
-     protected: 
+     protected:
          Adafruit_SI1145 * _si1145 = nullptr;
          double _uvi = 0.0;
 };
-   
+
 #endif // SENSOR_SUPPORT && SI1145_SUPPORT

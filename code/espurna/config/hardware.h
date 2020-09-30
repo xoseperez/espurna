@@ -3422,10 +3422,10 @@
     #define DEBUG_SERIAL_SUPPORT 0
 
 // ----------------------------------------------------------------------------------------
-//  Power socket 16A similar to BLITZWOLF_BWSHPX but button pin differs 
+//  Power socket 16A similar to BLITZWOLF_BWSHPX but button pin differs
 //  IMPORTANT, This template is for hardware version SP111_A_Wifi_Ver1.1 (as printed on the PCB)
 //  hhttps://www.amazon.de/-/en/Smallest-Consumption-Measuring-Function-Compatible/dp/B07PSMF47W
-// ----------------------------------------------------------------------------------------    
+// ----------------------------------------------------------------------------------------
 
 #elif defined(GOSUND_SP111)
 

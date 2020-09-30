@@ -71,7 +71,7 @@ class BaseEmonSensor : public BaseSensor {
         virtual double defaultVoltage() {
             return 0.0;
         }
-        
+
         // when sensor needs explicit mains voltage value
         virtual void setVoltage(double) {}
         virtual void setVoltage(unsigned char index, double value) {

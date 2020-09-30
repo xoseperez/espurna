@@ -72,10 +72,10 @@ namespace Tuya {
 
 
         Output(Stream& stream) :
-            StreamWrapper(stream) 
+            StreamWrapper(stream)
         {}
 
-        Output(StreamString& stream, size_t length) : 
+        Output(StreamString& stream, size_t length) :
             Output(stream)
         {
             stream.reserve((length * 2) + 1);

@@ -228,7 +228,7 @@ void test_case_insensitive() {
 
     str.out += String("TeSt.lOwErCaSe1\r\n");
     TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    
+
 }
 
 // We can use command ctx.output to send something back into the stream

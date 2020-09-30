@@ -523,7 +523,6 @@ class KeyValueStore {
 
     // implementation quirk is that `Cursor::operator=` won't work because of the `RawStorageBase&` member
     // right now, just construct in place and assume that compiler will inline things
-    // on one hand, we can implement it. but, we can't specifically 
     KeyValueResult _read_kv() {
         auto key = _raw_read();
         if (!key || !key.length) {

@@ -64,7 +64,7 @@ struct TBroker<R(Args...)> {
 
 // TODO: since 1.14.0 we intoduced static syntax for Brokers, ::Register & ::Publish.
 // Preserve it (up to a point) when creating module-level objects.
-// Provide a helper namespace with Register & Publish, instance and 
+// Provide a helper namespace with Register & Publish, instance and
 // To help out VS Code with argument discovery, put TArgs as the first template parameter.
 
 #define BrokerDeclare(Name, Signature) \

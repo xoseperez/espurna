@@ -145,7 +145,7 @@ class BMP180Sensor : public I2CSensor<> {
             _bmp180_calib.ac1 = i2c_read_int16(_address, BMP180_REGISTER_CAL_AC1);
             _bmp180_calib.ac2 = i2c_read_int16(_address, BMP180_REGISTER_CAL_AC2);
             _bmp180_calib.ac3 = i2c_read_int16(_address, BMP180_REGISTER_CAL_AC3);
-            
+
             _bmp180_calib.ac4 = i2c_read_uint16(_address, BMP180_REGISTER_CAL_AC4);
             _bmp180_calib.ac5 = i2c_read_uint16(_address, BMP180_REGISTER_CAL_AC5);
             _bmp180_calib.ac6 = i2c_read_uint16(_address, BMP180_REGISTER_CAL_AC6);
@@ -157,9 +157,9 @@ class BMP180Sensor : public I2CSensor<> {
             _bmp180_calib.md = i2c_read_int16(_address, BMP180_REGISTER_CAL_MD);
 
         }
-        
+
         // Compute B5 coefficient used in temperature & pressure calcs.
-        // Based on Adafruit_BMP085_Unified library 
+        // Based on Adafruit_BMP085_Unified library
         long _computeB5(unsigned long t) {
             long X1 = (t - (long)_bmp180_calib.ac6) * ((long)_bmp180_calib.ac5) >> 15;
             long X2 = ((long)_bmp180_calib.mc << 11) / (X1+(long)_bmp180_calib.md);
@@ -234,11 +234,11 @@ class BMP180Sensor : public I2CSensor<> {
 
             int16_t  b1;
             int16_t  b2;
-            
+
             int16_t  mb;
             int16_t  mc;
             int16_t  md;
-            
+
         } bmp180_calib_t;
 
         bmp180_calib_t _bmp180_calib;

@@ -315,7 +315,7 @@ void _mqttConfigure() {
 
         const auto qos = getSetting("mqttQoS", MQTT_QOS);
         const bool retain = getSetting("mqttRetain", 1 == MQTT_RETAIN);
-        
+
         // Note: MQTT spec defines this as 2 bytes
         const auto keepalive = constrain(
             getSetting("mqttKeep", MQTT_KEEPALIVE),

@@ -363,7 +363,7 @@ void _tspkPost(const String& address) {
         auto client = std::make_unique<WiFiClient>();
         _tspkPost(*client.get(), url, false);
         return;
-    }        
+    }
 
 }
 

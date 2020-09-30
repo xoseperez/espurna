@@ -129,11 +129,11 @@ constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const u
         ((bitmask & ButtonMask::Pushbutton)
             ? debounce_event::types::Mode::Pushbutton
             : debounce_event::types::Mode::Switch),
-        ((bitmask & ButtonMask::DefaultHigh) 
+        ((bitmask & ButtonMask::DefaultHigh)
             ? debounce_event::types::PinValue::High
             : debounce_event::types::PinValue::Low),
-        ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup 
-            : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown 
+        ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup
+            : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown
             : debounce_event::types::PinMode::Input)
     };
 }
@@ -841,7 +841,6 @@ void buttonSetup() {
                 actions,
                 delays
             );
-            
         }
     }
 #endif // BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT || BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL

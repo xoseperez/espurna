@@ -1,5 +1,5 @@
 /*
- 
+
   Original code:
 
   Debounce buttons and trigger events

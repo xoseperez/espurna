@@ -162,7 +162,7 @@ struct SettingsKeys {
         }
 
         bool operator !=(iterator& const other) const {
-            return !(*this == other); 
+            return !(*this == other);
         }
 
         using difference_type = size_t;

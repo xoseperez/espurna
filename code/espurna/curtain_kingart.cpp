@@ -49,7 +49,7 @@ Copyright (C) 2020 - Eric Chauvet
 char _KACurtainBuffer[KINGART_CURTAIN_BUFFER_SIZE];
 bool _KACurtainNewData = false;
 
-// Status vars - for curtain move detection : 
+// Status vars - for curtain move detection :
 int _curtain_position               = CURTAIN_POSITION_UNKNOWN;
 int _curtain_last_position          = CURTAIN_POSITION_UNKNOWN;
 int _curtain_button                 = CURTAIN_BUTTON_UNKNOWN;
@@ -90,7 +90,7 @@ int setButtonFromSwitchText(String & text) {
     else
         return CURTAIN_BUTTON_UNKNOWN;
 }
-  
+
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
@@ -98,9 +98,9 @@ int setButtonFromSwitchText(String & text) {
 //------------------------------------------------------------------------------
 //This check that wa got latest and new stats from the AT+RESULT message
 bool _KAValidStatus() {
-   return   _curtain_button != CURTAIN_BUTTON_UNKNOWN && 
-            _curtain_last_button != CURTAIN_BUTTON_UNKNOWN &&  
-            _curtain_position != CURTAIN_POSITION_UNKNOWN && 
+   return   _curtain_button != CURTAIN_BUTTON_UNKNOWN &&
+            _curtain_last_button != CURTAIN_BUTTON_UNKNOWN &&
+            _curtain_position != CURTAIN_POSITION_UNKNOWN &&
             _curtain_last_position != CURTAIN_POSITION_UNKNOWN;
 }
 
@@ -166,7 +166,7 @@ void _KAStopMoving() {
     else if( _curtain_last_position != CURTAIN_POSITION_UNKNOWN)
         _curtain_position_set = _curtain_last_position;
 
-    if (!_curtain_initial_position_set) { //The curtain stopped moving for the first time, set the position back to 
+    if (!_curtain_initial_position_set) { //The curtain stopped moving for the first time, set the position back to
         int init_position = getSetting("curtainBoot", 0);
         KINGART_DEBUG_MSG_P(PSTR("[KA] curtainBoot : %d, curtainBootPos : %d\n"), init_position, getSetting("curtainBootPos", 100));
         if (init_position == CURTAIN_INIT_CLOSE) {
@@ -226,7 +226,7 @@ The device will determine the direction all by itself.
 
 # Set the Cover / Shutter / Blind / Curtain run time
 
-The factory default Open and Close run time for the switch is 50 seconds, and it must be set to 
+The factory default Open and Close run time for the switch is 50 seconds, and it must be set to
 an accurate run time for smooth working. Some motors do not have the resistance stop function,
 so when the Cover/Shutter/Blind/Curtain track open or close to the maximum length, but the motor keeps on running.
 This might cause damage on the motor and the switch, it also wastes a lot of energy. In order
@@ -255,8 +255,8 @@ void _KACurtainResult() {
     const String buffer(_KACurtainBuffer);
     _curtain_button = CURTAIN_BUTTON_UNKNOWN;
     _curtain_position = CURTAIN_POSITION_UNKNOWN;
-    
-    
+
+
     if(buffer.indexOf("AT+RESULT") == 0) { //AT+RESULT is an acquitment of our command (MQTT or GUI)
         //Set the status on what we kown
         if( ( _curtain_last_button == CURTAIN_BUTTON_OPEN && _curtain_last_position == 0 ) ||
@@ -265,11 +265,11 @@ void _KACurtainResult() {
             _KAStopMoving();
         } else { //Else it is probably moving
             _KASetMoving();
-            /*  
+            /*
                 (*1) ATTENTION THERE :
-                Send immediatly a AT+START - we need to purge the first response. 
-                It will return us the right direction of the switch but the position 
-                we set instead of the real on. We take care of the switch response but 
+                Send immediatly a AT+START - we need to purge the first response.
+                It will return us the right direction of the switch but the position
+                we set instead of the real on. We take care of the switch response but
                 we ignore the position.
             */
             _KACurtainSend("AT+START");
@@ -289,8 +289,7 @@ void _KACurtainResult() {
                 switch_text = switch_text.substring(0, leftovers);
                 _curtain_button = setButtonFromSwitchText(switch_text);
             }
-            
-        } 
+        }
         // Get position from MCU
         int setclose_idx = buffer.indexOf("setclose");
         if (setclose_idx > 0) {
@@ -299,7 +298,7 @@ void _KACurtainResult() {
             if (leftovers > 0) { // Not found if finishing by setclose
                 position = position.substring(0, leftovers);
             }
-            if(_curtain_ignore_next_position) { // (*1) 
+            if(_curtain_ignore_next_position) { // (*1)
                 _curtain_ignore_next_position = false;
             } else {
                 _curtain_position = position.toInt();
@@ -314,7 +313,7 @@ void _KACurtainResult() {
        _KAStopMoving();
     } else if(_curtain_moving ) {
         if(_KAValidStatus()) {
-            if(_curtain_last_button != _curtain_button) //Direction change? Reset the timer to know 
+            if(_curtain_last_button != _curtain_button) //Direction change? Reset the timer to know
                 _KASetMoving();
             else if(_curtain_last_position == _curtain_position) //Same direction, same position - curtain is not moving anymore
                 _KAStopMoving();
@@ -339,7 +338,7 @@ void _KACurtainResult() {
     } else if (_curtain_button != CURTAIN_BUTTON_UNKNOWN) {
         _curtain_last_button = _curtain_button;
     }
-    
+
     // Handle configuration button presses
     if (buffer.indexOf("enterESPTOUCH") > 0) {
         wifiStartAP();
@@ -373,7 +372,6 @@ void _curtainMQTTCallback(unsigned int type, const char * topic, char * payload)
             } else {
                 _curtain_position_set = String(payload).toInt();
                 _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, _curtain_position_set);
-                
             }
         }
     }
@@ -420,7 +418,7 @@ void _curtainWebSocketStatus(JsonObject& root) {
 
 //------------------------------------------------------------------------------
 void _curtainWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
- 
+
     if (strcmp(action, "curtainAction") == 0) {
         if (data.containsKey("position")) {
             _curtain_position_set = data["position"].as<int>();
@@ -473,13 +471,12 @@ void kingartCurtainSetup() {
 
     // Init port to receive and send messages
     KINGART_CURTAIN_PORT.begin(KINGART_CURTAIN_BAUDRATE);
-  
+
 #if MQTT_SUPPORT
     // Register MQTT callback only when supported
     mqttRegister(_curtainMQTTCallback);
 #endif // MQTT_SUPPORT
 
-    
 #if WEB_SUPPORT
     // Websockets
     wsRegister()
@@ -505,5 +502,4 @@ unsigned char curtainCount() {
     return 1;
 }
 
-  
 #endif // KINGART_CURTAIN_SUPPORT

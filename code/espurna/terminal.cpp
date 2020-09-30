@@ -651,5 +651,5 @@ void terminalSetup() {
 
 }
 
-#endif // TERMINAL_SUPPORT 
+#endif // TERMINAL_SUPPORT
 

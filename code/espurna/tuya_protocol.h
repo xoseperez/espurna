@@ -99,7 +99,7 @@ namespace Tuya {
     template <>
     std::vector<uint8_t> DataProtocol<bool>::serialize() {
         return std::vector<uint8_t> {
-            _id, static_cast<uint8_t>(Type::BOOL), 0x00, 0x01, 
+            _id, static_cast<uint8_t>(Type::BOOL), 0x00, 0x01,
             static_cast<uint8_t>(_value)
         };
     }
