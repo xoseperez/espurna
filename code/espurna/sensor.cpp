@@ -536,6 +536,7 @@ BaseFilter* _magnitudeCreateFilter(unsigned char type, size_t size) {
     case MAGNITUDE_ENERGY_DELTA:
         filter = new SumFilter();
         break;
+    case MAGNITUDE_EVENT:
     case MAGNITUDE_DIGITAL:
         filter = new MaxFilter();
         break;
