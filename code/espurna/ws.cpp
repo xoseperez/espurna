@@ -45,7 +45,7 @@ void _wsUpdate(JsonObject& root) {
     }
 #if NTP_SUPPORT
     if (ntpSynced()) {
-        auto info { ntpInfo() };
+        auto info = ntpInfo();
         root["now"] = info.now;
         root["nowString"] = info.utc;
         root["nowLocalString"] = info.local.length()
