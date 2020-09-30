@@ -105,18 +105,16 @@ class EventSensor : public BaseSensor {
         }
 
         void pre() override {
-            ETS_GPIO_INTR_DISABLE();
+            _last = _current;
             _current = _counter;
-            _counter = 0ul;
-            ETS_GPIO_INTR_ENABLE();
         }
 
         double value(unsigned char index) override {
             switch (index) {
             case 0:
-                return _current;
+                return _current - _last;
             case 1:
-                return (_current > 0) ? 1.0 : 0.0;
+                return (_current - _last > 0) ? 1.0 : 0.0;
             default:
                 return 0.0;
             }
@@ -170,7 +168,9 @@ class EventSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         unsigned long _counter { 0ul };
+
         unsigned long _current { 0ul };
+        unsigned long _last { 0ul };
 
         unsigned long _isr_last { 0ul };
         unsigned long _isr_debounce { microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000) };
