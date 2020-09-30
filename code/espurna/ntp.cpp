@@ -379,7 +379,7 @@ void _ntpConvertLegacyOffsets() {
     if (offset > 0) {
         custom += '-';
     }
-    custom += offset / 60;
+    custom += abs(offset) / 60;
 
     if (dst) {
         custom += europe ? F("CEST") : F("EDT");
