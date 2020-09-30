@@ -1596,28 +1596,6 @@
 #define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
 
-// WARNING: legacy NTP settings. can be ignored with Core 2.6.2+
-
-#ifndef NTP_TIMEOUT
-#define NTP_TIMEOUT                 1000            // Set NTP request timeout to 2 seconds (issue #452)
-#endif
-
-#ifndef NTP_TIME_OFFSET
-#define NTP_TIME_OFFSET             60              // Default timezone offset (GMT+1)
-#endif
-
-#ifndef NTP_DAY_LIGHT
-#define NTP_DAY_LIGHT               1               // Enable daylight time saving by default
-#endif
-
-#ifndef NTP_SYNC_INTERVAL
-#define NTP_SYNC_INTERVAL           60              // NTP initial check every minute
-#endif
-
-#ifndef NTP_DST_REGION
-#define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
-#endif
-
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------

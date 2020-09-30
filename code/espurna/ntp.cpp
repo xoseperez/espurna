@@ -351,8 +351,8 @@ void _ntpConvertLegacyOffsets() {
     bool found { false };
 
     bool europe { true };
-    bool dst { false };
-    int offset { 0 };
+    bool dst { true };
+    int offset { 60 };
 
     settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         const auto key = kv.key.read();
@@ -374,7 +374,7 @@ void _ntpConvertLegacyOffsets() {
 
     // XXX: only expect offsets in hours
     String custom { europe ? F("CET") : F("CST") };
-    custom.reserve(16);
+    custom.reserve(32);
 
     if (offset > 0) {
         custom += '-';
