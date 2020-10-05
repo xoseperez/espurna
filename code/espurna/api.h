@@ -22,74 +22,43 @@ String apiKey();
 
 #if WEB_SUPPORT && API_SUPPORT
 
-#include <vector>
+#include <ArduinoJson.h>
+#include <functional>
+#include <forward_list>
+#include <memory>
 
-constexpr unsigned char ApiUnusedArg = 0u;
+#include "api_impl.h"
 
-struct ApiBuffer {
-    constexpr static size_t size = API_BUFFER_SIZE;
-    char data[size];
+//using ApiBasicHandler = bool(*)(ApiHandle& handle);
+//using ApiJsonHandler = bool(*)(ApiHandle& handle, JsonObject& root);
 
-    void erase() {
-        std::fill(data, data + size, '\0');
-    }
+using ApiBasicHandler = std::function<bool(ApiHandle& handle, ApiBuffer& buffer)>;
+using ApiJsonHandler = std::function<bool(ApiHandle& handle, JsonObject& root)>;
+
+enum class ApiType {
+    Unknown,
+    Basic,
+    Json
 };
 
-struct Api {
-    using BasicHandler = void(*)(const Api& api, ApiBuffer& buffer);
-    using JsonHandler = void(*)(const Api& api, JsonObject& root);
-
-    enum class Type {
-        Basic,
-        Json
-    };
-
-    Api() = delete;
-
-    // TODO:
-    // - bind to multiple paths, dispatch specific path in the callback
-    // - allow index to be passed through path argument (/{arg1}/{arg2} syntax, for example)
-    Api(const String& path_, Type type_, unsigned char arg_, BasicHandler get_, BasicHandler put_ = nullptr) :
-        path(path_),
-        type(type_),
-        arg(arg_)
-    {
-        get.basic = get_;
-        put.basic = put_;
-    }
-
-    Api(const String& path_, Type type_, unsigned char arg_, JsonHandler get_, JsonHandler put_ = nullptr) :
-        path(path_),
-        type(type_),
-        arg(arg_)
-    {
-        get.json = get_;
-        put.json = put_;
-    }
-
-    String path;
-    Type type;
-    unsigned char arg;
-
-    union {
-        BasicHandler basic;
-        JsonHandler json;
-    } get;
-
-    union {
-        BasicHandler basic;
-        JsonHandler json;
-    } put;
+struct ApiHandler {
+    ApiBasicHandler get;
+    ApiBasicHandler put;
+    ApiJsonHandler json;
 };
 
-void apiRegister(const Api& api);
+using ApiPtr = std::shared_ptr<ApiHandler>;
+
+using ApiPathList = std::forward_list<String>;
+using ApiPathListGenerator = void(*)(ApiPathList& out);
+using ApiPathGenerator = void(*)<ApiPtr(const String& path)>;
+
+void apiRegister(ApiPathListGenerator, ApiPathGenerator);
 
 void apiCommonSetup();
 void apiSetup();
 
-void apiReserve(size_t);
-
-void apiError(const Api&, ApiBuffer& buffer);
-void apiOk(const Api&, ApiBuffer& buffer);
+void apiError(ApiHandle&);
+void apiOk(ApiHandle&);
 
 #endif // API_SUPPORT == 1

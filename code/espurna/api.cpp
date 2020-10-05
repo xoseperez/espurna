@@ -12,8 +12,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if API_SUPPORT
 
-#include <vector>
-
 #include "system.h"
 #include "web.h"
 #include "rpc.h"
@@ -21,11 +19,186 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
 
-constexpr size_t ApiPathSizeMax { 64ul };
-std::vector<Api> _apis;
+#include <algorithm>
+#include <vector>
+#include <forward_list>
 
 // -----------------------------------------------------------------------------
-// API
+
+struct Api {
+    ApiPathListGenerator list;
+    ApiPathGenerator generator;
+};
+
+std::forward_list<Api> _apis;
+
+struct ApiPathElement {
+    enum class Type {
+        Unknown,
+        Value,
+        Placeholder
+    };
+
+    bool operator==(const ApiPathElement& other) const {
+        if (other.type == Type::Placeholder) {
+            return false;
+        }
+
+        if (type == Type::Placeholder) {
+            return true;
+        }
+
+        return value == other.value;
+    }
+
+    bool operator!=(const ApiPathElement& other) const {
+        return !(*this == other);
+    }
+
+    Type type;
+    String value;
+};
+
+using ApiPath = std::vector<ApiPathElement>;
+
+ApiPath _apiConstructPath(const String& pattern) {
+    ApiPath result;
+    result.reserve(std::count(pattern.begin(), pattern.end(), '/') + 1);
+
+    String value;
+    value.reserve(pattern.length());
+
+    ApiPathElement::Type type { ApiPathElement::Type::Unknown };
+    const char* p { pattern.c_str() };
+
+parse_value:
+    type = ApiPathElement::Type::Value;
+
+    switch (*p) {
+    case '/':
+    case '\0':
+        goto push_result;
+    case '{':
+        ++p;
+        goto parse_placeholder;
+    case '}':
+        goto error;
+    }
+
+    value += *(p++);
+    goto parse_value;
+
+parse_placeholder:
+    type = ApiPathElement::Type::Placeholder;
+
+    switch (*p) {
+    case '{':
+    case '\0':
+    case '/':
+        goto error;
+    case '}':
+        switch (*(p + 1)) {
+        case '/':
+            p += 2;
+            break;
+        case '\0':
+            p += 1;
+            break;
+        default:
+            goto error;
+        }
+
+        goto push_result;
+    }
+
+    value += *(p++);
+    goto parse_placeholder;
+
+push_result:
+    result.push_back({type, std::move(value)});
+    type = ApiPathElement::Type::Unknown;
+    if (*p == '/') {
+        ++p;
+        goto parse_value;
+    } else if (*p != '\0') {
+        goto parse_value;
+    }
+    goto return_result;
+
+error:
+    result.clear();
+
+return_result:
+    return result;
+}
+
+String repr(const ApiPath& path) {
+    String result;
+    result.reserve(128u);
+
+    for (auto& elem : path) {
+        result += '\'';
+        result += elem.value;
+        result += '\'';
+        result += ' ';
+    }
+
+    return result;
+}
+
+
+struct ApiPathMatcher {
+
+    bool match(const ApiPath& other) const {
+        String lhs(repr(_path));
+        String rhs(repr(other));
+        DEBUG_MSG_P(PSTR("[API] %s (API) vs. %s (other)\n"),
+            lhs.c_str(), rhs.c_str());
+
+        if (!_path.size() || !other.size() || (_path.size() != other.size())) {
+            DEBUG_MSG_P(PSTR("[API] sizes %u vs. %u mismatch\n"),
+                _path.size(), other.size());
+            return false;
+        }
+
+        for (unsigned index = 0; index < _path.size(); ++index) {
+            if (_path[index] != other[index]) {
+                DEBUG_MSG_P(PSTR("[API] path index %u mismatch (%s vs. %s)\n"),
+                    index, _path[index].value.c_str(), other[index].value.c_str());
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    ApiHandle::PathParams params(const ApiPath& other) const {
+        ApiHandle::PathParams result;
+
+        if (!_path.size() || (_path.size() != other.size())) {
+            return result;
+        }
+
+        auto lhs = _path.rbegin();
+        auto rhs = other.rbegin();
+        while (lhs != _path.rend() && rhs != other.rend()) {
+            if ((*lhs).type == ApiPathElement::Type::Placeholder) {
+                result.emplace_front((*lhs).value, (*rhs).value);
+            }
+            ++lhs;
+            ++rhs;
+        }
+
+        return result;
+    }
+
+    private:
+
+    ApiPath _path;
+};
+
+constexpr size_t ApiPathSizeMax { 128ul };
+
 // -----------------------------------------------------------------------------
 
 bool _asJson(AsyncWebServerRequest *request) {
@@ -38,11 +211,16 @@ bool _asJson(AsyncWebServerRequest *request) {
 }
 
 void _onAPIsText(AsyncWebServerRequest *request) {
-    AsyncResponseStream *response = request->beginResponseStream("text/plain");
-    char buffer[ApiPathSizeMax] = {0};
+    ApiPathList list;
     for (auto& api : _apis) {
-        sprintf_P(buffer, PSTR("/api/%s\n"), api.path.c_str());
-        response->write(buffer);
+        api.list(list);
+    }
+
+    AsyncResponseStream *response = request->beginResponseStream("text/plain");
+    for (auto& path : list) {
+        DEBUG_MSG_P(PSTR("[api] sending list -> %s"), path.c_str());
+        response->print(path);
+        response->write("\r\n");
     }
     request->send(response);
 }
@@ -51,13 +229,15 @@ constexpr size_t ApiJsonBufferSize = 1024;
 
 void _onAPIsJson(AsyncWebServerRequest *request) {
 
+    ApiPathList list;
+    for (auto& api : _apis) {
+        api.list(list);
+    }
+
     DynamicJsonBuffer jsonBuffer(ApiJsonBufferSize);
     JsonArray& root = jsonBuffer.createArray();
-
-    char buffer[ApiPathSizeMax] = {0};
-    for (auto& api : _apis) {
-        sprintf(buffer, "/api/%s", api.path.c_str());
-        root.add(buffer);
+    for (auto& path : list) {
+        root.add(path);
     }
 
     AsyncResponseStream *response = request->beginResponseStream("application/json");
@@ -108,152 +288,177 @@ void _onRPC(AsyncWebServerRequest *request) {
 }
 
 struct ApiMatch {
-    Api* api { nullptr };
-    Api::Type type { Api::Type::Basic };
+    ApiPtr api;
+    ApiType type;
 };
 
-ApiMatch _apiMatch(const String& url, AsyncWebServerRequest* request) {
-
+ApiMatch _apiMatch(AsyncWebServerRequest* request, const String& path) {
     ApiMatch result;
-    char buffer[ApiPathSizeMax] = {0};
-
     for (auto& api : _apis) {
-        sprintf_P(buffer, PSTR("/api/%s"), api.path.c_str());
-        if (url != buffer) {
-            continue;
+        result.api = api.generator(path);
+        if (result.api) {
+            break;
         }
+    }
 
-        auto type = _asJson(request)
-            ? Api::Type::Json
-            : Api::Type::Basic;
+    if (!result.api) {
+        return result;
+    }
 
-        result.api = &api;
-        result.type = type;
-        break;
+    result.type = _asJson(request)
+        ? ApiType::Json
+        : ApiType::Basic;
+
+    if ((ApiType::Json == result.type) && (!result.api->json)) {
+        result.api = nullptr;
     }
 
     return result;
 }
 
-bool _apiDispatchRequest(const String& url, AsyncWebServerRequest* request) {
+// Notice that we don't register handlers for specific paths, but functions that generate such handlers on demand
+// This allows us to use some common code between HTTP and MQTT endpoints and delay RAM allocation until the API is actually used
+//
+// TODO: provide dynamic paths such as relay/{id:uint} and do implicit maching in API dispatch, storing given path variables as a map-like structure for the callback.
+// however, unlike many other url matching libraries, we *will* allow exact same patterns for multiple routes, thus requiring the registree to return 'status' whether the request can actually be handled by it
 
-    auto match = _apiMatch(url, request);
-    if (!match.api) {
-        return false;
+void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
+    if (!path.length()) {
+        request->send(500);
+        return;
     }
 
-    if (match.type != match.api->type) {
-        DEBUG_MSG_P(PSTR("[API] Cannot handle the request type\n"));
+    auto method = request->method();
+    if ((HTTP_PUT != method) && (HTTP_GET != method) && (HTTP_HEAD != method)) {
+        DEBUG_MSG_P(PSTR("[API] Method not implemented\n"));
+        request->send(501);
+        return;
+    }
+
+    auto match = _apiMatch(request, path);
+    if (!match.api) {
+        DEBUG_MSG_P(PSTR("[API] No matching API found!\n"));
         request->send(404);
-        return true;
+        return;
+    }
+
+    if (HTTP_HEAD == method) {
+        request->send(204);
+        return;
     }
 
     const bool is_put = (
-        (!apiRestFul() || (request->method() == HTTP_PUT))
-        && request->hasParam("value", request->method() == HTTP_PUT)
+        (!apiRestFul() || (HTTP_PUT == method))
+        && request->hasParam("value", HTTP_PUT == method)
     );
 
-    ApiBuffer buffer;
+    ApiHandle::PathParams params;
+    ApiHandle handle(*request, std::move(params));
 
-    switch (match.api->type) {
+    switch (match.type) {
 
-    case Api::Type::Basic: {
-        if (!match.api->get.basic) {
+    case ApiType::Basic: {
+        if (!match.api->get) {
             break;
         }
 
+        ApiBuffer buffer;
         if (is_put) {
-            if (!match.api->put.basic) {
+            if (!match.api->put) {
                 break;
             }
-            auto value = request->getParam("value", request->method() == HTTP_PUT)->value();
-            if (buffer.size < (value.length() + 1ul)) {
+            auto value = request->getParam("value", HTTP_PUT == method)->value();
+            if (!buffer.copy(value.c_str(), value.length())) {
                 break;
             }
-            std::copy(value.c_str(), value.c_str() + value.length() + 1, buffer.data);
-            match.api->put.basic(*match.api, buffer);
-            buffer.erase();
+            if (!match.api->put(handle, buffer)) {
+                break;
+            }
+            buffer.clear();
         }
 
-        match.api->get.basic(*match.api, buffer);
-        request->send(200, "text/plain", buffer.data);
+        if (!match.api->get(handle, buffer)) {
+            break;
+        }
+        if (!handle.sent()) {
+            request->send(200, "text/plain", buffer.data);
+        }
 
-        return true;
+        return;
     }
 
-    // TODO: pass the body instead of `value` param
-    // TODO: handle HTTP_PUT
-    case Api::Type::Json: {
-        if (!match.api->get.json || is_put) {
+    // TODO: pass request body as well, allow PUT
+    // TODO: can we get the body contents *without* body callback and when request is c-t:application/json?
+    case ApiType::Json: {
+        if (!match.api->json || is_put) {
             break;
         }
 
         DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
         JsonObject& root = jsonBuffer.createObject();
+        if (!match.api->json(handle, root)) {
+            break;
+        }
 
-        match.api->get.json(*match.api, root);
+        if (!handle.sent()) {
+            AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
+            root.printTo(*response);
+            request->send(response);
+        }
 
-        AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
-        root.printTo(*response);
-        request->send(response);
-
-        return true;
+        return;
     }
 
     }
 
-    DEBUG_MSG_P(PSTR("[API] Method not supported\n"));
-    request->send(405);
+    if (!handle.sent()) {
+        DEBUG_MSG_P(PSTR("[API] Request was not handled\n"));
+        request->send(500);
+    }
 
-    return true;
+    return;
 
 }
 
 bool _apiRequestCallback(AsyncWebServerRequest* request) {
 
-    String url = request->url();
-
-    if (url.equals("/rpc")) {
+    auto path = request->url();
+    if (path.equals("/rpc")) {
         _onRPC(request);
         return true;
     }
 
-    if (url.equals("/api") || url.equals("/apis")) {
+    if (path.equals("/api") || path.equals("/apis")) {
         _onAPIs(request);
         return true;
     }
 
-    if (!url.startsWith("/api/")) return false;
+    if (!path.startsWith("/api/")) return false;
     if (!apiAuthenticate(request)) return false;
 
-    return _apiDispatchRequest(url, request);
+    _apiDispatchRequest(request, path.substring(strlen("/api/")));
+    return true;
 
 }
 
 // -----------------------------------------------------------------------------
 
-void apiReserve(size_t size) {
-    _apis.reserve(_apis.size() + size);
-}
-
-void apiRegister(const Api& api) {
-    if (api.path.length() >= (ApiPathSizeMax - strlen("/api/") - 1ul)) {
-        return;
-    }
-    _apis.push_back(api);
+void apiRegister(ApiPathListGenerator list, ApiPathGenerator path) {
+    Api api { std::move(list), std::move(path) };
+    _apis.push_front(std::move(api));
 }
 
 void apiSetup() {
     webRequestRegister(_apiRequestCallback);
 }
 
-void apiOk(const Api&, ApiBuffer& buffer) {
+void apiOk(ApiHandle&, ApiBuffer& buffer) {
     buffer.data[0] = 'O';
     buffer.data[1] = 'K';
     buffer.data[2] = '\0';
 }
 
-void apiError(const Api&, ApiBuffer& buffer) {
+void apiError(ApiHandle&, ApiBuffer& buffer) {
     buffer.data[0] = '-';
     buffer.data[1] = 'E';
     buffer.data[2] = 'R';
