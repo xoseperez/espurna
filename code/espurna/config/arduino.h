@@ -181,6 +181,7 @@
 //#define ZHILDE_44EU_W
 //#define ZHILDE_64EU_W
 //#define FCMILA_E27_7W_RGBW
+//#define LSC_E27_10W_WHITE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
