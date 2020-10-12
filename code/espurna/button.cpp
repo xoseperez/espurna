@@ -141,6 +141,7 @@ constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const u
 constexpr const button_action_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
     return (
         (event == button_event_t::Pressed) ? actions.pressed :
+        (event == button_event_t::Released) ? actions.released :
         (event == button_event_t::Click) ? actions.click :
         (event == button_event_t::DoubleClick) ? actions.dblclick :
         (event == button_event_t::LongClick) ? actions.lngclick :
@@ -164,6 +165,7 @@ constexpr const button_event_t _buttonMapReleased(uint8_t count, unsigned long l
 button_actions_t _buttonConstructActions(unsigned char index) {
     return {
         _buttonPress(index),
+        _buttonRelease(index),
         _buttonClick(index),
         _buttonDoubleClick(index),
         _buttonLongClick(index),
@@ -219,21 +221,23 @@ bool button_t::state() {
     return event_emitter->isPressed();
 }
 
+button_event_t _buttonMapChanged(button_t& button) {
+    if (BUTTON_ACTION_NONE == button.actions.click) {
+        return button.state()
+            ? button_event_t::Pressed
+            : button_event_t::Released;
+    }
+
+    return button_event_t::Click;
+}
+
 button_event_t button_t::loop() {
-    if (!event_emitter) {
-        return button_event_t::None;
-    }
-
-    auto event = event_emitter->loop();
-    if (event == debounce_event::types::EventNone) {
-        return button_event_t::None;
-    }
-
-    switch (event) {
+    if (event_emitter) {
+        switch (event_emitter->loop()) {
         case debounce_event::types::EventPressed:
             return button_event_t::Pressed;
         case debounce_event::types::EventChanged:
-            return button_event_t::Click;
+            return _buttonMapChanged(*this);
         case debounce_event::types::EventReleased: {
             return _buttonMapReleased(
                 event_emitter->getEventCount(),
@@ -243,8 +247,8 @@ button_event_t button_t::loop() {
             );
         }
         case debounce_event::types::EventNone:
-        default:
             break;
+        }
     }
 
     return button_event_t::None;
@@ -391,16 +395,18 @@ button_action_t buttonAction(unsigned char id, const button_event_t event) {
     return _buttonDecodeEventAction(_buttons[id].actions, event);
 }
 
-// Approach based on https://github.com/esp8266/Arduino/pull/6950
-// "PROGMEM footprint cleanup for responseCodeToString (#6950)"
+// Note that we don't directly return F(...), but use a temporary to assign it conditionally
+// (ref. https://github.com/esp8266/Arduino/pull/6950 "PROGMEM footprint cleanup for responseCodeToString")
 // In this particular case, saves 76 bytes (120 vs 44)
 
-#if 1
 String _buttonEventString(button_event_t event) {
     const __FlashStringHelper* ptr = nullptr;
     switch (event) {
         case button_event_t::Pressed:
             ptr = F("Pressed");
+            break;
+        case button_event_t::Released:
+            ptr = F("Released");
             break;
         case button_event_t::Click:
             ptr = F("Click");
@@ -418,33 +424,11 @@ String _buttonEventString(button_event_t event) {
             ptr = F("Triple-click");
             break;
         case button_event_t::None:
-        default:
             ptr = F("None");
             break;
     }
     return String(ptr);
 }
-#else
-String _buttonEventString(button_event_t event) {
-    switch (event) {
-        case button_event_t::Pressed:
-            return F("Pressed");
-        case button_event_t::Click:
-            return F("Click");
-        case button_event_t::DoubleClick:
-            return F("Double-click");
-        case button_event_t::LongClick:
-            return F("Long-click");
-        case button_event_t::LongLongClick:
-            return F("Looong-click");
-        case button_event_t::TripleClick:
-            return F("Triple-click");
-        case button_event_t::None:
-        default:
-            return F("None");
-    }
-}
-#endif
 
 void buttonEvent(unsigned char id, button_event_t event) {
 
@@ -829,6 +813,7 @@ void buttonSetup() {
         for (unsigned char index = 0; index < buttons; ++index) {
             const button_actions_t actions {
                 BUTTON_ACTION_NONE,
+                BUTTON_ACTION_NONE,
                 // The only generated event is ::Click
                 getSetting({"btnClick", index}, _buttonClick(index)),
                 BUTTON_ACTION_NONE,
@@ -872,6 +857,7 @@ void buttonSetup() {
 
             const button_actions_t actions {
                 getSetting({"btnPress", index}, _buttonPress(index)),
+                getSetting({"btnRlse", index}, _buttonRelease(index)),
                 getSetting({"btnClick", index}, _buttonClick(index)),
                 getSetting({"btnDclk", index}, _buttonDoubleClick(index)),
                 getSetting({"btnLclk", index}, _buttonLongClick(index)),

@@ -23,17 +23,19 @@ constexpr size_t ButtonsMax = 32;
 using button_action_t = uint8_t;
 
 enum class button_event_t {
-    None = 0,
-    Pressed = 1,
-    Click = 2,
-    DoubleClick = 3,
-    LongClick = 4,
-    LongLongClick = 5,
-    TripleClick = 6
+    None,
+    Pressed,
+    Released,
+    Click,
+    DoubleClick,
+    LongClick,
+    LongLongClick,
+    TripleClick
 };
 
 struct button_actions_t {
     button_action_t pressed;
+    button_action_t released;
     button_action_t click;
     button_action_t dblclick;
     button_action_t lngclick;
