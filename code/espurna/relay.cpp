@@ -134,7 +134,19 @@ String _relay_rpc_payload_toggle;
 // UTILITY
 // -----------------------------------------------------------------------------
 
-bool _relayTryParseId(const String& endpoint, unsigned char& relayID) {
+bool _relayTryParseId(const char* p, unsigned char& relayID) {
+    char* endp { nullptr };
+    const unsigned long result { strtoul(p, &endp, 10) };
+    if ((endp == p) || (*endp != '\0') || (result >= relayCount())) {
+        DEBUG_MSG_P(PSTR("[RELAY] Invalid relayID (%s)\n"), p);
+        return false;
+    }
+
+    relayID = result;
+    return true;
+}
+
+bool _relayTryParseIdFromPath(const String& endpoint, unsigned char& relayID) {
     int next_slash { endpoint.lastIndexOf('/') };
     if (next_slash < 0) {
         return false;
@@ -142,21 +154,11 @@ bool _relayTryParseId(const String& endpoint, unsigned char& relayID) {
 
     const char* p { endpoint.c_str() + next_slash + 1 };
     if (*p == '\0') {
+        DEBUG_MSG_P(PSTR("[RELAY] relayID was not specified\n"));
         return false;
     }
 
-    char* endp { nullptr };
-    const decltype(strtoul) result { strtoul(p, &endp, 10) };
-    if (endp == p || *endp != '\0') {
-        return false;
-    }
-
-    if (result >= relayCount()) {
-        return false;
-    }
-
-    relayID = result;
-    return true;
+    return _relayTryParseId(p, relayID);
 }
 
 void _relayHandleStatus(unsigned char relayID, PayloadStatus status) {
@@ -186,16 +188,6 @@ bool _relayHandlePayload(unsigned char relayID, const char* payload) {
     return false;
 }
 
-void _relayHandleSwitchEndpoint(const String& endpoint, const char* payload) {
-    unsigned char id;
-    if (_relayTryParseId(endpoint, id)) {
-        _relayHandlePayload(id, payload);
-        return;
-    }
-
-    DEBUG_MSG_P(PSTR("[RELAY] Invalid relayID (%s)\n"), endpoint.c_str());
-}
-
 bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
     unsigned long pulse = 1000 * atof(payload);
     if (!pulse) {
@@ -211,16 +203,6 @@ bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
     relayToggle(id, true, false);
 
     return true;
-}
-
-bool _relayHandlePulseEndpoint(const String& endpoint, const char* payload) {
-    unsigned char id;
-    if (!_relayTryParseId(endpoint, id)) {
-        DEBUG_MSG_P(PSTR("[RELAY] Invalid relayID (%s)\n"), endpoint.c_str());
-        return false;
-    }
-
-    return _relayHandlePulsePayload(id, payload);
 }
 
 PayloadStatus _relayStatusInvert(PayloadStatus status) {
@@ -1106,102 +1088,70 @@ void relaySetupWS() {
 
 #if API_SUPPORT
 
-ApiPtr _relayPulseApiHandlers(unsigned char id) {
-    auto handlers = std::make_shared<ApiHandlers>;
-    handlers->get = [id](ApiHandle&, ApiBuffer& buffer) {
-        dtostrf((double) _relays[id].pulse_ms / 1000, 1, 3, buffer.data);
-        return true;
-    };
-    handlers->put = [id](ApiHandle&, ApiBuffer& buffer) {
-        return _relayHandlePulsePayload(buffer.data);
-    };
-    return handlers;
-}
+template <typename T>
+bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
+    auto id_param = request.wildcards()[0];
+    unsigned char id;
+    if (!_relayTryParseId(id_param.c_str(), id)) {
+        return false;
+    }
 
-ApiPtr _relayJsonApiHandlers() {
-    auto handlers = std::make_shared<ApiHandlers>;
-    handlers->json = [](ApiHandle&, JsonObject& root) {
-        JsonArray& relays = root.createNestedArray("relayStatus");
-        for (unsigned char id = 0; id < relayCount(); ++id) {
-            relays.add(_relays[id].target_status ? 1 : 0);
-        }
-        return true;
-    };
-
-    return handlers; 
-}
-
-ApiPtr _relayApiHandlers(unsigned char id) {
-    auto handlers = std::make_shared<ApiHandlers>;
-    handlers->get = [id](ApiHandle&, ApiBuffer& buffer) {
-        snprintf_P(buffer.data, buffer.size(),
-                PSTR("%d"), _relays[id].target_status ? 1 : 0);
-        return true;
-    };
-    handlers->put = [id](ApiHandle& handle, ApiBuffer& buffer) {
-        return _relayHandlePayload(id, buffer.data);
-    };
-
-    return handlers; 
+    return callback(id);
 }
 
 void relaySetupAPI() {
 
-    apiRegister(
-        [](ApiPathList& paths) {
-            paths.push_front(F(MQTT_TOPIC_RELAY));
-            paths.push_front(F(MQTT_TOPIC_RELAY "/+"));
-            paths.push_front(F(MQTT_TOPIC_PULSE "/+"));
-        },
-        [](const String& path) -> ApiPtr {
-            if (path == F(MQTT_TOPIC_RELAY)) {
-                return _relayJsonApiHandlers();
+    apiRegister(F(MQTT_TOPIC_RELAY), {nullptr, nullptr,
+        [](ApiRequest&, JsonObject& root) {
+            JsonArray& relays = root.createNestedArray("relayStatus");
+            for (unsigned char id = 0; id < relayCount(); ++id) {
+                relays.add(_relays[id].target_status ? 1 : 0);
             }
-
-            unsigned char id;
-            if (_relayTryParseId(path, id)) {
-                DEBUG_MSG_P(PSTR("[RELAY] Invalid relayID (%s)\n"), endpoint.c_str());
-                return nullptr;
-            }
-
-            if (path.startsWith(F(MQTT_TOPIC_PULSE "/"))) {
-                return _relayPulseApiHandlers(id);
-            } else if (path.startsWith(F(MQTT_TOPIC_RELAY "/"))) {
-                return _relayApiHandlers(id);
-            }
-
-            return nullptr;
+            return true;
         }
-    );
+    });
+
+    apiRegister(F(MQTT_TOPIC_RELAY "/+"), {
+        [](ApiRequest& request, ApiBuffer& buffer) {
+            return _relayApiTryHandle(request, [&](unsigned char id) {
+                snprintf_P(buffer.data, buffer.size(), PSTR("%d"), _relays[id].target_status ? 1 : 0);
+                return true;
+            });
+        },
+        [](ApiRequest& request, ApiBuffer& buffer) {
+            return _relayApiTryHandle(request, [&](unsigned char id) {
+                return _relayHandlePayload(id, buffer.data);
+            });
+        },
+        nullptr
+    });
+
+    apiRegister(F(MQTT_TOPIC_PULSE "/+"), {
+        [](ApiRequest& request, ApiBuffer& buffer) {
+            return _relayApiTryHandle(request, [&](unsigned char id) {
+                dtostrf((double) _relays[id].pulse_ms / 1000, 1, 3, buffer.data);
+                return true;
+            });
+        },
+        [](ApiRequest& request, ApiBuffer& buffer) {
+            return _relayApiTryHandle(request, [&](unsigned char id) {
+                return _relayHandlePulsePayload(id, buffer.data);
+            });
+        },
+        nullptr
+    });
 
     #if defined(ITEAD_SONOFF_IFAN02)
-        apiRegister({
-            [](ApiPathList& paths) {
-                paths.push_front(F(MQTT_TOPIC_SPEED "/+"));
+        apiRegister(F(MQTT_TOPIC_SPEED), {
+            [](ApiRequest&, ApiBuffer& buffer) {
+                snprintf(buffer.data, buffer.size(), "%u", getSpeed());
+                return true;
             },
-            [](const String& path) -> ApiPtr {
-                if (!path.startsWith(F(MQTT_TOPIC_SPEED "/"))) {
-                    return nullptr;
-                }
-
-                unsigned char id;
-                if (_relayTryParseId(path, id)) {
-                    DEBUG_MSG_P(PSTR("[RELAY] Invalid relayID (%s)\n"), endpoint.c_str());
-                    return nullptr;
-                }
-
-                auto handlers = std::make_shared<ApiHandlers>;
-                handlers->get = [id](ApiHandle&, ApiBuffer& buffer) {
-                    snprintf(buffer.data, buffer.size(), "%u", getSpeed());
-                    return true;
-                };
-                handlers->put = [id](ApiHandle&, ApiBuffer& buffer) {
-                    setSpeed(atoi(buffer.data));
-                    return true;
-                };
-
-                return handlers;
-            }
+            [](ApiRequest&, ApiBuffer& buffer) {
+                setSpeed(atoi(buffer.data));
+                return true;
+            },
+            nullptr
         });
     #endif
 
@@ -1346,16 +1296,20 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         String t = mqttMagnitude((char *) topic);
+        unsigned char id;
+        if (!_relayTryParseIdFromPath(t.c_str(), id)) {
+            return;
+        }
 
         if (t.startsWith(MQTT_TOPIC_PULSE)) {
-            _relayHandlePulseEndpoint(t, payload);
-            _relays[i].report = mqttForward();
+            _relayHandlePulsePayload(id, payload);
+            _relays[id].report = mqttForward();
             return;
         }
 
         if (t.startsWith(MQTT_TOPIC_RELAY)) {
-            _relayHandleSwitchEndpoint(t, payload);
-            _relays[i].report = mqttForward();
+            _relayHandlePayload(id, payload);
+            _relays[id].report = mqttForward();
             return;
         }
 
@@ -1364,8 +1318,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         for (unsigned char i=0; i < _relays.size(); i++) {
 
             const String t = getSetting({"mqttGroup", i});
+            if (!t.length()) break;
 
-            if ((t.length() > 0) && t.equals(topic)) {
+            if (t == topic) {
 
                 auto value = relayParsePayload(payload);
                 if (value == PayloadStatus::Unknown) return;
@@ -1377,7 +1332,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 }
 
                 DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d\n"), i);
-                _relayHandlePayload(i, value)
+                _relayHandleStatus(i, value);
                 _relays[i].group_report = false;
 
             }
@@ -1399,26 +1354,20 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         for (unsigned char i=0; i < _relays.size(); i++) {
             const auto reaction = getSetting({"relayOnDisc", i}, 0);
 
-            bool status { false };
-            const char* action { nullptr };
-
+            bool status;
             switch (reaction) {
             case 1:
-                action = "ON";
-                status = false; 
+                status = false;
                 break;
             case 2:
-                action = "OFF";
                 status = true;
-                break
-            default:
                 break;
+            default:
+                return;
             }
 
-            if (action) {
-                DEBUG_MSG_P(PSTR("[RELAY] Turn %s relay #%u due to MQTT disconnection\n"), action, i);
-                relayStatus(i, status);
-            }
+            DEBUG_MSG_P(PSTR("[RELAY] Turn %s relay #%u due to MQTT disconnection\n"), status ? "ON" : "OFF", i);
+            relayStatus(i, status);
         }
     }
 

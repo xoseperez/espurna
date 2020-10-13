@@ -853,101 +853,129 @@ void lightBroker() {
 
 #if API_SUPPORT
 
-void _lightApiSetup() {
+bool _lightTryParseChannel(const char* p, unsigned char& id) {
+    char* endp { nullptr };
+    const unsigned long result { strtoul(p, &endp, 10) };
+    if ((endp == p) || (*endp != '\0') || (result >= lightChannels())) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Invalid channelID (%s)\n"), p);
+        return false;
+    }
 
-    // Note that we expect a fixed number of entries.
-    // Otherwise, underlying vector will reserve more than we need (likely, *2 of the current size)
-    apiReserve(
-        (_light_has_color ? 4u : 0u) + 2u + _light_channels.size()
-    );
+    id = result;
+    return true;
+}
+
+template <typename T>
+bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
+    auto id_param = request.wildcards()[0];
+    unsigned char id;
+    if (!_lightTryParseChannel(id_param.c_str(), id)) {
+        return false;
+    }
+
+    return callback(id);
+}
+
+void _lightApiSetup() {
 
     if (_light_has_color) {
 
-        apiRegister({
-            MQTT_TOPIC_COLOR_RGB, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
+        apiRegister(F(MQTT_TOPIC_COLOR_RGB), {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
-                    _toRGB(buffer.data, buffer.size, true);
+                    _toRGB(buffer.data, buffer.size(), true);
                 } else {
-                    _toLong(buffer.data, buffer.size, true);
+                    _toLong(buffer.data, buffer.size(), true);
                 }
+
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 lightColor(buffer.data, true);
                 lightUpdate(true, true);
+                return true;
             }
         });
 
-        apiRegister({
-            MQTT_TOPIC_COLOR_HSV, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
-                _toHSV(buffer.data, buffer.size);
+        apiRegister(F(MQTT_TOPIC_COLOR_HSV), {
+            [](ApiRequest&, ApiBuffer& buffer) {
+                _toHSV(buffer.data, buffer.size());
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 lightColor(buffer.data, false);
                 lightUpdate(true, true);
+                return true;
             }
         });
 
-        apiRegister({
-            MQTT_TOPIC_MIRED, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
+        apiRegister(F(MQTT_TOPIC_MIRED), {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 sprintf(buffer.data, PSTR("%d"), _light_mireds);
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 _lightAdjustMireds(buffer.data);
                 lightUpdate(true, true);
+                return true;
             }
         });
 
-        apiRegister({
-            MQTT_TOPIC_KELVIN, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
+        apiRegister(F(MQTT_TOPIC_KELVIN), {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 sprintf(buffer.data, PSTR("%d"), _toKelvin(_light_mireds));
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
+            [](ApiRequest&, ApiBuffer& buffer) {
                 _lightAdjustKelvin(buffer.data);
                 lightUpdate(true, true);
+                return true;
             }
         });
 
     }
 
-    apiRegister({
-        MQTT_TOPIC_TRANSITION, Api::Type::Basic, ApiUnusedArg,
-        [](const Api&, ApiBuffer& buffer) {
-            snprintf_P(buffer.data, buffer.size, PSTR("%u"), lightTransitionTime());
+    apiRegister(F(MQTT_TOPIC_TRANSITION), {
+        [](ApiRequest&, ApiBuffer& buffer) {
+            snprintf_P(buffer.data, buffer.size(), PSTR("%u"), lightTransitionTime());
+            return true;
         },
-        [](const Api&, ApiBuffer& buffer) {
+        [](ApiRequest&, ApiBuffer& buffer) {
             lightTransitionTime(atol(buffer.data));
-        }
+            return true;
+        },
+        nullptr
     });
 
-    apiRegister({
-        MQTT_TOPIC_BRIGHTNESS, Api::Type::Basic, ApiUnusedArg,
-        [](const Api&, ApiBuffer& buffer) {
-            snprintf_P(buffer.data, buffer.size, PSTR("%u"), _light_brightness);
+    apiRegister(F(MQTT_TOPIC_BRIGHTNESS), {
+        [](ApiRequest&, ApiBuffer& buffer) {
+            snprintf_P(buffer.data, buffer.size(), PSTR("%u"), _light_brightness);
+            return true;
         },
-        [](const Api&, ApiBuffer& buffer) {
+        [](ApiRequest&, ApiBuffer& buffer) {
             _lightAdjustBrightness(buffer.data);
             lightUpdate(true, true);
-        }
+            return true;
+        },
+        nullptr
     });
 
-    char path[32] = {0};
-    for (unsigned char id = 0; id < _light_channels.size(); ++id) {
-        snprintf_P(path, sizeof(path), PSTR(MQTT_TOPIC_CHANNEL "/%u"), id);
-        apiRegister({
-            path, Api::Type::Basic, id,
-            [](const Api& api, ApiBuffer& buffer) {
-                snprintf_P(buffer.data, buffer.size, PSTR("%u"), _light_channels[api.arg].target);
-            },
-            [](const Api& api, ApiBuffer& buffer) {
-                _lightAdjustChannel(api.arg, buffer.data);
+    apiRegister(F(MQTT_TOPIC_CHANNEL "/+"), {
+        [](ApiRequest& request, ApiBuffer& buffer) {
+            return _lightApiTryHandle(request, [&](unsigned char id) {
+                snprintf_P(buffer.data, buffer.size(), PSTR("%u"), _light_channels[id].target);
+                return true;
+            });
+        },
+        [](ApiRequest& request, ApiBuffer& buffer) {
+            return _lightApiTryHandle(request, [&](unsigned char id) {
+                _lightAdjustChannel(id, buffer.data);
                 lightUpdate(true, true);
-            }
-        });
-    }
+                return true;
+            });
+        },
+        nullptr
+    });
 
 }
 
