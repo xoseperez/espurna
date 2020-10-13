@@ -117,7 +117,9 @@ types::Event EventEmitter::loop() {
             _value = !_value;
 
             if (_is_switch) {
-                event = types::EventChanged;
+                event = isPressed()
+                    ? types::EventPressed
+                    : types::EventReleased;
             } else {
                 if (_value == _default_value) {
                     _event_length = millis() - _event_start;

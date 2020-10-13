@@ -152,6 +152,7 @@ constexpr const button_action_t _buttonDecodeEventAction(const button_actions_t&
 
 constexpr const button_event_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
     return (
+        (0 == count) ? button_event_t::Released :
         (1 == count) ? (
             (length > lnglngclick_delay) ? button_event_t::LongLongClick :
             (length > lngclick_delay) ? button_event_t::LongClick : button_event_t::Click
@@ -221,23 +222,11 @@ bool button_t::state() {
     return event_emitter->isPressed();
 }
 
-button_event_t _buttonMapChanged(button_t& button) {
-    if (BUTTON_ACTION_NONE == button.actions.click) {
-        return button.state()
-            ? button_event_t::Pressed
-            : button_event_t::Released;
-    }
-
-    return button_event_t::Click;
-}
-
 button_event_t button_t::loop() {
     if (event_emitter) {
         switch (event_emitter->loop()) {
         case debounce_event::types::EventPressed:
             return button_event_t::Pressed;
-        case debounce_event::types::EventChanged:
-            return _buttonMapChanged(*this);
         case debounce_event::types::EventReleased: {
             return _buttonMapReleased(
                 event_emitter->getEventCount(),
