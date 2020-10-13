@@ -24,6 +24,17 @@ String apiKey();
 
 #include "api_impl.h"
 
+#include <functional>
+
+using ApiBasicHandler = std::function<bool(ApiRequest&, ApiBuffer&)>;
+using ApiJsonHandler = std::function<bool(ApiRequest&, JsonObject& reponse)>;
+
+struct ApiHandler {
+    ApiBasicHandler get;
+    ApiBasicHandler put;
+    ApiJsonHandler json;
+};
+
 void apiRegister(const String& path, ApiHandler handler);
 
 void apiCommonSetup();

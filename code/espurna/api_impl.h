@@ -15,7 +15,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <algorithm>
 #include <forward_list>
-#include <functional>
 #include <memory>
 
 // -----------------------------------------------------------------------------
@@ -163,14 +162,5 @@ struct ApiRequest {
     AsyncWebServerRequest& _request;
     const ApiLevels& _levels;
     const ApiLevels& _wildcards;
-};
-
-using ApiBasicHandler = std::function<bool(ApiRequest&, ApiBuffer&)>;
-using ApiJsonHandler = std::function<bool(ApiRequest&, JsonObject& reponse)>;
-
-struct ApiHandler {
-    ApiBasicHandler get;
-    ApiBasicHandler put;
-    ApiJsonHandler json;
 };
 
