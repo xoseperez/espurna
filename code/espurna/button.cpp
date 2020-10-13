@@ -260,13 +260,6 @@ std::bitset<ButtonsMax> _buttons_mqtt_retain(
     (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
 );
 
-void buttonMQTT(unsigned char id, button_event_t event) {
-    char payload[4] = {0};
-    itoa(_buttonEventNumber(event), payload, 10);
-    // mqttSend(topic, id, payload, force, retain)
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, _buttons_mqtt_retain[id]);
-}
-
 #endif
 
 #if WEB_SUPPORT
@@ -392,28 +385,28 @@ String _buttonEventString(button_event_t event) {
     const __FlashStringHelper* ptr = nullptr;
     switch (event) {
         case button_event_t::Pressed:
-            ptr = F("Pressed");
+            ptr = F("pressed");
             break;
         case button_event_t::Released:
-            ptr = F("Released");
+            ptr = F("released");
             break;
         case button_event_t::Click:
-            ptr = F("Click");
+            ptr = F("click");
             break;
         case button_event_t::DoubleClick:
-            ptr = F("Double-click");
+            ptr = F("double-click");
             break;
         case button_event_t::LongClick:
-            ptr = F("Long-click");
+            ptr = F("long-click");
             break;
         case button_event_t::LongLongClick:
-            ptr = F("Looong-click");
+            ptr = F("looong-click");
             break;
         case button_event_t::TripleClick:
-            ptr = F("Triple-click");
+            ptr = F("triple-click");
             break;
         case button_event_t::None:
-            ptr = F("None");
+            ptr = F("none");
             break;
     }
     return String(ptr);
@@ -435,7 +428,7 @@ void buttonEvent(unsigned char id, button_event_t event) {
 
     #if MQTT_SUPPORT
         if (action || _buttons_mqtt_send_all[id]) {
-            buttonMQTT(id, event);
+            mqttSend(MQTT_TOPIC_BUTTON, id, _buttonEventString(event).c_str(), false, _buttons_mqtt_retain[id]);
         }
     #endif
 

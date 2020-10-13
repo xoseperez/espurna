@@ -76,7 +76,6 @@ BrokerDeclare(ButtonBroker, void(unsigned char id, button_event_t event));
 bool buttonState(unsigned char id);
 button_action_t buttonAction(unsigned char id, const button_event_t event);
 
-void buttonMQTT(unsigned char id, button_event_t event);
 void buttonEvent(unsigned char id, button_event_t event);
 
 unsigned char buttonCount();
