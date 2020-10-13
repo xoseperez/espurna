@@ -190,10 +190,6 @@ struct ApiParsedPath {
                 && ((*rhs).type == ApiLevel::Type::Value)
             ) {
                 result.wildcards.emplace_back((*rhs).type, (*rhs).offset, (*rhs).length);
-                DEBUG_MSG_P(PSTR("[API] + %u byte(s) at pos %u\n"), (*rhs).length, (*rhs).offset);
-                DEBUG_MSG_P(PSTR("[API] =toString() %s\n"), result.wildcards.levels().back().toString().c_str());
-                DEBUG_MSG_P(PSTR("[API] =c_str() %s\n"), result.wildcards.path().c_str());
-                DEBUG_MSG_P(PSTR("[API] =c_str()+ %s\n"), result.wildcards.path().c_str() + (*rhs).offset);
                 std::advance(lhs, 1);
                 std::advance(rhs, 1);
                 goto loop;
@@ -421,9 +417,11 @@ void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
         return;
     }
 
+    webLog(request);
+
     auto method = request->method();
     if ((HTTP_PUT != method) && (HTTP_GET != method) && (HTTP_HEAD != method)) {
-        DEBUG_MSG_P(PSTR("[API] Method not implemented\n"));
+        DEBUG_MSG_P(PSTR("[API] %s is not implemented\n"), request->methodToString());
         request->send(501);
         return;
     }
