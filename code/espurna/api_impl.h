@@ -68,11 +68,6 @@ struct ApiLevels {
 
     using Levels = std::vector<ApiLevel>;
 
-    using difference_type = Levels::difference_type;
-    using value_type = Levels::value_type;
-    using pointer = Levels::pointer;
-    using reference = Levels::reference;
-
     explicit ApiLevels(const String& path) :
         _path(path)
     {}
@@ -135,7 +130,7 @@ struct ApiRequest {
         _wildcards(wildcards)
     {}
 
-    // TODO: return response, manage terminal & prometheus through this thing
+    // TODO: re-do buffer management (ApiBuffer) for both input and output and provide some kind of helper method
 
     template <typename ...Args>
     void send(Args&&... args) {
