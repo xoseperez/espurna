@@ -190,7 +190,7 @@
 #endif
 
 #ifndef TERMINAL_WEB_API_PATH
-#define TERMINAL_WEB_API_PATH       "/api/cmd"
+#define TERMINAL_WEB_API_PATH       "cmd"
 #endif
 
 //------------------------------------------------------------------------------

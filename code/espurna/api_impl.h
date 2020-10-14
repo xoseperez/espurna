@@ -139,12 +139,18 @@ struct ApiRequest {
 
     template <typename ...Args>
     void send(Args&&... args) {
-        _sent = true;
+        _detached = true;
         _request.send(std::forward<Args>(args)...);
     }
 
-    bool sent() const {
-        return _sent;
+    template <typename T>
+    void handle(T&& handler) {
+        _detached = true;
+        handler(&_request);
+    }
+
+    bool detached() const {
+        return _detached;
     }
 
     const ApiLevels& levels() const {
@@ -157,7 +163,7 @@ struct ApiRequest {
 
     private:
 
-    bool _sent { false };
+    bool _detached { false };
 
     AsyncWebServerRequest& _request;
     const ApiLevels& _levels;

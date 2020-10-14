@@ -466,13 +466,16 @@ void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
             if (!handler.put(api_req, buffer)) {
                 break;
             }
+            if (api_req.detached()) {
+                return;
+            }
             buffer.clear();
         }
 
         if (!handler.get(api_req, buffer)) {
             break;
         }
-        if (!api_req.sent()) {
+        if (!api_req.detached()) {
             request->send(200, "text/plain", buffer.data);
         }
 
@@ -492,7 +495,7 @@ void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
             break;
         }
 
-        if (!api_req.sent()) {
+        if (!api_req.detached()) {
             AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
             root.printTo(*response);
             request->send(response);
@@ -505,7 +508,7 @@ void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
         break;
     }
 
-    if (!api_req.sent()) {
+    if (!api_req.detached()) {
         DEBUG_MSG_P(PSTR("[API] Request was not handled\n"));
         request->send(500);
     }
