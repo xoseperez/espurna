@@ -883,15 +883,15 @@ void _lightApiSetup() {
         apiRegister(F(MQTT_TOPIC_COLOR_RGB), {
             [](ApiRequest&, ApiBuffer& buffer) {
                 if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
-                    _toRGB(buffer.data, buffer.size(), true);
+                    _toRGB(buffer.data(), buffer.size(), true);
                 } else {
-                    _toLong(buffer.data, buffer.size(), true);
+                    _toLong(buffer.data(), buffer.size(), true);
                 }
 
                 return true;
             },
             [](ApiRequest&, ApiBuffer& buffer) {
-                lightColor(buffer.data, true);
+                lightColor(buffer.data(), true);
                 lightUpdate(true, true);
                 return true;
             }
@@ -899,11 +899,11 @@ void _lightApiSetup() {
 
         apiRegister(F(MQTT_TOPIC_COLOR_HSV), {
             [](ApiRequest&, ApiBuffer& buffer) {
-                _toHSV(buffer.data, buffer.size());
+                _toHSV(buffer.data(), buffer.size());
                 return true;
             },
             [](ApiRequest&, ApiBuffer& buffer) {
-                lightColor(buffer.data, false);
+                lightColor(buffer.data(), false);
                 lightUpdate(true, true);
                 return true;
             }
@@ -911,11 +911,11 @@ void _lightApiSetup() {
 
         apiRegister(F(MQTT_TOPIC_MIRED), {
             [](ApiRequest&, ApiBuffer& buffer) {
-                sprintf(buffer.data, PSTR("%d"), _light_mireds);
+                snprintf(buffer.data(), buffer.size(), PSTR("%d"), _light_mireds);
                 return true;
             },
             [](ApiRequest&, ApiBuffer& buffer) {
-                _lightAdjustMireds(buffer.data);
+                _lightAdjustMireds(buffer.data());
                 lightUpdate(true, true);
                 return true;
             }
@@ -923,11 +923,11 @@ void _lightApiSetup() {
 
         apiRegister(F(MQTT_TOPIC_KELVIN), {
             [](ApiRequest&, ApiBuffer& buffer) {
-                sprintf(buffer.data, PSTR("%d"), _toKelvin(_light_mireds));
+                snprintf(buffer.data(), buffer.size(), PSTR("%d"), _toKelvin(_light_mireds));
                 return true;
             },
             [](ApiRequest&, ApiBuffer& buffer) {
-                _lightAdjustKelvin(buffer.data);
+                _lightAdjustKelvin(buffer.data());
                 lightUpdate(true, true);
                 return true;
             }
@@ -937,11 +937,11 @@ void _lightApiSetup() {
 
     apiRegister(F(MQTT_TOPIC_TRANSITION), {
         [](ApiRequest&, ApiBuffer& buffer) {
-            snprintf_P(buffer.data, buffer.size(), PSTR("%u"), lightTransitionTime());
+            snprintf_P(buffer.data(), buffer.size(), PSTR("%u"), lightTransitionTime());
             return true;
         },
         [](ApiRequest&, ApiBuffer& buffer) {
-            lightTransitionTime(atol(buffer.data));
+            lightTransitionTime(atol(buffer.data()));
             return true;
         },
         nullptr
@@ -949,11 +949,11 @@ void _lightApiSetup() {
 
     apiRegister(F(MQTT_TOPIC_BRIGHTNESS), {
         [](ApiRequest&, ApiBuffer& buffer) {
-            snprintf_P(buffer.data, buffer.size(), PSTR("%u"), _light_brightness);
+            snprintf_P(buffer.data(), buffer.size(), PSTR("%u"), _light_brightness);
             return true;
         },
         [](ApiRequest&, ApiBuffer& buffer) {
-            _lightAdjustBrightness(buffer.data);
+            _lightAdjustBrightness(buffer.data());
             lightUpdate(true, true);
             return true;
         },
@@ -963,13 +963,13 @@ void _lightApiSetup() {
     apiRegister(F(MQTT_TOPIC_CHANNEL "/+"), {
         [](ApiRequest& request, ApiBuffer& buffer) {
             return _lightApiTryHandle(request, [&](unsigned char id) {
-                snprintf_P(buffer.data, buffer.size(), PSTR("%u"), _light_channels[id].target);
+                snprintf_P(buffer.data(), buffer.size(), PSTR("%u"), _light_channels[id].target);
                 return true;
             });
         },
         [](ApiRequest& request, ApiBuffer& buffer) {
             return _lightApiTryHandle(request, [&](unsigned char id) {
-                _lightAdjustChannel(id, buffer.data);
+                _lightAdjustChannel(id, buffer.data());
                 lightUpdate(true, true);
                 return true;
             });

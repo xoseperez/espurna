@@ -1493,7 +1493,7 @@ void _sensorApiSetup() {
             [type](ApiRequest& request, ApiBuffer& buffer) {
                 return _sensorApiTryHandle(request, type, [&](const sensor_magnitude_t& magnitude) {
                     auto value = _sensor_realtime ? magnitude.last : magnitude.reported;
-                    dtostrf(value, 1, magnitude.decimals, buffer.data);
+                    dtostrf(value, 1, magnitude.decimals, buffer.data());
                     return true;
                 });
             }
@@ -1503,7 +1503,7 @@ void _sensorApiSetup() {
         if (type == MAGNITUDE_ENERGY) {
             put = [](ApiRequest& request, ApiBuffer& buffer) {
                 return _sensorApiTryHandle(request, MAGNITUDE_ENERGY, [&](const sensor_magnitude_t& magnitude) {
-                    _sensorApiResetEnergy(magnitude, buffer.data);
+                    _sensorApiResetEnergy(magnitude, buffer.data());
                 });
             };
         }

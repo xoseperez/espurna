@@ -35,6 +35,7 @@ struct ApiParsedPath {
 
     // given the path 'topic/one/two/three' and pattern 'topic/+/two/+', provide
     // wildcards [0] -> one and [1] -> three
+
     struct Match {
         explicit Match(const ApiParsedPath& other) :
             path(other.path()),
@@ -476,7 +477,7 @@ void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
             break;
         }
         if (!api_req.detached()) {
-            request->send(200, "text/plain", buffer.data);
+            request->send(200, "text/plain", buffer.data());
         }
 
         return;
@@ -550,20 +551,12 @@ void apiSetup() {
 }
 
 bool apiOk(ApiRequest&, ApiBuffer& buffer) {
-    buffer.data[0] = 'O';
-    buffer.data[1] = 'K';
-    buffer.data[2] = '\0';
+    buffer.copy("OK", 2);
     return true;
 }
 
 bool apiError(ApiRequest&, ApiBuffer& buffer) {
-    buffer.data[0] = '-';
-    buffer.data[1] = 'E';
-    buffer.data[2] = 'R';
-    buffer.data[3] = 'R';
-    buffer.data[4] = 'O';
-    buffer.data[5] = 'R';
-    buffer.data[6] = '\0';
+    buffer.copy("ERROR", 2);
     return true;
 }
 

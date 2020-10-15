@@ -21,7 +21,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 struct ApiBuffer {
     void clear() {
-        std::fill(data, data + size(), '\0');
+        std::fill(_data, _data + size(), '\0');
     }
 
     bool copy(const char* ptr, size_t size) {
@@ -29,15 +29,23 @@ struct ApiBuffer {
             return false;
         }
 
-        std::copy(ptr, ptr + size + 1, data);
+        std::copy(ptr, ptr + size, _data);
+        _data[size] = '\0';
+
         return true;
     }
 
     constexpr size_t size() const {
-        return sizeof(data);
+        return sizeof(_data);
     }
 
-    char data[API_BUFFER_SIZE];
+    char* data() {
+        return _data;
+    }
+
+    private:
+
+    char _data[API_BUFFER_SIZE];
 };
 
 struct ApiLevel {
@@ -129,14 +137,6 @@ struct ApiRequest {
         _levels(levels),
         _wildcards(wildcards)
     {}
-
-    // TODO: re-do buffer management (ApiBuffer) for both input and output and provide some kind of helper method
-
-    template <typename ...Args>
-    void send(Args&&... args) {
-        _detached = true;
-        _request.send(std::forward<Args>(args)...);
-    }
 
     template <typename T>
     void handle(T&& handler) {

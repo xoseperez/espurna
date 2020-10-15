@@ -1023,7 +1023,7 @@ void _rfbApiSetup() {
     apiRegister(F(MQTT_TOPIC_RFOUT), {
         apiOk, // just a stub, nothing to return
         [](ApiRequest&, ApiBuffer& buffer) {
-            _rfbSendFromPayload(buffer.data);
+            _rfbSendFromPayload(buffer.data());
             return true;
         }
     });
@@ -1032,16 +1032,16 @@ void _rfbApiSetup() {
     apiRegister(F(MQTT_TOPIC_RFLEARN), {
         [](ApiRequest&, ApiBuffer& buffer) {
             if (_rfb_learn) {
-                snprintf_P(buffer.data, buffer.size(), PSTR("learning id:%u,status:%c"),
+                snprintf_P(buffer.data(), buffer.size(), PSTR("learning id:%u,status:%c"),
                     _rfb_learn->id, _rfb_learn->status ? 't' : 'f'
                 );
             } else {
-                snprintf_P(buffer.data, buffer.size(), PSTR("waiting"));
+                snprintf_P(buffer.data(), buffer.size(), PSTR("waiting"));
             }
             return true;
         },
         [](ApiRequest&, ApiBuffer& buffer) {
-            _rfbLearnStartFromPayload(buffer.data);
+            _rfbLearnStartFromPayload(buffer.data());
             return true;
         }
     });
@@ -1051,7 +1051,7 @@ void _rfbApiSetup() {
     apiRegister(F(MQTT_TOPIC_RFRAW), {
         apiOk, // just a stub, nothing to return
         [](ApiRequest&, ApiBuffer& buffer) {
-            _rfbSendRawFromPayload(buffer.data);
+            _rfbSendRawFromPayload(buffer.data());
             return true;
         }
     });

@@ -498,7 +498,7 @@ void _terminalWebApiSetup() {
             String cmd;
             cmd.reserve(buffer.size() + 3);
 
-            cmd += buffer.data;
+            cmd += buffer.data();
             if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
                 cmd += '\n';
             }

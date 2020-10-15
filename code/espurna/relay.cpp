@@ -1114,13 +1114,13 @@ void relaySetupAPI() {
     apiRegister(F(MQTT_TOPIC_RELAY "/+"), {
         [](ApiRequest& request, ApiBuffer& buffer) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                snprintf_P(buffer.data, buffer.size(), PSTR("%d"), _relays[id].target_status ? 1 : 0);
+                snprintf_P(buffer.data(), buffer.size(), PSTR("%d"), _relays[id].target_status ? 1 : 0);
                 return true;
             });
         },
         [](ApiRequest& request, ApiBuffer& buffer) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                return _relayHandlePayload(id, buffer.data);
+                return _relayHandlePayload(id, buffer.data());
             });
         },
         nullptr
@@ -1129,13 +1129,13 @@ void relaySetupAPI() {
     apiRegister(F(MQTT_TOPIC_PULSE "/+"), {
         [](ApiRequest& request, ApiBuffer& buffer) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                dtostrf((double) _relays[id].pulse_ms / 1000, 1, 3, buffer.data);
+                dtostrf((double) _relays[id].pulse_ms / 1000, 1, 3, buffer.data());
                 return true;
             });
         },
         [](ApiRequest& request, ApiBuffer& buffer) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                return _relayHandlePulsePayload(id, buffer.data);
+                return _relayHandlePulsePayload(id, buffer.data());
             });
         },
         nullptr
@@ -1144,11 +1144,11 @@ void relaySetupAPI() {
     #if defined(ITEAD_SONOFF_IFAN02)
         apiRegister(F(MQTT_TOPIC_SPEED), {
             [](ApiRequest&, ApiBuffer& buffer) {
-                snprintf(buffer.data, buffer.size(), "%u", getSpeed());
+                snprintf(buffer.data(), buffer.size(), "%u", getSpeed());
                 return true;
             },
             [](ApiRequest&, ApiBuffer& buffer) {
-                setSpeed(atoi(buffer.data));
+                setSpeed(atoi(buffer.data()));
                 return true;
             },
             nullptr
