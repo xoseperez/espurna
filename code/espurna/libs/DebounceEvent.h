@@ -69,7 +69,6 @@ namespace types {
 
     enum Event {
         EventNone,
-        EventChanged,
         EventPressed,
         EventReleased
     };

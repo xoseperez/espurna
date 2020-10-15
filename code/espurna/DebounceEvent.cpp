@@ -42,7 +42,7 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
     _default_value(config.default_value == types::PinValue::High),
     _delay(debounce_delay),
     _repeat(repeat),
-    _value(false),
+    _value(_default_value),
     _ready(false),
     _reset_count(true),
     _event_start(0),
@@ -70,8 +70,6 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
     } else {
         _pin->pinMode(INPUT);
     }
-
-    _value = _is_switch ? (_pin->digitalRead() == (HIGH)) : _default_value;
 }
 
 EventEmitter::EventEmitter(types::Pin pin, const types::Config& config, unsigned long delay, unsigned long repeat) :
@@ -119,7 +117,9 @@ types::Event EventEmitter::loop() {
             _value = !_value;
 
             if (_is_switch) {
-                event = types::EventChanged;
+                event = isPressed()
+                    ? types::EventPressed
+                    : types::EventReleased;
             } else {
                 if (_value == _default_value) {
                     _event_length = millis() - _event_start;

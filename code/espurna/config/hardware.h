@@ -1682,11 +1682,16 @@
 
     // Buttons
     #define BUTTON1_PIN         5
-    #define BUTTON2_PIN         4
     #define BUTTON1_RELAY       1
-    #define BUTTON2_RELAY       2
     #define BUTTON1_CONFIG      BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_PRESS       BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE     BUTTON_ACTION_OFF
+
+    #define BUTTON2_PIN         4
+    #define BUTTON2_RELAY       2
     #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_PRESS       BUTTON_ACTION_ON
+    #define BUTTON2_RELEASE     BUTTON_ACTION_OFF
 
     // Relays
     #define RELAY1_PIN          14
@@ -2560,11 +2565,8 @@
     #define BUTTON1_CONFIG        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY         1
 
-    #define BUTTON1_PRESS         BUTTON_ACTION_NONE
-    #define BUTTON1_CLICK         BUTTON_ACTION_TOGGLE
-    #define BUTTON1_DBLCLICK      BUTTON_ACTION_NONE
-    #define BUTTON1_LNGCLICK      BUTTON_ACTION_NONE
-    #define BUTTON1_LNGLNGCLICK   BUTTON_ACTION_NONE
+    #define BUTTON1_PRESS         BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE       BUTTON_ACTION_OFF
 
     // Relays
     #define RELAY1_PIN            5 // D1
@@ -2842,17 +2844,15 @@
     #define BUTTON1_RELAY           1
     #define BUTTON1_CONFIG          BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
 
-    #define BUTTON1_PRESS           BUTTON_ACTION_NONE
-    #define BUTTON1_CLICK           BUTTON_ACTION_TOGGLE
-    #define BUTTON1_DBLCLICK        BUTTON_ACTION_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_ACTION_NONE
-    #define BUTTON1_LNGLNGCLICK     BUTTON_ACTION_NONE
+    #define BUTTON1_PRESS           BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE         BUTTON_ACTION_OFF
 
     #define BUTTON2_PIN             13
     #define BUTTON2_RELAY           2
     #define BUTTON2_CONFIG          BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
 
-    #define BUTTON2_CLICK          BUTTON_ACTION_TOGGLE
+    #define BUTTON2_PRESS           BUTTON_ACTION_ON
+    #define BUTTON2_RELEASE         BUTTON_ACTION_OFF
 
     // Relays
     #define RELAY1_PIN              4
@@ -3664,6 +3664,9 @@
     #define BUTTON1_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
 
+    #define BUTTON1_PRESS       BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE     BUTTON_ACTION_OFF
+
     // Relays
     #define RELAY1_PIN          4
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
@@ -3676,11 +3679,18 @@
 
     // Buttons
     #define BUTTON1_PIN         12
-    #define BUTTON2_PIN         14
-    #define BUTTON1_CONFIG      BUTTON_SWITCH
-    #define BUTTON2_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
+    #define BUTTON1_CONFIG      BUTTON_SWITCH
+
+    #define BUTTON1_PRESS       BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE     BUTTON_ACTION_OFF
+
+    #define BUTTON2_PIN         14
+    #define BUTTON2_CONFIG      BUTTON_SWITCH
     #define BUTTON2_RELAY       2
+
+    #define BUTTON2_PRESS       BUTTON_ACTION_ON
+    #define BUTTON2_RELEASE     BUTTON_ACTION_OFF
 
     // Relays
     #define RELAY1_PIN          4
@@ -3697,6 +3707,9 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
+
+    #define BUTTON1_PRESS       BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE     BUTTON_ACTION_OFF
 
     #define BUTTON2_PIN         2
     #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
@@ -3741,9 +3754,15 @@
     #define BUTTON1_CONFIG      BUTTON_SWITCH
     #define BUTTON1_RELAY       1
 
+    #define BUTTON1_PRESS       BUTTON_ACTION_ON
+    #define BUTTON1_RELEASE     BUTTON_ACTION_OFF
+
     #define BUTTON2_PIN         5
     #define BUTTON2_CONFIG      BUTTON_SWITCH
     #define BUTTON2_RELAY       2
+
+    #define BUTTON2_PRESS       BUTTON_ACTION_ON
+    #define BUTTON2_RELEASE     BUTTON_ACTION_OFF
 
     #define BUTTON3_PIN         2
     #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
@@ -4951,6 +4970,48 @@
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       5       // WHITE
+
+// -----------------------------------------------------------------------------
+// Benexmart 5W GU5.3 (MR16) RGBWW
+// https://www.aliexpress.com/item/4001245365644.html
+// -----------------------------------------------------------------------------
+
+#elif defined(BENEXMART_GU53_RGBWW)
+
+    // Info
+    #define MANUFACTURER        "BENEXMART"
+    #define DEVICE              "GU53_RGBWW"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       5       // WARM WHITE
+    #define LIGHT_CH5_PIN       13      // COLD WHITE
+
+// LSC E27 10W White Bulb with TYLC6E ESP8266 module
+// https://www.action.com/de-at/p/lsc-smart-connect-intelligente-led-lampe/
+// -----------------------------------------------------------------------------
+
+#elif defined(LSC_E27_10W_WHITE)
+
+    // Info
+    #define MANUFACTURER                  "LSC"
+    #define DEVICE                        "E27_10W_WHITE"
+    #define RELAY_PROVIDER                RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER                LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      2
+    #define LIGHT_CH1_PIN                 5       // WARM WHITE LED PWM PIN
+    #define LIGHT_CH1_INVERSE             0
+    #define LIGHT_CH2_PIN                 4       // COLD WHITE LED PWM PIN
+    #define LIGHT_CH2_INVERSE             0
 
 #else
 

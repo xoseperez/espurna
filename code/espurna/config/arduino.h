@@ -27,6 +27,7 @@
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
 //#define AVATTO_NAS_WR01W
+//#define BENEXMART_GU53_RGBWW
 //#define BESTEK_MRJ1011
 //#define BH_ONOFRE
 //#define BLITZWOLF_BWSHP5
@@ -181,6 +182,7 @@
 //#define ZHILDE_44EU_W
 //#define ZHILDE_64EU_W
 //#define FCMILA_E27_7W_RGBW
+//#define LSC_E27_10W_WHITE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

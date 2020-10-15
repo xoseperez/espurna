@@ -46,6 +46,19 @@ constexpr const unsigned char _buttonConfigBitmask(unsigned char index) {
     );
 }
 
+constexpr const unsigned char _buttonRelease(unsigned char index) {
+    return (
+        (index == 0) ? BUTTON1_RELEASE :
+        (index == 1) ? BUTTON2_RELEASE :
+        (index == 2) ? BUTTON3_RELEASE :
+        (index == 3) ? BUTTON4_RELEASE :
+        (index == 4) ? BUTTON5_RELEASE :
+        (index == 5) ? BUTTON6_RELEASE :
+        (index == 6) ? BUTTON7_RELEASE :
+        (index == 7) ? BUTTON8_RELEASE : BUTTON_ACTION_NONE
+    );
+}
+
 constexpr const unsigned char _buttonPress(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PRESS :
