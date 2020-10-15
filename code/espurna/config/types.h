@@ -19,7 +19,7 @@
 // BUTTONS
 //------------------------------------------------------------------------------
 
-// button actions, limited to 4-bit number (0b1111 / 0xf / 15)
+// button actions, limited to 8-bit number (0b11111111 / 0xff / 255)
 #define BUTTON_ACTION_NONE            0u
 #define BUTTON_ACTION_TOGGLE          1u
 #define BUTTON_ACTION_ON              2u
@@ -33,7 +33,7 @@
 #define BUTTON_ACTION_DIM_UP          10u
 #define BUTTON_ACTION_DIM_DOWN        11u
 #define BUTTON_ACTION_DISPLAY_ON      12u
-#define BUTTON_ACTION_MAX             15u
+#define BUTTON_ACTION_MAX             255u
 
 // Deprecated: legacy mapping, changed to action from above
 #define BUTTON_MODE_NONE              BUTTON_ACTION_NONE
