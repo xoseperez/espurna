@@ -65,11 +65,13 @@ String serialize(const debounce_event::types::Mode& value) {
 template<>
 debounce_event::types::PinValue convert(const String& value) {
     switch (value.toInt()) {
+        case 1:
+            return debounce_event::types::PinValue::High;
+        case 2:
+            return debounce_event::types::PinValue::Initial;
+        default:
         case 0:
             return debounce_event::types::PinValue::Low;
-        case 1:
-        default:
-            return debounce_event::types::PinValue::High;
     }
 }
 
@@ -81,8 +83,10 @@ String serialize(const debounce_event::types::PinValue& value) {
             result = "0";
             break;
         case debounce_event::types::PinValue::High:
-        default:
             result = "1";
+            break;
+        case debounce_event::types::PinValue::Initial:
+            result = "2";
             break;
     }
     return result;
@@ -124,13 +128,14 @@ String serialize(const debounce_event::types::PinMode& mode) {
 
 // -----------------------------------------------------------------------------
 
-constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const unsigned char bitmask) {
+constexpr debounce_event::types::Config _buttonDecodeConfigBitmask(int bitmask) {
     return {
         ((bitmask & ButtonMask::Pushbutton)
             ? debounce_event::types::Mode::Pushbutton
             : debounce_event::types::Mode::Switch),
-        ((bitmask & ButtonMask::DefaultHigh)
-            ? debounce_event::types::PinValue::High
+        ((bitmask & ButtonMask::DefaultLow) ? debounce_event::types::PinValue::Low
+         : (bitmask & ButtonMask::DefaultHigh) ? debounce_event::types::PinValue::High
+         : (bitmask & ButtonMask::DefaultBoot) ? debounce_event::types::PinValue::Initial
             : debounce_event::types::PinValue::Low),
         ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup
             : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown
@@ -138,7 +143,7 @@ constexpr const debounce_event::types::Config _buttonDecodeConfigBitmask(const u
     };
 }
 
-constexpr const button_action_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
+constexpr button_action_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
     return (
         (event == button_event_t::Pressed) ? actions.pressed :
         (event == button_event_t::Released) ? actions.released :
@@ -150,7 +155,7 @@ constexpr const button_action_t _buttonDecodeEventAction(const button_actions_t&
     );
 }
 
-constexpr const button_event_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+constexpr button_event_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
     return (
         (0 == count) ? button_event_t::Released :
         (1 == count) ? (

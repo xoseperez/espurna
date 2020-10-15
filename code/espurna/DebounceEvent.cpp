@@ -39,37 +39,48 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
     _callback(callback),
     _config(config),
     _is_switch(config.mode == types::Mode::Switch),
-    _default_value(config.default_value == types::PinValue::High),
     _delay(debounce_delay),
-    _repeat(repeat),
-    _value(_default_value),
-    _ready(false),
-    _reset_count(true),
-    _event_start(0),
-    _event_length(0),
-    _event_count(0)
+    _repeat(repeat)
 {
     if (!pin) return;
 
-    if (_config.pin_mode == types::PinMode::InputPullup) {
+    switch (_config.pin_mode) {
+    case types::PinMode::InputPullup:
         _pin->pinMode(INPUT_PULLUP);
-    } else if (_config.pin_mode == types::PinMode::InputPulldown) {
+        break;
+    case types::PinMode::InputPulldown:
         // ESP8266 does not have INPUT_PULLDOWN definition, and instead
         // has a GPIO16-specific INPUT_PULLDOWN_16:
         // - https://github.com/esp8266/Arduino/issues/478
         // - https://github.com/esp8266/Arduino/commit/1b3581d55ebf0f8c91e081f9af4cf7433d492ec9
-        #ifdef ESP8266
-            if (_pin->pin == 16) {
-                _pin->pinMode(_default_value ? INPUT : INPUT_PULLDOWN_16);
-            } else {
-                _pin->pinMode(INPUT);
-            }
-        #else
-            _pin->pinMode(INPUT_PULLDOWN);
-        #endif
-    } else {
+#ifdef ESP8266
+        if (_pin->pin == 16) {
+            _pin->pinMode(INPUT_PULLDOWN_16);
+        } else {
+            _pin->pinMode(INPUT);
+        }
+#else
+        _pin->pinMode(INPUT_PULLDOWN);
+#endif
+        break;
+    case types::PinMode::Input:
         _pin->pinMode(INPUT);
+        break;
     }
+
+    switch (config.default_value) {
+    case types::PinValue::Low:
+        _default_value = false;
+        break;
+    case types::PinValue::High:
+        _default_value = true;
+        break;
+    case types::PinValue::Initial:
+        _default_value = ((HIGH) == _pin->digitalRead());
+        break;
+    }
+
+    _value = _default_value;
 }
 
 EventEmitter::EventEmitter(types::Pin pin, const types::Config& config, unsigned long delay, unsigned long repeat) :
