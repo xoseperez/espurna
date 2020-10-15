@@ -4971,6 +4971,27 @@
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       5       // WHITE
 
+// -----------------------------------------------------------------------------
+// LSC E27 10W White Bulb with TYLC6E ESP8266 module
+// https://www.action.com/de-at/p/lsc-smart-connect-intelligente-led-lampe/
+// -----------------------------------------------------------------------------
+
+#elif defined(LSC_E27_10W_WHITE)
+
+    // Info
+    #define MANUFACTURER                  "LSC"
+    #define DEVICE                        "E27_10W_WHITE"
+    #define RELAY_PROVIDER                RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER                LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      2
+    #define LIGHT_CH1_PIN                 5       // WARM WHITE LED PWM PIN
+    #define LIGHT_CH1_INVERSE             0
+    #define LIGHT_CH2_PIN                 4       // COLD WHITE LED PWM PIN
+    #define LIGHT_CH2_INVERSE             0
+
 #else
 
     #error "UNSUPPORTED HARDWARE!!"
