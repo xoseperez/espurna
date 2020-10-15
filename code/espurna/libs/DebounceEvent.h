@@ -52,7 +52,8 @@ namespace types {
 
     enum class PinValue {
         Low,
-        High
+        High,
+        Initial
     };
 
     enum class PinMode {
@@ -101,20 +102,20 @@ class EventEmitter {
 
         const types::Config _config;
 
-        const bool _is_switch;
-        const bool _default_value;
+        const bool _is_switch { false };
 
-        const unsigned long _delay;
-        const unsigned long _repeat;
+        const unsigned long _delay { 0ul };
+        const unsigned long _repeat { 0ul };
 
-        bool _value;
+        bool _default_value { true };
+        bool _value { true };
 
-        bool _ready;
-        bool _reset_count;
+        bool _ready { false };
+        bool _reset_count { true };
 
-        unsigned long _event_start;
-        unsigned long _event_length;
-        unsigned char _event_count;
+        unsigned long _event_start { 0ul };
+        unsigned long _event_length { 0ul };
+        unsigned char _event_count { 0ul };
 
 };
 

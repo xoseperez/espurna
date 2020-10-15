@@ -53,7 +53,9 @@
 // compat definitions for DebounceEvent
 #define BUTTON_PUSHBUTTON           ButtonMask::Pushbutton
 #define BUTTON_SWITCH               ButtonMask::Switch
+#define BUTTON_DEFAULT_LOW          ButtonMask::DefaultLow
 #define BUTTON_DEFAULT_HIGH         ButtonMask::DefaultHigh
+#define BUTTON_DEFAULT_BOOT         ButtonMask::DefaultBoot
 #define BUTTON_SET_PULLUP           ButtonMask::SetPullup
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
 

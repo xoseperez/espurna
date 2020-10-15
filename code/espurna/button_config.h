@@ -10,17 +10,17 @@ BUTTON MODULE
 
 namespace ButtonMask {
 
-enum {
-    Pushbutton = 1 << 0,
-    Switch = 1 << 1,
-    DefaultHigh = 1 << 2,
-    SetPullup = 1 << 3,
-    SetPulldown = 1 << 4
-};
+constexpr int Pushbutton { 1 << 0 };
+constexpr int Switch { 1 << 1 };
+constexpr int DefaultLow { 1 << 2 };
+constexpr int DefaultHigh { 1 << 3 };
+constexpr int DefaultBoot { 1 << 4 };
+constexpr int SetPullup { 1 << 5 };
+constexpr int SetPulldown { 1 << 6 };
 
 } // namespace ButtonMask
 
-constexpr const unsigned char _buttonPin(unsigned char index) {
+constexpr unsigned char _buttonPin(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PIN :
         (index == 1) ? BUTTON2_PIN :
@@ -33,7 +33,7 @@ constexpr const unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonConfigBitmask(unsigned char index) {
+constexpr int _buttonConfigBitmask(unsigned char index) {
     return (
         (index == 0) ? (BUTTON1_CONFIG) :
         (index == 1) ? (BUTTON2_CONFIG) :
@@ -46,7 +46,7 @@ constexpr const unsigned char _buttonConfigBitmask(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonRelease(unsigned char index) {
+constexpr unsigned char _buttonRelease(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_RELEASE :
         (index == 1) ? BUTTON2_RELEASE :
@@ -59,7 +59,7 @@ constexpr const unsigned char _buttonRelease(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonPress(unsigned char index) {
+constexpr unsigned char _buttonPress(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PRESS :
         (index == 1) ? BUTTON2_PRESS :
@@ -72,7 +72,7 @@ constexpr const unsigned char _buttonPress(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonClick(unsigned char index) {
+constexpr unsigned char _buttonClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_CLICK :
         (index == 1) ? BUTTON2_CLICK :
@@ -85,7 +85,7 @@ constexpr const unsigned char _buttonClick(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonDoubleClick(unsigned char index) {
+constexpr unsigned char _buttonDoubleClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_DBLCLICK :
         (index == 1) ? BUTTON2_DBLCLICK :
@@ -98,7 +98,7 @@ constexpr const unsigned char _buttonDoubleClick(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonTripleClick(unsigned char index) {
+constexpr unsigned char _buttonTripleClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_TRIPLECLICK :
         (index == 1) ? BUTTON2_TRIPLECLICK :
@@ -111,7 +111,7 @@ constexpr const unsigned char _buttonTripleClick(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonLongClick(unsigned char index) {
+constexpr unsigned char _buttonLongClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGCLICK :
         (index == 1) ? BUTTON2_LNGCLICK :
@@ -124,7 +124,7 @@ constexpr const unsigned char _buttonLongClick(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonLongLongClick(unsigned char index) {
+constexpr unsigned char _buttonLongLongClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGLNGCLICK :
         (index == 1) ? BUTTON2_LNGLNGCLICK :
@@ -137,7 +137,7 @@ constexpr const unsigned char _buttonLongLongClick(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _buttonRelay(unsigned char index) {
+constexpr unsigned char _buttonRelay(unsigned char index) {
     return (
         (index == 0) ? (BUTTON1_RELAY - 1) :
         (index == 1) ? (BUTTON2_RELAY - 1) :
@@ -150,11 +150,11 @@ constexpr const unsigned char _buttonRelay(unsigned char index) {
     );
 }
 
-constexpr const unsigned long _buttonDebounceDelay() {
+constexpr unsigned long _buttonDebounceDelay() {
     return BUTTON_DEBOUNCE_DELAY;
 }
 
-constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
+constexpr unsigned long _buttonDebounceDelay(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_DEBOUNCE_DELAY :
         (index == 1) ? BUTTON2_DEBOUNCE_DELAY :
@@ -167,11 +167,11 @@ constexpr const unsigned long _buttonDebounceDelay(unsigned char index) {
     );
 }
 
-constexpr const unsigned long _buttonRepeatDelay() {
+constexpr unsigned long _buttonRepeatDelay() {
     return BUTTON_REPEAT_DELAY;
 }
 
-constexpr const unsigned long _buttonRepeatDelay(unsigned char index) {
+constexpr unsigned long _buttonRepeatDelay(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_REPEAT_DELAY :
         (index == 1) ? BUTTON2_REPEAT_DELAY :
@@ -184,11 +184,11 @@ constexpr const unsigned long _buttonRepeatDelay(unsigned char index) {
     );
 }
 
-constexpr const unsigned long _buttonLongClickDelay() {
+constexpr unsigned long _buttonLongClickDelay() {
     return BUTTON_LNGCLICK_DELAY;
 }
 
-constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
+constexpr unsigned long _buttonLongClickDelay(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGCLICK_DELAY :
         (index == 1) ? BUTTON2_LNGCLICK_DELAY :
@@ -201,11 +201,11 @@ constexpr const unsigned long _buttonLongClickDelay(unsigned char index) {
     );
 }
 
-constexpr const unsigned long _buttonLongLongClickDelay() {
+constexpr unsigned long _buttonLongLongClickDelay() {
     return BUTTON_LNGLNGCLICK_DELAY;
 }
 
-constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
+constexpr unsigned long _buttonLongLongClickDelay(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGLNGCLICK_DELAY :
         (index == 1) ? BUTTON2_LNGLNGCLICK_DELAY :
@@ -218,7 +218,7 @@ constexpr const unsigned long _buttonLongLongClickDelay(unsigned char index) {
     );
 }
 
-constexpr const bool _buttonMqttSendAllEvents(unsigned char index) {
+constexpr bool _buttonMqttSendAllEvents(unsigned char index) {
     return (
         (index == 0) ? (1 == BUTTON1_MQTT_SEND_ALL_EVENTS) :
         (index == 1) ? (1 == BUTTON2_MQTT_SEND_ALL_EVENTS) :
@@ -231,7 +231,7 @@ constexpr const bool _buttonMqttSendAllEvents(unsigned char index) {
     );
 }
 
-constexpr const bool _buttonMqttRetain(unsigned char index) {
+constexpr bool _buttonMqttRetain(unsigned char index) {
     return (
         (index == 0) ? (1 == BUTTON1_MQTT_RETAIN) :
         (index == 1) ? (1 == BUTTON2_MQTT_RETAIN) :
