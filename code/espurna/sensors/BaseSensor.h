@@ -111,6 +111,7 @@ class BaseSensor {
                     return sensor::Unit::KilowattHour;
                 case MAGNITUDE_PM1dot0:
                 case MAGNITUDE_PM2dot5:
+                case MAGNITUDE_PM10:
                     return sensor::Unit::MicrogrammPerCubicMeter;
                 case MAGNITUDE_CO:
                 case MAGNITUDE_CO2:
