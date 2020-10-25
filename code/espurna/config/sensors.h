@@ -1001,6 +1001,19 @@
 #define SDS011_TX_PIN                    12
 #endif
 
+#ifndef SDS011_REPORTING_MODE
+#define SDS011_REPORTING_MODE            1   // Mode 0 = query, 1 = active. Default mode is 'active' where data is
+#endif                                       // read from software serial instead of querying the sensor.
+
+#ifndef SDS011_CUSTOM_WORKING_PERIOD
+#define SDS011_CUSTOM_WORKING_PERIOD     300 // Duration of the cycle in seconds. Each cycle works as follows:
+#endif                                       // for each working period, 30 seconds will be reserved for waking up
+                                             // the sensor, measuring and at the end of cycle, a new reading will be
+                                             // provided. For example, for a working period of 300 second (5 minutes)
+                                             // the sensor will wake up after 4.5 minutes, work for 0.5 minutes
+                                             // (completing the working period of 5 minutes) and sleep for another
+                                             // 4.5 minutes. This is the recommended setting.
+
 //------------------------------------------------------------------------------
 // SenseAir CO2 sensor
 // Enable support by passing SENSEAIR_SUPPORT=1 build flag
