@@ -223,37 +223,8 @@ bool _apiRequestCallback(AsyncWebServerRequest* request) {
         return true;
     }
 
-    bool needAuth = true;
-    if ( getSetting("alexaEnabled", 1 == ALEXA_ENABLED) )
-    {
-        String alexaHash = getSetting("alexaHash", "none");
-        if ( (url.startsWith("/api/" + alexaHash)) && (alexaHash != "none") )
-        {
-
-            needAuth = false;
-        } else
-        {
-            if (url.equals("/description.xml")) {
-                if ( alexaHash != "in_progress" )
-                {
-                    setSetting("alexaHash", "in_progress");
-                }
-            } else if ( (url.startsWith("/api/")) && (url.endsWith("/lights")) && (alexaHash == "in_progress") )
-            {
-                alexaHash = url;
-                alexaHash.remove(alexaHash.length()-7,7); // strip "/lights"
-                alexaHash.remove(0,5); // strip "/api/"
-                setSetting("alexaHash", alexaHash);
-                needAuth = false;
-            } else if (alexaHash == "in_progress")
-            {
-                setSetting("alexaHash", "none");
-            }
-        }
-    }
-
     if (!url.startsWith("/api/")) return false;
-    if (needAuth && !apiAuthenticate(request)) return false;
+    if (!apiAuthenticate(request)) return false;
 
     return _apiDispatchRequest(url, request);
 
