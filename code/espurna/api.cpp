@@ -226,7 +226,7 @@ bool _apiRequestCallback(AsyncWebServerRequest* request) {
     if (!url.startsWith("/api/")) return false;
 
 // [alexa] don't call the http api -> response for alexa is done by fauxmoesp lib
-#ifdef ALEXA_SUPPORT
+#if ALEXA_SUPPORT
     if (url.indexOf("/lights") > 14 ) return false;
 #endif
 
