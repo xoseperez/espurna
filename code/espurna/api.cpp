@@ -224,6 +224,12 @@ bool _apiRequestCallback(AsyncWebServerRequest* request) {
     }
 
     if (!url.startsWith("/api/")) return false;
+
+// [alexa] don't call the http api -> response for alexa is done by fauxmoesp lib
+#if ALEXA_SUPPORT
+    if (url.indexOf("/lights") > 14 ) return false;
+#endif
+
     if (!apiAuthenticate(request)) return false;
 
     return _apiDispatchRequest(url, request);
