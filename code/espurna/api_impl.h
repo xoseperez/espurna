@@ -117,16 +117,11 @@ struct ApiRequest {
 
     template <typename T>
     void param_foreach(const String& name, T&& handler) {
-        size_t count { 0ul };
-
         const size_t params { _request.params() };
-        for (size_t current = 0; current < total; ++current) {
+        for (size_t current = 0; current < params; ++current) {
             auto* param = _request.getParam(current);
             if (param->name() == name) {
-                if (index == count) {
-                    handler(param->value());
-                }
-                ++count;
+                handler(param->value());
             }
         }
     }
