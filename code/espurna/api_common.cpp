@@ -49,7 +49,7 @@ String apiKey() {
     return getSetting("apiKey", API_KEY);
 }
 
-bool apiAuthenticate(AsyncWebServerRequest *request) {
+bool apiAuthenticate(AsyncWebServerRequest* request) {
 
     const auto key = apiKey();
     if (!apiEnabled() || !key.length()) {

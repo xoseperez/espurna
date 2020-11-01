@@ -245,7 +245,7 @@ private:
 };
 
 std::forward_list<Api> _apis;
-
+bool _api_eager_auth { false };
 constexpr size_t ApiPathSizeMax { 128ul };
 
 // -----------------------------------------------------------------------------
@@ -412,44 +412,22 @@ std::unique_ptr<ApiMatch> _apiMatch(AsyncWebServerRequest* request, const ApiPar
     return result;
 }
 
-void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
-    if (!path.length()) {
-        request->send(500);
-        return;
-    }
-
-    webLog(request);
-
+void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
     auto method = request->method();
-    if ((HTTP_PUT != method) && (HTTP_GET != method) && (HTTP_HEAD != method)) {
-        DEBUG_MSG_P(PSTR("[API] %s is not implemented\n"), request->methodToString());
-        request->send(501);
-        return;
-    }
-
-    auto parsed_path = ApiParsedPath(path);
-    auto match = _apiMatch(request, parsed_path);
-    if (!match) {
-        DEBUG_MSG_P(PSTR("[API] No matching API found!\n"));
-        request->send(404);
-        return;
-    }
-
     if (HTTP_HEAD == method) {
         request->send(204);
         return;
     }
 
+    ApiRequest api_req(*request, match.levels(), match.wildcards());
     const bool is_put = (
         (!apiRestFul() || (HTTP_PUT == method))
         && request->hasParam("value", HTTP_PUT == method)
     );
 
-    ApiRequest api_req(*request, match->levels(), match->wildcards());
+    auto& handler = match.handler();
 
-    auto& handler = match->handler();
-
-    switch (match->type()) {
+    switch (match.type()) {
     case ApiType::Basic: {
         if (!handler.get) {
             break;
@@ -508,18 +486,47 @@ void _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
     case ApiType::Unknown:
         break;
     }
-
+    
     if (!api_req.detached()) {
-        DEBUG_MSG_P(PSTR("[API] Request was not handled\n"));
         request->send(500);
     }
 
     return;
-
 }
 
-bool _apiRequestCallback(AsyncWebServerRequest* request) {
+bool _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
+    webLog(request);
 
+    auto method = request->method();
+    if ((HTTP_PUT != method) && (HTTP_GET != method) && (HTTP_HEAD != method)) {
+        request->send(501);
+        return false;
+    }
+
+    // XXX(alexa & maybe something else):
+    // allow auth to happen when exact match is found, do nothing otherwise
+    if (_api_eager_auth && !apiAuthenticate(request)) {
+        return false;
+    }
+
+    auto parsed_path = ApiParsedPath(path);
+    auto match = _apiMatch(request, parsed_path);
+    if (match) {
+        if (!_api_eager_auth && !apiAuthenticate(request)) {
+            return true;
+        }
+        _apiDispatchMatch(request, *match.get());
+        return true;
+    }
+
+    return false;
+}
+
+// TODO(web server):
+// - since me-no-dev/ESPAsyncWebServer#380, we could use 'webServer().on('/api/*', [](AsyncWebServerRequest*) { ... })`, but this would still require us to 'know' about the fauxmoESP
+// - from alexa side, `apiRegister(...something for alexa...)` looks really weird, since it's not really API function but just a way to manage specific path wildcard when nothing else matched it
+
+bool _apiRequestCallback(AsyncWebServerRequest* request) {
     auto path = request->url();
     if (path.equals("/rpc")) {
         _onRPC(request);
@@ -532,11 +539,7 @@ bool _apiRequestCallback(AsyncWebServerRequest* request) {
     }
 
     if (!path.startsWith("/api/")) return false;
-    if (!apiAuthenticate(request)) return false;
-
-    _apiDispatchRequest(request, path.substring(strlen("/api/")));
-    return true;
-
+    return _apiDispatchRequest(request, path.substring(strlen("/api/")));
 }
 
 // -----------------------------------------------------------------------------
@@ -558,6 +561,14 @@ bool apiOk(ApiRequest&, ApiBuffer& buffer) {
 bool apiError(ApiRequest&, ApiBuffer& buffer) {
     buffer.copy("ERROR", 2);
     return true;
+}
+
+void apiEagerAuth(bool value) {
+    _api_eager_auth = value;
+}
+
+bool apiEagerAuth() {
+    return _api_eager_auth;
 }
 
 #endif // API_SUPPORT
