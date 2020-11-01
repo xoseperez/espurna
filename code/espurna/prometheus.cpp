@@ -60,7 +60,7 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
 
 void prometheusSetup() {
     apiRegister(F("metrics"), {
-        [](ApiRequest& request, ApiBuffer&) {
+        [](ApiRequest& request) {
             request.handle(_prometheusRequestHandler);
             return true;
         }

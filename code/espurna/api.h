@@ -29,7 +29,7 @@ String apiKey();
 
 #include <functional>
 
-using ApiBasicHandler = std::function<bool(ApiRequest&, ApiBuffer&)>;
+using ApiBasicHandler = std::function<bool(ApiRequest&)>;
 using ApiJsonHandler = std::function<bool(ApiRequest&, JsonObject& reponse)>;
 
 struct ApiHandler {
@@ -43,7 +43,7 @@ void apiRegister(const String& path, ApiHandler handler);
 void apiCommonSetup();
 void apiSetup();
 
-bool apiError(ApiRequest&, ApiBuffer&);
-bool apiOk(ApiRequest&, ApiBuffer&);
+bool apiError(ApiRequest&);
+bool apiOk(ApiRequest&);
 
 #endif // API_SUPPORT == 1

@@ -478,7 +478,7 @@ void _terminalWebApiSetup() {
 #if API_SUPPORT
 
     apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH), {
-        [](ApiRequest& api, ApiBuffer&) {
+        [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
                 AsyncResponseStream *response = request->beginResponseStream("text/plain");
                 for (auto& command : _terminal.commandNames()) {
@@ -490,15 +490,12 @@ void _terminalWebApiSetup() {
             });
             return true;
         },
-        [](ApiRequest& api, ApiBuffer& buffer) {
-            if (!buffer.size()) {
+        [](ApiRequest& api) {
+            auto cmd = api.getValue();
+            if (!cmd.length()) {
                 return false;
             }
 
-            String cmd;
-            cmd.reserve(buffer.size() + 3);
-
-            cmd += buffer.data();
             if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
                 cmd += '\n';
             }

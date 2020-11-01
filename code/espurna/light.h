@@ -31,8 +31,12 @@ size_t lightChannels();
 unsigned int lightTransitionTime();
 void lightTransitionTime(unsigned long ms);
 
-void lightColor(const char * color, bool rgb);
-void lightColor(const char * color);
+void lightColor(const char* color, bool rgb);
+void lightColor(const String& color, bool rgb);
+
+void lightColor(const String& color);
+void lightColor(const char* color);
+
 void lightColor(unsigned long color);
 String lightColor(bool rgb);
 String lightColor();

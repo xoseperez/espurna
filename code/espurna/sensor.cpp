@@ -449,6 +449,10 @@ void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payl
     sensor->resetEnergy(magnitude.index_local, energy);
 }
 
+void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const String& payload) {
+    _sensorApiResetEnergy(magnitude, payload.c_str());
+}
+
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
 
     sensor::Energy result;
@@ -1490,10 +1494,15 @@ void _sensorApiSetup() {
         }
 
         ApiBasicHandler get {
-            [type](ApiRequest& request, ApiBuffer& buffer) {
+            [type](ApiRequest& request) {
                 return _sensorApiTryHandle(request, type, [&](const sensor_magnitude_t& magnitude) {
-                    auto value = _sensor_realtime ? magnitude.last : magnitude.reported;
-                    dtostrf(value, 1, magnitude.decimals, buffer.data());
+                    char buffer[64] { 0 };
+                    dtostrf(
+                        _sensor_realtime ? magnitude.last : magnitude.reported,
+                        1, magnitude.decimals,
+                        buffer
+                    );
+                    request.send(String(buffer));
                     return true;
                 });
             }
@@ -1501,9 +1510,9 @@ void _sensorApiSetup() {
 
         ApiBasicHandler put { nullptr };
         if (type == MAGNITUDE_ENERGY) {
-            put = [](ApiRequest& request, ApiBuffer& buffer) {
+            put = [](ApiRequest& request) {
                 return _sensorApiTryHandle(request, MAGNITUDE_ENERGY, [&](const sensor_magnitude_t& magnitude) {
-                    _sensorApiResetEnergy(magnitude, buffer.data());
+                    _sensorApiResetEnergy(magnitude, request.getValue());
                 });
             };
         }

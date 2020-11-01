@@ -420,10 +420,7 @@ void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
     }
 
     ApiRequest api_req(*request, match.levels(), match.wildcards());
-    const bool is_put = (
-        (!apiRestFul() || (HTTP_PUT == method))
-        && request->hasParam("value", HTTP_PUT == method)
-    );
+    const bool is_put = api_req.hasValue(apiRestFul());
 
     auto& handler = match.handler();
 
@@ -433,29 +430,23 @@ void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
             break;
         }
 
-        ApiBuffer buffer;
         if (is_put) {
             if (!handler.put) {
                 break;
             }
-            auto value = request->getParam("value", HTTP_PUT == method)->value();
-            if (!buffer.copy(value.c_str(), value.length())) {
+            if (!handler.put(api_req)) {
                 break;
             }
-            if (!handler.put(api_req, buffer)) {
-                break;
-            }
-            if (api_req.detached()) {
+            if (api_req.done()) {
                 return;
             }
-            buffer.clear();
         }
 
-        if (!handler.get(api_req, buffer)) {
+        if (!handler.get(api_req)) {
             break;
         }
-        if (!api_req.detached()) {
-            request->send(200, "text/plain", buffer.data());
+        if (!api_req.done()) {
+            request->send(204);
         }
 
         return;
@@ -474,7 +465,7 @@ void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
             break;
         }
 
-        if (!api_req.detached()) {
+        if (!api_req.done()) {
             AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
             root.printTo(*response);
             request->send(response);
@@ -487,7 +478,7 @@ void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
         break;
     }
     
-    if (!api_req.detached()) {
+    if (!api_req.done()) {
         request->send(500);
     }
 
@@ -553,13 +544,13 @@ void apiSetup() {
     webRequestRegister(_apiRequestCallback);
 }
 
-bool apiOk(ApiRequest&, ApiBuffer& buffer) {
-    buffer.copy("OK", 2);
+bool apiOk(ApiRequest& request) {
+    request.send(F("OK"));
     return true;
 }
 
-bool apiError(ApiRequest&, ApiBuffer& buffer) {
-    buffer.copy("ERROR", 2);
+bool apiError(ApiRequest& request) {
+    request.send(F("ERROR"));
     return true;
 }
 

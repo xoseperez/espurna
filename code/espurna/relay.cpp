@@ -188,6 +188,10 @@ bool _relayHandlePayload(unsigned char relayID, const char* payload) {
     return false;
 }
 
+bool _relayHandlePayload(unsigned char relayID, const String& payload) {
+    return _relayHandlePayload(relayID, payload.c_str());
+}
+
 bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
     unsigned long pulse = 1000 * atof(payload);
     if (!pulse) {
@@ -203,6 +207,10 @@ bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
     relayToggle(id, true, false);
 
     return true;
+}
+
+bool _relayHandlePulsePayload(unsigned char id, const String& payload) {
+    return _relayHandlePulsePayload(id, payload.c_str());
 }
 
 PayloadStatus _relayStatusInvert(PayloadStatus status) {
@@ -1065,7 +1073,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
             relayID = data["id"];
         }
 
-        _relayHandlePayload(relayID, data["status"]);
+        _relayHandlePayload(relayID, data["status"].as<const char*>());
 
     }
 
@@ -1112,30 +1120,30 @@ void relaySetupAPI() {
     });
 
     apiRegister(F(MQTT_TOPIC_RELAY "/+"), {
-        [](ApiRequest& request, ApiBuffer& buffer) {
+        [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                snprintf_P(buffer.data(), buffer.size(), PSTR("%d"), _relays[id].target_status ? 1 : 0);
+                request.send(String(_relays[id].target_status ? 1 : 0));
                 return true;
             });
         },
-        [](ApiRequest& request, ApiBuffer& buffer) {
+        [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                return _relayHandlePayload(id, buffer.data());
+                return _relayHandlePayload(id, request.getValue());
             });
         },
         nullptr
     });
 
     apiRegister(F(MQTT_TOPIC_PULSE "/+"), {
-        [](ApiRequest& request, ApiBuffer& buffer) {
+        [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                dtostrf((double) _relays[id].pulse_ms / 1000, 1, 3, buffer.data());
+                request.send(String(static_cast<double>(_relays[id].pulse_ms) / 1000));
                 return true;
             });
         },
-        [](ApiRequest& request, ApiBuffer& buffer) {
+        [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                return _relayHandlePulsePayload(id, buffer.data());
+                return _relayHandlePulsePayload(id, request.getValue());
             });
         },
         nullptr
@@ -1143,12 +1151,12 @@ void relaySetupAPI() {
 
     #if defined(ITEAD_SONOFF_IFAN02)
         apiRegister(F(MQTT_TOPIC_SPEED), {
-            [](ApiRequest&, ApiBuffer& buffer) {
-                snprintf(buffer.data(), buffer.size(), "%u", getSpeed());
+            [](ApiRequest& request) {
+                request.send(String(static_cast<int>(getSpeed())));
                 return true;
             },
-            [](ApiRequest&, ApiBuffer& buffer) {
-                setSpeed(atoi(buffer.data()));
+            [](ApiRequest& request) {
+                setSpeed(atoi(request.getValue()));
                 return true;
             },
             nullptr

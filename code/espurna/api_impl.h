@@ -19,35 +19,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 // -----------------------------------------------------------------------------
 
-struct ApiBuffer {
-    void clear() {
-        std::fill(_data, _data + size(), '\0');
-    }
-
-    bool copy(const char* ptr, size_t size) {
-        if (this->size() < (size + 1ul)) {
-            return false;
-        }
-
-        std::copy(ptr, ptr + size, _data);
-        _data[size] = '\0';
-
-        return true;
-    }
-
-    constexpr size_t size() const {
-        return sizeof(_data);
-    }
-
-    char* data() {
-        return _data;
-    }
-
-    private:
-
-    char _data[API_BUFFER_SIZE];
-};
-
 struct ApiLevel {
     enum class Type {
         Unknown,
@@ -140,12 +111,28 @@ struct ApiRequest {
 
     template <typename T>
     void handle(T&& handler) {
-        _detached = true;
+        _done = true;
         handler(&_request);
     }
 
-    bool detached() const {
-        return _detached;
+    bool hasValue(bool restful) {
+        return (
+            (!restful|| (HTTP_PUT == _request.method()))
+            && _request.hasParam("value", HTTP_PUT == _request.method())
+        );
+    }
+
+    String getValue() {
+        return _request.getParam("value", HTTP_PUT == _request.method())->value();
+    }
+
+    void send(const String& payload) {
+        _done = true;
+        _request.send(200, "text/plain", payload);
+    }
+
+    bool done() const {
+        return _done;
     }
 
     const ApiLevels& levels() const {
@@ -158,7 +145,7 @@ struct ApiRequest {
 
     private:
 
-    bool _detached { false };
+    bool _done { false };
 
     AsyncWebServerRequest& _request;
     const ApiLevels& _levels;
