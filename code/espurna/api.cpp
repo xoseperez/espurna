@@ -420,9 +420,11 @@ void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
     }
 
     ApiRequest api_req(*request, match.levels(), match.wildcards());
+
+    // TODO: do we enforce this now, since the params() & params_foreach() are exposed?
     const bool is_put = (
-        (!apiRestFul()|| (HTTP_PUT == _request.method()))
-        && _request.hasParam("value", HTTP_PUT == _request.method())
+        (!apiRestFul()|| (HTTP_PUT == method))
+        && request->hasParam("value", HTTP_PUT == method)
     );
 
     auto& handler = match.handler();

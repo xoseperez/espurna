@@ -49,6 +49,8 @@ String apiKey() {
     return getSetting("apiKey", API_KEY);
 }
 
+// TODO: use `Api-Key` header instead and warn when api_key param is found?
+
 bool apiAuthenticate(AsyncWebServerRequest* request) {
 
     const auto key = apiKey();

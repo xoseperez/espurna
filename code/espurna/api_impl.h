@@ -115,15 +115,29 @@ struct ApiRequest {
         handler(&_request);
     }
 
-    const String& param(const String& name) {
-        static String empty;
+    template <typename T>
+    void param_foreach(const String& name, T&& handler) {
+        size_t count { 0ul };
 
+        const size_t params { _request.params() };
+        for (size_t current = 0; current < total; ++current) {
+            auto* param = _request.getParam(current);
+            if (param->name() == name) {
+                if (index == count) {
+                    handler(param->value());
+                }
+                ++count;
+            }
+        }
+    }
+
+    const String& param(const String& name) {
         auto* result = _request.getParam(name, HTTP_PUT == _request.method());
         if (result) {
             return result->value();
         }
 
-        return empty;
+        return empty();
     }
 
     void send(const String& payload) {
@@ -144,6 +158,11 @@ struct ApiRequest {
     }
 
     private:
+
+    const String& empty() {
+        static String string;
+        return string;
+    }
 
     bool _done { false };
 
