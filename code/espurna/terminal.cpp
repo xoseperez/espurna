@@ -491,7 +491,9 @@ void _terminalWebApiSetup() {
             return true;
         },
         [](ApiRequest& api) {
-            auto cmd = api.getValue();
+            // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
+            // over  every 'value' available to provide a way to call multiple commands at once
+            auto cmd = api.param(F("value"));
             if (!cmd.length()) {
                 return false;
             }

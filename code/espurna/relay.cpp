@@ -1128,7 +1128,7 @@ void relaySetupAPI() {
         },
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                return _relayHandlePayload(id, request.getValue());
+                return _relayHandlePayload(id, request.param(F("value")));
             });
         },
         nullptr
@@ -1143,7 +1143,7 @@ void relaySetupAPI() {
         },
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
-                return _relayHandlePulsePayload(id, request.getValue());
+                return _relayHandlePulsePayload(id, request.param(F("value")));
             });
         },
         nullptr
@@ -1156,7 +1156,7 @@ void relaySetupAPI() {
                 return true;
             },
             [](ApiRequest& request) {
-                setSpeed(atoi(request.getValue()));
+                setSpeed(atoi(request.param(F("value"))));
                 return true;
             },
             nullptr

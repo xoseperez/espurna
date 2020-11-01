@@ -922,7 +922,7 @@ void _lightApiSetup() {
                 return true;
             },
             [](ApiRequest& request) {
-                lightColor(request.getValue(), true);
+                lightColor(request.param(F("value")), true);
                 lightUpdate(true, true);
                 return true;
             }
@@ -934,7 +934,7 @@ void _lightApiSetup() {
                 return true;
             },
             [](ApiRequest& request) {
-                lightColor(request.getValue(), false);
+                lightColor(request.param(F("value")), false);
                 lightUpdate(true, true);
                 return true;
             }
@@ -946,7 +946,7 @@ void _lightApiSetup() {
                 return true;
             },
             [](ApiRequest& request) {
-                _lightAdjustMireds(request.getValue());
+                _lightAdjustMireds(request.param(F("value")));
                 lightUpdate(true, true);
                 return true;
             }
@@ -958,7 +958,7 @@ void _lightApiSetup() {
                 return true;
             },
             [](ApiRequest& request) {
-                _lightAdjustKelvin(request.getValue());
+                _lightAdjustKelvin(request.param(F("value")));
                 lightUpdate(true, true);
                 return true;
             }
@@ -972,7 +972,7 @@ void _lightApiSetup() {
             return true;
         },
         [](ApiRequest& request) {
-            lightTransitionTime(request.getValue().toInt());
+            lightTransitionTime(request.param(F("value")).toInt());
             return true;
         },
         nullptr
@@ -984,7 +984,7 @@ void _lightApiSetup() {
             return true;
         },
         [](ApiRequest& request) {
-            _lightAdjustBrightness(request.getValue());
+            _lightAdjustBrightness(request.param(F("value")));
             lightUpdate(true, true);
             return true;
         },
@@ -1000,7 +1000,7 @@ void _lightApiSetup() {
         },
         [](ApiRequest& request) {
             return _lightApiTryHandle(request, [&](unsigned char id) {
-                _lightAdjustChannel(id, request.getValue());
+                _lightAdjustChannel(id, request.param(F("value")));
                 lightUpdate(true, true);
                 return true;
             });

@@ -1023,7 +1023,7 @@ void _rfbApiSetup() {
     apiRegister(F(MQTT_TOPIC_RFOUT), {
         apiOk, // just a stub, nothing to return
         [](ApiRequest& request) {
-            _rfbSendFromPayload(request.getValue().c_str());
+            _rfbSendFromPayload(request.param(F("value")).c_str());
             return true;
         }
     });
@@ -1043,7 +1043,7 @@ void _rfbApiSetup() {
             return true;
         },
         [](ApiRequest& request) {
-            _rfbLearnStartFromPayload(request.getValue().c_str());
+            _rfbLearnStartFromPayload(request.param(F("value")).c_str());
             return true;
         }
     });
@@ -1053,7 +1053,7 @@ void _rfbApiSetup() {
     apiRegister(F(MQTT_TOPIC_RFRAW), {
         apiOk, // just a stub, nothing to return
         [](ApiRequest& request) {
-            _rfbSendRawFromPayload(request.getValue().c_str());
+            _rfbSendRawFromPayload(request.param(F("value")).c_str());
             return true;
         }
     });

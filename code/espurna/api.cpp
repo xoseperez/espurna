@@ -420,7 +420,10 @@ void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
     }
 
     ApiRequest api_req(*request, match.levels(), match.wildcards());
-    const bool is_put = api_req.hasValue(apiRestFul());
+    const bool is_put = (
+        (!apiRestFul()|| (HTTP_PUT == _request.method()))
+        && _request.hasParam("value", HTTP_PUT == _request.method())
+    );
 
     auto& handler = match.handler();
 

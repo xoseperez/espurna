@@ -115,15 +115,15 @@ struct ApiRequest {
         handler(&_request);
     }
 
-    bool hasValue(bool restful) {
-        return (
-            (!restful|| (HTTP_PUT == _request.method()))
-            && _request.hasParam("value", HTTP_PUT == _request.method())
-        );
-    }
+    const String& param(const String& name) {
+        static String empty;
 
-    String getValue() {
-        return _request.getParam("value", HTTP_PUT == _request.method())->value();
+        auto* result = _request.getParam(name, HTTP_PUT == _request.method());
+        if (result) {
+            return result->value();
+        }
+
+        return empty;
     }
 
     void send(const String& payload) {

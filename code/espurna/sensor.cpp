@@ -1512,7 +1512,7 @@ void _sensorApiSetup() {
         if (type == MAGNITUDE_ENERGY) {
             put = [](ApiRequest& request) {
                 return _sensorApiTryHandle(request, MAGNITUDE_ENERGY, [&](const sensor_magnitude_t& magnitude) {
-                    _sensorApiResetEnergy(magnitude, request.getValue());
+                    _sensorApiResetEnergy(magnitude, request.param(F("value")));
                 });
             };
         }
