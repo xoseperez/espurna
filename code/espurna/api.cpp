@@ -245,7 +245,6 @@ private:
 };
 
 std::forward_list<Api> _apis;
-bool _api_eager_auth { false };
 constexpr size_t ApiPathSizeMax { 128ul };
 
 // -----------------------------------------------------------------------------
@@ -499,16 +498,13 @@ bool _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
         return false;
     }
 
-    // XXX(alexa & maybe something else):
-    // allow auth to happen when exact match is found, do nothing otherwise
-    if (_api_eager_auth && !apiAuthenticate(request)) {
-        return false;
-    }
+    // XXX(fauxmoESP aka alexa & maybe something else):
+    // don't be clever and hide the whole /api/* under auth
 
     auto parsed_path = ApiParsedPath(path);
     auto match = _apiMatch(request, parsed_path);
     if (match) {
-        if (!_api_eager_auth && !apiAuthenticate(request)) {
+        if (!apiAuthenticate(request)) {
             return true;
         }
         _apiDispatchMatch(request, *match.get());
@@ -557,14 +553,6 @@ bool apiOk(ApiRequest& request) {
 bool apiError(ApiRequest& request) {
     request.send(F("ERROR"));
     return true;
-}
-
-void apiEagerAuth(bool value) {
-    _api_eager_auth = value;
-}
-
-bool apiEagerAuth() {
-    return _api_eager_auth;
 }
 
 #endif // API_SUPPORT

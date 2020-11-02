@@ -56,14 +56,14 @@ bool apiAuthenticate(AsyncWebServerRequest* request) {
     const auto key = apiKey();
     if (!apiEnabled() || !key.length()) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
-        request->send(403);
+        request->send(404);
         return false;
     }
 
     AsyncWebParameter* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
     if (!keyParam || !keyParam->value().equals(key)) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
-        request->send(403);
+        request->send(404);
         return false;
     }
 
