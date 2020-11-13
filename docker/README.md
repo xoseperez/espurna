@@ -41,7 +41,7 @@ sudo docker run --rm -it -v /tmp/firmware/:/firmware espurna-build
 This example will only build firmware for environment `intermittech-quinled` from local files in `/home/user/espurna`
 
 ```bash
-udo docker run --rm -it -v /tmp/firmware/:/firmware espurna-build intermittech-quinled
+sudo docker run --rm -it -v /tmp/firmware/:/firmware espurna-build intermittech-quinled
 --------------------------------------------------------------
 ESPURNA FIRMWARE BUILDER
 Building for version 1.15.0-dev (83a49b19)
