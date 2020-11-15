@@ -29,8 +29,7 @@ jobs:
     - stage: Test Host
     - stage: Test WebUI
     - stage: Test PlatformIO Build
-      env: TEST_ENV=esp8266-4m-base
-    - env: >-
+      env: >-
         TEST_ENV=esp8266-4m-latest-base TEST_EXTRA_ARGS="-a
         test/build/extra/secure_client.h"
     - stage: Release
