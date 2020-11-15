@@ -369,9 +369,12 @@
     #define BUTTON1_PIN         0
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
+
     #define BUTTON2_PIN         4
     #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       1
+    #define BUTTON2_PRESS       BUTTON_ACTION_ON
+    #define BUTTON2_RELEASE     BUTTON_ACTION_OFF
 
     // Relays
     #define RELAY1_PIN          12
