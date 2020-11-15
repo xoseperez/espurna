@@ -14,6 +14,53 @@
 
 #include "BaseEmonSensor.h"
 
+// ref. HLW8012/src/HLW8012.h
+//
+// These values are used to calculate current, voltage and power factors as per datasheet formula
+// These are the nominal values for the Sonoff POW resistors:
+// * The CURRENT_RESISTOR is the 1milliOhm copper-manganese resistor in series with the main line
+// * The VOLTAGE_RESISTOR_UPSTREAM are the 5 470kOhm resistors in the voltage divider that feeds the V2P pin in the HLW8012
+// * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
+//
+// (note: V_REF & F_OSC come from HLW8012.h)
+
+namespace {
+
+constexpr double _hlw8012_voltage_resistor(double voltage_upstream, double voltage_downstream) {
+    return (voltage_upstream + voltage_downstream) / voltage_downstream;
+}
+
+constexpr double _hlw8012_default_voltage_resistor() {
+    return _hlw8012_voltage_resistor(HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
+}
+
+constexpr double _hlw8012_default_current_resistor() {
+    return HLW8012_CURRENT_R;
+}
+
+// TODO: ..._RATIO flags are 0, but would it not make a better case for 1.0 as default aka make this a 'multiplier'?
+// TODO: Also note that HLW8012 lib will happily accept 0.0 as multiplier, with no way to recover back through the WebUI as we only adjust 'expected' value
+
+constexpr double _hlw8012_default_current_multiplier() {
+    return (HLW8012_CURRENT_RATIO != 0.0)
+        ? (HLW8012_CURRENT_RATIO)
+        : ( 1000000.0 * 512 * V_REF / _hlw8012_default_current_resistor() / 24.0 / F_OSC );
+}
+
+constexpr double _hlw8012_default_voltage_multiplier() {
+    return (HLW8012_VOLTAGE_RATIO != 0.0)
+        ? (HLW8012_VOLTAGE_RATIO)
+        : ( 1000000.0 * 512 * V_REF * _hlw8012_default_voltage_resistor() / 2.0 / F_OSC );
+}
+
+constexpr double _hlw8012_default_power_multiplier() {
+    return (HLW8012_POWER_RATIO != 0.0)
+        ? (HLW8012_POWER_RATIO)
+        : ( 1000000.0 * 128 * V_REF * V_REF * _hlw8012_default_voltage_resistor() / _hlw8012_default_current_resistor() / 48.0 / F_OSC );
+}
+
+} //namespace
+
 class HLW8012Sensor : public BaseEmonSensor {
 
     public:
@@ -72,46 +119,50 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         double defaultCurrentRatio() const override {
-            return HLW8012_CURRENT_RATIO;
+            return _hlw8012_default_current_multiplier();
         }
 
         double defaultVoltageRatio() const override {
-            return HLW8012_VOLTAGE_RATIO;
+            return _hlw8012_default_voltage_multiplier();
         }
 
         double defaultPowerRatio() const override {
-            return HLW8012_POWER_RATIO;
+            return _hlw8012_default_power_multiplier();
         }
 
         void resetRatios() override {
-            _hlw8012->setCurrentMultiplier(_initialRatioC);
-            _hlw8012->setVoltageMultiplier(_initialRatioV);
-            _hlw8012->setPowerMultiplier(_initialRatioP);
+            _defaultRatios();
         }
 
         void setCurrentRatio(double value) override {
-            _hlw8012->setCurrentMultiplier(value);
-        };
+            if (value > 0.0) {
+                _hlw8012->setCurrentMultiplier(value);
+            }
+        }
 
         void setVoltageRatio(double value) override {
-            _hlw8012->setVoltageMultiplier(value);
-        };
+            if (value > 0.0) {
+                _hlw8012->setVoltageMultiplier(value);
+            }
+        }
 
         void setPowerRatio(double value) override {
-            _hlw8012->setPowerMultiplier(value);
-        };
+            if (value > 0.0) {
+                _hlw8012->setPowerMultiplier(value);
+            }
+        }
 
         double getCurrentRatio() override {
             return _hlw8012->getCurrentMultiplier();
-        };
+        }
 
         double getVoltageRatio() override {
             return _hlw8012->getVoltageMultiplier();
-        };
+        }
 
         double getPowerRatio() override {
             return _hlw8012->getPowerMultiplier();
-        };
+        }
 
         // ---------------------------------------------------------------------
 
@@ -151,10 +202,13 @@ class HLW8012Sensor : public BaseEmonSensor {
                 _hlw8012->begin(_cf, _cf1, _sel, _sel_current, false, 1000000);
             #endif
 
-            // Adjust with ratio values that could be set in the hardware profile
+            // Note that HLW8012 does not initialize the multipliers (aka ratios) after begin(),
+            // we need to manually set those based on either resistor values or RATIO flags
+            // (see the defaults block at the top)
             _defaultRatios();
 
-            // Handle interrupts
+            // While we expect begin() to be called only once, try to detach before attaching again
+            // (might be no-op on esp8266, since attachInterrupt will replace the existing func)
             #if HLW8012_USE_INTERRUPTS && (!HLW8012_WAIT_FOR_WIFI)
                 _enableInterrupts(false);
                 _enableInterrupts(true);
@@ -174,7 +228,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         // Descriptive name of the slot # index
         String description(unsigned char index) {
             return description();
-        };
+        }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
@@ -240,22 +294,9 @@ class HLW8012Sensor : public BaseEmonSensor {
     protected:
 
         void _defaultRatios() {
-            // These values are used to calculate current, voltage and power factors as per datasheet formula
-            // These are the nominal values for the Sonoff POW resistors:
-            // * The CURRENT_RESISTOR is the 1milliOhm copper-manganese resistor in series with the main line
-            // * The VOLTAGE_RESISTOR_UPSTREAM are the 5 470kOhm resistors in the voltage divider that feeds the V2P pin in the HLW8012
-            // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
-            _hlw8012->setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
-
-            // Multipliers are already set, but we might have changed default values via the hardware profile
-            if (defaultCurrentRatio() > 0.0) _hlw8012->setCurrentMultiplier(defaultCurrentRatio());
-            if (defaultVoltageRatio() > 0.0) _hlw8012->setVoltageMultiplier(defaultVoltageRatio());
-            if (defaultPowerRatio() > 0.0) _hlw8012->setPowerMultiplier(defaultPowerRatio());
-
-            // Preserve ratios as a fallback
-            _initialRatioC = getCurrentRatio();
-            _initialRatioV = getVoltageRatio();
-            _initialRatioP = getPowerRatio();
+            _hlw8012->setCurrentMultiplier(defaultCurrentRatio());
+            _hlw8012->setVoltageMultiplier(defaultVoltageRatio());
+            _hlw8012->setPowerMultiplier(defaultPowerRatio());
         }
 
         // ---------------------------------------------------------------------
