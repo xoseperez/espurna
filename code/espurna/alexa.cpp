@@ -116,12 +116,6 @@ void alexaLoop() {
 
 void alexaSetup() {
 
-#if API_SUPPORT
-    // XXX: force API authentication to be delayed until the exact match is found, because
-    //      fauxmoESP expects to handle /api/<hash>/lights by itself and it's not part of our HTTP API
-    apiEagerAuth(false);
-#endif
-
     // Backwards compatibility
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
