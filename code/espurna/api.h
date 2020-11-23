@@ -29,13 +29,8 @@ String apiKey();
 using ApiBasicHandler = std::function<bool(ApiRequest&)>;
 using ApiJsonHandler = std::function<bool(ApiRequest&, JsonObject& reponse)>;
 
-struct ApiHandler {
-    ApiBasicHandler get;
-    ApiBasicHandler put;
-    ApiJsonHandler json;
-};
-
-void apiRegister(const String& path, ApiHandler handler);
+void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put);
+void apiRegister(const String& path, ApiJsonHandler&& get, ApiJsonHandler&& put);
 
 void apiCommonSetup();
 void apiSetup();

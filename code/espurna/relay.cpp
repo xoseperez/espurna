@@ -1109,17 +1109,18 @@ bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
 
 void relaySetupAPI() {
 
-    apiRegister(F(MQTT_TOPIC_RELAY), {nullptr, nullptr,
+    apiRegister(F(MQTT_TOPIC_RELAY),
         [](ApiRequest&, JsonObject& root) {
             JsonArray& relays = root.createNestedArray("relayStatus");
             for (unsigned char id = 0; id < relayCount(); ++id) {
                 relays.add(_relays[id].target_status ? 1 : 0);
             }
             return true;
-        }
-    });
+        },
+        nullptr
+    );
 
-    apiRegister(F(MQTT_TOPIC_RELAY "/+"), {
+    apiRegister(F(MQTT_TOPIC_RELAY "/+"),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
                 request.send(String(_relays[id].target_status ? 1 : 0));
@@ -1130,11 +1131,10 @@ void relaySetupAPI() {
             return _relayApiTryHandle(request, [&](unsigned char id) {
                 return _relayHandlePayload(id, request.param(F("value")));
             });
-        },
-        nullptr
-    });
+        }
+    );
 
-    apiRegister(F(MQTT_TOPIC_PULSE "/+"), {
+    apiRegister(F(MQTT_TOPIC_PULSE "/+"),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](unsigned char id) {
                 request.send(String(static_cast<double>(_relays[id].pulse_ms) / 1000));
@@ -1145,9 +1145,8 @@ void relaySetupAPI() {
             return _relayApiTryHandle(request, [&](unsigned char id) {
                 return _relayHandlePulsePayload(id, request.param(F("value")));
             });
-        },
-        nullptr
-    });
+        }
+    );
 
     #if defined(ITEAD_SONOFF_IFAN02)
         apiRegister(F(MQTT_TOPIC_SPEED), {

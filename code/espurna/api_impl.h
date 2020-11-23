@@ -27,11 +27,6 @@ struct ApiLevel {
         MultiWildcard
     };
 
-    String toString() const {
-        return path.substring(offset, offset + length);
-    }
-
-    const String& path;
     Type type;
     size_t offset;
     size_t length;
@@ -51,8 +46,14 @@ struct ApiLevels {
         _path(path)
     {}
 
+    template <typename T>
+    explicit ApiLevels(const String& path, T&& levels) :
+        _path(path),
+        _levels(std::forward<T>(levels))
+    {}
+
     ApiLevel& emplace_back(ApiLevel::Type type, size_t offset, size_t length) {
-        ApiLevel level { _path, type, offset, length };
+        ApiLevel level { type, offset, length };
         _levels.push_back(std::move(level));
         return _levels.back();
     }
@@ -66,7 +67,8 @@ struct ApiLevels {
     }
 
     String operator[](size_t index) const {
-        return _levels[index].toString();
+        auto& level = _levels[index];
+        return _path.substring(level.offset, level.offset + level.length);
     }
 
     const String& path() const {
@@ -87,6 +89,10 @@ struct ApiLevels {
 
     Levels::const_iterator end() const {
         return _levels.end();
+    }
+
+    ApiLevels link(const String& path) && {
+        return ApiLevels(path, std::move(_levels));
     }
 
 private:
@@ -136,8 +142,12 @@ struct ApiRequest {
     }
 
     void send(const String& payload) {
+        if (payload.length()) {
+            _request.send(200, "text/plain", payload);
+        } else {
+            _request.send(204);
+        }
         _done = true;
-        _request.send(200, "text/plain", payload);
     }
 
     bool done() const {

@@ -42,7 +42,7 @@ const char _ssdp_template[] PROGMEM =
 
 void ssdpSetup() {
 
-    webServer()->on("/description.xml", HTTP_GET, [](AsyncWebServerRequest *request) {
+    webServer().on("/description.xml", HTTP_GET, [](AsyncWebServerRequest *request) {
 
         DEBUG_MSG_P(PSTR("[SSDP] Schema request\n"));
 

@@ -52,23 +52,15 @@ String apiKey() {
 // TODO: use `Api-Key` header instead and warn when api_key param is found?
 
 bool apiAuthenticate(AsyncWebServerRequest* request) {
-
     const auto key = apiKey();
-    if (!apiEnabled() || !key.length()) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
-        request->send(404);
-        return false;
+    if (apiEnabled() && key.length()) {
+        auto* header = request->getHeader(F("Api-Key"));
+        if (header && (key == header->value())) {
+            return true;
+        }
     }
 
-    AsyncWebParameter* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
-    if (!keyParam || !keyParam->value().equals(key)) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
-        request->send(404);
-        return false;
-    }
-
-    return true;
-
+    return false;
 }
 
 void apiCommonSetup() {

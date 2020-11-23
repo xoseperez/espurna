@@ -26,50 +26,27 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
-struct Api {
-    String path;
-    ApiHandler handler;
-};
+struct ApiMatch;
 
 struct ApiParsedPath {
-
-    // given the path 'topic/one/two/three' and pattern 'topic/+/two/+', provide
-    // wildcards [0] -> one and [1] -> three
-
-    struct Match {
-        explicit Match(const ApiParsedPath& other) :
-            path(other.path()),
-            levels(other.levels()),
-            wildcards(other.path())
-        {}
-
-        explicit operator bool() const {
-            return ok;
-        }
-
-        const String& path;
-        const ApiLevels& levels;
-        ApiLevels wildcards;
-        bool ok { false };
-    };
 
     template <typename T>
     explicit ApiParsedPath(T&& path) :
         _path(std::forward<T>(path)),
         _levels(_path)
     {
-        init(); 
+        init();
     }
 
     void init() {
         ApiLevel::Type type { ApiLevel::Type::Unknown };
-        uint32_t length { 0ul };
-        uint32_t offset { 0ul };
+        size_t length { 0ul };
+        size_t offset { 0ul };
 
         const char* p { _path.c_str() };
         if (*p == '\0') {
            goto error;
-        } 
+        }
 
         _levels.reserve(std::count(_path.begin(), _path.end(), '/') + 1);
 
@@ -80,6 +57,7 @@ struct ApiParsedPath {
 
         switch (*p) {
         case '/':
+            type = ApiLevel::Type::Value;
             goto push_result;
         case '+':
             goto parse_single_wildcard;
@@ -146,88 +124,10 @@ struct ApiParsedPath {
         _ok = true;
     }
 
-    explicit operator bool() {
+    explicit operator bool() const {
         return _ok;
     }
 
-    Match match(const String& other) const {
-        return match(ApiParsedPath(other));
-    }
-
-    Match match(const ApiParsedPath& other) const {
-        Match result(other);
-
-        auto lhs = _levels.begin();
-        auto rhs = other._levels.begin();
-
-        if (!_ok) {
-            goto error;
-        }
-
-    loop:
-        switch ((*lhs).type) {
-        case ApiLevel::Type::Value:
-            if (
-                (rhs != other._levels.end())
-                && ((*rhs).type == ApiLevel::Type::Value)
-                && ((*rhs).offset == (*lhs).offset)
-                && ((*rhs).length == (*lhs).length)
-            ) {
-                if (0 == std::memcmp(
-                    _path.c_str() + (*lhs).offset,
-                    other._path.c_str() + (*rhs).offset,
-                    (*rhs).length))
-                {
-                    ++lhs;
-                    ++rhs;
-                    goto loop;
-                }
-            }
-            goto error;
-
-        case ApiLevel::Type::SingleWildcard:
-            if (
-                (rhs != other._levels.end())
-                && ((*rhs).type == ApiLevel::Type::Value)
-            ) {
-                result.wildcards.emplace_back((*rhs).type, (*rhs).offset, (*rhs).length);
-                std::advance(lhs, 1);
-                std::advance(rhs, 1);
-                goto loop;
-            }
-            goto error;
-
-        case ApiLevel::Type::MultiWildcard:
-            if (std::next(lhs) == _levels.end()) {
-                while (rhs != other._levels.end()) {
-                    if ((*rhs).type != ApiLevel::Type::Value) {
-                        goto error;
-                    }
-                    result.wildcards.emplace_back((*rhs).type, (*rhs).offset, (*rhs).length);
-                    std::advance(rhs, 1);
-                }
-                lhs = _levels.end();
-                break;
-            }
-            goto error;
-
-        case ApiLevel::Type::Unknown:
-            goto error;
-        };
-
-        if (lhs == _levels.end() && rhs == other._levels.end()) {
-            result.ok = true;
-            goto return_result;
-        }
-
-    error:
-        result.ok = false;
-        result.wildcards.clear();
-
-    return_result:
-        return result;
-    }
-
     const String& path() const {
         return _path;
     }
@@ -236,313 +136,573 @@ struct ApiParsedPath {
         return _levels;
     }
 
-private:
+    ApiMatch match(const ApiParsedPath& other) const;
+    ApiMatch match(const String& other) const;
 
+private:
     String _path;
     ApiLevels _levels;
     bool _ok { false };
-
 };
 
-std::forward_list<Api> _apis;
-constexpr size_t ApiPathSizeMax { 128ul };
-
-// -----------------------------------------------------------------------------
-
-bool _asJson(AsyncWebServerRequest *request) {
-    bool asJson = false;
-    if (request->hasHeader("Accept")) {
-        AsyncWebHeader* h = request->getHeader("Accept");
-        asJson = h->value().equals("application/json");
-    }
-    return asJson;
-}
-
-void _onAPIsText(AsyncWebServerRequest *request) {
-    AsyncResponseStream *response = request->beginResponseStream("text/plain");
-    for (auto& api : _apis) {
-        response->print(api.path);
-        response->write("\r\n");
-    }
-    request->send(response);
-}
-
-constexpr size_t ApiJsonBufferSize = 1024;
-
-void _onAPIsJson(AsyncWebServerRequest *request) {
-
-    DynamicJsonBuffer jsonBuffer(ApiJsonBufferSize);
-    JsonArray& root = jsonBuffer.createArray();
-    for (auto& api : _apis) {
-        root.add(api.path);
-    }
-
-    AsyncResponseStream *response = request->beginResponseStream("application/json");
-    root.printTo(*response);
-    request->send(response);
-
-}
-
-void _onAPIs(AsyncWebServerRequest *request) {
-
-    webLog(request);
-    if (!apiAuthenticate(request)) return;
-
-    bool asJson = _asJson(request);
-
-    String output;
-    if (asJson) {
-        _onAPIsJson(request);
-    } else {
-        _onAPIsText(request);
-    }
-
-}
-
-void _onRPC(AsyncWebServerRequest *request) {
-
-    webLog(request);
-    if (!apiAuthenticate(request)) return;
-
-    //bool asJson = _asJson(request);
-    int response = 404;
-
-    if (request->hasParam("action")) {
-
-        AsyncWebParameter* p = request->getParam("action");
-
-        const auto action = p->value();
-        DEBUG_MSG_P(PSTR("[RPC] Action: %s\n"), action.c_str());
-
-        if (rpcHandleAction(action)) {
-            response = 204;
-        }
-
-    }
-
-    request->send(response);
-
-}
-
-enum class ApiType {
-    Unknown,
-    Basic,
-    Json
-};
+// given the path 'topic/one/two/three' and pattern 'topic/+/two/+', provide
+// wildcards [0] -> one and [1] -> three
 
 struct ApiMatch {
-    ApiMatch(const Api& api, ApiType type, const ApiParsedPath::Match& match) :
-        _type(type),
-        _handler(api.handler),
-        _path(match.path),
-        _levels(match.levels),
-        _wildcards(match.wildcards)
-    {}
-
-    ApiType type() const {
-        return _type;
+    explicit ApiMatch(const ApiParsedPath& pattern, const ApiParsedPath& other) :
+        _path(other),
+        _wildcards(_path.path())
+    {
+        _init(pattern, other);
     }
 
-    const ApiHandler& handler() const {
-        return _handler;
+    explicit operator bool() const {
+        return _ok;
     }
 
-    const String& path() const {
-        return _path;
+    const String& path() {
+        return _path.path();
     }
 
     const ApiLevels& levels() const {
-        return _levels;
+        return _path.levels();
     }
 
     const ApiLevels& wildcards() const {
         return _wildcards;
     }
 
-private:
-    ApiType _type { ApiType::Unknown };
-    const ApiHandler& _handler;
+    void reserve(size_t size) {
+        _wildcards.reserve(size);
+    }
 
-    const String& _path;
-    ApiLevels _levels;
+    void clear() {
+        _wildcards.clear();
+    }
+
+    bool ok() const {
+        return _ok;
+    }
+
+    private:
+
+    void _init(const ApiParsedPath& pattern, const ApiParsedPath& other);
+
+    ApiParsedPath _path;
     ApiLevels _wildcards;
+    bool _ok { false };
 };
 
-std::unique_ptr<ApiMatch> _apiMatch(AsyncWebServerRequest* request, const ApiParsedPath& path) {
-    auto type = _asJson(request)
-        ? ApiType::Json
-        : ApiType::Basic;
+void ApiMatch::_init(const ApiParsedPath& pattern, const ApiParsedPath& other) {
+    if (!pattern || !other) {
+        return;
+    }
 
-    auto can_handle = [](ApiType type, const ApiHandler& handler) {
-        switch (type) {
-        case ApiType::Basic:
-            if (handler.put || handler.get) {
-                return true;
+    auto lhs = pattern.levels().begin();
+    auto rhs = other.levels().begin();
+
+    auto lhs_end = pattern.levels().end();
+    auto rhs_end = other.levels().end();
+
+loop:
+    if (lhs == lhs_end) {
+        goto check_end;
+    }
+
+    switch ((*lhs).type) {
+    case ApiLevel::Type::Value:
+        if (
+            (rhs != rhs_end)
+            && ((*rhs).type == ApiLevel::Type::Value)
+            && ((*rhs).offset == (*lhs).offset)
+            && ((*rhs).length == (*lhs).length)
+        ) {
+            if (0 == std::memcmp(
+                pattern.path().c_str() + (*lhs).offset,
+                other.path().c_str() + (*rhs).offset,
+                (*rhs).length))
+            {
+                std::advance(lhs, 1);
+                std::advance(rhs, 1);
+                goto loop;
             }
-            break;
-        case ApiType::Json:
-            if (handler.json) {
-                return true;
+        }
+        goto error;
+
+    case ApiLevel::Type::SingleWildcard:
+        if (
+            (rhs != rhs_end)
+            && ((*rhs).type == ApiLevel::Type::Value)
+        ) {
+            _wildcards.emplace_back((*rhs).type, (*rhs).offset, (*rhs).length);
+            std::advance(lhs, 1);
+            std::advance(rhs, 1);
+            goto loop;
+        }
+        goto error;
+
+    case ApiLevel::Type::MultiWildcard:
+        if (std::next(lhs) == lhs_end) {
+            while (rhs != rhs_end) {
+                if ((*rhs).type != ApiLevel::Type::Value) {
+                    goto error;
+                }
+                _wildcards.emplace_back((*rhs).type, (*rhs).offset, (*rhs).length);
+                std::advance(rhs, 1);
             }
-            break;
-        case ApiType::Unknown:
-        default:
+            lhs = lhs_end;
             break;
         }
+        goto error;
 
-        return false;
+    case ApiLevel::Type::Unknown:
+        goto error;
     };
 
-    std::unique_ptr<ApiMatch> result;
-
-    for (auto& api : _apis) {
-        if (!can_handle(type, api.handler)) {
-            continue;
-        }
-
-        auto pattern = ApiParsedPath(api.path);
-        auto match = pattern.match(path);
-        if (match) {
-            result = std::make_unique<ApiMatch>(api, type, match);
-            break;
-        }
+check_end:
+    if (lhs == lhs_end && rhs == rhs_end) {
+        _ok = true;
+        goto return_result;
     }
 
-    return result;
-}
+error:
+    _ok = false;
+    clear();
 
-void _apiDispatchMatch(AsyncWebServerRequest* request, const ApiMatch& match) {
-    auto method = request->method();
-    if (HTTP_HEAD == method) {
-        request->send(204);
-        return;
-    }
-
-    ApiRequest api_req(*request, match.levels(), match.wildcards());
-
-    // TODO: do we enforce this now, since the params() & params_foreach() are exposed?
-    const bool is_put = (
-        (!apiRestFul()|| (HTTP_PUT == method))
-        && request->hasParam("value", HTTP_PUT == method)
-    );
-
-    auto& handler = match.handler();
-
-    switch (match.type()) {
-    case ApiType::Basic: {
-        if (!handler.get) {
-            break;
-        }
-
-        if (is_put) {
-            if (!handler.put) {
-                break;
-            }
-            if (!handler.put(api_req)) {
-                break;
-            }
-            if (api_req.done()) {
-                return;
-            }
-        }
-
-        if (!handler.get(api_req)) {
-            break;
-        }
-        if (!api_req.done()) {
-            request->send(204);
-        }
-
-        return;
-    }
-
-    // TODO: pass request body as well, allow PUT
-    // TODO: can we get the body contents *without* body callback and when request is c-t:application/json?
-    case ApiType::Json: {
-        if (!handler.json || is_put) {
-            break;
-        }
-
-        DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
-        JsonObject& root = jsonBuffer.createObject();
-        if (!handler.json(api_req, root)) {
-            break;
-        }
-
-        if (!api_req.done()) {
-            AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
-            root.printTo(*response);
-            request->send(response);
-        }
-
-        return;
-    }
-
-    case ApiType::Unknown:
-        break;
-    }
-    
-    if (!api_req.done()) {
-        request->send(500);
-    }
-
+return_result:
     return;
 }
 
-bool _apiDispatchRequest(AsyncWebServerRequest* request, const String& path) {
-    webLog(request);
+ApiMatch ApiParsedPath::match(const String& other) const {
+    return match(ApiParsedPath(other));
+}
 
-    auto method = request->method();
-    if ((HTTP_PUT != method) && (HTTP_GET != method) && (HTTP_HEAD != method)) {
-        request->send(501);
-        return false;
-    }
+// -----------------------------------------------------------------------------
 
-    // XXX(fauxmoESP aka alexa & maybe something else):
-    // don't be clever and hide the whole /api/* under auth
-
-    auto parsed_path = ApiParsedPath(path);
-    auto match = _apiMatch(request, parsed_path);
-    if (match) {
-        if (!apiAuthenticate(request)) {
-            return true;
-        }
-        _apiDispatchMatch(request, *match.get());
-        return true;
+bool _apiAccepts(AsyncWebServerRequest* request, const __FlashStringHelper* str) {
+    auto* header = request->getHeader(F("Accept"));
+    if (header) {
+        return
+            (header->value().indexOf(F("*/*")) >= 0)
+         || (header->value().indexOf(str) >= 0);
     }
 
     return false;
 }
 
-// TODO(web server):
-// - since me-no-dev/ESPAsyncWebServer#380, we could use 'webServer().on('/api/*', [](AsyncWebServerRequest*) { ... })`, but this would still require us to 'know' about the fauxmoESP
-// - from alexa side, `apiRegister(...something for alexa...)` looks really weird, since it's not really API function but just a way to manage specific path wildcard when nothing else matched it
-
-bool _apiRequestCallback(AsyncWebServerRequest* request) {
-    auto path = request->url();
-    if (path.equals("/rpc")) {
-        _onRPC(request);
-        return true;
-    }
-
-    if (path.equals("/api") || path.equals("/apis")) {
-        _onAPIs(request);
-        return true;
-    }
-
-    if (!path.startsWith("/api/")) return false;
-    return _apiDispatchRequest(request, path.substring(strlen("/api/")));
+bool _apiAcceptsText(AsyncWebServerRequest* request) {
+    return _apiAccepts(request, F("text/plain"));
 }
+
+bool _apiAcceptsJson(AsyncWebServerRequest* request) {
+    return _apiAccepts(request, F("application/json"));
+}
+
+bool _apiMatchHeader(AsyncWebServerRequest* request, const __FlashStringHelper* key, const __FlashStringHelper* value) {
+    auto* header = request->getHeader(key);
+    if (header) {
+        return header->value().equals(value);
+    }
+
+    return false;
+}
+
+bool _apiIsJsonContent(AsyncWebServerRequest* request) {
+    return _apiMatchHeader(request, F("Content-Type"), F("application/json"));
+}
+
+bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
+    return _apiMatchHeader(request, F("Content-Type"), F("application/x-www-form-urlencoded"));
+}
+
+// 'Modernized' API configuration:
+// - `Api-Key` header for both GET and PUT
+// - Parse request body as JSON object
+
+struct ApiRequestHelper {
+
+    template <typename T>
+    struct ReadOnlyStream : public Stream {
+        ReadOnlyStream() = delete;
+        explicit ReadOnlyStream(const T& buffer) :
+            _buffer(buffer),
+            _size(buffer.size())
+        {}
+
+        int available() override {
+            return _size - _index;
+        }
+
+        int peek() override {
+            if (_index < _size) {
+                return static_cast<int>(_buffer[_index]);
+            }
+
+            return -1;
+        }
+
+        int read() override {
+            auto peeked = peek();
+            if (peeked >= 0) {
+                ++_index;
+            }
+
+            return peeked;
+        }
+
+        // since we are fixed in size, no need for any timeouts and the only available option is to return full chunk of data
+        size_t readBytes(uint8_t* ptr, size_t size) override {
+            if ((_index < _size) && ((_size - _index) >= size)) {
+                std::copy(_buffer.data() + _index, _buffer.data() + _index + size, ptr);
+                _index += size;
+                return size;
+            }
+
+            return 0;
+        }
+
+        void flush() override {
+        }
+
+        size_t write(const uint8_t*, size_t) override {
+            return 0;
+        }
+
+        size_t write(uint8_t) override {
+            return 0;
+        }
+
+        const T& _buffer;
+        const size_t _size;
+        size_t _index { 0 };
+    };
+
+    using Buffer = std::vector<uint8_t>;
+    using BodyStream = ReadOnlyStream<Buffer>;
+
+    template <typename Pattern, typename Path>
+    explicit ApiRequestHelper(AsyncWebServerRequest& request, Pattern&& pattern, Path&& path) :
+        _pattern(std::forward<Pattern>(pattern)),
+        _path(std::forward<Path>(path)),
+        _match(_pattern, _path),
+        _request(request, _match.levels(), _match.wildcards())
+    {}
+
+    const ApiMatch& match() const {
+        return _match;
+    }
+
+    const bool done() const {
+        return _request.done();
+    }
+
+    void body(uint8_t* ptr, size_t size) {
+        _buffer.insert(_buffer.end(), ptr, ptr + size);
+    }
+
+    BodyStream body() {
+        return BodyStream(_buffer);
+    }
+
+    ApiRequest& request() {
+        return _request;
+    }
+
+private:
+    const ApiParsedPath& _pattern;
+    ApiParsedPath _path;
+    ApiMatch _match;
+    ApiRequest _request;
+    Buffer _buffer;
+};
+
+// Because the webserver request is split between multiple separate function invocations, we need to preserve some state.
+// TODO: in case we are dealing with multicore, perhaps a custom stack-like allocator would be better here
+// (e.g. static-allocated buffer within handler class, giving out fixed-size N free objects)
+
+using ApiRequestHelperPtr = std::unique_ptr<ApiRequestHelper>;
+
+void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelperPtr& helper) {
+    request._tempObject = helper.release();
+    request.onDisconnect([&]() {
+        auto* ptr = reinterpret_cast<ApiRequestHelper*>(request._tempObject);
+        delete ptr;
+        request._tempObject = nullptr;  // XXX: espasyncwebserver will free the pointer when request is disconnected, but only after this callback
+    });
+    request.addInterestingHeader(F("Api-Key")); // XXX: ALL headers are parsed, but 'uninteresting' ones are deleted from internal list
+}
+
+class ApiJsonWebHandler : public AsyncWebHandler {
+private:
+
+public:
+    template <typename Path, typename Callback>
+    ApiJsonWebHandler(Path&& path, Callback&& get, Callback&& put) :
+        _path(std::forward<Path>(path)),
+        _get(std::forward<Callback>(get)),
+        _put(std::forward<Callback>(put))
+    {}
+
+    bool isRequestHandlerTrivial() override {
+        return false;
+    }
+
+    bool canHandle(AsyncWebServerRequest* request) override {
+        if (!apiEnabled()) {
+            return false;
+        }
+
+        if (!_apiAcceptsJson(request)) {
+            return false;
+        }
+
+        auto helper = std::make_unique<ApiRequestHelper>(*request, _path, request->url());
+        if (helper->match() && apiAuthenticate(request)) {
+            switch (request->method()) {
+            case HTTP_HEAD:
+                return true;
+            case HTTP_GET:
+            case HTTP_PUT:
+                break;
+            default:
+                return false;
+            }
+            _apiAttachHelper(*request, helper);
+            return true;
+        }
+
+        return false;
+    }
+
+    void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t, size_t total) override {
+        auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+        helper.body(data, len);
+    }
+
+    void handleRequest(AsyncWebServerRequest* request) override {
+        auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+        auto& apireq = helper.request();
+
+        switch (request->method()) {
+        case HTTP_HEAD:
+            request->send(204);
+            return;
+
+        case HTTP_GET: {
+            DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
+            JsonObject& root = jsonBuffer.createObject();
+            if (!_get(apireq, root)) {
+                break;
+            }
+            if (!helper.done()) {
+                AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
+                root.printTo(*response);
+                request->send(response);
+                return;
+            }
+            break;
+        }
+
+        case HTTP_PUT: {
+            auto body = helper.body(); // XXX: ArduinoJson template deductor does not like temporaries
+            DynamicJsonBuffer jsonBuffer(2 * API_BUFFER_SIZE);
+            JsonObject& root = jsonBuffer.parseObject(body);
+            if (!_put(apireq, root)) {
+                break;
+            }
+            if (!helper.done()) {
+                request->send(204);
+                return;
+            }
+        }
+
+        default:
+            request->send(405);
+            return;
+        }
+
+
+        request->send(500);
+    }
+
+    const String& path() const {
+        return _path.path();
+    }
+
+private:
+    ApiParsedPath _path;
+    ApiJsonHandler _get;
+    ApiJsonHandler _put;
+};
+
+// ESPurna legacy API configuration
+// - ?apikey=... to authorize in GET or PUT
+// - ?value=... for PUT values
+
+class ApiBasicWebHandler : public AsyncWebHandler {
+public:
+    template <typename Path, typename Callback>
+    ApiBasicWebHandler(Path&& path, Callback&& get, Callback&& put) :
+        _path(std::forward<Path>(path)),
+        _get(std::forward<Callback>(get)),
+        _put(std::forward<Callback>(put))
+    {}
+
+    bool _trivialApiAuthenticate(AsyncWebServerRequest* request) {
+        const auto key = apiKey();
+        if (!key.length()) {
+            return false;
+        }
+
+        auto* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
+        return keyParam && (key == keyParam->value());
+    }
+
+    bool isRequestHandlerTrivial() override {
+        return true;
+    }
+
+    bool canHandle(AsyncWebServerRequest* request) override {
+        if (!apiEnabled()) {
+            return false;
+        }
+
+        if (!_apiAcceptsText(request)) {
+            return false;
+        }
+
+        switch (request->method()) {
+        case HTTP_HEAD:
+        case HTTP_GET:
+        case HTTP_PUT:
+            break;
+        default:
+            return false;
+        }
+
+        auto helper = std::make_unique<ApiRequestHelper>(*request, _path, request->url());
+        if (helper->match()) {
+            _apiAttachHelper(*request, helper);
+            return true;
+        }
+
+        return false;
+    }
+
+    void handleRequest(AsyncWebServerRequest* request) override {
+        if (!apiAuthenticate(request) && !_trivialApiAuthenticate(request)) {
+            request->send(403);
+            return;
+        }
+
+        auto method = request->method();
+        const bool is_put = (
+            (!apiRestFul()|| (HTTP_PUT == method))
+            && request->hasParam("value", HTTP_PUT == method)
+        );
+
+        switch (method) {
+        case HTTP_HEAD:
+            request->send(204);
+            return;
+        case HTTP_GET:
+        case HTTP_PUT: {
+            auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+            auto& apireq = helper.request();
+
+            if (is_put) {
+                if (!_put(apireq)) {
+                    request->send(500);
+                    return;
+                }
+
+                if (apireq.done()) {
+                    return;
+                }
+            }
+
+            if (!_get(apireq)) {
+                request->send(500);
+                return;
+            }
+
+            if (!apireq.done()) {
+                request->send(204);
+                return;
+            }
+        }
+        default:
+            request->send(405);
+            return;
+        }
+    }
+
+    const String& path() const {
+        return _path.path();
+    }
+
+    const ApiBasicHandler& get() const {
+        return _get;
+    }
+
+    const ApiBasicHandler& put() const {
+        return _put;
+    }
+
+private:
+    ApiParsedPath _path;
+    ApiBasicHandler _get;
+    ApiBasicHandler _put;
+};
+
+std::forward_list<std::reference_wrapper<const String>> _apis;
+constexpr size_t ApiPathSizeMax { 128ul };
 
 // -----------------------------------------------------------------------------
 
-void apiRegister(const String& path, ApiHandler handler) {
-    Api api { path, std::move(handler) };
-    _apis.push_front(std::move(api));
+const String& _apiBase() {
+    static const String base(F("/api/"));
+    return base;
+}
+
+template <typename Handler, typename Callback>
+void _apiRegister(const String& path, Callback&& get, Callback&& put) {
+    auto* ptr = new Handler(_apiBase() + path, std::forward<Callback>(get), std::forward<Callback>(put));
+    webServer().addHandler(ptr);
+    _apis.emplace_front(std::ref(ptr->path()));
+}
+
+void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put) {
+    _apiRegister<ApiBasicWebHandler>(path, std::move(get), std::move(put));
+}
+
+void apiRegister(const String& path, ApiJsonHandler&& get, ApiJsonHandler&& put) {
+    _apiRegister<ApiJsonWebHandler>(path, std::move(get), std::move(put));
 }
 
 void apiSetup() {
-    webRequestRegister(_apiRequestCallback);
+    apiRegister(F("list"),
+        [](ApiRequest& request) {
+            String paths;
+            for (auto& api : _apis) {
+                paths += api.get() + "\r\n";
+            }
+            request.send(paths);
+            return true;
+        },
+        nullptr
+    );
+
+    apiRegister(F("rpc"),
+        nullptr,
+        [](ApiRequest& request) {
+            if (rpcHandleAction(request.param(F("action")))) {
+                return apiOk(request);
+            }
+            return apiError(request);
+        }
+    );
+
 }
 
 bool apiOk(ApiRequest& request) {
