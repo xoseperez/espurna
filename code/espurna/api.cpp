@@ -575,7 +575,7 @@ public:
     {}
 
     bool isRequestHandlerTrivial() override {
-        return true;
+        return false;
     }
 
     bool canHandle(AsyncWebServerRequest* request) override {
