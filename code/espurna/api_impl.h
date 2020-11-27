@@ -46,10 +46,14 @@ struct ApiLevels {
         _path(path)
     {}
 
-    template <typename T>
-    explicit ApiLevels(const String& path, T&& levels) :
+    explicit ApiLevels(const String& path, const ApiLevels& other) :
         _path(path),
-        _levels(std::forward<T>(levels))
+        _levels(other._levels)
+    {}
+
+    explicit ApiLevels(const String& path, ApiLevels&& other) :
+        _path(path),
+        _levels(std::move(other._levels))
     {}
 
     ApiLevel& emplace_back(ApiLevel::Type type, size_t offset, size_t length) {
@@ -91,10 +95,6 @@ struct ApiLevels {
         return _levels.end();
     }
 
-    ApiLevels link(const String& path) && {
-        return ApiLevels(path, std::move(_levels));
-    }
-
 private:
 
     const String& _path;
@@ -107,8 +107,8 @@ struct ApiRequest {
 
     ApiRequest() = delete;
     ApiRequest(const ApiRequest&) = delete;
-    ApiRequest(ApiRequest&&) = delete;
 
+    ApiRequest(ApiRequest&&) = default;
     explicit ApiRequest(AsyncWebServerRequest& request, const ApiLevels& levels, const ApiLevels& wildcards) :
         _request(request),
         _levels(levels),
@@ -122,14 +122,21 @@ struct ApiRequest {
     }
 
     template <typename T>
-    void param_foreach(const String& name, T&& handler) {
+    void param_foreach(T&& handler) {
         const size_t params { _request.params() };
         for (size_t current = 0; current < params; ++current) {
             auto* param = _request.getParam(current);
-            if (param->name() == name) {
-                handler(param->value());
-            }
+            handler(param->name(), param->value());
         }
+    }
+
+    template <typename T>
+    void param_foreach(const String& name, T&& handler) {
+        param_foreach([&](const String& param_name, const String& param_value) {
+            if (param_name == name) {
+                handler(param_value);
+            }
+        });
     }
 
     const String& param(const String& name) {
@@ -138,7 +145,7 @@ struct ApiRequest {
             return result->value();
         }
 
-        return empty();
+        return _empty_string();
     }
 
     void send(const String& payload) {
@@ -158,13 +165,21 @@ struct ApiRequest {
         return _levels;
     }
 
+    String levels(size_t index) const {
+        return _levels[index];
+    }
+
     const ApiLevels& wildcards() const {
         return _wildcards;
     }
 
+    String wildcards(size_t index) const {
+        return _wildcards[index];
+    }
+
     private:
 
-    const String& empty() {
+    const String& _empty_string() {
         static String string;
         return string;
     }

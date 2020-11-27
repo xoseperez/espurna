@@ -13,6 +13,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+bool apiAuthenticateHeader(AsyncWebServerRequest*, const String& key);
+bool apiAuthenticateParam(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticate(AsyncWebServerRequest*);
 bool apiEnabled();
 bool apiRestFul();

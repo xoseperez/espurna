@@ -29,14 +29,31 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 struct ApiMatch;
 
 struct ApiParsedPath {
-
-    template <typename T>
-    explicit ApiParsedPath(T&& path) :
-        _path(std::forward<T>(path)),
+    explicit ApiParsedPath(const String& path) :
+        _path(path),
         _levels(_path)
     {
         init();
     }
+
+    explicit ApiParsedPath(String&& path) :
+        _path(std::move(path)),
+        _levels(_path)
+    {
+        init();
+    }
+
+    ApiParsedPath(const ApiParsedPath& other) :
+        _path(other._path),
+        _levels(_path, other._levels),
+        _ok(other._ok)
+    {}
+
+    ApiParsedPath(ApiParsedPath&& other) :
+        _path(std::move(other._path)),
+        _levels(_path, std::move(other._levels)),
+        _ok(other._ok)
+    {}
 
     void init() {
         ApiLevel::Type type { ApiLevel::Type::Unknown };
@@ -149,6 +166,11 @@ private:
 // wildcards [0] -> one and [1] -> three
 
 struct ApiMatch {
+    explicit ApiMatch(ApiMatch&& other) :
+        _path(std::move(other._path)),
+        _wildcards(_path.path(), std::move(other._wildcards))
+    {}
+
     explicit ApiMatch(const ApiParsedPath& pattern, const ApiParsedPath& other) :
         _path(other),
         _wildcards(_path.path())
@@ -320,7 +342,6 @@ bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
 // - Parse request body as JSON object
 
 struct ApiRequestHelper {
-
     template <typename T>
     struct ReadOnlyStream : public Stream {
         ReadOnlyStream() = delete;
@@ -380,20 +401,25 @@ struct ApiRequestHelper {
     using Buffer = std::vector<uint8_t>;
     using BodyStream = ReadOnlyStream<Buffer>;
 
+    ApiRequestHelper(const ApiRequestHelper&) = delete;
+
+    ApiRequestHelper(ApiRequestHelper&& other) :
+        _request(other._request),
+        _pattern(std::move(other._pattern)),
+        _path(std::move(other._path)),
+        _match(_pattern, _path)
+    {}
+
     template <typename Pattern, typename Path>
     explicit ApiRequestHelper(AsyncWebServerRequest& request, Pattern&& pattern, Path&& path) :
+        _request(request),
         _pattern(std::forward<Pattern>(pattern)),
         _path(std::forward<Path>(path)),
-        _match(_pattern, _path),
-        _request(request, _match.levels(), _match.wildcards())
+        _match(_pattern, _path)
     {}
 
     const ApiMatch& match() const {
         return _match;
-    }
-
-    const bool done() const {
-        return _request.done();
     }
 
     void body(uint8_t* ptr, size_t size) {
@@ -404,15 +430,15 @@ struct ApiRequestHelper {
         return BodyStream(_buffer);
     }
 
-    ApiRequest& request() {
-        return _request;
+    ApiRequest request() {
+        return ApiRequest(_request, _match.levels(), _match.wildcards());
     }
 
 private:
+    AsyncWebServerRequest& _request;
     const ApiParsedPath& _pattern;
     ApiParsedPath _path;
     ApiMatch _match;
-    ApiRequest _request;
     Buffer _buffer;
 };
 
@@ -420,16 +446,16 @@ private:
 // TODO: in case we are dealing with multicore, perhaps a custom stack-like allocator would be better here
 // (e.g. static-allocated buffer within handler class, giving out fixed-size N free objects)
 
-using ApiRequestHelperPtr = std::unique_ptr<ApiRequestHelper>;
-
-void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelperPtr& helper) {
-    request._tempObject = helper.release();
+void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelper&& helper) {
+    request._tempObject = new ApiRequestHelper(std::move(helper));
     request.onDisconnect([&]() {
         auto* ptr = reinterpret_cast<ApiRequestHelper*>(request._tempObject);
         delete ptr;
         request._tempObject = nullptr;  // XXX: espasyncwebserver will free the pointer when request is disconnected, but only after this callback
     });
-    request.addInterestingHeader(F("Api-Key")); // XXX: ALL headers are parsed, but 'uninteresting' ones are deleted from internal list
+    // XXX: ALL headers are parsed, but 'uninteresting' ones are deleted from internal list after this callback is done
+    // (i.e. canHandle *or* filter of the handler)
+    request.addInterestingHeader(F("Api-Key"));
 }
 
 class ApiJsonWebHandler : public AsyncWebHandler {
@@ -456,8 +482,8 @@ public:
             return false;
         }
 
-        auto helper = std::make_unique<ApiRequestHelper>(*request, _path, request->url());
-        if (helper->match() && apiAuthenticate(request)) {
+        auto helper = ApiRequestHelper(*request, _path, request->url());
+        if (helper.match() && apiAuthenticate(request)) {
             switch (request->method()) {
             case HTTP_HEAD:
                 return true;
@@ -467,7 +493,7 @@ public:
             default:
                 return false;
             }
-            _apiAttachHelper(*request, helper);
+            _apiAttachHelper(*request, std::move(helper));
             return true;
         }
 
@@ -481,8 +507,8 @@ public:
 
     void handleRequest(AsyncWebServerRequest* request) override {
         auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
-        auto& apireq = helper.request();
 
+        auto apireq = helper.request();
         switch (request->method()) {
         case HTTP_HEAD:
             request->send(204);
@@ -494,7 +520,7 @@ public:
             if (!_get(apireq, root)) {
                 break;
             }
-            if (!helper.done()) {
+            if (!apireq.done()) {
                 AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
                 root.printTo(*response);
                 request->send(response);
@@ -510,7 +536,7 @@ public:
             if (!_put(apireq, root)) {
                 break;
             }
-            if (!helper.done()) {
+            if (!apireq.done()) {
                 request->send(204);
                 return;
             }
@@ -548,16 +574,6 @@ public:
         _put(std::forward<Callback>(put))
     {}
 
-    bool _trivialApiAuthenticate(AsyncWebServerRequest* request) {
-        const auto key = apiKey();
-        if (!key.length()) {
-            return false;
-        }
-
-        auto* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
-        return keyParam && (key == keyParam->value());
-    }
-
     bool isRequestHandlerTrivial() override {
         return true;
     }
@@ -580,9 +596,9 @@ public:
             return false;
         }
 
-        auto helper = std::make_unique<ApiRequestHelper>(*request, _path, request->url());
-        if (helper->match()) {
-            _apiAttachHelper(*request, helper);
+        auto helper = ApiRequestHelper(*request, _path, request->url());
+        if (helper.match()) {
+            _apiAttachHelper(*request, std::move(helper));
             return true;
         }
 
@@ -590,7 +606,7 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
-        if (!apiAuthenticate(request) && !_trivialApiAuthenticate(request)) {
+        if (!apiAuthenticate(request)) {
             request->send(403);
             return;
         }
@@ -608,8 +624,8 @@ public:
         case HTTP_GET:
         case HTTP_PUT: {
             auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
-            auto& apireq = helper.request();
 
+            auto apireq = helper.request();
             if (is_put) {
                 if (!_put(apireq)) {
                     request->send(500);

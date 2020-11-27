@@ -51,13 +51,38 @@ String apiKey() {
 
 // TODO: use `Api-Key` header instead and warn when api_key param is found?
 
-bool apiAuthenticate(AsyncWebServerRequest* request) {
-    const auto key = apiKey();
+bool apiAuthenticateHeader(AsyncWebServerRequest* request, const String& key) {
     if (apiEnabled() && key.length()) {
         auto* header = request->getHeader(F("Api-Key"));
         if (header && (key == header->value())) {
             return true;
         }
+    }
+
+    return false;
+}
+
+bool apiAuthenticateParam(AsyncWebServerRequest* request, const String& key) {
+    auto* param = request->getParam("apikey", (request->method() == HTTP_PUT));
+    if (param && (key == param->value())) {
+        return true;
+    }
+
+    return false;
+}
+
+bool apiAuthenticate(AsyncWebServerRequest* request) {
+    const auto key = apiKey();
+    if (!key.length()) {
+        return false;
+    }
+
+    if (apiAuthenticateHeader(request, key)) {
+        return true;
+    }
+
+    if (apiAuthenticateParam(request, key)) {
+        return true;
     }
 
     return false;
