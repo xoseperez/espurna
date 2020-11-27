@@ -73,13 +73,11 @@ struct ApiParsedPath {
         offset = p - _path.c_str();
 
         switch (*p) {
-        case '/':
-            type = ApiLevel::Type::Value;
-            goto push_result;
         case '+':
             goto parse_single_wildcard;
         case '#':
             goto parse_multi_wildcard;
+        case '/':
         default:
             goto parse_value;
         }
@@ -136,9 +134,11 @@ struct ApiParsedPath {
     error:
         _levels.clear();
         _ok = false;
+        return;
 
     success:
         _ok = true;
+        return;
     }
 
     explicit operator bool() const {
