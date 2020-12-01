@@ -379,7 +379,7 @@ private:
     PathParts _parts;
 };
 
-class ApiJsonWebHandler : public ApiBaseWebHandler {
+class ApiJsonWebHandler final : public ApiBaseWebHandler {
 public:
     ApiJsonWebHandler() = delete;
     ApiJsonWebHandler(const ApiJsonWebHandler&) = delete;
@@ -492,7 +492,7 @@ private:
 // MUST be trivial (see isRequestHandlerTrivial) to allow auth with PUT
 // (or, we reimplement body parsing like JSON variant, but for form-data)
 
-class ApiBasicWebHandler : public ApiBaseWebHandler {
+class ApiBasicWebHandler final : public ApiBaseWebHandler {
 public:
     template <typename Path, typename Callback>
     ApiBasicWebHandler(Path&& path, Callback&& get, Callback&& put) :
