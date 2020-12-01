@@ -231,89 +231,19 @@ bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
     return _apiMatchHeader(request, F("Content-Type"), F("application/x-www-form-urlencoded"));
 }
 
-// 'Modernized' API configuration:
-// - `Api-Key` header for both GET and PUT
-// - Parse request body as JSON object
-
 struct ApiRequestHelper {
-    template <typename T>
-    struct ReadOnlyStream : public Stream {
-        ReadOnlyStream() = delete;
-        explicit ReadOnlyStream(const T& buffer) :
-            _buffer(buffer),
-            _size(buffer.size())
-        {}
-
-        int available() override {
-            return _size - _index;
-        }
-
-        int peek() override {
-            if (_index < _size) {
-                return static_cast<int>(_buffer[_index]);
-            }
-
-            return -1;
-        }
-
-        int read() override {
-            auto peeked = peek();
-            if (peeked >= 0) {
-                ++_index;
-            }
-
-            return peeked;
-        }
-
-        // since we are fixed in size, no need for any timeouts and the only available option is to return full chunk of data
-        size_t readBytes(uint8_t* ptr, size_t size) override {
-            if ((_index < _size) && ((_size - _index) >= size)) {
-                std::copy(_buffer.data() + _index, _buffer.data() + _index + size, ptr);
-                _index += size;
-                return size;
-            }
-
-            return 0;
-        }
-
-        void flush() override {
-        }
-
-        size_t write(const uint8_t*, size_t) override {
-            return 0;
-        }
-
-        size_t write(uint8_t) override {
-            return 0;
-        }
-
-        const T& _buffer;
-        const size_t _size;
-        size_t _index { 0 };
-    };
-
     using Buffer = std::vector<uint8_t>;
-    using BodyStream = ReadOnlyStream<Buffer>;
 
     ApiRequestHelper(const ApiRequestHelper&) = delete;
     ApiRequestHelper(ApiRequestHelper&&) noexcept = default;
 
     // &path is expected to be request->url(), which is valid throughout the request's lifetime
-
     explicit ApiRequestHelper(AsyncWebServerRequest& request, const PathParts& pattern) :
         _request(request),
         _pattern(pattern),
         _path(request.url()),
         _match(_pattern.match(_path))
     {}
-
-    void body(uint8_t* ptr, size_t size) {
-        _buffer.insert(_buffer.end(), ptr, ptr + size);
-    }
-
-    BodyStream body() const {
-        return BodyStream(_buffer);
-    }
 
     ApiRequest request() const {
         return ApiRequest(_request, _pattern, _path);
@@ -331,14 +261,15 @@ private:
     AsyncWebServerRequest& _request;
     const PathParts& _pattern;
     PathParts _path;
-    Buffer _buffer;
     bool _match;
 };
 
 // Because the webserver request is split between multiple separate function invocations, we need to preserve some state.
-// TODO: in case we are dealing with multicore, perhaps a custom stack-like allocator would be better here?
+// TODO: in case we are dealing with multicore, perhaps enforcing static-size data structs instead of the vector would we better?
 //
 // Some quirks to deal with:
+// - Server never checks for request ending in either filter or canHandle, so content-length overflows are just ignored,
+//   but are still flowing through the lwip.
 // - espasyncwebserver will `free(_tempObject)` when request is disconnected, but only after this callbackhandler is done.
 //   make sure to set nullptr before returning
 // - ALL headers are parsed (and we could access those during this callback), but we need to explicitly
@@ -379,8 +310,76 @@ private:
     PathParts _parts;
 };
 
+// 'Modernized' API configuration:
+// - `Api-Key` header for both GET and PUT
+// - Parse request body as JSON object
+//   (currently, limited by both LWIP buffer sizes for recv and API_BUFFER_SIZE value for parsing)
+//
+// TODO: PUT callback uses the same signature, response is expected to be constructed manually through handle()
+
 class ApiJsonWebHandler final : public ApiBaseWebHandler {
 public:
+    static constexpr size_t BufferSize { 4 * API_BUFFER_SIZE };
+
+    struct ReadOnlyStream : public Stream {
+        ReadOnlyStream() = delete;
+        explicit ReadOnlyStream(const uint8_t* buffer, size_t size) :
+            _buffer(buffer),
+            _size(size)
+        {}
+
+        int available() override {
+            return _size - _index;
+        }
+
+        int peek() override {
+            if (_index < _size) {
+                return static_cast<int>(_buffer[_index]);
+            }
+
+            return -1;
+        }
+
+        int read() override {
+            auto peeked = peek();
+            if (peeked >= 0) {
+                ++_index;
+            }
+
+            return peeked;
+        }
+
+        // since we are fixed in size, no need for any timeouts and the only available option is to return full chunk of data
+        size_t readBytes(uint8_t* ptr, size_t size) override {
+            if ((_index < _size) && ((_size - _index) >= size)) {
+                std::copy(_buffer + _index, _buffer + _index + size, ptr);
+                _index += size;
+                return size;
+            }
+
+            return 0;
+        }
+
+        size_t readBytes(char* ptr, size_t size) override {
+			return readBytes(reinterpret_cast<uint8_t*>(ptr), size);
+		}
+
+        void flush() override {
+        }
+
+        size_t write(const uint8_t*, size_t) override {
+            return 0;
+        }
+
+        size_t write(uint8_t) override {
+            return 0;
+        }
+
+        const uint8_t* _buffer;
+        const size_t _size;
+        size_t _index { 0 };
+    };
+
     ApiJsonWebHandler() = delete;
     ApiJsonWebHandler(const ApiJsonWebHandler&) = delete;
     ApiJsonWebHandler(ApiJsonWebHandler&&) = delete;
@@ -393,7 +392,7 @@ public:
     {}
 
     bool isRequestHandlerTrivial() override {
-        return false;
+        return true;
     }
 
     bool canHandle(AsyncWebServerRequest* request) override {
@@ -410,8 +409,14 @@ public:
             switch (request->method()) {
             case HTTP_HEAD:
                 return true;
-            case HTTP_GET:
             case HTTP_PUT:
+                if (!_put) {
+                    return false;
+                }
+            case HTTP_GET:
+                if (!_get) {
+                    return false;
+                }
                 break;
             default:
                 return false;
@@ -424,7 +429,29 @@ public:
     }
 
     void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t, size_t total) override {
-        reinterpret_cast<ApiRequestHelper*>(request->_tempObject)->body(data, len);
+        auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+        if (total && (len == total)) {
+			// XXX: arduinojson v5 de-serializer will happily read garbage from raw ptr, since there's no length limit
+            //      this is fixed in v6 though. for now, use a wrapper, but be aware that this actually uses more mem for the jsonbuffer
+            DynamicJsonBuffer jsonBuffer(2 * API_BUFFER_SIZE);
+			ReadOnlyStream stream(data, total);
+
+            JsonObject& root = jsonBuffer.parseObject(stream);
+            if (!root.success()) {
+                request->send(500);
+                return;
+            }
+
+            auto apireq = helper.request();
+            if (!_put(apireq, root)) {
+                request->send(500);
+                return;
+            }
+            if (!apireq.done()) {
+                request->send(204);
+                return;
+            }
+        }
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
@@ -440,6 +467,7 @@ public:
             DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
             JsonObject& root = jsonBuffer.createObject();
             if (!_get(apireq, root)) {
+                request->send(500);
                 break;
             }
             if (!apireq.done()) {
@@ -448,29 +476,19 @@ public:
                 request->send(response);
                 return;
             }
+            request->send(500);
             break;
         }
 
-        case HTTP_PUT: {
-            auto body = helper.body(); // XXX: ArduinoJson template deductor does not like temporaries
-            DynamicJsonBuffer jsonBuffer(2 * API_BUFFER_SIZE);
-            JsonObject& root = jsonBuffer.parseObject(body);
-            if (!_put(apireq, root)) {
-                break;
-            }
-            if (!apireq.done()) {
-                request->send(204);
-                return;
-            }
-        }
+        // see handleBody()
+        case HTTP_PUT:
+            break;
 
         default:
             request->send(405);
-            return;
+            break;
         }
 
-
-        request->send(500);
     }
 
     const String& pattern() const {
@@ -610,6 +628,8 @@ const String& _apiBase() {
     static const String base(F("/api/"));
     return base;
 }
+
+// `String` is a given, since we *do* need to construct this dynamically
 
 template <typename Handler, typename Callback>
 void _apiRegister(const String& path, Callback&& get, Callback&& put) {
