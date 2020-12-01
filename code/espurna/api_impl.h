@@ -16,10 +16,16 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <algorithm>
 #include <forward_list>
 #include <memory>
+#include <type_traits>
 
 // -----------------------------------------------------------------------------
 
-struct ApiLevel {
+//namespace api {
+
+template <typename A, typename B>
+using TPathArg = typename std::enable_if<std::is_convertible<typename std::remove_reference<A>::type, B>::value>::type;
+
+struct PathPart {
     enum class Type {
         Unknown,
         Value,
@@ -32,87 +38,80 @@ struct ApiLevel {
     size_t length;
 };
 
-static_assert(std::is_nothrow_move_constructible<ApiLevel>::value, "");
-static_assert(std::is_copy_constructible<ApiLevel>::value, "");
+struct PathParts {
+    using Parts = std::vector<PathPart>;
 
-struct ApiLevels {
-    ApiLevels() = delete;
-    ApiLevels(const ApiLevels&) = default;
-    ApiLevels(ApiLevels&&) noexcept = default;
+    PathParts() = delete;
+    PathParts(const PathParts&) = default;
+    PathParts(PathParts&&) noexcept = default;
 
-    using Levels = std::vector<ApiLevel>;
+    explicit PathParts(const String& path);
 
-    explicit ApiLevels(const String& path) :
-        _path(path)
-    {}
-
-    explicit ApiLevels(const String& path, const ApiLevels& other) :
-        _path(path),
-        _levels(other._levels)
-    {}
-
-    explicit ApiLevels(const String& path, ApiLevels&& other) :
-        _path(path),
-        _levels(std::move(other._levels))
-    {}
-
-    ApiLevel& emplace_back(ApiLevel::Type type, size_t offset, size_t length) {
-        ApiLevel level { type, offset, length };
-        _levels.push_back(std::move(level));
-        return _levels.back();
+    explicit operator bool() const {
+        return _ok;
     }
 
     void clear() {
-        _levels.clear();
+        _parts.clear();
     }
 
     void reserve(size_t size) {
-        _levels.reserve(size);
+        _parts.reserve(size);
     }
 
     String operator[](size_t index) const {
-        auto& level = _levels[index];
-        return _path.substring(level.offset, level.offset + level.length);
+        auto& part = _parts[index];
+        return _path.substring(part.offset, part.offset + part.length);
     }
 
     const String& path() const {
         return _path;
     }
 
-    const Levels& levels() const {
-        return _levels;
+    const Parts& parts() const {
+        return _parts;
     }
 
     size_t size() const {
-        return _levels.size();
+        return _parts.size();
     }
 
-    Levels::const_iterator begin() const {
-        return _levels.begin();
+    Parts::const_iterator begin() const {
+        return _parts.begin();
     }
 
-    Levels::const_iterator end() const {
-        return _levels.end();
+    Parts::const_iterator end() const {
+        return _parts.end();
+    }
+
+    bool match(const PathParts& path) const;
+    bool match(const String& path) const {
+        return match(PathParts(path));
     }
 
 private:
+    PathPart& emplace_back(PathPart::Type type, size_t offset, size_t length) {
+        PathPart part { type, offset, length };
+        _parts.push_back(std::move(part));
+        return _parts.back();
+    }
 
     const String& _path;
-    Levels _levels;
+    mutable Parts _parts;
+    bool _ok { false };
 };
 
+// this is a purely temporary object, which we can only create while doing the API dispatch
+
 struct ApiRequest {
-
-    // this is a purely temporary object, which we can only create while doing the API dispatch
-
     ApiRequest() = delete;
     ApiRequest(const ApiRequest&) = delete;
 
-    ApiRequest(ApiRequest&&) = default;
-    explicit ApiRequest(AsyncWebServerRequest& request, const ApiLevels& levels, const ApiLevels& wildcards) :
+    ApiRequest(ApiRequest&&) noexcept = default;
+    explicit ApiRequest(AsyncWebServerRequest& request, const PathParts& pattern, const PathParts& parts) :
         _request(request),
-        _levels(levels),
-        _wildcards(wildcards)
+        _pattern(pattern),
+        _parts(parts)
     {}
 
     template <typename T>
@@ -161,25 +160,40 @@ struct ApiRequest {
         return _done;
     }
 
-    const ApiLevels& levels() const {
-        return _levels;
+    const PathParts& parts() const {
+        return _parts;
     }
 
-    String levels(size_t index) const {
-        return _levels[index];
+    String part(size_t index) const {
+        return _parts[index];
     }
 
-    const ApiLevels& wildcards() const {
-        return _wildcards;
-    }
+    // Only works for '+', retrieving the part at the same index from the opposing side
+    String wildcard(int index) const {
+        if (index < 0) {
+            index = std::abs(index + 1);
+        }
 
-    String wildcards(size_t index) const {
-        return _wildcards[index];
+        int counter { 0 };
+        auto& pattern = _pattern.parts();
+
+        for (unsigned int part = 0; part < pattern.size(); ++part) {
+            auto& lhs = pattern[part];
+            if (PathPart::Type::SingleWildcard == lhs.type) {
+                if (counter == index) {
+                    auto& rhs = _parts.parts()[part];
+                    return _parts.path().substring(rhs.offset, rhs.offset + rhs.length);
+                }
+                ++counter;
+            }
+        }
+
+        return _empty_string();
     }
 
     private:
 
-    const String& _empty_string() {
+    const String& _empty_string() const {
         static String string;
         return string;
     }
@@ -187,7 +201,8 @@ struct ApiRequest {
     bool _done { false };
 
     AsyncWebServerRequest& _request;
-    const ApiLevels& _levels;
-    const ApiLevels& _wildcards;
+    const PathParts& _pattern;
+    const PathParts& _parts;
 };
 
+//} // namespace api

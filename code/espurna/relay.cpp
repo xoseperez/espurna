@@ -1098,7 +1098,7 @@ void relaySetupWS() {
 
 template <typename T>
 bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
-    auto id_param = request.wildcards()[0];
+    auto id_param = request.wildcard(0);
     unsigned char id;
     if (!_relayTryParseId(id_param.c_str(), id)) {
         return false;
