@@ -31,7 +31,7 @@ PathParts::PathParts(const String& path) :
 {
     if (!_path.length()) {
         _ok = false;
-        return; 
+        return;
     }
 
     PathPart::Type type { PathPart::Type::Unknown };
@@ -349,7 +349,7 @@ void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelper&& helper)
     request.onDisconnect([&]() {
         auto* ptr = reinterpret_cast<ApiRequestHelper*>(request._tempObject);
         delete ptr;
-        request._tempObject = nullptr;  
+        request._tempObject = nullptr;
     });
     request.addInterestingHeader(F("Api-Key"));
 }

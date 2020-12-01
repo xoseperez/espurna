@@ -174,6 +174,10 @@ struct ApiRequest {
             index = std::abs(index + 1);
         }
 
+        if (std::abs(index) >= _pattern.parts().size()) {
+            return _empty_string();
+        }
+
         int counter { 0 };
         auto& pattern = _pattern.parts();
 
