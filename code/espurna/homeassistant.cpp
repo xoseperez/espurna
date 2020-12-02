@@ -293,10 +293,10 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 void ha_discovery_t::prepareSwitches(ha_config_t& config) {
 
-    // Note: because none of the keys are erased, use a separate object to avoid accidentally sending magnitude data
-    JsonObject& root = config.jsonBuffer.createObject();
-
     for (unsigned char i=0; i<relayCount(); i++) {
+        
+        // Note: because none of the keys are erased, use a separate object to avoid accidentally sending magnitude or light provider data
+        JsonObject& root = config.jsonBuffer.createObject();
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/" + switchType +
