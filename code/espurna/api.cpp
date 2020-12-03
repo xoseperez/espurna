@@ -415,6 +415,9 @@ public:
             case HTTP_HEAD:
                 return true;
             case HTTP_PUT:
+                if (!_apiIsJsonContent(request)) {
+                    return false;
+                }
                 if (!_put) {
                     return false;
                 }
@@ -552,7 +555,11 @@ public:
         switch (request->method()) {
         case HTTP_HEAD:
         case HTTP_GET:
+            break;
         case HTTP_PUT:
+            if (!_apiIsFormDataContent(request)) {
+                return false;
+            }
             break;
         default:
             return false;
