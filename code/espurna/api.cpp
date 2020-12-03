@@ -322,7 +322,7 @@ private:
 
 class ApiJsonWebHandler final : public ApiBaseWebHandler {
 public:
-    static constexpr size_t BufferSize { 4 * API_BUFFER_SIZE };
+    static constexpr size_t BufferSize { API_JSON_BUFFER_SIZE };
 
     struct ReadOnlyStream : public Stream {
         ReadOnlyStream() = delete;
@@ -432,7 +432,7 @@ public:
     }
 
     void _handleGet(AsyncWebServerRequest* request, ApiRequest& apireq) {
-        DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
+        DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
         JsonObject& root = jsonBuffer.createObject();
         if (!_get(apireq, root)) {
             request->send(500);
@@ -452,7 +452,7 @@ public:
     void _handlePut(AsyncWebServerRequest* request, uint8_t* data, size_t size) {
         // XXX: arduinojson v5 de-serializer will happily read garbage from raw ptr, since there's no length limit
         //      this is fixed in v6 though. for now, use a wrapper, but be aware that this actually uses more mem for the jsonbuffer
-        DynamicJsonBuffer jsonBuffer(2 * API_BUFFER_SIZE);
+        DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
         ReadOnlyStream stream(data, size);
 
         JsonObject& root = jsonBuffer.parseObject(stream);

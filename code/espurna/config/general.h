@@ -806,8 +806,8 @@
                                                 // Setting this to 0 will allow using GET to change relays, for instance
 #endif
 
-#ifndef API_BUFFER_SIZE
-#define API_BUFFER_SIZE             64          // Size of the buffer for HTTP GET API responses
+#ifndef API_JSON_BUFFER_SIZE
+#define API_JSON_BUFFER_SIZE        256         // Size of the (de)serializer buffer.
 #endif
 
 #ifndef API_REAL_TIME_VALUES
