@@ -268,8 +268,10 @@ private:
 // TODO: in case we are dealing with multicore, perhaps enforcing static-size data structs instead of the vector would we better?
 //
 // Some quirks to deal with:
-// - Server never checks for request ending in either filter or canHandle, so content-length overflows are just ignored,
-//   but are still flowing through the lwip.
+// - handleBody is called before handleRequest, and there's no way to signal completion / success of both callbacks to the server
+// - Server never checks for request closing in either filter or canHandle, so if we don't want to handle large content-length, it
+//   will still flow through the lwip backend.
+// - `request->_tempObject` is used to keep API request state
 // - espasyncwebserver will `free(_tempObject)` when request is disconnected, but only after this callbackhandler is done.
 //   make sure to set nullptr before returning
 // - ALL headers are parsed (and we could access those during this callback), but we need to explicitly
@@ -644,7 +646,7 @@ const String& _apiBase() {
     return base;
 }
 
-// `String` is a given, since we *do* need to construct this dynamically
+// `String` is a given, since we *do* need to construct this dynamically in sensors
 
 template <typename Handler, typename Callback>
 void _apiRegister(const String& path, Callback&& get, Callback&& put) {
