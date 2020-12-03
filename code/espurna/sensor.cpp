@@ -1455,8 +1455,8 @@ bool _sensorApiTryParseMagnitudeIndex(const char* p, unsigned char type, unsigne
 template <typename T>
 bool _sensorApiTryHandle(ApiRequest& request, unsigned char type, T&& callback) {
     unsigned char index { 0u };
-    if (request.wildcards().size()) {
-        auto index_param = request.wildcards()[0];
+    if (request.wildcards()) {
+        auto index_param = request.wildcard(0);
         if (!_sensorApiTryParseMagnitudeIndex(index_param.c_str(), type, index)) {
             return false;
         }
@@ -1474,7 +1474,7 @@ bool _sensorApiTryHandle(ApiRequest& request, unsigned char type, T&& callback) 
 
 void _sensorApiSetup() {
 
-    apiRegister(F("magnitudes"), {nullptr, nullptr,
+    apiRegister(F("magnitudes"),
         [](ApiRequest&, JsonObject& root) {
             JsonArray& magnitudes = root.createNestedArray("magnitudes");
             for (auto& magnitude : _magnitudes) {
@@ -1484,8 +1484,9 @@ void _sensorApiSetup() {
                 data.add(magnitude.reported);
             }
             return true;
-        }
-    });
+        },
+        nullptr
+    );
 
     _magnitudeForEachCounted([](unsigned char type) {
         String pattern = magnitudeTopic(type);
@@ -1517,7 +1518,7 @@ void _sensorApiSetup() {
             };
         }
 
-        apiRegister(pattern, {get, put, nullptr});
+        apiRegister(pattern, std::move(get), std::move(put));
     });
 
 }

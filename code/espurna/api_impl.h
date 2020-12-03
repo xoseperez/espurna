@@ -168,6 +168,17 @@ struct ApiRequest {
         return _parts[index];
     }
 
+    size_t wildcards() const {
+        size_t result { 0ul };
+        for (auto& part : _pattern) {
+            if (PathPart::Type::SingleWildcard == part.type) {
+                ++result;
+            }
+        }
+
+        return result;
+    }
+
     // Only works for '+', retrieving the part at the same index from the opposing side
     String wildcard(int index) const {
         if (index < 0) {
