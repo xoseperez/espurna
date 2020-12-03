@@ -1020,16 +1020,16 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 
 void _rfbApiSetup() {
 
-    apiRegister(F(MQTT_TOPIC_RFOUT), {
+    apiRegister(F(MQTT_TOPIC_RFOUT),
         apiOk, // just a stub, nothing to return
         [](ApiRequest& request) {
             _rfbSendFromPayload(request.param(F("value")).c_str());
             return true;
         }
-    });
+    );
 
 #if RELAY_SUPPORT
-    apiRegister(F(MQTT_TOPIC_RFLEARN), {
+    apiRegister(F(MQTT_TOPIC_RFLEARN),
         [](ApiRequest& request) {
             char buffer[64] { 0 };
             if (_rfb_learn) {
@@ -1046,17 +1046,17 @@ void _rfbApiSetup() {
             _rfbLearnStartFromPayload(request.param(F("value")).c_str());
             return true;
         }
-    });
+    );
 #endif
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    apiRegister(F(MQTT_TOPIC_RFRAW), {
+    apiRegister(F(MQTT_TOPIC_RFRAW),
         apiOk, // just a stub, nothing to return
         [](ApiRequest& request) {
             _rfbSendRawFromPayload(request.param(F("value")).c_str());
             return true;
         }
-    });
+    );
 #endif
 
 }
