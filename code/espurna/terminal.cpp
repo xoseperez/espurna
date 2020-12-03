@@ -477,7 +477,7 @@ void _terminalWebApiSetup() {
 
 #if API_SUPPORT
 
-    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH), {
+    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
         [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
                 AsyncResponseStream *response = request->beginResponseStream("text/plain");
@@ -512,7 +512,7 @@ void _terminalWebApiSetup() {
 
             return true;
         }
-    });
+    );
 
 #else
 
@@ -525,8 +525,10 @@ void _terminalWebApiSetup() {
         }
 
         // return 'true' after this point, since we did handle the request
-        webLog(request);
-        if (!apiAuthenticate(request)) return true;
+        if (!apiAuthenticate(request)) {
+            request->send(403);
+            return true;
+        }
 
         auto* cmd_param = request->getParam("value", (request->method() == HTTP_PUT));
         if (!cmd_param) {

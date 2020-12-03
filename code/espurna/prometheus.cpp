@@ -59,12 +59,13 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
 #if API_SUPPORT
 
 void prometheusSetup() {
-    apiRegister(F("metrics"), {
+    apiRegister(F("metrics"),
         [](ApiRequest& request) {
             request.handle(_prometheusRequestHandler);
             return true;
-        }
-    });
+        },
+        nullptr
+    );
 }
 
 #else 
@@ -72,10 +73,11 @@ void prometheusSetup() {
 void prometheusSetup() {
     webRequestRegister([](AsyncWebServerRequest* request) {
         if (request->url().equals(F("/api/metrics"))) {
-            webLog(request);
             if (apiAuthenticate(request)) {
-                _prometheusRequestHandler(*request);
+                _prometheusRequestHandler(request);
+                return true;
             }
+            request->send(403);
             return true;
         }
 
