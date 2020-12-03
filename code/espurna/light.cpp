@@ -901,7 +901,7 @@ bool _lightTryParseChannel(const char* p, unsigned char& id) {
 
 template <typename T>
 bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
-    auto id_param = request.wildcards()[0];
+    auto id_param = request.wildcard(0);
     unsigned char id;
     if (!_lightTryParseChannel(id_param.c_str(), id)) {
         return false;
@@ -914,7 +914,7 @@ void _lightApiSetup() {
 
     if (_light_has_color) {
 
-        apiRegister(F(MQTT_TOPIC_COLOR_RGB), {
+        apiRegister(F(MQTT_TOPIC_COLOR_RGB),
             [](ApiRequest& request) {
                 auto result = getSetting("useCSS", 1 == LIGHT_USE_CSS)
                     ? _toRGB(true) : _toLong(true);
@@ -926,9 +926,9 @@ void _lightApiSetup() {
                 lightUpdate(true, true);
                 return true;
             }
-        });
+        );
 
-        apiRegister(F(MQTT_TOPIC_COLOR_HSV), {
+        apiRegister(F(MQTT_TOPIC_COLOR_HSV),
             [](ApiRequest& request) {
                 request.send(_toHSV());
                 return true;
@@ -938,9 +938,9 @@ void _lightApiSetup() {
                 lightUpdate(true, true);
                 return true;
             }
-        });
+        );
 
-        apiRegister(F(MQTT_TOPIC_MIRED), {
+        apiRegister(F(MQTT_TOPIC_MIRED),
             [](ApiRequest& request) {
                 request.send(String(_light_mireds));
                 return true;
@@ -950,9 +950,9 @@ void _lightApiSetup() {
                 lightUpdate(true, true);
                 return true;
             }
-        });
+        );
 
-        apiRegister(F(MQTT_TOPIC_KELVIN), {
+        apiRegister(F(MQTT_TOPIC_KELVIN),
             [](ApiRequest& request) {
                 request.send(String(_toKelvin(_light_mireds)));
                 return true;
@@ -962,11 +962,11 @@ void _lightApiSetup() {
                 lightUpdate(true, true);
                 return true;
             }
-        });
+        );
 
     }
 
-    apiRegister(F(MQTT_TOPIC_TRANSITION), {
+    apiRegister(F(MQTT_TOPIC_TRANSITION),
         [](ApiRequest& request) {
             request.send(String(lightTransitionTime()));
             return true;
@@ -974,11 +974,10 @@ void _lightApiSetup() {
         [](ApiRequest& request) {
             lightTransitionTime(request.param(F("value")).toInt());
             return true;
-        },
-        nullptr
-    });
+        }
+    );
 
-    apiRegister(F(MQTT_TOPIC_BRIGHTNESS), {
+    apiRegister(F(MQTT_TOPIC_BRIGHTNESS),
         [](ApiRequest& request) {
             request.send(String(static_cast<int>(_light_brightness)));
             return true;
@@ -987,11 +986,10 @@ void _lightApiSetup() {
             _lightAdjustBrightness(request.param(F("value")));
             lightUpdate(true, true);
             return true;
-        },
-        nullptr
-    });
+        }
+    );
 
-    apiRegister(F(MQTT_TOPIC_CHANNEL "/+"), {
+    apiRegister(F(MQTT_TOPIC_CHANNEL "/+"),
         [](ApiRequest& request) {
             return _lightApiTryHandle(request, [&](unsigned char id) {
                 request.send(String(static_cast<int>(_light_channels[id].target)));
@@ -1004,9 +1002,8 @@ void _lightApiSetup() {
                 lightUpdate(true, true);
                 return true;
             });
-        },
-        nullptr
-    });
+        }
+    );
 
 }
 
