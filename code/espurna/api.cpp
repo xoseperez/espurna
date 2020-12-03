@@ -312,10 +312,13 @@ private:
 
 // 'Modernized' API configuration:
 // - `Api-Key` header for both GET and PUT
-// - Parse request body as JSON object
-//   (currently, limited by both LWIP buffer sizes for recv and API_BUFFER_SIZE value for parsing)
+// - Parse request body as JSON object. Limited to LWIP internal buffer size, and will also break when client
+//   does weird stuff and PUTs data in multiple packets b/c only the initial packet is parsed.
+// - Same as the text/plain, when ApiRequest::handle was not called it will then call GET
 //
-// TODO: PUT callback uses the same signature, response is expected to be constructed manually through handle()
+// TODO: bump to arduinojson v6 to handle partial / broken data payloads
+// TODO: somehow detect partial data and buffer (optionally)
+// TODO: POST instead of PUT?
 
 class ApiJsonWebHandler final : public ApiBaseWebHandler {
 public:
@@ -428,56 +431,69 @@ public:
         return false;
     }
 
-    void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t, size_t total) override {
+    void _handleGet(AsyncWebServerRequest* request, ApiRequest& apireq) {
+        DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
+        JsonObject& root = jsonBuffer.createObject();
+        if (!_get(apireq, root)) {
+            request->send(500);
+            return;
+        }
+
+        if (!apireq.done()) {
+            AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
+            root.printTo(*response);
+            request->send(response);
+            return;
+        }
+
+        request->send(500);
+    }
+
+    void _handlePut(AsyncWebServerRequest* request, uint8_t* data, size_t size) {
+        // XXX: arduinojson v5 de-serializer will happily read garbage from raw ptr, since there's no length limit
+        //      this is fixed in v6 though. for now, use a wrapper, but be aware that this actually uses more mem for the jsonbuffer
+        DynamicJsonBuffer jsonBuffer(2 * API_BUFFER_SIZE);
+        ReadOnlyStream stream(data, size);
+
+        JsonObject& root = jsonBuffer.parseObject(stream);
+        if (!root.success()) {
+            request->send(500);
+            return;
+        }
+
         auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+
+        auto apireq = helper.request();
+        if (!_put(apireq, root)) {
+            request->send(500);
+            return;
+        }
+
+        if (!apireq.done()) {
+            _handleGet(request, apireq);
+        }
+
+        return;
+    }
+
+    void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t, size_t total) override {
         if (total && (len == total)) {
-			// XXX: arduinojson v5 de-serializer will happily read garbage from raw ptr, since there's no length limit
-            //      this is fixed in v6 though. for now, use a wrapper, but be aware that this actually uses more mem for the jsonbuffer
-            DynamicJsonBuffer jsonBuffer(2 * API_BUFFER_SIZE);
-			ReadOnlyStream stream(data, total);
-
-            JsonObject& root = jsonBuffer.parseObject(stream);
-            if (!root.success()) {
-                request->send(500);
-                return;
-            }
-
-            auto apireq = helper.request();
-            if (!_put(apireq, root)) {
-                request->send(500);
-                return;
-            }
-            if (!apireq.done()) {
-                request->send(204);
-                return;
-            }
+            _handlePut(request, data, total);
         }
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
         auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
 
-        auto apireq = helper.request();
         switch (request->method()) {
         case HTTP_HEAD:
             request->send(204);
             return;
 
         case HTTP_GET: {
-            DynamicJsonBuffer jsonBuffer(API_BUFFER_SIZE);
-            JsonObject& root = jsonBuffer.createObject();
-            if (!_get(apireq, root)) {
-                request->send(500);
-                break;
-            }
-            if (!apireq.done()) {
-                AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
-                root.printTo(*response);
-                request->send(response);
-                return;
-            }
-            request->send(500);
-            break;
+            auto apireq = helper.request();
+            _handleGet(request, apireq);
+            return;
         }
 
         // see handleBody()
@@ -488,7 +504,6 @@ public:
             request->send(405);
             break;
         }
-
     }
 
     const String& pattern() const {
