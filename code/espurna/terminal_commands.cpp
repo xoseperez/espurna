@@ -13,6 +13,7 @@ Heavily inspired by the Embedis design:
 
 #include "terminal_commands.h"
 
+#include <algorithm>
 #include <memory>
 
 namespace terminal {
