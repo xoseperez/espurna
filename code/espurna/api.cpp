@@ -193,6 +193,43 @@ error:
     return false;
 }
 
+String ApiRequest::wildcard(int index) const {
+    if (index < 0) {
+        index = std::abs(index + 1);
+    }
+
+    if (std::abs(index) >= _pattern.parts().size()) {
+        return _empty_string();
+    }
+
+    int counter { 0 };
+    auto& pattern = _pattern.parts();
+
+    for (unsigned int part = 0; part < pattern.size(); ++part) {
+        auto& lhs = pattern[part];
+        if (PathPart::Type::SingleWildcard == lhs.type) {
+            if (counter == index) {
+                auto& rhs = _parts.parts()[part];
+                return _parts.path().substring(rhs.offset, rhs.offset + rhs.length);
+            }
+            ++counter;
+        }
+    }
+
+    return _empty_string();
+}
+
+size_t ApiRequest::wildcards() const {
+    size_t result { 0ul };
+    for (auto& part : _pattern) {
+        if (PathPart::Type::SingleWildcard == part.type) {
+            ++result;
+        }
+    }
+
+    return result;
+}
+
 // -----------------------------------------------------------------------------
 
 bool _apiAccepts(AsyncWebServerRequest* request, const __FlashStringHelper* str) {
@@ -232,8 +269,6 @@ bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
 }
 
 struct ApiRequestHelper {
-    using Buffer = std::vector<uint8_t>;
-
     ApiRequestHelper(const ApiRequestHelper&) = delete;
     ApiRequestHelper(ApiRequestHelper&&) noexcept = default;
 
@@ -265,17 +300,18 @@ private:
 };
 
 // Because the webserver request is split between multiple separate function invocations, we need to preserve some state.
-// TODO: in case we are dealing with multicore, perhaps enforcing static-size data structs instead of the vector would we better?
+// TODO: in case we are dealing with multicore, perhaps enforcing static-size data structs instead of the vector would we better,
+//       to avoid calling generic malloc when paths are parsed?
 //
 // Some quirks to deal with:
 // - handleBody is called before handleRequest, and there's no way to signal completion / success of both callbacks to the server
-// - Server never checks for request closing in either filter or canHandle, so if we don't want to handle large content-length, it
+// - Server never checks for request closing in filter or canHandle, so if we don't want to handle large content-length, it
 //   will still flow through the lwip backend.
-// - `request->_tempObject` is used to keep API request state
+// - `request->_tempObject` is used to keep API request state, but it's just a plain void pointer
 // - espasyncwebserver will `free(_tempObject)` when request is disconnected, but only after this callbackhandler is done.
-//   make sure to set nullptr before returning
-// - ALL headers are parsed (and we could access those during this callback), but we need to explicitly
-//   request them to stay in memory for the actual handler
+//   make sure it's set to nullptr via `AsyncWebServerRequest::onDisconnect`
+// - ALL headers are parsed (and we could access those during filter and canHandle callbacks), but we need to explicitly
+//   request them to stay in memory so that the actual handler can work with them
 
 void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelper&& helper) {
     request._tempObject = new ApiRequestHelper(std::move(helper));
@@ -292,6 +328,8 @@ public:
     ApiBaseWebHandler() = delete;
     ApiBaseWebHandler(const ApiBaseWebHandler&) = delete;
     ApiBaseWebHandler(ApiBaseWebHandler&&) = delete;
+
+    // In case this needs to be copied or moved, ensure PathParts copy references the new object's string
 
     template <typename Pattern>
     explicit ApiBaseWebHandler(Pattern&& pattern) :
@@ -526,9 +564,9 @@ private:
 
 // ESPurna legacy API configuration
 // - ?apikey=... to authorize in GET or PUT
-// - ?value=... for PUT values
-// MUST be trivial (see isRequestHandlerTrivial) to allow auth with PUT
-// (or, we reimplement body parsing like JSON variant, but for form-data)
+// - ?anything=... for input data (common key is "value")
+// MUST correctly override isRequestHandlerTrivial() to allow auth with PUT
+// (i.e. so that ESPAsyncWebServer parses the body and adds form-data to request params list)
 
 class ApiBasicWebHandler final : public ApiBaseWebHandler {
 public:
@@ -643,24 +681,21 @@ private:
     ApiBasicHandler _put;
 };
 
-std::forward_list<ApiBaseWebHandler*> _apis;
-constexpr size_t ApiPathSizeMax { 128ul };
-
 // -----------------------------------------------------------------------------
 
-const String& _apiBase() {
-    static const String base(F("/api/"));
-    return base;
-}
+namespace {
 
-// `String` is a given, since we *do* need to construct this dynamically in sensors
+std::forward_list<ApiBaseWebHandler*> _apis;
 
 template <typename Handler, typename Callback>
 void _apiRegister(const String& path, Callback&& get, Callback&& put) {
-    auto* ptr = new Handler(_apiBase() + path, std::forward<Callback>(get), std::forward<Callback>(put));
+    // `String` is a given, since we *do* need to construct this dynamically in sensors
+    auto* ptr = new Handler(String(F(API_BASE_PATH)) + path, std::forward<Callback>(get), std::forward<Callback>(put));
     webServer().addHandler(reinterpret_cast<AsyncWebHandler*>(ptr));
     _apis.emplace_front(ptr);
 }
+
+} // namespace
 
 void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put) {
     _apiRegister<ApiBasicWebHandler>(path, std::move(get), std::move(put));

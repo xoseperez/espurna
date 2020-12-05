@@ -10,20 +10,13 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <Arduino.h>
 
-#include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 
 #include <algorithm>
-#include <forward_list>
 #include <memory>
-#include <type_traits>
+#include <vector>
 
 // -----------------------------------------------------------------------------
-
-//namespace api {
-
-template <typename A, typename B>
-using TPathArg = typename std::enable_if<std::is_convertible<typename std::remove_reference<A>::type, B>::value>::type;
 
 struct PathPart {
     enum class Type {
@@ -42,6 +35,7 @@ struct PathParts {
     using Parts = std::vector<PathPart>;
 
     PathParts() = delete;
+
     PathParts(const PathParts&) = default;
     PathParts(PathParts&&) noexcept = default;
 
@@ -97,7 +91,7 @@ private:
     }
 
     const String& _path;
-    mutable Parts _parts;
+    Parts _parts;
     bool _ok { false };
 };
 
@@ -105,9 +99,10 @@ private:
 
 struct ApiRequest {
     ApiRequest() = delete;
-    ApiRequest(const ApiRequest&) = delete;
 
+    ApiRequest(const ApiRequest&) = default;
     ApiRequest(ApiRequest&&) noexcept = default;
+
     explicit ApiRequest(AsyncWebServerRequest& request, const PathParts& pattern, const PathParts& parts) :
         _request(request),
         _pattern(pattern),
@@ -168,48 +163,14 @@ struct ApiRequest {
         return _parts[index];
     }
 
-    size_t wildcards() const {
-        size_t result { 0ul };
-        for (auto& part : _pattern) {
-            if (PathPart::Type::SingleWildcard == part.type) {
-                ++result;
-            }
-        }
+    // Only works when pattern cointains '+', retrieving the part at the same index from the real path
+    // e.g. for the pair of `some/+/path` and `some/data/path`, calling `wildcard(0)` will return `data`
+    String wildcard(int index) const;
+    size_t wildcards() const;
 
-        return result;
-    }
-
-    // Only works for '+', retrieving the part at the same index from the opposing side
-    String wildcard(int index) const {
-        if (index < 0) {
-            index = std::abs(index + 1);
-        }
-
-        if (std::abs(index) >= _pattern.parts().size()) {
-            return _empty_string();
-        }
-
-        int counter { 0 };
-        auto& pattern = _pattern.parts();
-
-        for (unsigned int part = 0; part < pattern.size(); ++part) {
-            auto& lhs = pattern[part];
-            if (PathPart::Type::SingleWildcard == lhs.type) {
-                if (counter == index) {
-                    auto& rhs = _parts.parts()[part];
-                    return _parts.path().substring(rhs.offset, rhs.offset + rhs.length);
-                }
-                ++counter;
-            }
-        }
-
-        return _empty_string();
-    }
-
-    private:
-
+private:
     const String& _empty_string() const {
-        static String string;
+        static const String string;
         return string;
     }
 
@@ -219,5 +180,3 @@ struct ApiRequest {
     const PathParts& _pattern;
     const PathParts& _parts;
 };
-
-//} // namespace api
