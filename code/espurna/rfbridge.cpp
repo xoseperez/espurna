@@ -1020,42 +1020,43 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
 
 void _rfbApiSetup() {
 
-    apiReserve(3u);
-
-    apiRegister({
-        MQTT_TOPIC_RFOUT, Api::Type::Basic, ApiUnusedArg,
+    apiRegister(F(MQTT_TOPIC_RFOUT),
         apiOk, // just a stub, nothing to return
-        [](const Api&, ApiBuffer& buffer) {
-            _rfbSendFromPayload(buffer.data);
+        [](ApiRequest& request) {
+            _rfbSendFromPayload(request.param(F("value")).c_str());
+            return true;
         }
-    });
+    );
 
 #if RELAY_SUPPORT
-    apiRegister({
-        MQTT_TOPIC_RFLEARN, Api::Type::Basic, ApiUnusedArg,
-        [](const Api&, ApiBuffer& buffer) {
+    apiRegister(F(MQTT_TOPIC_RFLEARN),
+        [](ApiRequest& request) {
+            char buffer[64] { 0 };
             if (_rfb_learn) {
-                snprintf_P(buffer.data, buffer.size, PSTR("learning id:%u,status:%c"),
+                snprintf_P(buffer, sizeof(buffer), PSTR("learning id:%u,status:%c"),
                     _rfb_learn->id, _rfb_learn->status ? 't' : 'f'
                 );
             } else {
-                snprintf_P(buffer.data, buffer.size, PSTR("waiting"));
+                snprintf_P(buffer, sizeof(buffer), PSTR("waiting"));
             }
+            request.send(buffer);
+            return true;
         },
-        [](const Api&, ApiBuffer& buffer) {
-            _rfbLearnStartFromPayload(buffer.data);
+        [](ApiRequest& request) {
+            _rfbLearnStartFromPayload(request.param(F("value")).c_str());
+            return true;
         }
-    });
+    );
 #endif
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    apiRegister({
-        MQTT_TOPIC_RFRAW, Api::Type::Basic, ApiUnusedArg,
+    apiRegister(F(MQTT_TOPIC_RFRAW),
         apiOk, // just a stub, nothing to return
-        [](const Api&, ApiBuffer& buffer) {
-            _rfbSendRawFromPayload(buffer.data);
+        [](ApiRequest& request) {
+            _rfbSendRawFromPayload(request.param(F("value")).c_str());
+            return true;
         }
-    });
+    );
 #endif
 
 }

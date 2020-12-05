@@ -471,24 +471,64 @@ void _terminalLoop() {
 
 }
 
-#if WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
-
-bool _terminalWebApiMatchPath(AsyncWebServerRequest* request) {
-    const String api_path = getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
-    return request->url().equals(api_path);
-}
+#if TERMINAL_WEB_API_SUPPORT
 
 void _terminalWebApiSetup() {
 
+#if API_SUPPORT
+
+    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
+        [](ApiRequest& api) {
+            api.handle([](AsyncWebServerRequest* request) {
+                AsyncResponseStream *response = request->beginResponseStream("text/plain");
+                for (auto& command : _terminal.commandNames()) {
+                    response->print(command);
+                    response->print("\r\n");
+                }
+
+                request->send(response);
+            });
+            return true;
+        },
+        [](ApiRequest& api) {
+            // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
+            // over  every 'value' available to provide a way to call multiple commands at once
+            auto cmd = api.param(F("value"));
+            if (!cmd.length()) {
+                return false;
+            }
+
+            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+                cmd += '\n';
+            }
+
+            api.handle([&](AsyncWebServerRequest* request) {
+                AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
+                    StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+                    terminal::Terminal handler(stream);
+                    handler.processLine();
+                });
+            });
+
+            return true;
+        }
+    );
+
+#else
+
     webRequestRegister([](AsyncWebServerRequest* request) {
-        // continue to the next handler if path does not match
-        if (!_terminalWebApiMatchPath(request)) return false;
+        String path(F(API_BASE_PATH));
+        path += getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
+        if (path != request->url()) {
+            return false;
+        }
 
-        // return 'true' after this point, since we did handle the request
-        webLog(request);
-        if (!apiAuthenticate(request)) return true;
+        if (!apiAuthenticate(request)) {
+            request->send(403);
+            return true;
+        }
 
-        auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
+        auto* cmd_param = request->getParam("value", (request->method() == HTTP_PUT));
         if (!cmd_param) {
             request->send(500);
             return true;
@@ -514,9 +554,11 @@ void _terminalWebApiSetup() {
         return true;
     });
 
+#endif // API_SUPPORT
+
 }
 
-#endif // WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
+#endif // TERMINAL_WEB_API_SUPPORT
 
 
 #if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT

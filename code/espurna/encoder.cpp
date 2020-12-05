@@ -10,6 +10,11 @@ Copyright (C) 2018-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
 
+#include "light.h"
+#include "libs/Encoder.h"
+
+#include <vector>
+
 struct encoder_t {
     Encoder * encoder;
     unsigned char button_pin;

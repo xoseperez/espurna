@@ -714,7 +714,7 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
 void wsSetup() {
 
     _ws.onEvent(_wsEvent);
-    webServer()->addHandler(&_ws);
+    webServer().addHandler(&_ws);
 
     // CORS
     const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
@@ -723,7 +723,7 @@ void wsSetup() {
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
     }
 
-    webServer()->on("/auth", HTTP_GET, _onAuth);
+    webServer().on("/auth", HTTP_GET, _onAuth);
 
     wsRegister()
         .onConnected(_wsOnConnected)

@@ -190,7 +190,7 @@
 #endif
 
 #ifndef TERMINAL_WEB_API_PATH
-#define TERMINAL_WEB_API_PATH       "/api/cmd"
+#define TERMINAL_WEB_API_PATH       "cmd"
 #endif
 
 //------------------------------------------------------------------------------
@@ -734,6 +734,10 @@
 #define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
 #endif
 
+#ifndef WEB_ACCESS_LOG
+#define WEB_ACCESS_LOG              0           // Log every request that was received by the server (but, not necessarily processed)
+#endif
+
 // Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
 // XXX: This is not working at the moment!! Pending https://github.com/me-no-dev/ESPAsyncTCP/issues/95
 #ifndef WEB_SSL_ENABLED
@@ -806,8 +810,12 @@
                                                 // Setting this to 0 will allow using GET to change relays, for instance
 #endif
 
-#ifndef API_BUFFER_SIZE
-#define API_BUFFER_SIZE             64          // Size of the buffer for HTTP GET API responses
+#ifndef API_JSON_BUFFER_SIZE
+#define API_JSON_BUFFER_SIZE        256         // Size of the (de)serializer buffer.
+#endif
+
+#ifndef API_BASE_PATH
+#define API_BASE_PATH               "/api/"
 #endif
 
 #ifndef API_REAL_TIME_VALUES

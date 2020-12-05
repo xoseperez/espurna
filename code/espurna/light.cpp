@@ -444,6 +444,12 @@ void _toRGB(char * rgb, size_t len, bool target = false) {
     snprintf_P(rgb, len, PSTR("#%06X"), value);
 }
 
+String _toRGB(bool target) {
+    char buffer[64] { 0 };
+    _toRGB(buffer, sizeof(buffer), target);
+    return buffer;
+}
+
 void _toHSV(char * hsv, size_t len) {
     double h {0.}, s {0.}, v {0.};
     double r {0.}, g {0.}, b {0.};
@@ -486,6 +492,12 @@ void _toHSV(char * hsv, size_t len) {
     );
 }
 
+String _toHSV() {
+    char buffer[64] { 0 };
+    _toHSV(buffer, sizeof(buffer));
+    return buffer;
+}
+
 void _toLong(char * color, size_t len, bool target) {
 
     if (!_light_has_color) return;
@@ -500,6 +512,12 @@ void _toLong(char * color, size_t len, bool target) {
 
 void _toLong(char * color, size_t len) {
     _toLong(color, len, false);
+}
+
+String _toLong(bool target = false) {
+    char buffer[64] { 0 };
+    _toLong(buffer, sizeof(buffer), target);
+    return buffer;
 }
 
 String _toCSV(bool target) {
@@ -539,20 +557,36 @@ int _lightAdjustValue(const int& value, const String& operation) {
     return updated;
 }
 
-void _lightAdjustBrightness(const char *payload) {
+void _lightAdjustBrightness(const char* payload) {
     lightBrightness(_lightAdjustValue(lightBrightness(), payload));
 }
 
-void _lightAdjustChannel(unsigned char id, const char *payload) {
+void _lightAdjustBrightness(const String& payload) {
+    _lightAdjustBrightness(payload.c_str());
+}
+
+void _lightAdjustChannel(unsigned char id, const char* payload) {
     lightChannel(id, _lightAdjustValue(lightChannel(id), payload));
 }
 
-void _lightAdjustKelvin(const char *payload) {
+void _lightAdjustChannel(unsigned char id, const String& payload) {
+    _lightAdjustChannel(id, payload.c_str());
+}
+
+void _lightAdjustKelvin(const char* payload) {
     _fromKelvin(_lightAdjustValue(_toKelvin(_light_mireds), payload));
 }
 
-void _lightAdjustMireds(const char *payload) {
+void _lightAdjustKelvin(const String& payload) {
+    _lightAdjustKelvin(payload.c_str());
+}
+
+void _lightAdjustMireds(const char* payload) {
     _fromMireds(_lightAdjustValue(_light_mireds, payload));
+}
+
+void _lightAdjustMireds(const String& payload) {
+    _lightAdjustMireds(payload.c_str());
 }
 
 // -----------------------------------------------------------------------------
@@ -853,101 +887,123 @@ void lightBroker() {
 
 #if API_SUPPORT
 
-void _lightApiSetup() {
+bool _lightTryParseChannel(const char* p, unsigned char& id) {
+    char* endp { nullptr };
+    const unsigned long result { strtoul(p, &endp, 10) };
+    if ((endp == p) || (*endp != '\0') || (result >= lightChannels())) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Invalid channelID (%s)\n"), p);
+        return false;
+    }
 
-    // Note that we expect a fixed number of entries.
-    // Otherwise, underlying vector will reserve more than we need (likely, *2 of the current size)
-    apiReserve(
-        (_light_has_color ? 4u : 0u) + 2u + _light_channels.size()
-    );
+    id = result;
+    return true;
+}
+
+template <typename T>
+bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
+    auto id_param = request.wildcard(0);
+    unsigned char id;
+    if (!_lightTryParseChannel(id_param.c_str(), id)) {
+        return false;
+    }
+
+    return callback(id);
+}
+
+void _lightApiSetup() {
 
     if (_light_has_color) {
 
-        apiRegister({
-            MQTT_TOPIC_COLOR_RGB, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
-                if (getSetting("useCSS", 1 == LIGHT_USE_CSS)) {
-                    _toRGB(buffer.data, buffer.size, true);
-                } else {
-                    _toLong(buffer.data, buffer.size, true);
-                }
+        apiRegister(F(MQTT_TOPIC_COLOR_RGB),
+            [](ApiRequest& request) {
+                auto result = getSetting("useCSS", 1 == LIGHT_USE_CSS)
+                    ? _toRGB(true) : _toLong(true);
+                request.send(result);
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
-                lightColor(buffer.data, true);
+            [](ApiRequest& request) {
+                lightColor(request.param(F("value")), true);
                 lightUpdate(true, true);
+                return true;
             }
-        });
+        );
 
-        apiRegister({
-            MQTT_TOPIC_COLOR_HSV, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
-                _toHSV(buffer.data, buffer.size);
+        apiRegister(F(MQTT_TOPIC_COLOR_HSV),
+            [](ApiRequest& request) {
+                request.send(_toHSV());
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
-                lightColor(buffer.data, false);
+            [](ApiRequest& request) {
+                lightColor(request.param(F("value")), false);
                 lightUpdate(true, true);
+                return true;
             }
-        });
+        );
 
-        apiRegister({
-            MQTT_TOPIC_MIRED, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
-                sprintf(buffer.data, PSTR("%d"), _light_mireds);
+        apiRegister(F(MQTT_TOPIC_MIRED),
+            [](ApiRequest& request) {
+                request.send(String(_light_mireds));
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
-                _lightAdjustMireds(buffer.data);
+            [](ApiRequest& request) {
+                _lightAdjustMireds(request.param(F("value")));
                 lightUpdate(true, true);
+                return true;
             }
-        });
+        );
 
-        apiRegister({
-            MQTT_TOPIC_KELVIN, Api::Type::Basic, ApiUnusedArg,
-            [](const Api&, ApiBuffer& buffer) {
-                sprintf(buffer.data, PSTR("%d"), _toKelvin(_light_mireds));
+        apiRegister(F(MQTT_TOPIC_KELVIN),
+            [](ApiRequest& request) {
+                request.send(String(_toKelvin(_light_mireds)));
+                return true;
             },
-            [](const Api&, ApiBuffer& buffer) {
-                _lightAdjustKelvin(buffer.data);
+            [](ApiRequest& request) {
+                _lightAdjustKelvin(request.param(F("value")));
                 lightUpdate(true, true);
+                return true;
             }
-        });
+        );
 
     }
 
-    apiRegister({
-        MQTT_TOPIC_TRANSITION, Api::Type::Basic, ApiUnusedArg,
-        [](const Api&, ApiBuffer& buffer) {
-            snprintf_P(buffer.data, buffer.size, PSTR("%u"), lightTransitionTime());
+    apiRegister(F(MQTT_TOPIC_TRANSITION),
+        [](ApiRequest& request) {
+            request.send(String(lightTransitionTime()));
+            return true;
         },
-        [](const Api&, ApiBuffer& buffer) {
-            lightTransitionTime(atol(buffer.data));
+        [](ApiRequest& request) {
+            lightTransitionTime(request.param(F("value")).toInt());
+            return true;
         }
-    });
+    );
 
-    apiRegister({
-        MQTT_TOPIC_BRIGHTNESS, Api::Type::Basic, ApiUnusedArg,
-        [](const Api&, ApiBuffer& buffer) {
-            snprintf_P(buffer.data, buffer.size, PSTR("%u"), _light_brightness);
+    apiRegister(F(MQTT_TOPIC_BRIGHTNESS),
+        [](ApiRequest& request) {
+            request.send(String(static_cast<int>(_light_brightness)));
+            return true;
         },
-        [](const Api&, ApiBuffer& buffer) {
-            _lightAdjustBrightness(buffer.data);
+        [](ApiRequest& request) {
+            _lightAdjustBrightness(request.param(F("value")));
             lightUpdate(true, true);
+            return true;
         }
-    });
+    );
 
-    char path[32] = {0};
-    for (unsigned char id = 0; id < _light_channels.size(); ++id) {
-        snprintf_P(path, sizeof(path), PSTR(MQTT_TOPIC_CHANNEL "/%u"), id);
-        apiRegister({
-            path, Api::Type::Basic, id,
-            [](const Api& api, ApiBuffer& buffer) {
-                snprintf_P(buffer.data, buffer.size, PSTR("%u"), _light_channels[api.arg].target);
-            },
-            [](const Api& api, ApiBuffer& buffer) {
-                _lightAdjustChannel(api.arg, buffer.data);
+    apiRegister(F(MQTT_TOPIC_CHANNEL "/+"),
+        [](ApiRequest& request) {
+            return _lightApiTryHandle(request, [&](unsigned char id) {
+                request.send(String(static_cast<int>(_light_channels[id].target)));
+                return true;
+            });
+        },
+        [](ApiRequest& request) {
+            return _lightApiTryHandle(request, [&](unsigned char id) {
+                _lightAdjustChannel(id, request.param(F("value")));
                 lightUpdate(true, true);
-            }
-        });
-    }
+                return true;
+            });
+        }
+    );
 
 }
 
@@ -1006,11 +1062,11 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     if (_light_has_color) {
         if (strcmp(action, "color") == 0) {
             if (data.containsKey("rgb")) {
-                lightColor(data["rgb"], true);
+                lightColor(data["rgb"].as<const char*>(), true);
                 lightUpdate(true, true);
             }
             if (data.containsKey("hsv")) {
-                lightColor(data["hsv"], false);
+                lightColor(data["hsv"].as<const char*>(), false);
                 lightUpdate(true, true);
             }
         }
@@ -1104,7 +1160,7 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("MIRED"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
-            _lightAdjustMireds(ctx.argv[1].c_str());
+            _lightAdjustMireds(ctx.argv[1]);
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
@@ -1225,8 +1281,16 @@ void lightColor(const char * color, bool rgb) {
     }
 }
 
-void lightColor(const char * color) {
+void lightColor(const String& color, bool rgb) {
+    lightColor(color.c_str(), rgb);
+}
+
+void lightColor(const char* color) {
     lightColor(color, true);
+}
+
+void lightColor(const String& color) {
+    lightColor(color.c_str());
 }
 
 void lightColor(unsigned long color) {

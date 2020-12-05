@@ -49,24 +49,41 @@ String apiKey() {
     return getSetting("apiKey", API_KEY);
 }
 
-bool apiAuthenticate(AsyncWebServerRequest *request) {
+bool apiAuthenticateHeader(AsyncWebServerRequest* request, const String& key) {
+    if (apiEnabled() && key.length()) {
+        auto* header = request->getHeader(F("Api-Key"));
+        if (header && (key == header->value())) {
+            return true;
+        }
+    }
 
+    return false;
+}
+
+bool apiAuthenticateParam(AsyncWebServerRequest* request, const String& key) {
+    auto* param = request->getParam("apikey", (request->method() == HTTP_PUT));
+    if (param && (key == param->value())) {
+        return true;
+    }
+
+    return false;
+}
+
+bool apiAuthenticate(AsyncWebServerRequest* request) {
     const auto key = apiKey();
-    if (!apiEnabled() || !key.length()) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
-        request->send(403);
+    if (!key.length()) {
         return false;
     }
 
-    AsyncWebParameter* keyParam = request->getParam("apikey", (request->method() == HTTP_PUT));
-    if (!keyParam || !keyParam->value().equals(key)) {
-        DEBUG_MSG_P(PSTR("[WEBSERVER] Wrong / missing apikey parameter\n"));
-        request->send(403);
-        return false;
+    if (apiAuthenticateHeader(request, key)) {
+        return true;
     }
 
-    return true;
+    if (apiAuthenticateParam(request, key)) {
+        return true;
+    }
 
+    return false;
 }
 
 void apiCommonSetup() {

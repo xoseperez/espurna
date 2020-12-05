@@ -449,6 +449,10 @@ void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payl
     sensor->resetEnergy(magnitude.index_local, energy);
 }
 
+void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const String& payload) {
+    _sensorApiResetEnergy(magnitude, payload.c_str());
+}
+
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
 
     sensor::Energy result;
@@ -1436,44 +1440,86 @@ String _sensorApiMagnitudeName(sensor_magnitude_t& magnitude) {
     return name;
 }
 
-void _sensorApiJsonCallback(const Api&, JsonObject& root) {
-    JsonArray& magnitudes = root.createNestedArray("magnitudes");
-    for (auto& magnitude : _magnitudes) {
-        JsonArray& data = magnitudes.createNestedArray();
-        data.add(_sensorApiMagnitudeName(magnitude));
-        data.add(magnitude.last);
-        data.add(magnitude.reported);
+bool _sensorApiTryParseMagnitudeIndex(const char* p, unsigned char type, unsigned char& magnitude_index) {
+    char* endp { nullptr };
+    const unsigned long result { strtoul(p, &endp, 10) };
+    if ((endp == p) || (*endp != '\0') || (result >= sensor_magnitude_t::counts(type))) {
+        DEBUG_MSG_P(PSTR("[RELAY] Invalid magnitude ID (%s)\n"), p);
+        return false;
     }
+
+    magnitude_index = result;
+    return true;
 }
 
-void _sensorApiGetValue(const Api& api, ApiBuffer& buffer) {
-    auto& magnitude = _magnitudes[api.arg];
-    double value = _sensor_realtime ? magnitude.last : magnitude.reported;
-    dtostrf(value, 1, magnitude.decimals, buffer.data);
-}
+template <typename T>
+bool _sensorApiTryHandle(ApiRequest& request, unsigned char type, T&& callback) {
+    unsigned char index { 0u };
+    if (request.wildcards()) {
+        auto index_param = request.wildcard(0);
+        if (!_sensorApiTryParseMagnitudeIndex(index_param.c_str(), type, index)) {
+            return false;
+        }
+    }
 
-void _sensorApiResetEnergyPutCallback(const Api& api, ApiBuffer& buffer) {
-    _sensorApiResetEnergy(_magnitudes[api.arg], buffer.data);
+    for (auto& magnitude : _magnitudes) {
+        if ((type == magnitude.type) && (index == magnitude.index_global)) {
+            callback(magnitude);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void _sensorApiSetup() {
 
-    apiReserve(
-        _magnitudes.size() + sensor_magnitude_t::counts(MAGNITUDE_ENERGY) + 1u
+    apiRegister(F("magnitudes"),
+        [](ApiRequest&, JsonObject& root) {
+            JsonArray& magnitudes = root.createNestedArray("magnitudes");
+            for (auto& magnitude : _magnitudes) {
+                JsonArray& data = magnitudes.createNestedArray();
+                data.add(_sensorApiMagnitudeName(magnitude));
+                data.add(magnitude.last);
+                data.add(magnitude.reported);
+            }
+            return true;
+        },
+        nullptr
     );
 
-    apiRegister({"magnitudes", Api::Type::Json, ApiUnusedArg, _sensorApiJsonCallback});
+    _magnitudeForEachCounted([](unsigned char type) {
+        String pattern = magnitudeTopic(type);
+        if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(type) > 1)) {
+            pattern += "/+";
+        }
 
-    for (unsigned char id = 0; id < _magnitudes.size(); ++id) {
-        apiRegister({
-            _sensorApiMagnitudeName(_magnitudes[id]).c_str(),
-            Api::Type::Basic, id,
-            _sensorApiGetValue,
-            (_magnitudes[id].type == MAGNITUDE_ENERGY)
-                ? _sensorApiResetEnergyPutCallback
-                : nullptr
-        });
-    }
+        ApiBasicHandler get {
+            [type](ApiRequest& request) {
+                return _sensorApiTryHandle(request, type, [&](const sensor_magnitude_t& magnitude) {
+                    char buffer[64] { 0 };
+                    dtostrf(
+                        _sensor_realtime ? magnitude.last : magnitude.reported,
+                        1, magnitude.decimals,
+                        buffer
+                    );
+                    request.send(String(buffer));
+                    return true;
+                });
+            }
+        };
+
+        ApiBasicHandler put { nullptr };
+        if (type == MAGNITUDE_ENERGY) {
+            put = [](ApiRequest& request) {
+                return _sensorApiTryHandle(request, MAGNITUDE_ENERGY, [&](const sensor_magnitude_t& magnitude) {
+                    _sensorApiResetEnergy(magnitude, request.param(F("value")));
+                });
+            };
+        }
+
+        apiRegister(pattern, std::move(get), std::move(put));
+    });
 
 }
 

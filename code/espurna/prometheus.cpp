@@ -20,7 +20,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cmath>
 
 void _prometheusRequestHandler(AsyncWebServerRequest* request) {
-    static_assert(RELAY_SUPPORT || SENSOR_SUPPORT, "");
+    static_assert((RELAY_SUPPORT) || (SENSOR_SUPPORT), "");
 
     // TODO: Add more stuff?
     // Note: Response 'stream' backing buffer is customizable. Default is 1460 bytes (see ESPAsyncWebServer.h)
@@ -55,20 +55,36 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
     request->send(response);
 }
 
-bool _prometheusRequestCallback(AsyncWebServerRequest* request) {
-    if (request->url().equals(F("/api/metrics"))) {
-        webLog(request);
-        if (apiAuthenticate(request)) {
-            _prometheusRequestHandler(request);
-        }
-        return true;
-    }
 
-    return false;
-}
+#if API_SUPPORT
 
 void prometheusSetup() {
-    webRequestRegister(_prometheusRequestCallback);
+    apiRegister(F("metrics"),
+        [](ApiRequest& request) {
+            request.handle(_prometheusRequestHandler);
+            return true;
+        },
+        nullptr
+    );
 }
+
+#else 
+
+void prometheusSetup() {
+    webRequestRegister([](AsyncWebServerRequest* request) {
+        if (request->url().equals(F(API_BASE_PATH "metrics"))) {
+            if (apiAuthenticate(request)) {
+                _prometheusRequestHandler(request);
+                return true;
+            }
+            request->send(403);
+            return true;
+        }
+
+        return false;
+    });
+}
+
+#endif // API_SUPPORT
 
 #endif // PROMETHEUS_SUPPORT

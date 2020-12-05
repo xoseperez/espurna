@@ -514,8 +514,8 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
 
 // -----------------------------------------------------------------------------
 
-AsyncWebServer * webServer() {
-    return _server;
+AsyncWebServer& webServer() {
+    return *_server;
 }
 
 void webBodyRegister(web_body_callback_f callback) {
@@ -536,22 +536,37 @@ uint16_t webPort() {
 }
 
 void webLog(AsyncWebServerRequest *request) {
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Request: %s %s\n"), request->methodToString(), request->url().c_str());
+    DEBUG_MSG_P(PSTR("[WEBSERVER] %s %s\n"), request->methodToString(), request->url().c_str());
 }
+
+class WebAccessLogHandler : public AsyncWebHandler {
+    bool canHandle(AsyncWebServerRequest* request) override {
+        webLog(request);
+        return false;
+    }
+};
 
 void webSetup() {
 
     // Cache the Last-Modifier header value
     snprintf_P(_last_modified, sizeof(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
-    // Create server
+    // Create server and install global URL debug handler
+    // (since we don't want to forcibly add it to each instance)
     unsigned int port = webPort();
     _server = new AsyncWebServer(port);
+
+#if DEBUG_SUPPORT
+    if (getSetting("webAccessLog", (1 == WEB_ACCESS_LOG))) {
+        static WebAccessLogHandler log;
+        _server->addHandler(&log);
+    }
+#endif
 
     // Rewrites
     _server->rewrite("/", "/index.html");
 
-    // Serve home (basic authentication protection)
+    // Serve home (basic authentication protection is done manually b/c the handler is installed through callback functions)
     #if WEB_EMBEDDED
         _server->on("/index.html", HTTP_GET, _onHome);
     #endif
