@@ -1444,7 +1444,7 @@ bool _sensorApiTryParseMagnitudeIndex(const char* p, unsigned char type, unsigne
     char* endp { nullptr };
     const unsigned long result { strtoul(p, &endp, 10) };
     if ((endp == p) || (*endp != '\0') || (result >= sensor_magnitude_t::counts(type))) {
-        DEBUG_MSG_P(PSTR("[RELAY] Invalid magnitude ID (%s)\n"), p);
+        DEBUG_MSG_P(PSTR("[SENSOR] Invalid magnitude ID (%s)\n"), p);
         return false;
     }
 
