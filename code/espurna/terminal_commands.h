@@ -12,7 +12,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "terminal_parsing.h"
 
-#include <unordered_map>
+#include <forward_list>
 #include <functional>
 #include <vector>
 
@@ -28,8 +28,8 @@ struct CommandContext {
     Print& output;
 };
 
-struct Terminal {
-
+class Terminal {
+public:
     enum class Result {
         Error,           // Genric error condition
         Command,         // We successfully parsed the line and executed the callback specified via addCommand
@@ -42,18 +42,22 @@ struct Terminal {
     using CommandFunc = void(*)(const CommandContext&);
     using ProcessFunc = bool(*)(Result);
 
+    using Names = std::vector<const __FlashStringHelper*>;
+    using Command = std::pair<const __FlashStringHelper*, CommandFunc>;
+    using Commands = std::forward_list<Command>;
+
     // stream      - see `stream` description below
     // buffer_size - set internal limit for the total command line length
     Terminal(Stream& stream, size_t buffer_size = 128) :
-        stream(stream),
-        buffer_size(buffer_size)
+        _stream(stream),
+        _buffer_size(buffer_size)
     {
-        buffer.reserve(buffer_size);
+        _buffer.reserve(buffer_size);
     }
 
-    static void addCommand(const String& name, CommandFunc func);
-    static size_t commandsSize();
-    static std::vector<String> commandNames();
+    static void addCommand(const __FlashStringHelper* name, CommandFunc func);
+    static size_t commands();
+    static Names names();
 
     // Try to process a single line (until either `\r\n` or just `\n`)
     Result processLine();
@@ -69,22 +73,18 @@ struct Terminal {
     static bool defaultProcessFunc(Result);
 
     // general input / output stream:
-    // - stream.read() should return user iput
+    // - stream.read() should return user input
     // - stream.write() can be called from the command callback
     // - stream.write() can be called by us to show error messages
-    Stream& stream;
+    Stream& _stream;
 
-    // buffer for the input stream, fixed in size
-    std::vector<char> buffer;
-    const size_t buffer_size;
+    // input stream is buffered until it can be parsed
+    // in case parsing did not happen and we filled the buffer up to it's size,
+    // the error will be returned and the buffer parsing will start from the beginning
+    std::vector<char> _buffer;
+    const size_t _buffer_size;
 
-    // TODO: every command is shared, instance should probably also have an
-    //       option to add 'private' commands list?
-    // Note: we can save ~2.5KB by using std::vector<std::pair<String, CommandFunc>>
-    //       https://github.com/xoseperez/espurna/pull/2247#issuecomment-633689741
-    static std::unordered_map<String, CommandFunc,
-        parsing::LowercaseFnv1Hash<String>,
-        parsing::LowercaseEquals<String>> commands;
-
+    static Commands _commands;
 };
-}
+
+} // namespace terminal

@@ -202,27 +202,29 @@ err:
 
 // Fowler–Noll–Vo hash function to hash command strings that treats input as lowercase
 // ref: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-template<>
-size_t LowercaseFnv1Hash<String>::operator()(const String& str) const {
+//
+// This is here in case `std::unordered_map` becomes viable
+// TODO: afaik, map implementation should handle collisions (however rare they are in our case)
+// if not, we can always roll static commands allocation and just match strings with strcmp_P
+
+uint32_t lowercase_fnv1_hash(const char* ptr) {
     constexpr uint32_t fnv_prime = 16777619u;
     constexpr uint32_t fnv_basis = 2166136261u;
 
+    const auto length = strlen_P(ptr);
+
     uint32_t hash = fnv_basis;
-    for (size_t idx = 0; idx < str.length(); ++idx) {
-        // TODO: String::operator[] is slightly slower here
-        //       does not happen with the std::string
-        hash = hash ^ static_cast<uint32_t>(tolower(str.c_str()[idx]));
+    for (size_t idx = 0; idx < length; ++idx) {
+        hash = hash ^ static_cast<uint32_t>(tolower(pgm_read_byte(&ptr[idx])));
         hash = hash * fnv_prime;
     }
 
     return hash;
 }
 
-template<>
-bool LowercaseEquals<String>::operator()(const String& lhs, const String& rhs) const {
-    return lhs.equalsIgnoreCase(rhs);
+uint32_t lowercase_fnv1_hash(const __FlashStringHelper* ptr) {
+    return lowercase_fnv1_hash(reinterpret_cast<const char*>(ptr));
 }
-
 
 } // namespace parsing
 } // namespace terminal

@@ -17,23 +17,41 @@ Heavily inspired by the Embedis design:
 
 namespace terminal {
 
-std::unordered_map<String, Terminal::CommandFunc,
-    parsing::LowercaseFnv1Hash<String>,
-    parsing::LowercaseEquals<String>> Terminal::commands;
+Terminal::Commands Terminal::_commands;
 
-void Terminal::addCommand(const String& name, CommandFunc func) {
-    if (!func) return;
-    commands.emplace(std::make_pair(name, func));
+// TODO: `name` is never checked for uniqueness, unlike the previous implementation with the `unordered_map`
+// (and note that the map used hash IDs instead of direct string comparison)
+//
+// One possible workaround is to delegate command matching to a callback function of a module:
+//
+// > addCommandMatcher([](const String& argv0) -> Callback {
+// >     if (argv0.equalsIgnoreCase(F("one")) {
+// >         return cmd_one;
+// >     } else if (argv0.equalsIgnoreCase(F("two")) {
+// >         return cmd_two;
+// >     }
+// >     return nullptr;
+// > });
+// 
+// Or, using a PROGMEM static array of `{progmem_name, callback_ptr}` pairs.
+// There would be a lot of PROGMEM boilerplate, though, since PROGMEM strings cannot be
+// written inline with the array itself, and must be declared with a symbol name beforehand.
+// (unless, progmem_name is a fixed-size char[], but then it must have a special limit for command length)
+
+void Terminal::addCommand(const __FlashStringHelper* name, CommandFunc func) {
+    if (func) {
+        _commands.emplace_front(std::make_pair(name, func));
+    }
 }
 
-size_t Terminal::commandsSize() {
-    return commands.size();
+size_t Terminal::commands() {
+    return std::distance(_commands.begin(), _commands.end());
 }
 
-std::vector<String> Terminal::commandNames() {
-    std::vector<String> out;
-    out.reserve(commands.size());
-    for (auto& command : commands) {
+Terminal::Names Terminal::names() {
+    Terminal::Names out;
+    out.reserve(commands());
+    for (auto& command : _commands) {
         out.push_back(command.first);
     }
     return out;
@@ -42,37 +60,45 @@ std::vector<String> Terminal::commandNames() {
 Terminal::Result Terminal::processLine() {
 
     // Arduino stream API returns either `char` >= 0 or -1 on error
-    int c = -1;
-    while ((c = stream.read()) >= 0) {
-        if (buffer.size() >= (buffer_size - 1)) {
-            buffer.clear();
+    int c { -1 };
+    while ((c = _stream.read()) >= 0) {
+        if (_buffer.size() >= (_buffer_size - 1)) {
+            _buffer.clear();
             return Result::BufferOverflow;
         }
-        buffer.push_back(c);
+        _buffer.push_back(c);
         if (c == '\n') {
             // in case we see \r\n, offset minus one and overwrite \r
-            auto end = buffer.end() - 1;
+            auto end = _buffer.end() - 1;
             if (*(end - 1) == '\r') {
                 --end;
             }
             *end = '\0';
 
-            // parser should pick out at least one arg (command)
-            auto cmdline = parsing::parse_commandline(buffer.data());
-            buffer.clear();
-            if (cmdline.argc >= 1) {
-                auto command = commands.find(cmdline.argv[0]);
-                if (command == commands.end()) return Result::CommandNotFound;
-                (*command).second(CommandContext{std::move(cmdline.argv), cmdline.argc, stream});
+            // parser should pick out at least one arg aka command
+            auto cmdline = parsing::parse_commandline(_buffer.data());
+            _buffer.clear();
+            if ((cmdline.argc >= 1) && (cmdline.argv[0].length())) {
+                auto found = std::find_if(_commands.begin(), _commands.end(), [&cmdline](const Command& command) {
+                    // note that `String::equalsIgnoreCase(const __FlashStringHelper*)` does not exist, and will create a temporary `String`
+                    // both use read-1-byte-at-a-time for PROGMEM, however this variant saves around 200μs in time since there's no temporary object
+                    auto* lhs = cmdline.argv[0].c_str();
+                    auto* rhs = reinterpret_cast<const char*>(command.first);
+                    auto len = strlen_P(rhs);
+
+                    return (cmdline.argv[0].length() == len) && (0 == strncasecmp_P(lhs, rhs, len));
+                });
+                if (found == _commands.end()) return Result::CommandNotFound;
+                (*found).second(CommandContext{std::move(cmdline.argv), cmdline.argc, _stream});
                 return Result::Command;
             }
         }
     }
 
     // we need to notify about the fixable things
-    if (buffer.size() && (c < 0)) {
+    if (_buffer.size() && (c < 0)) {
         return Result::Pending;
-    } else if (!buffer.size() && (c < 0)) {
+    } else if (!_buffer.size() && (c < 0)) {
         return Result::NoInput;
     // ... and some unexpected conditions
     } else {
@@ -90,4 +116,4 @@ void Terminal::process(ProcessFunc func) {
     }    
 }
 
-} // ns terminal
+} // namespace terminal

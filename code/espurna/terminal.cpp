@@ -186,21 +186,21 @@ static unsigned char _serial_rx_pointer = 0;
 // -----------------------------------------------------------------------------
 
 void _terminalHelpCommand(const terminal::CommandContext& ctx) {
+    auto names = _terminal.names();
 
-    // Get sorted list of commands
-    auto commands = _terminal.commandNames();
-    std::sort(commands.begin(), commands.end(), [](const String& rhs, const String& lhs) -> bool {
-        return lhs.compareTo(rhs) > 0;
+    // XXX: Core's ..._P funcs only allow 2nd pointer to be in PROGMEM,
+    //      explicitly load the 1st one
+    std::sort(names.begin(), names.end(), [](const __FlashStringHelper* lhs, const __FlashStringHelper* rhs) {
+        const String lhs_as_string(lhs);
+        return strncasecmp_P(lhs_as_string.c_str(), reinterpret_cast<const char*>(rhs), lhs_as_string.length()) < 0;
     });
 
-    // Output the list asap
     ctx.output.print(F("Available commands:\n"));
-    for (auto& command : commands) {
-        ctx.output.printf("> %s\n", command.c_str());
+    for (auto* name : names) {
+        ctx.output.printf("> %s\n", reinterpret_cast<const char*>(name));
     }
 
     terminalOK(ctx.output);
-
 }
 
 #if LWIP_VERSION_MAJOR != 1
@@ -635,7 +635,7 @@ void terminalInject(char ch) {
     _io.inject(ch);
 }
 
-void terminalRegisterCommand(const String& name, terminal::Terminal::CommandFunc func) {
+void terminalRegisterCommand(const __FlashStringHelper* name, terminal::Terminal::CommandFunc func) {
     terminal::Terminal::addCommand(name, func);
 };
 

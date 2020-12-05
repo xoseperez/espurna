@@ -25,21 +25,5 @@ struct CommandLine {
 
 CommandLine parse_commandline(const char *line);
 
-// Fowler–Noll–Vo hash function to hash command strings that treats input as lowercase
-// ref: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-//
-// TODO: afaik, unordered_map should handle collisions (however rare they are in our case)
-//       if not, we can always roll static commands allocation and just match strings
-//       with LowercaseEquals (which is not that much slower)
-template <typename T>
-struct LowercaseFnv1Hash {
-    size_t operator()(const T& str) const;
-};
-
-template <typename T>
-struct LowercaseEquals {
-    bool operator()(const T& lhs, const T& rhs) const;
-};
-
-}
-}
+} // namespace parsing
+} // namespace terminal
