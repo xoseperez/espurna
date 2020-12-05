@@ -72,7 +72,7 @@ void prometheusSetup() {
 
 void prometheusSetup() {
     webRequestRegister([](AsyncWebServerRequest* request) {
-        if (request->url().equals(F("/api/metrics"))) {
+        if (request->url().equals(F(API_BASE_PATH "metrics"))) {
             if (apiAuthenticate(request)) {
                 _prometheusRequestHandler(request);
                 return true;

@@ -517,14 +517,12 @@ void _terminalWebApiSetup() {
 #else
 
     webRequestRegister([](AsyncWebServerRequest* request) {
-        // continue to the next handler if path does not match
-        String path(F("/api/"));
+        String path(F(API_BASE_PATH));
         path += getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
         if (path != request->url()) {
             return false;
         }
 
-        // return 'true' after this point, since we did handle the request
         if (!apiAuthenticate(request)) {
             request->send(403);
             return true;

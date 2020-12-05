@@ -16,6 +16,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 bool apiAuthenticateHeader(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticateParam(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticate(AsyncWebServerRequest*);
+void apiCommonSetup();
 bool apiEnabled();
 bool apiRestFul();
 String apiKey();
@@ -34,7 +35,6 @@ using ApiJsonHandler = std::function<bool(ApiRequest&, JsonObject& reponse)>;
 void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put);
 void apiRegister(const String& path, ApiJsonHandler&& get, ApiJsonHandler&& put);
 
-void apiCommonSetup();
 void apiSetup();
 
 bool apiError(ApiRequest&);
