@@ -268,37 +268,6 @@ bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
     return _apiMatchHeader(request, F("Content-Type"), F("application/x-www-form-urlencoded"));
 }
 
-struct ApiRequestHelper {
-    ApiRequestHelper(const ApiRequestHelper&) = delete;
-    ApiRequestHelper(ApiRequestHelper&&) noexcept = default;
-
-    // &path is expected to be request->url(), which is valid throughout the request's lifetime
-    explicit ApiRequestHelper(AsyncWebServerRequest& request, const PathParts& pattern) :
-        _request(request),
-        _pattern(pattern),
-        _path(request.url()),
-        _match(_pattern.match(_path))
-    {}
-
-    ApiRequest request() const {
-        return ApiRequest(_request, _pattern, _path);
-    }
-
-    const PathParts& parts() const {
-        return _path;
-    }
-
-    bool match() const {
-        return _match;
-    }
-
-private:
-    AsyncWebServerRequest& _request;
-    const PathParts& _pattern;
-    PathParts _path;
-    bool _match;
-};
-
 // Because the webserver request is split between multiple separate function invocations, we need to preserve some state.
 // TODO: in case we are dealing with multicore, perhaps enforcing static-size data structs instead of the vector would we better,
 //       to avoid calling generic malloc when paths are parsed?

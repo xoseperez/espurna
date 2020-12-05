@@ -180,3 +180,34 @@ private:
     const PathParts& _pattern;
     const PathParts& _parts;
 };
+
+struct ApiRequestHelper {
+    ApiRequestHelper(const ApiRequestHelper&) = delete;
+    ApiRequestHelper(ApiRequestHelper&&) noexcept = default;
+
+    // &path is expected to be request->url(), which is valid throughout the request's lifetime
+    explicit ApiRequestHelper(AsyncWebServerRequest& request, const PathParts& pattern) :
+        _request(request),
+        _pattern(pattern),
+        _path(request.url()),
+        _match(_pattern.match(_path))
+    {}
+
+    ApiRequest request() const {
+        return ApiRequest(_request, _pattern, _path);
+    }
+
+    const PathParts& parts() const {
+        return _path;
+    }
+
+    bool match() const {
+        return _match;
+    }
+
+private:
+    AsyncWebServerRequest& _request;
+    const PathParts& _pattern;
+    PathParts _path;
+    bool _match;
+};
