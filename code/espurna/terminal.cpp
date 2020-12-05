@@ -551,8 +551,8 @@ void terminalWebApiSetup() {
         },
         [](ApiRequest& api) {
             // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
-            // over  every 'value' available to provide a way to call multiple commands at once
-            auto cmd = api.param(F("value"));
+            // over every received 'line' to provide a way to call multiple commands at once
+            auto cmd = api.param(F("line"));
             if (!cmd.length()) {
                 return false;
             }
@@ -585,7 +585,7 @@ void terminalWebApiSetup() {
             return true;
         }
 
-        auto* cmd_param = request->getParam("value", (request->method() == HTTP_PUT));
+        auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
         if (!cmd_param) {
             request->send(500);
             return true;
