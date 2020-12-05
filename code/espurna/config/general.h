@@ -734,6 +734,10 @@
 #define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
 #endif
 
+#ifndef WEB_ACCESS_LOG
+#define WEB_ACCESS_LOG              0           // Log every request that was received by the server (but, not necessarily processed)
+#endif
+
 // Requires ESPAsyncTCP to be built with ASYNC_TCP_SSL_ENABLED=1 and Arduino Core version >= 2.4.0
 // XXX: This is not working at the moment!! Pending https://github.com/me-no-dev/ESPAsyncTCP/issues/95
 #ifndef WEB_SSL_ENABLED

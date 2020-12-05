@@ -539,7 +539,7 @@ void webLog(AsyncWebServerRequest *request) {
     DEBUG_MSG_P(PSTR("[WEBSERVER] %s %s\n"), request->methodToString(), request->url().c_str());
 }
 
-class WebDebugHandler : public AsyncWebHandler {
+class WebAccessLogHandler : public AsyncWebHandler {
     bool canHandle(AsyncWebServerRequest* request) override {
         webLog(request);
         return false;
@@ -556,10 +556,12 @@ void webSetup() {
     unsigned int port = webPort();
     _server = new AsyncWebServer(port);
 
-    if (getSetting("webDebug", false)) {
-        static WebDebugHandler handler;
-        _server->addHandler(&handler);
+#if DEBUG_SUPPORT
+    if (getSetting("webAccessLog", (1 == WEB_ACCESS_LOG))) {
+        static WebAccessLogHandler log;
+        _server->addHandler(&log);
     }
+#endif
 
     // Rewrites
     _server->rewrite("/", "/index.html");
