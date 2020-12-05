@@ -203,7 +203,7 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
 
 // -----------------------------------------------------------------------------
 
-AsyncWebServer * _server;
+AsyncWebServer* _server;
 char _last_modified[50];
 std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;

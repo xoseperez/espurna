@@ -192,6 +192,12 @@ void setup() {
         apiSetup();
     #endif
 
+    // Run terminal command and send back the result
+    #if TERMINAL_WEB_API_SUPPORT
+        terminalWebApiSetup();
+    #endif
+
+    // Special HTTP metrics endpoint
     #if PROMETHEUS_SUPPORT
         prometheusSetup();
     #endif

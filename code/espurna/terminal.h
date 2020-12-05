@@ -37,5 +37,6 @@ void terminalInject(char ch);
 Stream& terminalDefaultStream();
 
 void terminalSetup();
+void terminalWebApiSetup();
 
 #endif // TERMINAL_SUPPORT == 1

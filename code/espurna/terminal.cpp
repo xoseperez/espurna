@@ -471,96 +471,6 @@ void _terminalLoop() {
 
 }
 
-#if TERMINAL_WEB_API_SUPPORT
-
-void _terminalWebApiSetup() {
-
-#if API_SUPPORT
-
-    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
-        [](ApiRequest& api) {
-            api.handle([](AsyncWebServerRequest* request) {
-                AsyncResponseStream *response = request->beginResponseStream("text/plain");
-                for (auto& command : _terminal.commandNames()) {
-                    response->print(command);
-                    response->print("\r\n");
-                }
-
-                request->send(response);
-            });
-            return true;
-        },
-        [](ApiRequest& api) {
-            // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
-            // over  every 'value' available to provide a way to call multiple commands at once
-            auto cmd = api.param(F("value"));
-            if (!cmd.length()) {
-                return false;
-            }
-
-            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                cmd += '\n';
-            }
-
-            api.handle([&](AsyncWebServerRequest* request) {
-                AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
-                    StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
-                    terminal::Terminal handler(stream);
-                    handler.processLine();
-                });
-            });
-
-            return true;
-        }
-    );
-
-#else
-
-    webRequestRegister([](AsyncWebServerRequest* request) {
-        String path(F(API_BASE_PATH));
-        path += getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
-        if (path != request->url()) {
-            return false;
-        }
-
-        if (!apiAuthenticate(request)) {
-            request->send(403);
-            return true;
-        }
-
-        auto* cmd_param = request->getParam("value", (request->method() == HTTP_PUT));
-        if (!cmd_param) {
-            request->send(500);
-            return true;
-        }
-
-        auto cmd = cmd_param->value();
-        if (!cmd.length()) {
-            request->send(500);
-            return true;
-        }
-
-        if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-            cmd += '\n';
-        }
-
-        // TODO: batch requests? processLine() -> process(...)
-        AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
-            StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
-            terminal::Terminal handler(stream);
-            handler.processLine();
-        });
-
-        return true;
-    });
-
-#endif // API_SUPPORT
-
-}
-
-#endif // TERMINAL_WEB_API_SUPPORT
-
-
 #if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
 
 void _terminalMqttSetup() {
@@ -613,11 +523,97 @@ void _terminalMqttSetup() {
 
 #endif // MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
 
-}
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Pubic API
 // -----------------------------------------------------------------------------
+
+#if TERMINAL_WEB_API_SUPPORT
+
+// XXX: new `apiRegister()` depends that `webServer()` is available, meaning we can't call this setup func
+// before the `webSetup()` is called. ATM, just make sure it is in order.
+
+void terminalWebApiSetup() {
+#if API_SUPPORT
+    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
+        [](ApiRequest& api) {
+            api.handle([](AsyncWebServerRequest* request) {
+                AsyncResponseStream *response = request->beginResponseStream("text/plain");
+                for (auto* name : _terminal.names()) {
+                    response->print(name);
+                    response->print("\r\n");
+                }
+
+                request->send(response);
+            });
+            return true;
+        },
+        [](ApiRequest& api) {
+            // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
+            // over  every 'value' available to provide a way to call multiple commands at once
+            auto cmd = api.param(F("value"));
+            if (!cmd.length()) {
+                return false;
+            }
+
+            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+                cmd += '\n';
+            }
+
+            api.handle([&](AsyncWebServerRequest* request) {
+                AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
+                    StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+                    terminal::Terminal handler(stream);
+                    handler.processLine();
+                });
+            });
+
+            return true;
+        }
+    );
+#else
+    webRequestRegister([](AsyncWebServerRequest* request) {
+        String path(F(API_BASE_PATH));
+        path += getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
+        if (path != request->url()) {
+            return false;
+        }
+
+        if (!apiAuthenticate(request)) {
+            request->send(403);
+            return true;
+        }
+
+        auto* cmd_param = request->getParam("value", (request->method() == HTTP_PUT));
+        if (!cmd_param) {
+            request->send(500);
+            return true;
+        }
+
+        auto cmd = cmd_param->value();
+        if (!cmd.length()) {
+            request->send(500);
+            return true;
+        }
+
+        if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
+            cmd += '\n';
+        }
+
+        // TODO: batch requests? processLine() -> process(...)
+        AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
+            StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+            terminal::Terminal handler(stream);
+            handler.processLine();
+        });
+
+        return true;
+    });
+#endif // API_SUPPORT
+}
+
+#endif // TERMINAL_WEB_API_SUPPORT
 
 Stream & terminalDefaultStream() {
     return (Stream &) _io;
@@ -669,11 +665,6 @@ void terminalSetup() {
     #if WEB_SUPPORT
         wsRegister()
             .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
-    #endif
-
-    // Run terminal command and send back the result. Depends on the terminal command using ctx.output
-    #if WEB_SUPPORT && TERMINAL_WEB_API_SUPPORT
-        _terminalWebApiSetup();
     #endif
 
     // Similar to the above, but we allow only very small and in-place outputs.

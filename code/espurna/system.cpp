@@ -90,7 +90,7 @@ void systemCheck(bool stable) {
 
         if (++value > SYSTEM_CHECK_MAX) {
             _systemStable = false;
-            value = 0;
+            value = SYSTEM_CHECK_MAX;
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         }
     }
