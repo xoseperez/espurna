@@ -6,9 +6,11 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 */
 
-#include "config\general.h"
+#include "garland.h"
 #if GARLAND_SUPPORT
 
+#include "ws.h"
+#include "web.h"
 #include "garland\scene.h"
 #include "garland\color.h"
 #include "garland\palette.h"
@@ -114,33 +116,6 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
 #endif
 
 //------------------------------------------------------------------------------
-void garlandSetup() {
-  garlandConfigure();
-
-  // Websockets
-  #if WEB_SUPPORT
-    wsRegister()
-      .onConnected(_garlandWebSocketOnConnected)
-      .onKeyCheck(_garlandWebSocketOnKeyCheck)
-      .onAction(_garlandWebSocketOnAction);
-  #endif
-
-  espurnaRegisterLoop(garlandLoop);
-  espurnaRegisterReload(_garlandReload);
-
-  pixels.begin();
-  randomSeed(analogRead(0)*analogRead(1));
-  paletteInd = random(PALS);
-  // scene.setAnim(animInd);
-  scene.setAnim(&anim_start);
-  scene.setPeriod(6);
-  // scene.setPalette(pals[0]);
-  scene.doSetUp();
-
-  _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
-}
-
-//------------------------------------------------------------------------------
 // Loop
 //------------------------------------------------------------------------------
 void garlandLoop(void) {
@@ -171,6 +146,33 @@ void garlandLoop(void) {
     DEBUG_MSG_P(PSTR("[GARLAND] Scene: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
     scene.doSetUp();
   }
+}
+
+//------------------------------------------------------------------------------
+void garlandSetup() {
+  garlandConfigure();
+
+  // Websockets
+  #if WEB_SUPPORT
+    wsRegister()
+      .onConnected(_garlandWebSocketOnConnected)
+      .onKeyCheck(_garlandWebSocketOnKeyCheck)
+      .onAction(_garlandWebSocketOnAction);
+  #endif
+
+  espurnaRegisterLoop(garlandLoop);
+  espurnaRegisterReload(_garlandReload);
+
+  pixels.begin();
+  randomSeed(analogRead(0)*analogRead(1));
+  paletteInd = random(PALS);
+  // scene.setAnim(animInd);
+  scene.setAnim(&anim_start);
+  scene.setPeriod(6);
+  // scene.setPalette(pals[0]);
+  scene.doSetUp();
+
+  _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
 
 #endif // GARLAND_SUPPORT

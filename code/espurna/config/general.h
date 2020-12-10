@@ -232,7 +232,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef GARLAND_SUPPORT
-#define GARLAND_SUPPORT             1
+#define GARLAND_SUPPORT             0
 #endif
 
 #ifndef GARLAND_D_PIN
