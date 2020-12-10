@@ -4,8 +4,8 @@
 #include "palette.h"
 #include "..\config\general.h"
 
-#define PIN 4 // WS2812 pin number
-const int   LEDS                     = GARLAND_LEDS;
+const int   PIN  = GARLAND_D_PIN; // WS2812 pin number
+const int   LEDS = GARLAND_LEDS;
 #define DEFAULT_BRIGHTNESS 12//256// brightness adjustment, up to 256
 
 #define TRANSITION_MS 1000 // transition time between animations, ms
