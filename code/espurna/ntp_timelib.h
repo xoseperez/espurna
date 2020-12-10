@@ -25,7 +25,7 @@ constexpr time_t secondsY2K = 946684800; // the time at the start of y2k
 template <typename T>
 constexpr const T numberOfSeconds(T ts) {
     return (ts % (T)secondsPerMinute);
-}  
+}
 
 template <typename T>
 constexpr const T numberOfMinutes(T ts) {
@@ -47,7 +47,7 @@ constexpr const int elapsedDays(uint32_t ts) {
     return (ts / secondsPerDay);
 }
 
-// the number of seconds since last midnight 
+// the number of seconds since last midnight
 constexpr const uint32_t elapsedSecsToday(uint32_t ts) {
     return (ts % (uint32_t)secondsPerDay);
 }
@@ -65,7 +65,7 @@ constexpr const time_t previousMidnight(time_t ts) {
     return ((ts / secondsPerDay) * secondsPerDay);
 }
 
-// time at the end of the given day 
+// time at the end of the given day
 constexpr const time_t nextMidnight(time_t ts) {
     return previousMidnight(ts) + secondsPerDay;
 }

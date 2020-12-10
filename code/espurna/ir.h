@@ -10,7 +10,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
 #if IR_SUPPORT
+
+#include "ir_button.h"
 
 #include <IRremoteESP8266.h>
 #include <IRrecv.h>

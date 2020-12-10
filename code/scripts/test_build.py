@@ -25,52 +25,45 @@ import subprocess
 import os
 import sys
 import datetime
-from espurna_utils.display import Color, clr, print_warning
 
-CUSTOM_HEADER = "espurna/config/custom.h"
-if os.path.exists(CUSTOM_HEADER):
-    raise SystemExit(
-        clr(
-            Color.YELLOW,
-            "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(
-                CUSTOM_HEADER
-            ),
-        )
-    )
+from espurna_utils.display import clr, print_warning, Color
+
+
+def restore_source_tree(files):
+    cmd = ["git", "checkout", "-f", "--"]
+    cmd.extend(files)
+    subprocess.check_call(cmd)
 
 
 def try_remove(path):
     try:
         os.remove(path)
-    except: # pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         print_warning("Please manually remove the file `{}`".format(path))
 
 
-atexit.register(try_remove, CUSTOM_HEADER)
+total_time = 0
 
 
-def main(args):
-    configurations = []
-    if not args.no_default:
-        configurations = list(glob.glob(args.default_configurations))
+def print_total_time():
+    print()
+    print(
+        clr(
+            Color.BOLD,
+            "> Total time: {}".format(datetime.timedelta(seconds=total_time)),
+        )
+    )
 
-    configurations.extend(x for x in (args.add or []))
-    if not configurations:
-        raise SystemExit(clr(Color.YELLOW, "No configurations selected"))
 
-    print(clr(Color.BOLD, "> Selected configurations:"))
-    for cfg in configurations:
-        print(cfg)
-    if args.list:
-        return
-
-    if not args.environment:
-        raise SystemExit(clr(Color.YELLOW, "No environment selected"))
-    print(clr(Color.BOLD, "> Selected environment: {}".format(args.environment)))
+def run_configurations(args, configurations):
+    cmd = ["platformio", "run"]
+    if not args.no_silent:
+        cmd.extend(["-s"])
+    cmd.extend(["-e", args.environment])
 
     for cfg in configurations:
         print(clr(Color.BOLD, "> Building {}".format(cfg)))
-        with open(CUSTOM_HEADER, "w") as custom_h:
+        with open(args.custom_h, "w") as custom_h:
 
             def write(line):
                 sys.stdout.write(line)
@@ -87,11 +80,16 @@ def main(args):
         os_env = os.environ.copy()
         os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = "-DUSE_CUSTOM_H"
         os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
-        cmd = ["platformio", "run", "-s", "-e", args.environment]
+        if not args.no_single_source:
+            os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
         start = time.time()
         subprocess.check_call(cmd, env=os_env)
-        end = time.time()
+        diff = time.time() - start
+
+        global total_time
+        total_time += diff
+
         print(
             clr(
                 Color.BOLD,
@@ -100,16 +98,58 @@ def main(args):
                     os.stat(
                         os.path.join(".pio", "build", args.environment, "firmware.bin")
                     ).st_size,
-                    datetime.timedelta(seconds=(end - start)),
+                    datetime.timedelta(seconds=diff),
                 ),
             )
         )
+
+
+def main(args):
+    if os.path.exists(args.custom_h):
+        raise SystemExit(
+            clr(
+                Color.YELLOW,
+                "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(
+                    args.custom_h
+                ),
+            )
+        )
+
+    configurations = []
+    if not args.no_default:
+        configurations = list(glob.glob(args.default_configurations))
+
+    configurations.extend(x for x in (args.add or []))
+    if not configurations:
+        raise SystemExit(clr(Color.YELLOW, "No configurations selected"))
+
+    if len(configurations) > 1:
+        atexit.register(print_total_time)
+
+    print(clr(Color.BOLD, "> Selected configurations:"))
+    for cfg in configurations:
+        print(cfg)
+    if args.list:
+        return
+
+    if not args.environment:
+        raise SystemExit(clr(Color.YELLOW, "No environment selected"))
+    print(clr(Color.BOLD, "> Selected environment: {}".format(args.environment)))
+
+    atexit.register(try_remove, args.custom_h)
+
+    run_configurations(args, configurations)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l", "--list", action="store_true", help="List selected configurations"
+    )
+    parser.add_argument(
+        "--custom-h",
+        default="espurna/config/custom.h",
+        help="Header that will be included in by the config/all.h",
     )
     parser.add_argument(
         "-n",
@@ -128,6 +168,12 @@ if __name__ == "__main__":
         "--default-configurations",
         default="test/build/*.h",
         help="(glob) default configuration headers",
+    )
+    parser.add_argument(
+        "--no-silent", action="store_true", help="Do not silence pio-run"
+    )
+    parser.add_argument(
+        "--no-single-source", action="store_true", help="Disable 'unity' build"
     )
 
     main(parser.parse_args())

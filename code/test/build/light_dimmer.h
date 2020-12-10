@@ -7,4 +7,5 @@
 #define LIGHT_CH3_PIN 12
 #define LIGHT_CH4_PIN 13
 #define LIGHT_CH5_PIN 14
+#define ENCODER_SUPPORT 1
 #define IR_SUPPORT 1

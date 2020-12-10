@@ -93,6 +93,7 @@
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
+
 class EmonADS1X15Sensor : public EmonSensor {
 
     public:
@@ -101,7 +102,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonADS1X15Sensor(): EmonSensor() {
+        EmonADS1X15Sensor() {
             _channels = ADS1X15_CHANNELS;
             _sensor_id = SENSOR_EMON_ADS1X15_ID;
             init();
@@ -145,6 +146,11 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        // Convert slot # index to a magnitude # index
+        unsigned char local(unsigned char index) override {
+            return (_ports) ? (index / _ports) : 0u;
+        }
+
         // Initialization method, must be idempotent
         void begin() {
 
@@ -162,6 +168,8 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (mask & 0x01) ++_ports;
                 mask = mask >> 1;
             }
+
+            resizeDevices(_ports);
             _count = _ports * _magnitudes;
 
             // Bit depth
@@ -191,7 +199,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             char buffer[35];
             unsigned char channel = getChannel(index % _ports);
             snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 (A%d) @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, channel, _address);
@@ -228,7 +236,9 @@ class EmonADS1X15Sensor : public EmonSensor {
                 unsigned char channel = getChannel(port);
                 _current[port] = getCurrent(channel);
                 #if EMON_REPORT_ENERGY
-                    _energy[port] += (_current[port] * _voltage * (millis() - last) / 1000);
+                    _energy[port] += sensor::Ws {
+                        static_cast<uint32_t>(_current[port] * _voltage * (millis() - last) / 1000)
+                    };
                 #endif
             }
             last = millis();
@@ -247,7 +257,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (magnitude == i++) return _current[port] * _voltage;
             #endif
             #if EMON_REPORT_ENERGY
-                if (magnitude == i) return _energy[port];
+                if (magnitude == i) return _energy[port].asDouble();
             #endif
             return 0;
         }
@@ -326,8 +336,7 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         }
 
-        unsigned int readADC(unsigned char channel) {
-            UNUSED(channel);
+        unsigned int readADC(unsigned char) {
             unsigned int value = i2c_read_uint16(_address, ADS1X15_REG_POINTER_CONVERT);
             if (_type == ADS1X15_CHIP_ADS1015) value >>= ADS1015_BIT_SHIFT;
             delayMicroseconds(500);

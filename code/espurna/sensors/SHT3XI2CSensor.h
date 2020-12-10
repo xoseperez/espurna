@@ -12,7 +12,7 @@
 #include "I2CSensor.h"
 #include "../utils.h"
 
-class SHT3XI2CSensor : public I2CSensor {
+class SHT3XI2CSensor : public I2CSensor<> {
 
     public:
 
@@ -20,7 +20,7 @@ class SHT3XI2CSensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SHT3XI2CSensor(): I2CSensor() {
+        SHT3XI2CSensor() {
             _sensor_id = SENSOR_SHT3X_I2C_ID;
             _count = 2;
         }

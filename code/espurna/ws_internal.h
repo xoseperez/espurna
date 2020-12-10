@@ -1,12 +1,16 @@
 /*
 
-WEBSOCKET MODULE
+Part of the WEBSOCKET MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
 #pragma once
+
+#include "espurna.h"
+#include "ws.h"
 
 #include <IPAddress.h>
 
@@ -14,13 +18,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <memory>
 #include <vector>
 
-constexpr const size_t WS_DEBUG_MSG_BUFFER = 8;
-
 // -----------------------------------------------------------------------------
 // WS authentication
 // -----------------------------------------------------------------------------
 
-struct ws_ticket_t {
+struct WsTicket {
     IPAddress ip;
     unsigned long timestamp = 0;
 };
@@ -29,139 +31,147 @@ struct ws_ticket_t {
 // WS callbacks
 // -----------------------------------------------------------------------------
 
-struct ws_counter_t {
+// The idea here is to bind either:
+// - constant 'callbacks' list as reference, which was registered via wsRegister()
+// - in-place callback / callbacks that will be moved inside this container
 
-    ws_counter_t() : current(0), start(0), stop(0) {}
+struct WsPostponedCallbacks {
 
-    ws_counter_t(uint32_t start, uint32_t stop) :
-        current(start), start(start), stop(stop) {}
+    public:
 
-    void reset() {
-        current = start;
-    }
-
-    void next() {
-        if (current < stop) {
-            ++current;
-        }
-    }
-
-    bool done() {
-        return (current >= stop);
-    }
-
-    uint32_t current;
-    uint32_t start;
-    uint32_t stop;
-};
-
-struct ws_data_t {
-
-    enum mode_t {
-        SEQUENCE,
-        ALL
+    enum class Mode {
+        Sequence,
+        All
     };
 
-    ws_data_t(const ws_on_send_callback_f& cb) :
-        storage(new ws_on_send_callback_list_t {cb}),
-        client_id(0),
-        mode(ALL),
-        callbacks(*storage.get()),
-        counter(0, 1)
+    WsPostponedCallbacks(uint32_t client_id, ws_on_send_callback_f&& cb) :
+        client_id(client_id),
+        timestamp(ESP.getCycleCount()),
+        _storage(new ws_on_send_callback_list_t {std::move(cb)}),
+        _callbacks(*_storage.get()),
+        _current(_callbacks.begin()),
+        _mode(Mode::All)
     {}
 
-    ws_data_t(uint32_t client_id, const ws_on_send_callback_f& cb) :
-        storage(new ws_on_send_callback_list_t {cb}),
+    WsPostponedCallbacks(uint32_t client_id, const ws_on_send_callback_f& cb) :
         client_id(client_id),
-        mode(ALL),
-        callbacks(*storage.get()),
-        counter(0, 1)
+        timestamp(ESP.getCycleCount()),
+        _storage(new ws_on_send_callback_list_t {cb}),
+        _callbacks(*_storage.get()),
+        _current(_callbacks.begin()),
+        _mode(Mode::All)
     {}
 
-    ws_data_t(const uint32_t client_id, ws_on_send_callback_list_t&& callbacks, mode_t mode = SEQUENCE) :
-        storage(new ws_on_send_callback_list_t(std::move(callbacks))),
-        client_id(client_id),
-        mode(mode),
-        callbacks(*storage.get()),
-        counter(0, (storage.get())->size())
+    template <typename T>
+    explicit WsPostponedCallbacks(T&& cb) :
+        WsPostponedCallbacks(0, std::forward<T>(cb))
     {}
 
-    ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
+    WsPostponedCallbacks(const uint32_t client_id, const ws_on_send_callback_list_t& cbs, Mode mode = Mode::Sequence) :
         client_id(client_id),
-        mode(mode),
-        callbacks(callbacks),
-        counter(0, callbacks.size())
+        timestamp(ESP.getCycleCount()),
+        _callbacks(cbs),
+        _current(_callbacks.begin()),
+        _mode(mode)
+    {}
+
+    WsPostponedCallbacks(const uint32_t client_id, ws_on_send_callback_list_t&& cbs, Mode mode = Mode::All) :
+        client_id(client_id),
+        timestamp(ESP.getCycleCount()),
+        _storage(new ws_on_send_callback_list_t(std::move(cbs))),
+        _callbacks(*_storage.get()),
+        _current(_callbacks.begin()),
+        _mode(mode)
     {}
 
     bool done() {
-        return counter.done();
+        return _current == _callbacks.end();
     }
 
     void sendAll(JsonObject& root) {
-        while (!counter.done()) counter.next();
-        for (auto& callback : callbacks) {
+        _current = _callbacks.end();
+        for (auto& callback : _callbacks) {
             callback(root);
         }
     }
 
     void sendCurrent(JsonObject& root) {
-        callbacks[counter.current](root);
-        counter.next();
+        if (_current == _callbacks.end()) return;
+        (*_current)(root);
+        ++_current;
     }
 
     void send(JsonObject& root) {
-        switch (mode) {
-            case SEQUENCE: sendCurrent(root); break;
-            case ALL: sendAll(root); break;
+        switch (_mode) {
+        case Mode::Sequence:
+            sendCurrent(root);
+            break;
+        case Mode::All:
+            sendAll(root);
+            break;
         }
     }
 
-    std::unique_ptr<ws_on_send_callback_list_t> storage;
-
     const uint32_t client_id;
-    const mode_t mode;
-    const ws_on_send_callback_list_t& callbacks;
-    ws_counter_t counter;
+    const decltype(ESP.getCycleCount()) timestamp;
+
+    private:
+
+    std::unique_ptr<ws_on_send_callback_list_t> _storage;
+
+    const ws_on_send_callback_list_t& _callbacks;
+    ws_on_send_callback_list_t::const_iterator _current;
+
+    const Mode _mode;
+
 };
 
 // -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
 
-using ws_debug_msg_t = std::pair<String, String>;
+struct WsDebug {
 
-struct ws_debug_t {
+    using Message = std::pair<String, String>;
+    using MsgList = std::vector<Message>;
 
-    ws_debug_t(size_t capacity) :
-        flush(false),
-        current(0),
-        capacity(capacity)
+    WsDebug(size_t capacity) :
+        _flush(false),
+        _current(0),
+        _capacity(capacity)
     {
-        messages.reserve(capacity);
+        _messages.reserve(_capacity);
     }
 
     void clear() {
-        messages.clear();
-        current = 0;
-        flush = false;
+        _messages.clear();
+        _current = 0;
+        _flush = false;
     }
 
-    void add(const char* prefix, const char* message) {
-        if (current >= capacity) {
-            flush = true;
+    template <typename T = Message>
+    void add(T&& message) {
+        if (_current >= _capacity) {
+            _flush = true;
             send(wsConnected());
         }
 
-        messages.emplace(messages.begin() + current, prefix, message);
-        flush = true;
-        ++current;
+        _messages.emplace(_messages.begin() + _current, std::forward<T>(message));
+        _flush = true;
+        ++_current;
     }
 
-    void send(const bool connected);
+    void add(const char* prefix, const char* message) {
+        add(std::move(std::make_pair(prefix, message)));
+    }
 
-    bool flush;
-    size_t current;
-    const size_t capacity;
-    std::vector<ws_debug_msg_t> messages;
+    void send(bool connected);
+
+    private:
+
+    bool _flush;
+    size_t _current;
+    const size_t _capacity;
+    MsgList _messages;
 
 };

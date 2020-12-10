@@ -30,7 +30,7 @@ class LDRSensor : public AnalogSensor {
 		// Public
 		// ---------------------------------------------------------------------
 
-		LDRSensor(): AnalogSensor() {
+		LDRSensor() {
 			_count = 1;
 			_sensor_id = SENSOR_LDR_ID;
 		}
@@ -125,7 +125,7 @@ class LDRSensor : public AnalogSensor {
 		}
 
 		// Descriptive name of the slot # index
-		String slot(unsigned char index) {
+		String description(unsigned char index) {
 			return description();
 		}
 

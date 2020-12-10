@@ -12,7 +12,7 @@
 
 #include "I2CSensor.h"
 
-class VL53L1XSensor : public I2CSensor {
+class VL53L1XSensor : public I2CSensor<> {
 
     public:
 
@@ -20,7 +20,7 @@ class VL53L1XSensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        VL53L1XSensor(): I2CSensor() {
+        VL53L1XSensor() {
             _count = 1;
             _sensor_id = SENSOR_VL53L1X_ID;
             _vl53l1x = new VL53L1X();
@@ -80,7 +80,7 @@ class VL53L1XSensor : public I2CSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

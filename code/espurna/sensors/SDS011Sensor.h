@@ -24,7 +24,7 @@ class SDS011Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SDS011Sensor(): BaseSensor() {
+        SDS011Sensor() {
             _count = 2;
             _sensor_id = SENSOR_SDS011_ID;
         }
@@ -83,7 +83,7 @@ class SDS011Sensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

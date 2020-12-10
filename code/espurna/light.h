@@ -4,18 +4,21 @@
 
 #pragma once
 
+#include "espurna.h"
+
+// TODO: lowercase
 namespace Light {
-    constexpr const size_t ChannelsMax = 5;
+    constexpr size_t ChannelsMax = 5;
 
-    constexpr const long VALUE_MIN = LIGHT_MIN_VALUE;
-    constexpr const long VALUE_MAX = LIGHT_MAX_VALUE;
+    constexpr long VALUE_MIN = LIGHT_MIN_VALUE;
+    constexpr long VALUE_MAX = LIGHT_MAX_VALUE;
 
-    constexpr const long BRIGHTNESS_MIN = LIGHT_MIN_BRIGHTNESS;
-    constexpr const long BRIGHTNESS_MAX = LIGHT_MAX_BRIGHTNESS;
+    constexpr long BRIGHTNESS_MIN = LIGHT_MIN_BRIGHTNESS;
+    constexpr long BRIGHTNESS_MAX = LIGHT_MAX_BRIGHTNESS;
 
-    constexpr const long PWM_MIN = LIGHT_MIN_PWM;
-    constexpr const long PWM_MAX = LIGHT_MAX_PWM;
-    constexpr const long PWM_LIMIT = LIGHT_LIMIT_PWM;
+    constexpr long PWM_MIN = LIGHT_MIN_PWM;
+    constexpr long PWM_MAX = LIGHT_MAX_PWM;
+    constexpr long PWM_LIMIT = LIGHT_LIMIT_PWM;
 
     enum Communications : unsigned char {
         COMMS_NONE = 0,
@@ -24,22 +27,19 @@ namespace Light {
     };
 }
 
-struct channel_t {
-
-    channel_t();
-    channel_t(unsigned char pin, bool inverse);
-
-    unsigned char pin;           // real GPIO pin
-    bool inverse;                // whether we should invert the value before using it
-    bool state;                  // is the channel ON
-    unsigned char inputValue;    // raw value, without the brightness
-    unsigned char value;         // normalized value, including brightness
-    unsigned char target;        // target value
-    double current;              // transition value
-
-};
-
 size_t lightChannels();
+unsigned int lightTransitionTime();
+void lightTransitionTime(unsigned long ms);
+
+void lightColor(const char* color, bool rgb);
+void lightColor(const String& color, bool rgb);
+
+void lightColor(const String& color);
+void lightColor(const char* color);
+
+void lightColor(unsigned long color);
+String lightColor(bool rgb);
+String lightColor();
 
 void lightState(unsigned char i, bool state);
 bool lightState(unsigned char i);
@@ -55,3 +55,14 @@ void lightChannel(unsigned char id, long value);
 
 void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
 void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP);
+
+void lightUpdate(bool save, bool forward, bool group_forward);
+void lightUpdate(bool save, bool forward);
+
+bool lightHasColor();
+bool lightUseCCT();
+
+void lightMQTT();
+void lightSetupChannels(unsigned char size);
+
+void lightSetup();

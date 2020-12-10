@@ -1,0 +1,37 @@
+# -------------------------------------------------------------------------------------------------------------
+# Example file for 'platformio_override.ini' use.
+# Either copy and paste this file, then rename removing the .example or create your
+# own file: 'platformio_override.ini'
+# 'platformio_override.ini' allows users to create their own environments to add, remove or change
+# firmware configurations. 
+#
+# See: https://github.com/xoseperez/espurna/wiki/PlatformIO#customize-build-settings
+# for more details.
+# -------------------------------------------------------------------------------------------------------------
+
+# Example for a standard Sonoff Basic R2 or R3 but enabling DHT support on GPIO 2.
+# It can be built from VSCode/PlatformIO by selecting the 'Build: my-sonoff-build-dht' 
+# build selection.
+
+[env:my-sonoff-build-dht]
+extends = env:esp8266-1m-base
+src_build_flags = -DITEAD_SONOFF_BASIC -DDHT_SUPPORT=1 -DDHT_PIN=2
+
+
+# Example for an environment based on a 1M byte esp8266 board. E.G. Sonoff Basic R2 or R3.
+# The 'extends' key can be set to 'env:esp8266-1m-latest-base' which uses
+# the latest platform build version or, 'env:esp8266-1m-base' to use the default base 
+# platform build version.
+# This example environment also uses 'code/espurna/config/custom.h' allowing a more refined configuration.
+# See: https://github.com/xoseperez/espurna/wiki/PlatformIO#customh and 'code/espurna/config/custom.h.example'
+
+[env:my-sonoff-build01]
+extends = env:esp8266-1m-latest-base
+src_build_flags = -DMY_SONOFF_BUILD01 -DUSE_CUSTOM_H
+
+
+# Example for an environment the same as 'my-sonoff-build01' but with a different 'custom.h' configuration.
+
+[env:my-sonoff-build02]
+extends = env:esp8266-1m-latest-base
+src_build_flags = -DMY_SONOFF_BUILD02 -DUSE_CUSTOM_H

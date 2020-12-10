@@ -10,12 +10,12 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
-#include "BaseSensor.h"
+#include "BaseEmonSensor.h"
 extern "C" {
     #include "../libs/fs_math.h"
 }
 
-class V9261FSensor : public BaseSensor {
+class V9261FSensor : public BaseEmonSensor {
 
     public:
 
@@ -23,7 +23,7 @@ class V9261FSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        V9261FSensor(): BaseSensor(), _data() {
+        V9261FSensor(): _data() {
             _count = 6;
             _sensor_id = SENSOR_V9261F_ID;
         }
@@ -57,12 +57,6 @@ class V9261FSensor : public BaseSensor {
         }
 
         // ---------------------------------------------------------------------
-
-        void resetEnergy(double value = 0) {
-            _energy = value;
-        }
-
-        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -73,7 +67,7 @@ class V9261FSensor : public BaseSensor {
 
             if (_serial) delete _serial;
 
-            _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32);
+            _serial = new SoftwareSerial(_pin_rx, -1, _inverted);
             _serial->enableIntTx(false);
             _serial->begin(V9261F_BAUDRATE);
 
@@ -90,7 +84,7 @@ class V9261FSensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 
@@ -124,7 +118,7 @@ class V9261FSensor : public BaseSensor {
             if (index == 3) return _reactive;
             if (index == 4) return _apparent;
             if (index == 5) return _apparent > 0 ? 100 * _active / _apparent : 100;
-            if (index == 6) return _energy;
+            if (index == 6) return _energy[0].asDouble();
             return 0;
         }
 
@@ -218,7 +212,9 @@ class V9261FSensor : public BaseSensor {
                     _apparent = fs_sqrt(_reactive * _reactive + _active * _active);
 
                     if (last > 0) {
-                        _energy += (_active * (millis() - last) / 1000);
+                        _energy[0] += sensor::Ws {
+                            static_cast<uint32_t>(_active * (millis() / last) / 1000)
+                        };
                     }
                     last = millis();
 
@@ -263,7 +259,6 @@ class V9261FSensor : public BaseSensor {
         double _voltage = 0;
         double _current = 0;
         double _apparent = 0;
-        double _energy = 0;
 
         double _ratioP = V9261F_POWER_FACTOR;
         double _ratioC = V9261F_CURRENT_FACTOR;

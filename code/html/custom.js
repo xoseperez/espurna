@@ -12,6 +12,7 @@ var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
 var configurationSaved = false;
+var ws_pingpong;
 
 var useWhite = false;
 var useCCT = false;
@@ -25,7 +26,11 @@ var filters = [];
 <!-- endRemoveIf(!rfm69)-->
 
 <!-- removeIf(!sensor)-->
-var magnitudes = [];
+var Magnitudes = [];
+var MagnitudeErrors = {};
+var MagnitudeNames = {};
+var MagnitudeTypePrefixes = {};
+var MagnitudePrefixTypes = {};
 <!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
@@ -43,52 +48,6 @@ function initMessages() {
     messages[9]  = "No changes detected";
     messages[10] = "Session expired, please reload page...";
 }
-
-<!-- removeIf(!sensor)-->
-function sensorName(id) {
-    var names = [
-        "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
-        "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
-        "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
-        "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "T6613", "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
-        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075",
-        "EZOPH"
-    ];
-    if (1 <= id && id <= names.length) {
-        return names[id - 1];
-    }
-    return null;
-}
-
-function magnitudeType(type) {
-    var types = [
-        "Temperature", "Humidity", "Pressure",
-        "Current", "Voltage", "Active Power", "Apparent Power",
-        "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
-        "Analog", "Digital", "Event",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance" , "HCHO",
-        "Local Dose Rate", "Local Dose Rate",
-        "Count",
-        "NO2", "CO", "Resistance", "pH"
-    ];
-    if (1 <= type && type <= types.length) {
-        return types[type - 1];
-    }
-    return null;
-}
-
-function magnitudeError(error) {
-    var errors = [
-        "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
-        "Data Error", "I2C Error", "GPIO Error", "Calibration error"
-    ];
-    if (0 <= error && error < errors.length) {
-        return errors[error];
-    }
-    return "Error " + error;
-}
-<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -121,34 +80,6 @@ function keepTime() {
 
 function zeroPad(number, positions) {
     return number.toString().padStart(positions, "0");
-}
-
-function loadTimeZones() {
-
-    var time_zones = [
-        -720, -660, -600, -570, -540,
-        -480, -420, -360, -300, -240,
-        -210, -180, -120, -60, 0,
-        60, 120, 180, 210, 240,
-        270, 300, 330, 345, 360,
-        390, 420, 480, 510, 525,
-        540, 570, 600, 630, 660,
-        720, 765, 780, 840
-    ];
-
-    for (var i in time_zones) {
-        var tz = time_zones[i];
-        var offset = tz >= 0 ? tz : -tz;
-        var text = "GMT" + (tz >= 0 ? "+" : "-") +
-            zeroPad(parseInt(offset / 60, 10), 2) + ":" +
-            zeroPad(offset % 60, 2);
-        $("select[name='ntpOffset']").append(
-            $("<option></option>")
-                .attr("value", tz)
-                .text(text)
-        );
-    }
-
 }
 
 function validatePassword(password) {
@@ -205,9 +136,9 @@ function validateFormHostname(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
     if ("true" !== hostname.attr("hasChanged")) {
@@ -273,7 +204,7 @@ function isGroupValue(value) {
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
-        "ledMode", "ledRelay",
+        "ledGPIO", "ledMode", "ledRelay",
         "adminPass",
         "node", "key", "topic",
         "rpnRule", "rpnTopic", "rpnName"
@@ -450,6 +381,15 @@ function getJson(str) {
     } catch (e) {
         return false;
     }
+}
+
+function moduleVisible(module) {
+    if (module == "sch") {
+        $("li.module-" + module).css("display", "inherit");
+        $("div.module-" + module).css("display", "flex");
+        return;
+    }
+    $(".module-" + module).css("display", "inherit");
 }
 
 <!-- removeIf(!thermostat)-->
@@ -942,8 +882,8 @@ function createMagnitudeList(data, container, template_name) {
 
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(magnitudes[i].description);
+        $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
+        $("div.hint", line).html(Magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
@@ -1098,7 +1038,18 @@ function addSchedule(values) {
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = (1 === values.schType) ? "switch" : "light";
+    var type = "none";
+    switch(values.schType) {
+        case 1:
+            type = "switch";
+            break;
+        case 2:
+            type = "light";
+            break;
+        case 3:
+            type = "curtain";
+            break;
+    }
 
     template = $("#" + type + "ActionTemplate").children();
     $(line).find("#schActionDiv").append(template.clone());
@@ -1236,23 +1187,6 @@ function initRelayConfig(data) {
 
 }
 
-function initLeds(data) {
-
-    var current = $("#ledConfig > div").length;
-    if (current > 0) { return; }
-
-    var size = data.length;
-    var template = $("#ledConfigTemplate").children();
-    for (var i=0; i<size; ++i) {
-        var line = $(template).clone();
-        $("span.id", line).html(i);
-        $("select", line).attr("data", i);
-        $("input", line).attr("data", i);
-        line.appendTo("#ledConfig");
-    }
-
-}
-
 // -----------------------------------------------------------------------------
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
@@ -1271,21 +1205,78 @@ function initMagnitudes(data) {
 
     for (var i=0; i<size; ++i) {
         var magnitude = {
-            "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "name": MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10),
             "units": data.units[i],
             "description": data.description[i]
         };
-        magnitudes.push(magnitude);
+        Magnitudes.push(magnitude);
 
         var line = $(template).clone();
         $("label", line).html(magnitude.name);
-        $("div.hint", line).html(magnitude.description);
         $("input", line).attr("data", i);
+        $("div.sns-desc", line).html(magnitude.description);
+        $("div.sns-info", line).hide();
         line.appendTo("#magnitudes");
     }
 
 }
 <!-- endRemoveIf(!sensor)-->
+
+// -----------------------------------------------------------------------------
+// Curtains
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!curtain)-->
+
+//Create the controls for one curtain. It is called when curtain is updated (so created the first time)
+//Let this there as we plan to have more than one curtain per switch
+function initCurtain(data) {
+
+    var current = $("#curtains > div").length;
+    if (current > 0) { return; }
+  
+    // add curtain template (prepare multi switches)
+    var template = $("#curtainTemplate").children();
+    var line = $(template).clone();
+    // init curtain button
+    $(line).find(".button-curtain-open").on("click", function() {
+        sendAction("curtainAction", {button: 1});
+        $(this).css('background', 'red');
+    });    
+    $(line).find(".button-curtain-pause").on("click", function() {
+        sendAction("curtainAction", {button: 0});
+        $(this).css('background', 'red');
+    });    
+    $(line).find(".button-curtain-close").on("click", function() {
+        sendAction("curtainAction", {button: 2});
+        $(this).css('background', 'red');
+    });    
+    line.appendTo("#curtains");
+
+    // init curtain slider
+    $("#curtainSet").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("curtainAction", {position: value});
+    });
+
+}
+
+function initCurtainConfig(data) {
+
+    var current = $("#curtainConfig > legend").length; // there is a legend per relay
+    if (current > 0) { return; }
+
+    // Populate the curtain select
+    $("select.iscurtain").append(
+        $("<option></option>")
+            .attr("value", "0")
+            .text("Curtain #" + "0")
+    );
+}
+
+<!-- endRemoveIf(!curtain)-->
 
 // -----------------------------------------------------------------------------
 // Lights
@@ -1707,6 +1698,54 @@ function processData(data) {
         if (key == "rpnNames") return;
 
         // ---------------------------------------------------------------------
+        // Curtains
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!curtain)-->
+
+        function applyCurtain(a, b) {
+            $("#curtainGetPicture").css('background', 'linear-gradient(' + a + ', black ' + b + '%, #a0d6ff ' + b + '%)');
+        }
+
+        if ("curtainState" === key) {
+            initCurtain();
+            switch(value.type) {
+                case '0': //Roller
+                default:
+                    applyCurtain('180deg', value.get);
+                    break;
+                case '1': //One side left to right
+                    applyCurtain('90deg', value.get);
+                    break;
+                case '2': //One side right to left
+                    applyCurtain('270deg', value.get);
+                    break;
+                case '3': //Two sides
+                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get/2 + '%, #a0d6ff ' + value.get/2 + '% ' + (100 - value.get/2) + '%, black ' + (100 - value.get/2) + '%)');
+                    break;
+            }
+            $("#curtainSet").val(value.set);
+
+            if(!value.moving) { 
+                $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
+            } else {
+                if(!value.button)
+                    $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
+                else if(value.button == 1) {
+                    $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)');
+                    $("button.button-curtain-open").css('background', 'rgb(192, 0, 0)');
+                }
+                else if(value.button == 2) {
+                    $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)');
+                    $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
+
+                }
+            }
+            return;
+        }
+        <!-- endRemoveIf(!curtain)-->
+
+        // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
@@ -1766,19 +1805,75 @@ function processData(data) {
 
         <!-- removeIf(!sensor)-->
 
+        {
+            var position = key.indexOf("Correction");
+            if (position > 0 && position === key.length - 10) {
+                var template = $("#magnitudeCorrectionTemplate > div")[0];
+                var elem = $(template).clone();
+
+                var prefix = key.slice(0, position);
+                $("label", elem).html(MagnitudeNames[MagnitudePrefixTypes[prefix]]);
+                $("input", elem).attr("name", key).val(value);
+
+                setOriginalsFromValues($("input", elem));
+                elem.appendTo("#magnitude-corrections");
+                moduleVisible("magnitude-corrections");
+                return;
+            }
+        }
+
+        if ("snsErrors" === key) {
+            for (var index in value) {
+                var type = value[index][0];
+                var name = value[index][1];
+                MagnitudeErrors[type] = name;
+            }
+            return;
+        }
+
+        if ("snsMagnitudes" === key) {
+            for (var index in value) {
+                var type = value[index][0];
+                var prefix = value[index][1];
+                var name = value[index][2];
+                MagnitudeNames[type] = name;
+                MagnitudeTypePrefixes[type] = prefix;
+                MagnitudePrefixTypes[prefix] = type;
+                moduleVisible(prefix);
+            }
+            return;
+        }
+
         if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+            return;
         }
 
         if ("magnitudes" === key) {
             for (var i=0; i<value.size; ++i) {
+                var inputElem = $("input[name='magnitude'][data='" + i + "']");
+                var infoElem = inputElem.parent().parent().find("div.sns-info");
+
                 var error = value.error[i] || 0;
-                var text = (0 === error) ?
-                    value.value[i] + magnitudes[i].units :
-                    magnitudeError(error);
-                var element = $("input[name='magnitude'][data='" + i + "']");
-                element.val(text);
+                var text = (0 === error)
+                    ? value.value[i] + Magnitudes[i].units
+                    : MagnitudeErrors[error];
+                inputElem.val(text);
+
+                if (value.info !== undefined) {
+                    var info = value.info[i] || 0;
+                    infoElem.toggle(info != 0);
+                    infoElem.text(info);
+                }
             }
+            return;
+        }
+
+        if ("pzemVisible" === key) {
+            $("input[name='snsSave']").prop("disabled", true);
+            $("input[name='snsSave']")
+                .parent().parent().find(".hint")
+                .text("PZEM004 module saves the energy data on it's own")
             return;
         }
 
@@ -1859,18 +1954,56 @@ function processData(data) {
         }
 
         // ---------------------------------------------------------------------
+        // Curtain(s)
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!curtain)-->
+
+        // Relay configuration
+        if ("curtainConfig" === key) {
+            initCurtainConfig(value);
+            return;
+        }
+
+        <!-- endRemoveIf(!curtain)-->
+
+
+
+        // ---------------------------------------------------------------------
         // LEDs
         // ---------------------------------------------------------------------
 
-        if ("ledConfig" === key) {
-            initLeds(value);
-            for (var i=0; i<value.length; ++i) {
-                var mode = $("select[name='ledMode'][data='" + i + "']");
-                var relay = $("select[name='ledRelay'][data='" + i + "']");
-                mode.val(value[i].mode);
-                relay.val(value[i].relay);
-                setOriginalsFromValues($([mode,relay]));
-            }
+        if ("led" === key) {
+            if($("#ledConfig > div").length > 0) return;
+
+            var schema = value["schema"];
+            value["list"].forEach(function(led_data, index) {
+                if (schema.length !== led_data.length) {
+                    throw "LED schema mismatch!";
+                }
+
+                var led = {};
+                schema.forEach(function(key, index) {
+                    led[key] = led_data[index];
+                });
+
+                var line = $($("#ledConfigTemplate").children()).clone();
+
+                $("span.id", line).html(index);
+                $("select", line).attr("data", index);
+                $("input", line).attr("data", index);
+
+                $("select[name='ledGPIO']", line).val(led.GPIO);
+                // XXX: checkbox implementation depends on unique id
+                // $("input[name='ledInv']", line).val(led.Inv);
+                $("select[name='ledMode']", line).val(led.Mode);
+                $("input[name='ledRelay']", line).val(led.Relay);
+
+                setOriginalsFromValues($("input,select", line));
+
+                line.appendTo("#ledConfig");
+            });
+
             return;
         }
 
@@ -1956,12 +2089,7 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
-            if (module == "sch") {
-                $("li.module-" + module).css("display", "inherit");
-                $("div.module-" + module).css("display", "flex");
-                return;
-            }
-            $(".module-" + module).css("display", "inherit");
+            moduleVisible(module);
             return;
         }
 
@@ -1998,7 +2126,7 @@ function processData(data) {
         }
         <!-- removeIf(!thermostat)-->
         if ("tmpUnits" == key) {
-            $("span.tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
+            $("span.tmpUnit").html(data[key] == 3 ? "ºF" : "ºC");
         }
         <!-- endRemoveIf(!thermostat)-->
 
@@ -2136,6 +2264,16 @@ function connectToURL(url) {
                 processData(data);
             }
         };
+        websock.onclose = function(evt) {
+            clearInterval(ws_pingpong);
+            if (window.confirm("Connection lost with the device, click OK to refresh the page")) {
+                $("#layout").toggle(false);
+                window.location.reload();
+            }
+        }
+        websock.onopen = function(evt) {
+            ws_pingpong = setInterval(function() { sendAction("ping", {}); }, 5000);
+        }
     }).catch(function(error) {
         console.log(error);
         doReload(5000);
@@ -2157,7 +2295,6 @@ function connectToCurrentURL() {
 $(function() {
 
     initMessages();
-    loadTimeZones();
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
@@ -2221,6 +2358,12 @@ $(function() {
     });
     <!-- endRemoveIf(!light)-->
 
+    <!-- removeIf(!curtain)-->
+    $(".button-add-curtain-schedule").on("click", function() {
+        addSchedule({schType: 3, schSwitch: -1});
+    });
+    <!-- endRemoveIf(!curtain)-->
+
     $(".button-add-rpnrule").on('click', addRPNRule);
     $(".button-add-rpntopic").on('click', addRPNTopic);
 
@@ -2257,6 +2400,7 @@ $(function() {
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
+        processData({"webMode": 0});
         return;
     }
 

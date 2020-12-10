@@ -32,7 +32,7 @@ class MHZ19Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        MHZ19Sensor(): BaseSensor() {
+        MHZ19Sensor() {
             _count = 1;
             _sensor_id = SENSOR_MHZ19_ID;
         }
@@ -76,7 +76,7 @@ class MHZ19Sensor : public BaseSensor {
 
             if (_serial) delete _serial;
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 32);
+            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
             _serial->enableIntTx(false);
             _serial->begin(9600);
             calibrateAuto(_calibrateAuto);
@@ -94,7 +94,7 @@ class MHZ19Sensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

@@ -8,6 +8,11 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
+#include <Arduino.h>
+#include <cstdint>
+
+#include "espurna.h"
+
 // Base address of USER RTC memory
 // https://github.com/esp8266/esp8266-wiki/wiki/Memory-Map#memmory-mapped-io-registers
 #define RTCMEM_ADDR_BASE (0x60001200)
@@ -22,11 +27,10 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #define RTCMEM_BLOCKS 96u
 
 // Change this when modifying RtcmemData
-#define RTCMEM_MAGIC 0x45535075
+#define RTCMEM_MAGIC 0x46535076
 
 // XXX: All access must be 4-byte aligned and always at full length.
-//
-// For example, using bitfields / inner structs / etc:
+//      Exactly like PROGMEM works. For example, using bitfields / inner structs / etc:
 // ...
 // uint32_t a : 8;
 // uint32_t b : 8;
@@ -38,18 +42,26 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // mem->d = 4;
 
 // TODO replace with custom memory segment in ldscript?
+//      `magic` would need to be tracked differently
+
+struct RtcmemEnergy {
+    uint32_t kwh;
+    uint32_t ws;
+};
+
 struct RtcmemData {
     uint32_t magic;
     uint32_t sys;
     uint32_t relay;
     uint32_t mqtt;
     uint64_t light;
-    double energy[4];
+    RtcmemEnergy energy[4];
 };
 
 static_assert(sizeof(RtcmemData) <= (RTCMEM_BLOCKS * 4u), "RTCMEM struct is too big");
 constexpr uint8_t RtcmemSize = (sizeof(RtcmemData) / 4u);
 
-auto Rtcmem = reinterpret_cast<volatile RtcmemData*>(RTCMEM_ADDR);
+extern volatile RtcmemData* Rtcmem;
 
 bool rtcmemStatus();
+void rtcmemSetup();

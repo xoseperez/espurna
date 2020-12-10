@@ -8,8 +8,20 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
+#include "espurna.h"
+
+#include <lwip/init.h>
+#if LWIP_VERSION_MAJOR == 1
+#include <netif/etharp.h>
+#elif LWIP_VERSION_MAJOR >= 2
+#include <lwip/etharp.h>
+#endif
+
+// (HACK) allow us to use internal lwip struct.
+// esp8266 re-defines enum values from tcp header... include them first
 #define LWIP_INTERNAL
-#include <ESP8266WiFi.h>
+#include <JustWifi.h>
+#include <Ticker.h>
 #undef LWIP_INTERNAL
 
 extern "C" {
@@ -20,16 +32,7 @@ extern "C" {
   #include <lwip/err.h> // ERR_x
   #include <lwip/dns.h> // dns_gethostbyname
   #include <lwip/ip_addr.h> // ip4/ip6 helpers
-  #include <lwip/init.h> // LWIP_VERSION_MAJOR
 };
-
-#if LWIP_VERSION_MAJOR == 1
-#include <netif/etharp.h>
-#else // LWIP_VERSION_MAJOR >= 2
-#include <lwip/etharp.h>
-#endif
-
-#include <JustWifi.h>
 
 // ref: https://github.com/me-no-dev/ESPAsyncTCP/pull/115/files#diff-e2e636049095cc1ff920c1bfabf6dcacR8
 // This is missing with Core 2.3.0 and is sometimes missing from the build flags. Assume HIGH_BANDWIDTH version.
@@ -37,10 +40,13 @@ extern "C" {
 #define TCP_MSS (1460)
 #endif
 
-struct wifi_scan_info_t;
+using wifi_callback_f = void(*)(justwifi_messages_t code, char * parameter);
 
-using wifi_scan_f = std::function<void(wifi_scan_info_t& info)>;
-using wifi_callback_f = std::function<void(justwifi_messages_t code, char * parameter)>;
+enum class WiFiApMode {
+    Disabled,
+    Enabled,
+    Fallback
+};
 
 uint8_t wifiState();
 void wifiReconnectCheck();
@@ -52,9 +58,12 @@ String getIP();
 void wifiDebug();
 void wifiDebug(WiFiMode_t modes);
 
+WiFiApMode wifiApMode();
 void wifiStartAP();
 void wifiStartSTA();
 void wifiDisconnect();
+void wifiTurnOff();
+void wifiTurnOn();
 
 void wifiStartWPS();
 void wifiStartSmartConfig();

@@ -19,7 +19,7 @@ class DigitalSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        DigitalSensor(): BaseSensor() {
+        DigitalSensor() {
             _count = 1;
             _sensor_id = SENSOR_DIGITAL_ID;
         }
@@ -70,7 +70,7 @@ class DigitalSensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

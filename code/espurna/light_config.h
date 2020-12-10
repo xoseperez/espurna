@@ -6,6 +6,8 @@ LIGHT MODULE
 
 #pragma once
 
+#include "espurna.h"
+
 constexpr const unsigned char _lightEnablePin() {
     return LIGHT_ENABLE_PIN;
 }

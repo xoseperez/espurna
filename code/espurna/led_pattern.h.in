@@ -1,0 +1,71 @@
+/*
+
+LED MODULE
+
+Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
+#pragma once
+
+#include "led.h"
+
+#include <cstring>
+
+// Scans input string with format
+// '<on1>,<off1>,<repeats1> <on2>,<off2>,<repeats2> ...'
+// Directly changing `led.pattern.delays` contents
+
+void _ledLoadPattern(led_t& led, const char* input) {
+    char buffer[16];
+
+    const char* d1;
+    const char* d2;
+    const char* d3;
+
+    const char* p = input;
+    const char* marker;
+
+    led.pattern.delays.clear();
+
+loop:
+/*!stags:re2c format = 'const char *@@;'; */
+/*!re2c
+        re2c:define:YYCTYPE = char;
+        re2c:define:YYCURSOR = p;
+        re2c:define:YYMARKER = marker;
+        re2c:yyfill:enable   = 0;
+        re2c:yych:conversion = 1;
+        re2c:indent:top      = 1;
+
+        end = "\x00";
+        wsp = [ \t]+;
+        num = [0-9]+;
+
+        * { return; }
+        wsp { goto loop; }
+        @d1 num [,] @d2 num [,] @d3 num {
+            unsigned long on;
+            unsigned long off;
+            unsigned char repeats;
+
+            memcpy(buffer, d1, int(d2 - d1));
+            buffer[int(d2 - d1 - 1)] = '\0';
+            on = strtoul(buffer, nullptr, 10);
+
+            memcpy(buffer, d2, int(d3 - d2));
+            buffer[int(d3 - d2 - 1)] = '\0';
+            off = strtoul(buffer, nullptr, 10);
+
+            memcpy(buffer, d3, int(p - d3));
+            buffer[int(p - d3)] = '\0';
+            repeats = strtoul(buffer, nullptr, 10);
+
+            led.pattern.delays.emplace_back(
+                on, off, repeats
+            );
+
+            goto loop;
+        }
+*/
+}

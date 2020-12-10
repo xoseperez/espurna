@@ -11,8 +11,10 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "I2CSensor.h"
 #include "../utils.h"
+
+#include "BaseEmonSensor.h"
+#include "I2CSensor.h"
 
 // -----------------------------------------------------------------------------
 // ADE7953 - Energy (Shelly 2.5)
@@ -34,25 +36,24 @@
 #define ADE7953_VOLTAGE                 1
 #define ADE7953_TOTAL_DEVICES           3
 
-class ADE7953Sensor : public I2CSensor {
+class ADE7953Sensor : public I2CSensor<BaseEmonSensor> {
 
     protected:
 
         struct reading_t {
             float current = 0.0;
             float power = 0.0;
-            float energy = 0.0;        
         };
 
-    public:      
+    public:
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
-        ADE7953Sensor(): I2CSensor() {            
-            _sensor_id = SENSOR_ADE7953_ID;            
-            _readings.resize(ADE7953_TOTAL_DEVICES);
-            _energy_offsets.resize(ADE7953_TOTAL_DEVICES);
-            _count = _readings.size() * ADE7953_TOTAL_DEVICES + ADE7953_VOLTAGE; //10            
+        ADE7953Sensor() {
+            resizeDevices(ADE7953_TOTAL_DEVICES);
+            _sensor_id = SENSOR_ADE7953_ID;
+            _readings.resize(countDevices());
+            _count = _readings.size() * countDevices() + ADE7953_VOLTAGE; //10
         }
 
         // ---------------------------------------------------------------------
@@ -74,27 +75,17 @@ class ADE7953Sensor : public I2CSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 
-        // Type for slot # index
-        unsigned char type(unsigned char index) {           
-            if (index == 0) return MAGNITUDE_VOLTAGE;                         
-            index = index % ADE7953_TOTAL_DEVICES;            
-            if (index == 0) return MAGNITUDE_ENERGY;
-            if (index == 1) return MAGNITUDE_CURRENT;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;            
-            return MAGNITUDE_NONE;
-        }
-
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {                        
+        void pre() {
             uint32_t active_power1 = 0;
             uint32_t active_power2 = 0;
             uint32_t current_rms1 = 0;
             uint32_t current_rms2 = 0;
-            uint32_t voltage_rms = 0;            
+            uint32_t voltage_rms = 0;
 
             voltage_rms = read(_address, 0x31C);      // Both relays
             current_rms1 = read(_address, 0x31B);     // Relay 1
@@ -113,62 +104,85 @@ class ADE7953Sensor : public I2CSensor {
                 active_power2 = (int32_t)read(_address, 0x312);  // Relay 2
                 active_power2 = (active_power2 > 0) ? active_power2 : 0;
             }
-            _voltage = (float) voltage_rms / ADE7953_UREF;            
-            
+            _voltage = (float) voltage_rms / ADE7953_UREF;
+
             storeReading(
-                ADE7953_ALL_RELAYS, 
-                (float)(current_rms1 + current_rms2) / (ADE7953_IREF * 10), 
+                ADE7953_ALL_RELAYS,
+                (float)(current_rms1 + current_rms2) / (ADE7953_IREF * 10),
                 (float)(active_power1 + active_power2) / (ADE7953_PREF / 10)
             );
             storeReading(
-                ADE7953_RELAY_1, 
-                (float) current_rms1 / (ADE7953_IREF * 10), 
+                ADE7953_RELAY_1,
+                (float) current_rms1 / (ADE7953_IREF * 10),
                 (float) active_power1 / (ADE7953_PREF / 10)
-            );    
+            );
             storeReading(
-                ADE7953_RELAY_2, 
-                (float)current_rms2 / (ADE7953_IREF * 10), 
+                ADE7953_RELAY_2,
+                (float)current_rms2 / (ADE7953_IREF * 10),
                 (float)active_power2 / (ADE7953_PREF / 10)
             );
         }
 
         inline void storeReading(unsigned int relay, float current, float power) {
-            auto& reading_ref = _readings.at(relay); 
+            auto& reading_ref = _readings.at(relay);
+
             reading_ref.current = current;
             reading_ref.power = power;
+
+            // TODO: chip already stores precise data about energy, see datasheet
             static unsigned long last = 0;
-            if (last > 0) {                    
-                reading_ref.energy += (power * (millis() - last) / 1000);
-            }                        
+            if (last > 0) {
+                const uint32_t delta = (fabs(power) * (millis() - last) / 1000);
+                _energy[relay] += sensor::Ws { delta };
+            }
             last = millis();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {        
-            if (index == 0) return _voltage;            
-            int relay = (index - 1) / ADE7953_TOTAL_DEVICES;	
-            index = index % ADE7953_TOTAL_DEVICES;
-            if (index == 0) return _energy_offsets[relay] + _readings[relay].energy;
+        double value(unsigned char index) {
+            if (index == 0) return _voltage;
+            int relay = (index - 1) / countDevices();	
+            index = index % countDevices();
+            if (index == 0) return getEnergy(relay);
             if (index == 1) return _readings[relay].current;
-            if (index == 2) return _readings[relay].power;     
+            if (index == 2) return _readings[relay].power;
             return 0;
         }
 
-        unsigned int getTotalDevices() {
-            return ADE7953_TOTAL_DEVICES;
+        // Convert slot # to a magnitude #
+        unsigned char local(unsigned char index) override {
+            if (index == 0) { return 0; }        // common voltage
+            return (index - 1) / countDevices(); // device { energy, current, active power }
         }
 
-        void resetEnergy(int relay, double value = 0) {
-            _energy_offsets[relay] = value;
+        // Type for slot # index
+        unsigned char type(unsigned char index) {
+            if (index == 0) return MAGNITUDE_VOLTAGE;
+            index = index % countDevices();
+            if (index == 0) return MAGNITUDE_ENERGY;
+            if (index == 1) return MAGNITUDE_CURRENT;
+            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
+            return MAGNITUDE_NONE;
         }
 
-    protected:  
-        void _init() {                     
-            nice_delay(100);                   // Need 100mS to init ADE7953
+    protected:
+        void _init() {
+			// Need at least 100mS to init ADE7953.
+			// TODO: add polling delay member instead of waiting right here?
+            nice_delay(100);
+			
+			// Lock chip i2c address
+			uint8_t addresses[] = { ADE7953_ADDRESS };
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
+			if (0 == _address) return;
+
+			// TODO: we implement other i2c methods as local functions, as we need to address 16-bit registers
+			//       should eventually be replaced with i2c module alternatives.
+
             write(_address, 0x102, 0x0004);    // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
             write(_address, 0x0FE, 0x00AD);    // Unlock register 0x120
-            write(_address, 0x120, 0x0030);    // Configure optimum setting       
-                    
+            write(_address, 0x120, 0x0030);    // Configure optimum setting
+
             _ready = true;
         }
 
@@ -206,7 +220,7 @@ class ADE7953Sensor : public I2CSensor {
 
         }
         #endif
-            
+
         void write(unsigned char address, uint16_t reg, uint32_t val) {
             int size = reg_size(reg);
             if (size) {
@@ -220,9 +234,9 @@ class ADE7953Sensor : public I2CSensor {
                 delayMicroseconds(5);    // Bus-free time minimum 4.7us
             }
         }
-            
+
         static uint32_t read(int address, uint16_t reg) {
-            uint32_t response = 0;            
+            uint32_t response = 0;
             const int size = reg_size(reg);
             if (size) {
                 Wire.beginTransmission(address);
@@ -239,9 +253,9 @@ class ADE7953Sensor : public I2CSensor {
             return response;
         }
 
-    std::vector<reading_t> _readings;    
     float _voltage = 0;
-    std::vector<double> _energy_offsets;
+    std::vector<reading_t> _readings;
+
 };
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT

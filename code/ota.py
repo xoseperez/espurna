@@ -22,7 +22,7 @@ import zeroconf
 
 # -------------------------------------------------------------------------------
 
-__version__ = (0, 4, 1)
+__version__ = (0, 4, 2)
 
 DESCRIPTION = "ESPurna OTA Manager v{}".format(".".join(str(x) for x in __version__))
 DISCOVERY_TIMEOUT = 10
@@ -113,9 +113,11 @@ class Listener:
             return
 
         hostname = info.server.split(".")[0]
+        addresses = info.parsed_addresses()
+
         device = {
             "hostname": hostname.upper(),
-            "ip": socket.inet_ntoa(info.address),
+            "ip": addresses[0] if addresses else info.host,
             "mac": "",
             "app_name": "",
             "app_version": "",
@@ -326,8 +328,8 @@ def parse_commandline_args():
         "-a",
         "--arduino-core",
         help="Arduino ESP8266 Core version",
-        default="2_3_0",
-        choices=["2_3_0", "latest", "git"],
+        default="current",
+        choices=["current", "latest", "git"],
     )
     parser.add_argument("-o", "--flags", help="extra flags", default="")
     parser.add_argument("-p", "--password", help="auth password", default="")
@@ -400,16 +402,15 @@ def discover_devices(args):
 
 @functools.lru_cache(maxsize=None)
 def get_platformio_env(arduino_core, size):
-    # todo: eventually 2_3_0 is dropped
-    # todo: naming
-    env_prefix = "esp8266"
+    prefix = "esp8266"
     if not size in [1, 2, 4]:
         raise ValueError(
             "Board memory size can only be one of: 1 for 1M, 2 for 2M, 4 for 4M"
         )
-    if arduino_core != "2_3_0":
-        env_prefix = "{}-{}".format(env_prefix, arduino_core)
-    return "{env_prefix}-{size:d}m-ota".format(env_prefix=env_prefix, size=size)
+    core = ""
+    if arduino_core != "current":
+        core = "-{}".format(arduino_core)
+    return "{prefix}-{size:d}m{core}-base".format(prefix=prefix, core=core, size=size)
 
 
 def main(args):

@@ -19,8 +19,10 @@ import sys
 
 from SCons.Script import ARGUMENTS
 
+from espurna_utils.release import merge_cpp
 
-TRAVIS = os.environ.get("TRAVIS")
+
+CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
 PIO_PLATFORM = env.PioPlatform()
 CONFIG = env.GetProjectConfig()
 VERBOSE = "1" == ARGUMENTS.get("PIOVERBOSE", "0")
@@ -94,12 +96,12 @@ def ensure_platform_updated():
         log("Warning: no connection, cannot check for outdated packages", verbose=True)
 
 
-# handle OTA uploads
-# using env instead of ini to fix platformio ini changing hash on every change
+# handle build flags through os environment.
+# using env instead of ini to avoid platformio ini changing hash on every change
 env.Append(
     ESPURNA_BOARD=os.environ.get("ESPURNA_BOARD", ""),
     ESPURNA_AUTH=os.environ.get("ESPURNA_AUTH", ""),
-    ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", "")
+    ESPURNA_FLAGS=os.environ.get("ESPURNA_FLAGS", ""),
 )
 
 ESPURNA_OTA_PORT = os.environ.get("ESPURNA_IP")
@@ -110,16 +112,25 @@ if ESPURNA_OTA_PORT:
 else:
     env.Replace(UPLOAD_PROTOCOL="esptool")
 
-# latest toolchain is still optional with PIO (TODO: recheck after 2.6.0!)
-# also updates arduino core git to the latest master commit
-if TRAVIS and (
-    env.GetProjectOption("platform") == CONFIG.get("common", "arduino_core_git")
-):
-    ensure_platform_updated()
+# handle `-t release` parameters
+if CI:
+    env.Append(
+        ESPURNA_RELEASE_NAME=os.environ.get("ESPURNA_RELEASE_NAME", ""),
+        ESPURNA_RELEASE_VERSION=os.environ.get("ESPURNA_RELEASE_VERSION", ""),
+        ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", ""),
+    )
+
+# updates arduino core git to the latest master commit
+if CI:
+    package_overrides = env.GetProjectOption("platform_packages")
+    for package in package_overrides:
+        if "https://github.com/esp8266/Arduino.git" in package:
+            ensure_platform_updated()
+            break
 
 # to speed-up build process, install libraries in either global or local shared storage
 if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
-    if TRAVIS:
+    if CI:
         storage = None
         log("using global library storage")
     else:
@@ -127,3 +138,28 @@ if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
         log("using shared library storage: {}".format(storage))
 
     subprocess_libdeps(env.GetProjectOption("lib_deps"), storage)
+
+# tweak build system to ignore espurna.ino, but include user code
+# ref: platformio-core/platformio/tools/piomisc.py::ConvertInoToCpp()
+def ConvertInoToCpp(env):
+    pass
+
+
+ino = env.Glob("$PROJECT_DIR/espurna/*.ino") + env.Glob("$PROJECT_DIR/espurna/*.pde")
+if len(ino) == 1 and ino[0].name == "espurna.ino":
+    env.AddMethod(ConvertInoToCpp)
+
+# merge every .cpp into a single file and **only** build that single file
+if "1" == os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
+    cpp_files = []
+    for root, dirs, filenames in os.walk("espurna"):
+        for name in filenames:
+            if not name.endswith(".cpp"):
+                continue
+
+            abspath = os.path.join(os.path.abspath(root), name)
+            env.AddBuildMiddleware(lambda node: None, abspath)
+
+            relpath = os.path.relpath(abspath, "espurna")
+            cpp_files.append(relpath)
+    merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")

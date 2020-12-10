@@ -3,8 +3,109 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.14.2] Not yet released
-\-
+## [1.15.0] In the works
+
+### Fixed
+#### Domoticz
+- Do not put floats into nvalue ([#2230](https://github.com/xoseperez/espurna/issues/2230))
+- Constrain pressure 0...100 ([#2230](https://github.com/xoseperez/espurna/issues/2230))
+#### Hardware
+- Fix GPIO16 support ([#2110](https://github.com/xoseperez/espurna/issues/2110), thanks to **[@foxman69](https://github.com/foxman69)**)
+- Fix for button long click ([#2172](https://github.com/xoseperez/espurna/issues/2172), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
+- Fix latched pulse always being HIGH ([#2145](https://github.com/xoseperez/espurna/issues/2145), thanks to **[@antonio-fiol](https://github.com/antonio-fiol)**)
+- Fix ADC_MODE_VALUE use in preprocessor ([#2227](https://github.com/xoseperez/espurna/issues/2227), thanks to **[@vtochq](https://github.com/vtochq)**)
+- Actually apply button pulldown ([#2239](https://github.com/xoseperez/espurna/issues/2239), thanks to **[@sigmafx](https://github.com/sigmafx)**)
+#### Influxdb
+- Fix http response parsing, refactor module scope ([#2153](https://github.com/xoseperez/espurna/issues/2153))
+#### MQTT
+- Set MQTT will topic after /get suffix initialization ([#2106](https://github.com/xoseperez/espurna/issues/2106), [#2115](https://github.com/xoseperez/espurna/issues/2115), thanks to **[@tomas-bara](https://github.com/tomas-bara)**)
+#### Nofuss
+- Fix nofuss.cpp typo ([#2251](https://github.com/xoseperez/espurna/issues/2251), thanks to **[@CmPi](https://github.com/CmPi)**)
+#### RPN rules
+- rpn $relayX variables were not populated on boot ([#2246](https://github.com/xoseperez/espurna/issues/2246), thanks to **[@pezinek](https://github.com/pezinek)**)
+#### Sensor
+- Apparent, reactive power measurement unit corrections ([#2161](https://github.com/xoseperez/espurna/issues/2161), thanks to **[@irmishappy](https://github.com/irmishappy)**)
+- Fixes and updates for thermostat and display ([#2173](https://github.com/xoseperez/espurna/issues/2173), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
+- Properly dispatch emon sensor ratio defaults ([#2241](https://github.com/xoseperez/espurna/issues/2241))
+#### WebUI
+- Fix scheduler panel tabindex= values ([#2096](https://github.com/xoseperez/espurna/issues/2096), thanks to **[@foxman69](https://github.com/foxman69)**)
+- Directly iterate over internal callbacks array ([#2248](https://github.com/xoseperez/espurna/issues/2248), [#2261](https://github.com/xoseperez/espurna/issues/2261))
+
+### Added
+#### Debug
+- Optionally store boot log ([#2109](https://github.com/xoseperez/espurna/issues/2109))
+- Log mode, allow to skip boot messages ([#2116](https://github.com/xoseperez/espurna/issues/2116))
+#### Domoticz
+- Add workaround for pressure sensors ([#2215](https://github.com/xoseperez/espurna/issues/2215))
+#### HTTP API
+- Handle received data as terminal command [#2247](https://github.com/xoseperez/espurna/issues/2247))
+#### Hardware
+- KingArt WiFi Curtain Switch ([#2063](https://github.com/xoseperez/espurna/issues/2063), thanks to **[@AlbertWeterings](https://github.com/AlbertWeterings)**)
+- Add support for Kogan Smarter Home Plug With Energy Meter ([#2086](https://github.com/xoseperez/espurna/issues/2086), thanks to **[@aureq](https://github.com/aureq)**)
+- Add support for Teckin SB53 smart bulb ([#2090](https://github.com/xoseperez/espurna/issues/2090), thanks to **[@marcuswinkler](https://github.com/marcuswinkler)**)
+- Add Shelly 1PM GPIO picture ([#2092](https://github.com/xoseperez/espurna/issues/2092), thanks to **[@lblabr](https://github.com/lblabr)**)
+- Add MagicHome ZJ\_LB\_RGBWW\_L support ([#2100](https://github.com/xoseperez/espurna/issues/2100), thanks to **[@wwilsman](https://github.com/wwilsman)**)
+- Deltaco smart home devices ([#2103](https://github.com/xoseperez/espurna/issues/2103), thanks to **[@orrpan](https://github.com/orrpan)**)
+- Added hardware config for Avatto NAS-WR01W ([#2113](https://github.com/xoseperez/espurna/issues/2113), thanks to **[@blockmar](https://github.com/blockmar)**)
+- Config for Teckin SP23 & Maxcio W-UK007S ([#2157](https://github.com/xoseperez/espurna/issues/2157), thanks to **[@julianwb](https://github.com/julianwb)**)
+- Add support for read PIO-A of DS2406 ([#2174](https://github.com/xoseperez/espurna/issues/2174), thanks to **[@rmcbc](https://github.com/rmcbc)**)
+- Example for Generic ESP01 boards with 512KiB flash ([#2185](https://github.com/xoseperez/espurna/issues/2185), thanks to **[@ziggurat29](https://github.com/ziggurat29)**)
+- Board definition for the Gosund WP3 smart socket ([#2191](https://github.com/xoseperez/espurna/issues/2191), thanks to **[@ziggurat29](https://github.com/ziggurat29)**)
+- correct Gosund WP3 LED documentation and provide reasonable default actions ([#2200](https://github.com/xoseperez/espurna/issues/2200), thanks to **[@ziggurat29](https://github.com/ziggurat29)**)
+- Add support for HUGOAI smart socket plug. ([#2243](https://github.com/xoseperez/espurna/issues/2243), thanks to **[@estebanz01](https://github.com/estebanz01)**)
+- Add support for Aoycocr X5P Plug. ([#2235](https://github.com/xoseperez/espurna/issues/2235), thanks to **[@estebanz01](https://github.com/estebanz01)**)
+#### MQTT
+- Handle received data as terminal command [#2247](https://github.com/xoseperez/espurna/issues/2247))
+#### PlatformIO
+- Use development version of PlatformIO Core ([#2146](https://github.com/xoseperez/espurna/issues/2146), thanks to **[@ivankravets ](https://github.com/ivankravets )**)
+- Add '.example' files. ([#2257](https://github.com/xoseperez/espurna/issues/2257), thanks to **[@davebuk](https://github.com/davebuk)**)
+#### Sensors
+- HLW8012: gpio runtime settings ([#2142](https://github.com/xoseperez/espurna/issues/2142))
+- Add SI1145 sensor ([#2216](https://github.com/xoseperez/espurna/issues/2216), thanks to **[@HilverinkJ](https://github.com/HilverinkJ)**)
+- Add HDC1080 sensor ([#2227](https://github.com/xoseperez/espurna/issues/2227), thanks to **[@vtochq](https://github.com/vtochq)**)
+- HLW8012: energy\_delta ([#2230](https://github.com/xoseperez/espurna/issues/2230))
+- Load ratios after boot + show pwr defaults with `get` ([#2241](https://github.com/xoseperez/espurna/issues/2241))
+#### Settings
+- Led and button GPIO runtime settings ([#2117](https://github.com/xoseperez/espurna/issues/2117), [#2162](https://github.com/xoseperez/espurna/issues/2162), [#2170](https://github.com/xoseperez/espurna/issues/2170), [#2177](https://github.com/xoseperez/espurna/issues/2177))
+- Configure light dimmer pins from settings ([#2129](https://github.com/xoseperez/espurna/issues/2129))
+#### Terminal
+- Show pretty uptime with NTP\_SUPPORT ([#2137](https://github.com/xoseperez/espurna/issues/2137))
+- Change command-line parser ([#2245](https://github.com/xoseperez/espurna/issues/2245), [#2247](https://github.com/xoseperez/espurna/issues/2247))
+#### Thingspeak
+- Configure Thingspeak URL at runtime ([#2124](https://github.com/xoseperez/espurna/issues/2124), thanks to **[@sametflo](https://github.com/sametflo)**)
+- Refactor deprecated WiFiClientSecure ([#2140](https://github.com/xoseperez/espurna/issues/2140), [#2144](https://github.com/xoseperez/espurna/issues/2144))
+#### WebUI
+- WebUI: alert when WS closes ([#2131](https://github.com/xoseperez/espurna/issues/2131), thanks to **[@foxman69](https://github.com/foxman69)**)
+- Optional Web(UI) OTA ([#2190](https://github.com/xoseperez/espurna/issues/2190))
+- Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
+- Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
+
+### Changed
+#### Build
+- ci: rework build.sh & release.sh generator
+- ci: use python3.8, prettify .travis.yml
+- ci: run pio test directory
+- PIO: remove -ota envs, handle OTA condition in extra script ([#2099](https://github.com/xoseperez/espurna/issues/2099))
+- PIO: platformio.ini refactoring ([#2212](https://github.com/xoseperez/espurna/issues/2212))
+- PIO: rename generic environments ([#2214](https://github.com/xoseperez/espurna/issues/2214))
+    - esp8266-\<flavour\>-\<size\>-base to esp8266-\<size\>-\<flavour\>-base
+    - espurna-base to espurna-core-webui
+- Convert .ino -> .cpp ([#1306](https://github.com/xoseperez/espurna/issues/1306), [#2228](https://github.com/xoseperez/espurna/issues/2228), [#2234](https://github.com/xoseperez/espurna/issues/2234), [#2236](https://github.com/xoseperez/espurna/issues/2236))
+- Broker: declare and define per module ([#2253](https://github.com/xoseperez/espurna/issues/2253))
+#### Libraries
+- Bump RFM69 version ([#2148](https://github.com/xoseperez/espurna/issues/2148))
+- pin arduino mqtt version ([#2154](https://github.com/xoseperez/espurna/issues/2154))
+- Update IRremoteESP8266 to 2.7.4 ([#2182](https://github.com/xoseperez/espurna/issues/2182))
+#### MQTT
+- Set keepalive to be less than heartbeat interval ([#2154](https://github.com/xoseperez/espurna/issues/2154))
+- Always buffer incoming data ([#2181](https://github.com/xoseperez/espurna/issues/2181))
+#### NTP
+- Use sntp app from lwip on latest Cores, replace ntpclientlib ([#2132](https://github.com/xoseperez/espurna/issues/2132))
+#### Sensors
+- Emon refactoring ([#2213](https://github.com/xoseperez/espurna/issues/2213))
+#### Settings
+- Refactor get/set/del/hasSetting ([#2048](https://github.com/xoseperez/espurna/issues/2048))
+- Update migrate configuration ([#2176](https://github.com/xoseperez/espurna/issues/2176))
 
 ## [1.14.1] 2019-12-31
 

@@ -53,7 +53,10 @@
 #include <PZEM004T.h>
 
 #include "BaseSensor.h"
+#include "BaseEmonSensor.h"
 
+#include "../sensor.h"
+#include "../terminal.h"
 
 #define PZ_MAGNITUDE_COUNT                  4
 
@@ -62,20 +65,48 @@
 #define PZ_MAGNITUDE_POWER_ACTIVE_INDEX     2
 #define PZ_MAGNITUDE_ENERGY_INDEX           3
 
-class PZEM004TSensor : public BaseSensor {
+class PZEM004TSensor : public BaseEmonSensor {
 
-    public:
+    private:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        PZEM004TSensor(): BaseSensor() {
+        // We can only create a single instance of the sensor class.
+        PZEM004TSensor() : BaseEmonSensor(0) {
             _sensor_id = SENSOR_PZEM004T_ID;
         }
 
         ~PZEM004TSensor() {
             if (_pzem) delete _pzem;
+            PZEM004TSensor::instance = nullptr;
+        }
+
+    public:
+
+        static PZEM004TSensor* instance;
+
+        static PZEM004TSensor* create() {
+            if (PZEM004TSensor::instance) return PZEM004TSensor::instance;
+            PZEM004TSensor::instance = new PZEM004TSensor();
+            return PZEM004TSensor::instance;
+        }
+
+        // ---------------------------------------------------------------------
+
+        // We can't modify PZEM values, just ignore this
+        void resetEnergy() override {}
+        void resetEnergy(unsigned char) override {}
+        void resetEnergy(unsigned char, sensor::Energy) override {}
+
+        // Override Base methods that deal with _energy[]
+        size_t countDevices() override {
+            return _addresses.size();
+        }
+
+        double getEnergy(unsigned char index) override {
+            return _readings[index].energy;
+        }
+
+        sensor::Energy totalEnergy(unsigned char index) override {
+            return getEnergy(index);
         }
 
         // ---------------------------------------------------------------------
@@ -114,24 +145,19 @@ class PZEM004TSensor : public BaseSensor {
                 reading.power = PZEM_ERROR_VALUE;
                 reading.energy = PZEM_ERROR_VALUE;
                 if (addr.fromString(address)) {
-                    _devices.push_back(addr);
-                    _energy_offsets.push_back(0);
+                    _addresses.push_back(addr);
                     _readings.push_back(reading);
                 }
                 address = strtok(0, sep);
             }
-            _count = _devices.size() * PZ_MAGNITUDE_COUNT;
-            _dirty = true;
-        }
 
-        // Return the number of devices managed by this sensor
-        unsigned char getAddressesCount() {
-            return _devices.size();
+            _count = _addresses.size() * PZ_MAGNITUDE_COUNT;
+            _dirty = true;
         }
 
         // Get device physical address based on the device index
         String getAddress(unsigned char dev) {
-            return _devices[dev].toString();
+            return _addresses[dev].toString();
         }
 
         // Set the device physical address
@@ -155,15 +181,6 @@ class PZEM004TSensor : public BaseSensor {
         }
 
         // ---------------------------------------------------------------------
-
-        // If called with value = -1, the offset will be the last energy reading
-        // otherwise, it will be the value provided
-        float resetEnergy(unsigned char dev, float value = -1) {
-            _energy_offsets[dev] = value != -1 ? value : _readings[dev].energy;
-            return _energy_offsets[dev];
-        }
-
-        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -174,10 +191,14 @@ class PZEM004TSensor : public BaseSensor {
             if (_pzem) delete _pzem;
             if (_serial) {
                 _pzem = new PZEM004T(_serial);
+                if ((_pin_tx == 15) && (_pin_rx == 13)) {
+                    _serial->flush();
+                    _serial->swap();
+                }
             } else {
                 _pzem = new PZEM004T(_pin_rx, _pin_tx);
             }
-            if(_devices.size() == 1) _pzem->setAddress(_devices[0]);
+            if(_addresses.size() == 1) _pzem->setAddress(_addresses[0]);
 
             _ready = true;
             _dirty = false;
@@ -195,8 +216,8 @@ class PZEM004TSensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            int dev = index / PZ_MAGNITUDE_COUNT;
+        String description(unsigned char index) {
+            auto dev = local(index);
             char buffer[25];
             snprintf(buffer, sizeof(buffer), "(%u/%s)", dev, getAddress(dev).c_str());
             return description() + String(buffer);
@@ -204,14 +225,17 @@ class PZEM004TSensor : public BaseSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            int dev = index / PZ_MAGNITUDE_COUNT;
-            return _devices[dev].toString();
+            return _addresses[local(index)].toString();
+        }
+
+        // Convert slot # to a magnitude #
+        unsigned char local(unsigned char index) override {
+            return index / PZ_MAGNITUDE_COUNT;
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            int dev = index / PZ_MAGNITUDE_COUNT;
-            index = index - (dev * PZ_MAGNITUDE_COUNT);
+            index = index - (local(index) * PZ_MAGNITUDE_COUNT);
             if (index == PZ_MAGNITUDE_CURRENT_INDEX)      return MAGNITUDE_CURRENT;
             if (index == PZ_MAGNITUDE_VOLTAGE_INDEX)      return MAGNITUDE_VOLTAGE;
             if (index == PZ_MAGNITUDE_POWER_ACTIVE_INDEX) return MAGNITUDE_POWER_ACTIVE;
@@ -221,14 +245,33 @@ class PZEM004TSensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
+            double response = 0.0;
+
             int dev = index / PZ_MAGNITUDE_COUNT;
             index = index - (dev * PZ_MAGNITUDE_COUNT);
-            double response = 0;
-            if (index == PZ_MAGNITUDE_CURRENT_INDEX)      response = _readings[dev].current;
-            if (index == PZ_MAGNITUDE_VOLTAGE_INDEX)      response = _readings[dev].voltage;
-            if (index == PZ_MAGNITUDE_POWER_ACTIVE_INDEX) response = _readings[dev].power;
-            if (index == PZ_MAGNITUDE_ENERGY_INDEX)       response = (_readings[dev].energy * 3600) - _energy_offsets[dev];
-            if (response < 0) response = 0;
+
+            switch (index) {
+                case PZ_MAGNITUDE_CURRENT_INDEX:
+                    response = _readings[dev].current;
+                    break;
+                case PZ_MAGNITUDE_VOLTAGE_INDEX:
+                    response = _readings[dev].voltage;
+                    break;
+                case PZ_MAGNITUDE_POWER_ACTIVE_INDEX:
+                    response = _readings[dev].power;
+                    break;
+                case PZ_MAGNITUDE_ENERGY_INDEX: {
+                    response = _readings[dev].energy;
+                    break;
+                }
+                default:
+                    break;
+            }
+
+            if (response < 0.0) {
+                response = 0.0;
+            }
+
             return response;
         }
 
@@ -254,36 +297,9 @@ class PZEM004TSensor : public BaseSensor {
                 // This we cannot do it from outside the library
             }
 
-            float read;
-            float* readings_p;
-            switch(magnitude) {
-                case PZ_MAGNITUDE_CURRENT_INDEX:
-                    read = _pzem->current(_devices[dev]);
-                    readings_p = &_readings[dev].current;
-                    break;
-                case PZ_MAGNITUDE_VOLTAGE_INDEX:
-                    read = _pzem->voltage(_devices[dev]);
-                    readings_p = &_readings[dev].voltage;
-                    break;
-                case PZ_MAGNITUDE_POWER_ACTIVE_INDEX:
-                    read = _pzem->power(_devices[dev]);
-                    readings_p = &_readings[dev].power;
-                    break;
-                case PZ_MAGNITUDE_ENERGY_INDEX:
-                    read = _pzem->energy(_devices[dev]);
-                    readings_p = &_readings[dev].energy;
-                    break;
-                default:
-                    _busy = false;
-                    return;
-            }
-            if(read == PZEM_ERROR_VALUE) {
-                _error = SENSOR_ERROR_TIMEOUT;
-            } else {
-                *readings_p = read;
-            }
+            tickStoreReading(dev, magnitude);
 
-            if(++dev == _devices.size()) {
+            if(++dev == _addresses.size()) {
                 dev = 0;
                 last_millis = millis();
                 if(++magnitude == PZ_MAGNITUDE_COUNT) {
@@ -299,21 +315,122 @@ class PZEM004TSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        unsigned int _pin_rx = PZEM004T_RX_PIN;
-        unsigned int _pin_tx = PZEM004T_TX_PIN;
-        bool _busy = false;
-        typedef struct {
+        void tickStoreReading(unsigned char dev, unsigned char magnitude) {
+            float read = PZEM_ERROR_VALUE;
+            float* readings_p = nullptr;
+
+            switch (magnitude) {
+                case PZ_MAGNITUDE_CURRENT_INDEX:
+                    read = _pzem->current(_addresses[dev]);
+                    readings_p = &_readings[dev].current;
+                    break;
+                case PZ_MAGNITUDE_VOLTAGE_INDEX:
+                    read = _pzem->voltage(_addresses[dev]);
+                    readings_p = &_readings[dev].voltage;
+                    break;
+                case PZ_MAGNITUDE_POWER_ACTIVE_INDEX:
+                    read = _pzem->power(_addresses[dev]);
+                    readings_p = &_readings[dev].power;
+                    break;
+                case PZ_MAGNITUDE_ENERGY_INDEX:
+                    read = _pzem->energy(_addresses[dev]);
+                    readings_p = &_readings[dev].energy;
+                    break;
+                default:
+                    _busy = false;
+                    return;
+            }
+
+            if (read == PZEM_ERROR_VALUE) {
+                _error = SENSOR_ERROR_TIMEOUT;
+            } else {
+                *readings_p = read;
+            }
+        }
+
+
+        struct reading_t {
             float voltage;
             float current;
             float power;
             float energy;
-        } reading_t;
+        };
+
+        unsigned int _pin_rx = PZEM004T_RX_PIN;
+        unsigned int _pin_tx = PZEM004T_TX_PIN;
+        bool _busy = false;
         std::vector<reading_t> _readings;
-        std::vector<float> _energy_offsets;
-        std::vector<IPAddress> _devices;
+        std::vector<IPAddress> _addresses;
         HardwareSerial * _serial = NULL;
         PZEM004T * _pzem = NULL;
 
 };
+
+PZEM004TSensor* PZEM004TSensor::instance = nullptr;
+
+#if TERMINAL_SUPPORT
+
+void pzem004tInitCommands() {
+
+    terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
+        if (!PZEM004TSensor::instance) return;
+
+        if (ctx.argc == 1) {
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            unsigned char dev_count = PZEM004TSensor::instance->countDevices();
+            for(unsigned char dev = 0; dev < dev_count; dev++) {
+                DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, PZEM004TSensor::instance->getAddress(dev).c_str());
+            }
+            terminalOK();
+        } else if(ctx.argc == 2) {
+            IPAddress addr;
+            if (addr.fromString(ctx.argv[1])) {
+                if(PZEM004TSensor::instance->setDeviceAddress(&addr)) {
+                    terminalOK();
+                }
+            } else {
+                terminalError(F("Invalid address argument"));
+            }
+        } else {
+            terminalError(F("Wrong arguments"));
+        }
+    });
+
+    terminalRegisterCommand(F("PZ.RESET"), [](const terminal::CommandContext& ctx) {
+        if(ctx.argc > 2) {
+            terminalError(F("Wrong arguments"));
+        } else {
+            unsigned char init = ctx.argc == 2 ? ctx.argv[1].toInt() : 0;
+            unsigned char limit = ctx.argc == 2 ? init +1 : PZEM004TSensor::instance->countDevices();
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            for(unsigned char dev = init; dev < limit; dev++) {
+                PZEM004TSensor::instance->resetEnergy(dev);
+            }
+            terminalOK();
+        }
+    });
+
+    terminalRegisterCommand(F("PZ.VALUE"), [](const terminal::CommandContext& ctx) {
+        if(ctx.argc > 2) {
+            terminalError(F("Wrong arguments"));
+        } else {
+            unsigned char init = ctx.argc == 2 ? ctx.argv[1].toInt() : 0;
+            unsigned char limit = ctx.argc == 2 ? init +1 : PZEM004TSensor::instance->countDevices();
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            for(unsigned char dev = init; dev < limit; dev++) {
+                DEBUG_MSG_P(PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s\n"), //
+                            dev,
+                            PZEM004TSensor::instance->getAddress(dev).c_str(),
+                            String(PZEM004TSensor::instance->value(dev * PZ_MAGNITUDE_CURRENT_INDEX)).c_str(),
+                            String(PZEM004TSensor::instance->value(dev * PZ_MAGNITUDE_VOLTAGE_INDEX)).c_str(),
+                            String(PZEM004TSensor::instance->value(dev * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
+                            String(PZEM004TSensor::instance->value(dev * PZ_MAGNITUDE_ENERGY_INDEX)).c_str());
+            }
+            terminalOK();
+        }
+    });
+}
+
+#endif // TERMINAL_SUPPORT == 1
 
 #endif // SENSOR_SUPPORT && PZEM004T_SUPPORT

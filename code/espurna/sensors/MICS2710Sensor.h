@@ -9,12 +9,12 @@
 
 #include <Arduino.h>
 
-#include "BaseSensor.h"
+#include "BaseAnalogSensor.h"
 extern "C" {
     #include "../libs/fs_math.h"
 }
 
-class MICS2710Sensor : public BaseSensor {
+class MICS2710Sensor : public BaseAnalogSensor {
 
     public:
 
@@ -22,7 +22,7 @@ class MICS2710Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        MICS2710Sensor(): BaseSensor() {
+        MICS2710Sensor() {
             _count = 2;
             _sensor_id = SENSOR_MICS2710_ID;
         }
@@ -47,22 +47,6 @@ class MICS2710Sensor : public BaseSensor {
 
         unsigned char getPreHeatGPIO() {
             return _preGPIO;
-        }
-
-        void setRL(unsigned long Rl) {
-            if (Rl > 0) _Rl = Rl;
-        }
-
-        unsigned long getRL() {
-            return _Rl;
-        }
-
-        void setR0(unsigned long R0) {
-            if (R0 > 0) _R0 = R0;
-        }
-
-        unsigned long getR0() {
-            return _R0;
         }
 
         // ---------------------------------------------------------------------
@@ -106,7 +90,7 @@ class MICS2710Sensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 
@@ -174,9 +158,6 @@ class MICS2710Sensor : public BaseSensor {
 
         bool _heating = false;
         unsigned long _start = 0;                   // monitors the pre-heating time
-        unsigned long _R0 = MICS2710_R0;            // R0, calikbration value at 25º
-        unsigned long _Rl = MICS2710_RL;            // RL, load resistance
-        unsigned long _Rs = 0;                      // cached resistance
         unsigned char _noxGPIO = MICS2710_PRE_PIN;
         unsigned char _preGPIO = MICS2710_NOX_PIN;
 

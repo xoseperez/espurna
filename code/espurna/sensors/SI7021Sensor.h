@@ -25,7 +25,7 @@
 PROGMEM const char si7021_chip_si7021_name[] = "SI7021";
 PROGMEM const char si7021_chip_htu21d_name[] = "HTU21D";
 
-class SI7021Sensor : public I2CSensor {
+class SI7021Sensor : public I2CSensor<> {
 
     public:
 
@@ -33,7 +33,7 @@ class SI7021Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SI7021Sensor(): I2CSensor() {
+        SI7021Sensor() {
             _sensor_id = SENSOR_SI7021_ID;
         }
 
@@ -63,7 +63,7 @@ class SI7021Sensor : public I2CSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

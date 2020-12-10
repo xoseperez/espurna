@@ -27,7 +27,7 @@ Retention        | 0x06    | Device ID(24-31)Bit| 0x0E    | Retention           
 Retention        | 0x07    | Status Register    | 0x0F    | Retention               | 0x17    | Retention | 0x1F
 */
 
-class AM2320Sensor : public I2CSensor {
+class AM2320Sensor : public I2CSensor<> {
 
     public:
 
@@ -35,7 +35,7 @@ class AM2320Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        AM2320Sensor(): I2CSensor() {
+        AM2320Sensor() {
             _count = 2;
             _sensor_id = SENSOR_AM2320_ID;
         }
@@ -65,7 +65,7 @@ class AM2320Sensor : public I2CSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         };
 

@@ -116,7 +116,7 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         // Public
         // ---------------------------------------------------------------------
 
-        SenseAirSensor(): BaseSensor() {
+        SenseAirSensor() {
             _count = 1;
             _co2 = 0;
             _lastCo2 = 0;
@@ -162,7 +162,7 @@ class SenseAirSensor : public BaseSensor, SenseAir {
 
             if (_serial) delete _serial;
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
+            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
             _serial->enableIntTx(false);
             _serial->begin(9600);
             _serial->enableRx(true);
@@ -180,7 +180,7 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         }
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) {
+        String description(unsigned char index) {
             return description();
         }
 

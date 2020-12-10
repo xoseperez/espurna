@@ -15,15 +15,19 @@
 //#define ALLTERCO_SHELLY1PM
 //#define ALLTERCO_SHELLY2
 //#define ALLTERCO_SHELLY25
+//#define AOYCOCR_X5P
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC02
 //#define ARILUX_AL_LC02_V14
 //#define ARILUX_AL_LC06
 //#define ARILUX_AL_LC11
 //#define ARILUX_E27
+//#define ARLEC_PB89HA
+//#define ARLEC_PC190HA
 //#define ARNIEX_SWIFITCH
 //#define AUTHOMETION_LYT8266
 //#define AVATTO_NAS_WR01W
+//#define BENEXMART_GU53_RGBWW
 //#define BESTEK_MRJ1011
 //#define BH_ONOFRE
 //#define BLITZWOLF_BWSHP5
@@ -37,8 +41,8 @@
 //#define EHOMEDIY_WT02
 //#define EHOMEDIY_WT03
 //#define ELECTRODRAGON_WIFI_IOT
-//#define ESPURNA_BASE
 //#define ESPURNA_CORE
+//#define ESPURNA_CORE_WEBUI
 //#define ETEKCITY_ESW01_USA
 //#define EUROMATE_WIFI_STECKER_SCHUKO
 //#define EUROMATE_WIFI_STECKER_SCHUKO_V2
@@ -50,15 +54,20 @@
 //#define GBLIFE_RGBW_SOCKET
 //#define GENERIC_8CH
 //#define GENERIC_AG_L4
+//#define GENERIC_AG_L4_V3
 //#define GENERIC_E14
 //#define GENERIC_ECH1560
 //#define GENERIC_ESP01S_DHT11_V10
 //#define GENERIC_ESP01S_DS18B20_V10
 //#define GENERIC_ESP01S_RELAY_V40
 //#define GENERIC_ESP01S_RGBLED_V10
+//#define GENERIC_ESP01_512KB
 //#define GENERIC_GU10
 //#define GENERIC_V9261F
 //#define GIZWITS_WITTY_CLOUD
+//#define GOSUND_SP111
+//#define GOSUND_P1
+//#define GOSUND_WP3
 //#define GOSUND_WS1
 //#define GREEN_ESP8266RELAY
 //#define HAMA_WIFI_STECKDOSE_00176533
@@ -67,6 +76,7 @@
 //#define HOMECUBE_16A
 //#define HUACANXING_H801
 //#define HUACANXING_H802
+//#define HUGOAI_AWP02L_N
 //#define HYKKER_SMART_HOME_POWER_PLUG
 //#define IKE_ESPIKE
 //#define INTERMITTECH_QUINLED
@@ -102,6 +112,7 @@
 //#define JANGOE_WIFI_RELAY_NO
 //#define JINVOO_VALVE_SM_AW713
 //#define JORGEGARCIA_WIFI_RELAYS
+//#define KINGART_CURTAIN_SWITCH
 //#define KMC_70011
 //#define KOGAN_SMARTER_HOME_PLUG_W_POW
 //#define LINGAN_SWA1
@@ -123,8 +134,10 @@
 //#define MAGICHOME_ZJ_WFMN_C_11
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
+//#define MAXCIO_WUK007S
 //#define MAXCIO_WUS002S
 //#define MUVIT_IO_MIOBULB001
+//#define NEDIS_WIFIP310FWT
 //#define NEO_COOLCAM_NAS_WR01W
 //#define NEXETE_A19
 //#define NODEMCU_BASIC
@@ -134,6 +147,7 @@
 //#define OUKITEL_P1
 //#define PHYX_ESP12_RGB
 //#define PILOTAK_ESP_DIN_V1
+//#define PRODINO_WIFI
 //#define PSH_RGBW_CONTROLLER
 //#define PSH_WIFI_PLUG
 //#define PSH_WIFI_SENSOR
@@ -143,6 +157,7 @@
 //#define TECKIN_SP20
 //#define TECKIN_SP21
 //#define TECKIN_SP22_V14
+//#define TECKIN_SP23_V13
 //#define TFLAG_NX_SMX00
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
@@ -165,7 +180,10 @@
 //#define YJZK_SWITCH_1CH
 //#define YJZK_SWITCH_2CH
 //#define YJZK_SWITCH_3CH
-//#define ZHILDE_EU44_W
+//#define ZHILDE_44EU_W
+//#define ZHILDE_64EU_W
+//#define FCMILA_E27_7W_RGBW
+//#define LSC_E27_10W_WHITE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -195,7 +213,7 @@
 //#define NTP_SUPPORT            0
 //#define OTA_ARDUINOOTA_SUPPORT 1
 //#define RFM69_SUPPORT          1
-//#define RF_SUPPORT             1
+//#define RFB_SUPPORT            1
 //#define RPN_RULES_SUPPORT      0
 //#define SCHEDULER_SUPPORT      0
 //#define SPIFFS_SUPPORT         1
@@ -217,6 +235,7 @@
 //#define BH1750_SUPPORT         1
 //#define BMP180_SUPPORT         1
 //#define BMX280_SUPPORT         1
+//#define BME680_SUPPORT         1
 //#define CSE7766_SUPPORT        1
 //#define DALLAS_SUPPORT         1
 //#define DHT_SUPPORT            1
@@ -250,3 +269,4 @@
 //#define V9261F_SUPPORT         1
 //#define VEML6075_SUPPORT       1
 //#define VL53L1X_SUPPORT        1
+//#define HDC1080_SUPPORT        1

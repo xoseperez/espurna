@@ -8,6 +8,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
+#include <cstdint>
+
 #include "tuya_dataframe.h"
 #include "tuya_types.h"
 #include "tuya_transport.h"
@@ -97,7 +99,7 @@ namespace Tuya {
     template <>
     std::vector<uint8_t> DataProtocol<bool>::serialize() {
         return std::vector<uint8_t> {
-            _id, static_cast<uint8_t>(Type::BOOL), 0x00, 0x01, 
+            _id, static_cast<uint8_t>(Type::BOOL), 0x00, 0x01,
             static_cast<uint8_t>(_value)
         };
     }

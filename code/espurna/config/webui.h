@@ -12,6 +12,7 @@
 #define WEBUI_IMAGE_LIGHTFOX   16
 #define WEBUI_IMAGE_GARLAND    31
 #define WEBUI_IMAGE_THERMOSTAT 32
+#define WEBUI_IMAGE_CURTAIN    64
 #define WEBUI_IMAGE_FULL       15
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -32,7 +33,7 @@
     #endif
 #endif
 
-#if RF_SUPPORT == 1
+#if RFB_SUPPORT == 1
     #ifndef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_RFBRIDGE
     #else
@@ -69,6 +70,15 @@
 #if THERMOSTAT_SUPPORT == 1
     #ifndef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_THERMOSTAT
+    #else
+        #undef WEBUI_IMAGE
+        #define WEBUI_IMAGE    WEBUI_IMAGE_FULL
+    #endif
+#endif
+
+#if CURTAIN_SUPPORT == 1
+    #ifndef WEBUI_IMAGE
+        #define WEBUI_IMAGE    WEBUI_IMAGE_CURTAIN
     #else
         #undef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_FULL

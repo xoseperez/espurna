@@ -6,18 +6,22 @@ OTA MODULE
 
 #pragma once
 
-#include <Updater.h>
+#include "espurna.h"
+
+#if OTA_WEB_SUPPORT
+
+void otaWebSetup();
+
+#endif // OTA_WEB_SUPPORT == 1
 
 #if OTA_ARDUINOOTA_SUPPORT
 
-#include <ArduinoOTA.h>
 void arduinoOtaSetup();
 
 #endif // OTA_ARDUINOOTA_SUPPORT == 1
 
 #if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
 
-#include <ESPAsyncTCP.h>
 void otaClientSetup();
 
 #endif // OTA_CLIENT == OTA_CLIENT_ASYNCTCP
@@ -34,6 +38,7 @@ void otaClientSetup();
 #include <WiFiClientSecure.h>
 #endif
 
+void otaSetup();
 void otaPrintError();
 bool otaFinalize(size_t size, int reason, bool evenIfRemaining = false);
 

@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.14.2--dev-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.15.0--dev-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
@@ -59,6 +59,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Supports NetBIOS, LLMNR and Netbios (when built with Arduino Core >= 2.4.0) and SSDP (experimental)
 * Switch management
     * Support for **push buttons** and **toggle switches**
+    * Support for **digital** and [**analog**](https://en.wikipedia.org/wiki/Resistor_ladder) buttons
     * Configurable **status on boot** per switch (always ON, always OFF, same as before or toggle)
     * Support for **pulse mode** per switch (normally ON or normally OFF) with configurable time
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
@@ -93,6 +94,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Environment
         * **DHT11 / DHT12 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP180**, **BMP280** and **BME280** pressure, humidity (BME280) and temperature (BMP280 & BME280) sensor by Bosch
+        * **BME680** pressure, humidity, temperature and gas sensor by Bosch with support for Bosch's proprietary library BSEC for accurate Indoor Air Quality (IAQ) monitoring (⚠️ [learn more](https://github.com/xoseperez/espurna/wiki/Sensors#bme680-environmental-sensor))
         * **TMP35** and **TMP36** analog temperature sensors
         * **MAX6675** temperature sensor
         * **NTC** temperature sensors
@@ -262,7 +264,7 @@ Here is the list of supported hardware. For more information please refer to the
 ||||
 |---|---|---|
 |![Itead Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![Itead Sonoff Dual/Dual R2](images/devices/itead-sonoff-dual.jpg)|![Itead Sonoff TH10/TH16](images/devices/itead-sonoff-th.jpg)|
-|**Itead Sonoff Basic**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
+|**Itead Sonoff Basic (including R2 and R3)**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
 |![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)||
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
 |![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||

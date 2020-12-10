@@ -33,7 +33,7 @@ class EmonADC121Sensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonADC121Sensor(): EmonSensor() {
+        EmonADC121Sensor() {
             _channels = ADC121_CHANNELS;
             _sensor_id = SENSOR_EMON_ADC121_ID;
             init();
@@ -86,13 +86,15 @@ class EmonADC121Sensor : public EmonSensor {
                 return;
             }
 
+            // only 1 channel, see ADC121_CHANNELS
+
             _current[0] = read(0);
 
             #if EMON_REPORT_ENERGY
                 static unsigned long last = 0;
-                if (last > 0) {
-                    _energy[0] += (_current[0] * _voltage * (millis() - last) / 1000);
-                }
+                _energy[0] += sensor::Ws {
+                    static_cast<uint32_t>(_current[0] * _voltage * (millis() - last) / 1000)
+                };
                 last = millis();
             #endif
 
@@ -117,7 +119,7 @@ class EmonADC121Sensor : public EmonSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            unsigned char channel = index / _magnitudes;
+            unsigned char channel = local(index);
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return _current[channel];
@@ -126,7 +128,7 @@ class EmonADC121Sensor : public EmonSensor {
                 if (index == i++) return _current[channel] * _voltage;
             #endif
             #if EMON_REPORT_ENERGY
-                if (index == i) return _energy[channel];
+                if (index == i) return _energy[channel].asDouble();
             #endif
             return 0;
         }
@@ -141,8 +143,7 @@ class EmonADC121Sensor : public EmonSensor {
             i2c_write_uint8(_address, ADC121_REG_CONFIG, 0);
         }
 
-        unsigned int readADC(unsigned char channel) {
-            UNUSED(channel);
+        unsigned int readADC(unsigned char) {
             unsigned int value = i2c_read_uint16(_address, ADC121_REG_RESULT) & 0x0FFF;
             return value;
         }

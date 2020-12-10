@@ -38,6 +38,8 @@
 #if ALEXA_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1               // and switches
 #endif
 
 #if RPN_RULES_SUPPORT
@@ -74,11 +76,20 @@
 #define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
 
+#if THERMOSTAT_SUPPORT
+#undef MQTT_USE_JSON
+#define MQTT_USE_JSON               1           // Thermostat depends on group messages in a JSON body
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Thermostat depends on switches
+#endif
+
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP to work
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Scheduler needs relays
 #endif
 
 #if LWIP_VERSION_MAJOR != 1
@@ -101,6 +112,22 @@
 #if TUYA_SUPPORT
 #undef BROKER_SUPPORT
 #define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1           // Most of the time we require it
+#endif
+
+#if TERMINAL_WEB_API_SUPPORT
+#undef TERMINAL_SUPPORT
+#define TERMINAL_SUPPORT            1           // Need terminal command line parser and commands
+#undef WEB_SUPPORT
+#define WEB_SUPPORT                 1           // Registered as web server request handler
+#endif
+
+#if TERMINAL_MQTT_SUPPORT
+#undef TERMINAL_SUPPORT
+#define TERMINAL_SUPPORT            1           // Need terminal command line parser and commands
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT                1           // Subscribe and publish things
 #endif
 
 //------------------------------------------------------------------------------
@@ -155,4 +182,62 @@
 #define NTP_LEGACY_SUPPORT 1
 #else
 #define NTP_LEGACY_SUPPORT 0
+#endif
+
+//------------------------------------------------------------------------------
+// Remove serial debug support completely in case hardware does not support it
+// TODO: provide runtime check as well?
+
+#if (BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT) || \
+    (BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT)
+#if DEBUG_SERIAL_SUPPORT
+#warning "DEBUG_SERIAL_SUPPORT will be disabled because it conflicts with the BUTTON_PROVIDER_{ITEAD_SONOFF_DUAL,FOXEL_LIGHTFOX_DUAL}"
+#undef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT 0
+#endif
+#endif
+
+//------------------------------------------------------------------------------
+// It looks more natural that one click will enable display
+// and long click will switch relay
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+#undef BUTTON1_CLICK
+#define BUTTON1_CLICK           BUTTON_ACTION_DISPLAY_ON
+#undef BUTTON1_LNGCLICK
+#define BUTTON1_LNGCLICK        BUTTON_ACTION_TOGGLE
+#endif
+
+//------------------------------------------------------------------------------
+// We should always set MQTT_MAX_PACKET_SIZE
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+#if not defined(MQTT_MAX_PACKET_SIZE)
+#warning "MQTT_MAX_PACKET_SIZE should be set in `build_flags = ...` of the environment! Default value is used instead."
+#endif
+#endif
+
+//------------------------------------------------------------------------------
+// Disable BME680 support if using Core version 2.3.0 due to memory constraints.
+
+#if BME680_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#warning "BME680_SUPPORT is not available when using Arduino Core 2.3.0 due to memory constraints. Please use Arduino Core 2.6.3+ instead (or set `platform = ${common.platform_latest}` for the latest version)."
+#undef BME680_SUPPORT
+#define BME680_SUPPORT 0
+#endif
+
+//------------------------------------------------------------------------------
+// Prometheus needs web server + request handler API
+
+#if PROMETHEUS_SUPPORT
+#undef WEB_SUPPORT
+#define WEB_SUPPORT 1
+#endif
+
+//------------------------------------------------------------------------------
+// Analog pin needs ADC_TOUT mode set up at compile time
+
+#if BUTTON_PROVIDER_ANALOG_SUPPORT
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
 #endif

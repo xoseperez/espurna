@@ -96,6 +96,12 @@
                             <a href="#" class="pure-menu-link" data="panel-general">GENERAL</a>
                         </li>
 
+                        <!-- removeIf(!curtain) -->
+                        <li class="pure-menu-item module module-curtain">
+                            <a href="#" class="pure-menu-link" data="panel-curtain">CURTAIN</a>
+                        </li>
+                        <!-- endRemoveIf(!curtain) -->
+
                         <!-- removeIf(!garland) -->
                         <li class="pure-menu-item module module-garland">
                             <a href="#" class="pure-menu-link" data="panel-garland">GARLAND</a>
@@ -234,6 +240,10 @@
 
                                 <div id="relays"></div>
 
+                                <!-- removeIf(!curtain) -->
+                                <div id="curtains"></div>
+                                <!-- endRemoveIf(!curtain) -->
+                                
                                 <!-- removeIf(!light) -->
                                 <div id="colors"></div>
                                 <div id="cct"></div>
@@ -359,7 +369,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="31" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -380,16 +390,16 @@
                                 </div>
 
                                 <div class="pure-g module module-btn">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Double click delay</label>
-                                    <input name="btnDelay" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Click repeat delay</label>
+                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
-                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
-                                        Increase this number if you are having trouble to double click the button.
-                                        Set this value to 0 to disable double click. You won't be able to set the device in AP mode manually but your device will respond immediately to button clicks.<br />
-                                        You will have to <strong>reboot the device</strong> after updating for this setting to apply.
+                                        Delay in milliseconds to detect a double or triple click (from 0 to 1000ms).<br />
+                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get the expected event.
+                                        Increase this number if you are having trouble triggering the event.
+                                        Set this value to 0 to disable repeat detection, device will respond immediately to a single button click. When using default configuration, consider that this will disable the SoftAP button action.<br />
+                                        You will have to <strong>reboot the device</strong> to apply this setting.
                                     </div>
                                 </div>
 
@@ -425,22 +435,28 @@
 
                         <div class="page">
 
-                            <fieldset>
+                            <details>
 
-                                <legend class="module module-led">Modes</legend>
-                                <div class="pure-g module module-led">
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        <li><strong>WiFi status</strong> will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.</li>
-                                        <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (you must define which switch to follow in the side field).</li>
-                                        <li><strong>Inverse switch</strong> will force the LED to not-follow the status of a given switch (you must define which switch to follow in the side field).</li>
-                                        <li><strong>Find me</strong> will turn the LED ON when all switches are OFF. This is meant to locate switches at night.</li>
-                                        <li><strong>Find me &amp; WiFi</strong> will follow the WiFi status but will stay mostly on when switches are OFF, and mostly OFF when any of them is ON.</li>
-                                        <li><strong>Switches status</strong> will turn the LED ON whenever any switch is ON, and OFF otherwise. This is global status notification.</li>
-                                        <li><strong>Switches status &amp; WiFi</strong> will follow the WiFi status but will stay mostly off when switches are OFF, and mostly ON when any of them is ON.</li>
-                                        <li><strong>MQTT managed</strong> will let you manage the LED status via MQTT by sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).</li>
-                                        <li><strong>Always ON</strong> and <strong>Always OFF</strong> modes are self-explanatory.</li>
-                                    </div>
+                            <summary><legend class="module module-led">Available modes</legend></summary>
+
+                            <br/>
+                            <div class="pure-g module module-led">
+                                <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                    <li><strong>WiFi status</strong> will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.</li>
+                                    <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (you must define which switch to follow in the side field).</li>
+                                    <li><strong>Inverse switch</strong> will force the LED to not-follow the status of a given switch (you must define which switch to follow in the side field).</li>
+                                    <li><strong>Find me</strong> will turn the LED ON when all switches are OFF. This is meant to locate switches at night.</li>
+                                    <li><strong>Find me &amp; WiFi</strong> will follow the WiFi status but will stay mostly on when switches are OFF, and mostly OFF when any of them is ON.</li>
+                                    <li><strong>Switches status</strong> will turn the LED ON whenever any switch is ON, and OFF otherwise. This is global status notification.</li>
+                                    <li><strong>Switches status &amp; WiFi</strong> will follow the WiFi status but will stay mostly off when switches are OFF, and mostly ON when any of them is ON.</li>
+                                    <li><strong>Manually managed</strong> will let you manage the LED status via MQTT by sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).</li>
+                                    <li><strong>Always ON</strong> and <strong>Always OFF</strong> modes are self-explanatory.</li>
                                 </div>
+                            </div>
+
+                            </details>
+
+                            <fieldset>
 
                                 <div id="ledConfig"></div>
 
@@ -483,6 +499,54 @@
                         </div>
                     </div>
                 </form>
+
+                <!-- removeIf(!curtain) -->
+                <form id="form-curtain" class="pure-form form-settings">
+                    <div class="panel" id="panel-curtain">
+
+                        <div class="header">
+                            <h1>CURTAIN</h1>
+                            <h2>Curtain configuration</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <legend class="module module-curtain">General</legend>
+
+                                <div class="pure-g module module-curtain">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Curtain type</label>
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="curtainType" tabindex="3">
+                                        <option value="0">Roller</option>
+                                        <option value="1">Closing right</option>
+                                        <option value="2">Closing left</option>
+                                        <option value="3">Two sides</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Define your curtain type. It adapts the graphical view in status menu.</div>
+                                </div>
+
+                                <div class="pure-g module module-curtain">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Curtain bootup position</label>
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="curtainBoot" tabindex="3">
+                                        <option value="0">Do nothing</option>
+                                        <option value="1">Closed</option>
+                                        <option value="2">Opened</option>
+                                        <option value="3">Last set position</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Define the initial position of the curtain after a reboot or power loss.</div>
+                                </div>
+
+                                <div id="curtainConfig"></div>
+
+                            </fieldset>
+
+                        </div>
+                    </div>
+                </form>
+                <!-- endRemoveIf(!curtain) -->
 
                 <!-- removeIf(!light) -->
                 <form id="form-color" class="pure-form form-settings">
@@ -707,7 +771,7 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g">
+                                <div class="pure-g module module-ota">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
                                     <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
@@ -785,12 +849,15 @@
 
                             <fieldset>
 
-                                <div id="schedules" class="group-settings" data-settings-max="10" data-settings-target="schSwitch" ></div>
+                                <div id="schedules" class="group-settings" data-settings-max="10" data-settings-target="schSwitch schType" ></div>
 
                                 <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
                                 <!-- removeIf(!light) -->
                                 <button type="button" class="pure-button button-add-light-schedule module module-color">Add channel schedule</button>
                                 <!-- endRemoveIf(!light) -->
+                                <!-- removeIf(!curtain) -->
+                                <button type="button" class="pure-button button-add-curtain-schedule module module-curtain">Add curtain schedule</button>
+                                <!-- endRemoveIf(!curtain) -->
 
                             </fieldset>
 
@@ -972,6 +1039,9 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the root topic for this device. The {hostname} and {mac} placeholders will be replaced by the device hostname and MAC address.<br />
                                         - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
+                                        <!-- removeIf(!curtain) -->
+                                        - <strong>&lt;root&gt;/curtain/set</strong> Set the curtain opening value (0-100), 0 means closed, 100 opened. "on", "off", "pause" pilots buttons.<br />
+                                        <!-- endRemoveIf(!curtain) -->
                                         <!-- removeIf(!light) -->
                                         <span class="module module-color">- <strong>&lt;root&gt;/rgb/set</strong> Set the color using this topic, your can either send an "#RRGGBB" value or "RRR,GGG,BBB" (0-255 each).<br /></span>
                                         <span class="module module-color">- <strong>&lt;root&gt;/hsv/set</strong> Set the color using hue (0-360), saturation (0-100) and value (0-100) values, comma separated.<br /></span>
@@ -1035,7 +1105,7 @@
 
                         <div class="header">
                             <h1>NTP</h1>
-                            <h2>Configure your NTP (Network Time Protocol) servers and local configuration to keep your device time up to the second for your location.</h2>
+                            <h2>Synchronize the device time with the remote server</h2>
                         </div>
 
                         <div class="page">
@@ -1043,8 +1113,13 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Device Current Time</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="now" type="text" readonly />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Device Time</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="nowString" type="text" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Device Local Time</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="nowLocalString" type="text" readonly />
                                 </div>
 
                                 <div class="pure-g">
@@ -1052,27 +1127,11 @@
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer" type="text" tabindex="41" />
                                 </div>
 
-                                <div class="pure-g module module-ntplwip">
+                                <div class="pure-g module module-ntp">
                                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpTZ" type="text" tabindex="42" />
-                                </div>
-
-                                <div class="pure-g module module-ntplegacy">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
-                                </div>
-
-                                <div class="pure-g module module-ntplegacy">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ntpDST" /></div>
-                                </div>
-
-                                <div class="pure-g module module-ntplegacy">
-                                    <label class="pure-u-1 pure-u-lg-1-4">DST Region</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpRegion">
-                                        <option value="0">Europe</option>
-                                        <option value="1">USA</option>
-                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">POSIX TZ variable, defaults to <code>UTC0</code><br/>For the list of possible options, <a rel="noopener" href="https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h">see esp8266/Arduino's TZ.h (use the value inside of F("..."))</a>. For the complete documentation, <a rel="noopener" href="https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html">see libc tzset(3) manual page</a></div>
                                 </div>
 
                             </fieldset>
@@ -1377,8 +1436,13 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak address</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkAddress" type="text" tabindex="32" />
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="33" />
                                 </div>
 
                                 <legend>Sensors &amp; actuators</legend>
@@ -1521,6 +1585,9 @@
                                 <div class="pure-g module module-cmd">
                                     <div class="pure-u-1 hint">
                                         Write a command and click send to execute it on the device. The output will be shown in the debug text area below.
+                                        <!-- removeIf(!curtain) -->
+                                        Type "debug" to display MCU serial exchanges. Any other command is sent to MCU serial as is.
+                                        <!-- endRemoveIf(!curtain) -->
                                     </div>
                                     <input name="dbgcmd" class="pure-u-3-4" type="text" tabindex="2" />
                                     <div class="pure-u-1-4 pure-u-lg-1-4"><button type="button" class="pure-button button-dbgcmd pure-u-23-24">Send</button></div>
@@ -1604,45 +1671,26 @@
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Power units</label>
                                     <select name="pwrUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Watts (W)</option>
-                                        <option value="1">Kilowatts (kW)</option>
+                                        <option value="13">Watts (W)</option>
+                                        <option value="14">Kilowatts (kW)</option>
                                     </select>
                                 </div>
 
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
                                     <select name="eneUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Joules (J)</option>
-                                        <option value="1">Kilowatts·hour (kWh)</option>
+                                        <option value="15">Joules (J)</option>
+                                        <option value="16">Kilowatts·hour (kWh)</option>
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-temperature">
+                                <div class="pure-g module module-tmp">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
                                     <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="0">Celsius (&deg;C)</option>
-                                        <option value="1">Fahrenheit (&deg;F)</option>
+                                        <option value="2">Celsius (&deg;C)</option>
+                                        <option value="3">Fahrenheit (&deg;F)</option>
+                                        <option value="4">Kelvin (K)</option>
                                     </select>
-                                </div>
-
-                                <div class="pure-g module module-temperature">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Temperature correction</label>
-                                    <input name="tmpCorrection" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Temperature correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g module module-humidity">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Humidity correction</label>
-                                    <input name="humCorrection" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Humidity correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
-                                    </div>
                                 </div>
 
                                 <div class="pure-g module module-mics">
@@ -1704,6 +1752,15 @@
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to set energy count to 0.</div>
+                                </div>
+
+                                <div class="pure-g module module-magnitude-corrections">
+                                    <legend>Value corrections</legend>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint more">
+                                        Correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
+                                    </div>
+                                    <div class="pure-form pure-form-aligned" id="magnitude-corrections">
+                                    </div>
                                 </div>
 
                             </fieldset>
@@ -1801,23 +1858,42 @@
 
         <!-- Templates -->
 
-        <div id="ledConfigTemplate" class="template">
+        <div id="magnitudeCorrectionTemplate" class="template">
             <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">LED #<span class="id"></span> mode</label>
-                <select name="ledMode" class="pure-u-1-4">
-                    <option value="1">WiFi status</option>
-                    <option value="2">Follow switch #</option>
-                    <option value="3">Inverse switch #</option>
-                    <option value="4">Find me</option>
-                    <option value="5">Find me &amp; WiFi</option>
-                    <option value="8">Switches status</option>
-                    <option value="9">Switches &amp; WiFi</option>
-                    <option value="0">MQTT managed</option>
-                    <option value="6">Always ON</option>
-                    <option value="7">Always OFF</option>
-                </select>
-                &nbsp;
-                <div class="pure-u-1-4"><input class="pure-u-23-24" name="ledRelay" type="number" min="0" data="0" /></div>
+                <label class="pure-u-1 pure-u-lg-1-4"></label>
+                <input name="correction" class="pure-u-1 pure-u-lg-1-4" type="number" step="0.1" data="0"></input>
+                <div class="pure-u-0 pure-u-lg-1-2"></div>
+                <div class="pure-u-0 pure-u-lg-1-4"></div>
+                <div class="pure-u-1 pure-u-lg-3-4 hint"></div>
+            </div>
+        </div>
+
+        <div id="ledConfigTemplate" class="template">
+            <div class="pure-form pure-form-aligned">
+                <legend class="pure-u-1 pure-u-lg-1-4">LED #<span class="id"></span></legend>
+                <div class="pure-control-group">
+                    <label>GPIO</label>
+                    <select class="pure-input-2-3 gpio-select" name="ledGPIO" action="reboot"></select>
+                </div>
+                <div class="pure-control-group">
+                    <label>Mode</label>
+                    <select class="pure-input-2-3" name="ledMode">
+                        <option value="1">WiFi status</option>
+                        <option value="2">Follow switch #</option>
+                        <option value="3">Inverse switch #</option>
+                        <option value="4">Find me</option>
+                        <option value="5">Find me &amp; WiFi</option>
+                        <option value="8">Switches status</option>
+                        <option value="9">Switches &amp; WiFi</option>
+                        <option value="0">Manual</option>
+                        <option value="6">Always ON</option>
+                        <option value="7">Always OFF</option>
+                    </select>
+                </div>
+                <div class="pure-control-group">
+                    <label>Relay ID</label>
+                    <input class="pure-input-2-3" name="ledRelay" type="number" min="0" data="0"></input>
+                </div>
             </div>
         </div>
 
@@ -1901,7 +1977,7 @@
 
                 <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" value="12" />
+                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" value="0" />
                     <div class="pure-u-1-4 hint center">&nbsp;h</div>
                 </div>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
@@ -1954,6 +2030,17 @@
             <input type="hidden" name="schType" value="2">
         </div>
         <!-- endRemoveIf(!light) -->
+
+        <!-- removeIf(!curtain) -->
+        <div id="curtainActionTemplate" class="template">
+            <label class="pure-u-1 pure-u-lg-1-4">Curtain position (0 = open to 100 = closed)</label>
+            <div class="pure-u-1 pure-u-lg-1-5">
+                <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="100" value="0" />
+            </div>
+            <select class="pure-u-1 pure-u-lg-1-5 iscurtain" name="schSwitch" ></select>
+            <input type="hidden" name="schType" value="3">
+        </div>
+        <!-- endRemoveIf(!curtain) -->
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
@@ -2081,6 +2168,29 @@
         </div>
         <!-- endRemoveIf(!light) -->
 
+        <!-- removeIf(!curtain) -->
+        <div id="curtainTemplate" class="template">
+            <div class="pure-g">
+                <div class="pure-u-1-1 curtain-div">
+                    <div class="curtain-roller" id="curtainGetPicture"></div>
+                </div>
+            </div>
+            <div class="pure-g">
+                <div class="pure-u-1-3 curtain-div"><button type="button" class="pure-button curtain-button button-curtain-close">CLOSE</button></div>
+                <div class="pure-u-1-3 curtain-div"><button type="button" class="pure-button curtain-button button-curtain-pause">PAUSE</button></div>
+                <div class="pure-u-1-3 curtain-div"><button type="button" class="pure-button curtain-button button-curtain-open">OPEN</button></div>
+            </div>
+            <div class="pure-g">
+                <input type="range" list="tickmarks" min="0" max="100" class="slider pure-u-1-1 reverse-range" id="curtainSet">
+                <datalist id="tickmarks">
+                    <option value="0"></option>
+                    <option value="50"></option>
+                    <option value="100"></option>
+                </datalist>
+            </div>
+        </div>
+        <!-- endRemoveIf(!curtain) -->
+
         <!-- removeIf(!sensor) -->
         <div id="magnitudeTemplate" class="template">
             <div class="pure-g">
@@ -2088,7 +2198,9 @@
                 <div class="pure-u-1 pure-u-lg-1-4">
                     <input class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude" data="256" readonly />
                 </div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center sns-desc"></div>
+                <div class="pure-u-1 pure-u-lg-1 hint sns-info">
+                </div>
             </div>
         </div>
         <!-- endRemoveIf(!sensor) -->
