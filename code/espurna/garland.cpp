@@ -143,7 +143,7 @@ void garlandLoop(void) {
     while (prevPalInd == paletteInd) paletteInd = random(PALS);    
     scene.setPalette(pals[paletteInd]);
 
-    DEBUG_MSG_P(PSTR("[GARLAND] Scene: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
+    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %d Period: %2d Inter: %d avg_calc: %d avg_show: %d\n"), anims[animInd]->getName().c_str(), paletteInd, period, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
     scene.setup();
   }
 }

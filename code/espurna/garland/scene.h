@@ -24,7 +24,7 @@ public:
 
     class Anim {
     public:
-        String getName();
+        String getName() { return _name; }
         Anim(String name);
         void Setup(int paletteInd , Color* leds);
         virtual void Run() = 0;
