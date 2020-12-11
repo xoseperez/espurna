@@ -11,7 +11,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+#include "SdsDustSensor.h"
 
 #include "BaseSensor.h"
 
@@ -30,7 +30,7 @@ class SDS011Sensor : public BaseSensor {
         }
 
         ~SDS011Sensor() {
-            if (_serial) delete _serial;
+            if (_sensor) delete _sensor;
         }
 
         // ---------------------------------------------------------------------
@@ -66,10 +66,24 @@ class SDS011Sensor : public BaseSensor {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_sensor) delete _sensor;
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx);
-            _serial->begin(9600);
+            _sensor = new SdsDustSensor(_pin_rx, _pin_tx);
+            _sensor->begin(9600);
+
+            #if SDS011_REPORTING_MODE == 0
+                _sensor->setQueryReportingMode();
+            #elif SDS011_REPORTING_MODE == 1
+                _sensor->setActiveReportingMode();
+                _sensor->setContinuousWorkingPeriod();
+                #if SDS011_CUSTOM_WORKING_PERIOD > 0
+                _sensor->setCustomWorkingPeriod(SDS011_CUSTOM_WORKING_PERIOD / 60);
+                #endif
+            #endif
+
+            DEBUG_MSG_P(PSTR("[SDS011] %s\n"), _sensor->queryFirmwareVersion().toString().c_str());
+            DEBUG_MSG_P(PSTR("[SDS011] %s\n"), _sensor->queryReportingMode().toString().c_str());
+            DEBUG_MSG_P(PSTR("[SDS011] %s\n"), _sensor->queryWorkingPeriod().toString().c_str());
 
             _ready = true;
             _dirty = false;
@@ -121,53 +135,44 @@ class SDS011Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         void _read() {
-            byte buffer;
-            int value;
-            int len = 0;
-            int pm10_serial = 0;
-            int pm25_serial = 0;
-            int checksum_is = 0;
-            int checksum_ok = 0;
+            #if SDS011_REPORTING_MODE == 0
+            PmResult pm = _sensor->queryPm();
+            #elif SDS011_REPORTING_MODE == 1
+            PmResult pm = _sensor->readPm();
+            #endif
 
-            while ((_serial->available() > 0) && (_serial->available() >= (10-len))) {
-                buffer = _serial->read();
-                value = int(buffer);
-                switch (len) {
-                    case (0): if (value != 170) { len = -1; }; break;
-                    case (1): if (value != 192) { len = -1; }; break;
-                    case (2): pm25_serial = value; checksum_is = value; break;
-                    case (3): pm25_serial += (value << 8); checksum_is += value; break;
-                    case (4): pm10_serial = value; checksum_is += value; break;
-                    case (5): pm10_serial += (value << 8); checksum_is += value; break;
-                    case (6): checksum_is += value; break;
-                    case (7): checksum_is += value; break;
-                    case (8): if (value == (checksum_is % 256)) { checksum_ok = 1; } else { len = -1; }; break;
-                    case (9): if (value != 171) { len = -1; }; break;
-                }
+            if (!pm.isOk()) {
+                switch (pm.status) {
+                    case Status::NotAvailable:
+                    #if SDS011_CUSTOM_WORKING_PERIOD != -1
+                        if (_p2dot5 == 0 && _p10 == 0) {
+                            _error = SENSOR_ERROR_WARM_UP;
+                            return;
+                        }
 
-                len++;
-
-                if (len == 10) {
-                    if(checksum_ok == 1) {
-                        _p10 = (float)pm10_serial/10.0;
-                        _p2dot5 = (float)pm25_serial/10.0;
-                        len = 0; checksum_ok = 0; pm10_serial = 0.0; pm25_serial = 0.0; checksum_is = 0;
                         _error = SENSOR_ERROR_OK;
-                    } else {
+                        return;
+                    #endif
+                    case Status::InvalidChecksum:
                         _error = SENSOR_ERROR_CRC;
-                    }
+                        return;
+                    default:
+                        _error = SENSOR_ERROR_OTHER;
+                        return;
                 }
-
-                yield();
             }
 
+            _error = SENSOR_ERROR_OK;
+
+            _p10 = pm.pm10;
+            _p2dot5 = pm.pm25;
         }
 
         double _p2dot5 = 0;
         double _p10 = 0;
         unsigned int _pin_rx;
         unsigned int _pin_tx;
-        SoftwareSerial * _serial = NULL;
+        SdsDustSensor * _sensor = NULL;
 
 };
 
