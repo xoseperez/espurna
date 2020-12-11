@@ -139,12 +139,12 @@ void garlandLoop(void) {
     byte period = random(5, 30);
     scene.setPeriod(period);
 
-    // int prevPalInd = paletteInd;
-    // while (prevPalInd == paletteInd) paletteInd = random(PALS);    
-    // scene.setPalette(pals[paletteInd]);
+    int prevPalInd = paletteInd;
+    while (prevPalInd == paletteInd) paletteInd = random(PALS);    
+    scene.setPalette(pals[paletteInd]);
 
     DEBUG_MSG_P(PSTR("[GARLAND] Scene: %d, Pal: %d, Period: %d, Inter: %d, avg_calc: %d, avg_show: %d\n"), animInd, paletteInd, period, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
-    scene.doSetUp();
+    scene.setup();
   }
 }
 
@@ -166,11 +166,10 @@ void garlandSetup() {
   pixels.begin();
   randomSeed(analogRead(0)*analogRead(1));
   paletteInd = random(PALS);
-  // scene.setAnim(animInd);
   scene.setAnim(&anim_start);
   scene.setPeriod(6);
-  // scene.setPalette(pals[0]);
-  scene.doSetUp();
+  scene.setPalette(pals[0]);
+  scene.setup();
 
   _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }

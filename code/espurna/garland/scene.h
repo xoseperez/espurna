@@ -4,8 +4,8 @@
 #include "palette.h"
 #include "..\config\general.h"
 
-const int   PIN  = GARLAND_D_PIN; // WS2812 pin number
-const int   LEDS = GARLAND_LEDS;
+constexpr int   PIN  = GARLAND_D_PIN; // WS2812 pin number
+constexpr int   LEDS = GARLAND_LEDS;
 #define DEFAULT_BRIGHTNESS 12//256// brightness adjustment, up to 256
 
 #define TRANSITION_MS 1000 // transition time between animations, ms
@@ -20,7 +20,7 @@ const int   LEDS = GARLAND_LEDS;
 
 class Scene {
 public:
-    Scene();
+    Scene() = default;
 
     class Anim {
     public:
@@ -75,7 +75,7 @@ public:
     byte getBrightness();
     void setAnim(Anim* anim) { _anim = anim; }
     bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
-    void doSetUp();
+    void setup();
     unsigned long getAvgCalcTime();
     unsigned long getAvgShowTime();
     
@@ -93,8 +93,6 @@ private:
     int paletteInd = 0;
     Palette *palette;
 
-    // millis for next timeslot 
-    unsigned long nextms;
     // millis to transition end
     unsigned long transms;
 
@@ -106,14 +104,12 @@ private:
 
     //whether to call SetUp on palette change
     //(some animations require full transition with fade, otherwise the colors would change in a step, some not)
-    bool setUpOnPalChange;
+    bool setUpOnPalChange = true;
 
     Color curColor = Color(0);
     Color prevColor = Color(0);
 
     Color sparkleColor = Color(0xFFFFFF);
-
-    static byte seq[LEDS];
 
     //brigthness animation (BrA) current initial phase
     byte braPhase;
@@ -142,7 +138,7 @@ private:
     //glow animation - must be called at the end of each animaton run
     void glowRun();
 
-    void setUp();
+    void setupImpl();
 };
 
 unsigned int rng();
