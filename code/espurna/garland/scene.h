@@ -6,7 +6,7 @@
 
 constexpr int   PIN  = GARLAND_D_PIN; // WS2812 pin number
 constexpr int   LEDS = GARLAND_LEDS;
-#define DEFAULT_BRIGHTNESS 12//256// brightness adjustment, up to 256
+#define DEFAULT_BRIGHTNESS 255// brightness adjustment, up to 255
 
 #define TRANSITION_MS 1000 // transition time between animations, ms
 
