@@ -1,0 +1,1 @@
+#define GARLAND_SUPPORT 1
