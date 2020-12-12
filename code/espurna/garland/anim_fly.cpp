@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "anims.h"
 #include "color.h"
 #include "palette.h"
@@ -42,3 +44,5 @@ void AnimFly::Run() {
 }
 
 AnimFly anim_fly;
+
+#endif // GARLAND_SUPPORT

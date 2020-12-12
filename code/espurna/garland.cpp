@@ -11,10 +11,10 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #include "ws.h"
 #include "web.h"
-#include "garland\scene.h"
-#include "garland\color.h"
-#include "garland\palette.h"
-#include "garland\anims.h"
+#include "garland/scene.h"
+#include "garland/color.h"
+#include "garland/palette.h"
+#include "garland/anims.h"
 #include <Adafruit_NeoPixel.h>
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";

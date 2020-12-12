@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "anims.h"
 #include "scene.h"
 
@@ -33,3 +35,5 @@ void AnimStart::Run() {
 }
 
 AnimStart anim_start;
+
+#endif // GARLAND_SUPPORT

@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #ifndef palette_h
 #define palette_h
 
@@ -40,3 +42,5 @@ extern Palette PalIceBlue;
 
 extern Palette * pals[];
 #endif
+
+#endif // GARLAND_SUPPORT

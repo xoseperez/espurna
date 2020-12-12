@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "anims.h"
 #include "color.h"
 #include "palette.h"
@@ -31,3 +33,5 @@ void AnimRun::Run() {
 }
 
 AnimRun anim_run;
+
+#endif // GARLAND_SUPPORT

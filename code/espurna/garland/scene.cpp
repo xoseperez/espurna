@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include <Adafruit_NeoPixel.h>
 #include "color.h"
 #include "palette.h"
@@ -177,3 +179,5 @@ void Scene::Anim::glowRun()
 {
     braPhase += braPhaseSpd;
 }
+
+#endif // GARLAND_SUPPORT

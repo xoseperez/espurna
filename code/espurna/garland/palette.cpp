@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "palette.h"
 
 // Red,Green,Blue sequence
@@ -72,3 +74,5 @@ Color PalIceBlue_[] =
 Palette PalIceBlue = { 3, PalIceBlue_};
 
 Palette * pals[PALS] = {&PalRgb, &PalRainbow, &PalRainbowStripe, &PalParty, &PalHeat, &PalFire, &PalIceBlue};
+
+#endif // GARLAND_SUPPORT

@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #ifndef anims_h
 #define anims_h
 
@@ -81,3 +83,5 @@ extern AnimFly          anim_fly;
 extern AnimPixieDust    anim_pixel_dust;
 
 #endif //anims_h
+
+#endif // GARLAND_SUPPORT

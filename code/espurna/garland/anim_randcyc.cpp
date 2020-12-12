@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "anims.h"
 #include "scene.h"
 
@@ -18,3 +20,5 @@ void AnimRandCyc::Run() {
 }
 
 AnimRandCyc anim_rand_cyc;
+
+#endif // GARLAND_SUPPORT

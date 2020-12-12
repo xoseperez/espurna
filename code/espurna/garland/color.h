@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #ifndef color_h
 #define color_h
 #include <Arduino.h>
@@ -77,3 +79,5 @@ struct Color
 } ;
 
 #endif
+
+#endif // GARLAND_SUPPORT

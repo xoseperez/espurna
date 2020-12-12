@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "anims.h"
 #include "color.h"
 #include "palette.h"
@@ -64,3 +66,5 @@ void AnimPixieDust::Run() {
 }
 
 AnimPixieDust anim_pixel_dust;
+
+#endif // GARLAND_SUPPORT

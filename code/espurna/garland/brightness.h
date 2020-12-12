@@ -1,3 +1,4 @@
+#if GARLAND_SUPPORT
 
 const byte PROGMEM BRI[] = {
     0,
@@ -257,3 +258,5 @@ const byte PROGMEM BRI[] = {
     251,
     255    
 };
+
+#endif // GARLAND_SUPPORT

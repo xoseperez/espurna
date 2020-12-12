@@ -1,8 +1,10 @@
+#if GARLAND_SUPPORT
+
 #ifndef anim_h
 #define anim_h
 #include <Adafruit_NeoPixel.h>
 #include "palette.h"
-#include "..\config\general.h"
+#include "../config/general.h"
 
 constexpr int   PIN  = GARLAND_D_PIN; // WS2812 pin number
 constexpr int   LEDS = GARLAND_LEDS;
@@ -146,3 +148,5 @@ unsigned int rng();
 byte rngb();
 
 #endif
+
+#endif // GARLAND_SUPPORT

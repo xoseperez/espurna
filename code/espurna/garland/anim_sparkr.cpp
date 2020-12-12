@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "anims.h"
 #include "scene.h"
 
@@ -62,3 +64,5 @@ void AnimSparkr::Run() {
 }
 
 AnimSparkr anim_sparkr;
+
+#endif // GARLAND_SUPPORT

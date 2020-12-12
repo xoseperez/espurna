@@ -1,3 +1,5 @@
+#if GARLAND_SUPPORT
+
 #include "scene.h"
 
 void Scene::glowSetUp()
@@ -20,3 +22,5 @@ void Scene::glowRun()
 {
     braPhase += braPhaseSpd;
 }
+
+#endif // GARLAND_SUPPORT
