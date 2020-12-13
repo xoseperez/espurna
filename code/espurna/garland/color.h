@@ -71,6 +71,10 @@ struct Color
       return diff <= 220; //220 is magic number. Low values give "true" on closer colors, while higher can cause infinite loop while trying to find different color
     }
 
+    bool empty() {
+      return r == 0 && g == 0 && b == 0;
+    }
+
     void println() {
         Serial.print(("r="));Serial.print(r);Serial.print((" "));
         Serial.print(("g="));Serial.print(g);Serial.print( (" "));

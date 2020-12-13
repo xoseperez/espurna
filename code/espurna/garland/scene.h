@@ -3,19 +3,20 @@
 #ifndef anim_h
 #define anim_h
 #include <Adafruit_NeoPixel.h>
-#include "palette.h"
+
 #include "../config/general.h"
+#include "palette.h"
 
-constexpr int   PIN  = GARLAND_D_PIN; // WS2812 pin number
-constexpr int   LEDS = GARLAND_LEDS;
-#define DEFAULT_BRIGHTNESS 255// brightness adjustment, up to 255
+constexpr int PIN = GARLAND_D_PIN;  // WS2812 pin number
+constexpr int LEDS = GARLAND_LEDS;
+#define DEFAULT_BRIGHTNESS 255  // brightness adjustment, up to 255
 
-#define TRANSITION_MS 1000 // transition time between animations, ms
+#define TRANSITION_MS 1000  // transition time between animations, ms
 
 // brigthness animation amplitude shift. true BrA amplitude is calculated as (0..127) value shifted right by this amount
 #define BRA_AMP_SHIFT 1
 // brigthness animation amplitude offset
-#define BRA_OFFSET 127//(222-64)
+#define BRA_OFFSET 127  //(222-64)
 
 //probability of spark when in idle plase
 #define SPARK_PROB 3
@@ -28,32 +29,32 @@ public:
     public:
         String getName() { return _name; }
         Anim(String name);
-        void Setup(int paletteInd , Color* leds);
+        void Setup(int paletteInd, Color* leds);
         virtual void Run() = 0;
 
     protected:
         int phase;
         int pos;
         int inc;
-        Palette*        _palette;
-        Color*          _leds;
+        Palette* _palette;
+        Color* _leds;
 
         //brigthness animation (BrA) current initial phase
         byte braPhase;
-        //braPhase change speed 
-        byte braPhaseSpd=5;
+        //braPhase change speed
+        byte braPhaseSpd = 5;
         //BrA frequency (spatial)
-        byte braFreq=150;
+        byte braFreq = 150;
 
         static byte seq[LEDS];
 
         Color curColor = Color(0);
         Color prevColor = Color(0);
         const Color sparkleColor = Color(0xFFFFFF);
-        
+
         //auxiliary colors array
         static Color ledstmp[LEDS];
-        
+
         virtual void SetupImpl(){};
 
         //glow animation setup
@@ -63,24 +64,23 @@ public:
         //note this overwrites the LED color, so the glow assumes that color will be stored elsewhere (not in leds[])
         //or computed each time regardless previous leds[] value
         void glowForEachLed(int i);
-        
+
         //glow animation - must be called at the end of each animaton run
         void glowRun();
 
     private:
-        const String    _name;
+        const String _name;
     };
 
-    void setPeriod(byte period);
-    void setPalette(Palette * pal);
+    void setPalette(Palette* pal);
     void setBrightness(byte brightness);
     byte getBrightness();
     void setAnim(Anim* anim) { _anim = anim; }
-    bool run();//returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
+    bool run();  //returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
     void setup();
     unsigned long getAvgCalcTime();
     unsigned long getAvgShowTime();
-    
+
 private:
     //Color arrays - two for making transition
     static Color leds1[LEDS];
@@ -88,12 +88,10 @@ private:
     //auxiliary colors array
     static Color ledstmp[LEDS];
 
-    // length of animation timeslot (period)
-    byte period;
     // array of Color to work with
-    Color *leds;
+    Color* leds;
     int paletteInd = 0;
-    Palette *palette;
+    Palette* palette;
 
     // millis to transition end
     unsigned long transms;
@@ -115,15 +113,13 @@ private:
 
     //brigthness animation (BrA) current initial phase
     byte braPhase;
-    //braPhase change speed 
-    byte braPhaseSpd=5;
+    //braPhase change speed
+    byte braPhaseSpd = 5;
     //BrA frequency (spatial)
-    byte braFreq=150;
+    byte braFreq = 150;
 
-    unsigned long start_time = 0;
     unsigned long sum_calc_time = 0;
     unsigned long sum_show_time = 0;
-    unsigned int sum_num = 0;
     unsigned int calc_num = 0;
     unsigned int show_num = 0;
 
@@ -136,7 +132,7 @@ private:
     //note this overwrites the LED color, so the glow assumes that color will be stored elsewhere (not in leds[])
     //or computed each time regardless previous leds[] value
     void glowForEachLed(int i);
-    
+
     //glow animation - must be called at the end of each animaton run
     void glowRun();
 
@@ -149,4 +145,4 @@ byte rngb();
 
 #endif
 
-#endif // GARLAND_SUPPORT
+#endif  // GARLAND_SUPPORT

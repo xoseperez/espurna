@@ -73,6 +73,14 @@ public:
 };
 
 //------------------------------------------------------------------------------
+class AnimComets : public Scene::Anim {
+public:
+    AnimComets();
+    void SetupImpl() override;
+    void Run() override;
+};
+
+//------------------------------------------------------------------------------
 extern AnimStart        anim_start;
 extern AnimRun          anim_run;
 extern AnimStars        anim_stars;
@@ -81,6 +89,7 @@ extern AnimSparkr       anim_sparkr;
 extern AnimRandCyc      anim_rand_cyc;
 extern AnimFly          anim_fly;
 extern AnimPixieDust    anim_pixel_dust;
+extern AnimComets       anim_comets;
 
 #endif //anims_h
 
