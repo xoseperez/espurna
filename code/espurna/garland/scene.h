@@ -5,7 +5,6 @@
 #include "../config/general.h"
 #include "palette.h"
 
-constexpr int PIN = GARLAND_D_PIN;  // WS2812 pin number
 constexpr int LEDS = GARLAND_LEDS;
 #define DEFAULT_BRIGHTNESS 12  // brightness adjustment, up to 255
 

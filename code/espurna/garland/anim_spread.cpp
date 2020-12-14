@@ -12,13 +12,12 @@ AnimSpread::AnimSpread() : Scene::Anim("Spread") {
 
 void AnimSpread::SetupImpl() {
     inc = secureRandom(2, 8);
-    memset(seq, 0, LEDS);
+    for (auto& s : seq) s = 0;
 }
 
 void AnimSpread::Run() {
-    memset(_leds, 0, 3 * LEDS);
-
     for (int i = 0; i < LEDS; i++) {
+        _leds[i] = 0;
         if (seq[i] > 0) {
             byte width = SPREAD_MAX_WIDTH - seq[i];
             for (int j = i - width; j <= (i + width); j++) {

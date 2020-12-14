@@ -16,7 +16,8 @@ void AnimStars::SetupImpl() {
     inc = secureRandom(2, 5);
 
     //reset all phases
-    memset(seq, 255, LEDS);
+    for (auto& s : seq)
+        s = 255;
 }
 
 void AnimStars::Run() {

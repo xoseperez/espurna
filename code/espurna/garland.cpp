@@ -24,6 +24,8 @@ const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 
+constexpr int PIN                       = GARLAND_D_PIN; // WS2812 pin number
+
 #define EFFECT_UPDATE_INTERVAL_MIN      5000  // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX      10000 // 10 sec
 
@@ -166,17 +168,19 @@ void garlandLoop(void) {
 
     if (millis() - _last_update > _interval_effect_update) {
         _last_update = millis();
-        _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+        _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
         int prevAnimInd = animInd;
-        while (prevAnimInd == animInd) animInd = random(1, anims.size());
+        while (prevAnimInd == animInd) animInd = secureRandom(1, anims.size());
 
         int prevPalInd = paletteInd;
-        while (prevPalInd == paletteInd) paletteInd = random(pals.size());
+        while (prevPalInd == paletteInd) paletteInd = secureRandom(pals.size());
 
-        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d calc: %4d pixl: %4d show: %4d\n"),
-                    anims[animInd]->getName().c_str(), pals[paletteInd].name().c_str(), _interval_effect_update, 
+        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %4d show: %4d\n"),
+                    anims[prevAnimInd]->getName().c_str(), pals[prevPalInd].name().c_str(),
                     scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime());
+        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
+                    anims[animInd]->getName().c_str(), pals[paletteInd].name().c_str(), _interval_effect_update);
 
         scene.setAnim(anims[animInd]);
         scene.setPalette(&pals[paletteInd]);
@@ -200,12 +204,12 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    paletteInd = random(pals.size());
+    paletteInd = secureRandom(pals.size());
     scene.setAnim(anims[0]);
     scene.setPalette(&pals[0]);
     scene.setup();
 
-    _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+    _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
 
 #endif  // GARLAND_SUPPORT
