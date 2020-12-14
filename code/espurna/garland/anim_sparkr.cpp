@@ -44,7 +44,7 @@ void AnimSparkr::Run() {
     glowRun();
 
     if (phase > LEDS) {
-        if (random(SPARK_PROB) == 0) {
+        if (secureRandom(SPARK_PROB) == 0) {
             int i = (int)rngb() * LEDS / 256;
             _leds[i] = sparkleColor;
         }

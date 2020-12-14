@@ -11,34 +11,34 @@ AnimSpread::AnimSpread() : Scene::Anim("Spread") {
 }
 
 void AnimSpread::SetupImpl() {
-    inc = random(2,8);
+    inc = secureRandom(2, 8);
     memset(seq, 0, LEDS);
 }
 
 void AnimSpread::Run() {
-    memset(_leds, 0, 3*LEDS);
+    memset(_leds, 0, 3 * LEDS);
 
-    for (int i=0;i<LEDS;i++) {
+    for (int i = 0; i < LEDS; i++) {
         if (seq[i] > 0) {
             byte width = SPREAD_MAX_WIDTH - seq[i];
-            for (int j=i-width;j<=(i+width);j++) {
+            for (int j = i - width; j <= (i + width); j++) {
                 Color c = ledstmp[i];
-                if (j>=0 && j<LEDS) {
+                if (j >= 0 && j < LEDS) {
                     _leds[j].r += c.r;
                     _leds[j].g += c.g;
                     _leds[j].b += c.b;
                 }
             }
-            ledstmp[i].fade(255/SPREAD_MAX_WIDTH);
+            ledstmp[i].fade(255 / SPREAD_MAX_WIDTH);
             seq[i]--;
         }
     }
 
-    if (random(inc) == 0) {
-        byte pos = random(0,LEDS); 
+    if (secureRandom(inc) == 0) {
+        byte pos = secureRandom(0, LEDS);
         ledstmp[pos] = _palette->getRndInterpColor();
         seq[pos] = SPREAD_MAX_WIDTH;
-    }        
+    }
 }
 
-#endif // GARLAND_SUPPORT
+#endif  // GARLAND_SUPPORT

@@ -15,11 +15,10 @@ void AnimStart::Run() {
         _leds[phase].r = 255;
         _leds[phase].g = 255;
         _leds[phase].b = 255;
-        for(int i=0; i<LEDS; i++) {
+        for (int i = 0; i < LEDS; i++) {
             _leds[i].fade(50);
-        }        
-    } else if (phase >= LEDS) 
-    {
+        }
+    } else if (phase >= LEDS) {
         for(int i=0; i<LEDS; i++) {
             short r = LEDS + 255 - phase + rngb();
             r = min(r,(short)255); _leds[i].r = (byte)max(r,(short)0);

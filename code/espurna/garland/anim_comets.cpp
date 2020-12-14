@@ -1,23 +1,22 @@
 #if GARLAND_SUPPORT
 
+#include <list>
+
 #include "anims.h"
 #include "color.h"
 #include "palette.h"
 #include "scene.h"
-#include "espurna.h"
-
-#include <list>
 
 struct Comet {
-    float head = random(0, LEDS/2);
-    int len = random(10, 20);
-    float speed = ((float)random(4, 10)) / 10;
+    float head = secureRandom(0, LEDS / 2);
+    int len = secureRandom(10, 20);
+    float speed = ((float)secureRandom(4, 10)) / 10;
     Color color;
     int dir = 1;
     Comet(Palette* pal) : color(pal->getRndInterpColor()) {
         // DEBUG_MSG_P(PSTR("[GARLAND] Comet created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
-        if (random(10) > 5) {
-            head = LEDS-head;
+        if (secureRandom(10) > 5) {
+            head = LEDS - head;
             dir = -1;
         }
     }
@@ -30,7 +29,7 @@ AnimComets::AnimComets() : Scene::Anim("Comets") {
 
 void AnimComets::SetupImpl() {
     comets.clear();
-    for (int i=0; i<4; ++i)
+    for (int i = 0; i < 4; ++i)
         comets.emplace_back(_palette);
 }
 
@@ -41,7 +40,7 @@ void AnimComets::Run() {
         int tail = c.head + c.len * -c.dir;
         // Check if Comet out of range and generate it again
         if ((c.head < 0 && tail < 0) || (c.head >= LEDS && tail >= LEDS)) {
-            Comet new_comet(_palette); 
+            Comet new_comet(_palette);
             std::swap(c, new_comet);
         }
 
@@ -60,6 +59,4 @@ void AnimComets::Run() {
     }
 }
 
-AnimComets anim_comets;
-
-#endif // GARLAND_SUPPORT
+#endif  // GARLAND_SUPPORT

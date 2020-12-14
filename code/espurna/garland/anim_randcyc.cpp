@@ -7,16 +7,16 @@ AnimRandCyc::AnimRandCyc() : Scene::Anim("RandCyc") {
 }
 
 void AnimRandCyc::SetupImpl() {
-    for (int i=0;i<LEDS;i++) {
+    for (int i = 0; i < LEDS; i++) {
         seq[i] = rngb();
     }
 }
 
 void AnimRandCyc::Run() {
-    for (int i=0;i<LEDS;i++) {
+    for (int i = 0; i < LEDS; i++) {
         _leds[i] = _palette->getPalColor((float)seq[i] / 256);
-        seq[i]+=rngb() >> 6;
+        seq[i] += rngb() >> 6;
     }
 }
 
-#endif // GARLAND_SUPPORT
+#endif  // GARLAND_SUPPORT

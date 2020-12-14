@@ -11,26 +11,25 @@
 AnimStars::AnimStars() : Scene::Anim("Stars") {
 }
 
-
 void AnimStars::SetupImpl() {
     //inc is (average) interval between appearance of new stars
-    inc = random (2, 5);
+    inc = secureRandom(2, 5);
 
     //reset all phases
-    memset(seq, 255, LEDS); 
+    memset(seq, 255, LEDS);
 }
 
-void AnimStars::Run() {   
-    for (byte i=0;i<LEDS;i++) {
+void AnimStars::Run() {
+    for (byte i = 0; i < LEDS; i++) {
         byte phi = seq[i];
         if (phi < 254) {
             Color col = ledstmp[i];
             if (phi <= 127) {
                 _leds[i] = col.brightness(phi << 1);
             } else {
-                _leds[i] = col.brightness((255-phi) << 1);
+                _leds[i] = col.brightness((255 - phi) << 1);
             }
-            seq[i]+=2;
+            seq[i] += 2;
         } else {
             _leds[i].r = 0;
             _leds[i].g = 0;
@@ -38,8 +37,8 @@ void AnimStars::Run() {
         }
     }
 
-    if (random(inc) == 0) {
-        byte pos = random(LEDS);
+    if (secureRandom(inc) == 0) {
+        byte pos = secureRandom(LEDS);
         if (seq[pos] > 250) {
             seq[pos] = 0;
             ledstmp[pos] = _palette->getRndInterpColor();
@@ -47,4 +46,4 @@ void AnimStars::Run() {
     }
 }
 
-#endif // GARLAND_SUPPORT
+#endif  // GARLAND_SUPPORT
