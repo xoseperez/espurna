@@ -42,7 +42,7 @@ void AnimStars::Run() {
         byte pos = random(LEDS);
         if (seq[pos] > 250) {
             seq[pos] = 0;
-            ledstmp[pos] = _palette->getRndNeighborInterpColor();
+            ledstmp[pos] = _palette->getRndInterpColor();
         }
     }
 }

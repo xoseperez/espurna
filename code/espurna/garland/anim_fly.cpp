@@ -35,7 +35,7 @@ void AnimFly::Run() {
     }
 
     if (random(abs(inc)) == 0) {
-        curColor = _palette->getRndNeighborInterpColor();
+        curColor = _palette->getRndInterpColor();
         phase = pos;
     }
 

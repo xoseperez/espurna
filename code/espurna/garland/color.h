@@ -66,16 +66,21 @@ struct Color
     }  
 
     //checks whether this color is visually close to given one
-    bool isCloseTo(Color c) {
+    bool isCloseTo(Color c) const {
       int diff = abs(r-c.r) + abs(g-c.g) + abs(b-c.b);
       return diff <= 220; //220 is magic number. Low values give "true" on closer colors, while higher can cause infinite loop while trying to find different color
     }
 
-    bool empty() {
+    //return value, that can be used to define how close one color to another
+    int howCloseTo(Color c) const {
+      return abs(r-c.r) + abs(g-c.g) + abs(b-c.b);
+    }
+
+    bool empty() const {
       return r == 0 && g == 0 && b == 0;
     }
 
-    void println() {
+    void println() const {
         Serial.print(("r="));Serial.print(r);Serial.print((" "));
         Serial.print(("g="));Serial.print(g);Serial.print( (" "));
         Serial.print(("b="));Serial.println(b);

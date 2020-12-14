@@ -14,7 +14,7 @@
 //     float speed = ((float)random(4, 10)) / 10;
 //     Color color;
 //     int dir = 1;
-//     Dot(Palette* pal) : color(pal->getRndNeighborInterpColor()) {
+//     Dot(Palette* pal) : color(pal->getRndInterpColor()) {
 //         // DEBUG_MSG_P(PSTR("[GARLAND] Dot created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
 //         if (random(10) > 5) {
 //             head = LEDS-head;

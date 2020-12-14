@@ -36,7 +36,7 @@ void AnimSpread::Run() {
 
     if (random(inc) == 0) {
         byte pos = random(0,LEDS); 
-        ledstmp[pos] = _palette->getRndNeighborInterpColor();
+        ledstmp[pos] = _palette->getRndInterpColor();
         seq[pos] = SPREAD_MAX_WIDTH;
     }        
 }

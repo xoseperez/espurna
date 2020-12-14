@@ -33,7 +33,7 @@ void AnimPixieDust::Run() {
         if (phase >= 4*LEDS) {
             phase = -DUST_LENGTH/2;
             prevColor = curColor;
-            curColor = _palette->getRndNeighborInterpColor();     
+            curColor = _palette->getRndInterpColor();     
         }
     } else {
         for (int i=0;i<LEDS;i++) {
@@ -44,9 +44,7 @@ void AnimPixieDust::Run() {
         if (phase <= -3*LEDS) {
             phase = LEDS + DUST_LENGTH/2;
             prevColor = curColor;
-            while (prevColor.isCloseTo(curColor)) { 
-                curColor = _palette->getRndNeighborInterpColor();
-            }
+            curColor = _palette->getContrastColor(prevColor);
         }
     }
     glowRun();

@@ -6,15 +6,15 @@
 AnimSparkr::AnimSparkr() : Scene::Anim("Sparkr") {
 }
 
-void AnimSparkr::initSeq(byte * seq) {
-    for (int i=0; i<LEDS; i++) {
+void AnimSparkr::initSeq(byte* seq) {
+    for (int i = 0; i < LEDS; i++) {
         seq[i] = i;
     }
 }
 
-void AnimSparkr::shuffleSeq(byte * seq) {
-    for (int i=0; i<LEDS; i++) {
-        byte ind = (unsigned int) ( rngb() * LEDS / 256);
+void AnimSparkr::shuffleSeq(byte* seq) {
+    for (int i = 0; i < LEDS; i++) {
+        byte ind = (unsigned int)(rngb() * LEDS / 256);
         if (ind != i) {
             byte tmp = seq[ind];
             seq[ind] = seq[i];
@@ -26,21 +26,19 @@ void AnimSparkr::shuffleSeq(byte * seq) {
 void AnimSparkr::SetupImpl() {
     glowSetUp();
     phase = 0;
-    curColor = _palette->getRndNeighborInterpColor();
-    prevColor = _palette->getRndNeighborInterpColor();
+    curColor = _palette->getRndInterpColor();
+    prevColor = _palette->getRndInterpColor();
     initSeq(seq);
     shuffleSeq(seq);
-
-
 }
 
 void AnimSparkr::Run() {
-    for (int i=0;i<LEDS;i++) {
+    for (int i = 0; i < LEDS; i++) {
         byte pos = seq[i];
 
-        _leds[pos] = (i > phase)
-            ? prevColor 
-            : (i == phase) ? sparkleColor : curColor;
+        _leds[pos] = (i > phase) ? prevColor
+                                 : (i == phase) ? sparkleColor
+                                                : curColor;
         glowForEachLed(i);
     }
     glowRun();
@@ -49,18 +47,16 @@ void AnimSparkr::Run() {
         if (random(SPARK_PROB) == 0) {
             int i = (int)rngb() * LEDS / 256;
             _leds[i] = sparkleColor;
-        }    
+        }
     }
 
     phase++;
-    if (phase > 2*LEDS) {
+    if (phase > 2 * LEDS) {
         phase = 0;
         prevColor = curColor;
-        while (prevColor.isCloseTo(curColor)) {
-            curColor = _palette->getRndNeighborInterpColor();     
-        }
+        curColor = _palette->getContrastColor(prevColor);
         shuffleSeq(seq);
     }
 }
 
-#endif // GARLAND_SUPPORT
+#endif  // GARLAND_SUPPORT
