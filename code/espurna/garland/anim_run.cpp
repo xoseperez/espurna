@@ -19,7 +19,7 @@ void AnimRun::SetupImpl() {
 void AnimRun::Run() {
     int p = pos;
     for (int i=0;i<LEDS;i++) {
-        Color c = _palette->getPalColor((float)p/256);
+        Color c = _palette->getPalColor((float)p / 256);
         _leds[i] = c;
    
         p = p + inc;
@@ -31,7 +31,5 @@ void AnimRun::Run() {
     }
     pos = pos + 1;
 }
-
-AnimRun anim_run;
 
 #endif // GARLAND_SUPPORT

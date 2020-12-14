@@ -5,7 +5,6 @@
 #include "palette.h"
 #include "scene.h"
 
-
 #define DUST_LENGTH 20
 
 AnimPixieDust::AnimPixieDust() : Scene::Anim("PixieDust") {
@@ -13,8 +12,8 @@ AnimPixieDust::AnimPixieDust() : Scene::Anim("PixieDust") {
 
 void AnimPixieDust::SetupImpl() {
     phase = 0;
-    curColor = _palette->getPalColor((float)rng()/256);
-    prevColor = _palette->getPalColor((float)rng()/256);
+    curColor = _palette->getRndInterpColor();
+    prevColor = _palette->getRndInterpColor();
     inc = random(2)*2-1;
     if (inc > 0) {
         phase = -DUST_LENGTH/2;
@@ -34,7 +33,7 @@ void AnimPixieDust::Run() {
         if (phase >= 4*LEDS) {
             phase = -DUST_LENGTH/2;
             prevColor = curColor;
-            curColor = _palette->getPalColor((float)rngb()/256);     
+            curColor = _palette->getRndNeighborInterpColor();     
         }
     } else {
         for (int i=0;i<LEDS;i++) {
@@ -46,7 +45,7 @@ void AnimPixieDust::Run() {
             phase = LEDS + DUST_LENGTH/2;
             prevColor = curColor;
             while (prevColor.isCloseTo(curColor)) { 
-              curColor = _palette->getPalColor((float)rngb()/256);     
+                curColor = _palette->getRndNeighborInterpColor();
             }
         }
     }
@@ -64,7 +63,5 @@ void AnimPixieDust::Run() {
         }
     }
 }
-
-AnimPixieDust anim_pixel_dust;
 
 #endif // GARLAND_SUPPORT

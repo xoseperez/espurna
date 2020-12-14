@@ -1,7 +1,6 @@
-#if GARLAND_SUPPORT
+#pragma once
 
-#ifndef anims_h
-#define anims_h
+#if GARLAND_SUPPORT
 
 #include "scene.h"
 
@@ -81,16 +80,11 @@ public:
 };
 
 //------------------------------------------------------------------------------
-extern AnimStart        anim_start;
-extern AnimRun          anim_run;
-extern AnimStars        anim_stars;
-extern AnimSpread       anim_spread;
-extern AnimSparkr       anim_sparkr;
-extern AnimRandCyc      anim_rand_cyc;
-extern AnimFly          anim_fly;
-extern AnimPixieDust    anim_pixel_dust;
-extern AnimComets       anim_comets;
-
-#endif //anims_h
+class AnimAssemble : public Scene::Anim {
+public:
+    AnimAssemble();
+    void SetupImpl() override;
+    void Run() override;
+};
 
 #endif // GARLAND_SUPPORT

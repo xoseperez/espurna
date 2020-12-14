@@ -42,11 +42,9 @@ void AnimStars::Run() {
         byte pos = random(LEDS);
         if (seq[pos] > 250) {
             seq[pos] = 0;
-            ledstmp[pos] = _palette->getPalColor((float)rngb()/256);
+            ledstmp[pos] = _palette->getRndNeighborInterpColor();
         }
     }
 }
-
-AnimStars anim_stars;
 
 #endif // GARLAND_SUPPORT

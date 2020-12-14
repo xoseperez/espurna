@@ -36,11 +36,9 @@ void AnimSpread::Run() {
 
     if (random(inc) == 0) {
         byte pos = random(0,LEDS); 
-        ledstmp[pos] = _palette->getPalColor((float)rngb()/256);
+        ledstmp[pos] = _palette->getRndNeighborInterpColor();
         seq[pos] = SPREAD_MAX_WIDTH;
     }        
 }
-
-AnimSpread anim_spread;
 
 #endif // GARLAND_SUPPORT

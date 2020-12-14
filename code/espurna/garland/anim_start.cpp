@@ -34,6 +34,4 @@ void AnimStart::Run() {
     phase++;
 }
 
-AnimStart anim_start;
-
 #endif // GARLAND_SUPPORT

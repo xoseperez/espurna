@@ -35,14 +35,12 @@ void AnimFly::Run() {
     }
 
     if (random(abs(inc)) == 0) {
-        curColor = _palette->getPalColor((float)rngb()/256);
+        curColor = _palette->getRndNeighborInterpColor();
         phase = pos;
     }
 
     _leds[launchpos] = Color( (int)curColor.r * phase / pos, (int)curColor.g * phase / pos, (int)curColor.b * phase / pos) ;
     if (phase > 0) phase--; 
 }
-
-AnimFly anim_fly;
 
 #endif // GARLAND_SUPPORT

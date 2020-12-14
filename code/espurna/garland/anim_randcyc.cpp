@@ -19,6 +19,4 @@ void AnimRandCyc::Run() {
     }
 }
 
-AnimRandCyc anim_rand_cyc;
-
 #endif // GARLAND_SUPPORT

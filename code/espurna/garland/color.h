@@ -1,7 +1,7 @@
+#pragma once
+
 #if GARLAND_SUPPORT
 
-#ifndef color_h
-#define color_h
 #include <Arduino.h>
 
 struct Color
@@ -80,8 +80,6 @@ struct Color
         Serial.print(("g="));Serial.print(g);Serial.print( (" "));
         Serial.print(("b="));Serial.println(b);
     }
-} ;
-
-#endif
+};
 
 #endif // GARLAND_SUPPORT

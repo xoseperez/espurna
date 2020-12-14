@@ -26,8 +26,8 @@ void AnimSparkr::shuffleSeq(byte * seq) {
 void AnimSparkr::SetupImpl() {
     glowSetUp();
     phase = 0;
-    curColor = _palette->getPalColor((float)rngb()/256);
-    prevColor = _palette->getPalColor((float)rngb()/256);
+    curColor = _palette->getRndNeighborInterpColor();
+    prevColor = _palette->getRndNeighborInterpColor();
     initSeq(seq);
     shuffleSeq(seq);
 
@@ -56,13 +56,11 @@ void AnimSparkr::Run() {
     if (phase > 2*LEDS) {
         phase = 0;
         prevColor = curColor;
-        while (prevColor.isCloseTo(curColor)) { 
-          curColor = _palette->getPalColor((float)rngb()/256);     
+        while (prevColor.isCloseTo(curColor)) {
+            curColor = _palette->getRndNeighborInterpColor();     
         }
         shuffleSeq(seq);
     }
 }
-
-AnimSparkr anim_sparkr;
 
 #endif // GARLAND_SUPPORT

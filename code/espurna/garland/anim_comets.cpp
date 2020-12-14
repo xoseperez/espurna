@@ -14,7 +14,7 @@ struct Comet {
     float speed = ((float)random(4, 10)) / 10;
     Color color;
     int dir = 1;
-    Comet(Palette* pal) : color(pal->getPalColor((float)rngb()/256)) {
+    Comet(Palette* pal) : color(pal->getRndNeighborInterpColor()) {
         // DEBUG_MSG_P(PSTR("[GARLAND] Comet created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
         if (random(10) > 5) {
             head = LEDS-head;

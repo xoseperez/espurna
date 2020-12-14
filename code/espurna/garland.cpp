@@ -1,15 +1,15 @@
 /*
-
 GARLAND MODULE
-
 Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
-
 */
 
 #include "garland.h"
+
 #if GARLAND_SUPPORT
 
 #include <Adafruit_NeoPixel.h>
+
+#include <vector>
 
 #include "garland/anims.h"
 #include "garland/color.h"
@@ -24,9 +24,8 @@ const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 
-#define ANIMS                             8 //number of animations
-#define EFFECT_UPDATE_INTERVAL_MIN     5000 // 5 sec
-#define EFFECT_UPDATE_INTERVAL_MAX    10000 // 5 sec
+#define EFFECT_UPDATE_INTERVAL_MIN      5000  // 5 sec
+#define EFFECT_UPDATE_INTERVAL_MAX      10000 // 10 sec
 
 bool _garland_enabled                   = true;
 unsigned long _last_update              = 0;
@@ -34,13 +33,52 @@ unsigned long _interval_effect_update;
 
 int paletteInd;
 int animInd                             = 0; 
-extern Adafruit_NeoPixel pixels;
 
-Scene scene = Scene();
+// Palette should 
+std::vector<Palette> pals = {
+    // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
+    // RGB: Red,Green,Blue sequence
+    Palette("RGB", {0xFF0000, 0x00FF00, 0x0000FF}),
 
-Scene::Anim* anims[] = { &anim_run, &anim_fly, &anim_pixel_dust, &anim_rand_cyc, &anim_sparkr, &anim_spread, &anim_stars, &anim_comets };
+    // Rainbow: Rainbow colors
+    Palette("Rainbow", {0xFF0000, 0xAB5500, 0xABAB00, 0x00FF00, 0x00AB55, 0x0000FF, 0x5500AB, 0xAB0055}),
+    
+    // RainbowStripe: Rainbow colors with alternating stripes of black
+    Palette("Stripe", {0xFF0000, 0x000000, 0xAB5500, 0x000000, 0xABAB00, 0x000000, 0x00FF00, 0x000000,
+                       0x00AB55, 0x000000, 0x0000FF, 0x000000, 0x5500AB, 0x000000, 0xAB0055, 0x000000}),
+    
+    // Party: Blue purple ping red orange yellow (and back). Basically, everything but the greens.
+    // This palette is good for lighting at a club or party.
+    Palette("Party", {0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
+                      0xAB5500, 0xDD2200, 0xF2000E, 0xC2003E, 0x8F0071, 0x5F00A1, 0x2F00D0, 0x0007F9}),
+    
+    // Heat: Approximate "black body radiation" palette, akin to the FastLED 'HeatColor' function.
+    // Recommend that you use values 0-240 rather than the usual 0-255, as the last 15 colors will be
+    // 'wrapping around' from the hot end to the cold end, which looks wrong.
+    Palette("Heat", {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
+    
+    // Fire:
+    Palette("Fire", {0x000000, 0x220000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
+    
+    // Ice Blue:
+    Palette("Blue", {0xffffff, 0x0000ff, 0x00ffff}),
+    
+    // Sun: Slice Of The Sun
+    // Palette("Sun", {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
+    
+    // Lime: yellow green mix
+    // Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
+    
+    // Pastel: Pastel Fruity Mixture
+    // Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})
+};
 
-constexpr bool disableAutoChangeEffects  = false;
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
+Scene scene(&pixels);
+
+std::vector<Scene::Anim*> anims = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
+                                   new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
+constexpr bool disableAutoChangeEffects = false;
 
 //------------------------------------------------------------------------------
 void garlandDisable() {
@@ -131,15 +169,17 @@ void garlandLoop(void) {
         _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
         int prevAnimInd = animInd;
-        while (prevAnimInd == animInd) animInd = random(ANIMS);
-
-        scene.setAnim(anims[animInd]);
+        while (prevAnimInd == animInd) animInd = random(1, anims.size());
 
         int prevPalInd = paletteInd;
-        while (prevPalInd == paletteInd) paletteInd = random(PALS);
-        scene.setPalette(pals[paletteInd]);
+        while (prevPalInd == paletteInd) paletteInd = random(pals.size());
 
-        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %d Inter: %d avg_calc: %d avg_show: %d\n"), anims[animInd]->getName().c_str(), paletteInd, _interval_effect_update, scene.getAvgCalcTime(), scene.getAvgShowTime());
+        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d avg_calc: %d avg_show: %d\n"),
+                    anims[animInd]->getName().c_str(), pals[paletteInd].name().c_str(), _interval_effect_update, 
+                    scene.getAvgCalcTime(), scene.getAvgShowTime());
+
+        scene.setAnim(anims[animInd]);
+        scene.setPalette(&pals[paletteInd]);
         scene.setup();
     }
 }
@@ -160,10 +200,9 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    randomSeed(analogRead(0) * analogRead(1));
-    paletteInd = random(PALS);
-    scene.setAnim(&anim_start);
-    scene.setPalette(pals[0]);
+    paletteInd = random(pals.size());
+    scene.setAnim(anims[0]);
+    scene.setPalette(&pals[0]);
     scene.setup();
 
     _interval_effect_update = random(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);

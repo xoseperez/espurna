@@ -1,15 +1,13 @@
-#if GARLAND_SUPPORT
+#pragma once
 
-#ifndef anim_h
-#define anim_h
-#include <Adafruit_NeoPixel.h>
+#if GARLAND_SUPPORT
 
 #include "../config/general.h"
 #include "palette.h"
 
 constexpr int PIN = GARLAND_D_PIN;  // WS2812 pin number
 constexpr int LEDS = GARLAND_LEDS;
-#define DEFAULT_BRIGHTNESS 255  // brightness adjustment, up to 255
+#define DEFAULT_BRIGHTNESS 12  // brightness adjustment, up to 255
 
 #define TRANSITION_MS 1000  // transition time between animations, ms
 
@@ -21,15 +19,17 @@ constexpr int LEDS = GARLAND_LEDS;
 //probability of spark when in idle plase
 #define SPARK_PROB 3
 
+class Adafruit_NeoPixel;
+
 class Scene {
 public:
-    Scene() = default;
+    Scene(Adafruit_NeoPixel* pixels);
 
     class Anim {
     public:
         String getName() { return _name; }
         Anim(String name);
-        void Setup(int paletteInd, Color* leds);
+        void Setup(Palette* palette, Color* leds);
         virtual void Run() = 0;
 
     protected:
@@ -124,6 +124,7 @@ private:
     unsigned int show_num = 0;
 
     Anim* _anim = nullptr;
+    Adafruit_NeoPixel* _pixels;
 
     //glow animation setup
     void glowSetUp();
@@ -142,7 +143,5 @@ private:
 unsigned int rng();
 
 byte rngb();
-
-#endif
 
 #endif  // GARLAND_SUPPORT

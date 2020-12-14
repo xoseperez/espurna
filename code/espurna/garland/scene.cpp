@@ -8,12 +8,11 @@
 #include "color.h"
 #include "palette.h"
 
-// Adafruit's class to operate strip
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
-
 //=============================================================================
 // Scene
 //=============================================================================
+
+Scene::Scene(Adafruit_NeoPixel* pixels) : _pixels(pixels) {}
 
 void Scene::setPalette(Palette* pal) {
     this->palette = pal;
@@ -46,7 +45,7 @@ bool Scene::run() {
             byte r = (int)pgm_read_byte_near(BRI + c.r) * brightness / 256;
             byte g = (int)pgm_read_byte_near(BRI + c.g) * brightness / 256;
             byte b = (int)pgm_read_byte_near(BRI + c.b) * brightness / 256;
-            pixels.setPixelColor(i, pixels.Color(r, g, b));
+            _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     } else {
         for (int i = 0; i < LEDS; i++) {
@@ -57,14 +56,14 @@ bool Scene::run() {
                 (int)pgm_read_byte_near(BRI + leds[i].g) * brightness / 256;
             byte b =
                 (int)pgm_read_byte_near(BRI + leds[i].b) * brightness / 256;
-            pixels.setPixelColor(i, pixels.Color(r, g, b));
+            _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     }
 
     ++calc_num;
     sum_calc_time += (millis() - iteration_start_time);
 
-    pixels.show();
+    _pixels->show();
     ++show_num;
     sum_show_time += (millis() - iteration_start_time);
 
@@ -82,7 +81,7 @@ void Scene::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(paletteInd, leds);
+        _anim->Setup(palette, leds);
     }
 }
 
@@ -123,8 +122,8 @@ Color Scene::Anim::ledstmp[LEDS];
 //=============================================================================
 Scene::Anim::Anim(String name) : _name(name) {}
 
-void Scene::Anim::Setup(int paletteInd, Color* leds) {
-    _palette = pals[paletteInd];
+void Scene::Anim::Setup(Palette* palette, Color* leds) {
+    _palette = palette;
     _leds = leds;
     SetupImpl();
 }
