@@ -79,6 +79,7 @@ public:
     bool run();  //returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
     void setup();
     unsigned long getAvgCalcTime();
+    unsigned long getAvgPixlTime();
     unsigned long getAvgShowTime();
 
 private:
@@ -119,9 +120,11 @@ private:
     byte braFreq = 150;
 
     unsigned long sum_calc_time = 0;
+    unsigned long sum_pixl_time = 0;
     unsigned long sum_show_time = 0;
     unsigned int calc_num = 0;
     unsigned int show_num = 0;
+    unsigned int pixl_num = 0;
 
     Anim* _anim = nullptr;
     Adafruit_NeoPixel* _pixels;

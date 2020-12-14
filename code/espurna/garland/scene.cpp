@@ -26,11 +26,15 @@ void Scene::setBrightness(byte brightness) { this->brightness = brightness; }
 byte Scene::getBrightness() { return brightness; }
 
 bool Scene::run() {
-    unsigned long iteration_start_time = millis();
+    unsigned long iteration_start_time = micros();
 
     if (_anim) {
         _anim->Run();
     }
+
+    sum_calc_time += (micros() - iteration_start_time);
+    iteration_start_time = micros();
+    ++calc_num;
 
     // transition coef, if within 0..1 - transition is active
     // changes from 1 to 0 during transition, so we interpolate from current
@@ -60,12 +64,14 @@ bool Scene::run() {
         }
     }
 
-    ++calc_num;
-    sum_calc_time += (millis() - iteration_start_time);
+    sum_pixl_time += (micros() - iteration_start_time);
+    iteration_start_time = micros();
+    ++pixl_num;
+    
 
     _pixels->show();
+    sum_show_time += (micros() - iteration_start_time);
     ++show_num;
-    sum_show_time += (millis() - iteration_start_time);
 
     return true;
 }
@@ -87,8 +93,10 @@ void Scene::setupImpl() {
 
 void Scene::setup() {
     sum_calc_time = 0;
+    sum_pixl_time = 0;
     sum_show_time = 0;
     calc_num = 0;
+    pixl_num = 0;
     show_num = 0;
 
     if (!setUpOnPalChange) {
@@ -97,7 +105,7 @@ void Scene::setup() {
 }
 
 unsigned long Scene::getAvgCalcTime() { return sum_calc_time / calc_num; }
-
+unsigned long Scene::getAvgPixlTime() { return sum_pixl_time / pixl_num; }
 unsigned long Scene::getAvgShowTime() { return sum_show_time / show_num; }
 
 unsigned int rng() {
@@ -129,11 +137,11 @@ void Scene::Anim::Setup(Palette* palette, Color* leds) {
 }
 
 void Scene::Anim::glowSetUp() {
-    braPhaseSpd = random(4, 13);
+    braPhaseSpd = secureRandom(4, 13);
     if (braPhaseSpd > 8) {
         braPhaseSpd = braPhaseSpd - 17;
     }
-    braFreq = random(20, 60);
+    braFreq = secureRandom(20, 60);
 }
 
 void Scene::Anim::glowForEachLed(int i) {

@@ -236,7 +236,7 @@
 #endif
 
 #ifndef GARLAND_D_PIN
-#define GARLAND_D_PIN               0           // WS2812 pin number
+#define GARLAND_D_PIN               D2          // WS2812 pin number
 #endif
 
 #ifndef GARLAND_LEDS
