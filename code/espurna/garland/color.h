@@ -6,16 +6,9 @@
 
 struct Color
 {
-    union
-    {
-        struct
-        {
-            byte r;
-            byte g;
-            byte b;
-        };
-        byte raw[3];
-    };
+    byte r;
+    byte g;
+    byte b;
 
     inline Color() __attribute__((always_inline)) : r(0), g(0), b(0) {}
     
