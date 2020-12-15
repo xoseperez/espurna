@@ -1,6 +1,16 @@
 /*
 GARLAND MODULE
 Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
+
+Tested on 60 led strip. 
+!!! For more leds can cause WDT rebot. Need to be carefully tested for more than 60 leds !!!
+The most time consuming operation is actually showing leds by Adafruit Neopixel. It take about 1870 mcs.
+More long strip can take more time to show. 
+Currently animation calculation, brightness calculation/transition and showing makes in one loop cycle.
+Debug output shows timings. Overal timing should be not more that 3000 ms.
+
+For longer strips have sense to separate show operation from animation/brightness calculation. Or even
+divide showing for parts and process them in different cycles.
 */
 
 #include "garland.h"
