@@ -4,7 +4,6 @@
 
 #include <Adafruit_NeoPixel.h>
 
-#include "brightness.h"
 #include "color.h"
 #include "palette.h"
 
@@ -49,20 +48,17 @@ bool Scene::run() {
         for (int i = 0; i < _numLeds; i++) {
             // transition is in progress
             Color c = _leds[i].interpolate(leds_prev[i], transc);
-            byte r = (int)pgm_read_byte_near(BRI + c.r) * brightness / 256;
-            byte g = (int)pgm_read_byte_near(BRI + c.g) * brightness / 256;
-            byte b = (int)pgm_read_byte_near(BRI + c.b) * brightness / 256;
+            byte r = (int)(bri_lvl[c.r]) * brightness / 256;
+            byte g = (int)(bri_lvl[c.g]) * brightness / 256;
+            byte b = (int)(bri_lvl[c.b]) * brightness / 256;
             _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     } else {
         for (int i = 0; i < _numLeds; i++) {
             // regular operation
-            byte r =
-                (int)pgm_read_byte_near(BRI + _leds[i].r) * brightness / 256;
-            byte g =
-                (int)pgm_read_byte_near(BRI + _leds[i].g) * brightness / 256;
-            byte b =
-                (int)pgm_read_byte_near(BRI + _leds[i].b) * brightness / 256;
+            byte r = (int)(bri_lvl[_leds[i].r]) * brightness / 256;
+            byte g = (int)(bri_lvl[_leds[i].g]) * brightness / 256;
+            byte b = (int)(bri_lvl[_leds[i].b]) * brightness / 256;
             _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     }
