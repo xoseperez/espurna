@@ -22,7 +22,7 @@
 //     }
 // };
 
-AnimAssemble::AnimAssemble() : Scene::Anim("Assemble") {
+AnimAssemble::AnimAssemble() : Anim("Assemble") {
 }
 
 void AnimAssemble::SetupImpl() {

@@ -5,7 +5,7 @@
 #include "palette.h"
 #include "scene.h"
 
-AnimRun::AnimRun() : Scene::Anim("Run") {
+AnimRun::AnimRun() : Anim("Run") {
 }
 
 void AnimRun::SetupImpl() {

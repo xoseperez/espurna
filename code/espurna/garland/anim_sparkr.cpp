@@ -3,7 +3,9 @@
 #include "anims.h"
 #include "scene.h"
 
-AnimSparkr::AnimSparkr() : Scene::Anim("Sparkr") {
+#define SPARK_PROB             3    //probability of spark when in idle plase
+
+AnimSparkr::AnimSparkr() : Anim("Sparkr") {
 }
 
 void AnimSparkr::initSeq() {

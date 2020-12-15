@@ -3,7 +3,7 @@
 #include "anims.h"
 #include "scene.h"
 
-AnimStart::AnimStart() : Scene::Anim("Start") {
+AnimStart::AnimStart() : Anim("Start") {
 }
 
 void AnimStart::SetupImpl() {

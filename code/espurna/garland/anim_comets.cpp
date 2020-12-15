@@ -7,7 +7,7 @@
 #include "palette.h"
 #include "scene.h"
 
-AnimComets::AnimComets() : Scene::Anim("Comets") {
+AnimComets::AnimComets() : Anim("Comets") {
 }
 
 void AnimComets::SetupImpl() {

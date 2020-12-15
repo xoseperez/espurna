@@ -7,7 +7,7 @@
 
 #define SPREAD_MAX_WIDTH 20
 
-AnimSpread::AnimSpread() : Scene::Anim("Spread") {
+AnimSpread::AnimSpread() : Anim("Spread") {
 }
 
 void AnimSpread::SetupImpl() {

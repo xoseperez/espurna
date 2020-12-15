@@ -1,5 +1,6 @@
 #if GARLAND_SUPPORT
 
+#include "anim.h"
 #include "anims.h"
 #include "color.h"
 #include "palette.h"
@@ -8,7 +9,7 @@
 //seq keeps phases: 0..127 increasing, 128..255 decreasing, ends at 255 (steady off)
 //ledstmp keeps color of stars
 
-AnimStars::AnimStars() : Scene::Anim("Stars") {
+AnimStars::AnimStars() : Anim("Stars") {
 }
 
 void AnimStars::SetupImpl() {

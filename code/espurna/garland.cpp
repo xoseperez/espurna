@@ -79,8 +79,8 @@ std::vector<Palette> pals = {
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-std::vector<Scene::Anim*> anims = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
-                                   new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
+std::vector<Anim*> anims = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
+                            new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
 constexpr bool disableAutoChangeEffects = false;
 
 //------------------------------------------------------------------------------

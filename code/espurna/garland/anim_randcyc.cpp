@@ -3,7 +3,7 @@
 #include "anims.h"
 #include "scene.h"
 
-AnimRandCyc::AnimRandCyc() : Scene::Anim("RandCyc") {
+AnimRandCyc::AnimRandCyc() : Anim("RandCyc") {
 }
 
 void AnimRandCyc::SetupImpl() {

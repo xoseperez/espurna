@@ -5,7 +5,7 @@
 #include "palette.h"
 #include "scene.h"
 
-AnimFly::AnimFly() : Scene::Anim("Fly") {
+AnimFly::AnimFly() : Anim("Fly") {
 }
 
 void AnimFly::SetupImpl() {

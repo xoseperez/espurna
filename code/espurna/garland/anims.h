@@ -4,10 +4,11 @@
 
 #include <list>
 
-#include "scene.h"
+#include "anim.h"
+#include "palette.h"
 
 //------------------------------------------------------------------------------
-class AnimStart : public Scene::Anim {
+class AnimStart : public Anim {
 public:
     AnimStart();
     void SetupImpl() override;
@@ -15,7 +16,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimRun : public Scene::Anim {
+class AnimRun : public Anim {
 public:
     AnimRun();
     void SetupImpl() override;
@@ -23,7 +24,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimStars : public Scene::Anim {
+class AnimStars : public Anim {
 public:
     AnimStars();
     void SetupImpl() override;
@@ -31,7 +32,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimSpread : public Scene::Anim {
+class AnimSpread : public Anim {
 public:
     AnimSpread();
     void SetupImpl() override;
@@ -39,7 +40,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimSparkr : public Scene::Anim {
+class AnimSparkr : public Anim {
 public:
     AnimSparkr();
     void SetupImpl() override;
@@ -50,7 +51,7 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class AnimRandCyc : public Scene::Anim {
+class AnimRandCyc : public Anim {
 public:
     AnimRandCyc();
     void SetupImpl() override;
@@ -58,7 +59,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimFly : public Scene::Anim {
+class AnimFly : public Anim {
 public:
     AnimFly();
     void SetupImpl() override;
@@ -66,7 +67,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimPixieDust : public Scene::Anim {
+class AnimPixieDust : public Anim {
 public:
     AnimPixieDust();
     void SetupImpl() override;
@@ -74,7 +75,7 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class AnimComets : public Scene::Anim {
+class AnimComets : public Anim {
 public:
     AnimComets();
     void SetupImpl() override;
@@ -99,7 +100,7 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class AnimAssemble : public Scene::Anim {
+class AnimAssemble : public Anim {
 public:
     AnimAssemble();
     void SetupImpl() override;
