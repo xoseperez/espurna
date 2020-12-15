@@ -14,15 +14,15 @@
 
 Scene::Scene(Adafruit_NeoPixel* pixels)
     : _pixels(pixels),
-      numLeds(pixels->numPixels()),
-      leds1(numLeds),
-      leds2(numLeds),
-      ledstmp(numLeds),
-      seq(numLeds) {
+      _numLeds(pixels->numPixels()),
+      _leds1(_numLeds),
+      _leds2(_numLeds),
+      _ledstmp(_numLeds),
+      _seq(_numLeds) {
 }
 
-void Scene::setPalette(Palette* pal) {
-    this->palette = pal;
+void Scene::setPalette(Palette* palette) {
+    _palette = palette;
     if (setUpOnPalChange) {
         setupImpl();
     }
@@ -47,26 +47,26 @@ bool Scene::run() {
     // changes from 1 to 0 during transition, so we interpolate from current
     // color to previous
     float transc = (float)((long)transms - (long)millis()) / TRANSITION_MS;
-    Color* leds_prev = (leds == &leds1[0]) ? &leds2[0] : &leds1[0];
+    Color* leds_prev = (_leds == &_leds1[0]) ? &_leds2[0] : &_leds1[0];
 
     if (transc > 0) {
-        for (int i = 0; i < numLeds; i++) {
+        for (int i = 0; i < _numLeds; i++) {
             // transition is in progress
-            Color c = leds[i].interpolate(leds_prev[i], transc);
+            Color c = _leds[i].interpolate(leds_prev[i], transc);
             byte r = (int)pgm_read_byte_near(BRI + c.r) * brightness / 256;
             byte g = (int)pgm_read_byte_near(BRI + c.g) * brightness / 256;
             byte b = (int)pgm_read_byte_near(BRI + c.b) * brightness / 256;
             _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     } else {
-        for (int i = 0; i < numLeds; i++) {
+        for (int i = 0; i < _numLeds; i++) {
             // regular operation
             byte r =
-                (int)pgm_read_byte_near(BRI + leds[i].r) * brightness / 256;
+                (int)pgm_read_byte_near(BRI + _leds[i].r) * brightness / 256;
             byte g =
-                (int)pgm_read_byte_near(BRI + leds[i].g) * brightness / 256;
+                (int)pgm_read_byte_near(BRI + _leds[i].g) * brightness / 256;
             byte b =
-                (int)pgm_read_byte_near(BRI + leds[i].b) * brightness / 256;
+                (int)pgm_read_byte_near(BRI + _leds[i].b) * brightness / 256;
             _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     }
@@ -87,14 +87,14 @@ void Scene::setupImpl() {
     transms = millis() + TRANSITION_MS;
 
     // switch operation buffers (for transition to operate)
-    if (leds == &leds1[0]) {
-        leds = &leds2[0];
+    if (_leds == &_leds1[0]) {
+        _leds = &_leds2[0];
     } else {
-        leds = &leds1[0];
+        _leds = &_leds1[0];
     }
 
     if (_anim) {
-        _anim->Setup(palette, numLeds, leds, &ledstmp[0], &seq[0]);
+        _anim->Setup(_palette, _numLeds, _leds, &_ledstmp[0], &_seq[0]);
     }
 }
 

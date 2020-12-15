@@ -75,6 +75,11 @@ public:
 
 //------------------------------------------------------------------------------
 class AnimComets : public Scene::Anim {
+public:
+    AnimComets();
+    void SetupImpl() override;
+    void Run() override;
+private:
     struct Comet {
         float head;
         int len = secureRandom(10, 20);
@@ -91,10 +96,6 @@ class AnimComets : public Scene::Anim {
     };
 
     std::list<Comet> comets;
-public:
-    AnimComets();
-    void SetupImpl() override;
-    void Run() override;
 };
 
 //------------------------------------------------------------------------------
