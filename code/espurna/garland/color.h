@@ -73,6 +73,8 @@ struct Color
         Serial.print(("g="));Serial.print(g);Serial.print( (" "));
         Serial.print(("b="));Serial.println(b);
     }
+
+    friend bool operator== (const Color &c1, const Color &c2);
 };
 
 #endif // GARLAND_SUPPORT

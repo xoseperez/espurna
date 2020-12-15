@@ -30,12 +30,7 @@ void AnimComets::Run() {
         for (int l = 0; l < c.len; ++l) {
             int p = c.head + l * -c.dir;
             if (p >= 0 && p < numLeds) {
-                Color bpc = Color((byte)(c.color.r * (c.len - l) / c.len), (byte)(c.color.g * (c.len - l) / c.len), (byte)(c.color.b * (c.len - l) / c.len));
-                if (leds[p].empty()) {
-                    leds[p] = bpc;
-                } else {
-                    leds[p] = leds[p].interpolate(bpc, 0.5);
-                }
+                leds[p] = c.points[l];
             }
         }
         c.head = c.head + c.speed * c.dir;

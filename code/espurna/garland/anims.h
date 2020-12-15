@@ -87,11 +87,16 @@ private:
         float speed = ((float)secureRandom(4, 10)) / 10;
         Color color;
         int dir = 1;
-        Comet(Palette* pal, uint16_t numLeds) : head(secureRandom(0, numLeds / 2)), color(pal->getRndInterpColor()) {
+        std::vector<Color> points;
+        Comet(Palette* pal, uint16_t numLeds) : head(secureRandom(0, numLeds / 2)), color(pal->getRndInterpColor()), points(len) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Comet created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
             if (secureRandom(10) > 5) {
                 head = numLeds - head;
                 dir = -1;
+            }
+
+            for (int i = 0; i < len; ++i) {
+                points[i] = Color((byte)(color.r * (len - i) / len), (byte)(color.g * (len - i) / len), (byte)(color.b * (len - i) / len));
             }
         }
     };
