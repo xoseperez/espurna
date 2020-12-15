@@ -22,8 +22,9 @@ public:
     void setBrightness(byte brightness);
     byte getBrightness();
     void setAnim(Anim* anim) { _anim = anim; }
-    bool run();  //returns true if actual change has completed, or false if it's dummy call (previous call was too recent in time)
+    void run();
     void setup();
+    bool finishedAnimCycle() { return _anim ? _anim->finishedycle() : true; };
     unsigned long getAvgCalcTime();
     unsigned long getAvgPixlTime();
     unsigned long getAvgShowTime();

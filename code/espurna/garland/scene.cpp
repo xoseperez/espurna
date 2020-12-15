@@ -27,7 +27,7 @@ void Scene::setBrightness(byte brightness) { this->brightness = brightness; }
 
 byte Scene::getBrightness() { return brightness; }
 
-bool Scene::run() {
+void Scene::run() {
     unsigned long iteration_start_time = micros();
 
     if (_anim) {
@@ -71,8 +71,6 @@ bool Scene::run() {
     _pixels->show();
     sum_show_time += (micros() - iteration_start_time);
     ++show_num;
-
-    return true;
 }
 
 void Scene::setupImpl() {

@@ -13,6 +13,7 @@ public:
     Anim(String name);
     String getName() { return _name; }
     void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
+    virtual bool finishedycle() const { return true; };
     virtual void Run() = 0;
 
 protected:

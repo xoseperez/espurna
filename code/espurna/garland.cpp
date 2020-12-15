@@ -135,14 +135,10 @@ bool _garlandWebSocketOnKeyCheck(const char* key, JsonVariant& value) {
 void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
     if (strcmp(action, NAME_GARLAND_SWITCH) == 0) {
         if (data.containsKey("status") && data.is<int>("status")) {
-            const char* payload = data["status"];
-            if (strlen(payload) == 1) {
-                if (payload[0] == '0') {
-                    _garland_enabled = false;
-                    pixels.clear();
-                    pixels.show();
-                } else if (payload[0] == '1')
-                    _garland_enabled = true;
+            _garland_enabled = (1 == data["status"].as<int>());
+            if (!_garland_enabled) {
+                pixels.clear();
+                pixels.show();
             }
         }
     }
@@ -164,10 +160,9 @@ void garlandLoop(void) {
     if (!garlandEnabled())
         return;
 
-    if (scene.run()) {
-    }
+    scene.run();
 
-    if (millis() - _last_update > _interval_effect_update) {
+    if (millis() - _last_update > _interval_effect_update && scene.finishedAnimCycle()) {
         _last_update = millis();
         _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
