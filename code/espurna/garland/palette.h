@@ -17,6 +17,9 @@ class Palette {
     * The argument is a floating number between 0 and 1
     * Used to smoothly traverse through palette.
     */
+    // TODO: looks like this operation takes a long time and made often
+    // for some animations.
+    // It worth to implement cache or table for pre-calculated colors (256)
     Color getPalColor(float i) const {
         int i0 = (int)(i * _numColors) % (_numColors);
         int i1 = (int)(i * _numColors + 1) % (_numColors);
