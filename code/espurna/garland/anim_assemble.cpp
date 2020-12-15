@@ -33,8 +33,8 @@ void AnimAssemble::SetupImpl() {
 
     int p = 0;
     for (int i = 0; i < LEDS; i++) {
-        Color c = _palette->getPalColor((float)p / 256);
-        _leds[i] = c;
+        Color c = palette->getPalColor((float)p / 256);
+        leds[i] = c;
 
         p = p + inc;
         if (p >= 256) {

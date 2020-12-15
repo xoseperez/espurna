@@ -30,17 +30,17 @@ AnimComets::AnimComets() : Scene::Anim("Comets") {
 void AnimComets::SetupImpl() {
     comets.clear();
     for (int i = 0; i < 4; ++i)
-        comets.emplace_back(_palette);
+        comets.emplace_back(palette);
 }
 
 void AnimComets::Run() {
-    for (int i = 0; i < LEDS; i++) _leds[i] = 0;
+    for (int i = 0; i < LEDS; i++) leds[i] = 0;
 
     for (auto& c : comets) {
         int tail = c.head + c.len * -c.dir;
         // Check if Comet out of range and generate it again
         if ((c.head < 0 && tail < 0) || (c.head >= LEDS && tail >= LEDS)) {
-            Comet new_comet(_palette);
+            Comet new_comet(palette);
             std::swap(c, new_comet);
         }
 
@@ -48,10 +48,10 @@ void AnimComets::Run() {
             int p = c.head + l * -c.dir;
             if (p >= 0 && p < LEDS) {
                 Color bpc = Color((byte)(c.color.r * (c.len - l) / c.len), (byte)(c.color.g * (c.len - l) / c.len), (byte)(c.color.b * (c.len - l) / c.len));
-                if (_leds[p].empty()) {
-                    _leds[p] = bpc;
+                if (leds[p].empty()) {
+                    leds[p] = bpc;
                 } else {
-                    _leds[p] = _leds[p].interpolate(bpc, 0.5);
+                    leds[p] = leds[p].interpolate(bpc, 0.5);
                 }
             }
         }

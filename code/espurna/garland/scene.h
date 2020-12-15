@@ -30,17 +30,19 @@ public:
     public:
         String getName() { return _name; }
         Anim(String name);
-        void Setup(Palette* palette, Color* leds, std::vector<byte>* seq);
+        void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq);
         virtual void Run() = 0;
 
     protected:
+        uint16_t numLeds;
         int phase;
         int pos;
         int inc;
-        Palette* _palette;
-        Color* _leds;
+        Palette* palette;
+        Color* leds = nullptr;
+        Color* ledstmp = nullptr;
+        byte* seq = nullptr;
 
-        std::vector<byte>* seq = nullptr;
         //brigthness animation (BrA) current initial phase
         byte braPhase;
         //braPhase change speed
@@ -53,7 +55,7 @@ public:
         const Color sparkleColor = Color(0xFFFFFF);
 
         //auxiliary colors array
-        static Color ledstmp[LEDS];
+        // static Color ledstmp[LEDS];
 
         virtual void SetupImpl(){};
 
@@ -89,9 +91,9 @@ private:
     static Color leds1[LEDS];
     static Color leds2[LEDS];
     //auxiliary colors array
-    static Color ledstmp[LEDS];
+    // static Color ledstmp[LEDS];
+    std::vector<Color> ledstmp;
     std::vector<byte> seq;
-
 
     // array of Color to work with
     Color* leds;

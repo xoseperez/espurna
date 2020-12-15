@@ -15,7 +15,9 @@
 Scene::Scene(Adafruit_NeoPixel* pixels)
     : _pixels(pixels),
       numLeds(pixels->numPixels()),
-      seq(numLeds) {}
+      ledstmp(numLeds),
+      seq(numLeds) {
+}
 
 void Scene::setPalette(Palette* pal) {
     this->palette = pal;
@@ -90,7 +92,7 @@ void Scene::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(palette, leds, &seq);
+        _anim->Setup(palette, numLeds, &leds[0], &ledstmp[0], &seq[0]);
     }
 }
 
@@ -124,18 +126,20 @@ byte rngb() { return (byte)rng(); }
 
 Color Scene::leds1[LEDS];
 Color Scene::leds2[LEDS];
-Color Scene::ledstmp[LEDS];
+// Color Scene::ledstmp[LEDS];
 // byte Scene::Anim::seq[LEDS];
-Color Scene::Anim::ledstmp[LEDS];
+// Color Scene::Anim::ledstmp[LEDS];
 
 //=============================================================================
 // Scene::Anim
 //=============================================================================
 Scene::Anim::Anim(String name) : _name(name) {}
 
-void Scene::Anim::Setup(Palette* palette, Color* leds, std::vector<byte>* seq) {
-    _palette = palette;
-    _leds = leds;
+void Scene::Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq) {
+    this->palette = palette;
+    this->numLeds = numLeds;
+    this->leds = leds;
+    this->ledstmp = ledstmp;
     this->seq = seq;
     SetupImpl();
 }
@@ -151,7 +155,7 @@ void Scene::Anim::glowSetUp() {
 void Scene::Anim::glowForEachLed(int i) {
     int8 bra = braPhase + i * braFreq;
     bra = BRA_OFFSET + (abs(bra) >> BRA_AMP_SHIFT);
-    _leds[i] = _leds[i].brightness(bra);
+    leds[i] = leds[i].brightness(bra);
 }
 
 void Scene::Anim::glowRun() { braPhase += braPhaseSpd; }
