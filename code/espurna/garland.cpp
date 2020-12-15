@@ -37,7 +37,7 @@ unsigned long _interval_effect_update;
 int paletteInd;
 int animInd                             = 0; 
 
-// Palette should 
+// Palette should
 std::vector<Palette> pals = {
     // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
     // RGB: Red,Green,Blue sequence
@@ -45,36 +45,38 @@ std::vector<Palette> pals = {
 
     // Rainbow: Rainbow colors
     Palette("Rainbow", {0xFF0000, 0xAB5500, 0xABAB00, 0x00FF00, 0x00AB55, 0x0000FF, 0x5500AB, 0xAB0055}),
-    
+
     // RainbowStripe: Rainbow colors with alternating stripes of black
     Palette("Stripe", {0xFF0000, 0x000000, 0xAB5500, 0x000000, 0xABAB00, 0x000000, 0x00FF00, 0x000000,
                        0x00AB55, 0x000000, 0x0000FF, 0x000000, 0x5500AB, 0x000000, 0xAB0055, 0x000000}),
-    
+
     // Party: Blue purple ping red orange yellow (and back). Basically, everything but the greens.
     // This palette is good for lighting at a club or party.
     Palette("Party", {0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
                       0xAB5500, 0xDD2200, 0xF2000E, 0xC2003E, 0x8F0071, 0x5F00A1, 0x2F00D0, 0x0007F9}),
-    
+
     // Heat: Approximate "black body radiation" palette, akin to the FastLED 'HeatColor' function.
     // Recommend that you use values 0-240 rather than the usual 0-255, as the last 15 colors will be
     // 'wrapping around' from the hot end to the cold end, which looks wrong.
     Palette("Heat", {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
-    
+
     // Fire:
     Palette("Fire", {0x000000, 0x220000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
-    
-    // Ice Blue:
+
+    // Blue:
     Palette("Blue", {0xffffff, 0x0000ff, 0x00ffff}),
-    
+
     // Sun: Slice Of The Sun
-    // Palette("Sun", {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
-    
+    Palette("Sun", {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
+
     // Lime: yellow green mix
-    // Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
-    
+    Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
+
     // Pastel: Pastel Fruity Mixture
-    // Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})
-};
+    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac}),
+
+    // Green: Vibrant greens
+    Palette("Green", {0x89ff01, 0x42c501, 0x349404, 0x0f6902, 0x004208})};
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
