@@ -7,7 +7,6 @@
 
 #include <vector>
 
-constexpr int LEDS = GARLAND_LEDS;
 #define DEFAULT_BRIGHTNESS 12  // brightness adjustment, up to 255
 
 #define TRANSITION_MS 1000  // transition time between animations, ms

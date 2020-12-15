@@ -11,20 +11,20 @@ void AnimStart::SetupImpl() {
 }
 
 void AnimStart::Run() {
-    if (phase < LEDS) {
+    if (phase < numLeds) {
         leds[phase].r = 255;
         leds[phase].g = 255;
         leds[phase].b = 255;
-        for (int i = 0; i < LEDS; i++) {
+        for (int i = 0; i < numLeds; i++) {
             leds[i].fade(50);
         }
-    } else if (phase >= LEDS) {
-        for(int i=0; i<LEDS; i++) {
-            short r = LEDS + 255 - phase + rngb();
+    } else if (phase >= numLeds) {
+        for(int i=0; i<numLeds; i++) {
+            short r = numLeds + 255 - phase + rngb();
             r = min(r,(short)255); leds[i].r = (byte)max(r,(short)0);
-            short g = LEDS + 255 - phase + rngb();
+            short g = numLeds + 255 - phase + rngb();
             g = min(g,(short)255); leds[i].g = (byte)max(g,(short)0);
-            short b = LEDS + 255 - phase + rngb();
+            short b = numLeds + 255 - phase + rngb();
             b = min(b,(short)255); leds[i].b = (byte)max(b,(short)0);
         }
         phase++;

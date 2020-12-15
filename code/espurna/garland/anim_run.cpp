@@ -18,7 +18,7 @@ void AnimRun::SetupImpl() {
 
 void AnimRun::Run() {
     int p = pos;
-    for (int i = 0; i < LEDS; i++) {
+    for (int i = 0; i < numLeds; i++) {
         Color c = palette->getPalColor((float)p / 256);
         leds[i] = c;
 

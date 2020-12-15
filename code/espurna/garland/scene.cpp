@@ -50,7 +50,7 @@ bool Scene::run() {
     Color* leds_prev = (leds == &leds1[0]) ? &leds2[0] : &leds1[0];
 
     if (transc > 0) {
-        for (int i = 0; i < LEDS; i++) {
+        for (int i = 0; i < numLeds; i++) {
             // transition is in progress
             Color c = leds[i].interpolate(leds_prev[i], transc);
             byte r = (int)pgm_read_byte_near(BRI + c.r) * brightness / 256;
@@ -59,7 +59,7 @@ bool Scene::run() {
             _pixels->setPixelColor(i, _pixels->Color(r, g, b));
         }
     } else {
-        for (int i = 0; i < LEDS; i++) {
+        for (int i = 0; i < numLeds; i++) {
             // regular operation
             byte r =
                 (int)pgm_read_byte_near(BRI + leds[i].r) * brightness / 256;

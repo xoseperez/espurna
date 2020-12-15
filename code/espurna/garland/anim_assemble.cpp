@@ -8,7 +8,7 @@
 #include "scene.h"
 
 // struct Dot {
-//     float point = secureRandom(0, LEDS/2);
+//     float point = secureRandom(0, numLeds/2);
 //     int len = secureRandom(10, 20);
 //     float speed = ((float)secureRandom(4, 10)) / 10;
 //     Color color;
@@ -16,7 +16,7 @@
 //     Dot(Palette* pal) : color(pal->getRndInterpColor()) {
 //         // DEBUG_MSG_P(PSTR("[GARLAND] Dot created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
 //         if (secureRandom(10) > 5) {
-//             head = LEDS-head;
+//             head = numLeds-head;
 //             dir = -1;
 //         }
 //     }
@@ -32,7 +32,7 @@ void AnimAssemble::SetupImpl() {
     }
 
     int p = 0;
-    for (int i = 0; i < LEDS; i++) {
+    for (int i = 0; i < numLeds; i++) {
         Color c = palette->getPalColor((float)p / 256);
         leds[i] = c;
 

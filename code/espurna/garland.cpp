@@ -24,6 +24,7 @@ const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
 const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 
+constexpr int LEDS                      = GARLAND_LEDS;
 constexpr int PIN                       = GARLAND_D_PIN; // WS2812 pin number
 
 #define EFFECT_UPDATE_INTERVAL_MIN      5000  // 5 sec

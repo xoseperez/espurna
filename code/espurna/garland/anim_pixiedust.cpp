@@ -18,31 +18,31 @@ void AnimPixieDust::SetupImpl() {
     if (inc > 0) {
         phase = -DUST_LENGTH / 2;
     } else {
-        phase = LEDS + DUST_LENGTH / 2;
+        phase = numLeds + DUST_LENGTH / 2;
     }
     glowSetUp();
 }
 
 void AnimPixieDust::Run() {
     if (inc > 0) {
-        for (int i = 0; i < LEDS; i++) {
+        for (int i = 0; i < numLeds; i++) {
             leds[i] = (i > phase) ? prevColor : curColor;
             glowForEachLed(i);
         }
         phase++;
-        if (phase >= 4 * LEDS) {
+        if (phase >= 4 * numLeds) {
             phase = -DUST_LENGTH / 2;
             prevColor = curColor;
             curColor = palette->getRndInterpColor();
         }
     } else {
-        for (int i = 0; i < LEDS; i++) {
+        for (int i = 0; i < numLeds; i++) {
             leds[i] = (i < phase) ? prevColor : curColor;
             glowForEachLed(i);
         }
         phase--;
-        if (phase <= -3 * LEDS) {
-            phase = LEDS + DUST_LENGTH / 2;
+        if (phase <= -3 * numLeds) {
+            phase = numLeds + DUST_LENGTH / 2;
             prevColor = curColor;
             curColor = palette->getContrastColor(prevColor);
         }
@@ -50,7 +50,7 @@ void AnimPixieDust::Run() {
     glowRun();
 
     for (int k = phase - DUST_LENGTH / 2; k < (phase + DUST_LENGTH / 2); k++) {
-        if (k >= 0 && k < LEDS) {
+        if (k >= 0 && k < numLeds) {
             int mix = abs(k - phase) * 255 / DUST_LENGTH + secureRandom(-100, 100);
             if (mix < 0) {
                 mix = 0;
