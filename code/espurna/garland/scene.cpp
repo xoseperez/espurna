@@ -15,6 +15,8 @@
 Scene::Scene(Adafruit_NeoPixel* pixels)
     : _pixels(pixels),
       numLeds(pixels->numPixels()),
+      leds1(numLeds),
+      leds2(numLeds),
       ledstmp(numLeds),
       seq(numLeds) {
 }
@@ -45,7 +47,7 @@ bool Scene::run() {
     // changes from 1 to 0 during transition, so we interpolate from current
     // color to previous
     float transc = (float)((long)transms - (long)millis()) / TRANSITION_MS;
-    Color* leds_prev = (leds == leds1) ? leds2 : leds1;
+    Color* leds_prev = (leds == &leds1[0]) ? &leds2[0] : &leds1[0];
 
     if (transc > 0) {
         for (int i = 0; i < LEDS; i++) {
@@ -85,14 +87,14 @@ void Scene::setupImpl() {
     transms = millis() + TRANSITION_MS;
 
     // switch operation buffers (for transition to operate)
-    if (leds == leds1) {
-        leds = leds2;
+    if (leds == &leds1[0]) {
+        leds = &leds2[0];
     } else {
-        leds = leds1;
+        leds = &leds1[0];
     }
 
     if (_anim) {
-        _anim->Setup(palette, numLeds, &leds[0], &ledstmp[0], &seq[0]);
+        _anim->Setup(palette, numLeds, leds, &ledstmp[0], &seq[0]);
     }
 }
 
@@ -123,12 +125,6 @@ unsigned int rng() {
 }
 
 byte rngb() { return (byte)rng(); }
-
-Color Scene::leds1[LEDS];
-Color Scene::leds2[LEDS];
-// Color Scene::ledstmp[LEDS];
-// byte Scene::Anim::seq[LEDS];
-// Color Scene::Anim::ledstmp[LEDS];
 
 //=============================================================================
 // Scene::Anim

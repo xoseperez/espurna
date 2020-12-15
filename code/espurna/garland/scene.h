@@ -54,9 +54,6 @@ public:
         Color prevColor = Color(0);
         const Color sparkleColor = Color(0xFFFFFF);
 
-        //auxiliary colors array
-        // static Color ledstmp[LEDS];
-
         virtual void SetupImpl(){};
 
         //glow animation setup
@@ -88,10 +85,9 @@ private:
     Adafruit_NeoPixel* _pixels;
     uint16_t numLeds;
     //Color arrays - two for making transition
-    static Color leds1[LEDS];
-    static Color leds2[LEDS];
+    std::vector<Color> leds1;
+    std::vector<Color> leds2;
     //auxiliary colors array
-    // static Color ledstmp[LEDS];
     std::vector<Color> ledstmp;
     std::vector<byte> seq;
 
