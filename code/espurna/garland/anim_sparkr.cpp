@@ -6,19 +6,16 @@
 AnimSparkr::AnimSparkr() : Scene::Anim("Sparkr") {
 }
 
-void AnimSparkr::initSeq(byte* seq) {
-    for (int i = 0; i < LEDS; i++) {
-        seq[i] = i;
-    }
+void AnimSparkr::initSeq() {
+    for (int i = 0; i < LEDS; i++)
+        (*seq)[i] = i;
 }
 
-void AnimSparkr::shuffleSeq(byte* seq) {
+void AnimSparkr::shuffleSeq() {
     for (int i = 0; i < LEDS; i++) {
         byte ind = (unsigned int)(rngb() * LEDS / 256);
         if (ind != i) {
-            byte tmp = seq[ind];
-            seq[ind] = seq[i];
-            seq[i] = tmp;
+            std::swap((*seq)[ind], (*seq)[i]);
         }
     }
 }
@@ -28,13 +25,13 @@ void AnimSparkr::SetupImpl() {
     phase = 0;
     curColor = _palette->getRndInterpColor();
     prevColor = _palette->getRndInterpColor();
-    initSeq(seq);
-    shuffleSeq(seq);
+    initSeq();
+    shuffleSeq();
 }
 
 void AnimSparkr::Run() {
     for (int i = 0; i < LEDS; i++) {
-        byte pos = seq[i];
+        byte pos = (*seq)[i];
 
         _leds[pos] = (i > phase) ? prevColor
                                  : (i == phase) ? sparkleColor
@@ -55,7 +52,7 @@ void AnimSparkr::Run() {
         phase = 0;
         prevColor = curColor;
         curColor = _palette->getContrastColor(prevColor);
-        shuffleSeq(seq);
+        shuffleSeq();
     }
 }
 

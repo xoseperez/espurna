@@ -16,13 +16,13 @@ void AnimStars::SetupImpl() {
     inc = secureRandom(2, 5);
 
     //reset all phases
-    for (auto& s : seq)
+    for (auto& s : (*seq))
         s = 255;
 }
 
 void AnimStars::Run() {
     for (byte i = 0; i < LEDS; i++) {
-        byte phi = seq[i];
+        byte phi = (*seq)[i];
         if (phi < 254) {
             Color col = ledstmp[i];
             if (phi <= 127) {
@@ -30,7 +30,7 @@ void AnimStars::Run() {
             } else {
                 _leds[i] = col.brightness((255 - phi) << 1);
             }
-            seq[i] += 2;
+            (*seq)[i] += 2;
         } else {
             _leds[i].r = 0;
             _leds[i].g = 0;
@@ -40,8 +40,8 @@ void AnimStars::Run() {
 
     if (secureRandom(inc) == 0) {
         byte pos = secureRandom(LEDS);
-        if (seq[pos] > 250) {
-            seq[pos] = 0;
+        if ((*seq)[pos] > 250) {
+            (*seq)[pos] = 0;
             ledstmp[pos] = _palette->getRndInterpColor();
         }
     }

@@ -5,6 +5,8 @@
 #include "../config/general.h"
 #include "palette.h"
 
+#include <vector>
+
 constexpr int LEDS = GARLAND_LEDS;
 #define DEFAULT_BRIGHTNESS 12  // brightness adjustment, up to 255
 
@@ -28,7 +30,7 @@ public:
     public:
         String getName() { return _name; }
         Anim(String name);
-        void Setup(Palette* palette, Color* leds);
+        void Setup(Palette* palette, Color* leds, std::vector<byte>* seq);
         virtual void Run() = 0;
 
     protected:
@@ -38,14 +40,13 @@ public:
         Palette* _palette;
         Color* _leds;
 
+        std::vector<byte>* seq = nullptr;
         //brigthness animation (BrA) current initial phase
         byte braPhase;
         //braPhase change speed
         byte braPhaseSpd = 5;
         //BrA frequency (spatial)
         byte braFreq = 150;
-
-        static byte seq[LEDS];
 
         Color curColor = Color(0);
         Color prevColor = Color(0);
@@ -82,11 +83,15 @@ public:
     unsigned long getAvgShowTime();
 
 private:
+    Adafruit_NeoPixel* _pixels;
+    uint16_t numLeds;
     //Color arrays - two for making transition
     static Color leds1[LEDS];
     static Color leds2[LEDS];
     //auxiliary colors array
     static Color ledstmp[LEDS];
+    std::vector<byte> seq;
+
 
     // array of Color to work with
     Color* leds;
@@ -126,7 +131,6 @@ private:
     unsigned int pixl_num = 0;
 
     Anim* _anim = nullptr;
-    Adafruit_NeoPixel* _pixels;
 
     //glow animation setup
     void glowSetUp();

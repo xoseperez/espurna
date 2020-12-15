@@ -12,7 +12,10 @@
 // Scene
 //=============================================================================
 
-Scene::Scene(Adafruit_NeoPixel* pixels) : _pixels(pixels) {}
+Scene::Scene(Adafruit_NeoPixel* pixels)
+    : _pixels(pixels),
+      numLeds(pixels->numPixels()),
+      seq(numLeds) {}
 
 void Scene::setPalette(Palette* pal) {
     this->palette = pal;
@@ -87,7 +90,7 @@ void Scene::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(palette, leds);
+        _anim->Setup(palette, leds, &seq);
     }
 }
 
@@ -122,7 +125,7 @@ byte rngb() { return (byte)rng(); }
 Color Scene::leds1[LEDS];
 Color Scene::leds2[LEDS];
 Color Scene::ledstmp[LEDS];
-byte Scene::Anim::seq[LEDS];
+// byte Scene::Anim::seq[LEDS];
 Color Scene::Anim::ledstmp[LEDS];
 
 //=============================================================================
@@ -130,9 +133,10 @@ Color Scene::Anim::ledstmp[LEDS];
 //=============================================================================
 Scene::Anim::Anim(String name) : _name(name) {}
 
-void Scene::Anim::Setup(Palette* palette, Color* leds) {
+void Scene::Anim::Setup(Palette* palette, Color* leds, std::vector<byte>* seq) {
     _palette = palette;
     _leds = leds;
+    this->seq = seq;
     SetupImpl();
 }
 

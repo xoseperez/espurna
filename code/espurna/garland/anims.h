@@ -43,8 +43,8 @@ public:
     void SetupImpl() override;
     void Run() override;
 private:
-    void initSeq(byte * seq);
-    void shuffleSeq(byte * seq);
+    void initSeq();
+    void shuffleSeq();
 };
 
 //------------------------------------------------------------------------------
