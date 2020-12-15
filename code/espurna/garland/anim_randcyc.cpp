@@ -13,7 +13,7 @@ void AnimRandCyc::SetupImpl() {
 
 void AnimRandCyc::Run() {
     for (int i = 0; i < numLeds; i++) {
-        leds[i] = palette->getPalColor((float)seq[i] / 256);
+        leds[i] = palette->getCachedPalColor(seq[i]);
         seq[i] += rngb() >> 6;
     }
 }

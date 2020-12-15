@@ -8,7 +8,8 @@
 
 class Palette {
    public:
-    Palette(const String name, std::vector<Color> colors) : _name(name), _numColors(colors.size()), _colors(colors) {}
+    Palette(const String name, std::vector<Color> colors) : _name(name), _numColors(colors.size()), _colors(colors), _cache(256) {
+    }
 
     String name() const { return _name; }
 
@@ -17,9 +18,6 @@ class Palette {
     * The argument is a floating number between 0 and 1
     * Used to smoothly traverse through palette.
     */
-    // TODO: looks like this operation takes a long time and made often
-    // for some animations.
-    // It worth to implement cache or table for pre-calculated colors (256)
     Color getPalColor(float i) const {
         int i0 = (int)(i * _numColors) % (_numColors);
         int i1 = (int)(i * _numColors + 1) % (_numColors);
@@ -27,6 +25,18 @@ class Palette {
         // decimal part is used to interpolate between the two colors
         float t0 = i * _numColors - trunc(i * _numColors);
         return _colors[i0].interpolate(_colors[i1], t0);
+    }
+
+    Color getCachedPalColor(byte i) {
+        if (!_cache[i].empty())
+            return _cache[i];
+        
+        Color col = getPalColor((float)i / 256);
+        if (col.empty())
+            col = 1;
+
+        _cache[i] = col;
+        return col;
     }
 
     /**
@@ -72,6 +82,7 @@ class Palette {
     const String _name;
     const int _numColors;
     std::vector<Color> _colors;
+    std::vector<Color> _cache;
 };
 
 #endif  // GARLAND_SUPPORT
