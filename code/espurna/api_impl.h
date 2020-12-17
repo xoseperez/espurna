@@ -111,6 +111,7 @@ struct ApiRequest {
 
     template <typename T>
     void handle(T&& handler) {
+        if (_done) return;
         _done = true;
         handler(&_request);
     }
@@ -143,12 +144,14 @@ struct ApiRequest {
     }
 
     void send(const String& payload) {
+        if (_done) return;
+        _done = true;
+
         if (payload.length()) {
             _request.send(200, "text/plain", payload);
         } else {
             _request.send(204);
         }
-        _done = true;
     }
 
     bool done() const {
