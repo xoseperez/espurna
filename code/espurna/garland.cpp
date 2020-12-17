@@ -116,19 +116,15 @@ bool garlandEnabled() {
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
-void commonSetup() {
+void _garlandConfigure() {
     _garland_enabled = getSetting(NAME_GARLAND_ENABLED, true);
     DEBUG_MSG_P(PSTR("[GARLAND] _garland_enabled = %d\n"), _garland_enabled);
-}
 
-//------------------------------------------------------------------------------
-void garlandConfigure() {
-    commonSetup();
 }
 
 //------------------------------------------------------------------------------
 void _garlandReload() {
-    commonSetup();
+    _garlandConfigure();
 }
 
 #if WEB_SUPPORT
@@ -152,8 +148,10 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
         if (data.containsKey("status") && data.is<int>("status")) {
             _garland_enabled = (1 == data["status"].as<int>());
             if (!_garland_enabled) {
-                pixels.clear();
-                pixels.show();
+                schedule_function([](){
+                    pixels.clear();
+                    pixels.show();
+                });
             }
         }
     }
@@ -201,7 +199,7 @@ void garlandLoop(void) {
 
 //------------------------------------------------------------------------------
 void garlandSetup() {
-    garlandConfigure();
+    _garlandConfigure();
 
 // Websockets
 #if WEB_SUPPORT
