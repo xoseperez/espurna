@@ -7,9 +7,6 @@
 
 #include "anim.h"
 
-#define DEFAULT_BRIGHTNESS    12    // brightness adjustment, up to 255
-#define TRANSITION_MS       1000    // transition time between animations, ms
-
 class Adafruit_NeoPixel;
 class Palette;
 
@@ -48,7 +45,7 @@ private:
     // millis to transition end
     unsigned long transms;
 
-    byte brightness = DEFAULT_BRIGHTNESS;
+    byte brightness =  255;
 
     //whether to call SetUp on palette change
     //(some animations require full transition with fade, otherwise the colors would change in a step, some not)

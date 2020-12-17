@@ -51,7 +51,7 @@ void AnimPixieDust::Run() {
 
     for (int k = phase - DUST_LENGTH / 2; k < (phase + DUST_LENGTH / 2); k++) {
         if (k >= 0 && k < numLeds) {
-            int mix = abs(k - phase) * 255 / DUST_LENGTH + secureRandom(-100, 100);
+            int mix = abs(k - phase) * 255 / DUST_LENGTH + ((int)rngb() - 125);
             if (mix < 0) {
                 mix = 0;
             } else if (mix > 255) {

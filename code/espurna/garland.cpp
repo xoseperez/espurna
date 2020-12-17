@@ -48,7 +48,7 @@ int paletteInd;
 int animInd                             = 0; 
 
 // Palette should
-std::vector<Palette> pals = {
+Palette pals[] = {
     // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
     // RGB: Red,Green,Blue sequence
     Palette("RGB", {0xFF0000, 0x00FF00, 0x0000FF}),
@@ -88,12 +88,15 @@ std::vector<Palette> pals = {
     // Green: Vibrant greens
     Palette("Green", {0x89ff01, 0x42c501, 0x349404, 0x0f6902, 0x004208})};
 
+constexpr size_t palsSize() { return sizeof(pals)/sizeof(pals[0]); }
+
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-std::vector<Anim*> anims = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
-                            new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
-constexpr bool disableAutoChangeEffects = false;
+Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
+               new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
+
+constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
 //------------------------------------------------------------------------------
 void garlandDisable() {
@@ -179,16 +182,16 @@ void garlandLoop(void) {
         _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
         int prevAnimInd = animInd;
-        while (prevAnimInd == animInd) animInd = secureRandom(1, anims.size());
+        while (prevAnimInd == animInd) animInd = secureRandom(1, animsSize());
 
         int prevPalInd = paletteInd;
-        while (prevPalInd == paletteInd) paletteInd = secureRandom(pals.size());
+        while (prevPalInd == paletteInd) paletteInd = secureRandom(palsSize());
 
         DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %4d show: %4d\n"),
-                    anims[prevAnimInd]->getName().c_str(), pals[prevPalInd].name().c_str(),
+                    anims[prevAnimInd]->getName().c_str(), pals[prevPalInd].name(),
                     scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime());
         DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
-                    anims[animInd]->getName().c_str(), pals[paletteInd].name().c_str(), _interval_effect_update);
+                    anims[animInd]->getName().c_str(), pals[paletteInd].name(), _interval_effect_update);
 
         scene.setAnim(anims[animInd]);
         scene.setPalette(&pals[paletteInd]);
@@ -212,7 +215,7 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    paletteInd = secureRandom(pals.size());
+    paletteInd = secureRandom(palsSize());
     scene.setAnim(anims[0]);
     scene.setPalette(&pals[0]);
     scene.setup();

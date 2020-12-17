@@ -8,10 +8,10 @@
 
 class Palette {
    public:
-    Palette(const String name, std::vector<Color> colors) : _name(name), _numColors(colors.size()), _colors(colors), _cache(256) {
+    Palette(const char* name, std::vector<Color> colors) : _name(name), _numColors(colors.size()), _colors(colors), _cache(256) {
     }
 
-    String name() const { return _name; }
+    const char* name() const { return _name; }
 
     /**
     * Get the interpolated color from the palette.
@@ -79,7 +79,7 @@ class Palette {
     }
 
    private:
-    const String _name;
+    const char* _name;
     const int _numColors;
     std::vector<Color> _colors;
     std::vector<Color> _cache;

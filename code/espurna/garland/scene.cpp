@@ -7,6 +7,8 @@
 #include "color.h"
 #include "palette.h"
 
+#define TRANSITION_MS       1000    // transition time between animations, ms
+
 Scene::Scene(Adafruit_NeoPixel* pixels)
     : _pixels(pixels),
       _numLeds(pixels->numPixels()),
@@ -114,6 +116,8 @@ unsigned int rng() {
     return (y);
 }
 
+// Ranom numbers generator in byte range (256) much faster than secureRandom.
+// For usage in time-critical places.
 byte rngb() { return (byte)rng(); }
 
 #endif  // GARLAND_SUPPORT

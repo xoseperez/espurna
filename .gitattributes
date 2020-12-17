@@ -1,3 +1,5 @@
 *.gz.h    -diff -merge
 *.gz.h    linguist-generated=true
 *.ini     text eol=lf
+*.h       text eol=lf
+*.cpp     text eol=lf
