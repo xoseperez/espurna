@@ -277,6 +277,8 @@ bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
 // - Server never checks for request closing in filter or canHandle, so if we don't want to handle large content-length, it
 //   will still flow through the lwip backend.
 // - `request->_tempObject` is used to keep API request state, but it's just a plain void pointer
+// - `request->send(..., payload)` creates a heap-allocated `reponse` object that will copy the payload and tracks it by a basic pointer.
+//   In case we call `request->send` a 2nd time (regardless of the type of the send()), it creates a 2nd object without de-allocating the 1st one.
 // - espasyncwebserver will `free(_tempObject)` when request is disconnected, but only after this callbackhandler is done.
 //   make sure it's set to nullptr via `AsyncWebServerRequest::onDisconnect`
 // - ALL headers are parsed (and we could access those during filter and canHandle callbacks), but we need to explicitly
@@ -597,6 +599,7 @@ public:
         case HTTP_HEAD:
             request->send(204);
             return;
+
         case HTTP_GET:
         case HTTP_PUT: {
             auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
@@ -622,10 +625,13 @@ public:
                 request->send(204);
                 return;
             }
+
+            break;
         }
+
         default:
             request->send(405);
-            return;
+            break;
         }
     }
 
