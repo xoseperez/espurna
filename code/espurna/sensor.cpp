@@ -454,17 +454,15 @@ void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const String& pa
 }
 
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
-
     sensor::Energy result;
 
     if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
         result = _sensorRtcmemLoadEnergy(index);
-    } else if (_sensor_save_every > 0) {
+    } else {
         result = _sensorParseEnergy(getSetting({"eneTotal", index}));
     }
 
     return result;
-
 }
 
 sensor::Energy sensorEnergyTotal() {
