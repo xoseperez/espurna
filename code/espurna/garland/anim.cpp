@@ -3,7 +3,7 @@
 #include "anim.h"
 #include "palette.h"
 
-Anim::Anim(String name) : _name(name) {}
+Anim::Anim(const char* name) : _name(name) {}
 
 void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq) {
     this->palette = palette;

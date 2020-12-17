@@ -10,8 +10,8 @@ class Palette;
 
 class Anim {
 public:
-    Anim(String name);
-    String getName() { return _name; }
+    Anim(const char* name);
+    const char* name() { return _name; }
     void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
     virtual bool finishedycle() const { return true; };
     virtual void Run() = 0;
@@ -52,5 +52,5 @@ protected:
     void glowRun();
 
 private:
-    const String _name;
+    const char* _name;
 };
