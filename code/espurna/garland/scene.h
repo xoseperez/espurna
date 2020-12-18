@@ -6,6 +6,16 @@
 #include <vector>
 
 #include "anim.h"
+#include "animations/anim_assemble.h"
+#include "animations/anim_comets.h"
+#include "animations/anim_fly.h"
+#include "animations/anim_pixiedust.h"
+#include "animations/anim_randcyc.h"
+#include "animations/anim_run.h"
+#include "animations/anim_sparkr.h"
+#include "animations/anim_spread.h"
+#include "animations/anim_stars.h"
+#include "animations/anim_start.h"
 
 class Adafruit_NeoPixel;
 class Palette;
@@ -89,8 +99,5 @@ private:
 
     void setupImpl();
 };
-
-unsigned int rng();
-byte         rngb();
 
 #endif  // GARLAND_SUPPORT

@@ -151,17 +151,4 @@ unsigned long Scene::getAvgCalcTime() { return sum_calc_time / calc_num; }
 unsigned long Scene::getAvgPixlTime() { return sum_pixl_time / pixl_num; }
 unsigned long Scene::getAvgShowTime() { return sum_show_time / show_num; }
 
-unsigned int rng() {
-    static unsigned int y = 0;
-    y += micros();  // seeded with changing number
-    y ^= y << 2;
-    y ^= y >> 7;
-    y ^= y << 7;
-    return (y);
-}
-
-// Ranom numbers generator in byte range (256) much faster than secureRandom.
-// For usage in time-critical places.
-byte rngb() { return (byte)rng(); }
-
 #endif  // GARLAND_SUPPORT

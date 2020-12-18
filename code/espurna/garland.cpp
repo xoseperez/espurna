@@ -21,7 +21,6 @@ divide showing for parts and process them in different cycles.
 
 #include <vector>
 
-#include "garland/anims.h"
 #include "garland/color.h"
 #include "garland/palette.h"
 #include "garland/scene.h"

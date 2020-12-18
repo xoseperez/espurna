@@ -54,3 +54,6 @@ protected:
 private:
     const char* _name;
 };
+
+unsigned int rng();
+byte         rngb();
