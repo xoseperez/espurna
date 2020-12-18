@@ -30,9 +30,12 @@ divide showing for parts and process them in different cycles.
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
 const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
+const char* NAME_GARLAND_SPEED          = "garlandSpeed";
 
 const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
+const char* NAME_GARLAND_SET_SPEED      = "garland_set_speed";
+const char* NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
 
 constexpr int LEDS                      = GARLAND_LEDS;
 constexpr int PIN                       = GARLAND_D_PIN; // WS2812 pin number
@@ -43,9 +46,6 @@ constexpr int PIN                       = GARLAND_D_PIN; // WS2812 pin number
 bool _garland_enabled                   = true;
 unsigned long _last_update              = 0;
 unsigned long _interval_effect_update;
-
-int paletteInd;
-int animInd                             = 0; 
 
 // Palette should
 Palette pals[] = {
@@ -94,7 +94,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(LEDS, PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
 Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
-               new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
+                 new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
@@ -120,6 +120,12 @@ void _garlandConfigure() {
     _garland_enabled = getSetting(NAME_GARLAND_ENABLED, true);
     DEBUG_MSG_P(PSTR("[GARLAND] _garland_enabled = %d\n"), _garland_enabled);
 
+    byte brightness = getSetting(NAME_GARLAND_BRIGHTNESS, 255);
+    scene.setBrightness(brightness);
+    DEBUG_MSG_P(PSTR("[GARLAND] brightness = %d\n"), brightness);
+
+    float speed = getSetting(NAME_GARLAND_SPEED, 50);
+    scene.setSpeed(speed);
 }
 
 //------------------------------------------------------------------------------
@@ -132,6 +138,7 @@ void _garlandReload() {
 void _garlandWebSocketOnConnected(JsonObject& root) {
     root[NAME_GARLAND_ENABLED] = garlandEnabled();
     root[NAME_GARLAND_BRIGHTNESS] = scene.getBrightness();
+    root[NAME_GARLAND_SPEED] = scene.getSpeed();
     root["garlandVisible"] = 1;
 }
 
@@ -139,6 +146,7 @@ void _garlandWebSocketOnConnected(JsonObject& root) {
 bool _garlandWebSocketOnKeyCheck(const char* key, JsonVariant& value) {
     if (strncmp(key, NAME_GARLAND_ENABLED, strlen(NAME_GARLAND_ENABLED)) == 0) return true;
     if (strncmp(key, NAME_GARLAND_BRIGHTNESS, strlen(NAME_GARLAND_BRIGHTNESS)) == 0) return true;
+    if (strncmp(key, NAME_GARLAND_SPEED, strlen(NAME_GARLAND_SPEED)) == 0) return true;
     return false;
 }
 
@@ -147,6 +155,7 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     if (strcmp(action, NAME_GARLAND_SWITCH) == 0) {
         if (data.containsKey("status") && data.is<int>("status")) {
             _garland_enabled = (1 == data["status"].as<int>());
+            setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
             if (!_garland_enabled) {
                 schedule_function([](){
                     pixels.clear();
@@ -160,8 +169,29 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
         if (data.containsKey("brightness")) {
             byte new_brightness = data.get<byte>("brightness");
             DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), new_brightness);
+            setSetting(NAME_GARLAND_BRIGHTNESS, new_brightness);
             scene.setBrightness(new_brightness);
         }
+    }
+
+    if (strcmp(action, NAME_GARLAND_SET_SPEED) == 0) {
+        if (data.containsKey("speed")) {
+            byte new_speed = data.get<byte>("speed");
+            DEBUG_MSG_P(PSTR("[GARLAND] new speed = %d\n"), new_speed);
+            setSetting(NAME_GARLAND_SPEED, new_speed);
+            scene.setSpeed(new_speed);
+        }
+    }
+
+    if (strcmp(action, NAME_GARLAND_SET_DEFAULT) == 0) {
+        scene.setDefault();
+        byte brightness = scene.getBrightness();
+        setSetting(NAME_GARLAND_BRIGHTNESS, brightness);
+        byte speed = scene.getSpeed();
+        setSetting(NAME_GARLAND_SPEED, speed);
+        char buffer[128];
+        snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandBrightness\": %d, \"garlandSpeed\": %d}"), brightness, speed);
+        wsSend(buffer);
     }
 }
 #endif
@@ -179,9 +209,11 @@ void garlandLoop(void) {
         _last_update = millis();
         _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
+        static int animInd    = 0; 
         int prevAnimInd = animInd;
         while (prevAnimInd == animInd) animInd = secureRandom(1, animsSize());
 
+        static int paletteInd = 0;
         int prevPalInd = paletteInd;
         while (prevPalInd == paletteInd) paletteInd = secureRandom(palsSize());
 
@@ -213,7 +245,6 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    paletteInd = secureRandom(palsSize());
     scene.setAnim(anims[0]);
     scene.setPalette(&pals[0]);
     scene.setup();

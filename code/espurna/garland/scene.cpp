@@ -6,8 +6,13 @@
 
 #include "color.h"
 #include "palette.h"
+#include "debug.h"
 
-#define TRANSITION_MS       1000    // transition time between animations, ms
+#define TRANSITION_MS      1000    // transition time between animations, ms
+#define SPEED_MAX          70
+#define SPEED_FACTOR       10
+#define DEFAULT_SPEED      50
+#define DEFAULT_BRIGHTNESS 255
 
 Scene::Scene(Adafruit_NeoPixel* pixels)
     : _pixels(pixels),
@@ -25,54 +30,93 @@ void Scene::setPalette(Palette* palette) {
     }
 }
 
-void Scene::setBrightness(byte brightness) { this->brightness = brightness; }
+void Scene::setBrightness(byte brightness) {
+    DEBUG_MSG_P(PSTR("[GARLAND] Scene::setBrightness = %d\n"), brightness);
+    this->brightness = brightness;
+}
 
-byte Scene::getBrightness() { return brightness; }
+byte Scene::getBrightness() {
+    DEBUG_MSG_P(PSTR("[GARLAND] Scene::getBrightness = %d\n"), brightness);
+    return brightness;
+}
+
+// Speed is reverse to cycleFactor and 10x
+void Scene::setSpeed(byte speed) {
+    this->speed = speed;
+    cycleFactor = (float)(SPEED_MAX - speed) / SPEED_FACTOR;
+    DEBUG_MSG_P(PSTR("[GARLAND] Scene::setSpeed %d cycleFactor = %d\n"), speed, (int)(cycleFactor * 1000));
+}
+
+byte Scene::getSpeed() {
+    DEBUG_MSG_P(PSTR("[GARLAND] Scene::getSpeed %d cycleFactor = %d\n"), speed, (int)(cycleFactor * 1000));
+    return speed;
+}
+
+void Scene::setDefault() {
+    speed = DEFAULT_SPEED;
+    cycleFactor = (float)(SPEED_MAX - speed) / SPEED_FACTOR;
+    brightness = DEFAULT_BRIGHTNESS;
+    DEBUG_MSG_P(PSTR("[GARLAND] Scene::setDefault speed = %d cycleFactor = %d brightness = %d\n"), speed, (int)(cycleFactor * 1000), brightness);
+}
 
 void Scene::run() {
     unsigned long iteration_start_time = micros();
 
-    if (_anim) {
-        _anim->Run();
-    }
+    if (state == Calculate || cyclesRemain == 0) {
+        // Calculate number of cycles for this animation iteration
+        float cycleSum = cycleFactor + cycleTail;
+        cyclesRemain = cycleSum;
+        cycleTail = cycleSum - cyclesRemain;
 
-    sum_calc_time += (micros() - iteration_start_time);
-    iteration_start_time = micros();
-    ++calc_num;
-
-    // transition coef, if within 0..1 - transition is active
-    // changes from 1 to 0 during transition, so we interpolate from current
-    // color to previous
-    float transc = (float)((long)transms - (long)millis()) / TRANSITION_MS;
-    Color* leds_prev = (_leds == &_leds1[0]) ? &_leds2[0] : &_leds1[0];
-
-    if (transc > 0) {
-        for (int i = 0; i < _numLeds; i++) {
-            // transition is in progress
-            Color c = _leds[i].interpolate(leds_prev[i], transc);
-            byte r = (int)(bri_lvl[c.r]) * brightness / 256;
-            byte g = (int)(bri_lvl[c.g]) * brightness / 256;
-            byte b = (int)(bri_lvl[c.b]) * brightness / 256;
-            _pixels->setPixelColor(i, _pixels->Color(r, g, b));
+        if (_anim) {
+            _anim->Run();
         }
-    } else {
-        for (int i = 0; i < _numLeds; i++) {
-            // regular operation
-            byte r = (int)(bri_lvl[_leds[i].r]) * brightness / 256;
-            byte g = (int)(bri_lvl[_leds[i].g]) * brightness / 256;
-            byte b = (int)(bri_lvl[_leds[i].b]) * brightness / 256;
-            _pixels->setPixelColor(i, _pixels->Color(r, g, b));
-        }
-    }
 
-    sum_pixl_time += (micros() - iteration_start_time);
-    iteration_start_time = micros();
-    ++pixl_num;
+        sum_calc_time += (micros() - iteration_start_time);
+        iteration_start_time = micros();
+        ++calc_num;
+        state = Transition;
+    }
     
+    if (state == Transition && cyclesRemain < 3) {
+        // transition coef, if within 0..1 - transition is active
+        // changes from 1 to 0 during transition, so we interpolate from current
+        // color to previous
+        float transc = (float)((long)transms - (long)millis()) / TRANSITION_MS;
+        Color* leds_prev = (_leds == &_leds1[0]) ? &_leds2[0] : &_leds1[0];
 
-    _pixels->show();
-    sum_show_time += (micros() - iteration_start_time);
-    ++show_num;
+        if (transc > 0) {
+            for (int i = 0; i < _numLeds; i++) {
+                // transition is in progress
+                Color c = _leds[i].interpolate(leds_prev[i], transc);
+                byte r = (int)(bri_lvl[c.r]) * brightness / 256;
+                byte g = (int)(bri_lvl[c.g]) * brightness / 256;
+                byte b = (int)(bri_lvl[c.b]) * brightness / 256;
+                _pixels->setPixelColor(i, _pixels->Color(r, g, b));
+            }
+        } else {
+            for (int i = 0; i < _numLeds; i++) {
+                // regular operation
+                byte r = (int)(bri_lvl[_leds[i].r]) * brightness / 256;
+                byte g = (int)(bri_lvl[_leds[i].g]) * brightness / 256;
+                byte b = (int)(bri_lvl[_leds[i].b]) * brightness / 256;
+                _pixels->setPixelColor(i, _pixels->Color(r, g, b));
+            }
+        }
+
+        sum_pixl_time += (micros() - iteration_start_time);
+        iteration_start_time = micros();
+        ++pixl_num;
+        state = Show;
+    }
+    
+    if (state == Show && cyclesRemain < 2) {    
+        _pixels->show();
+        sum_show_time += (micros() - iteration_start_time);
+        ++show_num;
+        state = Calculate;
+    }
+    --cyclesRemain;
 }
 
 void Scene::setupImpl() {

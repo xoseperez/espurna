@@ -18,10 +18,13 @@ public:
     void setPalette(Palette* palette);
     void setBrightness(byte brightness);
     byte getBrightness();
+    void setSpeed(byte speed);
+    byte getSpeed();
+    void setDefault();
     void setAnim(Anim* anim) { _anim = anim; }
     void run();
     void setup();
-    bool finishedAnimCycle() { return _anim ? _anim->finishedycle() : true; };
+    bool finishedAnimCycle() { return _anim ? _anim->finishedycle() : true; }
     unsigned long getAvgCalcTime();
     unsigned long getAvgPixlTime();
     unsigned long getAvgShowTime();
@@ -43,9 +46,24 @@ private:
     Palette*           _palette = nullptr;
 
     // millis to transition end
-    unsigned long transms;
+    unsigned long      transms;
 
-    byte brightness =  255;
+    byte               brightness = 0;
+
+    // Reverse to speed. If more convenient to calculate in this way.
+    // 1 < cycleFactor < 4
+    byte               speed = 50;
+    float              cycleFactor = 2.0;
+    float              cycleTail = 0;
+    unsigned int       cyclesRemain = 0;
+
+    enum State {
+        Calculate,
+        Transition,
+        Show
+    }                  state = Calculate;
+
+    int                frameRate = 0;
 
     //whether to call SetUp on palette change
     //(some animations require full transition with fade, otherwise the colors would change in a step, some not)

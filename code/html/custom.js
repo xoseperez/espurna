@@ -2323,12 +2323,18 @@ $(function() {
     <!-- removeIf(!garland)-->
     $(".checkbox-garland-enable").on("change", function() {
         sendAction("garland_switch", {status: $(this).prop("checked") ? 1 : 0});
-        return false;
     });
 
     $(".slider-garland-brightness").on("change", function() {
         sendAction("garland_set_brightness", {brightness: $(this)[0].value});
-        return false;
+    });
+
+    $(".slider-garland-speed").on("change", function() {
+        sendAction("garland_set_speed", {speed: $(this)[0].value});
+    });
+
+    $(".button-garland-set-default").on("click", function() {
+        sendAction("garland_set_default", {});
     });
     <!-- endRemoveIf(!garland)-->
 
