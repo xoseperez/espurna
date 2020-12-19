@@ -65,7 +65,7 @@ private:
     byte               speed = 50;
     float              cycleFactor = 2.0;
     float              cycleTail = 0;
-    unsigned int       cyclesRemain = 0;
+    int                cyclesRemain = 0;
 
     enum State {
         Calculate,

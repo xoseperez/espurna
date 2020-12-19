@@ -15,6 +15,8 @@ public:
     void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
     virtual bool finishedycle() const { return true; };
     virtual void Run() = 0;
+    virtual void setCycleFactor(float new_cycle_factor) { cycleFactor = new_cycle_factor; }
+    virtual float getCycleFactor() { return cycleFactor; }
 
 protected:
     uint16_t    numLeds     = 0;
@@ -37,6 +39,10 @@ protected:
     Color       curColor     = Color(0);
     Color       prevColor    = Color(0);
     const Color sparkleColor = Color(0xFFFFFF);
+
+    // Reversed analog of speed. To control speed for particular animation (fine tuning for one).
+    // Lower - faster. Set cycleFactor < 1 speed up animation, while cycleFactor > 1 slow it down.
+    float       cycleFactor = 1.0;
 
     virtual void SetupImpl() = 0;
 

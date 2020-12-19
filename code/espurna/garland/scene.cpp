@@ -62,11 +62,17 @@ void Scene::setDefault() {
 void Scene::run() {
     unsigned long iteration_start_time = micros();
 
-    if (state == Calculate || cyclesRemain == 0) {
+    if (state == Calculate || cyclesRemain < 1) {
         // Calculate number of cycles for this animation iteration
-        float cycleSum = cycleFactor + cycleTail;
+        float cycleSum = cycleFactor * (_anim ? _anim->getCycleFactor() : 1.0) + cycleTail;
         cyclesRemain = cycleSum;
-        cycleTail = cycleSum - cyclesRemain;
+        if (cyclesRemain < 1) {
+            cyclesRemain = 1;
+            cycleSum = 0;
+            cycleTail = 0;
+        } else {
+            cycleTail = cycleSum - cyclesRemain;
+        }
 
         if (_anim) {
             _anim->Run();
