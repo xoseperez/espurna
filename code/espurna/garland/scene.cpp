@@ -121,6 +121,7 @@ void Scene::run() {
         sum_show_time += (micros() - iteration_start_time);
         ++show_num;
         state = Calculate;
+        ++numShows;
     }
     --cyclesRemain;
 }
@@ -147,6 +148,7 @@ void Scene::setup() {
     calc_num = 0;
     pixl_num = 0;
     show_num = 0;
+    numShows = 0;
 
     if (!setUpOnPalChange) {
         setupImpl();

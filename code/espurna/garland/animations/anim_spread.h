@@ -34,7 +34,7 @@ class AnimSpread : public Anim {
 
     void SetupImpl() override {
         inc = secureRandom(2, 4);
-        DEBUG_MSG_P(PSTR("[GARLAND] AnimSpread inc = %d\n"), inc);
+        // DEBUG_MSG_P(PSTR("[GARLAND] AnimSpread inc = %d\n"), inc);
         for (int i = 0; i < numLeds; i++)
             seq[i] = 0;
     }

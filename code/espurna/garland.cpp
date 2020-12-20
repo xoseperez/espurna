@@ -204,11 +204,12 @@ void garlandLoop(void) {
 
     scene.run();
 
-    if (millis() - _last_update > _interval_effect_update && scene.finishedAnimCycle()) {
+    unsigned long animation_time = millis() - _last_update;
+    if (animation_time > _interval_effect_update && scene.finishedAnimCycle()) {
         _last_update = millis();
         _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
-        static int animInd    = 0; 
+        static int animInd    = 0;
         int prevAnimInd = animInd;
         while (prevAnimInd == animInd) animInd = secureRandom(1, animsSize());
 
@@ -216,9 +217,12 @@ void garlandLoop(void) {
         int prevPalInd = paletteInd;
         while (prevPalInd == paletteInd) paletteInd = secureRandom(palsSize());
 
-        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %4d show: %4d\n"),
+        int numShows = scene.getNumShows();
+        int frameRate = animation_time > 0 ? numShows * 1000 / animation_time : 0;
+        
+        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
                     anims[prevAnimInd]->name(), pals[prevPalInd].name(),
-                    scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime());
+                    scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
         DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
                     anims[animInd]->name(), pals[paletteInd].name(), _interval_effect_update);
 

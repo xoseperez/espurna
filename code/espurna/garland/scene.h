@@ -38,6 +38,7 @@ public:
     unsigned long getAvgCalcTime();
     unsigned long getAvgPixlTime();
     unsigned long getAvgShowTime();
+    int getNumShows() { return numShows; }
 
 private:
     Adafruit_NeoPixel* _pixels = nullptr;
@@ -73,7 +74,7 @@ private:
         Show
     }                  state = Calculate;
 
-    int                frameRate = 0;
+    int                numShows = 0;
 
     //whether to call SetUp on palette change
     //(some animations require full transition with fade, otherwise the colors would change in a step, some not)
