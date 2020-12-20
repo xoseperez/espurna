@@ -431,6 +431,20 @@ void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp
     SetupImpl();
 }
 
+void Anim::initSeq() {
+    for (int i = 0; i < numLeds; i++)
+        seq[i] = i;
+}
+
+void Anim::shuffleSeq() {
+    for (int i = 0; i < numLeds; i++) {
+        byte ind = (unsigned int)(rngb() * numLeds / 256);
+        if (ind != i) {
+            std::swap(seq[ind], seq[i]);
+        }
+    }
+}
+
 void Anim::glowSetUp() {
     braPhaseSpd = secureRandom(4, 13);
     if (braPhaseSpd > 8) {

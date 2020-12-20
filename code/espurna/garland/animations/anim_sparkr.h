@@ -46,21 +46,6 @@ class AnimSparkr : public Anim {
             shuffleSeq();
         }
     }
-
-   private:
-    void initSeq() {
-        for (int i = 0; i < numLeds; i++)
-            seq[i] = i;
-    }
-
-    void shuffleSeq() {
-        for (int i = 0; i < numLeds; i++) {
-            byte ind = (unsigned int)(rngb() * numLeds / 256);
-            if (ind != i) {
-                std::swap(seq[ind], seq[i]);
-            }
-        }
-    }
 };
 
 #endif  // GARLAND_SUPPORT

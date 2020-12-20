@@ -46,6 +46,10 @@ protected:
 
     virtual void SetupImpl() = 0;
 
+    // helper functions for animations
+    void initSeq();
+    void shuffleSeq();
+
     //glow animation setup
     void glowSetUp();
 

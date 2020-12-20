@@ -10,6 +10,7 @@
 class AnimAssemble : public Anim {
    public:
     AnimAssemble() : Anim("Assemble") {
+        cycleFactor = 2;
     }
     void SetupImpl() override {
         inc = 1 + (rngb() >> 5);
@@ -19,8 +20,9 @@ class AnimAssemble : public Anim {
 
         int p = 0;
         for (int i = 0; i < numLeds; i++) {
+            leds[i] = 0;
             Color c = palette->getCachedPalColor((byte)p);
-            leds[i] = c;
+            ledstmp[i] = c;
 
             p = p + inc;
             if (p >= 256) {
@@ -29,25 +31,24 @@ class AnimAssemble : public Anim {
                 p = p + 256;
             }
         }
+        initSeq();
+        shuffleSeq();
+        pos = 0;
     }
 
     void Run() override {
+        if (pos < numLeds) {
+            byte cur_point = seq[pos];
+            leds[cur_point] = ledstmp[cur_point];
+            ++pos;
+        } else {
+            int del_pos = pos - numLeds;
+            byte cur_point = seq[del_pos];
+            leds[cur_point] = 0;
+            if (++pos >= numLeds * 2)
+                pos = 0;
+        }
     }
 };
-
-// struct Dot {
-//     float point = secureRandom(0, numLeds/2);
-//     int len = secureRandom(10, 20);
-//     float speed = ((float)secureRandom(4, 10)) / 10;
-//     Color color;
-//     int dir = 1;
-//     Dot(Palette* pal) : color(pal->getRndInterpColor()) {
-//         // DEBUG_MSG_P(PSTR("[GARLAND] Dot created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
-//         if (secureRandom(10) > 5) {
-//             head = numLeds-head;
-//             dir = -1;
-//         }
-//     }
-// };
 
 #endif  // GARLAND_SUPPORT
