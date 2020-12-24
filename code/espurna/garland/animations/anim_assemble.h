@@ -19,7 +19,7 @@ class AnimAssemble : public Anim {
         }
 
         int p = 0;
-        for (int i = 0; i < numLeds; i++) {
+        for (int i = 0; i < numLeds; ++i) {
             leds[i] = 0;
             Color c = palette->getCachedPalColor((byte)p);
             ledstmp[i] = c;

@@ -20,7 +20,7 @@ class AnimRun : public Anim {
 
     void Run() override {
         int p = pos;
-        for (int i = 0; i < numLeds; i++) {
+        for (int i = 0; i < numLeds; ++i) {
             Color c = palette->getCachedPalColor((byte)p);
             leds[i] = c;
 

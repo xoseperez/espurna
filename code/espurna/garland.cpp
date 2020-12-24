@@ -91,7 +91,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GR
 Scene scene(&pixels);
 
 Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
-                 new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
+                 new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
@@ -434,12 +434,12 @@ void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp
 }
 
 void Anim::initSeq() {
-    for (int i = 0; i < numLeds; i++)
+    for (int i = 0; i < numLeds; ++i)
         seq[i] = i;
 }
 
 void Anim::shuffleSeq() {
-    for (int i = 0; i < numLeds; i++) {
+    for (int i = 0; i < numLeds; ++i) {
         byte ind = (unsigned int)(rngb() * numLeds / 256);
         if (ind != i) {
             std::swap(seq[ind], seq[i]);

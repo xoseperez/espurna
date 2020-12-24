@@ -8,6 +8,7 @@
 #include "anim.h"
 #include "animations/anim_assemble.h"
 #include "animations/anim_comets.h"
+#include "animations/anim_dolphins.h"
 #include "animations/anim_fly.h"
 #include "animations/anim_pixiedust.h"
 #include "animations/anim_randcyc.h"
