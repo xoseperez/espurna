@@ -443,7 +443,7 @@ sensor::Energy _sensorParseEnergy(const String& value) {
 
     const char* plus { strchr(p, '+') };
     if (!plus) {
-        return;
+        return result;
     }
 
     p = plus + 1;
