@@ -38,7 +38,7 @@ def log(message, verbose=False, file=sys.stderr):
 
 
 # Most portable way, without depending on platformio internals
-def subprocess_libdeps(lib_deps, storage=None, silent=True):
+def subprocess_libdeps(lib_deps, storage=None, verbose=False):
     import subprocess
 
     args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib"]
@@ -47,7 +47,7 @@ def subprocess_libdeps(lib_deps, storage=None, silent=True):
     else:
         args.extend(["-d", storage])
     args.append("install")
-    if silent:
+    if not verbose:
         args.append("-s")
 
     args.extend(lib_deps)
@@ -137,7 +137,7 @@ if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
         storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
         log("using shared library storage: {}".format(storage))
 
-    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage)
+    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
 
 # tweak build system to ignore espurna.ino, but include user code
 # ref: platformio-core/platformio/tools/piomisc.py::ConvertInoToCpp()
@@ -163,3 +163,15 @@ if "1" == os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
             relpath = os.path.relpath(abspath, "espurna")
             cpp_files.append(relpath)
     merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
+
+# make sure to register as a valid command. however, it is always called right here
+# (--list-targets is a kind-of inefficient for finding this, though, since it *will* install libs into .pio/ anyways...)
+def install_libs_dummy(target, source, env):
+    pass
+env.AddCustomTarget("install-libs", None, install_libs_dummy)
+
+from SCons.Script import COMMAND_LINE_TARGETS
+if "install-libs" in COMMAND_LINE_TARGETS:
+    storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
+    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
+    sys.exit(0)

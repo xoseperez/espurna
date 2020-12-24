@@ -428,14 +428,34 @@ void _sensorRtcmemSaveEnergy(unsigned char index, const sensor::Energy& source) 
 
 sensor::Energy _sensorParseEnergy(const String& value) {
     sensor::Energy result;
-
-    const bool separator = value.indexOf('+') > 0;
-    if (value.length() && (separator > 0)) {
-        const String before = value.substring(0, separator);
-        const String after = value.substring(separator + 1);
-        result.kwh = strtoul(before.c_str(), nullptr, 10);
-        result.ws = strtoul(after.c_str(), nullptr, 10);
+    if (!value.length()) {
+        return result;
     }
+
+    const char* p { value.c_str() };
+
+    char* endp { nullptr };
+    auto kwh = strtoul(p, &endp, 10);
+    if (!endp || (endp == p)) {
+        return result;
+    }
+    result.kwh = kwh;
+
+    const char* plus { strchr(p, '+') };
+    if (!plus) {
+        return;
+    }
+
+    p = plus + 1;
+    if (*p == '\0') {
+        return result;
+    }
+
+    auto ws = strtoul(p, &endp, 10);
+    if (!endp || (endp == p)) {
+        return result;
+    }
+    result.ws = ws;
 
     return result;
 }
@@ -454,17 +474,15 @@ void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const String& pa
 }
 
 sensor::Energy _sensorEnergyTotal(unsigned char index) {
-
     sensor::Energy result;
 
     if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
         result = _sensorRtcmemLoadEnergy(index);
-    } else if (_sensor_save_every > 0) {
+    } else {
         result = _sensorParseEnergy(getSetting({"eneTotal", index}));
     }
 
     return result;
-
 }
 
 sensor::Energy sensorEnergyTotal() {
