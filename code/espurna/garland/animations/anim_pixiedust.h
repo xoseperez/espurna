@@ -27,7 +27,7 @@ class AnimPixieDust : public Anim {
 
     void Run() override {
         if (inc > 0) {
-            for (int i = 0; i < numLeds; i++) {
+            for (int i = 0; i < numLeds; ++i) {
                 leds[i] = (i > phase) ? prevColor : curColor;
                 glowForEachLed(i);
             }
@@ -38,7 +38,7 @@ class AnimPixieDust : public Anim {
                 curColor = palette->getRndInterpColor();
             }
         } else {
-            for (int i = 0; i < numLeds; i++) {
+            for (int i = 0; i < numLeds; ++i) {
                 leds[i] = (i < phase) ? prevColor : curColor;
                 glowForEachLed(i);
             }

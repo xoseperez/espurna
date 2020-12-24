@@ -35,15 +35,15 @@ class AnimSpread : public Anim {
     void SetupImpl() override {
         inc = secureRandom(2, 4);
         // DEBUG_MSG_P(PSTR("[GARLAND] AnimSpread inc = %d\n"), inc);
-        for (int i = 0; i < numLeds; i++)
+        for (int i = 0; i < numLeds; ++i)
             seq[i] = 0;
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; i++)
+        for (int i = 0; i < numLeds; ++i)
             leds[i] = 0;
 
-        for (int i = 0; i < numLeds; i++) {
+        for (int i = 0; i < numLeds; ++i) {
             if (seq[i] > 0) {
                 byte width = maxWidth - seq[i];
                 for (int j = i - width; j <= (i + width); j++) {
