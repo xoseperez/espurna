@@ -117,6 +117,7 @@ var buildWebUI = function(module) {
         'sensor': false,
         'rfbridge': false,
         'rfm69': false,
+        'garland': false,
         'thermostat': false,
         'lightfox': false,
         'curtain': false
@@ -215,6 +216,10 @@ gulp.task('webui_lightfox', function() {
     return buildWebUI('lightfox');
 });
 
+gulp.task('webui_garland', function() {
+    return buildWebUI('garland');
+});
+
 gulp.task('webui_thermostat', function() {
     return buildWebUI('thermostat');
 });
@@ -235,6 +240,7 @@ gulp.task('webui',
         'webui_rfbridge',
         'webui_rfm69',
         'webui_lightfox',
+        'webui_garland',
         'webui_thermostat',
         'webui_curtain',
         'webui_all'

@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "domoticz.h"
 #include "encoder.h"
 #include "homeassistant.h"
+#include "garland.h"
 #include "i2c.h"
 #include "influxdb.h"
 #include "ir.h"
@@ -309,6 +310,11 @@ void setup() {
         extraSetup();
     #endif
 
+
+    #if GARLAND_SUPPORT
+        garlandSetup();
+    #endif
+    
     // Prepare configuration for version 2.0
     migrate();
 

@@ -114,6 +114,9 @@ PROGMEM const char espurna_modules[] =
     #if TERMINAL_SUPPORT
         "TERMINAL "
     #endif
+    #if GARLAND_SUPPORT
+        "GARLAND "
+    #endif
     #if THERMOSTAT_SUPPORT
         "THERMOSTAT "
     #endif
@@ -175,6 +178,9 @@ PROGMEM const char espurna_webui[] =
     #endif
     #if WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
         "LIGHTFOX"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_GARLAND
+        "GARLAND"
     #endif
     #if WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
         "THERMOSTAT"

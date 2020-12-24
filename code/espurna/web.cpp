@@ -41,6 +41,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "static/index.rfm69.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
     #include "static/index.lightfox.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_GARLAND
+    #include "static/index.garland.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
     #include "static/index.thermostat.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN

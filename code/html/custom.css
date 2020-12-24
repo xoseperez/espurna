@@ -213,6 +213,7 @@ div.state {
 .button-ha-config,
 .button-settings-backup,
 .button-settings-restore,
+.button-garland-set-default,
 .button-dbgcmd,
 .button-apikey {
     background: rgb(0, 192, 0); /* green */
