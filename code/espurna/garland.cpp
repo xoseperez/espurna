@@ -4,10 +4,10 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.com/Vasil-Pahomov/Liana)
 
-Tested on 60 led strip. 
+Tested on 60 led strip.
 !!! For more leds can cause WDT rebot. Need to be carefully tested for more than 60 leds !!!
 The most time consuming operation is actually showing leds by Adafruit Neopixel. It take about 1870 mcs.
-More long strip can take more time to show. 
+More long strip can take more time to show.
 Currently animation calculation, brightness calculation/transition and showing makes in one loop cycle.
 Debug output shows timings. Overal timing should be not more that 3000 ms.
 
@@ -217,7 +217,7 @@ void garlandLoop(void) {
 
         int numShows = scene.getNumShows();
         int frameRate = animation_time > 0 ? numShows * 1000 / animation_time : 0;
-        
+
         DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
                     anims[prevAnimInd]->name(), pals[prevPalInd].name(),
                     scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
@@ -256,7 +256,7 @@ void garlandSetup() {
 /*#######################################################################
   _____
  / ____|
-| (___     ___    ___   _ __     ___ 
+| (___     ___    ___   _ __     ___
  \___ \   / __|  / _ \ | '_ \   / _ \
  ____) | | (__  |  __/ | | | | |  __/
 |_____/   \___|  \___| |_| |_|  \___|
@@ -337,7 +337,7 @@ void Scene::run() {
         ++calc_num;
         state = Transition;
     }
-    
+
     if (state == Transition && cyclesRemain < 3) {
         // transition coef, if within 0..1 - transition is active
         // changes from 1 to 0 during transition, so we interpolate from current
@@ -369,8 +369,8 @@ void Scene::run() {
         ++pixl_num;
         state = Show;
     }
-    
-    if (state == Show && cyclesRemain < 2) {    
+
+    if (state == Show && cyclesRemain < 2) {
         _pixels->show();
         sum_show_time += (micros() - iteration_start_time);
         ++show_num;
@@ -416,8 +416,8 @@ unsigned long Scene::getAvgShowTime() { return sum_show_time / show_num; }
 /*#######################################################################
                     _                       _     _
     /\             (_)                     | |   (_)
-   /  \     _ __    _   _ __ ___     __ _  | |_   _    ___    _ __  
-  / /\ \   | '_ \  | | | '_ ` _ \   / _` | | __| | |  / _ \  | '_ \ 
+   /  \     _ __    _   _ __ ___     __ _  | |_   _    ___    _ __
+  / /\ \   | '_ \  | | | '_ ` _ \   / _` | | __| | |  / _ \  | '_ \
  / ____ \  | | | | | | | | | | | | | (_| | | |_  | | | (_) | | | | |
 /_/    \_\ |_| |_| |_| |_| |_| |_|  \__,_|  \__| |_|  \___/  |_| |_|
 #######################################################################*/

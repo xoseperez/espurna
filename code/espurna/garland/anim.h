@@ -9,7 +9,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 #include "color.h"
 
-#define BRA_AMP_SHIFT          1    // brigthness animation amplitude shift. true BrA amplitude is calculated 
+#define BRA_AMP_SHIFT          1    // brigthness animation amplitude shift. true BrA amplitude is calculated
                                     // as (0..127) value shifted right by this amount
 #define BRA_OFFSET           127    //(222-64) // brigthness animation amplitude offset
 
