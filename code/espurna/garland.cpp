@@ -2,6 +2,8 @@
 GARLAND MODULE
 Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
+Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.com/Vasil-Pahomov/Liana)
+
 Tested on 60 led strip. 
 !!! For more leds can cause WDT rebot. Need to be carefully tested for more than 60 leds !!!
 The most time consuming operation is actually showing leds by Adafruit Neopixel. It take about 1870 mcs.
