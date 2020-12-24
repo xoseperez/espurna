@@ -15,7 +15,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 class Palette {
    public:
-    Palette(const char* name, std::vector<Color> colors) : _name(name), _numColors(colors.size()), _colors(colors), _cache(256) {
+    Palette(const char* name, std::vector<Color>&& colors) : _name(name), _numColors(colors.size()), _colors(std::move(colors)), _cache(256) {
     }
 
     const char* name() const { return _name; }
