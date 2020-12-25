@@ -1,6 +1,6 @@
 #if GARLAND_SUPPORT
 
-#include <list>
+#include <vector>
 
 #include "../anim.h"
 #include "../color.h"
@@ -10,10 +10,10 @@
 class AnimDolphins : public Anim {
    public:
     AnimDolphins() : Anim("Dolphins") {
+        cycleFactor = 3;
     }
 
     void SetupImpl() override {
-        cycleFactor = 4;
         dolphins.clear();
         for (int i = 0; i < 4; ++i)
             dolphins.emplace_back(palette, numLeds);
@@ -100,7 +100,7 @@ class AnimDolphins : public Anim {
             return true;
         }
 
-        // Decide that dolphin have ehough space if first half of its len is empty
+        // Decide that dolphin have ehough space if seq of len before it is empty
         bool HaveEnoughSpace(byte* seq) {
             for (int i = 0; i < len; ++i) {
                 if (seq[start + i * dir] != 0) {

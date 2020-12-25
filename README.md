@@ -186,7 +186,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
 * Configuration stored in different flash sectors to prevent data loss and corruption
 * **Garland** Implementing garland using WS2812 leds
-    * 10 animation modes (include start animation)
+    * 12 animation modes (include start animation)
     * Web control for:
         * ON/OFF
         * brightness
