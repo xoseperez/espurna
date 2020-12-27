@@ -34,7 +34,6 @@ COPY . /espurna
 WORKDIR /espurna/code
 
 RUN npm install --only=dev && \
-    platformio lib install && \
     platformio run --target clean
 
 VOLUME ["/espurna", "/firmware"]
