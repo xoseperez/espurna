@@ -18,11 +18,7 @@ sudo docker build -t espurna-build -f docker/Dockerfile .
 ## Examples
 
 ### Listing Firmware Images
-<<<<<<< HEAD
-```
-=======
 ```bash
->>>>>>> 69500e79965f3f441e2e1e07d891aa6e3b2857e0
 sudo docker run --rm -it -v /tmp/firmware/:/firmware espurna-build -l
 --------------------------------------------------------------
 Available environments:
