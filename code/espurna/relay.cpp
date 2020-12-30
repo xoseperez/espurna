@@ -1733,6 +1733,7 @@ bool relayAdd(std::unique_ptr<RelayProviderBase>&& provider) {
         _relays.emplace_back(provider.release());
         if (!scheduled) {
             schedule_function([count]() {
+                _relayConfigure();
                 _relayBootAll(count);
                 scheduled = false;
             });
