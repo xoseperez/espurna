@@ -51,44 +51,6 @@ constexpr bool _rfb_transmit { true };
 
 #if RELAY_SUPPORT
 
-class RfbRelayProvider : public RelayProvider {
-public:
-    using Instances = std::forward_list<RfbRelayProvider*>;
-
-    RfbProvider() = delete;
-    explicit RfbProvider(unsigned char id) :
-        _id(id)
-    {
-        instances.push_front(this);
-    }
-
-    void change(bool status) {
-        rfbStatus(_id, status);
-    }
-
-    void notify(bool status) {
-        rfbStatus(_id, status);
-    }
-
-    unsigned char id() const {
-        return _id;
-    }
-
-    static const RfbRelayProvider::Instances& instances() {
-        return _instances;
-    }
-
-    static const RfbRelayProvider::Instances& count() {
-        return std::distance(_instances.begin(), _instances.end());
-    }
-
-private:
-    static Instances _instances;
-    unsigned char _id;
-}
-
-RfbRelayProvider::Instances RfbRelayProvider::_instances;
-
 struct RfbRelayMatch {
     RfbRelayMatch() = default;
     RfbRelayMatch(unsigned char id_, PayloadStatus status_) :
@@ -1304,6 +1266,11 @@ void rfbSetup() {
         }
     }
 
+#endif
+
+#if RELAY_SUPPORT
+    relaySetStatusNotify(rfbStatus);
+    relaySetStatusChange(rfbStatus);
 #endif
 
 #if MQTT_SUPPORT

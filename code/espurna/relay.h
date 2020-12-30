@@ -83,7 +83,11 @@ void relayPulse(unsigned char id);
 void relaySync(unsigned char id);
 void relaySave(bool persist);
 
-unsigned char relayAdd(std::unique_ptr<RelayProviderBase>&& provider);
+using RelayStatusCallback = void(*)(unsigned char id, bool status);
+
+bool relayAdd(std::unique_ptr<RelayProviderBase>&& provider);
+void relaySetStatusNotify(RelayStatusCallback);
+void relaySetStatusChange(RelayStatusCallback);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();

@@ -44,30 +44,37 @@ extern "C" {
 
 #if RELAY_SUPPORT
 
-// If the number of dummy relays matches the number of light channels
-// assume each relay controls one channel.
-// If the number of dummy relays is the number of channels plus 1
-// assume the first one controls all the channels and
-// the rest one channel each.
-// Otherwise every dummy relay controls all channels.
+// Setup virtual relays contolling the light's state
+// TODO: only do per-channel setup optionally
 
 class LightChannelProvider : public RelayProviderBase {
 public:
-    LightProvider() = delete;
-    explicit LightProvider(unsigned char id) :
+    LightChannelProvider() = delete;
+    explicit LightChannelProvider(unsigned char id) :
         _id(id)
     {}
 
-    void change(bool status) {
+    const char* id() const {
+        return "light_channel";
+    }
+
+    void change(bool status) override {
         lightState(_id, status);
         lightState(true);
         lightUpdate(true, true);
     }
+
+private:
+    unsigned char _id { RELAY_NONE };
 };
 
 class LightGlobalProvider : public RelayProviderBase {
 public:
-    void change(bool status) {
+    const char* id() const {
+        return "light_global";
+    }
+
+    void change(bool status) override {
         lightState(status);
         lightUpdate(true, true);
     }
@@ -76,18 +83,21 @@ public:
 #endif
 
 struct channel_t {
+    channel_t() = default;
+    explicit channel_t(unsigned char pin_, bool inverse_) :
+        pin(pin_),
+        inverse(inverse_)
+    {
+        pinMode(pin, OUTPUT);
+    }
 
-    channel_t();
-    channel_t(unsigned char pin, bool inverse);
-
-    unsigned char pin;           // real GPIO pin
-    bool inverse;                // whether we should invert the value before using it
-    bool state;                  // is the channel ON
-    unsigned char inputValue;    // raw value, without the brightness
-    unsigned char value;         // normalized value, including brightness
-    unsigned char target;        // target value
-    double current;              // transition value
-
+    unsigned char pin { GPIO_NONE };    // real GPIO pin
+    bool inverse { false };             // whether we should invert the value before using it
+    bool state { true };                // is the channel ON
+    unsigned char inputValue { 0 };     // raw value, without the brightness
+    unsigned char value { 0 };          // normalized value, including brightness
+    unsigned char target { 0 };         // target value
+    double current { 0.0 };             // transition value
 };
 
 Ticker _light_comms_ticker;
@@ -96,6 +106,7 @@ Ticker _light_transition_ticker;
 
 std::vector<channel_t> _light_channels;
 
+bool _light_has_controls = false;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
@@ -120,8 +131,8 @@ long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
 long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
 
-using light_brightness_func_t = void();
-light_brightness_func_t* _light_brightness_func = nullptr;
+using light_brightness_func_t = void(*)();
+light_brightness_func_t _light_brightness_func = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
@@ -165,28 +176,6 @@ static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds arr
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
-
-channel_t::channel_t() :
-    pin(GPIO_NONE),
-    inverse(false),
-    state(true),
-    inputValue(0),
-    value(0),
-    target(0),
-    current(0.0)
-{}
-
-channel_t::channel_t(unsigned char pin, bool inverse) :
-    pin(pin),
-    inverse(inverse),
-    state(true),
-    inputValue(0),
-    value(0),
-    target(0),
-    current(0.0)
-{
-    pinMode(pin, OUTPUT);
-}
 
 void _setValue(const unsigned char id, const unsigned int value) {
     if (_light_channels[id].value != value) {
@@ -784,6 +773,10 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
         mqttSubscribe(buffer);
 
+        // Global lights control
+        if (!_light_has_controls) {
+            mqttSubscribe(MQTT_TOPIC_LIGHT);
+        }
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -849,6 +842,24 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             return;
         }
 
+        // Global
+        if (t.equals(MQTT_TOPIC_LIGHT)) {
+            switch (rpcParsePayload(payload)) {
+            case PayloadStatus::On:
+                lightState(true);
+                break;
+            case PayloadStatus::Off:
+                lightState(false);
+                break;
+            case PayloadStatus::Toggle:
+                lightState(!_light_state);
+                break;
+            case PayloadStatus::Unknown:
+                break;
+            }
+            lightUpdate(true, mqttForward());
+        }
+
     }
 
 }
@@ -889,6 +900,12 @@ void lightMQTT() {
     // Brightness
     snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_brightness);
     mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
+
+    // Global
+    if (!_light_has_controls) {
+        snprintf_P(buffer, sizeof(buffer), "%c", _light_state ? '1' : '0');
+        mqttSend(MQTT_TOPIC_LIGHT, buffer);
+    }
 
 }
 
@@ -1524,6 +1541,13 @@ void lightSetup() {
         _lightRestoreSettings();
     }
     lightUpdate(false, false);
+
+    #if RELAY_SUPPORT
+        if (getSetting("ltRelayEnabled", true)) {
+            relayAdd(std::make_unique<LightGlobalProvider>());
+            _light_has_controls = true;
+        }
+    #endif
 
     #if WEB_SUPPORT
         wsRegister()

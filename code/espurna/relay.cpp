@@ -18,14 +18,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "api.h"
 #include "broker.h"
-#include "light.h"
 #include "mqtt.h"
-#include "rfbridge.h"
 #include "rpc.h"
 #include "rtcmem.h"
 #include "settings.h"
 #include "storage_eeprom.h"
-#include "tuya.h"
 #include "utils.h"
 #include "ws.h"
 
@@ -197,6 +194,9 @@ bool _relay_sync_locked = false;
 Ticker _relay_save_timer;
 Ticker _relay_sync_timer;
 
+RelayStatusCallback _relay_status_notify { nullptr };
+RelayStatusCallback _relay_status_change { nullptr };
+
 #if WEB_SUPPORT
 
 bool _relay_report_ws = false;
@@ -231,6 +231,16 @@ void RelayProviderBase::boot(bool) {
 }
 
 void RelayProviderBase::notify(bool) {
+}
+
+// Direct status notifications
+
+void relaySetStatusNotify(RelayStatusCallback callback) {
+    _relay_status_notify = callback;
+}
+
+void relaySetStatusChange(RelayStatusCallback callback) {
+    _relay_status_change = callback;
 }
 
 // No-op provider, available for purely virtual relays that are controlled only via API
@@ -594,6 +604,9 @@ void _relayProcess(bool mode) {
         // Call the provider to perform the action
         _relays[id].current_status = target;
         _relays[id].provider->change(target);
+        if (_relay_status_change) {
+            _relay_status_change(id, target);
+        }
 
         // Send to Broker
         #if BROKER_SUPPORT
@@ -769,6 +782,9 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
         }
 
         _relays[id].provider->notify(status);
+        if (_relay_status_notify) {
+            _relay_status_notify(id, status);
+        }
 
         // Update the pulse counter if the relay is already in the non-normal state (#454)
         relayPulse(id);
@@ -1079,43 +1095,46 @@ void _relayWebSocketUpdate(JsonObject& root) {
 }
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    JsonObject& relays = root.createNestedObject("relayConfig");
+    JsonObject& config = root.createNestedObject("relayConfig");
 
-    relays["size"] = relayCount();
-    relays["start"] = 0;
+    config["size"] = relayCount();
+    config["start"] = 0;
 
-    JsonArray& name = relays.createNestedArray("name");
-    JsonArray& prov = relays.createNestedArray("prov");
-    JsonArray& boot = relays.createNestedArray("boot");
-    JsonArray& pulse = relays.createNestedArray("pulse");
-    JsonArray& pulse_time = relays.createNestedArray("pulse_time");
+    const char* keys[] = {
+        "prov", "name", "boot", "pulse", "pulse_time"
+    };
+    JsonArray& schema = config.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
     #if SCHEDULER_SUPPORT
-        JsonArray& sch_last = relays.createNestedArray("sch_last");
+        schema.add("sch_last");
     #endif
 
     #if MQTT_SUPPORT
-        JsonArray& group = relays.createNestedArray("group");
-        JsonArray& group_sync = relays.createNestedArray("group_sync");
-        JsonArray& on_disconnect = relays.createNestedArray("on_disc");
+        schema.add("group");
+        schema.add("group_sync");
+        schema.add("on_disc");
     #endif
 
-    for (unsigned char i=0; i<relayCount(); i++) {
-        name.add(getSetting({"relayName", i}));
-        prov.add(getSetting({"relayProv", i}));
-        boot.add(getSetting({"relayBoot", i}, RELAY_BOOT_MODE));
+    JsonArray& relays = config.createNestedArray("relays");
 
-        pulse.add(_relays[i].pulse);
-        pulse_time.add(_relays[i].pulse_ms / 1000.0);
+    for (unsigned char id = 0;  id < relayCount(); ++id) {
+        JsonArray& relay = relays.createNestedArray();
+        relay.add(_relays[id].provider->id());
+        relay.add(getSetting({"relayName", id}));
+        relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
+
+        relay.add(_relays[id].pulse);
+        relay.add(_relays[id].pulse_ms / 1000.0);
 
         #if SCHEDULER_SUPPORT
-            sch_last.add(getSetting({"relayLastSch", i}, SCHEDULER_RESTORE_LAST_SCHEDULE));
+            relay.add(getSetting({"relayLastSch", id}, SCHEDULER_RESTORE_LAST_SCHEDULE));
         #endif
 
         #if MQTT_SUPPORT
-            group.add(getSetting({"mqttGroup", i}));
-            group_sync.add(getSetting({"mqttGroupSync", i}, 0));
-            on_disconnect.add(getSetting({"relayOnDisc", i}, 0));
+            relay.add(getSetting({"mqttGroup", id}));
+            relay.add(getSetting({"mqttGroupSync", id}, 0));
+            relay.add(getSetting({"relayOnDisc", id}, 0));
         #endif
     }
 }
@@ -1543,7 +1562,8 @@ void _relayLoop() {
     #endif
 }
 
-// Dummy relays for virtual light switches, Sonoff Dual, Sonoff RF Bridge and Tuya
+// Dummy relays for virtual light switches (hardware-less), Sonoff Dual, Sonoff RF Bridge and Tuya
+
 void relaySetupDummy(size_t size, bool reconfigure) {
 
     if (size == _relayDummy) return;
@@ -1706,25 +1726,21 @@ void relaySetup() {
 
 }
 
-using RelayProviderGenerator = std::unique_ptr<RelayProviderBase>(*)(unsigned char, RelayType);
-
-unsigned char relayAdd(RelayProviderGenerator generator) {
-    unsigned char id { relayCount() };
-    static bool scheduled = false;
-
-    auto impl = generator(id, RelayType::Normal);
-    if (impl && impl->setup()) {
-        _relays.emplace_back(impl.release());
+bool relayAdd(std::unique_ptr<RelayProviderBase>&& provider) {
+    if (provider && provider->setup()) {
+        static bool scheduled { false };
+        unsigned char count { relayCount() };
+        _relays.emplace_back(provider.release());
         if (!scheduled) {
-            schedule_function([&]() {
-                _relayBootAll(id);
+            schedule_function([count]() {
+                _relayBootAll(count);
                 scheduled = false;
             });
         }
-        return id;
+        return true;
     }
 
-    return RELAY_NONE;
+    return false;
 }
 
 #endif // RELAY_SUPPORT == 1

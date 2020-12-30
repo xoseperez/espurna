@@ -1231,6 +1231,7 @@
 #define MQTT_TOPIC_CMD              "cmd"
 
 // Light module
+#define MQTT_TOPIC_LIGHT            "light"
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
 #define MQTT_TOPIC_COLOR_HSV        "hsv"
