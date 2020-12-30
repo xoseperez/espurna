@@ -8,23 +8,29 @@ npm_install() {
 }
 
 pio_install() {
-    pip install -U platformio
+    pip3 install -U platformio
     pio upgrade --dev
     pio platform update -p
 }
 
 cd code
 
-if [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test Host" ]; then
+case "$1" in
+("host")
     pio_install
-elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test WebUI" ]; then
+    ;;
+("webui")
     npm_install
-elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Test PlatformIO Build" ]; then
+    ;;
+("build")
     pio_install
-elif [ "${TRAVIS_BUILD_STAGE_NAME}" = "Release" ]; then
+    ;;
+("release")
     npm_install
     pio_install
-else
+    ;;
+(*)
     echo -e "\e[1;33mUnknown stage name, exiting!\e[0m"
     exit 1
-fi
+    ;;
+esac

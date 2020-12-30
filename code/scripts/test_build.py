@@ -62,7 +62,7 @@ def run_configurations(args, configurations):
     cmd.extend(["-e", args.environment])
 
     for cfg in configurations:
-        print(clr(Color.BOLD, "> Building {}".format(cfg)))
+        print(clr(Color.BOLD, "> Building {}".format(cfg)), flush=True)
         with open(args.custom_h, "w") as custom_h:
 
             def write(line):
@@ -100,7 +100,8 @@ def run_configurations(args, configurations):
                     ).st_size,
                     datetime.timedelta(seconds=diff),
                 ),
-            )
+            ),
+            flush=True,
         )
 
 
