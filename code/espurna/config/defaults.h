@@ -737,6 +737,81 @@
 #define RELAY8_DELAY_OFF      0
 #endif
 
+#ifndef RELAY1_PROVIDER
+#define RELAY1_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY2_PROVIDER
+#define RELAY2_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY3_PROVIDER
+#define RELAY3_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY4_PROVIDER
+#define RELAY4_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY5_PROVIDER
+#define RELAY5_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY6_PROVIDER
+#define RELAY6_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY7_PROVIDER
+#define RELAY7_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY8_PROVIDER
+#define RELAY8_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+
+#ifndef RELAY1_PIN_TYPE
+#define RELAY1_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY2_PIN_TYPE
+#define RELAY2_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY3_PIN_TYPE
+#define RELAY3_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY4_PIN_TYPE
+#define RELAY4_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY5_PIN_TYPE
+#define RELAY5_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY6_PIN_TYPE
+#define RELAY6_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY7_PIN_TYPE
+#define RELAY7_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY8_PIN_TYPE
+#define RELAY8_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+
+#ifndef RELAY1_BOOT_MODE
+#define RELAY1_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY2_BOOT_MODE
+#define RELAY2_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY3_BOOT_MODE
+#define RELAY3_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY4_BOOT_MODE
+#define RELAY4_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY5_BOOT_MODE
+#define RELAY5_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY6_BOOT_MODE
+#define RELAY6_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY7_BOOT_MODE
+#define RELAY7_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY8_BOOT_MODE
+#define RELAY8_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+
 #ifndef RELAY_DELAY_INTERLOCK
 #define RELAY_DELAY_INTERLOCK       0
 #endif
@@ -908,11 +983,6 @@
 // https://github.com/xoseperez/espurna/issues/1151
 #ifndef HOSTNAME
 #define HOSTNAME                ""
-#endif
-
-// Relay providers
-#ifndef RELAY_PROVIDER
-#define RELAY_PROVIDER          RELAY_PROVIDER_RELAY
 #endif
 
 // Light provider

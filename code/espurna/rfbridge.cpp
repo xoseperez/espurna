@@ -51,6 +51,44 @@ constexpr bool _rfb_transmit { true };
 
 #if RELAY_SUPPORT
 
+class RfbRelayProvider : public RelayProvider {
+public:
+    using Instances = std::forward_list<RfbRelayProvider*>;
+
+    RfbProvider() = delete;
+    explicit RfbProvider(unsigned char id) :
+        _id(id)
+    {
+        instances.push_front(this);
+    }
+
+    void change(bool status) {
+        rfbStatus(_id, status);
+    }
+
+    void notify(bool status) {
+        rfbStatus(_id, status);
+    }
+
+    unsigned char id() const {
+        return _id;
+    }
+
+    static const RfbRelayProvider::Instances& instances() {
+        return _instances;
+    }
+
+    static const RfbRelayProvider::Instances& count() {
+        return std::distance(_instances.begin(), _instances.end());
+    }
+
+private:
+    static Instances _instances;
+    unsigned char _id;
+}
+
+RfbRelayProvider::Instances RfbRelayProvider::_instances;
+
 struct RfbRelayMatch {
     RfbRelayMatch() = default;
     RfbRelayMatch(unsigned char id_, PayloadStatus status_) :
@@ -347,7 +385,7 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
 }
 
 void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, relayCount());
+    _rfbWebSocketSendCodeArray(root, 0, RfbRelayProvider::count());
 }
 
 #endif // RELAY_SUPPORT
@@ -355,7 +393,7 @@ void _rfbWebSocketOnData(JsonObject& root) {
 void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_REPEATS);
 #if RELAY_SUPPORT
-    root["rfbCount"] = relayCount();
+    root["rfbCount"] = RfbRelayProvider::count();
 #endif
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
     root["rfbdirectVisible"] = 1;
@@ -410,7 +448,8 @@ bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
 // thus requiring us to 'return' value from settings as the real code, replacing input
 RfbRelayMatch _rfbMatch(const char* code) {
 
-    if (!relayCount()) {
+    auto count = RfbRelayProvider::count();
+    if (!count) {
         return {};
     }
 

@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "api.h"
 #include "broker.h"
 #include "mqtt.h"
+#include "relay.h"
 #include "rpc.h"
 #include "rtcmem.h"
 #include "tuya.h"
@@ -40,6 +41,39 @@ extern "C" {
 #endif
 
 // -----------------------------------------------------------------------------
+
+#if RELAY_SUPPORT
+
+// If the number of dummy relays matches the number of light channels
+// assume each relay controls one channel.
+// If the number of dummy relays is the number of channels plus 1
+// assume the first one controls all the channels and
+// the rest one channel each.
+// Otherwise every dummy relay controls all channels.
+
+class LightChannelProvider : public RelayProviderBase {
+public:
+    LightProvider() = delete;
+    explicit LightProvider(unsigned char id) :
+        _id(id)
+    {}
+
+    void change(bool status) {
+        lightState(_id, status);
+        lightState(true);
+        lightUpdate(true, true);
+    }
+};
+
+class LightGlobalProvider : public RelayProviderBase {
+public:
+    void change(bool status) {
+        lightState(status);
+        lightUpdate(true, true);
+    }
+};
+
+#endif
 
 struct channel_t {
 

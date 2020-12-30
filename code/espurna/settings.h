@@ -125,6 +125,9 @@ T convert(const String& value);
 // --------------------------------------------------------------------------
 
 template <>
+GpioType convert(const String& value);
+
+template <>
 float convert(const String& value);
 
 template <>

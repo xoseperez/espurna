@@ -15,6 +15,15 @@
 #define WIFI_STATE_WPS              4
 #define WIFI_STATE_SMARTCONFIG      8
 
+// -----------------------------------------------------------------------------
+// GPIO
+// -----------------------------------------------------------------------------
+
+#define GPIO_NONE           0x99
+
+#define GPIO_TYPE_HARDWARE      GpioType::Hardware
+#define GPIO_TYPE_MCP23S08      GpioType::Mcp23s08
+
 //------------------------------------------------------------------------------
 // BUTTONS
 //------------------------------------------------------------------------------
@@ -75,6 +84,8 @@
 // RELAY
 //------------------------------------------------------------------------------
 
+#define RELAY_NONE          0x99
+
 #define RELAY_BOOT_OFF              0
 #define RELAY_BOOT_ON               1
 #define RELAY_BOOT_SAME             2
@@ -82,10 +93,10 @@
 #define RELAY_BOOT_LOCKED_OFF       4
 #define RELAY_BOOT_LOCKED_ON        5
 
-#define RELAY_TYPE_NORMAL           0
-#define RELAY_TYPE_INVERSE          1
-#define RELAY_TYPE_LATCHED          2
-#define RELAY_TYPE_LATCHED_INVERSE  3
+#define RELAY_TYPE_NORMAL           RelayType::Normal
+#define RELAY_TYPE_INVERSE          RelayType::Inverse
+#define RELAY_TYPE_LATCHED          RelayType::Latched
+#define RELAY_TYPE_LATCHED_INVERSE  RelayType::LatchedInverse
 
 #define RELAY_SYNC_ANY              0
 #define RELAY_SYNC_NONE_OR_ONE      1
@@ -97,12 +108,11 @@
 #define RELAY_PULSE_OFF             1
 #define RELAY_PULSE_ON              2
 
-#define RELAY_PROVIDER_RELAY        0
-#define RELAY_PROVIDER_DUAL         1
-#define RELAY_PROVIDER_LIGHT        2
-#define RELAY_PROVIDER_RFBRIDGE     3
-#define RELAY_PROVIDER_STM          4
-#define RELAY_PROVIDER_MCP23S08     5
+#define RELAY_PROVIDER_NONE         RelayProvider::None
+#define RELAY_PROVIDER_DUMMY        RelayProvider::Dummy
+#define RELAY_PROVIDER_GPIO         RelayProvider::Gpio
+#define RELAY_PROVIDER_DUAL         RelayProvider::Dual
+#define RELAY_PROVIDER_STM          RelayProvider::Stm
 
 #define RFB_PROVIDER_RCSWITCH       0
 #define RFB_PROVIDER_EFM8BB1        1
@@ -409,10 +419,3 @@
 #define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
 #define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
 #define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
-
-// -----------------------------------------------------------------------------
-// Hardware default values
-// -----------------------------------------------------------------------------
-
-#define GPIO_NONE           0x99
-#define RELAY_NONE          0x99

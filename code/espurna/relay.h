@@ -11,9 +11,48 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "espurna.h"
 #include "rpc.h"
 
-#include <bitset>
-
 constexpr size_t RelaysMax = 32;
+
+enum class RelayType : int {
+    None,
+    Normal,
+    Inverse,
+    Latched,
+    LatchedInverse
+};
+
+enum class RelayProvider: int {
+    None,
+    Dummy,
+    Gpio,
+    Dual,
+    Stm
+};
+
+class RelayProviderBase {
+public:
+    RelayProviderBase() = default;
+    virtual ~RelayProviderBase();
+
+    virtual void dump();
+
+    // whether the provider is ready
+    virtual bool setup();
+
+    // status requested at boot
+    virtual void boot(bool status);
+
+    // when 'status' was requested, but target status remains the same or is canceled
+    virtual void notify(bool status);
+
+    // when relay 'status' is changed from target to current
+    virtual void change(bool status) = 0;
+
+    // unique id of the provider
+    virtual const char* id() const = 0;
+};
+
+void relayRegisterProvider(const char* name, RelayProviderBase*(*)(unsigned char id));
 
 PayloadStatus relayParsePayload(const char * payload);
 
@@ -42,7 +81,9 @@ void relayMQTT();
 
 void relayPulse(unsigned char id);
 void relaySync(unsigned char id);
-void relaySave(bool eeprom);
+void relaySave(bool persist);
+
+unsigned char relayAdd(std::unique_ptr<RelayProviderBase>&& provider);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();
