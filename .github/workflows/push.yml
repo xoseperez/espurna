@@ -1,8 +1,8 @@
-# Normal push, check the build status for the nighly builder or the release
+# Check the build status for the nighly builder, release or pull request
 
 name: ESPurna build
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
