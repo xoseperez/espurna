@@ -16,7 +16,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "relay.h"
 #include "rpc.h"
 #include "rtcmem.h"
-#include "tuya.h"
 #include "ws.h"
 
 #include "light_config.h"
@@ -135,11 +134,19 @@ using light_brightness_func_t = void(*)();
 light_brightness_func_t _light_brightness_func = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+
 #include <my92xx.h>
 my92xx * _my92xx;
 unsigned char _light_channel_map[] {
     MY92XX_MAPPING
 };
+
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
+std::unique_ptr<LightProvider> _light_provider;
+
 #endif
 
 // UI hint about channel distribution
@@ -664,10 +671,19 @@ void _lightProviderUpdate(unsigned long steps) {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
-        for (unsigned int i=0; i < _light_channels.size(); i++) {
+        for (unsigned char i=0; i < _light_channels.size(); i++) {
             pwm_set_duty(_toPWM(i), i);
         }
         pwm_start();
+
+    #endif
+
+    #if LIGHT_PROVIDER_CUSTOM
+
+        for (unsigned char i=0; i < _light_channels.size(); i++) {
+            _light_provider->channel(i, _light_channels[i].current);
+        }
+        _light_provider->update();
 
     #endif
 
@@ -1470,13 +1486,41 @@ void _lightConfigure() {
 
 }
 
-// Dummy channel setup for light providers without real GPIO
-void lightSetupChannels(unsigned char size) {
+void _lightBoot(bool notify) {
+    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), _light_channels.size());
 
-    size = constrain(size, 0, Light::ChannelsMax);
-    if (size == _light_channels.size()) return;
-    _light_channels.resize(size);
+    _lightConfigure();
+    if (rtcmemStatus()) {
+        _lightRestoreRtcmem();
+    } else {
+        _lightRestoreSettings();
+    }
 
+    lightUpdate(notify, notify);
+}
+
+void lightSetProvider(std::unique_ptr<LightProvider>&& ptr) {
+    _light_provider = std::move(ptr);
+}
+
+bool lightAdd() {
+#if LIGHT_PROVIDER_CUSTOM
+    if (_light_channels.size() < Light::ChannelsMax) {
+        _light_channels.push_back(std::move(channel_t()));
+
+        static bool schedule { false };
+        if (!schedule) {
+            schedule_function([]() {
+                _lightBoot(true);
+                schedule = false;
+            });
+        }
+
+        return true;
+    }
+#endif
+
+    return false;
 }
 
 void lightSetup() {
@@ -1487,6 +1531,7 @@ void lightSetup() {
         digitalWrite(enable_pin, HIGH);
     }
 
+    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
     _light_channels.reserve(Light::ChannelsMax);
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -1527,20 +1572,7 @@ void lightSetup() {
 
     #endif
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-        Tuya::tuyaSetupLight();
-    #endif
-
-    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
-    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channels.size());
-
-    _lightConfigure();
-    if (rtcmemStatus()) {
-        _lightRestoreRtcmem();
-    } else {
-        _lightRestoreSettings();
-    }
-    lightUpdate(false, false);
+    _lightBoot(false);
 
     #if RELAY_SUPPORT
         if (getSetting("ltRelayEnabled", true)) {

@@ -14,7 +14,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <iterator>
 #include <vector>
 
-namespace Tuya {
+namespace tuya {
 
     class PrintRaw {
         public:

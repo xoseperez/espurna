@@ -8,24 +8,38 @@
 
 // TODO: lowercase
 namespace Light {
-    constexpr size_t ChannelsMax = 5;
 
-    constexpr long VALUE_MIN = LIGHT_MIN_VALUE;
-    constexpr long VALUE_MAX = LIGHT_MAX_VALUE;
+constexpr size_t ChannelsMax = 5;
 
-    constexpr long BRIGHTNESS_MIN = LIGHT_MIN_BRIGHTNESS;
-    constexpr long BRIGHTNESS_MAX = LIGHT_MAX_BRIGHTNESS;
+constexpr long VALUE_MIN = LIGHT_MIN_VALUE;
+constexpr long VALUE_MAX = LIGHT_MAX_VALUE;
 
-    constexpr long PWM_MIN = LIGHT_MIN_PWM;
-    constexpr long PWM_MAX = LIGHT_MAX_PWM;
-    constexpr long PWM_LIMIT = LIGHT_LIMIT_PWM;
+constexpr long BRIGHTNESS_MIN = LIGHT_MIN_BRIGHTNESS;
+constexpr long BRIGHTNESS_MAX = LIGHT_MAX_BRIGHTNESS;
 
-    enum Communications : unsigned char {
-        COMMS_NONE = 0,
-        COMMS_NORMAL = 1 << 0,
-        COMMS_GROUP = 1 << 1
-    };
+constexpr long PWM_MIN = LIGHT_MIN_PWM;
+constexpr long PWM_MAX = LIGHT_MAX_PWM;
+constexpr long PWM_LIMIT = LIGHT_LIMIT_PWM;
+
+enum Communications : unsigned char {
+    COMMS_NONE = 0,
+    COMMS_NORMAL = 1 << 0,
+    COMMS_GROUP = 1 << 1
+};
+
 }
+
+using LightProviderUpdate = void(*)();
+using LightProviderChannel = void(*)(unsigned char channel, double value);
+
+struct LightProvider {
+    explicit LightProvider(LightProviderUpdate update_, LightProviderChannel channel_) :
+        update(update_),
+        channel(channel_)
+    {}
+    LightProviderUpdate update;
+    LightProviderChannel channel;
+};
 
 size_t lightChannels();
 unsigned int lightTransitionTime();
@@ -64,5 +78,8 @@ bool lightUseCCT();
 
 void lightMQTT();
 void lightSetupChannels(unsigned char size);
+
+void lightSetProvider(std::unique_ptr<LightProvider>&&);
+bool lightAdd();
 
 void lightSetup();

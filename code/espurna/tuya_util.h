@@ -12,7 +12,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <algorithm>
 #include <vector>
 
-namespace Tuya {
+namespace tuya {
 
     template <typename T>
     class States {

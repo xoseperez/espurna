@@ -14,7 +14,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "tuya_types.h"
 #include "tuya_transport.h"
 
-namespace Tuya {
+namespace tuya {
 
     class DataFrame {
 

@@ -8,7 +8,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
-namespace Tuya {
+namespace tuya {
 
     enum class Command : uint8_t {
         Heartbeat = 0x00,
