@@ -33,12 +33,16 @@ public:
 constexpr size_t GpioPins = 18;
 
 bool gpioValid(GpioType type, unsigned char gpio);
-bool gpioLock(GpioType type, unsigned char gpio);
-bool gpioUnlock(GpioType type, unsigned char gpio);
-
 bool gpioValid(unsigned char gpio);
+
+bool gpioLock(GpioType type, unsigned char gpio);
 bool gpioLock(unsigned char gpio);
+
+bool gpioUnlock(GpioType type, unsigned char gpio);
 bool gpioUnlock(unsigned char gpio);
+
+bool gpioLocked(GpioType type, unsigned char gpio);
+bool gpioLocked(unsigned char gpio);
 
 BasePinPtr gpioRegister(GpioType type, unsigned char gpio);
 

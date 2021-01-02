@@ -84,6 +84,7 @@ public:
         switch (index) {
         case 0 ... 5:
         case 9:
+            return true;
         case 10:
             return _esp8285;
         case 12 ... 17:
@@ -141,6 +142,15 @@ bool _gpioLock(GpioType type, unsigned char gpio, bool value) {
     return false;
 }
 
+bool _gpioLocked(GpioType type, unsigned char gpio) {
+    auto* ptr = _gpioFind(type, gpio);
+    if (ptr) {
+        return ptr->lock(gpio);
+    }
+
+    return false;
+}
+
 bool gpioLock(GpioType type, unsigned char gpio) {
     return _gpioLock(type, gpio, true);
 }
@@ -155,6 +165,14 @@ bool gpioUnlock(GpioType type, unsigned char gpio) {
 
 bool gpioUnlock(unsigned char gpio) {
     return _gpioLock(GpioType::Hardware, gpio, false);
+}
+
+bool gpioLocked(GpioType type, unsigned char gpio) {
+    return _gpioLocked(type, gpio);
+}
+
+bool gpioLocked(unsigned char gpio) {
+    return _gpioLocked(GpioType::Hardware, gpio);
 }
 
 BasePinPtr gpioRegister(GpioType type, unsigned char gpio) {
