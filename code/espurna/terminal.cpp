@@ -327,7 +327,8 @@ void _terminalInitCommands() {
         case 1:
             for (auto current = start; current < end; ++current) {
                 if (gpioValid(current)) {
-                    ctx.output.printf_P(PSTR("%s @ GPIO%02d (%s)\n"),
+                    ctx.output.printf_P(PSTR("%c %s @ GPIO%02d (%s)\n"),
+                        gpioLocked(current) ? '*' : ' ',
                         GPEP(current) ? "OUTPUT" : " INPUT",
                         current,
                         (HIGH == digitalRead(current)) ? "HIGH" : "LOW"
