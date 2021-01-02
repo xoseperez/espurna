@@ -64,6 +64,27 @@ $.fn.enterKey = function (fnc) {
     });
 };
 
+function followScroll(id) {
+    var elem = document.getElementById(id);
+    var offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
+    if (offset > 90) {
+        elem.scrollTop = elem.scrollHeight;
+    }
+}
+
+function fromSchema(source, schema) {
+    if (schema.length !== source.length) {
+        throw "Schema mismatch!";
+    }
+
+    var target = {};
+    schema.forEach(function(key, index) {
+        target[key] = source[index];
+    });
+
+    return target;
+}
+
 function keepTime() {
 
     $("span[name='ago']").html(ago);
@@ -1085,16 +1106,8 @@ function addSchedule(values) {
 // Relays
 // -----------------------------------------------------------------------------
 
-function initRelayFromSchema(schema, id, relay) {
-    if (schema.length !== relay.length) {
-        throw "Relay schema mismatch!";
-    }
-
-    var result = {};
-    schema.forEach(function(key, index) {
-        result[key] = relay[index];
-    });
-
+function initRelayFromSchema(id, relay, schema) {
+    var result = fromSchema(relay, schema)
     if (!result.name.length) {
         result.name = "Switch #" + id;
     }
@@ -1111,7 +1124,7 @@ function initRelays(data) {
     var template = $("#relayTemplate .pure-g")[0];
 
     data["relays"].forEach(function(relay, id) {
-        var _relay = initRelayFromSchema(schema, id, relay);
+        var _relay = initRelayFromSchema(id, relay, schema);
 
         var line = $(template).clone();
 
@@ -1174,7 +1187,7 @@ function initRelayConfig(data) {
     var schema = data.schema;
 
     data["relays"].forEach(function(relay, id) {
-        var _relay = initRelayFromSchema(schema, id, relay);
+        var _relay = initRelayFromSchema(id, relay, schema);
         var line = $(template).clone();
 
         $("span.name", line).html(_relay.name);
@@ -1183,21 +1196,21 @@ function initRelayConfig(data) {
         $("select[name='relayPulse']", line).val(_relay.pulse);
         $("input[name='relayTime']", line).val(_relay.pulse_time);
 
-        if ("sch_last" in schema) {
+        if (schema.includes("sch_last")) {
             $("input[name='relayLastSch']", line)
-                .prop('checked', _relay.sch_last)
+                .prop("checked", _relay.sch_last)
                 .attr("id", "relayLastSch" + id)
                 .attr("name", "relayLastSch" + id)
                 .next().attr("for","relayLastSch" + (id));
         }
 
-        if ("group" in schema) {
+        if (schema.includes("group")) {
             $("input[name='mqttGroup']", line).val(_relay.group);
         }
-        if ("group_sync" in schema) {
+        if (schema.includes("group_sync")) {
             $("select[name='mqttGroupSync']", line).val(_relay.group_sync);
         }
-        if ("on_disc" in schema) {
+        if (schema.includes("on_disc")) {
             $("select[name='relayOnDisc']", line).val(_relay.on_disc);
         }
 
@@ -1915,17 +1928,7 @@ function processData(data) {
         if ("wifi" === key) {
             maxNetworks = parseInt(value["max"], 10);
             value["networks"].forEach(function(network) {
-                var schema = value["schema"];
-                if (schema.length !== network.length) {
-                    throw "WiFi schema mismatch!";
-                }
-
-                var _network = {};
-                schema.forEach(function(key, index) {
-                    _network[key] = network[index];
-                });
-
-                addNetwork(_network);
+                addNetwork(fromSchema(network, value.schema));
             });
             return;
         }
@@ -2006,20 +2009,13 @@ function processData(data) {
 
             var schema = value["schema"];
             value["list"].forEach(function(led_data, index) {
-                if (schema.length !== led_data.length) {
-                    throw "LED schema mismatch!";
-                }
-
-                var led = {};
-                schema.forEach(function(key, index) {
-                    led[key] = led_data[index];
-                });
-
                 var line = $($("#ledConfigTemplate").children()).clone();
 
                 $("span.id", line).html(index);
                 $("select", line).attr("data", index);
                 $("input", line).attr("data", index);
+
+                var led = fromSchema(led_data, schema);
 
                 $("select[name='ledGPIO']", line).val(led.GPIO);
                 // XXX: checkbox implementation depends on unique id
@@ -2109,7 +2105,7 @@ function processData(data) {
                 $("#weblog").append(new Text(msg[i]));
             }
 
-            $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
+            followScroll("weblog");
             return;
         }
 
