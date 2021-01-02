@@ -19,6 +19,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <functional>
 #include <queue>
+#include <forward_list>
 #include <StreamString.h>
 
 #include "tuya_types.h"
@@ -29,10 +30,59 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 namespace tuya {
 
-    class TuyaProvider : public RelayProviderBase {
+    constexpr size_t SerialSpeed { 9600u };
+
+    constexpr uint32_t DiscoveryTimeout { 1500u };
+
+    constexpr uint32_t HeartbeatSlow { 9000u };
+    constexpr uint32_t HeartbeatFast { 3000u };
+
+    struct Config {
+        Config(const Config&) = delete;
+        Config(Config&& other) noexcept :
+            key(std::move(other.key)),
+            value(std::move(other.value))
+        {}
+
+        Config(String&& key_, String&& value_) noexcept :
+            key(std::move(key_)),
+            value(std::move(value_))
+        {}
+
+        String key;
+        String value;
+    };
+
+    Transport tuyaSerial(TUYA_SERIAL);
+    std::queue<DataFrame> outputFrames;
+
+    template <typename T>
+    void send(unsigned char dp, T value) {
+        outputFrames.emplace(
+            Command::SetDP, DataProtocol<T>(dp, value).serialize()
+        );
+    }
+
+    // --------------------------------------------
+
+    Discovery discovery(DiscoveryTimeout);
+    bool transportDebug { false };
+    bool configDone { false };
+    bool reportWiFi { false };
+    bool filter { false };
+
+    String product;
+    std::forward_list<Config> config;
+
+    DpMap switchIds;
+    DpMap channelIds;
+
+    // --------------------------------------------
+
+    class TuyaRelayProvider : public RelayProviderBase {
     public:
-        explicit TuyaProvider(unsigned char id) :
-            _id(id)
+        explicit TuyaRelayProvider(unsigned char dp) :
+            _dp(dp)
         {}
 
         const char* id() const {
@@ -40,33 +90,51 @@ namespace tuya {
         }
 
         void change(bool status) {
-            sendSwitch(_id, status);
+            send(_dp, status);
         }
     private:
-        unsigned char _id;
+        unsigned char _dp;
     };
 
-    constexpr size_t SERIAL_SPEED { 9600u };
+#if LIGHT_PROVIDER_CUSTOM
 
-    constexpr unsigned char SWITCH_MAX { 8u };
-    constexpr unsigned char DIMMER_MAX { 5u };
+    class TuyaLightProvider : public LightProvider {
+    public:
+        TuyaLightProvider() = default;
+        explicit TuyaLightProvider(const DpMap& channels) :
+            _channels(channels)
+        {}
 
-    constexpr uint32_t DISCOVERY_TIMEOUT { 1500u };
+        void update() override {
+        }
 
-    constexpr uint32_t HEARTBEAT_SLOW { 9000u };
-    constexpr uint32_t HEARTBEAT_FAST { 3000u };
+        void state(bool) override {
+        }
+
+        void channel(unsigned char channel, double value) override {
+            auto dp = _channels.dp(channel);
+            if (dp) {
+                send(dp->id, static_cast<unsigned int>(value));
+            }
+        }
+
+    private:
+        const DpMap& _channels;
+    };
+
+#endif
 
     // --------------------------------------------
 
     size_t getHeartbeatInterval(Heartbeat hb) {
         switch (hb) {
-            case Heartbeat::FAST:
-                return HEARTBEAT_FAST;
-            case Heartbeat::SLOW:
-                return HEARTBEAT_SLOW;
-            case Heartbeat::NONE:
-            default:
-                return 0;
+        case Heartbeat::FAST:
+            return HeartbeatFast;
+        case Heartbeat::SLOW:
+            return HeartbeatSlow;
+        case Heartbeat::NONE:
+        default:
+            return 0;
         }
     }
 
@@ -80,92 +148,24 @@ namespace tuya {
         return 0x02;
     }
 
-    // TODO: is v2 required to modify pin assigments?
+    // --------------------------------------------
+
+    void addConfig(String&& key, String&& value) {
+        Config kv{std::move(key), std::move(value)};
+        config.push_front(std::move(kv));
+    }
+
     void updatePins(uint8_t led, uint8_t rst) {
-        setSetting("ledGPIO0", led);
-        setSetting("btnGPIO0", rst);
-        //espurnaReload();
-    }
-
-    // --------------------------------------------
-
-    States<bool> switchStates(SWITCH_MAX);
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-    States<uint32_t> channelStates(DIMMER_MAX);
-#endif
-
-    // Handle DP data from the MCU, mapping incoming DP ID to the specific relay / channel ID
-
-    void applySwitch() {
-        for (unsigned char id=0; id < switchStates.size(); ++id) {
-            relayStatus(id, switchStates[id].value);
+        static bool done { false };
+        if (!done) {
+            addConfig("ledGPIO0", String(led));
+            addConfig("btnGPIO0", String(rst));
+            done = true;
         }
     }
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-    void applyChannel() {
-        for (unsigned char id=0; id < channelStates.size(); ++id) {
-            lightChannel(id, channelStates[id].value);
-        }
-        lightUpdate(true, true);
-    }
-#endif
-
-    // --------------------------------------------
-
-    Transport tuyaSerial(TUYA_SERIAL);
-    std::queue<DataFrame> outputFrames;
-
-    DiscoveryTimeout discoveryTimeout(DISCOVERY_TIMEOUT);
-    bool transportDebug { false };
-    bool configDone { false };
-    bool reportWiFi { false };
-    bool filter { false };
-
-    String product;
 
     void showProduct() {
-        if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
-    }
-
-    // Setup the switch & channel mappings based on either the discovery or user settings
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-
-    void updateChannels() {
-        if (channelStates.size()) {
-            auto size = channelStates.size();
-            do {
-                if (!::lightAdd()) {
-                    return;
-                }
-            } while (--size);
-
-            lightSetProvider(std::make_unique<LightProvider>(
-                []() {
-                },
-                [](unsigned char id, double value) {
-                    sendChannel(id, static_cast<unsigned int>(value));
-                }
-            ));
-            configDone = true;
-        }
-    }
-
-#endif
-
-    void updateSwitches() {
-        if (switchStates.size()) {
-            size_t end { switchStates.size() + ::relayCount() };
-            if ((end > ::RelaysMax) || (end > std::numeric_limits<decltype(relayCount())>::max())) {
-                return;
-            }
-
-            for (size_t id = ::relayCount(); id < end; ++id) {
-                ::relayAdd(std::make_unique<TuyaProvider>(static_cast<unsigned char>(id)));
-            }
-            configDone = true;
-        }
+        DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
     }
 
     void dataframeDebugSend(const char* tag, const DataFrame& frame) {
@@ -177,52 +177,81 @@ namespace tuya {
     }
 
     void sendHeartbeat(Heartbeat hb, State state) {
-
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
             outputFrames.emplace(Command::Heartbeat);
             last = millis();
         }
-
     }
 
     void sendWiFiStatus() {
-        if (!reportWiFi) return;
-        outputFrames.emplace(
-            Command::WiFiStatus, std::initializer_list<uint8_t> { getWiFiState() }
-        );
-    }
-
-    void pushOrUpdateState(const Type type, const DataFrame& frame) {
-        if (Type::BOOL == type) {
-            const DataProtocol<bool> proto(frame);
-            switchStates.pushOrUpdate(proto.id(), proto.value());
-            //DEBUG_MSG_P(PSTR("[TUYA] apply BOOL id=%02u value=%s\n"), proto.id(), proto.value() ? "true" : "false");
-        } else if (Type::INT == type) {
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-            const DataProtocol<uint32_t> proto(frame);
-            channelStates.pushOrUpdate(proto.id(), proto.value());
-            //DEBUG_MSG_P(PSTR("[TUYA] apply  INT id=%02u value=%u\n"), proto.id(), proto.value());
-#endif
+        if (reportWiFi) {
+            outputFrames.emplace(
+                Command::WiFiStatus, std::initializer_list<uint8_t> { getWiFiState() }
+            );
         }
     }
 
-    // XXX: sometimes we need to ignore incoming state, when not in discovery mode
+    void dump(const char* type, unsigned char id, const char* buf) {
+        DEBUG_MSG_P(PSTR("[Tuya] Received %s dp=%u value=%s"), type, id, buf);
+    }
+
+    void dump(const DataProtocol<uint32_t>& proto) {
+        char buf[3] { '#', proto.value() ? 't' : 'f', '\0' };
+        dump("boolean", proto.id(), buf);
+    }
+
+    void dump(const DataProtocol<bool>& proto) {
+        char buf[4 * sizeof(uint32_t)];
+        snprintf(buf, sizeof(buf), "%u", proto.value());
+        dump("integer", proto.id(), buf);
+    }
+
+    // XXX: sometimes we need to ignore incoming state
     // ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
-    void updateState(const Type type, const DataFrame& frame) {
+    void updateState(Type type, const DataFrame& frame) {
+        if (Type::BOOL == type) {
+            const DataProtocol<bool> proto(frame);
+            dump(proto);
+        } else if (Type::INT == type) {
+            const DataProtocol<uint32_t> proto(frame);
+            dump(proto);
+        }
+
         if (filter) {
             return;
         }
+    }
 
-        if (Type::BOOL == type) {
-            const DataProtocol<bool> proto(frame);
-            switchStates.update(proto.id(), proto.value());
-        } else if (Type::INT == type) {
+    void updateDiscovered(Discovery&& discovery) {
+        auto& dps = discovery.get();
+
+        for (auto& dp : dps) {
+            switch (dp.type) {
+            case Type::BOOL:
+                if (relayAdd(std::make_unique<TuyaRelayProvider>(dp.id))) {
+                    switchIds.add((relayCount() - 1), dp.id);
+                }
+                break;
+            case Type::INT:
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-            const DataProtocol<uint32_t> proto(frame);
-            channelStates.update(proto.id(), proto.value());
+                if (lightAdd()) {
+                    channelIds.add((lightChannels() - 1), dp.id);
+                }
 #endif
+                break;
+            default:
+                break;
+            }
         }
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+        if (channelIds.size()) {
+           lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds));
+        }
+#endif
+
+        dps.clear();
     }
 
     void processDP(State state, const DataFrame& frame) {
@@ -244,8 +273,7 @@ namespace tuya {
         }
 
         if (State::DISCOVERY == state) {
-            discoveryTimeout.feed();
-            pushOrUpdateState(type, frame);
+            discovery.add(type, frame[0]);
         } else {
             updateState(type, frame);
         }
@@ -345,39 +373,6 @@ namespace tuya {
 
     }
 
-    // Push local state data, mapping it to the appropriate DP
-
-    void sendSwitch(unsigned char id) {
-        if (id >= switchStates.size()) return;
-        outputFrames.emplace(
-            Command::SetDP, DataProtocol<bool>(switchStates[id].dp, switchStates[id].value).serialize()
-        );
-    }
-
-    void sendSwitch(unsigned char id, bool value) {
-        if (id >= switchStates.size()) return;
-        if (value == switchStates[id].value) return;
-        switchStates[id].value = value;
-        sendSwitch(id);
-    }
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-
-    void sendChannel(unsigned char id) {
-        if (id >= channelStates.size()) return;
-        outputFrames.emplace(
-            Command::SetDP, DataProtocol<uint32_t>(channelStates[id].dp, channelStates[id].value).serialize()
-        );
-    }
-
-    void sendChannel(unsigned char id, unsigned int value) {
-        if (id >= channelStates.size()) return;
-        if (value == channelStates[id].value) return;
-        channelStates[id].value = value;
-        sendChannel(id);
-    }
-#endif
-
     // Main loop state machine. Process input data and manage output queue
 
     void loop() {
@@ -418,19 +413,16 @@ namespace tuya {
             {
                 DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
                 outputFrames.emplace(Command::QueryDP);
-                discoveryTimeout.feed();
+                discovery.feed();
                 state = State::DISCOVERY;
                 break;
             }
             // parse known data protocols until discovery timeout expires
             case State::DISCOVERY:
             {
-                if (discoveryTimeout) {
+                if (discovery) {
                     DEBUG_MSG_P(PSTR("[TUYA] Discovery finished\n"));
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                    updateChannels();
-#endif
-                    updateSwitches();
+                    updateDiscovered(std::move(discovery));
                     state = State::IDLE;
                 }
                 break;
@@ -438,10 +430,6 @@ namespace tuya {
             // initial config is done, only doing heartbeat periodically
             case State::IDLE:
             {
-                if (switchStates.changed()) applySwitch();
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                if (channelStates.changed()) applyChannel();
-#endif
                 sendHeartbeat(Heartbeat::SLOW, state);
                 break;
             }
@@ -461,31 +449,43 @@ namespace tuya {
     // so we can use dummy values
 
     void setupSwitches() {
-        for (unsigned char id = 0; id < switchStates.capacity(); ++id) {
+        bool done { false };
+        for (unsigned char id = 0; id < RelaysMax; ++id) {
             auto dp = getSetting({"tuyaSwitch", id}, 0);
             if (!dp) {
                 break;
             }
 
-            switchStates.pushOrUpdate(dp, false);
+            if (relayAdd(std::make_unique<TuyaRelayProvider>(dp))) {
+                switchIds.add((relayCount() - 1), dp);
+                done = true;
+            }
         }
 
-        updateSwitches();
+        configDone = done;
     }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
 
     void setupChannels() {
-        for (unsigned char id = 0; id < channelStates.capacity(); ++id) {
+        bool done { false };
+        for (unsigned char id = 0; id < Light::ChannelsMax; ++id) {
             auto dp = getSetting({"tuyaChannel", id}, 0);
             if (!dp) {
                 break;
             }
 
-            channelStates.pushOrUpdate(dp, 0);
+            if (lightAdd()) {
+                channelIds.add((lightChannels() - 1), dp);
+                done = true;
+            }
         }
 
-        updateChannels();
+        if (done) {
+           lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds));
+        }
+
+        configDone = done;
     }
 
 #endif
@@ -496,38 +496,36 @@ namespace tuya {
 
         #if TERMINAL_SUPPORT
 
-            terminalRegisterCommand(F("TUYA.SHOW"), [](const terminal::CommandContext&) {
-                static const char fmt[] PROGMEM = "%12s%u => dp=%u value=%u\n";
+            terminalRegisterCommand(F("TUYA.SHOW"), [](const terminal::CommandContext& ctx) {
                 showProduct();
-
-                for (unsigned char id=0; id < switchStates.size(); ++id) {
-                    DEBUG_MSG_P(fmt, "tuyaSwitch", id, switchStates[id].dp, switchStates[id].value);
+                ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
+                ctx.output.println(F("\nConfig:"));
+                for (auto& kv : config) {
+                    ctx.output.printf_P(PSTR("\"%s\" => \"%s\""), kv.key.c_str(), kv.value.c_str());
                 }
 
-                #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                    for (unsigned char id=0; id < channelStates.size(); ++id) {
-                        DEBUG_MSG_P(fmt, "tuyaChannel", id, channelStates[id].dp, channelStates[id].value);
-                    }
-                #endif
+                ctx.output.println(F("\nKnown DP(s):"));
+                for (auto& entry : switchIds.map()) {
+                    ctx.output.printf_P(PSTR("%u (bool) => %d (relay)\n"), entry.dp, entry.id);
+                }
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+                for (auto& entry : channelIds.map()) {
+                    ctx.output.printf_P(PSTR("%u (integer) => %d (channel)\n"), entry.dp, entry.id);
+                }
+#endif
             });
 
             terminalRegisterCommand(F("TUYA.SAVE"), [](const terminal::CommandContext&) {
-                DEBUG_MSG_P(PSTR("[TUYA] Saving current configuration ...\n"));
-                for (unsigned char n=0; n < switchStates.size(); ++n) {
-                    setSetting({"tuyaSwitch", n}, switchStates[n].dp);
+                for (auto& kv : config) {
+                    setSetting(kv.key, kv.value);
                 }
-                #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                    for (unsigned char n=0; n < channelStates.size(); ++n) {
-                        setSetting({"tuyaChannel", n}, channelStates[n].dp);
-                    }
-                #endif
             });
 
         #endif
 
         // Filtering for incoming data
         // TODO: see https://github.com/xoseperez/espurna/issues/2222
-        //       unlike emulator, this real device sends total garbage which we can safely ignore 
+        //       unlike emulator, this real device sends total garbage which we can safely ignore
         //       (may not be true for all, but that's the one we got the most of :>)
         filter = getSetting("tuyaFilter", true);
 
@@ -541,7 +539,7 @@ namespace tuya {
         transportDebug = getSetting("tuyaDebug", true);
 
         // Install main loop method and WiFiStatus ping (only works with specific mode)
-        TUYA_SERIAL.begin(SERIAL_SPEED);
+        TUYA_SERIAL.begin(SerialSpeed);
 
         ::espurnaRegisterLoop(loop);
         ::wifiRegister([](justwifi_messages_t code, char * parameter) {

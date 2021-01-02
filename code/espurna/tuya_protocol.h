@@ -49,6 +49,10 @@ namespace tuya {
 
     }
 
+    uint8_t dataProtocol(const DataFrame& frame) {
+        return *(frame.cbegin());
+    }
+
     // Since we know of the type only at runtime, specialize the protocol container
 
     template <typename T>

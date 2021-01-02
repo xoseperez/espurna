@@ -29,16 +29,14 @@ enum Communications : unsigned char {
 
 }
 
-using LightProviderUpdate = void(*)();
-using LightProviderChannel = void(*)(unsigned char channel, double value);
+using LightStateListener = std::function<void(bool)>;
 
-struct LightProvider {
-    explicit LightProvider(LightProviderUpdate update_, LightProviderChannel channel_) :
-        update(update_),
-        channel(channel_)
-    {}
-    LightProviderUpdate update;
-    LightProviderChannel channel;
+class LightProvider {
+    public:
+
+    virtual void update() = 0;
+    virtual void state(bool) = 0;
+    virtual void channel(unsigned char ch, double value) = 0;
 };
 
 size_t lightChannels();
@@ -79,6 +77,7 @@ bool lightUseCCT();
 void lightMQTT();
 void lightSetupChannels(unsigned char size);
 
+void lightSetStateListener(LightStateListener);
 void lightSetProvider(std::unique_ptr<LightProvider>&&);
 bool lightAdd();
 

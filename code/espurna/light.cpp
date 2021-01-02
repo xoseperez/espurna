@@ -133,6 +133,8 @@ long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
 using light_brightness_func_t = void(*)();
 light_brightness_func_t _light_brightness_func = nullptr;
 
+LightStateListener _light_state_listener = nullptr;
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
 #include <my92xx.h>
@@ -680,15 +682,20 @@ void _lightProviderUpdate(unsigned long steps) {
 
     #if LIGHT_PROVIDER_CUSTOM
 
-        for (unsigned char i=0; i < _light_channels.size(); i++) {
-            _light_provider->channel(i, _light_channels[i].current);
+        if (_light_provider) {
+            _light_provider->state(_light_state);
+            for (unsigned char i=0; i < _light_channels.size(); i++) {
+                _light_provider->channel(i, _light_channels[i].current);
+            }
+            _light_provider->update();
         }
-        _light_provider->update();
 
     #endif
 
     // This is not the final value, update again
-    if (steps) _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+    if (steps) {
+        _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+    }
 
     _light_provider_update = false;
 
@@ -755,6 +762,22 @@ void _lightRestoreSettings() {
     }
     _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX);
     _light_mireds = getSetting("mireds", _light_mireds);
+}
+
+void _lightParsePayload(const char* payload) {
+    switch (rpcParsePayload(payload)) {
+    case PayloadStatus::On:
+        lightState(true);
+        break;
+    case PayloadStatus::Off:
+        lightState(false);
+        break;
+    case PayloadStatus::Toggle:
+        lightState(!_light_state);
+        break;
+    case PayloadStatus::Unknown:
+        break;
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -860,19 +883,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
         // Global
         if (t.equals(MQTT_TOPIC_LIGHT)) {
-            switch (rpcParsePayload(payload)) {
-            case PayloadStatus::On:
-                lightState(true);
-                break;
-            case PayloadStatus::Off:
-                lightState(false);
-                break;
-            case PayloadStatus::Toggle:
-                lightState(!_light_state);
-                break;
-            case PayloadStatus::Unknown:
-                break;
-            }
+            _lightParsePayload(payload);
             lightUpdate(true, mqttForward());
         }
 
@@ -1173,6 +1184,16 @@ void _lightChannelDebug(unsigned char id) {
 
 void _lightInitCommands() {
 
+    terminalRegisterCommand(F("LIGHT"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 1) {
+            terminalError(ctx, F("LIGHT <STATE>"));
+            return;
+        }
+
+        _lightParsePayload(ctx.argv[1].c_str());
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("BRIGHTNESS"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
             _lightAdjustBrightness(ctx.argv[1].c_str());
@@ -1330,6 +1351,8 @@ bool lightState(unsigned char id) {
 
 void lightState(bool state) {
     if (_light_state != state) {
+        if (_light_state_listener)
+            _light_state_listener(state);
         _light_state = state;
         _light_dirty = true;
     }
@@ -1486,8 +1509,34 @@ void _lightConfigure() {
 
 }
 
+#if RELAY_SUPPORT
+
+void _lightRelaySupport() {
+    if (!getSetting("ltRelayEnabled", true)) {
+        return;
+    }
+
+    if (!lightChannels()) {
+        return;
+    }
+
+    if (!_light_has_controls && relayAdd(std::make_unique<LightGlobalProvider>())) {
+        auto next_id = relayCount();
+        _light_state_listener = [next_id](bool state) {
+            relayStatus(next_id, state);
+        };
+        _light_has_controls = true;
+    }
+}
+
+#endif
+
 void _lightBoot(bool notify) {
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), _light_channels.size());
+
+#if RELAY_SUPPORT
+    _lightRelaySupport();
+#endif
 
     _lightConfigure();
     if (rtcmemStatus()) {
@@ -1573,13 +1622,6 @@ void lightSetup() {
     #endif
 
     _lightBoot(false);
-
-    #if RELAY_SUPPORT
-        if (getSetting("ltRelayEnabled", true)) {
-            relayAdd(std::make_unique<LightGlobalProvider>());
-            _light_has_controls = true;
-        }
-    #endif
 
     #if WEB_SUPPORT
         wsRegister()
