@@ -16,53 +16,55 @@
 #include "tuya_protocol.h"
 #include "tuya_dataframe.h"
 
-using namespace Tuya;
+using namespace tuya;
 
 static bool datatype_same(const DataFrame& frame, const Type expect_type) {
     const auto type = dataType(frame);
     return expect_type == type;
 }
 
-void test_states() {
+void test_dpmap() {
 
-    States<bool> states(8);
+    DpMap map;
 
-    // Will not update anything without explicit push
-    states.update(1, false);
-    states.update(1, true);
-    states.update(2, true);
-    states.update(2, false);
+    // id -- dp
+    map.add(1, 2);
+    map.add(3, 4);
+    map.add(5, 6);
+    map.add(7, 8);
 
-    TEST_ASSERT_EQUAL_MESSAGE(8, states.capacity(),
-            "Capacity has changed");
-    TEST_ASSERT_EQUAL_MESSAGE(0, states.size(),
-            "Size should not change when updating non-existant id");
+    TEST_ASSERT_EQUAL(4, map.size());
 
-    // Push something at specific ID
-    states.pushOrUpdate(2, true);
-    TEST_ASSERT_MESSAGE(states.changed(),
-            "Should change after explicit push");
-    states.pushOrUpdate(2, false);
-    TEST_ASSERT_MESSAGE(states.changed(),
-            "Should change after explicit update");
-    TEST_ASSERT_EQUAL_MESSAGE(1, states.size(),
-            "Size should not change when updating existing id");
-    states.pushOrUpdate(3, true);
-    TEST_ASSERT_MESSAGE(states.changed(),
-            "Should change after explicit push");
+    map.add(7,10);
+    map.add(5,5);
 
-    // Do not trigger "changed" state when value remains the same
-    states.pushOrUpdate(2, false);
-    TEST_ASSERT_MESSAGE(!states.changed(),
-            "Should not change after not changing any values");
+    TEST_ASSERT_EQUAL(4, map.size());
 
-    // Still shouldn't trigger "changed" without explicit push
-    states.update(4, false);
-    TEST_ASSERT_MESSAGE(!states.changed(),
-            "Should not change after updating non-existant id");
-    TEST_ASSERT_EQUAL_MESSAGE(2, states.size(),
-            "Size should remain the same after updating non-existant id");
+#define TEST_FIND_DP(EXPECTED_DP, EXPECTED_ID) \
+    {\
+        auto* dp = map.id(EXPECTED_DP);\
+        TEST_ASSERT(dp != nullptr);\
+        TEST_ASSERT_EQUAL(EXPECTED_DP, dp->dp);\
+        TEST_ASSERT_EQUAL(EXPECTED_ID, dp->id);\
+    }
 
+    TEST_FIND_DP(2, 1);
+    TEST_FIND_DP(4, 3);
+    TEST_FIND_DP(6, 5);
+    TEST_FIND_DP(8, 7);
+
+#define TEST_FIND_ID(EXPECTED_ID, EXPECTED_DP) \
+    {\
+        auto* dp = map.dp(EXPECTED_ID);\
+        TEST_ASSERT(dp != nullptr);\
+        TEST_ASSERT_EQUAL(EXPECTED_DP, dp->dp);\
+        TEST_ASSERT_EQUAL(EXPECTED_ID, dp->id);\
+    }
+
+    TEST_FIND_ID(1, 2);
+    TEST_FIND_ID(3, 4);
+    TEST_FIND_ID(5, 6);
+    TEST_FIND_ID(7, 8);
 }
 
 void test_static_dataframe_bool() {
@@ -222,7 +224,7 @@ int main(int argc, char** argv) {
 
     UNITY_BEGIN();
 
-    RUN_TEST(test_states);
+    RUN_TEST(test_dpmap);
     RUN_TEST(test_static_dataframe_bool);
     RUN_TEST(test_static_dataframe_int);
     RUN_TEST(test_static_dataframe_heartbeat);
