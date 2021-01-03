@@ -783,6 +783,10 @@ bool _lightParsePayload(const char* payload) {
     return true;
 }
 
+bool _lightParsePayload(const String& payload) {
+    return _lightParsePayload(payload.c_str());
+}
+
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
@@ -1325,8 +1329,8 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Channel transition will be handled by the provider function
     // User can configure total transition time, step time is a fixed value
-    cont unsigned long steps = _light_use_transitions
-        ? _light_transition_time / _light_transition_step : 1
+    const unsigned long steps = _light_use_transitions
+        ? _light_transition_time / _light_transition_step
         : 1;
     _light_transition_ticker.once_ms(_light_transition_step, _lightProviderScheduleUpdate, steps);
 
@@ -1536,10 +1540,6 @@ void _lightRelaySupport() {
         return;
     }
 
-    if (!lightChannels()) {
-        return;
-    }
-
     if (!_light_has_controls && relayAdd(std::make_unique<LightGlobalProvider>())) {
         auto next_id = relayCount();
         _light_state_listener = [next_id](bool state) {
@@ -1553,10 +1553,6 @@ void _lightRelaySupport() {
 
 void _lightBoot(bool notify) {
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), _light_channels.size());
-
-#if RELAY_SUPPORT
-    _lightRelaySupport();
-#endif
 
     _lightConfigure();
     if (rtcmemStatus()) {
@@ -1642,6 +1638,10 @@ void lightSetup() {
     #endif
 
     _lightBoot(false);
+
+#if RELAY_SUPPORT
+    _lightRelaySupport();
+#endif
 
     #if WEB_SUPPORT
         wsRegister()
