@@ -347,7 +347,7 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
 }
 
 void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, RfbRelayProvider::count());
+    _rfbWebSocketSendCodeArray(root, 0, relayCount());
 }
 
 #endif // RELAY_SUPPORT
@@ -355,7 +355,7 @@ void _rfbWebSocketOnData(JsonObject& root) {
 void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbRepeat"] = getSetting("rfbRepeat", RFB_SEND_REPEATS);
 #if RELAY_SUPPORT
-    root["rfbCount"] = RfbRelayProvider::count();
+    root["rfbCount"] = relayCount();
 #endif
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
     root["rfbdirectVisible"] = 1;
@@ -410,8 +410,7 @@ bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
 // thus requiring us to 'return' value from settings as the real code, replacing input
 RfbRelayMatch _rfbMatch(const char* code) {
 
-    auto count = RfbRelayProvider::count();
-    if (!count) {
+    if (!relayCount()) {
         return {};
     }
 
