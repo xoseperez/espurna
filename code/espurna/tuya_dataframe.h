@@ -23,10 +23,11 @@ namespace tuya {
         using container = std::vector<uint8_t>;
         using const_iterator = container::const_iterator;
 
-        DataFrame(DataFrame& rhs) = delete;
-
+        DataFrame(const DataFrame&) = delete;
         ~DataFrame() = default;
-        DataFrame(DataFrame&& rhs) = default;
+
+        DataFrame(DataFrame&&) noexcept = default;
+        DataFrame& operator=(DataFrame&&) noexcept = default;
 
         DataFrame(uint8_t command) :
             command(command),

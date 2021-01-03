@@ -30,6 +30,14 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 namespace tuya {
 
+    bool operator<(const DataFrame& lhs, const DataFrame& rhs) {
+        if (dataType(lhs) == Type::BOOL) {
+            return true;
+        }
+
+        return false;
+    }
+
     constexpr size_t SerialSpeed { 9600u };
 
     constexpr uint32_t DiscoveryTimeout { 1500u };
@@ -54,7 +62,7 @@ namespace tuya {
     };
 
     Transport tuyaSerial(TUYA_SERIAL);
-    std::queue<DataFrame> outputFrames;
+    std::priority_queue<DataFrame> outputFrames;
 
     template <typename T>
     void send(unsigned char dp, T value) {
@@ -466,7 +474,7 @@ error:
         }
 
         if (TUYA_SERIAL && !outputFrames.empty()) {
-            const DataFrame frame = std::move(outputFrames.front());
+            auto& frame = outputFrames.top();
             dataframeDebugSend("=>", frame);
             tuyaSerial.write(frame.serialize());
             outputFrames.pop();
