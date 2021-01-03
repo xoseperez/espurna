@@ -227,7 +227,7 @@ namespace tuya {
             return;
         }
 
-#if LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
         if (channelStateId && (channelStateId == proto.id())) {
             lightState(proto.value());
             return;
