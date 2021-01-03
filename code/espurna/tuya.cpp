@@ -113,9 +113,18 @@ namespace tuya {
 
         void channel(unsigned char channel, double value) override {
             auto dp = _channels.dp(channel);
-            if (dp) {
-                send(dp->id, static_cast<unsigned int>(value));
+            if (!dp) {
+                return;
             }
+
+            // tuya dimmer is precious, and can't handle 0...some-kind-of-threshold
+            // just ignore it, the associated switch will handle turning it off
+            auto rounded = static_cast<unsigned int>(value);
+            if (rounded <= 0x10) {
+                return;
+            }
+
+            send(dp->id, rounded);
         }
 
     private:
@@ -192,6 +201,19 @@ namespace tuya {
         }
     }
 
+    void updateSwitch(const DataProtocol<bool>& proto) {
+        if (filter) {
+            return;
+        }
+
+        auto* dp = switchIds.id(proto.id());
+        if (!dp) {
+            return;
+        }
+
+        relayStatus(dp->id, proto.value());
+    }
+
     void dump(const char* type, unsigned char id, const char* buf) {
         DEBUG_MSG_P(PSTR("[Tuya] Received %s dp=%u value=%s"), type, id, buf);
     }
@@ -211,15 +233,12 @@ namespace tuya {
     // ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
     void updateState(Type type, const DataFrame& frame) {
         if (Type::BOOL == type) {
-            const DataProtocol<bool> proto(frame);
+            DataProtocol<bool> proto(frame);
             dump(proto);
+            updateSwitch(proto);
         } else if (Type::INT == type) {
-            const DataProtocol<uint32_t> proto(frame);
+            DataProtocol<uint32_t> proto(frame);
             dump(proto);
-        }
-
-        if (filter) {
-            return;
         }
     }
 
