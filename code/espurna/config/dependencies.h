@@ -105,8 +105,10 @@
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
 #undef TUYA_SUPPORT
 #define TUYA_SUPPORT                1           // Need base Tuya module for this to work
+#undef LIGHT_TRANSITION_STEP
+#define LIGHT_TRANSITION_STEP       LIGHT_TRANSITION_TIME // no transitions by default just to be safe
 #undef LIGHT_USE_TRANSITIONS
-#define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
+#define LIGHT_USE_TRANSITIONS       0
 #endif
 
 #if TUYA_SUPPORT
