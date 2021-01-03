@@ -27,7 +27,18 @@ namespace tuya {
         ~DataFrame() = default;
 
         DataFrame(DataFrame&&) noexcept = default;
-        DataFrame& operator=(DataFrame&&) noexcept = default;
+#if 201103L <= __cplusplus
+        DataFrame& operator=(DataFrame&& other) noexcept {
+            _data = std::move(other._data);
+            _begin = _data.cbegin();
+            _end = _data.cend();
+            version = other.version;
+            command = other.command;
+            length = other.length;
+        }
+#else
+        DataFrame& operator=(DataFrame&& other) noexcept = default;
+#endif
 
         DataFrame(uint8_t command) :
             command(command),
