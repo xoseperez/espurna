@@ -84,7 +84,7 @@ namespace tuya {
 
     DpMap switchIds;
 
-#if LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
     DpMap channelIds;
     uint8_t channelStateId { 0u };
 #endif
@@ -108,7 +108,7 @@ namespace tuya {
         unsigned char _dp;
     };
 
-#if LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
 
     class TuyaLightProvider : public LightProvider {
     public:

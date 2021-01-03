@@ -681,7 +681,7 @@ void _lightProviderUpdate(unsigned long steps) {
 
     #endif
 
-    #if LIGHT_PROVIDER_CUSTOM
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
 
         if (_light_provider) {
             for (unsigned char i=0; i < _light_channels.size(); i++) {
@@ -1571,12 +1571,13 @@ void _lightBoot(bool notify) {
     lightUpdate(notify, notify);
 }
 
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
 void lightSetProvider(std::unique_ptr<LightProvider>&& ptr) {
     _light_provider = std::move(ptr);
 }
 
 bool lightAdd() {
-#if LIGHT_PROVIDER_CUSTOM
     if (_light_channels.size() < Light::ChannelsMax) {
         _light_channels.push_back(std::move(channel_t()));
 
@@ -1590,10 +1591,17 @@ bool lightAdd() {
 
         return true;
     }
-#endif
 
     return false;
 }
+
+#else
+
+bool lightAdd() {
+    return false;
+}
+
+#endif // LIGHT_PROVIDER_CUSTOM
 
 void lightSetup() {
 
