@@ -527,7 +527,6 @@ error:
         #if TERMINAL_SUPPORT
 
             terminalRegisterCommand(F("TUYA.SHOW"), [](const terminal::CommandContext& ctx) {
-                showProduct();
                 ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
                 ctx.output.println(F("\nConfig:"));
                 for (auto& kv : config) {
