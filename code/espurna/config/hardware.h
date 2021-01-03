@@ -4554,7 +4554,7 @@
     #define MANUFACTURER        "TUYA"
     #define DEVICE              "GENERIC_DIMMER"
 
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_CUSTOM
     #define LIGHT_CHANNELS      0
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define DUMMY_RELAY_COUNT   0
