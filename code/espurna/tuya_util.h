@@ -24,12 +24,21 @@ struct DpId {
     uint8_t dp;
 };
 
+// Specifically for relay (or channel) <=> DP id association
+// Caller is expected to check for uniqueness manually, when `add(...)`ing
+
 struct DpMap {
     using map_type = std::vector<DpId>;
     DpMap() = default;
 
-    void add(uint8_t id, uint8_t dp) {
+    bool add(uint8_t id, uint8_t dp) {
+        for (auto& map : _map) {
+            if ((map.id == id) || (map.dp == dp)) {
+                return false;
+            }
+        }
         _map.push_back(DpId{id, dp});
+        return true;
     }
 
     const map_type& map() {

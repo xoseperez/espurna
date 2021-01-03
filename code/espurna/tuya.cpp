@@ -229,14 +229,24 @@ namespace tuya {
         for (auto& dp : dps) {
             switch (dp.type) {
             case Type::BOOL:
-                if (relayAdd(std::make_unique<TuyaRelayProvider>(dp.id))) {
-                    switchIds.add((relayCount() - 1), dp.id);
+                if (!relayAdd(std::make_unique<TuyaRelayProvider>(dp.id))) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Cannot add relay for DP id=%u\n"), dp.id);
+                    goto error;
+                }
+                if (!switchIds.add((relayCount() - 1), dp.id)) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Switch for DP id=%u already exists\n"), dp.id);
+                    goto error;
                 }
                 break;
             case Type::INT:
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                if (lightAdd()) {
-                    channelIds.add((lightChannels() - 1), dp.id);
+                if (!lightAdd()) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Cannot add channel for DP id=%u\n"), dp.id);
+                    goto error;
+                }
+                if (!channelIds.add((lightChannels() - 1), dp.id)) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Channel for DP id=%u already exists\n"), dp.id);
+                    goto error;
                 }
 #endif
                 break;
@@ -251,6 +261,7 @@ namespace tuya {
         }
 #endif
 
+error:
         dps.clear();
     }
 
@@ -529,11 +540,11 @@ namespace tuya {
         //       (may not be true for all, but that's the one we got the most of :>)
         filter = getSetting("tuyaFilter", true);
 
-        setupSwitches();
-
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
         setupChannels();
 #endif
+
+        setupSwitches();
 
         // Print all IN and OUT messages
         transportDebug = getSetting("tuyaDebug", true);

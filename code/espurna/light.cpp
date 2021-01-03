@@ -764,7 +764,7 @@ void _lightRestoreSettings() {
     _light_mireds = getSetting("mireds", _light_mireds);
 }
 
-void _lightParsePayload(const char* payload) {
+bool _lightParsePayload(const char* payload) {
     switch (rpcParsePayload(payload)) {
     case PayloadStatus::On:
         lightState(true);
@@ -776,8 +776,10 @@ void _lightParsePayload(const char* payload) {
         lightState(!_light_state);
         break;
     case PayloadStatus::Unknown:
-        break;
+        return false;
     }
+
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -1083,6 +1085,19 @@ void _lightApiSetup() {
         }
     );
 
+    if (!_light_has_controls) {
+        apiRegister(F(MQTT_TOPIC_LIGHT),
+            [](ApiRequest& request) {
+                request.send(lightState() ? "1" : "0");
+                return true;
+            },
+            [](ApiRequest& request) {
+                _lightParsePayload(request.param(F("value")));
+                lightUpdate(true, true);
+                return true;
+            }
+        );
+    }
 }
 
 #endif // API_SUPPORT
