@@ -83,7 +83,11 @@ namespace tuya {
     std::forward_list<Config> config;
 
     DpMap switchIds;
+
+#if LIGHT_PROVIDER_CUSTOM
     DpMap channelIds;
+    uint8_t channelStateId { 0u };
+#endif
 
     // --------------------------------------------
 
@@ -113,10 +117,18 @@ namespace tuya {
             _channels(channels)
         {}
 
+        explicit TuyaLightProvider(const DpMap& channels, uint8_t state) :
+            _channels(channels),
+            _state(state)
+        {}
+
         void update() override {
         }
 
-        void state(bool) override {
+        void state(bool status) override {
+            if (_state) {
+                send(_state, status);
+            }
         }
 
         void channel(unsigned char channel, double value) override {
@@ -137,6 +149,7 @@ namespace tuya {
 
     private:
         const DpMap& _channels;
+        uint8_t _state { 0 };
     };
 
 #endif
@@ -213,6 +226,13 @@ namespace tuya {
         if (filter) {
             return;
         }
+
+#if LIGHT_PROVIDER_CUSTOM
+        if (channelStateId && (channelStateId == proto.id())) {
+            lightState(proto.value());
+            return;
+        }
+#endif
 
         auto* dp = switchIds.id(proto.id());
         if (!dp) {
@@ -520,7 +540,8 @@ error:
         }
 
         if (done) {
-           lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds));
+            channelStateId = getSetting("tuyaChanState", 0u);
+            lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds, channelStateId));
         }
 
         configDone = done;

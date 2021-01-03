@@ -684,11 +684,14 @@ void _lightProviderUpdate(unsigned long steps) {
     #if LIGHT_PROVIDER_CUSTOM
 
         if (_light_provider) {
-            _light_provider->state(_light_state);
             for (unsigned char i=0; i < _light_channels.size(); i++) {
                 _light_provider->channel(i, _light_channels[i].current);
             }
             _light_provider->update();
+        }
+
+        if (!steps) {
+            _light_provider->state(_light_state);
         }
 
     #endif
