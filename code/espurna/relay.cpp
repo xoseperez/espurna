@@ -1613,15 +1613,15 @@ constexpr size_t _relayAdhocPins() {
     ;
 }
 
-struct relay_gpio_provider_pins {
-    GpioType type;
-    unsigned char main;
-    unsigned char reset;
+struct RelayGpioProviderCfg {
+    GpioBase* base { nullptr };
+    unsigned char main { GPIO_NONE };
+    unsigned char reset { GPIO_NONE };
 };
 
-relay_gpio_provider_pins _relayGpioProviderPins(unsigned char index) {
+RelayGpioProviderCfg _relayGpioProviderCfg(unsigned char index) {
     return {
-        getSetting({"relayGPIOType", index}, _relayPinType(index)),
+        gpioBase(getSetting({"relayGPIOType", index}, _relayPinType(index))),
         getSetting({"relayGPIO", index}, _relayPin(index)),
         getSetting({"relayResetGPIO", index}, _relayResetPin(index))};
 }
@@ -1629,19 +1629,17 @@ relay_gpio_provider_pins _relayGpioProviderPins(unsigned char index) {
 using GpioCheck = bool(*)(unsigned char);
 
 std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType type) {
-    auto pins = _relayGpioProviderPins(index);
+    auto cfg = _relayGpioProviderCfg(index);
+    if (!cfg.base) {
+        return nullptr;
+    }
 
-    auto pin = gpioRegister(pins.type, pins.main);
+    auto pin = gpioRegister(*cfg.base, cfg.main);
     if (!pin) {
         return nullptr;
     }
-    ets_printf("- registered pin %u\n", pins.main);
 
-    auto reset_pin = gpioRegister(pins.type, pins.reset);
-    if (reset_pin) {
-        ets_printf("- registered reset pin %u\n", pins.reset);
-    }
-
+    auto reset_pin = gpioRegister(*cfg.base, cfg.reset);
     return std::make_unique<GpioProvider>(
         index, type, std::move(pin), std::move(reset_pin)
     );

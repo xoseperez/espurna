@@ -313,7 +313,7 @@ void _terminalInitCommands() {
         }
 
         int start = 0;
-        int end = GpioPins;
+        int end = gpioPins();
 
         switch (ctx.argc) {
         case 3:

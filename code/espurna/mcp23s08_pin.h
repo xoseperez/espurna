@@ -42,36 +42,3 @@ class McpGpioPin final : public BasePin {
         return desc;
     }
 };
-
-class GpioMcp23s08 : public GpioBase {
-public:
-    constexpr static size_t Pins { 8ul };
-
-    using Pin = McpGpioPin;
-    using Mask = std::bitset<Pins>;
-
-    const char* id() const {
-        return "mcp23s08";
-    }
-
-    size_t pins() const {
-        return Pins;
-    }
-
-    bool lock(unsigned char index) {
-        return _lock[index];
-    }
-
-    bool lock(unsigned char index, bool value) {
-        bool current = _lock[index];
-        _lock.set(index, value);
-        return (value != current);
-    }
-
-    bool available(unsigned char index) {
-        return (index < Pins);
-    }
-
-private:
-    Mask _lock;
-};

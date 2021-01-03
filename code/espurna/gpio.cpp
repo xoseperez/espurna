@@ -33,15 +33,16 @@ GpioType convert(const String& value) {
     return GpioType::None;
 }
 
-}
-}
+} // namespace internal
+} // namespace settings
 
 namespace {
 
 class GpioHardware : public GpioBase {
 public:
     constexpr static size_t Pins { 17ul };
-    using Mask = std::bitset<GpioPins>;
+
+    using Mask = std::bitset<Pins>;
     using Pin = GpioPin;
 
     GpioHardware() {
@@ -62,15 +63,15 @@ public:
         );
     }
 
-    const char* id() const {
+    const char* id() const override {
         return "hardware";
     }
 
-    size_t pins() const {
+    size_t pins() const override {
         return Pins;
     }
 
-    bool lock(unsigned char index) override {
+    bool lock(unsigned char index) const override {
         return _lock[index];
     }
 
@@ -80,18 +81,22 @@ public:
         return (value != current);
     }
 
-    bool available(unsigned char index) override {
+    bool valid(unsigned char index) const override {
         switch (index) {
         case 0 ... 5:
         case 9:
             return true;
         case 10:
             return _esp8285;
-        case 12 ... 17:
+        case 12 ... 16:
             return true;
         }
 
         return false;
+    }
+
+    BasePinPtr pin(unsigned char index) {
+        return std::make_unique<GpioPin>(index);
     }
 
 private:
@@ -99,102 +104,44 @@ private:
     Mask _lock;
 };
 
-std::pair<GpioType, GpioBase*> _gpio_support[] {
-    {GpioType::Hardware, new GpioHardware()}
-#if MCP23S08_SUPPORT
-    ,{GpioType::Mcp23s08, new GpioMcp23s08()}
-#endif
-};
-
-GpioBase* _gpioFind(GpioType type, unsigned char gpio) {
-    for (auto& pair : _gpio_support) {
-        if ((pair.first == type)
-            && (gpio < pair.second->pins())
-            && (pair.second->available(gpio))) {
-            return pair.second;
-        }
-    }
-
-    return nullptr;
-}
-
 } // namespace
 
-bool gpioValid(GpioType type, unsigned char gpio) {
-    auto* ptr = _gpioFind(type, gpio);
-    if (ptr) {
-        return ptr->available(gpio);
+GpioBase& hardwareGpio() {
+    static GpioHardware gpio;
+    return gpio;
+}
+
+GpioBase* gpioBase(GpioType type) {
+    GpioBase* ptr { nullptr };
+
+    switch (type) {
+    case GpioType::Hardware:
+        ptr = &hardwareGpio();
+        break;
+    case GpioType::Mcp23s08:
+#if MCP23S08_SUPPORT
+        ptr = &mcp23s08Gpio();
+#endif
+        break;
+    case GpioType::None:
+        break;
     }
 
-    return false;
+    return ptr;
 }
 
-bool gpioValid(unsigned char gpio) {
-    return gpioValid(GpioType::Hardware, gpio);
-}
-
-bool _gpioLock(GpioType type, unsigned char gpio, bool value) {
-    auto* ptr = _gpioFind(type, gpio);
-    if (ptr) {
-        return ptr->lock(gpio, value);
-    }
-
-    return false;
-}
-
-bool _gpioLocked(GpioType type, unsigned char gpio) {
-    auto* ptr = _gpioFind(type, gpio);
-    if (ptr) {
-        return ptr->lock(gpio);
-    }
-
-    return false;
-}
-
-bool gpioLock(GpioType type, unsigned char gpio) {
-    return _gpioLock(type, gpio, true);
-}
-
-bool gpioLock(unsigned char gpio) {
-    return _gpioLock(GpioType::Hardware, gpio, true);
-}
-
-bool gpioUnlock(GpioType type, unsigned char gpio) {
-    return _gpioLock(type, gpio, false);
-}
-
-bool gpioUnlock(unsigned char gpio) {
-    return _gpioLock(GpioType::Hardware, gpio, false);
-}
-
-bool gpioLocked(GpioType type, unsigned char gpio) {
-    return _gpioLocked(type, gpio);
-}
-
-bool gpioLocked(unsigned char gpio) {
-    return _gpioLocked(GpioType::Hardware, gpio);
-}
-
-BasePinPtr gpioRegister(GpioType type, unsigned char gpio) {
+BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio) {
     BasePinPtr result;
 
-    auto* ptr = _gpioFind(type, gpio);
-    if (ptr && ptr->lock(gpio, true)) {
-        switch (type) {
-        case GpioType::None:
-            break;
-        case GpioType::Hardware:
-            result = std::make_unique<GpioPin>(gpio);
-            break;
-        case GpioType::Mcp23s08:
-#if MCP23S08_SUPPORT
-            result = std::make_unique<Mcp23s08Pin>(gpio);
-#endif
-            break;
-        }
+    if (base.lock(gpio)) {
+        result = std::move(base.pin(gpio));
     }
 
     return result;
+}
+
+BasePinPtr gpioRegister(unsigned char gpio) {
+    return gpioRegister(hardwareGpio(), gpio);
 }
 
 void gpioSetup() {
