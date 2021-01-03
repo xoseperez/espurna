@@ -1540,8 +1540,12 @@ void _lightRelaySupport() {
         return;
     }
 
-    if (!_light_has_controls && relayAdd(std::make_unique<LightGlobalProvider>())) {
-        auto next_id = relayCount();
+    if (_light_has_controls) {
+        return;
+    }
+
+    auto next_id = relayCount();
+    if (relayAdd(std::make_unique<LightGlobalProvider>())) {
         _light_state_listener = [next_id](bool state) {
             relayStatus(next_id, state);
         };
