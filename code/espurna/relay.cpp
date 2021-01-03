@@ -1585,30 +1585,30 @@ void relaySetupDummy(size_t size, bool reconfigure) {
 }
 
 constexpr size_t _relayAdhocPins() {
-    return 0 +
+    return 0
     #if RELAY1_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY2_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY3_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY4_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY5_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY6_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY7_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     #if RELAY8_PIN != GPIO_NONE
-        1
+        + 1
     #endif
     ;
 }
