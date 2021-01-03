@@ -35,6 +35,7 @@ namespace tuya {
             version = other.version;
             command = other.command;
             length = other.length;
+            return *this;
         }
 #else
         DataFrame& operator=(DataFrame&& other) noexcept = default;
