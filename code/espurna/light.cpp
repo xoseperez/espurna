@@ -115,6 +115,7 @@ bool _light_provider_update = false;
 
 bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
+unsigned int _light_transition_step = LIGHT_TRANSITION_STEP;
 
 bool _light_dirty = false;
 bool _light_state = false;
@@ -694,7 +695,7 @@ void _lightProviderUpdate(unsigned long steps) {
 
     // This is not the final value, update again
     if (steps) {
-        _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+        _light_transition_ticker.once_ms(_light_transition_step, _lightProviderScheduleUpdate, steps);
     }
 
     _light_provider_update = false;
@@ -1145,7 +1146,8 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["useTransitions"] = _light_use_transitions;
     root["useCSS"] = getSetting("useCSS", 1 == LIGHT_USE_CSS);
     root["useRGB"] = getSetting("useRGB", 1 == LIGHT_USE_RGB);
-    root["lightTime"] = _light_transition_time;
+    root["ltTime"] = _light_transition_time;
+    root["ltStep"] = _light_transition_step;
 
     _lightWebSocketStatus(root);
 }
@@ -1309,22 +1311,24 @@ void _lightComms(unsigned char mask) {
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Calculate values based on inputs and brightness
+    // Update only if the values had actually changed
     _light_brightness_func();
 
-    // Only update if a channel has changed
     if (!_light_dirty) return;
     _light_dirty = false;
 
-    // Update channels
     for (unsigned int i=0; i < _light_channels.size(); i++) {
-        _light_channels[i].target = _light_state && _light_channels[i].state ? _light_channels[i].value : 0;
-        //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channels[i].target);
+        _light_channels[i].target = (_light_state && _light_channels[i].state)
+            ? _light_channels[i].value
+            : 0;
     }
 
     // Channel transition will be handled by the provider function
     // User can configure total transition time, step time is a fixed value
-    const unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+    cont unsigned long steps = _light_use_transitions
+        ? _light_transition_time / _light_transition_step : 1
+        : 1;
+    _light_transition_ticker.once_ms(_light_transition_step, _lightProviderScheduleUpdate, steps);
 
     // Delay every communication 100ms to avoid jamming
     const unsigned char mask =
@@ -1458,7 +1462,7 @@ void lightTransitionTime(unsigned long ms) {
         _light_transition_time = ms;
     }
     setSetting("useTransitions", _light_use_transitions);
-    setSetting("lightTime", _light_transition_time);
+    setSetting("ltTime", _light_transition_time);
     saveSettings();
 }
 
@@ -1520,7 +1524,8 @@ void _lightConfigure() {
 
     _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
     _light_use_transitions = getSetting("useTransitions", 1 == LIGHT_USE_TRANSITIONS);
-    _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME);
+    _light_transition_time = getSetting("ltTime", LIGHT_TRANSITION_TIME);
+    _light_transition_step = getSetting("ltStep", LIGHT_TRANSITION_STEP);
 
 }
 
