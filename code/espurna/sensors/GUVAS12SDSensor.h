@@ -42,7 +42,7 @@ class GUVAS12SDSensor : public BaseSensor {
         }
 
         ~GUVAS12SDSensor() {
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            gpioUnlock(_gpio);
         }
 
         // ---------------------------------------------------------------------
@@ -65,9 +65,12 @@ class GUVAS12SDSensor : public BaseSensor {
         void begin() {
 
             // Manage GPIO lock
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) {
+                gpioUnlock(_previous);
+            }
+
             _previous = GPIO_NONE;
-            if (!gpioGetLock(_gpio)) {
+            if (!gpioLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
             }

@@ -76,7 +76,7 @@ class DallasSensor : public BaseSensor {
 
         ~DallasSensor() {
             if (_wire) delete _wire;
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            gpioUnlock(_gpio);
         }
 
         // ---------------------------------------------------------------------
@@ -103,9 +103,12 @@ class DallasSensor : public BaseSensor {
             if (!_dirty) return;
 
             // Manage GPIO lock
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) {
+                gpioUnlock(_previous);
+            }
+
             _previous = GPIO_NONE;
-            if (!gpioGetLock(_gpio)) {
+            if (!gpioLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
             }
@@ -125,7 +128,7 @@ class DallasSensor : public BaseSensor {
 
             // Check connection
             if (_count == 0) {
-                gpioReleaseLock(_gpio);
+                gpioUnlock(_gpio);
             } else {
                 _previous = _gpio;
             }
