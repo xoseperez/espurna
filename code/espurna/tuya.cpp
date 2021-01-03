@@ -564,7 +564,7 @@ error:
         // TODO: see https://github.com/xoseperez/espurna/issues/2222
         //       unlike emulator, this real device sends total garbage which we can safely ignore
         //       (may not be true for all, but that's the one we got the most of :>)
-        filter = getSetting("tuyaFilter", true);
+        filter = getSetting("tuyaFilter", false);
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
         setupChannels();
