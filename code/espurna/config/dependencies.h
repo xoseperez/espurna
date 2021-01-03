@@ -102,9 +102,7 @@
 #define TELNET_SERVER_ASYNC_BUFFERED 1         // enable buffered telnet by default on latest Cores
 #endif
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-#undef TUYA_SUPPORT
-#define TUYA_SUPPORT                1           // Need base Tuya module for this to work
+#if TUYA_SUPPORT
 #undef LIGHT_TRANSITION_STEP
 #define LIGHT_TRANSITION_STEP       LIGHT_TRANSITION_TIME // no transitions by default just to be safe
 #undef LIGHT_USE_TRANSITIONS
