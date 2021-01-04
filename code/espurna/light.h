@@ -9,6 +9,7 @@
 // TODO: lowercase
 namespace Light {
 
+constexpr size_t Channels = LIGHT_CHANNELS;
 constexpr size_t ChannelsMax = 5;
 
 constexpr long VALUE_MIN = LIGHT_MIN_VALUE;

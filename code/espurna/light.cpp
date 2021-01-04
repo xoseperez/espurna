@@ -160,7 +160,7 @@ const char _light_channel_desc[5][5] PROGMEM = {
     {'R', 'G', 'B', 'W',   0},
     {'R', 'G', 'B', 'W', 'C'}
 };
-static_assert((LIGHT_CHANNELS * LIGHT_CHANNELS) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
+static_assert((Light::Channels * Light::Channels) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
 
 // Gamma Correction lookup table (8 bit)
 const unsigned char _light_gamma_table[] PROGMEM = {
@@ -1617,7 +1617,7 @@ void lightSetup() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        lightSetupChannels(LIGHT_CHANNELS);
+        _light_channels.resize(std::min(Light::Channels, Light::ChannelsMax));
 
     #endif
 
