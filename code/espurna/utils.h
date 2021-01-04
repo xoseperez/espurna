@@ -31,6 +31,7 @@ const String& getDevice();
 const String& getManufacturer();
 const String& getCoreVersion();
 const String& getCoreRevision();
+const String& getVersion();
 
 int getHeartbeatMode();
 unsigned long getHeartbeatInterval();

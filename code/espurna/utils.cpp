@@ -60,8 +60,7 @@ const String& getManufacturer() {
 }
 
 String getBoardName() {
-    static const String defaultValue(F(DEVICE_NAME));
-    return getSetting("boardName", defaultValue);
+    return getSetting("boardName", F(DEVICE_NAME));
 }
 
 void setBoardName() {
@@ -105,6 +104,15 @@ const String& getCoreRevision() {
         #endif
     }
     return revision;
+}
+
+const String& getVersion() {
+#if defined(APP_REVISION)
+    static const String value(F(APP_VERSION " (" APP_REVISION ")"));
+#else
+    static const String value(F(APP_VERSION));
+#endif
+    return value;
 }
 
 int getHeartbeatMode() {
@@ -284,16 +292,19 @@ namespace Heartbeat {
 }
 
 void infoUptime() {
-    const auto uptime [[gnu::unused]] = getUptime();
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(
-            PSTR("[MAIN] Uptime: %02dd %02dh %02dm %02ds\n"),
-            elapsedDays(uptime), numberOfHours(uptime),
-            numberOfMinutes(uptime), numberOfSeconds(uptime)
-        );
-    #else
-        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime);
-    #endif // NTP_SUPPORT
+#if NTP_SUPPORT
+    time_t uptime = getUptime();
+    tm spec;
+    gmtime_r(&uptime, &spec);
+
+    DEBUG_MSG_P(
+        PSTR("[MAIN] Uptime: %02dy %02dd %02dh %02dm %02ds\n"),
+        (spec.tm_year - 70), spec.tm_yday, spec.tm_hour,
+        spec.tm_min, spec.tm_sec
+    );
+#else
+    DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), getUptime());
+#endif // NTP_SUPPORT
 }
 
 void heartbeat() {
@@ -338,7 +349,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_APP, APP_NAME);
 
             if (hb_cfg & Heartbeat::Version)
-                mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
+                mqttSend(MQTT_TOPIC_VERSION, getVersion().c_str());
 
             if (hb_cfg & Heartbeat::Board)
                 mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
@@ -541,11 +552,7 @@ void info(bool first) {
 
     // -------------------------------------------------------------------------
 
-    #if defined(APP_REVISION)
-        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION " (" APP_REVISION ")\n"));
-    #else
-        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION "\n"));
-    #endif
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " %s\n"), getVersion().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
     DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
@@ -553,7 +560,7 @@ void info(bool first) {
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu\n"), __UNIX_TIMESTAMP__);
+    DEBUG_MSG_P(PSTR("[MAIN] Built: %s\n"), buildTime().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
