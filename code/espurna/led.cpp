@@ -460,14 +460,16 @@ void ledSetup() {
 
     for (unsigned char index=0; index < LedsMax; ++index) {
         const auto pin = getSetting({"ledGPIO", index}, _ledPin(index));
-        if (gpioLock(pin)) {
-            _leds.emplace_back(
-                pin,
-                getSetting({"ledInv", index}, _ledInverse(index)),
-                getSetting({"ledMode", index}, _ledMode(index)),
-                getSetting({"ledRelay", index}, _ledRelay(index))
-            );
+        if (!gpioLock(pin)) {
+            break;
         }
+
+        _leds.emplace_back(
+            pin,
+            getSetting({"ledInv", index}, _ledInverse(index)),
+            getSetting({"ledMode", index}, _ledMode(index)),
+            getSetting({"ledRelay", index}, _ledRelay(index))
+        );
     }
 
     _led_update = true;

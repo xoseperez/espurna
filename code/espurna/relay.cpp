@@ -1634,14 +1634,14 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType 
         return nullptr;
     }
 
-    auto pin = gpioRegister(*cfg.base, cfg.main);
-    if (!pin) {
+    auto main = gpioRegister(*cfg.base, cfg.main);
+    if (!main) {
         return nullptr;
     }
 
-    auto reset_pin = gpioRegister(*cfg.base, cfg.reset);
+    auto reset = gpioRegister(*cfg.base, cfg.reset);
     return std::make_unique<GpioProvider>(
-        index, type, std::move(pin), std::move(reset_pin)
+        index, type, std::move(main), std::move(reset)
     );
 }
 

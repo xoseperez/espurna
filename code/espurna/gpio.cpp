@@ -75,17 +75,15 @@ public:
         return _lock[index];
     }
 
-    bool lock(unsigned char index, bool value) override {
-        bool current = _lock[index];
+    void lock(unsigned char index, bool value) override {
         _lock.set(index, value);
-        return (value != current);
     }
 
     bool valid(unsigned char index) const override {
         switch (index) {
         case 0 ... 5:
-        case 9:
             return true;
+        case 9:
         case 10:
             return _esp8285;
         case 12 ... 16:
@@ -133,7 +131,7 @@ GpioBase* gpioBase(GpioType type) {
 BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio) {
     BasePinPtr result;
 
-    if (base.lock(gpio)) {
+    if (gpioLock(base, gpio)) {
         result = std::move(base.pin(gpio));
     }
 

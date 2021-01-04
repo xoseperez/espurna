@@ -15,8 +15,9 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 #if MCP23S08_SUPPORT
 
-#include <SPI.h>
+#include "mcp23s08_pin.h"
 
+#include <SPI.h>
 #include <bitset>
 
 // TODO: check if this needed for SPI operation
@@ -63,10 +64,8 @@ public:
         return _lock[index];
     }
 
-    bool lock(unsigned char index, bool value) override {
-        bool current = _lock[index];
+    void lock(unsigned char index, bool value) override {
         _lock.set(index, value);
-        return (value != current);
     }
 
     bool valid(unsigned char index) const override {
@@ -210,7 +209,7 @@ bool mcpGpioValid(unsigned char gpio)
 }
 
 GpioBase& mcp23s08Gpio() {
-    static McpGpioHardware gpio;
+    static GpioMcp23s08 gpio;
     return gpio;
 }
 
