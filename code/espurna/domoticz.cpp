@@ -246,6 +246,11 @@ void domoticzSendMagnitude(unsigned char type, unsigned char index, double value
         );
         char svalue[2] = {status, '\0'};
         domoticzSend(key, static_cast<int>(value), svalue);
+    // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Air_quality
+    // nvalue contains the ppm
+    // svalue is not used (?)
+    } else if (MAGNITUDE_CO2 == type) {
+        domoticzSend(key, static_cast<int>(value), "");
     // Otherwise, send char string (nvalue is only for integers)
     } else {
         domoticzSend(key, 0, buffer);
