@@ -1614,9 +1614,9 @@ constexpr size_t _relayAdhocPins() {
 }
 
 struct RelayGpioProviderCfg {
-    GpioBase* base { nullptr };
-    unsigned char main { GPIO_NONE };
-    unsigned char reset { GPIO_NONE };
+    GpioBase* base;
+    unsigned char main;
+    unsigned char reset;
 };
 
 RelayGpioProviderCfg _relayGpioProviderCfg(unsigned char index) {

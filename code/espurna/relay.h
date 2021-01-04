@@ -52,8 +52,6 @@ public:
     virtual const char* id() const = 0;
 };
 
-void relayRegisterProvider(const char* name, RelayProviderBase*(*)(unsigned char id));
-
 PayloadStatus relayParsePayload(const char * payload);
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
