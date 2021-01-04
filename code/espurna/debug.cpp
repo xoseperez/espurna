@@ -373,16 +373,29 @@ void debugConfigure() {
     // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
     // Core debugging also depends on various DEBUG_ESP_... being defined
     {
-        #if defined(DEBUG_ESP_PORT)
-        #if not defined(NDEBUG)
-            constexpr bool debug_sdk = true;
-        #endif // !defined(NDEBUG)
-        #else
-            constexpr bool debug_sdk = false;
-        #endif // defined(DEBUG_ESP_PORT)
-
+#if defined(DEBUG_ESP_PORT)
+#if not defined(NDEBUG)
+        constexpr bool debug_sdk = true;
+#endif // !defined(NDEBUG)
+#else
+        constexpr bool debug_sdk = false;
+#endif // defined(DEBUG_ESP_PORT)
         DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
     }
+
+    // Make sure other modules are aware of used GPIOs
+#if DEBUG_SERIAL_SUPPORT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored  "-Wpragmas"
+#pragma GCC diagnostic ignored  "-Wtautological-compare"
+    if (&(DEBUG_PORT) == &Serial) {
+        gpioLock(1);
+        gpioLock(3);
+    } else if (&(DEBUG_PORT) == &Serial1) {
+        gpioLock(2);
+    }
+#pragma GCC diagnostic pop
+#endif
 
     #if DEBUG_LOG_BUFFER_SUPPORT
     {
