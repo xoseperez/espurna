@@ -418,7 +418,6 @@ bool _relayTryParseId(const char* p, unsigned char& relayID) {
     char* endp { nullptr };
     const unsigned long result { strtoul(p, &endp, 10) };
     if ((endp == p) || (*endp != '\0') || (result >= relayCount())) {
-        DEBUG_MSG_P(PSTR("[RELAY] Invalid relayID (%s)\n"), p);
         return false;
     }
 
@@ -1497,51 +1496,50 @@ void relaySetupMQTT() {
 void _relayInitCommands() {
 
     terminalRegisterCommand(F("RELAY"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc < 2) {
-            terminalError(F("Wrong arguments"));
+        if (ctx.argc == 1) {
+            DEBUG_MSG_P(PSTR("   cur tgt  prov  lock  delay_on   delay_off  pulse  pulse_ms\n"));
+            DEBUG_MSG_P(PSTR("   --- --- ------ ---- ---------- ----------- ----- ----------\n"));
+            for (unsigned char index = 0; index < _relays.size(); ++index) {
+                auto& relay = _relays.at(index);
+                DEBUG_MSG_P(PSTR("%02u %3s %3s %6s %4u %10u %11u %5u %10u\n"),
+                    index,
+                    relay.current_status ? "ON" : "OFF",
+                    relay.target_status ? "ON" : "OFF",
+                    relay.provider->id(),
+                    relay.lock,
+                    relay.delay_on, relay.delay_off,
+                    relay.pulse, relay.pulse_ms
+                );
+            }
             return;
         }
-        int id = ctx.argv[1].toInt();
-        if (id >= relayCount()) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+
+        unsigned char id;
+        if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
+            terminalError(ctx, F("Invalid relayID"));
             return;
         }
 
         if (ctx.argc > 2) {
-            int value = ctx.argv[2].toInt();
-            if (value == 2) {
-                relayToggle(id);
-            } else {
-                relayStatus(id, value == 1);
+            auto status = relayParsePayload(ctx.argv[2].c_str());
+            if (PayloadStatus::Unknown == status) {
+                terminalError(ctx, F("Invalid status"));
+                return;
             }
-        }
-        DEBUG_MSG_P(PSTR("Status: %s\n"), _relays[id].target_status ? "true" : "false");
-        if (_relays[id].pulse != RELAY_PULSE_NONE) {
-            DEBUG_MSG_P(PSTR("Pulse: %s\n"), (_relays[id].pulse == RELAY_PULSE_ON) ? "ON" : "OFF");
-            DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
 
+            _relayHandleStatus(id, status);
         }
-        terminalOK();
-    });
 
-    #if 0
-    terminalRegisterCommand(F("RELAY.INFO"), [](const terminal::CommandContext&) {
-        DEBUG_MSG_P(PSTR("    cur tgt pin type reset lock  delay_on   delay_off  pulse  pulse_ms\n"));
-        DEBUG_MSG_P(PSTR("    --- --- --- ---- ----- ---- ---------- ----------- ----- ----------\n"));
-        for (unsigned char index = 0; index < _relays.size(); ++index) {
-            const auto& relay = _relays.at(index);
-            DEBUG_MSG_P(PSTR("%3u %3s %3s %3u %4u %5u %4u %10u %11u %5u %10u\n"),
-                index,
-                relay.current_status ? "ON" : "OFF",
-                relay.target_status ? "ON" : "OFF",
-                relay.pin, relay.type, relay.reset_pin,
-                relay.lock,
-                relay.delay_on, relay.delay_off,
-                relay.pulse, relay.pulse_ms
-            );
+        auto& relay = _relays[id];
+
+        ctx.output.printf_P(PSTR("Status: %s\n"), relay.target_status ? "ON" : "OFF");
+        if ((relay.pulse != RELAY_PULSE_NONE) && (relay.pulse_ms)) {
+            ctx.output.printf_P(PSTR("Pulse: %s\n"), (relay.pulse == RELAY_PULSE_ON) ? "ON" : "OFF");
+            ctx.output.printf_P(PSTR("Pulse time: %lu\n"), relay.pulse_ms);
         }
+
+        terminalOK(ctx);
     });
-    #endif
 
 }
 
