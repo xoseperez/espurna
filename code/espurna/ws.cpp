@@ -21,7 +21,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");
-Ticker _ws_defer;
 
 // -----------------------------------------------------------------------------
 // Periodic updates
@@ -344,7 +343,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "reconnect") == 0) {
-            _ws_defer.once_ms(100, wifiDisconnect);
+            static Ticker timer;
+            timer.once_ms_scheduled(100, []() {
+                wifiDisconnect();
+                yield();
+            });
             return;
         }
 

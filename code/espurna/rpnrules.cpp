@@ -689,6 +689,7 @@ void _rpnInit() {
 
     rpn_operator_set(_rpn_ctxt, "disconnect", 0, [](rpn_context & ctxt) -> rpn_error {
         wifiDisconnect();
+        yield();
         return 0;
     });
 
