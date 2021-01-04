@@ -203,6 +203,10 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
 
 #else
 
+constexpr time_t secondsPerMinute = 60;
+constexpr time_t secondsPerHour = 3600;
+constexpr time_t secondsPerDay = secondsPerHour * 24;
+
 NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
     tm utc_time;
     tm local_time;

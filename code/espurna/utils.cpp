@@ -284,16 +284,19 @@ namespace Heartbeat {
 }
 
 void infoUptime() {
-    const auto uptime [[gnu::unused]] = getUptime();
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(
-            PSTR("[MAIN] Uptime: %02dd %02dh %02dm %02ds\n"),
-            elapsedDays(uptime), numberOfHours(uptime),
-            numberOfMinutes(uptime), numberOfSeconds(uptime)
-        );
-    #else
-        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime);
-    #endif // NTP_SUPPORT
+#if NTP_SUPPORT
+    time_t uptime = getUptime();
+    tm spec;
+    gmtime_r(&uptime, &spec);
+
+    DEBUG_MSG_P(
+        PSTR("[MAIN] Uptime: %02dy %02dd %02dh %02dm %02ds\n"),
+        (spec.tm_year - 70), spec.tm_yday, spec.tm_hour,
+        spec.tm_min, spec.tm_sec
+    );
+#else
+    DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime);
+#endif // NTP_SUPPORT
 }
 
 void heartbeat() {
