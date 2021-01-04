@@ -992,7 +992,7 @@ void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
     case RELAY_BOOT_SAME:
         status = mask[index];
         break;
-    case RELAY_BOOT_TOGGLE: 
+    case RELAY_BOOT_TOGGLE:
         status = !mask[index];
         break;
     case RELAY_BOOT_ON:
@@ -1497,20 +1497,18 @@ void _relayInitCommands() {
 
     terminalRegisterCommand(F("RELAY"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc == 1) {
-            DEBUG_MSG_P(PSTR("   cur tgt  prov  lock  delay_on   delay_off  pulse  pulse_ms\n"));
-            DEBUG_MSG_P(PSTR("   --- --- ------ ---- ---------- ----------- ----- ----------\n"));
             for (unsigned char index = 0; index < _relays.size(); ++index) {
-                auto& relay = _relays.at(index);
-                DEBUG_MSG_P(PSTR("%02u %3s %3s %6s %4u %10u %11u %5u %10u\n"),
+                auto& relay = _relays[index];
+                ctx.output.printf_P(PSTR("id=%02u provider=%s current=%s target=%s lock=%s\n"),
                     index,
-                    relay.current_status ? "ON" : "OFF",
-                    relay.target_status ? "ON" : "OFF",
                     relay.provider->id(),
-                    relay.lock,
-                    relay.delay_on, relay.delay_off,
-                    relay.pulse, relay.pulse_ms
+                    relay.current_status ? "ON" : "OFF", relay.target_status ? "ON" : "OFF",
+                    ((relay.lock == RELAY_LOCK_ON) ? "ON" :
+                    (relay.lock == RELAY_LOCK_OFF) ? "OFF" :
+                    "NONE")
                 );
             }
+            terminalOK(ctx);
             return;
         }
 
