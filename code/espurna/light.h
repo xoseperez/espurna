@@ -76,7 +76,6 @@ bool lightHasColor();
 bool lightUseCCT();
 
 void lightMQTT();
-void lightSetupChannels(unsigned char size);
 
 void lightSetStateListener(LightStateListener);
 void lightSetProvider(std::unique_ptr<LightProvider>&&);
