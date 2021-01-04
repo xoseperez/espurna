@@ -295,7 +295,7 @@ void infoUptime() {
         spec.tm_min, spec.tm_sec
     );
 #else
-    DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime);
+    DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), getUptime());
 #endif // NTP_SUPPORT
 }
 
