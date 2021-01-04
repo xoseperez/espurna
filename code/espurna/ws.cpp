@@ -469,11 +469,8 @@ void _wsOnConnected(JsonObject& root) {
     root["webMode"] = WEB_MODE_NORMAL;
 
     root["app_name"] = APP_NAME;
-    root["app_version"] = APP_VERSION;
+    root["app_version"] = getVersion().c_str();
     root["app_build"] = buildTime();
-    #if defined(APP_REVISION)
-        root["app_revision"] = APP_REVISION;
-    #endif
     root["device"] = getDevice().c_str();
     root["manufacturer"] = getManufacturer().c_str();
     root["chipid"] = getChipId().c_str();

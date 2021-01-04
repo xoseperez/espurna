@@ -240,7 +240,7 @@ void _onDiscover(AsyncWebServerRequest *request) {
     StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
-    root["version"] = APP_VERSION;
+    root["version"] = getVersion().c_str();
     root["device"] = device.c_str();
     root["hostname"] = hostname.c_str();
 
@@ -267,8 +267,8 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
 
-    response->printf("{\n\"app\": \"%s\"", APP_NAME);
-    response->printf(",\n\"version\": \"%s\"", APP_VERSION);
+    response->printf("{\n\"app\": \"" APP_NAME "\"");
+    response->printf(",\n\"version\": \"%s\"", getVersion().c_str());
     response->printf(",\n\"backup\": \"1\"");
     #if NTP_SUPPORT
         response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());

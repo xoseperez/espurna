@@ -75,15 +75,17 @@ struct ha_config_t {
         jsonBuffer(size),
         deviceConfig(jsonBuffer.createObject()),
         root(jsonBuffer.createObject()),
-        identifier(getIdentifier()),
         name(getSetting("desc", getSetting("hostname"))),
-        version(String(APP_NAME " " APP_VERSION " (") + getCoreVersion() + ")")
+        identifier(getIdentifier().c_str()),
+        version(getVersion().c_str()),
+        manufacturer(getManufacturer().c_str()),
+        device(getDevice().c_str())
     {
-        deviceConfig.createNestedArray("identifiers").add(identifier.c_str());
+        deviceConfig.createNestedArray("identifiers").add(identifier);
         deviceConfig["name"] = name.c_str();
-        deviceConfig["sw_version"] = version.c_str();
-        deviceConfig["manufacturer"] = getManufacturer().c_str();
-        deviceConfig["model"] = getDevice().c_str();
+        deviceConfig["sw_version"] = version;
+        deviceConfig["manufacturer"] = manufacturer;
+        deviceConfig["model"] = device;
     }
 
     ha_config_t() : ha_config_t(DEFAULT_BUFFER_SIZE) {}
@@ -94,9 +96,11 @@ struct ha_config_t {
     JsonObject& deviceConfig;
     JsonObject& root;
 
-    const String identifier;
-    const String name;
-    const String version;
+    String name;
+    const char* identifier;
+    const char* version;
+    const char* manufacturer;
+    const char* device;
 };
 
 // -----------------------------------------------------------------------------
@@ -396,11 +400,11 @@ void _haSensorYaml(unsigned char index, JsonObject& root) {
 #endif // SENSOR_SUPPORT
 
 void _haGetDeviceConfig(JsonObject& config) {
-    config.createNestedArray("identifiers").add(getIdentifier());
+    config.createNestedArray("identifiers").add(getIdentifier().c_str());
     config["name"] = getSetting("desc", getSetting("hostname"));
     config["manufacturer"] = getManufacturer().c_str();
     config["model"] = getDevice().c_str();
-    config["sw_version"] = String(APP_NAME) + " " + APP_VERSION + " (" + getCoreVersion() + ")";
+    config["sw_version"] = getVersion().c_str();
 }
 
 void _haSend() {
