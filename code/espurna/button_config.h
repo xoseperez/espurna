@@ -42,7 +42,7 @@ constexpr GpioType _buttonPinType(unsigned char index) {
         (index == 4) ? BUTTON5_PIN_TYPE :
         (index == 5) ? BUTTON6_PIN_TYPE :
         (index == 6) ? BUTTON7_PIN_TYPE :
-        (index == 7) ? BUTTON8_PIN_TYPE : GPIO_TYPE_HARDWARE
+        (index == 7) ? BUTTON8_PIN_TYPE : GPIO_TYPE_NONE
     );
 }
 

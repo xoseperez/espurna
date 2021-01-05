@@ -21,6 +21,7 @@
 
 #define GPIO_NONE           0x99
 
+#define GPIO_TYPE_NONE          GpioType::None
 #define GPIO_TYPE_HARDWARE      GpioType::Hardware
 #define GPIO_TYPE_MCP23S08      GpioType::Mcp23s08
 

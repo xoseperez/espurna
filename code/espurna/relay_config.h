@@ -69,7 +69,7 @@ constexpr GpioType _relayPinType(unsigned char index) {
         (index == 4) ? RELAY5_PIN_TYPE :
         (index == 5) ? RELAY6_PIN_TYPE :
         (index == 6) ? RELAY7_PIN_TYPE :
-        (index == 7) ? RELAY8_PIN_TYPE : GPIO_TYPE_HARDWARE
+        (index == 7) ? RELAY8_PIN_TYPE : GPIO_TYPE_NONE
     );
 }
 

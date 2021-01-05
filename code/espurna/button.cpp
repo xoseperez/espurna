@@ -809,7 +809,7 @@ void buttonSetup() {
     for (unsigned char index = 0; index < ButtonsMax; ++index) {
         auto provider = getSetting({"btnProv", index}, _buttonProvider(index));
         if (!_buttonSetupProvider(index, provider)) {
-            return;
+            break;
         }
     }
 
