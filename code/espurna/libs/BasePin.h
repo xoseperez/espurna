@@ -11,6 +11,8 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <Arduino.h>
 
 #include <cstdint>
+#include <memory>
+
 #include "../config/types.h"
 
 class BasePin {
@@ -32,21 +34,19 @@ class BasePin {
     // > This technique is unfortunate as it relies on detailed knowledge of how common toolchains work, and it may also require creating
     // > a dummy virtual function.
 
-    explicit BasePin(unsigned char pin) :
-        pin(pin)
-    {}
+    virtual ~BasePin();
+    virtual String description() const;
 
-    virtual ~BasePin() {
-    }
-
-    virtual operator bool() {
-        return GPIO_NONE != pin;
-    }
+    virtual const char* id() const = 0;
+    virtual unsigned char pin() const = 0;
 
     virtual void pinMode(int8_t mode) = 0;
     virtual void digitalWrite(int8_t val) = 0;
     virtual int digitalRead() = 0;
-    virtual String description() const = 0;
 
-    const unsigned char pin { GPIO_NONE };
+    operator bool() const {
+        return GPIO_NONE != pin();
+    }
 };
+
+using BasePinPtr = std::unique_ptr<BasePin>;

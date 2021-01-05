@@ -104,6 +104,15 @@ private:
 
 } // namespace
 
+String BasePin::description() const {
+    char buffer[64];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s @ GPIO%02u"), id(), pin());
+    return buffer;
+}
+
+BasePin::~BasePin() {
+}
+
 GpioBase& hardwareGpio() {
     static GpioHardware gpio;
     return gpio;

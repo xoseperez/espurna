@@ -11,10 +11,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "espurna.h"
 #include "libs/BasePin.h"
 
-#include <memory>
-
-using BasePinPtr = std::unique_ptr<BasePin>;
-
 enum class GpioType : int {
     None,
     Hardware,

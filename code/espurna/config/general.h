@@ -418,25 +418,8 @@
 
 // Generic digital pin support
 
-#ifndef BUTTON_PROVIDER_GENERIC_SUPPORT
-#define BUTTON_PROVIDER_GENERIC_SUPPORT                1
-#endif
-
-// Hardware specific, drive buttons through serial connection
-// (mutually exclusive)
-
-#ifndef BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
-#define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT      0
-#endif
-
-#ifndef BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
-#define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL            0
-#endif
-
-// Support MCP23S08 8-Bit I/O Expander via the SPI interface
-
-#ifndef BUTTON_PROVIDER_MCP23S08_SUPPORT
-#define BUTTON_PROVIDER_MCP23S08_SUPPORT               MCP23S08_SUPPORT
+#ifndef BUTTON_PROVIDER_GPIO_SUPPORT
+#define BUTTON_PROVIDER_GPIO_SUPPORT                1
 #endif
 
 // Resistor ladder support. Poll analog pin and return digital LOW when analog reading is in a certain range
@@ -444,7 +427,7 @@
 // Uses BUTTON#_ANALOG_LEVEL for the individual button level configuration
 
 #ifndef BUTTON_PROVIDER_ANALOG_SUPPORT
-#define BUTTON_PROVIDER_ANALOG_SUPPORT                 0
+#define BUTTON_PROVIDER_ANALOG_SUPPORT              0
 #endif
 
 //------------------------------------------------------------------------------
@@ -471,8 +454,19 @@
 // RELAY
 //------------------------------------------------------------------------------
 
+// Enable general support for relays (aka switches)
 #ifndef RELAY_SUPPORT
-#define RELAY_SUPPORT               1
+#define RELAY_SUPPORT                   1
+#endif
+
+// ESP01-relays with STM co-MCU driving the relays
+#ifndef RELAY_PROVIDER_STM_SUPPORT
+#define RELAY_PROVIDER_STM_SUPPORT      0
+#endif
+
+// Sonoff Dual, using serial protocol
+#ifndef RELAY_PROVIDER_DUAL_SUPPORT
+#define RELAY_PROVIDER_DUAL_SUPPORT     0
 #endif
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
@@ -480,9 +474,16 @@
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF
 #endif
 
-// 0 means ANY, 1 zero or one and 2 one and only one
+// One of RELAY_SYNC_ANY, RELAY_SYNC_NONE_OR_ONE, RELAY_SYNC_SAME or RELAY_SYNC_FIRST
+// Default to ANY i.e. don't do anything
 #ifndef RELAY_SYNC
 #define RELAY_SYNC                  RELAY_SYNC_ANY
+#endif
+
+// 0 (ms) means EVERY relay switches as soon as possible
+// otherwise, wait up until this much time before changing the status
+#ifndef RELAY_DELAY_INTERLOCK
+#define RELAY_DELAY_INTERLOCK       0
 #endif
 
 // Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on

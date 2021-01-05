@@ -69,9 +69,9 @@
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
 
 // configure where do we get the button events
-#define BUTTON_PROVIDER_GENERIC               0
-#define BUTTON_PROVIDER_MCP23S08              1
-#define BUTTON_PROVIDER_ANALOG                2
+#define BUTTON_PROVIDER_NONE        ButtonProvider::None
+#define BUTTON_PROVIDER_GPIO        ButtonProvider::Gpio
+#define BUTTON_PROVIDER_ANALOG      ButtonProvider::Analog
 
 //------------------------------------------------------------------------------
 // ENCODER
