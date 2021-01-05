@@ -841,8 +841,8 @@ void buttonSetup() {
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsRegister()
-            .onConnected(_buttonWebSocketOnVisible)
             .onVisible(_buttonWebSocketOnVisible)
+            .onConnected(_buttonWebSocketOnConnected)
             .onKeyCheck(_buttonWebSocketOnKeyCheck);
     #endif
 

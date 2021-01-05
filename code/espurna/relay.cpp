@@ -1238,6 +1238,7 @@ void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
+        root["relayDelayInterlock"] = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK);
     }
 
     root["relayVisible"] = 1;
