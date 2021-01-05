@@ -111,3 +111,12 @@ namespace std {
 
 #endif
 
+// -----------------------------------------------------------------------------
+// Make sure all INPUT modes are available to the source
+// (even if those do nothing)
+// -----------------------------------------------------------------------------
+// TODO: esp8266/Arduino issue
+
+#if defined(ESP8266) and not defined(INPUT_PULLDOWN)
+#define INPUT_PULLDOWN 0x3
+#endif
