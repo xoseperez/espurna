@@ -78,6 +78,10 @@ struct RelayMaskHelper {
         return _mask;
     }
 
+    void reset() {
+        _mask.reset();
+    }
+
     void set(unsigned char id, bool status) {
         _mask.set(id, status);
     }
@@ -336,38 +340,124 @@ private:
 
 // Special provider for Sonoff Dual, using serial protocol
 
+#if RELAY_PROVIDER_DUAL_SUPPORT
+
 class DualProvider : public RelayProviderBase {
 public:
-    bool setup() override {
-        Serial.begin(SERIAL_BAUDRATE);
-        return true;
+    DualProvider() = delete;
+    explicit DualProvider(unsigned char id) : _id(id) {
+        _instances.push_back(this);
+    }
+
+    ~DualProvider() {
+        _instances.erase(
+            std::remove(_instances.begin(), _instances.end(), this),
+            _instances.end());
     }
 
     const char* id() const override {
         return "dual";
     }
 
-    void change(bool status) override {
-        // Calculate mask based on the available relays
-        // (note that this may break when there are more relays than the F330 supports)
-        unsigned char mask=0;
-        for (unsigned char i=0; i<_relays.size(); i++) {
-            if (_relays[i].current_status) mask = mask + (1 << i);
+    bool setup() override {
+        static bool once { false };
+        if (!once) {
+            once = true;
+            Serial.begin(SERIAL_BAUDRATE);
+            espurnaRegisterLoop(loop);
+        }
+        return true;
+    }
+
+    void change(bool) override {
+        static bool scheduled { false };
+        if (!scheduled) {
+            schedule_function([]() {
+                flush();
+                scheduled = false;
+            });
+        }
+    }
+
+    unsigned char relayId() const {
+        return _id;
+    }
+
+    static std::vector<DualProvider*>& instances() {
+        return _instances;
+    }
+
+    // Porting the old masking code from buttons
+    // (no guarantee that this actually works, based on hearsay and some 3rd-party code)
+    // | first | second |  mask |
+    // |  OFF  |  OFF   |  0x0  |
+    // |  ON   |  OFF   |  0x1  |
+    // |  OFF  |  ON    |  0x2  |
+    // |  ON   |  ON    |  0x3  |
+    // i.e. set status bit mask[INSTANCE] for each relay
+    // unless everything is ON, then *only* send mask[SIZE] bit and erase the rest
+
+    static void flush() {
+        bool sync { true };
+        RelayMaskHelper mask;
+        for (unsigned char index = 0; index < _instances.size(); ++index) {
+            bool status { relayStatus(_instances[index]->relayId()) };
+            sync = sync && status;
+            mask.set(index, status);
         }
 
-        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
+        if (sync) {
+            mask.reset();
+            mask.set(_instances.size(), true);
+        }
 
-        // Send it to F330
-        Serial.flush();
-        Serial.write(0xA0);
-        Serial.write(0x04);
-        Serial.write(mask);
-        Serial.write(0xA1);
+        DEBUG_MSG_P(PSTR("[RELAY] Sending DUAL mask: %s\n"), mask.toString().c_str());
+
+        uint8_t buffer[4] { 0xa0, 0x04, static_cast<unsigned char>(mask.toUnsigned()), 0xa1 };
+        Serial.write(buffer, sizeof(buffer));
         Serial.flush();
     }
+
+    static void loop() {
+        if (Serial.available() < 4) {
+            return;
+        }
+
+        unsigned char bytes[4] = {0};
+        Serial.readBytes(bytes, 4);
+        if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
+            return;
+        }
+
+        // RELAYs and BUTTONs are synchonized in the SIL F330
+        // Make sure we handle SYNC action first
+        RelayMaskHelper mask(bytes[2]);
+        if (mask[_instances.size()]) {
+            for (auto& instance : _instances) {
+                relayStatus(instance->relayId(), true);
+            }
+            return;
+        }
+
+        // Then, manage relays individually
+        for (unsigned char index = 0; index < _instances.size(); ++index) {
+            relayStatus(_instances[index]->relayId(), mask[index]);
+        }
+    }
+
+private:
+    unsigned char _id { 0 };
+
+    static std::vector<DualProvider*> _instances;
 };
 
+std::vector<DualProvider*> DualProvider::_instances;
+
+#endif // RELAY_PROVIDER_DUAL_SUPPORT
+
 // Special provider for ESP01-relays with STM co-MCU driving the relays
+
+#if RELAY_PROVIDER_STM_SUPPORT
 
 class StmProvider : public RelayProviderBase {
 public:
@@ -380,14 +470,18 @@ public:
         return "stm";
     }
 
-    bool setup() {
-        Serial.begin(SERIAL_BAUDRATE);
+    bool setup() override {
+        static bool once { false };
+        if (!once) {
+            once = true;
+            Serial.begin(SERIAL_BAUDRATE);
+        }
         return true;
     }
 
     void boot(bool) override {
-        // XXX hack for correctly restoring relay state on boot
-        // because of broken stm relay firmware
+        // XXX: this was part of the legacy implementation
+        // "because of broken stm relay firmware"
         _relays[_id].change_delay = 3000 + 1000 * _id;
     }
 
@@ -398,9 +492,8 @@ public:
         Serial.write(status);
         Serial.write(0xA1 + status + _id);
 
-        // The serial init are not full recognized by relais board.
-        // References: https://github.com/xoseperez/espurna/issues/1519 , https://github.com/xoseperez/espurna/issues/1130
-        delay(100);
+        // TODO: is this really solved via interlock delay, so we don't have to switch contexts here?
+        //delay(100);
 
         Serial.flush();
     }
@@ -409,6 +502,7 @@ private:
     unsigned char _id;
 };
 
+#endif // RELAY_PROVIDER_STM_SUPPORT
 
 // -----------------------------------------------------------------------------
 // UTILITY

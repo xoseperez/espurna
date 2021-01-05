@@ -185,19 +185,6 @@
 #endif
 
 //------------------------------------------------------------------------------
-// Remove serial debug support completely in case hardware does not support it
-// TODO: provide runtime check as well?
-
-#if (BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT) || \
-    (BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT)
-#if DEBUG_SERIAL_SUPPORT
-#warning "DEBUG_SERIAL_SUPPORT will be disabled because it conflicts with the BUTTON_PROVIDER_{ITEAD_SONOFF_DUAL,FOXEL_LIGHTFOX_DUAL}"
-#undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT 0
-#endif
-#endif
-
-//------------------------------------------------------------------------------
 // It looks more natural that one click will enable display
 // and long click will switch relay
 

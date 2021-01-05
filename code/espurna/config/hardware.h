@@ -565,20 +565,21 @@
     #define MANUFACTURER            "ITEAD"
     #define DEVICE                  "SONOFF_DUAL"
     #define SERIAL_BAUDRATE         19230
-    #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
-    #define DUMMY_RELAY_COUNT       2
-    #define DEBUG_SERIAL_SUPPORT    0
-
-    // Buttons
-    #define BUTTON1_RELAY       1
-    #define BUTTON2_RELAY       2
-    #define BUTTON3_RELAY       1
-
-    #define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT    1
 
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
+
+    // Relays
+    #define RELAY1_PROVIDER     RELAY_PROVIDER_DUAL
+    #define RELAY2_PROVIDER     RELAY_PROVIDER_DUAL
+
+    // No need to include generic GPIO support
+    // "Buttons" are attached to a secondary MCU and RELAY_PROVIDER_DUAL handles that
+    #define BUTTON_PROVIDER_GPIO_SUPPORT    0
+
+    // Conflicts with relay operation
+    #define DEBUG_SERIAL_SUPPORT            0
 
 #elif defined(ITEAD_SONOFF_DUAL_R2)
 
@@ -2188,10 +2189,17 @@
     #define DEVICE                  "2CH"
 
     // Relays
-    #define DUMMY_RELAY_COUNT       2
-    #define RELAY_PROVIDER          RELAY_PROVIDER_STM
+    #define RELAY1_PROVIDER          RELAY_PROVIDER_STM
+    #define RELAY2_PROVIDER          RELAY_PROVIDER_STM
+
+    // Make sure we space out serial writes when relays are in sync. ref:
+    // - https://github.com/xoseperez/espurna/issues/1130
+    // - https://github.com/xoseperez/espurna/issues/1519
+    // - https://github.com/xoseperez/espurna/pull/1520
+    #define RELAY_DELAY_INTERLOCK    100
 
     // Remove UART noise on serial line
+    // (or use `#define DEBUG_PORT Serial1` instead)
     #define DEBUG_SERIAL_SUPPORT    0
 
 // -----------------------------------------------------------------------------
@@ -3488,13 +3496,16 @@
 
     
     //Enable this to view buttons analog level.
+    //Or, use adc terminal command
     //#define ANALOG_SUPPORT                1
 
     // Disable UART noise
     #define DEBUG_SERIAL_SUPPORT            0
 
     // Buttons
+    #define BUTTON_PROVIDER_GPIO_SUPPORT    1
     #define BUTTON_PROVIDER_ANALOG_SUPPORT  1
+
     #define BUTTON1_PIN                     16
     #define BUTTON1_CONFIG                  BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY                   4
@@ -4383,17 +4394,17 @@
     #define MANUFACTURER            "FOXEL"
     #define DEVICE                  "LIGHTFOX_DUAL"
     #define SERIAL_BAUDRATE         19200
-    #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
-    #define DUMMY_RELAY_COUNT       2
-    #define DEBUG_SERIAL_SUPPORT    0
 
-    // Buttons
-    #define BUTTON1_RELAY           1
-    #define BUTTON2_RELAY           2
-    #define BUTTON3_RELAY           2
-    #define BUTTON4_RELAY           1
+    // Relays
+    #define RELAY1_PROVIDER         RELAY_PROVIDER_DUAL
+    #define RELAY2_PROVIDER         RELAY_PROVIDER_DUAL
 
-    #define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT    1
+    // No need to include generic GPIO support
+    // "Buttons" are attached to a secondary MCU and RELAY_PROVIDER_DUAL handles that
+    #define BUTTON_PROVIDER_GPIO_SUPPORT    0
+
+    // Conflicts with relay operation
+    #define DEBUG_SERIAL_SUPPORT            0
 
 // -----------------------------------------------------------------------------
 // Teckin SP20
