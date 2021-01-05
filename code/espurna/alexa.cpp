@@ -97,7 +97,7 @@ void alexaLoop() {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (0 == element.device_id) {
-                relayStatus(0, element.state);
+                lightState(element.state);
             } else {
                 lightState(element.device_id - 1, element.state);
                 lightChannel(element.device_id - 1, element.value);
