@@ -43,7 +43,7 @@ EventEmitter::EventEmitter(BasePinPtr&& pin, types::EventHandler callback, const
     _delay(debounce_delay),
     _repeat(repeat)
 {
-    if (!pin) return;
+    if (!_pin) return;
 
     switch (_config.pin_mode) {
     case types::PinMode::InputPullup:
