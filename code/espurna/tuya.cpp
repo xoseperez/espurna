@@ -573,14 +573,17 @@ error:
                 }
 
                 ctx.output.println(F("\nKnown DP(s):"));
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+                if (channelStateId) {
+                    ctx.output.printf_P(PSTR("%u (bool) => lights state\n"), channelStateId);
+                }
+                for (auto& entry : channelIds.map()) {
+                    ctx.output.printf_P(PSTR("%u (int) => %d (channel)\n"), entry.dp, entry.id);
+                }
+#endif
                 for (auto& entry : switchIds.map()) {
                     ctx.output.printf_P(PSTR("%u (bool) => %d (relay)\n"), entry.dp, entry.id);
                 }
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                for (auto& entry : channelIds.map()) {
-                    ctx.output.printf_P(PSTR("%u (integer) => %d (channel)\n"), entry.dp, entry.id);
-                }
-#endif
             });
 
             terminalRegisterCommand(F("TUYA.SAVE"), [](const terminal::CommandContext&) {
