@@ -53,10 +53,10 @@ public:
     {}
 
     explicit DataFrameView(const_iterator it) :
-        _version(it[2]),
-        _command(it[3]),
-        _length((it[4] << 8) + it[5]),
-        _begin(it + 6),
+        _version(it[0]),
+        _command(it[1]),
+        _length((it[2] << 8) + it[3]),
+        _begin(it + 4),
         _end(_begin + _length)
     {}
 

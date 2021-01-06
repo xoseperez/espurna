@@ -139,7 +139,7 @@ void test_dataframe_copy() {
 void test_dataframe_raw_data() {
 
     {
-        container data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+        container data = {0x00, 0x00, 0x00, 0x01, 0x01};
         DataFrameView frame(data);
 
         TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::Heartbeat),
@@ -150,11 +150,16 @@ void test_dataframe_raw_data() {
                 "Heartbeat message contains a single byte");
         TEST_ASSERT_EQUAL_MESSAGE(1, frame[0],
                 "Heartbeat message contains a single 0x01");
+
+        auto serialized = frame.serialize();
+        TEST_ASSERT_MESSAGE(std::equal(data.begin(), data.end(), serialized.begin()),
+            "Serialized frame should match the original data");
     }
 
     {
-        container data = {0x55, 0xaa, 0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01, 0x0f};
+        container data = {0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01};
         DataFrameView frame(data);
+
         TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::ReportDP),
                 "This message should be parsed as data protocol");
         TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
@@ -165,6 +170,10 @@ void test_dataframe_raw_data() {
         const DataProtocol<bool> dp(frame.data());
         TEST_ASSERT_EQUAL_MESSAGE(1, dp.id(), "This boolean DP id should be 1");
         TEST_ASSERT_MESSAGE(dp.value(), "This boolean DP value should be true");
+
+        auto serialized = frame.serialize();
+        TEST_ASSERT_MESSAGE(std::equal(data.begin(), data.end(), serialized.begin()),
+            "Serialized frame should match the original data");
     }
 
     //show_datatype(frame);
