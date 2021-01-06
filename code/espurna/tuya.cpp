@@ -126,7 +126,7 @@ namespace tuya {
         }
 
         void state(bool status) override {
-            if (_state) {
+            if (_state && !status) {
                 send(_state, status);
             }
         }
