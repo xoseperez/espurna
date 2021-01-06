@@ -198,10 +198,11 @@ namespace tuya {
         DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
     }
 
-    void dataframeDebugSend(const char* tag, const DataFrame& frame) {
+    template <typename T>
+    void dataframeDebugSend(const char* tag, const T& frame) {
         if (!transportDebug) return;
         StreamString out;
-        Output writer(out, frame.length);
+        Output writer(out, frame.length());
         writer.writeHex(frame.serialize());
         DEBUG_MSG("[TUYA] %s: %s\n", tag, out.c_str());
     }
@@ -242,31 +243,15 @@ namespace tuya {
         relayStatus(dp->id, proto.value());
     }
 
-    void dump(const char* type, unsigned char id, const char* buf) {
-        DEBUG_MSG_P(PSTR("[Tuya] Received %s dp=%u value=%s\n"), type, id, buf);
-    }
-
-    void dump(const DataProtocol<bool>& proto) {
-        char buf[3] { '#', proto.value() ? 't' : 'f', '\0' };
-        dump("boolean", proto.id(), buf);
-    }
-
-    void dump(const DataProtocol<uint32_t>& proto) {
-        char buf[4 * sizeof(uint32_t)];
-        snprintf(buf, sizeof(buf), "%u", proto.value());
-        dump("integer", proto.id(), buf);
-    }
-
     // XXX: sometimes we need to ignore incoming state
     // ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
-    void updateState(Type type, const DataFrame& frame) {
+    template <typename T>
+    void updateState(Type type, const T& frame) {
         if (Type::BOOL == type) {
-            DataProtocol<bool> proto(frame);
-            dump(proto);
+            DataProtocol<bool> proto(frame.data());
             updateSwitch(proto);
         } else if (Type::INT == type) {
-            DataProtocol<uint32_t> proto(frame);
-            dump(proto);
+            DataProtocol<uint32_t> proto(frame.data());
         }
     }
 
@@ -312,17 +297,16 @@ error:
         dps.clear();
     }
 
-    void processDP(State state, const DataFrame& frame) {
-
-        // TODO: do not log protocol errors without transport debug enabled
-        if (!frame.length) {
-            DEBUG_MSG_P(PSTR("[TUYA] DP frame must have data\n"));
+    template <typename T>
+    void processDP(State state, const T& frame) {
+        if (transportDebug && !frame.length()) {
+            DEBUG_MSG_P(PSTR("[TUYA] Can't process DP without any data\n"));
             return;
         }
 
         const Type type {dataType(frame)};
         if (Type::UNKNOWN == type) {
-            if (frame.length >= 2) {
+            if (frame.length() >= 2) {
                 DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame[0], frame[1]);
             } else {
                 DEBUG_MSG_P(PSTR("[TUYA] Invalid DP frame\n"));
@@ -340,13 +324,13 @@ error:
 
     void processFrame(State& state, const Transport& buffer) {
 
-        const DataFrame frame(buffer);
+        const DataFrameView frame(buffer);
 
         dataframeDebugSend("<=", frame);
 
         // initial packet has 0, do the initial setup
         // all after that have 1. might be a good idea to re-do the setup when that happens on boot
-        if (frame.commandEquals(Command::Heartbeat) && (frame.length == 1)) {
+        if (util::command_equals(frame, Command::Heartbeat) && (frame.length() == 1)) {
             if (State::HEARTBEAT == state) {
                 if ((frame[0] == 0) || !configDone) {
                     DEBUG_MSG_P(PSTR("[TUYA] Starting configuration ...\n"));
@@ -361,12 +345,12 @@ error:
             return;
         }
 
-        if (frame.commandEquals(Command::QueryProduct) && frame.length) {
+        if (util::command_equals(frame, Command::QueryProduct) && frame.length()) {
             if (product.length()) {
                 product = "";
             }
-            product.reserve(frame.length);
-            for (unsigned int n = 0; n < frame.length; ++n) {
+            product.reserve(frame.length());
+            for (unsigned int n = 0; n < frame.length(); ++n) {
                 product += static_cast<char>(frame[n]);
             }
             showProduct();
@@ -374,13 +358,13 @@ error:
             return;
         }
 
-        if (frame.commandEquals(Command::QueryMode)) {
+        if (util::command_equals(frame, Command::QueryMode)) {
             // first and second byte are GPIO pin for WiFi status and RST respectively
-            if (frame.length == 2) {
+            if (frame.length() == 2) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u\n"), frame[0], frame[1]);
                 updatePins(frame[0], frame[1]);
             // ... or nothing. we need to report wifi status to the mcu via Command::WiFiStatus
-            } else if (!frame.length) {
+            } else if (!frame.length()) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU\n"));
                 reportWiFi = true;
                 sendWiFiStatus();
@@ -389,20 +373,20 @@ error:
             return;
         }
 
-        if (frame.commandEquals(Command::WiFiResetCfg) && !frame.length) {
+        if (util::command_equals(frame, Command::WiFiResetCfg) && !frame.length()) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
             outputFrames.emplace(Command::WiFiResetCfg);
             return;
         }
 
-        if (frame.commandEquals(Command::WiFiResetSelect) && (frame.length == 1)) {
+        if (util::command_equals(frame, Command::WiFiResetSelect) && (frame.length() == 1)) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
                 (frame[0] == 0) ? "Smart Config" : "AP");
             outputFrames.emplace(Command::WiFiResetSelect);
             return;
         }
 
-        if (frame.commandEquals(Command::ReportDP) && frame.length) {
+        if (util::command_equals(frame, Command::ReportDP) && frame.length()) {
             processDP(state, frame);
             if (state == State::DISCOVERY) return;
             if (state == State::HEARTBEAT) return;

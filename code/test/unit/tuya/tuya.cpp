@@ -18,7 +18,8 @@
 
 using namespace tuya;
 
-static bool datatype_same(const DataFrame& frame, const Type expect_type) {
+template <typename T>
+static bool datatype_same(const T& frame, const Type expect_type) {
     const auto type = dataType(frame);
     return expect_type == type;
 }
@@ -71,9 +72,9 @@ void test_static_dataframe_bool() {
 
     DataFrame frame(Command::SetDP, DataProtocol<bool>(0x02, false).serialize());
 
-    TEST_ASSERT_EQUAL_MESSAGE(0, frame.version,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.version(),
             "Version should stay 0 unless explicitly set");
-    TEST_ASSERT_MESSAGE(frame.commandEquals(Command::SetDP),
+    TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::SetDP),
             "commandEquals should return true with the same arg as in the constructor");
     TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
             "DataProtocol<bool> should translate to Type::BOOL");
@@ -83,11 +84,11 @@ void test_static_dataframe_bool() {
 void test_static_dataframe_int() {
 
     DataFrame frame(Command::ReportDP, DataProtocol<uint32_t>(0x03, 255).serialize());
-    TEST_ASSERT_EQUAL_MESSAGE(0, frame.version,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.version(),
             "Version should stay 0 unless explicitly set");
-    TEST_ASSERT_MESSAGE(frame.commandEquals(Command::ReportDP),
+    TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::ReportDP),
             "commandEquals should return true with the same arg as in the constructor");
-    TEST_ASSERT_EQUAL_UINT_MESSAGE(std::distance(frame.cbegin(), frame.cend()), frame.length,
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(std::distance(frame.cbegin(), frame.cend()), frame.length(),
             "Data is expected to be stored in a contigious memory and be equal in length to the ::length attribute");
     TEST_ASSERT_EQUAL_MESSAGE(0, frame[5],
             "Only last byte should be set");
@@ -99,7 +100,7 @@ void test_static_dataframe_int() {
 void test_static_dataframe_heartbeat() {
 
     DataFrame frame(Command::Heartbeat);
-    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length(),
             "Frame with Command::Heartbeat should not have any data attached to it");
     TEST_ASSERT_EQUAL_MESSAGE(0, std::distance(frame.cbegin(), frame.cend()),
             "Frame with Command::SetDP should not have any data attached to it");
@@ -110,7 +111,7 @@ void test_static_dataframe_heartbeat() {
 void test_dataframe_const() {
 
     const DataFrame frame(Command::SetDP);
-    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length,
+    TEST_ASSERT_EQUAL_MESSAGE(0, frame.length(),
             "Frame with Command::SetDP should not have any data attached to it");
     TEST_ASSERT_EQUAL_MESSAGE(0, std::distance(frame.cbegin(), frame.cend()),
             "Frame with Command::SetDP should not have any data attached to it");
@@ -120,14 +121,17 @@ void test_dataframe_const() {
 
 void test_dataframe_copy() {
 
-    DataFrame frame(Command::Heartbeat);
-    frame.version = 0x7f;
+    DataFrame frame(Command::Heartbeat, 0x7f, container{1,2,3});
 
     DataFrame moved_frame(std::move(frame));
-    TEST_ASSERT_EQUAL_MESSAGE(0x7f, moved_frame.version,
+    TEST_ASSERT_EQUAL(3, moved_frame.length());
+    TEST_ASSERT_EQUAL(3, moved_frame.length());
+    TEST_ASSERT_EQUAL_MESSAGE(0x7f, moved_frame.version(),
             "DataFrame should be movable object");
 
-    TEST_ASSERT_MESSAGE(!std::is_copy_constructible<DataFrame>::value,
+    DataFrame copied_frame(moved_frame);
+    TEST_ASSERT_EQUAL(3, copied_frame.length());
+    TEST_ASSERT_EQUAL_MESSAGE(0x7f, copied_frame.version(),
             "DataFrame should not be copyable");
 
 }
@@ -135,29 +139,30 @@ void test_dataframe_copy() {
 void test_dataframe_raw_data() {
 
     {
-        const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
-        DataFrame frame(data.cbegin());
-        TEST_ASSERT_MESSAGE(frame.commandEquals(Command::Heartbeat),
+        container data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+        DataFrameView frame(data);
+
+        TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::Heartbeat),
                 "This message should be parsed as heartbeat");
-        TEST_ASSERT_EQUAL_MESSAGE(0, frame.version,
+        TEST_ASSERT_EQUAL_MESSAGE(0, frame.version(),
                 "This message should have version == 0");
-        TEST_ASSERT_EQUAL_MESSAGE(1, frame.length,
+        TEST_ASSERT_EQUAL_MESSAGE(1, frame.length(),
                 "Heartbeat message contains a single byte");
         TEST_ASSERT_EQUAL_MESSAGE(1, frame[0],
                 "Heartbeat message contains a single 0x01");
     }
 
     {
-        const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01, 0x0f};
-        DataFrame frame(data.cbegin());
-        TEST_ASSERT_MESSAGE(frame.commandEquals(Command::ReportDP),
+        container data = {0x55, 0xaa, 0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01, 0x0f};
+        DataFrameView frame(data);
+        TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::ReportDP),
                 "This message should be parsed as data protocol");
         TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
                 "This message should have boolean datatype attached to it");
-        TEST_ASSERT_EQUAL_MESSAGE(5, frame.length,
+        TEST_ASSERT_EQUAL_MESSAGE(5, frame.length(),
                 "Boolean DP contains 5 bytes");
 
-        const DataProtocol<bool> dp(frame);
+        const DataProtocol<bool> dp(frame.data());
         TEST_ASSERT_EQUAL_MESSAGE(1, dp.id(), "This boolean DP id should be 1");
         TEST_ASSERT_MESSAGE(dp.value(), "This boolean DP value should be true");
     }
@@ -212,7 +217,7 @@ class BufferedStream : public Stream {
 };
 
 void test_transport() {
-    const std::vector<uint8_t> data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+    container data = {0x55, 0xaa, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
     BufferedStream stream;
     stream.write(data.data(), data.size());
 
@@ -233,6 +238,6 @@ int main(int argc, char** argv) {
     RUN_TEST(test_dataframe_raw_data);
     RUN_TEST(test_transport);
 
-    UNITY_END();
+    return UNITY_END();
 
 }

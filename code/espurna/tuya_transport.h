@@ -120,9 +120,8 @@ namespace tuya {
         // 256 * 1.04 = 266.24
         constexpr static size_t TIME_LIMIT = 267;
 
-        using const_iterator = std::vector<uint8_t>::const_iterator;
-
     public:
+        using const_iterator = std::vector<uint8_t>::const_iterator;
 
         Input(Stream& stream) :
             StreamWrapper(stream)
@@ -134,7 +133,7 @@ namespace tuya {
         bool done() { return _done; }
         size_t size() { return _index; }
 
-        uint8_t operator[](size_t i) {
+        uint8_t operator[](size_t i) const {
             if (i > LIMIT) return 0;
             return _buffer[i];
         }

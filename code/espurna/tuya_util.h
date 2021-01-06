@@ -14,6 +14,15 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 namespace tuya {
 
+namespace util {
+
+template <typename T>
+bool command_equals(const T& frame, Command command) {
+    return (frame.command() == static_cast<uint8_t>(command));
+}
+
+}
+
 struct Dp {
     Type type;
     uint8_t id;
