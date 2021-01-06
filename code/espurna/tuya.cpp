@@ -243,15 +243,15 @@ namespace tuya {
     }
 
     void dump(const char* type, unsigned char id, const char* buf) {
-        DEBUG_MSG_P(PSTR("[Tuya] Received %s dp=%u value=%s"), type, id, buf);
+        DEBUG_MSG_P(PSTR("[Tuya] Received %s dp=%u value=%s\n"), type, id, buf);
     }
 
-    void dump(const DataProtocol<uint32_t>& proto) {
+    void dump(const DataProtocol<bool>& proto) {
         char buf[3] { '#', proto.value() ? 't' : 'f', '\0' };
         dump("boolean", proto.id(), buf);
     }
 
-    void dump(const DataProtocol<bool>& proto) {
+    void dump(const DataProtocol<uint32_t>& proto) {
         char buf[4 * sizeof(uint32_t)];
         snprintf(buf, sizeof(buf), "%u", proto.value());
         dump("integer", proto.id(), buf);
