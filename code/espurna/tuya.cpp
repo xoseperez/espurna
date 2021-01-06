@@ -276,23 +276,23 @@ namespace tuya {
         for (auto& dp : dps) {
             switch (dp.type) {
             case Type::BOOL:
-                if (!relayAdd(std::make_unique<TuyaRelayProvider>(dp.id))) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Cannot add relay for DP id=%u\n"), dp.id);
+                if (!switchIds.add(relayCount(), dp.id)) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Switch for DP id=%u already exists\n"), dp.id);
                     goto error;
                 }
-                if (!switchIds.add((relayCount() - 1), dp.id)) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Switch for DP id=%u already exists\n"), dp.id);
+                if (!relayAdd(std::make_unique<TuyaRelayProvider>(dp.id))) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Cannot add relay for DP id=%u\n"), dp.id);
                     goto error;
                 }
                 break;
             case Type::INT:
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                if (!lightAdd()) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Cannot add channel for DP id=%u\n"), dp.id);
+                if (!channelIds.add(lightChannels(), dp.id)) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Channel for DP id=%u already exists\n"), dp.id);
                     goto error;
                 }
-                if (!channelIds.add((lightChannels() - 1), dp.id)) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Channel for DP id=%u already exists\n"), dp.id);
+                if (!lightAdd()) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Cannot add channel for DP id=%u\n"), dp.id);
                     goto error;
                 }
 #endif
@@ -514,10 +514,15 @@ error:
                 break;
             }
 
-            if (relayAdd(std::make_unique<TuyaRelayProvider>(dp))) {
-                switchIds.add((relayCount() - 1), dp);
-                done = true;
+            if (!switchIds.add(relayCount(), dp)) {
+                break;
             }
+
+            if (!relayAdd(std::make_unique<TuyaRelayProvider>(dp))) {
+                break;
+            }
+
+            done = true;
         }
 
         configDone = done;
@@ -533,10 +538,15 @@ error:
                 break;
             }
 
-            if (lightAdd()) {
-                channelIds.add((lightChannels() - 1), dp);
-                done = true;
+            if (!channelIds.add(lightChannels(), dp)) {
+                break;
             }
+
+            if (!lightAdd()) {
+                break;
+            }
+
+            done = true;
         }
 
         if (done) {

@@ -24,6 +24,10 @@ struct DpId {
     uint8_t dp;
 };
 
+bool operator==(const DpId& lhs, const DpId& rhs) {
+    return (lhs.id == rhs.id) || (lhs.dp == rhs.dp);
+}
+
 // Specifically for relay (or channel) <=> DP id association
 // Caller is expected to check for uniqueness manually, when `add(...)`ing
 
@@ -31,14 +35,27 @@ struct DpMap {
     using map_type = std::vector<DpId>;
     DpMap() = default;
 
-    bool add(uint8_t id, uint8_t dp) {
-        for (auto& map : _map) {
-            if ((map.id == id) || (map.dp == dp)) {
-                return false;
+    bool exists(const DpId& dpid) {
+        for (const auto& entry : _map) {
+            if (entry == dpid) {
+                return true;
             }
         }
-        _map.push_back(DpId{id, dp});
-        return true;
+
+        return false;
+    }
+
+    bool add(const DpId& dpid) {
+        if (!exists(dpid)) {
+            _map.push_back(dpid);
+            return true;
+        }
+
+        return false;
+    }
+
+    bool add(uint8_t id, uint8_t dp) {
+        return add(DpId{id, dp});
     }
 
     const map_type& map() {
