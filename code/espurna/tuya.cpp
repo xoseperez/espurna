@@ -258,6 +258,10 @@ namespace tuya {
     void updateDiscovered(Discovery&& discovery) {
         auto& dps = discovery.get();
 
+        if (configDone) {
+            goto error;
+        }
+
         for (auto& dp : dps) {
             switch (dp.type) {
             case Type::BOOL:
