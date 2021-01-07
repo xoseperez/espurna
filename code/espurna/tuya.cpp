@@ -74,8 +74,9 @@ namespace tuya {
     // --------------------------------------------
 
     Discovery discovery(DiscoveryTimeout);
+    OnceFlag configDone;
+
     bool transportDebug { false };
-    bool configDone { false };
     bool reportWiFi { false };
     bool filter { false };
 
@@ -507,7 +508,9 @@ error:
             done = true;
         }
 
-        configDone = done;
+        if (done) {
+            configDone.set();
+        }
     }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
@@ -536,7 +539,9 @@ error:
             lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds, channelStateId));
         }
 
-        configDone = done;
+        if (done) {
+            configDone.set();
+        }
     }
 
 #endif
