@@ -399,8 +399,8 @@ void debugConfigure() {
 
     #if DEBUG_LOG_BUFFER_SUPPORT
     {
-        const auto enabled = getSetting("dbgBufEnabled", 1 == DEBUG_LOG_BUFFER_ENABLED);
-        const auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE);
+        const auto enabled = getSetting("dbgLogBuf", 1 == DEBUG_LOG_BUFFER_ENABLED);
+        const auto size = getSetting("dbgLogBufSize", DEBUG_LOG_BUFFER_SIZE);
         if (enabled) {
             _debug_log_buffer_enabled = true;
             _debug_log_buffer.reserve(size);
