@@ -17,41 +17,37 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 namespace tuya {
 
     class PrintRaw {
-        public:
-            static void write(Print& printer, uint8_t data) {
-                printer.write(data);
-            }
+    public:
+        static void write(Print& printer, uint8_t data) {
+            printer.write(data);
+        }
 
-            static void write(Print& printer, const uint8_t* data, size_t size) {
-                printer.write(data, size);
-            }
+        static void write(Print& printer, const uint8_t* data, size_t size) {
+            printer.write(data, size);
+        }
     };
 
     class PrintHex {
-        public:
-            static void write(Print& printer, uint8_t data) {
-                char buffer[3] = {0};
-                snprintf(buffer, sizeof(buffer), "%02x", data);
-                printer.write(buffer, 2);
-            }
+    public:
+        static void write(Print& printer, uint8_t data) {
+            char buffer[3] = {0};
+            snprintf(buffer, sizeof(buffer), "%02x", data);
+            printer.write(buffer, 2);
+        }
 
-            static void write(Print& printer, const uint8_t* data, size_t size) {
-                for (size_t n=0; n<size; ++n) {
-                    char buffer[3] = {0};
-                    snprintf(buffer, sizeof(buffer), "%02x", data[n]);
-                    printer.write(buffer, 2);
-                }
+        static void write(Print& printer, const uint8_t* data, size_t size) {
+            for (size_t n = 0; n < size; ++n) {
+                write(printer, data[n]);
             }
+        }
     };
 
+
     class StreamWrapper {
-
     protected:
-
         Stream& _stream;
 
     public:
-
         StreamWrapper(Stream& stream) :
             _stream(stream)
         {}
