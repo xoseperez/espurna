@@ -144,7 +144,7 @@ namespace tuya {
                 return;
             }
 
-            send(dp->id, rounded);
+            send(dp->dp, rounded);
         }
 
     private:
