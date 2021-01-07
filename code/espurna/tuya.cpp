@@ -132,8 +132,8 @@ namespace tuya {
         }
 
         void channel(unsigned char channel, double value) override {
-            auto dp = _channels.dp(channel);
-            if (!dp) {
+            auto* entry = _channels.find_local(channel);
+            if (!entry) {
                 return;
             }
 
@@ -144,7 +144,7 @@ namespace tuya {
                 return;
             }
 
-            send(dp->dp, rounded);
+            send(entry->dp_id, rounded);
         }
 
     private:
@@ -235,12 +235,12 @@ namespace tuya {
         }
 #endif
 
-        auto* dp = switchIds.id(proto.id());
-        if (!dp) {
+        auto* entry = switchIds.find_dp(proto.id());
+        if (!entry) {
             return;
         }
 
-        relayStatus(dp->id, proto.value());
+        relayStatus(entry->local_id, proto.value());
     }
 
     // XXX: sometimes we need to ignore incoming state
@@ -560,11 +560,11 @@ error:
                     ctx.output.printf_P(PSTR("%u (bool) => lights state\n"), channelStateId);
                 }
                 for (auto& entry : channelIds.map()) {
-                    ctx.output.printf_P(PSTR("%u (int) => %d (channel)\n"), entry.dp, entry.id);
+                    ctx.output.printf_P(PSTR("%u (int) => %d (channel)\n"), entry.dp_id, entry.local_id);
                 }
 #endif
                 for (auto& entry : switchIds.map()) {
-                    ctx.output.printf_P(PSTR("%u (bool) => %d (relay)\n"), entry.dp, entry.id);
+                    ctx.output.printf_P(PSTR("%u (bool) => %d (relay)\n"), entry.dp_id, entry.local_id);
                 }
             });
 

@@ -28,25 +28,25 @@ struct Dp {
     uint8_t id;
 };
 
-struct DpId {
-    uint8_t id;
-    uint8_t dp;
+struct DpRelation {
+    uint8_t local_id;
+    uint8_t dp_id;
 };
 
-bool operator==(const DpId& lhs, const DpId& rhs) {
-    return (lhs.id == rhs.id) || (lhs.dp == rhs.dp);
+bool operator==(const DpRelation& lhs, const DpRelation& rhs) {
+    return (lhs.local_id == rhs.local_id) || (lhs.dp_id == rhs.dp_id);
 }
 
 // Specifically for relay (or channel) <=> DP id association
 // Caller is expected to check for uniqueness manually, when `add(...)`ing
 
 struct DpMap {
-    using map_type = std::vector<DpId>;
+    using map_type = std::vector<DpRelation>;
     DpMap() = default;
 
-    bool exists(const DpId& dpid) {
+    bool exists(const DpRelation& other) {
         for (const auto& entry : _map) {
-            if (entry == dpid) {
+            if (entry == other) {
                 return true;
             }
         }
@@ -54,37 +54,37 @@ struct DpMap {
         return false;
     }
 
-    bool add(const DpId& dpid) {
-        if (!exists(dpid)) {
-            _map.push_back(dpid);
+    bool add(const DpRelation& entry) {
+        if (!exists(entry)) {
+            _map.push_back(entry);
             return true;
         }
 
         return false;
     }
 
-    bool add(uint8_t id, uint8_t dp) {
-        return add(DpId{id, dp});
+    bool add(uint8_t local_id, uint8_t dp_id) {
+        return add(DpRelation{local_id, dp_id});
     }
 
     const map_type& map() {
         return _map;
     }
 
-    const DpId* dp(unsigned char id) const {
-        for (const auto& map : _map) {
-            if (map.id == id) {
-                return &map;
+    const DpRelation* find_local(unsigned char local_id) const {
+        for (const auto& entry : _map) {
+            if (entry.local_id == local_id) {
+                return &entry;
             }
         }
 
         return nullptr;
     }
 
-    const DpId* id(unsigned char dp) const {
-        for (const auto& map : _map) {
-            if (map.dp == dp) {
-                return &map;
+    const DpRelation* find_dp(unsigned char dp_id) const {
+        for (const auto& entry : _map) {
+            if (entry.dp_id == dp_id) {
+                return &entry;
             }
         }
 
@@ -131,7 +131,7 @@ public:
     }
 
 private:
-    std::vector<Dp> _dps;
+    Dps _dps;
 
     uint32_t _start;
     const uint32_t _timeout;

@@ -28,7 +28,7 @@ void test_dpmap() {
 
     DpMap map;
 
-    // id -- dp
+    // id <-> dp
     map.add(1, 2);
     map.add(3, 4);
     map.add(5, 6);
@@ -39,33 +39,37 @@ void test_dpmap() {
     map.add(7,10);
     map.add(5,5);
 
+    // dpmap is a 'set' of values
     TEST_ASSERT_EQUAL(4, map.size());
 
-#define TEST_FIND_DP(EXPECTED_DP, EXPECTED_ID) \
+#define TEST_FIND_DP_ID(EXPECTED_DP_ID, EXPECTED_LOCAL_ID) \
     {\
-        auto* dp = map.id(EXPECTED_DP);\
-        TEST_ASSERT(dp != nullptr);\
-        TEST_ASSERT_EQUAL(EXPECTED_DP, dp->dp);\
-        TEST_ASSERT_EQUAL(EXPECTED_ID, dp->id);\
+        auto* entry = map.find_dp(EXPECTED_DP_ID);\
+        TEST_ASSERT(entry != nullptr);\
+        TEST_ASSERT_EQUAL(EXPECTED_DP_ID, entry->dp_id);\
+        TEST_ASSERT_EQUAL(EXPECTED_LOCAL_ID, entry->local_id);\
     }
 
-    TEST_FIND_DP(2, 1);
-    TEST_FIND_DP(4, 3);
-    TEST_FIND_DP(6, 5);
-    TEST_FIND_DP(8, 7);
+    TEST_FIND_DP_ID(2, 1);
+    TEST_FIND_DP_ID(4, 3);
+    TEST_FIND_DP_ID(6, 5);
+    TEST_FIND_DP_ID(8, 7);
 
-#define TEST_FIND_ID(EXPECTED_ID, EXPECTED_DP) \
+#define TEST_FIND_LOCAL_ID(EXPECTED_LOCAL_ID, EXPECTED_DP_ID) \
     {\
-        auto* dp = map.dp(EXPECTED_ID);\
-        TEST_ASSERT(dp != nullptr);\
-        TEST_ASSERT_EQUAL(EXPECTED_DP, dp->dp);\
-        TEST_ASSERT_EQUAL(EXPECTED_ID, dp->id);\
+        auto* entry = map.find_local(EXPECTED_LOCAL_ID);\
+        TEST_ASSERT(entry != nullptr);\
+        TEST_ASSERT_EQUAL(EXPECTED_DP_ID, entry->dp_id);\
+        TEST_ASSERT_EQUAL(EXPECTED_LOCAL_ID, entry->local_id);\
     }
 
-    TEST_FIND_ID(1, 2);
-    TEST_FIND_ID(3, 4);
-    TEST_FIND_ID(5, 6);
-    TEST_FIND_ID(7, 8);
+    TEST_FIND_LOCAL_ID(1, 2);
+    TEST_FIND_LOCAL_ID(3, 4);
+    TEST_FIND_LOCAL_ID(5, 6);
+    TEST_FIND_LOCAL_ID(7, 8);
+
+#undef TEST_FIND_LOCAL_ID
+#undef TEST_FIND_DP_ID
 }
 
 void test_static_dataframe_bool() {
