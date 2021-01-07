@@ -303,11 +303,6 @@ error:
 
     template <typename T>
     void processDP(State state, const T& frame) {
-        if (transportDebug && !frame.length()) {
-            DEBUG_MSG_P(PSTR("[TUYA] Can't process DP without any data\n"));
-            return;
-        }
-
         const Type type {dataType(frame)};
         if (Type::UNKNOWN == type) {
             if (frame.length() >= 2) {
@@ -323,7 +318,6 @@ error:
         } else {
             updateState(type, frame);
         }
-
     }
 
     void processFrame(State& state, const Transport& buffer) {
@@ -557,7 +551,7 @@ error:
                 ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
                 ctx.output.println(F("\nConfig:"));
                 for (auto& kv : config) {
-                    ctx.output.printf_P(PSTR("\"%s\" => \"%s\""), kv.key.c_str(), kv.value.c_str());
+                    ctx.output.printf_P(PSTR("\"%s\" => \"%s\"\n"), kv.key.c_str(), kv.value.c_str());
                 }
 
                 ctx.output.println(F("\nKnown DP(s):"));

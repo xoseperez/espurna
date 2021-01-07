@@ -231,7 +231,67 @@ void test_transport() {
     stream.write(data.data(), data.size());
 
     Transport transport(stream);
-    TEST_ASSERT_MESSAGE(transport.available(), "Available data");
+    TEST_ASSERT(transport.available());
+
+    for (size_t n = 0; n < data.size(); ++n) {
+        transport.read();
+    }
+    TEST_ASSERT(transport.done());
+}
+
+void test_dataframe_report() {
+    container input = {0x55, 0xaa, 0x00, 0x07, 0x00, 0x08, 0x02, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00, 0x10, 0x26};
+
+    BufferedStream stream;
+    stream.write(input.data(), input.size());
+
+    Transport transport(stream);
+    while (transport.available()) {
+        transport.read();
+    }
+
+    TEST_ASSERT(transport.done());
+
+    DataFrameView frame(transport);
+    TEST_ASSERT(util::command_equals(frame, Command::ReportDP));
+    TEST_ASSERT_EQUAL(Type::INT, dataType(frame));
+    TEST_ASSERT_EQUAL(8, frame.length());
+    TEST_ASSERT_EQUAL(0, frame.version());
+
+    DataProtocol<uint32_t> proto(frame.data());
+    TEST_ASSERT_EQUAL(0x02, proto.id());
+    TEST_ASSERT_EQUAL(0x10, proto.value());
+}
+
+void test_dataframe_echo() {
+    BufferedStream stream;
+    Transport transport(stream);
+
+    {
+        DataProtocol<uint32_t> proto(0x02, 0x66);
+        TEST_ASSERT_EQUAL(0x02, proto.id());
+        TEST_ASSERT_EQUAL(0x66,proto.value());
+
+        DataFrame frame(Command::SetDP, proto.serialize());
+        transport.write(frame.serialize());
+    }
+
+    while (transport.available()) {
+        transport.read();
+    }
+    TEST_ASSERT(transport.done());
+
+    {
+        DataFrameView frame(transport);
+        TEST_ASSERT(util::command_equals(frame, Command::SetDP));
+        TEST_ASSERT_EQUAL(Type::INT, dataType(frame));
+        TEST_ASSERT_EQUAL(8, frame.length());
+        TEST_ASSERT_EQUAL(0, frame.version());
+
+        DataProtocol<uint32_t> proto(frame.data());
+        TEST_ASSERT_EQUAL(0x02, proto.id());
+        TEST_ASSERT_EQUAL(0x66, proto.value());
+    }
 }
 
 int main(int argc, char** argv) {
@@ -245,6 +305,8 @@ int main(int argc, char** argv) {
     RUN_TEST(test_dataframe_const);
     RUN_TEST(test_dataframe_copy);
     RUN_TEST(test_dataframe_raw_data);
+    RUN_TEST(test_dataframe_report);
+    RUN_TEST(test_dataframe_echo);
     RUN_TEST(test_transport);
 
     return UNITY_END();

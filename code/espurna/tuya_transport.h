@@ -63,14 +63,10 @@ namespace tuya {
         void rewind() {
             while(_stream.read() != -1);
         }
-
     };
 
     class Output : public virtual StreamWrapper {
-
     public:
-
-
         Output(Stream& stream) :
             StreamWrapper(stream)
         {}
@@ -112,7 +108,6 @@ namespace tuya {
     };
 
     class Input : public virtual StreamWrapper {
-
         // Buffer depth based on the SDK recommendations
         constexpr static size_t LIMIT = 256;
 
@@ -207,14 +202,12 @@ namespace tuya {
         }
 
     private:
-
         bool _done = false;
         size_t _index = 0;
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0;
         std::vector<uint8_t> _buffer;
         unsigned long _last = 0;
-
     };
 
     class Transport : public Input, public Output, public virtual StreamWrapper {
