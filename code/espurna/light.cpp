@@ -1321,6 +1321,7 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     // Update only if the values had actually changed
     _light_brightness_func();
 
+    if (!_light_channels.size()) return;
     if (!_light_dirty) return;
     _light_dirty = false;
 

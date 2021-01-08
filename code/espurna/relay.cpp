@@ -1124,7 +1124,8 @@ void _relayBootAll(unsigned char start) {
         ? _relayMaskRtcmem()
         : _relayMaskSettings();
 
-    DEBUG_MSG_P(PSTR("[RELAY] Boot mask: %s\n"), mask.toString().c_str());
+    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
+            _relays.size(), mask.toString().c_str());
 
     _relayRecursive = true;
 
@@ -1810,8 +1811,6 @@ void relaySetup() {
     // Main callbacks
     espurnaRegisterLoop(_relayLoop);
     espurnaRegisterReload(_relayConfigure);
-
-    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
 }
 
