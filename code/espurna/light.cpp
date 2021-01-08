@@ -1605,6 +1605,7 @@ bool lightAdd() {
 #endif // LIGHT_PROVIDER_CUSTOM
 
 void lightSetup() {
+    moveSetting("lightTime", "ltTime");
 
     const auto enable_pin = getSetting("ltEnableGPIO", _lightEnablePin());
     if (enable_pin != GPIO_NONE) {
