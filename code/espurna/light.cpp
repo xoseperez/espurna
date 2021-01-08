@@ -1116,6 +1116,7 @@ void _lightApiSetup() {
 bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "light", 5) == 0) return true;
     if (strncmp(key, "use", 3) == 0) return true;
+    if (strncmp(key, "lt", 2) == 0) return true;
     return false;
 }
 
