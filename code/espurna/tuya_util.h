@@ -23,6 +23,35 @@ bool command_equals(const T& frame, Command command) {
 
 }
 
+struct StateId {
+    StateId() = default;
+
+    void filter(bool value) {
+        _filter = value;
+    }
+
+    bool filter() {
+        return _filter;
+    }
+
+    uint8_t id() {
+        return _id;
+    }
+
+    StateId& operator=(uint8_t value) {
+        _id = value;
+        return *this;
+    }
+
+    explicit operator bool() {
+        return _id != 0u;
+    }
+
+private:
+    uint8_t _id { 0 };
+    bool _filter { false };
+};
+
 struct OnceFlag {
     OnceFlag() = default;
     OnceFlag(const OnceFlag&) = delete;

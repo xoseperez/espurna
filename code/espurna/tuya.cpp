@@ -87,7 +87,7 @@ namespace tuya {
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
     DpMap channelIds;
-    uint8_t channelStateId { 0u };
+    StateId channelStateId;
 #endif
 
     // --------------------------------------------
@@ -118,7 +118,7 @@ namespace tuya {
             _channels(channels)
         {}
 
-        explicit TuyaLightProvider(const DpMap& channels, uint8_t state) :
+        explicit TuyaLightProvider(const DpMap& channels, StateId* state) :
             _channels(channels),
             _state(state)
         {}
@@ -127,8 +127,11 @@ namespace tuya {
         }
 
         void state(bool status) override {
-            if (_state && !status) {
-                send(_state, status);
+            if (_state && *_state) {
+                _state->filter(false);
+                if (!status) {
+                    send(_state->id(), status);
+                }
             }
         }
 
@@ -145,12 +148,19 @@ namespace tuya {
                 return;
             }
 
+            // Filtering for incoming data
+            // ref. https://github.com/xoseperez/espurna/issues/2222
+            // TODO: should be fixed when relay & channel transition states are implemented as transactions?
+            if (_state && *_state) {
+                _state->filter(true);
+            }
+
             send(entry->dp_id, rounded);
         }
 
     private:
         const DpMap& _channels;
-        uint8_t _state { 0 };
+        StateId* _state { nullptr };
     };
 
 #endif
@@ -225,13 +235,14 @@ namespace tuya {
     }
 
     void updateSwitch(const DataProtocol<bool>& proto) {
-        if (filter) {
-            return;
-        }
-
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-        if (channelStateId && (channelStateId == proto.id())) {
-            lightState(proto.value());
+        if (channelStateId && (channelStateId.id() == proto.id())) {
+            // See above. Ignore the selected state ID while we are sending the data,
+            // to avoid resetting the state to ON while we are turning OFF
+            // (and vice versa)
+            if (!channelStateId.filter()) {
+                lightState(proto.value());
+            }
             return;
         }
 #endif
@@ -536,7 +547,7 @@ error:
 
         if (done) {
             channelStateId = getSetting("tuyaChanState", 0u);
-            lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds, channelStateId));
+            lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds, &channelStateId));
         }
 
         if (done) {
@@ -562,7 +573,7 @@ error:
                 ctx.output.println(F("\nKnown DP(s):"));
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
                 if (channelStateId) {
-                    ctx.output.printf_P(PSTR("%u (bool) => lights state\n"), channelStateId);
+                    ctx.output.printf_P(PSTR("%u (bool) => lights state\n"), channelStateId.id());
                 }
                 for (auto& entry : channelIds.map()) {
                     ctx.output.printf_P(PSTR("%u (int) => %d (channel)\n"), entry.dp_id, entry.local_id);
@@ -580,12 +591,6 @@ error:
             });
 
         #endif
-
-        // Filtering for incoming data
-        // TODO: see https://github.com/xoseperez/espurna/issues/2222
-        //       unlike emulator, this real device sends total garbage which we can safely ignore
-        //       (may not be true for all, but that's the one we got the most of :>)
-        filter = getSetting("tuyaFilter", false);
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
         setupChannels();
