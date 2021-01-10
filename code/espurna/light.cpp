@@ -92,11 +92,13 @@ struct channel_t {
 
     unsigned char pin { GPIO_NONE };    // real GPIO pin
     bool inverse { false };             // whether we should invert the value before using it
+
     bool state { true };                // is the channel ON
+
     unsigned char inputValue { 0 };     // raw value, without the brightness
     unsigned char value { 0 };          // normalized value, including brightness
     unsigned char target { 0 };         // target value
-    double current { 0.0 };             // transition value
+    float current { 0.0f };             // transition value
 };
 
 Ticker _light_comms_ticker;
@@ -187,14 +189,14 @@ static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds arr
 // UTILS
 // -----------------------------------------------------------------------------
 
-void _setValue(const unsigned char id, const unsigned int value) {
+void _setValue(const unsigned char id, unsigned int value) {
     if (_light_channels[id].value != value) {
         _light_channels[id].value = value;
         _light_dirty = true;
     }
 }
 
-void _setInputValue(const unsigned char id, const unsigned int value) {
+void _setInputValue(const unsigned char id, unsigned int value) {
     _light_channels[id].inputValue = value;
 }
 
@@ -640,27 +642,80 @@ unsigned int _toPWM(unsigned char id) {
     return _toPWM(_light_channels[id].current, useGamma, _light_channels[id].inverse);
 }
 
-void _lightTransition(unsigned long step) {
+namespace {
 
-    // Transitions based on current step. If step == 0, then it is the last transition
-    for (auto& channel : _light_channels) {
-        if (!step) {
-            channel.current = channel.target;
-        } else {
-            channel.current += (double) (channel.target - channel.current) / (step + 1);
+class ChannelTransition {
+public:
+    struct Transition {
+        float& value;
+        unsigned char target;
+        float step;
+        size_t count;
+    };
+
+    explicit ChannelTransition(size_t steps) {
+        if (!steps) {
+            return;
+        }
+
+        if (steps == 1) {
+            for (auto& channel : _light_channels) {
+                channel.current = channel.target;
+            }
+            return;
+        }
+
+        for (auto& channel : _light_channels) {
+            auto step = (channel.target - channel.current) / steps;
+            auto count = steps;
+            if (std::abs(step) < 1.0f) {
+                count = 1;
+            }
+
+            DEBUG_MSG_P(PSTR("[LIGHT] schedule target=%u step=%s count=%u\n"),
+                channel.target, String(step).c_str(), count);
+            _transitions.push_back(Transition{
+                channel.current, channel.target, step, count});
         }
     }
 
-}
+    bool next() {
+        bool result { true };
 
-void _lightProviderScheduleUpdate(unsigned long steps);
+        for (auto& transition : _transitions) {
+            if (!transition.count) {
+                result = false;
+                continue;
+            }
 
-void _lightProviderUpdate(unsigned long steps) {
+            if (--transition.count) {
+                transition.value += transition.step;
+            } else {
+                transition.value = transition.target;
+                result = false;
+            }
+        }
+
+        return result;
+    }
+
+private:
+    std::vector<Transition> _transitions;
+};
+
+} // namespace
+
+std::unique_ptr<ChannelTransition> _light_provider_transition;
+
+void _lightProviderSchedule(unsigned long ms);
+
+void _lightProviderUpdate() {
 
     if (_light_provider_update) return;
     _light_provider_update = true;
 
-    _lightTransition(--steps);
+    if (!_light_provider_transition) return;
+    auto next = _light_provider_transition->next();
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -690,23 +745,24 @@ void _lightProviderUpdate(unsigned long steps) {
             _light_provider->update();
         }
 
-        if (!steps) {
+        if (!next) {
             _light_provider->state(_light_state);
         }
 
     #endif
 
-    // This is not the final value, update again
-    if (steps) {
-        _light_transition_ticker.once_ms(_light_transition_step, _lightProviderScheduleUpdate, steps);
+    if (next) {
+        _lightProviderSchedule(_light_transition_step);
+    } else {
+        _light_provider_transition.reset(nullptr);
     }
 
     _light_provider_update = false;
 
 }
 
-void _lightProviderScheduleUpdate(unsigned long steps) {
-    schedule_function(std::bind(_lightProviderUpdate, steps));
+void _lightProviderSchedule(unsigned long ms) {
+    _light_transition_ticker.once_ms_scheduled(ms, _lightProviderUpdate);
 }
 
 // -----------------------------------------------------------------------------
@@ -1333,11 +1389,15 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     }
 
     // Channel transition will be handled by the provider function
-    // User can configure total transition time, step time is a fixed value
     const unsigned long steps = _light_use_transitions
         ? _light_transition_time / _light_transition_step
         : 1;
-    _light_transition_ticker.once_ms(_light_transition_step, _lightProviderScheduleUpdate, steps);
+    const unsigned long time = (steps == 1)
+        ? 10
+        : _light_transition_step;
+
+    _light_provider_transition = std::make_unique<ChannelTransition>(steps);
+    _lightProviderSchedule(time);
 
     // Delay every communication 100ms to avoid jamming
     const unsigned char mask =
