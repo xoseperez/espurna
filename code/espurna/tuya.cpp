@@ -219,7 +219,7 @@ namespace tuya {
     }
 
     void sendHeartbeat(Heartbeat hb, State state) {
-        static uint32_t last = 0;
+        static uint32_t last = millis() + getHeartbeatInterval(hb) + 1;
         if (millis() - last > getHeartbeatInterval(hb)) {
             outputFrames.emplace(Command::Heartbeat);
             last = millis();
@@ -261,7 +261,7 @@ namespace tuya {
     void updateState(Type type, const T& frame) {
         if (Type::BOOL == type) {
             DataProtocol<bool> proto(frame.data());
-            updateSwitch(proto);
+            //updateSwitch(proto);
         } else if (Type::INT == type) {
             DataProtocol<uint32_t> proto(frame.data());
         }
