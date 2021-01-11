@@ -695,9 +695,10 @@ public:
         if (!action) {
             _time = 10;
             _step = 10;
+            return;
         }
 
-        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition total=%u (ms) every=%u (ms)\n"), _time, _step);
+        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition every %u (total %u)\n"), _step, _time);
     }
 
     bool next() {

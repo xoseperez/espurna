@@ -362,6 +362,7 @@ error:
         if ((frame.command() == Command::Heartbeat) && (frame.length() == 1)) {
             if (State::BOOT == state) {
                 if (!configDone) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Attempting to configure the board ...\n"));
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
                     setupChannels();
 #endif
@@ -369,7 +370,7 @@ error:
                 }
 
                 if (!configDone) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Starting discovery ...\n"));
+                    DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
                     state = State::QUERY_PRODUCT;
                     return;
                 }
@@ -489,7 +490,7 @@ error:
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
-                DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
+                DEBUG_MSG_P(PSTR("[TUYA] Querying DP(s)\n"));
                 outputFrames.emplace(Command::QueryDP);
                 discovery.feed();
                 state = State::DISCOVERY;

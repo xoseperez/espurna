@@ -126,7 +126,7 @@ void _schConfigure() {
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
                     i, sch_type, sch_switch,
                     sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
-                    (char *) sch_weekdays.c_str(),
+                    sch_weekdays.c_str(),
                     sch_enabled ? "" : " (disabled)"
                 );
 
