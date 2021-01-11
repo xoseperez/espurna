@@ -1306,16 +1306,20 @@
 // 4 channels => RGBW
 // 5 channels => RGBWW
 
-#ifndef LIGHT_SAVE_ENABLED
-#define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
+#ifndef LIGHT_PROVIDER
+#define LIGHT_PROVIDER LIGHT_PROVIDER_NONE
 #endif
 
 #ifndef LIGHT_COMMS_DELAY
-#define LIGHT_COMMS_DELAY       100         // Delay communication after light update (in ms)
+#define LIGHT_COMMS_DELAY       100         // Delay communication for the specified number of ms after light update
+#endif
+
+#ifndef LIGHT_SAVE_ENABLED
+#define LIGHT_SAVE_ENABLED      1          // Light channel values saved by default after each change
 #endif
 
 #ifndef LIGHT_SAVE_DELAY
-#define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+#define LIGHT_SAVE_DELAY        5000       // Persist channel & brightness values after the specified number of ms
 #endif
 
 #ifndef LIGHT_MIN_PWM
@@ -1416,6 +1420,9 @@
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 #endif
 
+#ifndef LIGHT_RELAY_ENABLED
+#define LIGHT_RELAY_ENABLED     1           // Add a virtual switch that controls the global light state. Depends on RELAY_SUPPORT
+#endif
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

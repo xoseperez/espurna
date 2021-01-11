@@ -22,19 +22,47 @@ constexpr long PWM_MIN = LIGHT_MIN_PWM;
 constexpr long PWM_MAX = LIGHT_MAX_PWM;
 constexpr long PWM_LIMIT = LIGHT_LIMIT_PWM;
 
-enum Communications : unsigned char {
-    COMMS_NONE = 0,
-    COMMS_NORMAL = 1 << 0,
-    COMMS_GROUP = 1 << 1
+enum class Communications {
+    None = 0,
+    Web = 1 << 0,
+    Mqtt = 1 << 1,
+    MqttGroup = 1 << 2,
+    Broker = 1 << 3
 };
 
+constexpr int operator|(Communications lhs, int rhs) {
+    return static_cast<int>(lhs) | rhs;
 }
+
+constexpr int operator|(int lhs, Communications rhs) {
+    return lhs | static_cast<int>(rhs);
+}
+
+constexpr int operator|(Communications lhs, Communications rhs) {
+    return static_cast<int>(lhs) | static_cast<int>(rhs);
+}
+
+constexpr int operator&(int lhs, Communications rhs) {
+    return lhs & static_cast<int>(rhs);
+}
+
+constexpr int operator&(Communications lhs, int rhs) {
+    return static_cast<int>(lhs) & rhs;
+}
+
+constexpr int DefaultCommunications {
+    Communications::Web
+    | Communications::Mqtt
+    | Communications::MqttGroup
+    | Communications::Broker
+};
+
+} // namespace Light
 
 using LightStateListener = std::function<void(bool)>;
 
 class LightProvider {
-    public:
-
+public:
     virtual void update() = 0;
     virtual void state(bool) = 0;
     virtual void channel(unsigned char ch, double value) = 0;
@@ -69,8 +97,12 @@ void lightChannel(unsigned char id, long value);
 void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
 void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP);
 
-void lightUpdate(bool save, bool forward, bool group_forward);
-void lightUpdate(bool save, bool forward);
+void lightCommsMask(Light::Communications mask);
+void lightCommsMask(int mask);
+
+void lightUpdate(bool save, unsigned long transition);
+void lightUpdate(unsigned long transition);
+void lightUpdate();
 
 bool lightHasColor();
 bool lightUseCCT();

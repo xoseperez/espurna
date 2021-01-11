@@ -525,12 +525,12 @@ void buttonEvent(unsigned char id, button_event_t event) {
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         case BUTTON_ACTION_DIM_UP:
             lightBrightnessStep(1);
-            lightUpdate(true, true);
+            lightUpdate();
             break;
 
         case BUTTON_ACTION_DIM_DOWN:
             lightBrightnessStep(-1);
-            lightUpdate(true, true);
+            lightUpdate();
             break;
     #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 

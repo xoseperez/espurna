@@ -174,7 +174,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
         if (SCHEDULER_TYPE_DIM == sch_type) {
             DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
             lightChannel(sch_switch, sch_action);
-            lightUpdate(true, true);
+            lightUpdate();
         }
     #endif
 

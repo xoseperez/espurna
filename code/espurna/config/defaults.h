@@ -1005,8 +1005,3 @@
 #ifndef HOSTNAME
 #define HOSTNAME                ""
 #endif
-
-// Light provider
-#ifndef LIGHT_PROVIDER
-#define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
-#endif

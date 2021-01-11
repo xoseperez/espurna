@@ -137,7 +137,7 @@ void _encoderLoop() {
 
         }
 
-        lightUpdate(true, true);
+        lightUpdate();
 
     }
 
