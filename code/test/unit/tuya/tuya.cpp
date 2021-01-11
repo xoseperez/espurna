@@ -78,7 +78,7 @@ void test_static_dataframe_bool() {
 
     TEST_ASSERT_EQUAL_MESSAGE(0, frame.version(),
             "Version should stay 0 unless explicitly set");
-    TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::SetDP),
+    TEST_ASSERT_MESSAGE((frame.command() == Command::SetDP),
             "commandEquals should return true with the same arg as in the constructor");
     TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
             "DataProtocol<bool> should translate to Type::BOOL");
@@ -90,7 +90,7 @@ void test_static_dataframe_int() {
     DataFrame frame(Command::ReportDP, DataProtocol<uint32_t>(0x03, 255).serialize());
     TEST_ASSERT_EQUAL_MESSAGE(0, frame.version(),
             "Version should stay 0 unless explicitly set");
-    TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::ReportDP),
+    TEST_ASSERT_MESSAGE((frame.command() == Command::ReportDP),
             "commandEquals should return true with the same arg as in the constructor");
     TEST_ASSERT_EQUAL_UINT_MESSAGE(std::distance(frame.cbegin(), frame.cend()), frame.length(),
             "Data is expected to be stored in a contigious memory and be equal in length to the ::length attribute");
@@ -146,7 +146,7 @@ void test_dataframe_raw_data() {
         container data = {0x00, 0x00, 0x00, 0x01, 0x01};
         DataFrameView frame(data);
 
-        TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::Heartbeat),
+        TEST_ASSERT_MESSAGE((frame.command() == Command::Heartbeat),
                 "This message should be parsed as heartbeat");
         TEST_ASSERT_EQUAL_MESSAGE(0, frame.version(),
                 "This message should have version == 0");
@@ -164,7 +164,7 @@ void test_dataframe_raw_data() {
         container data = {0x00, 0x07, 0x00, 0x05, 0x01, 0x01, 0x00, 0x01, 0x01};
         DataFrameView frame(data);
 
-        TEST_ASSERT_MESSAGE(util::command_equals(frame, Command::ReportDP),
+        TEST_ASSERT_MESSAGE((frame.command() == Command::ReportDP),
                 "This message should be parsed as data protocol");
         TEST_ASSERT_MESSAGE(datatype_same(frame, Type::BOOL),
                 "This message should have boolean datatype attached to it");
@@ -257,7 +257,7 @@ void test_dataframe_report() {
     TEST_ASSERT(transport.done());
 
     DataFrameView frame(transport);
-    TEST_ASSERT(util::command_equals(frame, Command::ReportDP));
+    TEST_ASSERT(frame.command() == Command::ReportDP);
     TEST_ASSERT_EQUAL(Type::INT, dataType(frame));
     TEST_ASSERT_EQUAL(8, frame.length());
     TEST_ASSERT_EQUAL(0, frame.version());
@@ -287,7 +287,7 @@ void test_dataframe_echo() {
 
     {
         DataFrameView frame(transport);
-        TEST_ASSERT(util::command_equals(frame, Command::SetDP));
+        TEST_ASSERT(frame.command() == Command::SetDP);
         TEST_ASSERT_EQUAL(Type::INT, dataType(frame));
         TEST_ASSERT_EQUAL(8, frame.length());
         TEST_ASSERT_EQUAL(0, frame.version());

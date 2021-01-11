@@ -31,19 +31,22 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 namespace tuya {
 
     bool operator<(const DataFrame& lhs, const DataFrame& rhs) {
-        if (dataType(lhs) == Type::BOOL) {
+        if ((lhs.command() != Command::Heartbeat) && (rhs.command() == Command::Heartbeat)) {
             return true;
         }
 
         return false;
     }
 
-    constexpr size_t SerialSpeed { 9600u };
+    constexpr unsigned long SerialSpeed { 9600u };
 
-    constexpr uint32_t DiscoveryTimeout { 1500u };
+    constexpr unsigned long DiscoveryTimeout { 1500u };
 
-    constexpr uint32_t HeartbeatSlow { 9000u };
-    constexpr uint32_t HeartbeatFast { 3000u };
+    constexpr unsigned long HeartbeatSlow { 9000u };
+    constexpr unsigned long HeartbeatFast { 3000u };
+    constexpr unsigned long HeartbeatVeryFast { 200u };
+
+    constexpr unsigned long HeartbeatIncrement { 200u };
 
     struct Config {
         Config(const Config&) = delete;
@@ -167,18 +170,6 @@ namespace tuya {
 
     // --------------------------------------------
 
-    size_t getHeartbeatInterval(Heartbeat hb) {
-        switch (hb) {
-        case Heartbeat::FAST:
-            return HeartbeatFast;
-        case Heartbeat::SLOW:
-            return HeartbeatSlow;
-        case Heartbeat::NONE:
-        default:
-            return 0;
-        }
-    }
-
     uint8_t getWiFiState() {
 
         uint8_t state = wifiState();
@@ -218,11 +209,39 @@ namespace tuya {
         DEBUG_MSG("[TUYA] %s: %s\n", tag, out.c_str());
     }
 
-    void sendHeartbeat(Heartbeat hb, State state) {
-        static uint32_t last = millis() + getHeartbeatInterval(hb) + 1;
-        if (millis() - last > getHeartbeatInterval(hb)) {
-            outputFrames.emplace(Command::Heartbeat);
+    unsigned long heartbeatInterval(Heartbeat heartbeat) {
+        static unsigned long interval { 0ul };
+
+        switch (heartbeat) {
+        case Heartbeat::Boot:
+            if (interval < HeartbeatFast) {
+                interval += HeartbeatIncrement;
+            } else {
+                interval = HeartbeatFast;
+            }
+            break;
+        case Heartbeat::Fast:
+            interval = HeartbeatFast;
+            break;
+        case Heartbeat::Slow:
+            interval = HeartbeatSlow;
+            break;
+        case Heartbeat::None:
+            interval = 0;
+            break;
+        }
+
+        return interval;
+    }
+
+    void sendHeartbeat(Heartbeat heartbeat) {
+        static unsigned long interval = 0ul;
+        static unsigned long last = millis() + 1ul;
+
+        if (millis() - last > interval) {
+            interval = heartbeatInterval(heartbeat);
             last = millis();
+            outputFrames.emplace(Command::Heartbeat);
         }
     }
 
@@ -340,22 +359,29 @@ error:
 
         // initial packet has 0, do the initial setup
         // all after that have 1. might be a good idea to re-do the setup when that happens on boot
-        if (util::command_equals(frame, Command::Heartbeat) && (frame.length() == 1)) {
-            if (State::HEARTBEAT == state) {
-                if ((frame[0] == 0) || !configDone) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Starting configuration ...\n"));
+        if ((frame.command() == Command::Heartbeat) && (frame.length() == 1)) {
+            if (State::BOOT == state) {
+                if (!configDone) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+                    setupChannels();
+#endif
+                    setupSwitches();
+                }
+
+                if (!configDone) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Starting discovery ...\n"));
                     state = State::QUERY_PRODUCT;
                     return;
-                } else {
-                    DEBUG_MSG_P(PSTR("[TUYA] Already configured\n"));
-                    state = State::IDLE;
                 }
+
+                state = State::IDLE;
             }
+
             sendWiFiStatus();
             return;
         }
 
-        if (util::command_equals(frame, Command::QueryProduct) && frame.length()) {
+        if ((frame.command() == Command::QueryProduct) && frame.length()) {
             if (product.length()) {
                 product = "";
             }
@@ -368,7 +394,7 @@ error:
             return;
         }
 
-        if (util::command_equals(frame, Command::QueryMode)) {
+        if (frame.command() == Command::QueryMode) {
             // first and second byte are GPIO pin for WiFi status and RST respectively
             if (frame.length() == 2) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u\n"), frame[0], frame[1]);
@@ -383,23 +409,23 @@ error:
             return;
         }
 
-        if (util::command_equals(frame, Command::WiFiResetCfg) && !frame.length()) {
+        if ((frame.command() == Command::WiFiResetCfg) && !frame.length()) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
             outputFrames.emplace(Command::WiFiResetCfg);
             return;
         }
 
-        if (util::command_equals(frame, Command::WiFiResetSelect) && (frame.length() == 1)) {
+        if ((frame.command() == Command::WiFiResetSelect) && (frame.length() == 1)) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
                 (frame[0] == 0) ? "Smart Config" : "AP");
             outputFrames.emplace(Command::WiFiResetSelect);
             return;
         }
 
-        if (util::command_equals(frame, Command::ReportDP) && frame.length()) {
+        if ((frame.command() == Command::ReportDP) && frame.length()) {
             processDP(state, frame);
             if (state == State::DISCOVERY) return;
-            if (state == State::HEARTBEAT) return;
+            if (state == State::BOOT) return;
             state = State::IDLE;
             return;
         }
@@ -441,9 +467,9 @@ error:
             // send fast heartbeat until mcu responds with something
             case State::INIT:
                 tuyaSerial.rewind();
-                state = State::HEARTBEAT;
-            case State::HEARTBEAT:
-                sendHeartbeat(Heartbeat::FAST, state);
+                state = State::BOOT;
+            case State::BOOT:
+                sendHeartbeat(Heartbeat::Boot);
                 break;
             // general info about the device (which we don't care about)
             case State::QUERY_PRODUCT:
@@ -482,7 +508,7 @@ error:
             // initial config is done, only doing heartbeat periodically
             case State::IDLE:
             {
-                sendHeartbeat(Heartbeat::SLOW, state);
+                sendHeartbeat(Heartbeat::Slow);
                 break;
             }
         }
@@ -591,12 +617,6 @@ error:
             });
 
         #endif
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-        setupChannels();
-#endif
-
-        setupSwitches();
 
         // Print all IN and OUT messages
         transportDebug = getSetting("tuyaDebug", true);

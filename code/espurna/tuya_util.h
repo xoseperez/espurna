@@ -12,15 +12,24 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <algorithm>
 #include <vector>
 
+#include "tuya_types.h"
+
 namespace tuya {
 
-namespace util {
-
-template <typename T>
-bool command_equals(const T& frame, Command command) {
-    return (frame.command() == static_cast<uint8_t>(command));
+inline bool operator==(uint8_t lhs, Command rhs) {
+    return lhs == static_cast<uint8_t>(rhs);
 }
 
+inline bool operator==(Command lhs, uint8_t rhs) {
+    return static_cast<uint8_t>(lhs) == rhs;
+}
+
+inline bool operator!=(uint8_t lhs, Command rhs) {
+    return !(lhs == rhs);
+}
+
+inline bool operator!=(Command lhs, uint8_t rhs) {
+    return !(lhs == rhs);
 }
 
 struct StateId {

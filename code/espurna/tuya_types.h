@@ -28,7 +28,7 @@ namespace tuya {
 
     enum class State {
         INIT,
-        HEARTBEAT,
+        BOOT,
         QUERY_PRODUCT,
         QUERY_MODE,
         QUERY_DP,
@@ -37,9 +37,10 @@ namespace tuya {
     };
 
     enum class Heartbeat {
-        NONE,
-        SLOW,
-        FAST
+        None,
+        Boot,
+        Fast,
+        Slow
     };
 
     enum class Type : uint8_t {
