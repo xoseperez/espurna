@@ -563,6 +563,30 @@
 
                             <fieldset>
 
+                                <div class="pure-g module-relay">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Light state switch</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ltRelay" tabindex="5" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled, add virtual relay switch that controls the ON / OFF state.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save values</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ltSave" tabindex="6" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Save channel &amp; brightness values in settings</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save delay</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltSaveDelay" min="5000" max="60000" tabindex="7" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">When "Save values" is enabled, wait for the delay (ms) before the values are saved</div>
+                                </div>
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use color</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
@@ -617,11 +641,11 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Channel transitions</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="13" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled, channel changes will be smoothed.</div>
                                 </div>
 
                                 <div class="pure-g">

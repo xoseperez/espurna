@@ -64,10 +64,14 @@ $.fn.enterKey = function (fnc) {
     });
 };
 
-function followScroll(id) {
+function followScroll(id, threshold) {
+    if (threshold === undefined) {
+        threshold = 90;
+    }
+
     var elem = document.getElementById(id);
     var offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
-    if (offset > 90) {
+    if (offset > threshold) {
         elem.scrollTop = elem.scrollHeight;
     }
 }
@@ -793,6 +797,7 @@ function doDebugCommand() {
     var command = el.val();
     el.val("");
     sendAction("dbgcmd", {command: command});
+    followScroll("weblog", 0);
     return false;
 }
 

@@ -103,10 +103,12 @@
 #endif
 
 #if TUYA_SUPPORT
+#undef LIGHT_TRANSITION_TIME
+#define LIGHT_TRANSITION_TIME       1600       // longer transition than the default
 #undef LIGHT_TRANSITION_STEP
-#define LIGHT_TRANSITION_STEP       LIGHT_TRANSITION_TIME // no transitions by default just to be safe
+#define LIGHT_TRANSITION_STEP       200        // step can't be 10ms since most tuya serial connections are not fast
 #undef LIGHT_USE_TRANSITIONS
-#define LIGHT_USE_TRANSITIONS       0
+#define LIGHT_USE_TRANSITIONS       0          // also, disable transitions unless set at runtime
 #endif
 
 #if TUYA_SUPPORT
