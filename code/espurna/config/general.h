@@ -1813,6 +1813,14 @@
 #define TUYA_SERIAL                 Serial
 #endif
 
+#ifndef TUYA_FILTER_ENABLED
+#define TUYA_FILTER_ENABLED         1
+#endif
+
+#ifndef TUYA_DEBUG_ENABLED
+#define TUYA_DEBUG_ENABLED          1
+#endif
+
 //--------------------------------------------------------------------------------
 // Support expander MCP23S08
 //--------------------------------------------------------------------------------

@@ -253,7 +253,7 @@ namespace tuya {
         }
     }
 
-    void updateSwitch(const DataProtocol<bool>& proto) {
+    void updateState(const DataProtocol<bool>& proto) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
         if (channelStateId && (channelStateId.id() == proto.id())) {
             // See above. Ignore the selected state ID while we are sending the data,
@@ -274,15 +274,19 @@ namespace tuya {
         relayStatus(entry->local_id, proto.value());
     }
 
+    void updateState(const DataProtocol<uint32_t>& proto) {
+    }
+
     // XXX: sometimes we need to ignore incoming state
     // ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
     template <typename T>
     void updateState(Type type, const T& frame) {
         if (Type::BOOL == type) {
             DataProtocol<bool> proto(frame.data());
-            //updateSwitch(proto);
+            updateState(proto);
         } else if (Type::INT == type) {
             DataProtocol<uint32_t> proto(frame.data());
+            updateState(proto);
         }
     }
 
@@ -334,7 +338,7 @@ error:
 
     template <typename T>
     void processDP(State state, const T& frame) {
-        const Type type {dataType(frame)};
+        auto type = dataType(frame);
         if (Type::UNKNOWN == type) {
             if (frame.length() >= 2) {
                 DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame[0], frame[1]);
@@ -346,7 +350,7 @@ error:
 
         if (State::DISCOVERY == state) {
             discovery.add(type, frame[0]);
-        } else {
+        } else if (!filter) {
             updateState(type, frame);
         }
     }
@@ -620,7 +624,10 @@ error:
         #endif
 
         // Print all IN and OUT messages
-        transportDebug = getSetting("tuyaDebug", true);
+        transportDebug = getSetting("tuyaDebug", 1 == TUYA_DEBUG_ENABLED);
+
+        // Whether to ignore the incoming state messages
+        filter = getSetting("tuyaFilter", 1 == TUYA_FILTER_ENABLED);
 
         // Install main loop method and WiFiStatus ping (only works with specific mode)
         TUYA_SERIAL.begin(SerialSpeed);
