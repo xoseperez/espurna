@@ -1502,6 +1502,10 @@ void lightUpdate(LightTransition transition) {
     lightUpdate(_light_save, transition, Light::DefaultReport);
 }
 
+void lightUpdate(bool save) {
+    lightUpdate(save, lightTransition(), Light::DefaultReport);
+}
+
 void lightUpdate() {
     lightUpdate(lightTransition());
 }
@@ -1731,7 +1735,7 @@ void _lightBoot() {
         _lightRestoreSettings();
     }
 
-    lightUpdate(false, lightTransition(), Light::DefaultReport);
+    lightUpdate(false);
 }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM

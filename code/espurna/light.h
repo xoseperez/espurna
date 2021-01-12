@@ -111,6 +111,7 @@ void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP
 void lightUpdate(bool save, LightTransition transition, Light::Report report);
 void lightUpdate(bool save, LightTransition transition, int report);
 void lightUpdate(LightTransition transition);
+void lightUpdate(bool save);
 void lightUpdate();
 
 bool lightHasColor();
