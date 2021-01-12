@@ -112,9 +112,8 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
         }
     }
 
-    // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (unsigned char)
-    lightBrightness((root["Level"].as<unsigned char>() / 100.0) * Light::BRIGHTNESS_MAX);
-    lightCommsMask(mqttForward() ? Light::Communications::None : Light::Communications::Mqtt);
+    // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (default 255)
+    lightBrightness((root["Level"].as<long>() / 100l) * Light::BRIGHTNESS_MAX);
     lightUpdate();
 
 }
