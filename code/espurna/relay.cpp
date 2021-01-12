@@ -1119,25 +1119,31 @@ void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
     relay.provider->boot(status);
 }
 
-void _relayBootAll(unsigned char start) {
+void _relayBootAll() {
     auto mask = rtcmemStatus()
         ? _relayMaskRtcmem()
         : _relayMaskSettings();
 
-    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
-            _relays.size(), mask.toString().c_str());
-
     _relayRecursive = true;
 
-    for (unsigned char id = start; id < relayCount(); ++id) {
+    bool once { true };
+    static RelayMask done;
+    for (unsigned char id = 0; id < relayCount(); ++id) {
+        if (done[id]) {
+            continue;
+        }
+
+        if (once) {
+            DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
+                _relays.size(), mask.toString().c_str());
+            once = false;
+        }
+
+        done.set(id, true);
         _relayBoot(id, mask);
     }
 
     _relayRecursive = false;
-}
-
-void _relayBootAll() {
-    _relayBootAll(0);
 }
 
 void _relayConfigure() {
@@ -1817,12 +1823,11 @@ void relaySetup() {
 bool relayAdd(std::unique_ptr<RelayProviderBase>&& provider) {
     if (provider && provider->setup()) {
         static bool scheduled { false };
-        unsigned char count { relayCount() };
         _relays.emplace_back(provider.release());
         if (!scheduled) {
-            schedule_function([count]() {
+            schedule_function([]() {
                 _relayConfigure();
-                _relayBootAll(count);
+                _relayBootAll();
                 scheduled = false;
             });
         }
