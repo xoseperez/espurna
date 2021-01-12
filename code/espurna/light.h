@@ -22,7 +22,7 @@ constexpr long PWM_MIN = LIGHT_MIN_PWM;
 constexpr long PWM_MAX = LIGHT_MAX_PWM;
 constexpr long PWM_LIMIT = LIGHT_LIMIT_PWM;
 
-enum class Communications {
+enum class Report {
     None = 0,
     Web = 1 << 0,
     Mqtt = 1 << 1,
@@ -30,31 +30,28 @@ enum class Communications {
     Broker = 1 << 3
 };
 
-constexpr int operator|(Communications lhs, int rhs) {
+constexpr int operator|(Report lhs, int rhs) {
     return static_cast<int>(lhs) | rhs;
 }
 
-constexpr int operator|(int lhs, Communications rhs) {
+constexpr int operator|(int lhs, Report rhs) {
     return lhs | static_cast<int>(rhs);
 }
 
-constexpr int operator|(Communications lhs, Communications rhs) {
+constexpr int operator|(Report lhs, Report rhs) {
     return static_cast<int>(lhs) | static_cast<int>(rhs);
 }
 
-constexpr int operator&(int lhs, Communications rhs) {
+constexpr int operator&(int lhs, Report rhs) {
     return lhs & static_cast<int>(rhs);
 }
 
-constexpr int operator&(Communications lhs, int rhs) {
+constexpr int operator&(Report lhs, int rhs) {
     return static_cast<int>(lhs) & rhs;
 }
 
-constexpr int DefaultCommunications {
-    Communications::Web
-    | Communications::Mqtt
-    | Communications::MqttGroup
-    | Communications::Broker
+constexpr int DefaultReport {
+    Report::Web | Report::Mqtt | Report::MqttGroup | Report::Broker
 };
 
 } // namespace Light
@@ -68,9 +65,20 @@ public:
     virtual void channel(unsigned char ch, double value) = 0;
 };
 
+struct LightTransition {
+    unsigned long time;
+    unsigned long step;
+};
+
 size_t lightChannels();
-unsigned int lightTransitionTime();
-void lightTransitionTime(unsigned long ms);
+
+LightTransition lightTransition();
+
+unsigned long lightTransitionTime();
+unsigned long lightTransitionStep();
+
+void lightTransition(unsigned long time, unsigned long step);
+void lightTransition(LightTransition transition);
 
 void lightColor(const char* color, bool rgb);
 void lightColor(const String& color, bool rgb);
@@ -81,6 +89,9 @@ void lightColor(const char* color);
 void lightColor(unsigned long color);
 String lightColor(bool rgb);
 String lightColor();
+
+bool lightSave();
+void lightSave(bool save);
 
 void lightState(unsigned char i, bool state);
 bool lightState(unsigned char i);
@@ -97,11 +108,9 @@ void lightChannel(unsigned char id, long value);
 void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
 void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP);
 
-void lightCommsMask(Light::Communications mask);
-void lightCommsMask(int mask);
-
-void lightUpdate(bool save, unsigned long transition);
-void lightUpdate(unsigned long transition);
+void lightUpdate(bool save, LightTransition transition, Light::Report report);
+void lightUpdate(bool save, LightTransition transition, int report);
+void lightUpdate(LightTransition transition);
 void lightUpdate();
 
 bool lightHasColor();
