@@ -652,17 +652,17 @@ public:
         size_t count;
 
         void debug() const {
-            DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %u (step %s, %u time(s))\n"),
+            DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %u (step %s, %u times)\n"),
                 String(value, 2).c_str(), target, String(step, 2).c_str(), count);
         }
     };
 
-    explicit LightTransitionHandler(bool state, Channels& channels, LightTransition transition) :
+    explicit LightTransitionHandler(Channels& channels, bool state, LightTransition transition) :
         _time(transition.time),
         _step(transition.step)
     {
         for (auto& channel : channels) {
-            transition(state, channel);
+            prepare(channel, state);
         }
 
         // if nothing to do, ignore transition step & time and just schedule as soon as possible
@@ -674,7 +674,7 @@ public:
         DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition every %ums (total %ums)\n"), _step, _time);
     }
 
-    void transition(bool state, channel_t& channel) {
+    void prepare(channel_t& channel, bool state) {
         channel.target = (state && channel.state) ? channel.value : 0;
 
         float diff = static_cast<float>(channel.target) - channel.current;
@@ -1187,6 +1187,18 @@ void _lightApiSetup() {
 
     }
 
+    apiRegister(F(MQTT_TOPIC_TRANSITION),
+        [](ApiRequest& request) {
+            request.send(String(lightTransitionTime()));
+            return true;
+        },
+        [](ApiRequest& request) {
+            auto value = request.param(F("value"));
+            lightTransition(strtoul(value.c_str(), nullptr, 10), _light_transition_step);
+            return true;
+        }
+    );
+
     apiRegister(F(MQTT_TOPIC_BRIGHTNESS),
         [](ApiRequest& request) {
             request.send(String(static_cast<int>(_light_brightness)));
@@ -1464,9 +1476,9 @@ void lightUpdate(bool save, LightTransition transition, int report) {
     }
     _light_dirty = false;
 
-    // Channels will be handled by the handler class and the specified provider
+    // Channel output values will be set by the handler class and the specified provider
     // We either set the values immediately or schedule an ongoing transition
-    _light_transition = std::make_unique<LightTransitionHandler>(_light_state, _light_channels, transition);
+    _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, _light_state, transition);
     _lightProviderSchedule(_light_transition->step());
 
     // Send current state to all available 'report' targets
@@ -1719,7 +1731,7 @@ void _lightBoot() {
         _lightRestoreSettings();
     }
 
-    lightUpdate(false, lightTransition(), Light::Report::Web | Light::Report::Broker);
+    lightUpdate(false, lightTransition(), Light::DefaultReport);
 }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
@@ -1729,7 +1741,7 @@ void lightSetProvider(std::unique_ptr<LightProvider>&& ptr) {
 }
 
 bool lightAdd() {
-    if (_light_channels.size() < Light::ChannelsMax) {
+    if (_light_channels.size() <= Light::ChannelsMax) {
         static bool scheduled { false };
         _light_channels.push_back(channel_t());
         if (!scheduled) {
