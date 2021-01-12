@@ -799,7 +799,7 @@ void _relayMaskSettings(const String& mask) {
 }
 
 inline void _relayMaskSettings(const RelayMaskHelper& mask) {
-    _relayMaskSettings(mask.toString());
+    _relayMaskSettings(settings::internal::serialize(mask));
 }
 
 } // namespace
