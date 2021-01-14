@@ -342,10 +342,11 @@ void setup() {
 
     auto relay_pin = gpioRegister(controlPin());
     if (relay_pin) {
+        relay_pin->pinMode(OUTPUT);
         auto provider = std::make_unique<FanProvider>(std::move(relay_pin), config, onSpeedUpdate);
         if (!relayAdd(std::move(provider))) {
-            DEBUG_MSG_P(PSTR("[IFAN] Could not add relay provider for GPIO%d\n"), relay_pin->pin());
-            gpioUnlock(relay_pin->pin());
+            DEBUG_MSG_P(PSTR("[IFAN] Could not add relay provider for GPIO%d\n"), controlPin());
+            gpioUnlock(controlPin());
         }
     }
 
