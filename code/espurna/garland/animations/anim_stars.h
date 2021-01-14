@@ -18,7 +18,7 @@ class AnimStars : public Anim {
         inc = secureRandom(2, 5);
 
         //reset all phases
-        for (int i = 0; i < numLeds; i++)
+        for (int i = 0; i < numLeds; ++i)
             seq[i] = 255;
     }
 

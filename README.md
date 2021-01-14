@@ -185,6 +185,12 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Extra long click (>10 seconds) to go back to factory settings (only main button)
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
 * Configuration stored in different flash sectors to prevent data loss and corruption
+* **Garland** Implementing garland using WS2812 leds
+    * 12 animation modes (include start animation)
+    * Web control for:
+        * ON/OFF
+        * brightness
+        * speed
 
 ## Notices
 

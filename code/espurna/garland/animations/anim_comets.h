@@ -19,7 +19,7 @@ class AnimComets : public Anim {
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; i++) leds[i] = 0;
+        for (int i = 0; i < numLeds; ++i) leds[i] = 0;
 
         for (auto& c : comets) {
             int tail = c.head + c.len * -c.dir;

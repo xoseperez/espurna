@@ -80,18 +80,15 @@ Palette pals[] = {
     Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
 
     // Pastel: Pastel Fruity Mixture
-    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac}),
-
-    // Green: Vibrant greens
-    Palette("Green", {0x89ff01, 0x42c501, 0x349404, 0x0f6902, 0x004208})};
+    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})};
 
 constexpr size_t palsSize() { return sizeof(pals)/sizeof(pals[0]); }
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(),
-                 new AnimSpread(), new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble()};
+Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(), 
+                 new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
@@ -434,12 +431,12 @@ void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp
 }
 
 void Anim::initSeq() {
-    for (int i = 0; i < numLeds; i++)
+    for (int i = 0; i < numLeds; ++i)
         seq[i] = i;
 }
 
 void Anim::shuffleSeq() {
-    for (int i = 0; i < numLeds; i++) {
+    for (int i = 0; i < numLeds; ++i) {
         byte ind = (unsigned int)(rngb() * numLeds / 256);
         if (ind != i) {
             std::swap(seq[ind], seq[i]);

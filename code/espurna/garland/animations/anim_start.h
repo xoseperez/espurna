@@ -17,11 +17,11 @@ class AnimStart : public Anim {
             leds[phase].r = 255;
             leds[phase].g = 255;
             leds[phase].b = 255;
-            for (int i = 0; i < numLeds; i++) {
+            for (int i = 0; i < numLeds; ++i) {
                 leds[i].fade(50);
             }
         } else if (phase >= numLeds) {
-            for (int i = 0; i < numLeds; i++) {
+            for (int i = 0; i < numLeds; ++i) {
                 short r = numLeds + 255 - phase + rngb();
                 r = min(r, (short)255);
                 leds[i].r = (byte)max(r, (short)0);
