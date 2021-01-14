@@ -26,9 +26,9 @@ script_build_webui=true
 
 release_mode=false
 
-if ${TRAVIS:-false}; then
-    git_revision=${TRAVIS_COMMIT::7}
-    git_tag=${TRAVIS_TAG}
+if ${CI:-false}; then
+    git_revision=${GITHUB_SHA::8}
+    git_tag=$(echo -n $GITHUB_REF | grep '^refs/tags/' | cut -d '/' -f 2)
 elif is_git; then
     git_revision=$(git rev-parse --short HEAD)
     git_tag=$(git tag --contains HEAD)
@@ -86,9 +86,8 @@ build_webui() {
     echo "Building web interface..."
     node node_modules/gulp/bin/gulp.js || exit
 
-    # TODO: do something if webui files are different
-    # for now, just print in travis log
-    if ${TRAVIS:-false}; then
+    # TODO: do something if webui files are different?
+    if ${CI:-false}; then
         git --no-pager diff --stat
     fi
 }
@@ -114,8 +113,7 @@ build_environments() {
         platformio run --silent --environment $environment || exit 1
         echo -n "SIZE:    "
         stat_bytes .pio/build/$environment/firmware.bin
-        [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
-            mv .pio/build/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
+        mv .pio/build/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
     done
     echo "--------------------------------------------------------------"
 }

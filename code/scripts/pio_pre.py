@@ -22,7 +22,7 @@ from SCons.Script import ARGUMENTS
 from espurna_utils.release import merge_cpp
 
 
-CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
+CI = "true" == os.environ.get("CI")
 PIO_PLATFORM = env.PioPlatform()
 CONFIG = env.GetProjectConfig()
 VERBOSE = "1" == ARGUMENTS.get("PIOVERBOSE", "0")

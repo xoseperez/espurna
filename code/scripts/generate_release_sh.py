@@ -22,7 +22,7 @@ import shlex
 import configparser
 import collections
 
-CI = any([os.environ.get("TRAVIS"), os.environ.get("CI")])
+CI = "true" == os.environ.get("CI", "false")
 Build = collections.namedtuple("Build", "env extends build_flags src_build_flags")
 
 

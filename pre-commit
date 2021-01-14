@@ -3,11 +3,11 @@
 
 Referencing current branch in github README.md [1]
 This pre-commit hook [2] updates the README.md file's
-Travis badge with the current branch. Based on [4].
+CI badge [3] with the current branch. Based on [4].
 
 [1] http://stackoverflow.com/questions/18673694/referencing-current-branch-in-github-readme-md
 [2] http://www.git-scm.com/book/en/v2/Customizing-Git-Git-Hooks
-[3] https://docs.travis-ci.com/user/status-images/
+[3] https://github.com/xoseperez/espurna/actions
 [4] https://gist.github.com/dandye/dfe0870a6a1151c89ed9
 
 Copy this file to .git/hooks/
@@ -94,8 +94,7 @@ def espurna_get_version(base, version_h="code/espurna/config/version.h"):
 
 
 TEMPLATES = {
-    "![travis]": "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]"
-                 "(https://travis-ci.org/{USER}/{REPO})\n",
+    "![ci]": "![ci](https://github.com/{USER}/{REPO}/workflows/ESPurna%20build/badge.svg?branch={BRANCH})\n"
     "![version]": "[![version](https://img.shields.io/badge/version-{VERSION:escape_hyphen}-brightgreen.svg)]"
                   "(CHANGELOG.md)\n",
     "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH:escape_hyphen}-orange.svg)]"
