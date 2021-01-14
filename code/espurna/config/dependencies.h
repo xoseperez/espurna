@@ -132,6 +132,11 @@
 #define MQTT_SUPPORT                1           // Subscribe and publish things
 #endif
 
+#if IFAN_SUPPORT
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1            // Need relays to manage general state
+#endif
+
 //------------------------------------------------------------------------------
 // Hint about ESPAsyncTCP options and our internal one
 // TODO: clean-up SSL_ENABLED and USE_SSL settings for 1.15.0

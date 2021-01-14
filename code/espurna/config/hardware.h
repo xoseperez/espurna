@@ -1014,7 +1014,7 @@
     #define IFAN_SUPPORT            1
 
     // These buttons are triggered by the remote
-    // iFan module adds a custom button handler
+    // iFan module adds a custom button handler and a special relay controlling the speed
     #define BUTTON1_PIN             0
     #define BUTTON1_CLICK           BUTTON_ACTION_TOGGLE
 
@@ -1026,9 +1026,6 @@
 
     #define BUTTON4_PIN             14
     #define BUTTON4_CLICK           BUTTON_ACTION_CUSTOM
-
-    // Only one relay by default, controlling the ON / OFF
-    #define RELAY1_PIN              12
 
     // LEDs
     #define LED1_PIN                13

@@ -99,8 +99,6 @@ constexpr unsigned long DefaultSaveDelay { 1000ul };
 // Remote presses trigger GPIO pushbutton events
 // Attach to a specific ID to trigger an action
 
-constexpr unsigned char DefaultRelayId { 0u };
-
 constexpr unsigned char DefaultLowButtonId { 1u };
 constexpr unsigned char DefaultMediumButtonId { 2u };
 constexpr unsigned char DefaultHighButtonId { 3u };
@@ -125,9 +123,22 @@ StatePins statePins() {
     };
 }
 
+constexpr int controlPin() {
+    return 12;
+}
+
 struct Config {
+    Config() = default;
+    explicit Config(unsigned long save_, unsigned char buttonLowId_,
+            unsigned char buttonMediumId_, unsigned char buttonHighId_, Speed speed_) :
+        save(save_),
+        buttonLowId(buttonLowId_),
+        buttonMediumId(buttonMediumId_),
+        buttonHighId(buttonHighId_),
+        speed(speed_)
+    {}
+
     unsigned long save { DefaultSaveDelay };
-    unsigned char relayId { DefaultRelayId };
     unsigned char buttonLowId { DefaultLowButtonId };
     unsigned char buttonMediumId { DefaultMediumButtonId };
     unsigned char buttonHighId { DefaultHighButtonId };
@@ -136,14 +147,13 @@ struct Config {
 };
 
 Config readSettings() {
-    return {
+    return Config(
         getSetting("ifanSave", DefaultSaveDelay),
-        getSetting("ifanRelayId", DefaultRelayId),
         getSetting("ifanBtnLowId", DefaultLowButtonId),
-        getSetting("ifanBtnLowId", DefaultMediumButtonId),
+        getSetting("ifanBtnMediumId", DefaultMediumButtonId),
         getSetting("ifanBtnHighId", DefaultHighButtonId),
         getSetting("ifanSpeed", Speed::Medium)
-    };
+    );
 }
 
 Config config;
@@ -223,41 +233,38 @@ const char* maskFromSpeed(Speed speed) {
     return "";
 }
 
-void setSpeed(StatePins& pins, Speed speed) {
-    auto state = stateFromSpeed(speed);
-
-    DEBUG_MSG_P(PSTR("[IFAN] State mask: %s\n"), maskFromSpeed(speed));
-    for (size_t index = 0; index < pins.size(); ++ index) {
-        if (!pins[index].second) continue;
-        pins[index].second->digitalWrite(state[index]);
-    }
-
-}
-
-void setSpeed(Speed speed) {
-    setSpeed(config.state_pins, speed);
-}
-
 // Note that we use API speed endpoint strictly for the setting
 // (which also allows to pre-set the speed without turning the relay ON)
 
-void setSpeedFromPayload(const char* payload) {
-    auto speed = payloadToSpeed(payload);
+using FanSpeedUpdate = std::function<void(Speed)>;
+
+FanSpeedUpdate onSpeedUpdate = [](Speed) {
+};
+
+void updateSpeed(Config& config, Speed speed) {
     switch (speed) {
     case Speed::Low:
     case Speed::Medium:
     case Speed::High:
-        setSpeed(speed);
-        report(speed);
         save(speed);
+        report(speed);
+        onSpeedUpdate(speed);
         break;
     case Speed::Off:
         break;
     }
 }
 
-void setSpeedFromPayload(const String& payload) {
-    setSpeedFromPayload(payload.c_str());
+void updateSpeed(Speed speed) {
+    updateSpeed(config, speed);
+}
+
+void updateSpeedFromPayload(const char* payload) {
+    updateSpeed(payloadToSpeed(payload));
+}
+
+void updateSpeedFromPayload(const String& payload) {
+    updateSpeedFromPayload(payload.c_str());
 }
 
 #if MQTT_SUPPORT
@@ -272,7 +279,7 @@ void onMqttEvent(unsigned int type, const char* topic, const char* payload) {
     case MQTT_MESSAGE_EVENT: {
         auto parsed = mqttMagnitude(topic);
         if (parsed.startsWith(MQTT_TOPIC_SPEED)) {
-            setSpeedFromPayload(payload);
+            updateSpeedFromPayload(payload);
         }
         break;
     }
@@ -282,9 +289,45 @@ void onMqttEvent(unsigned int type, const char* topic, const char* payload) {
 
 #endif // MQTT_SUPPORT
 
-void setSpeedFromStatus(bool status) {
-    setSpeed(status ? config.speed : Speed::Off);
-}
+class FanProvider : public RelayProviderBase {
+public:
+    explicit FanProvider(BasePinPtr&& pin, const Config& config, FanSpeedUpdate& callback) :
+        _pin(std::move(pin)),
+        _config(config)
+    {
+        callback = [this](Speed speed) {
+            change(speed);
+        };
+    }
+
+    const char* id() const override {
+        return "fan";
+    }
+
+    void change(Speed speed) {
+        _pin->digitalWrite((Speed::Off != speed) ? HIGH : LOW);
+
+        auto state = stateFromSpeed(speed);
+        DEBUG_MSG_P(PSTR("[IFAN] State mask: %s\n"), maskFromSpeed(speed));
+
+        for (size_t index = 0; index < _config.state_pins.size(); ++index) {
+            auto& pin = _config.state_pins[index].second;
+            if (!pin) {
+                continue;
+            }
+
+            pin->digitalWrite(state[index]);
+        }
+    }
+
+    void change(bool status) override {
+        change(status ? _config.speed : Speed::Off);
+    }
+
+private:
+    BasePinPtr _pin;
+    const Config& _config;
+};
 
 void setup() {
 
@@ -297,23 +340,23 @@ void setup() {
 
     espurnaRegisterReload(configure);
 
+    auto relay_pin = gpioRegister(controlPin());
+    if (relay_pin) {
+        auto provider = std::make_unique<FanProvider>(std::move(relay_pin), config, onSpeedUpdate);
+        if (!relayAdd(std::move(provider))) {
+            DEBUG_MSG_P(PSTR("[IFAN] Could not add relay provider for GPIO%d\n"), relay_pin->pin());
+            gpioUnlock(relay_pin->pin());
+        }
+    }
+
 #if BUTTON_SUPPORT
     buttonSetCustomAction([](unsigned char id) {
         if (config.buttonLowId == id) {
-            setSpeed(Speed::Low);
+            updateSpeed(Speed::Low);
         } else if (config.buttonMediumId == id) {
-            setSpeed(Speed::Medium);
+            updateSpeed(Speed::Medium);
         } else if (config.buttonHighId == id) {
-            setSpeed(Speed::High);
-        }
-    });
-#endif
-
-#if RELAY_SUPPORT
-    setSpeedFromStatus(relayStatus(config.relayId));
-    relaySetStatusChange([](unsigned char id, bool status) {
-        if (config.relayId == id) {
-            setSpeedFromStatus(status);
+            updateSpeed(Speed::High);
         }
     });
 #endif
@@ -329,7 +372,7 @@ void setup() {
             return true;
         },
         [](ApiRequest& request) {
-            setSpeedFromPayload(request.param(F("value")));
+            updateSpeedFromPayload(request.param(F("value")));
             return true;
         }
     );
@@ -338,7 +381,7 @@ void setup() {
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("SPEED"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc == 2) {
-            setSpeedFromPayload(ctx.argv[1]);
+            updateSpeedFromPayload(ctx.argv[1]);
         }
 
         ctx.output.println(speedToPayload(config.speed));
