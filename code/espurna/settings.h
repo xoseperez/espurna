@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 #include <utility>
 #include <vector>
+#include <type_traits>
 
 #include <ArduinoJson.h>
 
@@ -114,6 +115,14 @@ using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
 namespace settings {
 namespace internal {
 
+template <typename T>
+using is_arduino_string = std::is_same<String, typename std::decay<T>::type>;
+
+template <typename T>
+using enable_if_arduino_string = std::enable_if<is_arduino_string<T>::value>;
+
+// --------------------------------------------------------------------------
+
 uint32_t u32fromString(const String& string, int base);
 
 template <typename T>
@@ -123,6 +132,9 @@ template <typename T>
 T convert(const String& value);
 
 // --------------------------------------------------------------------------
+
+template <>
+GpioType convert(const String& value);
 
 template <>
 float convert(const String& value);
@@ -154,12 +166,7 @@ unsigned char convert(const String& value);
 template<typename T>
 String serialize(const T& value);
 
-template<typename T>
-String serialize(const T& value) {
-    return String(value);
-}
-
-} // namespace settings::internal
+} // namespace internal
 } // namespace settings
 
 // --------------------------------------------------------------------------

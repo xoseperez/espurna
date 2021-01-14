@@ -14,121 +14,174 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "tuya_types.h"
 #include "tuya_transport.h"
 
-namespace Tuya {
+namespace tuya {
 
-    class DataFrame {
+using container = std::vector<uint8_t>;
+using const_iterator = container::const_iterator;
 
-    public:
+namespace util {
 
-        using container = std::vector<uint8_t>;
-        using const_iterator = container::const_iterator;
+template <typename T>
+container serialize_frame(const T& frame) {
+    container result;
 
-        DataFrame(DataFrame& rhs) = delete;
+    result.reserve(6 + frame.length());
 
-        ~DataFrame() = default;
-        DataFrame(DataFrame&& rhs) = default;
+    result.push_back(frame.version());
+    result.push_back(frame.command());
+    result.push_back(static_cast<uint8_t>(frame.length() >> 8) & 0xff);
+    result.push_back(static_cast<uint8_t>(frame.length() & 0xff));
 
-        DataFrame(uint8_t command) :
-            command(command),
-            length(0)
-        {}
+    if (frame.length()) {
+        result.insert(result.end(), frame.cbegin(), frame.cend());
+    }
 
-        DataFrame(Command command) :
-            DataFrame(static_cast<uint8_t>(command))
-        {}
+    return result;
+}
 
-        DataFrame(Command command, uint16_t length,
-                const const_iterator begin,
-                const const_iterator end) :
-            command(static_cast<uint8_t>(command)),
-            length(length),
-            _begin(begin),
-            _end(end)
-        {}
+} // namespace util
 
-        DataFrame(uint8_t version, uint8_t command, uint16_t length,
-                const const_iterator begin,
-                const const_iterator end) :
-            version(version),
-            command(command),
-            length(length),
-            _begin(begin),
-            _end(end)
-        {}
+class DataFrameView {
 
-        DataFrame(Command command, std::initializer_list<uint8_t> data) :
-            command(static_cast<uint8_t>(command)),
-            length(data.size()),
-            _data(data),
-            _begin(_data.cbegin()),
-            _end(_data.cend())
-        {}
+public:
+    explicit DataFrameView(const Transport& input) :
+        _version(input[2]),
+        _command(input[3]),
+        _length((input[4] << 8) + input[5]),
+        _begin(input.cbegin() + 6),
+        _end(_begin + _length)
+    {}
 
-        DataFrame(Command command, std::vector<uint8_t>&& data) :
-            command(static_cast<uint8_t>(command)),
-            length(data.size()),
-            _data(std::move(data)),
-            _begin(_data.cbegin()),
-            _end(_data.cend())
-        {}
+    explicit DataFrameView(const_iterator it) :
+        _version(it[0]),
+        _command(it[1]),
+        _length((it[2] << 8) + it[3]),
+        _begin(it + 4),
+        _end(_begin + _length)
+    {}
 
-        DataFrame(const_iterator iter) :
-            version(iter[2]),
-            command(iter[3]),
-            length((iter[4] << 8) + iter[5]),
-            _begin(iter + 6),
-            _end(iter + 6 + length)
-        {}
+    explicit DataFrameView(const container& data) :
+        DataFrameView(data.cbegin())
+    {}
 
-        DataFrame(const Transport& input) :
-            DataFrame(input.cbegin())
-        {}
+    container data() const {
+        return container(_begin, _end);
+    }
 
-        bool commandEquals(Command command) const {
-            return (static_cast<uint8_t>(command) == this->command);
-        }
+    container serialize() const {
+        return util::serialize_frame(*this);
+    }
 
-        const_iterator cbegin() const {
-            return _begin;
-        };
-
-        const_iterator cend() const {
-            return _end;
-        };
-
-        uint8_t operator[](size_t i) const {
-            if (!length) return 0;
-            return _begin[i];
-        }
-
-        container serialize() const {
-            container result;
-
-            result.reserve(6 + length);
-            result.assign({
-                version, command,
-                uint8_t(length >> 8),
-                uint8_t(length & 0xff)
-            });
-
-            if (length && (_begin != _end)) {
-                result.insert(result.end(), _begin, _end);
-            }
-
-            return result;
-        }
-
-        uint8_t version = 0;
-        uint8_t command = 0;
-        uint16_t length = 0;
-
-    protected:
-
-        container _data;
-        const_iterator _begin;
-        const_iterator _end;
-
+    const_iterator cbegin() const {
+        return _begin;
     };
 
+    const_iterator cend() const {
+        return _end;
+    };
 
-}
+    uint8_t operator[](size_t i) const {
+        return *(_begin + i);
+    }
+     
+    uint8_t version() const {
+        return _version;
+    }
+
+    uint8_t command() const {
+        return _command;
+    }
+
+    uint16_t length() const {
+        return _length;
+    }
+
+private:
+    uint8_t _version { 0u };
+    uint8_t _command { 0u };
+    uint16_t _length { 0u };
+
+    const_iterator _begin;
+    const_iterator _end;
+};
+
+class DataFrame {
+public:
+    template <typename T>
+    DataFrame(Command command, uint8_t version, T&& data) :
+        _data(std::forward<T>(data)),
+        _command(static_cast<uint8_t>(command)),
+        _version(version)
+    {}
+
+    template <typename T>
+    DataFrame(Command command, T&& data) :
+        _data(std::forward<T>(data)),
+        _command(static_cast<uint8_t>(command))
+    {}
+
+    explicit DataFrame(uint8_t command) :
+        _command(command)
+    {}
+
+    explicit DataFrame(Command command) :
+        DataFrame(static_cast<uint8_t>(command))
+    {}
+
+    explicit DataFrame(const Transport& input) :
+        _version(input[2]),
+        _command(input[3])
+    {
+        auto length = (input[4] << 8) + input[5];
+        _data.reserve(length);
+
+        auto data = input.cbegin() + 6;
+        _data.insert(_data.begin(), data, data + length);
+    }
+
+    explicit DataFrame(const DataFrameView& view) :
+        _data(view.cbegin(), view.cend()),
+        _version(view.version()),
+        _command(view.command())
+    {}
+
+    const container& data() const {
+        return _data;
+    }
+
+    const_iterator cbegin() const {
+        return _data.cbegin();
+    };
+
+    const_iterator cend() const {
+        return _data.cend();
+    };
+
+    uint8_t operator[](size_t i) const {
+        return _data[i];
+    }
+
+    container serialize() const {
+        return util::serialize_frame(*this);
+    }
+
+    uint8_t version() const {
+        return _version;
+    }
+
+    uint8_t command() const {
+        return _command;
+    }
+
+    uint16_t length() const {
+        return _data.size();
+    }
+
+private:
+    container _data;
+
+    uint8_t _version { 0u };
+    uint8_t _command { 0u };
+};
+
+} // namespace

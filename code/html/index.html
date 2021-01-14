@@ -489,6 +489,11 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Define how the different switches should be synchronized.</div>
                                 </div>
 
+                                <div class="pure-g module module-multirelay">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Interlock delay</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="relayDelayInterlock" class="pure-u-1" type="number" min="0" /></div>
+                                </div>
+
                                 <div id="relayConfig"></div>
 
                             </fieldset>
@@ -558,6 +563,30 @@
 
                             <fieldset>
 
+                                <div class="pure-g module-relay">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Light state switch</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ltRelay" tabindex="5" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled, add virtual relay switch that controls the ON / OFF state.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save values</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ltSave" tabindex="6" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Save channel &amp; brightness values in settings</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save delay</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltSaveDelay" min="5000" max="60000" tabindex="7" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">When "Save values" is enabled, wait for the delay (ms) before the values are saved</div>
+                                </div>
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use color</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
@@ -612,24 +641,32 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Channel transitions</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="13" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled, channel changes will be smoothed.</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Transition time</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="lightTime" min="10" max="5000" tabindex="14" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltTime" min="10" max="5000" tabindex="14" action="reload" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Time in millisecons to transition from one color to another.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Time to transition from one color to another (ms)</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Transition step</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltStep" min="10" max="5000" tabindex="15" action="reload" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">(ms, depends on the transition time)</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="15" action="reconnect" /></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="16" action="reconnect" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Sync color between different lights.</div>
                                 </div>
@@ -2048,13 +2085,13 @@
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
+                <label class="pure-u-1 pure-u-lg-1-4"><span class="relay-name"></span></label>
                 <div><input name="relay" type="checkbox" on="ON" off="OFF" /></div>
             </div>
         </div>
 
         <div id="relayConfigTemplate" class="template">
-            <legend>Switch #<span class="id"></span> (<span class="gpio"></span>)</legend>
+            <legend><span class="name"></span> (<span class="prov"></span>)</legend>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
                 <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">

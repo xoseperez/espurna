@@ -22,6 +22,12 @@ constexpr size_t ButtonsMax = 32;
 
 using button_action_t = uint8_t;
 
+enum class ButtonProvider : int {
+    None,
+    Gpio,
+    Analog
+};
+
 enum class button_event_t {
     None,
     Pressed,
@@ -47,28 +53,24 @@ struct button_event_delays_t {
     button_event_delays_t();
     button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick);
 
-    const unsigned long debounce;
-    const unsigned long repeat;
-    const unsigned long lngclick;
-    const unsigned long lnglngclick;
+    unsigned long debounce;
+    unsigned long repeat;
+    unsigned long lngclick;
+    unsigned long lnglngclick;
 };
 
 struct button_t {
-
-    button_t(unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
-    button_t(std::shared_ptr<BasePin> pin, const debounce_event::types::Config& config,
-        unsigned char relayID, const button_actions_t& actions, const button_event_delays_t& delays);
+    button_t(button_actions_t&& actions, button_event_delays_t&& delays);
+    button_t(BasePinPtr&& pin, const debounce_event::types::Config& config,
+        button_actions_t&& actions, button_event_delays_t&& delays);
 
     bool state();
     button_event_t loop();
 
     std::unique_ptr<debounce_event::EventEmitter> event_emitter;
 
-    const button_event_delays_t event_delays;
-    const button_actions_t actions;
-
-    const unsigned char relayID;
-
+    button_actions_t actions;
+    button_event_delays_t event_delays;
 };
 
 BrokerDeclare(ButtonBroker, void(unsigned char id, button_event_t event));

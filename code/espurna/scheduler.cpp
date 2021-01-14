@@ -126,7 +126,7 @@ void _schConfigure() {
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
                     i, sch_type, sch_switch,
                     sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
-                    (char *) sch_weekdays.c_str(),
+                    sch_weekdays.c_str(),
                     sch_enabled ? "" : " (disabled)"
                 );
 
@@ -174,7 +174,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
         if (SCHEDULER_TYPE_DIM == sch_type) {
             DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
             lightChannel(sch_switch, sch_action);
-            lightUpdate(true, true);
+            lightUpdate();
         }
     #endif
 

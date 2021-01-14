@@ -299,7 +299,7 @@ void setup() {
         displaySetup();
     #endif
     #if TUYA_SUPPORT
-        Tuya::tuyaSetup();
+        tuya::setup();
     #endif
     #if KINGART_CURTAIN_SUPPORT
         kingartCurtainSetup();

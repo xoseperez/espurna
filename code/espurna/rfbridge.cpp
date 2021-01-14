@@ -1244,27 +1244,31 @@ void rfbSetup() {
         auto rx = getSetting("rfbRX", RFB_RX_PIN);
         auto tx = getSetting("rfbTX", RFB_TX_PIN);
 
-        // TODO: tag gpioGetLock with a NAME string, skip log here
-        _rfb_receive = gpioValid(rx);
-        _rfb_transmit = gpioValid(tx);
-        if (!_rfb_transmit && !_rfb_receive) {
+        if ((GPIO_NONE == rx) && (GPIO_NONE == tx)) {
             DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
             return;
         }
 
         _rfb_modem = new RCSwitch();
-        if (_rfb_receive) {
+        if (gpioLock(rx)) {
+            _rfb_receive = true;
             _rfb_modem->enableReceive(rx);
             DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
         }
-        if (_rfb_transmit) {
+        if (gpioLock(tx)) {
             auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
+            _rfb_transmit = true;
             _rfb_modem->enableTransmit(tx);
             _rfb_modem->setRepeatTransmit(transmit);
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
         }
     }
 
+#endif
+
+#if RELAY_SUPPORT
+    relaySetStatusNotify(rfbStatus);
+    relaySetStatusChange(rfbStatus);
 #endif
 
 #if MQTT_SUPPORT

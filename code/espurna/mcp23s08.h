@@ -27,3 +27,4 @@ void MCP23S08SetPin(uint8_t pinNumber, bool state);
 bool MCP23S08GetPin(uint8_t pinNumber);
 
 bool mcpGpioValid(unsigned char gpio);
+GpioBase& mcp23s08Gpio();

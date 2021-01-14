@@ -16,28 +16,34 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 #include "libs/BasePin.h"
 #include "mcp23s08.h"
 
-class McpGpioPin final : public BasePin {
-    public:
+#include <bitset>
 
+class McpGpioPin final : public BasePin {
+public:
     explicit McpGpioPin(unsigned char pin) :
-        BasePin(pin)
+        _pin(pin)
     {}
 
     void pinMode(int8_t mode) override {
-        ::MCP23S08SetDirection(this->pin, mode);
+        ::MCP23S08SetDirection(_pin, mode);
     }
 
     void digitalWrite(int8_t val) override {
-        ::MCP23S08SetPin(this->pin, val);
+        ::MCP23S08SetPin(_pin, val);
     }
 
     int digitalRead() override {
-        return ::MCP23S08GetPin(this->pin);
+        return ::MCP23S08GetPin(_pin);
     }
 
-    String description() const override {
-        static String desc(String(F("McpGpioPin @ GPIO")) + static_cast<int>(pin));
-        return desc;
+    unsigned char pin() const override {
+        return _pin;
     }
+
+    const char* id() const override {
+        return "McpGpioPin";
+    }
+
+private:
+    unsigned char _pin { GPIO_NONE };
 };
-

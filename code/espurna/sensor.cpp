@@ -1794,7 +1794,8 @@ void _sensorLoad() {
             }
         };
 
-        for (unsigned char index = 0; index < GpioPins; ++index) {
+        auto pins = gpioPins();
+        for (unsigned char index = 0; index < pins; ++index) {
             const auto pin = getPin(index);
             if (pin == GPIO_NONE) break;
 
@@ -1913,7 +1914,8 @@ void _sensorLoad() {
             }
         };
 
-        for (unsigned char index = 0; index < GpioPins; ++index) {
+        auto pins = gpioPins();
+        for (unsigned char index = 0; index < pins; ++index) {
             const auto pin = getPin(index);
             if (pin == GPIO_NONE) break;
 

@@ -8,7 +8,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
-namespace Tuya {
+namespace tuya {
 
     enum class Command : uint8_t {
         Heartbeat = 0x00,
@@ -28,7 +28,7 @@ namespace Tuya {
 
     enum class State {
         INIT,
-        HEARTBEAT,
+        BOOT,
         QUERY_PRODUCT,
         QUERY_MODE,
         QUERY_DP,
@@ -37,9 +37,10 @@ namespace Tuya {
     };
 
     enum class Heartbeat {
-        NONE,
-        SLOW,
-        FAST
+        None,
+        Boot,
+        Fast,
+        Slow
     };
 
     enum class Type : uint8_t {

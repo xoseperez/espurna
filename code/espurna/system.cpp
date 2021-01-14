@@ -243,19 +243,11 @@ void systemLoop() {
 }
 
 void _systemSetupSpecificHardware() {
-
     //The ESPLive has an ADC MUX which needs to be configured.
     #if defined(MANCAVEMADE_ESPLIVE)
         pinMode(16, OUTPUT);
         digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
     #endif
-
-    // These devices use the hardware UART
-    // to communicate to secondary microcontrollers
-    #if (RFB_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_EFM8BB1)) || (RELAY_PROVIDER == RELAY_PROVIDER_DUAL) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
-        Serial.begin(SERIAL_BAUDRATE);
-    #endif
-
 }
 
 void systemSetup() {

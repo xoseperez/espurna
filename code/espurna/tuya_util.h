@@ -12,114 +12,195 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <algorithm>
 #include <vector>
 
-namespace Tuya {
+#include "tuya_types.h"
 
-    template <typename T>
-    class States {
+namespace tuya {
 
-        public:
-
-            struct Container {
-                uint8_t dp;
-                T value;
-            };
-
-            using iterator = typename std::vector<Container>::iterator;
-            using const_iterator = typename std::vector<Container>::const_iterator;
-
-            States(size_t capacity) :
-                _capacity(capacity)
-            {
-                _states.reserve(capacity);
-            }
-
-            bool update(const uint8_t dp, const T value, bool create=false) {
-                auto found = std::find_if(_states.begin(), _states.end(), [dp](const Container& internal) {
-                    return dp == internal.dp;
-                });
-
-                if (found != _states.end()) {
-                    if (found->value != value) {
-                        found->value = value;
-                        _changed = true;
-                        return true;
-                    }
-                } else if (create) {
-                    _changed = true;
-                    _states.emplace_back(States::Container{dp, value});
-                    return true;
-                }
-
-                return false;
-            }
-
-            bool pushOrUpdate(const uint8_t dp, const T value) {
-                if (_states.size() >= _capacity) return false;
-                return update(dp, value, true);
-            }
-
-            bool changed() {
-                bool res = _changed;
-                if (_changed) _changed = false;
-                return res;
-            }
-
-            Container& operator[] (const size_t n) {
-                return _states[n];
-            }
-
-            size_t size() const {
-                return _states.size();
-            }
-
-            size_t capacity() const {
-                return _capacity;
-            }
-
-            iterator begin() {
-                return _states.begin();
-            }
-
-            iterator end() {
-                return _states.end();
-            }
-
-            const_iterator begin() const {
-                return _states.begin();
-            }
-
-            const_iterator end() const {
-                return _states.end();
-            }
-
-        private:
-            bool _changed = false;
-            size_t _capacity = 0;
-            std::vector<Container> _states;
-    };
-
-    class DiscoveryTimeout {
-        public:
-            DiscoveryTimeout(uint32_t start, uint32_t timeout) :
-                _start(start),
-                _timeout(timeout)
-            {}
-
-            DiscoveryTimeout(uint32_t timeout) :
-                DiscoveryTimeout(millis(), timeout)
-            {}
-
-            operator bool() {
-                return (millis() - _start > _timeout);
-            }
-
-            void feed() {
-                _start = millis();
-            }
-
-        private:
-            uint32_t _start;
-            const uint32_t _timeout;
-    };
-
+inline bool operator==(uint8_t lhs, Command rhs) {
+    return lhs == static_cast<uint8_t>(rhs);
 }
+
+inline bool operator==(Command lhs, uint8_t rhs) {
+    return static_cast<uint8_t>(lhs) == rhs;
+}
+
+inline bool operator!=(uint8_t lhs, Command rhs) {
+    return !(lhs == rhs);
+}
+
+inline bool operator!=(Command lhs, uint8_t rhs) {
+    return !(lhs == rhs);
+}
+
+struct StateId {
+    StateId() = default;
+
+    void filter(bool value) {
+        _filter = value;
+    }
+
+    bool filter() {
+        return _filter;
+    }
+
+    uint8_t id() {
+        return _id;
+    }
+
+    StateId& operator=(uint8_t value) {
+        _id = value;
+        return *this;
+    }
+
+    explicit operator bool() {
+        return _id != 0u;
+    }
+
+private:
+    uint8_t _id { 0 };
+    bool _filter { false };
+};
+
+struct OnceFlag {
+    OnceFlag() = default;
+    OnceFlag(const OnceFlag&) = delete;
+    OnceFlag(OnceFlag&&) = delete;
+
+    explicit operator bool() const {
+        return _value;
+    }
+
+    OnceFlag& operator=(bool value) {
+        if (!_value) {
+            _value = value;
+        }
+        return *this;
+    }
+
+    void set() {
+        _value = true;
+    }
+
+    bool get() const {
+        return _value;
+    }
+
+private:
+    bool _value { false };
+};
+
+struct Dp {
+    Type type;
+    uint8_t id;
+};
+
+struct DpRelation {
+    uint8_t local_id;
+    uint8_t dp_id;
+};
+
+bool operator==(const DpRelation& lhs, const DpRelation& rhs) {
+    return (lhs.local_id == rhs.local_id) || (lhs.dp_id == rhs.dp_id);
+}
+
+// Specifically for relay (or channel) <=> DP id association
+// Caller is expected to check for uniqueness manually, when `add(...)`ing
+
+struct DpMap {
+    using map_type = std::vector<DpRelation>;
+    DpMap() = default;
+
+    bool exists(const DpRelation& other) {
+        for (const auto& entry : _map) {
+            if (entry == other) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool add(const DpRelation& entry) {
+        if (!exists(entry)) {
+            _map.push_back(entry);
+            return true;
+        }
+
+        return false;
+    }
+
+    bool add(uint8_t local_id, uint8_t dp_id) {
+        return add(DpRelation{local_id, dp_id});
+    }
+
+    const map_type& map() {
+        return _map;
+    }
+
+    const DpRelation* find_local(unsigned char local_id) const {
+        for (const auto& entry : _map) {
+            if (entry.local_id == local_id) {
+                return &entry;
+            }
+        }
+
+        return nullptr;
+    }
+
+    const DpRelation* find_dp(unsigned char dp_id) const {
+        for (const auto& entry : _map) {
+            if (entry.dp_id == dp_id) {
+                return &entry;
+            }
+        }
+
+        return nullptr;
+    }
+
+    size_t size() const {
+        return _map.size();
+    }
+
+private:
+    map_type _map;
+};
+
+using Dps = std::vector<Dp>;
+
+class Discovery {
+public:
+    Discovery() = delete;
+    Discovery(uint32_t start, uint32_t timeout) :
+        _start(start),
+        _timeout(timeout)
+    {}
+
+    explicit Discovery(uint32_t timeout) :
+        Discovery(millis(), timeout)
+    {}
+
+    explicit operator bool() {
+        return (millis() - _start > _timeout);
+    }
+
+    void feed() {
+        _start = millis();
+    }
+
+    void add(Type type, uint8_t dp) {
+        feed();
+        _dps.push_back(Dp{type, dp});
+    }
+
+    Dps& get() {
+        return _dps;
+    }
+
+private:
+    Dps _dps;
+
+    uint32_t _start;
+    const uint32_t _timeout;
+};
+
+} // namespace tuya

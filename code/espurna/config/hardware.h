@@ -565,20 +565,23 @@
     #define MANUFACTURER            "ITEAD"
     #define DEVICE                  "SONOFF_DUAL"
     #define SERIAL_BAUDRATE         19230
-    #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
-    #define DUMMY_RELAY_COUNT       2
-    #define DEBUG_SERIAL_SUPPORT    0
-
-    // Buttons
-    #define BUTTON1_RELAY       1
-    #define BUTTON2_RELAY       2
-    #define BUTTON3_RELAY       1
-
-    #define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT    1
 
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
+
+    // Relays
+    #define RELAY_PROVIDER_DUAL_SUPPORT 1
+
+    #define RELAY1_PROVIDER     RELAY_PROVIDER_DUAL
+    #define RELAY2_PROVIDER     RELAY_PROVIDER_DUAL
+
+    // No need to include generic GPIO support
+    // "Buttons" are attached to a secondary MCU and RELAY_PROVIDER_DUAL handles that
+    #define BUTTON_PROVIDER_GPIO_SUPPORT    0
+
+    // Conflicts with relay operation
+    #define DEBUG_SERIAL_SUPPORT            0
 
 #elif defined(ITEAD_SONOFF_DUAL_R2)
 
@@ -765,9 +768,7 @@
     // Info
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "BNSZ01"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            13
@@ -782,7 +783,6 @@
     // Info
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_RFBRIDGE"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
 
     // Number of virtual switches
     #ifndef DUMMY_RELAY_COUNT
@@ -820,9 +820,7 @@
     // Info
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_B1"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -839,9 +837,7 @@
     // Info
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_LED"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            13
@@ -1246,9 +1242,7 @@
     // Info
     #define MANUFACTURER        "AITHINKER"
     #define DEVICE              "AI_LIGHT"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1268,9 +1262,7 @@
     // Info
     #define MANUFACTURER        "LYASI"
     #define DEVICE              "RGB_LED"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1290,9 +1282,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "LED_CONTROLLER"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            2
@@ -1315,9 +1305,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "LED_CONTROLLER_20"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            2
@@ -1340,9 +1328,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "ZJ_WFMN_A_11"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            2
@@ -1367,9 +1353,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "ZJ_WFMN_B_11"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            2
@@ -1394,9 +1378,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "ZJ_WFMN_C_11"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
 	// Buttons
     #define BUTTON1_PIN         0
@@ -1416,9 +1398,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "ZJ_ESPM_5CH_B_13"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -1442,9 +1422,7 @@
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "ZJ_LB_RGBWW_L"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -1463,9 +1441,7 @@
     // Info
     #define MANUFACTURER        "HUACANXING"
     #define DEVICE              "H801"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
     #define SERIAL_RX_ENABLED   1
 
@@ -1486,9 +1462,7 @@
     // Info
     #define MANUFACTURER        "HUACANXING"
     #define DEVICE              "H802"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
     #define SERIAL_RX_ENABLED   1
 
@@ -1832,9 +1806,7 @@
     // Info
     #define MANUFACTURER        "INTERMITTECH"
     #define DEVICE              "QUINLED"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            5
@@ -1854,9 +1826,7 @@
     // Info
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "AL_LC01"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      3
@@ -1869,9 +1839,7 @@
     // Info
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "AL_LC02"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1885,9 +1853,7 @@
     // Info
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "AL_LC02_V14"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1901,9 +1867,7 @@
     // Info
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "AL_LC06"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -1923,9 +1887,7 @@
     // Info
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "AL_LC11"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -1940,9 +1902,7 @@
     // Info
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "E27"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -2011,9 +1971,7 @@
     // Info
     #define MANUFACTURER        "AUTHOMETION"
     #define DEVICE              "LYT8266"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -2029,9 +1987,7 @@
     // Info
     #define MANUFACTURER        "GIZWITS"
     #define DEVICE              "WITTY_CLOUD"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Buttons
     #define BUTTON1_PIN         4
@@ -2188,10 +2144,19 @@
     #define DEVICE                  "2CH"
 
     // Relays
-    #define DUMMY_RELAY_COUNT       2
-    #define RELAY_PROVIDER          RELAY_PROVIDER_STM
+    #define RELAY_PROVIDER_STM_SUPPORT  1
+
+    #define RELAY1_PROVIDER          RELAY_PROVIDER_STM
+    #define RELAY2_PROVIDER          RELAY_PROVIDER_STM
+
+    // Make sure we space out serial writes when relays are in sync. ref:
+    // - https://github.com/xoseperez/espurna/issues/1130
+    // - https://github.com/xoseperez/espurna/issues/1519
+    // - https://github.com/xoseperez/espurna/pull/1520
+    #define RELAY_DELAY_INTERLOCK    100
 
     // Remove UART noise on serial line
+    // (or use `#define DEBUG_PORT Serial1` instead)
     #define DEBUG_SERIAL_SUPPORT    0
 
 // -----------------------------------------------------------------------------
@@ -3488,13 +3453,16 @@
 
     
     //Enable this to view buttons analog level.
+    //Or, use adc terminal command
     //#define ANALOG_SUPPORT                1
 
     // Disable UART noise
     #define DEBUG_SERIAL_SUPPORT            0
 
     // Buttons
+    #define BUTTON_PROVIDER_GPIO_SUPPORT    1
     #define BUTTON_PROVIDER_ANALOG_SUPPORT  1
+
     #define BUTTON1_PIN                     16
     #define BUTTON1_CONFIG                  BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY                   4
@@ -3635,9 +3603,7 @@
     // Info
     #define MANUFACTURER                "GENERIC"
     #define DEVICE                      "AG_L4"
-    #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT           1
 
     // button 1: "power" button
     #define BUTTON1_PIN                 4
@@ -3679,9 +3645,7 @@
     // Info
     #define MANUFACTURER                "GENERIC"
     #define DEVICE                      "AG_L4_V3"
-    #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT           1
 
     // button 1: "power" button
     #define BUTTON1_PIN                 13
@@ -3907,9 +3871,7 @@
     // Info
     #define MANUFACTURER        "LOHAS"
     #define DEVICE              "E27_9W"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -3928,9 +3890,7 @@
     // Info
     #define MANUFACTURER        "LOHAS"
     #define DEVICE              "E26_A19"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -3947,9 +3907,7 @@
     // Info
     #define MANUFACTURER        "TECKIN"
     #define DEVICE              "SB53"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -3988,9 +3946,7 @@
     #define BUTTON2_LNGLNGCLICK     BUTTON_ACTION_RESET
 
     // Light
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
     #define LIGHT_STEP          8
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       5   // warm white
@@ -4019,9 +3975,7 @@
     // Info
     #define MANUFACTURER        "PHYX"
     #define DEVICE              "ESP12_RGB"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      3
@@ -4039,9 +3993,7 @@
     // Info
     #define MANUFACTURER        "IWOOLE"
     #define DEVICE              "LED_TABLE_LAMP"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -4060,9 +4012,7 @@
     // Info
     #define MANUFACTURER        "GENERIC"
     #define DEVICE              "GU10"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -4081,9 +4031,7 @@
     // Info
     #define MANUFACTURER        "GENERIC"
     #define DEVICE              "E14"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -4101,9 +4049,7 @@
     // Info
     #define MANUFACTURER        "DELTACO"
     #define DEVICE              "SH_LEXXW"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      2
@@ -4119,9 +4065,7 @@
     // Info
     #define MANUFACTURER        "DELTACO"
     #define DEVICE              "SH_LEXXRGB"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -4141,9 +4085,7 @@
     // Info
     #define MANUFACTURER        "NEXETE"
     #define DEVICE              "A19"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -4161,9 +4103,7 @@
     // Info
     #define MANUFACTURER        "LOMBEX"
     #define DEVICE              "LUX_NOVA2_TUNABLE_WHITE"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -4184,9 +4124,7 @@
     // Info
     #define MANUFACTURER        "LOMBEX"
     #define DEVICE              "LUX_NOVA2_WHITE_COLOR"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -4243,9 +4181,7 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // Light RGBW
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5       // RED
@@ -4281,9 +4217,7 @@
     //Blue  LED: 2
 
     // Light
-    #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT           1
     #define LIGHT_CHANNELS              3
     #define LIGHT_CH1_PIN               0       // RED
     #define LIGHT_CH2_PIN               4       // GREEN
@@ -4383,17 +4317,19 @@
     #define MANUFACTURER            "FOXEL"
     #define DEVICE                  "LIGHTFOX_DUAL"
     #define SERIAL_BAUDRATE         19200
-    #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
-    #define DUMMY_RELAY_COUNT       2
-    #define DEBUG_SERIAL_SUPPORT    0
 
-    // Buttons
-    #define BUTTON1_RELAY           1
-    #define BUTTON2_RELAY           2
-    #define BUTTON3_RELAY           2
-    #define BUTTON4_RELAY           1
+    // Relays
+    #define RELAY_PROVIDER_DUAL_SUPPORT 1
 
-    #define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT    1
+    #define RELAY1_PROVIDER         RELAY_PROVIDER_DUAL
+    #define RELAY2_PROVIDER         RELAY_PROVIDER_DUAL
+
+    // No need to include generic GPIO support
+    // "Buttons" are attached to a secondary MCU and RELAY_PROVIDER_DUAL handles that
+    #define BUTTON_PROVIDER_GPIO_SUPPORT    0
+
+    // Conflicts with relay operation
+    #define DEBUG_SERIAL_SUPPORT            0
 
 // -----------------------------------------------------------------------------
 // Teckin SP20
@@ -4487,9 +4423,7 @@
     // Info
     #define MANUFACTURER        "PSH"
     #define DEVICE              "RGBW_CONTROLLER"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // LEDs
     #define LED1_PIN            13
@@ -4554,10 +4488,8 @@
     #define MANUFACTURER        "TUYA"
     #define DEVICE              "GENERIC_DIMMER"
 
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
-    #define LIGHT_CHANNELS      0
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define DUMMY_RELAY_COUNT   0
+    #define TUYA_SUPPORT        1
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_CUSTOM
 
 // -----------------------------------------------------------------------------
 // Etekcity ESW01-USA
@@ -4684,9 +4616,7 @@
     // Info
     #define MANUFACTURER        "MUVIT_IO"
     #define DEVICE              "MIOBULB001"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -4815,9 +4745,7 @@
     // Info
     #define MANUFACTURER        "LSC"
     #define DEVICE              "SMART_LED_LIGHT_STRIP"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light RGBW
     #define LIGHT_CHANNELS      4
@@ -4983,28 +4911,34 @@
     #define MCP23S08_SUPPORT        1
 
     // Relays
-    #define RELAY_PROVIDER          RELAY_PROVIDER_MCP23S08
     #define RELAY1_PIN              4
+    #define RELAY1_PIN_TYPE         GPIO_TYPE_MCP23S08
+
     #define RELAY2_PIN              5
+    #define RELAY2_PIN_TYPE         GPIO_TYPE_MCP23S08
+
     #define RELAY3_PIN              6
+    #define RELAY3_PIN_TYPE         GPIO_TYPE_MCP23S08
+
     #define RELAY4_PIN              7
+    #define RELAY4_PIN_TYPE         GPIO_TYPE_MCP23S08
 
     // Buttons
-    #define BUTTON1_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_PIN             0
+    #define BUTTON1_PIN_TYPE        GPIO_TYPE_MCP23S08
 
-    #define BUTTON2_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_PIN             1
+    #define BUTTON2_PIN_TYPE        GPIO_TYPE_MCP23S08
 
-    #define BUTTON3_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON3_PIN             2
+    #define BUTTON3_PIN_TYPE        GPIO_TYPE_MCP23S08
 
-    #define BUTTON4_PROVIDER        BUTTON_PROVIDER_MCP23S08
     #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON4_PIN             3
+    #define BUTTON4_PIN_TYPE        GPIO_TYPE_MCP23S08
 
     #define BUTTON1_RELAY           1
     #define BUTTON2_RELAY           2
@@ -5025,9 +4959,7 @@
     // Info
     #define MANUFACTURER        "FCMILA"
     #define DEVICE              "E27_7W_RGBW"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -5046,9 +4978,7 @@
     // Info
     #define MANUFACTURER        "BENEXMART"
     #define DEVICE              "GU53_RGBWW"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -5067,9 +4997,7 @@
     // Info
     #define MANUFACTURER                  "LSC"
     #define DEVICE                        "E27_10W_WHITE"
-    #define RELAY_PROVIDER                RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER                LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
 
     // Light
     #define LIGHT_CHANNELS      2

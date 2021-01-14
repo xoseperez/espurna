@@ -418,25 +418,8 @@
 
 // Generic digital pin support
 
-#ifndef BUTTON_PROVIDER_GENERIC_SUPPORT
-#define BUTTON_PROVIDER_GENERIC_SUPPORT                1
-#endif
-
-// Hardware specific, drive buttons through serial connection
-// (mutually exclusive)
-
-#ifndef BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
-#define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT      0
-#endif
-
-#ifndef BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
-#define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL            0
-#endif
-
-// Support MCP23S08 8-Bit I/O Expander via the SPI interface
-
-#ifndef BUTTON_PROVIDER_MCP23S08_SUPPORT
-#define BUTTON_PROVIDER_MCP23S08_SUPPORT               MCP23S08_SUPPORT
+#ifndef BUTTON_PROVIDER_GPIO_SUPPORT
+#define BUTTON_PROVIDER_GPIO_SUPPORT                1
 #endif
 
 // Resistor ladder support. Poll analog pin and return digital LOW when analog reading is in a certain range
@@ -444,7 +427,7 @@
 // Uses BUTTON#_ANALOG_LEVEL for the individual button level configuration
 
 #ifndef BUTTON_PROVIDER_ANALOG_SUPPORT
-#define BUTTON_PROVIDER_ANALOG_SUPPORT                 0
+#define BUTTON_PROVIDER_ANALOG_SUPPORT              0
 #endif
 
 //------------------------------------------------------------------------------
@@ -471,8 +454,19 @@
 // RELAY
 //------------------------------------------------------------------------------
 
+// Enable general support for relays (aka switches)
 #ifndef RELAY_SUPPORT
-#define RELAY_SUPPORT               1
+#define RELAY_SUPPORT                   1
+#endif
+
+// ESP01-relays with STM co-MCU driving the relays
+#ifndef RELAY_PROVIDER_STM_SUPPORT
+#define RELAY_PROVIDER_STM_SUPPORT      0
+#endif
+
+// Sonoff Dual, using serial protocol
+#ifndef RELAY_PROVIDER_DUAL_SUPPORT
+#define RELAY_PROVIDER_DUAL_SUPPORT     0
 #endif
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
@@ -480,9 +474,16 @@
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF
 #endif
 
-// 0 means ANY, 1 zero or one and 2 one and only one
+// One of RELAY_SYNC_ANY, RELAY_SYNC_NONE_OR_ONE, RELAY_SYNC_SAME or RELAY_SYNC_FIRST
+// Default to ANY i.e. don't do anything
 #ifndef RELAY_SYNC
 #define RELAY_SYNC                  RELAY_SYNC_ANY
+#endif
+
+// 0 (ms) means EVERY relay switches as soon as possible
+// otherwise, wait up until this much time before changing the status
+#ifndef RELAY_DELAY_INTERLOCK
+#define RELAY_DELAY_INTERLOCK       0
 #endif
 
 // Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
@@ -1231,6 +1232,7 @@
 #define MQTT_TOPIC_CMD              "cmd"
 
 // Light module
+#define MQTT_TOPIC_LIGHT            "light"
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
 #define MQTT_TOPIC_COLOR_HSV        "hsv"
@@ -1304,16 +1306,20 @@
 // 4 channels => RGBW
 // 5 channels => RGBWW
 
-#ifndef LIGHT_SAVE_ENABLED
-#define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
+#ifndef LIGHT_PROVIDER
+#define LIGHT_PROVIDER LIGHT_PROVIDER_NONE
 #endif
 
-#ifndef LIGHT_COMMS_DELAY
-#define LIGHT_COMMS_DELAY       100         // Delay communication after light update (in ms)
+#ifndef LIGHT_REPORT_DELAY
+#define LIGHT_REPORT_DELAY      100        // Delay reporting current state for the specified number of ms after light update
+#endif
+
+#ifndef LIGHT_SAVE_ENABLED
+#define LIGHT_SAVE_ENABLED      1          // Light channel values saved by default after each change
 #endif
 
 #ifndef LIGHT_SAVE_DELAY
-#define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+#define LIGHT_SAVE_DELAY        5000       // Persist channel & brightness values after the specified number of ms
 #endif
 
 #ifndef LIGHT_MIN_PWM
@@ -1414,6 +1420,9 @@
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 #endif
 
+#ifndef LIGHT_RELAY_ENABLED
+#define LIGHT_RELAY_ENABLED     1           // Add a virtual switch that controls the global light state. Depends on RELAY_SUPPORT
+#endif
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
@@ -1802,6 +1811,14 @@
 
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
+#endif
+
+#ifndef TUYA_FILTER_ENABLED
+#define TUYA_FILTER_ENABLED         1
+#endif
+
+#ifndef TUYA_DEBUG_ENABLED
+#define TUYA_DEBUG_ENABLED          1
 #endif
 
 //--------------------------------------------------------------------------------

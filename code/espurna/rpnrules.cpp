@@ -560,15 +560,15 @@ void _rpnInit() {
     #endif // RELAY_SUPPORT == 1
 
     // Channel operators
-    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
         rpn_operator_set(_rpn_ctxt, "update", 0, [](rpn_context & ctxt) -> rpn_error {
-            lightUpdate(true, true);
+            lightUpdate();
             return 0;
         });
 
         rpn_operator_set(_rpn_ctxt, "black", 0, [](rpn_context & ctxt) -> rpn_error {
-            lightColor((unsigned long) 0);
+            lightColor(0ul);
             return 0;
         });
 

@@ -14,7 +14,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "tuya_types.h"
 #include "tuya_transport.h"
 
-namespace Tuya {
+namespace tuya {
 
     // 2 known Data Protocols:
     //
@@ -26,19 +26,29 @@ namespace Tuya {
     // Note: 'int' type is mostly used for dimmer and while it is 4 byte value,
     //       only the first byte is used (i.e. value is between 0 and 255)
 
-    Type dataType(const DataFrame& frame) {
+    template <typename T>
+    uint8_t dataProtocol(const T& frame) {
+        if (!frame.length()) {
+            return 0;
+        }
 
-        if (!frame.length) return Type::UNKNOWN;
+        return frame[0];
+    }
+
+    template <typename T>
+    Type dataType(const T& frame) {
+        if (!frame.length()) {
+            return Type::UNKNOWN;
+        }
 
         const Type type = static_cast<Type>(frame[1]);
-
         switch (type) {
             case Type::BOOL:
-                if (frame.length != 5) break;
+                if (frame.length() != 5) break;
                 if (frame[3] != 0x01) break;
                 return type;
             case Type::INT:
-                if (frame.length != 8) break;
+                if (frame.length() != 8) break;
                 if (frame[3] != 0x04) break;
                 return type;
             default:
@@ -51,44 +61,45 @@ namespace Tuya {
 
     // Since we know of the type only at runtime, specialize the protocol container
 
-    template <typename T>
+    template <typename Value>
     class DataProtocol {
+    public:
+        explicit DataProtocol(const container& data);
+        DataProtocol(uint8_t id, Value value) :
+            _id(id),
+            _value(value)
+        {}
 
-        public:
+        uint8_t id() const {
+            return _id;
+        }
 
-            DataProtocol(const uint8_t id, const T value) :
-                _id(id), _value(value)
-            {}
+        Value value() const {
+            return _value;
+        }
 
-            DataProtocol(const DataFrame& frame);
+        container serialize();
 
-            uint8_t id() const { return _id; }
-            T value() const { return _value; }
-
-            std::vector<uint8_t> serialize();
-
-        private:
-
-            uint8_t _id;
-            T _value;
-
+    private:
+        uint8_t _id;
+        Value _value;
     };
 
-    template <typename T>
-    DataProtocol<T>::DataProtocol(const DataFrame& frame) {
+#if 0
+    template <typename T, typename Frame>
+    DataProtocol<T>::DataProtocol(const Frame& frame) {
         static_assert(sizeof(T) != sizeof(T), "No constructor yet for this type!");
     }
+#endif
 
     template <>
-    DataProtocol<bool>::DataProtocol(const DataFrame& frame) {
-        auto data = frame.cbegin();
-        _id = data[0],
+    DataProtocol<bool>::DataProtocol(const container& data) {
+        _id = data[0];
         _value = data[4];
     }
 
     template <>
-    DataProtocol<uint32_t>::DataProtocol(const DataFrame& frame) {
-        auto data = frame.cbegin();
+    DataProtocol<uint32_t>::DataProtocol(const container& data) {
         _id = data[0];
         _value = static_cast<uint32_t>(data[4] << 24)
                | static_cast<uint32_t>(data[5] << 16)
@@ -97,7 +108,7 @@ namespace Tuya {
     }
 
     template <>
-    std::vector<uint8_t> DataProtocol<bool>::serialize() {
+    container DataProtocol<bool>::serialize() {
         return std::vector<uint8_t> {
             _id, static_cast<uint8_t>(Type::BOOL), 0x00, 0x01,
             static_cast<uint8_t>(_value)
@@ -105,7 +116,7 @@ namespace Tuya {
     }
 
     template <>
-    std::vector<uint8_t> DataProtocol<uint32_t>::serialize() {
+    container DataProtocol<uint32_t>::serialize() {
         return std::vector<uint8_t> {
             _id, static_cast<uint8_t>(Type::INT), 0x00, 0x04,
             static_cast<uint8_t>((_value >> 24) & 0xff),

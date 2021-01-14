@@ -313,7 +313,7 @@ void _terminalInitCommands() {
         }
 
         int start = 0;
-        int end = GpioPins;
+        int end = gpioPins();
 
         switch (ctx.argc) {
         case 3:
@@ -327,8 +327,9 @@ void _terminalInitCommands() {
         case 1:
             for (auto current = start; current < end; ++current) {
                 if (gpioValid(current)) {
-                    ctx.output.printf_P(PSTR("%s @ GPIO%02d (%s)\n"),
-                        GPEP(current) ? "OUTPUT" : " INPUT",
+                    ctx.output.printf_P(PSTR("%c %s @ GPIO%02d (%s)\n"),
+                        gpioLocked(current) ? '*' : ' ',
+                        GPEP(current) ? "OUTPUT" : "INPUT ",
                         current,
                         (HIGH == digitalRead(current)) ? "HIGH" : "LOW"
                     );

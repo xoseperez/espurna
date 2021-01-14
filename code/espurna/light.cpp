@@ -13,9 +13,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "api.h"
 #include "broker.h"
 #include "mqtt.h"
+#include "relay.h"
 #include "rpc.h"
 #include "rtcmem.h"
-#include "tuya.h"
 #include "ws.h"
 
 #include "light_config.h"
@@ -41,36 +41,80 @@ extern "C" {
 
 // -----------------------------------------------------------------------------
 
-struct channel_t {
+#if RELAY_SUPPORT
 
-    channel_t();
-    channel_t(unsigned char pin, bool inverse);
+// Setup virtual relays contolling the light's state
+// TODO: only do per-channel setup optionally
 
-    unsigned char pin;           // real GPIO pin
-    bool inverse;                // whether we should invert the value before using it
-    bool state;                  // is the channel ON
-    unsigned char inputValue;    // raw value, without the brightness
-    unsigned char value;         // normalized value, including brightness
-    unsigned char target;        // target value
-    double current;              // transition value
+class LightChannelProvider : public RelayProviderBase {
+public:
+    LightChannelProvider() = delete;
+    explicit LightChannelProvider(unsigned char id) :
+        _id(id)
+    {}
 
+    const char* id() const {
+        return "light_channel";
+    }
+
+    void change(bool status) override {
+        lightState(_id, status);
+        lightState(true);
+        lightUpdate();
+    }
+
+private:
+    unsigned char _id { RELAY_NONE };
 };
 
-Ticker _light_comms_ticker;
-Ticker _light_save_ticker;
-Ticker _light_transition_ticker;
+class LightGlobalProvider : public RelayProviderBase {
+public:
+    const char* id() const {
+        return "light_global";
+    }
+
+    void change(bool status) override {
+        lightState(status);
+        lightUpdate();
+    }
+};
+
+#endif
+
+struct channel_t {
+    channel_t() = default;
+    explicit channel_t(unsigned char pin_, bool inverse_) :
+        pin(pin_),
+        inverse(inverse_)
+    {
+        pinMode(pin, OUTPUT);
+    }
+
+    unsigned char pin { GPIO_NONE };    // real GPIO pin
+    bool inverse { false };             // whether we should invert the value before using it
+
+    bool state { true };                // is the channel ON
+
+    unsigned char inputValue { 0 };     // raw value, without the brightness
+    unsigned char value { 0 };          // normalized value, including brightness
+    unsigned char target { 0 };         // target value
+    float current { 0.0f };             // transition value
+};
 
 std::vector<channel_t> _light_channels;
 
+bool _light_save = LIGHT_SAVE_ENABLED;
+unsigned long _light_save_delay = LIGHT_SAVE_DELAY;
+Ticker _light_save_ticker;
+
+unsigned long _light_report_delay = LIGHT_REPORT_DELAY;
+Ticker _light_report_ticker;
+
+bool _light_has_controls = false;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
 bool _light_use_gamma = false;
-
-bool _light_provider_update = false;
-
-bool _light_use_transitions = false;
-unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 
 bool _light_dirty = false;
 bool _light_state = false;
@@ -86,15 +130,25 @@ long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
 long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
 
-using light_brightness_func_t = void();
-light_brightness_func_t* _light_brightness_func = nullptr;
+using light_brightness_func_t = void(*)();
+light_brightness_func_t _light_brightness_func = nullptr;
+
+LightStateListener _light_state_listener = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+
 #include <my92xx.h>
 my92xx * _my92xx;
 unsigned char _light_channel_map[] {
     MY92XX_MAPPING
 };
+
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
+std::unique_ptr<LightProvider> _light_provider;
+
 #endif
 
 // UI hint about channel distribution
@@ -105,7 +159,7 @@ const char _light_channel_desc[5][5] PROGMEM = {
     {'R', 'G', 'B', 'W',   0},
     {'R', 'G', 'B', 'W', 'C'}
 };
-static_assert((LIGHT_CHANNELS * LIGHT_CHANNELS) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
+static_assert((Light::Channels * Light::Channels) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
 
 // Gamma Correction lookup table (8 bit)
 const unsigned char _light_gamma_table[] PROGMEM = {
@@ -132,36 +186,14 @@ static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds arr
 // UTILS
 // -----------------------------------------------------------------------------
 
-channel_t::channel_t() :
-    pin(GPIO_NONE),
-    inverse(false),
-    state(true),
-    inputValue(0),
-    value(0),
-    target(0),
-    current(0.0)
-{}
-
-channel_t::channel_t(unsigned char pin, bool inverse) :
-    pin(pin),
-    inverse(inverse),
-    state(true),
-    inputValue(0),
-    value(0),
-    target(0),
-    current(0.0)
-{
-    pinMode(pin, OUTPUT);
-}
-
-void _setValue(const unsigned char id, const unsigned int value) {
+void _setValue(const unsigned char id, unsigned int value) {
     if (_light_channels[id].value != value) {
         _light_channels[id].value = value;
         _light_dirty = true;
     }
 }
 
-void _setInputValue(const unsigned char id, const unsigned int value) {
+void _setInputValue(const unsigned char id, unsigned int value) {
     _light_channels[id].inputValue = value;
 }
 
@@ -607,27 +639,127 @@ unsigned int _toPWM(unsigned char id) {
     return _toPWM(_light_channels[id].current, useGamma, _light_channels[id].inverse);
 }
 
-void _lightTransition(unsigned long step) {
+namespace {
 
-    // Transitions based on current step. If step == 0, then it is the last transition
-    for (auto& channel : _light_channels) {
-        if (!step) {
-            channel.current = channel.target;
-        } else {
-            channel.current += (double) (channel.target - channel.current) / (step + 1);
+class LightTransitionHandler {
+public:
+    using Channels = std::vector<channel_t>;
+
+    struct Transition {
+        float& value;
+        unsigned char target;
+        float step;
+        size_t count;
+
+        void debug() const {
+            DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %u (step %s, %u times)\n"),
+                String(value, 2).c_str(), target, String(step, 2).c_str(), count);
         }
+    };
+
+    explicit LightTransitionHandler(Channels& channels, bool state, LightTransition transition) :
+        _time(transition.time),
+        _step(transition.step)
+    {
+        for (auto& channel : channels) {
+            prepare(channel, state);
+        }
+
+        // if nothing to do, ignore transition step & time and just schedule as soon as possible
+        if (!transitions()) {
+            reset();
+            return;
+        }
+
+        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition every %ums (total %ums)\n"), _step, _time);
     }
 
-}
+    void prepare(channel_t& channel, bool state) {
+        channel.target = (state && channel.state) ? channel.value : 0;
 
-void _lightProviderScheduleUpdate(unsigned long steps);
+        float diff = static_cast<float>(channel.target) - channel.current;
+        if (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon())) {
+            channel.current = channel.target;
+            return;
+        }
 
-void _lightProviderUpdate(unsigned long steps) {
+        float step = (diff > 0.0) ? 1.0f : -1.0f;
+        float every = static_cast<double>(_time) / std::abs(diff);
+        if (every < _step) {
+            auto step_ref = static_cast<float>(_step);
+            step *= (step_ref / every);
+            every = step_ref;
+        }
+        size_t count = _time / every;
+
+        auto transition = Transition{channel.current, channel.target, step, count};
+        transition.debug();
+
+        _transitions.push_back(transition);
+    }
+
+    void reset() {
+        _step = 10;
+        _time = 10;
+    }
+
+    bool next() {
+        bool result { false };
+
+        for (auto& transition : _transitions) {
+            if (!transition.count) {
+                continue;
+            }
+
+            if (--transition.count) {
+                transition.value += transition.step;
+                result = true;
+            } else {
+                transition.value = transition.target;
+            }
+        }
+
+        return result;
+    }
+
+    unsigned long step() const {
+        return _step;
+    }
+
+    unsigned long time() const {
+        return _time;
+    }
+
+    size_t transitions() const {
+        return _transitions.size();
+    }
+
+private:
+    std::vector<Transition> _transitions;
+    unsigned long _time;
+    unsigned long _step;
+};
+
+} // namespace
+
+std::unique_ptr<LightTransitionHandler> _light_transition;
+
+Ticker _light_transition_ticker;
+bool _light_use_transitions = false;
+unsigned long _light_transition_time = LIGHT_TRANSITION_TIME;
+unsigned long _light_transition_step = LIGHT_TRANSITION_STEP;
+
+bool _light_provider_update = false;
+
+void _lightProviderSchedule(unsigned long ms);
+
+void _lightProviderUpdate() {
 
     if (_light_provider_update) return;
     _light_provider_update = true;
 
-    _lightTransition(--steps);
+    if (!_light_transition) return;
+    auto next = _light_transition->next();
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -641,22 +773,40 @@ void _lightProviderUpdate(unsigned long steps) {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
-        for (unsigned int i=0; i < _light_channels.size(); i++) {
+        for (unsigned char i=0; i < _light_channels.size(); i++) {
             pwm_set_duty(_toPWM(i), i);
         }
         pwm_start();
 
     #endif
 
-    // This is not the final value, update again
-    if (steps) _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
+        if (_light_provider) {
+            for (unsigned char i=0; i < _light_channels.size(); i++) {
+                _light_provider->channel(i, _light_channels[i].current);
+            }
+            _light_provider->update();
+        }
+
+        if (!next) {
+            _light_provider->state(_light_state);
+        }
+
+    #endif
+
+    if (next) {
+        _lightProviderSchedule(_light_transition->step());
+    } else {
+        _light_transition.reset(nullptr);
+    }
 
     _light_provider_update = false;
 
 }
 
-void _lightProviderScheduleUpdate(unsigned long steps) {
-    schedule_function(std::bind(_lightProviderUpdate, steps));
+void _lightProviderSchedule(unsigned long ms) {
+    _light_transition_ticker.once_ms_scheduled(ms, _lightProviderUpdate);
 }
 
 // -----------------------------------------------------------------------------
@@ -671,6 +821,14 @@ union light_rtcmem_t {
     } __attribute__((packed)) packed;
     uint64_t value;
 };
+
+bool lightSave() {
+    return _light_save;
+}
+
+void lightSave(bool save) {
+    _light_save = save;
+}
 
 void _lightSaveRtcmem() {
     if (lightChannels() > Light::ChannelsMax) return;
@@ -702,6 +860,10 @@ void _lightRestoreRtcmem() {
 }
 
 void _lightSaveSettings() {
+    if (!_light_save) {
+        return;
+    }
+
     for (unsigned char i=0; i < _light_channels.size(); ++i) {
         setSetting({"ch", i}, _light_channels[i].inputValue);
     }
@@ -718,9 +880,63 @@ void _lightRestoreSettings() {
     _light_mireds = getSetting("mireds", _light_mireds);
 }
 
+bool _lightParsePayload(const char* payload) {
+    switch (rpcParsePayload(payload)) {
+    case PayloadStatus::On:
+        lightState(true);
+        break;
+    case PayloadStatus::Off:
+        lightState(false);
+        break;
+    case PayloadStatus::Toggle:
+        lightState(!_light_state);
+        break;
+    case PayloadStatus::Unknown:
+        return false;
+    }
+
+    return true;
+}
+
+bool _lightParsePayload(const String& payload) {
+    return _lightParsePayload(payload.c_str());
+}
+
+bool _lightTryParseChannel(const char* p, unsigned char& id) {
+    char* endp { nullptr };
+    const unsigned long result { strtoul(p, &endp, 10) };
+    if ((endp == p) || (*endp != '\0') || (result >= lightChannels())) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Invalid channelID (%s)\n"), p);
+        return false;
+    }
+
+    id = result;
+    return true;
+}
+
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
+
+int _lightMqttReportMask() {
+    return Light::DefaultReport & ~(static_cast<int>(mqttForward() ? Light::Report::None : Light::Report::Mqtt));
+}
+
+int _lightMqttReportGroupMask() {
+    return _lightMqttReportMask() & ~static_cast<int>(Light::Report::MqttGroup);
+}
+
+void _lightUpdateFromMqtt(LightTransition transition) {
+    lightUpdate(_light_save, transition, _lightMqttReportMask());
+}
+
+void _lightUpdateFromMqtt() {
+    _lightUpdateFromMqtt(lightTransition());
+}
+
+void _lightUpdateFromMqttGroup() {
+    lightUpdate(_light_save, lightTransition(), _lightMqttReportGroupMask());
+}
 
 #if MQTT_SUPPORT
 void _lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
@@ -734,13 +950,15 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         if (_light_has_color) {
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
-            mqttSubscribe(MQTT_TOPIC_TRANSITION);
         }
 
         if (_light_has_color || _light_use_cct) {
             mqttSubscribe(MQTT_TOPIC_MIRED);
             mqttSubscribe(MQTT_TOPIC_KELVIN);
         }
+
+        // Transition config (everything sent after this will use this new value)
+        mqttSubscribe(MQTT_TOPIC_TRANSITION);
 
         // Group color
         if (mqtt_group_color.length() > 0) mqttSubscribeRaw(mqtt_group_color.c_str());
@@ -750,14 +968,17 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
         mqttSubscribe(buffer);
 
+        // Global lights control
+        if (!_light_has_controls) {
+            mqttSubscribe(MQTT_TOPIC_LIGHT);
+        }
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
         // Group color
         if ((mqtt_group_color.length() > 0) && (mqtt_group_color.equals(topic))) {
             lightColor(payload, true);
-            lightUpdate(true, mqttForward(), false);
+            _lightUpdateFromMqttGroup();
             return;
         }
 
@@ -767,52 +988,58 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         // Color temperature in mireds
         if (t.equals(MQTT_TOPIC_MIRED)) {
             _lightAdjustMireds(payload);
-            lightUpdate(true, mqttForward());
+            _lightUpdateFromMqtt();
             return;
         }
 
         // Color temperature in kelvins
         if (t.equals(MQTT_TOPIC_KELVIN)) {
             _lightAdjustKelvin(payload);
-            lightUpdate(true, mqttForward());
+            _lightUpdateFromMqtt();
             return;
         }
 
         // Color
         if (t.equals(MQTT_TOPIC_COLOR_RGB)) {
             lightColor(payload, true);
-            lightUpdate(true, mqttForward());
+            _lightUpdateFromMqtt();
             return;
         }
         if (t.equals(MQTT_TOPIC_COLOR_HSV)) {
             lightColor(payload, false);
-            lightUpdate(true, mqttForward());
+            _lightUpdateFromMqtt();
+            return;
+        }
+
+        // Transition setting
+        if (t.equals(MQTT_TOPIC_TRANSITION)) {
+            lightTransition(strtoul(payload, nullptr, 10), _light_transition_step);
             return;
         }
 
         // Brightness
         if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
             _lightAdjustBrightness(payload);
-            lightUpdate(true, mqttForward());
-            return;
-        }
-
-        // Transitions
-        if (t.equals(MQTT_TOPIC_TRANSITION)) {
-            lightTransitionTime(atol(payload));
+            _lightUpdateFromMqtt();
             return;
         }
 
         // Channel
         if (t.startsWith(MQTT_TOPIC_CHANNEL)) {
-            unsigned int channelID = t.substring(strlen(MQTT_TOPIC_CHANNEL)+1).toInt();
-            if (channelID >= _light_channels.size()) {
-                DEBUG_MSG_P(PSTR("[LIGHT] Wrong channelID (%d)\n"), channelID);
+            unsigned char id;
+            if (!_lightTryParseChannel(t.c_str() + strlen(MQTT_TOPIC_CHANNEL) + 1, id)) {
                 return;
             }
-            _lightAdjustChannel(channelID, payload);
-            lightUpdate(true, mqttForward());
+
+            _lightAdjustChannel(id, payload);
+            _lightUpdateFromMqtt();
             return;
+        }
+
+        // Global
+        if (t.equals(MQTT_TOPIC_LIGHT)) {
+            _lightParsePayload(payload);
+            _lightUpdateFromMqtt();
         }
 
     }
@@ -856,6 +1083,12 @@ void lightMQTT() {
     snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_brightness);
     mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
 
+    // Global
+    if (!_light_has_controls) {
+        snprintf_P(buffer, sizeof(buffer), "%c", _light_state ? '1' : '0');
+        mqttSend(MQTT_TOPIC_LIGHT, buffer);
+    }
+
 }
 
 void lightMQTTGroup() {
@@ -887,18 +1120,6 @@ void lightBroker() {
 
 #if API_SUPPORT
 
-bool _lightTryParseChannel(const char* p, unsigned char& id) {
-    char* endp { nullptr };
-    const unsigned long result { strtoul(p, &endp, 10) };
-    if ((endp == p) || (*endp != '\0') || (result >= lightChannels())) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Invalid channelID (%s)\n"), p);
-        return false;
-    }
-
-    id = result;
-    return true;
-}
-
 template <typename T>
 bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
     auto id_param = request.wildcard(0);
@@ -923,7 +1144,7 @@ void _lightApiSetup() {
             },
             [](ApiRequest& request) {
                 lightColor(request.param(F("value")), true);
-                lightUpdate(true, true);
+                lightUpdate();
                 return true;
             }
         );
@@ -935,7 +1156,7 @@ void _lightApiSetup() {
             },
             [](ApiRequest& request) {
                 lightColor(request.param(F("value")), false);
-                lightUpdate(true, true);
+                lightUpdate();
                 return true;
             }
         );
@@ -947,7 +1168,7 @@ void _lightApiSetup() {
             },
             [](ApiRequest& request) {
                 _lightAdjustMireds(request.param(F("value")));
-                lightUpdate(true, true);
+                lightUpdate();
                 return true;
             }
         );
@@ -959,7 +1180,7 @@ void _lightApiSetup() {
             },
             [](ApiRequest& request) {
                 _lightAdjustKelvin(request.param(F("value")));
-                lightUpdate(true, true);
+                lightUpdate();
                 return true;
             }
         );
@@ -972,7 +1193,8 @@ void _lightApiSetup() {
             return true;
         },
         [](ApiRequest& request) {
-            lightTransitionTime(request.param(F("value")).toInt());
+            auto value = request.param(F("value"));
+            lightTransition(strtoul(value.c_str(), nullptr, 10), _light_transition_step);
             return true;
         }
     );
@@ -984,7 +1206,7 @@ void _lightApiSetup() {
         },
         [](ApiRequest& request) {
             _lightAdjustBrightness(request.param(F("value")));
-            lightUpdate(true, true);
+            lightUpdate();
             return true;
         }
     );
@@ -999,12 +1221,25 @@ void _lightApiSetup() {
         [](ApiRequest& request) {
             return _lightApiTryHandle(request, [&](unsigned char id) {
                 _lightAdjustChannel(id, request.param(F("value")));
-                lightUpdate(true, true);
+                lightUpdate();
                 return true;
             });
         }
     );
 
+    if (!_light_has_controls) {
+        apiRegister(F(MQTT_TOPIC_LIGHT),
+            [](ApiRequest& request) {
+                request.send(lightState() ? "1" : "0");
+                return true;
+            },
+            [](ApiRequest& request) {
+                _lightParsePayload(request.param(F("value")));
+                lightUpdate();
+                return true;
+            }
+        );
+    }
 }
 
 #endif // API_SUPPORT
@@ -1015,6 +1250,7 @@ void _lightApiSetup() {
 bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "light", 5) == 0) return true;
     if (strncmp(key, "use", 3) == 0) return true;
+    if (strncmp(key, "lt", 2) == 0) return true;
     return false;
 }
 
@@ -1052,7 +1288,12 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["useTransitions"] = _light_use_transitions;
     root["useCSS"] = getSetting("useCSS", 1 == LIGHT_USE_CSS);
     root["useRGB"] = getSetting("useRGB", 1 == LIGHT_USE_RGB);
-    root["lightTime"] = _light_transition_time;
+    root["ltSave"] = _light_save;
+    root["ltTime"] = _light_transition_time;
+    root["ltStep"] = _light_transition_step;
+#if RELAY_SUPPORT
+    root["ltRelay"] = getSetting("ltRelay", 1 == LIGHT_RELAY_ENABLED);
+#endif
 
     _lightWebSocketStatus(root);
 }
@@ -1063,11 +1304,11 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
         if (strcmp(action, "color") == 0) {
             if (data.containsKey("rgb")) {
                 lightColor(data["rgb"].as<const char*>(), true);
-                lightUpdate(true, true);
+                lightUpdate();
             }
             if (data.containsKey("hsv")) {
                 lightColor(data["hsv"].as<const char*>(), false);
-                lightUpdate(true, true);
+                lightUpdate();
             }
         }
     }
@@ -1075,7 +1316,7 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     if (_light_use_cct) {
       if (strcmp(action, "mireds") == 0) {
           _fromMireds(data["mireds"]);
-          lightUpdate(true, true);
+          lightUpdate();
       }
     }
 
@@ -1083,14 +1324,14 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     if (strcmp(action, "channel") == 0) {
         if (data.containsKey("id") && data.containsKey("value")) {
             lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
-            lightUpdate(true, true);
+            lightUpdate();
         }
     }
 
     if (strcmp(action, "brightness") == 0) {
         if (data.containsKey("value")) {
             lightBrightness(data["value"].as<int>());
-            lightUpdate(true, true);
+            lightUpdate();
         }
     }
 
@@ -1106,10 +1347,20 @@ void _lightChannelDebug(unsigned char id) {
 
 void _lightInitCommands() {
 
+    terminalRegisterCommand(F("LIGHT"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 1) {
+            terminalError(ctx, F("LIGHT <STATE>"));
+            return;
+        }
+
+        _lightParsePayload(ctx.argv[1].c_str());
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("BRIGHTNESS"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
             _lightAdjustBrightness(ctx.argv[1].c_str());
-            lightUpdate(true, true);
+            lightUpdate();
         }
         DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
         terminalOK();
@@ -1132,7 +1383,7 @@ void _lightInitCommands() {
 
         if (ctx.argc > 2) {
             _lightAdjustChannel(id, ctx.argv[2].c_str());
-            lightUpdate(true, true);
+            lightUpdate();
         }
 
         _lightChannelDebug(id);
@@ -1143,7 +1394,7 @@ void _lightInitCommands() {
     terminalRegisterCommand(F("COLOR"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
             lightColor(ctx.argv[1].c_str());
-            lightUpdate(true, true);
+            lightUpdate();
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
@@ -1152,7 +1403,7 @@ void _lightInitCommands() {
     terminalRegisterCommand(F("KELVIN"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
             _lightAdjustKelvin(ctx.argv[1].c_str());
-            lightUpdate(true, true);
+            lightUpdate();
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
@@ -1161,7 +1412,7 @@ void _lightInitCommands() {
     terminalRegisterCommand(F("MIRED"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
             _lightAdjustMireds(ctx.argv[1]);
-            lightUpdate(true, true);
+            lightUpdate();
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();
@@ -1183,70 +1434,81 @@ bool lightUseCCT() {
     return _light_use_cct;
 }
 
-void _lightComms(unsigned char mask) {
-
-    // Report color and brightness to MQTT broker
-    #if MQTT_SUPPORT
-        if (mask & Light::COMMS_NORMAL) lightMQTT();
-        if (mask & Light::COMMS_GROUP) lightMQTTGroup();
-    #endif
-
-    // Report color to WS clients (using current brightness setting)
-    #if WEB_SUPPORT
-        wsPost(_lightWebSocketStatus);
-    #endif
-
-    // Report channels to local broker
-    #if BROKER_SUPPORT
-        lightBroker();
-    #endif
-
-}
-
-void lightUpdate(bool save, bool forward, bool group_forward) {
-
-    // Calculate values based on inputs and brightness
-    _light_brightness_func();
-
-    // Only update if a channel has changed
-    if (!_light_dirty) return;
-    _light_dirty = false;
-
-    // Update channels
-    for (unsigned int i=0; i < _light_channels.size(); i++) {
-        _light_channels[i].target = _light_state && _light_channels[i].state ? _light_channels[i].value : 0;
-        //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channels[i].target);
+void _lightReport(int report) {
+#if MQTT_SUPPORT
+    if (report & Light::Report::Mqtt) {
+        lightMQTT();
     }
 
-    // Channel transition will be handled by the provider function
-    // User can configure total transition time, step time is a fixed value
-    const unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+    if (report & Light::Report::MqttGroup) {
+        lightMQTTGroup();
+    }
+#endif
 
-    // Delay every communication 100ms to avoid jamming
-    const unsigned char mask =
-        ((forward) ? Light::COMMS_NORMAL : Light::COMMS_NONE) |
-        ((group_forward) ? Light::COMMS_GROUP : Light::COMMS_NONE);
-    _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
+#if WEB_SUPPORT
+    if (report & Light::Report::Web) {
+        wsPost(_lightWebSocketStatus);
+    }
+#endif
 
+#if BROKER_SUPPORT
+    if (report & Light::Report::Broker) {
+        lightBroker();
+    }
+#endif
+}
+
+void _lightReport(Light::Report report) {
+    _lightReport(static_cast<int>(report));
+}
+
+void lightUpdate(bool save, LightTransition transition, int report) {
+    // Calculate values based on inputs and brightness
+    // Update only if the values had actually changed
+    _light_brightness_func();
+
+    if (!_light_channels.size()) {
+        return;
+    }
+
+    if (!_light_dirty) {
+        return;
+    }
+    _light_dirty = false;
+
+    // Channel output values will be set by the handler class and the specified provider
+    // We either set the values immediately or schedule an ongoing transition
+    _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, _light_state, transition);
+    _lightProviderSchedule(_light_transition->step());
+
+    // Send current state to all available 'report' targets
+    // (make sure to delay the report, in case lightUpdate is called repeatedly)
+    _light_report_ticker.once_ms(_light_report_delay, [report]() {
+        _lightReport(report);
+    });
+
+    // Always save to RTCMEM, optionally preserve the state in the settings storage
     _lightSaveRtcmem();
-
-    #if LIGHT_SAVE_ENABLED
-        // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightSaveSettings);
-    #endif
-
+    if (save) {
+        _light_save_ticker.once_ms(_light_save_delay, _lightSaveSettings);
+    }
 };
 
-void lightUpdate(bool save, bool forward) {
-    lightUpdate(save, forward, true);
+void lightUpdate(bool save, LightTransition transition, Light::Report report) {
+    lightUpdate(save, transition, static_cast<int>(report));
 }
 
-#if LIGHT_SAVE_ENABLED == 0
-void lightSave() {
-    _lightSaveSettings();
+void lightUpdate(LightTransition transition) {
+    lightUpdate(_light_save, transition, Light::DefaultReport);
 }
-#endif
+
+void lightUpdate(bool save) {
+    lightUpdate(save, lightTransition(), Light::DefaultReport);
+}
+
+void lightUpdate() {
+    lightUpdate(lightTransition());
+}
 
 void lightState(unsigned char id, bool state) {
     if (id >= _light_channels.size()) return;
@@ -1263,6 +1525,8 @@ bool lightState(unsigned char id) {
 
 void lightState(bool state) {
     if (_light_state != state) {
+        if (_light_state_listener)
+            _light_state_listener(state);
         _light_state = state;
         _light_dirty = true;
     }
@@ -1337,24 +1601,39 @@ void lightBrightnessStep(long steps, long multiplier) {
     lightBrightness(static_cast<int>(_light_brightness) + (steps * multiplier));
 }
 
-unsigned int lightTransitionTime() {
-    if (_light_use_transitions) {
-        return _light_transition_time;
-    } else {
-        return 0;
-    }
+unsigned long lightTransitionTime() {
+    return _light_use_transitions ? _light_transition_time : 0;
 }
 
-void lightTransitionTime(unsigned long ms) {
-    if (0 == ms) {
-        _light_use_transitions = false;
-    } else {
-        _light_use_transitions = true;
-        _light_transition_time = ms;
+unsigned long lightTransitionStep() {
+    return _light_use_transitions ? _light_transition_step : 0;
+}
+
+LightTransition lightTransition() {
+    return {lightTransitionTime(), lightTransitionStep()};
+}
+
+void lightTransition(unsigned long time, unsigned long step) {
+    bool save { false };
+
+    _light_use_transitions = (time && step);
+    if (_light_use_transitions) {
+        save = true;
+        _light_transition_time = time;
+        _light_transition_step = step;
     }
+
     setSetting("useTransitions", _light_use_transitions);
-    setSetting("lightTime", _light_transition_time);
+    if (save) {
+        setSetting("ltTime", _light_transition_time);
+        setSetting("ltStep", _light_transition_step);
+    }
+
     saveSettings();
+}
+
+void lightTransition(LightTransition transition) {
+    lightTransition(transition.time, transition.step);
 }
 
 // -----------------------------------------------------------------------------
@@ -1415,20 +1694,97 @@ void _lightConfigure() {
 
     _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
     _light_use_transitions = getSetting("useTransitions", 1 == LIGHT_USE_TRANSITIONS);
-    _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME);
+    _light_save = getSetting("ltSave", 1 == LIGHT_SAVE_ENABLED);
+    _light_save_delay = getSetting("ltSaveDelay", LIGHT_SAVE_DELAY);
+    _light_transition_time = getSetting("ltTime", LIGHT_TRANSITION_TIME);
+    _light_transition_step = getSetting("ltStep", LIGHT_TRANSITION_STEP);
 
 }
 
-// Dummy channel setup for light providers without real GPIO
-void lightSetupChannels(unsigned char size) {
+#if RELAY_SUPPORT
 
-    size = constrain(size, 0, Light::ChannelsMax);
-    if (size == _light_channels.size()) return;
-    _light_channels.resize(size);
+void _lightRelaySupport() {
+    if (!getSetting("ltRelay", 1 == LIGHT_RELAY_ENABLED)) {
+        return;
+    }
 
+    if (_light_has_controls) {
+        return;
+    }
+
+    auto next_id = relayCount();
+    if (relayAdd(std::make_unique<LightGlobalProvider>())) {
+        _light_state_listener = [next_id](bool state) {
+            relayStatus(next_id, state);
+        };
+        _light_has_controls = true;
+    }
+}
+
+#endif
+
+void _lightBoot() {
+    if (_light_channels.size()) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), _light_channels.size());
+    }
+
+    _lightConfigure();
+    if (rtcmemStatus()) {
+        _lightRestoreRtcmem();
+    } else {
+        _lightRestoreSettings();
+    }
+
+    lightUpdate(false);
+}
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
+void lightSetProvider(std::unique_ptr<LightProvider>&& ptr) {
+    _light_provider = std::move(ptr);
+}
+
+bool lightAdd() {
+    if (_light_channels.size() <= Light::ChannelsMax) {
+        static bool scheduled { false };
+        _light_channels.push_back(channel_t());
+        if (!scheduled) {
+            schedule_function([]() {
+                _lightBoot();
+                scheduled = false;
+            });
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+#else
+
+bool lightAdd() {
+    return false;
+}
+
+#endif // LIGHT_PROVIDER_CUSTOM
+
+void _lightProviderDebug() {
+    DEBUG_MSG_P(PSTR("[LIGHT] Provider: "
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_NONE
+        "NONE"
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+        "DIMMER"
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+        "MY92XX"
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+        "CUSTOM"
+#endif
+    "\n"));
 }
 
 void lightSetup() {
+    moveSetting("lightTime", "ltTime");
 
     const auto enable_pin = getSetting("ltEnableGPIO", _lightEnablePin());
     if (enable_pin != GPIO_NONE) {
@@ -1438,14 +1794,14 @@ void lightSetup() {
 
     _light_channels.reserve(Light::ChannelsMax);
 
+    _lightProviderDebug();
+
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        lightSetupChannels(LIGHT_CHANNELS);
+        _light_channels.resize(std::min(Light::Channels, Light::ChannelsMax));
 
-    #endif
-
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+    #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
         // Initial duty value (will be passed to pwm_set_duty(...), OFF in this case)
         uint32_t pwm_duty_init[Light::ChannelsMax] = {0};
@@ -1476,20 +1832,11 @@ void lightSetup() {
 
     #endif
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-        Tuya::tuyaSetupLight();
-    #endif
+    _lightBoot();
 
-    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
-    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channels.size());
-
-    _lightConfigure();
-    if (rtcmemStatus()) {
-        _lightRestoreRtcmem();
-    } else {
-        _lightRestoreSettings();
-    }
-    lightUpdate(false, false);
+#if RELAY_SUPPORT
+    _lightRelaySupport();
+#endif
 
     #if WEB_SUPPORT
         wsRegister()
@@ -1511,13 +1858,7 @@ void lightSetup() {
         _lightInitCommands();
     #endif
 
-    // Main callbacks
-    espurnaRegisterReload([]() {
-        #if LIGHT_SAVE_ENABLED == 0
-            lightSave();
-        #endif
-        _lightConfigure();
-    });
+    espurnaRegisterReload(_lightConfigure);
 
 }
 
