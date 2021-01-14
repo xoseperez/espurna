@@ -108,7 +108,7 @@ const String& getCoreRevision() {
 
 const String& getVersion() {
 #if defined(APP_REVISION)
-    static const String value(F(APP_VERSION " (" APP_REVISION ")"));
+    static const String value(F(APP_VERSION APP_REVISION));
 #else
     static const String value(F(APP_VERSION));
 #endif
