@@ -26,7 +26,7 @@ void mqttRegister(mqtt_callback_f callback);
 String mqttTopic(const char * magnitude, bool is_set);
 String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
 
-String mqttMagnitude(char * topic);
+String mqttMagnitude(const char* topic);
 
 bool mqttSendRaw(const char * topic, const char * message, bool retain);
 bool mqttSendRaw(const char * topic, const char * message);

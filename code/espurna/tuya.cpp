@@ -2,7 +2,7 @@
 
 TUYA MODULE
 
-Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 

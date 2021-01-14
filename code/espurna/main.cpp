@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "garland.h"
 #include "i2c.h"
 #include "influxdb.h"
+#include "ifan.h"
 #include "ir.h"
 #include "led.h"
 #include "light.h"
@@ -303,6 +304,9 @@ void setup() {
     #endif
     #if KINGART_CURTAIN_SUPPORT
         kingartCurtainSetup();
+    #endif
+    #if IFAN_SUPPORT
+        ifanSetup();
     #endif
 
     // 3rd party code hook

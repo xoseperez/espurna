@@ -1010,25 +1010,17 @@
     #define MANUFACTURER            "ITEAD"
     #define DEVICE                  "SONOFF_IFAN02"
 
-    // These are virtual buttons triggered by the remote
+    // Base module
+    #define IFAN_SUPPORT            1
+
+    // These buttons are triggered by the remote
     #define BUTTON1_PIN             0
     #define BUTTON2_PIN             9
     #define BUTTON3_PIN             10
     #define BUTTON4_PIN             14
-    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON4_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
-    // Relays
+    // Only one relay by default, controlling the ON / OFF
     #define RELAY1_PIN              12
-    #define RELAY2_PIN              5
-    #define RELAY3_PIN              4
-    #define RELAY4_PIN              15
-    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
-    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
-    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
-    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN                13

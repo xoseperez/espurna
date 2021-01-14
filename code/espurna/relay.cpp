@@ -739,34 +739,6 @@ void _relayProcess(bool mode) {
     }
 }
 
-#if defined(ITEAD_SONOFF_IFAN02)
-
-unsigned char _relay_ifan02_speeds[] = {0, 1, 3, 5};
-
-unsigned char getSpeed() {
-    unsigned char speed =
-        (_relays[1].target_status ? 1 : 0) +
-        (_relays[2].target_status ? 2 : 0) +
-        (_relays[3].target_status ? 4 : 0);
-    for (unsigned char i=0; i<4; i++) {
-        if (_relay_ifan02_speeds[i] == speed) return i;
-    }
-    return 0;
-}
-
-void setSpeed(unsigned char speed) {
-    if ((0 <= speed) & (speed <= 3)) {
-        if (getSpeed() == speed) return;
-        unsigned char states = _relay_ifan02_speeds[speed];
-        for (unsigned char i=0; i<3; i++) {
-            relayStatus(i+1, states & 1 == 1);
-            states >>= 1;
-        }
-    }
-}
-
-#endif
-
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
@@ -1350,20 +1322,6 @@ void relaySetupAPI() {
         }
     );
 
-    #if defined(ITEAD_SONOFF_IFAN02)
-        apiRegister(F(MQTT_TOPIC_SPEED), {
-            [](ApiRequest& request) {
-                request.send(String(static_cast<int>(getSpeed())));
-                return true;
-            },
-            [](ApiRequest& request) {
-                setSpeed(atoi(request.param(F("value"))));
-                return true;
-            },
-            nullptr
-        });
-    #endif
-
 }
 
 #endif // API_SUPPORT
@@ -1432,13 +1390,6 @@ void relayMQTT(unsigned char id) {
         _relayMQTTGroup(id);
     }
 
-    // Send speed for IFAN02
-    #if defined (ITEAD_SONOFF_IFAN02)
-        char buffer[5];
-        snprintf(buffer, sizeof(buffer), "%u", getSpeed());
-        mqttSend(MQTT_TOPIC_SPEED, buffer);
-    #endif
-
 }
 
 void relayMQTT() {
@@ -1473,6 +1424,10 @@ void relayStatusWrap(unsigned char id, PayloadStatus value, bool is_group_topic)
 
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
+    if (!relayCount()) {
+        return;
+    }
+
     if (type == MQTT_CONNECT_EVENT) {
 
         // Send status on connect
@@ -1489,10 +1444,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         char pulse_topic[strlen(MQTT_TOPIC_PULSE) + 3];
         snprintf_P(pulse_topic, sizeof(pulse_topic), PSTR("%s/+"), MQTT_TOPIC_PULSE);
         mqttSubscribe(pulse_topic);
-
-        #if defined(ITEAD_SONOFF_IFAN02)
-            mqttSubscribe(MQTT_TOPIC_SPEED);
-        #endif
 
         // Subscribe to group topics
         for (unsigned char i=0; i < _relays.size(); i++) {
@@ -1547,13 +1498,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             }
         }
 
-        // Itead Sonoff IFAN02
-        #if defined (ITEAD_SONOFF_IFAN02)
-            if (t.startsWith(MQTT_TOPIC_SPEED)) {
-                setSpeed(atoi(payload));
-            }
-        #endif
-
     }
 
     // TODO: safeguard against network issues. this one has good intentions, but we may end up
@@ -1583,7 +1527,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 }
 
 void relaySetupMQTT() {
-    if (!relayCount()) return;
     mqttRegister(relayMQTTCallback);
 }
 

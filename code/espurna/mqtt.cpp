@@ -523,7 +523,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
@@ -646,7 +646,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     @param topic the full MQTT topic
     @return String object with the magnitude part.
 */
-String mqttMagnitude(char * topic) {
+String mqttMagnitude(const char* topic) {
 
     String pattern = _mqtt_topic + _mqtt_setter;
     int position = pattern.indexOf("#");
