@@ -17,10 +17,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <memory>
 
-constexpr size_t ButtonsPresetMax = 8;
-constexpr size_t ButtonsMax = 32;
+constexpr size_t ButtonsActionMax { 255ul };
 
-using button_action_t = uint8_t;
+constexpr size_t ButtonsPresetMax { 8ul };
+constexpr size_t ButtonsMax { 32ul };
+
+using ButtonCustomAction = void(*)(unsigned char id);
 
 enum class ButtonProvider : int {
     None,
@@ -39,14 +41,33 @@ enum class button_event_t {
     TripleClick
 };
 
-struct button_actions_t {
-    button_action_t pressed;
-    button_action_t released;
-    button_action_t click;
-    button_action_t dblclick;
-    button_action_t lngclick;
-    button_action_t lnglngclick;
-    button_action_t trplclick;
+// button actions, limited to 8-bit number (0b11111111 / 0xff / 255)
+
+enum class ButtonAction : uint8_t  {
+    None,
+    Toggle,
+    On,
+    Off,
+    AccessPoint,
+    Reset,
+    Pulse,
+    FactoryReset,
+    Wps,
+    SmartConfig,
+    BrightnessIncrease,
+    BrightnessDecrease,
+    DisplayOn,
+    Custom
+};
+
+struct ButtonActions {
+    ButtonAction pressed;
+    ButtonAction released;
+    ButtonAction click;
+    ButtonAction dblclick;
+    ButtonAction lngclick;
+    ButtonAction lnglngclick;
+    ButtonAction trplclick;
 };
 
 struct button_event_delays_t {
@@ -60,23 +81,25 @@ struct button_event_delays_t {
 };
 
 struct button_t {
-    button_t(button_actions_t&& actions, button_event_delays_t&& delays);
+    button_t(ButtonActions&& actions, button_event_delays_t&& delays);
     button_t(BasePinPtr&& pin, const debounce_event::types::Config& config,
-        button_actions_t&& actions, button_event_delays_t&& delays);
+        ButtonActions&& actions, button_event_delays_t&& delays);
 
     bool state();
     button_event_t loop();
 
     std::unique_ptr<debounce_event::EventEmitter> event_emitter;
 
-    button_actions_t actions;
+    ButtonActions actions;
     button_event_delays_t event_delays;
 };
 
 BrokerDeclare(ButtonBroker, void(unsigned char id, button_event_t event));
 
+void buttonSetCustomAction(ButtonCustomAction);
+
 bool buttonState(unsigned char id);
-button_action_t buttonAction(unsigned char id, const button_event_t event);
+ButtonAction buttonAction(unsigned char id, const button_event_t event);
 
 void buttonEvent(unsigned char id, button_event_t event);
 

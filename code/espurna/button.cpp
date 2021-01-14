@@ -136,7 +136,34 @@ ButtonProvider convert(const String& value) {
     return ButtonProvider::None;
 }
 
-} // namespace settings::internal
+template<>
+ButtonAction convert(const String& value) {
+    auto num = strtoul(value.c_str(), nullptr, 10);
+    if (num < ButtonsActionMax) {
+        auto action = static_cast<ButtonAction>(num);
+        switch (action) {
+        case ButtonAction::None:
+        case ButtonAction::Toggle:
+        case ButtonAction::On:
+        case ButtonAction::Off:
+        case ButtonAction::AccessPoint:
+        case ButtonAction::Reset:
+        case ButtonAction::Pulse:
+        case ButtonAction::FactoryReset:
+        case ButtonAction::Wps:
+        case ButtonAction::SmartConfig:
+        case ButtonAction::BrightnessIncrease:
+        case ButtonAction::BrightnessDecrease:
+        case ButtonAction::DisplayOn:
+        case ButtonAction::Custom:
+            return action;
+        }
+    }
+
+    return ButtonAction::None;
+}
+
+} // namespace internal
 } // namespace settings
 
 // -----------------------------------------------------------------------------
@@ -156,7 +183,7 @@ constexpr debounce_event::types::Config _buttonDecodeConfigBitmask(int bitmask) 
     };
 }
 
-constexpr button_action_t _buttonDecodeEventAction(const button_actions_t& actions, button_event_t event) {
+constexpr ButtonAction _buttonDecodeEventAction(const ButtonActions& actions, button_event_t event) {
     return (
         (event == button_event_t::Pressed) ? actions.pressed :
         (event == button_event_t::Released) ? actions.released :
@@ -164,7 +191,7 @@ constexpr button_action_t _buttonDecodeEventAction(const button_actions_t& actio
         (event == button_event_t::DoubleClick) ? actions.dblclick :
         (event == button_event_t::LongClick) ? actions.lngclick :
         (event == button_event_t::LongLongClick) ? actions.lnglngclick :
-        (event == button_event_t::TripleClick) ? actions.trplclick : 0U
+        (event == button_event_t::TripleClick) ? actions.trplclick : ButtonAction::None
     );
 }
 
@@ -181,7 +208,7 @@ constexpr button_event_t _buttonMapReleased(uint8_t count, unsigned long length,
     );
 }
 
-button_actions_t _buttonConstructActions(unsigned char index) {
+ButtonActions _buttonConstructActions(unsigned char index) {
     return {
         _buttonPress(index),
         _buttonRelease(index),
@@ -222,12 +249,12 @@ button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned lo
     lnglngclick(lnglngclick)
 {}
 
-button_t::button_t(button_actions_t&& actions_, button_event_delays_t&& delays_) :
+button_t::button_t(ButtonActions&& actions_, button_event_delays_t&& delays_) :
     actions(std::move(actions_)),
     event_delays(std::move(delays_))
 {}
 
-button_t::button_t(BasePinPtr&& pin, const debounce_event::types::Config& config, button_actions_t&& actions_, button_event_delays_t&& delays_) :
+button_t::button_t(BasePinPtr&& pin, const debounce_event::types::Config& config, ButtonActions&& actions_, button_event_delays_t&& delays_) :
     event_emitter(std::make_unique<debounce_event::EventEmitter>(std::move(pin), config, delays_.debounce, delays_.repeat)),
     actions(std::move(actions_)),
     event_delays(std::move(delays_))
@@ -382,14 +409,22 @@ bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
 
 #endif // WEB_SUPPORT
 
-bool buttonState(unsigned char id) {
-    if (id >= _buttons.size()) return false;
-    return _buttons[id].state();
+ButtonCustomAction _button_custom_action { nullptr };
+
+void buttonSetCustomAction(ButtonCustomAction action) {
+    _button_custom_action = action;
 }
 
-button_action_t buttonAction(unsigned char id, const button_event_t event) {
-    if (id >= _buttons.size()) return 0;
-    return _buttonDecodeEventAction(_buttons[id].actions, event);
+bool buttonState(unsigned char id) {
+    return (id < _buttons.size())
+        ? _buttons[id].state()
+        : false;
+}
+
+ButtonAction buttonAction(unsigned char id, const button_event_t event) {
+    return (id < _buttons.size())
+        ? _buttonDecodeEventAction(_buttons[id].actions, event)
+        : ButtonAction::None;
 }
 
 // Note that we don't directly return F(...), but use a temporary to assign it conditionally
@@ -442,20 +477,27 @@ unsigned char _buttonRelaySetting(unsigned char id) {
     return relays[id];
 }
 
-void _buttonRelayAction(unsigned char id, button_action_t action) {
+void _buttonRelayAction(unsigned char id, ButtonAction action) {
     auto relayId = _buttonRelaySetting(id);
 
     switch (action) {
-    case BUTTON_ACTION_TOGGLE:
+    case ButtonAction::Toggle:
         relayToggle(relayId);
         break;
 
-    case BUTTON_ACTION_ON:
+    case ButtonAction::On:
         relayStatus(relayId, true);
         break;
 
-    case BUTTON_ACTION_OFF:
+    case ButtonAction::Off:
         relayStatus(relayId, false);
+        break;
+
+    case ButtonAction::Pulse:
+        // TODO
+        break;
+
+    default:
         break;
     }
 }
@@ -470,75 +512,88 @@ void buttonEvent(unsigned char id, button_event_t event) {
     if (event == button_event_t::None) return;
 
     auto& button = _buttons[id];
+
     auto action = _buttonDecodeEventAction(button.actions, event);
 
-    #if BROKER_SUPPORT
-        ButtonBroker::Publish(id, event);
-    #endif
+#if BROKER_SUPPORT
+    ButtonBroker::Publish(id, event);
+#endif
 
-    #if MQTT_SUPPORT
-        if (action || _buttons_mqtt_send_all[id]) {
-            mqttSend(MQTT_TOPIC_BUTTON, id, _buttonEventString(event).c_str(), false, _buttons_mqtt_retain[id]);
-        }
-    #endif
+#if MQTT_SUPPORT
+    if ((action != ButtonAction::None) || _buttons_mqtt_send_all[id]) {
+        mqttSend(MQTT_TOPIC_BUTTON, id, _buttonEventString(event).c_str(), false, _buttons_mqtt_retain[id]);
+    }
+#endif
 
     switch (action) {
 
-    #if RELAY_SUPPORT
-        case BUTTON_ACTION_TOGGLE:
-        case BUTTON_ACTION_ON:
-        case BUTTON_ACTION_OFF:
-            _buttonRelayAction(id, action);
-            break;
-    #endif
+#if RELAY_SUPPORT
+    case ButtonAction::Toggle:
+    case ButtonAction::On:
+    case ButtonAction::Off:
+    case ButtonAction::Pulse:
+        _buttonRelayAction(id, action);
+        break;
+#endif
 
-        case BUTTON_ACTION_AP:
-            if (wifiState() & WIFI_STATE_AP) {
-                wifiStartSTA();
-            } else {
-                wifiStartAP();
-            }
-            break;
+    case ButtonAction::AccessPoint:
+        if (wifiState() & WIFI_STATE_AP) {
+            wifiStartSTA();
+        } else {
+            wifiStartAP();
+        }
+        break;
 
-        case BUTTON_ACTION_RESET:
-            deferredReset(100, CUSTOM_RESET_HARDWARE);
-            break;
+    case ButtonAction::Reset:
+        deferredReset(100, CUSTOM_RESET_HARDWARE);
+        break;
 
-        case BUTTON_ACTION_FACTORY:
-            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
-            resetSettings();
-            deferredReset(100, CUSTOM_RESET_FACTORY);
-            break;
+    case ButtonAction::FactoryReset:
+        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+        resetSettings();
+        deferredReset(100, CUSTOM_RESET_FACTORY);
+        break;
 
-    #if defined(JUSTWIFI_ENABLE_WPS)
-        case BUTTON_ACTION_WPS:
-            wifiStartWPS();
-            break;
-    #endif // defined(JUSTWIFI_ENABLE_WPS)
+    case ButtonAction::Wps:
+#if defined(JUSTWIFI_ENABLE_WPS)
+        wifiStartWPS();
+#endif
+        break;
 
-    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        case BUTTON_ACTION_SMART_CONFIG:
-            wifiStartSmartConfig();
-            break;
-    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+    case ButtonAction::SmartConfig:
+#if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+        wifiStartSmartConfig();
+#endif
+        break;
 
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-        case BUTTON_ACTION_DIM_UP:
-            lightBrightnessStep(1);
-            lightUpdate();
-            break;
+    case ButtonAction::BrightnessIncrease:
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        lightBrightnessStep(1);
+        lightUpdate();
+#endif
+        break;
 
-        case BUTTON_ACTION_DIM_DOWN:
-            lightBrightnessStep(-1);
-            lightUpdate();
-            break;
-    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    case ButtonAction::BrightnessDecrease:
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        lightBrightnessStep(-1);
+        lightUpdate();
+#endif
+        break;
 
-    #if THERMOSTAT_DISPLAY_SUPPORT
-        case BUTTON_ACTION_DISPLAY_ON:
-            displayOn();
-            break;
-    #endif
+    case ButtonAction::DisplayOn:
+#if THERMOSTAT_DISPLAY_SUPPORT
+        displayOn();
+#endif
+        break;
+
+    case ButtonAction::Custom:
+        if (_button_custom_action) {
+            _button_custom_action(id);
+        }
+        break;
+
+    case ButtonAction::None:
+        break;
 
     }
 
@@ -746,8 +801,8 @@ BasePinPtr _buttonGpioPin(unsigned char index, ButtonProvider provider) {
     return result;
 }
 
-inline button_actions_t _buttonActions(unsigned char index) {
-    button_actions_t actions {
+ButtonActions _buttonActions(unsigned char index) {
+    return {
         getSetting({"btnPress", index}, _buttonPress(index)),
         getSetting({"btnRlse", index}, _buttonRelease(index)),
         getSetting({"btnClick", index}, _buttonClick(index)),
@@ -756,20 +811,17 @@ inline button_actions_t _buttonActions(unsigned char index) {
         getSetting({"btnLLclk", index}, _buttonLongLongClick(index)),
         getSetting({"btnTclk", index}, _buttonTripleClick(index))
     };
-
-    return actions;
 }
 
-// Note that we use settings without indexes as default values
+// Note that we use settings without indexes as default values to preserve backwards compatibility
+
 button_event_delays_t _buttonDelays(unsigned char index) {
-    button_event_delays_t delays {
+    return {
         _buttonGetSetting("btnDebDel", index, _buttonDebounceDelay(index)),
         _buttonGetSetting("btnRepDel", index, _buttonRepeatDelay(index)),
         _buttonGetSetting("btnLclkDel", index, _buttonLongClickDelay(index)),
         _buttonGetSetting("btnLLclkDel", index, _buttonLongLongClickDelay(index)),
     };
-
-    return delays;
 }
 
 bool _buttonSetupProvider(unsigned char index, ButtonProvider provider) {

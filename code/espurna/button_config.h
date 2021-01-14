@@ -59,7 +59,7 @@ constexpr int _buttonConfigBitmask(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonRelease(unsigned char index) {
+constexpr ButtonAction _buttonRelease(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_RELEASE :
         (index == 1) ? BUTTON2_RELEASE :
@@ -72,7 +72,7 @@ constexpr unsigned char _buttonRelease(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonPress(unsigned char index) {
+constexpr ButtonAction _buttonPress(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_PRESS :
         (index == 1) ? BUTTON2_PRESS :
@@ -85,7 +85,7 @@ constexpr unsigned char _buttonPress(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonClick(unsigned char index) {
+constexpr ButtonAction _buttonClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_CLICK :
         (index == 1) ? BUTTON2_CLICK :
@@ -98,7 +98,7 @@ constexpr unsigned char _buttonClick(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonDoubleClick(unsigned char index) {
+constexpr ButtonAction _buttonDoubleClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_DBLCLICK :
         (index == 1) ? BUTTON2_DBLCLICK :
@@ -111,7 +111,7 @@ constexpr unsigned char _buttonDoubleClick(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonTripleClick(unsigned char index) {
+constexpr ButtonAction _buttonTripleClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_TRIPLECLICK :
         (index == 1) ? BUTTON2_TRIPLECLICK :
@@ -124,7 +124,7 @@ constexpr unsigned char _buttonTripleClick(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonLongClick(unsigned char index) {
+constexpr ButtonAction _buttonLongClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGCLICK :
         (index == 1) ? BUTTON2_LNGCLICK :
@@ -137,7 +137,7 @@ constexpr unsigned char _buttonLongClick(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonLongLongClick(unsigned char index) {
+constexpr ButtonAction _buttonLongLongClick(unsigned char index) {
     return (
         (index == 0) ? BUTTON1_LNGLNGCLICK :
         (index == 1) ? BUTTON2_LNGLNGCLICK :

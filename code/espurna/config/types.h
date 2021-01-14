@@ -29,21 +29,22 @@
 // BUTTONS
 //------------------------------------------------------------------------------
 
-// button actions, limited to 8-bit number (0b11111111 / 0xff / 255)
-#define BUTTON_ACTION_NONE            0u
-#define BUTTON_ACTION_TOGGLE          1u
-#define BUTTON_ACTION_ON              2u
-#define BUTTON_ACTION_OFF             3u
-#define BUTTON_ACTION_AP              4u
-#define BUTTON_ACTION_RESET           5u
-#define BUTTON_ACTION_PULSE           6u
-#define BUTTON_ACTION_FACTORY         7u
-#define BUTTON_ACTION_WPS             8u
-#define BUTTON_ACTION_SMART_CONFIG    9u
-#define BUTTON_ACTION_DIM_UP          10u
-#define BUTTON_ACTION_DIM_DOWN        11u
-#define BUTTON_ACTION_DISPLAY_ON      12u
-#define BUTTON_ACTION_MAX             255u
+#define BUTTON_ACTION_NONE            ButtonAction::None
+#define BUTTON_ACTION_TOGGLE          ButtonAction::Toggle
+#define BUTTON_ACTION_ON              ButtonAction::On
+#define BUTTON_ACTION_OFF             ButtonAction::Off
+#define BUTTON_ACTION_AP              ButtonAction::AccessPoint
+#define BUTTON_ACTION_RESET           ButtonAction::Reset
+#define BUTTON_ACTION_PULSE           ButtonAction::Pulse
+#define BUTTON_ACTION_FACTORY         ButtonAction::FactoryReset
+#define BUTTON_ACTION_WPS             ButtonAction::Wps
+#define BUTTON_ACTION_SMART_CONFIG    ButtonAction::SmartConfig
+#define BUTTON_ACTION_DIM_UP          ButtonAction::BrightnessIncrease
+#define BUTTON_ACTION_DIM_DOWN        ButtonAction::BrightnessDecrease
+#define BUTTON_ACTION_DISPLAY_ON      ButtonAction::DisplayOn
+#define BUTTON_ACTION_CUSTOM          ButtonAction::Custom
+
+#define BUTTON_ACTION_MAX             ButtonsActionMax
 
 // Deprecated: legacy mapping, changed to action from above
 #define BUTTON_MODE_NONE              BUTTON_ACTION_NONE

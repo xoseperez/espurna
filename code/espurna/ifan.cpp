@@ -101,10 +101,9 @@ constexpr unsigned long DefaultSaveDelay { 1000ul };
 
 constexpr unsigned char DefaultRelayId { 0u };
 
-constexpr unsigned char DefaultStateButton { 0u };
-constexpr unsigned char DefaultLowButton { 1u };
-constexpr unsigned char DefaultMediumButton { 2u };
-constexpr unsigned char DefaultHighButton { 3u };
+constexpr unsigned char DefaultLowButtonId { 1u };
+constexpr unsigned char DefaultMediumButtonId { 2u };
+constexpr unsigned char DefaultHighButtonId { 3u };
 
 // We expect to write a specific 'mask' via GPIO LOW & HIGH to set the speed
 // Sync up with the relay and write it on ON / OFF status events
@@ -128,10 +127,10 @@ StatePins statePins() {
 
 struct Config {
     unsigned long save { DefaultSaveDelay };
-    unsigned char relayId { RELAY_NONE };
-    unsigned char buttonLowId { RELAY_NONE };
-    unsigned char buttonMediumId { RELAY_NONE };
-    unsigned char buttonHighId { RELAY_NONE };
+    unsigned char relayId { DefaultRelayId };
+    unsigned char buttonLowId { DefaultLowButtonId };
+    unsigned char buttonMediumId { DefaultMediumButtonId };
+    unsigned char buttonHighId { DefaultHighButtonId };
     Speed speed { Speed::Off };
     StatePins state_pins;
 };
@@ -140,9 +139,9 @@ Config readSettings() {
     return {
         getSetting("ifanSave", DefaultSaveDelay),
         getSetting("ifanRelayId", DefaultRelayId),
-        getSetting("ifanBtnLowId", DefaultMediumButton),
-        getSetting("ifanBtnLowId", DefaultMediumButton),
-        getSetting("ifanBtnHighId", DefaultHighButton),
+        getSetting("ifanBtnLowId", DefaultLowButtonId),
+        getSetting("ifanBtnLowId", DefaultMediumButtonId),
+        getSetting("ifanBtnHighId", DefaultHighButtonId),
         getSetting("ifanSpeed", Speed::Medium)
     };
 }
@@ -299,13 +298,7 @@ void setup() {
     espurnaRegisterReload(configure);
 
 #if BUTTON_SUPPORT
-    ButtonBroker::Register([](unsigned char id, button_event_t event) {
-        // TODO: add special 'custom' action for buttons, and trigger via basic callback?
-        //       that way we don't depend on the event type and directly trigger with whatever cfg says
-        if (event != button_event_t::Click) {
-            return;
-        }
-
+    buttonSetCustomAction([](unsigned char id) {
         if (config.buttonLowId == id) {
             setSpeed(Speed::Low);
         } else if (config.buttonMediumId == id) {
