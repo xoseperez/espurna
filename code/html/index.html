@@ -11,9 +11,6 @@
         <link rel="stylesheet" href="vendor/pure-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/pure-grids-responsive-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/side-menu.css" />
-        <!-- removeIf(!light) -->
-        <link rel="stylesheet" href="vendor/jquery.wheelcolorpicker-3.0.8.css" />
-        <!-- endRemoveIf(!light) -->
         <!-- removeIf(!rfm69) -->
         <link rel="stylesheet" href="vendor/datatables-1.10.16.css" />
         <!-- endRemoveIf(!rfm69) -->
@@ -240,19 +237,22 @@
 
                                 <div id="relays"></div>
 
-                                <!-- removeIf(!curtain) -->
-                                <div id="curtains"></div>
-                                <!-- endRemoveIf(!curtain) -->
-                                
                                 <!-- removeIf(!light) -->
-                                <div id="colors"></div>
+                                <div id="color"></div>
                                 <div id="cct"></div>
+                                <!-- endRemoveIf(!light) -->
+
+                                <!-- removeIf(!light) -->
                                 <div id="channels"></div>
                                 <!-- endRemoveIf(!light) -->
 
                                 <!-- removeIf(!sensor) -->
                                 <div id="magnitudes"></div>
                                 <!-- endRemoveIf(!sensor) -->
+
+                                <!-- removeIf(!curtain) -->
+                                <div id="curtains"></div>
+                                <!-- endRemoveIf(!curtain) -->
 
                                 <!-- removeIf(!rfm69) -->
                                 <div class="pure-g module module-rfm69">
@@ -2176,14 +2176,6 @@
         <!-- endRemoveIf(!sensor) -->
 
         <!-- removeIf(!light) -->
-        <div id="colorTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Color</label>
-                <input class="pure-u-1 pure-u-lg-1-4" data-wcp-layout="block" name="color" readonly />
-            </div>
-
-        </div>
-
         <div id="brightnessTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
@@ -2281,7 +2273,7 @@
     <script src="vendor/jquery-3.4.1.slim.min.js"></script>
     <script src="custom.js"></script>
     <!-- removeIf(!light) -->
-    <script src="vendor/jquery.wheelcolorpicker-3.0.8.min.js"></script>
+    <script src="vendor/iro-5.3.1.min.js"></script>
     <!-- endRemoveIf(!light) -->
     <!-- removeIf(!rfm69) -->
     <script src="vendor/datatables-1.10.16.min.js"></script>

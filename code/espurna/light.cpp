@@ -1274,6 +1274,7 @@ void _lightWebSocketStatus(JsonObject& root) {
         channels.add(lightChannel(id));
     }
     root["brightness"] = lightBrightness();
+    root["lightstate"] = lightState();
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
@@ -1294,8 +1295,6 @@ void _lightWebSocketOnConnected(JsonObject& root) {
 #if RELAY_SUPPORT
     root["ltRelay"] = getSetting("ltRelay", 1 == LIGHT_RELAY_ENABLED);
 #endif
-
-    _lightWebSocketStatus(root);
 }
 
 void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -1842,6 +1841,7 @@ void lightSetup() {
         wsRegister()
             .onVisible(_lightWebSocketOnVisible)
             .onConnected(_lightWebSocketOnConnected)
+            .onData(_lightWebSocketStatus)
             .onAction(_lightWebSocketOnAction)
             .onKeyCheck(_lightWebSocketOnKeyCheck);
     #endif

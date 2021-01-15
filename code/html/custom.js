@@ -14,8 +14,11 @@ var numReload = 0;
 var configurationSaved = false;
 var ws_pingpong;
 
+//removeIf(!light)
+var colorPicker;
 var useWhite = false;
 var useCCT = false;
+//endRemoveIf(!light)
 
 var now = 0;
 var ago = 0;
@@ -1149,7 +1152,7 @@ function initRelays(data) {
             });
 
         $("label.toggle", line)
-            .prop("for", "relay" + id)
+            .prop("for", "relay" + id);
 
         line.appendTo("#relays");
 
@@ -1331,68 +1334,68 @@ function initCurtainConfig(data) {
 
 //removeIf(!light)
 
-// wheelColorPicker accepts:
-//   hsv(0...360,0...1,0...1)
-//   hsv(0...100%,0...100%,0...100%)
-// While we use:
-//   hsv(0...360,0...100%,0...100%)
-
-function _hsv_round(value) {
-    return Math.round(value * 100) / 100;
+function colorToHsvString(color) {
+    var h = String(Math.round(color.hsv.h));
+    var s = String(Math.round(color.hsv.s));
+    var v = String(Math.round(color.hsv.v));
+    return h + "," + s + "," + v;
 }
 
-function getPickerRGB(picker) {
-    return $(picker).wheelColorPicker("getValue", "css");
+function hsvStringToColor(hsv) {
+    var parts = hsv.split(",");
+    return {
+        h: parseInt(parts[0]),
+        s: parseInt(parts[1]),
+        v: parseInt(parts[2])
+    };
 }
 
-function setPickerRGB(picker, value) {
-    $(picker).wheelColorPicker("setValue", value, true);
+function colorSlider(type) {
+    return {component: iro.ui.Slider, options: {sliderType: type}};
 }
 
-// TODO: use pct values instead of doing conversion?
-function getPickerHSV(picker) {
-    var color = $(picker).wheelColorPicker("getColor");
-    return String(Math.ceil(_hsv_round(color.h) * 360))
-        + "," + String(Math.ceil(_hsv_round(color.s) * 100))
-        + "," + String(Math.ceil(_hsv_round(color.v) * 100));
+function colorWheel() {
+    return {component: iro.ui.Wheel, options: {}};
 }
 
-function setPickerHSV(picker, value) {
-    if (value === getPickerHSV(picker)) return;
-    var chunks = value.split(",");
-    $(picker).wheelColorPicker("setColor", {
-        h: _hsv_round(chunks[0] / 360),
-        s: _hsv_round(chunks[1] / 100),
-        v: _hsv_round(chunks[2] / 100)
-    });
+function colorBox() {
+    return {component: iro.ui.Box, options: {}};
 }
 
-function initColor(cfg) {
-    var rgb = false;
-    if (typeof cfg === "object") {
-        rgb = cfg.rgb;
+function updateColor(mode, value) {
+    if (colorPicker) {
+        if (mode === "rgb") {
+            colorPicker.color.hexString = value;
+        } else if (mode === "hsv") {
+            colorPicker.color.hsv = hsvStringToColor(value);
+        }
+        return;
     }
 
-    // check if already initialized
-    var done = $("#colors > div").length;
-    if (done > 0) { return; }
+    // TODO: useRGB -> ltWheel?
+    // TODO: always show wheel + sliders like before?
+    var layout = []
+    if (mode === "rgb") {
+        layout.push(colorWheel());
+        layout.push(colorSlider("value"));
+    } else if (mode === "hsv") {
+        layout.push(colorBox());
+        layout.push(colorSlider("hue"));
+    }
 
-    // add template
-    var template = $("#colorTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colors");
+    var options = {
+        color: (mode === "rgb") ? value : hsvStringToColor(value),
+        layout: layout
+    };
 
-    // init color wheel
-    $("input[name='color']").wheelColorPicker({
-        sliders: (rgb ? "wrgbp" : "whsp")
-    }).on("sliderup", function() {
-        if (rgb) {
-            sendAction("color", {rgb: getPickerRGB(this)});
-        } else {
-            sendAction("color", {hsv: getPickerHSV(this)});
+    colorPicker = new iro.ColorPicker("#color", options);
+    colorPicker.on("input:change", function(color) {
+        if (mode === "rgb") {
+            sendAction("color", {rgb: color.hexString});
+        } else if (mode === "hsv") {
+            sendAction("color", {hsv: colorToHsvString(color)});
         }
     });
-
 }
 
 function initCCT() {
@@ -1417,12 +1420,9 @@ function initChannels(num) {
     var done = $("#channels > div").length > 0;
     if (done) { return; }
 
-    // does it have color channels?
-    var colors = $("#colors > div").length > 0;
-
     // calculate channels to create
     var max = num;
-    if (colors) {
+    if (colorPicker) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
@@ -1798,15 +1798,13 @@ function processData(data) {
 
         //removeIf(!light)
 
-        if ("rgb" === key) {
-            initColor({rgb: true});
-            setPickerRGB($("input[name='color']"), value);
+        if ("lightstate" === key) {
+            $("#color").toggle(value);
             return;
         }
 
-        if ("hsv" === key) {
-            initColor({hsv: true});
-            setPickerHSV($("input[name='color']"), value);
+        if (("rgb" === key) || ("hsv" === key)) {
+            updateColor(key, value);
             return;
         }
 
