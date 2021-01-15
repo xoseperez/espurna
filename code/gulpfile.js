@@ -173,15 +173,15 @@ var buildWebUI = function(module) {
     }
 
     return gulp.src(htmlFolder + '*.html').
-        pipe(remover(modules)).
         pipe(htmllint({
             'failOnError': true,
             'rules': {
                 'id-class-style': false,
                 'label-req-for': false,
-                'line-end-style': false,
+                'line-end-style': false
             }
         }, htmllintReporter)).
+        pipe(remover(modules)).
         pipe(favicon()).
         pipe(inline({
             base: htmlFolder,

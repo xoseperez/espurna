@@ -1284,7 +1284,7 @@ function initCurtain(data) {
 
     var current = $("#curtains > div").length;
     if (current > 0) { return; }
-  
+
     // add curtain template (prepare multi switches)
     var template = $("#curtainTemplate").children();
     var line = $(template).clone();
@@ -1292,15 +1292,15 @@ function initCurtain(data) {
     $(line).find(".button-curtain-open").on("click", function() {
         sendAction("curtainAction", {button: 1});
         $(this).css('background', 'red');
-    });    
+    });
     $(line).find(".button-curtain-pause").on("click", function() {
         sendAction("curtainAction", {button: 0});
         $(this).css('background', 'red');
-    });    
+    });
     $(line).find(".button-curtain-close").on("click", function() {
         sendAction("curtainAction", {button: 2});
         $(this).css('background', 'red');
-    });    
+    });
     line.appendTo("#curtains");
 
     // init curtain slider
@@ -1741,7 +1741,7 @@ function processData(data) {
             }
 			return;
         }
-        
+
         if (key == "rpnNames") return;
 
         // ---------------------------------------------------------------------
@@ -1773,7 +1773,7 @@ function processData(data) {
             }
             $("#curtainSet").val(value.set);
 
-            if(!value.moving) { 
+            if(!value.moving) {
                 $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
             } else {
                 if(!value.button)
