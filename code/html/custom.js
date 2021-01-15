@@ -1140,7 +1140,7 @@ function initRelays(data) {
             .text(_relay.name)
             .attr("data", id);
 
-        $(":checkbox", line)
+        $("input[type='checkbox']", line)
             .prop('checked', false)
             .prop('disabled', true)
             .attr("data", id)
