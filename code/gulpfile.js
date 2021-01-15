@@ -116,7 +116,12 @@ var compressJs = function() {
         }
 
         if (source.path.endsWith("custom.js")) {
-            var result = terser.minify(source.contents.toString());
+            var contents = source.contents.toString();
+            var result = terser.minify(contents);
+            if (result.error) {
+                var { message, filename, line, col, pos } = result.error;
+                throw new Error("terser error `" + message + "` in file " + filename + ", at line " + line);
+            }
             source.contents = Buffer.from(result.code);
 
             this.push(source);
