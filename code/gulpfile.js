@@ -43,6 +43,7 @@ const replace = require('gulp-replace');
 const remover = require('gulp-remove-code');
 const gzip = require('gulp-gzip');
 const path = require('path');
+const terser = require('terser')
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -107,6 +108,28 @@ var htmllintReporter = function(filepath, issues) {
     }
 };
 
+var compressJs = function() {
+    return through.obj(function (source, encoding, callback) {
+        if (source.isNull()) {
+            callback(null, source);
+            return;
+        }
+
+        if (source.path.endsWith("custom.js")) {
+            var result = terser.minify(source.contents.toString());
+            source.contents = Buffer.from(result.code);
+
+            this.push(source);
+            callback();
+
+            return;
+        }
+
+        callback(null, source);
+        return;
+    });
+};
+
 var buildWebUI = function(module) {
 
     // Declare some modules as optional to remove with
@@ -145,6 +168,7 @@ var buildWebUI = function(module) {
     }
 
     return gulp.src(htmlFolder + '*.html').
+        pipe(remover(modules)).
         pipe(htmllint({
             'failOnError': true,
             'rules': {
@@ -156,7 +180,7 @@ var buildWebUI = function(module) {
         pipe(favicon()).
         pipe(inline({
             base: htmlFolder,
-            js: [],
+            js: [function() { return remover(modules); }, compressJs],
             css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
         })).
@@ -165,7 +189,7 @@ var buildWebUI = function(module) {
             collapseWhitespace: true,
             removeComments: true,
             minifyCSS: true,
-            minifyJS: true
+            minifyJS: false
         })).
         pipe(replace('pure-', 'p-')).
         pipe(gzip({ gzipOptions: { level: 9 } })).
