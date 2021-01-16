@@ -4,18 +4,19 @@
 
         <title>ESPurna 0.0.0</title>
         <meta charset="utf-8" />
-        <!-- shortcut::html/favicon.ico -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <!-- build:css style.css -->
-        <link rel="stylesheet" href="vendor/pure-2.0.3.min.css" />
-        <link rel="stylesheet" href="vendor/pure-grids-responsive-2.0.3.min.css" />
-        <link rel="stylesheet" href="vendor/side-menu.css" />
+        <link type="image" rel="icon" href="favicon.ico" inline />
+
+        <link rel="stylesheet" href="vendor/pure-2.0.3.min.css" inline />
+        <link rel="stylesheet" href="vendor/pure-grids-responsive-2.0.3.min.css" inline />
+        <link rel="stylesheet" href="vendor/side-menu.css" inline />
+
         <!-- removeIf(!rfm69) -->
-        <link rel="stylesheet" href="vendor/jquery.dataTables-v1.10.23.min.css" />
+        <link rel="stylesheet" href="vendor/jquery.dataTables-v1.10.23.min.css" inline />
         <!-- endRemoveIf(!rfm69) -->
-        <link rel="stylesheet" href="custom.css" />
-        <!-- endbuild -->
+
+        <link rel="stylesheet" href="custom.css" inline />
 
     </head>
 
@@ -852,8 +853,10 @@
                                         Disable this option if you are <strong>connecting to a single access point</strong> (or router) or to a <strong>hidden SSID</strong>.
                                     </div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <button class="pure-button button-wifi-scan" type="button">Scan now</button>
-                                    <div class="pure-u-0 pure-u-lg-1-4 scan loading"></div>
+                                    <button id="button-wifi-scan" class="pure-button" type="button">Scan now</button>
+                                    <div class="pure-u-0 pure-u-lg-1-4 scan loading">
+                                        <img src="images/loading.gif" alt="Scanning" inline></img>
+                                    </div>
                                 </div>
 
                                 <div class="pure-g">
@@ -2269,15 +2272,15 @@
 
     </body>
 
-    <!-- build:js script.js -->
-    <script src="vendor/jquery-4.0.0-pre.slim-no-sizzle.min.js"></script>
-    <script src="custom.js"></script>
+    <script src="vendor/jquery-4.0.0-pre.slim.min.js" inline></script>
+    <script src="custom.js" inline></script>
+
     <!-- removeIf(!light) -->
-    <script src="vendor/iro-5.3.1.min.js"></script>
+    <script src="vendor/iro-5.3.1.min.js" inline></script>
     <!-- endRemoveIf(!light) -->
+
     <!-- removeIf(!rfm69) -->
-    <script src="vendor/jquery.dataTables-v1.10.23.min.js"></script>
+    <script src="vendor/jquery.dataTables-v1.10.23.min.js" inline></script>
     <!-- endRemoveIf(!rfm69) -->
-    <!-- endbuild -->
 
 </html>

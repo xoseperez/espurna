@@ -782,6 +782,7 @@ function doToggle(id, value) {
 function doScan() {
     $("#scanResult").html("");
     $("div.scan.loading").show();
+    $("#button-wifi-scan").attr("disabled", true);
     sendAction("scan", {});
     return false;
 }
@@ -1938,6 +1939,7 @@ function processData(data) {
 
         if ("scanResult" === key) {
             $("div.scan.loading").hide();
+            $("#button-wifi-scan").attr("disabled", false);
             $("#scanResult").show();
         }
 
@@ -2331,12 +2333,13 @@ $(function() {
     $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
+    $("#button-wifi-scan").on("click", doScan);
+
     $(".button-update").on("click", doUpdate);
     $(".button-update-password").on("click", doUpdatePassword);
     $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
-    $(".button-wifi-scan").on("click", doScan);
     $(".button-ha-config").on("click", doHAConfig);
     $(".button-dbgcmd").on("click", doDebugCommand);
     $("input[name='dbgcmd']").enterKey(doDebugCommand);
