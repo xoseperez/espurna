@@ -14,7 +14,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 constexpr size_t RelaysMax = 32;
 
 enum class RelayType : int {
-    None,
     Normal,
     Inverse,
     Latched,

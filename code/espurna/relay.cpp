@@ -118,7 +118,6 @@ template <>
 RelayType convert(const String& value) {
     auto type = static_cast<RelayType>(value.toInt());
     switch (type) {
-    case RelayType::None:
     case RelayType::Normal:
     case RelayType::Inverse:
     case RelayType::Latched:
@@ -126,7 +125,7 @@ RelayType convert(const String& value) {
         return type;
     }
 
-    return RelayType::None;
+    return RelayType::Normal;
 }
 
 template <>
@@ -278,10 +277,6 @@ struct GpioProvider : public RelayProviderBase {
     }
 
     bool setup() override {
-        if (_type == RelayType::None) {
-            return false;
-        }
-
         if (!_pin) {
             return false;
         }
@@ -300,8 +295,6 @@ struct GpioProvider : public RelayProviderBase {
 
     void change(bool status) override {
         switch (_type) {
-        case RelayType::None:
-            break;
         case RelayType::Normal:
             _pin->digitalWrite(status);
             break;
@@ -333,7 +326,7 @@ struct GpioProvider : public RelayProviderBase {
 
 private:
     unsigned char _id { RELAY_NONE };
-    RelayType _type { RelayType::None };
+    RelayType _type { RelayType::Normal };
     std::unique_ptr<BasePin> _pin;
     std::unique_ptr<BasePin> _reset_pin;
 };
