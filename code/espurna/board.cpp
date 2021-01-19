@@ -41,6 +41,9 @@ PROGMEM const char espurna_modules[] =
     #if ENCODER_SUPPORT
         "ENCODER "
     #endif
+    #if FAN_SUPPORT
+        "FAN "
+    #endif
     #if HOMEASSISTANT_SUPPORT
         "HOMEASSISTANT "
     #endif

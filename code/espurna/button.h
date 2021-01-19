@@ -22,8 +22,6 @@ constexpr size_t ButtonsActionMax { 255ul };
 constexpr size_t ButtonsPresetMax { 8ul };
 constexpr size_t ButtonsMax { 32ul };
 
-using ButtonCustomAction = void(*)(unsigned char id);
-
 enum class ButtonProvider : int {
     None,
     Gpio,
@@ -57,7 +55,10 @@ enum class ButtonAction : uint8_t  {
     BrightnessIncrease,
     BrightnessDecrease,
     DisplayOn,
-    Custom
+    Custom,
+    FanLow,
+    FanMedium,
+    FanHigh
 };
 
 struct ButtonActions {
@@ -96,6 +97,7 @@ struct button_t {
 
 BrokerDeclare(ButtonBroker, void(unsigned char id, button_event_t event));
 
+using ButtonCustomAction = void(*)(unsigned char id, button_event_t event);
 void buttonSetCustomAction(ButtonCustomAction);
 
 bool buttonState(unsigned char id);

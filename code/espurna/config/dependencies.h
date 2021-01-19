@@ -135,6 +135,8 @@
 #if IFAN_SUPPORT
 #undef RELAY_SUPPORT
 #define RELAY_SUPPORT               1            // Need relays to manage general state
+#undef FAN_SUPPORT
+#define FAN_SUPPORT                 1
 #endif
 
 //------------------------------------------------------------------------------

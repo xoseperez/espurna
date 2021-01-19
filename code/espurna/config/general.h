@@ -1839,9 +1839,18 @@
 #endif
 
 //--------------------------------------------------------------------------------
+// Generic Fan support
+//--------------------------------------------------------------------------------
+
+#ifndef FAN_SUPPORT
+#define FAN_SUPPORT                 0
+#endif
+
+//--------------------------------------------------------------------------------
 // ITEAD iFan support
 //--------------------------------------------------------------------------------
 
+// Note: enabling this will also implicitly enable FAN_SUPPORT
 #ifndef IFAN_SUPPORT
 #define IFAN_SUPPORT                0
 #endif

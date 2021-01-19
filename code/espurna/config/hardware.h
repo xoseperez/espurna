@@ -1018,21 +1018,21 @@
     #define DEVICE                  "SONOFF_IFAN02"
 
     // Base module
-    #define IFAN_SUPPORT            1
+    #define FAN_SUPPORT            1
 
     // These buttons are triggered by the remote
-    // iFan module adds a custom button handler and a special relay controlling the speed
+    // Fan module adds a custom button handler and a special relay controlling the speed
     #define BUTTON1_PIN             0
     #define BUTTON1_CLICK           BUTTON_ACTION_TOGGLE
 
     #define BUTTON2_PIN             9
-    #define BUTTON2_CLICK           BUTTON_ACTION_CUSTOM
+    #define BUTTON2_CLICK           BUTTON_ACTION_FAN_LOW
 
     #define BUTTON3_PIN             10
-    #define BUTTON3_CLICK           BUTTON_ACTION_CUSTOM
+    #define BUTTON3_CLICK           BUTTON_ACTION_FAN_MEDIUM
 
     #define BUTTON4_PIN             14
-    #define BUTTON4_CLICK           BUTTON_ACTION_CUSTOM
+    #define BUTTON4_CLICK           BUTTON_ACTION_FAN_HIGH
 
     // LEDs
     #define LED1_PIN                13

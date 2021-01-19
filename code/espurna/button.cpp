@@ -15,11 +15,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #include "compat.h"
+#include "fan.h"
 #include "gpio.h"
-#include "system.h"
+#include "light.h"
 #include "mqtt.h"
 #include "relay.h"
-#include "light.h"
+#include "system.h"
 #include "ws.h"
 
 #include "libs/BasePin.h"
@@ -156,6 +157,9 @@ ButtonAction convert(const String& value) {
         case ButtonAction::BrightnessDecrease:
         case ButtonAction::DisplayOn:
         case ButtonAction::Custom:
+        case ButtonAction::FanLow:
+        case ButtonAction::FanMedium:
+        case ButtonAction::FanHigh:
             return action;
         }
     }
@@ -588,8 +592,26 @@ void buttonEvent(unsigned char id, button_event_t event) {
 
     case ButtonAction::Custom:
         if (_button_custom_action) {
-            _button_custom_action(id);
+            _button_custom_action(id, event);
         }
+        break;
+
+    case ButtonAction::FanLow:
+#if FAN_SUPPORT
+        fanSpeed(FanSpeed::Low);
+#endif
+        break;
+
+    case ButtonAction::FanMedium:
+#if FAN_SUPPORT
+        fanSpeed(FanSpeed::Medium);
+#endif
+        break;
+
+    case ButtonAction::FanHigh:
+#if FAN_SUPPORT
+        fanSpeed(FanSpeed::High);
+#endif
         break;
 
     case ButtonAction::None:

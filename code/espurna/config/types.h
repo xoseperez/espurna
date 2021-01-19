@@ -43,6 +43,9 @@
 #define BUTTON_ACTION_DIM_DOWN        ButtonAction::BrightnessDecrease
 #define BUTTON_ACTION_DISPLAY_ON      ButtonAction::DisplayOn
 #define BUTTON_ACTION_CUSTOM          ButtonAction::Custom
+#define BUTTON_ACTION_FAN_LOW         ButtonAction::FanLow
+#define BUTTON_ACTION_FAN_MEDIUM      ButtonAction::FanMedium
+#define BUTTON_ACTION_FAN_HIGH        ButtonAction::FanHigh
 
 #define BUTTON_ACTION_MAX             ButtonsActionMax
 

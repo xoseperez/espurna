@@ -14,7 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if IFAN_SUPPORT
 
 #include "api.h"
-#include "button.h"
+#include "fan.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "terminal.h"
@@ -22,60 +22,55 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <array>
 #include <utility>
 
+// TODO: in case there are more FANs, move externally
+
 namespace ifan02 {
 
-enum class Speed {
-    Off,
-    Low,
-    Medium,
-    High
-};
-
-const char* speedToPayload(Speed value) {
+const char* speedToPayload(FanSpeed value) {
     switch (value) {
-    case Speed::Off:
+    case FanSpeed::Off:
         return "off";
-    case Speed::Low:
+    case FanSpeed::Low:
         return "low";
-    case Speed::Medium:
+    case FanSpeed::Medium:
         return "medium";
-    case Speed::High:
+    case FanSpeed::High:
         return "high";
     }
 
     return "";
 }
 
-Speed payloadToSpeed(const char* payload) {
+FanSpeed payloadToSpeed(const char* payload) {
     auto len = strlen(payload);
     if (len == 1) {
         switch (payload[0]) {
         case '0':
-            return Speed::Off;
+            return FanSpeed::Off;
         case '1':
-            return Speed::Low;
+            return FanSpeed::Low;
         case '2':
-            return Speed::Medium;
+            return FanSpeed::Medium;
         case '3':
-            return Speed::High;
+            return FanSpeed::High;
         }
     } else if (len > 1) {
         String cmp(payload);
         if (cmp == "off") {
-            return Speed::Off;
+            return FanSpeed::Off;
         } else if (cmp == "low") {
-            return Speed::Low;
+            return FanSpeed::Low;
         } else if (cmp == "medium") {
-            return Speed::Medium;
+            return FanSpeed::Medium;
         } else if (cmp == "high") {
-            return Speed::High;
+            return FanSpeed::High;
         }
     }
 
-    return Speed::Off;
+    return FanSpeed::Off;
 }
 
-Speed payloadToSpeed(const String& string) {
+FanSpeed payloadToSpeed(const String& string) {
     return payloadToSpeed(string.c_str());
 }
 
@@ -85,7 +80,7 @@ namespace settings {
 namespace internal {
 
 template <>
-ifan02::Speed convert(const String& value) {
+FanSpeed convert(const String& value) {
     return ifan02::payloadToSpeed(value);
 }
 
@@ -95,13 +90,6 @@ ifan02::Speed convert(const String& value) {
 namespace ifan02 {
 
 constexpr unsigned long DefaultSaveDelay { 1000ul };
-
-// Remote presses trigger GPIO pushbutton events
-// Attach to a specific ID to trigger an action
-
-constexpr unsigned char DefaultLowButtonId { 1u };
-constexpr unsigned char DefaultMediumButtonId { 2u };
-constexpr unsigned char DefaultHighButtonId { 3u };
 
 // We expect to write a specific 'mask' via GPIO LOW & HIGH to set the speed
 // Sync up with the relay and write it on ON / OFF status events
@@ -129,30 +117,20 @@ constexpr int controlPin() {
 
 struct Config {
     Config() = default;
-    explicit Config(unsigned long save_, unsigned char buttonLowId_,
-            unsigned char buttonMediumId_, unsigned char buttonHighId_, Speed speed_) :
+    explicit Config(unsigned long save_, FanSpeed speed_) :
         save(save_),
-        buttonLowId(buttonLowId_),
-        buttonMediumId(buttonMediumId_),
-        buttonHighId(buttonHighId_),
         speed(speed_)
     {}
 
     unsigned long save { DefaultSaveDelay };
-    unsigned char buttonLowId { DefaultLowButtonId };
-    unsigned char buttonMediumId { DefaultMediumButtonId };
-    unsigned char buttonHighId { DefaultHighButtonId };
-    Speed speed { Speed::Off };
+    FanSpeed speed { FanSpeed::Off };
     StatePins state_pins;
 };
 
 Config readSettings() {
     return Config(
-        getSetting("ifanSave", DefaultSaveDelay),
-        getSetting("ifanBtnLowId", DefaultLowButtonId),
-        getSetting("ifanBtnMediumId", DefaultMediumButtonId),
-        getSetting("ifanBtnHighId", DefaultHighButtonId),
-        getSetting("ifanSpeed", Speed::Medium)
+        getSetting("fanSave", DefaultSaveDelay),
+        getSetting("fanSpeed", FanSpeed::Medium)
     );
 }
 
@@ -162,18 +140,18 @@ void configure() {
     config = readSettings();
 }
 
-void report(Speed speed [[gnu::unused]]) {
+void report(FanSpeed speed [[gnu::unused]]) {
 #if MQTT_SUPPORT
     mqttSend(MQTT_TOPIC_SPEED, speedToPayload(speed));
 #endif
 }
 
-void save(Speed speed) {
+void save(FanSpeed speed) {
     static Ticker ticker;
     config.speed = speed;
     ticker.once_ms(config.save, []() {
         const char* value = speedToPayload(config.speed);
-        setSetting("ifanSpeed", value);
+        setSetting("fanSpeed", value);
         DEBUG_MSG_P(PSTR("[IFAN] Saved speed setting \"%s\"\n"), value);
     });
 }
@@ -203,30 +181,30 @@ StatePins setupStatePins() {
     return pins;
 }
 
-State stateFromSpeed(Speed speed) {
+State stateFromSpeed(FanSpeed speed) {
     switch (speed) {
-    case Speed::Low:
+    case FanSpeed::Low:
         return {HIGH, LOW, LOW};
-    case Speed::Medium:
+    case FanSpeed::Medium:
         return {HIGH, HIGH, LOW};
-    case Speed::High:
+    case FanSpeed::High:
         return {HIGH, LOW, HIGH};
-    case Speed::Off:
+    case FanSpeed::Off:
         break;
     }
 
     return {LOW, LOW, LOW};
 }
 
-const char* maskFromSpeed(Speed speed) {
+const char* maskFromSpeed(FanSpeed speed) {
     switch (speed) {
-    case Speed::Low:
+    case FanSpeed::Low:
         return "0b100";
-    case Speed::Medium:
+    case FanSpeed::Medium:
         return "0b110";
-    case Speed::High:
+    case FanSpeed::High:
         return "0b101";
-    case Speed::Off:
+    case FanSpeed::Off:
         return "0b000";
     }
 
@@ -236,26 +214,26 @@ const char* maskFromSpeed(Speed speed) {
 // Note that we use API speed endpoint strictly for the setting
 // (which also allows to pre-set the speed without turning the relay ON)
 
-using FanSpeedUpdate = std::function<void(Speed)>;
+using FanSpeedUpdate = std::function<void(FanSpeed)>;
 
-FanSpeedUpdate onSpeedUpdate = [](Speed) {
+FanSpeedUpdate onFanSpeedUpdate = [](FanSpeed) {
 };
 
-void updateSpeed(Config& config, Speed speed) {
+void updateSpeed(Config& config, FanSpeed speed) {
     switch (speed) {
-    case Speed::Low:
-    case Speed::Medium:
-    case Speed::High:
+    case FanSpeed::Low:
+    case FanSpeed::Medium:
+    case FanSpeed::High:
         save(speed);
         report(speed);
-        onSpeedUpdate(speed);
+        onFanSpeedUpdate(speed);
         break;
-    case Speed::Off:
+    case FanSpeed::Off:
         break;
     }
 }
 
-void updateSpeed(Speed speed) {
+void updateSpeed(FanSpeed speed) {
     updateSpeed(config, speed);
 }
 
@@ -295,17 +273,18 @@ public:
         _pin(std::move(pin)),
         _config(config)
     {
-        callback = [this](Speed speed) {
+        callback = [this](FanSpeed speed) {
             change(speed);
         };
+        _pin->pinMode(OUTPUT);
     }
 
     const char* id() const override {
         return "fan";
     }
 
-    void change(Speed speed) {
-        _pin->digitalWrite((Speed::Off != speed) ? HIGH : LOW);
+    void change(FanSpeed speed) {
+        _pin->digitalWrite((FanSpeed::Off != speed) ? HIGH : LOW);
 
         auto state = stateFromSpeed(speed);
         DEBUG_MSG_P(PSTR("[IFAN] State mask: %s\n"), maskFromSpeed(speed));
@@ -321,7 +300,7 @@ public:
     }
 
     void change(bool status) override {
-        change(status ? _config.speed : Speed::Off);
+        change(status ? _config.speed : FanSpeed::Off);
     }
 
 private:
@@ -342,25 +321,12 @@ void setup() {
 
     auto relay_pin = gpioRegister(controlPin());
     if (relay_pin) {
-        relay_pin->pinMode(OUTPUT);
-        auto provider = std::make_unique<FanProvider>(std::move(relay_pin), config, onSpeedUpdate);
+        auto provider = std::make_unique<FanProvider>(std::move(relay_pin), config, onFanSpeedUpdate);
         if (!relayAdd(std::move(provider))) {
             DEBUG_MSG_P(PSTR("[IFAN] Could not add relay provider for GPIO%d\n"), controlPin());
             gpioUnlock(controlPin());
         }
     }
-
-#if BUTTON_SUPPORT
-    buttonSetCustomAction([](unsigned char id) {
-        if (config.buttonLowId == id) {
-            updateSpeed(Speed::Low);
-        } else if (config.buttonMediumId == id) {
-            updateSpeed(Speed::Medium);
-        } else if (config.buttonHighId == id) {
-            updateSpeed(Speed::High);
-        }
-    });
-#endif
 
 #if MQTT_SUPPORT
     mqttRegister(onMqttEvent);
@@ -394,7 +360,15 @@ void setup() {
 
 } // namespace ifan
 
-void ifanSetup() {
+FanSpeed fanSpeed() {
+    return ifan02::config.speed;
+}
+
+void fanSpeed(FanSpeed speed) {
+    ifan02::updateSpeed(FanSpeed::Low);
+}
+
+void fanSetup() {
     ifan02::setup();
 }
 
