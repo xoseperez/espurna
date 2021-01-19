@@ -13,6 +13,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 constexpr size_t RelaysMax = 32;
 
+enum class RelayPulse : uint8_t {
+    None,
+    Off,
+    On
+};
+
+enum class RelayLock : uint8_t {
+    None,
+    Off,
+    On
+};
+
 enum class RelayType : int {
     Normal,
     Inverse,

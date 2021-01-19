@@ -96,8 +96,67 @@ private:
 
 } // namespace
 
+template <typename T>
+T _relayPayloadToTristate(const char* payload) {
+    auto len = strlen(payload);
+    if (len == 1) {
+        switch (payload[0]) {
+        case '0':
+            return T::None;
+        case '1':
+            return T::Off;
+        case '2':
+            return T::On;
+        }
+    } else if (len > 1) {
+        String cmp(payload);
+        if (cmp == "none") {
+            return T::None;
+        } else if (cmp == "off") {
+            return T::Off;
+        } else if (cmp == "on") {
+            return T::On;
+        }
+    }
+
+    return T::None;
+}
+
+template <typename T>
+const char* _relayTristateToPayload(T tristate) {
+    static_assert(std::is_enum<T>::value, "");
+    switch (tristate) {
+    case T::Off:
+        return "off";
+    case T::On:
+        return "on";
+    case T::None:
+        break;
+    }
+
+    return "none";
+}
+
+const char* _relayPulseToPayload(RelayPulse pulse) {
+    return _relayTristateToPayload(pulse);
+}
+
+const char* _relayLockToPayload(RelayLock lock) {
+    return _relayTristateToPayload(lock);
+}
+
 namespace settings {
 namespace internal {
+
+template <>
+RelayPulse convert(const String& value) {
+    return _relayPayloadToTristate<RelayPulse>(value.c_str());
+}
+
+template <>
+RelayLock convert(const String& value) {
+    return _relayPayloadToTristate<RelayLock>(value.c_str());
+}
 
 template <>
 RelayProvider convert(const String& value) {
@@ -163,7 +222,7 @@ public:
     unsigned long delay_on { 0ul };                // Delay to turn relay ON
     unsigned long delay_off { 0ul };               // Delay to turn relay OFF
 
-    unsigned char pulse { RELAY_PULSE_NONE };      // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    RelayPulse pulse { RelayPulse::None };      // Sets up a timer for the opposite mode
     unsigned long pulse_ms { 0ul };                // Pulse length in millis
     Ticker* pulseTicker { nullptr };               // Holds the pulse back timer
 
@@ -176,7 +235,7 @@ public:
     // Status
     bool current_status { false };                 // Holds the current (physical) status of the relay
     bool target_status { false };                  // Holds the target status
-    unsigned char lock { RELAY_LOCK_DISABLED };    // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
+    RelayLock lock { RelayLock::None };        // Holds the value of target status that persists and cannot be changed from.
 
     // MQTT
     bool report { false };                         // Whether to report to own topic
@@ -564,12 +623,12 @@ bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
         return false;
     }
 
-    if (RELAY_PULSE_NONE != _relays[id].pulse) {
+    if (RelayPulse::None != _relays[id].pulse) {
         DEBUG_MSG_P(PSTR("[RELAY] Overriding relayID %u pulse settings\n"), id);
     }
 
     _relays[id].pulse_ms = pulse;
-    _relays[id].pulse = relayStatus(id) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
+    _relays[id].pulse = relayStatus(id) ? RelayPulse::On : RelayPulse::Off;
     relayToggle(id, true, false);
 
     return true;
@@ -592,21 +651,21 @@ PayloadStatus _relayStatusTyped(unsigned char id) {
 
 void _relayLockAll() {
     for (auto& relay : _relays) {
-        relay.lock = relay.target_status ? RELAY_LOCK_ON : RELAY_LOCK_OFF;
+        relay.lock = relay.target_status ? RelayLock::On : RelayLock::Off;
     }
     _relay_sync_locked = true;
 }
 
 void _relayUnlockAll() {
     for (auto& relay : _relays) {
-        relay.lock = RELAY_LOCK_DISABLED;
+        relay.lock = RelayLock::None;
     }
     _relay_sync_locked = false;
 }
 
 bool _relayStatusLock(unsigned char id, bool status) {
-    if (_relays[id].lock != RELAY_LOCK_DISABLED) {
-        bool lock = _relays[id].lock == RELAY_LOCK_ON;
+    if (_relays[id].lock != RelayLock::None) {
+        bool lock = _relays[id].lock == RelayLock::On;
         if ((lock != status) || (lock != _relays[id].target_status)) {
             _relays[id].target_status = lock;
             _relays[id].change_delay = 0;
@@ -781,7 +840,7 @@ void relayPulse(unsigned char id) {
 
     relay.pulseTicker->detach();
     auto mode = relay.pulse;
-    if (mode == RELAY_PULSE_NONE) {
+    if (mode == RelayPulse::None) {
         return;
     }
 
@@ -796,18 +855,18 @@ void relayPulse(unsigned char id) {
 
     // limit is per https://www.espressif.com/sites/default/files/documentation/2c-esp8266_non_os_sdk_api_reference_en.pdf
     // > 3.1.1 os_timer_arm
-    // > the timer value allowed ranges from 5 to 0x68D7A3. 
+    // > the timer value allowed ranges from 5 to 0x68D7A3.
     if ((ms < 5) || (ms >= 0x68D7A3)) {
         DEBUG_MSG_P(PSTR("[RELAY] Unable to schedule the delay %lums (longer than 114 minutes)\n"), ms);
         return;
     }
 
-    if ((mode == RELAY_PULSE_ON) != relay.current_status) {
+    if ((mode == RelayPulse::On) != relay.current_status) {
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
-        relay.pulse = getSetting({"relayPulse", id}, RELAY_PULSE_MODE);
-        relay.pulse_ms = 1000 * getSetting({"relayTime", id}, 0.);
+        relay.pulse = getSetting({"relayPulse", id}, _relayPulseMode(id));
+        relay.pulse_ms = static_cast<unsigned long>(1000.0 * getSetting({"relayTime", id}, _relayPulseTime(id)));
     }
 
 }
@@ -1045,7 +1104,7 @@ void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
     const auto boot_mode = getSetting({"relayBoot", index}, _relayBootMode(index));
 
     auto status = false;
-    auto lock = RELAY_LOCK_DISABLED;
+    auto lock = RelayLock::None;
 
     switch (boot_mode) {
     case RELAY_BOOT_SAME:
@@ -1059,14 +1118,14 @@ void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
         break;
     case RELAY_BOOT_LOCKED_ON:
         status = true;
-        lock = RELAY_LOCK_ON;
+        lock = RelayLock::On;
         break;
     case RELAY_BOOT_OFF:
         status = false;
         break;
     case RELAY_BOOT_LOCKED_OFF:
         status = false;
-        lock = RELAY_LOCK_OFF;
+        lock = RelayLock::Off;
         break;
     }
 
@@ -1113,8 +1172,8 @@ void _relayBootAll() {
 
 void _relayConfigure() {
     for (unsigned char i = 0, relays = _relays.size() ; (i < relays); ++i) {
-        _relays[i].pulse = getSetting({"relayPulse", i}, RELAY_PULSE_MODE);
-        _relays[i].pulse_ms = 1000 * getSetting({"relayTime", i}, 0.);
+        _relays[i].pulse = getSetting({"relayPulse", i}, _relayPulseMode(i));
+        _relays[i].pulse_ms = static_cast<unsigned long>(1000.0 * getSetting({"relayTime", i}, _relayPulseTime(i)));
 
         _relays[i].delay_on = getSetting({"relayDelayOn", i}, _relayDelayOn(i));
         _relays[i].delay_off = getSetting({"relayDelayOff", i}, _relayDelayOff(i));
@@ -1155,7 +1214,7 @@ void _relayWebSocketUpdate(JsonObject& root) {
     // Note: we use byte instead of bool to ever so slightly compress json output
     for (unsigned char i=0; i<relayCount(); i++) {
         status.add<uint8_t>(_relays[i].target_status);
-        lock.add(_relays[i].lock);
+        lock.add(static_cast<uint8_t>(_relays[i].lock));
     }
 }
 
@@ -1189,7 +1248,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         relay.add(getSetting({"relayName", id}));
         relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
 
-        relay.add(_relays[id].pulse);
+        relay.add(static_cast<uint8_t>(_relays[id].pulse));
         relay.add(_relays[id].pulse_ms / 1000.0);
 
         #if SCHEDULER_SUPPORT
@@ -1534,18 +1593,45 @@ void relaySetupMQTT() {
 void _relayInitCommands() {
 
     terminalRegisterCommand(F("RELAY"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 1) {
-            for (unsigned char index = 0; index < _relays.size(); ++index) {
+        auto showRelays = [&](unsigned char start, unsigned char stop, bool full = true) {
+            for (unsigned char index = start; index < stop; ++index) {
                 auto& relay = _relays[index];
-                ctx.output.printf_P(PSTR("id=%02u provider=%s current=%s target=%s lock=%s\n"),
-                    index,
-                    relay.provider->id(),
-                    relay.current_status ? "ON" : "OFF", relay.target_status ? "ON" : "OFF",
-                    ((relay.lock == RELAY_LOCK_ON) ? "ON" :
-                    (relay.lock == RELAY_LOCK_OFF) ? "OFF" :
-                    "NONE")
+
+                char pulse_info[64] = "";
+                if ((relay.pulse != RelayPulse::None) && (relay.pulse_ms)) {
+                    snprintf_P(pulse_info, sizeof(pulse_info), PSTR(" Pulse=%s Time=%u"),
+                        _relayPulseToPayload(relay.pulse), relay.pulse_ms);
+                }
+
+                char extended_info[64] = "";
+                if (full) {
+                    int index = 0;
+                    if (index >= 0 && relay.delay_on) {
+                        index += snprintf_P(extended_info + index, sizeof(extended_info),
+                                PSTR(" DelayOn=%u"), relay.delay_on);
+                    }
+                    if (index >= 0 && relay.delay_off) {
+                        index += snprintf_P(extended_info + index, sizeof(extended_info),
+                                PSTR(" DelayOff=%u"), relay.delay_off);
+                    }
+                    if (index >= 0 && relay.lock != RelayLock::None) {
+                        index += snprintf_P(extended_info + index, sizeof(extended_info),
+                                PSTR(" Lock=%s"), _relayLockToPayload(relay.lock));
+                    }
+                }
+
+                ctx.output.printf_P(PSTR("relay%u {Prov=%s Current=%s Target=%s%s%s}\n"),
+                    index, relay.provider->id(),
+                    relay.current_status ? "ON" : "OFF",
+                    relay.target_status ? "ON" : "OFF",
+                    pulse_info,
+                    extended_info
                 );
             }
+        };
+
+        if (ctx.argc == 1) {
+            showRelays(0, _relays.size());
             terminalOK(ctx);
             return;
         }
@@ -1566,14 +1652,7 @@ void _relayInitCommands() {
             _relayHandleStatus(id, status);
         }
 
-        auto& relay = _relays[id];
-
-        ctx.output.printf_P(PSTR("Status: %s\n"), relay.target_status ? "ON" : "OFF");
-        if ((relay.pulse != RELAY_PULSE_NONE) && (relay.pulse_ms)) {
-            ctx.output.printf_P(PSTR("Pulse: %s\n"), (relay.pulse == RELAY_PULSE_ON) ? "ON" : "OFF");
-            ctx.output.printf_P(PSTR("Pulse time: %lu\n"), relay.pulse_ms);
-        }
-
+        showRelays(id, id + 1, false);
         terminalOK(ctx);
     });
 

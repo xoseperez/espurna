@@ -8,6 +8,32 @@ RELAY MODULE
 
 #include "espurna.h"
 
+constexpr double _relayPulseTime(unsigned char index) {
+    return (
+        (index == 0) ? RELAY1_PULSE_TIME :
+        (index == 1) ? RELAY2_PULSE_TIME :
+        (index == 2) ? RELAY3_PULSE_TIME :
+        (index == 3) ? RELAY4_PULSE_TIME :
+        (index == 4) ? RELAY5_PULSE_TIME :
+        (index == 5) ? RELAY6_PULSE_TIME :
+        (index == 6) ? RELAY7_PULSE_TIME :
+        (index == 7) ? RELAY8_PULSE_TIME : RELAY_PULSE_TIME
+    );
+}
+
+constexpr RelayPulse _relayPulseMode(unsigned char index) {
+    return (
+        (index == 0) ? RELAY1_PULSE_MODE :
+        (index == 1) ? RELAY2_PULSE_MODE :
+        (index == 2) ? RELAY3_PULSE_MODE :
+        (index == 3) ? RELAY4_PULSE_MODE :
+        (index == 4) ? RELAY5_PULSE_MODE :
+        (index == 5) ? RELAY6_PULSE_MODE :
+        (index == 6) ? RELAY7_PULSE_MODE :
+        (index == 7) ? RELAY8_PULSE_MODE : RELAY_PULSE_NONE
+    );
+}
+
 constexpr unsigned long _relayDelayOn(unsigned char index) {
     return (
         (index == 0) ? RELAY1_DELAY_ON :

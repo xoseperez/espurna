@@ -837,6 +837,56 @@
 #define RELAY8_BOOT_MODE    RELAY_BOOT_MODE
 #endif
 
+#ifndef RELAY1_PULSE_MODE
+#define RELAY1_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY2_PULSE_MODE
+#define RELAY2_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY3_PULSE_MODE
+#define RELAY3_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY4_PULSE_MODE
+#define RELAY4_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY5_PULSE_MODE
+#define RELAY5_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY6_PULSE_MODE
+#define RELAY6_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY7_PULSE_MODE
+#define RELAY7_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY8_PULSE_MODE
+#define RELAY8_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+
+#ifndef RELAY1_PULSE_TIME
+#define RELAY1_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY2_PULSE_TIME
+#define RELAY2_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY3_PULSE_TIME
+#define RELAY3_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY4_PULSE_TIME
+#define RELAY4_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY5_PULSE_TIME
+#define RELAY5_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY6_PULSE_TIME
+#define RELAY6_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY7_PULSE_TIME
+#define RELAY7_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY8_PULSE_TIME
+#define RELAY8_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+
 // -----------------------------------------------------------------------------
 // LEDs
 // -----------------------------------------------------------------------------

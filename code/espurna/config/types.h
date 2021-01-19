@@ -109,9 +109,9 @@
 #define RELAY_SYNC_SAME             3
 #define RELAY_SYNC_FIRST            4
 
-#define RELAY_PULSE_NONE            0
-#define RELAY_PULSE_OFF             1
-#define RELAY_PULSE_ON              2
+#define RELAY_PULSE_NONE            RelayPulse::None
+#define RELAY_PULSE_OFF             RelayPulse::Off
+#define RELAY_PULSE_ON              RelayPulse::On
 
 #define RELAY_PROVIDER_NONE         RelayProvider::None
 #define RELAY_PROVIDER_DUMMY        RelayProvider::Dummy
@@ -126,9 +126,10 @@
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
-#define RELAY_LOCK_DISABLED          0
-#define RELAY_LOCK_OFF               1
-#define RELAY_LOCK_ON                2
+#define RELAY_LOCK_DISABLED          RelayLock::None
+#define RELAY_LOCK_NONE              RelayLock::None
+#define RELAY_LOCK_OFF               RelayLock::Off
+#define RELAY_LOCK_ON                RelayLock::On
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG

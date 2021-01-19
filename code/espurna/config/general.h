@@ -486,14 +486,14 @@
 #define RELAY_DELAY_INTERLOCK       0
 #endif
 
-// Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
+// Default pulse mode / normal mode. Switching from it will start the 'pulse' timer and reset the relay back after it finishes
 #ifndef RELAY_PULSE_MODE
 #define RELAY_PULSE_MODE            RELAY_PULSE_NONE
 #endif
 
 // Default pulse time in seconds
 #ifndef RELAY_PULSE_TIME
-#define RELAY_PULSE_TIME            1.0
+#define RELAY_PULSE_TIME            0.0
 #endif
 
 // Relay requests flood protection window - in seconds
