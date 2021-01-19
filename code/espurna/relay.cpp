@@ -211,6 +211,10 @@ public:
     // Struct defaults to empty relay configuration, as we allow switches to exist without real GPIOs
     relay_t() = default;
 
+    relay_t(RelayProviderBasePtr&& provider_) :
+        provider(provider_.release())
+    {}
+
     relay_t(RelayProviderBase* provider_) :
         provider(provider_)
     {}
@@ -1758,11 +1762,11 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType 
     );
 }
 
-std::unique_ptr<RelayProviderBase> _relaySetupProvider(unsigned char index) {
+RelayProviderBasePtr _relaySetupProvider(unsigned char index) {
     auto provider = getSetting({"relayProv", index}, _relayProvider(index));
     auto type = getSetting({"relayType", index}, _relayType(index));
 
-    std::unique_ptr<RelayProviderBase> result;
+    RelayProviderBasePtr result;
 
     switch (provider) {
     case RelayProvider::Dummy:
@@ -1799,7 +1803,7 @@ void _relaySetupAdhoc() {
         if (!impl->setup()) {
             break;
         }
-        _relays.emplace_back(impl.release());
+        _relays.emplace_back(std::move(impl));
     }
 }
 
@@ -1835,10 +1839,10 @@ void relaySetup() {
 
 }
 
-bool relayAdd(std::unique_ptr<RelayProviderBase>&& provider) {
+bool relayAdd(RelayProviderBasePtr&& provider) {
     if (provider && provider->setup()) {
         static bool scheduled { false };
-        _relays.emplace_back(provider.release());
+        _relays.emplace_back(std::move(provider));
         if (!scheduled) {
             schedule_function([]() {
                 _relayConfigure();

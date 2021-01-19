@@ -93,8 +93,9 @@ void relaySync(unsigned char id);
 void relaySave(bool persist);
 
 using RelayStatusCallback = void(*)(unsigned char id, bool status);
+using RelayProviderBasePtr = std::unique_ptr<RelayProviderBase>;
 
-bool relayAdd(std::unique_ptr<RelayProviderBase>&& provider);
+bool relayAdd(RelayProviderBasePtr&& provider);
 void relaySetStatusNotify(RelayStatusCallback);
 void relaySetStatusChange(RelayStatusCallback);
 
