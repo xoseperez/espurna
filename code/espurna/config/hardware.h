@@ -75,6 +75,9 @@
     #define THINGSPEAK_SUPPORT      0
     #define WEB_SUPPORT             0
 
+    #define TELNET_AUTHENTICATION   0
+    #define TELNET_STA              1
+
     // Extra light-weight image
     //#define BUTTON_SUPPORT          0 // don't need / have buttons
     //#define LED_SUPPORT             0 // don't need wifi indicator
@@ -109,6 +112,10 @@
     #define SENSOR_SUPPORT          0
     #define THINGSPEAK_SUPPORT      0
     //#define WEB_SUPPORT             0
+    #define WEB_FORCE_PASS_CHANGE   0
+
+    #define TELNET_AUTHENTICATION   0
+    #define TELNET_STA              1
 
     // Extra light-weight image
     #define BUTTON_SUPPORT          0
