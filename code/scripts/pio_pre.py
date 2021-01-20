@@ -115,6 +115,7 @@ else:
 # handle `-t release` parameters
 if CI:
     env.Append(
+        ESPURNA_RELEASE_REVISION=os.environ.get("ESPURNA_RELEASE_REVISION", ""),
         ESPURNA_RELEASE_NAME=os.environ.get("ESPURNA_RELEASE_NAME", ""),
         ESPURNA_RELEASE_VERSION=os.environ.get("ESPURNA_RELEASE_VERSION", ""),
         ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", ""),
