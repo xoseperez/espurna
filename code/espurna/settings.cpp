@@ -87,7 +87,23 @@ long convert(const String& value) {
 
 template <>
 bool convert(const String& value) {
-    return convert<int>(value) == 1;
+    if (value.length()) {
+        if ((value == "0")
+            || (value == "n")
+            || (value == "no")
+            || (value == "false")
+            || (value == "off")) {
+            return false;
+        }
+
+        return (value == "1")
+            || (value == "y")
+            || (value == "yes")
+            || (value == "true")
+            || (value == "on");
+    }
+
+    return false;
 }
 
 template <>
