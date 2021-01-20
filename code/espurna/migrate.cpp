@@ -8,17 +8,36 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "settings.h"
 
-void _cmpMoveIndexDown(const char * key, int offset = 0) {
-    if (hasSetting({key, 0})) return;
-    for (unsigned char index = 1; index < SETTINGS_MAX_LIST_COUNT; index++) {
-        const unsigned char prev = index - 1;
-        if (hasSetting({key, index})) {
-            setSetting({key, prev}, getSetting({key, index}).toInt() + offset);
-        } else {
-            delSetting({key, prev});
+#include <vector>
+#include <utility>
+
+namespace {
+
+void delPrefixes(const char** prefixes, size_t size) {
+    std::vector<String> to_purge;
+
+    using namespace settings;
+    kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
+        auto key = kv.key.read();
+        for (size_t index = 0; index < size; ++index) {
+            if (key.startsWith(prefixes[index])) {
+                to_purge.push_back(std::move(key));
+                return;
+            }
         }
+    });
+
+    for (auto& key : to_purge) {
+        delSetting(key);
     }
 }
+
+template <size_t Size>
+void delPrefixes(const char* (&&prefixes)[Size]) {
+    delPrefixes(prefixes, Size);
+}
+
+} // namespace
 
 // Configuration versions
 //
@@ -44,34 +63,40 @@ void migrate() {
     const auto version = migrateVersion();
     setSetting("cfg", CFG_VERSION);
 
-    if (!version) return;
+    if (!version) {
+        return;
+    }
 
+    // get rid of old keys that were never used until now
+    // and some very old keys that were forced via migrate.ino
     switch (version) {
-        // migrate old version with 1-based indices
-        case 2:
-            _cmpMoveIndexDown("ledGPIO");
-            _cmpMoveIndexDown("ledLogic");
-            _cmpMoveIndexDown("btnGPIO");
-            _cmpMoveIndexDown("btnRelay", -1);
-            _cmpMoveIndexDown("relayGPIO");
-            _cmpMoveIndexDown("relayType");
-            // fall through
-        // get rid / move some existing keys from old migrate.ino
-        case 3:
-            moveSettings("chGPIO", "ltDimmerGPIO");
-            moveSettings("myDIGPIO", "ltMy92DIGPIO");
-            moveSettings("myDCKGPIO", "ltMy92DCKGPIO");
-            moveSettings("myChips", "ltMy92Chips");
-            moveSettings("myModel", "ltMy92Model");
-            moveSettings("chLogic", "ltDimmerInv");
-            moveSettings("ledLogic", "ledInv");
-            delSetting("lightProvider");
-            delSetting("relayProvider");
-            delSetting("relays");
-            delSetting("board");
-            // fall through
-        default:
-            break;
+    case 2:
+        delPrefixes({
+            "btnGPIO",
+            "ledGPIO",
+            "ledLogic",
+            "relayGPIO",
+            "relayType"
+        });
+        // fall through
+    case 3:
+    case 4:
+        delPrefixes({
+            "board",
+            "chGPIO",
+            "chLogic",
+            "ledGPIO",
+            "ledLogic",
+            "lightProvider",
+            "myChips",
+            "myDCKGPIO",
+            "myDIGPIO",
+            "relayGPIO",
+            "relayProvider",
+            "relayType",
+            "relays"
+        });
+        break;
     }
 
     saveSettings();

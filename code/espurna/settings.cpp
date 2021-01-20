@@ -335,18 +335,42 @@ String getSetting(const SettingsKey& key, String&& defaultValue) {
     return result.value;
 }
 
+bool delSetting(const String& key) {
+    return settings::kv_store.del(key);
+}
+
 bool delSetting(const SettingsKey& key) {
-    return settings::kv_store.del(key.toString());
+    return delSetting(key.toString());
+}
+
+bool delSetting(const char* key) {
+    return delSetting(String(key));
+}
+
+bool delSetting(const __FlashStringHelper* key) {
+    return delSetting(String(key));
+}
+
+bool hasSetting(const String& key) {
+    return settings::kv_store.has(key);
 }
 
 bool hasSetting(const SettingsKey& key) {
-    return settings::kv_store.has(key.toString());
+    return hasSetting(key.toString());
+}
+
+bool hasSetting(const char* key) {
+    return hasSetting(String(key));
+}
+
+bool hasSetting(const __FlashStringHelper* key) {
+    return hasSetting(String(key));
 }
 
 void saveSettings() {
-    #if not SETTINGS_AUTOSAVE
-        eepromCommit();
-    #endif
+#if not SETTINGS_AUTOSAVE
+    eepromCommit();
+#endif
 }
 
 void resetSettings() {

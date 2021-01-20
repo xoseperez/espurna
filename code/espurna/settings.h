@@ -233,7 +233,14 @@ bool setSetting(const SettingsKey& key, T value) {
     return setSetting(key, std::move(String(value)));
 }
 
+bool delSetting(const char* key);
+bool delSetting(const String& key);
+bool delSetting(const __FlashStringHelper* key);
 bool delSetting(const SettingsKey& key);
+
+bool hasSetting(const char* key);
+bool hasSetting(const String& key);
+bool hasSetting(const __FlashStringHelper* key);
 bool hasSetting(const SettingsKey& key);
 
 void saveSettings();
