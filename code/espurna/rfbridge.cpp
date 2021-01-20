@@ -1131,7 +1131,7 @@ void _rfbInitCommands() {
 // -----------------------------------------------------------------------------
 
 void rfbStore(unsigned char id, bool status, const char * code) {
-    settings_key_t key { status ? F("rfbON") : F("rfbOFF"), id };
+    SettingsKey key { status ? F("rfbON") : F("rfbOFF"), id };
     setSetting(key, code);
     DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.toString().c_str(), code);
 }
@@ -1214,12 +1214,12 @@ void _rfbSettingsMigrate(int version) {
     String buffer;
 
     for (unsigned char index = 0; index < relayCount(); ++index) {
-        const settings_key_t on_key {F("rfbON"), index};
+        SettingsKey on_key {F("rfbON"), index};
         if (migrate_code(buffer, getSetting(on_key))) {
             setSetting(on_key, buffer);
         }
 
-        const settings_key_t off_key {F("rfbOFF"), index};
+        SettingsKey off_key {F("rfbOFF"), index};
         if (migrate_code(buffer, getSetting(off_key))) {
             setSetting(off_key, buffer);
         }

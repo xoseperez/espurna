@@ -1096,7 +1096,7 @@ PayloadStatus relayParsePayload(const char * payload) {
 void _relayBackwards() {
 
     for (unsigned char id = 0; id < _relays.size(); ++id) {
-        const settings_key_t key {"mqttGroupInv", id};
+        SettingsKey key {"mqttGroupInv", id};
         if (!hasSetting(key)) continue;
         setSetting({"mqttGroupSync", id}, getSetting(key));
         delSetting(key);

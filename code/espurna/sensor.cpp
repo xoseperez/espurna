@@ -1051,7 +1051,7 @@ const String _sensorQueryDefault(const String& key) {
         }
     };
 
-    auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> settings_key_t {
+    auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> SettingsKey {
         switch (magnitude.type) {
         case MAGNITUDE_CURRENT:
             return {"pwrRatioC", magnitude.index_global};
@@ -1076,7 +1076,7 @@ const String _sensorQueryDefault(const String& key) {
             case MAGNITUDE_POWER_ACTIVE:
             case MAGNITUDE_ENERGY: {
                 auto ratioKey(magnitude_key(magnitude));
-                if (ratioKey.match(key)) {
+                if (ratioKey == key) {
                     target = magnitude.sensor;
                     type = magnitude.type;
                     goto return_defaults;

@@ -271,9 +271,9 @@ bool _wsStore(const String& key, JsonArray& values) {
     unsigned char index = 0;
     for (auto& element : values) {
         const auto value = element.as<String>();
-        const auto keyobj = settings_key_t {key, index};
-        if (!hasSetting(keyobj) || value != getSetting(keyobj)) {
-            setSetting(keyobj, value);
+        auto setting = SettingsKey {key, index};
+        if (!hasSetting(setting) || value != getSetting(setting)) {
+            setSetting(setting, value);
             changed = true;
         }
         ++index;
