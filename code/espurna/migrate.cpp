@@ -13,14 +13,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 namespace {
 
-void delPrefixes(const char** prefixes, size_t size) {
+void delPrefixes(const std::initializer_list<const char*>& prefixes) {
     std::vector<String> to_purge;
 
     using namespace settings;
     kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();
-        for (size_t index = 0; index < size; ++index) {
-            if (key.startsWith(prefixes[index])) {
+        for (const auto* prefix : prefixes) {
+            if (key.startsWith(prefix)) {
                 to_purge.push_back(std::move(key));
                 return;
             }
@@ -30,11 +30,6 @@ void delPrefixes(const char** prefixes, size_t size) {
     for (auto& key : to_purge) {
         delSetting(key);
     }
-}
-
-template <size_t Size>
-void delPrefixes(const char* (&&prefixes)[Size]) {
-    delPrefixes(prefixes, Size);
 }
 
 } // namespace
