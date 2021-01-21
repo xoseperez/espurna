@@ -1062,7 +1062,7 @@ const String _sensorQueryDefault(const String& key) {
         case MAGNITUDE_ENERGY:
             return {"pwrRatioE", magnitude.index_global};
         default:
-            return {};
+            return "";
         }
     };
 
@@ -2515,13 +2515,10 @@ void _sensorConfigure() {
             // adjust type-specific units
             {
                 const sensor::Unit default_unit { magnitude.sensor->units(magnitude.slot) };
-                const settings_key_t key {
+                const String key {
                     String(_magnitudeSettingsPrefix(magnitude.type)) + F("Units") + String(magnitude.index_global, 10) };
 
-                magnitude.units = _magnitudeUnitFilter(
-                    magnitude,
-                    getSetting(key, default_unit)
-                );
+                magnitude.units = _magnitudeUnitFilter(magnitude, getSetting(key, default_unit));
             }
 
             // some magnitudes allow to be corrected with an offset
