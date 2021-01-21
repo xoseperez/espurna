@@ -897,7 +897,7 @@ void rpnSetup() {
     #endif
 
     #if NTP_SUPPORT
-        NtpBroker::Register([](const NtpTick tick, time_t timestamp, const String& datetime) {
+        NtpBroker::Register([](NtpTick tick, time_t timestamp, const String& datetime) {
             static const String tick_every_hour(F("tick1h"));
             static const String tick_every_minute(F("tick1m"));
 

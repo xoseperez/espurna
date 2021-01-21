@@ -52,7 +52,7 @@ struct NtpInfo {
     time_t now;
 };
 
-BrokerDeclare(NtpBroker, void(const NtpTick, time_t, const String&));
+BrokerDeclare(NtpBroker, void(NtpTick, time_t, const String&));
 
 NtpInfo ntpInfo();
 
