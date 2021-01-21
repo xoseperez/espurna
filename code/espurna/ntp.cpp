@@ -231,7 +231,7 @@ void _ntpConfigure() {
     const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
     const char* active_tz = getenv("TZ");
 
-    bool changed { cfg_tz != active_tz };
+    bool changed = cfg_tz != active_tz;
     if (changed) {
         setenv("TZ", cfg_tz.c_str(), 1);
         tzset();
@@ -363,6 +363,7 @@ void _ntpSetTimestamp(time_t ts) {
 // -----------------------------------------------------------------------------
 
 void _ntpConvertLegacyOffsets() {
+    bool save { true };
     bool found { false };
 
     bool europe { true };
@@ -371,7 +372,9 @@ void _ntpConvertLegacyOffsets() {
 
     settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         const auto key = kv.key.read();
-        if (key == F("ntpOffset")) {
+        if (key == F("ntpTZ")) {
+            save = false;
+        } else if (key == F("ntpOffset")) {
             offset = kv.value.read().toInt();
             found = true;
         } else if (key == F("ntpDST")) {
@@ -383,34 +386,31 @@ void _ntpConvertLegacyOffsets() {
         }
     });
 
-    if (!found) {
-        return;
-    }
+    if (save && found) {
+        // XXX: only expect offsets in hours
+        String custom { europe ? F("CET") : F("CST") };
+        custom.reserve(32);
 
-    // XXX: only expect offsets in hours
-    String custom { europe ? F("CET") : F("CST") };
-    custom.reserve(32);
-
-    if (offset > 0) {
-        custom += '-';
-    }
-    custom += abs(offset) / 60;
-
-    if (dst) {
-        custom += europe ? F("CEST") : F("EDT");
-        if (europe) {
-            custom += F(",M3.5.0,M10.5.0/3");
-        } else {
-            custom += F(",M3.2.0,M11.1.0");
+        if (offset > 0) {
+            custom += '-';
         }
+        custom += abs(offset) / 60;
+
+        if (dst) {
+            custom += europe ? F("CEST") : F("EDT");
+            if (europe) {
+                custom += F(",M3.5.0,M10.5.0/3");
+            } else {
+                custom += F(",M3.2.0,M11.1.0");
+            }
+        }
+
+        setSetting("ntpTZ", custom);
     }
 
     delSetting("ntpOffset");
     delSetting("ntpDST");
     delSetting("ntpRegion");
-
-    setSetting("ntpTZ", custom);
-
 }
 
 void ntpSetup() {
