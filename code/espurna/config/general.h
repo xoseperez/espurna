@@ -1629,6 +1629,10 @@
 #define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
 
+#ifndef NTP_DHCP_SERVER
+#define NTP_DHCP_SERVER             1               // Automatically replace the NTP server value with the one received with the DHCP packet
+#endif
+
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------

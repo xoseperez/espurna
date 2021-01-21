@@ -166,13 +166,15 @@ void _ntpWebSocketOnConnected(JsonObject& root) {
 
 #endif
 
-// TODO: mention possibility of multiple servers
 String _ntpGetServer() {
     String server;
 
     server = sntp_getservername(0);
     if (!server.length()) {
-        server = IPAddress(sntp_getserver(0)).toString();
+        auto ip = IPAddress(sntp_getserver(0));
+        if (ip) {
+            server = ip.toString();
+        }
     }
 
     return server;
@@ -220,19 +222,32 @@ void _ntpReport() {
 }
 
 void _ntpConfigure() {
+    // Ignore or accept the DHCP SNTP option
+    // When enabled, it is possible that lwip will replace the NTP server pointer from under us
+    sntp_servermode_dhcp(getSetting("ntpDhcp", 1 == NTP_DHCP_SERVER));
+
     // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
+    // but, String() already handles every char pointer as a flash-string
     const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
     const char* active_tz = getenv("TZ");
-    if (cfg_tz != active_tz) {
+
+    bool changed { cfg_tz != active_tz };
+    if (changed) {
         setenv("TZ", cfg_tz.c_str(), 1);
         tzset();
     }
 
     const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
     const auto active_server = _ntpGetServer();
-    if (cfg_tz != active_tz) {
+    changed = (cfg_server != active_server) || changed;
+
+    // We skip configTime() API since we already set the TZ just above
+    // (and most of the time we expect NTP server to proxy to multiple servers instead of defining more than one here)
+    if (changed) {
+        sntp_stop();
         _ntp_server = cfg_server;
-        configTime(cfg_tz.c_str(), _ntp_server.c_str());
+        sntp_setservername(0, _ntp_server.c_str());
+        sntp_init();
         DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
@@ -428,8 +443,20 @@ void ntpSetup() {
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
     static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP) {
-        const auto server = _ntpGetServer();
-        if (sntp_enabled() && (!_ntp_server.length() || (server != _ntp_server))) {
+        if (!sntp_enabled()) {
+            return;
+        }
+
+        auto server = _ntpGetServer();
+        if (!server.length()) {
+            DEBUG_MSG_P(PSTR("[NTP] Updating `ntpDhcp` to ignore the DHCP values\n"));
+            setSetting("ntpDhcp", "0");
+            sntp_servermode_dhcp(0);
+            schedule_function(_ntpConfigure);
+            return;
+        }
+
+        if (!_ntp_server.length() || (server != _ntp_server)) {
             DEBUG_MSG_P(PSTR("[NTP] Updating `ntpServer` setting from DHCP: %s\n"), server.c_str());
             _ntp_server = server;
             setSetting("ntpServer", server);
