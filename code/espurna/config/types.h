@@ -253,23 +253,6 @@
 #define LIGHT_EFFECT_SMOOTH         4
 
 //------------------------------------------------------------------------------
-// RESET
-//------------------------------------------------------------------------------
-
-#define CUSTOM_RESET_HARDWARE       1       // Reset from hardware button
-#define CUSTOM_RESET_WEB            2       // Reset from web interface
-#define CUSTOM_RESET_TERMINAL       3       // Reset from terminal
-#define CUSTOM_RESET_MQTT           4       // Reset via MQTT
-#define CUSTOM_RESET_RPC            5       // Reset via RPC (HTTP)
-#define CUSTOM_RESET_OTA            6       // Reset after successful OTA update
-#define CUSTOM_RESET_HTTP           7       // Reset via HTTP GET
-#define CUSTOM_RESET_NOFUSS         8       // Reset after successful NOFUSS update
-#define CUSTOM_RESET_UPGRADE        9       // Reset after update from web interface
-#define CUSTOM_RESET_FACTORY        10      // Factory reset from terminal
-
-#define CUSTOM_RESET_MAX            10
-
-//------------------------------------------------------------------------------
 // ENVIRONMENTAL
 //------------------------------------------------------------------------------
 

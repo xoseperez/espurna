@@ -139,7 +139,7 @@ void _otaClientRunUpdater(__attribute__((unused)) WiFiClient* client, const Stri
             break;
         case HTTP_UPDATE_OK:
             DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
-            deferredReset(500, CUSTOM_RESET_OTA); // wait a bit more than usual
+            deferredReset(500, CustomResetReason::Ota); // wait a bit more than usual
             break;
     }
 

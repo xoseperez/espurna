@@ -24,23 +24,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // Reset reasons
 //--------------------------------------------------------------------------------
 
-PROGMEM const char custom_reset_hardware[] = "Hardware button";
-PROGMEM const char custom_reset_web[] = "Reboot from web interface";
-PROGMEM const char custom_reset_terminal[] = "Reboot from terminal";
-PROGMEM const char custom_reset_mqtt[] = "Reboot from MQTT";
-PROGMEM const char custom_reset_rpc[] = "Reboot from RPC";
-PROGMEM const char custom_reset_ota[] = "Reboot after successful OTA update";
-PROGMEM const char custom_reset_http[] = "Reboot from HTTP";
-PROGMEM const char custom_reset_nofuss[] = "Reboot after successful NoFUSS update";
-PROGMEM const char custom_reset_upgrade[] = "Reboot after successful web update";
-PROGMEM const char custom_reset_factory[] = "Factory reset";
-PROGMEM const char* const custom_reset_string[] = {
-    custom_reset_hardware, custom_reset_web, custom_reset_terminal,
-    custom_reset_mqtt, custom_reset_rpc, custom_reset_ota,
-    custom_reset_http, custom_reset_nofuss, custom_reset_upgrade,
-    custom_reset_factory
-};
-
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
         setSetting("hostname", F(HOSTNAME));
@@ -540,13 +523,10 @@ const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
 
 
 void info(bool first) {
-
-    // Avoid printing on early boot when buffering is enabled
-    #if DEBUG_SUPPORT
-
-    #if DEBUG_LOG_BUFFER_SUPPORT
-        if (first && debugLogBuffer()) return;
-    #endif
+#if DEBUG_SUPPORT
+#if DEBUG_LOG_BUFFER_SUPPORT
+    if (first && debugLogBuffer()) return;
+#endif
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
@@ -618,14 +598,13 @@ void info(bool first) {
 
     DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
-    unsigned char reason = customResetReason();
-    if (reason > 0) {
-        char buffer[32];
-        strcpy_P(buffer, custom_reset_string[reason-1]);
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), buffer);
+
+    auto reason = customResetReason();
+    if (CustomResetReason::None != reason) {
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), customResetReasonToPayload(reason).c_str());
     } else {
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), ESP.getResetReason().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), ESP.getResetInfo().c_str());
     }
     DEBUG_MSG_P(PSTR("\n"));
 
@@ -634,9 +613,9 @@ void info(bool first) {
     DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] OTA: %s\n"), getEspurnaOTAModules().c_str());
-    #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
-    #endif // SENSOR_SUPPORT
+#if SENSOR_SUPPORT
+    DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
+#endif
     DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s\n"), getEspurnaWebUI().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
@@ -660,19 +639,18 @@ void info(bool first) {
 
     // -------------------------------------------------------------------------
 
-    #if SYSTEM_CHECK_ENABLED
-        if (!systemCheck()) {
-            DEBUG_MSG_P(PSTR("\n"));
-            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
-        }
-    #endif
+#if SYSTEM_CHECK_ENABLED
+    if (!systemCheck()) {
+        DEBUG_MSG_P(PSTR("\n"));
+        DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
+    }
+#endif
 
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
-    #endif // DEBUG_SUPPORT == 1
-
+#endif // DEBUG_SUPPORT == 1
 }
 
 // -----------------------------------------------------------------------------

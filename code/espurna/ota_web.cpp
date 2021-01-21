@@ -128,7 +128,7 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     }
 
     if (final) {
-        otaFinalize(index + len, CUSTOM_RESET_UPGRADE, true);
+        otaFinalize(index + len, CustomResetReason::Ota, true);
     } else {
         otaProgress(index + len);
     }

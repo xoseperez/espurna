@@ -288,7 +288,7 @@ void _terminalInitCommands() {
 
     terminalRegisterCommand(F("ERASE.CONFIG"), [](const terminal::CommandContext&) {
         terminalOK();
-        customResetReason(CUSTOM_RESET_TERMINAL);
+        customResetReason(CustomResetReason::Terminal);
         eraseSDKConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
@@ -358,13 +358,13 @@ void _terminalInitCommands() {
 
     terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext&) {
         terminalOK();
-        deferredReset(100, CUSTOM_RESET_TERMINAL);
+        deferredReset(100, CustomResetReason::Terminal);
     });
 
     terminalRegisterCommand(F("RESET.SAFE"), [](const terminal::CommandContext&) {
         systemStabilityCounter(SYSTEM_CHECK_MAX);
         terminalOK();
-        deferredReset(100, CUSTOM_RESET_TERMINAL);
+        deferredReset(100, CustomResetReason::Terminal);
     });
 
     terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext&) {

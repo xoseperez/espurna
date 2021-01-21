@@ -220,13 +220,12 @@ constexpr const size_t WEB_CONFIG_BUFFER_MAX = 4096;
 // -----------------------------------------------------------------------------
 
 void _onReset(AsyncWebServerRequest *request) {
-
     webLog(request);
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    deferredReset(100, CUSTOM_RESET_HTTP);
+    deferredReset(100, CustomResetReason::Web);
     request->send(200);
 }
 

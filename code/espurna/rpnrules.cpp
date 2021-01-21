@@ -807,7 +807,7 @@ void _rpnInit() {
 
     rpn_operator_set(_rpn_ctxt, "reset", 0, [](rpn_context & ctxt) -> rpn_error {
         static bool once = ([]() {
-            deferredReset(100, CUSTOM_RESET_TERMINAL);
+            deferredReset(100, CustomResetReason::Rule);
             return true;
         })();
         return once

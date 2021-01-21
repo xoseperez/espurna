@@ -338,7 +338,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
-            deferredReset(100, CUSTOM_RESET_WEB);
+            deferredReset(100, CustomResetReason::Web);
             return;
         }
 
@@ -352,9 +352,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "factory_reset") == 0) {
-            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
-            resetSettings();
-            deferredReset(100, CUSTOM_RESET_FACTORY);
+            factoryReset();
             return;
         }
 

@@ -343,7 +343,7 @@ void _KACurtainResult() {
     if (buffer.indexOf("enterESPTOUCH") > 0) {
         wifiStartAP();
     } else if (buffer.indexOf("exitESPTOUCH") > 0) {
-        deferredReset(100, CUSTOM_RESET_HARDWARE);
+        deferredReset(100, CustomResetReason::Hardware);
     } else { //In any other case, update as it could be a move action
         curtainUpdateUI();
     }

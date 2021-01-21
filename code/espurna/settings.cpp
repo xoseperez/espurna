@@ -541,22 +541,22 @@ void settingsSetup() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext& ctx) {
         espurnaReload();
-        terminalOK();
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext&) {
-        resetSettings();
-        terminalOK();
+    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext& ctx) {
+        factoryReset();
+        terminalOK(ctx);
     });
 
-    #if not SETTINGS_AUTOSAVE
-        terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext&) {
-            eepromCommit();
-            terminalOK();
-        });
-    #endif
+#if not SETTINGS_AUTOSAVE
+    terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext& ctx) {
+        eepromCommit();
+        terminalOK(ctx);
+    });
+#endif
 
 
 }

@@ -168,7 +168,7 @@ void nofussSetup() {
             #endif
             // TODO: NoFUSS will reset the board after this callback returns.
             //       Maybe this should be optional
-            customResetReason(CUSTOM_RESET_NOFUSS);
+            customResetReason(CustomResetReason::Ota);
             nice_delay(100);
         }
 

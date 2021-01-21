@@ -57,7 +57,7 @@ void _arduinoOtaOnEnd() {
     #endif
 
     // Note: ArduinoOTA will reset the board after this callback returns.
-    customResetReason(CUSTOM_RESET_OTA);
+    customResetReason(CustomResetReason::Ota);
     nice_delay(100);
 
 }

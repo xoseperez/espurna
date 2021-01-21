@@ -70,7 +70,7 @@ void _otaClientDisconnect() {
 
 void _otaClientOnDisconnect(void* arg, AsyncClient* client) {
     DEBUG_MSG_P(PSTR("\n"));
-    otaFinalize(reinterpret_cast<ota_client_t*>(arg)->size, CUSTOM_RESET_OTA, true);
+    otaFinalize(reinterpret_cast<ota_client_t*>(arg)->size, CustomResetReason::Ota, true);
     schedule_function(_otaClientDisconnect);
 }
 

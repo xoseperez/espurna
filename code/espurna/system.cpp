@@ -50,16 +50,16 @@ void systemStabilityCounter(uint8_t count) {
     Rtcmem->sys = data.value;
 }
 
-uint8_t _systemResetReason() {
+CustomResetReason _systemRtcmemResetReason() {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    return data.packed.reset_reason;
+    return static_cast<CustomResetReason>(data.packed.reset_reason);
 }
 
-void _systemResetReason(uint8_t reason) {
+void _systemRtcmemResetReason(CustomResetReason reason) {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
-    data.packed.reset_reason = reason;
+    data.packed.reset_reason = static_cast<uint8_t>(reason);
     Rtcmem->sys = data.value;
 }
 
@@ -116,39 +116,90 @@ void systemCheckLoop() {
 // -----------------------------------------------------------------------------
 // Reset
 // -----------------------------------------------------------------------------
+
 Ticker _defer_reset;
-uint8_t _reset_reason = 0;
+auto _reset_reason = CustomResetReason::None;
+
+String customResetReasonToPayload(CustomResetReason reason) {
+    const __FlashStringHelper* ptr { nullptr };
+    switch (reason) {
+    case CustomResetReason::None:
+        ptr = F("None");
+        break;
+    case CustomResetReason::Button:
+        ptr = F("Hardware button");
+        break;
+    case CustomResetReason::Factory:
+        ptr = F("Factory reset");
+        break;
+    case CustomResetReason::Hardware:
+        ptr = F("Reboot from a Hardware request");
+        break;
+    case CustomResetReason::Mqtt:
+        ptr = F("Reboot from MQTT");
+        break;
+    case CustomResetReason::Ota:
+        ptr = F("Reboot after a successful OTA update");
+        break;
+    case CustomResetReason::Rpc:
+        ptr = F("Reboot from a RPC action");
+        break;
+    case CustomResetReason::Rule:
+        ptr = F("Reboot from an automation rule");
+        break;
+    case CustomResetReason::Scheduler:
+        ptr = F("Reboot from a scheduler action");
+        break;
+    case CustomResetReason::Terminal:
+        ptr = F("Reboot from a terminal command");
+        break;
+    case CustomResetReason::Web:
+        ptr = F("Reboot from web interface");
+        break;
+    }
+
+    return String(ptr);
+}
 
 // system_get_rst_info() result is cached by the Core init for internal use
 uint32_t systemResetReason() {
     return resetInfo.reason;
 }
 
-void customResetReason(unsigned char reason) {
+void customResetReason(CustomResetReason reason) {
     _reset_reason = reason;
-    _systemResetReason(reason);
+    _systemRtcmemResetReason(reason);
 }
 
-unsigned char customResetReason() {
-    static unsigned char status = 255;
-    if (status == 255) {
-        if (rtcmemStatus()) status = _systemResetReason();
-        if (status > 0) customResetReason(0);
-        if (status > CUSTOM_RESET_MAX) status = 0;
+CustomResetReason customResetReason() {
+    bool once { true };
+    static auto reason = CustomResetReason::None;
+    if (once) {
+        once = false;
+        if (rtcmemStatus()) {
+            reason = _systemRtcmemResetReason();
+        }
+        customResetReason(CustomResetReason::None);
     }
-    return status;
+    return reason;
 }
 
 void reset() {
     ESP.restart();
 }
 
-void deferredReset(unsigned long delay, unsigned char reason) {
+void deferredReset(unsigned long delay, CustomResetReason reason) {
     _defer_reset.once_ms(delay, customResetReason, reason);
 }
 
+void factoryReset() {
+    DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+    resetSettings();
+    deferredReset(100, CustomResetReason::Factory);
+}
+
 bool checkNeedsReset() {
-    return _reset_reason > 0;
+    return _reset_reason != CustomResetReason::None;
 }
 
 // -----------------------------------------------------------------------------

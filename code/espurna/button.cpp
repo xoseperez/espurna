@@ -549,13 +549,11 @@ void buttonEvent(unsigned char id, button_event_t event) {
         break;
 
     case ButtonAction::Reset:
-        deferredReset(100, CUSTOM_RESET_HARDWARE);
+        deferredReset(100, CustomResetReason::Button);
         break;
 
     case ButtonAction::FactoryReset:
-        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
-        resetSettings();
-        deferredReset(100, CUSTOM_RESET_FACTORY);
+        factoryReset();
         break;
 
     case ButtonAction::Wps:
