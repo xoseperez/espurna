@@ -7,12 +7,9 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include <HLW8012.h>
-
-#include "../debug.h"
-
 #include "BaseEmonSensor.h"
+
+#include <HLW8012.h>
 
 // ref. HLW8012/src/HLW8012.h
 //

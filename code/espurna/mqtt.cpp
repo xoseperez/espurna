@@ -12,6 +12,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #if MQTT_SUPPORT
 
 #include <vector>
+#include <forward_list>
 #include <utility>
 #include <Ticker.h>
 
@@ -92,10 +93,14 @@ String _mqtt_server;
 uint16_t _mqtt_port;
 String _mqtt_clientid;
 
+std::forward_list<heartbeat::Callback> _mqtt_heartbeat_callbacks;
+heartbeat::Mode _mqtt_heartbeat_mode;
+heartbeat::Seconds _mqtt_heartbeat_interval;
+
 String _mqtt_payload_online;
 String _mqtt_payload_offline;
 
-std::vector<mqtt_callback_f> _mqtt_callbacks;
+std::forward_list<mqtt_callback_f> _mqtt_callbacks;
 
 struct mqtt_message_t {
     static const unsigned char END = 255;
@@ -331,10 +336,7 @@ void _mqttConfigure() {
         _mqttApplySetting(_mqtt_retain, retain);
         _mqttApplySetting(_mqtt_keepalive, keepalive);
         _mqttApplySetting(_mqtt_clientid, id);
-    }
 
-    // MQTT WILL
-    {
         _mqttApplyTopic(_mqtt_will, MQTT_TOPIC_STATUS);
     }
 
@@ -343,6 +345,11 @@ void _mqttConfigure() {
         _mqttApplySetting(_mqtt_use_json, getSetting("mqttUseJson", 1 == MQTT_USE_JSON));
         _mqttApplyTopic(_mqtt_topic_json, MQTT_TOPIC_JSON);
     }
+
+    _mqttApplySetting(_mqtt_heartbeat_mode,
+            getSetting("mqttHbMode", heartbeat::currentMode()));
+    _mqttApplySetting(_mqtt_heartbeat_interval,
+            getSetting("mqttHbIntvl", heartbeat::currentInterval()));
 
     // Skip messages in a small window right after the connection
     _mqtt_skip_time = getSetting("mqttSkipTime", MQTT_SKIP_TIME);
@@ -509,29 +516,104 @@ void _mqttInitCommands() {
 // -----------------------------------------------------------------------------
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
-
     if (type == MQTT_CONNECT_EVENT) {
-
-        // Subscribe to internal action topics
         mqttSubscribe(MQTT_TOPIC_ACTION);
-
-        // Flag system to send heartbeat
-        systemSendHeartbeat();
-
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
-        // Match topic
         String t = mqttMagnitude(topic);
-
-        // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
             rpcHandleAction(payload);
         }
+    }
+}
 
+bool _mqttHeartbeat(heartbeat::Mask mask) {
+    // Backported from the older utils implementation.
+    // Wait until the time is synced to avoid sending partial report *and*
+    // as a result, wait until the next interval to actually send the datetime string.
+#if NTP_SUPPORT
+    if ((mask & heartbeat::Report::Datetime) && !ntpSynced()) {
+        return false;
+    }
+#endif
+
+    if (!mqttConnected()) {
+        return false;
     }
 
+    // TODO: rework old HEARTBEAT_REPEAT_STATUS?
+    // for example: send full report once, send only the dynamic data after that
+    // (interval, hostname, description, ssid, bssid, ip, mac, rssi, uptime, datetime, heap, loadavg, vcc)
+    // otherwise, it is still possible by setting everything to 0 *but* the Report::Status bit
+    // TODO: per-module mask?
+    // TODO: simply send static data with onConnected, and the rest from here?
+
+    if (mask & heartbeat::Report::Status)
+        mqttSendStatus();
+
+    if (mask & heartbeat::Report::Interval)
+        mqttSend(MQTT_TOPIC_INTERVAL, String(_mqtt_heartbeat_interval.count()).c_str());
+
+    if (mask & heartbeat::Report::App)
+        mqttSend(MQTT_TOPIC_APP, APP_NAME);
+
+    if (mask & heartbeat::Report::Version)
+        mqttSend(MQTT_TOPIC_VERSION, getVersion().c_str());
+
+    if (mask & heartbeat::Report::Board)
+        mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
+
+    if (mask & heartbeat::Report::Hostname)
+        mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname", getIdentifier()).c_str());
+
+    if (mask & heartbeat::Report::Description) {
+        auto desc = getSetting("desc");
+        if (desc.length()) {
+            mqttSend(MQTT_TOPIC_DESCRIPTION, desc.c_str());
+        }
+    }
+
+    if (mask & heartbeat::Report::Ssid)
+        mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
+
+    if (mask & heartbeat::Report::Bssid)
+        mqttSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
+
+    if (mask & heartbeat::Report::Ip)
+        mqttSend(MQTT_TOPIC_IP, getIP().c_str());
+
+    if (mask & heartbeat::Report::Mac)
+        mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
+
+    if (mask & heartbeat::Report::Rssi)
+        mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+
+    if (mask & heartbeat::Report::Uptime)
+        mqttSend(MQTT_TOPIC_UPTIME, String(systemUptime()).c_str());
+
+#if NTP_SUPPORT
+    if (mask & heartbeat::Report::Datetime)
+        mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+#endif
+
+    if (mask & heartbeat::Report::Freeheap) {
+        auto stats = systemHeapStats();
+        mqttSend(MQTT_TOPIC_FREEHEAP, String(stats.available).c_str());
+    }
+
+    if (mask & heartbeat::Report::Loadavg)
+        mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
+
+    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+        mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+
+    auto status = mqttConnected();
+    for (auto& cb : _mqtt_heartbeat_callbacks) {
+        status = status && cb(mask);
+    }
+
+    return status;
 }
 
 void _mqttOnConnect() {
@@ -540,6 +622,8 @@ void _mqttOnConnect() {
 
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Connected;
+
+    systemHeartbeat(_mqttHeartbeat, _mqtt_heartbeat_mode, _mqtt_heartbeat_interval);
 
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 
@@ -558,6 +642,8 @@ void _mqttOnDisconnect() {
     // Reset reconnection delay
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Disconnected;
+
+    systemStopHeartbeat(_mqttHeartbeat);
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
@@ -937,7 +1023,7 @@ bool mqttForward() {
 }
 
 void mqttRegister(mqtt_callback_f callback) {
-    _mqtt_callbacks.push_back(callback);
+    _mqtt_callbacks.push_front(callback);
 }
 
 void mqttSetBroker(IPAddress ip, uint16_t port) {
@@ -997,12 +1083,12 @@ void _mqttConnect() {
         _mqtt_server = mdnsResolve(_mqtt_server);
     #endif
 
-    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%u\n"), _mqtt_server.c_str(), _mqtt_port);
+    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%hu\n"), _mqtt_server.c_str(), _mqtt_port);
 
     DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
     DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
-    DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
-    DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
+    DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %c\n"), _mqtt_retain ? 'Y' : 'N');
+    DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %hu (s)\n"), _mqtt_keepalive);
     DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
 
     _mqtt_state = AsyncClientState::Connecting;
@@ -1058,6 +1144,10 @@ void mqttLoop() {
 
 }
 
+void mqttHeartbeat(heartbeat::Callback callback) {
+    _mqtt_heartbeat_callbacks.push_front(callback);
+}
+
 void mqttSetup() {
 
     _mqttBackwards();
@@ -1092,7 +1182,6 @@ void mqttSetup() {
         });
 
         _mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
-
             switch (reason) {
                 case AsyncMqttClientDisconnectReason::TCP_DISCONNECTED:
                     DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));

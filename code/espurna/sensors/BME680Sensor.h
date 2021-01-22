@@ -48,10 +48,9 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include <bsec.h>
-
 #include "I2CSensor.h"
+
+#include <bsec.h>
 
 // Available configuration modes based on parameters:
 // voltage / maximum time between sensor calls / time considered

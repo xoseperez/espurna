@@ -277,19 +277,25 @@ void _lightApplyBrightnessColor() {
 }
 
 String lightDesc(unsigned char id) {
-    if (id >= _light_channels.size()) return FPSTR(pstr_unknown);
-
-    const char tag = pgm_read_byte(&_light_channel_desc[_light_channels.size() - 1][id]);
-    switch (tag) {
-        case 'W': return F("WARM WHITE");
-        case 'C': return F("COLD WHITE");
-        case 'R': return F("RED");
-        case 'G': return F("GREEN");
-        case 'B': return F("BLUE");
-        default: break;
+    if (id < _light_channels.size()) {
+        const char tag = pgm_read_byte(&_light_channel_desc[_light_channels.size() - 1][id]);
+        switch (tag) {
+        case 'W':
+            return F("WARM WHITE");
+        case 'C':
+            return F("COLD WHITE");
+        case 'R':
+            return F("RED");
+        case 'G':
+            return F("GREEN");
+        case 'B':
+            return F("BLUE");
+        default:
+            break;
+        }
     }
 
-    return FPSTR(pstr_unknown);
+    return F("UNKNOWN");
 }
 
 // -----------------------------------------------------------------------------
@@ -939,7 +945,15 @@ void _lightUpdateFromMqttGroup() {
 }
 
 #if MQTT_SUPPORT
-void _lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+bool _lightMqttHeartbeat(heartbeat::Mask mask) {
+    if (mask & heartbeat::Report::Light)
+        lightMQTT();
+
+    return mqttConnected();
+}
+
+void _lightMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
     String mqtt_group_color = getSetting("mqttGroupColor");
 
@@ -1044,6 +1058,11 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
     }
 
+}
+
+void _lightMqttSetup() {
+    mqttHeartbeat(_lightMqttHeartbeat);
+    mqttRegister(_lightMqttCallback);
 }
 
 void lightMQTT() {
@@ -1851,7 +1870,7 @@ void lightSetup() {
     #endif
 
     #if MQTT_SUPPORT
-        mqttRegister(_lightMQTTCallback);
+        _lightMqttSetup();
     #endif
 
     #if TERMINAL_SUPPORT

@@ -14,6 +14,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "light.h"
 #include "mqtt.h"
 #include "ntp.h"
+#include "ntp_timelib.h"
 #include "relay.h"
 #include "rfbridge.h"
 #include "rpc.h"

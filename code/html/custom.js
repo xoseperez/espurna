@@ -240,6 +240,26 @@ function isGroupValue(value) {
     return names.indexOf(value) >= 0;
 }
 
+function bitsetToValues(bitset) {
+    var values = [];
+    for (var index = 0; index < 31; ++index) {
+        if (bitset & (1 << index)) {
+            values.push(String(index));
+        }
+    }
+
+    return values;
+}
+
+function valuesToBitset(values) {
+    var result = 0;
+    for (var value of values) {
+        result |= 1 << parseInt(value);
+    }
+
+    return result;
+}
+
 function getValue(element) {
 
     if ($(element).attr("type") === "checkbox") {
@@ -248,6 +268,8 @@ function getValue(element) {
         if (!$(element).prop("checked")) {
             return null;
         }
+    } else if ($(element).attr("multiple") !== undefined) {
+        return valuesToBitset($(element).val());
     }
 
     return $(element).val();
@@ -2202,7 +2224,11 @@ function processData(data) {
         // Look for SELECTs
         var select = $("select[name='" + key + "']");
         if (select.length > 0) {
-            select.val(value);
+            if (select.attr("multiple") !== undefined) {
+                select.val(bitsetToValues(value));
+            } else {
+                select.val(value);
+            }
             elems.push(select);
         }
 
@@ -2222,6 +2248,11 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
+
+    if ($(this).attr("multiple") !== undefined) {
+        newValue = newValue.join(",");
+    }
+
     var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 

@@ -11,22 +11,114 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <Schedule.h>
 
-#include <cstdint>
-
 #include "rtcmem.h"
 #include "ws.h"
 #include "ntp.h"
 
-// -----------------------------------------------------------------------------
+#include <cstdint>
+#include <forward_list>
+#include <vector>
 
-bool _system_send_heartbeat = false;
-int _heartbeat_mode = HEARTBEAT_MODE;
-unsigned long _heartbeat_interval = HEARTBEAT_INTERVAL;
-
-// Calculated load average 0 to 100;
-unsigned short int _load_average = 100;
+#include "libs/TypeChecks.h"
 
 // -----------------------------------------------------------------------------
+
+// This method is called by the SDK early on boot to know where to connect the ADC
+
+int __get_adc_mode() {
+    return (int) (ADC_MODE_VALUE);
+}
+
+// -----------------------------------------------------------------------------
+
+namespace settings {
+namespace internal {
+
+template <>
+heartbeat::Mode convert(const String& value) {
+    auto len = value.length();
+    if (len == 1) {
+        switch (*value.c_str()) {
+        case '0':
+            return heartbeat::Mode::None;
+        case '1':
+            return heartbeat::Mode::Once;
+        case '2':
+            return heartbeat::Mode::Repeat;
+        }
+    } else if (len > 1) {
+        if (value == F("none")) {
+            return heartbeat::Mode::None;
+        } else if (value == F("once")) {
+            return heartbeat::Mode::Once;
+        } else if (value == F("repeat")) {
+            return heartbeat::Mode::Repeat;
+        }
+    }
+
+    return heartbeat::Mode::None;
+}
+
+template <>
+heartbeat::Seconds convert(const String& value) {
+    return heartbeat::Seconds(convert<unsigned long>(value));
+}
+
+template <>
+heartbeat::Milliseconds convert(const String& value) {
+    return heartbeat::Milliseconds(convert<unsigned long>(value));
+}
+
+} // namespace internal
+} // namespace settings
+
+String systemHeartbeatModeToPayload(heartbeat::Mode mode) {
+    const __FlashStringHelper* ptr { nullptr };
+    switch (mode) {
+    case heartbeat::Mode::None:
+        ptr = F("none");
+        break;
+    case heartbeat::Mode::Once:
+        ptr = F("once");
+        break;
+    case heartbeat::Mode::Repeat:
+        ptr = F("repeat");
+        break;
+    }
+
+    return String(ptr);
+}
+
+// -----------------------------------------------------------------------------
+
+unsigned long systemFreeStack() {
+    return ESP.getFreeContStack();
+}
+
+HeapStats systemHeapStats() {
+    HeapStats stats;
+    ESP.getHeapStats(&stats.available, &stats.usable, &stats.frag_pct);
+    return stats;
+}
+
+void systemHeapStats(HeapStats& stats) {
+    stats = systemHeapStats();
+}
+
+unsigned long systemFreeHeap() {
+    return ESP.getFreeHeap();
+}
+
+unsigned long systemInitialFreeHeap() {
+    static unsigned long value { 0ul };
+    if (!value) {
+        value = systemFreeHeap();
+    }
+
+    return value;
+}
+
+//--------------------------------------------------------------------------------
 
 union system_rtcmem_t {
     struct {
@@ -102,7 +194,7 @@ bool systemCheck() {
     return _systemStable;
 }
 
-void systemCheckLoop() {
+void _systemCheckLoop() {
     static bool checked = false;
     if (!checked && (millis() > SYSTEM_CHECK_TIME)) {
         // Flag system as stable
@@ -188,6 +280,10 @@ void reset() {
     ESP.restart();
 }
 
+bool eraseSDKConfig() {
+    return ESP.eraseConfig();
+}
+
 void deferredReset(unsigned long delay, CustomResetReason reason) {
     _defer_reset.once_ms(delay, customResetReason, reason);
 }
@@ -204,80 +300,195 @@ bool checkNeedsReset() {
 
 // -----------------------------------------------------------------------------
 
-void systemSendHeartbeat() {
-    _system_send_heartbeat = true;
-}
+// Calculated load average as a percentage
 
-bool systemGetHeartbeat() {
-    return _system_send_heartbeat;
-}
+unsigned char _load_average { 0u };
 
-unsigned long systemLoadAverage() {
+unsigned char systemLoadAverage() {
     return _load_average;
 }
 
-void _systemSetupHeartbeat() {
-    _heartbeat_mode = getSetting("hbMode", HEARTBEAT_MODE);
-    _heartbeat_interval = getSetting("hbInterval", HEARTBEAT_INTERVAL);
+// -----------------------------------------------------------------------------
+
+namespace heartbeat {
+
+constexpr Mask defaultValue() {
+    return (Report::Status * (HEARTBEAT_REPORT_STATUS))
+        | (Report::Ssid * (HEARTBEAT_REPORT_SSID))
+        | (Report::Ip * (HEARTBEAT_REPORT_IP))
+        | (Report::Mac * (HEARTBEAT_REPORT_MAC))
+        | (Report::Rssi * (HEARTBEAT_REPORT_RSSI))
+        | (Report::Uptime * (HEARTBEAT_REPORT_UPTIME))
+        | (Report::Datetime * (HEARTBEAT_REPORT_DATETIME))
+        | (Report::Freeheap * (HEARTBEAT_REPORT_FREEHEAP))
+        | (Report::Vcc * (HEARTBEAT_REPORT_VCC))
+        | (Report::Relay * (HEARTBEAT_REPORT_RELAY))
+        | (Report::Light * (HEARTBEAT_REPORT_LIGHT))
+        | (Report::Hostname * (HEARTBEAT_REPORT_HOSTNAME))
+        | (Report::Description * (HEARTBEAT_REPORT_DESCRIPTION))
+        | (Report::App * (HEARTBEAT_REPORT_APP))
+        | (Report::Version * (HEARTBEAT_REPORT_VERSION))
+        | (Report::Board * (HEARTBEAT_REPORT_BOARD))
+        | (Report::Loadavg * (HEARTBEAT_REPORT_LOADAVG))
+        | (Report::Interval * (HEARTBEAT_REPORT_INTERVAL))
+        | (Report::Range * (HEARTBEAT_REPORT_RANGE))
+        | (Report::RemoteTemp * (HEARTBEAT_REPORT_REMOTE_TEMP))
+        | (Report::Bssid * (HEARTBEAT_REPORT_BSSID));
 }
 
-#if WEB_SUPPORT
-    bool _systemWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-        if (strncmp(key, "sys", 3) == 0) return true;
-        if (strncmp(key, "hb", 2) == 0) return true;
-        return false;
+Mask currentValue() {
+    // because we start shifting from 1, we could use the
+    // first bit as a flag to enable all of the messages
+    auto value = getSetting("hbReport", defaultValue());
+    if (value == 1) {
+        value = std::numeric_limits<Mask>::max();
     }
-#endif
 
-void systemLoop() {
+    return value;
+}
 
-    // -------------------------------------------------------------------------
-    // User requested reset
-    // -------------------------------------------------------------------------
+Mode currentMode() {
+    return getSetting("hbMode", HEARTBEAT_MODE);
+}
 
-    if (checkNeedsReset()) {
-        reset();
+Seconds currentInterval() {
+    return getSetting("hbInterval", HEARTBEAT_INTERVAL);
+}
+
+Milliseconds currentIntervalMs() {
+    return Milliseconds(currentInterval());
+}
+
+Ticker timer;
+
+struct CallbackRunner {
+    Callback callback;
+    Mode mode;
+    heartbeat::Milliseconds interval;
+    heartbeat::Milliseconds last;
+};
+
+std::vector<CallbackRunner> runners;
+
+} // namespace heartbeat
+
+void _systemHeartbeat();
+
+void systemStopHeartbeat(heartbeat::Callback callback) {
+    using namespace heartbeat;
+    auto found = std::remove_if(runners.begin(), runners.end(),
+        [&](const CallbackRunner& runner) {
+            return callback == runner.callback;
+        });
+    runners.erase(found, runners.end());
+}
+
+void systemHeartbeat(heartbeat::Callback callback, heartbeat::Mode mode, heartbeat::Seconds interval) {
+    if (mode == heartbeat::Mode::None) {
         return;
     }
 
-    // -------------------------------------------------------------------------
-    // Check system stability
-    // -------------------------------------------------------------------------
+    auto msec = heartbeat::Milliseconds(interval);
+    if (!msec.count()) {
+        return;
+    }
 
-    #if SYSTEM_CHECK_ENABLED
-        systemCheckLoop();
-    #endif
+    auto offset = heartbeat::Milliseconds(millis() - 1ul);
+    heartbeat::runners.push_back({
+        callback, mode,
+        msec,
+        offset - msec
+    });
 
-    // -------------------------------------------------------------------------
-    // Heartbeat
-    // -------------------------------------------------------------------------
+    heartbeat::timer.detach();
+    static bool scheduled { false };
 
-    if (_system_send_heartbeat && _heartbeat_mode == HEARTBEAT_ONCE) {
-        heartbeat();
-        _system_send_heartbeat = false;
-    } else if (_heartbeat_mode == HEARTBEAT_REPEAT || _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
-        static unsigned long last_hbeat = 0;
-        #if NTP_SUPPORT
-            if ((_system_send_heartbeat && ntpSynced()) || (millis() - last_hbeat > _heartbeat_interval * 1000)) {
-        #else
-            if (_system_send_heartbeat || (millis() - last_hbeat > _heartbeat_interval * 1000)) {
-        #endif
-            last_hbeat = millis();
-            heartbeat();
-           _system_send_heartbeat = false;
+    if (!scheduled) {
+        scheduled = true;
+        schedule_function([]() {
+            scheduled = false;
+            _systemHeartbeat();
+        });
+    }
+}
+
+void systemHeartbeat(heartbeat::Callback callback, heartbeat::Mode mode) {
+    systemHeartbeat(callback, mode, heartbeat::currentInterval());
+}
+
+void systemHeartbeat(heartbeat::Callback callback) {
+    systemHeartbeat(callback, heartbeat::currentMode(), heartbeat::currentInterval());
+}
+
+heartbeat::Seconds systemHeartbeatInterval() {
+    heartbeat::Milliseconds result(0ul);
+    for (auto& runner : heartbeat::runners) {
+        result = heartbeat::Milliseconds(result.count()
+                ? std::min(result, runner.interval) : runner.interval);
+    }
+
+    return std::chrono::duration_cast<heartbeat::Seconds>(result);
+}
+
+void _systemHeartbeat() {
+    using namespace heartbeat;
+
+    constexpr Milliseconds BeatMin { 1000ul };
+    constexpr Milliseconds BeatMax { BeatMin * 10 };
+
+    auto next = Milliseconds(currentInterval());
+
+    auto ts = Milliseconds(millis());
+    if (runners.size()) {
+        auto mask = currentValue();
+
+        auto it = runners.begin();
+        auto end = runners.end();
+        while (it != end) {
+            auto diff = ts - (*it).last;
+            if (diff > (*it).interval) {
+                auto result = (*it).callback(mask);
+                if (result && ((*it).mode == Mode::Once)) {
+                    it = runners.erase(it);
+                    end = runners.end();
+                    continue;
+                }
+
+                if (result) {
+                    (*it).last = ts;
+                } else if (diff < ((*it).interval + BeatMax)) {
+                    next = BeatMin;
+                }
+
+                next = std::min(next, (*it).interval);
+            } else {
+                next = std::min(next, (*it).interval - diff);
+            }
+            ++it;
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Load Average calculation
-    // -------------------------------------------------------------------------
+    if (next < BeatMin) {
+        next = BeatMin;
+    }
 
+    timer.once_ms_scheduled(next.count(), _systemHeartbeat);
+}
+
+void systemScheduleHeartbeat() {
+    auto ts = heartbeat::Milliseconds(millis());
+    for (auto& runner : heartbeat::runners) {
+        runner.last = ts - runner.interval - heartbeat::Milliseconds(1ul);
+    }
+    schedule_function(_systemHeartbeat);
+}
+
+void _systemUpdateLoadAverage() {
     static unsigned long last_loadcheck = 0;
     static unsigned long load_counter_temp = 0;
     load_counter_temp++;
 
     if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
-
         static unsigned long load_counter = 0;
         static unsigned long load_counter_max = 1;
 
@@ -286,19 +497,62 @@ void systemLoop() {
         if (load_counter > load_counter_max) {
             load_counter_max = load_counter;
         }
-        _load_average = 100 - (100 * load_counter / load_counter_max);
+        _load_average = 100u - (100u * load_counter / load_counter_max);
         last_loadcheck = millis();
+    }
+}
 
+#if WEB_SUPPORT
+
+bool _systemWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+    if (strncmp(key, "sys", 3) == 0) return true;
+    if (strncmp(key, "hb", 2) == 0) return true;
+    return false;
+}
+
+void _systemWebSocketOnConnected(JsonObject& root) {
+    root["hbReport"] = heartbeat::currentValue();
+    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).count();
+    root["hbMode"] = static_cast<uint8_t>(getSetting("hbMode", HEARTBEAT_MODE));
+}
+
+#endif
+
+void systemLoop() {
+    if (checkNeedsReset()) {
+        reset();
+        return;
     }
 
+#if SYSTEM_CHECK_ENABLED
+    _systemCheckLoop();
+#endif
+
+    _systemUpdateLoadAverage();
 }
 
 void _systemSetupSpecificHardware() {
-    //The ESPLive has an ADC MUX which needs to be configured.
-    #if defined(MANCAVEMADE_ESPLIVE)
-        pinMode(16, OUTPUT);
-        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
-    #endif
+#if defined(MANCAVEMADE_ESPLIVE)
+    // The ESPLive has an ADC MUX which needs to be configured.
+    // Default CT input (pin B, solder jumper B)
+    pinMode(16, OUTPUT);
+    digitalWrite(16, HIGH);
+#endif
+}
+
+unsigned long systemUptime() {
+    static unsigned long last = 0;
+    static unsigned char overflows = 0;
+
+    if (millis() < last) {
+        ++overflows;
+    }
+    last = millis();
+
+    unsigned long seconds = static_cast<unsigned long>(overflows)
+        * (std::numeric_limits<unsigned long>::max() / 1000ul) + (last / 1000ul);
+
+    return seconds;
 }
 
 void systemSetup() {
@@ -313,16 +567,15 @@ void systemSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister().onKeyCheck(_systemWebSocketOnKeyCheck);
+        wsRegister()
+            .onConnected(_systemWebSocketOnConnected)
+            .onKeyCheck(_systemWebSocketOnKeyCheck);
     #endif
 
-    // Init device-specific hardware
     _systemSetupSpecificHardware();
 
-    // Register Loop
     espurnaRegisterLoop(systemLoop);
 
-    // Cache Heartbeat values
-    _systemSetupHeartbeat();
+    schedule_function(_systemHeartbeat);
 
 }

@@ -16,8 +16,16 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include "mqtt.h"
 #include "ws.h"
 
+#include <ArduinoJson.h>
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+// alias for `#include "SSD1306Wire.h"`
+#include <SSD1306.h>
+#endif
+
 #include <limits>
 #include <cmath>
+#include <cfloat>
 
 const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
 const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
@@ -145,7 +153,25 @@ void updateOperationMode() {
 //------------------------------------------------------------------------------
 // MQTT
 //------------------------------------------------------------------------------
-void thermostatMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+bool _thermostatMqttHeartbeat(heartbeat::Mask mask) {
+    if (mask & heartbeat::Report::Range) {
+        const auto& range = thermostatRange();
+        mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MIN, String(range.min).c_str());
+        mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(range.max).c_str());
+    }
+
+    if (mask & heartbeat::Report::RemoteTemp) {
+        const auto& remote_temp = thermostatRemoteTemp();
+        char buffer[16];
+        dtostrf(remote_temp.temp, 1, 1, buffer);
+        mqttSend(MQTT_TOPIC_REMOTE_TEMP, buffer);
+    }
+
+    return mqttConnected();
+}
+
+void thermostatMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
       mqttSubscribeRaw(thermostat_remote_sensor_topic.c_str());
@@ -448,11 +474,11 @@ void thermostatLoop(void) {
 
 //------------------------------------------------------------------------------
 String getBurnTimeStr(unsigned int burn_time) {
-  char burnTimeStr[18] = { 0 };
+  char burnTimeStr[24] = { 0 };
   if (burn_time < 60) {
     sprintf(burnTimeStr, "%d мин.", burn_time);
   } else {
-    sprintf(burnTimeStr, "%d ч. %d мин.", (int)floor(burn_time / 60), burn_time % 60);
+    sprintf(burnTimeStr, "%d ч. %d мин.", (int)floor(burn_time / 60), (int)(burn_time % 60));
   }
   return String(burnTimeStr);
 }
@@ -799,9 +825,8 @@ void thermostatSetup() {
   _thermostat_burn_day        = getSetting(NAME_BURN_DAY, 0);
   _thermostat_burn_month      = getSetting(NAME_BURN_MONTH, 0);
 
-  #if MQTT_SUPPORT
-    mqttRegister(thermostatMQTTCallback);
-  #endif
+  mqttHeartbeat(_thermostatMqttHeartbeat);
+  mqttRegister(thermostatMqttCallback);
 
   // Websockets
   #if WEB_SUPPORT

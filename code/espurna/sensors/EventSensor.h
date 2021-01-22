@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-
-#include "../debug.h"
 #include "BaseSensor.h"
 
 // we are bound by usable GPIOs

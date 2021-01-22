@@ -3,7 +3,6 @@
 #include "../anim.h"
 #include "../color.h"
 #include "../palette.h"
-#include "debug.h"
 
 //------------------------------------------------------------------------------
 class AnimSpread : public Anim {

@@ -8,9 +8,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-
-#include "../debug.h"
 #include "BaseSensor.h"
 
 class GeigerSensor : public BaseSensor {

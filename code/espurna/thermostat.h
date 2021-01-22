@@ -10,13 +10,6 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #include "espurna.h"
 
-#include <ArduinoJson.h>
-#include <float.h>
-
-#if THERMOSTAT_DISPLAY_SUPPORT
-#include <SSD1306.h> // alias for `#include "SSD1306Wire.h"`
-#endif
-
 #define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
 #define ASK_TEMP_RANGE_INTERVAL_REGULAR      60000  // ask every minute to be sure
 #define MILLIS_IN_SEC                         1000
@@ -35,6 +28,14 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #define THERMOSTAT_MIN_OFF_TIME                 10 // 10 min
 #define THERMOSTAT_ENABLED_BY_DEFAULT         true
 #define THERMOSTAT_MODE_COOLER_BY_DEFAULT     false
+
+#define MQTT_TOPIC_HOLD_TEMP        "hold_temp"
+#define MQTT_TOPIC_HOLD_TEMP_MIN    "min"
+#define MQTT_TOPIC_HOLD_TEMP_MAX    "max"
+#define MQTT_TOPIC_REMOTE_TEMP      "remote_temp"
+#define MQTT_TOPIC_ASK_TEMP_RANGE   "ask_temp_range"
+#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MIN "notify_temp_range_min"
+#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MAX "notify_temp_range_max"
 
 struct temp_t {
   float temp;

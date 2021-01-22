@@ -373,10 +373,14 @@ void saveSettings() {
 #endif
 }
 
+void autosaveSettings() {
+#if SETTINGS_AUTOSAVE
+    eepromCommit();
+#endif
+}
+
 void resetSettings() {
-    auto* ptr = EEPROMr.getDataPtr();
-    std::fill(ptr + EepromReservedSize, ptr + EepromSize, 0xFF);
-    EEPROMr.commit();
+    eepromClear();
 }
 
 // -----------------------------------------------------------------------------
@@ -557,6 +561,5 @@ void settingsSetup() {
         terminalOK(ctx);
     });
 #endif
-
 
 }

@@ -14,11 +14,12 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #include "broker.h"
 #include "light.h"
 #include "ntp.h"
+#include "ntp_timelib.h"
 #include "relay.h"
 #include "ws.h"
 #include "curtain_kingart.h"
 
-constexpr const int SchedulerDummySwitchId = 0xff;
+constexpr int SchedulerDummySwitchId { 0xff };
 
 int _sch_restore = 0;
 
@@ -232,7 +233,6 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
 // If daybefore and relay is -1, check with current timestamp
 // Otherwise, modify it by moving 'daybefore' days back and only use the 'relay' id
 void _schCheck(int relay, int daybefore) {
-
     time_t timestamp = now();
     auto calendar_weekday = _schGetWeekday(timestamp, daybefore);
 
@@ -341,10 +341,12 @@ void schSetup() {
             .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
 
-    NtpBroker::Register([](const NtpTick tick, time_t, const String&) {
-        if (NtpTick::EveryMinute != tick) return;
+    static bool restore_once = true;
+    NtpBroker::Register([](NtpTick tick, time_t, const String&) {
+        if (NtpTick::EveryMinute != tick) {
+            return;
+        }
 
-        static bool restore_once = true;
         if (restore_once) {
             for (unsigned char i = 0; i < schedulableCount(); i++) {
                 if (getSetting({"relayLastSch", i}, 1 == SCHEDULER_RESTORE_LAST_SCHEDULE)) {

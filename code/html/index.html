@@ -367,7 +367,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -379,7 +379,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Description</label>
-                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" tabindex="2" />
+                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         Human-friendly name for your device. Will be reported with the heartbeat.<br />
@@ -389,7 +389,7 @@
 
                                 <div class="pure-g module module-btn">
                                     <label class="pure-u-1 pure-u-lg-1-4">Click repeat delay</label>
-                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
+                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -408,11 +408,62 @@
 
                                 <div class="pure-g module module-alexa">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa device name</label>
-                                    <input name="alexaName" class="pure-u-1 pure-u-lg-1-4"  maxlength="31" type="text" action="reboot" tabindex="7" />
+                                    <input name="alexaName" class="pure-u-1 pure-u-lg-1-4"  maxlength="31" type="text" action="reboot" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This name will be used in Alexa integration.<br />
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat messages</label>
+                                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" >
+                                        <option value="0">Disabled</option>
+                                        <option value="1">Once per connection</option>
+                                        <option value="2">Repeat after defined interval</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
+                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" min="1" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        How often the heartbeat messages should be sent (number of <strong>seconds</strong>).
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat report</label>
+                                    <select multiple class="pure-u-1 pure-u-lg-3-4" name="hbReport" >
+                                        <option value="1">Device status</option>
+                                        <option value="2">SSID</option>
+                                        <option value="21">BSSID</option>
+                                        <option value="3">IP</option>
+                                        <option value="4">MAC</option>
+                                        <option value="5">RSSI</option>
+                                        <option value="6">Uptime</option>
+                                        <option value="7">Datetime</option>
+                                        <option value="8">Free heap</option>
+                                        <option value="9">VCC</option>
+                                        <option value="10">Relays status</option>
+                                        <option value="11">Lights status</option>
+                                        <option value="12">Hostname</option>
+                                        <option value="13">App name</option>
+                                        <option value="14">App version</option>
+                                        <option value="15">Board</option>
+                                        <option value="16">Loadavg</option>
+                                        <option value="17">Heartbeat interval</option>
+                                        <option value="18">Device description</option>
+                                        <option value="19">Temperature range</option>
+                                        <option value="20">Remote temperature</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Enable / disable heartbeat messages.
                                     </div>
                                 </div>
 
@@ -782,30 +833,6 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Request password when starting telnet session</div>
                                 </div>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
-                                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" tabindex="15" >
-                                        <option value="0">Disabled</option>
-                                        <option value="1">On device startup</option>
-                                        <option value="2">Repeat after defined interval</option>
-                                        <option value="3">Repeat only device status</option>
-                                    </select>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Define when heartbeat message will be sent.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
-                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" tabindex="16" />
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
-                                    </div>
-                                </div>
-
                                 <div class="pure-g module module-ota">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
@@ -815,7 +842,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" rel="noopener" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
-                                    <input name="upgrade" type="file" tabindex="17" />
+                                    <input name="upgrade" type="file" tabindex="18" />
                                 </div>
 
                             </fieldset>

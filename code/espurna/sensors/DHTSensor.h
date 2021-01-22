@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 
 #include "../gpio.h"
 #include "../utils.h"

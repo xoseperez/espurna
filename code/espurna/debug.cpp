@@ -17,7 +17,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "settings.h"
 #include "telnet.h"
 #include "web.h"
+#include "ntp.h"
+#include "utils.h"
 #include "ws.h"
+
+#if DEBUG_WEB_SUPPORT
+#include <ArduinoJson.h>
+#endif
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
@@ -367,6 +373,24 @@ void debugConfigureBoot() {
     debugConfigure();
 }
 
+bool _debugHeartbeat(heartbeat::Mask mask) {
+    if (mask & heartbeat::Report::Uptime)
+        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
+
+    if (mask & heartbeat::Report::Freeheap)
+        infoHeapStats();
+
+    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+        DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
+
+#if NTP_SUPPORT
+    if ((mask & heartbeat::Report::Datetime) && (ntpSynced()))
+        DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), ntpDateTime().c_str());
+#endif
+
+    return true;
+}
+
 void debugConfigure() {
 
     // HardwareSerial::begin() will automatically enable this when
@@ -407,6 +431,10 @@ void debugConfigure() {
         }
     }
     #endif // DEBUG_LOG_BUFFER
+
+    systemHeartbeat(_debugHeartbeat,
+        getSetting("dbgHbMode", heartbeat::currentMode()),
+        getSetting("dbgHbIntvl", heartbeat::currentInterval()));
 
 }
 

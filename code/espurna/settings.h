@@ -8,7 +8,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
 
 #include <functional>
 #include <utility>
@@ -25,23 +25,26 @@ BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
 
 // --------------------------------------------------------------------------
 
+void resetSettings();
+void saveSettings();
+void autosaveSettings();
+
 namespace settings {
 
-struct EepromStorage {
+class EepromStorage {
+public:
 
-    uint8_t read(size_t pos) {
-        return EEPROMr.read(pos);
-    }
+uint8_t read(size_t pos) {
+    return eepromRead(pos);
+}
 
-    void write(size_t pos, uint8_t value) {
-        EEPROMr.write(pos, value);
-    }
+void write(size_t pos, uint8_t value) {
+    eepromWrite(pos, value);
+}
 
-    void commit() {
-#if SETTINGS_AUTOSAVE
-        eepromCommit();
-#endif
-    }
+void commit() {
+    autosaveSettings();
+}
 
 };
 
@@ -146,9 +149,6 @@ T convert(const String& value);
 // --------------------------------------------------------------------------
 
 template <>
-GpioType convert(const String& value);
-
-template <>
 float convert(const String& value);
 
 template <>
@@ -242,9 +242,6 @@ bool hasSetting(const char* key);
 bool hasSetting(const String& key);
 bool hasSetting(const __FlashStringHelper* key);
 bool hasSetting(const SettingsKey& key);
-
-void saveSettings();
-void resetSettings();
 
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024);

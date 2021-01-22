@@ -33,8 +33,8 @@ void _wsResetUpdateTimer() {
 }
 
 void _wsUpdate(JsonObject& root) {
-    root["heap"] = getFreeHeap();
-    root["uptime"] = getUptime();
+    root["heap"] = systemFreeHeap();
+    root["uptime"] = systemUptime();
     root["rssi"] = WiFi.RSSI();
     root["loadaverage"] = systemLoadAverage();
     if (ADC_MODE_VALUE == ADC_VCC) {
@@ -489,8 +489,6 @@ void _wsOnConnected(JsonObject& root) {
 
     root["webPort"] = getSetting("webPort", WEB_PORT);
     root["wsAuth"] = getSetting("wsAuth", 1 == WS_AUTHENTICATION);
-    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE);
-    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL);
 }
 
 void _wsConnected(uint32_t client_id) {

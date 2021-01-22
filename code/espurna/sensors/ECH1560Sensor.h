@@ -7,10 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-
-#include "../debug.h"
-
 #include "BaseSensor.h"
 #include "BaseEmonSensor.h"
 
@@ -89,7 +85,7 @@ class ECH1560Sensor : public BaseEmonSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[35];
-            snprintf(buffer, sizeof(buffer), "ECH1560 (CLK,SDO) @ GPIO(%u,%u)", _clk, _miso);
+            snprintf(buffer, sizeof(buffer), "ECH1560 (CLK,SDO) @ GPIO(%hhu,%hhu)", _clk, _miso);
             return String(buffer);
         }
 
@@ -101,7 +97,7 @@ class ECH1560Sensor : public BaseEmonSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
             char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _clk, _miso);
+            snprintf(buffer, sizeof(buffer), "%hhu:%hhu", _clk, _miso);
             return String(buffer);
         }
 

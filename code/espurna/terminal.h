@@ -8,14 +8,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
 
-#if TERMINAL_SUPPORT
-
-#include <functional>
-#include <memory>
-#include <unordered_map>
-#include <vector>
+#include <cstddef>
 
 #include "terminal_parsing.h"
 #include "terminal_commands.h"
@@ -38,5 +33,3 @@ Stream& terminalDefaultStream();
 
 void terminalSetup();
 void terminalWebApiSetup();
-
-#endif // TERMINAL_SUPPORT == 1

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 
 #include "BaseSensor.h"
 #include "../utils.h"
@@ -89,7 +88,7 @@ class GUVAS12SDSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[18];
-            snprintf(buffer, sizeof(buffer), "GUVAS12SD @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "GUVAS12SD @ GPIO%hhu", _gpio);
             return String(buffer);
         }
 

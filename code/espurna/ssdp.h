@@ -10,11 +10,5 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 
 #include "espurna.h"
 
-#if SSDP_SUPPORT
-
-#include <ESP8266SSDP.h>
-
 void ssdpSetup();
-
-#endif // SSDP_SUPPORT
 

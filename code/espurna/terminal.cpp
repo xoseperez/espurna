@@ -12,7 +12,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if TERMINAL_SUPPORT
 
 #include "api.h"
-#include "debug.h"
 #include "settings.h"
 #include "system.h"
 #include "telnet.h"
@@ -205,7 +204,9 @@ void _terminalHelpCommand(const terminal::CommandContext& ctx) {
 
 #if LWIP_VERSION_MAJOR != 1
 
-String _terminalPcbStateToString(unsigned char state) {
+namespace {
+
+inline String _terminalPcbStateToString(unsigned char state) {
     switch (state) {
         case 0: return F("CLOSED");
         case 1: return F("LISTEN");
@@ -279,6 +280,8 @@ void _terminalDnsFound(const char* name, const ip_addr_t* result, void*) {
     _terminalPrintDnsResult(name, result);
 }
 
+} // namespace
+
 #endif // LWIP_VERSION_MAJOR != 1
 
 void _terminalInitCommands() {
@@ -341,14 +344,20 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext&) {
-        infoHeapStats();
-        terminalOK();
+    terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext& ctx) {
+        static auto initial = systemInitialFreeHeap();
+
+        auto stats = systemHeapStats();
+        ctx.output.printf_P(PSTR("initial: %u, available: %u, fragmentation: %hhu%%\n"),
+            initial, stats.available, stats.frag_pct);
+
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext&) {
-        infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
-        terminalOK();
+    terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext& ctx) {
+        ctx.output.printf_P(PSTR("continuation stack initial: %d, free: %u\n"),
+            CONT_STACKSIZE, systemFreeStack());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext&) {
@@ -356,20 +365,21 @@ void _terminalInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext&) {
-        terminalOK();
+    terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc == 2) {
+            auto arg = ctx.argv[1].toInt();
+            if (arg < SYSTEM_CHECK_MAX) {
+                systemStabilityCounter(arg);
+            }
+        }
+
+        terminalOK(ctx);
         deferredReset(100, CustomResetReason::Terminal);
     });
 
-    terminalRegisterCommand(F("RESET.SAFE"), [](const terminal::CommandContext&) {
-        systemStabilityCounter(SYSTEM_CHECK_MAX);
-        terminalOK();
-        deferredReset(100, CustomResetReason::Terminal);
-    });
-
-    terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext&) {
-        infoUptime();
-        terminalOK();
+    terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext& ctx) {
+        ctx.output.println(getUptime());
+        terminalOK(ctx);
     });
 
     #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL

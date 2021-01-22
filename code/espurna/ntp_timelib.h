@@ -39,4 +39,3 @@ int month();
 int year();
 
 time_t now();
-

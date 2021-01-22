@@ -20,18 +20,22 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "system.h"
 #include "terminal.h"
 
+#include <ESP8266HTTPClient.h>
+#include <ESP8266httpUpdate.h>
+
 #include "libs/URL.h"
 #include "libs/TypeChecks.h"
 #include "libs/SecureClientHelpers.h"
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
+#include <WiFiClientSecure.h>
 
-    #if OTA_SECURE_CLIENT_INCLUDE_CA
-    #include "static/ota_client_trusted_root_ca.h"
-    #else
-    #include "static/digicert_evroot_pem.h"
-    #define _ota_client_trusted_root_ca _ssl_digicert_ev_root_ca
-    #endif
+#if OTA_SECURE_CLIENT_INCLUDE_CA
+#include "static/ota_client_trusted_root_ca.h"
+#else
+#include "static/digicert_evroot_pem.h"
+#define _ota_client_trusted_root_ca _ssl_digicert_ev_root_ca
+#endif
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 

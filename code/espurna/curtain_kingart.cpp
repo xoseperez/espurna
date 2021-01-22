@@ -14,8 +14,9 @@ Copyright (C) 2020 - Eric Chauvet
 
 #if KINGART_CURTAIN_SUPPORT
 
-#include "ntp.h"
 #include "mqtt.h"
+#include "ntp.h"
+#include "ntp_timelib.h"
 #include "settings.h"
 #include "ws.h"
 

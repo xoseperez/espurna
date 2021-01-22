@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <OneWire.h>
 
 #include <vector>

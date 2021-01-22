@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <SparkFun_VEML6075_Arduino_Library.h>
 
 #include "I2CSensor.h"

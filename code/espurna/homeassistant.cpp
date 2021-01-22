@@ -50,11 +50,15 @@ String _haFixPayload(const String& value) {
     return value;
 }
 
-String& _haFixName(String& name) {
-    for (unsigned char i=0; i<name.length(); i++) {
-        if (!isalnum(name.charAt(i))) name.setCharAt(i, '_');
+String _haFixName(String&& name) {
+    auto* ptr = const_cast<char*>(name.c_str());
+    while (*ptr != '\0') {
+        if (!isalnum(*ptr)) {
+            *ptr = '_';
+        }
+        ++ptr;
     }
-    return name;
+    return std::move(name);
 }
 
 #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
@@ -75,7 +79,7 @@ struct ha_config_t {
         jsonBuffer(size),
         deviceConfig(jsonBuffer.createObject()),
         root(jsonBuffer.createObject()),
-        name(getSetting("desc", getSetting("hostname"))),
+        name(getSetting("desc", getSetting("hostname", getIdentifier()))),
         identifier(getIdentifier().c_str()),
         version(getVersion().c_str()),
         manufacturer(getManufacturer().c_str()),
@@ -126,9 +130,9 @@ struct ha_discovery_t {
         DEBUG_MSG_P(PSTR("[HA] Discovery %s\n"), empty() ? "OK" : "FAILED");
     }
 
-    // TODO: is this expected behaviour?
     void add(String& topic, String& message) {
-        _messages.emplace_back(std::move(topic), std::move(message));
+        auto msg = mqtt_msg_t { std::move(topic), std::move(message) };
+        _messages.push_back(std::move(msg));
     }
 
     // We don't particulary care about the order since names have indexes?
@@ -181,7 +185,7 @@ void _haSendDiscovery() {
         if (_ha_discovery->empty()) break;
 
         auto& message = _ha_discovery->next();
-        if (!mqttSendRaw(message.first.c_str(), message.second.c_str())) {
+        if (!mqttSendRaw(message.topic.c_str(), message.message.c_str())) {
             break;
         }
         _ha_discovery->pop();
@@ -210,7 +214,7 @@ void _haSendDiscovery() {
 #if SENSOR_SUPPORT
 
 void _haSendMagnitude(unsigned char index, JsonObject& config) {
-    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(magnitudeType(index)));
+    config["name"] = _haFixName(getSetting("hostname", getIdentifier()) + String(" ") + magnitudeTopic(magnitudeType(index)));
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(index).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(index);
 }
@@ -224,7 +228,7 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/sensor/" +
-            getSetting("hostname") + "_" + String(i) +
+            getSetting("hostname", getIdentifier()) + "_" + String(i) +
             "/config";
         String message;
 
@@ -251,12 +255,13 @@ void ha_discovery_t::prepareMagnitudes(ha_config_t& config) {
 
 void _haSendSwitch(unsigned char i, JsonObject& config) {
 
-    String name = getSetting("hostname");
+    String name = _haFixName(getSetting("hostname", getIdentifier()));
     if (relayCount() > 1) {
-        name += String("_") + String(i);
+        name += '_';
+        name += i;
     }
 
-    config.set("name", _haFixName(name));
+    config.set("name", name);
 
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
@@ -304,7 +309,7 @@ void ha_discovery_t::prepareSwitches(ha_config_t& config) {
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/" + switchType +
-            "/" + getSetting("hostname") + "_" + String(i) +
+            "/" + getSetting("hostname", getIdentifier()) + "_" + String(i) +
             "/config";
         String message;
 
@@ -401,7 +406,7 @@ void _haSensorYaml(unsigned char index, JsonObject& root) {
 
 void _haGetDeviceConfig(JsonObject& config) {
     config.createNestedArray("identifiers").add(getIdentifier().c_str());
-    config["name"] = getSetting("desc", getSetting("hostname"));
+    config["name"] = getSetting("desc", getSetting("hostname", getIdentifier()));
     config["manufacturer"] = getManufacturer().c_str();
     config["model"] = getDevice().c_str();
     config["sw_version"] = getVersion().c_str();

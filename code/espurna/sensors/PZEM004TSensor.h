@@ -49,7 +49,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <PZEM004T.h>
 
 #include "BaseSensor.h"

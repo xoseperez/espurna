@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <Adafruit_SI1145.h>
 
 #include "I2CSensor.h"

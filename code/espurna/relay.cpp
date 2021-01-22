@@ -1478,6 +1478,13 @@ void relayStatusWrap(unsigned char id, PayloadStatus value, bool is_group_topic)
     }
 }
 
+bool _relayMqttHeartbeat(heartbeat::Mask mask) {
+    if (mask & heartbeat::Report::Relay)
+        relayMQTT();
+
+    return mqttConnected();
+}
+
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (!relayCount()) {
@@ -1485,12 +1492,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     }
 
     if (type == MQTT_CONNECT_EVENT) {
-
-        // Send status on connect
-        #if (HEARTBEAT_MODE == HEARTBEAT_NONE) or (not HEARTBEAT_REPORT_RELAY)
-            relayMQTT();
-        #endif
-
         // Subscribe to own /set topic
         char relay_topic[strlen(MQTT_TOPIC_RELAY) + 3];
         snprintf_P(relay_topic, sizeof(relay_topic), PSTR("%s/+"), MQTT_TOPIC_RELAY);
@@ -1506,7 +1507,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             const auto t = getSetting({"mqttGroup", i});
             if (t.length() > 0) mqttSubscribeRaw(t.c_str());
         }
-
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -1583,6 +1583,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 }
 
 void relaySetupMQTT() {
+    mqttHeartbeat(_relayMqttHeartbeat);
     mqttRegister(relayMQTTCallback);
 }
 

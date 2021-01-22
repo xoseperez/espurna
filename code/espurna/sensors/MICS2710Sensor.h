@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 
 #include "BaseAnalogSensor.h"
 extern "C" {

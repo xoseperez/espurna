@@ -6,6 +6,17 @@
 
 #include "espurna.h"
 
+#define MQTT_TOPIC_LIGHT            "light"
+#define MQTT_TOPIC_CHANNEL          "channel"
+#define MQTT_TOPIC_COLOR_RGB        "rgb"
+#define MQTT_TOPIC_COLOR_HSV        "hsv"
+#define MQTT_TOPIC_ANIM_MODE        "anim_mode"
+#define MQTT_TOPIC_ANIM_SPEED       "anim_speed"
+#define MQTT_TOPIC_BRIGHTNESS       "brightness"
+#define MQTT_TOPIC_MIRED            "mired"
+#define MQTT_TOPIC_KELVIN           "kelvin"
+#define MQTT_TOPIC_TRANSITION       "transition"
+
 // TODO: lowercase
 namespace Light {
 

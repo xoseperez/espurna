@@ -10,6 +10,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if NTP_LEGACY_SUPPORT && NTP_SUPPORT
 
+#include <TimeLib.h>
+#include <WiFiUdp.h>
+#include <NtpClientLib.h>
+
 #include <Ticker.h>
 
 #include "debug.h"

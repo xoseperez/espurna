@@ -15,6 +15,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 #include "ws.h"
 
+#include <NoFUSSClient.h>
+
 unsigned long _nofussLastCheck = 0;
 unsigned long _nofussInterval = 0;
 bool _nofussEnabled = false;

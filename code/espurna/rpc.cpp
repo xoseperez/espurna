@@ -25,7 +25,7 @@ bool rpcHandleAction(const String& action) {
         });
     } else if (action.equals("heartbeat")) {
         result = true;
-        schedule_function(heartbeat);
+        systemScheduleHeartbeat();
     }
     return result;
 }

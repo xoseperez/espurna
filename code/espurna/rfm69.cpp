@@ -10,10 +10,14 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
+#define RFM69_PACKET_SEPARATOR ':'
+
+#include <RFM69.h>
+#include <RFM69_ATC.h>
+#include <SPI.h>
+
 #include "mqtt.h"
 #include "ws.h"
-
-#define RFM69_PACKET_SEPARATOR ':'
 
 // -----------------------------------------------------------------------------
 // Locals

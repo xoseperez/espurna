@@ -19,13 +19,17 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <coredecls.h>
 #include <Ticker.h>
 
+#include <lwip/apps/sntp.h>
+#include <TZ.h>
+
 static_assert(
     (SNTP_SERVER_DNS == 1),
     "lwip must be configured with SNTP_SERVER_DNS"
 );
 
 #include "config/buildtime.h"
-#include "debug.h"
+
+#include "ntp_timelib.h"
 #include "broker.h"
 #include "ws.h"
 
@@ -228,12 +232,16 @@ void _ntpConfigure() {
 
     // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
     // but, String() already handles every char pointer as a flash-string
-    const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
+    auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
     const char* active_tz = getenv("TZ");
 
     bool changed = cfg_tz != active_tz;
     if (changed) {
-        setenv("TZ", cfg_tz.c_str(), 1);
+        if (cfg_tz.length()) {
+            setenv("TZ", cfg_tz.c_str(), 1);
+        } else {
+            unsetenv("TZ");
+        }
         tzset();
     }
 
@@ -248,7 +256,8 @@ void _ntpConfigure() {
         _ntp_server = cfg_server;
         sntp_setservername(0, _ntp_server.c_str());
         sntp_init();
-        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
+        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(),
+                cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
 
@@ -259,7 +268,7 @@ bool ntpSynced() {
 }
 
 String ntpDateTime(tm* timestruct) {
-    char buffer[20];
+    char buffer[32];
     snprintf_P(buffer, sizeof(buffer),
         PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
         timestruct->tm_year + 1900,
@@ -311,6 +320,7 @@ void _ntpBrokerCallback() {
     static int last_minute = -1;
 
     String datetime;
+
     if ((last_minute != now_minute) || (last_hour != now_hour)) {
         datetime = ntpDateTime(&local_tm);
     }
@@ -318,12 +328,12 @@ void _ntpBrokerCallback() {
     // notify subscribers about each tick interval (note that both can happen simultaneously)
     if (last_hour != now_hour) {
         last_hour = now_hour;
-        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
+        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime);
     }
 
     if (last_minute != now_minute) {
         last_minute = now_minute;
-        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
+        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime);
     }
 
     // try to autocorrect each invocation
@@ -422,9 +432,8 @@ void ntpSetup() {
 
     _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
     _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
-    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %us, Update delay: %us\n"),
-        _ntp_startup_delay, _ntp_update_delay
-    );
+    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %u (s), Update delay: %u (s)\n"),
+        _ntp_startup_delay, _ntp_update_delay);
 
     _ntp_startup_delay = _ntp_startup_delay * 1000;
     _ntp_update_delay = _ntp_update_delay * 1000;

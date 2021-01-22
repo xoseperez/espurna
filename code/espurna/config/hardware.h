@@ -1018,7 +1018,7 @@
     #define DEVICE                  "SONOFF_IFAN02"
 
     // Base module
-    #define FAN_SUPPORT            1
+    #define IFAN_SUPPORT            1
 
     // These buttons are triggered by the remote
     // Fan module adds a custom button handler and a special relay controlling the speed

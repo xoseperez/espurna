@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-
 #include "I2CSensor.h"
 
 #define BH1750_CONTINUOUS_HIGH_RES_MODE     0x10    // Start measurement at 1lx resolution. Measurement time is approx 120ms.

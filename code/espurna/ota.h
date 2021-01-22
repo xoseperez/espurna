@@ -28,15 +28,9 @@ void otaClientSetup();
 
 #if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
 
-#include <ESP8266HTTPClient.h>
-#include <ESP8266httpUpdate.h>
 void otaClientSetup();
 
 #endif // OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
-
-#if SECURE_CLIENT != SECURE_CLIENT_NONE
-#include <WiFiClientSecure.h>
-#endif
 
 void otaSetup();
 void otaPrintError();
