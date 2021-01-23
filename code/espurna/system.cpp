@@ -312,6 +312,14 @@ unsigned char systemLoadAverage() {
 
 namespace heartbeat {
 
+constexpr Mode defaultMode() {
+    return HEARTBEAT_MODE;
+}
+
+constexpr Seconds defaultInterval() {
+    return Seconds(HEARTBEAT_INTERVAL);
+}
+
 constexpr Mask defaultValue() {
     return (Report::Status * (HEARTBEAT_REPORT_STATUS))
         | (Report::Ssid * (HEARTBEAT_REPORT_SSID))
@@ -348,11 +356,11 @@ Mask currentValue() {
 }
 
 Mode currentMode() {
-    return getSetting("hbMode", HEARTBEAT_MODE);
+    return getSetting("hbMode", defaultMode());
 }
 
 Seconds currentInterval() {
-    return getSetting("hbInterval", HEARTBEAT_INTERVAL);
+    return getSetting("hbInterval", defaultInterval());
 }
 
 Milliseconds currentIntervalMs() {
@@ -504,6 +512,10 @@ void _systemUpdateLoadAverage() {
 
 #if WEB_SUPPORT
 
+uint8_t _systemHeartbeatModeToId(heartbeat::Mode mode) {
+    return static_cast<uint8_t>(mode);
+}
+
 bool _systemWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "sys", 3) == 0) return true;
     if (strncmp(key, "hb", 2) == 0) return true;
@@ -512,8 +524,8 @@ bool _systemWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _systemWebSocketOnConnected(JsonObject& root) {
     root["hbReport"] = heartbeat::currentValue();
-    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).count();
-    root["hbMode"] = static_cast<uint8_t>(getSetting("hbMode", HEARTBEAT_MODE));
+    root["hbInterval"] = getSetting("hbInterval", heartbeat::defaultInterval()).count();
+    root["hbMode"] = _systemHeartbeatModeToId(getSetting("hbMode", heartbeat::defaultMode()));
 }
 
 #endif

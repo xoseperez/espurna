@@ -10,6 +10,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RPN_RULES_SUPPORT
 
+#include <rpnlib.h>
+
 #include "broker.h"
 #include "light.h"
 #include "mqtt.h"

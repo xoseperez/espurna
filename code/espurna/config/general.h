@@ -41,7 +41,7 @@
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          heartbeat::Seconds(300ul)     // Interval between heartbeat messages
+#define HEARTBEAT_INTERVAL          300     // Interval between heartbeat messages
 #endif
 
 //------------------------------------------------------------------------------
