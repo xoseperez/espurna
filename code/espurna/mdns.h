@@ -1,11 +1,13 @@
+/*
+
+MDNS MODULE
+
+Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
+
+*/
+
 #pragma once
 
 #include "espurna.h"
-#include <Arduino.h>
 
-#if MDNS_SERVER_SUPPORT
-
-#include <ESP8266mDNS.h>
 void mdnsServerSetup();
-
-#endif

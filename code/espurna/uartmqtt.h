@@ -11,10 +11,4 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-#if UART_MQTT_SUPPORT
-
-#include <SoftwareSerial.h>
-
 void uartmqttSetup();
-
-#endif // UART_MQTT_SUPPORT == 1
