@@ -56,7 +56,7 @@ heartbeat::Mode convert(const String& value) {
         }
     }
 
-    return heartbeat::Mode::None;
+    return heartbeat::Mode::Repeat;
 }
 
 template <>
