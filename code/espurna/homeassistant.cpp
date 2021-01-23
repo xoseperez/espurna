@@ -133,13 +133,13 @@ struct ha_discovery_t {
     }
 
     void add(String& topic, String& message) {
-        auto msg = mqtt_msg_t { std::move(topic), std::move(message) };
+        auto msg = MqttMessage { std::move(topic), std::move(message) };
         _messages.push_back(std::move(msg));
     }
 
     // We don't particulary care about the order since names have indexes?
     // If we ever do, use iterators to reference elems and pop the String contents instead
-    mqtt_msg_t& next() {
+    MqttMessage& next() {
         return _messages.back();
     }
 
@@ -162,7 +162,7 @@ struct ha_discovery_t {
     #endif
 
     Ticker timer;
-    std::vector<mqtt_msg_t> _messages;
+    std::vector<MqttMessage> _messages;
     unsigned char _retry;
 
 };

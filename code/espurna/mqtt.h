@@ -56,7 +56,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_CMD              "cmd"
 
 using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
-struct mqtt_msg_t {
+struct MqttMessage {
     String topic;
     String message;
 };
@@ -83,8 +83,7 @@ void mqttSend(const char * topic, unsigned int index, const char * message);
 void mqttSendStatus();
 void mqttFlush();
 
-int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent);
-int8_t mqttEnqueue(const char * topic, const char * message);
+void mqttEnqueue(const char* topic, const char* message);
 
 const String& mqttPayloadOnline();
 const String& mqttPayloadOffline();
