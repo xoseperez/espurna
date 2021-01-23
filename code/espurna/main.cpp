@@ -201,9 +201,6 @@ void setup() {
     #if MDNS_SERVER_SUPPORT
         mdnsServerSetup();
     #endif
-    #if MDNS_CLIENT_SUPPORT
-        mdnsClientSetup();
-    #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
     #endif

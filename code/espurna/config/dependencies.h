@@ -92,16 +92,6 @@
 #define RELAY_SUPPORT               1           // Scheduler needs relays
 #endif
 
-#if LWIP_VERSION_MAJOR != 1
-#undef MDNS_CLIENT_SUPPORT
-#define MDNS_CLIENT_SUPPORT         0          // default resolver already handles this
-#endif
-
-#if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#undef TELNET_SERVER_ASYNC_BUFFERED
-#define TELNET_SERVER_ASYNC_BUFFERED 1         // enable buffered telnet by default on latest Cores
-#endif
-
 #if TUYA_SUPPORT
 #undef LIGHT_TRANSITION_TIME
 #define LIGHT_TRANSITION_TIME       1600       // longer transition than the default

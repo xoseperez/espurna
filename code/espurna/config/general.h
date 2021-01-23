@@ -172,7 +172,7 @@
 #endif
 
 #ifndef TELNET_SERVER_ASYNC_BUFFERED
-#define TELNET_SERVER_ASYNC_BUFFERED         0  // Enable buffered output for telnet server (+1Kb)
+#define TELNET_SERVER_ASYNC_BUFFERED         1  // Enable buffered output for telnet server (+1Kb)
                                                 // Helps to avoid lost data with lwip2 TCP_MSS=536 option
 #endif
 
@@ -840,10 +840,6 @@
 
 #ifndef MDNS_SERVER_SUPPORT
 #define MDNS_SERVER_SUPPORT         1           // Publish services using mDNS by default (1.48Kb)
-#endif
-
-#ifndef MDNS_CLIENT_SUPPORT
-#define MDNS_CLIENT_SUPPORT         0           // Resolve mDNS names (3.44Kb)
 #endif
 
 #ifndef LLMNR_SUPPORT

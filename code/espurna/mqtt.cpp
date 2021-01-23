@@ -1021,10 +1021,6 @@ void _mqttConnect() {
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    #if MDNS_CLIENT_SUPPORT
-        _mqtt_server = mdnsResolve(_mqtt_server);
-    #endif
-
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%hu\n"), _mqtt_server.c_str(), _mqtt_port);
 
     DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
