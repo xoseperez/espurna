@@ -215,8 +215,16 @@ void _haSendDiscovery() {
 
 #if SENSOR_SUPPORT
 
+String _haMagnitudeName(unsigned char index) {
+    auto name = getSetting("hostname", getIdentifier());
+    name += " ";
+    name += magnitudeTopic(magnitudeType(index));
+
+    return _haFixName(std::move(name));
+}
+
 void _haSendMagnitude(unsigned char index, JsonObject& config) {
-    config["name"] = _haFixName(getSetting("hostname", getIdentifier()) + String(" ") + magnitudeTopic(magnitudeType(index)));
+    config["name"] = _haMagnitudeName(index);
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(index).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(index);
 }
