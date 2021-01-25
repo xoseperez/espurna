@@ -43,10 +43,19 @@ void _wsUpdate(JsonObject& root) {
         root["vcc"] = "N/A (TOUT) ";
     }
 #if NTP_SUPPORT
-    // XXX: arduinojson will ignore info.now assignment (64bit time_t) when trying to store it as integer
+    // XXX: arduinojson default config stores:
+    // - double as float
+    // - int64_t as int32_t
+    // Simply send the string...
     if (ntpSynced()) {
         auto info = ntpInfo();
-        root["now"] = static_cast<double>(info.now);
+
+        constexpr size_t TimeSize { sizeof(time_t) };
+        const char* const fmt = (TimeSize == 8) ? "%lld" : "%ld";
+        char buffer[TimeSize * 4];
+        sprintf(buffer, fmt, info.now);
+        root["now"] = String(buffer);
+
         root["nowString"] = info.utc;
         root["nowLocalString"] = info.local.length()
             ? info.local

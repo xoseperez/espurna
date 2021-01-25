@@ -2130,7 +2130,7 @@ function processData(data) {
         }
 
         if ("now" === key) {
-            now = value;
+            now = parseInt(value, 10);
             return;
         }
 
