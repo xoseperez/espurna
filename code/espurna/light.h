@@ -7,6 +7,7 @@
 #include "espurna.h"
 
 #define MQTT_TOPIC_LIGHT            "light"
+#define MQTT_TOPIC_LIGHT_JSON       "light_json"
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
 #define MQTT_TOPIC_COLOR_HSV        "hsv"
@@ -68,6 +69,7 @@ constexpr int DefaultReport {
 } // namespace Light
 
 using LightStateListener = std::function<void(bool)>;
+using LightReportListener = void(*)();
 
 class LightProvider {
 public:
@@ -130,6 +132,7 @@ bool lightUseCCT();
 
 void lightMQTT();
 
+void lightSetReportListener(LightReportListener);
 void lightSetStateListener(LightStateListener);
 void lightSetProvider(std::unique_ptr<LightProvider>&&);
 bool lightAdd();

@@ -1385,6 +1385,10 @@
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 #endif
 
+#ifndef HOMEASSISTANT_RETAIN
+#define HOMEASSISTANT_RETAIN    MQTT_RETAIN     // Make broker retain the messages
+#endif
+
 // -----------------------------------------------------------------------------
 // INFLUXDB
 // -----------------------------------------------------------------------------

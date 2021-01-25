@@ -809,15 +809,6 @@ function doScan() {
     return false;
 }
 
-function doHAConfig() {
-    $("#haConfig")
-        .text("")
-        .height(0)
-        .show();
-    sendAction("haconfig", {});
-    return false;
-}
-
 function doDebugCommand() {
     var el = $("input[name='dbgcmd']");
     var command = el.val();
@@ -1966,18 +1957,6 @@ function processData(data) {
         }
 
         // -----------------------------------------------------------------------------
-        // Home Assistant
-        // -----------------------------------------------------------------------------
-
-        if ("haConfig" === key) {
-            send("{}");
-            $("#haConfig")
-                .append(new Text(value))
-                .height($("#haConfig")[0].scrollHeight);
-            return;
-        }
-
-        // -----------------------------------------------------------------------------
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
@@ -2371,7 +2350,6 @@ $(function() {
     $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
-    $(".button-ha-config").on("click", doHAConfig);
     $(".button-dbgcmd").on("click", doDebugCommand);
     $("input[name='dbgcmd']").enterKey(doDebugCommand);
     $(".button-dbg-clear").on("click", doDebugClear);

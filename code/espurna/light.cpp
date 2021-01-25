@@ -109,6 +109,7 @@ Ticker _light_save_ticker;
 
 unsigned long _light_report_delay = LIGHT_REPORT_DELAY;
 Ticker _light_report_ticker;
+LightReportListener _light_report;
 
 bool _light_has_controls = false;
 bool _light_has_color = false;
@@ -1452,6 +1453,12 @@ bool lightUseCCT() {
     return _light_use_cct;
 }
 
+// -----------------------------------------------------------------------------
+
+void lightSetReportListener(LightReportListener func) {
+    _light_report = func;
+}
+
 void _lightReport(int report) {
 #if MQTT_SUPPORT
     if (report & Light::Report::Mqtt) {
@@ -1474,6 +1481,10 @@ void _lightReport(int report) {
         lightBroker();
     }
 #endif
+
+    if (_light_report) {
+        _light_report();
+    }
 }
 
 void _lightReport(Light::Report report) {
