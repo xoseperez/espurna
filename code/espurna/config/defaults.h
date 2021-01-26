@@ -1044,6 +1044,66 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// Tuya
+// -----------------------------------------------------------------------------
+
+#ifndef TUYA_CH_STATE_DPID
+#define TUYA_CH_STATE_DPID  0
+#endif
+
+#ifndef TUYA_CH1_DPID
+#define TUYA_CH1_DPID       0
+#endif
+
+#ifndef TUYA_CH2_DPID
+#define TUYA_CH2_DPID       0
+#endif
+
+#ifndef TUYA_CH3_DPID
+#define TUYA_CH3_DPID       0
+#endif
+
+#ifndef TUYA_CH4_DPID
+#define TUYA_CH4_DPID       0
+#endif
+
+#ifndef TUYA_CH5_DPID
+#define TUYA_CH5_DPID       0
+#endif
+
+#ifndef TUYA_SW1_DPID
+#define TUYA_SW1_DPID       0
+#endif
+
+#ifndef TUYA_SW2_DPID
+#define TUYA_SW2_DPID       0
+#endif
+
+#ifndef TUYA_SW3_DPID
+#define TUYA_SW3_DPID       0
+#endif
+
+#ifndef TUYA_SW4_DPID
+#define TUYA_SW4_DPID       0
+#endif
+
+#ifndef TUYA_SW5_DPID
+#define TUYA_SW5_DPID       0
+#endif
+
+#ifndef TUYA_SW6_DPID
+#define TUYA_SW6_DPID       0
+#endif
+
+#ifndef TUYA_SW7_DPID
+#define TUYA_SW7_DPID       0
+#endif
+
+#ifndef TUYA_SW8_DPID
+#define TUYA_SW8_DPID       0
+#endif
+
+// -----------------------------------------------------------------------------
 // General
 // -----------------------------------------------------------------------------
 

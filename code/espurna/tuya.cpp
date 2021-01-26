@@ -527,6 +527,33 @@ error:
 
     }
 
+    namespace build {
+
+    constexpr unsigned char channelDpId(unsigned char index) {
+        return (index == 0) ? TUYA_CH1_DPID :
+            (index == 1) ? TUYA_CH2_DPID :
+            (index == 2) ? TUYA_CH3_DPID :
+            (index == 3) ? TUYA_CH4_DPID :
+            (index == 4) ? TUYA_CH5_DPID : 0u;
+    }
+
+    constexpr unsigned char switchDpId(unsigned char index) {
+        return (index == 0) ? TUYA_SW1_DPID :
+            (index == 1) ? TUYA_SW2_DPID :
+            (index == 2) ? TUYA_SW3_DPID :
+            (index == 3) ? TUYA_SW4_DPID :
+            (index == 4) ? TUYA_SW5_DPID :
+            (index == 5) ? TUYA_SW6_DPID :
+            (index == 6) ? TUYA_SW7_DPID :
+            (index == 7) ? TUYA_SW8_DPID : 0u;
+    }
+
+    constexpr unsigned char channelStateDpId() {
+        return TUYA_CH_STATE_DPID;
+    }
+
+    } // namespace build
+
     // Predefined DP<->SWITCH, DP<->CHANNEL associations
     // Respective provider setup should be called before state restore,
     // so we can use dummy values
@@ -534,7 +561,7 @@ error:
     void setupSwitches() {
         bool done { false };
         for (unsigned char id = 0; id < RelaysMax; ++id) {
-            auto dp = getSetting({"tuyaSwitch", id}, 0);
+            auto dp = getSetting({"tuyaSwitch", id}, build::switchDpId(id));
             if (!dp) {
                 break;
             }
@@ -560,7 +587,7 @@ error:
     void setupChannels() {
         bool done { false };
         for (unsigned char id = 0; id < Light::ChannelsMax; ++id) {
-            auto dp = getSetting({"tuyaChannel", id}, 0);
+            auto dp = getSetting({"tuyaChannel", id}, build::channelDpId(id));
             if (!dp) {
                 break;
             }
@@ -577,7 +604,7 @@ error:
         }
 
         if (done) {
-            channelStateId = getSetting("tuyaChanState", 0u);
+            channelStateId = getSetting("tuyaChanState", build::channelStateDpId());
             lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds, &channelStateId));
         }
 

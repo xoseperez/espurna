@@ -73,7 +73,7 @@ public:
             manufacturer(manufacturer_),
             device(device_)
         {
-			name = normalize_ascii(std::move(name));
+            name = normalize_ascii(std::move(name));
             identifier = normalize_ascii(std::move(identifier), true);
         }
 

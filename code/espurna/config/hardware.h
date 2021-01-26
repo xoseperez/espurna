@@ -4495,6 +4495,13 @@
     #define TUYA_SUPPORT        1
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_CUSTOM
 
+    #define LED1_GPIO           14
+
+    #define TUYA_CH_STATE_DPID  1
+    #define TUYA_CH1_DPID       2
+
+    #define DEBUG_SERIAL_SUPPORT    0
+
 // -----------------------------------------------------------------------------
 // Etekcity ESW01-USA
 // https://www.amazon.com/Etekcity-Voltson-Outlet-Monitoring-Required/dp/B01M3MYIFS
