@@ -813,10 +813,11 @@
     #define RFB_PROVIDER        RFB_PROVIDER_EFM8BB1
     #endif
 
-    #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    #define SERIAL_BAUDRATE         19200
+    #ifndef DEBUG_SERIAL_SUPPORT
     #define DEBUG_SERIAL_SUPPORT    0
     #endif
+
+    #define SERIAL_BAUDRATE         19200
 
     // Only used when RFB_PROVIDER is RCSWITCH
     #define RFB_RX_PIN          4
