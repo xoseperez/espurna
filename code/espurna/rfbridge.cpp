@@ -954,6 +954,14 @@ void _rfbSendFromPayload(const char * payload) {
 
 }
 
+void rfbSend(const char* code) {
+    _rfbSendFromPayload(code);
+}
+
+void rfbSend(const String& code) {
+    _rfbSendFromPayload(code.c_str());
+}
+
 #if MQTT_SUPPORT
 
 void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
@@ -1066,6 +1074,15 @@ void _rfbApiSetup() {
 #if TERMINAL_SUPPORT
 
 void _rfbInitCommands() {
+
+    terminalRegisterCommand(F("RFB.SEND"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc == 2) {
+            rfbSend(ctx.argv[1]);
+            return;
+        }
+
+        terminalError(ctx, F("RFB.SEND <CODE>"));
+    });
 
 #if RELAY_SUPPORT
     terminalRegisterCommand(F("RFB.LEARN"), [](const terminal::CommandContext& ctx) {

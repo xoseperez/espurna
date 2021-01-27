@@ -404,6 +404,16 @@ decltype(_rfb_codes)::iterator _rpnRfbFindCode(unsigned char protocol, const Str
     });
 }
 
+rpn_error _rpnRfbSend(rpn_context& ctxt) {
+    auto code = rpn_stack_pop(ctxt);
+    if (!code.isString()) {
+        return rpn_operator_error::InvalidArgument;
+    }
+
+    rfbSend(code.toString());
+    return rpn_operator_error::Ok;
+}
+
 rpn_error _rpnRfbPop(rpn_context& ctxt) {
     auto code = rpn_stack_pop(ctxt);
     auto proto = rpn_stack_pop(ctxt);
@@ -682,6 +692,7 @@ void _rpnInit() {
     #endif
 
     #if RFB_SUPPORT
+        rpn_operator_set(_rpn_ctxt, "rfb_send", 1, _rpnRfbSend);
         rpn_operator_set(_rpn_ctxt, "rfb_pop", 2, _rpnRfbPop);
         rpn_operator_set(_rpn_ctxt, "rfb_info", 2, _rpnRfbInfo);
         rpn_operator_set(_rpn_ctxt, "rfb_sequence", 4, _rpnRfbSequence);
