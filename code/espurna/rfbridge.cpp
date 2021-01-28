@@ -923,9 +923,12 @@ void _rfbSendQueued() {
 
 // Check if the payload looks like a HEX code (plus comma, specifying the 'repeats' arg for the queue)
 void _rfbSendFromPayload(const char * payload) {
+    size_t len { strlen(payload) };
+    if (!len) {
+        return;
+    }
 
     decltype(_rfb_repeats) repeats { _rfb_repeats };
-    size_t len { strlen(payload) };
 
     const char* sep { strchr(payload, ',') };
     if (sep) {
@@ -951,7 +954,6 @@ void _rfbSendFromPayload(const char * payload) {
     // We postpone the actual sending until the loop, as we may've been called from MQTT or HTTP API
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
     _rfbEnqueue(payload, len, repeats);
-
 }
 
 void rfbSend(const char* code) {
@@ -1166,10 +1168,7 @@ void rfbStatus(unsigned char id, bool status) {
     // TODO: Consider having 'origin' of the relay change. Either supply relayStatus with an additional arg,
     //       or track these statuses directly.
     if (!_rfb_relay_status_lock[id]) {
-        String value = rfbRetrieve(id, status);
-        if (value.length() && !(value.length() & 1)) {
-            _rfbSendFromPayload(value.c_str());
-        }
+        rfbSend(rfbRetrieve(id, status));
     }
 
     _rfb_relay_status_lock[id] = false;
