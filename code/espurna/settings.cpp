@@ -87,7 +87,23 @@ long convert(const String& value) {
 
 template <>
 bool convert(const String& value) {
-    return convert<int>(value) == 1;
+    if (value.length()) {
+        if ((value == "0")
+            || (value == "n")
+            || (value == "no")
+            || (value == "false")
+            || (value == "off")) {
+            return false;
+        }
+
+        return (value == "1")
+            || (value == "y")
+            || (value == "yes")
+            || (value == "true")
+            || (value == "on");
+    }
+
+    return false;
 }
 
 template <>
@@ -219,14 +235,6 @@ String settingsQueryDefaults(const String& key) {
 // Key-value API
 // -----------------------------------------------------------------------------
 
-String settings_key_t::toString() const {
-    if (_index < 0) {
-        return _value;
-    } else {
-        return _value + _index;
-    }
-}
-
 settings_move_key_t _moveKeys(const String& from, const String& to, unsigned char index) {
     return settings_move_key_t {{from, index}, {to, index}};
 }
@@ -257,78 +265,122 @@ void moveSettings(const String& from, const String& to) {
     }
 }
 
-template<>
-String getSetting(const settings_key_t& key, String defaultValue) {
-    auto result = settings::kv_store.get(key.toString());
-    if (!result) {
-        return defaultValue;
-    }
-    return result.value;
+template
+bool getSetting(const SettingsKey& key, bool defaultValue);
+
+template
+int getSetting(const SettingsKey& key, int defaultValue);
+
+template
+long getSetting(const SettingsKey& key, long defaultValue);
+
+template
+unsigned char getSetting(const SettingsKey& key, unsigned char defaultValue);
+
+template
+unsigned short getSetting(const SettingsKey& key, unsigned short defaultValue);
+
+template
+unsigned int getSetting(const SettingsKey& key, unsigned int defaultValue);
+
+template
+unsigned long getSetting(const SettingsKey& key, unsigned long defaultValue);
+
+template
+float getSetting(const SettingsKey& key, float defaultValue);
+
+template
+double getSetting(const SettingsKey& key, double defaultValue);
+
+String getSetting(const String& key) {
+    return settings::kv_store.get(key).value;
 }
 
-template
-bool getSetting(const settings_key_t& key, bool defaultValue);
+String getSetting(const __FlashStringHelper* key) {
+    return getSetting(String(key));
+}
 
-template
-int getSetting(const settings_key_t& key, int defaultValue);
+String getSetting(const char* key) {
+    return getSetting(String(key));
+}
 
-template
-long getSetting(const settings_key_t& key, long defaultValue);
-
-template
-unsigned char getSetting(const settings_key_t& key, unsigned char defaultValue);
-
-template
-unsigned short getSetting(const settings_key_t& key, unsigned short defaultValue);
-
-template
-unsigned int getSetting(const settings_key_t& key, unsigned int defaultValue);
-
-template
-unsigned long getSetting(const settings_key_t& key, unsigned long defaultValue);
-
-template
-float getSetting(const settings_key_t& key, float defaultValue);
-
-template
-double getSetting(const settings_key_t& key, double defaultValue);
-
-String getSetting(const settings_key_t& key) {
+String getSetting(const SettingsKey& key) {
     static const String defaultValue("");
     return getSetting(key, defaultValue);
 }
 
-String getSetting(const settings_key_t& key, const char* defaultValue) {
-    return getSetting(key, String(defaultValue));
+String getSetting(const SettingsKey& key, const char* defaultValue) {
+    return getSetting(key, std::move(String(defaultValue)));
 }
 
-String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultValue) {
-    return getSetting(key, String(defaultValue));
+String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValue) {
+    return getSetting(key, std::move(String(defaultValue)));
 }
 
-template<>
-bool setSetting(const settings_key_t& key, const String& value) {
-    return settings::kv_store.set(key.toString(), value);
+String getSetting(const SettingsKey& key, const String& defaultValue) {
+    auto result = settings::kv_store.get(key.toString());
+    if (!result) {
+        result.value = defaultValue;
+    }
+
+    return result.value;
 }
 
-bool delSetting(const settings_key_t& key) {
-    return settings::kv_store.del(key.toString());
+String getSetting(const SettingsKey& key, String&& defaultValue) {
+    auto result = settings::kv_store.get(key.toString());
+    if (!result) {
+        result.value = std::move(defaultValue);
+    }
+
+    return result.value;
 }
 
-bool hasSetting(const settings_key_t& key) {
-    return settings::kv_store.has(key.toString());
+bool delSetting(const String& key) {
+    return settings::kv_store.del(key);
+}
+
+bool delSetting(const SettingsKey& key) {
+    return delSetting(key.toString());
+}
+
+bool delSetting(const char* key) {
+    return delSetting(String(key));
+}
+
+bool delSetting(const __FlashStringHelper* key) {
+    return delSetting(String(key));
+}
+
+bool hasSetting(const String& key) {
+    return settings::kv_store.has(key);
+}
+
+bool hasSetting(const SettingsKey& key) {
+    return hasSetting(key.toString());
+}
+
+bool hasSetting(const char* key) {
+    return hasSetting(String(key));
+}
+
+bool hasSetting(const __FlashStringHelper* key) {
+    return hasSetting(String(key));
 }
 
 void saveSettings() {
-    #if not SETTINGS_AUTOSAVE
-        eepromCommit();
-    #endif
+#if not SETTINGS_AUTOSAVE
+    eepromCommit();
+#endif
+}
+
+void autosaveSettings() {
+#if SETTINGS_AUTOSAVE
+    eepromCommit();
+#endif
 }
 
 void resetSettings() {
-    auto* ptr = EEPROMr.getDataPtr();
-    std::fill(ptr + EepromReservedSize, ptr + EepromSize, 0xFF);
-    EEPROMr.commit();
+    eepromClear();
 }
 
 // -----------------------------------------------------------------------------
@@ -493,22 +545,21 @@ void settingsSetup() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext& ctx) {
         espurnaReload();
-        terminalOK();
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext&) {
-        resetSettings();
-        terminalOK();
+    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext& ctx) {
+        factoryReset();
+        terminalOK(ctx);
     });
 
-    #if not SETTINGS_AUTOSAVE
-        terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext&) {
-            eepromCommit();
-            terminalOK();
-        });
-    #endif
-
+#if not SETTINGS_AUTOSAVE
+    terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext& ctx) {
+        eepromCommit();
+        terminalOK(ctx);
+    });
+#endif
 
 }

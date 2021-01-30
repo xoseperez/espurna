@@ -23,7 +23,7 @@ void otaPrintError() {
     }
 }
 
-bool otaFinalize(size_t size, int reason, bool evenIfRemaining) {
+bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining) {
     if (Update.isRunning() && Update.end(evenIfRemaining)) {
         DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
         deferredReset(500, reason);
@@ -106,7 +106,7 @@ void otaSetup() {
         if ((0xA55A == rtcmem[64]) && (0xA55A == rtcmem[68])) {
             DEBUG_MSG_P(PSTR("[OTA] Detected TASMOTA OTA, resetting the device...\n"));
             rtcmem[64] = rtcmem[68] = 0;
-            customResetReason(CUSTOM_RESET_TERMINAL);
+            customResetReason(CustomResetReason::Factory);
             resetSettings();
             eraseSDKConfig();
             *((int*) 0) = 0;

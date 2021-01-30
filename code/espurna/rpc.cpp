@@ -21,11 +21,11 @@ bool rpcHandleAction(const String& action) {
     if (action.equals("reboot")) {
         result = true;
         schedule_function([]() {
-            deferredReset(100, CUSTOM_RESET_RPC);
+            deferredReset(100, CustomResetReason::Rpc);
         });
     } else if (action.equals("heartbeat")) {
         result = true;
-        schedule_function(heartbeat);
+        systemScheduleHeartbeat();
     }
     return result;
 }

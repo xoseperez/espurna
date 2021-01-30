@@ -19,13 +19,17 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <coredecls.h>
 #include <Ticker.h>
 
+#include <lwip/apps/sntp.h>
+#include <TZ.h>
+
 static_assert(
     (SNTP_SERVER_DNS == 1),
     "lwip must be configured with SNTP_SERVER_DNS"
 );
 
 #include "config/buildtime.h"
-#include "debug.h"
+
+#include "ntp_timelib.h"
 #include "broker.h"
 #include "ws.h"
 
@@ -166,13 +170,15 @@ void _ntpWebSocketOnConnected(JsonObject& root) {
 
 #endif
 
-// TODO: mention possibility of multiple servers
 String _ntpGetServer() {
     String server;
 
     server = sntp_getservername(0);
     if (!server.length()) {
-        server = IPAddress(sntp_getserver(0)).toString();
+        auto ip = IPAddress(sntp_getserver(0));
+        if (ip) {
+            server = ip.toString();
+        }
     }
 
     return server;
@@ -220,20 +226,38 @@ void _ntpReport() {
 }
 
 void _ntpConfigure() {
+    // Ignore or accept the DHCP SNTP option
+    // When enabled, it is possible that lwip will replace the NTP server pointer from under us
+    sntp_servermode_dhcp(getSetting("ntpDhcp", 1 == NTP_DHCP_SERVER));
+
     // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
-    const auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
+    // but, String() already handles every char pointer as a flash-string
+    auto cfg_tz = getSetting("ntpTZ", NTP_TIMEZONE);
     const char* active_tz = getenv("TZ");
-    if (cfg_tz != active_tz) {
-        setenv("TZ", cfg_tz.c_str(), 1);
+
+    bool changed = cfg_tz != active_tz;
+    if (changed) {
+        if (cfg_tz.length()) {
+            setenv("TZ", cfg_tz.c_str(), 1);
+        } else {
+            unsetenv("TZ");
+        }
         tzset();
     }
 
     const auto cfg_server = getSetting("ntpServer", F(NTP_SERVER));
     const auto active_server = _ntpGetServer();
-    if (cfg_tz != active_tz) {
+    changed = (cfg_server != active_server) || changed;
+
+    // We skip configTime() API since we already set the TZ just above
+    // (and most of the time we expect NTP server to proxy to multiple servers instead of defining more than one here)
+    if (changed) {
+        sntp_stop();
         _ntp_server = cfg_server;
-        configTime(cfg_tz.c_str(), _ntp_server.c_str());
-        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(), cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
+        sntp_setservername(0, _ntp_server.c_str());
+        sntp_init();
+        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(),
+                cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
 
@@ -244,7 +268,7 @@ bool ntpSynced() {
 }
 
 String ntpDateTime(tm* timestruct) {
-    char buffer[20];
+    char buffer[32];
     snprintf_P(buffer, sizeof(buffer),
         PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
         timestruct->tm_year + 1900,
@@ -296,6 +320,7 @@ void _ntpBrokerCallback() {
     static int last_minute = -1;
 
     String datetime;
+
     if ((last_minute != now_minute) || (last_hour != now_hour)) {
         datetime = ntpDateTime(&local_tm);
     }
@@ -303,12 +328,12 @@ void _ntpBrokerCallback() {
     // notify subscribers about each tick interval (note that both can happen simultaneously)
     if (last_hour != now_hour) {
         last_hour = now_hour;
-        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime.c_str());
+        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime);
     }
 
     if (last_minute != now_minute) {
         last_minute = now_minute;
-        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime.c_str());
+        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime);
     }
 
     // try to autocorrect each invocation
@@ -348,6 +373,7 @@ void _ntpSetTimestamp(time_t ts) {
 // -----------------------------------------------------------------------------
 
 void _ntpConvertLegacyOffsets() {
+    bool save { true };
     bool found { false };
 
     bool europe { true };
@@ -356,7 +382,9 @@ void _ntpConvertLegacyOffsets() {
 
     settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         const auto key = kv.key.read();
-        if (key == F("ntpOffset")) {
+        if (key == F("ntpTZ")) {
+            save = false;
+        } else if (key == F("ntpOffset")) {
             offset = kv.value.read().toInt();
             found = true;
         } else if (key == F("ntpDST")) {
@@ -368,34 +396,31 @@ void _ntpConvertLegacyOffsets() {
         }
     });
 
-    if (!found) {
-        return;
-    }
+    if (save && found) {
+        // XXX: only expect offsets in hours
+        String custom { europe ? F("CET") : F("CST") };
+        custom.reserve(32);
 
-    // XXX: only expect offsets in hours
-    String custom { europe ? F("CET") : F("CST") };
-    custom.reserve(32);
-
-    if (offset > 0) {
-        custom += '-';
-    }
-    custom += abs(offset) / 60;
-
-    if (dst) {
-        custom += europe ? F("CEST") : F("EDT");
-        if (europe) {
-            custom += F(",M3.5.0,M10.5.0/3");
-        } else {
-            custom += F(",M3.2.0,M11.1.0");
+        if (offset > 0) {
+            custom += '-';
         }
+        custom += abs(offset) / 60;
+
+        if (dst) {
+            custom += europe ? F("CEST") : F("EDT");
+            if (europe) {
+                custom += F(",M3.5.0,M10.5.0/3");
+            } else {
+                custom += F(",M3.2.0,M11.1.0");
+            }
+        }
+
+        setSetting("ntpTZ", custom);
     }
 
     delSetting("ntpOffset");
     delSetting("ntpDST");
     delSetting("ntpRegion");
-
-    setSetting("ntpTZ", custom);
-
 }
 
 void ntpSetup() {
@@ -407,9 +432,8 @@ void ntpSetup() {
 
     _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
     _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
-    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %us, Update delay: %us\n"),
-        _ntp_startup_delay, _ntp_update_delay
-    );
+    DEBUG_MSG_P(PSTR("[NTP] Startup delay: %u (s), Update delay: %u (s)\n"),
+        _ntp_startup_delay, _ntp_update_delay);
 
     _ntp_startup_delay = _ntp_startup_delay * 1000;
     _ntp_update_delay = _ntp_update_delay * 1000;
@@ -428,8 +452,20 @@ void ntpSetup() {
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
     static WiFiEventHandler on_sta = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP) {
-        const auto server = _ntpGetServer();
-        if (sntp_enabled() && (!_ntp_server.length() || (server != _ntp_server))) {
+        if (!sntp_enabled()) {
+            return;
+        }
+
+        auto server = _ntpGetServer();
+        if (!server.length()) {
+            DEBUG_MSG_P(PSTR("[NTP] Updating `ntpDhcp` to ignore the DHCP values\n"));
+            setSetting("ntpDhcp", "0");
+            sntp_servermode_dhcp(0);
+            schedule_function(_ntpConfigure);
+            return;
+        }
+
+        if (!_ntp_server.length() || (server != _ntp_server)) {
             DEBUG_MSG_P(PSTR("[NTP] Updating `ntpServer` setting from DHCP: %s\n"), server.c_str());
             _ntp_server = server;
             setSetting("ntpServer", server);

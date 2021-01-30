@@ -14,24 +14,27 @@ var numReload = 0;
 var configurationSaved = false;
 var ws_pingpong;
 
+//removeIf(!light)
+var colorPicker;
 var useWhite = false;
 var useCCT = false;
+//endRemoveIf(!light)
 
 var now = 0;
 var ago = 0;
 
-<!-- removeIf(!rfm69)-->
+//removeIf(!rfm69)
 var packets;
 var filters = [];
-<!-- endRemoveIf(!rfm69)-->
+//endRemoveIf(!rfm69)
 
-<!-- removeIf(!sensor)-->
+//removeIf(!sensor)
 var Magnitudes = [];
 var MagnitudeErrors = {};
 var MagnitudeNames = {};
 var MagnitudeTypePrefixes = {};
 var MagnitudePrefixTypes = {};
-<!-- endRemoveIf(!sensor)-->
+//endRemoveIf(!sensor)
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -63,6 +66,31 @@ $.fn.enterKey = function (fnc) {
         });
     });
 };
+
+function followScroll(id, threshold) {
+    if (threshold === undefined) {
+        threshold = 90;
+    }
+
+    var elem = document.getElementById(id);
+    var offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
+    if (offset > threshold) {
+        elem.scrollTop = elem.scrollHeight;
+    }
+}
+
+function fromSchema(source, schema) {
+    if (schema.length !== source.length) {
+        throw "Schema mismatch!";
+    }
+
+    var target = {};
+    schema.forEach(function(key, index) {
+        target[key] = source[index];
+    });
+
+    return target;
+}
 
 function keepTime() {
 
@@ -212,6 +240,26 @@ function isGroupValue(value) {
     return names.indexOf(value) >= 0;
 }
 
+function bitsetToValues(bitset) {
+    var values = [];
+    for (var index = 0; index < 31; ++index) {
+        if (bitset & (1 << index)) {
+            values.push(String(index));
+        }
+    }
+
+    return values;
+}
+
+function valuesToBitset(values) {
+    var result = 0;
+    for (var value of values) {
+        result |= 1 << parseInt(value);
+    }
+
+    return result;
+}
+
 function getValue(element) {
 
     if ($(element).attr("type") === "checkbox") {
@@ -220,6 +268,8 @@ function getValue(element) {
         if (!$(element).prop("checked")) {
             return null;
         }
+    } else if ($(element).attr("multiple") !== undefined) {
+        return valuesToBitset($(element).val());
     }
 
     return $(element).val();
@@ -392,7 +442,7 @@ function moduleVisible(module) {
     $(".module-" + module).css("display", "inherit");
 }
 
-<!-- removeIf(!thermostat)-->
+//removeIf(!thermostat)
 function checkTempRangeMin() {
     var min = parseInt($("#tempRangeMinInput").val(), 10);
     var max = parseInt($("#tempRangeMaxInput").val(), 10);
@@ -415,7 +465,7 @@ function doResetThermostatCounters(ask) {
         "Are you sure you want to reset burning counters?";
     return doAction(question, "thermostat_reset_counters");
 }
-<!-- endRemoveIf(!thermostat)-->
+//endRemoveIf(!thermostat)
 
 function initSelectGPIO(select) {
     // TODO: properly lock used GPIOs via locking and apply the mask here
@@ -754,16 +804,8 @@ function doToggle(id, value) {
 function doScan() {
     $("#scanResult").html("");
     $("div.scan.loading").show();
+    $("#button-wifi-scan").attr("disabled", true);
     sendAction("scan", {});
-    return false;
-}
-
-function doHAConfig() {
-    $("#haConfig")
-        .text("")
-        .height(0)
-        .show();
-    sendAction("haconfig", {});
     return false;
 }
 
@@ -772,6 +814,7 @@ function doDebugCommand() {
     var command = el.val();
     el.val("");
     sendAction("dbgcmd", {command: command});
+    followScroll("weblog", 0);
     return false;
 }
 
@@ -780,7 +823,7 @@ function doDebugClear() {
     return false;
 }
 
-<!-- removeIf(!rfm69)-->
+//removeIf(!rfm69)
 
 function doClearCounts() {
     sendAction("clear-counts", {});
@@ -828,7 +871,7 @@ function doClearFilters() {
     return false;
 }
 
-<!-- endRemoveIf(!rfm69)-->
+//endRemoveIf(!rfm69)
 
 function delParent() {
     var parent = $(this).parent().parent();
@@ -871,7 +914,7 @@ function createRelayList(data, container, template_name) {
 
 }
 
-<!-- removeIf(!sensor)-->
+//removeIf(!sensor)
 function createMagnitudeList(data, container, template_name) {
 
     var current = $("#" + container + " > div").length;
@@ -890,7 +933,7 @@ function createMagnitudeList(data, container, template_name) {
     }
 
 }
-<!-- endRemoveIf(!sensor)-->
+//endRemoveIf(!sensor)
 
 // -----------------------------------------------------------------------------
 // RPN Rules
@@ -924,7 +967,7 @@ function addRPNTopic() {
 // RFM69
 // -----------------------------------------------------------------------------
 
-<!-- removeIf(!rfm69)-->
+//removeIf(!rfm69)
 
 function addMapping() {
     var template = $("#nodeTemplate .pure-g")[0];
@@ -938,7 +981,7 @@ function addMapping() {
     line.appendTo("#mapping");
 }
 
-<!-- endRemoveIf(!rfm69)-->
+//endRemoveIf(!rfm69)
 
 // -----------------------------------------------------------------------------
 // Wifi
@@ -1085,28 +1128,49 @@ function addSchedule(values) {
 // Relays
 // -----------------------------------------------------------------------------
 
+function initRelayFromSchema(id, relay, schema) {
+    var result = fromSchema(relay, schema)
+    if (!result.name.length) {
+        result.name = "Switch #" + id;
+    }
+
+    return result;
+}
+
 function initRelays(data) {
 
     var current = $("#relays > div").length;
     if (current > 0) { return; }
 
+    var schema = data.schema;
     var template = $("#relayTemplate .pure-g")[0];
-    for (var i=0; i<data.length; i++) {
 
-        // Add relay fields
+    data["relays"].forEach(function(relay, id) {
+        var _relay = initRelayFromSchema(id, relay, schema);
+
         var line = $(template).clone();
-        $(".id", line).html(i);
-        $(":checkbox", line).prop('checked', data[i]).attr("data", i)
-            .prop("id", "relay" + i)
+
+        $("span.relay-name", line)
+            .text(_relay.name)
+            .attr("data", id);
+
+        $("input[type='checkbox']", line)
+            .prop('checked', false)
+            .prop('disabled', true)
+            .attr("data", id)
+            .prop("id", "relay" + id)
             .on("change", function (event) {
-                var id = parseInt($(event.target).attr("data"), 10);
+                var target= parseInt($(event.target).attr("data"), 10);
                 var status = $(event.target).prop("checked");
-                doToggle(id, status);
+                doToggle(target, status);
             });
-        $("label.toggle", line).prop("for", "relay" + i)
+
+        $("label.toggle", line)
+            .prop("for", "relay" + id);
+
         line.appendTo("#relays");
 
-    }
+    });
 
 }
 
@@ -1141,49 +1205,49 @@ function initRelayConfig(data) {
     var current = $("#relayConfig > legend").length; // there is a legend per relay
     if (current > 0) { return; }
 
-    var size = data.size;
-    var start = data.start;
-
     var template = $("#relayConfigTemplate").children();
+    var schema = data.schema;
 
-    for (var i=start; i<size; ++i) {
+    data["relays"].forEach(function(relay, id) {
+        var _relay = initRelayFromSchema(id, relay, schema);
         var line = $(template).clone();
 
-        $("span.id", line).html(i);
-        $("span.gpio", line).html(data.gpio[i]);
-        $("select[name='relayBoot']", line).val(data.boot[i]);
-        $("select[name='relayPulse']", line).val(data.pulse[i]);
-        $("input[name='relayTime']", line).val(data.pulse_time[i]);
+        $("span.name", line).html(_relay.name);
+        $("span.prov", line).html(_relay.prov);
+        $("select[name='relayBoot']", line).val(_relay.boot);
+        $("select[name='relayPulse']", line).val(_relay.pulse);
+        $("input[name='relayTime']", line).val(_relay.pulse_time);
 
-        if ("sch_last" in data) {
+        if (schema.includes("sch_last")) {
             $("input[name='relayLastSch']", line)
-                .prop('checked', data.sch_last[i])
-                .attr("id", "relayLastSch" + i)
-                .attr("name", "relayLastSch" + i)
-                .next().attr("for","relayLastSch" + (i));
+                .prop("checked", _relay.sch_last)
+                .attr("id", "relayLastSch" + id)
+                .attr("name", "relayLastSch" + id)
+                .next().attr("for","relayLastSch" + (id));
         }
 
-        if ("group" in data) {
-            $("input[name='mqttGroup']", line).val(data.group[i]);
+        if (schema.includes("group")) {
+            $("input[name='mqttGroup']", line).val(_relay.group);
         }
-        if ("group_sync" in data) {
-            $("select[name='mqttGroupSync']", line).val(data.group_sync[i]);
+        if (schema.includes("group_sync")) {
+            $("select[name='mqttGroupSync']", line).val(_relay.group_sync);
         }
-        if ("on_disc" in data) {
-            $("select[name='relayOnDisc']", line).val(data.on_disc[i]);
+        if (schema.includes("on_disc")) {
+            $("select[name='relayOnDisc']", line).val(_relay.on_disc);
         }
 
         setOriginalsFromValues($("input,select", line));
         line.appendTo("#relayConfig");
 
-        // Populate the relay SELECTs
+        // Populate the relay SELECTs on the configuration panel
         $("select.isrelay").append(
             $("<option></option>")
-                .attr("value", i)
-                .text("Switch #" + i)
+                .attr("value", id)
+                .text(name)
         );
 
-    }
+        ++id;
+    });
 
 }
 
@@ -1191,7 +1255,7 @@ function initRelayConfig(data) {
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
 
-<!-- removeIf(!sensor)-->
+//removeIf(!sensor)
 function initMagnitudes(data) {
 
     // check if already initialized (each magnitude is inside div.pure-g)
@@ -1220,13 +1284,13 @@ function initMagnitudes(data) {
     }
 
 }
-<!-- endRemoveIf(!sensor)-->
+//endRemoveIf(!sensor)
 
 // -----------------------------------------------------------------------------
 // Curtains
 // -----------------------------------------------------------------------------
 
-<!-- removeIf(!curtain)-->
+//removeIf(!curtain)
 
 //Create the controls for one curtain. It is called when curtain is updated (so created the first time)
 //Let this there as we plan to have more than one curtain per switch
@@ -1234,7 +1298,7 @@ function initCurtain(data) {
 
     var current = $("#curtains > div").length;
     if (current > 0) { return; }
-  
+
     // add curtain template (prepare multi switches)
     var template = $("#curtainTemplate").children();
     var line = $(template).clone();
@@ -1242,15 +1306,15 @@ function initCurtain(data) {
     $(line).find(".button-curtain-open").on("click", function() {
         sendAction("curtainAction", {button: 1});
         $(this).css('background', 'red');
-    });    
+    });
     $(line).find(".button-curtain-pause").on("click", function() {
         sendAction("curtainAction", {button: 0});
         $(this).css('background', 'red');
-    });    
+    });
     $(line).find(".button-curtain-close").on("click", function() {
         sendAction("curtainAction", {button: 2});
         $(this).css('background', 'red');
-    });    
+    });
     line.appendTo("#curtains");
 
     // init curtain slider
@@ -1276,76 +1340,76 @@ function initCurtainConfig(data) {
     );
 }
 
-<!-- endRemoveIf(!curtain)-->
+//endRemoveIf(!curtain)
 
 // -----------------------------------------------------------------------------
 // Lights
 // -----------------------------------------------------------------------------
 
-<!-- removeIf(!light)-->
+//removeIf(!light)
 
-// wheelColorPicker accepts:
-//   hsv(0...360,0...1,0...1)
-//   hsv(0...100%,0...100%,0...100%)
-// While we use:
-//   hsv(0...360,0...100%,0...100%)
-
-function _hsv_round(value) {
-    return Math.round(value * 100) / 100;
+function colorToHsvString(color) {
+    var h = String(Math.round(color.hsv.h));
+    var s = String(Math.round(color.hsv.s));
+    var v = String(Math.round(color.hsv.v));
+    return h + "," + s + "," + v;
 }
 
-function getPickerRGB(picker) {
-    return $(picker).wheelColorPicker("getValue", "css");
+function hsvStringToColor(hsv) {
+    var parts = hsv.split(",");
+    return {
+        h: parseInt(parts[0]),
+        s: parseInt(parts[1]),
+        v: parseInt(parts[2])
+    };
 }
 
-function setPickerRGB(picker, value) {
-    $(picker).wheelColorPicker("setValue", value, true);
+function colorSlider(type) {
+    return {component: iro.ui.Slider, options: {sliderType: type}};
 }
 
-// TODO: use pct values instead of doing conversion?
-function getPickerHSV(picker) {
-    var color = $(picker).wheelColorPicker("getColor");
-    return String(Math.ceil(_hsv_round(color.h) * 360))
-        + "," + String(Math.ceil(_hsv_round(color.s) * 100))
-        + "," + String(Math.ceil(_hsv_round(color.v) * 100));
+function colorWheel() {
+    return {component: iro.ui.Wheel, options: {}};
 }
 
-function setPickerHSV(picker, value) {
-    if (value === getPickerHSV(picker)) return;
-    var chunks = value.split(",");
-    $(picker).wheelColorPicker("setColor", {
-        h: _hsv_round(chunks[0] / 360),
-        s: _hsv_round(chunks[1] / 100),
-        v: _hsv_round(chunks[2] / 100)
-    });
+function colorBox() {
+    return {component: iro.ui.Box, options: {}};
 }
 
-function initColor(cfg) {
-    var rgb = false;
-    if (typeof cfg === "object") {
-        rgb = cfg.rgb;
+function updateColor(mode, value) {
+    if (colorPicker) {
+        if (mode === "rgb") {
+            colorPicker.color.hexString = value;
+        } else if (mode === "hsv") {
+            colorPicker.color.hsv = hsvStringToColor(value);
+        }
+        return;
     }
 
-    // check if already initialized
-    var done = $("#colors > div").length;
-    if (done > 0) { return; }
+    // TODO: useRGB -> ltWheel?
+    // TODO: always show wheel + sliders like before?
+    var layout = []
+    if (mode === "rgb") {
+        layout.push(colorWheel());
+        layout.push(colorSlider("value"));
+    } else if (mode === "hsv") {
+        layout.push(colorBox());
+        layout.push(colorSlider("hue"));
+    }
 
-    // add template
-    var template = $("#colorTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colors");
+    var options = {
+        color: (mode === "rgb") ? value : hsvStringToColor(value),
+        layout: layout
+    };
 
-    // init color wheel
-    $("input[name='color']").wheelColorPicker({
-        sliders: (rgb ? "wrgbp" : "whsp")
-    }).on("sliderup", function() {
-        if (rgb) {
-            sendAction("color", {rgb: getPickerRGB(this)});
-        } else {
-            sendAction("color", {hsv: getPickerHSV(this)});
+    colorPicker = new iro.ColorPicker("#color", options);
+    colorPicker.on("input:change", function(color) {
+        if (mode === "rgb") {
+            sendAction("color", {rgb: color.hexString});
+        } else if (mode === "hsv") {
+            sendAction("color", {hsv: colorToHsvString(color)});
         }
     });
-
 }
 
 function initCCT() {
@@ -1370,12 +1434,9 @@ function initChannels(num) {
     var done = $("#channels > div").length > 0;
     if (done) { return; }
 
-    // does it have color channels?
-    var colors = $("#colors > div").length > 0;
-
     // calculate channels to create
     var max = num;
-    if (colors) {
+    if (colorPicker) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
@@ -1429,13 +1490,13 @@ function initChannels(num) {
     });
 
 }
-<!-- endRemoveIf(!light)-->
+//endRemoveIf(!light)
 
 // -----------------------------------------------------------------------------
 // RFBridge
 // -----------------------------------------------------------------------------
 
-<!-- removeIf(!rfbridge)-->
+//removeIf(!rfbridge)
 
 function rfbLearn() {
     var parent = $(this).parents(".pure-g");
@@ -1472,13 +1533,13 @@ function addRfbNode() {
 
     return line;
 }
-<!-- endRemoveIf(!rfbridge)-->
+//endRemoveIf(!rfbridge)
 
 // -----------------------------------------------------------------------------
 // LightFox
 // -----------------------------------------------------------------------------
 
-<!-- removeIf(!lightfox)-->
+//removeIf(!lightfox)
 
 function lightfoxLearn() {
     sendAction("lightfoxLearn", {});
@@ -1515,7 +1576,7 @@ function initLightfox(data, relayCount) {
     $(".button-lightfox-clear").off("click").click(lightfoxClear);
 
 }
-<!-- endRemoveIf(!lightfox)-->
+//endRemoveIf(!lightfox)
 
 // -----------------------------------------------------------------------------
 // Processing
@@ -1528,10 +1589,10 @@ function processData(data) {
     // title
     if ("app_name" in data) {
         var title = data.app_name;
-		if ("app_version" in data) {
-			title = title + " " + data.app_version;
-		}
-        $("span[name=title]").html(title);
+        if ("app_version" in data) {
+            $("span[name=title]").html(data.app_version);
+            title = title + " " + data.app_version;
+        }
         if ("hostname" in data) {
             title = data.hostname + " - " + title;
         }
@@ -1566,7 +1627,7 @@ function processData(data) {
         // RFBridge
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!rfbridge)-->
+        //removeIf(!rfbridge)
 
         if ("rfbCount" === key) {
             for (i=0; i<data.rfbCount; i++) { addRfbNode(); }
@@ -1590,26 +1651,26 @@ function processData(data) {
             return;
         }
 
-        <!-- endRemoveIf(!rfbridge)-->
+        //endRemoveIf(!rfbridge)
 
         // ---------------------------------------------------------------------
         // LightFox
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!lightfox)-->
+        //removeIf(!lightfox)
 
         if ("lightfoxButtons" === key) {
             initLightfox(data["lightfoxButtons"], data["lightfoxRelayCount"]);
             return;
         }
 
-        <!-- endRemoveIf(!lightfox)-->
+        //endRemoveIf(!lightfox)
 
         // ---------------------------------------------------------------------
         // RFM69
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!rfm69)-->
+        //removeIf(!rfm69)
 
         if (key == "packet") {
             var packet = data.packet;
@@ -1649,7 +1710,7 @@ function processData(data) {
             return;
         }
 
-        <!-- endRemoveIf(!rfm69)-->
+        //endRemoveIf(!rfm69)
 
         // ---------------------------------------------------------------------
         // RPN Rules
@@ -1694,14 +1755,14 @@ function processData(data) {
             }
 			return;
         }
-        
+
         if (key == "rpnNames") return;
 
         // ---------------------------------------------------------------------
         // Curtains
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!curtain)-->
+        //removeIf(!curtain)
 
         function applyCurtain(a, b) {
             $("#curtainGetPicture").css('background', 'linear-gradient(' + a + ', black ' + b + '%, #a0d6ff ' + b + '%)');
@@ -1726,7 +1787,7 @@ function processData(data) {
             }
             $("#curtainSet").val(value.set);
 
-            if(!value.moving) { 
+            if(!value.moving) {
                 $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
             } else {
                 if(!value.button)
@@ -1743,23 +1804,21 @@ function processData(data) {
             }
             return;
         }
-        <!-- endRemoveIf(!curtain)-->
+        //endRemoveIf(!curtain)
 
         // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!light)-->
+        //removeIf(!light)
 
-        if ("rgb" === key) {
-            initColor({rgb: true});
-            setPickerRGB($("input[name='color']"), value);
+        if ("lightstate" === key) {
+            $("#color").toggle(value);
             return;
         }
 
-        if ("hsv" === key) {
-            initColor({hsv: true});
-            setPickerHSV($("input[name='color']"), value);
+        if (("rgb" === key) || ("hsv" === key)) {
+            updateColor(key, value);
             return;
         }
 
@@ -1797,13 +1856,13 @@ function processData(data) {
             useCCT = value;
         }
 
-        <!-- endRemoveIf(!light)-->
+        //endRemoveIf(!light)
 
         // ---------------------------------------------------------------------
         // Sensors & Magnitudes
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!sensor)-->
+        //removeIf(!sensor)
 
         {
             var position = key.indexOf("Correction");
@@ -1877,7 +1936,7 @@ function processData(data) {
             return;
         }
 
-        <!-- endRemoveIf(!sensor)-->
+        //endRemoveIf(!sensor)
 
         // ---------------------------------------------------------------------
         // WiFi
@@ -1886,36 +1945,15 @@ function processData(data) {
         if ("wifi" === key) {
             maxNetworks = parseInt(value["max"], 10);
             value["networks"].forEach(function(network) {
-                var schema = value["schema"];
-                if (schema.length !== network.length) {
-                    throw "WiFi schema mismatch!";
-                }
-
-                var _network = {};
-                schema.forEach(function(key, index) {
-                    _network[key] = network[index];
-                });
-
-                addNetwork(_network);
+                addNetwork(fromSchema(network, value.schema));
             });
             return;
         }
 
         if ("scanResult" === key) {
             $("div.scan.loading").hide();
+            $("#button-wifi-scan").attr("disabled", false);
             $("#scanResult").show();
-        }
-
-        // -----------------------------------------------------------------------------
-        // Home Assistant
-        // -----------------------------------------------------------------------------
-
-        if ("haConfig" === key) {
-            send("{}");
-            $("#haConfig")
-                .append(new Text(value))
-                .height($("#haConfig")[0].scrollHeight);
-            return;
         }
 
         // -----------------------------------------------------------------------------
@@ -1941,15 +1979,14 @@ function processData(data) {
         // Relays
         // ---------------------------------------------------------------------
 
-        if ("relayState" === key) {
-            initRelays(value.status);
-            updateRelays(value);
+        if ("relayConfig" === key) {
+            initRelays(value);
+            initRelayConfig(value);
             return;
         }
 
-        // Relay configuration
-        if ("relayConfig" === key) {
-            initRelayConfig(value);
+        if ("relayState" === key) {
+            updateRelays(value);
             return;
         }
 
@@ -1957,7 +1994,7 @@ function processData(data) {
         // Curtain(s)
         // ---------------------------------------------------------------------
 
-        <!-- removeIf(!curtain)-->
+        //removeIf(!curtain)
 
         // Relay configuration
         if ("curtainConfig" === key) {
@@ -1965,7 +2002,7 @@ function processData(data) {
             return;
         }
 
-        <!-- endRemoveIf(!curtain)-->
+        //endRemoveIf(!curtain)
 
 
 
@@ -1978,20 +2015,13 @@ function processData(data) {
 
             var schema = value["schema"];
             value["list"].forEach(function(led_data, index) {
-                if (schema.length !== led_data.length) {
-                    throw "LED schema mismatch!";
-                }
-
-                var led = {};
-                schema.forEach(function(key, index) {
-                    led[key] = led_data[index];
-                });
-
                 var line = $($("#ledConfigTemplate").children()).clone();
 
                 $("span.id", line).html(index);
                 $("select", line).attr("data", index);
                 $("input", line).attr("data", index);
+
+                var led = fromSchema(led_data, schema);
 
                 $("select[name='ledGPIO']", line).val(led.GPIO);
                 // XXX: checkbox implementation depends on unique id
@@ -2018,12 +2048,12 @@ function processData(data) {
         }
 
         // Domoticz - Magnitudes
-        <!-- removeIf(!sensor)-->
+        //removeIf(!sensor)
         if ("dczMagnitudes" === key) {
             createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
             return;
         }
-        <!-- endRemoveIf(!sensor)-->
+        //endRemoveIf(!sensor)
 
         // ---------------------------------------------------------------------
         // Thingspeak
@@ -2036,12 +2066,12 @@ function processData(data) {
         }
 
         // Thingspeak - Magnitudes
-        <!-- removeIf(!sensor)-->
+        //removeIf(!sensor)
         if ("tspkMagnitudes" === key) {
             createMagnitudeList(value, "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
         }
-        <!-- endRemoveIf(!sensor)-->
+        //endRemoveIf(!sensor)
 
         // ---------------------------------------------------------------------
         // HTTP API
@@ -2081,7 +2111,7 @@ function processData(data) {
                 $("#weblog").append(new Text(msg[i]));
             }
 
-            $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
+            followScroll("weblog");
             return;
         }
 
@@ -2100,7 +2130,7 @@ function processData(data) {
         }
 
         if ("now" === key) {
-            now = value;
+            now = parseInt(value, 10);
             return;
         }
 
@@ -2124,11 +2154,11 @@ function processData(data) {
             var days    = uptime;
             value = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
         }
-        <!-- removeIf(!thermostat)-->
+        //removeIf(!thermostat)
         if ("tmpUnits" == key) {
             $("span.tmpUnit").html(data[key] == 3 ? "ºF" : "ºC");
         }
-        <!-- endRemoveIf(!thermostat)-->
+        //endRemoveIf(!thermostat)
 
         // ---------------------------------------------------------------------
         // Matching
@@ -2173,7 +2203,11 @@ function processData(data) {
         // Look for SELECTs
         var select = $("select[name='" + key + "']");
         if (select.length > 0) {
-            select.val(value);
+            if (select.attr("multiple") !== undefined) {
+                select.val(bitsetToValues(value));
+            } else {
+                select.val(value);
+            }
             elems.push(select);
         }
 
@@ -2193,6 +2227,11 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
+
+    if ($(this).attr("multiple") !== undefined) {
+        newValue = newValue.join(",");
+    }
+
     var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 
@@ -2304,13 +2343,13 @@ $(function() {
     $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
+    $("#button-wifi-scan").on("click", doScan);
+
     $(".button-update").on("click", doUpdate);
     $(".button-update-password").on("click", doUpdatePassword);
     $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
-    $(".button-wifi-scan").on("click", doScan);
-    $(".button-ha-config").on("click", doHAConfig);
     $(".button-dbgcmd").on("click", doDebugCommand);
     $("input[name='dbgcmd']").enterKey(doDebugCommand);
     $(".button-dbg-clear").on("click", doDebugClear);
@@ -2320,7 +2359,7 @@ $(function() {
     $("#uploader").on("change", onFileUpload);
     $(".button-upgrade").on("click", doUpgrade);
 
-    <!-- removeIf(!garland)-->
+    //removeIf(!garland)
     $(".checkbox-garland-enable").on("change", function() {
         sendAction("garland_switch", {status: $(this).prop("checked") ? 1 : 0});
     });
@@ -2336,11 +2375,11 @@ $(function() {
     $(".button-garland-set-default").on("click", function() {
         sendAction("garland_set_default", {});
     });
-    <!-- endRemoveIf(!garland)-->
+    //endRemoveIf(!garland)
 
-    <!-- removeIf(!thermostat)-->
+    //removeIf(!thermostat)
     $(".button-thermostat-reset-counters").on('click', doResetThermostatCounters);
-    <!-- endRemoveIf(!thermostat)-->
+    //endRemoveIf(!thermostat)
 
     $(".button-apikey").on("click", generateAPIKey);
     $(".button-upgrade-browse").on("click", function() {
@@ -2358,24 +2397,24 @@ $(function() {
     $(".button-add-switch-schedule").on("click", function() {
         addSchedule({schType: 1, schSwitch: -1});
     });
-    <!-- removeIf(!light)-->
+    //removeIf(!light)
     $(".button-add-light-schedule").on("click", function() {
         addSchedule({schType: 2, schSwitch: -1});
     });
-    <!-- endRemoveIf(!light)-->
+    //endRemoveIf(!light)
 
-    <!-- removeIf(!curtain)-->
+    //removeIf(!curtain)
     $(".button-add-curtain-schedule").on("click", function() {
         addSchedule({schType: 3, schSwitch: -1});
     });
-    <!-- endRemoveIf(!curtain)-->
+    //endRemoveIf(!curtain)
 
     $(".button-add-rpnrule").on('click', addRPNRule);
     $(".button-add-rpntopic").on('click', addRPNTopic);
 
     $(".button-del-parent").on('click', delParent);
 
-    <!-- removeIf(!rfm69)-->
+    //removeIf(!rfm69)
     $(".button-add-mapping").on('click', addMapping);
     $(".button-clear-counts").on('click', doClearCounts);
     $(".button-clear-messages").on('click', doClearMessages);
@@ -2387,7 +2426,7 @@ $(function() {
     for (var i = 0; i < packets.columns()[0].length; i++) {
         filters[i] = false;
     }
-    <!-- endRemoveIf(!rfm69)-->
+    //endRemoveIf(!rfm69)
 
     $(".gpio-select").each(function(_, elem) {
         initSelectGPIO(elem)

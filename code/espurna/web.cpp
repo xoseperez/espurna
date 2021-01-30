@@ -213,20 +213,19 @@ bool _webConfigSuccess = false;
 std::vector<web_request_callback_f> _web_request_callbacks;
 std::vector<web_body_callback_f> _web_body_callbacks;
 
-constexpr const size_t WEB_CONFIG_BUFFER_MAX = 4096;
+constexpr unsigned long WebConfigBufferMax { 4096ul };
 
 // -----------------------------------------------------------------------------
 // HOOKS
 // -----------------------------------------------------------------------------
 
 void _onReset(AsyncWebServerRequest *request) {
-
     webLog(request);
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    deferredReset(100, CUSTOM_RESET_HTTP);
+    deferredReset(100, CustomResetReason::Web);
     request->send(200);
 }
 
@@ -240,7 +239,7 @@ void _onDiscover(AsyncWebServerRequest *request) {
     StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
-    root["version"] = APP_VERSION;
+    root["version"] = getVersion().c_str();
     root["device"] = device.c_str();
     root["hostname"] = hostname.c_str();
 
@@ -267,8 +266,8 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
 
-    response->printf("{\n\"app\": \"%s\"", APP_NAME);
-    response->printf(",\n\"version\": \"%s\"", APP_VERSION);
+    response->printf("{\n\"app\": \"" APP_NAME "\"");
+    response->printf(",\n\"version\": \"%s\"", getVersion().c_str());
     response->printf(",\n\"backup\": \"1\"");
     #if NTP_SUPPORT
         response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
@@ -317,7 +316,7 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String filename, size_t i
 
     // Copy
     if (len > 0) {
-        if ((_webConfigBuffer->size() + len) > std::min(WEB_CONFIG_BUFFER_MAX, getFreeHeap() - sizeof(std::vector<uint8_t>))) {
+        if ((_webConfigBuffer->size() + len) > std::min(WebConfigBufferMax, systemFreeHeap() - sizeof(std::vector<uint8_t>))) {
             delete _webConfigBuffer;
             _webConfigBuffer = nullptr;
             request->send(500);
@@ -356,8 +355,8 @@ void _onHome(AsyncWebServerRequest *request) {
 
             // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
             // This is necessary when a TLS connection is open since it sucks too much memory
-            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
-            size_t max = (getFreeHeap() / 3) & 0xFFE0;
+            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), systemFreeHeap());
+            size_t max = (systemFreeHeap() / 3) & 0xFFE0;
 
             AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 

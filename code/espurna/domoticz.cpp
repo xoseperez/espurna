@@ -112,9 +112,9 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
         }
     }
 
-    // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (unsigned char)
-    lightBrightness((root["Level"].as<unsigned char>() / 100.0) * Light::BRIGHTNESS_MAX);
-    lightUpdate(true, mqttForward());
+    // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (default 255)
+    lightBrightness((root["Level"].as<long>() / 100l) * Light::BRIGHTNESS_MAX);
+    lightUpdate();
 
 }
 
@@ -246,6 +246,11 @@ void domoticzSendMagnitude(unsigned char type, unsigned char index, double value
         );
         char svalue[2] = {status, '\0'};
         domoticzSend(key, static_cast<int>(value), svalue);
+    // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Air_quality
+    // nvalue contains the ppm
+    // svalue is not used (?)
+    } else if (MAGNITUDE_CO2 == type) {
+        domoticzSend(key, static_cast<int>(value), "");
     // Otherwise, send char string (nvalue is only for integers)
     } else {
         domoticzSend(key, 0, buffer);

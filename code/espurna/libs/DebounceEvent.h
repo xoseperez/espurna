@@ -74,7 +74,6 @@ namespace types {
         EventReleased
     };
 
-    using Pin = std::shared_ptr<BasePin>;
     using EventHandler = std::function<void(const EventEmitter& self, types::Event event, uint8_t count, unsigned long length)>;
 
 }
@@ -83,21 +82,20 @@ class EventEmitter {
 
     public:
 
-        EventEmitter(types::Pin pin, const types::Config& config = {types::Mode::Pushbutton, types::PinValue::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
-        EventEmitter(types::Pin pin, types::EventHandler callback, const types::Config& = {types::Mode::Pushbutton, types::PinValue::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(BasePinPtr&& pin, const types::Config& config = {types::Mode::Pushbutton, types::PinValue::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
+        EventEmitter(BasePinPtr&& pin, types::EventHandler callback, const types::Config& = {types::Mode::Pushbutton, types::PinValue::High, types::PinMode::Input}, unsigned long delay = DebounceDelay, unsigned long repeat = RepeatDelay);
 
         types::Event loop();
         bool isPressed();
 
-        const types::Pin getPin() const;
-        const types::Config getConfig() const;
+        const BasePinPtr& pin() const;
+        const types::Config& config() const;
 
         unsigned long getEventLength();
         unsigned long getEventCount();
 
     private:
-
-        types::Pin _pin;
+        BasePinPtr _pin;
         types::EventHandler _callback;
 
         const types::Config _config;

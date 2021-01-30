@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <MAX6675.h>
 
 #include <vector>

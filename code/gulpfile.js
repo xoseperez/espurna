@@ -26,36 +26,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Dependencies
 // -----------------------------------------------------------------------------
 
+const path = require('path');
+
 const gulp = require('gulp');
 const through = require('through2');
-
-const htmlmin = require('gulp-htmlmin');
-const inline = require('gulp-inline');
-const inlineImages = require('gulp-css-base64');
-const favicon = require('gulp-base64-favicon');
-const crass = require('gulp-crass');
 
 const htmllint = require('gulp-htmllint');
 const csslint = require('gulp-csslint');
 
+const htmlmin = require('html-minifier');
+
+const gzip = require('gulp-gzip');
+const inline = require('gulp-inline-source-html');
 const rename = require('gulp-rename');
 const replace = require('gulp-replace');
-const remover = require('gulp-remove-code');
-const gzip = require('gulp-gzip');
-const path = require('path');
 
 // -----------------------------------------------------------------------------
 // Configuration
 // -----------------------------------------------------------------------------
 
 const htmlFolder = 'html/';
-const configFolder = 'espurna/config/';
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
 
 // -----------------------------------------------------------------------------
 // Methods
 // -----------------------------------------------------------------------------
+
+var toMinifiedHtml = function(options) {
+    return through.obj(function (source, encoding, callback) {
+        if (source.isNull()) {
+            callback(null, source);
+            return;
+        }
+
+        var contents = source.contents.toString();
+        source.contents = Buffer.from(htmlmin.minify(contents, options));
+        callback(null, source);
+    });
+}
 
 var toHeader = function(name, debug) {
 
@@ -107,6 +116,93 @@ var htmllintReporter = function(filepath, issues) {
     }
 };
 
+// TODO: this is a roughly equivalent port of the gulp-remove-code,
+// which also uses regexp rules to filter in-between specially-formatted comment blocks
+
+var jsRegexp = function(module) {
+    return '//\\s*removeIf\\(!' + module + '\\)'
+            + '\\s*(\n|\r|.)*?'
+            + '//\\s*endRemoveIf\\(!' + module + '\\)';
+}
+
+var cssRegexp = function(module) {
+    return '/\\*\\s*removeIf\\(!' + module + '\\)\\s*\\*/'
+            + '\\s*(\n|\r|.)*?'
+            + '/\\*\\s*endRemoveIf\\(!' + module + '\\)\\s*\\*/';
+}
+
+var htmlRegexp = function(module) {
+    return '<!--\\s*removeIf\\(!' + module + '\\)\\s*-->'
+            + '\\s*(\n|\r|.)*?'
+            + '<!--\\s*endRemoveIf\\(!' + module + '\\)\\s*-->';
+}
+
+var generateRegexps = function(modules, func) {
+    var regexps = new Set();
+    for (const [module, enabled] of Object.entries(modules)) {
+        if (enabled) {
+            continue;
+        }
+
+        const expression = func(module);
+        const re = new RegExp(expression, 'gm');
+
+        regexps.add(re);
+    }
+
+    return regexps;
+}
+
+// TODO: use html parser here?
+// TODO: separate js files to include js, html & css and avoid 2 step regexp?
+
+var htmlRemover = function(modules) {
+    const regexps = generateRegexps(modules, htmlRegexp);
+
+    return through.obj(function (source, _, callback) {
+        if (source.isNull()) {
+            callback(null, source);
+            return;
+        }
+
+        var contents = source.contents.toString();
+        for (var regexp of regexps) {
+            contents = contents.replace(regexp, '');
+        }
+        source.contents = Buffer.from(contents);
+        callback(null, source);
+    });
+}
+
+var inlineHandler = function(modules) {
+    return function(source) {
+        if (((source.sourcepath === 'custom.css') || (source.sourcepath === 'custom.js'))) {
+            const filter = (source.type === 'css') ? cssRegexp : jsRegexp;
+            const regexps = generateRegexps(modules, filter);
+
+            var content = source.fileContent;
+            for (var regexp of regexps) {
+                content = content.replace(regexp, '');
+            }
+
+            source.fileContent = content;
+            return;
+        }
+
+        if (source.content) {
+            return;
+        }
+
+        // Just ignore the vendored libs, repackaging makes things worse for the size
+        const path = source.sourcepath;
+        if (path.endsWith('.min.js')) {
+            source.compress = false;
+        } else if (path.endsWith('.min.css')) {
+            source.compress = false;
+        }
+    };
+}
+
 var buildWebUI = function(module) {
 
     // Declare some modules as optional to remove with
@@ -151,21 +247,16 @@ var buildWebUI = function(module) {
                 'id-class-style': false,
                 'label-req-for': false,
                 'line-end-style': false,
+                'attr-req-value': false
             }
         }, htmllintReporter)).
-        pipe(favicon()).
-        pipe(inline({
-            base: htmlFolder,
-            js: [],
-            css: [crass, inlineImages],
-            disabledTypes: ['svg', 'img']
-        })).
-        pipe(remover(modules)).
-        pipe(htmlmin({
+        pipe(htmlRemover(modules)).
+        pipe(inline({handlers: [inlineHandler(modules)]})).
+        pipe(toMinifiedHtml({
             collapseWhitespace: true,
             removeComments: true,
-            minifyCSS: true,
-            minifyJS: true
+            minifyCSS: false,
+            minifyJS: false
         })).
         pipe(replace('pure-', 'p-')).
         pipe(gzip({ gzipOptions: { level: 9 } })).
@@ -182,7 +273,7 @@ var buildWebUI = function(module) {
 
 gulp.task('certs', function() {
     gulp.src(dataFolder + 'server.*').
-        pipe(toHeader(debug=false)).
+        pipe(toHeader('', false)).
         pipe(gulp.dest(staticFolder));
 });
 

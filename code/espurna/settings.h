@@ -8,11 +8,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
 
 #include <functional>
 #include <utility>
 #include <vector>
+#include <type_traits>
 
 #include <ArduinoJson.h>
 
@@ -24,23 +25,26 @@ BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
 
 // --------------------------------------------------------------------------
 
+void resetSettings();
+void saveSettings();
+void autosaveSettings();
+
 namespace settings {
 
-struct EepromStorage {
+class EepromStorage {
+public:
 
-    uint8_t read(size_t pos) {
-        return EEPROMr.read(pos);
-    }
+uint8_t read(size_t pos) {
+    return eepromRead(pos);
+}
 
-    void write(size_t pos, uint8_t value) {
-        EEPROMr.write(pos, value);
-    }
+void write(size_t pos, uint8_t value) {
+    eepromWrite(pos, value);
+}
 
-    void commit() {
-#if SETTINGS_AUTOSAVE
-        eepromCommit();
-#endif
-    }
+void commit() {
+    autosaveSettings();
+}
 
 };
 
@@ -52,51 +56,63 @@ extern kvs_type kv_store;
 
 // --------------------------------------------------------------------------
 
-class settings_key_t {
+class SettingsKey {
+public:
+    SettingsKey(const char* key) :
+        _key(key)
+    {}
 
-    public:
-        settings_key_t(const char* value, unsigned char index) :
-            _value(value), _index(index)
-        {}
-        settings_key_t(const String& value, unsigned char index) :
-            _value(value), _index(index)
-        {}
-        settings_key_t(String&& value, unsigned char index) :
-            _value(std::move(value)), _index(index)
-        {}
-        settings_key_t(const char* value) :
-            _value(value), _index(-1)
-        {}
-        settings_key_t(const String& value) :
-            _value(value), _index(-1)
-        {}
-        settings_key_t(const __FlashStringHelper* value) :
-            _value(value), _index(-1)
-        {}
-        settings_key_t() :
-            _value(), _index(-1)
-        {}
+    SettingsKey(const String& key) :
+        _key(key)
+    {}
 
-        bool match(const char* value) const {
-            return (_value == value) || (toString() == value);
-        }
+    SettingsKey(String&& key) :
+        _key(std::move(key))
+    {}
 
-        bool match(const String& value) const {
-            return (_value == value) || (toString() == value);
-        }
+    SettingsKey(const String& prefix, unsigned char index) {
+        _key.reserve(prefix.length());
+        _key += prefix;
+        _key += index;
+    }
 
-        String toString() const;
+    SettingsKey(String&& prefix, unsigned char index) :
+        _key(std::move(prefix))
+    {
+        _key += index;
+    }
 
-        explicit operator String () const {
-            return toString();
-        }
+    SettingsKey(const char* prefix, unsigned char index) :
+        _key(prefix)
+    {
+        _key += index;
+    }
 
-    private:
-        const String _value;
-        int _index;
+    bool operator==(const char* other) const {
+        return _key == other;
+    }
+
+    bool operator==(const String& other) const {
+        return _key == other;
+    }
+
+    const String& toString() const {
+        return _key;
+    }
+
+    explicit operator String() const & {
+        return _key;
+    }
+
+    explicit operator String() && {
+        return std::move(_key);
+    }
+
+private:
+    String _key;
 };
 
-using settings_move_key_t = std::pair<settings_key_t, settings_key_t>;
+using settings_move_key_t = std::pair<SettingsKey, SettingsKey>;
 using settings_filter_t = std::function<String(String& value)>;
 
 // --------------------------------------------------------------------------
@@ -114,10 +130,18 @@ using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
 namespace settings {
 namespace internal {
 
-uint32_t u32fromString(const String& string, int base);
+template <typename T>
+using is_arduino_string = std::is_same<String, typename std::decay<T>::type>;
 
 template <typename T>
-using convert_t = T(*)(const String& value);
+using enable_if_arduino_string = std::enable_if<is_arduino_string<T>::value>;
+
+template <typename T>
+using enable_if_not_arduino_string = std::enable_if<!is_arduino_string<T>::value>;
+
+// --------------------------------------------------------------------------
+
+uint32_t u32fromString(const String& string, int base);
 
 template <typename T>
 T convert(const String& value);
@@ -154,12 +178,7 @@ unsigned char convert(const String& value);
 template<typename T>
 String serialize(const T& value);
 
-template<typename T>
-String serialize(const T& value) {
-    return String(value);
-}
-
-} // namespace settings::internal
+} // namespace internal
 } // namespace settings
 
 // --------------------------------------------------------------------------
@@ -181,38 +200,48 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, unsigned int index);
 void moveSettings(const String& from, const String& to);
 
-template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
-R getSetting(const settings_key_t& key, R defaultValue) __attribute__((noinline));
+template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
+T getSetting(const SettingsKey& key, T defaultValue) __attribute__((noinline));
 
-template<typename R, settings::internal::convert_t<R> Rfunc = settings::internal::convert>
-R getSetting(const settings_key_t& key, R defaultValue) {
+template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
+T getSetting(const SettingsKey& key, T defaultValue) {
     auto result = settings::kv_store.get(key.toString());
     if (!result) {
         return defaultValue;
     }
-    return Rfunc(result.value);
+    return settings::internal::convert<T>(result.value);
 }
 
-template<>
-String getSetting(const settings_key_t& key, String defaultValue);
+String getSetting(const char* key);
+String getSetting(const String& key);
+String getSetting(const __FlashStringHelper* key);
 
-String getSetting(const settings_key_t& key);
-String getSetting(const settings_key_t& key, const char* defaultValue);
-String getSetting(const settings_key_t& key, const __FlashStringHelper* defaultValue);
+String getSetting(const SettingsKey& key);
+String getSetting(const SettingsKey& key, const char* defaultValue);
+String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValue);
+String getSetting(const SettingsKey& key, const String& defaultValue);
+String getSetting(const SettingsKey& key, const String& defaultValue);
+String getSetting(const SettingsKey& key, String&& defaultValue);
 
-template<typename T>
-bool setSetting(const settings_key_t& key, const T& value) {
-    return settings::kv_store.set(key.toString(), String(value));
+template<typename T, typename = typename settings::internal::enable_if_arduino_string<T>::type>
+bool setSetting(const SettingsKey& key, T&& value) {
+    return settings::kv_store.set(key.toString(), value);
 }
 
-template<>
-bool setSetting(const settings_key_t& key, const String& value);
+template<typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
+bool setSetting(const SettingsKey& key, T value) {
+    return setSetting(key, std::move(String(value)));
+}
 
-bool delSetting(const settings_key_t& key);
-bool hasSetting(const settings_key_t& key);
+bool delSetting(const char* key);
+bool delSetting(const String& key);
+bool delSetting(const __FlashStringHelper* key);
+bool delSetting(const SettingsKey& key);
 
-void saveSettings();
-void resetSettings();
+bool hasSetting(const char* key);
+bool hasSetting(const String& key);
+bool hasSetting(const __FlashStringHelper* key);
+bool hasSetting(const SettingsKey& key);
 
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024);

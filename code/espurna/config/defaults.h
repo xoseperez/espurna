@@ -33,6 +33,31 @@
 #define BUTTON8_PIN         GPIO_NONE
 #endif
 
+#ifndef BUTTON1_PIN_TYPE
+#define BUTTON1_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON2_PIN_TYPE
+#define BUTTON2_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON3_PIN_TYPE
+#define BUTTON3_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON4_PIN_TYPE
+#define BUTTON4_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON5_PIN_TYPE
+#define BUTTON5_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON6_PIN_TYPE
+#define BUTTON6_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON7_PIN_TYPE
+#define BUTTON7_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef BUTTON8_PIN_TYPE
+#define BUTTON8_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+
 #ifndef BUTTON1_CONFIG
 #define BUTTON1_CONFIG         BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
 #endif
@@ -423,28 +448,28 @@
 #endif
 
 #ifndef BUTTON1_PROVIDER
-#define BUTTON1_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON1_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON2_PROVIDER
-#define BUTTON2_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON2_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON3_PROVIDER
-#define BUTTON3_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON3_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON4_PROVIDER
-#define BUTTON4_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON4_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON5_PROVIDER
-#define BUTTON5_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON5_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON6_PROVIDER
-#define BUTTON6_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON6_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON7_PROVIDER
-#define BUTTON7_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON7_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 #ifndef BUTTON8_PROVIDER
-#define BUTTON8_PROVIDER    BUTTON_PROVIDER_GENERIC
+#define BUTTON8_PROVIDER    BUTTON_PROVIDER_GPIO
 #endif
 
 #ifndef BUTTON1_ANALOG_LEVEL
@@ -737,8 +762,129 @@
 #define RELAY8_DELAY_OFF      0
 #endif
 
-#ifndef RELAY_DELAY_INTERLOCK
-#define RELAY_DELAY_INTERLOCK       0
+#ifndef RELAY1_PROVIDER
+#define RELAY1_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY2_PROVIDER
+#define RELAY2_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY3_PROVIDER
+#define RELAY3_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY4_PROVIDER
+#define RELAY4_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY5_PROVIDER
+#define RELAY5_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY6_PROVIDER
+#define RELAY6_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY7_PROVIDER
+#define RELAY7_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+#ifndef RELAY8_PROVIDER
+#define RELAY8_PROVIDER    RELAY_PROVIDER_GPIO
+#endif
+
+#ifndef RELAY1_PIN_TYPE
+#define RELAY1_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY2_PIN_TYPE
+#define RELAY2_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY3_PIN_TYPE
+#define RELAY3_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY4_PIN_TYPE
+#define RELAY4_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY5_PIN_TYPE
+#define RELAY5_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY6_PIN_TYPE
+#define RELAY6_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY7_PIN_TYPE
+#define RELAY7_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+#ifndef RELAY8_PIN_TYPE
+#define RELAY8_PIN_TYPE    GPIO_TYPE_HARDWARE
+#endif
+
+#ifndef RELAY1_BOOT_MODE
+#define RELAY1_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY2_BOOT_MODE
+#define RELAY2_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY3_BOOT_MODE
+#define RELAY3_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY4_BOOT_MODE
+#define RELAY4_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY5_BOOT_MODE
+#define RELAY5_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY6_BOOT_MODE
+#define RELAY6_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY7_BOOT_MODE
+#define RELAY7_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+#ifndef RELAY8_BOOT_MODE
+#define RELAY8_BOOT_MODE    RELAY_BOOT_MODE
+#endif
+
+#ifndef RELAY1_PULSE_MODE
+#define RELAY1_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY2_PULSE_MODE
+#define RELAY2_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY3_PULSE_MODE
+#define RELAY3_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY4_PULSE_MODE
+#define RELAY4_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY5_PULSE_MODE
+#define RELAY5_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY6_PULSE_MODE
+#define RELAY6_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY7_PULSE_MODE
+#define RELAY7_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+#ifndef RELAY8_PULSE_MODE
+#define RELAY8_PULSE_MODE    RELAY_PULSE_MODE
+#endif
+
+#ifndef RELAY1_PULSE_TIME
+#define RELAY1_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY2_PULSE_TIME
+#define RELAY2_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY3_PULSE_TIME
+#define RELAY3_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY4_PULSE_TIME
+#define RELAY4_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY5_PULSE_TIME
+#define RELAY5_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY6_PULSE_TIME
+#define RELAY6_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY7_PULSE_TIME
+#define RELAY7_PULSE_TIME    RELAY_PULSE_TIME
+#endif
+#ifndef RELAY8_PULSE_TIME
+#define RELAY8_PULSE_TIME    RELAY_PULSE_TIME
 #endif
 
 // -----------------------------------------------------------------------------
@@ -898,6 +1044,66 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// Tuya
+// -----------------------------------------------------------------------------
+
+#ifndef TUYA_CH_STATE_DPID
+#define TUYA_CH_STATE_DPID  0
+#endif
+
+#ifndef TUYA_CH1_DPID
+#define TUYA_CH1_DPID       0
+#endif
+
+#ifndef TUYA_CH2_DPID
+#define TUYA_CH2_DPID       0
+#endif
+
+#ifndef TUYA_CH3_DPID
+#define TUYA_CH3_DPID       0
+#endif
+
+#ifndef TUYA_CH4_DPID
+#define TUYA_CH4_DPID       0
+#endif
+
+#ifndef TUYA_CH5_DPID
+#define TUYA_CH5_DPID       0
+#endif
+
+#ifndef TUYA_SW1_DPID
+#define TUYA_SW1_DPID       0
+#endif
+
+#ifndef TUYA_SW2_DPID
+#define TUYA_SW2_DPID       0
+#endif
+
+#ifndef TUYA_SW3_DPID
+#define TUYA_SW3_DPID       0
+#endif
+
+#ifndef TUYA_SW4_DPID
+#define TUYA_SW4_DPID       0
+#endif
+
+#ifndef TUYA_SW5_DPID
+#define TUYA_SW5_DPID       0
+#endif
+
+#ifndef TUYA_SW6_DPID
+#define TUYA_SW6_DPID       0
+#endif
+
+#ifndef TUYA_SW7_DPID
+#define TUYA_SW7_DPID       0
+#endif
+
+#ifndef TUYA_SW8_DPID
+#define TUYA_SW8_DPID       0
+#endif
+
+// -----------------------------------------------------------------------------
 // General
 // -----------------------------------------------------------------------------
 
@@ -908,14 +1114,4 @@
 // https://github.com/xoseperez/espurna/issues/1151
 #ifndef HOSTNAME
 #define HOSTNAME                ""
-#endif
-
-// Relay providers
-#ifndef RELAY_PROVIDER
-#define RELAY_PROVIDER          RELAY_PROVIDER_RELAY
-#endif
-
-// Light provider
-#ifndef LIGHT_PROVIDER
-#define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif

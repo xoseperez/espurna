@@ -14,8 +14,9 @@ Copyright (C) 2020 - Eric Chauvet
 
 #if KINGART_CURTAIN_SUPPORT
 
-#include "ntp.h"
 #include "mqtt.h"
+#include "ntp.h"
+#include "ntp_timelib.h"
 #include "settings.h"
 #include "ws.h"
 
@@ -343,7 +344,7 @@ void _KACurtainResult() {
     if (buffer.indexOf("enterESPTOUCH") > 0) {
         wifiStartAP();
     } else if (buffer.indexOf("exitESPTOUCH") > 0) {
-        deferredReset(100, CUSTOM_RESET_HARDWARE);
+        deferredReset(100, CustomResetReason::Hardware);
     } else { //In any other case, update as it could be a move action
         curtainUpdateUI();
     }

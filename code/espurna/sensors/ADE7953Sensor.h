@@ -8,13 +8,12 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include <Wire.h>
+#include "BaseEmonSensor.h"
+#include "I2CSensor.h"
 
 #include "../utils.h"
 
-#include "BaseEmonSensor.h"
-#include "I2CSensor.h"
+#include <Wire.h>
 
 // -----------------------------------------------------------------------------
 // ADE7953 - Energy (Shelly 2.5)

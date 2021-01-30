@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 
 #include "BaseSensor.h"
 #include "../utils.h"
@@ -42,7 +41,7 @@ class GUVAS12SDSensor : public BaseSensor {
         }
 
         ~GUVAS12SDSensor() {
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            gpioUnlock(_gpio);
         }
 
         // ---------------------------------------------------------------------
@@ -65,9 +64,12 @@ class GUVAS12SDSensor : public BaseSensor {
         void begin() {
 
             // Manage GPIO lock
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) {
+                gpioUnlock(_previous);
+            }
+
             _previous = GPIO_NONE;
-            if (!gpioGetLock(_gpio)) {
+            if (!gpioLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
             }
@@ -86,7 +88,7 @@ class GUVAS12SDSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[18];
-            snprintf(buffer, sizeof(buffer), "GUVAS12SD @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "GUVAS12SD @ GPIO%hhu", _gpio);
             return String(buffer);
         }
 

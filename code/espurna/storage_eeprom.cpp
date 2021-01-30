@@ -4,15 +4,20 @@ EEPROM MODULE
 
 */
 
-// XXX: including storage_eeprom.h here directly causes dependency issue with settings
 #include "espurna.h"
 
+#include <EEPROM_Rotate.h>
 EEPROM_Rotate EEPROMr;
+
+namespace {
+
 bool _eeprom_commit = false;
 
 uint32_t _eeprom_commit_count = 0;
 bool _eeprom_last_commit_result = false;
 bool _eeprom_ready = false;
+
+} // namespace
 
 bool eepromReady() {
     return _eeprom_ready;
@@ -22,14 +27,9 @@ void eepromRotate(bool value) {
     // Enable/disable EEPROM rotation only if we are using more sectors than the
     // reserved by the memory layout
     if (EEPROMr.size() > EEPROMr.reserved()) {
-        if (value) {
-            DEBUG_MSG_P(PSTR("[EEPROM] Reenabling EEPROM rotation\n"));
-        } else {
-            DEBUG_MSG_P(PSTR("[EEPROM] Disabling EEPROM rotation\n"));
-        }
-        EEPROMr.rotate(value);
-
         // Because .rotate(false) marks EEPROM as dirty, this is equivalent to the .backup(0)
+        DEBUG_MSG_P(PSTR("[EEPROM] %s EEPROM rotation\n"), value ? "Enabling" : "Disabling");
+        EEPROMr.rotate(value);
         eepromCommit();
     }
 }
@@ -58,6 +58,10 @@ bool _eepromCommit() {
     return _eeprom_last_commit_result;
 }
 
+void eepromForceCommit() {
+    _eepromCommit();
+}
+
 void eepromCommit() {
     _eeprom_commit = true;
 }
@@ -70,28 +74,23 @@ void eepromBackup(uint32_t index){
 
 void _eepromInitCommands() {
 
-    terminalRegisterCommand(F("EEPROM"), [](const terminal::CommandContext&) {
-        eepromSectorsDebug();
+    terminalRegisterCommand(F("EEPROM"), [](const terminal::CommandContext& ctx) {
+        ctx.output.printf_P(PSTR("Sectors: %s, current: %lu\n"),
+                eepromSectors().c_str(), eepromCurrent());
         if (_eeprom_commit_count > 0) {
-            DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
-            DEBUG_MSG_P(PSTR("[MAIN] Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
+            ctx.output.printf_P(PSTR("Commits done: %lu, last: %s\n"),
+                _eeprom_commit_count, _eeprom_last_commit_result ? "OK" : "ERROR");
         }
-        terminalOK();
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("EEPROM.COMMIT"), [](const terminal::CommandContext&) {
-        const bool res = _eepromCommit();
-        if (res) {
-            terminalOK();
-        } else {
-            DEBUG_MSG_P(PSTR("-ERROR\n"));
-        }
+    terminalRegisterCommand(F("EEPROM.COMMIT"), [](const terminal::CommandContext& ctx) {
+        _eepromCommit();
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("EEPROM.DUMP"), [](const terminal::CommandContext& ctx) {
-        // XXX: like Update::printError, dump only accepts Stream
-        //      this should be safe, since we expect read-only stream
-        EEPROMr.dump(reinterpret_cast<Stream&>(ctx.output));
+        EEPROMr.dump(static_cast<Stream&>(ctx.output)); // XXX: only Print interface is used
         terminalOK(ctx.output);
     });
 
@@ -106,7 +105,7 @@ void _eepromInitCommands() {
             terminalError(F("Sector out of range"));
             return;
         }
-        EEPROMr.dump(reinterpret_cast<Stream&>(ctx.output), sector);
+        EEPROMr.dump(static_cast<Stream&>(ctx.output), sector); // XXX: only Print interface is used
         terminalOK(ctx.output);
     });
 
@@ -124,30 +123,27 @@ void eepromLoop() {
 }
 
 void eepromSetup() {
-
-    #ifdef EEPROM_ROTATE_SECTORS
-        EEPROMr.size(EEPROM_ROTATE_SECTORS);
-    #else
-        // If the memory layout has more than one sector reserved use those,
-        // otherwise calculate pool size based on memory size.
-        if (EEPROMr.size() == 1) {
-            if (EEPROMr.last() > 1000) { // 4Mb boards
-                EEPROMr.size(4);
-            } else if (EEPROMr.last() > 250) { // 1Mb boards
-                EEPROMr.size(2);
-            }
+#ifdef EEPROM_ROTATE_SECTORS
+    EEPROMr.size(EEPROM_ROTATE_SECTORS);
+#else
+    // If the memory layout has more than one sector reserved use those,
+    // otherwise calculate pool size based on memory size.
+    if (EEPROMr.size() == 1) {
+        if (EEPROMr.last() > 1000) { // 4Mb boards
+            EEPROMr.size(4);
+        } else if (EEPROMr.last() > 250) { // 1Mb boards
+            EEPROMr.size(2);
         }
-    #endif
+    }
+#endif
 
     EEPROMr.offset(EepromRotateOffset);
     EEPROMr.begin(EepromSize);
 
-    #if TERMINAL_SUPPORT
-        _eepromInitCommands();
-    #endif
+#if TERMINAL_SUPPORT
+    _eepromInitCommands();
+#endif
 
     espurnaRegisterLoop(eepromLoop);
-
     _eeprom_ready = true;
-
 }

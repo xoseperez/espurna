@@ -8,13 +8,10 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include <SoftwareSerial.h>
-
-#include "../debug.h"
-
 #include "BaseSensor.h"
 #include "BaseEmonSensor.h"
+
+#include <SoftwareSerial.h>
 
 class CSE7766Sensor : public BaseEmonSensor {
 

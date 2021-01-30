@@ -10,10 +10,14 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
+#define RFM69_PACKET_SEPARATOR ':'
+
+#include <RFM69.h>
+#include <RFM69_ATC.h>
+#include <SPI.h>
+
 #include "mqtt.h"
 #include "ws.h"
-
-#define RFM69_PACKET_SEPARATOR ':'
 
 // -----------------------------------------------------------------------------
 // Locals
@@ -56,8 +60,8 @@ class RFM69Wrap: public RFM69_ATC {
 
     public:
 
-        RFM69Wrap(uint8_t slaveSelectPin=RF69_SPI_CS, uint8_t interruptPin=RF69_IRQ_PIN, bool isRFM69HW=false, uint8_t interruptNum=0):
-            RFM69_ATC(slaveSelectPin, interruptPin, isRFM69HW, interruptNum) {};
+        RFM69Wrap(uint8_t slaveSelectPin=RF69_SPI_CS, uint8_t interruptPin=RF69_IRQ_PIN, bool isRFM69HW=false):
+            RFM69_ATC(slaveSelectPin, interruptPin, isRFM69HW) {};
 
     protected:
 
@@ -309,14 +313,14 @@ void rfm69Setup() {
 
     _rfm69Configure();
 
-    _rfm69_radio = new RFM69Wrap(RFM69_CS_PIN, RFM69_IRQ_PIN, RFM69_IS_RFM69HW, digitalPinToInterrupt(RFM69_IRQ_PIN));
+    _rfm69_radio = new RFM69Wrap(RFM69_CS_PIN, RFM69_IRQ_PIN, RFM69_IS_RFM69HW);
     _rfm69_radio->initialize(RFM69_FREQUENCY, RFM69_NODE_ID, RFM69_NETWORK_ID);
     _rfm69_radio->encrypt(RFM69_ENCRYPTKEY);
-    _rfm69_radio->promiscuous(RFM69_PROMISCUOUS);
+    _rfm69_radio->spyMode(1 == RFM69_PROMISCUOUS);
     _rfm69_radio->enableAutoPower(0);
     if (RFM69_IS_RFM69HW) _rfm69_radio->setHighPower();
 
-    DEBUG_MSG_P(PSTR("[RFM69] Worning at %u MHz\n"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
+    DEBUG_MSG_P(PSTR("[RFM69] Working at %u MHz\n"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
     DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), RFM69_NODE_ID);
     DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), RFM69_NETWORK_ID);
     DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s\n"), RFM69_PROMISCUOUS ? "ON" : "OFF");

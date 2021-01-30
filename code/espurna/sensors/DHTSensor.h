@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <Arduino.h>
 
+#include "../gpio.h"
 #include "../utils.h"
 #include "BaseSensor.h"
 
@@ -65,7 +65,7 @@ class DHTSensor : public BaseSensor {
         }
 
         ~DHTSensor() {
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            gpioUnlock(_gpio);
         }
 
         // ---------------------------------------------------------------------
@@ -101,10 +101,13 @@ class DHTSensor : public BaseSensor {
 
             _count = 0;
 
-            // Manage GPIO lock
-            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            // Manage GPIO lock (note that this only handles the basic *hw* I/O)
+            if (_previous != GPIO_NONE) {
+                gpioUnlock(_previous);
+            }
+
             _previous = GPIO_NONE;
-            if (!gpioGetLock(_gpio)) {
+            if (!gpioLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
             }

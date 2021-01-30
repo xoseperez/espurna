@@ -7,10 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-
-#include "../debug.h"
-
 #include "BaseSensor.h"
 #include "BaseEmonSensor.h"
 

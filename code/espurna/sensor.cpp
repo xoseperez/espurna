@@ -1051,7 +1051,7 @@ const String _sensorQueryDefault(const String& key) {
         }
     };
 
-    auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> settings_key_t {
+    auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> SettingsKey {
         switch (magnitude.type) {
         case MAGNITUDE_CURRENT:
             return {"pwrRatioC", magnitude.index_global};
@@ -1062,7 +1062,7 @@ const String _sensorQueryDefault(const String& key) {
         case MAGNITUDE_ENERGY:
             return {"pwrRatioE", magnitude.index_global};
         default:
-            return {};
+            return "";
         }
     };
 
@@ -1076,7 +1076,7 @@ const String _sensorQueryDefault(const String& key) {
             case MAGNITUDE_POWER_ACTIVE:
             case MAGNITUDE_ENERGY: {
                 auto ratioKey(magnitude_key(magnitude));
-                if (ratioKey.match(key)) {
+                if (ratioKey == key) {
                     target = magnitude.sensor;
                     type = magnitude.type;
                     goto return_defaults;
@@ -1794,7 +1794,8 @@ void _sensorLoad() {
             }
         };
 
-        for (unsigned char index = 0; index < GpioPins; ++index) {
+        auto pins = gpioPins();
+        for (unsigned char index = 0; index < pins; ++index) {
             const auto pin = getPin(index);
             if (pin == GPIO_NONE) break;
 
@@ -1913,7 +1914,8 @@ void _sensorLoad() {
             }
         };
 
-        for (unsigned char index = 0; index < GpioPins; ++index) {
+        auto pins = gpioPins();
+        for (unsigned char index = 0; index < pins; ++index) {
             const auto pin = getPin(index);
             if (pin == GPIO_NONE) break;
 
@@ -2513,13 +2515,10 @@ void _sensorConfigure() {
             // adjust type-specific units
             {
                 const sensor::Unit default_unit { magnitude.sensor->units(magnitude.slot) };
-                const settings_key_t key {
+                const String key {
                     String(_magnitudeSettingsPrefix(magnitude.type)) + F("Units") + String(magnitude.index_global, 10) };
 
-                magnitude.units = _magnitudeUnitFilter(
-                    magnitude,
-                    getSetting(key, default_unit)
-                );
+                magnitude.units = _magnitudeUnitFilter(magnitude, getSetting(key, default_unit));
             }
 
             // some magnitudes allow to be corrected with an offset

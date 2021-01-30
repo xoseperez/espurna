@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-
-#include "../debug.h"
 
 #include "BaseEmonSensor.h"
 #include "I2CSensor.h"

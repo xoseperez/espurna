@@ -204,11 +204,10 @@
 //#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
 //#define LED_SUPPORT            0
-//#define LLMNR_SUPPORT          1  // Only with latest Arduino Core
-//#define MDNS_CLIENT_SUPPORT    1
+//#define LLMNR_SUPPORT          1
 //#define MDNS_SERVER_SUPPORT    0
 //#define MQTT_SUPPORT           0
-//#define NETBIOS_SUPPORT        1  // Only with latest Arduino Core
+//#define NETBIOS_SUPPORT        1
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
 //#define OTA_ARDUINOOTA_SUPPORT 1

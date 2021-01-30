@@ -30,38 +30,27 @@
 #include <functional>
 #include <memory>
 
+#include "compat.h"
 #include "libs/DebounceEvent.h"
 
 namespace debounce_event {
 
-EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const types::Config& config, unsigned long debounce_delay, unsigned long repeat) :
-    _pin(pin),
+EventEmitter::EventEmitter(BasePinPtr&& pin, types::EventHandler callback, const types::Config& config, unsigned long debounce_delay, unsigned long repeat) :
+    _pin(std::move(pin)),
     _callback(callback),
     _config(config),
     _is_switch(config.mode == types::Mode::Switch),
     _delay(debounce_delay),
     _repeat(repeat)
 {
-    if (!pin) return;
+    if (!_pin) return;
 
     switch (_config.pin_mode) {
     case types::PinMode::InputPullup:
         _pin->pinMode(INPUT_PULLUP);
         break;
     case types::PinMode::InputPulldown:
-        // ESP8266 does not have INPUT_PULLDOWN definition, and instead
-        // has a GPIO16-specific INPUT_PULLDOWN_16:
-        // - https://github.com/esp8266/Arduino/issues/478
-        // - https://github.com/esp8266/Arduino/commit/1b3581d55ebf0f8c91e081f9af4cf7433d492ec9
-#ifdef ESP8266
-        if (_pin->pin == 16) {
-            _pin->pinMode(INPUT_PULLDOWN_16);
-        } else {
-            _pin->pinMode(INPUT);
-        }
-#else
         _pin->pinMode(INPUT_PULLDOWN);
-#endif
         break;
     case types::PinMode::Input:
         _pin->pinMode(INPUT);
@@ -83,19 +72,19 @@ EventEmitter::EventEmitter(types::Pin pin, types::EventHandler callback, const t
     _value = _default_value;
 }
 
-EventEmitter::EventEmitter(types::Pin pin, const types::Config& config, unsigned long delay, unsigned long repeat) :
-    EventEmitter(pin, nullptr, config, delay, repeat)
+EventEmitter::EventEmitter(BasePinPtr&& pin, const types::Config& config, unsigned long delay, unsigned long repeat) :
+    EventEmitter(std::move(pin), nullptr, config, delay, repeat)
 {}
 
 bool EventEmitter::isPressed() {
     return (_value != _default_value);
 }
 
-const types::Pin EventEmitter::getPin() const {
+const BasePinPtr& EventEmitter::pin() const {
     return _pin;
 }
 
-const types::Config EventEmitter::getConfig() const {
+const types::Config& EventEmitter::config() const {
     return _config;
 }
 

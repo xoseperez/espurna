@@ -71,7 +71,7 @@ void ssdpSetup() {
     SSDP.setSchemaURL("description.xml");
     SSDP.setHTTPPort(webPort());
     SSDP.setDeviceType(SSDP_DEVICE_TYPE); //https://github.com/esp8266/Arduino/issues/2283
-    SSDP.setName(getSetting("hostname"));
+
     SSDP.setSerialNumber(String(ESP.getChipId()));
     SSDP.setModelName(APP_NAME);
     SSDP.setModelNumber(APP_VERSION);
@@ -79,9 +79,12 @@ void ssdpSetup() {
     SSDP.setManufacturer(getBoardName());
     SSDP.setManufacturerURL("");
     SSDP.setURL("/");
+
+    auto hostname = getSetting("hostname", getIdentifier());
+    SSDP.setName(hostname);
     SSDP.begin();
 
-    DEBUG_MSG_P(PSTR("[SSDP] Started\n"));
+    DEBUG_MSG_P(PSTR("[SSDP] Started for %s\n"), hostname.c_str());
 
 }
 

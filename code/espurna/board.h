@@ -6,7 +6,7 @@ BOARD MODULE
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
 
 const String& getChipId();
 const String& getIdentifier();

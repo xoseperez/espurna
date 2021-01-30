@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #include <VL53L1X.h>
 
 #include "I2CSensor.h"

@@ -15,6 +15,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "api.h"
 #include "broker.h"
 #include "light.h"
+#include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
 #include "web.h"
@@ -74,9 +75,7 @@ void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int va
     }
 
     if (topic.equals(MQTT_TOPIC_RELAY)) {
-        #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
-            if (id > 0) return;
-        #endif
+        if (id > 0) return;
         _alexa.setState(id, value, value > 0 ? 255 : 0);
     }
 
@@ -97,13 +96,13 @@ void alexaLoop() {
         alexa_queue_element_t element = _alexa_queue.front();
         DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d\n"), element.device_id, element.state ? "ON" : "OFF", element.value);
 
-        #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (0 == element.device_id) {
-                relayStatus(0, element.state);
+                lightState(element.state);
             } else {
                 lightState(element.device_id - 1, element.state);
                 lightChannel(element.device_id - 1, element.value);
-                lightUpdate(true, true);
+                lightUpdate();
             }
         #else
             relayStatus(element.device_id, element.state);
@@ -130,7 +129,7 @@ void alexaSetup() {
     }
 
     // Lights
-    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
         // Global switch
         _alexa.addDevice(hostname.c_str());

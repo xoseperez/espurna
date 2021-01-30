@@ -15,25 +15,39 @@
 #define WIFI_STATE_WPS              4
 #define WIFI_STATE_SMARTCONFIG      8
 
+// -----------------------------------------------------------------------------
+// GPIO
+// -----------------------------------------------------------------------------
+
+#define GPIO_NONE           0x99
+
+#define GPIO_TYPE_NONE          GpioType::None
+#define GPIO_TYPE_HARDWARE      GpioType::Hardware
+#define GPIO_TYPE_MCP23S08      GpioType::Mcp23s08
+
 //------------------------------------------------------------------------------
 // BUTTONS
 //------------------------------------------------------------------------------
 
-// button actions, limited to 8-bit number (0b11111111 / 0xff / 255)
-#define BUTTON_ACTION_NONE            0u
-#define BUTTON_ACTION_TOGGLE          1u
-#define BUTTON_ACTION_ON              2u
-#define BUTTON_ACTION_OFF             3u
-#define BUTTON_ACTION_AP              4u
-#define BUTTON_ACTION_RESET           5u
-#define BUTTON_ACTION_PULSE           6u
-#define BUTTON_ACTION_FACTORY         7u
-#define BUTTON_ACTION_WPS             8u
-#define BUTTON_ACTION_SMART_CONFIG    9u
-#define BUTTON_ACTION_DIM_UP          10u
-#define BUTTON_ACTION_DIM_DOWN        11u
-#define BUTTON_ACTION_DISPLAY_ON      12u
-#define BUTTON_ACTION_MAX             255u
+#define BUTTON_ACTION_NONE            ButtonAction::None
+#define BUTTON_ACTION_TOGGLE          ButtonAction::Toggle
+#define BUTTON_ACTION_ON              ButtonAction::On
+#define BUTTON_ACTION_OFF             ButtonAction::Off
+#define BUTTON_ACTION_AP              ButtonAction::AccessPoint
+#define BUTTON_ACTION_RESET           ButtonAction::Reset
+#define BUTTON_ACTION_PULSE           ButtonAction::Pulse
+#define BUTTON_ACTION_FACTORY         ButtonAction::FactoryReset
+#define BUTTON_ACTION_WPS             ButtonAction::Wps
+#define BUTTON_ACTION_SMART_CONFIG    ButtonAction::SmartConfig
+#define BUTTON_ACTION_DIM_UP          ButtonAction::BrightnessIncrease
+#define BUTTON_ACTION_DIM_DOWN        ButtonAction::BrightnessDecrease
+#define BUTTON_ACTION_DISPLAY_ON      ButtonAction::DisplayOn
+#define BUTTON_ACTION_CUSTOM          ButtonAction::Custom
+#define BUTTON_ACTION_FAN_LOW         ButtonAction::FanLow
+#define BUTTON_ACTION_FAN_MEDIUM      ButtonAction::FanMedium
+#define BUTTON_ACTION_FAN_HIGH        ButtonAction::FanHigh
+
+#define BUTTON_ACTION_MAX             ButtonsActionMax
 
 // Deprecated: legacy mapping, changed to action from above
 #define BUTTON_MODE_NONE              BUTTON_ACTION_NONE
@@ -60,9 +74,9 @@
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
 
 // configure where do we get the button events
-#define BUTTON_PROVIDER_GENERIC               0
-#define BUTTON_PROVIDER_MCP23S08              1
-#define BUTTON_PROVIDER_ANALOG                2
+#define BUTTON_PROVIDER_NONE        ButtonProvider::None
+#define BUTTON_PROVIDER_GPIO        ButtonProvider::Gpio
+#define BUTTON_PROVIDER_ANALOG      ButtonProvider::Analog
 
 //------------------------------------------------------------------------------
 // ENCODER
@@ -75,6 +89,8 @@
 // RELAY
 //------------------------------------------------------------------------------
 
+#define RELAY_NONE          0x99
+
 #define RELAY_BOOT_OFF              0
 #define RELAY_BOOT_ON               1
 #define RELAY_BOOT_SAME             2
@@ -82,10 +98,10 @@
 #define RELAY_BOOT_LOCKED_OFF       4
 #define RELAY_BOOT_LOCKED_ON        5
 
-#define RELAY_TYPE_NORMAL           0
-#define RELAY_TYPE_INVERSE          1
-#define RELAY_TYPE_LATCHED          2
-#define RELAY_TYPE_LATCHED_INVERSE  3
+#define RELAY_TYPE_NORMAL           RelayType::Normal
+#define RELAY_TYPE_INVERSE          RelayType::Inverse
+#define RELAY_TYPE_LATCHED          RelayType::Latched
+#define RELAY_TYPE_LATCHED_INVERSE  RelayType::LatchedInverse
 
 #define RELAY_SYNC_ANY              0
 #define RELAY_SYNC_NONE_OR_ONE      1
@@ -93,16 +109,15 @@
 #define RELAY_SYNC_SAME             3
 #define RELAY_SYNC_FIRST            4
 
-#define RELAY_PULSE_NONE            0
-#define RELAY_PULSE_OFF             1
-#define RELAY_PULSE_ON              2
+#define RELAY_PULSE_NONE            RelayPulse::None
+#define RELAY_PULSE_OFF             RelayPulse::Off
+#define RELAY_PULSE_ON              RelayPulse::On
 
-#define RELAY_PROVIDER_RELAY        0
-#define RELAY_PROVIDER_DUAL         1
-#define RELAY_PROVIDER_LIGHT        2
-#define RELAY_PROVIDER_RFBRIDGE     3
-#define RELAY_PROVIDER_STM          4
-#define RELAY_PROVIDER_MCP23S08     5
+#define RELAY_PROVIDER_NONE         RelayProvider::None
+#define RELAY_PROVIDER_DUMMY        RelayProvider::Dummy
+#define RELAY_PROVIDER_GPIO         RelayProvider::Gpio
+#define RELAY_PROVIDER_DUAL         RelayProvider::Dual
+#define RELAY_PROVIDER_STM          RelayProvider::Stm
 
 #define RFB_PROVIDER_RCSWITCH       0
 #define RFB_PROVIDER_EFM8BB1        1
@@ -111,9 +126,10 @@
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
-#define RELAY_LOCK_DISABLED          0
-#define RELAY_LOCK_OFF               1
-#define RELAY_LOCK_ON                2
+#define RELAY_LOCK_DISABLED          RelayLock::None
+#define RELAY_LOCK_NONE              RelayLock::None
+#define RELAY_LOCK_OFF               RelayLock::Off
+#define RELAY_LOCK_ON                RelayLock::On
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG
@@ -150,6 +166,14 @@
 #define SYSLOG_LOCAL5      (21<<3) /* reserved for local use */
 #define SYSLOG_LOCAL6      (22<<3) /* reserved for local use */
 #define SYSLOG_LOCAL7      (23<<3) /* reserved for local use */
+
+//------------------------------------------------------------------------------
+// Heartbeat
+//------------------------------------------------------------------------------
+
+#define HEARTBEAT_NONE      heartbeat::Mode::None
+#define HEARTBEAT_ONCE      heartbeat::Mode::Once
+#define HEARTBEAT_REPEAT    heartbeat::Mode::Repeat
 
 //------------------------------------------------------------------------------
 // MQTT
@@ -200,7 +224,7 @@
 #define LIGHT_PROVIDER_NONE         0
 #define LIGHT_PROVIDER_MY92XX       1       // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER       2
-#define LIGHT_PROVIDER_TUYA         3
+#define LIGHT_PROVIDER_CUSTOM       3
 
 // -----------------------------------------------------------------------------
 // SCHEDULER
@@ -235,23 +259,6 @@
 #define LIGHT_EFFECT_STROBE         2
 #define LIGHT_EFFECT_FADE           3
 #define LIGHT_EFFECT_SMOOTH         4
-
-//------------------------------------------------------------------------------
-// RESET
-//------------------------------------------------------------------------------
-
-#define CUSTOM_RESET_HARDWARE       1       // Reset from hardware button
-#define CUSTOM_RESET_WEB            2       // Reset from web interface
-#define CUSTOM_RESET_TERMINAL       3       // Reset from terminal
-#define CUSTOM_RESET_MQTT           4       // Reset via MQTT
-#define CUSTOM_RESET_RPC            5       // Reset via RPC (HTTP)
-#define CUSTOM_RESET_OTA            6       // Reset after successful OTA update
-#define CUSTOM_RESET_HTTP           7       // Reset via HTTP GET
-#define CUSTOM_RESET_NOFUSS         8       // Reset after successful NOFUSS update
-#define CUSTOM_RESET_UPGRADE        9       // Reset after update from web interface
-#define CUSTOM_RESET_FACTORY        10      // Factory reset from terminal
-
-#define CUSTOM_RESET_MAX            10
 
 //------------------------------------------------------------------------------
 // ENVIRONMENTAL
@@ -409,10 +416,3 @@
 #define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
 #define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
 #define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
-
-// -----------------------------------------------------------------------------
-// Hardware default values
-// -----------------------------------------------------------------------------
-
-#define GPIO_NONE           0x99
-#define RELAY_NONE          0x99

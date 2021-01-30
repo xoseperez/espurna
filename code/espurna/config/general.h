@@ -33,12 +33,28 @@
 #endif
 
 //------------------------------------------------------------------------------
+// HEARTBEAT
+//------------------------------------------------------------------------------
+
+#ifndef HEARTBEAT_MODE
+#define HEARTBEAT_MODE              HEARTBEAT_REPEAT
+#endif
+
+#ifndef HEARTBEAT_INTERVAL
+#define HEARTBEAT_INTERVAL          300     // Interval between heartbeat messages
+#endif
+
+//------------------------------------------------------------------------------
 // DEBUG
 //------------------------------------------------------------------------------
 
+// Set global logger mode. One of:
+// - DebugLogMode::Enabled
+// - DebugLogMode::Disabled
+// - DebugLogMode::SkipBoot
+
 #ifndef DEBUG_LOG_MODE
-#define DEBUG_LOG_MODE          DebugLogMode::Enabled   // Set global logger mode. One of:
-                                                        // ::Enabled, ::Disabled or ::SkipBoot
+#define DEBUG_LOG_MODE                  DebugLogMode::Enabled
 #endif
 
 // Serial debug log
@@ -156,7 +172,7 @@
 #endif
 
 #ifndef TELNET_SERVER_ASYNC_BUFFERED
-#define TELNET_SERVER_ASYNC_BUFFERED         0  // Enable buffered output for telnet server (+1Kb)
+#define TELNET_SERVER_ASYNC_BUFFERED         1  // Enable buffered output for telnet server (+1Kb)
                                                 // Helps to avoid lost data with lwip2 TCP_MSS=536 option
 #endif
 
@@ -236,11 +252,11 @@
 #endif
 
 #ifndef GARLAND_D_PIN
-#define GARLAND_D_PIN               D2          // WS2812 pin number
+#define GARLAND_D_PIN               4           // WS2812 pin number (default: D2 / GPIO4)
 #endif
 
 #ifndef GARLAND_LEDS
-#define GARLAND_LEDS                60          // Leds number
+#define GARLAND_LEDS                60          // Number of LEDs
 #endif
 
 //------------------------------------------------------------------------------
@@ -267,30 +283,9 @@
 #endif
 
 //------------------------------------------------------------------------------
-// HEARTBEAT
+// HEARTBEAT REPORT
 //------------------------------------------------------------------------------
 
-#define HEARTBEAT_NONE              0           // Never send heartbeat
-#define HEARTBEAT_ONCE              1           // Send it only once upon MQTT connection
-#define HEARTBEAT_REPEAT            2           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL
-#define HEARTBEAT_REPEAT_STATUS     3           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL only STATUS report
-
-// Backwards compatibility check
-#if defined(HEARTBEAT_ENABLED) && (HEARTBEAT_ENABLED == 0)
-#define HEARTBEAT_MODE              HEARTBEAT_NONE
-#endif
-
-#ifndef HEARTBEAT_MODE
-#define HEARTBEAT_MODE              HEARTBEAT_REPEAT
-#endif
-
-#ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          300UL         // Interval between heartbeat messages (in sec)
-#endif
-
-#define UPTIME_OVERFLOW             4294967295UL  // Uptime overflow value
-
-// Values that will be reported in heartbeat
 #ifndef HEARTBEAT_REPORT_STATUS
 #define HEARTBEAT_REPORT_STATUS     1
 #endif
@@ -364,11 +359,11 @@
 #endif
 
 #ifndef HEARTBEAT_REPORT_RANGE
-#define HEARTBEAT_REPORT_RANGE         THERMOSTAT_SUPPORT
+#define HEARTBEAT_REPORT_RANGE         1
 #endif
 
 #ifndef HEARTBEAT_REPORT_REMOTE_TEMP
-#define HEARTBEAT_REPORT_REMOTE_TEMP   THERMOSTAT_SUPPORT
+#define HEARTBEAT_REPORT_REMOTE_TEMP   1
 #endif
 
 #ifndef HEARTBEAT_REPORT_BSSID
@@ -384,95 +379,22 @@
 #endif
 
 //------------------------------------------------------------------------------
-// BUTTON
-//------------------------------------------------------------------------------
-
-#ifndef BUTTON_SUPPORT
-#define BUTTON_SUPPORT              1
-#endif
-
-#ifndef BUTTON_DEBOUNCE_DELAY
-#define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
-#endif
-
-#ifndef BUTTON_REPEAT_DELAY
-#define BUTTON_REPEAT_DELAY         500         // Time in ms to wait for a second (or third...) click
-#endif
-
-#ifndef BUTTON_LNGCLICK_DELAY
-#define BUTTON_LNGCLICK_DELAY       1000        // Time in ms holding the button down to get a long click
-#endif
-
-#ifndef BUTTON_LNGLNGCLICK_DELAY
-#define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
-#endif
-
-#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
-#define BUTTON_MQTT_SEND_ALL_EVENTS     0           // 0 - to send only events the are bound to actions
-                                                    // 1 - to send all button events to MQTT
-#endif
-
-#ifndef BUTTON_MQTT_RETAIN
-#define BUTTON_MQTT_RETAIN              0
-#endif
-
-// Generic digital pin support
-
-#ifndef BUTTON_PROVIDER_GENERIC_SUPPORT
-#define BUTTON_PROVIDER_GENERIC_SUPPORT                1
-#endif
-
-// Hardware specific, drive buttons through serial connection
-// (mutually exclusive)
-
-#ifndef BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT
-#define BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT      0
-#endif
-
-#ifndef BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL
-#define BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL            0
-#endif
-
-// Support MCP23S08 8-Bit I/O Expander via the SPI interface
-
-#ifndef BUTTON_PROVIDER_MCP23S08_SUPPORT
-#define BUTTON_PROVIDER_MCP23S08_SUPPORT               MCP23S08_SUPPORT
-#endif
-
-// Resistor ladder support. Poll analog pin and return digital LOW when analog reading is in a certain range
-// ref. https://github.com/bxparks/AceButton/tree/develop/docs/resistor_ladder
-// Uses BUTTON#_ANALOG_LEVEL for the individual button level configuration
-
-#ifndef BUTTON_PROVIDER_ANALOG_SUPPORT
-#define BUTTON_PROVIDER_ANALOG_SUPPORT                 0
-#endif
-
-//------------------------------------------------------------------------------
-// ENCODER
-//------------------------------------------------------------------------------
-
-#ifndef ENCODER_SUPPORT
-#define ENCODER_SUPPORT             0
-#endif
-
-#ifndef ENCODER_MINIMUM_DELTA
-#define ENCODER_MINIMUM_DELTA       1
-#endif
-
-//------------------------------------------------------------------------------
-// LED
-//------------------------------------------------------------------------------
-
-#ifndef LED_SUPPORT
-#define LED_SUPPORT                 1
-#endif
-
-//------------------------------------------------------------------------------
 // RELAY
 //------------------------------------------------------------------------------
 
+// Enable general support for relays (aka switches)
 #ifndef RELAY_SUPPORT
-#define RELAY_SUPPORT               1
+#define RELAY_SUPPORT                   1
+#endif
+
+// ESP01-relays with STM co-MCU driving the relays
+#ifndef RELAY_PROVIDER_STM_SUPPORT
+#define RELAY_PROVIDER_STM_SUPPORT      0
+#endif
+
+// Sonoff Dual, using serial protocol
+#ifndef RELAY_PROVIDER_DUAL_SUPPORT
+#define RELAY_PROVIDER_DUAL_SUPPORT     0
 #endif
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
@@ -480,19 +402,26 @@
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF
 #endif
 
-// 0 means ANY, 1 zero or one and 2 one and only one
+// One of RELAY_SYNC_ANY, RELAY_SYNC_NONE_OR_ONE, RELAY_SYNC_SAME or RELAY_SYNC_FIRST
+// Default to ANY i.e. don't do anything
 #ifndef RELAY_SYNC
 #define RELAY_SYNC                  RELAY_SYNC_ANY
 #endif
 
-// Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
+// 0 (ms) means EVERY relay switches as soon as possible
+// otherwise, wait up until this much time before changing the status
+#ifndef RELAY_DELAY_INTERLOCK
+#define RELAY_DELAY_INTERLOCK       0
+#endif
+
+// Default pulse mode / normal mode. Switching from it will start the 'pulse' timer and reset the relay back after it finishes
 #ifndef RELAY_PULSE_MODE
 #define RELAY_PULSE_MODE            RELAY_PULSE_NONE
 #endif
 
 // Default pulse time in seconds
 #ifndef RELAY_PULSE_TIME
-#define RELAY_PULSE_TIME            1.0
+#define RELAY_PULSE_TIME            0.0
 #endif
 
 // Relay requests flood protection window - in seconds
@@ -530,6 +459,73 @@
 
 #ifndef RELAY_MQTT_TOGGLE
 #define RELAY_MQTT_TOGGLE           "2"
+#endif
+
+//------------------------------------------------------------------------------
+// BUTTON
+//------------------------------------------------------------------------------
+
+#ifndef BUTTON_SUPPORT
+#define BUTTON_SUPPORT              1
+#endif
+
+#ifndef BUTTON_DEBOUNCE_DELAY
+#define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
+#endif
+
+#ifndef BUTTON_REPEAT_DELAY
+#define BUTTON_REPEAT_DELAY         500         // Time in ms to wait for a second (or third...) click
+#endif
+
+#ifndef BUTTON_LNGCLICK_DELAY
+#define BUTTON_LNGCLICK_DELAY       1000        // Time in ms holding the button down to get a long click
+#endif
+
+#ifndef BUTTON_LNGLNGCLICK_DELAY
+#define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
+#define BUTTON_MQTT_SEND_ALL_EVENTS     0           // 0 - to send only events the are bound to actions
+                                                    // 1 - to send all button events to MQTT
+#endif
+
+#ifndef BUTTON_MQTT_RETAIN
+#define BUTTON_MQTT_RETAIN              0
+#endif
+
+// Generic digital pin support
+
+#ifndef BUTTON_PROVIDER_GPIO_SUPPORT
+#define BUTTON_PROVIDER_GPIO_SUPPORT                1
+#endif
+
+// Resistor ladder support. Poll analog pin and return digital LOW when analog reading is in a certain range
+// ref. https://github.com/bxparks/AceButton/tree/develop/docs/resistor_ladder
+// Uses BUTTON#_ANALOG_LEVEL for the individual button level configuration
+
+#ifndef BUTTON_PROVIDER_ANALOG_SUPPORT
+#define BUTTON_PROVIDER_ANALOG_SUPPORT              0
+#endif
+
+//------------------------------------------------------------------------------
+// ENCODER
+//------------------------------------------------------------------------------
+
+#ifndef ENCODER_SUPPORT
+#define ENCODER_SUPPORT             0
+#endif
+
+#ifndef ENCODER_MINIMUM_DELTA
+#define ENCODER_MINIMUM_DELTA       1
+#endif
+
+//------------------------------------------------------------------------------
+// LED
+//------------------------------------------------------------------------------
+
+#ifndef LED_SUPPORT
+#define LED_SUPPORT                 1
 #endif
 
 // -----------------------------------------------------------------------------
@@ -846,10 +842,6 @@
 #define MDNS_SERVER_SUPPORT         1           // Publish services using mDNS by default (1.48Kb)
 #endif
 
-#ifndef MDNS_CLIENT_SUPPORT
-#define MDNS_CLIENT_SUPPORT         0           // Resolve mDNS names (3.44Kb)
-#endif
-
 #ifndef LLMNR_SUPPORT
 #define LLMNR_SUPPORT               0           // Publish device using LLMNR protocol by default (1.95Kb) - requires Core version >= 2.4.0
 #endif
@@ -1131,7 +1123,6 @@
 #define MQTT_KEEPALIVE              120             // MQTT keepalive value
 #endif
 
-
 #ifndef MQTT_RECONNECT_DELAY_MIN
 #define MQTT_RECONNECT_DELAY_MIN    5000            // Try to reconnect in 5 seconds upon disconnection
 #endif
@@ -1187,70 +1178,6 @@
 #define MQTT_ENQUEUE_MESSAGE_ID     1
 #endif
 
-// These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
-#define MQTT_TOPIC_JSON             "data"
-#define MQTT_TOPIC_ACTION           "action"
-#define MQTT_TOPIC_RELAY            "relay"
-#define MQTT_TOPIC_LED              "led"
-#define MQTT_TOPIC_BUTTON           "button"
-#define MQTT_TOPIC_IP               "ip"
-#define MQTT_TOPIC_SSID             "ssid"
-#define MQTT_TOPIC_BSSID            "bssid"
-#define MQTT_TOPIC_VERSION          "version"
-#define MQTT_TOPIC_UPTIME           "uptime"
-#define MQTT_TOPIC_DATETIME         "datetime"
-#define MQTT_TOPIC_TIMESTAMP        "timestamp"
-#define MQTT_TOPIC_FREEHEAP         "freeheap"
-#define MQTT_TOPIC_VCC              "vcc"
-#ifndef MQTT_TOPIC_STATUS
-#define MQTT_TOPIC_STATUS           "status"
-#endif
-#define MQTT_TOPIC_MAC              "mac"
-#define MQTT_TOPIC_RSSI             "rssi"
-#define MQTT_TOPIC_MESSAGE_ID       "id"
-#define MQTT_TOPIC_APP              "app"
-#define MQTT_TOPIC_INTERVAL         "interval"
-#define MQTT_TOPIC_HOSTNAME         "host"
-#define MQTT_TOPIC_DESCRIPTION      "desc"
-#define MQTT_TOPIC_TIME             "time"
-#define MQTT_TOPIC_RFOUT            "rfout"
-#define MQTT_TOPIC_RFIN             "rfin"
-#define MQTT_TOPIC_RFLEARN          "rflearn"
-#define MQTT_TOPIC_RFRAW            "rfraw"
-#define MQTT_TOPIC_UARTIN           "uartin"
-#define MQTT_TOPIC_UARTOUT          "uartout"
-#define MQTT_TOPIC_LOADAVG          "loadavg"
-#define MQTT_TOPIC_BOARD            "board"
-#define MQTT_TOPIC_PULSE            "pulse"
-#define MQTT_TOPIC_SPEED            "speed"
-#define MQTT_TOPIC_IRIN             "irin"
-#define MQTT_TOPIC_IROUT            "irout"
-#define MQTT_TOPIC_OTA              "ota"
-#define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
-#define MQTT_TOPIC_CURTAIN          "curtain"
-#define MQTT_TOPIC_CMD              "cmd"
-
-// Light module
-#define MQTT_TOPIC_CHANNEL          "channel"
-#define MQTT_TOPIC_COLOR_RGB        "rgb"
-#define MQTT_TOPIC_COLOR_HSV        "hsv"
-#define MQTT_TOPIC_ANIM_MODE        "anim_mode"
-#define MQTT_TOPIC_ANIM_SPEED       "anim_speed"
-#define MQTT_TOPIC_BRIGHTNESS       "brightness"
-#define MQTT_TOPIC_MIRED            "mired"
-#define MQTT_TOPIC_KELVIN           "kelvin"
-#define MQTT_TOPIC_TRANSITION       "transition"
-
-// Thermostat module
-#define MQTT_TOPIC_HOLD_TEMP        "hold_temp"
-#define MQTT_TOPIC_HOLD_TEMP_MIN    "min"
-#define MQTT_TOPIC_HOLD_TEMP_MAX    "max"
-#define MQTT_TOPIC_REMOTE_TEMP      "remote_temp"
-#define MQTT_TOPIC_ASK_TEMP_RANGE   "ask_temp_range"
-#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MIN "notify_temp_range_min"
-#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MAX "notify_temp_range_max"
-
-
 #ifndef MQTT_STATUS_ONLINE
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
 #endif
@@ -1304,16 +1231,20 @@
 // 4 channels => RGBW
 // 5 channels => RGBWW
 
-#ifndef LIGHT_SAVE_ENABLED
-#define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
+#ifndef LIGHT_PROVIDER
+#define LIGHT_PROVIDER LIGHT_PROVIDER_NONE
 #endif
 
-#ifndef LIGHT_COMMS_DELAY
-#define LIGHT_COMMS_DELAY       100         // Delay communication after light update (in ms)
+#ifndef LIGHT_REPORT_DELAY
+#define LIGHT_REPORT_DELAY      100        // Delay reporting current state for the specified number of ms after light update
+#endif
+
+#ifndef LIGHT_SAVE_ENABLED
+#define LIGHT_SAVE_ENABLED      1          // Light channel values saved by default after each change
 #endif
 
 #ifndef LIGHT_SAVE_DELAY
-#define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+#define LIGHT_SAVE_DELAY        5000       // Persist channel & brightness values after the specified number of ms
 #endif
 
 #ifndef LIGHT_MIN_PWM
@@ -1414,6 +1345,9 @@
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 #endif
 
+#ifndef LIGHT_RELAY_ENABLED
+#define LIGHT_RELAY_ENABLED     1           // Add a virtual switch that controls the global light state. Depends on RELAY_SUPPORT
+#endif
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
@@ -1451,6 +1385,10 @@
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 #endif
 
+#ifndef HOMEASSISTANT_RETAIN
+#define HOMEASSISTANT_RETAIN    MQTT_RETAIN     // Make broker retain the messages
+#endif
+
 // -----------------------------------------------------------------------------
 // INFLUXDB
 // -----------------------------------------------------------------------------
@@ -1482,7 +1420,6 @@
 #ifndef INFLUXDB_PASSWORD
 #define INFLUXDB_PASSWORD       ""              // Default password
 #endif
-
 
 // -----------------------------------------------------------------------------
 // THINGSPEAK
@@ -1618,6 +1555,10 @@
 
 #ifndef NTP_WAIT_FOR_SYNC
 #define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
+#endif
+
+#ifndef NTP_DHCP_SERVER
+#define NTP_DHCP_SERVER             1               // Automatically replace the NTP server value with the one received with the DHCP packet
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1796,12 +1737,21 @@
 //--------------------------------------------------------------------------------
 // TUYA switch & dimmer support
 //--------------------------------------------------------------------------------
+
 #ifndef TUYA_SUPPORT
 #define TUYA_SUPPORT                0
 #endif
 
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
+#endif
+
+#ifndef TUYA_FILTER_ENABLED
+#define TUYA_FILTER_ENABLED         1
+#endif
+
+#ifndef TUYA_DEBUG_ENABLED
+#define TUYA_DEBUG_ENABLED          1
 #endif
 
 //--------------------------------------------------------------------------------
@@ -1820,13 +1770,18 @@
 #define PROMETHEUS_SUPPORT          0
 #endif
 
+//--------------------------------------------------------------------------------
+// ITEAD iFan support
+//--------------------------------------------------------------------------------
+
+#ifndef IFAN_SUPPORT
+#define IFAN_SUPPORT                0
+#endif
+
 // =============================================================================
-// Configuration helpers
+// Configuration helpers to help detect features
 // =============================================================================
 
-//------------------------------------------------------------------------------
-// Provide generic way to detect debugging support
-//------------------------------------------------------------------------------
 #ifndef DEBUG_SUPPORT
 #define DEBUG_SUPPORT ( \
     DEBUG_SERIAL_SUPPORT || \
@@ -1836,3 +1791,6 @@
 )
 #endif
 
+#ifndef FAN_SUPPORT
+#define FAN_SUPPORT IFAN_SUPPORT
+#endif

@@ -5,17 +5,14 @@
   "author": "Xose Pérez <xose.perez@gmail.com>",
   "license": "GPL-3.0",
   "devDependencies": {
-    "gulp": "^4.0.0",
-    "gulp-base64-favicon": "^1.0.2",
-    "gulp-crass": "^0.2.2",
-    "gulp-css-base64": "^1.3.4",
+    "gulp": "^4.0.2",
     "gulp-csslint": "^1.0.0",
     "gulp-gzip": "^1.4.0",
-    "gulp-htmllint": "0.0.16",
+    "gulp-htmllint": "0.0.19",
     "gulp-htmlmin": "^5.0.1",
-    "gulp-inline": "^0.1.1",
-    "gulp-remove-code": "^3.0.4",
-    "gulp-rename": "^1.4.0",
-    "gulp-replace": "^1.0.0"
+    "gulp-inline-source-html": "^1.0.3",
+    "gulp-rename": "^2.0.0",
+    "gulp-replace": "^1.0.0",
+    "html-minifier": "^4.0.0"
   }
 }

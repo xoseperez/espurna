@@ -15,6 +15,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "terminal.h"
 #include "ws.h"
 
+#include <NoFUSSClient.h>
+
 unsigned long _nofussLastCheck = 0;
 unsigned long _nofussInterval = 0;
 bool _nofussEnabled = false;
@@ -43,11 +45,7 @@ void _nofussWebSocketOnConnected(JsonObject& root) {
 void _nofussConfigure() {
 
     String nofussServer = getSetting("nofussServer", NOFUSS_SERVER);
-    #if MDNS_CLIENT_SUPPORT
-        nofussServer = mdnsResolve(nofussServer);
-    #endif
-
-    if (nofussServer.length() == 0) {
+    if (!nofussServer.length()) {
         setSetting("nofussEnabled", 0);
         _nofussEnabled = false;
     } else {
@@ -168,7 +166,7 @@ void nofussSetup() {
             #endif
             // TODO: NoFUSS will reset the board after this callback returns.
             //       Maybe this should be optional
-            customResetReason(CUSTOM_RESET_NOFUSS);
+            customResetReason(CustomResetReason::Ota);
             nice_delay(100);
         }
 

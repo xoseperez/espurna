@@ -3,6 +3,7 @@
 ESPurna
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,65 +21,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "espurna.h"
+#include "main.h"
 
-#include "alexa.h"
-#include "api.h"
-#include "broker.h"
-#include "button.h"
-#include "crash.h"
-#include "curtain_kingart.h"
-#include "debug.h"
-#include "domoticz.h"
-#include "encoder.h"
-#include "homeassistant.h"
-#include "garland.h"
-#include "i2c.h"
-#include "influxdb.h"
-#include "ir.h"
-#include "led.h"
-#include "light.h"
-#include "lightfox.h"
-#include "llmnr.h"
-#include "mdns.h"
-#include "mqtt.h"
-#include "netbios.h"
-#include "nofuss.h"
-#include "ntp.h"
-#include "ota.h"
-#include "relay.h"
-#include "rfbridge.h"
-#include "rfm69.h"
-#include "rpc.h"
-#include "rpnrules.h"
-#include "rtcmem.h"
-#include "scheduler.h"
-#include "sensor.h"
-#include "ssdp.h"
-#include "telnet.h"
-#include "thermostat.h"
-#include "thingspeak.h"
-#include "tuya.h"
-#include "uartmqtt.h"
-#include "web.h"
-#include "ws.h"
-#include "mcp23s08.h"
-#include "prometheus.h"
-
-std::vector<void_callback_f> _loop_callbacks;
-std::vector<void_callback_f> _reload_callbacks;
+std::vector<LoopCallback> _loop_callbacks;
+std::vector<LoopCallback> _reload_callbacks;
 
 bool _reload_config = false;
 unsigned long _loop_delay = 0;
+
+constexpr unsigned long LoopDelayMin { 10ul };
+constexpr unsigned long LoopDelayMax { 300ul };
 
 // -----------------------------------------------------------------------------
 // GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
 
-void espurnaRegisterLoop(void_callback_f callback) {
+void espurnaRegisterLoop(LoopCallback callback) {
     _loop_callbacks.push_back(callback);
 }
 
-void espurnaRegisterReload(void_callback_f callback) {
+void espurnaRegisterReload(LoopCallback callback) {
     _reload_callbacks.push_back(callback);
 }
 
@@ -96,6 +58,14 @@ unsigned long espurnaLoopDelay() {
     return _loop_delay;
 }
 
+void espurnaLoopDelay(unsigned long loop_delay) {
+    _loop_delay = loop_delay;
+}
+
+constexpr unsigned long _loopDelay() {
+    return LOOP_DELAY_TIME;
+}
+
 // -----------------------------------------------------------------------------
 // BOOTING
 // -----------------------------------------------------------------------------
@@ -107,7 +77,7 @@ void setup() {
     // -------------------------------------------------------------------------
 
     // Cache initial free heap value
-    setInitialFreeHeap();
+    systemInitialFreeHeap();
 
     // Init logging module
     #if DEBUG_SUPPORT
@@ -131,10 +101,6 @@ void setup() {
         debugConfigureBoot();
         crashSetup();
     #endif
-
-    // Return bogus free heap value for broken devices
-    // XXX: device is likely to trigger other bugs! tread carefuly
-    wtfHeap(getSetting("wtfHeap", 0));
 
     // Init Serial, SPIFFS and system check
     systemSetup();
@@ -235,9 +201,6 @@ void setup() {
     #if MDNS_SERVER_SUPPORT
         mdnsServerSetup();
     #endif
-    #if MDNS_CLIENT_SUPPORT
-        mdnsClientSetup();
-    #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
     #endif
@@ -299,49 +262,48 @@ void setup() {
         displaySetup();
     #endif
     #if TUYA_SUPPORT
-        Tuya::tuyaSetup();
+        tuya::setup();
     #endif
     #if KINGART_CURTAIN_SUPPORT
         kingartCurtainSetup();
     #endif
-
-    // 3rd party code hook
-    #if USE_EXTRA
-        extraSetup();
+    #if FAN_SUPPORT
+        fanSetup();
     #endif
-
-
     #if GARLAND_SUPPORT
         garlandSetup();
     #endif
+
+    #if USE_EXTRA
+        extraSetup();
+    #endif
     
-    // Prepare configuration for version 2.0
+    // Update `cfg` version
     migrate();
 
     // Set up delay() after loop callbacks are finished
     // Note: should be after settingsSetup()
-    _loop_delay = constrain(
-        getSetting("loopDelay", LOOP_DELAY_TIME), 0, 300
-    );
+    unsigned long loop_delay { getSetting("loopDelay", _loopDelay()) };
+    _loop_delay = ((LoopDelayMin < loop_delay) && (loop_delay <= LoopDelayMax))
+        ? loop_delay : LoopDelayMin;
 
-    saveSettings();
-
+    if (_loop_delay != loop_delay) {
+        setSetting("loopDelay", _loop_delay);
+    }
 }
 
 void loop() {
-
     // Reload config before running any callbacks
     if (_reload_config) {
         _espurnaReload();
         _reload_config = false;
     }
 
-    // Call registered loop callbacks
-    for (unsigned char i = 0; i < _loop_callbacks.size(); i++) {
-        (_loop_callbacks[i])();
+    for (auto* callback : _loop_callbacks) {
+        callback();
     }
 
-    // Power saving delay
-    if (_loop_delay) delay(_loop_delay);
-
+    if (_loop_delay) {
+        delay(_loop_delay);
+    }
 }

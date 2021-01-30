@@ -14,11 +14,12 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #include "broker.h"
 #include "light.h"
 #include "ntp.h"
+#include "ntp_timelib.h"
 #include "relay.h"
 #include "ws.h"
 #include "curtain_kingart.h"
 
-constexpr const int SchedulerDummySwitchId = 0xff;
+constexpr int SchedulerDummySwitchId { 0xff };
 
 int _sch_restore = 0;
 
@@ -126,7 +127,7 @@ void _schConfigure() {
                     PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
                     i, sch_type, sch_switch,
                     sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
-                    (char *) sch_weekdays.c_str(),
+                    sch_weekdays.c_str(),
                     sch_enabled ? "" : " (disabled)"
                 );
 
@@ -174,7 +175,7 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
         if (SCHEDULER_TYPE_DIM == sch_type) {
             DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
             lightChannel(sch_switch, sch_action);
-            lightUpdate(true, true);
+            lightUpdate();
         }
     #endif
 
@@ -203,6 +204,10 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
 
 #else
 
+constexpr time_t secondsPerMinute = 60;
+constexpr time_t secondsPerHour = 3600;
+constexpr time_t secondsPerDay = secondsPerHour * 24;
+
 NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
     tm utc_time;
     tm local_time;
@@ -228,7 +233,6 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
 // If daybefore and relay is -1, check with current timestamp
 // Otherwise, modify it by moving 'daybefore' days back and only use the 'relay' id
 void _schCheck(int relay, int daybefore) {
-
     time_t timestamp = now();
     auto calendar_weekday = _schGetWeekday(timestamp, daybefore);
 
@@ -337,10 +341,12 @@ void schSetup() {
             .onKeyCheck(_schWebSocketOnKeyCheck);
     #endif
 
-    NtpBroker::Register([](const NtpTick tick, time_t, const String&) {
-        if (NtpTick::EveryMinute != tick) return;
+    static bool restore_once = true;
+    NtpBroker::Register([](NtpTick tick, time_t, const String&) {
+        if (NtpTick::EveryMinute != tick) {
+            return;
+        }
 
-        static bool restore_once = true;
         if (restore_once) {
             for (unsigned char i = 0; i < schedulableCount(); i++) {
                 if (getSetting({"relayLastSch", i}, 1 == SCHEDULER_RESTORE_LAST_SCHEDULE)) {

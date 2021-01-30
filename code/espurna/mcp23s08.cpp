@@ -15,8 +15,9 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 #if MCP23S08_SUPPORT
 
-#include <SPI.h>
+#include "mcp23s08_pin.h"
 
+#include <SPI.h>
 #include <bitset>
 
 // TODO: check if this needed for SPI operation
@@ -41,6 +42,45 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 static uint8_t  _mcp23s08TxData[16]  __attribute__((aligned(4)));
 static uint8_t  _mcp23s08RxData[16]  __attribute__((aligned(4)));
+
+namespace {
+
+class GpioMcp23s08 : public GpioBase {
+public:
+    constexpr static size_t Pins { 8ul };
+
+    using Pin = McpGpioPin;
+    using Mask = std::bitset<Pins>;
+
+    const char* id() const {
+        return "mcp23s08";
+    }
+
+    size_t pins() const {
+        return Pins;
+    }
+
+    bool lock(unsigned char index) const override {
+        return _lock[index];
+    }
+
+    void lock(unsigned char index, bool value) override {
+        _lock.set(index, value);
+    }
+
+    bool valid(unsigned char index) const override {
+        return (index < Pins);
+    }
+
+    BasePinPtr pin(unsigned char index) override {
+        return std::make_unique<McpGpioPin>(index);
+    }
+
+private:
+    Mask _lock;
+};
+
+} // namespace
 
 void MCP23S08Setup()
 {
@@ -166,6 +206,11 @@ bool MCP23S08GetPin(uint8_t pinNumber)
 bool mcpGpioValid(unsigned char gpio)
 {
     return gpio < McpGpioPins;
+}
+
+GpioBase& mcp23s08Gpio() {
+    static GpioMcp23s08 gpio;
+    return gpio;
 }
 
 #endif // MCP23S08_SUPPORT

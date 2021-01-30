@@ -14,44 +14,40 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <iterator>
 #include <vector>
 
-namespace Tuya {
+namespace tuya {
 
     class PrintRaw {
-        public:
-            static void write(Print& printer, uint8_t data) {
-                printer.write(data);
-            }
+    public:
+        static void write(Print& printer, uint8_t data) {
+            printer.write(data);
+        }
 
-            static void write(Print& printer, const uint8_t* data, size_t size) {
-                printer.write(data, size);
-            }
+        static void write(Print& printer, const uint8_t* data, size_t size) {
+            printer.write(data, size);
+        }
     };
 
     class PrintHex {
-        public:
-            static void write(Print& printer, uint8_t data) {
-                char buffer[3] = {0};
-                snprintf(buffer, sizeof(buffer), "%02x", data);
-                printer.write(buffer, 2);
-            }
+    public:
+        static void write(Print& printer, uint8_t data) {
+            char buffer[3] = {0};
+            snprintf(buffer, sizeof(buffer), "%02x", data);
+            printer.write(buffer, 2);
+        }
 
-            static void write(Print& printer, const uint8_t* data, size_t size) {
-                for (size_t n=0; n<size; ++n) {
-                    char buffer[3] = {0};
-                    snprintf(buffer, sizeof(buffer), "%02x", data[n]);
-                    printer.write(buffer, 2);
-                }
+        static void write(Print& printer, const uint8_t* data, size_t size) {
+            for (size_t n = 0; n < size; ++n) {
+                write(printer, data[n]);
             }
+        }
     };
 
+
     class StreamWrapper {
-
     protected:
-
         Stream& _stream;
 
     public:
-
         StreamWrapper(Stream& stream) :
             _stream(stream)
         {}
@@ -63,14 +59,10 @@ namespace Tuya {
         void rewind() {
             while(_stream.read() != -1);
         }
-
     };
 
     class Output : public virtual StreamWrapper {
-
     public:
-
-
         Output(Stream& stream) :
             StreamWrapper(stream)
         {}
@@ -112,7 +104,6 @@ namespace Tuya {
     };
 
     class Input : public virtual StreamWrapper {
-
         // Buffer depth based on the SDK recommendations
         constexpr static size_t LIMIT = 256;
 
@@ -120,9 +111,8 @@ namespace Tuya {
         // 256 * 1.04 = 266.24
         constexpr static size_t TIME_LIMIT = 267;
 
-        using const_iterator = std::vector<uint8_t>::const_iterator;
-
     public:
+        using const_iterator = std::vector<uint8_t>::const_iterator;
 
         Input(Stream& stream) :
             StreamWrapper(stream)
@@ -134,7 +124,7 @@ namespace Tuya {
         bool done() { return _done; }
         size_t size() { return _index; }
 
-        uint8_t operator[](size_t i) {
+        uint8_t operator[](size_t i) const {
             if (i > LIMIT) return 0;
             return _buffer[i];
         }
@@ -208,14 +198,12 @@ namespace Tuya {
         }
 
     private:
-
         bool _done = false;
         size_t _index = 0;
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0;
         std::vector<uint8_t> _buffer;
         unsigned long _last = 0;
-
     };
 
     class Transport : public Input, public Output, public virtual StreamWrapper {

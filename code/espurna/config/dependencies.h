@@ -92,21 +92,13 @@
 #define RELAY_SUPPORT               1           // Scheduler needs relays
 #endif
 
-#if LWIP_VERSION_MAJOR != 1
-#undef MDNS_CLIENT_SUPPORT
-#define MDNS_CLIENT_SUPPORT         0          // default resolver already handles this
-#endif
-
-#if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#undef TELNET_SERVER_ASYNC_BUFFERED
-#define TELNET_SERVER_ASYNC_BUFFERED 1         // enable buffered telnet by default on latest Cores
-#endif
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-#undef TUYA_SUPPORT
-#define TUYA_SUPPORT                1           // Need base Tuya module for this to work
+#if TUYA_SUPPORT
+#undef LIGHT_TRANSITION_TIME
+#define LIGHT_TRANSITION_TIME       1600       // longer transition than the default
+#undef LIGHT_TRANSITION_STEP
+#define LIGHT_TRANSITION_STEP       200        // step can't be 10ms since most tuya serial connections are not fast
 #undef LIGHT_USE_TRANSITIONS
-#define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
+#define LIGHT_USE_TRANSITIONS       0          // also, disable transitions unless set at runtime
 #endif
 
 #if TUYA_SUPPORT
@@ -128,6 +120,11 @@
 #define TERMINAL_SUPPORT            1           // Need terminal command line parser and commands
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1           // Subscribe and publish things
+#endif
+
+#if IFAN_SUPPORT
+#undef RELAY_SUPPORT
+#define RELAY_SUPPORT               1            // Need relays to manage general state
 #endif
 
 //------------------------------------------------------------------------------
@@ -182,19 +179,6 @@
 #define NTP_LEGACY_SUPPORT 1
 #else
 #define NTP_LEGACY_SUPPORT 0
-#endif
-
-//------------------------------------------------------------------------------
-// Remove serial debug support completely in case hardware does not support it
-// TODO: provide runtime check as well?
-
-#if (BUTTON_PROVIDER_ITEAD_SONOFF_DUAL_SUPPORT) || \
-    (BUTTON_PROVIDER_FOXEL_LIGHTFOX_DUAL_SUPPORT)
-#if DEBUG_SERIAL_SUPPORT
-#warning "DEBUG_SERIAL_SUPPORT will be disabled because it conflicts with the BUTTON_PROVIDER_{ITEAD_SONOFF_DUAL,FOXEL_LIGHTFOX_DUAL}"
-#undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT 0
-#endif
 #endif
 
 //------------------------------------------------------------------------------

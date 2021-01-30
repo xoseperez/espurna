@@ -4,21 +4,19 @@
 
         <title>ESPurna 0.0.0</title>
         <meta charset="utf-8" />
-        <!-- shortcut::html/favicon.ico -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <!-- build:css style.css -->
-        <link rel="stylesheet" href="vendor/pure-1.0.0.min.css" />
-        <link rel="stylesheet" href="vendor/pure-grids-responsive-1.0.0.min.css" />
-        <link rel="stylesheet" href="vendor/side-menu.css" />
-        <!-- removeIf(!light) -->
-        <link rel="stylesheet" href="vendor/jquery.wheelcolorpicker-3.0.8.css" />
-        <!-- endRemoveIf(!light) -->
+        <link type="image" rel="icon" href="favicon.ico" inline />
+
+        <link rel="stylesheet" href="vendor/pure-2.0.3.min.css" inline />
+        <link rel="stylesheet" href="vendor/pure-grids-responsive-2.0.3.min.css" inline />
+        <link rel="stylesheet" href="vendor/side-menu.css" inline />
+
         <!-- removeIf(!rfm69) -->
-        <link rel="stylesheet" href="vendor/datatables-1.10.16.css" />
+        <link rel="stylesheet" href="vendor/jquery.dataTables-v1.10.23.min.css" inline />
         <!-- endRemoveIf(!rfm69) -->
-        <link rel="stylesheet" href="custom.css" />
-        <!-- endbuild -->
+
+        <link rel="stylesheet" href="custom.css" inline />
 
     </head>
 
@@ -240,19 +238,22 @@
 
                                 <div id="relays"></div>
 
-                                <!-- removeIf(!curtain) -->
-                                <div id="curtains"></div>
-                                <!-- endRemoveIf(!curtain) -->
-                                
                                 <!-- removeIf(!light) -->
-                                <div id="colors"></div>
+                                <div id="color"></div>
                                 <div id="cct"></div>
+                                <!-- endRemoveIf(!light) -->
+
+                                <!-- removeIf(!light) -->
                                 <div id="channels"></div>
                                 <!-- endRemoveIf(!light) -->
 
                                 <!-- removeIf(!sensor) -->
                                 <div id="magnitudes"></div>
                                 <!-- endRemoveIf(!sensor) -->
+
+                                <!-- removeIf(!curtain) -->
+                                <div id="curtains"></div>
+                                <!-- endRemoveIf(!curtain) -->
 
                                 <!-- removeIf(!rfm69) -->
                                 <div class="pure-g module module-rfm69">
@@ -291,9 +292,6 @@
 
                                     <div class="pure-u-1-2">Firmware version</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_version"></span></div>
-
-                                    <div class="pure-u-1-2">Firmware revision</div>
-                                    <div class="pure-u-11-24"><span class="right" name="app_revision"></span></div>
 
                                     <div class="pure-u-1-2">Firmware build date</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_build"></span></div>
@@ -369,7 +367,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -381,7 +379,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Description</label>
-                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" tabindex="2" />
+                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         Human-friendly name for your device. Will be reported with the heartbeat.<br />
@@ -391,7 +389,7 @@
 
                                 <div class="pure-g module module-btn">
                                     <label class="pure-u-1 pure-u-lg-1-4">Click repeat delay</label>
-                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" tabindex="6" />
+                                    <input name="btnRepDel" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="0" step="100" max="1000" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -410,11 +408,62 @@
 
                                 <div class="pure-g module module-alexa">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa device name</label>
-                                    <input name="alexaName" class="pure-u-1 pure-u-lg-1-4"  maxlength="31" type="text" action="reboot" tabindex="7" />
+                                    <input name="alexaName" class="pure-u-1 pure-u-lg-1-4"  maxlength="31" type="text" action="reboot" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This name will be used in Alexa integration.<br />
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat messages</label>
+                                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" >
+                                        <option value="0">Disabled</option>
+                                        <option value="1">Once per connection</option>
+                                        <option value="2">Repeat after defined interval</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
+                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" min="1" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        How often the heartbeat messages should be sent (number of <strong>seconds</strong>).
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat report</label>
+                                    <select multiple class="pure-u-1 pure-u-lg-3-4" name="hbReport" >
+                                        <option value="1">Device status</option>
+                                        <option value="2">SSID</option>
+                                        <option value="21">BSSID</option>
+                                        <option value="3">IP</option>
+                                        <option value="4">MAC</option>
+                                        <option value="5">RSSI</option>
+                                        <option value="6">Uptime</option>
+                                        <option value="7">Datetime</option>
+                                        <option value="8">Free heap</option>
+                                        <option value="9">VCC</option>
+                                        <option value="10">Relays status</option>
+                                        <option value="11">Lights status</option>
+                                        <option value="12">Hostname</option>
+                                        <option value="13">App name</option>
+                                        <option value="14">App version</option>
+                                        <option value="15">Board</option>
+                                        <option value="16">Loadavg</option>
+                                        <option value="17">Heartbeat interval</option>
+                                        <option value="18">Device description</option>
+                                        <option value="19">Temperature range</option>
+                                        <option value="20">Remote temperature</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Enable / disable heartbeat messages.
                                     </div>
                                 </div>
 
@@ -492,6 +541,11 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Define how the different switches should be synchronized.</div>
                                 </div>
 
+                                <div class="pure-g module module-multirelay">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Interlock delay</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="relayDelayInterlock" class="pure-u-1" type="number" min="0" /></div>
+                                </div>
+
                                 <div id="relayConfig"></div>
 
                             </fieldset>
@@ -561,6 +615,30 @@
 
                             <fieldset>
 
+                                <div class="pure-g module-relay">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Light state switch</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ltRelay" tabindex="5" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled, add virtual relay switch that controls the ON / OFF state.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save values</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ltSave" tabindex="6" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Save channel &amp; brightness values in settings</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save delay</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltSaveDelay" min="5000" max="60000" tabindex="7" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">When "Save values" is enabled, wait for the delay (ms) before the values are saved</div>
+                                </div>
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use color</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
@@ -615,24 +693,32 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Channel transitions</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="13" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled, channel changes will be smoothed.</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Transition time</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="lightTime" min="10" max="5000" tabindex="14" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltTime" min="10" max="5000" tabindex="14" action="reload" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Time in millisecons to transition from one color to another.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Time to transition from one color to another (ms)</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Transition step</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="ltStep" min="10" max="5000" tabindex="15" action="reload" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">(ms, depends on the transition time)</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="15" action="reconnect" /></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="16" action="reconnect" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Sync color between different lights.</div>
                                 </div>
@@ -747,30 +833,6 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Request password when starting telnet session</div>
                                 </div>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
-                                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" tabindex="15" >
-                                        <option value="0">Disabled</option>
-                                        <option value="1">On device startup</option>
-                                        <option value="2">Repeat after defined interval</option>
-                                        <option value="3">Repeat only device status</option>
-                                    </select>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Define when heartbeat message will be sent.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
-                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" tabindex="16" />
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
-                                    </div>
-                                </div>
-
                                 <div class="pure-g module module-ota">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
@@ -780,7 +842,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" rel="noopener" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
-                                    <input name="upgrade" type="file" tabindex="17" />
+                                    <input name="upgrade" type="file" tabindex="18" />
                                 </div>
 
                             </fieldset>
@@ -818,8 +880,10 @@
                                         Disable this option if you are <strong>connecting to a single access point</strong> (or router) or to a <strong>hidden SSID</strong>.
                                     </div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <button class="pure-button button-wifi-scan" type="button">Scan now</button>
-                                    <div class="pure-u-0 pure-u-lg-1-4 scan loading"></div>
+                                    <button id="button-wifi-scan" class="pure-button" type="button">Scan now</button>
+                                    <div class="pure-u-0 pure-u-lg-1-4 scan loading">
+                                        <img src="images/loading.gif" alt="Scanning" inline></img>
+                                    </div>
                                 </div>
 
                                 <div class="pure-g">
@@ -1369,39 +1433,40 @@
                         <div class="page">
                             <fieldset>
 
-                                <legend>Discover</legend>
+                                <legend><a rel="noopener" target="_blank" href="https://www.home-assistant.io/docs/mqtt/discovery/">Discovery</a></legend>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Discover</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" tabindex="14" /></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
+                                        Home Assistant MQTT discovery. Enable / disable, then save to trigger the update.
                                     </div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Prefix</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="haPrefix" type="text" tabindex="15" />
-                                </div>
-
-                                <legend>Configuration</legend>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Configuration</label>
-                                    <div class="pure-u-1-4 pure-u-lg-3-4"><button type="button" class="pure-button button-ha-config pure-u-1-3">Show</button></div>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="haPrefix" type="text" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        These are the settings you should copy to your Home Assistant "configuration.yaml" file.
-                                        If any of the sections below (switch, light, sensor) already exists, do not duplicate it,
-                                        simply copy the contents of the section below the ones already present.
+                                        The prefix for the discovery topic e.g. <code><strong>&lt;prefix&gt;</strong>/switch/espurna-123456/config</code>
                                     </div>
                                 </div>
-                                <div class="pure-g">
-                                    <textarea class="pure-u-1 terminal" id="haConfig" name="haConfig" wrap="off" readonly></textarea>
-                                </div>
 
+
+                                <legend>MQTT</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Retain</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haRetain" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Set the <strong>Retain</strong> flag when sending the messages.
+                                    </div>
+                                </div>
 
                             </fieldset>
                         </div>
@@ -2051,13 +2116,13 @@
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
+                <label class="pure-u-1 pure-u-lg-1-4"><span class="relay-name"></span></label>
                 <div><input name="relay" type="checkbox" on="ON" off="OFF" /></div>
             </div>
         </div>
 
         <div id="relayConfigTemplate" class="template">
-            <legend>Switch #<span class="id"></span> (<span class="gpio"></span>)</legend>
+            <legend><span class="name"></span> (<span class="prov"></span>)</legend>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
                 <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">
@@ -2142,14 +2207,6 @@
         <!-- endRemoveIf(!sensor) -->
 
         <!-- removeIf(!light) -->
-        <div id="colorTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Color</label>
-                <input class="pure-u-1 pure-u-lg-1-4" data-wcp-layout="block" name="color" readonly />
-            </div>
-
-        </div>
-
         <div id="brightnessTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
@@ -2243,15 +2300,15 @@
 
     </body>
 
-    <!-- build:js script.js -->
-    <script src="vendor/jquery-3.4.1.slim.min.js"></script>
-    <script src="custom.js"></script>
+    <script src="vendor/jquery-4.0.0-pre.slim.min.js" inline></script>
+    <script src="custom.js" inline></script>
+
     <!-- removeIf(!light) -->
-    <script src="vendor/jquery.wheelcolorpicker-3.0.8.min.js"></script>
+    <script src="vendor/iro-5.3.1.min.js" inline></script>
     <!-- endRemoveIf(!light) -->
+
     <!-- removeIf(!rfm69) -->
-    <script src="vendor/datatables-1.10.16.min.js"></script>
+    <script src="vendor/jquery.dataTables-v1.10.23.min.js" inline></script>
     <!-- endRemoveIf(!rfm69) -->
-    <!-- endbuild -->
 
 </html>

@@ -3,6 +3,7 @@
 ESPurna
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,12 +42,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <memory>
 
-using void_callback_f = void (*)();
+#if DEBUG_SUPPORT
+#define DEBUG_MSG(...) debugSend(__VA_ARGS__)
+#define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
+#endif
 
-void espurnaRegisterLoop(void_callback_f callback);
-void espurnaRegisterReload(void_callback_f callback);
+#ifndef DEBUG_MSG
+#define DEBUG_MSG(...)
+#define DEBUG_MSG_P(...)
+#endif
+
+using LoopCallback = void (*)();
+
+void espurnaRegisterLoop(LoopCallback callback);
+void espurnaRegisterReload(LoopCallback callback);
 void espurnaReload();
 
 unsigned long espurnaLoopDelay();
+void espurnaLoopDelay(unsigned long);
 
 void extraSetup();

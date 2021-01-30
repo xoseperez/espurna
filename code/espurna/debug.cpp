@@ -17,7 +17,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "settings.h"
 #include "telnet.h"
 #include "web.h"
+#include "ntp.h"
+#include "utils.h"
 #include "ws.h"
+
+#if DEBUG_WEB_SUPPORT
+#include <ArduinoJson.h>
+#endif
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
@@ -367,33 +373,68 @@ void debugConfigureBoot() {
     debugConfigure();
 }
 
+bool _debugHeartbeat(heartbeat::Mask mask) {
+    if (mask & heartbeat::Report::Uptime)
+        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
+
+    if (mask & heartbeat::Report::Freeheap)
+        infoHeapStats();
+
+    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+        DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
+
+#if NTP_SUPPORT
+    if ((mask & heartbeat::Report::Datetime) && (ntpSynced()))
+        DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), ntpDateTime().c_str());
+#endif
+
+    return true;
+}
+
 void debugConfigure() {
 
     // HardwareSerial::begin() will automatically enable this when
     // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
     // Core debugging also depends on various DEBUG_ESP_... being defined
     {
-        #if defined(DEBUG_ESP_PORT)
-        #if not defined(NDEBUG)
-            constexpr bool debug_sdk = true;
-        #endif // !defined(NDEBUG)
-        #else
-            constexpr bool debug_sdk = false;
-        #endif // defined(DEBUG_ESP_PORT)
-
+#if defined(DEBUG_ESP_PORT)
+#if not defined(NDEBUG)
+        constexpr bool debug_sdk = true;
+#endif // !defined(NDEBUG)
+#else
+        constexpr bool debug_sdk = false;
+#endif // defined(DEBUG_ESP_PORT)
         DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
     }
 
+    // Make sure other modules are aware of used GPIOs
+#if DEBUG_SERIAL_SUPPORT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored  "-Wpragmas"
+#pragma GCC diagnostic ignored  "-Wtautological-compare"
+    if (&(DEBUG_PORT) == &Serial) {
+        gpioLock(1);
+        gpioLock(3);
+    } else if (&(DEBUG_PORT) == &Serial1) {
+        gpioLock(2);
+    }
+#pragma GCC diagnostic pop
+#endif
+
     #if DEBUG_LOG_BUFFER_SUPPORT
     {
-        const auto enabled = getSetting("dbgBufEnabled", 1 == DEBUG_LOG_BUFFER_ENABLED);
-        const auto size = getSetting("dbgBufSize", DEBUG_LOG_BUFFER_SIZE);
+        const auto enabled = getSetting("dbgLogBuf", 1 == DEBUG_LOG_BUFFER_ENABLED);
+        const auto size = getSetting("dbgLogBufSize", DEBUG_LOG_BUFFER_SIZE);
         if (enabled) {
             _debug_log_buffer_enabled = true;
             _debug_log_buffer.reserve(size);
         }
     }
     #endif // DEBUG_LOG_BUFFER
+
+    systemHeartbeat(_debugHeartbeat,
+        getSetting("dbgHbMode", heartbeat::currentMode()),
+        getSetting("dbgHbIntvl", heartbeat::currentInterval()));
 
 }
 

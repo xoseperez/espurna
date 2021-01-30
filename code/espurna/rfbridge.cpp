@@ -923,9 +923,12 @@ void _rfbSendQueued() {
 
 // Check if the payload looks like a HEX code (plus comma, specifying the 'repeats' arg for the queue)
 void _rfbSendFromPayload(const char * payload) {
+    size_t len { strlen(payload) };
+    if (!len) {
+        return;
+    }
 
     decltype(_rfb_repeats) repeats { _rfb_repeats };
-    size_t len { strlen(payload) };
 
     const char* sep { strchr(payload, ',') };
     if (sep) {
@@ -951,7 +954,14 @@ void _rfbSendFromPayload(const char * payload) {
     // We postpone the actual sending until the loop, as we may've been called from MQTT or HTTP API
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
     _rfbEnqueue(payload, len, repeats);
+}
 
+void rfbSend(const char* code) {
+    _rfbSendFromPayload(code);
+}
+
+void rfbSend(const String& code) {
+    _rfbSendFromPayload(code.c_str());
 }
 
 #if MQTT_SUPPORT
@@ -1067,6 +1077,15 @@ void _rfbApiSetup() {
 
 void _rfbInitCommands() {
 
+    terminalRegisterCommand(F("RFB.SEND"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc == 2) {
+            rfbSend(ctx.argv[1]);
+            return;
+        }
+
+        terminalError(ctx, F("RFB.SEND <CODE>"));
+    });
+
 #if RELAY_SUPPORT
     terminalRegisterCommand(F("RFB.LEARN"), [](const terminal::CommandContext& ctx) {
 
@@ -1131,7 +1150,7 @@ void _rfbInitCommands() {
 // -----------------------------------------------------------------------------
 
 void rfbStore(unsigned char id, bool status, const char * code) {
-    settings_key_t key { status ? F("rfbON") : F("rfbOFF"), id };
+    SettingsKey key { status ? F("rfbON") : F("rfbOFF"), id };
     setSetting(key, code);
     DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.toString().c_str(), code);
 }
@@ -1149,10 +1168,7 @@ void rfbStatus(unsigned char id, bool status) {
     // TODO: Consider having 'origin' of the relay change. Either supply relayStatus with an additional arg,
     //       or track these statuses directly.
     if (!_rfb_relay_status_lock[id]) {
-        String value = rfbRetrieve(id, status);
-        if (value.length() && !(value.length() & 1)) {
-            _rfbSendFromPayload(value.c_str());
-        }
+        rfbSend(rfbRetrieve(id, status));
     }
 
     _rfb_relay_status_lock[id] = false;
@@ -1214,12 +1230,12 @@ void _rfbSettingsMigrate(int version) {
     String buffer;
 
     for (unsigned char index = 0; index < relayCount(); ++index) {
-        const settings_key_t on_key {F("rfbON"), index};
+        SettingsKey on_key {F("rfbON"), index};
         if (migrate_code(buffer, getSetting(on_key))) {
             setSetting(on_key, buffer);
         }
 
-        const settings_key_t off_key {F("rfbOFF"), index};
+        SettingsKey off_key {F("rfbOFF"), index};
         if (migrate_code(buffer, getSetting(off_key))) {
             setSetting(off_key, buffer);
         }
@@ -1244,27 +1260,31 @@ void rfbSetup() {
         auto rx = getSetting("rfbRX", RFB_RX_PIN);
         auto tx = getSetting("rfbTX", RFB_TX_PIN);
 
-        // TODO: tag gpioGetLock with a NAME string, skip log here
-        _rfb_receive = gpioValid(rx);
-        _rfb_transmit = gpioValid(tx);
-        if (!_rfb_transmit && !_rfb_receive) {
+        if ((GPIO_NONE == rx) && (GPIO_NONE == tx)) {
             DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
             return;
         }
 
         _rfb_modem = new RCSwitch();
-        if (_rfb_receive) {
+        if (gpioLock(rx)) {
+            _rfb_receive = true;
             _rfb_modem->enableReceive(rx);
             DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
         }
-        if (_rfb_transmit) {
+        if (gpioLock(tx)) {
             auto transmit = getSetting("rfbTransmit", RFB_TRANSMIT_REPEATS);
+            _rfb_transmit = true;
             _rfb_modem->enableTransmit(tx);
             _rfb_modem->setRepeatTransmit(transmit);
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
         }
     }
 
+#endif
+
+#if RELAY_SUPPORT
+    relaySetStatusNotify(rfbStatus);
+    relaySetStatusChange(rfbStatus);
 #endif
 
 #if MQTT_SUPPORT

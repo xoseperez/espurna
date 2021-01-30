@@ -50,6 +50,12 @@ Raw messages:
 
 #if IR_SUPPORT
 
+#include <IRremoteESP8266.h>
+#include <IRrecv.h>
+#include <IRsend.h>
+
+#include "ir_button.h"
+
 #include "light.h"
 #include "mqtt.h"
 #include "relay.h"
@@ -301,13 +307,13 @@ void _irProcess(unsigned char type, unsigned long code) {
 
                     case IR_BUTTON_ACTION_BRIGHTER:
                         lightBrightnessStep(button_value ? 1 : -1);
-                        lightUpdate(true, true);
+                        lightUpdate();
                         nice_delay(150); //debounce
                         break;
 
                     case IR_BUTTON_ACTION_RGB:
                         lightColor(button_value);
-                        lightUpdate(true, true);
+                        lightUpdate();
                         break;
 
                 /*

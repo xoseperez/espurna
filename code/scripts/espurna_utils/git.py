@@ -10,14 +10,15 @@ def git(*args):
     return proc.stdout.readlines()[0].strip()
 
 def app_inject_revision(env):
-    revision = ""
-    try:
-        revision = "\\\"{}\\\"".format(git("rev-parse", "--short=8", "HEAD"))
-    except: # pylint: disable=broad-except
-        pass
+    revision = env.get("ESPURNA_RELEASE_REVISION", "")
+    if not revision:
+        try:
+            revision = ".git" + git("rev-parse", "--short=8", "HEAD")
+        except: # pylint: disable=broad-except
+            pass
 
     # Note: code expects this as undefined when empty
     if revision:
         env.Append(CPPDEFINES=[
-            ("APP_REVISION", revision)
+            ("APP_REVISION", "\\\"{}\\\"".format(revision))
         ])

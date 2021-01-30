@@ -226,9 +226,9 @@ div.state {
     display: none;
 }
 
+#button-wifi-scan,
 .button-more-network,
 .button-more-schedule,
-.button-wifi-scan,
 .button-rfb-send {
     background: rgb(255, 128, 0); /* orange */
 }
@@ -382,7 +382,6 @@ input[disabled] + .toggle .toggle__handler {
    -------------------------------------------------------------------------- */
 
 .loading {
-    background-image: url('images/loading.gif');
     display: none;
     height: 20px;
     margin: 8px 0 0 10px;
@@ -406,6 +405,15 @@ input[disabled] + .toggle .toggle__handler {
 #menu div.footer a {
     padding: 0;
     text-decoration: none;
+}
+
+/* -----------------------------------------------------------------------------
+    Home panel
+   -------------------------------------------------------------------------- */
+
+#color {
+    padding-bottom: 1em;
+    padding-top: 1em;
 }
 
 /* -----------------------------------------------------------------------------

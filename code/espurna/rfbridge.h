@@ -16,6 +16,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 BrokerDeclare(RfbridgeBroker, void(unsigned char protocol, const char* code));
 
+void rfbSend(const char* code);
+void rfbSend(const String& code);
+
 void rfbStatus(unsigned char id, bool status);
 void rfbLearn(unsigned char id, bool status);
 
