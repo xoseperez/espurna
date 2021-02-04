@@ -189,6 +189,11 @@ var inlineHandler = function(modules) {
             return;
         }
 
+        if (source.sourcepath === "favicon.ico") {
+            source.format = "x-icon";
+            return;
+        }
+
         if (source.content) {
             return;
         }
