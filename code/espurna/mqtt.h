@@ -56,10 +56,6 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_CMD              "cmd"
 
 using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
-struct MqttMessage {
-    String topic;
-    String message;
-};
 
 void mqttHeartbeat(heartbeat::Callback);
 void mqttRegister(mqtt_callback_f callback);
