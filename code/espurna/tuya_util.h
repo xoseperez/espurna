@@ -8,8 +8,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
-#include <cstdint>
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "tuya_types.h"
@@ -59,34 +59,6 @@ struct StateId {
 private:
     uint8_t _id { 0 };
     bool _filter { false };
-};
-
-struct OnceFlag {
-    OnceFlag() = default;
-    OnceFlag(const OnceFlag&) = delete;
-    OnceFlag(OnceFlag&&) = delete;
-
-    explicit operator bool() const {
-        return _value;
-    }
-
-    OnceFlag& operator=(bool value) {
-        if (!_value) {
-            _value = value;
-        }
-        return *this;
-    }
-
-    void set() {
-        _value = true;
-    }
-
-    bool get() const {
-        return _value;
-    }
-
-private:
-    bool _value { false };
 };
 
 struct Dp {
