@@ -580,16 +580,6 @@ String _toCSV(bool target) {
     return result;
 }
 
-// See cores/esp8266/WMath.cpp::map
-// Redefining as local method here to avoid breaking in unexpected ways in inputs like (0, 0, 0, 0, 1)
-template <typename T, typename Tin, typename Tout> T _lightMap(T x, Tin in_min, Tin in_max, Tout out_min, Tout out_max) {
-    auto divisor = (in_max - in_min);
-    if (divisor == 0){
-        return -1; //AVR returns -1, SAM returns 0
-    }
-    return (x - in_min) * (out_max - out_min) / divisor + out_min;
-}
-
 int _lightAdjustValue(const int& value, const String& operation) {
     if (!operation.length()) return value;
 
@@ -841,10 +831,21 @@ void _lightProviderSchedule(unsigned long ms);
 void _lightProviderHandleState(bool) {
 }
 
+// See cores/esp8266/WMath.cpp::map
+inline bool _lightPwmMap(long value, long& result) {
+    constexpr auto divisor = (Light::VALUE_MAX - Light::VALUE_MIN);
+    if (divisor != 0l){
+        result = (value - Light::VALUE_MIN) * (Light::PWM_LIMIT - Light::PWM_MIN) / divisor + Light::PWM_MIN;
+        return true;
+    }
+
+    return false;
+}
+
 // both require original values to be scaled into a PWM frequency
 void _lightProviderHandleValue(unsigned char channel, float value) {
     // TODO: strict rule in the transition itself?
-    if (value < 0.0) {
+    if (value < 0.0f) {
         return;
     }
 
@@ -857,18 +858,19 @@ void _lightProviderHandleValue(unsigned char channel, float value) {
         rounded = pgm_read_byte(_light_gamma_table + rounded);
     }
 
-    if (Light::VALUE_MAX != Light::PWM_LIMIT) {
-        rounded = _lightMap(rounded, Light::VALUE_MIN, Light::VALUE_MAX, Light::PWM_MIN, Light::PWM_LIMIT);
+    long pwm;
+    if (!_lightPwmMap(rounded, pwm)) {
+        return;
     }
 
     if (inverse) {
-       rounded = Light::PWM_LIMIT - rounded;
+       pwm = Light::PWM_LIMIT + Light::PWM_MIN - pwm;
     }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-    pwm_set_duty(rounded, channel);
+    pwm_set_duty(pwm, channel);
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setChannel(_light_channel_map[channel], rounded);
+    _my92xx->setChannel(_light_channel_map[channel], pwm);
 #endif
 }
 
