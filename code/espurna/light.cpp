@@ -1360,19 +1360,18 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
 #if TERMINAL_SUPPORT
 
-void _lightChannelDebug(unsigned char id) {
-    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
-}
-
 void _lightInitCommands() {
 
     terminalRegisterCommand(F("LIGHT"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 1) {
-            terminalError(ctx, F("LIGHT <STATE>"));
-            return;
+        if (ctx.argc > 1) {
+            if (!_lightParsePayload(ctx.argv[1].c_str())) {
+                terminalError(ctx, F("Invalid payload"));
+                return;
+            }
+            lightUpdate();
         }
 
-        _lightParsePayload(ctx.argv[1].c_str());
+        ctx.output.printf("%s\n", _light_state ? "ON" : "OFF");
         terminalOK(ctx);
     });
 
@@ -1381,21 +1380,27 @@ void _lightInitCommands() {
             _lightAdjustBrightness(ctx.argv[1].c_str());
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
-        terminalOK();
+        ctx.output.printf("%ld\n", lightBrightness());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](const terminal::CommandContext& ctx) {
-        if (!lightChannels()) return;
+        if (!lightChannels()) {
+            return;
+        }
 
         auto id = -1;
         if (ctx.argc > 1) {
             id = ctx.argv[1].toInt();
         }
 
+        auto description = [&](unsigned char channel) {
+            ctx.output.printf("#%u (%s): %ld\n", channel, lightDesc(id).c_str(), lightChannel(channel));
+        };
+
         if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
             for (unsigned char index = 0; index < lightChannels(); ++index) {
-                _lightChannelDebug(index);
+                description(index);
             }
             return;
         }
@@ -1405,9 +1410,8 @@ void _lightInitCommands() {
             lightUpdate();
         }
 
-        _lightChannelDebug(id);
-
-        terminalOK();
+        description(id);
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("COLOR"), [](const terminal::CommandContext& ctx) {
@@ -1415,8 +1419,8 @@ void _lightInitCommands() {
             lightColor(ctx.argv[1].c_str());
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
+        ctx.output.printf("%s\n", lightColor().c_str());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("KELVIN"), [](const terminal::CommandContext& ctx) {
@@ -1424,8 +1428,8 @@ void _lightInitCommands() {
             _lightAdjustKelvin(ctx.argv[1].c_str());
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
+        ctx.output.printf("%s\n", lightColor().c_str());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("MIRED"), [](const terminal::CommandContext& ctx) {
@@ -1433,8 +1437,8 @@ void _lightInitCommands() {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
+        ctx.output.printf("%s\n", lightColor().c_str());
+        terminalOK(ctx);
     });
 
 }
