@@ -1950,7 +1950,9 @@ void lightSetup() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        _light_channels.resize(std::min(Light::Channels, Light::ChannelsMax));
+        for (unsigned char index = 0; index < Light::Channels; ++index) {
+            _light_channels.emplace_back(GPIO_NONE, getSetting({"ltMy92xxInv", index}, _lightInverse(index)));
+        }
 
     #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
