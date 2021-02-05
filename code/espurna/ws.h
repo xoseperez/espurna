@@ -100,8 +100,8 @@ void wsSend(const char* data);
 // Immediatly try to serialize and send raw char data
 // (also, see above)
 
-void wsSend_P(PGM_P data);
-void wsSend_P(uint32_t client_id, PGM_P data);
+void wsSend_P(const char* data);
+void wsSend_P(uint32_t client_id, const char* data);
 
 // Check if any or specific client_id is connected
 // Server will try to set unique ID for each client
