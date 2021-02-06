@@ -665,7 +665,8 @@ public:
 
         float diff = static_cast<float>(channel.target) - channel.current;
         if (isImmediateTransition(target_state, diff)) {
-            _transitions.push_back(Transition{channel.current, channel.target, diff, 1});
+            Transition transition { channel.current, channel.target, diff, 1};
+            _transitions.push_back(std::move(transition));
             return false;
         }
 
@@ -678,10 +679,10 @@ public:
         }
         size_t count = _time / every;
 
-        auto transition = Transition{channel.current, channel.target, step, count};
+        Transition transition { channel.current, channel.target, step, count };
         transition.debug();
 
-        _transitions.push_back(transition);
+        _transitions.push_back(std::move(transition));
 
         return true;
     }
@@ -1941,14 +1942,14 @@ void lightSetup() {
     _lightProviderDebug();
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
+    {
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
         for (unsigned char index = 0; index < Light::Channels; ++index) {
             _light_channels.emplace_back(GPIO_NONE, getSetting({"ltMy92xxInv", index}, _lightInverse(index)));
         }
-
+    }
     #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-
+    {
         // Initial duty value (will be passed to pwm_set_duty(...), OFF in this case)
         uint32_t pwm_duty_init[Light::ChannelsMax] = {0};
 
@@ -1975,7 +1976,7 @@ void lightSetup() {
         // with 0 channels this should not do anything at all and provider will never call pwm_set_duty(...)
         pwm_init(Light::PWM_MAX, pwm_duty_init, _light_channels.size(), io_info);
         pwm_start();
-
+    }
     #endif
 
     _lightBoot();
