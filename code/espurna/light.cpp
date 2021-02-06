@@ -899,6 +899,7 @@ void _lightProviderUpdate() {
 
     if (!_light_transition) {
         _light_provider_update = false;
+        return;
     }
 
     auto next = _light_transition->run(
@@ -1879,6 +1880,7 @@ void _lightBoot() {
         _lightRestoreSettings();
     }
 
+    _light_state_changed = true;
     lightUpdate(false);
 }
 
@@ -1957,14 +1959,14 @@ void lightSetup() {
 
     _lightProviderDebug();
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
     {
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
         for (unsigned char index = 0; index < Light::Channels; ++index) {
             _light_channels.emplace_back(GPIO_NONE, getSetting({"ltMy92xxInv", index}, _lightInverse(index)));
         }
     }
-    #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     {
         // Initial duty value (will be passed to pwm_set_duty(...), OFF in this case)
         uint32_t pwm_duty_init[Light::ChannelsMax] = {0};
@@ -1993,7 +1995,7 @@ void lightSetup() {
         pwm_init(Light::PWM_MAX, pwm_duty_init, _light_channels.size(), io_info);
         pwm_start();
     }
-    #endif
+#endif
 
     _lightBoot();
 
