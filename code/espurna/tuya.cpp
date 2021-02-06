@@ -139,7 +139,7 @@ namespace tuya {
             }
         }
 
-        void channel(unsigned char channel, double value) override {
+        void channel(unsigned char channel, float value) override {
             // XXX: can't handle channel values when OFF, and will turn the lights ON
             if (!_last_state) {
                 return;
@@ -150,18 +150,9 @@ namespace tuya {
                 return;
             }
 
-            auto rounded = static_cast<unsigned int>(value);
-
             // input dimmer channel value when lights are OFF is 16
             // for the same reason as above, don't send OFF values
-            constexpr unsigned int Low { 16u };
-            constexpr unsigned int High { 255u };
-            rounded = std::clamp(rounded, Low, High);
-            if (rounded == 16u) {
-                return;
-            }
-
-            send(entry->dp_id, rounded);
+            send(entry->dp_id, static_cast<unsigned int>(value));
         }
 
     private:
