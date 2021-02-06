@@ -741,8 +741,7 @@ public:
 
 private:
     bool isImmediateTransition(bool state, float diff) {
-        return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon())
-                || (!state && (diff > 0.0)) || (state && (diff < 0.0)));
+        return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
     }
 
     std::vector<Transition> _transitions;
