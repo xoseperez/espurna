@@ -1092,16 +1092,17 @@ PayloadStatus relayParsePayload(const char * payload) {
     #endif
 }
 
-// BACKWARDS COMPATIBILITY
-void _relayBackwards() {
-
-    for (unsigned char id = 0; id < _relays.size(); ++id) {
-        SettingsKey key {"mqttGroupInv", id};
-        if (!hasSetting(key)) continue;
-        setSetting({"mqttGroupSync", id}, getSetting(key));
-        delSetting(key);
+void _relaySettingsMigrate(int version) {
+    if (!version || (version >= 5)) {
+        return;
     }
 
+    delSettingPrefix({
+        "relayGPIO",
+        "relayProvider",
+        "relayType",
+    });
+    delSetting("relays");
 }
 
 void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
@@ -1793,7 +1794,7 @@ RelayProviderBasePtr _relaySetupProvider(unsigned char index) {
     return result;
 }
 
-void _relaySetupAdhoc() {
+void _relaySetup() {
     _relays.reserve(_relayAdhocPins());
 
     for (unsigned char id = 0; id < RelaysMax; ++id) {
@@ -1806,17 +1807,15 @@ void _relaySetupAdhoc() {
         }
         _relays.emplace_back(std::move(impl));
     }
+
+    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT));
 }
 
 void relaySetup() {
+    _relaySettingsMigrate(migrateVersion());
 
-    // Ad-hoc relays
-    _relaySetupAdhoc();
+    _relaySetup();
 
-    // Dummy (virtual) relays
-    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT));
-
-    _relayBackwards();
     _relayConfigure();
     _relayBootAll();
     _relayLoop();

@@ -1928,8 +1928,25 @@ void _lightProviderDebug() {
     "\n"));
 }
 
-void lightSetup() {
+void _lightSettingsMigrate(int version) {
+    if (!version || (version >= 5)) {
+        return;
+    }
+
+    delSettingPrefix({
+        "chGPIO",
+        "chLogic",
+        "myChips",
+        "myDCKGPIO",
+        "myDIGPIO"
+    });
+    delSetting("lightProvider");
+
     moveSetting("lightTime", "ltTime");
+}
+
+void lightSetup() {
+    _lightSettingsMigrate(migrateVersion());
 
     const auto enable_pin = getSetting("ltEnableGPIO", _lightEnablePin());
     if (enable_pin != GPIO_NONE) {

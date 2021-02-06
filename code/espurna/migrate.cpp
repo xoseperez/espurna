@@ -12,9 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <utility>
 
-namespace {
-
-void delPrefixes(const std::initializer_list<const char*>& prefixes) {
+void delSettingPrefix(const std::initializer_list<const char*>& prefixes) {
     std::vector<String> to_purge;
 
     using namespace settings;
@@ -33,7 +31,13 @@ void delPrefixes(const std::initializer_list<const char*>& prefixes) {
     }
 }
 
-} // namespace
+void delSettingPrefix(const char* prefix) {
+    delSettingPrefix({prefix});
+}
+
+void delSettingPrefix(const String& prefix) {
+    delSettingPrefix(prefix.c_str());
+}
 
 // Configuration versions
 //
@@ -53,7 +57,6 @@ int migrateVersion() {
 }
 
 void migrate() {
-
     // We either get 0, when version did not change
     // Or, the version we migrate from
     const auto version = migrateVersion();
@@ -67,34 +70,11 @@ void migrate() {
     // and some very old keys that were forced via migrate.ino
     switch (version) {
     case 2:
-        delPrefixes({
-            "btnGPIO",
-            "ledGPIO",
-            "ledLogic",
-            "relayGPIO",
-            "relayType"
-        });
-        // fall through
     case 3:
     case 4:
-        delPrefixes({
-            "board",
-            "chGPIO",
-            "chLogic",
-            "ledGPIO",
-            "ledLogic",
-            "lightProvider",
-            "myChips",
-            "myDCKGPIO",
-            "myDIGPIO",
-            "relayGPIO",
-            "relayProvider",
-            "relayType",
-            "relays"
-        });
+        delSetting("board");
         break;
     }
 
     saveSettings();
-
 }
