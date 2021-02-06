@@ -8,11 +8,11 @@ LIGHT MODULE
 
 #include "espurna.h"
 
-constexpr const unsigned char _lightEnablePin() {
+constexpr unsigned char _lightEnablePin() {
     return LIGHT_ENABLE_PIN;
 }
 
-constexpr const unsigned char _lightChannelPin(unsigned char index) {
+constexpr unsigned char _lightChannelPin(unsigned char index) {
     return (
         (index == 0) ? LIGHT_CH1_PIN :
         (index == 1) ? LIGHT_CH2_PIN :
@@ -22,7 +22,7 @@ constexpr const unsigned char _lightChannelPin(unsigned char index) {
     );
 }
 
-constexpr const bool _lightInverse(unsigned char index) {
+constexpr bool _lightInverse(unsigned char index) {
     return (
         (index == 0) ? (1 == LIGHT_CH1_INVERSE) :
         (index == 1) ? (1 == LIGHT_CH2_INVERSE) :
@@ -32,3 +32,26 @@ constexpr const bool _lightInverse(unsigned char index) {
     );
 }
 
+#ifdef MY92XX_MAPPING
+
+constexpr unsigned char _my92xx_mapping[LIGHT_CHANNELS] {
+    MY92XX_MAPPING
+};
+
+constexpr unsigned char _lightMy92xxChannel(unsigned char)
+    __attribute__((deprecated("MY92XX_CH# flags should be used instead of MY92XX_MAPPING")));
+constexpr unsigned char _lightMy92xxChannel(unsigned char channel) {
+    return _my92xx_mapping[channel];
+}
+
+#else
+
+constexpr unsigned char _lightMy92xxChannel(unsigned char channel) {
+    return (channel == 0) ? MY92XX_CH1 :
+        (channel == 1) ? MY92XX_CH2 :
+        (channel == 2) ? MY92XX_CH3 :
+        (channel == 3) ? MY92XX_CH4 :
+        (channel == 4) ? MY92XX_CH5 : 255u;
+}
+
+#endif

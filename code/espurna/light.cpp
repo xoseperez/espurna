@@ -138,19 +138,12 @@ bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
 #include <my92xx.h>
-my92xx * _my92xx;
-unsigned char _light_channel_map[] {
-    MY92XX_MAPPING
-};
-
+my92xx* _my92xx { nullptr };
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-
 std::unique_ptr<LightProvider> _light_provider;
-
 #endif
 
 // UI hint about channel distribution
@@ -870,7 +863,7 @@ void _lightProviderHandleValue(unsigned char channel, float value) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     pwm_set_duty(pwm, channel);
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setChannel(_light_channel_map[channel], pwm);
+    _my92xx->setChannel(_lightMy92xxChannel(channel), pwm);
 #endif
 }
 
