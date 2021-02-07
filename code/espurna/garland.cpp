@@ -4,15 +4,12 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.com/Vasil-Pahomov/Liana)
 
-Tested on 60 led strip.
-!!! For more leds can cause WDT rebot. Need to be carefully tested for more than 60 leds !!!
+Tested on 300 led strip.
+
 The most time consuming operation is actually showing leds by Adafruit Neopixel. It take about 1870 mcs.
 More long strip can take more time to show.
 Currently animation calculation, brightness calculation/transition and showing makes in one loop cycle.
 Debug output shows timings. Overal timing should be not more that 3000 ms.
-
-For longer strips have sense to divide entire strip (pixels) on parts about 100 pixels and show one part
-at a cycle.
 */
 
 #include "garland.h"
@@ -39,6 +36,8 @@ const char* NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
 
 #define EFFECT_UPDATE_INTERVAL_MIN      5000  // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX      10000 // 10 sec
+
+#define NUMLEDS_CAN_CAUSE_WDT_RESET     100
 
 bool _garland_enabled                   = true;
 unsigned long _last_update              = 0;
@@ -368,7 +367,20 @@ void Scene::run() {
     }
 
     if (state == Show && cyclesRemain < 2) {
+        /* Showing pixels (actually transmitting their RGB data) is most time consuming operation in the
+        garland workflow. Using 800 kHz gives 1.25 μs per bit. -> 30 μs (0.03 ms) per RGB LED.
+        So for example 3 ms for 100 LEDs. Unfortunately it can't be postponed and resumed later as it
+        will lead to reseting the transmition operation. From other hand, long operation can cause
+        Soft WDT reset. To avoid wdt reset we need to switch soft wdt off for long strips. 
+        It is not best practice, but assuming that it is only garland, it can be acceptable.
+        Tested up to 300 leds. */
+        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+            ESP.wdtDisable();
+        }
         _pixels->show();
+        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+            ESP.wdtEnable(5000);
+        }
         sum_show_time += (micros() - iteration_start_time);
         ++show_num;
         state = Calculate;
