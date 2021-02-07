@@ -97,17 +97,24 @@ using std::isnan;
 #endif
 
 // -----------------------------------------------------------------------------
-// std::make_unique backport for C++11, since we still use it
+// std::make_unique & std::clamp backports for C++11, since we still use it
 // -----------------------------------------------------------------------------
-#if 201103L >= __cplusplus
+#if __cplusplus <= 201103L
 
 #include <memory>
 namespace std {
-    template<typename T, typename... Args>
-    std::unique_ptr<T> make_unique(Args&&... args) {
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-    }
+
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
+
+template <typename T>
+constexpr const T& clamp(const T& value, const T& low, const T& high) {
+    return (value < low) ? low : (high < value) ? high : value;
+}
+
+} // namespace std
 
 #endif
 

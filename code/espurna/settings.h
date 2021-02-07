@@ -238,6 +238,10 @@ bool delSetting(const String& key);
 bool delSetting(const __FlashStringHelper* key);
 bool delSetting(const SettingsKey& key);
 
+void delSettingPrefix(const std::initializer_list<const char*>&);
+void delSettingPrefix(const char* prefix);
+void delSettingPrefix(const String& prefix);
+
 bool hasSetting(const char* key);
 bool hasSetting(const String& key);
 bool hasSetting(const __FlashStringHelper* key);

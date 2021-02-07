@@ -17,6 +17,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "rpc.h"
 #include "rtcmem.h"
 #include "ws.h"
+#include "libs/OnceFlag.h"
 
 #include "light_config.h"
 
@@ -26,7 +27,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 extern "C" {
-    #include "libs/fs_math.h"
+#include "libs/fs_math.h"
 }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
@@ -34,7 +35,7 @@ extern "C" {
 // default is 8, we only need up to 5
 #define PWM_CHANNEL_NUM_MAX Light::ChannelsMax
 extern "C" {
-    #include "libs/pwm.h"
+#include "libs/pwm.h"
 }
 
 #endif
@@ -95,10 +96,10 @@ struct channel_t {
 
     bool state { true };                // is the channel ON
 
-    unsigned char inputValue { 0 };     // raw value, without the brightness
-    unsigned char value { 0 };          // normalized value, including brightness
-    unsigned char target { 0 };         // target value
-    float current { 0.0f };             // transition value
+    unsigned char inputValue { Light::VALUE_MIN };     // raw value, without the brightness
+    unsigned char value { Light::VALUE_MIN };          // normalized value, including brightness
+    unsigned char target { Light::VALUE_MIN };         // target value
+    float current { Light::VALUE_MIN };             // transition value
 };
 
 std::vector<channel_t> _light_channels;
@@ -117,7 +118,6 @@ bool _light_use_white = false;
 bool _light_use_cct = false;
 bool _light_use_gamma = false;
 
-bool _light_dirty = false;
 bool _light_state = false;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
 
@@ -131,25 +131,19 @@ long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
 long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
 
-using light_brightness_func_t = void(*)();
+using light_brightness_func_t = bool(*)();
 light_brightness_func_t _light_brightness_func = nullptr;
 
+bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
 #include <my92xx.h>
-my92xx * _my92xx;
-unsigned char _light_channel_map[] {
-    MY92XX_MAPPING
-};
-
+my92xx* _my92xx { nullptr };
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-
 std::unique_ptr<LightProvider> _light_provider;
-
 #endif
 
 // UI hint about channel distribution
@@ -187,14 +181,17 @@ static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds arr
 // UTILS
 // -----------------------------------------------------------------------------
 
-void _setValue(const unsigned char id, unsigned int value) {
+bool _setValue(unsigned char, unsigned int) __attribute__((warn_unused_result));
+bool _setValue(unsigned char id, unsigned int value) {
     if (_light_channels[id].value != value) {
         _light_channels[id].value = value;
-        _light_dirty = true;
+        return true;
     }
+
+    return false;
 }
 
-void _setInputValue(const unsigned char id, unsigned int value) {
+void _setInputValue(unsigned char id, unsigned int value) {
     _light_channels[id].inputValue = value;
 }
 
@@ -209,27 +206,29 @@ void _setCCTInputValue(unsigned char warm, unsigned char cold) {
     _setInputValue(1, constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
-void _lightApplyBrightness(size_t channels = lightChannels()) {
-
+bool _lightApplyBrightness(size_t channels = lightChannels()) {
     double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BRIGHTNESS_MAX);
 
     channels = std::min(channels, lightChannels());
 
+    OnceFlag changed;
     for (unsigned char i=0; i < lightChannels(); i++) {
         if (i >= channels) brightness = 1;
-        _setValue(i, _light_channels[i].inputValue * brightness);
+        changed = _setValue(i, _light_channels[i].inputValue * brightness);
     }
 
+    return changed.get();
 }
 
-void _lightApplyBrightnessColor() {
+bool _lightApplyBrightnessColor() {
+    OnceFlag changed;
 
     double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BRIGHTNESS_MAX);
 
     // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
     unsigned char white = std::min(_light_channels[0].inputValue, std::min(_light_channels[1].inputValue, _light_channels[2].inputValue));
     for (unsigned int i=0; i < 3; i++) {
-        _setValue(i, _light_channels[i].inputValue - white);
+        changed = _setValue(i, _light_channels[i].inputValue - white);
     }
 
     // Split the White Value across 2 White LED Strips.
@@ -240,14 +239,14 @@ void _lightApplyBrightnessColor() {
 
         // set cold white
         _light_channels[3].inputValue = 0;
-        _setValue(3, lround(((double) 1.0 - miredFactor) * white));
+        changed = _setValue(3, lround(((double) 1.0 - miredFactor) * white));
 
         // set warm white
         _light_channels[4].inputValue = 0;
-        _setValue(4, lround(miredFactor * white));
+        changed = _setValue(4, lround(miredFactor * white));
     } else {
         _light_channels[3].inputValue = 0;
-        _setValue(3, white);
+        changed = _setValue(3, white);
     }
 
     // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
@@ -261,20 +260,21 @@ void _lightApplyBrightnessColor() {
 
     double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
     for (unsigned char i=0; i < channelSize; i++) {
-        _setValue(i, lround((double) _light_channels[i].value * factor * brightness));
+        changed = _setValue(i, lround((double) _light_channels[i].value * factor * brightness));
     }
 
     // Scale white channel to match brightness
     for (unsigned char i=3; i < channelSize; i++) {
-        _setValue(i, constrain(static_cast<unsigned int>(_light_channels[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX));
+        changed = _setValue(i, constrain(static_cast<unsigned int>(_light_channels[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX));
     }
 
     // For the rest of channels, don't apply brightness, it is already in the inputValue
     // i should be 4 when RGBW and 5 when RGBWW
     for (unsigned char i=channelSize; i < _light_channels.size(); i++) {
-        _setValue(i, _light_channels[i].inputValue);
+        changed = _setValue(i, _light_channels[i].inputValue);
     }
 
+    return changed.get();
 }
 
 String lightDesc(unsigned char id) {
@@ -573,16 +573,6 @@ String _toCSV(bool target) {
     return result;
 }
 
-// See cores/esp8266/WMath.cpp::map
-// Redefining as local method here to avoid breaking in unexpected ways in inputs like (0, 0, 0, 0, 1)
-template <typename T, typename Tin, typename Tout> T _lightMap(T x, Tin in_min, Tin in_max, Tout out_min, Tout out_max) {
-    auto divisor = (in_max - in_min);
-    if (divisor == 0){
-        return -1; //AVR returns -1, SAM returns 0
-    }
-    return (x - in_min) * (out_max - out_min) / divisor + out_min;
-}
-
 int _lightAdjustValue(const int& value, const String& operation) {
     if (!operation.length()) return value;
 
@@ -632,20 +622,6 @@ void _lightAdjustMireds(const String& payload) {
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-unsigned int _toPWM(unsigned int value, bool gamma, bool inverse) {
-    value = constrain(value, Light::VALUE_MIN, Light::VALUE_MAX);
-    if (gamma) value = pgm_read_byte(_light_gamma_table + value);
-    if (Light::VALUE_MAX != Light::PWM_LIMIT) value = _lightMap(value, Light::VALUE_MIN, Light::VALUE_MAX, Light::PWM_MIN, Light::PWM_LIMIT);
-    if (inverse) value = LIGHT_LIMIT_PWM - value;
-    return value;
-}
-
-// Returns a PWM value for the given channel ID
-unsigned int _toPWM(unsigned char id) {
-    bool useGamma = _light_use_gamma && _light_has_color && (id < 3);
-    return _toPWM(_light_channels[id].current, useGamma, _light_channels[id].inverse);
-}
-
 namespace {
 
 class LightTransitionHandler {
@@ -665,29 +641,33 @@ public:
     };
 
     explicit LightTransitionHandler(Channels& channels, bool state, LightTransition transition) :
+        _state(state),
         _time(transition.time),
         _step(transition.step)
     {
+        OnceFlag delayed;
         for (auto& channel : channels) {
-            prepare(channel, state);
+            delayed = prepare(channel, state);
         }
 
         // if nothing to do, ignore transition step & time and just schedule as soon as possible
-        if (!transitions()) {
+        if (!delayed) {
             reset();
             return;
         }
 
-        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition every %ums (total %ums)\n"), _step, _time);
+        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"), _time, _step);
     }
 
-    void prepare(channel_t& channel, bool state) {
-        channel.target = (state && channel.state) ? channel.value : 0;
+    bool prepare(channel_t& channel, bool state) {
+        bool target_state = state && channel.state;
+        channel.target = target_state ? channel.value : Light::VALUE_MIN;
 
         float diff = static_cast<float>(channel.target) - channel.current;
-        if (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon())) {
-            channel.current = channel.target;
-            return;
+        if (isImmediateTransition(target_state, diff)) {
+            Transition transition { channel.current, channel.target, diff, 1};
+            _transitions.push_back(std::move(transition));
+            return false;
         }
 
         float step = (diff > 0.0) ? 1.0f : -1.0f;
@@ -699,10 +679,12 @@ public:
         }
         size_t count = _time / every;
 
-        auto transition = Transition{channel.current, channel.target, step, count};
+        Transition transition { channel.current, channel.target, step, count };
         transition.debug();
 
-        _transitions.push_back(transition);
+        _transitions.push_back(std::move(transition));
+
+        return true;
     }
 
     void reset() {
@@ -710,23 +692,43 @@ public:
         _time = 10;
     }
 
-    bool next() {
-        bool result { false };
+    template <typename StateFunc, typename ValueFunc, typename UpdateFunc>
+    bool run(StateFunc&& state, ValueFunc&& value, UpdateFunc&& update) {
+        bool next { false };
 
-        for (auto& transition : _transitions) {
+        if (!_state_notified && _state) {
+            _state_notified = true;
+            state(_state);
+        }
+
+        for (unsigned char index = 0; index < _transitions.size(); ++index) {
+            auto& transition = _transitions[index];
             if (!transition.count) {
                 continue;
             }
 
             if (--transition.count) {
                 transition.value += transition.step;
-                result = true;
+                next = true;
             } else {
                 transition.value = transition.target;
             }
+
+            value(index, transition.value);
         }
 
-        return result;
+        if (!_state_notified && !next && !_state) {
+            _state_notified = true;
+            state(_state);
+        }
+
+        update();
+
+        return next;
+    }
+
+    bool state() const {
+        return _state;
     }
 
     unsigned long step() const {
@@ -737,17 +739,75 @@ public:
         return _time;
     }
 
-    size_t transitions() const {
-        return _transitions.size();
+private:
+    bool isImmediateTransition(bool state, float diff) {
+        return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
     }
 
-private:
     std::vector<Transition> _transitions;
+    bool _state_notified { false };
+
+    bool _state;
     unsigned long _time;
     unsigned long _step;
 };
 
 } // namespace
+
+struct LightUpdateHandler {
+    LightUpdateHandler() = default;
+
+    explicit operator bool() {
+        return _run;
+    }
+
+    void lock() {
+        _lock = true;
+    }
+
+    void unlock() {
+        _lock = false;
+    }
+
+    void reset() {
+        _lock = false;
+        _run = false;
+    }
+
+    void set(bool save, LightTransition transition, int report) {
+        if (_lock) {
+            panic();
+        }
+
+        _run = true;
+
+        _save = save;
+        _transition = transition;
+        _report = report;
+    }
+
+    template <typename T>
+    void run(T&& callback) {
+        if (!_run) {
+            panic();
+        }
+
+        lock();
+        callback(_save, _transition, _report);
+        reset();
+    }
+
+private:
+    bool _save;
+    LightTransition _transition;
+    int _report;
+
+    bool _run { false };
+    bool _lock { false };
+};
+
+LightUpdateHandler _light_update;
+bool _light_provider_update = false;
 
 std::unique_ptr<LightTransitionHandler> _light_transition;
 
@@ -756,51 +816,96 @@ bool _light_use_transitions = false;
 unsigned long _light_transition_time = LIGHT_TRANSITION_TIME;
 unsigned long _light_transition_step = LIGHT_TRANSITION_STEP;
 
-bool _light_provider_update = false;
-
 void _lightProviderSchedule(unsigned long ms);
 
+#if (LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX)
+
+// there is no PWM stop and it seems my92xx version is fine by just setting 0 values for channels
+void _lightProviderHandleState(bool) {
+}
+
+// See cores/esp8266/WMath.cpp::map
+inline bool _lightPwmMap(long value, long& result) {
+    constexpr auto divisor = (Light::VALUE_MAX - Light::VALUE_MIN);
+    if (divisor != 0l){
+        result = (value - Light::VALUE_MIN) * (Light::PWM_LIMIT - Light::PWM_MIN) / divisor + Light::PWM_MIN;
+        return true;
+    }
+
+    return false;
+}
+
+// both require original values to be scaled into a PWM frequency
+void _lightProviderHandleValue(unsigned char channel, float value) {
+    // TODO: strict rule in the transition itself?
+    if (value < 0.0f) {
+        return;
+    }
+
+    // TODO: have 'red', 'green' or 'blue' tag instead of using hard-coded index offset?
+    auto gamma = _light_use_gamma && _light_has_color && (channel < 3);
+    auto inverse = _light_channels[channel].inverse;
+
+    auto rounded = std::lround(value);
+    if (gamma) {
+        rounded = pgm_read_byte(_light_gamma_table + rounded);
+    }
+
+    long pwm;
+    if (!_lightPwmMap(rounded, pwm)) {
+        return;
+    }
+
+    if (inverse) {
+       pwm = Light::PWM_LIMIT + Light::PWM_MIN - pwm;
+    }
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+    pwm_set_duty(pwm, channel);
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+    _my92xx->setChannel(_lightMy92xxChannel(channel), pwm);
+#endif
+}
+
+void _lightProviderHandleUpdate() {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+    pwm_start();
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+    _my92xx->setState(true);
+    _my92xx->update();
+#endif
+}
+
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
+void _lightProviderHandleState(bool state) {
+    _light_provider->state(state);
+}
+
+void _lightProviderHandleValue(unsigned char channel, float value) {
+    _light_provider->channel(channel, value);
+}
+
+void _lightProviderHandleUpdate() {
+    _light_provider->update();
+}
+
+#endif
+
 void _lightProviderUpdate() {
+    if (!_light_provider_update) {
+        return;
+    }
 
-    if (_light_provider_update) return;
-    _light_provider_update = true;
+    if (!_light_transition) {
+        _light_provider_update = false;
+        return;
+    }
 
-    if (!_light_transition) return;
-    auto next = _light_transition->next();
-
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
-        for (unsigned char i=0; i<_light_channels.size(); i++) {
-            _my92xx->setChannel(_light_channel_map[i], _toPWM(i));
-        }
-        _my92xx->setState(true);
-        _my92xx->update();
-
-    #endif
-
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-
-        for (unsigned char i=0; i < _light_channels.size(); i++) {
-            pwm_set_duty(_toPWM(i), i);
-        }
-        pwm_start();
-
-    #endif
-
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-
-        if (_light_provider) {
-            for (unsigned char i=0; i < _light_channels.size(); i++) {
-                _light_provider->channel(i, _light_channels[i].current);
-            }
-            _light_provider->update();
-        }
-
-        if (!next) {
-            _light_provider->state(_light_state);
-        }
-
-    #endif
+    auto next = _light_transition->run(
+        _lightProviderHandleState,
+        _lightProviderHandleValue,
+        _lightProviderHandleUpdate);
 
     if (next) {
         _lightProviderSchedule(_light_transition->step());
@@ -809,11 +914,12 @@ void _lightProviderUpdate() {
     }
 
     _light_provider_update = false;
-
 }
 
 void _lightProviderSchedule(unsigned long ms) {
-    _light_transition_ticker.once_ms_scheduled(ms, _lightProviderUpdate);
+    _light_transition_ticker.once_ms(ms, []() {
+        _light_provider_update = true;
+    });
 }
 
 // -----------------------------------------------------------------------------
@@ -1067,7 +1173,6 @@ void _lightMqttSetup() {
 }
 
 void lightMQTT() {
-
     char buffer[20];
 
     if (_light_has_color) {
@@ -1084,31 +1189,24 @@ void lightMQTT() {
         mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
 
     }
-    
+
     if (_light_has_color || _light_use_cct) {
-      
-      // Mireds
-      snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
-      mqttSend(MQTT_TOPIC_MIRED, buffer);
-    
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
+        mqttSend(MQTT_TOPIC_MIRED, buffer);
     }
 
-    // Channels
     for (unsigned int i=0; i < _light_channels.size(); i++) {
         itoa(_light_channels[i].target, buffer, 10);
         mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
     }
 
-    // Brightness
     snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_brightness);
     mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
 
-    // Global
     if (!_light_has_controls) {
         snprintf_P(buffer, sizeof(buffer), "%c", _light_state ? '1' : '0');
         mqttSend(MQTT_TOPIC_LIGHT, buffer);
     }
-
 }
 
 void lightMQTTGroup() {
@@ -1360,19 +1458,18 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
 #if TERMINAL_SUPPORT
 
-void _lightChannelDebug(unsigned char id) {
-    DEBUG_MSG_P(PSTR("Channel #%u (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
-}
-
 void _lightInitCommands() {
 
     terminalRegisterCommand(F("LIGHT"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 1) {
-            terminalError(ctx, F("LIGHT <STATE>"));
-            return;
+        if (ctx.argc > 1) {
+            if (!_lightParsePayload(ctx.argv[1].c_str())) {
+                terminalError(ctx, F("Invalid payload"));
+                return;
+            }
+            lightUpdate();
         }
 
-        _lightParsePayload(ctx.argv[1].c_str());
+        ctx.output.printf("%s\n", _light_state ? "ON" : "OFF");
         terminalOK(ctx);
     });
 
@@ -1381,21 +1478,27 @@ void _lightInitCommands() {
             _lightAdjustBrightness(ctx.argv[1].c_str());
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Brightness: %u\n"), lightBrightness());
-        terminalOK();
+        ctx.output.printf("%ld\n", lightBrightness());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](const terminal::CommandContext& ctx) {
-        if (!lightChannels()) return;
+        if (!lightChannels()) {
+            return;
+        }
 
         auto id = -1;
         if (ctx.argc > 1) {
             id = ctx.argv[1].toInt();
         }
 
+        auto description = [&](unsigned char channel) {
+            ctx.output.printf("#%u (%s): %ld\n", channel, lightDesc(id).c_str(), lightChannel(channel));
+        };
+
         if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
             for (unsigned char index = 0; index < lightChannels(); ++index) {
-                _lightChannelDebug(index);
+                description(index);
             }
             return;
         }
@@ -1405,9 +1508,8 @@ void _lightInitCommands() {
             lightUpdate();
         }
 
-        _lightChannelDebug(id);
-
-        terminalOK();
+        description(id);
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("COLOR"), [](const terminal::CommandContext& ctx) {
@@ -1415,8 +1517,8 @@ void _lightInitCommands() {
             lightColor(ctx.argv[1].c_str());
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
+        ctx.output.printf("%s\n", lightColor().c_str());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("KELVIN"), [](const terminal::CommandContext& ctx) {
@@ -1424,8 +1526,8 @@ void _lightInitCommands() {
             _lightAdjustKelvin(ctx.argv[1].c_str());
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
+        ctx.output.printf("%s\n", lightColor().c_str());
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("MIRED"), [](const terminal::CommandContext& ctx) {
@@ -1433,8 +1535,8 @@ void _lightInitCommands() {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();
         }
-        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        terminalOK();
+        ctx.output.printf("%s\n", lightColor().c_str());
+        terminalOK(ctx);
     });
 
 }
@@ -1491,37 +1593,50 @@ void _lightReport(Light::Report report) {
     _lightReport(static_cast<int>(report));
 }
 
-void lightUpdate(bool save, LightTransition transition, int report) {
-    // Calculate values based on inputs and brightness
-    // Update only if the values had actually changed
-    _light_brightness_func();
+// Called in the loop() when we received lightUpdate(...) values
 
-    if (!_light_channels.size()) {
+void _lightUpdate() {
+    if (!_light_update) {
         return;
     }
 
-    if (!_light_dirty) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+    if (!_light_provider) {
         return;
     }
-    _light_dirty = false;
+#endif
 
-    // Channel output values will be set by the handler class and the specified provider
-    // We either set the values immediately or schedule an ongoing transition
-    _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, _light_state, transition);
-    _lightProviderSchedule(_light_transition->step());
+    auto changed = _light_brightness_func();
+    if (!_light_state_changed && !changed) {
+        _light_update.reset();
+        return;
+    }
 
-    // Send current state to all available 'report' targets
-    // (make sure to delay the report, in case lightUpdate is called repeatedly)
-    _light_report_ticker.once_ms(_light_report_delay, [report]() {
-        _lightReport(report);
+    _light_state_changed = false;
+
+    _light_update.run([](bool save, LightTransition transition, int report) {
+        // Channel output values will be set by the handler class and the specified provider
+        // We either set the values immediately or schedule an ongoing transition
+        _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, _light_state, transition);
+        _lightProviderSchedule(_light_transition->step());
+
+        // Send current state to all available 'report' targets
+        // (make sure to delay the report, in case lightUpdate is called repeatedly)
+        _light_report_ticker.once_ms(_light_report_delay, [report]() {
+            _lightReport(report);
+        });
+
+        // Always save to RTCMEM, optionally preserve the state in the settings storage
+        _lightSaveRtcmem();
+        if (save) {
+            _light_save_ticker.once_ms(_light_save_delay, _lightSaveSettings);
+        }
     });
+}
 
-    // Always save to RTCMEM, optionally preserve the state in the settings storage
-    _lightSaveRtcmem();
-    if (save) {
-        _light_save_ticker.once_ms(_light_save_delay, _lightSaveSettings);
-    }
-};
+void lightUpdate(bool save, LightTransition transition, int report) {
+    _light_update.set(save, transition, report);
+}
 
 void lightUpdate(bool save, LightTransition transition, Light::Report report) {
     lightUpdate(save, transition, static_cast<int>(report));
@@ -1543,7 +1658,7 @@ void lightState(unsigned char id, bool state) {
     if (id >= _light_channels.size()) return;
     if (_light_channels[id].state != state) {
         _light_channels[id].state = state;
-        _light_dirty = true;
+        _light_state_changed = true;
     }
 }
 
@@ -1554,10 +1669,11 @@ bool lightState(unsigned char id) {
 
 void lightState(bool state) {
     if (_light_state != state) {
-        if (_light_state_listener)
-            _light_state_listener(state);
         _light_state = state;
-        _light_dirty = true;
+        if (_light_state_listener) {
+            _light_state_listener(state);
+        }
+        _light_state_changed = true;
     }
 }
 
@@ -1704,10 +1820,10 @@ void _lightConfigure() {
         if (_light_use_white) {
             _light_brightness_func = _lightApplyBrightnessColor;
         } else {
-            _light_brightness_func = []() { _lightApplyBrightness(3); };
+            _light_brightness_func = []() { return _lightApplyBrightness(3); };
         }
     } else {
-        _light_brightness_func = []() { _lightApplyBrightness(); };
+        _light_brightness_func = []() { return _lightApplyBrightness(); };
     }
 
     _light_use_cct = getSetting("useCCT", 1 == LIGHT_USE_CCT);
@@ -1764,6 +1880,7 @@ void _lightBoot() {
         _lightRestoreSettings();
     }
 
+    _light_state_changed = true;
     lightUpdate(false);
 }
 
@@ -1812,8 +1929,25 @@ void _lightProviderDebug() {
     "\n"));
 }
 
-void lightSetup() {
+void _lightSettingsMigrate(int version) {
+    if (!version || (version >= 5)) {
+        return;
+    }
+
+    delSettingPrefix({
+        "chGPIO",
+        "chLogic",
+        "myChips",
+        "myDCKGPIO",
+        "myDIGPIO"
+    });
+    delSetting("lightProvider");
+
     moveSetting("lightTime", "ltTime");
+}
+
+void lightSetup() {
+    _lightSettingsMigrate(migrateVersion());
 
     const auto enable_pin = getSetting("ltEnableGPIO", _lightEnablePin());
     if (enable_pin != GPIO_NONE) {
@@ -1825,13 +1959,15 @@ void lightSetup() {
 
     _lightProviderDebug();
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+    {
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        _light_channels.resize(std::min(Light::Channels, Light::ChannelsMax));
-
-    #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-
+        for (unsigned char index = 0; index < Light::Channels; ++index) {
+            _light_channels.emplace_back(GPIO_NONE, getSetting({"ltMy92xxInv", index}, _lightInverse(index)));
+        }
+    }
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+    {
         // Initial duty value (will be passed to pwm_set_duty(...), OFF in this case)
         uint32_t pwm_duty_init[Light::ChannelsMax] = {0};
 
@@ -1858,8 +1994,8 @@ void lightSetup() {
         // with 0 channels this should not do anything at all and provider will never call pwm_set_duty(...)
         pwm_init(Light::PWM_MAX, pwm_duty_init, _light_channels.size(), io_info);
         pwm_start();
-
-    #endif
+    }
+#endif
 
     _lightBoot();
 
@@ -1889,6 +2025,10 @@ void lightSetup() {
     #endif
 
     espurnaRegisterReload(_lightConfigure);
+    espurnaRegisterLoop([]() {
+        _lightUpdate();
+        _lightProviderUpdate();
+    });
 
 }
 

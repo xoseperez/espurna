@@ -338,13 +338,10 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     const char* action = root["action"];
     if (action) {
-
         if (strcmp(action, "ping") == 0) {
             wsSend_P(client_id, PSTR("{\"pong\": 1}"));
             return;
         }
-
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
             deferredReset(100, CustomResetReason::Web);
@@ -367,25 +364,19 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         JsonObject& data = root["data"];
         if (data.success()) {
-
-            // Callbacks
-            for (auto& callback : _ws_callbacks.on_action) {
-                callback(client_id, action, data);
-            }
-
-            // Restore configuration via websockets
             if (strcmp(action, "restore") == 0) {
                 if (settingsRestoreJson(data)) {
                     wsSend_P(client_id, PSTR("{\"message\": 5}"));
                 } else {
                     wsSend_P(client_id, PSTR("{\"message\": 4}"));
                 }
+                return;
             }
 
-            return;
-
+            for (auto& callback : _ws_callbacks.on_action) {
+                callback(client_id, action, data);
+            }
         }
-
     };
 
     // Check configuration -----------------------------------------------------
@@ -689,7 +680,7 @@ void wsSend(const char * payload) {
     }
 }
 
-void wsSend_P(PGM_P payload) {
+void wsSend_P(const char* payload) {
     if (_ws.count() > 0) {
         char buffer[strlen_P(payload)];
         strcpy_P(buffer, payload);
@@ -711,7 +702,7 @@ void wsSend(uint32_t client_id, const char * payload) {
     _ws.text(client_id, payload);
 }
 
-void wsSend_P(uint32_t client_id, PGM_P payload) {
+void wsSend_P(uint32_t client_id, const char* payload) {
     char buffer[strlen_P(payload)];
     strcpy_P(buffer, payload);
     _ws.text(client_id, buffer);

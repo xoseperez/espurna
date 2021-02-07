@@ -874,9 +874,17 @@ bool _buttonSetupProvider(unsigned char index, ButtonProvider provider) {
     return result;
 }
 
-void buttonSetup() {
-    // Backwards compatibility
+void _buttonSettingsMigrate(int version) {
+    if (!version || (version >= 5)) {
+        return;
+    }
+
+    delSettingPrefix("btnGPIO");
     moveSetting("btnDelay", "btnRepDel");
+}
+
+void buttonSetup() {
+    _buttonSettingsMigrate(migrateVersion());
 
     for (unsigned char index = 0; index < ButtonsMax; ++index) {
         auto provider = getSetting({"btnProv", index}, _buttonProvider(index));

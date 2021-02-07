@@ -17,6 +17,8 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "relay.h"
 #include "rpc.h"
 
+#include "libs/OnceFlag.h"
+
 #include <functional>
 #include <queue>
 #include <forward_list>
@@ -121,49 +123,42 @@ namespace tuya {
             _channels(channels)
         {}
 
-        explicit TuyaLightProvider(const DpMap& channels, StateId* state) :
+        explicit TuyaLightProvider(const DpMap& channels, StateId* stateId) :
             _channels(channels),
-            _state(state)
+            _stateId(stateId)
         {}
 
         void update() override {
         }
 
-        void state(bool status) override {
-            if (_state && *_state) {
-                _state->filter(false);
-                if (!status) {
-                    send(_state->id(), status);
-                }
+        // Channel values > 0 will switch the lights ON anyway
+        void state(bool value) override {
+            _last_state = value;
+            if (*_stateId && !value) {
+                send(_stateId->id(), value);
             }
         }
 
-        void channel(unsigned char channel, double value) override {
+        void channel(unsigned char channel, float value) override {
+            // XXX: can't handle channel values when OFF, and will turn the lights ON
+            if (!_last_state) {
+                return;
+            }
+
             auto* entry = _channels.find_local(channel);
             if (!entry) {
                 return;
             }
 
-            // tuya dimmer is precious, and can't handle 0...some-kind-of-threshold
-            // just ignore it, the associated switch will handle turning it off
-            auto rounded = static_cast<unsigned int>(value);
-            if (rounded <= 0x10) {
-                return;
-            }
-
-            // Filtering for incoming data
-            // ref. https://github.com/xoseperez/espurna/issues/2222
-            // TODO: should be fixed when relay & channel transition states are implemented as transactions?
-            if (_state && *_state) {
-                _state->filter(true);
-            }
-
-            send(entry->dp_id, rounded);
+            // input dimmer channel value when lights are OFF is 16
+            // for the same reason as above, don't send OFF values
+            send(entry->dp_id, static_cast<unsigned int>(value));
         }
 
     private:
         const DpMap& _channels;
-        StateId* _state { nullptr };
+        bool _last_state { false };
+        StateId* _stateId { nullptr };
     };
 
 #endif

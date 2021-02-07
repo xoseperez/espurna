@@ -427,7 +427,19 @@ void ledLoop() {
 
 }
 
+void _ledSettingsMigrate(int version) {
+    if (!version || (version >= 5)) {
+        return;
+    }
+
+    delSettingPrefix({
+        "ledGPIO",
+        "ledLogic"
+    });
+}
+
 void ledSetup() {
+    _ledSettingsMigrate(migrateVersion());
 
     size_t leds = 0;
 

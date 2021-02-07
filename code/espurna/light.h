@@ -75,7 +75,7 @@ class LightProvider {
 public:
     virtual void update() = 0;
     virtual void state(bool) = 0;
-    virtual void channel(unsigned char ch, double value) = 0;
+    virtual void channel(unsigned char ch, float value) = 0;
 };
 
 struct LightTransition {
