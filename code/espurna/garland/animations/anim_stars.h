@@ -23,7 +23,7 @@ class AnimStars : public Anim {
     }
 
     void Run() override {
-        for (byte i = 0; i < numLeds; i++) {
+        for (int i = 0; i < numLeds; i++) {
             byte phi = seq[i];
             if (phi < 254) {
                 Color col = ledstmp[i];
