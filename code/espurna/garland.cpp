@@ -34,8 +34,8 @@ const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 const char* NAME_GARLAND_SET_SPEED      = "garland_set_speed";
 const char* NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
 
-#define EFFECT_UPDATE_INTERVAL_MIN      5000  // 5 sec
-#define EFFECT_UPDATE_INTERVAL_MAX      10000 // 10 sec
+#define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
+#define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
 
 #define NUMLEDS_CAN_CAUSE_WDT_RESET     100
 
