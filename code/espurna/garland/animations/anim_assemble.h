@@ -8,6 +8,13 @@
 
 //------------------------------------------------------------------------------
 class AnimAssemble : public Anim {
+    enum class Phases {
+        Assemmble,
+        Glow,
+        Fade
+    };
+
+    Phases phase = Phases::Assemmble;
    public:
     AnimAssemble() : Anim("Assemble") {
         cycleFactor = 2;
@@ -33,20 +40,41 @@ class AnimAssemble : public Anim {
         }
         initSeq();
         shuffleSeq();
+        glowSetUp();
         pos = 0;
     }
 
     void Run() override {
-        if (pos < numLeds) {
-            byte cur_point = seq[pos];
-            leds[cur_point] = ledstmp[cur_point];
-            ++pos;
-        } else {
-            int del_pos = pos - numLeds;
-            byte cur_point = seq[del_pos];
-            leds[cur_point] = 0;
-            if (++pos >= numLeds * 2)
+        if (phase == Phases::Assemmble) {
+            if (pos < numLeds) {
+                byte cur_point = seq[pos];
+                leds[cur_point] = ledstmp[cur_point];
+                ++pos;
+            } else {
                 pos = 0;
+                phase = Phases::Glow;
+            }
+        } else if (phase == Phases::Glow) {
+            if (pos < numLeds/2) {
+                for (int i = 0; i < numLeds; ++i) {
+                    leds[i] = ledstmp[i];
+                    glowForEachLed(i);
+                }
+                glowRun();
+                ++pos;
+            } else {
+                pos = 0;
+                phase = Phases::Fade;
+            }
+        } else {
+            if (pos < numLeds) {
+                byte cur_point = seq[pos];
+                leds[cur_point] = 0;
+                ++pos;
+            } else {
+                pos = 0;
+                phase = Phases::Assemmble;
+            }
         }
     }
 };
