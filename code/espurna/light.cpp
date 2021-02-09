@@ -161,16 +161,6 @@ my92xx* _my92xx { nullptr };
 std::unique_ptr<LightProvider> _light_provider;
 #endif
 
-// UI hint about channel distribution
-const char _light_channel_desc[5][5] PROGMEM = {
-    {'W',   0,   0,   0,   0},
-    {'W', 'C',   0,   0,   0},
-    {'R', 'G', 'B',   0,   0},
-    {'R', 'G', 'B', 'W',   0},
-    {'R', 'G', 'B', 'W', 'C'}
-};
-static_assert((Light::Channels * Light::Channels) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
-
 // Gamma Correction lookup table (8 bit)
 const unsigned char _light_gamma_table[] PROGMEM = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -302,26 +292,42 @@ bool _lightApplyBrightnessColor() {
     return changed.get();
 }
 
-String lightDesc(unsigned char id) {
-    if (id < _light_channels.size()) {
-        const char tag = pgm_read_byte(&_light_channel_desc[_light_channels.size() - 1][id]);
-        switch (tag) {
+// UI hint about channel distribution
+const char* lightDesc(unsigned char id) {
+    constexpr size_t Columns { 5ul };
+    constexpr size_t Rows { 5ul };
+    constexpr char tags[Rows][Columns] = {
+        {'W',   0,   0,   0,   0},
+        {'W', 'C',   0,   0,   0},
+        {'R', 'G', 'B',   0,   0},
+        {'R', 'G', 'B', 'W',   0},
+        {'R', 'G', 'B', 'W', 'C'}
+    };
+    static_assert((Light::Channels * Light::Channels) <= (Rows * Columns), "Out-of-bounds array access");
+
+    const __FlashStringHelper* ptr { F("UNKNOWN") };
+    const size_t channels { _light_channels.size() };
+    if (id < channels) {
+        switch (tags[channels - 1][id]) {
         case 'W':
-            return F("WARM WHITE");
+            ptr = F("WARM WHITE");
+            break;
         case 'C':
-            return F("COLD WHITE");
+            ptr = F("COLD WHITE");
+            break;
         case 'R':
-            return F("RED");
+            ptr = F("RED");
+            break;
         case 'G':
-            return F("GREEN");
+            ptr = F("GREEN");
+            break;
         case 'B':
-            return F("BLUE");
-        default:
+            ptr = F("BLUE");
             break;
         }
     }
 
-    return F("UNKNOWN");
+    return reinterpret_cast<const char*>(ptr);
 }
 
 // -----------------------------------------------------------------------------
@@ -1590,7 +1596,7 @@ void _lightInitCommands() {
         }
 
         auto description = [&](unsigned char channel) {
-            ctx.output.printf("#%u (%s): %ld\n", channel, lightDesc(id).c_str(), lightChannel(channel));
+            ctx.output.printf("#%u (%s): %ld\n", channel, lightDesc(channel), lightChannel(channel));
         };
 
         if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
