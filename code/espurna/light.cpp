@@ -133,11 +133,21 @@ long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
 long _light_mireds = (Light::MiredsCold + Light::MiredsWarm) / 2L;
 
-using light_brightness_func_t = bool(*)();
-light_brightness_func_t _light_brightness_func = []() {
+namespace {
+
+// In case we somehow forgot to initialize the brightness func, make sure to trigger an exception.
+// Just using an `nullptr` may not always trigger an error
+// (also, so we also don't have to check whether the pointer is not `nullptr`)
+
+bool _lightApplyBrightnessStub() {
     panic();
     return false;
-};
+}
+
+} // namespace
+
+using LightBrightnessFunc = bool(*)();
+LightBrightnessFunc _light_brightness_func = _lightApplyBrightnessStub;
 
 bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
@@ -211,7 +221,7 @@ void _setCCTInputValue(unsigned char warm, unsigned char cold) {
     _setInputValue(1, constrain(cold, Light::ValueMin, Light::ValueMax));
 }
 
-bool _lightApplyBrightness(size_t channels = lightChannels()) {
+bool _lightApplyBrightnessChannels(size_t channels) {
     auto scale = static_cast<float>(_light_brightness) / static_cast<float>(Light::BrightnessMax);
 
     channels = std::min(channels, lightChannels());
@@ -225,6 +235,14 @@ bool _lightApplyBrightness(size_t channels = lightChannels()) {
     }
 
     return changed.get();
+}
+
+bool _lightApplyBrightnessAll() {
+    return _lightApplyBrightnessChannels(lightChannels());
+}
+
+bool _lightApplyBrightnessRgb() {
+    return _lightApplyBrightnessChannels(3);
 }
 
 bool _lightApplyBrightnessColor() {
@@ -1885,10 +1903,10 @@ void _lightConfigure() {
         if (_light_use_white) {
             _light_brightness_func = _lightApplyBrightnessColor;
         } else {
-            _light_brightness_func = []() { return _lightApplyBrightness(3); };
+            _light_brightness_func = _lightApplyBrightnessRgb;
         }
     } else {
-        _light_brightness_func = []() { return _lightApplyBrightness(); };
+        _light_brightness_func = _lightApplyBrightnessAll;
     }
 
     _light_use_cct = getSetting("useCCT", 1 == LIGHT_USE_CCT);
