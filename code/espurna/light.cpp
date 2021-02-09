@@ -659,7 +659,7 @@ namespace {
 
 // Gamma Correction lookup table (8 bit, ~2.2)
 // (note that the table could be constexpr, *but* the whole function needs to be constexpr as well)
-uint8_t _lightGammaMap(unsigned char value) {
+uint8_t _lightGammaMap(uint8_t value) {
     static uint8_t gamma[256] PROGMEM {
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
@@ -722,14 +722,12 @@ public:
         bool target_state = state && channel.state;
 
         channel.target = target_state ? channel.value : Light::ValueMin;
-        if (target_state) {
-            if (channel.gamma) {
-                channel.target = _lightGammaMap(channel.target);
-            }
+        if (channel.gamma) {
+            channel.target = _lightGammaMap(channel.target);
+        }
 
-            if (channel.inverse) {
-                channel.target = Light::ValueMax - channel.target;
-            }
+        if (channel.inverse) {
+            channel.target = Light::ValueMax - channel.target;
         }
 
         float diff = static_cast<float>(channel.target) - channel.current;
