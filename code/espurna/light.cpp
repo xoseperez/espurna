@@ -951,21 +951,39 @@ void _lightProviderSchedule(unsigned long ms) {
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
+// Layout should match the old union:
+//
+// union light_rtcmem_t {
+//     struct {
+//         uint8_t channels[Light::ChannelsMax];
+//         uint8_t brightness;
+//         uint16_t mired;
+//     } __attribute__((packed)) packed;
+//     uint64_t value;
+// };
+
 struct LightRtcmem {
     //   1 2 3 4 5 6 7 8
-    // [ c c c c c b m m ] 
-    //   ^ ^ ^ ^ ^ ~ ~ ~   channels
-    //             ^ ~ ~   brightness
-    //               ^ ^   mireds
+    // [ m m b c c c c c ]
+    //         ^ ^ ^ ^ ^   channels
+    //       ^ ~ ~ ~ ~ ~   brightness
+    //   ^ ^ ~ ~ ~ ~ ~ ~   mireds
+    //
+    // As seen in the rtcmem dump:
+    //   `ddccbbaa 112233ee`
+    // Where:
+    // - 1122 are mireds
+    // - 33 is brightness
+    // - aabbccddee are channels (from 0 to 5 respectively)
     explicit LightRtcmem(uint64_t value) {
-        _channels[0] = static_cast<uint8_t>((value >> (8ull * 7ull)));
-        _channels[1] = static_cast<uint8_t>((value >> (8ull * 6ull)));
-        _channels[2] = static_cast<uint8_t>((value >> (8ull * 5ull)));
-        _channels[3] = static_cast<uint8_t>((value >> (8ull * 4ull)));
-        _channels[4] = static_cast<uint8_t>((value >> (8ull * 3ull)));
+        _mireds = (value >> (8ull * 6ull)) & 0xffffull;
+        _brightness = (value >> (8ull * 5ull));
 
-        _brightness = (value >> (8ull * 2ull)) & 0xffull;
-        _mireds = (value & 0xffffull);
+        _channels[4] = static_cast<uint8_t>((value >> (8ull * 4ull)));
+        _channels[3] = static_cast<uint8_t>((value >> (8ull * 3ull)));
+        _channels[2] = static_cast<uint8_t>((value >> (8ull * 2ull)));
+        _channels[1] = static_cast<uint8_t>((value >> (8ull * 1ull)));
+        _channels[0] = static_cast<uint8_t>((value & 0xffull));
     }
 
 
@@ -983,13 +1001,13 @@ struct LightRtcmem {
     {}
 
     uint64_t serialize() const {
-        return (static_cast<uint64_t>(_channels[0]) << (8ull * 7ull))
-            | (static_cast<uint64_t>(_channels[1]) << (8ull * 6ull))
-            | (static_cast<uint64_t>(_channels[2]) << (8ull * 5ull))
-            | (static_cast<uint64_t>(_channels[3]) << (8ull * 4ull))
-            | (static_cast<uint64_t>(_channels[4]) << (8ull * 3ull))
-            | (static_cast<uint64_t>(_brightness) << (8ull * 2ull))
-            | (static_cast<uint64_t>(_mireds) & 0xffffull);
+        return (static_cast<uint64_t>(_mireds) << (8ull * 6ull))
+            | (static_cast<uint64_t>(_brightness) << (8ull * 5ull))
+            | (static_cast<uint64_t>(_channels[4]) << (8ull * 4ull))
+            | (static_cast<uint64_t>(_channels[3]) << (8ull * 3ull))
+            | (static_cast<uint64_t>(_channels[2]) << (8ull * 2ull))
+            | (static_cast<uint64_t>(_channels[1]) << (8ull * 1ull))
+            | (static_cast<uint64_t>(_channels[0]));
     }
 
     static Channels defaultChannels() {
