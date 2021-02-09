@@ -1629,7 +1629,7 @@ void _lightInitCommands() {
             _lightAdjustKelvin(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.printf("%s\n", lightColor().c_str());
+        ctx.output.printf("%ld\n", _toKelvin(_light_mireds));
         terminalOK(ctx);
     });
 
@@ -1638,7 +1638,7 @@ void _lightInitCommands() {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();
         }
-        ctx.output.printf("%s\n", lightColor().c_str());
+        ctx.output.printf("%ld\n", _light_mireds);
         terminalOK(ctx);
     });
 
