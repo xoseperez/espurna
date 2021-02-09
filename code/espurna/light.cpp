@@ -914,7 +914,7 @@ void _lightProviderHandleValue(unsigned char channel, float value) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     pwm_set_duty(pwm, channel);
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setChannel(_lightMy92xxChannel(channel), pwm);
+    _my92xx->setChannel(Light::build::my92xxChannel(channel), pwm);
 #endif
 }
 
