@@ -995,10 +995,6 @@
 // Lights
 // -----------------------------------------------------------------------------
 
-#ifndef LIGHT_CHANNELS
-#define LIGHT_CHANNELS      0
-#endif
-
 #ifndef LIGHT_ENABLE_PIN
 #define LIGHT_ENABLE_PIN    GPIO_NONE
 #endif
@@ -1046,6 +1042,10 @@
 // -----------------------------------------------------------------------------
 // my92xx
 // -----------------------------------------------------------------------------
+
+#ifndef MY92XX_CHANNELS
+#define MY92XX_CHANNELS     0
+#endif
 
 #ifndef MY92XX_CH1
 #define MY92XX_CH1          0

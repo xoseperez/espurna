@@ -782,7 +782,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       12
 
 #elif defined(ITEAD_SONOFF_RFBRIDGE)
@@ -831,7 +830,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      5
 
     #define MY92XX_MODEL        MY92XX_MODEL_MY9231
     #define MY92XX_CHIPS        2
@@ -839,6 +837,7 @@
     #define MY92XX_DCKI_PIN     14
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
 
+    #define MY92XX_CHANNELS     5
     #define MY92XX_CH1          4
     #define MY92XX_CH2          3
     #define MY92XX_CH3          5
@@ -859,7 +858,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       12  // Cold white
     #define LIGHT_CH2_PIN       14  // Warm white
 
@@ -1257,12 +1255,12 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       13
     #define MY92XX_DCKI_PIN     15
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_CHANNELS     4
 
 // -----------------------------------------------------------------------------
 // Lyasi LED
@@ -1276,12 +1274,12 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       4
     #define MY92XX_DCKI_PIN     5
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_CHANNELS     4
 
 // -----------------------------------------------------------------------------
 // LED Controller
@@ -1299,7 +1297,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -1322,7 +1319,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1347,7 +1343,6 @@
     #define LED2_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1372,7 +1367,6 @@
     #define LED2_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -1400,7 +1394,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       12      // WHITE
 
 #elif defined(MAGICHOME_ZJ_ESPM_5CH_B_13)
@@ -1420,7 +1413,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1435,7 +1427,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       4       // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -1460,7 +1451,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       15      // RED
     #define LIGHT_CH2_PIN       13      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -1477,7 +1467,6 @@
     #define SERIAL_RX_ENABLED   1
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1823,7 +1812,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       0
     #define LIGHT_CH2_PIN       2
 
@@ -1839,7 +1827,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      3
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1852,7 +1839,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1866,7 +1852,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -1885,7 +1870,6 @@
     #define BUTTON1_RELAY       1
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -1900,7 +1884,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       4       // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -1915,12 +1898,12 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       13
     #define MY92XX_DCKI_PIN     15
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_CHANNELS     4
 
 // -----------------------------------------------------------------------------
 // XENON SM-PW701U
@@ -1983,7 +1966,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       13      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -2014,7 +1996,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      3
     #define LIGHT_CH1_PIN       15       // RED
     #define LIGHT_CH2_PIN       12       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -3642,7 +3623,6 @@
     #define LED2_MODE                   LED_MODE_RELAY
 
     // Light
-    #define LIGHT_CHANNELS              3
     #define LIGHT_CH1_PIN               14       // RED
     #define LIGHT_CH2_PIN               13       // GREEN
     #define LIGHT_CH3_PIN               12      // BLUE
@@ -3684,7 +3664,6 @@
     #define LED2_MODE                   LED_MODE_RELAY
 
     // Light
-    #define LIGHT_CHANNELS              3
     #define LIGHT_CH1_PIN               4        // RED
     #define LIGHT_CH2_PIN               12       // GREEN
     #define LIGHT_CH3_PIN               14       // BLUE
@@ -3883,12 +3862,12 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define MY92XX_MODEL        MY92XX_MODEL_MY9231
     #define MY92XX_CHIPS        2
     #define MY92XX_DI_PIN       13
     #define MY92XX_DCKI_PIN     15
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_CHANNELS     5
 
     #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
@@ -3902,7 +3881,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       4       // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -3919,7 +3897,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -3957,7 +3934,6 @@
     // Light
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define LIGHT_STEP          8
-    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       5   // warm white
     #define LIGHT_CH2_PIN       4   // cold white
 
@@ -3987,7 +3963,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      3
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -4005,7 +3980,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -4024,7 +3998,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -4043,7 +4016,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -4061,7 +4033,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       12      // WARM WHITE
     #define LIGHT_CH2_PIN       14      // COLD WHITE
 
@@ -4077,7 +4048,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       5        // RED
     #define LIGHT_CH2_PIN       4        // GREEN
     #define LIGHT_CH3_PIN       13       // BLUE
@@ -4097,7 +4067,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       15      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -4115,13 +4084,12 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      2
-
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       4
     #define MY92XX_DCKI_PIN     5
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_CHANNELS     2
 
     // No RGB on this bulb. Warm white on channel 0, cool white on channel 3
     #define MY92XX_CH1          3
@@ -4139,12 +4107,12 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       4
     #define MY92XX_DCKI_PIN     5
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_CHANNELS     4
     // RGB on channels 0/1/2, either cool or warm white on channel 3
     // The bulb *should* have cool leds, but could also have warm leds as a common defect
 
@@ -4194,7 +4162,6 @@
     // Light RGBW
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -4229,7 +4196,6 @@
 
     // Light
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
-    #define LIGHT_CHANNELS              3
     #define LIGHT_CH1_PIN               0       // RED
     #define LIGHT_CH2_PIN               4       // GREEN
     #define LIGHT_CH3_PIN               2       // BLUE
@@ -4441,7 +4407,6 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5      // RED
     #define LIGHT_CH2_PIN       4      // GREEN
     #define LIGHT_CH3_PIN       12     // BLUE
@@ -4637,7 +4602,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
@@ -4766,7 +4730,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light RGBW
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -4980,7 +4943,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -4999,7 +4961,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       4       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
@@ -5018,7 +4979,6 @@
     #define LIGHT_PROVIDER                LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN                 5       // WARM WHITE LED PWM PIN
     #define LIGHT_CH1_INVERSE             0
     #define LIGHT_CH2_PIN                 4       // COLD WHITE LED PWM PIN

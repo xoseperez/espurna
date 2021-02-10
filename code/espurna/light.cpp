@@ -19,14 +19,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "libs/OnceFlag.h"
 
-#include "light_config.h"
-
 #include <Ticker.h>
 #include <Schedule.h>
 #include <ArduinoJson.h>
 
 #include <array>
 #include <vector>
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#include <my92xx.h>
+#endif
 
 extern "C" {
 #include "libs/fs_math.h"
@@ -41,6 +43,8 @@ extern "C" {
 }
 
 #endif
+
+#include "light_config.h"
 
 // -----------------------------------------------------------------------------
 
@@ -163,7 +167,6 @@ bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-#include <my92xx.h>
 my92xx* _my92xx { nullptr };
 #endif
 
@@ -174,6 +177,36 @@ std::unique_ptr<LightProvider> _light_provider;
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+
+namespace settings {
+namespace internal {
+
+template <>
+my92xx_model_t convert(const String& value) {
+    if (value.length() == 1) {
+        switch (*value.c_str()) {
+        case 0x01:
+            return MY92XX_MODEL_MY9291;
+        case 0x02:
+            return MY92XX_MODEL_MY9231;
+        }
+    } else {
+        if (value == "9291") {
+            return MY92XX_MODEL_MY9291;
+        } else if (value == "9231") {
+            return MY92XX_MODEL_MY9231;
+        }
+    }
+
+    return Light::build::my92xxModel();
+}
+
+} // namespace internal
+} // namespace settings
+
+#endif
 
 bool _setValue(unsigned char, unsigned int) __attribute__((warn_unused_result));
 bool _setValue(unsigned char id, unsigned int value) {
@@ -285,7 +318,8 @@ char _lightTag(size_t channels, unsigned char index) {
     constexpr size_t Columns { 5ul };
     constexpr size_t Rows { 5ul };
 
-    if (channels < Rows) {
+    auto row = channels - 1ul;
+    if (row < Rows) {
         constexpr char tags[Rows][Columns] = {
             {'W',   0,   0,   0,   0},
             {'W', 'C',   0,   0,   0},
@@ -294,7 +328,7 @@ char _lightTag(size_t channels, unsigned char index) {
             {'R', 'G', 'B', 'W', 'C'},
         };
 
-        return tags[channels][index];
+        return tags[row][index];
     }
 
     return 0;
@@ -658,7 +692,7 @@ void _lightAdjustMireds(const String& payload) {
 namespace {
 
 // Gamma Correction lookup table (8 bit, ~2.2)
-// (note that the table could be constexpr, *but* the whole function needs to be constexpr as well)
+// (TODO: could be constexpr, but the gamma table is still loaded into the RAM when marked as if it is a non-constexpr array)
 uint8_t _lightGammaMap(uint8_t value) {
     static uint8_t gamma[256] PROGMEM {
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -731,7 +765,7 @@ public:
         }
 
         float diff = static_cast<float>(channel.target) - channel.current;
-        if (isImmediateTransition(target_state, diff)) {
+        if (isImmediate(target_state, diff)) {
             Transition transition { channel.current, channel.target, diff, 1};
             _transitions.push_back(std::move(transition));
             return false;
@@ -807,7 +841,7 @@ public:
     }
 
 private:
-    bool isImmediateTransition(bool state, float diff) {
+    bool isImmediate(bool state, float diff) {
         return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
     }
 
@@ -887,8 +921,15 @@ void _lightProviderSchedule(unsigned long ms);
 
 #if (LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX)
 
-// there is no PWM stop and it seems my92xx version is fine by just setting 0 values for channels
-void _lightProviderHandleState(bool) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+unsigned char _light_my92xx_channel_map[Light::ChannelsMax] = {};
+#endif
+
+// there is no PWM stop, but my92xx has some internal state control that will send 0 as values when OFF
+void _lightProviderHandleState(bool state [[gnu::unused]]) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+    _my92xx->setState(state);
+#endif
 }
 
 // See cores/esp8266/WMath.cpp::map
@@ -912,7 +953,7 @@ void _lightProviderHandleValue(unsigned char channel, float value) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     pwm_set_duty(pwm, channel);
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setChannel(Light::build::my92xxChannel(channel), pwm);
+    _my92xx->setChannel(_light_my92xx_channel_map[channel], pwm);
 #endif
 }
 
@@ -920,7 +961,6 @@ void _lightProviderHandleUpdate() {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     pwm_start();
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setState(true);
     _my92xx->update();
 #endif
 }
@@ -1605,7 +1645,8 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("CHANNEL"), [](const terminal::CommandContext& ctx) {
         auto channels = lightChannels();
-        if (channels) {
+        if (!channels) {
+            terminalError(ctx, F("No channels configured"));
             return;
         }
 
@@ -1622,6 +1663,7 @@ void _lightInitCommands() {
             for (unsigned char index = 0; index < channels; ++index) {
                 description(index);
             }
+            terminalOK(ctx);
             return;
         }
 
@@ -1931,16 +1973,11 @@ const unsigned long _light_iofunc[16] PROGMEM = {
 namespace {
 
 inline bool _lightUseGamma(size_t channels, unsigned char index) {
-    if (_light_has_color && _light_use_gamma) {
-        switch (_lightTag(channels, index)) {
-        case 'R':
-        case 'G':
-        case 'B':
-            return true;
-        case 'W':
-        case 'C':
-            return false;
-        }
+    switch (_lightTag(channels, index)) {
+    case 'R':
+    case 'G':
+    case 'B':
+        return true;
     }
 
     return false;
@@ -1994,9 +2031,13 @@ void _lightConfigure() {
 
     _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
     for (unsigned char index = 0; index < lightChannels(); ++index) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+        _light_my92xx_channel_map[index] = getSetting({"ltMy92xxCh", index}, Light::build::my92xxChannel(index));
+#endif
         _light_channels[index].inverse = getSetting({"ltInv", index}, Light::build::inverse(index));
-        _light_channels[index].gamma = _lightUseGamma(channels, index);
+        _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(channels, index);
     }
+
 }
 
 #if RELAY_SUPPORT
@@ -2135,8 +2176,17 @@ void lightSetup() {
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
     {
-        _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        for (unsigned char index = 0; index < Light::Channels; ++index) {
+        // TODO: library API specifies some hard-coded amount of channels, based off of the model and chips
+        // we always map channel index 1-to-1, to simplify hw config, but most of the time there are less active channels
+        // than the value generated by the lib (ref. `my92xx::getChannels()`)
+        auto channels = getSetting("ltMy92xxChannels", Light::build::my92xxChannels());
+        _my92xx = new my92xx(
+            getSetting("ltMy92xxModel", Light::build::my92xxModel()),
+            getSetting("ltMy92xxChips", Light::build::my92xxChips()),
+            getSetting("ltMy92xxDiGPIO", Light::build::my92xxDiPin()),
+            getSetting("ltMy92xxDckiGPIO", Light::build::my92xxDckiPin()),
+            Light::build::my92xxCommand());
+        for (unsigned char index = 0; index < channels; ++index) {
             _light_channels.emplace_back(GPIO_NONE);
         }
     }
