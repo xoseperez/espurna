@@ -10,6 +10,15 @@ The most time consuming operation is actually showing leds by Adafruit Neopixel.
 More long strip can take more time to show.
 Currently animation calculation, brightness calculation/transition and showing makes in one loop cycle.
 Debug output shows timings. Overal timing should be not more that 3000 ms.
+
+MQTT control:
+"command:["immediate", "queue", "sequence", "reset"]
+"enable":["true", "false"]
+"brightness":[0-255]
+"speed":[30-60]
+"animation":["PixieDust", "Sparkr", "Run", "Stars", "Spread", "R"andCyc", "Fly", "Comets", "Assemble", "Dolphins", "Salut"]
+"palette":["RGB", "Rainbow", "Stripe", "Party", "Heat", Fire", "Blue", "Sun", "Lime", "Pastel"]
+"duration":5000
 */
 
 #include "garland.h"
@@ -23,6 +32,7 @@ Debug output shows timings. Overal timing should be not more that 3000 ms.
 #include "garland/color.h"
 #include "garland/palette.h"
 #include "garland/scene.h"
+#include "mqtt.h"
 #include "ws.h"
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
@@ -33,6 +43,19 @@ const char* NAME_GARLAND_SWITCH         = "garland_switch";
 const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 const char* NAME_GARLAND_SET_SPEED      = "garland_set_speed";
 const char* NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
+
+const char* MQTT_TOPIC_GARLAND          = "garland";
+const char* MQTT_TOPIC_COMMAND          = "command";
+const char* MQTT_TOPIC_ENABLE           = "enable";
+const char* MQTT_TOPIC_BRIGHTNESS       = "brightness";
+const char* MQTT_TOPIC_ANIM_PEED        = "speed";
+const char* MQTT_TOPIC_ANIMATION        = "animation";
+const char* MQTT_TOPIC_PALETTE          = "palette";
+const char* MQTT_TOPIC_DURATION         = "duration";
+
+const char* GARLAND_COMMAND_IMMEDIATE   = "immediate";
+const char* GARLAND_COMMAND_RESET       = "reset"; // reset queue
+const char* GARLAND_COMMAND_QUEUE       = "queue"; // enqueue command payload
 
 #define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
@@ -91,6 +114,8 @@ Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new Ani
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
+String immediate_command;
+std::queue<String> commands;
 //------------------------------------------------------------------------------
 void garlandDisable() {
     pixels.clear();
@@ -99,6 +124,13 @@ void garlandDisable() {
 //------------------------------------------------------------------------------
 void garlandEnabled(bool enabled) {
     _garland_enabled = enabled;
+    setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
+    if (!_garland_enabled) {
+        schedule_function([]() {
+            pixels.clear();
+            pixels.show();
+        });
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -147,14 +179,7 @@ bool _garlandWebSocketOnKeyCheck(const char* key, JsonVariant& value) {
 void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
     if (strcmp(action, NAME_GARLAND_SWITCH) == 0) {
         if (data.containsKey("status") && data.is<int>("status")) {
-            _garland_enabled = (1 == data["status"].as<int>());
-            setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
-            if (!_garland_enabled) {
-                schedule_function([](){
-                    pixels.clear();
-                    pixels.show();
-                });
-            }
+            garlandEnabled(1 == data["status"].as<int>());
         }
     }
 
@@ -190,9 +215,32 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
 #endif
 
 //------------------------------------------------------------------------------
+void executeCommand(const String& command) {
+    DEBUG_MSG_P(PSTR("[GARLAND] Executing command \"%s\"\n"), command.c_str());
+    // Parse JSON input
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(command);
+    if (!root.success()) {
+        DEBUG_MSG_P(PSTR("[GARLAND] Error parsing command\n"));
+        return;
+    }
+
+    if (root.containsKey(MQTT_TOPIC_ENABLE)) {
+        auto enable = root[MQTT_TOPIC_ENABLE].as<String>();
+        garlandEnabled(enable != "false");
+        DEBUG_MSG_P(PSTR("[GARLAND] Enabled: \"%s\"\n"), enable.c_str());
+    }
+}
+
+//------------------------------------------------------------------------------
 // Loop
 //------------------------------------------------------------------------------
 void garlandLoop(void) {
+    if (!immediate_command.isEmpty()) {
+        executeCommand(immediate_command);
+        immediate_command.clear();
+    }
+
     if (!garlandEnabled())
         return;
 
@@ -227,9 +275,48 @@ void garlandLoop(void) {
 }
 
 //------------------------------------------------------------------------------
+void garlandMqttCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_GARLAND);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        // Match topic
+        String t = mqttMagnitude((char*)topic);
+
+        if (t.equals(MQTT_TOPIC_GARLAND)) {
+            // Parse JSON input
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.parseObject(payload);
+            if (!root.success()) {
+                DEBUG_MSG_P(PSTR("[GARLAND] Error parsing mqtt data\n"));
+                return;
+            }
+
+            String command = GARLAND_COMMAND_IMMEDIATE;
+            if (root.containsKey(MQTT_TOPIC_COMMAND)) {
+                command = root[MQTT_TOPIC_COMMAND].as<String>();
+                DEBUG_MSG_P(PSTR("[GARLAND] Command: \"%s\"\n"), command.c_str());
+            }
+
+            if (command == GARLAND_COMMAND_IMMEDIATE) {
+                immediate_command = payload;
+            } else if (command == GARLAND_COMMAND_RESET) {
+                std::queue<String> empty;
+                std::swap( commands, empty );
+                immediate_command = "";
+            } else if (command == GARLAND_COMMAND_QUEUE) {
+                commands.push(payload);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 void garlandSetup() {
     _garlandConfigure();
 
+    mqttRegister(garlandMqttCallback);
 // Websockets
 #if WEB_SUPPORT
     wsRegister()
