@@ -381,12 +381,6 @@ private:
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
-static_assert(
-    (MQTT_LIBRARY != MQTT_LIBRARY_ASYNCMQTTCLIENT) ||
-    ((TCP_MSS == 1460) && (MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT)),
-    "Can't reliably send / receive JSON payloads with small TCP buffers"
-);
-
 class LightDiscovery : public Discovery {
 public:
     explicit LightDiscovery(Context& ctx) :
