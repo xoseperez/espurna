@@ -629,22 +629,20 @@ private:
 
 #endif
 
-// Reworked discovery class. Continiously schedules itself until we have no more entities to send.
-// Topic and message are generated on demand and most of JSON payload is cached for re-use.
-// (both, to avoid manually generating JSON and to avoid possible UTF8 issues when concatenating char raw strings)
+// Reworked discovery class. Try to send and wait for MQTT QoS 1 publish ACK to continue.
+// Topic and message are generated on demand and most of JSON payload is cached for re-use to save RAM.
 
 class DiscoveryTask {
 public:
     using Entity = std::unique_ptr<Discovery>;
     using Entities = std::forward_list<Entity>;
 
-    using Action = std::function<bool(const String&, const String&)>;
-
     static constexpr int Retries { 5 };
+    static constexpr unsigned long WaitShortMs { 100ul };
+    static constexpr unsigned long WaitLongMs { 1000ul };
 
-    DiscoveryTask(bool enabled, Action action) :
-        _enabled(enabled),
-        _action(action)
+    DiscoveryTask(bool enabled) :
+        _enabled(enabled)
     {}
 
     void add(Entity&& entity) {
@@ -656,126 +654,205 @@ public:
         _entities.push_front(std::make_unique<T>(_ctx));
     }
 
+    bool retry() {
+        if (_retry < 0) {
+            return false;
+        }
+
+        return (--_retry < 0);
+    }
+
     Context& context() {
         return _ctx;
     }
 
-    bool empty() const {
+    bool done() const {
         return _entities.empty();
     }
 
-    bool operator()() {
-        if (!mqttConnected() || _entities.empty()) {
-            return false;
-        }
-
-        auto& entity = _entities.front();
-        if (!entity->ok()) {
-            _entities.pop_front();
-            _ctx.reset();
-            return true;
-        }
-
-        const auto* topic = entity->topic().c_str();
-        const auto* msg = _enabled
-            ? entity->message().c_str()
-            : "";
-
-        auto res = _action(topic, msg);
-        if (!res) {
-            if (--_retry < 0) {
-                DEBUG_MSG_P(PSTR("[HASS] Discovery failed after %d retries\n"), Retries);
-                return false;
-            }
-
-            DEBUG_MSG_P(PSTR("[HASS] Sending failed, retrying %d / %d\n"), (Retries - _retry), Retries);
-            return true;
-        }
-
-        _retry = Retries;
-        if (entity->next()) {
-            return true;
-        }
-
-        _entities.pop_front();
-        if (!_entities.empty()) {
-            _ctx.reset();
-            return true;
+    bool ok() const {
+        if ((_retry > 0) && !_entities.empty()) {
+            auto& entity = _entities.front();
+            return entity->ok();
         }
 
         return false;
     }
 
+    template <typename T>
+    bool send(T&& action) {
+        while (!_entities.empty()) {
+            auto& entity = _entities.front();
+            if (!entity->ok()) {
+                _entities.pop_front();
+                _ctx.reset();
+                continue;
+            }
+
+            const auto* topic = entity->topic().c_str();
+            const auto* msg = _enabled
+                ? entity->message().c_str()
+                : "";
+
+            if (action(topic, msg)) {
+                if (!entity->next()) {
+                    _retry = Retries;
+                    _entities.pop_front();
+                    _ctx.reset();
+                }
+                return true;
+            }
+
+            return false;
+        }
+        
+        return false;
+    }
+
 private:
     bool _enabled { false };
+
     int _retry { Retries };
     Context _ctx { makeContext() };
-    Action _action;
     Entities _entities;
 };
 
 namespace internal {
 
-constexpr unsigned long interval { 100ul };
+using TaskPtr = std::shared_ptr<DiscoveryTask>;
+using FlagPtr = std::shared_ptr<bool>;
+
 bool retain { false };
 bool enabled { false };
-bool sent { false };
+
+enum class State {
+    Initial,
+    Pending,
+    Sent
+};
+
+State state { State::Initial };
 Ticker timer;
+
+void send(TaskPtr ptr, FlagPtr flag_ptr);
+
+void stop(bool done) {
+    timer.detach();
+    state = done ? State::Sent : State::Pending;
+}
+
+void schedule(unsigned long wait, TaskPtr ptr, FlagPtr flag_ptr) {
+    internal::timer.once_ms_scheduled(wait, [ptr, flag_ptr]() {
+        send(ptr, flag_ptr);
+    });
+}
+
+void schedule(TaskPtr ptr, FlagPtr flag_ptr) {
+    schedule(DiscoveryTask::WaitShortMs, ptr, flag_ptr);
+}
+
+void schedule(TaskPtr ptr) {
+    schedule(DiscoveryTask::WaitShortMs, ptr, std::make_shared<bool>(true));
+}
+
+void send(TaskPtr ptr, FlagPtr flag_ptr) {
+    auto& task = *ptr;
+    if (!mqttConnected() || task.done()) {
+        stop(true);
+        return;
+    }
+
+    auto& flag = *flag_ptr;
+    if (!flag) {
+        if (task.retry()) {
+            schedule(ptr, flag_ptr);
+        } else {
+            stop(false);
+        }
+        return;
+    }
+
+    uint16_t pid { 0u };
+    auto res = task.send([&](const char* topic, const char* message) {
+        pid = ::mqttSendRaw(topic, message, internal::retain, 1);
+        return pid > 0;
+    });
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    // - async fails when disconneted and when it's buffers are filled, which should be resolved after $LATENCY
+    // and the time it takes for the lwip to process it. future versions use queue, but could still fail when low on RAM
+    // - lwmqtt will fail when disconnected (already checked above) and *will* disconnect in case publish fails. publish funciton will
+    // wait for the puback all by itself. not tested.
+    // - pubsub will fail when it can't buffer the payload *or* the underlying wificlient fails. also not tested.
+
+    if (res) {
+        flag = false;
+        mqttOnPublish(pid, [flag_ptr]() {
+            (*flag_ptr) = true;
+        });
+    }
+#endif
+
+    auto wait = res
+        ? DiscoveryTask::WaitShortMs
+        : DiscoveryTask::WaitLongMs;
+
+    if (res || task.retry()) {
+        schedule(wait, ptr, flag_ptr);
+        return;
+    }
+
+    if (task.done()) {
+        stop(true);
+        return;
+    }
+}
 
 } // namespace internal
 
-bool mqttSend(const String& topic, const String& message) {
-    return ::mqttSendRaw(topic.c_str(), message.c_str(), internal::retain) > 0;
-}
-
-bool enabled() {
-    return internal::enabled;
-}
-
 void publishDiscovery() {
-    static bool busy { false };
-    if (busy) {
+    if (!mqttConnected() || internal::timer.active() || (internal::state != internal::State::Pending)) {
         return;
     }
 
-    if (internal::sent) {
+    auto task = std::make_shared<DiscoveryTask>(internal::enabled);
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    task->add<LightDiscovery>();
+#endif
+#if RELAY_SUPPORT
+    task->add<RelayDiscovery>();
+#endif
+#if SENSOR_SUPPORT
+    task->add<SensorDiscovery>();
+#endif
+
+    // only happens when nothing is configured to do the add()
+    if (task->done()) {
         return;
     }
 
+    internal::schedule(task);
+}
+
+void configure() {
     bool current = internal::enabled;
     internal::enabled = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
     internal::retain = getSetting("haRetain", 1 == HOMEASSISTANT_RETAIN);
 
-    if (current != internal::enabled) {
-        auto task = std::make_shared<DiscoveryTask>(internal::enabled, homeassistant::mqttSend);
-
-#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-        task->add<LightDiscovery>();
-#endif
-#if RELAY_SUPPORT
-        task->add<RelayDiscovery>();
-#endif
-#if SENSOR_SUPPORT
-        task->add<SensorDiscovery>();
-#endif
-
-        if (task->empty()) {
-            return;
-        }
-
-        internal::timer.attach_ms(internal::interval, [task]() {
-            if (!(*task)()) {
-                internal::timer.detach();
-                internal::sent = true;
-                busy = false;
-            }
-        });
+    if (internal::enabled != current) {
+        internal::state = internal::State::Pending;
     }
+
+    homeassistant::publishDiscovery();
 }
 
 void mqttCallback(unsigned int type, const char* topic, char* payload) {
     if (MQTT_DISCONNECT_EVENT == type) {
-        internal::sent = false;
+        if (internal::state == internal::State::Sent) {
+            internal::state = internal::State::Pending;
+        }
+        internal::timer.detach();
         return;
     }
 
@@ -822,6 +899,12 @@ bool onKeyCheck(const char* key, JsonVariant& value) {
 } // namespace web
 } // namespace homeassistant
 
+// This module does not implement .yaml generation, since we can't:
+// - use unique_id in the device config
+// - have abbreviated keys
+// - have mqtt return the correct status & command payloads when it is disabled
+//   (yet? needs reworked configuration section or making functions read settings directly)
+
 void haSetup() {
 #if WEB_SUPPORT
     wsRegister()
@@ -835,11 +918,17 @@ void haSetup() {
 #endif
     mqttRegister(homeassistant::mqttCallback);
 
-    espurnaRegisterReload([]() {
-        if (mqttConnected()) {
-            homeassistant::publishDiscovery();
-        }
+#if TERMINAL_SUPPORT
+    terminalRegisterCommand(F("HA.SEND"), [](const terminal::CommandContext& ctx) {
+        using namespace homeassistant::internal;
+        state = State::Pending;
+        homeassistant::publishDiscovery();
+        terminalOK(ctx);
     });
+#endif
+
+    espurnaRegisterReload(homeassistant::configure);
+    homeassistant::configure();
 }
 
 #endif // HOMEASSISTANT_SUPPORT

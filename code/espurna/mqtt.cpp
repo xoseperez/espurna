@@ -92,6 +92,20 @@ String _mqtt_server;
 uint16_t _mqtt_port;
 String _mqtt_clientid;
 
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+
+struct MqttPidCallback {
+    uint16_t pid;
+    mqtt_pid_callback_f run;
+};
+
+using MqttPidCallbacks = std::forward_list<MqttPidCallback>;
+
+MqttPidCallbacks _mqtt_publish_callbacks;
+MqttPidCallbacks _mqtt_subscribe_callbacks;
+
+#endif
+
 std::forward_list<heartbeat::Callback> _mqtt_heartbeat_callbacks;
 heartbeat::Mode _mqtt_heartbeat_mode;
 heartbeat::Seconds _mqtt_heartbeat_interval;
@@ -648,7 +662,6 @@ bool _mqttHeartbeat(heartbeat::Mask mask) {
 }
 
 void _mqttOnConnect() {
-
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
     _mqtt_last_connection = millis();
@@ -656,34 +669,58 @@ void _mqttOnConnect() {
 
     systemHeartbeat(_mqttHeartbeat, _mqtt_heartbeat_mode, _mqtt_heartbeat_interval);
 
-    DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
-
-    // Clean subscriptions
-    mqttUnsubscribeRaw("#");
-
     // Notify all subscribers about the connection
     for (auto& callback : _mqtt_callbacks) {
         callback(MQTT_CONNECT_EVENT, nullptr, nullptr);
     }
 
+    DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 }
 
 void _mqttOnDisconnect() {
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    _mqtt_publish_callbacks.clear();
+    _mqtt_subscribe_callbacks.clear();
+#endif
 
-    // Reset reconnection delay
     _mqtt_last_connection = millis();
     _mqtt_state = AsyncClientState::Disconnected;
 
     systemStopHeartbeat(_mqttHeartbeat);
-
-    DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
     // Notify all subscribers about the disconnect
     for (auto& callback : _mqtt_callbacks) {
         callback(MQTT_DISCONNECT_EVENT, nullptr, nullptr);
     }
 
+    DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 }
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+
+// Run the associated callback when message PID is acknowledged by the broker
+
+void _mqttPidCallback(MqttPidCallbacks& callbacks, uint16_t pid) {
+    if (callbacks.empty()) {
+        return;
+    }
+
+    auto end = callbacks.end();
+    auto prev = callbacks.before_begin();
+    auto it = callbacks.begin();
+
+    while (it != end) {
+        if ((*it).pid == pid) {
+            (*it).run();
+            it = callbacks.erase_after(prev);
+        } else {
+            prev = it;
+            ++it;
+        }
+    }
+}
+
+#endif
 
 // Force-skip everything received in a short window right after connecting to avoid syncronization issues.
 
@@ -764,23 +801,24 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     @return String object with the magnitude part.
 */
 String mqttMagnitude(const char* topic) {
+    String output;
 
     String pattern = _mqtt_topic + _mqtt_setter;
     int position = pattern.indexOf("#");
-    if (position == -1) return String();
-    String start = pattern.substring(0, position);
-    String end = pattern.substring(position + 1);
 
-    String magnitude = String(topic);
-    if (magnitude.startsWith(start) && magnitude.endsWith(end)) {
-        magnitude.replace(start, "");
-        magnitude.replace(end, "");
-    } else {
-        magnitude = String();
+    if (position >= 0) {
+        String start = pattern.substring(0, position);
+        String end = pattern.substring(position + 1);
+
+        String magnitude(topic);
+        if (magnitude.startsWith(start) && magnitude.endsWith(end)) {
+            magnitude.replace(start, "");
+            magnitude.replace(end, "");
+            output = std::move(magnitude);
+        }
     }
 
-    return magnitude;
-
+    return output;
 }
 
 /**
@@ -791,10 +829,17 @@ String mqttMagnitude(const char* topic) {
         or a state topic (false).
     @return String full MQTT topic.
 */
-String mqttTopic(const char * magnitude, bool is_set) {
-    String output = _mqtt_topic;
+String mqttTopic(const char* magnitude, bool is_set) {
+    String output;
+    output.reserve(strlen(magnitude)
+        + _mqtt_topic.length()
+        + _mqtt_setter.length()
+        + _mqtt_getter.length());
+
+    output += _mqtt_topic;
     output.replace("#", magnitude);
     output += is_set ? _mqtt_setter : _mqtt_getter;
+
     return output;
 }
 
@@ -807,23 +852,26 @@ String mqttTopic(const char * magnitude, bool is_set) {
         or a state topic (false).
     @return String full MQTT topic.
 */
-String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
-    char buffer[strlen(magnitude)+5];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), magnitude, index);
-    return mqttTopic(buffer, is_set);
+String mqttTopic(const char* magnitude, unsigned int index, bool is_set) {
+    String output;
+    output.reserve(strlen(magnitude) + (sizeof(decltype(index)) * 4));
+    output += magnitude;
+    output += '/';
+    output += index;
+    return mqttTopic(output.c_str(), is_set);
 }
 
 // -----------------------------------------------------------------------------
 
-bool mqttSendRaw(const char * topic, const char * message, bool retain) {
+uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos) {
     constexpr size_t MessageLogMax { 128ul };
 
     if (_mqtt.connected()) {
         const unsigned int packetId {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-            _mqtt.publish(topic, _mqtt_qos, retain, message)
+            _mqtt.publish(topic, qos, retain, message)
 #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-            _mqtt.publish(topic, message, retain, _mqtt_qos)
+            _mqtt.publish(topic, message, retain, qos)
 #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
             _mqtt.publish(topic, message, retain)
 #endif
@@ -836,50 +884,50 @@ bool mqttSendRaw(const char * topic, const char * message, bool retain) {
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %u)\n"), topic, message, packetId);
         }
 
-        return (packetId > 0);
+        return packetId;
     }
 
     return false;
 }
 
-
-bool mqttSendRaw(const char * topic, const char * message) {
-    return mqttSendRaw(topic, message, _mqtt_retain);
+uint16_t mqttSendRaw(const char * topic, const char * message, bool retain) {
+    return mqttSendRaw(topic, message, retain, _mqtt_qos);
 }
 
-void mqttSend(const char * topic, const char * message, bool force, bool retain) {
-    // TODO: refactor JSON mode to trigger WS-like status payloads instead sending single topic+message?
-    // (i.e. instead of {"relay/0": "1", ...} have {"relays": ["1"], ...})
-    // Heartbeat handles periodic status dumps for everything, mqttSend alternative simply notifies the module to send it's status data
+uint16_t mqttSendRaw(const char * topic, const char * message) {
+    return mqttSendRaw(topic, message, _mqtt_retain, _mqtt_qos);
+}
+
+bool mqttSend(const char * topic, const char * message, bool force, bool retain) {
     if (!force && _mqtt_use_json) {
         mqttEnqueue(topic, message);
         _mqtt_json_payload_flush.once_ms(MQTT_USE_JSON_DELAY, mqttFlush);
-        return;
+        return true;
     }
 
-    mqttSendRaw(mqttTopic(topic, false).c_str(), message, retain);
+    return mqttSendRaw(mqttTopic(topic, false).c_str(), message, retain) > 0;
 }
 
-void mqttSend(const char * topic, const char * message, bool force) {
-    mqttSend(topic, message, force, _mqtt_retain);
+bool mqttSend(const char * topic, const char * message, bool force) {
+    return mqttSend(topic, message, force, _mqtt_retain);
 }
 
-void mqttSend(const char * topic, const char * message) {
-    mqttSend(topic, message, false);
+bool mqttSend(const char * topic, const char * message) {
+    return mqttSend(topic, message, false);
 }
 
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
+bool mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
     char buffer[strlen(topic)+5];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
-    mqttSend(buffer, message, force, retain);
+    return mqttSend(buffer, message, force, retain);
 }
 
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
-    mqttSend(topic, index, message, force, _mqtt_retain);
+bool mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
+    return mqttSend(topic, index, message, force, _mqtt_retain);
 }
 
-void mqttSend(const char * topic, unsigned int index, const char * message) {
-    mqttSend(topic, index, message, false);
+bool mqttSend(const char * topic, unsigned int index, const char * message) {
+    return mqttSend(topic, index, message, false);
 }
 
 // -----------------------------------------------------------------------------
@@ -949,36 +997,38 @@ void mqttEnqueue(const char* topic, const char* message) {
 
 // -----------------------------------------------------------------------------
 
-void mqttSubscribeRaw(const char * topic) {
+// Only async client returns resulting PID, sync libraries return either success (1) or failure (0)
+
+uint16_t mqttSubscribeRaw(const char* topic, int qos) {
+    uint16_t pid { 0u };
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-            unsigned int packetId = _mqtt.subscribe(topic, _mqtt_qos);
-            DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
-        #else // Arduino-MQTT or PubSubClient
-            _mqtt.subscribe(topic, _mqtt_qos);
-            DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
-        #endif
+        pid = _mqtt.subscribe(topic, qos);
+        DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, pid);
     }
+
+    return pid;
 }
 
-void mqttSubscribe(const char * topic) {
-    mqttSubscribeRaw(mqttTopic(topic, true).c_str());
+uint16_t mqttSubscribeRaw(const char* topic) {
+    return mqttSubscribeRaw(topic, _mqtt_qos);
 }
 
-void mqttUnsubscribeRaw(const char * topic) {
+bool mqttSubscribe(const char * topic) {
+    return mqttSubscribeRaw(mqttTopic(topic, true).c_str(), _mqtt_qos);
+}
+
+uint16_t mqttUnsubscribeRaw(const char * topic) {
+    uint16_t pid { 0u };
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-            unsigned int packetId = _mqtt.unsubscribe(topic);
-            DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s (PID %d)\n"), topic, packetId);
-        #else // Arduino-MQTT or PubSubClient
-            _mqtt.unsubscribe(topic);
-            DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s\n"), topic);
-        #endif
+        pid = _mqtt.unsubscribe(topic);
+        DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing from %s (PID %d)\n"), topic, pid);
     }
+
+    return pid;
 }
 
-void mqttUnsubscribe(const char * topic) {
-    mqttUnsubscribeRaw(mqttTopic(topic, true).c_str());
+bool mqttUnsubscribe(const char * topic) {
+    return mqttUnsubscribeRaw(mqttTopic(topic, true).c_str());
 }
 
 // -----------------------------------------------------------------------------
@@ -1006,9 +1056,38 @@ bool mqttForward() {
     return _mqtt_forward;
 }
 
+/**
+    Register a persistent lifecycle callback
+
+    @param standalone function pointer
+*/
 void mqttRegister(mqtt_callback_f callback) {
     _mqtt_callbacks.push_front(callback);
 }
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+
+/**
+    Register a temporary publish callback
+
+    @param callable object
+*/
+void mqttOnPublish(uint16_t pid, mqtt_pid_callback_f callback) {
+    auto callable = MqttPidCallback { pid, callback };
+    _mqtt_publish_callbacks.push_front(std::move(callable));
+}
+
+/**
+    Register a temporary subscribe callback
+
+    @param callable object
+*/
+void mqttOnSubscribe(uint16_t pid, mqtt_pid_callback_f callback) {
+    auto callable = MqttPidCallback { pid, callback };
+    _mqtt_subscribe_callbacks.push_front(std::move(callable));
+}
+
+#endif
 
 void mqttSetBroker(IPAddress ip, uint16_t port) {
     setSetting("mqttServer", ip.toString());
@@ -1025,6 +1104,8 @@ void mqttSetBrokerIfNone(IPAddress ip, uint16_t port) {
         mqttSetBroker(ip, port);
     }
 }
+
+// TODO: these strings are only updated after running the configuration routine and when MQTT is *enabled*
 
 const String& mqttPayloadOnline() {
     return _mqtt_payload_online;
@@ -1047,12 +1128,11 @@ void mqttSendStatus() {
 // -----------------------------------------------------------------------------
 
 void _mqttConnect() {
-
-    // Do not connect if disabled
-    if (!_mqtt_enabled) return;
-
     // Do not connect if already connected or still trying to connect
     if (_mqtt.connected() || (_mqtt_state != AsyncClientState::Disconnected)) return;
+
+    // Do not connect if disabled or no WiFi
+    if (!_mqtt_enabled || (WiFi.status() != WL_CONNECTED)) return;
 
     // Check reconnect interval
     if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
@@ -1097,31 +1177,19 @@ void _mqttConnect() {
 }
 
 void mqttLoop() {
-
-    if (WiFi.status() != WL_CONNECTED) return;
-
-    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-
-        _mqttConnect();
-
-    #else // MQTT_LIBRARY != MQTT_LIBRARY_ASYNCMQTTCLIENT
-
-        if (_mqtt.connected()) {
-
-            _mqtt.loop();
-
-        } else {
-
-            if (_mqtt_state != AsyncClientState::Disconnected) {
-                _mqttOnDisconnect();
-            }
-
-            _mqttConnect();
-
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    _mqttConnect();
+#else
+    if (_mqtt.connected()) {
+        _mqtt.loop();
+    } else {
+        if (_mqtt_state != AsyncClientState::Disconnected) {
+            _mqttOnDisconnect();
         }
 
-    #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-
+        _mqttConnect();
+    }
+#endif
 }
 
 void mqttHeartbeat(heartbeat::Callback callback) {
@@ -1154,11 +1222,12 @@ void mqttSetup() {
             _mqttOnConnect();
         });
 
-        _mqtt.onSubscribe([](uint16_t packetId, uint8_t qos) {
-            DEBUG_MSG_P(PSTR("[MQTT] Subscribe ACK for PID %u\n"), packetId);
+        _mqtt.onSubscribe([](uint16_t pid, int) {
+            _mqttPidCallback(_mqtt_subscribe_callbacks, pid);
         });
-        _mqtt.onPublish([](uint16_t packetId) {
-            DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %u\n"), packetId);
+
+        _mqtt.onPublish([](uint16_t pid) {
+            _mqttPidCallback(_mqtt_publish_callbacks, pid);
         });
 
         _mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
@@ -1208,7 +1277,7 @@ void mqttSetup() {
 
     #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
 
-        _mqtt.onMessageAdvanced([](MQTTClient *client, char topic[], char payload[], int length) {
+        _mqtt.onMessageAdvanced([](MQTTClient* , char topic[], char payload[], int length) {
             _mqttOnMessage(topic, payload, length);
         });
 

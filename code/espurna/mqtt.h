@@ -56,25 +56,37 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_CMD              "cmd"
 
 using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
+using mqtt_pid_callback_f = std::function<void()>;
 
 void mqttHeartbeat(heartbeat::Callback);
 void mqttRegister(mqtt_callback_f callback);
+
+void mqttOnPublish(uint16_t pid, mqtt_pid_callback_f);
+void mqttOnSubscribe(uint16_t pid, mqtt_pid_callback_f);
 
 String mqttTopic(const char * magnitude, bool is_set);
 String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
 
 String mqttMagnitude(const char* topic);
 
-bool mqttSendRaw(const char * topic, const char * message, bool retain);
-bool mqttSendRaw(const char * topic, const char * message);
+uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos);
+uint16_t mqttSendRaw(const char * topic, const char * message, bool retain);
+uint16_t mqttSendRaw(const char * topic, const char * message);
 
-void mqttSend(const char * topic, const char * message, bool force, bool retain);
-void mqttSend(const char * topic, const char * message, bool force);
-void mqttSend(const char * topic, const char * message);
+uint16_t mqttSubscribeRaw(const char * topic, int qos);
+uint16_t mqttSubscribeRaw(const char * topic);
+bool mqttSubscribe(const char * topic);
 
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain);
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force);
-void mqttSend(const char * topic, unsigned int index, const char * message);
+uint16_t mqttUnsubscribeRaw(const char * topic);
+bool mqttUnsubscribe(const char * topic);
+
+bool mqttSend(const char * topic, const char * message, bool force, bool retain);
+bool mqttSend(const char * topic, const char * message, bool force);
+bool mqttSend(const char * topic, const char * message);
+
+bool mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain);
+bool mqttSend(const char * topic, unsigned int index, const char * message, bool force);
+bool mqttSend(const char * topic, unsigned int index, const char * message);
 
 void mqttSendStatus();
 void mqttFlush();
@@ -87,12 +99,6 @@ const char* mqttPayloadStatus(bool status);
 
 void mqttSetBroker(IPAddress ip, uint16_t port);
 void mqttSetBrokerIfNone(IPAddress ip, uint16_t port);
-
-void mqttSubscribeRaw(const char * topic);
-void mqttSubscribe(const char * topic);
-
-void mqttUnsubscribeRaw(const char * topic);
-void mqttUnsubscribe(const char * topic);
 
 void mqttEnabled(bool status);
 bool mqttEnabled();
