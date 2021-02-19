@@ -68,6 +68,8 @@ unsigned long _lastTimeUpdate           = 0;
 unsigned long _currentAnimDuration      = ULONG_MAX;
 unsigned int  _currentAnimInd           = 0;
 unsigned int  _currentPaletteInd        = 0;
+String        _immediate_command;
+std::queue<String> _commands;
 
 // Palette should
 Palette pals[] = {
@@ -117,8 +119,6 @@ Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new Ani
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
-String immediate_command;
-std::queue<String> commands;
 //------------------------------------------------------------------------------
 void garlandDisable() {
     pixels.clear();
@@ -134,6 +134,11 @@ void garlandEnabled(bool enabled) {
             pixels.show();
         });
     }
+#if WEB_SUPPORT
+    char buffer[128];
+    snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandEnabled\": %s}"), enabled ? "true" : "false");
+    wsSend(buffer);
+#endif    
 }
 
 //------------------------------------------------------------------------------
@@ -159,6 +164,20 @@ void _garlandConfigure() {
 //------------------------------------------------------------------------------
 void _garlandReload() {
     _garlandConfigure();
+}
+
+//------------------------------------------------------------------------------
+void setDefault() {
+    scene.setDefault();
+    byte brightness = scene.getBrightness();
+    setSetting(NAME_GARLAND_BRIGHTNESS, brightness);
+    byte speed = scene.getSpeed();
+    setSetting(NAME_GARLAND_SPEED, speed);
+#if WEB_SUPPORT
+    char buffer[128];
+    snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandBrightness\": %d, \"garlandSpeed\": %d}"), brightness, speed);
+    wsSend(buffer);
+#endif
 }
 
 #if WEB_SUPPORT
@@ -205,14 +224,7 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     }
 
     if (strcmp(action, NAME_GARLAND_SET_DEFAULT) == 0) {
-        scene.setDefault();
-        byte brightness = scene.getBrightness();
-        setSetting(NAME_GARLAND_BRIGHTNESS, brightness);
-        byte speed = scene.getSpeed();
-        setSetting(NAME_GARLAND_SPEED, speed);
-        char buffer[128];
-        snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandBrightness\": %d, \"garlandSpeed\": %d}"), brightness, speed);
-        wsSend(buffer);
+        setDefault();
     }
 }
 #endif
@@ -313,9 +325,9 @@ void executeCommand(const String& command) {
 // Loop
 //------------------------------------------------------------------------------
 void garlandLoop(void) {
-    if (!immediate_command.isEmpty()) {
-        executeCommand(immediate_command);
-        immediate_command.clear();
+    if (!_immediate_command.isEmpty()) {
+        executeCommand(_immediate_command);
+        _immediate_command.clear();
     }
 
     if (!garlandEnabled())
@@ -362,13 +374,16 @@ void garlandMqttCallback(unsigned int type, const char * topic, const char * pay
             }
 
             if (command == MQTT_COMMAND_IMMEDIATE) {
-                immediate_command = payload;
+                _immediate_command = payload;
             } else if (command == MQTT_COMMAND_RESET) {
                 std::queue<String> empty;
-                std::swap( commands, empty );
-                immediate_command = "";
+                std::swap( _commands, empty );
+                _immediate_command.clear();
+                _currentAnimDuration = 0;
+                setDefault();
+                garlandEnabled(true);
             } else if (command == MQTT_COMMAND_QUEUE) {
-                commands.push(payload);
+                _commands.push(payload);
             }
         }
     }
