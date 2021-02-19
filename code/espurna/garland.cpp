@@ -337,15 +337,20 @@ void garlandLoop(void) {
 
     unsigned long currentAnimRunTime = millis() - _lastTimeUpdate;
     if (currentAnimRunTime > _currentAnimDuration && scene.finishedAnimCycle()) {
-        unsigned int newAnimInd = _currentAnimInd;
-        while (newAnimInd == _currentAnimInd) newAnimInd = secureRandom(1, animsSize());
+        if (!_commands.empty()) {
+            executeCommand(_commands.front());
+            _commands.pop();
+        } else {
+            unsigned int newAnimInd = _currentAnimInd;
+            while (newAnimInd == _currentAnimInd) newAnimInd = secureRandom(1, animsSize());
 
-        unsigned int newPalInd = _currentPaletteInd;
-        while (newPalInd == _currentPaletteInd) newPalInd = secureRandom(palsSize());
+            unsigned int newPalInd = _currentPaletteInd;
+            while (newPalInd == _currentPaletteInd) newPalInd = secureRandom(palsSize());
 
-        unsigned long newAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+            unsigned long newAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
-        setupScene(newAnimInd, newPalInd, newAnimDuration);
+            setupScene(newAnimInd, newPalInd, newAnimDuration);
+        }
     }
 }
 
