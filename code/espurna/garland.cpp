@@ -57,6 +57,7 @@ const char* MQTT_PAYLOAD_DURATION       = "duration";
 const char* MQTT_COMMAND_IMMEDIATE      = "immediate";
 const char* MQTT_COMMAND_RESET          = "reset"; // reset queue
 const char* MQTT_COMMAND_QUEUE          = "queue"; // enqueue command payload
+const char* MQTT_COMMAND_SEQUENCE       = "sequence"; // place command to sequence
 
 #define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
@@ -68,8 +69,10 @@ unsigned long _lastTimeUpdate           = 0;
 unsigned long _currentAnimDuration      = ULONG_MAX;
 unsigned int  _currentAnimInd           = 0;
 unsigned int  _currentPaletteInd        = 0;
+unsigned int  _currentCommandInSequence = 0;
 String        _immediate_command;
-std::queue<String> _commands;
+std::queue<String>  _command_queue;
+std::vector<String> _command_sequence;
 
 // Palette should
 Palette pals[] = {
@@ -256,14 +259,14 @@ void setupScene(unsigned int anim_ind, unsigned int palette_ind, unsigned long d
 }
 
 //------------------------------------------------------------------------------
-void executeCommand(const String& command) {
+bool executeCommand(const String& command) {
     DEBUG_MSG_P(PSTR("[GARLAND] Executing command \"%s\"\n"), command.c_str());
     // Parse JSON input
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.parseObject(command);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[GARLAND] Error parsing command\n"));
-        return;
+        return false;
     }
 
     bool scene_setup_required = false;
@@ -318,7 +321,9 @@ void executeCommand(const String& command) {
 
     if (scene_setup_required) {
         setupScene(newAnimInd, newPalInd, newAnimDuration);
+        return true;
     }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -337,10 +342,18 @@ void garlandLoop(void) {
 
     unsigned long currentAnimRunTime = millis() - _lastTimeUpdate;
     if (currentAnimRunTime > _currentAnimDuration && scene.finishedAnimCycle()) {
-        if (!_commands.empty()) {
-            executeCommand(_commands.front());
-            _commands.pop();
-        } else {
+        bool scene_setup_done = false;
+        if (!_command_queue.empty()) {
+            scene_setup_done = executeCommand(_command_queue.front());
+            _command_queue.pop();
+        } else if (!_command_sequence.empty()) {
+            scene_setup_done = executeCommand(_command_sequence[_currentCommandInSequence]);
+            ++_currentCommandInSequence;
+            if (_currentCommandInSequence >= _command_sequence.size())
+                _currentCommandInSequence = 0;
+        }
+        
+        if (!scene_setup_done) {
             unsigned int newAnimInd = _currentAnimInd;
             while (newAnimInd == _currentAnimInd) newAnimInd = secureRandom(1, animsSize());
 
@@ -381,14 +394,18 @@ void garlandMqttCallback(unsigned int type, const char * topic, const char * pay
             if (command == MQTT_COMMAND_IMMEDIATE) {
                 _immediate_command = payload;
             } else if (command == MQTT_COMMAND_RESET) {
-                std::queue<String> empty;
-                std::swap( _commands, empty );
+                std::queue<String> empty_queue;
+                std::swap(_command_queue, empty_queue);
+                std::vector<String> empty_sequence;
+                std::swap(_command_sequence, empty_sequence);
                 _immediate_command.clear();
                 _currentAnimDuration = 0;
                 setDefault();
                 garlandEnabled(true);
             } else if (command == MQTT_COMMAND_QUEUE) {
-                _commands.push(payload);
+                _command_queue.push(payload);
+            } else if (command == MQTT_COMMAND_SEQUENCE) {
+                _command_sequence.push_back(payload);
             }
         }
     }
