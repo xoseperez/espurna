@@ -11,6 +11,7 @@
 #include "../ntp.h"
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+#include "ntp_timelib.h"
 #include <WiFiClientSecureBearSSL.h>
 #elif SECURE_CLIENT == SECURE_CLIENT_AXTLS
 #include <WiFiClientSecureAxTLS.h>
