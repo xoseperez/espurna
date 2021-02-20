@@ -27,6 +27,7 @@ MQTT control:
 
 #include <Adafruit_NeoPixel.h>
 
+#include <memory>
 #include <vector>
 
 #include "garland/color.h"
@@ -66,9 +67,7 @@ const char* MQTT_COMMAND_SEQUENCE       = "sequence"; // place command to sequen
 
 bool          _garland_enabled          = true;
 unsigned long _lastTimeUpdate           = 0;
-unsigned long _currentAnimDuration      = ULONG_MAX;
-unsigned int  _currentAnimInd           = 0;
-unsigned int  _currentPaletteInd        = 0;
+unsigned long _currentDuration          = ULONG_MAX;
 unsigned int  _currentCommandInSequence = 0;
 String        _immediate_command;
 std::queue<String>  _command_queue;
@@ -117,11 +116,15 @@ constexpr size_t palsSize() { return sizeof(pals)/sizeof(pals[0]); }
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(), 
+Anim* anims[] = {new AnimGlow(), new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(), 
                  new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
+#define START_ANIMATION  1
+Anim* _currentAnim       = anims[1];
+Palette* _currentPalette = &pals[0];
+auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
 //------------------------------------------------------------------------------
 void garlandDisable() {
     pixels.clear();
@@ -233,28 +236,27 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
 #endif
 
 //------------------------------------------------------------------------------
-void setupScene(unsigned int anim_ind, unsigned int palette_ind, unsigned long duration) {
+void setupScene(Anim* new_anim, Palette* new_palette, unsigned long new_duration) {
     unsigned long currentAnimRunTime = millis() - _lastTimeUpdate;
     _lastTimeUpdate = millis();
-    _currentAnimDuration = duration;
-
-    int prevAnimInd = _currentAnimInd;
-    _currentAnimInd = anim_ind;
-
-    int prevPalInd = _currentPaletteInd;
-    _currentPaletteInd = palette_ind;
 
     int numShows = scene.getNumShows();
     int frameRate = currentAnimRunTime > 0 ? numShows * 1000 / currentAnimRunTime : 0;
 
+    static String palette_name = "Start";
     DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
-                anims[prevAnimInd]->name(), pals[prevPalInd].name(),
+                _currentAnim->name(), palette_name.c_str(),
                 scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
-    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
-                anims[_currentAnimInd]->name(), pals[_currentPaletteInd].name(), _currentAnimDuration);
 
-    scene.setAnim(anims[_currentAnimInd]);
-    scene.setPalette(&pals[_currentPaletteInd]);
+    _currentDuration = new_duration;
+    _currentAnim     = new_anim;
+    _currentPalette  = new_palette;
+    palette_name = _currentPalette->name();
+    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
+                _currentAnim->name(), palette_name.c_str(), _currentDuration);
+
+    scene.setAnim(_currentAnim);
+    scene.setPalette(_currentPalette);
     scene.setup();
 }
 
@@ -286,28 +288,42 @@ bool executeCommand(const String& command) {
         scene.setSpeed(speed);
     }
 
-    unsigned int newAnimInd = _currentAnimInd;
+    Anim* newAnim = _currentAnim;
     if (root.containsKey(MQTT_PAYLOAD_ANIMATION)) {
         auto animation = root[MQTT_PAYLOAD_ANIMATION].as<const char*>();
         for (size_t i = 0; i < animsSize(); ++i) {
             auto anim_name = anims[i]->name();
             if (strcmp(animation, anim_name) == 0) {
-                newAnimInd = i;
+                newAnim = anims[i];
                 scene_setup_required = true;
                 break;
             }
         }
     }
 
-    unsigned int newPalInd = _currentPaletteInd;
+    Palette* newPalette = _currentPalette;
     if (root.containsKey(MQTT_PAYLOAD_PALETTE)) {
-        auto palette = root[MQTT_PAYLOAD_PALETTE].as<const char*>();
-        for (size_t i = 0; i < palsSize(); ++i) {
-            auto pal_name = pals[i].name();
-            if (strcmp(palette, pal_name) == 0) {
-                newPalInd = i;
-                scene_setup_required = true;
-                break;
+        if (root.is<int>(MQTT_PAYLOAD_PALETTE)) {
+            one_color_palette.reset(new Palette("Color", {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
+            newPalette = one_color_palette.get();
+        } else {
+            auto palette = root[MQTT_PAYLOAD_PALETTE].as<const char*>();
+            bool palette_found = false;
+            for (size_t i = 0; i < palsSize(); ++i) {
+                auto pal_name = pals[i].name();
+                if (strcmp(palette, pal_name) == 0) {
+                    newPalette = &pals[i];
+                    palette_found = true;
+                    scene_setup_required = true;
+                    break;
+                }
+            }
+            if (!palette_found) {
+                uint32_t color = (uint32_t)strtoul(palette, NULL, 0);
+                if (color != 0) {
+                    one_color_palette.reset(new Palette("Color", {color}));
+                    newPalette = one_color_palette.get();
+                }
             }
         }
     }
@@ -320,7 +336,7 @@ bool executeCommand(const String& command) {
     
 
     if (scene_setup_required) {
-        setupScene(newAnimInd, newPalInd, newAnimDuration);
+        setupScene(newAnim, newPalette, newAnimDuration);
         return true;
     }
     return false;
@@ -341,7 +357,7 @@ void garlandLoop(void) {
     scene.run();
 
     unsigned long currentAnimRunTime = millis() - _lastTimeUpdate;
-    if (currentAnimRunTime > _currentAnimDuration && scene.finishedAnimCycle()) {
+    if (currentAnimRunTime > _currentDuration && scene.finishedAnimCycle()) {
         bool scene_setup_done = false;
         if (!_command_queue.empty()) {
             scene_setup_done = executeCommand(_command_queue.front());
@@ -354,15 +370,16 @@ void garlandLoop(void) {
         }
         
         if (!scene_setup_done) {
-            unsigned int newAnimInd = _currentAnimInd;
-            while (newAnimInd == _currentAnimInd) newAnimInd = secureRandom(1, animsSize());
+            Anim* newAnim = _currentAnim;
+            while (newAnim == _currentAnim) newAnim = anims[secureRandom(START_ANIMATION + 1, animsSize())];
 
-            unsigned int newPalInd = _currentPaletteInd;
-            while (newPalInd == _currentPaletteInd) newPalInd = secureRandom(palsSize());
+            Palette* newPalette = _currentPalette;
+            while (newPalette == _currentPalette) 
+                newPalette = &pals[secureRandom(palsSize())];
 
             unsigned long newAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
-            setupScene(newAnimInd, newPalInd, newAnimDuration);
+            setupScene(newAnim, newPalette, newAnimDuration);
         }
     }
 }
@@ -399,7 +416,7 @@ void garlandMqttCallback(unsigned int type, const char * topic, const char * pay
                 std::vector<String> empty_sequence;
                 std::swap(_command_sequence, empty_sequence);
                 _immediate_command.clear();
-                _currentAnimDuration = 0;
+                _currentDuration = 0;
                 setDefault();
                 garlandEnabled(true);
             } else if (command == MQTT_COMMAND_QUEUE) {
@@ -428,11 +445,11 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    scene.setAnim(anims[0]);
-    scene.setPalette(&pals[0]);
+    scene.setAnim(_currentAnim);
+    scene.setPalette(_currentPalette);
     scene.setup();
 
-    _currentAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+    _currentDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
 
 /*#######################################################################
