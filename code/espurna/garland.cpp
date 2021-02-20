@@ -12,13 +12,35 @@ Currently animation calculation, brightness calculation/transition and showing m
 Debug output shows timings. Overal timing should be not more that 3000 ms.
 
 MQTT control:
-"command:["immediate", "queue", "sequence", "reset"]
-"enable":["true", "false"]
-"brightness":[0-255]
-"speed":[30-60]
+Topic: DEVICE_NAME/garland/set
+Message: {"command":"string", "enable":"string", "brightness":int, "speed":int, "animation":"string",
+          "palette":"string"/int, "duration":int}
+All parameters are optional.
+
+"command:["immediate", "queue", "sequence", "reset"] - if not set, than "immediate" by default
+    Commands priority:
+        - "immediate" - executes immediately, braking current animation.
+        - "queue" - if queue is not empty, than next queue command executes after current animation end.
+                    after execution command removed from queue. 
+        - "sequence" - executes commands in sequence in cycle.
+        - "reset" - clean queue and sequence, restore default settings, enable garland.
+        - random if there are no commands in queue or sequence.
+
+"enable":["true", "false"] - enable or disable garland
+"brightness":[0-255] - set brightness
+"speed":[30-60] - set animation speed
 "animation":["PixieDust", "Sparkr", "Run", "Stars", "Spread", "R"andCyc", "Fly", "Comets", "Assemble", "Dolphins", "Salut"]
+    - setup animation. If not set or not recognized, than setup previous anmation
 "palette":["RGB", "Rainbow", "Stripe", "Party", "Heat", Fire", "Blue", "Sun", "Lime", "Pastel"]
-"duration":5000
+    - can be one of listed above or can be one color palette.
+    - one color palette can be set by string, that represents color in the format "0xRRGGBB" (0xFF0000 for red) or
+      integer number, corresponding to it. Examples: "palette":"0x0000FF", "palette":255 equal to Blue color.
+"duration":5000 - setup command duration in milliseconds. If not set, than infinite duration will setup.
+
+If command contains animation, palette or duration, than it setup next animation, that will be shown for duration (infinite if
+duration does not set), otherwise it just set scene parameters.
+
+Infinite commands can be interrupted by immediate command or by reset command.
 */
 
 #include "garland.h"
