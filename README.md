@@ -188,9 +188,11 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
 * **Garland** Implementing garland using WS2812 leds
     * 12 animation modes (include start animation)
     * Web control for:
-        * ON/OFF
-        * brightness
-        * speed
+        * ON/OFF, brightness, speed
+    * MQTT control:
+        * ON/OFF, brightness, speed
+        * Animation queue
+        * Animation sequence
 
 ## Notices
 
