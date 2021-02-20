@@ -112,8 +112,8 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
         }
     }
 
-    // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (default 255)
-    lightBrightness((root["Level"].as<long>() / 100l) * Light::BRIGHTNESS_MAX);
+    // domoticz uses 100 as maximum value while we're using a custom scale
+    lightBrightness((root["Level"].as<long>() / 100l) * Light::BrightnessMax);
     lightUpdate();
 
 }

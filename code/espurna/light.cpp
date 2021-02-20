@@ -19,12 +19,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "libs/OnceFlag.h"
 
-#include "light_config.h"
-
 #include <Ticker.h>
 #include <Schedule.h>
 #include <ArduinoJson.h>
+
+#include <array>
 #include <vector>
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#include <my92xx.h>
+#endif
 
 extern "C" {
 #include "libs/fs_math.h"
@@ -39,6 +43,8 @@ extern "C" {
 }
 
 #endif
+
+#include "light_config.h"
 
 // -----------------------------------------------------------------------------
 
@@ -84,22 +90,32 @@ public:
 
 struct channel_t {
     channel_t() = default;
-    explicit channel_t(unsigned char pin_, bool inverse_) :
+
+    // TODO: set & store pin in the provider
+    explicit channel_t(unsigned char pin_, bool inverse_, bool gamma_) :
         pin(pin_),
-        inverse(inverse_)
+        inverse(inverse_),
+        gamma(gamma_)
+    {
+        pinMode(pin, OUTPUT);
+    }
+
+    explicit channel_t(unsigned char pin_) :
+        pin(pin_)
     {
         pinMode(pin, OUTPUT);
     }
 
     unsigned char pin { GPIO_NONE };    // real GPIO pin
-    bool inverse { false };             // whether we should invert the value before using it
+    bool inverse { false };             // re-map the value from [ValueMin:ValueMax] to [ValueMax:ValueMin]
+    bool gamma { false };               // apply gamma correction to the target value
 
     bool state { true };                // is the channel ON
 
-    unsigned char inputValue { Light::VALUE_MIN };     // raw value, without the brightness
-    unsigned char value { Light::VALUE_MIN };          // normalized value, including brightness
-    unsigned char target { Light::VALUE_MIN };         // target value
-    float current { Light::VALUE_MIN };             // transition value
+    unsigned char inputValue { Light::ValueMin };   // raw, without the brightness
+    unsigned char value { Light::ValueMin };        // normalized, including brightness
+    unsigned char target { Light::ValueMin };       // resulting value that will be given to the provider
+    float current { Light::ValueMin };              // interim between input and target, used by the transition handler
 };
 
 std::vector<channel_t> _light_channels;
@@ -119,26 +135,38 @@ bool _light_use_cct = false;
 bool _light_use_gamma = false;
 
 bool _light_state = false;
-unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
+long _light_brightness = Light::BrightnessMax;
 
 // Default to the Philips Hue value that HA also use.
 // https://developers.meethue.com/documentation/core-concepts
-long _light_cold_mireds = LIGHT_COLDWHITE_MIRED;
-long _light_warm_mireds = LIGHT_WARMWHITE_MIRED;
+long _light_cold_mireds = Light::MiredsCold;
+long _light_warm_mireds = Light::MiredsWarm;
 
 long _light_cold_kelvin = (1000000L / _light_cold_mireds);
 long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
-long _light_mireds = lround((_light_cold_mireds + _light_warm_mireds) / 2L);
+long _light_mireds = (Light::MiredsCold + Light::MiredsWarm) / 2L;
 
-using light_brightness_func_t = bool(*)();
-light_brightness_func_t _light_brightness_func = nullptr;
+namespace {
+
+// In case we somehow forgot to initialize the brightness func, make sure to trigger an exception.
+// Just using an `nullptr` may not always trigger an error
+// (also, so we also don't have to check whether the pointer is not `nullptr`)
+
+bool _lightApplyBrightnessStub() {
+    panic();
+    return false;
+}
+
+} // namespace
+
+using LightBrightnessFunc = bool(*)();
+LightBrightnessFunc _light_brightness_func = _lightApplyBrightnessStub;
 
 bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-#include <my92xx.h>
 my92xx* _my92xx { nullptr };
 #endif
 
@@ -146,40 +174,39 @@ my92xx* _my92xx { nullptr };
 std::unique_ptr<LightProvider> _light_provider;
 #endif
 
-// UI hint about channel distribution
-const char _light_channel_desc[5][5] PROGMEM = {
-    {'W',   0,   0,   0,   0},
-    {'W', 'C',   0,   0,   0},
-    {'R', 'G', 'B',   0,   0},
-    {'R', 'G', 'B', 'W',   0},
-    {'R', 'G', 'B', 'W', 'C'}
-};
-static_assert((Light::Channels * Light::Channels) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
-
-// Gamma Correction lookup table (8 bit)
-const unsigned char _light_gamma_table[] PROGMEM = {
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
-    3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
-    6,   7,   7,   7,   7,   8,   8,   8,   9,   9,   9,   10,  10,  11,  11,  11,
-    12,  12,  13,  13,  14,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,
-    19,  20,  20,  21,  22,  22,  23,  23,  24,  25,  25,  26,  26,  27,  28,  28,
-    29,  30,  30,  31,  32,  33,  33,  34,  35,  35,  36,  37,  38,  39,  39,  40,
-    41,  42,  43,  43,  44,  45,  46,  47,  48,  49,  50,  50,  51,  52,  53,  54,
-    55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  71,
-    72,  73,  74,  75,  76,  77,  78,  80,  81,  82,  83,  84,  86,  87,  88,  89,
-    91,  92,  93,  94,  96,  97,  98,  100, 101, 102, 104, 105, 106, 108, 109, 110,
-    112, 113, 115, 116, 118, 119, 121, 122, 123, 125, 126, 128, 130, 131, 133, 134,
-    136, 137, 139, 140, 142, 144, 145, 147, 149, 150, 152, 154, 155, 157, 159, 160,
-    162, 164, 166, 167, 169, 171, 173, 175, 176, 178, 180, 182, 184, 186, 187, 189,
-    191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
-    223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
-};
-static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds array access");
-
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+
+namespace settings {
+namespace internal {
+
+template <>
+my92xx_model_t convert(const String& value) {
+    if (value.length() == 1) {
+        switch (*value.c_str()) {
+        case 0x01:
+            return MY92XX_MODEL_MY9291;
+        case 0x02:
+            return MY92XX_MODEL_MY9231;
+        }
+    } else {
+        if (value == "9291") {
+            return MY92XX_MODEL_MY9291;
+        } else if (value == "9231") {
+            return MY92XX_MODEL_MY9231;
+        }
+    }
+
+    return Light::build::my92xxModel();
+}
+
+} // namespace internal
+} // namespace settings
+
+#endif
 
 bool _setValue(unsigned char, unsigned int) __attribute__((warn_unused_result));
 bool _setValue(unsigned char id, unsigned int value) {
@@ -196,34 +223,44 @@ void _setInputValue(unsigned char id, unsigned int value) {
 }
 
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
-    _setInputValue(0, constrain(red, Light::VALUE_MIN, Light::VALUE_MAX));
-    _setInputValue(1, constrain(green, Light::VALUE_MIN, Light::VALUE_MAX));
-    _setInputValue(2, constrain(blue, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(0, constrain(red, Light::ValueMin, Light::ValueMax));
+    _setInputValue(1, constrain(green, Light::ValueMin, Light::ValueMax));
+    _setInputValue(2, constrain(blue, Light::ValueMin, Light::ValueMax));
 }
 
 void _setCCTInputValue(unsigned char warm, unsigned char cold) {
-    _setInputValue(0, constrain(warm, Light::VALUE_MIN, Light::VALUE_MAX));
-    _setInputValue(1, constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(0, constrain(warm, Light::ValueMin, Light::ValueMax));
+    _setInputValue(1, constrain(cold, Light::ValueMin, Light::ValueMax));
 }
 
-bool _lightApplyBrightness(size_t channels = lightChannels()) {
-    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BRIGHTNESS_MAX);
+bool _lightApplyBrightnessChannels(size_t channels) {
+    auto scale = static_cast<float>(_light_brightness) / static_cast<float>(Light::BrightnessMax);
 
     channels = std::min(channels, lightChannels());
-
     OnceFlag changed;
-    for (unsigned char i=0; i < lightChannels(); i++) {
-        if (i >= channels) brightness = 1;
-        changed = _setValue(i, _light_channels[i].inputValue * brightness);
+
+    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+        if (channel >= channels) {
+            scale = 1.0f;
+        }
+        changed = _setValue(channel, _light_channels[channel].inputValue * scale);
     }
 
     return changed.get();
 }
 
+bool _lightApplyBrightnessAll() {
+    return _lightApplyBrightnessChannels(lightChannels());
+}
+
+bool _lightApplyBrightnessRgb() {
+    return _lightApplyBrightnessChannels(3);
+}
+
 bool _lightApplyBrightnessColor() {
     OnceFlag changed;
 
-    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BRIGHTNESS_MAX);
+    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BrightnessMax);
 
     // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
     unsigned char white = std::min(_light_channels[0].inputValue, std::min(_light_channels[1].inputValue, _light_channels[2].inputValue));
@@ -265,7 +302,7 @@ bool _lightApplyBrightnessColor() {
 
     // Scale white channel to match brightness
     for (unsigned char i=3; i < channelSize; i++) {
-        changed = _setValue(i, constrain(static_cast<unsigned int>(_light_channels[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX));
+        changed = _setValue(i, constrain(static_cast<unsigned int>(_light_channels[i].value * LIGHT_WHITE_FACTOR), Light::BrightnessMin, Light::BrightnessMax));
     }
 
     // For the rest of channels, don't apply brightness, it is already in the inputValue
@@ -277,26 +314,56 @@ bool _lightApplyBrightnessColor() {
     return changed.get();
 }
 
-String lightDesc(unsigned char id) {
-    if (id < _light_channels.size()) {
-        const char tag = pgm_read_byte(&_light_channel_desc[_light_channels.size() - 1][id]);
-        switch (tag) {
-        case 'W':
-            return F("WARM WHITE");
-        case 'C':
-            return F("COLD WHITE");
-        case 'R':
-            return F("RED");
-        case 'G':
-            return F("GREEN");
-        case 'B':
-            return F("BLUE");
-        default:
-            break;
-        }
+char _lightTag(size_t channels, unsigned char index) {
+    constexpr size_t Columns { 5ul };
+    constexpr size_t Rows { 5ul };
+
+    auto row = channels - 1ul;
+    if (row < Rows) {
+        constexpr char tags[Rows][Columns] = {
+            {'W',   0,   0,   0,   0},
+            {'W', 'C',   0,   0,   0},
+            {'R', 'G', 'B',   0,   0},
+            {'R', 'G', 'B', 'W',   0},
+            {'R', 'G', 'B', 'W', 'C'},
+        };
+
+        return tags[row][index];
     }
 
-    return F("UNKNOWN");
+    return 0;
+}
+
+char _lightTag(unsigned char index) {
+    return _lightTag(_light_channels.size(), index);
+}
+
+// UI hint about channel distribution
+const char* _lightDesc(size_t channels, unsigned char index) {
+    const __FlashStringHelper* ptr { F("UNKNOWN") };
+    switch (_lightTag(channels, index)) {
+    case 'W':
+        ptr = F("WARM WHITE");
+        break;
+    case 'C':
+        ptr = F("COLD WHITE");
+        break;
+    case 'R':
+        ptr = F("RED");
+        break;
+    case 'G':
+        ptr = F("GREEN");
+        break;
+    case 'B':
+        ptr = F("BLUE");
+        break;
+    }
+
+    return reinterpret_cast<const char*>(ptr);
+}
+
+const char* _lightDesc(unsigned char index) {
+    return _lightDesc(_light_channels.size(), index);
 }
 
 // -----------------------------------------------------------------------------
@@ -306,7 +373,7 @@ String lightDesc(unsigned char id) {
 void _fromLong(unsigned long value, bool brightness) {
     if (brightness) {
         _setRGBInputValue((value >> 24) & 0xFF, (value >> 16) & 0xFF, (value >> 8) & 0xFF);
-        lightBrightness((value & 0xFF) * Light::BRIGHTNESS_MAX / 255);
+        lightBrightness((value & 0xFF) * Light::BrightnessMax / 255);
     } else {
         _setRGBInputValue((value >> 16) & 0xFF, (value >> 8) & 0xFF, (value) & 0xFF);
     }
@@ -374,32 +441,32 @@ void _fromHSV(const char * hsv) {
     const double f = (h - floor(h));
     const double s = (double) value[1] / 100.0;
 
-    _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BRIGHTNESS_MAX) / 100.0)); // (default 255/100)
-    const unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
-    const unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
-    const unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
+    _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BrightnessMax) / 100.0)); // (default 255/100)
+    const unsigned char p = lround(Light::ValueMax * (1.0 - s));
+    const unsigned char q = lround(Light::ValueMax * (1.0 - s * f));
+    const unsigned char t = lround(Light::ValueMax * (1.0 - s * (1.0 - f)));
 
     switch (int(h)) {
         case 0:
-            _setRGBInputValue(Light::VALUE_MAX, t, p);
+            _setRGBInputValue(Light::ValueMax, t, p);
             break;
         case 1:
-            _setRGBInputValue(q, Light::VALUE_MAX, p);
+            _setRGBInputValue(q, Light::ValueMax, p);
             break;
         case 2:
-            _setRGBInputValue(p, Light::VALUE_MAX, t);
+            _setRGBInputValue(p, Light::ValueMax, t);
             break;
         case 3:
-            _setRGBInputValue(p, q, Light::VALUE_MAX);
+            _setRGBInputValue(p, q, Light::ValueMax);
             break;
         case 4:
-            _setRGBInputValue(t, p, Light::VALUE_MAX);
+            _setRGBInputValue(t, p, Light::ValueMax);
             break;
         case 5:
-            _setRGBInputValue(Light::VALUE_MAX, p, q);
+            _setRGBInputValue(Light::ValueMax, p, q);
             break;
         default:
-            _setRGBInputValue(Light::VALUE_MIN, Light::VALUE_MIN, Light::VALUE_MIN);
+            _setRGBInputValue(Light::ValueMin, Light::ValueMin, Light::ValueMin);
             break;
     }
 }
@@ -425,8 +492,8 @@ void _lightMiredsCCT(const long kelvin) {
     // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
     const double factor = ((double) _light_mireds - (double) _light_cold_mireds)/((double) _light_warm_mireds - (double) _light_cold_mireds);
     _setCCTInputValue(
-        lround(factor * Light::VALUE_MAX),
-        lround(((double) 1.0 - factor) * Light::VALUE_MAX)
+        lround(factor * Light::ValueMax),
+        lround(((double) 1.0 - factor) * Light::ValueMax)
     );
 }
 
@@ -441,20 +508,20 @@ void _fromKelvin(long kelvin) {
     _lightMireds(kelvin);
 
     if (_light_use_cct) {
-      _setRGBInputValue(Light::VALUE_MAX, Light::VALUE_MAX, Light::VALUE_MAX);
+      _setRGBInputValue(Light::ValueMax, Light::ValueMax, Light::ValueMax);
       return;
     }
 
     // Calculate colors
     kelvin /= 100;
     const unsigned int red = (kelvin <= 66)
-        ? Light::VALUE_MAX
+        ? Light::ValueMax
         : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592);
     const unsigned int green = (kelvin <= 66)
         ? 99.4708025861 * fs_log(kelvin) - 161.1195681661
         : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492);
     const unsigned int blue = (kelvin >= 66)
-        ? Light::VALUE_MAX
+        ? Light::ValueMax
         : ((kelvin <= 19)
             ? 0
             : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307);
@@ -494,9 +561,9 @@ void _toHSV(char * hsv, size_t len) {
     double r {0.}, g {0.}, b {0.};
     double min {0.}, max {0.};
 
-    r = static_cast<double>(_light_channels[0].target) / Light::VALUE_MAX;
-    g = static_cast<double>(_light_channels[1].target) / Light::VALUE_MAX;
-    b = static_cast<double>(_light_channels[2].target) / Light::VALUE_MAX;
+    r = static_cast<double>(_light_channels[0].target) / Light::ValueMax;
+    g = static_cast<double>(_light_channels[1].target) / Light::ValueMax;
+    b = static_cast<double>(_light_channels[2].target) / Light::ValueMax;
 
     min = std::min(r, std::min(g, b));
     max = std::max(r, std::max(g, b));
@@ -624,6 +691,32 @@ void _lightAdjustMireds(const String& payload) {
 
 namespace {
 
+// Gamma Correction lookup table (8 bit, ~2.2)
+// (TODO: could be constexpr, but the gamma table is still loaded into the RAM when marked as if it is a non-constexpr array)
+uint8_t _lightGammaMap(uint8_t value) {
+    static uint8_t gamma[256] PROGMEM {
+        0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+        1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
+        3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
+        6,   7,   7,   7,   7,   8,   8,   8,   9,   9,   9,   10,  10,  11,  11,  11,
+        12,  12,  13,  13,  14,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,
+        19,  20,  20,  21,  22,  22,  23,  23,  24,  25,  25,  26,  26,  27,  28,  28,
+        29,  30,  30,  31,  32,  33,  33,  34,  35,  35,  36,  37,  38,  39,  39,  40,
+        41,  42,  43,  43,  44,  45,  46,  47,  48,  49,  50,  50,  51,  52,  53,  54,
+        55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  71,
+        72,  73,  74,  75,  76,  77,  78,  80,  81,  82,  83,  84,  86,  87,  88,  89,
+        91,  92,  93,  94,  96,  97,  98,  100, 101, 102, 104, 105, 106, 108, 109, 110,
+        112, 113, 115, 116, 118, 119, 121, 122, 123, 125, 126, 128, 130, 131, 133, 134,
+        136, 137, 139, 140, 142, 144, 145, 147, 149, 150, 152, 154, 155, 157, 159, 160,
+        162, 164, 166, 167, 169, 171, 173, 175, 176, 178, 180, 182, 184, 186, 187, 189,
+        191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
+        223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
+    };
+    static_assert(Light::ValueMax < (sizeof(gamma) / sizeof(gamma[0])), "Out-of-bounds array access");
+
+    return pgm_read_byte(&gamma[value]);
+}
+
 class LightTransitionHandler {
 public:
     using Channels = std::vector<channel_t>;
@@ -661,10 +754,18 @@ public:
 
     bool prepare(channel_t& channel, bool state) {
         bool target_state = state && channel.state;
-        channel.target = target_state ? channel.value : Light::VALUE_MIN;
+
+        channel.target = target_state ? channel.value : Light::ValueMin;
+        if (channel.gamma) {
+            channel.target = _lightGammaMap(channel.target);
+        }
+
+        if (channel.inverse) {
+            channel.target = Light::ValueMax - channel.target;
+        }
 
         float diff = static_cast<float>(channel.target) - channel.current;
-        if (isImmediateTransition(target_state, diff)) {
+        if (isImmediate(target_state, diff)) {
             Transition transition { channel.current, channel.target, diff, 1};
             _transitions.push_back(std::move(transition));
             return false;
@@ -740,7 +841,7 @@ public:
     }
 
 private:
-    bool isImmediateTransition(bool state, float diff) {
+    bool isImmediate(bool state, float diff) {
         return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
     }
 
@@ -820,15 +921,22 @@ void _lightProviderSchedule(unsigned long ms);
 
 #if (LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX)
 
-// there is no PWM stop and it seems my92xx version is fine by just setting 0 values for channels
-void _lightProviderHandleState(bool) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+unsigned char _light_my92xx_channel_map[Light::ChannelsMax] = {};
+#endif
+
+// there is no PWM stop, but my92xx has some internal state control that will send 0 as values when OFF
+void _lightProviderHandleState(bool state [[gnu::unused]]) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+    _my92xx->setState(state);
+#endif
 }
 
 // See cores/esp8266/WMath.cpp::map
 inline bool _lightPwmMap(long value, long& result) {
-    constexpr auto divisor = (Light::VALUE_MAX - Light::VALUE_MIN);
+    constexpr auto divisor = (Light::ValueMax - Light::ValueMin);
     if (divisor != 0l){
-        result = (value - Light::VALUE_MIN) * (Light::PWM_LIMIT - Light::PWM_MIN) / divisor + Light::PWM_MIN;
+        result = (value - Light::ValueMin) * (Light::PwmLimit - Light::PwmMin) / divisor + Light::PwmMin;
         return true;
     }
 
@@ -837,33 +945,15 @@ inline bool _lightPwmMap(long value, long& result) {
 
 // both require original values to be scaled into a PWM frequency
 void _lightProviderHandleValue(unsigned char channel, float value) {
-    // TODO: strict rule in the transition itself?
-    if (value < 0.0f) {
-        return;
-    }
-
-    // TODO: have 'red', 'green' or 'blue' tag instead of using hard-coded index offset?
-    auto gamma = _light_use_gamma && _light_has_color && (channel < 3);
-    auto inverse = _light_channels[channel].inverse;
-
-    auto rounded = std::lround(value);
-    if (gamma) {
-        rounded = pgm_read_byte(_light_gamma_table + rounded);
-    }
-
     long pwm;
-    if (!_lightPwmMap(rounded, pwm)) {
+    if (!_lightPwmMap(std::lround(value), pwm)) {
         return;
-    }
-
-    if (inverse) {
-       pwm = Light::PWM_LIMIT + Light::PWM_MIN - pwm;
     }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     pwm_set_duty(pwm, channel);
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setChannel(_lightMy92xxChannel(channel), pwm);
+    _my92xx->setChannel(_light_my92xx_channel_map[channel], pwm);
 #endif
 }
 
@@ -871,7 +961,6 @@ void _lightProviderHandleUpdate() {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     pwm_start();
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setState(true);
     _my92xx->update();
 #endif
 }
@@ -926,13 +1015,87 @@ void _lightProviderSchedule(unsigned long ms) {
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
-union light_rtcmem_t {
-    struct {
-        uint8_t channels[Light::ChannelsMax];
-        uint8_t brightness;
-        uint16_t mired;
-    } __attribute__((packed)) packed;
-    uint64_t value;
+// Layout should match the old union:
+//
+// union light_rtcmem_t {
+//     struct {
+//         uint8_t channels[Light::ChannelsMax];
+//         uint8_t brightness;
+//         uint16_t mired;
+//     } __attribute__((packed)) packed;
+//     uint64_t value;
+// };
+
+struct LightRtcmem {
+    //   1 2 3 4 5 6 7 8
+    // [ m m b c c c c c ]
+    //         ^ ^ ^ ^ ^   channels
+    //       ^ ~ ~ ~ ~ ~   brightness
+    //   ^ ^ ~ ~ ~ ~ ~ ~   mireds
+    //
+    // As seen in the rtcmem dump:
+    //   `ddccbbaa 112233ee`
+    // Where:
+    // - 1122 are mireds
+    // - 33 is brightness
+    // - aabbccddee are channels (from 0 to 5 respectively)
+    explicit LightRtcmem(uint64_t value) {
+        _mireds = (value >> (8ull * 6ull)) & 0xffffull;
+        _brightness = (value >> (8ull * 5ull));
+
+        _channels[4] = static_cast<uint8_t>((value >> (8ull * 4ull)));
+        _channels[3] = static_cast<uint8_t>((value >> (8ull * 3ull)));
+        _channels[2] = static_cast<uint8_t>((value >> (8ull * 2ull)));
+        _channels[1] = static_cast<uint8_t>((value >> (8ull * 1ull)));
+        _channels[0] = static_cast<uint8_t>((value & 0xffull));
+    }
+
+
+    using Channels = std::array<uint8_t, Light::ChannelsMax>;
+    static_assert(Light::ChannelsMax == 5, "");
+
+    LightRtcmem() {
+        _channels.fill(Light::ValueMin);
+    }
+
+    LightRtcmem(const Channels& channels, long brightness, long mireds) :
+        _channels(channels),
+        _brightness(brightness),
+        _mireds(mireds)
+    {}
+
+    uint64_t serialize() const {
+        return (static_cast<uint64_t>(_mireds) << (8ull * 6ull))
+            | (static_cast<uint64_t>(_brightness) << (8ull * 5ull))
+            | (static_cast<uint64_t>(_channels[4]) << (8ull * 4ull))
+            | (static_cast<uint64_t>(_channels[3]) << (8ull * 3ull))
+            | (static_cast<uint64_t>(_channels[2]) << (8ull * 2ull))
+            | (static_cast<uint64_t>(_channels[1]) << (8ull * 1ull))
+            | (static_cast<uint64_t>(_channels[0]));
+    }
+
+    static Channels defaultChannels() {
+        Channels out;
+        out.fill(Light::ValueMin);
+        return out;
+    }
+
+    const Channels& channels() const {
+        return _channels;
+    }
+
+    long brightness() const {
+        return _brightness;
+    }
+
+    long mireds() const {
+        return _mireds;
+    }
+
+private:
+    Channels _channels;
+    long _brightness { Light::BrightnessMax };
+    long _mireds { (Light::MiredsWarm + Light::MiredsCold) / 2L };
 };
 
 bool lightSave() {
@@ -944,32 +1107,26 @@ void lightSave(bool save) {
 }
 
 void _lightSaveRtcmem() {
-    if (lightChannels() > Light::ChannelsMax) return;
-
-    light_rtcmem_t light;
-
-    for (unsigned int i=0; i < lightChannels(); i++) {
-        light.packed.channels[i] = _light_channels[i].inputValue;
+    auto channels = LightRtcmem::defaultChannels();
+    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+        channels[channel] = _light_channels[channel].inputValue;
     }
 
-    light.packed.brightness = _light_brightness;
-    light.packed.mired = _light_mireds;
-
-    Rtcmem->light = light.value;
+    LightRtcmem light(channels, _light_brightness, _light_mireds);
+    Rtcmem->light = light.serialize();
 }
 
 void _lightRestoreRtcmem() {
-    if (lightChannels() > Light::ChannelsMax) return;
+    uint64_t value = Rtcmem->light;
+    LightRtcmem light(value);
 
-    light_rtcmem_t light;
-    light.value = Rtcmem->light;
-
-    for (unsigned int i=0; i < lightChannels(); i++) {
-        _light_channels[i].inputValue = light.packed.channels[i];
+    auto& channels = light.channels();
+    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+        _light_channels[channel].inputValue = channels[channel];
     }
 
-    _light_brightness = light.packed.brightness;
-    _light_mireds = light.packed.mired;
+    _light_brightness = light.brightness();
+    _light_mireds = light.mireds();
 }
 
 void _lightSaveSettings() {
@@ -977,19 +1134,23 @@ void _lightSaveSettings() {
         return;
     }
 
-    for (unsigned char i=0; i < _light_channels.size(); ++i) {
-        setSetting({"ch", i}, _light_channels[i].inputValue);
+    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+        setSetting({"ch", channel}, _light_channels[channel].inputValue);
     }
+
     setSetting("brightness", _light_brightness);
     setSetting("mireds", _light_mireds);
+
     saveSettings();
 }
 
 void _lightRestoreSettings() {
-    for (unsigned char i=0; i < _light_channels.size(); ++i) {
-        _light_channels[i].inputValue = getSetting({"ch", i}, (i == 0) ? Light::VALUE_MAX : 0);
+    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+        auto value = getSetting({"ch", channel}, (channel == 0) ? Light::ValueMax : Light::ValueMin);
+        _light_channels[channel].inputValue = value;
     }
-    _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX);
+
+    _light_brightness = getSetting("brightness", Light::BrightnessMax);
     _light_mireds = getSetting("mireds", _light_mireds);
 }
 
@@ -1483,7 +1644,9 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](const terminal::CommandContext& ctx) {
-        if (!lightChannels()) {
+        auto channels = lightChannels();
+        if (!channels) {
+            terminalError(ctx, F("No channels configured"));
             return;
         }
 
@@ -1493,13 +1656,14 @@ void _lightInitCommands() {
         }
 
         auto description = [&](unsigned char channel) {
-            ctx.output.printf("#%u (%s): %ld\n", channel, lightDesc(id).c_str(), lightChannel(channel));
+            ctx.output.printf("#%hhu (%s): %hhu\n", channel, _lightDesc(channels, channel), _light_channels[channel].inputValue);
         };
 
-        if (id < 0 || id >= static_cast<decltype(id)>(lightChannels())) {
-            for (unsigned char index = 0; index < lightChannels(); ++index) {
+        if (id < 0 || id >= static_cast<decltype(id)>(channels)) {
+            for (unsigned char index = 0; index < channels; ++index) {
                 description(index);
             }
+            terminalOK(ctx);
             return;
         }
 
@@ -1526,7 +1690,7 @@ void _lightInitCommands() {
             _lightAdjustKelvin(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.printf("%s\n", lightColor().c_str());
+        ctx.output.printf("%ld\n", _toKelvin(_light_mireds));
         terminalOK(ctx);
     });
 
@@ -1535,7 +1699,7 @@ void _lightInitCommands() {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();
         }
-        ctx.output.printf("%s\n", lightColor().c_str());
+        ctx.output.printf("%ld\n", _light_mireds);
         terminalOK(ctx);
     });
 
@@ -1600,12 +1764,6 @@ void _lightUpdate() {
         return;
     }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-    if (!_light_provider) {
-        return;
-    }
-#endif
-
     auto changed = _light_brightness_func();
     if (!_light_state_changed && !changed) {
         _light_update.reset();
@@ -1635,6 +1793,16 @@ void _lightUpdate() {
 }
 
 void lightUpdate(bool save, LightTransition transition, int report) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+    if (!_light_provider) {
+        return;
+    }
+#endif
+
+    if (!lightChannels()) {
+        return;
+    }
+
     _light_update.set(save, transition, report);
 }
 
@@ -1727,7 +1895,7 @@ long lightChannel(unsigned char id) {
 
 void lightChannel(unsigned char id, long value) {
     if (id >= _light_channels.size()) return;
-    _setInputValue(id, constrain(value, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(id, constrain(value, Light::ValueMin, Light::ValueMax));
 }
 
 void lightChannelStep(unsigned char id, long steps, long multiplier) {
@@ -1739,7 +1907,7 @@ long lightBrightness() {
 }
 
 void lightBrightness(long brightness) {
-    _light_brightness = constrain(brightness, Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX);
+    _light_brightness = constrain(brightness, Light::BrightnessMin, Light::BrightnessMax);
 }
 
 void lightBrightnessStep(long steps, long multiplier) {
@@ -1802,16 +1970,34 @@ const unsigned long _light_iofunc[16] PROGMEM = {
 
 #endif
 
+namespace {
+
+inline bool _lightUseGamma(size_t channels, unsigned char index) {
+    switch (_lightTag(channels, index)) {
+    case 'R':
+    case 'G':
+    case 'B':
+        return true;
+    }
+
+    return false;
+}
+
+inline bool _lightUseGamma(unsigned char index) {
+    return _lightUseGamma(_light_channels.size(), index);
+}
+
 void _lightConfigure() {
+    auto channels = _light_channels.size();
 
     _light_has_color = getSetting("useColor", 1 == LIGHT_USE_COLOR);
-    if (_light_has_color && (_light_channels.size() < 3)) {
+    if (_light_has_color && (channels < 3)) {
         _light_has_color = false;
         setSetting("useColor", _light_has_color);
     }
 
     _light_use_white = getSetting("useWhite", 1 == LIGHT_USE_WHITE);
-    if (_light_use_white && (_light_channels.size() < 4) && (_light_channels.size() != 2)) {
+    if (_light_use_white && (channels < 4) && (channels != 2)) {
         _light_use_white = false;
         setSetting("useWhite", _light_use_white);
     }
@@ -1820,29 +2006,37 @@ void _lightConfigure() {
         if (_light_use_white) {
             _light_brightness_func = _lightApplyBrightnessColor;
         } else {
-            _light_brightness_func = []() { return _lightApplyBrightness(3); };
+            _light_brightness_func = _lightApplyBrightnessRgb;
         }
     } else {
-        _light_brightness_func = []() { return _lightApplyBrightness(); };
+        _light_brightness_func = _lightApplyBrightnessAll;
     }
 
     _light_use_cct = getSetting("useCCT", 1 == LIGHT_USE_CCT);
-    if (_light_use_cct && (((_light_channels.size() < 5) && (_light_channels.size() != 2)) || !_light_use_white)) {
+    if (_light_use_cct && (((channels < 5) && (channels != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);
     }
 
-    _light_cold_mireds = getSetting("lightColdMired", LIGHT_COLDWHITE_MIRED);
-    _light_warm_mireds = getSetting("lightWarmMired", LIGHT_WARMWHITE_MIRED);
+    _light_cold_mireds = getSetting("ltColdMired", Light::MiredsCold);
+    _light_warm_mireds = getSetting("ltWarmMired", Light::MiredsWarm);
     _light_cold_kelvin = (1000000L / _light_cold_mireds);
     _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
-    _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
     _light_use_transitions = getSetting("useTransitions", 1 == LIGHT_USE_TRANSITIONS);
     _light_save = getSetting("ltSave", 1 == LIGHT_SAVE_ENABLED);
     _light_save_delay = getSetting("ltSaveDelay", LIGHT_SAVE_DELAY);
     _light_transition_time = getSetting("ltTime", LIGHT_TRANSITION_TIME);
     _light_transition_step = getSetting("ltStep", LIGHT_TRANSITION_STEP);
+
+    _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
+    for (unsigned char index = 0; index < lightChannels(); ++index) {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+        _light_my92xx_channel_map[index] = getSetting({"ltMy92xxCh", index}, Light::build::my92xxChannel(index));
+#endif
+        _light_channels[index].inverse = getSetting({"ltInv", index}, Light::build::inverse(index));
+        _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(channels, index);
+    }
 
 }
 
@@ -1869,35 +2063,54 @@ void _lightRelaySupport() {
 #endif
 
 void _lightBoot() {
-    if (_light_channels.size()) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), _light_channels.size());
-    }
+    auto channels = _light_channels.size();
+    if (channels) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), channels);
 
-    _lightConfigure();
-    if (rtcmemStatus()) {
-        _lightRestoreRtcmem();
-    } else {
-        _lightRestoreSettings();
-    }
+        _lightConfigure();
+        if (rtcmemStatus()) {
+            _lightRestoreRtcmem();
+        } else {
+            _lightRestoreSettings();
+        }
 
-    _light_state_changed = true;
-    lightUpdate(false);
+        _light_state_changed = true;
+        lightUpdate(false);
+    }
 }
 
+} // namespace
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+
+// Custom provider is expected to:
+// - register a controller class via `lightSetProvider(...)`
+// - use `lightAdd()` N times to create N channels that will be handled via the controller
+// Once that's done, we 'boot' the provider and disable further calls to the `lightAdd()`
 
 void lightSetProvider(std::unique_ptr<LightProvider>&& ptr) {
     _light_provider = std::move(ptr);
 }
 
 bool lightAdd() {
-    if (_light_channels.size() <= Light::ChannelsMax) {
-        static bool scheduled { false };
-        _light_channels.push_back(channel_t());
-        if (!scheduled) {
+    enum class State {
+        None,
+        Scheduled,
+        Done
+    };
+
+    static State state { State::None };
+    if (State::Done == state) {
+        return false;
+    }
+
+    if (_light_channels.size() < Light::ChannelsMax) {
+        _light_channels.emplace_back(GPIO_NONE);
+        if (State::Scheduled != state) {
+            state = State::Scheduled;
             schedule_function([]() {
                 _lightBoot();
-                scheduled = false;
+                state = State::Done;
             });
         }
 
@@ -1944,12 +2157,14 @@ void _lightSettingsMigrate(int version) {
     delSetting("lightProvider");
 
     moveSetting("lightTime", "ltTime");
+    moveSetting("lightColdMired", "ltColdMired");
+    moveSetting("lightWarmMired", "ltWarmMired");
 }
 
 void lightSetup() {
     _lightSettingsMigrate(migrateVersion());
 
-    const auto enable_pin = getSetting("ltEnableGPIO", _lightEnablePin());
+    const auto enable_pin = getSetting("ltEnableGPIO", Light::build::enablePin());
     if (enable_pin != GPIO_NONE) {
         pinMode(enable_pin, OUTPUT);
         digitalWrite(enable_pin, HIGH);
@@ -1961,9 +2176,18 @@ void lightSetup() {
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
     {
-        _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        for (unsigned char index = 0; index < Light::Channels; ++index) {
-            _light_channels.emplace_back(GPIO_NONE, getSetting({"ltMy92xxInv", index}, _lightInverse(index)));
+        // TODO: library API specifies some hard-coded amount of channels, based off of the model and chips
+        // we always map channel index 1-to-1, to simplify hw config, but most of the time there are less active channels
+        // than the value generated by the lib (ref. `my92xx::getChannels()`)
+        auto channels = getSetting("ltMy92xxChannels", Light::build::my92xxChannels());
+        _my92xx = new my92xx(
+            getSetting("ltMy92xxModel", Light::build::my92xxModel()),
+            getSetting("ltMy92xxChips", Light::build::my92xxChips()),
+            getSetting("ltMy92xxDiGPIO", Light::build::my92xxDiPin()),
+            getSetting("ltMy92xxDckiGPIO", Light::build::my92xxDckiPin()),
+            Light::build::my92xxCommand());
+        for (unsigned char index = 0; index < channels; ++index) {
+            _light_channels.emplace_back(GPIO_NONE);
         }
     }
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
@@ -1977,12 +2201,12 @@ void lightSetup() {
         for (unsigned char index = 0; index < Light::ChannelsMax; ++index) {
 
             // Load up until first GPIO_NONE. Allow settings to override, but not remove values
-            const auto pin = getSetting({"ltDimmerGPIO", index}, _lightChannelPin(index));
+            const auto pin = getSetting({"ltDimmerGPIO", index}, Light::build::channelPin(index));
             if (!gpioValid(pin)) {
                 break;
             }
 
-            _light_channels.emplace_back(pin, getSetting({"ltDimmerInv", index}, _lightInverse(index)));
+            _light_channels.emplace_back(pin);
 
             io_info[index][0] = pgm_read_dword(&_light_iomux[pin]);
             io_info[index][1] = pgm_read_dword(&_light_iofunc[pin]);
@@ -1992,7 +2216,7 @@ void lightSetup() {
         }
 
         // with 0 channels this should not do anything at all and provider will never call pwm_set_duty(...)
-        pwm_init(Light::PWM_MAX, pwm_duty_init, _light_channels.size(), io_info);
+        pwm_init(Light::PwmMax, pwm_duty_init, _light_channels.size(), io_info);
         pwm_start();
     }
 #endif

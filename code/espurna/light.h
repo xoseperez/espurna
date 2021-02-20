@@ -21,18 +21,20 @@
 // TODO: lowercase
 namespace Light {
 
-constexpr size_t Channels = LIGHT_CHANNELS;
 constexpr size_t ChannelsMax = 5;
 
-constexpr long VALUE_MIN = LIGHT_MIN_VALUE;
-constexpr long VALUE_MAX = LIGHT_MAX_VALUE;
+constexpr long ValueMin = LIGHT_MIN_VALUE;
+constexpr long ValueMax = LIGHT_MAX_VALUE;
 
-constexpr long BRIGHTNESS_MIN = LIGHT_MIN_BRIGHTNESS;
-constexpr long BRIGHTNESS_MAX = LIGHT_MAX_BRIGHTNESS;
+constexpr long BrightnessMin = LIGHT_MIN_BRIGHTNESS;
+constexpr long BrightnessMax = LIGHT_MAX_BRIGHTNESS;
 
-constexpr long PWM_MIN = LIGHT_MIN_PWM;
-constexpr long PWM_MAX = LIGHT_MAX_PWM;
-constexpr long PWM_LIMIT = LIGHT_LIMIT_PWM;
+constexpr long MiredsCold = LIGHT_COLDWHITE_MIRED;
+constexpr long MiredsWarm = LIGHT_WARMWHITE_MIRED;
+
+constexpr long PwmMin = LIGHT_MIN_PWM;
+constexpr long PwmMax = LIGHT_MAX_PWM;
+constexpr long PwmLimit = LIGHT_LIMIT_PWM;
 
 enum class Report {
     None = 0,
