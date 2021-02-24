@@ -139,7 +139,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GR
 Scene scene(&pixels);
 
 Anim* anims[] = {new AnimGlow(), new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(), 
-                 new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut()};
+                 new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut(), new AnimFountain()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
