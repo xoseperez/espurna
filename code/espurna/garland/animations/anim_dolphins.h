@@ -90,7 +90,7 @@ class AnimDolphins : public Anim {
                 return false;
             }
             else {
-                // dolphin accupy space for future movement
+                // dolphin occupy space for future movement
                 int s = p < 0 ? 0 : p;
                 for (int i = s; i < len; ++i) {
                     seq[start + i * dir] = 1;
