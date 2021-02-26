@@ -10,6 +10,7 @@
 #define MQTT_TOPIC_LIGHT_JSON       "light_json"
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
+#define MQTT_TOPIC_COLOR_HEX        "hex"
 #define MQTT_TOPIC_COLOR_HSV        "hsv"
 #define MQTT_TOPIC_ANIM_MODE        "anim_mode"
 #define MQTT_TOPIC_ANIM_SPEED       "anim_speed"
@@ -68,6 +69,92 @@ constexpr int DefaultReport {
     Report::Web | Report::Mqtt | Report::MqttGroup | Report::Broker
 };
 
+struct Hsv {
+    static constexpr long HueMin { 0 };
+    static constexpr long HueMax { 360 };
+
+    static constexpr long SaturationMin { 0 };
+    static constexpr long SaturationMax { 100 };
+
+    static constexpr long ValueMin { 0 };
+    static constexpr long ValueMax { 100 };
+
+    Hsv() = default;
+    Hsv(long hue, long saturation, long value) :
+        _hue(std::clamp(hue, HueMin, HueMax)),
+        _saturation(std::clamp(saturation, SaturationMin, SaturationMax)),
+        _value(std::clamp(value, ValueMin, ValueMax))
+    {}
+
+    long hue() const {
+        return _hue;
+    }
+
+    long saturation() const {
+        return _saturation;
+    }
+
+    long value() const {
+        return _value;
+    }
+
+private:
+    long _hue { HueMin };
+    long _saturation { SaturationMin };
+    long _value { ValueMin };
+};
+
+struct Rgb {
+    static constexpr long Min { 0 };
+    static constexpr long Max { 255 };
+
+    Rgb() = default;
+    Rgb(long red, long green, long blue) :
+        _red(std::clamp(red, Min, Max)),
+        _green(std::clamp(green, Min, Max)),
+        _blue(std::clamp(blue, Min, Max))
+    {}
+
+    long red() const {
+        return _red;
+    }
+
+    long green() const {
+        return _green;
+    }
+
+    long blue() const {
+        return _blue;
+    }
+
+    unsigned long asUlong() const;
+
+private:
+    long _red { Min };
+    long _green { Min };
+    long _blue { Min };
+};
+
+struct MiredsRange {
+    constexpr MiredsRange() = default;
+    MiredsRange(long cold, long warm) :
+        _cold(cold),
+        _warm(warm)
+    {}
+
+    long cold() const {
+        return _cold;
+    }
+
+    long warm() const {
+        return _warm;
+    }
+
+private:
+    long _cold { MiredsCold };
+    long _warm { MiredsWarm };
+};
+
 } // namespace Light
 
 using LightStateListener = std::function<void(bool)>;
@@ -98,15 +185,41 @@ void lightTransition(LightTransition transition);
 void lightColor(const char* color, bool rgb);
 void lightColor(const String& color, bool rgb);
 
-void lightColor(const String& color);
 void lightColor(const char* color);
+void lightColor(const String& color);
 
 void lightColor(unsigned long color);
-String lightColor(bool rgb);
+String lightRgbPayload();
+String lightHsvPayload();
 String lightColor();
 
 bool lightSave();
 void lightSave(bool save);
+
+Light::Rgb lightRgb();
+void lightRgb(Light::Rgb);
+
+Light::Hsv lightHsv();
+void lightHs(long hue, long saturation);
+void lightHsv(Light::Hsv);
+
+void lightMireds(long mireds);
+Light::MiredsRange lightMiredsRange();
+
+void lightRed(long value);
+long lightRed();
+
+void lightGreen(long value);
+long lightGreen();
+
+void lightBlue(long value);
+long lightBlue();
+
+void lightColdWhite(long value);
+long lightColdWhite();
+
+void lightWarmWhite(long value);
+long lightWarmWhite();
 
 void lightState(unsigned char i, bool state);
 bool lightState(unsigned char i);
@@ -130,6 +243,7 @@ void lightUpdate(bool save);
 void lightUpdate();
 
 bool lightHasColor();
+bool lightUseRGB();
 bool lightUseCCT();
 
 void lightMQTT();

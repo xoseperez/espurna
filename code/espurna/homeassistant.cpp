@@ -171,7 +171,7 @@ public:
         if (_json) {
             return _json->size();
         }
-        
+
         return 0;
     }
 
@@ -438,21 +438,33 @@ public:
             json["pl_avail"] = quote(mqttPayloadStatus(true));
             json["pl_not_avail"] = quote(mqttPayloadStatus(false));
 
-            // ref. SUPPORT_... flags throughout the light component
             // send `true` for every payload we support sending / receiving
             // already enabled by default: "state", "transition"
 
-            // TODO: handle "rgb", "color_temp" and "white_value"
-
             json["brightness"] = true;
 
+            // Note that since we send back the values immediately, HS mode sliders
+            // *will jump*, as calculations of input do not always match the output.
+            // (especially, when gamma table is used, as we modify the results)
+            // In case or RGB, channel values input is expected to match the output exactly.
+
             if (lightHasColor()) {
-                json["rgb"] = true;
+                if (lightUseRGB()) {
+                    json["rgb"] = true;
+                } else {
+                    json["hs"] = true;
+                }
             }
 
+            // Mired is only an input, we never send this value back
+            // (...besides the internally pinned value, ref. MQTT_TOPIC_MIRED. not used here though)
+            // - in RGB mode, we convert the temperature into a specific color
+            // - in CCT mode, white channels are used
+
             if (lightHasColor() || lightUseCCT()) {
-                json["max_mireds"] = LIGHT_WARMWHITE_MIRED;
-                json["min_mireds"] = LIGHT_COLDWHITE_MIRED;
+                auto range = lightMiredsRange();
+                json["min_mirs"] = range.cold();
+                json["max_mirs"] = range.warm();
                 json["color_temp"] = true;
             }
 
@@ -471,28 +483,55 @@ private:
     String _message;
 };
 
-void publishLightJson() {
-    if (!mqttConnected()) {
-        return;
+bool heartbeat(heartbeat::Mask mask) {
+    // TODO: mask json payload specifically?
+    // or, find a way to detach masking from the system setting / don't use heartbeat timer
+    if (mask & heartbeat::Report::Light) {
+        DynamicJsonBuffer buffer(512);
+        JsonObject& root = buffer.createObject();
+
+        auto state = lightState();
+        root["state"] = state ? "ON" : "OFF";
+
+        if (state) {
+            root["brightness"] = lightBrightness();
+
+            if (lightUseCCT()) {
+                root["white_value"] = lightColdWhite();
+            }
+
+            if (lightColor()) {
+                auto& color = root.createNestedObject("color");
+                if (lightUseRGB()) {
+                    auto rgb = lightRgb();
+                    color["r"] = rgb.red();
+                    color["g"] = rgb.green();
+                    color["b"] = rgb.blue();
+                } else {
+                    auto hsv = lightHsv();
+                    color["h"] = hsv.hue();
+                    color["s"] = hsv.saturation();
+                }
+            }
+        }
+
+        String message;
+        root.printTo(message);
+
+        String topic = mqttTopic(MQTT_TOPIC_LIGHT_JSON, false);
+        mqttSendRaw(topic.c_str(), message.c_str(), false);
     }
 
-    DynamicJsonBuffer buffer(512);
-    JsonObject& root = buffer.createObject();
+    return true;
+}
 
-    root["state"] = lightState() ? "ON" : "OFF";
-    root["brightness"] = lightBrightness();
-
-    String message;
-    root.printTo(message);
-
-    String topic = mqttTopic(MQTT_TOPIC_LIGHT_JSON, false);
-    mqttSendRaw(topic.c_str(), message.c_str(), false);
+void publishLightJson() {
+    heartbeat(static_cast<heartbeat::Mask>(heartbeat::Report::Light));
 }
 
 void receiveLightJson(char* payload) {
     DynamicJsonBuffer buffer(1024);
     JsonObject& root = buffer.parseObject(payload);
-
     if (!root.success()) {
         return;
     }
@@ -518,11 +557,31 @@ void receiveLightJson(char* payload) {
         }
     }
 
+    if (root.containsKey("color_temp")) {
+        lightMireds(root["color_temp"].as<long>());
+    }
+
     if (root.containsKey("brightness")) {
         lightBrightness(root["brightness"].as<long>());
     }
 
-    // TODO: handle "rgb", "color_temp" and "white_value"
+    if (lightHasColor() && root.containsKey("color")) {
+        JsonObject& color = root["color"];
+        if (lightUseRGB()) {
+            lightRgb({
+                color["r"].as<long>(),
+                color["g"].as<long>(),
+                color["b"].as<long>()});
+        } else {
+            lightHs(
+                color["h"].as<long>(),
+                color["s"].as<long>());
+        }
+    }
+
+    if (lightUseCCT() && root.containsKey("white_value")) {
+        lightColdWhite(root["white_value"].as<long>());
+    }
 
     lightUpdate({transition, lightTransitionStep()});
 }
@@ -705,7 +764,7 @@ public:
 
             return false;
         }
-        
+
         return false;
     }
 
@@ -781,9 +840,9 @@ void send(TaskPtr ptr, FlagPtr flag_ptr) {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
     // - async fails when disconneted and when it's buffers are filled, which should be resolved after $LATENCY
     // and the time it takes for the lwip to process it. future versions use queue, but could still fail when low on RAM
-    // - lwmqtt will fail when disconnected (already checked above) and *will* disconnect in case publish fails. publish funciton will
-    // wait for the puback all by itself. not tested.
-    // - pubsub will fail when it can't buffer the payload *or* the underlying wificlient fails. also not tested.
+    // - lwmqtt will fail when disconnected (already checked above) and *will* disconnect in case publish fails.
+    // ::publish() will wait for the puback, so we don't have to do it ourselves. not tested.
+    // - pubsub will fail when it can't buffer the payload *or* the underlying WiFiClient calls fail. also not tested.
 
     if (res) {
         flag = false;
@@ -859,9 +918,8 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
     if (MQTT_CONNECT_EVENT == type) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         ::mqttSubscribe(MQTT_TOPIC_LIGHT_JSON);
-        schedule_function(publishLightJson);
 #endif
-        schedule_function(publishDiscovery);
+        ::schedule_function(publishDiscovery);
         return;
     }
 
@@ -899,10 +957,10 @@ bool onKeyCheck(const char* key, JsonVariant& value) {
 } // namespace web
 } // namespace homeassistant
 
-// This module does not implement .yaml generation, since we can't:
+// This module no longer implements .yaml generation, since we can't:
 // - use unique_id in the device config
 // - have abbreviated keys
-// - have mqtt return the correct status & command payloads when it is disabled
+// - have mqtt reliably return the correct status & command payloads when it is disabled
 //   (yet? needs reworked configuration section or making functions read settings directly)
 
 void haSetup() {
@@ -915,6 +973,7 @@ void haSetup() {
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     lightSetReportListener(homeassistant::publishLightJson);
+    mqttHeartbeat(homeassistant::heartbeat);
 #endif
     mqttRegister(homeassistant::mqttCallback);
 

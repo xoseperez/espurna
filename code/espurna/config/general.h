@@ -1319,10 +1319,6 @@
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
 #endif
 
-#ifndef LIGHT_USE_CSS
-#define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
-#endif
-
 #ifndef LIGHT_USE_RGB
 #define LIGHT_USE_RGB           0           // Use RGB color selector (1=> RGB, 0=> HSV)
 #endif
