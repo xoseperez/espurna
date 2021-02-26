@@ -1041,7 +1041,7 @@ struct LightRtcmem {
     // - aabbccddee are channels (from 0 to 5 respectively)
     explicit LightRtcmem(uint64_t value) {
         _mireds = (value >> (8ull * 6ull)) & 0xffffull;
-        _brightness = (value >> (8ull * 5ull));
+        _brightness = (value >> (8ull * 5ull)) & 0xffull;
 
         _channels[4] = static_cast<uint8_t>((value >> (8ull * 4ull)));
         _channels[3] = static_cast<uint8_t>((value >> (8ull * 3ull)));
@@ -1065,8 +1065,8 @@ struct LightRtcmem {
     {}
 
     uint64_t serialize() const {
-        return (static_cast<uint64_t>(_mireds) << (8ull * 6ull))
-            | (static_cast<uint64_t>(_brightness) << (8ull * 5ull))
+        return ((static_cast<uint64_t>(_mireds) & 0xffffull) << (8ull * 6ull))
+            | ((static_cast<uint64_t>(_brightness) & 0xffull) << (8ull * 5ull))
             | (static_cast<uint64_t>(_channels[4]) << (8ull * 4ull))
             | (static_cast<uint64_t>(_channels[3]) << (8ull * 3ull))
             | (static_cast<uint64_t>(_channels[2]) << (8ull * 2ull))
@@ -1125,8 +1125,8 @@ void _lightRestoreRtcmem() {
         _light_channels[channel].inputValue = channels[channel];
     }
 
-    _light_brightness = light.brightness();
-    _light_mireds = light.mireds();
+    _light_mireds = light.mireds(); // channels are already set
+    lightBrightness(light.brightness());
 }
 
 void _lightSaveSettings() {
@@ -1150,8 +1150,8 @@ void _lightRestoreSettings() {
         _light_channels[channel].inputValue = value;
     }
 
-    _light_brightness = getSetting("brightness", Light::BrightnessMax);
     _light_mireds = getSetting("mireds", _light_mireds);
+    lightBrightness(getSetting("brightness", Light::BrightnessMax));
 }
 
 bool _lightParsePayload(const char* payload) {
