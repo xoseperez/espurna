@@ -80,7 +80,7 @@ class AnimFountain : public Anim {
                         leds[start - p] = points[i];
                     } else {
                         leds[start + len - p] = points[i];
-                        leds[start - len + p] = points[i];                        
+                        leds[start - len + p] = points[i];
                     }
                 }
             }

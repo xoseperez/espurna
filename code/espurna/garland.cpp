@@ -21,7 +21,7 @@ All parameters are optional.
     Commands priority:
         - "immediate" - executes immediately, braking current animation.
         - "queue" - if queue is not empty, than next queue command executes after current animation end.
-                    after execution command removed from queue. 
+                    after execution command removed from queue.
         - "sequence" - executes commands in sequence in cycle.
         - "reset" - clean queue and sequence, restore default settings, enable garland.
         - random if there are no commands in queue or sequence.
@@ -138,7 +138,7 @@ constexpr size_t palsSize() { return sizeof(pals)/sizeof(pals[0]); }
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-Anim* anims[] = {new AnimGlow(), new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(), 
+Anim* anims[] = {new AnimGlow(), new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(),
                  new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut(), new AnimFountain()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
@@ -166,7 +166,7 @@ void garlandEnabled(bool enabled) {
     char buffer[128];
     snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandEnabled\": %s}"), enabled ? "true" : "false");
     wsSend(buffer);
-#endif    
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -355,7 +355,6 @@ bool executeCommand(const String& command) {
         newAnimDuration = root[MQTT_PAYLOAD_DURATION].as<unsigned long>();
         scene_setup_required = true;
     }
-    
 
     if (scene_setup_required) {
         setupScene(newAnim, newPalette, newAnimDuration);
@@ -390,14 +389,17 @@ void garlandLoop(void) {
             if (_currentCommandInSequence >= _command_sequence.size())
                 _currentCommandInSequence = 0;
         }
-        
+
         if (!scene_setup_done) {
             Anim* newAnim = _currentAnim;
-            while (newAnim == _currentAnim) newAnim = anims[secureRandom(START_ANIMATION + 1, animsSize())];
+            while (newAnim == _currentAnim) {
+                newAnim = anims[secureRandom(START_ANIMATION + 1, animsSize())];
+            }
 
             Palette* newPalette = _currentPalette;
-            while (newPalette == _currentPalette) 
+            while (newPalette == _currentPalette) {
                 newPalette = &pals[secureRandom(palsSize())];
+            }
 
             unsigned long newAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
@@ -596,7 +598,7 @@ void Scene::run() {
         garland workflow. Using 800 kHz gives 1.25 μs per bit. -> 30 μs (0.03 ms) per RGB LED.
         So for example 3 ms for 100 LEDs. Unfortunately it can't be postponed and resumed later as it
         will lead to reseting the transmition operation. From other hand, long operation can cause
-        Soft WDT reset. To avoid wdt reset we need to switch soft wdt off for long strips. 
+        Soft WDT reset. To avoid wdt reset we need to switch soft wdt off for long strips.
         It is not best practice, but assuming that it is only garland, it can be acceptable.
         Tested up to 300 leds. */
         if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
