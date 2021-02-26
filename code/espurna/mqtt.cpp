@@ -574,18 +574,19 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
 }
 
 bool _mqttHeartbeat(heartbeat::Mask mask) {
+    // No point retrying, since we will be re-scheduled on connection
+    if (!mqttConnected()) {
+        return true;
+    }
+
+#if NTP_SUPPORT
     // Backported from the older utils implementation.
     // Wait until the time is synced to avoid sending partial report *and*
     // as a result, wait until the next interval to actually send the datetime string.
-#if NTP_SUPPORT
     if ((mask & heartbeat::Report::Datetime) && !ntpSynced()) {
         return false;
     }
 #endif
-
-    if (!mqttConnected()) {
-        return false;
-    }
 
     // TODO: rework old HEARTBEAT_REPEAT_STATUS?
     // for example: send full report once, send only the dynamic data after that
