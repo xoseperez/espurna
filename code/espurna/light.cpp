@@ -879,7 +879,10 @@ uint8_t _lightGammaMap(uint8_t value) {
         191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
         223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
     };
+
     static_assert(Light::ValueMax < (sizeof(gamma) / sizeof(gamma[0])), "Out-of-bounds array access");
+    static_assert(Light::ValueMin >= 0, "Minimal value can't be negative");
+    static_assert(Light::ValueMin < Light::ValueMax, "");
 
     return pgm_read_byte(&gamma[value]);
 }
@@ -890,14 +893,9 @@ public:
 
     struct Transition {
         float& value;
-        unsigned char target;
+        long target;
         float step;
         size_t count;
-
-        void debug() const {
-            DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %u (step %s, %u times)\n"),
-                String(value, 2).c_str(), target, String(step, 2).c_str(), count);
-        }
     };
 
     explicit LightTransitionHandler(Channels& channels, bool state, LightTransition transition) :
@@ -921,19 +919,20 @@ public:
 
     bool prepare(channel_t& channel, bool state) {
         bool target_state = state && channel.state;
+        long target = target_state ? channel.value : Light::ValueMin;
 
-        channel.target = target_state ? channel.value : Light::ValueMin;
+        channel.target = target;
         if (channel.gamma) {
-            channel.target = _lightGammaMap(channel.target);
+            target = _lightGammaMap(static_cast<uint8_t>(target));
         }
 
         if (channel.inverse) {
-            channel.target = Light::ValueMax - channel.target;
+            target = Light::ValueMax - target;
         }
 
-        float diff = static_cast<float>(channel.target) - channel.current;
+        float diff = static_cast<float>(target) - channel.current;
         if (isImmediate(target_state, diff)) {
-            Transition transition { channel.current, channel.target, diff, 1};
+            Transition transition { channel.current, target, diff, 1};
             _transitions.push_back(std::move(transition));
             return false;
         }
@@ -947,10 +946,10 @@ public:
         }
         size_t count = _time / every;
 
-        Transition transition { channel.current, channel.target, step, count };
-        transition.debug();
-
+        Transition transition { channel.current, target, step, count };
         _transitions.push_back(std::move(transition));
+
+        show(transition);
 
         return true;
     }
@@ -1010,6 +1009,15 @@ public:
 private:
     bool isImmediate(bool state, float diff) {
         return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
+    }
+
+    static void show(const Transition& transition [[gnu::unused]]) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %ld (step %s, %u times)\n"),
+            String(transition.value, 2).c_str(),
+            transition.target,
+            String(transition.step, 2).c_str(),
+            transition.count
+        );
     }
 
     std::vector<Transition> _transitions;
