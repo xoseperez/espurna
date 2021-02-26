@@ -4,15 +4,43 @@ Copyright (C) 2020 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.com/Vasil-Pahomov/Liana)
 
-Tested on 60 led strip.
-!!! For more leds can cause WDT rebot. Need to be carefully tested for more than 60 leds !!!
+Tested on 300 led strip.
+
 The most time consuming operation is actually showing leds by Adafruit Neopixel. It take about 1870 mcs.
 More long strip can take more time to show.
 Currently animation calculation, brightness calculation/transition and showing makes in one loop cycle.
 Debug output shows timings. Overal timing should be not more that 3000 ms.
 
-For longer strips have sense to divide entire strip (pixels) on parts about 100 pixels and show one part
-at a cycle.
+MQTT control:
+Topic: DEVICE_NAME/garland/set
+Message: {"command":"string", "enable":"string", "brightness":int, "speed":int, "animation":"string",
+          "palette":"string"/int, "duration":int}
+All parameters are optional.
+
+"command:["immediate", "queue", "sequence", "reset"] - if not set, than "immediate" by default
+    Commands priority:
+        - "immediate" - executes immediately, braking current animation.
+        - "queue" - if queue is not empty, than next queue command executes after current animation end.
+                    after execution command removed from queue.
+        - "sequence" - executes commands in sequence in cycle.
+        - "reset" - clean queue and sequence, restore default settings, enable garland.
+        - random if there are no commands in queue or sequence.
+
+"enable":["true", "false"] - enable or disable garland
+"brightness":[0-255] - set brightness
+"speed":[30-60] - set animation speed
+"animation":["PixieDust", "Sparkr", "Run", "Stars", "Spread", "R"andCyc", "Fly", "Comets", "Assemble", "Dolphins", "Salut"]
+    - setup animation. If not set or not recognized, than setup previous anmation
+"palette":["RGB", "Rainbow", "Stripe", "Party", "Heat", Fire", "Blue", "Sun", "Lime", "Pastel"]
+    - can be one of listed above or can be one color palette.
+    - one color palette can be set by string, that represents color in the format "0xRRGGBB" (0xFF0000 for red) or
+      integer number, corresponding to it. Examples: "palette":"0x0000FF", "palette":255 equal to Blue color.
+"duration":5000 - setup command duration in milliseconds. If not set, than infinite duration will setup.
+
+If command contains animation, palette or duration, than it setup next animation, that will be shown for duration (infinite if
+duration does not set), otherwise it just set scene parameters.
+
+Infinite commands can be interrupted by immediate command or by reset command.
 */
 
 #include "garland.h"
@@ -21,11 +49,13 @@ at a cycle.
 
 #include <Adafruit_NeoPixel.h>
 
+#include <memory>
 #include <vector>
 
 #include "garland/color.h"
 #include "garland/palette.h"
 #include "garland/scene.h"
+#include "mqtt.h"
 #include "ws.h"
 
 const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
@@ -37,12 +67,33 @@ const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
 const char* NAME_GARLAND_SET_SPEED      = "garland_set_speed";
 const char* NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
 
-#define EFFECT_UPDATE_INTERVAL_MIN      5000  // 5 sec
-#define EFFECT_UPDATE_INTERVAL_MAX      10000 // 10 sec
+const char* MQTT_TOPIC_GARLAND          = "garland";
 
-bool _garland_enabled                   = true;
-unsigned long _last_update              = 0;
-unsigned long _interval_effect_update;
+const char* MQTT_PAYLOAD_COMMAND        = "command";
+const char* MQTT_PAYLOAD_ENABLE         = "enable";
+const char* MQTT_PAYLOAD_BRIGHTNESS     = "brightness";
+const char* MQTT_PAYLOAD_ANIM_SPEED     = "speed";
+const char* MQTT_PAYLOAD_ANIMATION      = "animation";
+const char* MQTT_PAYLOAD_PALETTE        = "palette";
+const char* MQTT_PAYLOAD_DURATION       = "duration";
+
+const char* MQTT_COMMAND_IMMEDIATE      = "immediate";
+const char* MQTT_COMMAND_RESET          = "reset"; // reset queue
+const char* MQTT_COMMAND_QUEUE          = "queue"; // enqueue command payload
+const char* MQTT_COMMAND_SEQUENCE       = "sequence"; // place command to sequence
+
+#define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
+#define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
+
+#define NUMLEDS_CAN_CAUSE_WDT_RESET     100
+
+bool          _garland_enabled          = true;
+unsigned long _lastTimeUpdate           = 0;
+unsigned long _currentDuration          = ULONG_MAX;
+unsigned int  _currentCommandInSequence = 0;
+String        _immediate_command;
+std::queue<String>  _command_queue;
+std::vector<String> _command_sequence;
 
 // Palette should
 Palette pals[] = {
@@ -87,11 +138,15 @@ constexpr size_t palsSize() { return sizeof(pals)/sizeof(pals[0]); }
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-Anim* anims[] = {new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(), 
-                 new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut()};
+Anim* anims[] = {new AnimGlow(), new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(),
+                 new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut(), new AnimFountain()};
 
 constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
 
+#define START_ANIMATION  1
+Anim* _currentAnim       = anims[1];
+Palette* _currentPalette = &pals[0];
+auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
 //------------------------------------------------------------------------------
 void garlandDisable() {
     pixels.clear();
@@ -100,6 +155,18 @@ void garlandDisable() {
 //------------------------------------------------------------------------------
 void garlandEnabled(bool enabled) {
     _garland_enabled = enabled;
+    setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
+    if (!_garland_enabled) {
+        schedule_function([]() {
+            pixels.clear();
+            pixels.show();
+        });
+    }
+#if WEB_SUPPORT
+    char buffer[128];
+    snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandEnabled\": %s}"), enabled ? "true" : "false");
+    wsSend(buffer);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -127,6 +194,20 @@ void _garlandReload() {
     _garlandConfigure();
 }
 
+//------------------------------------------------------------------------------
+void setDefault() {
+    scene.setDefault();
+    byte brightness = scene.getBrightness();
+    setSetting(NAME_GARLAND_BRIGHTNESS, brightness);
+    byte speed = scene.getSpeed();
+    setSetting(NAME_GARLAND_SPEED, speed);
+#if WEB_SUPPORT
+    char buffer[128];
+    snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandBrightness\": %d, \"garlandSpeed\": %d}"), brightness, speed);
+    wsSend(buffer);
+#endif
+}
+
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _garlandWebSocketOnConnected(JsonObject& root) {
@@ -148,14 +229,7 @@ bool _garlandWebSocketOnKeyCheck(const char* key, JsonVariant& value) {
 void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
     if (strcmp(action, NAME_GARLAND_SWITCH) == 0) {
         if (data.containsKey("status") && data.is<int>("status")) {
-            _garland_enabled = (1 == data["status"].as<int>());
-            setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
-            if (!_garland_enabled) {
-                schedule_function([](){
-                    pixels.clear();
-                    pixels.show();
-                });
-            }
+            garlandEnabled(1 == data["status"].as<int>());
         }
     }
 
@@ -178,52 +252,203 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     }
 
     if (strcmp(action, NAME_GARLAND_SET_DEFAULT) == 0) {
-        scene.setDefault();
-        byte brightness = scene.getBrightness();
-        setSetting(NAME_GARLAND_BRIGHTNESS, brightness);
-        byte speed = scene.getSpeed();
-        setSetting(NAME_GARLAND_SPEED, speed);
-        char buffer[128];
-        snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandBrightness\": %d, \"garlandSpeed\": %d}"), brightness, speed);
-        wsSend(buffer);
+        setDefault();
     }
 }
 #endif
 
 //------------------------------------------------------------------------------
+void setupScene(Anim* new_anim, Palette* new_palette, unsigned long new_duration) {
+    unsigned long currentAnimRunTime = millis() - _lastTimeUpdate;
+    _lastTimeUpdate = millis();
+
+    int numShows = scene.getNumShows();
+    int frameRate = currentAnimRunTime > 0 ? numShows * 1000 / currentAnimRunTime : 0;
+
+    static String palette_name = "Start";
+    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
+                _currentAnim->name(), palette_name.c_str(),
+                scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
+
+    _currentDuration = new_duration;
+    _currentAnim     = new_anim;
+    _currentPalette  = new_palette;
+    palette_name = _currentPalette->name();
+    DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
+                _currentAnim->name(), palette_name.c_str(), _currentDuration);
+
+    scene.setAnim(_currentAnim);
+    scene.setPalette(_currentPalette);
+    scene.setup();
+}
+
+//------------------------------------------------------------------------------
+bool executeCommand(const String& command) {
+    DEBUG_MSG_P(PSTR("[GARLAND] Executing command \"%s\"\n"), command.c_str());
+    // Parse JSON input
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(command);
+    if (!root.success()) {
+        DEBUG_MSG_P(PSTR("[GARLAND] Error parsing command\n"));
+        return false;
+    }
+
+    bool scene_setup_required = false;
+
+    if (root.containsKey(MQTT_PAYLOAD_ENABLE)) {
+        auto enable = root[MQTT_PAYLOAD_ENABLE].as<String>();
+        garlandEnabled(enable != "false");
+    }
+
+    if (root.containsKey(MQTT_PAYLOAD_BRIGHTNESS)) {
+        auto brightness = root[MQTT_PAYLOAD_BRIGHTNESS].as<byte>();
+        scene.setBrightness(brightness);
+    }
+
+    if (root.containsKey(MQTT_PAYLOAD_ANIM_SPEED)) {
+        auto speed = root[MQTT_PAYLOAD_ANIM_SPEED].as<byte>();
+        scene.setSpeed(speed);
+    }
+
+    Anim* newAnim = _currentAnim;
+    if (root.containsKey(MQTT_PAYLOAD_ANIMATION)) {
+        auto animation = root[MQTT_PAYLOAD_ANIMATION].as<const char*>();
+        for (size_t i = 0; i < animsSize(); ++i) {
+            auto anim_name = anims[i]->name();
+            if (strcmp(animation, anim_name) == 0) {
+                newAnim = anims[i];
+                scene_setup_required = true;
+                break;
+            }
+        }
+    }
+
+    Palette* newPalette = _currentPalette;
+    if (root.containsKey(MQTT_PAYLOAD_PALETTE)) {
+        if (root.is<int>(MQTT_PAYLOAD_PALETTE)) {
+            one_color_palette.reset(new Palette("Color", {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
+            newPalette = one_color_palette.get();
+        } else {
+            auto palette = root[MQTT_PAYLOAD_PALETTE].as<const char*>();
+            bool palette_found = false;
+            for (size_t i = 0; i < palsSize(); ++i) {
+                auto pal_name = pals[i].name();
+                if (strcmp(palette, pal_name) == 0) {
+                    newPalette = &pals[i];
+                    palette_found = true;
+                    scene_setup_required = true;
+                    break;
+                }
+            }
+            if (!palette_found) {
+                uint32_t color = (uint32_t)strtoul(palette, NULL, 0);
+                if (color != 0) {
+                    one_color_palette.reset(new Palette("Color", {color}));
+                    newPalette = one_color_palette.get();
+                }
+            }
+        }
+    }
+
+    unsigned long newAnimDuration = LONG_MAX;
+    if (root.containsKey(MQTT_PAYLOAD_DURATION)) {
+        newAnimDuration = root[MQTT_PAYLOAD_DURATION].as<unsigned long>();
+        scene_setup_required = true;
+    }
+
+    if (scene_setup_required) {
+        setupScene(newAnim, newPalette, newAnimDuration);
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
 // Loop
 //------------------------------------------------------------------------------
 void garlandLoop(void) {
+    if (!_immediate_command.isEmpty()) {
+        executeCommand(_immediate_command);
+        _immediate_command.clear();
+    }
+
     if (!garlandEnabled())
         return;
 
     scene.run();
 
-    unsigned long animation_time = millis() - _last_update;
-    if (animation_time > _interval_effect_update && scene.finishedAnimCycle()) {
-        _last_update = millis();
-        _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+    unsigned long currentAnimRunTime = millis() - _lastTimeUpdate;
+    if (currentAnimRunTime > _currentDuration && scene.finishedAnimCycle()) {
+        bool scene_setup_done = false;
+        if (!_command_queue.empty()) {
+            scene_setup_done = executeCommand(_command_queue.front());
+            _command_queue.pop();
+        } else if (!_command_sequence.empty()) {
+            scene_setup_done = executeCommand(_command_sequence[_currentCommandInSequence]);
+            ++_currentCommandInSequence;
+            if (_currentCommandInSequence >= _command_sequence.size())
+                _currentCommandInSequence = 0;
+        }
 
-        static int animInd    = 0;
-        int prevAnimInd = animInd;
-        while (prevAnimInd == animInd) animInd = secureRandom(1, animsSize());
+        if (!scene_setup_done) {
+            Anim* newAnim = _currentAnim;
+            while (newAnim == _currentAnim) {
+                newAnim = anims[secureRandom(START_ANIMATION + 1, animsSize())];
+            }
 
-        static int paletteInd = 0;
-        int prevPalInd = paletteInd;
-        while (prevPalInd == paletteInd) paletteInd = secureRandom(palsSize());
+            Palette* newPalette = _currentPalette;
+            while (newPalette == _currentPalette) {
+                newPalette = &pals[secureRandom(palsSize())];
+            }
 
-        int numShows = scene.getNumShows();
-        int frameRate = animation_time > 0 ? numShows * 1000 / animation_time : 0;
+            unsigned long newAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 
-        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
-                    anims[prevAnimInd]->name(), pals[prevPalInd].name(),
-                    scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
-        DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
-                    anims[animInd]->name(), pals[paletteInd].name(), _interval_effect_update);
+            setupScene(newAnim, newPalette, newAnimDuration);
+        }
+    }
+}
 
-        scene.setAnim(anims[animInd]);
-        scene.setPalette(&pals[paletteInd]);
-        scene.setup();
+//------------------------------------------------------------------------------
+void garlandMqttCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_GARLAND);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        // Match topic
+        String t = mqttMagnitude((char*)topic);
+
+        if (t.equals(MQTT_TOPIC_GARLAND)) {
+            // Parse JSON input
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.parseObject(payload);
+            if (!root.success()) {
+                DEBUG_MSG_P(PSTR("[GARLAND] Error parsing mqtt data\n"));
+                return;
+            }
+
+            String command = MQTT_COMMAND_IMMEDIATE;
+            if (root.containsKey(MQTT_PAYLOAD_COMMAND)) {
+                command = root[MQTT_PAYLOAD_COMMAND].as<String>();
+            }
+
+            if (command == MQTT_COMMAND_IMMEDIATE) {
+                _immediate_command = payload;
+            } else if (command == MQTT_COMMAND_RESET) {
+                std::queue<String> empty_queue;
+                std::swap(_command_queue, empty_queue);
+                std::vector<String> empty_sequence;
+                std::swap(_command_sequence, empty_sequence);
+                _immediate_command.clear();
+                _currentDuration = 0;
+                setDefault();
+                garlandEnabled(true);
+            } else if (command == MQTT_COMMAND_QUEUE) {
+                _command_queue.push(payload);
+            } else if (command == MQTT_COMMAND_SEQUENCE) {
+                _command_sequence.push_back(payload);
+            }
+        }
     }
 }
 
@@ -231,6 +456,7 @@ void garlandLoop(void) {
 void garlandSetup() {
     _garlandConfigure();
 
+    mqttRegister(garlandMqttCallback);
 // Websockets
 #if WEB_SUPPORT
     wsRegister()
@@ -243,11 +469,11 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    scene.setAnim(anims[0]);
-    scene.setPalette(&pals[0]);
+    scene.setAnim(_currentAnim);
+    scene.setPalette(_currentPalette);
     scene.setup();
 
-    _interval_effect_update = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+    _currentDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
 
 /*#######################################################################
@@ -368,7 +594,20 @@ void Scene::run() {
     }
 
     if (state == Show && cyclesRemain < 2) {
+        /* Showing pixels (actually transmitting their RGB data) is most time consuming operation in the
+        garland workflow. Using 800 kHz gives 1.25 μs per bit. -> 30 μs (0.03 ms) per RGB LED.
+        So for example 3 ms for 100 LEDs. Unfortunately it can't be postponed and resumed later as it
+        will lead to reseting the transmition operation. From other hand, long operation can cause
+        Soft WDT reset. To avoid wdt reset we need to switch soft wdt off for long strips.
+        It is not best practice, but assuming that it is only garland, it can be acceptable.
+        Tested up to 300 leds. */
+        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+            ESP.wdtDisable();
+        }
         _pixels->show();
+        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+            ESP.wdtEnable(5000);
+        }
         sum_show_time += (micros() - iteration_start_time);
         ++show_num;
         state = Calculate;

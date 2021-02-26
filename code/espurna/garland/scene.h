@@ -16,7 +16,9 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #include "animations/anim_assemble.h"
 #include "animations/anim_comets.h"
 #include "animations/anim_dolphins.h"
+#include "animations/anim_fountain.h"
 #include "animations/anim_fly.h"
+#include "animations/anim_glow.h"
 #include "animations/anim_pixiedust.h"
 #include "animations/anim_randcyc.h"
 #include "animations/anim_run.h"
@@ -70,10 +72,17 @@ private:
 
     byte               brightness = 0;
 
-    // Reverse to speed. If more convenient to calculate in this way.
-    // 1 < cycleFactor < 4
-    byte               speed = 50;
+    // cycleFactor is actually number of cycles to calculate and draw one animation step
+    // if cycleFactor is 2 or more, than calculation and drawing made in different cycles
+    // cycleFactor is float. For example cycleFactor=2.5 gives one step 2 than next 3 cycles per anim step
+    // Recommended values: 1 < cycleFactor < 4
     float              cycleFactor = 2.0;
+    // speed is reverse to cycleFactor. For forward direction control of animation speed.
+    // Recommended values: 30 < speed < 60.
+    // Correspondence: 
+    //   speed=60, cycleFactor=1
+    //   speed=30, cycleFactor=4
+    byte               speed = 50;
     float              cycleTail = 0;
     int                cyclesRemain = 0;
 

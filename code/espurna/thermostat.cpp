@@ -11,6 +11,7 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #if THERMOSTAT_SUPPORT
 
 #include "ntp.h"
+#include "ntp_timelib.h"
 #include "relay.h"
 #include "sensor.h"
 #include "mqtt.h"
