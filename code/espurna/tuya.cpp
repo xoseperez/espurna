@@ -368,13 +368,9 @@ error:
                     setupSwitches();
                 }
 
-                if (!configDone) {
-                    DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
-                    state = State::QUERY_PRODUCT;
-                    return;
-                }
-
-                state = State::IDLE;
+                DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
+                state = State::QUERY_PRODUCT;
+                return;
             }
 
             sendWiFiStatus();
