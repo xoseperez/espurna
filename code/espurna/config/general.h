@@ -444,10 +444,6 @@
 #define RELAY_SAVE_DELAY            1000
 #endif
 
-#ifndef RELAY_REPORT_STATUS
-#define RELAY_REPORT_STATUS         1
-#endif
-
 // Configure the MQTT payload for ON, OFF and TOGGLE
 #ifndef RELAY_MQTT_OFF
 #define RELAY_MQTT_OFF              "0"

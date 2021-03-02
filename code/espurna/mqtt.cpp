@@ -196,6 +196,20 @@ SecureClientConfig _mqtt_sc_config {
 // Client configuration & setup
 // -----------------------------------------------------------------------------
 
+// TODO: MQTT standard has some weird rules about session persistance on the broker
+// ref. 3.1.2.4 Clean Session, where we are uniquely identified by the client-id:
+// - subscriptions that are no longer useful are still there
+//   unsub # will be acked, but we were never subbed to # to begin with ...
+// - we *will* receive messages that were sent using qos 1 or 2 while we were offline
+//   which is only sort-of good, but MQTT broker v3 will never timeout those messages.
+//   this would be the main reason for turning ON the clean session
+// - connecting with clean session ON will purge existing session *and* also prevent
+//   the broker from caching the messages after the current connection ends.
+//   there is no middle-ground, where previous session is removed but the current one is preserved
+//   so, turning it ON <-> OFF during runtime is not very useful :/
+//
+// Pending MQTT v5 client
+
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 void _mqttSetupAsyncClient(bool secure = false) {
@@ -204,6 +218,7 @@ void _mqttSetupAsyncClient(bool secure = false) {
     _mqtt.setClientId(_mqtt_clientid.c_str());
     _mqtt.setKeepAlive(_mqtt_keepalive);
     _mqtt.setCleanSession(false);
+
     _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, _mqtt_payload_offline.c_str());
 
     if (_mqtt_user.length() && _mqtt_pass.length()) {
@@ -349,7 +364,7 @@ void _mqttConfigure() {
     {
         String setter = getSetting("mqttSetter", MQTT_SETTER);
         String getter = getSetting("mqttGetter", MQTT_GETTER);
-        bool forward = !setter.equals(getter) && RELAY_REPORT_STATUS;
+        bool forward = !setter.equals(getter);
 
         _mqttApplySetting(_mqtt_setter, setter);
         _mqttApplySetting(_mqtt_getter, getter);
