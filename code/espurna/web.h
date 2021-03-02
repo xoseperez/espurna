@@ -20,9 +20,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 struct AsyncWebPrintConfig {
     const char* const mimeType;
-    const size_t backlogCountMax;
-    const size_t backlogSizeMax;
-    const decltype(millis()) backlogTimeout;
+    size_t backlogCountMax;
+    size_t backlogSizeMax;
+    decltype(millis()) backlogTimeout;
 };
 
 struct AsyncWebPrint : public Print {

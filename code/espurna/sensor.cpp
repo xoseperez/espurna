@@ -1310,14 +1310,6 @@ void _sensorWebSocketOnVisible(JsonObject& root) {
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
-    // retrieve per-type ...Correction settings, when available
-    _magnitudeForEachCounted([&root](unsigned char type) {
-        if (_magnitudeCanUseCorrection(type)) {
-            auto key = String(_magnitudeSettingsPrefix(type)) + F("Correction");
-            root[key] = getSetting(key, _magnitudeCorrection(type));
-        }
-    });
-
     JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
     uint8_t size = 0;
 

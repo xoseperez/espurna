@@ -330,7 +330,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
-        wsSend_P(client_id, PSTR("{\"message\": 3}"));
+        wsSend_P(client_id, PSTR("{\"message\": \"Cannot parse the data!\"}"));
         return;
     }
 
@@ -366,9 +366,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
             if (strcmp(action, "restore") == 0) {
                 if (settingsRestoreJson(data)) {
-                    wsSend_P(client_id, PSTR("{\"message\": 5}"));
+                    wsSend_P(client_id, PSTR("{\"message\": \"Changes saved, you should be able to reboot now.\"}"));
                 } else {
-                    wsSend_P(client_id, PSTR("{\"message\": 4}"));
+                    wsSend_P(client_id, PSTR("{\"message\": \"Could not restore the configuration, see the debug log for more information.\"}"));
                 }
                 return;
             }
@@ -407,7 +407,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                         wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
                     }
                 } else {
-                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
+                    wsSend_P(client_id, PSTR("{\"message\": \"Passwords do not match!\"}"));
                 }
                 continue;
             }
@@ -445,11 +445,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // Persist settings
             saveSettings();
 
-            wsSend_P(client_id, PSTR("{\"message\": 8}"));
+            wsSend_P(client_id, PSTR("{\"saved\": true, \"message\": \"Changes saved.\"}"));
 
         } else {
 
-            wsSend_P(client_id, PSTR("{\"message\": 9}"));
+            wsSend_P(client_id, PSTR("{\"message\": \"No changes detected.\"}"));
 
         }
 
@@ -516,17 +516,17 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
     if (type == WS_EVT_CONNECT) {
 
         client->_tempObject = nullptr;
-
-        #ifndef NOWSAUTH
-            if (!_wsAuth(client)) {
-                wsSend_P(client->id(), PSTR("{\"message\": 10}"));
-                DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-                client->close();
-                return;
-            }
-        #endif
-
         IPAddress ip = client->remoteIP();
+
+#ifndef NOWSAUTH
+        if (!_wsAuth(client)) {
+            wsSend_P(client->id(), PSTR("{\"action\": \"reload\", \"message\": \"Session expired.\"}"));
+            DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired, ip: %d.%d.%d.%d\n"), client->id(), ip[0], ip[1], ip[2], ip[3]);
+            client->close();
+            return;
+        }
+#endif
+
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsConnected(client->id());
         _wsResetUpdateTimer();

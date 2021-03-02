@@ -2,7 +2,6 @@ var debug = false;
 var websock;
 var password = false;
 var maxNetworks;
-var messages = [];
 var free_size = 0;
 
 var urls = {};
@@ -35,22 +34,6 @@ var MagnitudeNames = {};
 var MagnitudeTypePrefixes = {};
 var MagnitudePrefixTypes = {};
 //endRemoveIf(!sensor)
-
-// -----------------------------------------------------------------------------
-// Messages
-// -----------------------------------------------------------------------------
-
-function initMessages() {
-    messages[1]  = "Remote update started";
-    messages[2]  = "OTA update started";
-    messages[3]  = "Error parsing data!";
-    messages[4]  = "The file does not look like a valid configuration backup or is corrupted";
-    messages[5]  = "Changes saved. You should reboot your board now";
-    messages[7]  = "Passwords do not match!";
-    messages[8]  = "Changes saved";
-    messages[9]  = "No changes detected";
-    messages[10] = "Session expired, please reload page...";
-}
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -720,21 +703,22 @@ function waitForSave(){
 
 function doUpdate() {
 
+    // Since we have 2-page config, make sure we select the active one
     var forms = $(".form-settings");
     if (validateForm(forms)) {
 
-        // Get data
         sendConfig(getData(forms));
 
-        // Empty special fields
+//removeIf(!sensor)
+        // Energy reset is handled via these keys
+        // TODO: replace these with actions, not settings
         $(".pwrExpected").val(0);
         $("input[name='snsResetCalibration']").prop("checked", false);
         $("input[name='pwrResetCalibration']").prop("checked", false);
         $("input[name='pwrResetE']").prop("checked", false);
+//endRemoveIf(!sensor)
 
-        // Change handling
         numChanged = 0;
-
         waitForSave();
 
     }
@@ -1619,7 +1603,9 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("action" === key) {
-            if ("reload" === data.action) { doReload(1000); }
+            if ("reload" === data.action) {
+                doReload(1000);
+            }
             return;
         }
 
@@ -1864,23 +1850,6 @@ function processData(data) {
 
         //removeIf(!sensor)
 
-        {
-            var position = key.indexOf("Correction");
-            if (position > 0 && position === key.length - 10) {
-                var template = $("#magnitudeCorrectionTemplate > div")[0];
-                var elem = $(template).clone();
-
-                var prefix = key.slice(0, position);
-                $("label", elem).html(MagnitudeNames[MagnitudePrefixTypes[prefix]]);
-                $("input", elem).attr("name", key).val(value);
-
-                setOriginalsFromValues($("input", elem));
-                elem.appendTo("#magnitude-corrections");
-                moduleVisible("magnitude-corrections");
-                return;
-            }
-        }
-
         if ("snsErrors" === key) {
             for (var index in value) {
                 var type = value[index][0];
@@ -2088,12 +2057,13 @@ function processData(data) {
         // General
         // ---------------------------------------------------------------------
 
-        // Messages
+        if ("saved" === key) {
+            configurationSaved = value;
+            return;
+        }
+
         if ("message" === key) {
-            if (value == 8) {
-                configurationSaved = true;
-            }
-            window.alert(messages[value]);
+            window.alert(value);
             return;
         }
 
@@ -2298,10 +2268,17 @@ function connectToURL(url) {
         if (websock) { websock.close(); }
         websock = new WebSocket(urls.ws.href);
         websock.onmessage = function(evt) {
-            var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-            if (data) {
-                processData(data);
+            var data = {};
+            try {
+                data = JSON.parse(evt.data
+                    .replace(/\n/g, "\\n")
+                    .replace(/\r/g, "\\r")
+                    .replace(/\t/g, "\\t"));
+            } catch (e) {
+                console.log(e);
             }
+
+            processData(data);
         };
         websock.onclose = function(evt) {
             clearInterval(ws_pingpong);
@@ -2333,7 +2310,6 @@ function connectToCurrentURL() {
 
 $(function() {
 
-    initMessages();
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
