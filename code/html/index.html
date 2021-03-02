@@ -213,10 +213,10 @@
                     <div class="footer">
                         &copy; 2016-2019<br />
                         Xose Pérez<br/>
-                        <a href="https://twitter.com/xoseperez" rel="noopener" target="_blank">@xoseperez</a><br/>
-                        <a href="http://tinkerman.cat" rel="noopener" target="_blank">http://tinkerman.cat</a><br/>
-                        <a href="https://github.com/xoseperez/espurna" rel="noopener" target="_blank">ESPurna @ GitHub</a><br/>
-                        GPLv3 license<br/>
+                        <a class="external" href="https://twitter.com/xoseperez">@xoseperez</a><br/>
+                        <a class="external" href="https://tinkerman.cat">https://tinkerman.cat</a><br/>
+                        <a class="external" href="https://github.com/xoseperez/espurna">ESPurna at GitHub</a><br/>
+                        <a class="external" href="https://www.gnu.org/licenses/gpl-3.0.en.html">GPLv3 license</a><br/>
                     </div>
 
                 </div>
@@ -826,7 +826,7 @@
                                     <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
                                     <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade pure-u-23-24">Upgrade</button></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" rel="noopener" target="_blank"><strong>two-step update</strong></a>.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a class="external" href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
                                     <input name="upgrade" type="file" tabindex="18" />
@@ -1077,9 +1077,9 @@
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the fingerprint for the SSL certificate of the server.<br />
-                                        You can get it using <a href="https://www.grc.com/fingerprints.htm" rel="noopener" target="_blank">https://www.grc.com/fingerprints.htm</a><br />
-                                        or using openssl from a linux box by typing:<br />
-                                        <pre>$ openssl s_client -connect &lt;host&gt;:&lt;port&gt; &lt; /dev/null 2&gt;/dev/null | openssl x509 -fingerprint -noout -in /dev/stdin</pre>
+                                        You can get it using <a class="external" href="https://www.grc.com/fingerprints.htm">https://www.grc.com/fingerprints.htm</a> (if it is publically available)<br />
+                                        or, using <a class="external" href="https://www.openssl.org/">openssl</a>. For example, on a Linux / macOS machine:<br />
+                                        <pre>$ echo -n | openssl s_client -connect &lt;host&gt;:&lt;port&gt; 2&gt;&and;1 | openssl x509 -noout -fingerprint -sha1 | cut -d\= -f2</pre>
                                     </div>
                                 </div>
 
@@ -1129,7 +1129,7 @@
 
                         <div class="header">
                             <h1>NoFUSS</h1>
-                            <h2>Automatically upgrade the firmware (see <a href="https://bitbucket.org/xoseperez/nofuss">xoseperez/nofuss</a> for details)</h2>
+                            <h2>Automatically upgrade the firmware (see <a class="external" href="https://bitbucket.org/xoseperez/nofuss">xoseperez/nofuss</a> for details)</h2>
                         </div>
 
                         <div class="page">
@@ -1182,7 +1182,7 @@
                                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
                                     <input class="pure-u-1 pure-u-lg-3-4" name="ntpTZ" type="text" tabindex="42" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">POSIX TZ variable, defaults to <code>UTC0</code><br/>For the list of possible options, <a rel="noopener" href="https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h">see esp8266/Arduino's TZ.h (use the value inside of F("..."))</a>. For the complete documentation, <a rel="noopener" href="https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html">see libc tzset(3) manual page</a></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">POSIX TZ variable, defaults to <code>UTC0</code><br/>For the list of possible options, <a class="external" href="https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h">see esp8266/Arduino's TZ.h (use the value inside of F("..."))</a>. For the complete documentation, <a class="external" href="https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html">see libc tzset(3) manual page</a></div>
                                 </div>
 
                             </fieldset>
@@ -1420,7 +1420,7 @@
                         <div class="page">
                             <fieldset>
 
-                                <legend><a rel="noopener" target="_blank" href="https://www.home-assistant.io/docs/mqtt/discovery/">Discovery</a></legend>
+                                <legend><a class="external" href="https://www.home-assistant.io/docs/mqtt/discovery/">Discovery</a></legend>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
@@ -1579,7 +1579,7 @@
                         <div class="header">
                             <h1>RULES</h1>
                             <h2>
-                                Here you can configure advanced rules based on RPN expressions. Check the <a href="https://github.com/xoseperez/espurna/wiki/RPN-Rules" rel="noopener" target="_blank">wiki page about the RPN Rules module</a> to know how to use them.
+                                Here you can configure advanced rules based on RPN expressions. Check the <a class="external" href="https://github.com/xoseperez/espurna/wiki/RPN-Rules">wiki page about the RPN Rules module</a> to know how to use them.
                             </h2>
                         </div>
 
@@ -1832,7 +1832,7 @@
                                 To learn a new code click <strong>LEARN</strong> (the Sonoff RFBridge will beep) then press a button on the remote, the new code should show up (and the RFBridge will double beep). If the device double beeps but the code does not update it has not been properly learnt. Keep trying.<br /><br />
                                 Modify or create new codes manually and then click <strong>SAVE</strong> to store them in the device memory. If your controlled device uses the same code to switch ON and OFF, learn the code with the ON button and copy paste it to the OFF input box, then click SAVE on the last one to store the value.<br /><br />
                                 Delete any code clicking the <strong>FORGET</strong> button.
-                                <br /><br />You can also specify any RAW code. For reference see <a rel="noopener" target="_blank" href="https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/Commands">possible commands for Sonoff RF Bridge EFM8BB1</a> (original firmware supports codes from <strong>0xA0</strong> to <strong>0xA5</strong>).
+                                <br /><br />You can also specify any RAW code. For reference see <a class="external" href="https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/Commands">possible commands for Sonoff RF Bridge EFM8BB1</a> (original firmware supports codes from <strong>0xA0</strong> to <strong>0xA5</strong>).
                             </h2>
                         </div>
 

@@ -2267,7 +2267,14 @@ function connectToCurrentURL() {
 
 $(function() {
 
+    // most of the time, we want this unconditionally for all <a href="..."></a>
+    $("a.external")
+        .attr("target", "_blank")
+        .attr("rel", "noopener")
+        .attr("tabindex", "-1");
+
     createCheckboxes();
+
     setInterval(function() { keepTime(); }, 1000);
 
     $(".password-reveal").on("click", toggleVisiblePassword);
