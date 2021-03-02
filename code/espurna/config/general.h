@@ -457,6 +457,14 @@
 #define RELAY_MQTT_TOGGLE           "2"
 #endif
 
+#ifndef RELAY_MQTT_TOPIC_MODE
+#define RELAY_MQTT_TOPIC_MODE       RELAY_MQTT_TOPIC_NORMAL
+#endif
+
+#ifndef RELAY_MQTT_DISCONNECT_STATUS
+#define RELAY_MQTT_DISCONNECT_STATUS    RELAY_MQTT_DISCONNECT_NONE
+#endif
+
 //------------------------------------------------------------------------------
 // BUTTON
 //------------------------------------------------------------------------------

@@ -32,6 +32,11 @@ enum class RelayType : int {
     LatchedInverse
 };
 
+enum class RelayMqttTopicMode : int {
+    Normal,
+    Inverse
+};
+
 enum class RelayProvider: int {
     None,
     Dummy,
@@ -84,9 +89,6 @@ const String& relayPayloadOff();
 const String& relayPayloadToggle();
 
 const char* relayPayload(PayloadStatus status);
-
-void relayMQTT(unsigned char id);
-void relayMQTT();
 
 void relayPulse(unsigned char id);
 void relaySync(unsigned char id);

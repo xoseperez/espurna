@@ -122,9 +122,14 @@
 #define RFB_PROVIDER_RCSWITCH       0
 #define RFB_PROVIDER_EFM8BB1        1
 
-#define RELAY_GROUP_SYNC_NORMAL      0
-#define RELAY_GROUP_SYNC_INVERSE     1
-#define RELAY_GROUP_SYNC_RECEIVEONLY 2
+#define RELAY_MQTT_TOPIC_NORMAL       RelayMqttTopicMode::Normal
+#define RELAY_MQTT_TOPIC_INVERSE      RelayMqttTopicMode::Inverse
+#define RELAY_MQTT_TOPIC_RECEIVE_ONLY RelayMqttTopicMode::ReceiveOnly
+
+#define RELAY_MQTT_DISCONNECT_NONE    PayloadStatus::Unknown
+#define RELAY_MQTT_DISCONNECT_ON      PayloadStatus::On
+#define RELAY_MQTT_DISCONNECT_OFF     PayloadStatus::Off
+#define RELAY_MQTT_DISCONNECT_TOGGLE  PayloadStatus::Toggle
 
 #define RELAY_LOCK_DISABLED          RelayLock::None
 #define RELAY_LOCK_NONE              RelayLock::None

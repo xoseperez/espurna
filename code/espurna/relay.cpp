@@ -149,6 +149,32 @@ namespace settings {
 namespace internal {
 
 template <>
+PayloadStatus convert(const String& value) {
+    auto status = static_cast<PayloadStatus>(value.toInt());
+    switch (status) {
+    case PayloadStatus::Off:
+    case PayloadStatus::On:
+    case PayloadStatus::Toggle:
+    case PayloadStatus::Unknown:
+        return status;
+    }
+
+    return PayloadStatus::Unknown;
+}
+
+template <>
+RelayMqttTopicMode convert(const String& value) {
+    auto mode = static_cast<RelayMqttTopicMode>(value.toInt());
+    switch (mode) {
+    case RelayMqttTopicMode::Normal:
+    case RelayMqttTopicMode::Inverse:
+        return mode;
+    }
+
+    return RelayMqttTopicMode::Normal;
+}
+
+template <>
 RelayPulse convert(const String& value) {
     return _relayPayloadToTristate<RelayPulse>(value.c_str());
 }
@@ -266,6 +292,10 @@ RelayStatusCallback _relay_status_change { nullptr };
 #if WEB_SUPPORT
 
 bool _relay_report_ws = false;
+
+void _relayWsReport() {
+    _relay_report_ws = true;
+}
 
 #endif // WEB_SUPPORT
 
@@ -642,15 +672,28 @@ bool _relayHandlePulsePayload(unsigned char id, const String& payload) {
     return _relayHandlePulsePayload(id, payload.c_str());
 }
 
-PayloadStatus _relayStatusInvert(PayloadStatus status) {
-    return (status == PayloadStatus::On) ? PayloadStatus::Off : status;
+PayloadStatus _relayInvertStatus(PayloadStatus status) {
+    switch (status) {
+    case PayloadStatus::On:
+        return PayloadStatus::Off;
+    case PayloadStatus::Off:
+        return PayloadStatus::On;
+    case PayloadStatus::Toggle:
+    case PayloadStatus::Unknown:
+        break;
+    }
+
+    return PayloadStatus::Unknown;
 }
 
-PayloadStatus _relayStatusTyped(unsigned char id) {
-    if (id >= _relays.size()) return PayloadStatus::Off;
+PayloadStatus _relayPayloadStatus(unsigned char id) {
+    if (id < _relays.size()) {
+        return _relays[id].current_status
+            ? PayloadStatus::On
+            : PayloadStatus::Off;
+    }
 
-    const bool status = _relays[id].current_status;
-    return (status) ? PayloadStatus::On : PayloadStatus::Off;
+    return PayloadStatus::Unknown;
 }
 
 void _relayLockAll() {
@@ -707,7 +750,7 @@ void _relaySyncUnlock() {
     auto action = []() {
         _relayUnlockAll();
         #if WEB_SUPPORT
-            _relay_report_ws = true;
+            _relayWsReport();
         #endif
     };
 
@@ -715,83 +758,6 @@ void _relaySyncUnlock() {
         _relay_sync_timer.once_ms(_relay_delay_interlock, action);
     } else {
         action();
-    }
-}
-
-// -----------------------------------------------------------------------------
-// RELAY PROVIDERS
-// -----------------------------------------------------------------------------
-
-/**
- * Walks the relay vector processing only those relays
- * that have to change to the requested mode
- * @bool mode Requested mode
- */
-void _relayProcess(bool mode) {
-
-    bool changed = false;
-
-    for (unsigned char id = 0; id < _relays.size(); id++) {
-
-        bool target = _relays[id].target_status;
-
-        // Only process the relays we have to change
-        if (target == _relays[id].current_status) continue;
-
-        // Only process the relays we have to change to the requested mode
-        if (target != mode) continue;
-
-        // Only process if the change delay has expired
-        if (_relays[id].change_delay && (millis() - _relays[id].change_start < _relays[id].change_delay)) continue;
-
-        // Purge existing delay in case of cancelation
-        _relays[id].change_delay = 0;
-        changed = true;
-
-        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
-
-        // Call the provider to perform the action
-        _relays[id].current_status = target;
-        _relays[id].provider->change(target);
-        if (_relay_status_change) {
-            _relay_status_change(id, target);
-        }
-
-        // Send to Broker
-        #if BROKER_SUPPORT
-            StatusBroker::Publish(MQTT_TOPIC_RELAY, id, target);
-        #endif
-
-        // Send MQTT
-        #if MQTT_SUPPORT
-            relayMQTT(id);
-        #endif
-
-        #if WEB_SUPPORT
-            _relay_report_ws = true;
-        #endif
-
-        if (!_relayRecursive) {
-
-            relayPulse(id);
-
-            // We will trigger a eeprom save only if
-            // we care about current relay status on boot
-            const auto boot_mode = getSetting({"relayBoot", id}, _relayBootMode(id));
-            const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
-            _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
-
-        }
-
-        _relays[id].report = false;
-        _relays[id].group_report = false;
-
-    }
-
-    // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
-    const bool needs_unlock = ((_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) || (_relay_sync_mode == RELAY_SYNC_ONE));
-    if (_relay_sync_locked && needs_unlock && changed) {
-        _relaySyncUnlock();
     }
 }
 
@@ -1080,29 +1046,57 @@ unsigned char relayCount() {
 }
 
 PayloadStatus relayParsePayload(const char * payload) {
-    #if MQTT_SUPPORT || API_SUPPORT
-        return rpcParsePayload(payload, [](const char* payload) {
-            if (_relay_rpc_payload_off.equals(payload)) return PayloadStatus::Off;
-            if (_relay_rpc_payload_on.equals(payload)) return PayloadStatus::On;
-            if (_relay_rpc_payload_toggle.equals(payload)) return PayloadStatus::Toggle;
-            return PayloadStatus::Unknown;
-        });
-    #else
-        return rpcParsePayload(payload);
-    #endif
+#if MQTT_SUPPORT || API_SUPPORT
+    return rpcParsePayload(payload, [](const char* payload) {
+        if (_relay_rpc_payload_off.equals(payload)) {
+            return PayloadStatus::Off;
+        } else if (_relay_rpc_payload_on.equals(payload)) {
+            return PayloadStatus::On;
+        } else if (_relay_rpc_payload_toggle.equals(payload)) {
+            return PayloadStatus::Toggle;
+        }
+
+        return PayloadStatus::Unknown;
+    });
+#else
+    return rpcParsePayload(payload);
+#endif
 }
 
 void _relaySettingsMigrate(int version) {
-    if (!version || (version >= 5)) {
-        return;
-    }
+    if (version && (version < 5)) {
+        // just a rename
+        moveSetting("relayDelayInterlock", "relayIlkDelay");
 
-    delSettingPrefix({
-        "relayGPIO",
-        "relayProvider",
-        "relayType",
-    });
-    delSetting("relays");
+        // groups use a new set of keys
+        for (unsigned char index = 0; index < RelaysMax; ++index) {
+            auto group = getSetting({"mqttGroup", index});
+            if (!group.length()) {
+                break;
+            }
+
+            auto syncKey = SettingsKey("mqttGroupSync", index);
+            auto sync = getSetting(syncKey);
+
+            setSetting({"relayTopicSub", index}, group);
+            if (sync.length()) {
+                if (sync != "2") { // aka RECEIVE_ONLY
+                    setSetting("relayTopicMode", sync);
+                    setSetting("relayTopicPub", group);
+                }
+            }
+        }
+
+        delSettingPrefix({
+            "mqttGroup",     // migrated to relayTopic
+            "mqttGroupSync", // migrated to relayTopic
+            "relayOnDisc",   // replaced with relayMqttDisc
+            "relayGPIO",     // avoid depending on migrate.ino
+            "relayProvider", // different type
+            "relayType",     // different type
+        });
+        delSetting("relays"); // does not do anything
+    }
 }
 
 void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
@@ -1187,7 +1181,7 @@ void _relayConfigure() {
     _relay_flood_window = (1000 * getSetting("relayFloodTime", RELAY_FLOOD_WINDOW));
     _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES);
 
-    _relay_delay_interlock = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK);
+    _relay_delay_interlock = getSetting("relayIlkDelay", RELAY_DELAY_INTERLOCK);
     _relay_sync_mode = getSetting("relaySync", RELAY_SYNC);
 
     #if MQTT_SUPPORT || API_SUPPORT
@@ -1224,47 +1218,62 @@ void _relayWebSocketUpdate(JsonObject& root) {
 }
 
 void _relayWebSocketSendRelays(JsonObject& root) {
+    if (!relayCount()) {
+        return;
+    }
+
     JsonObject& config = root.createNestedObject("relayConfig");
 
     config["size"] = relayCount();
     config["start"] = 0;
 
-    const char* keys[] = {
-        "prov", "name", "boot", "pulse", "pulse_time"
-    };
-    JsonArray& schema = config.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+    {
+        const char* schema_keys[] = {
+            "prov",
+            "name",
+            "boot",
+#if SCHEDULER_SUPPORT
+            "sch_last",
+#endif
+#if MQTT_SUPPORT
+            "topic_pub",
+            "topic_sub",
+            "topic_mode",
+            "mqtt_disc",
+#endif
+            "pulse",
+            "pulse_time"
+        };
 
-    #if SCHEDULER_SUPPORT
-        schema.add("sch_last");
-    #endif
+        JsonArray& schema = config.createNestedArray("schema");
+        schema.copyFrom(schema_keys, sizeof(schema_keys) / sizeof(*schema_keys));
+    }
 
-    #if MQTT_SUPPORT
-        schema.add("group");
-        schema.add("group_sync");
-        schema.add("on_disc");
-    #endif
+    {
+        JsonArray& relays = config.createNestedArray("relays");
 
-    JsonArray& relays = config.createNestedArray("relays");
+        for (unsigned char id = 0; id < relayCount(); ++id) {
+            JsonArray& relay = relays.createNestedArray();
+            relay.add(_relays[id].provider->id());
+            relay.add(getSetting({"relayName", id}));
+            relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
 
-    for (unsigned char id = 0;  id < relayCount(); ++id) {
-        JsonArray& relay = relays.createNestedArray();
-        relay.add(_relays[id].provider->id());
-        relay.add(getSetting({"relayName", id}));
-        relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
-
-        relay.add(static_cast<uint8_t>(_relays[id].pulse));
-        relay.add(_relays[id].pulse_ms / 1000.0);
-
-        #if SCHEDULER_SUPPORT
+#if SCHEDULER_SUPPORT
             relay.add(getSetting({"relayLastSch", id}, SCHEDULER_RESTORE_LAST_SCHEDULE));
-        #endif
+#endif
 
-        #if MQTT_SUPPORT
-            relay.add(getSetting({"mqttGroup", id}));
-            relay.add(getSetting({"mqttGroupSync", id}, 0));
-            relay.add(getSetting({"relayOnDisc", id}, 0));
-        #endif
+#if MQTT_SUPPORT
+            relay.add(getSetting({"relayTopicSub", id}, _relayMqttTopicSub(id)));
+            relay.add(getSetting({"relayTopicPub", id}, _relayMqttTopicPub(id)));
+            relay.add(static_cast<int>(getSetting({"relayTopicMode", id},
+                    _relayMqttTopicMode(id))));
+            relay.add(static_cast<int>(getSetting({"relayMqttDisc", id},
+                    _relayMqttDisconnectionStatus(id))));
+#endif
+
+            relay.add(static_cast<uint8_t>(_relays[id].pulse));
+            relay.add(_relays[id].pulse_ms / 1000.0);
+        }
     }
 }
 
@@ -1274,19 +1283,14 @@ void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
-        root["relayDelayInterlock"] = getSetting("relayDelayInterlock", RELAY_DELAY_INTERLOCK);
+        root["relayIlkDelay"] = getSetting("relayIlkDelay", RELAY_DELAY_INTERLOCK);
     }
 
     root["relayVisible"] = 1;
 }
 
 void _relayWebSocketOnConnected(JsonObject& root) {
-
-    if (relayCount() == 0) return;
-
-    // Per-relay configuration
     _relayWebSocketSendRelays(root);
-
 }
 
 void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -1419,39 +1423,150 @@ const char* relayPayload(PayloadStatus status) {
 
 #if MQTT_SUPPORT
 
-void _relayMQTTGroup(unsigned char id) {
-    const String topic = getSetting({"mqttGroup", id});
-    if (!topic.length()) return;
+struct RelayCustomTopic {
+    RelayCustomTopic() = delete;
+    RelayCustomTopic(const RelayCustomTopic&) = delete;
+    RelayCustomTopic(RelayCustomTopic&&) = delete;
 
-    const auto mode = getSetting({"mqttGroupSync", id}, RELAY_GROUP_SYNC_NORMAL);
-    if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
+    template <typename T>
+    RelayCustomTopic(unsigned char id, T&& topic, RelayMqttTopicMode mode) :
+        _id(id),
+        _topic(std::forward<T>(topic)),
+        _parts(_topic),
+        _mode(mode)
+    {}
 
-    auto status = _relayStatusTyped(id);
-    if (mode == RELAY_GROUP_SYNC_INVERSE) status = _relayStatusInvert(status);
+    unsigned char id() const {
+        return _id;
+    }
+
+    const String& topic() const {
+        return _topic;
+    }
+
+    const PathParts& parts() const {
+        return _parts;
+    }
+
+    const RelayMqttTopicMode mode() const {
+        return _mode;
+    }
+
+    bool match(const String& other) const {
+        PathParts parts(other);
+        return _parts.match(parts);
+    }
+
+    bool match(const PathParts& parts) const {
+        return _parts.match(parts);
+    }
+
+private:
+    unsigned char _id;
+    String _topic;
+    PathParts _parts;
+    RelayMqttTopicMode _mode;
+};
+
+std::forward_list<RelayCustomTopic> _relay_custom_topics;
+
+// TODO: it *will* handle the duplicates, but we waste memory storing them
+// TODO: mqttSubscribe(...) also happens multiple times
+//
+// this is not really an intended use-case though, but it is techically possible...
+
+void _relayMqttSubscribeCustomTopics() {
+    const size_t relays { relayCount() };
+    if (!relays) {
+        return;
+    }
+
+    struct CustomTopic {
+        String value;
+        RelayMqttTopicMode mode;
+    };
+
+    std::vector<CustomTopic> topics;
+    topics.reserve(relays);
+
+    for (unsigned char id = 0; id < relays; ++id) {
+        topics[id].value = _relayMqttTopicSub(id);
+        topics[id].mode = _relayMqttTopicMode(id);
+    }
+
+    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+        const char* const SubPrefix = "relayTopicSub";
+        const char* const ModePrefix = "relayTopicMode";
+
+        if ((kv.key.length <= strlen(SubPrefix))
+                && (kv.key.length <= strlen(ModePrefix))) {
+            return;
+        }
+
+        if (!kv.value.length) {
+            return;
+        }
+
+        const auto key = kv.key.read();
+        unsigned char id;
+
+        if (key.startsWith(SubPrefix)) {
+            if (_relayTryParseId(key.c_str() + strlen(SubPrefix), id)) {
+                topics[id].value = std::move(kv.value.read());
+            }
+        } else if (key.startsWith(ModePrefix)) {
+            using namespace settings::internal;
+            if (_relayTryParseId(key.c_str() + strlen(ModePrefix), id)) {
+                topics[id].mode = convert<RelayMqttTopicMode>(kv.value.read());
+            }
+        }
+    });
+
+    _relay_custom_topics.clear();
+    for (unsigned char id = 0; id < relays; ++id) {
+        auto& topic = topics[id];
+        if (!topic.value.length()) {
+            continue;
+        }
+
+        mqttSubscribeRaw(topic.value.c_str());
+        _relay_custom_topics.emplace_front(id, std::move(topic.value), topic.mode);
+    }
+}
+
+void _relayMqttPublishCustomTopic(unsigned char id) {
+    const String topic = getSetting({"relayTopicPub", id}, _relayMqttTopicPub(id));
+    if (!topic.length()) {
+        return;
+    }
+
+    auto status = _relayPayloadStatus(id);
+
+    auto mode = getSetting({"relayTopicMode", id}, _relayMqttTopicMode(id));
+    if (mode == RelayMqttTopicMode::Inverse) {
+        status = _relayInvertStatus(status);
+    }
+
     mqttSendRaw(topic.c_str(), relayPayload(status));
 }
 
-void relayMQTT(unsigned char id) {
+void _relayMqttReport(unsigned char id) {
+    if (id < _relays.size()) {
+        if (_relays[id].report) {
+            _relays[id].report = false;
+            mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
+        }
 
-    if (id >= _relays.size()) return;
-
-    // Send state topic
-    if (_relays[id].report) {
-        _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayStatusTyped(id)));
+        if (_relays[id].group_report) {
+            _relays[id].group_report = false;
+            _relayMqttPublishCustomTopic(id);
+        }
     }
-
-    // Check group topic
-    if (_relays[id].group_report) {
-        _relays[id].group_report = false;
-        _relayMQTTGroup(id);
-    }
-
 }
 
-void relayMQTT() {
+void _relayMqttReportAll() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayStatusTyped(id)));
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
     }
 }
 
@@ -1474,19 +1589,55 @@ void relayStatusWrap(unsigned char id, PayloadStatus value, bool is_group_topic)
         case PayloadStatus::Unknown:
         default:
             _relays[id].report = true;
-            relayMQTT(id);
+            _relayMqttReport(id);
             break;
     }
 }
 
 bool _relayMqttHeartbeat(heartbeat::Mask mask) {
     if (mask & heartbeat::Report::Relay)
-        relayMQTT();
+        _relayMqttReportAll();
 
     return mqttConnected();
 }
 
+void _relayMqttHandleCustomTopic(const String& topic, const char* payload) {
+    PathParts received(topic);
+    for (auto& topic : _relay_custom_topics) {
+        if (topic.match(received)) {
+            auto status = relayParsePayload(payload);
+            if (topic.mode() == RelayMqttTopicMode::Inverse) {
+                status = _relayInvertStatus(status);
+            }
+
+            const auto id = topic.id();
+            _relayHandleStatus(id, status);
+            _relays[id].group_report = false;
+        }
+    }
+}
+
+void _relayMqttHandleDisconnect() {
+    settings::kv_store.foreach([](settings::kvs_type::KeyValueResult&& kv) {
+        const char* const prefix = "relayMqttDisc";
+        if (kv.key.length <= strlen(prefix)) {
+            return;
+        }
+
+        const auto key = kv.key.read();
+        if (key.startsWith(prefix)) {
+            unsigned char id;
+            if (_relayTryParseId(key.c_str() + strlen(prefix), id)) {
+                const auto value = kv.value.read();
+                _relayHandleStatus(id, relayParsePayload(value.c_str()));
+            }
+        }
+    });
+}
+
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+    static bool connected { false };
 
     if (!relayCount()) {
         return;
@@ -1503,82 +1654,46 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         snprintf_P(pulse_topic, sizeof(pulse_topic), PSTR("%s/+"), MQTT_TOPIC_PULSE);
         mqttSubscribe(pulse_topic);
 
-        // Subscribe to group topics
-        for (unsigned char i=0; i < _relays.size(); i++) {
-            const auto t = getSetting({"mqttGroup", i});
-            if (t.length() > 0) mqttSubscribeRaw(t.c_str());
-        }
+        _relayMqttSubscribeCustomTopics();
+
+        connected = true;
+        return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
         String t = mqttMagnitude((char *) topic);
-        unsigned char id;
-        if (!_relayTryParseIdFromPath(t.c_str(), id)) {
-            return;
-        }
 
-        if (t.startsWith(MQTT_TOPIC_PULSE)) {
-            _relayHandlePulsePayload(id, payload);
-            _relays[id].report = mqttForward();
-            return;
-        }
-
-        if (t.startsWith(MQTT_TOPIC_RELAY)) {
-            _relayHandlePayload(id, payload);
-            _relays[id].report = mqttForward();
-            return;
-        }
-
-        // TODO: cache group topics instead of reading settings each time?
-        // TODO: this is another kvs::foreach case, since we slow down MQTT when settings grow
-        for (unsigned char i=0; i < _relays.size(); i++) {
-
-            const String t = getSetting({"mqttGroup", i});
-            if (!t.length()) break;
-
-            if (t == topic) {
-
-                auto value = relayParsePayload(payload);
-                if (value == PayloadStatus::Unknown) return;
-
-                if ((value == PayloadStatus::On) || (value == PayloadStatus::Off)) {
-                    if (getSetting({"mqttGroupSync", i}, RELAY_GROUP_SYNC_NORMAL) == RELAY_GROUP_SYNC_INVERSE) {
-                        value = _relayStatusInvert(value);
-                    }
-                }
-
-                DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d\n"), i);
-                _relayHandleStatus(i, value);
-                _relays[i].group_report = false;
-
-            }
-        }
-
-    }
-
-    // TODO: safeguard against network issues. this one has good intentions, but we may end up
-    // switching relays back and forth when connection is unstable but reconnects very fast after the failure
-
-    if (type == MQTT_DISCONNECT_EVENT) {
-        for (unsigned char i=0; i < _relays.size(); i++) {
-            const auto reaction = getSetting({"relayOnDisc", i}, 0);
-
-            bool status;
-            switch (reaction) {
-            case 1:
-                status = false;
-                break;
-            case 2:
-                status = true;
-                break;
-            default:
+        auto is_relay = t.startsWith(MQTT_TOPIC_RELAY);
+        auto is_pulse = t.startsWith(MQTT_TOPIC_PULSE);
+        if (is_relay || is_pulse) {
+            unsigned char id;
+            if (!_relayTryParseIdFromPath(t.c_str(), id)) {
                 return;
             }
 
-            DEBUG_MSG_P(PSTR("[RELAY] Turn %s relay #%u due to MQTT disconnection\n"), status ? "ON" : "OFF", i);
-            relayStatus(i, status);
+            if (is_relay) {
+                _relayHandlePayload(id, payload);
+                _relays[id].report = mqttForward();
+                return;
+            }
+
+            if (is_pulse) {
+                _relayHandlePulsePayload(id, payload);
+                _relays[id].report = mqttForward();
+                return;
+            }
         }
+
+        _relayMqttHandleCustomTopic(topic, payload);
+        return;
+    }
+
+    if (type == MQTT_DISCONNECT_EVENT) {
+        if (connected) {
+            connected = false;
+            _relayMqttHandleDisconnect();
+        }
+        return;
     }
 
 }
@@ -1667,18 +1782,93 @@ void _relayInitCommands() {
 #endif // TERMINAL_SUPPORT
 
 //------------------------------------------------------------------------------
+
+void _relayReport(unsigned char id [[gnu::unused]], bool status [[gnu::unused]]) {
+#if BROKER_SUPPORT
+    StatusBroker::Publish(MQTT_TOPIC_RELAY, id, status);
+#endif
+#if MQTT_SUPPORT
+    _relayMqttReport(id);
+#endif
+#if WEB_SUPPORT
+    _relayWsReport();
+#endif
+}
+
+/**
+ * Walks the relay vector processing only those relays
+ * that have to change to the requested mode
+ * @bool mode Requested mode
+ */
+void _relayProcess(bool mode) {
+
+    bool changed = false;
+
+    for (unsigned char id = 0; id < _relays.size(); id++) {
+
+        bool target = _relays[id].target_status;
+
+        // Only process the relays we have to change
+        if (target == _relays[id].current_status) continue;
+
+        // Only process the relays we have to change to the requested mode
+        if (target != mode) continue;
+
+        // Only process if the change delay has expired
+        if (_relays[id].change_delay && (millis() - _relays[id].change_start < _relays[id].change_delay)) continue;
+
+        // Purge existing delay in case of cancelation
+        _relays[id].change_delay = 0;
+        changed = true;
+
+        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
+
+        // Call the provider to perform the action
+        _relays[id].current_status = target;
+        _relays[id].provider->change(target);
+        if (_relay_status_change) {
+            _relay_status_change(id, target);
+        }
+
+        _relayReport(id, target);
+
+        if (!_relayRecursive) {
+
+            relayPulse(id);
+
+            // We will trigger a eeprom save only if
+            // we care about current relay status on boot
+            const auto boot_mode = getSetting({"relayBoot", id}, _relayBootMode(id));
+            const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
+
+        }
+
+        _relays[id].report = false;
+        _relays[id].group_report = false;
+
+    }
+
+    // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
+    const bool needs_unlock = ((_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) || (_relay_sync_mode == RELAY_SYNC_ONE));
+    if (_relay_sync_locked && needs_unlock && changed) {
+        _relaySyncUnlock();
+    }
+}
+
+//------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
 
 void _relayLoop() {
     _relayProcess(false);
     _relayProcess(true);
-    #if WEB_SUPPORT
-        if (_relay_report_ws) {
-            wsPost(_relayWebSocketUpdate);
-            _relay_report_ws = false;
-        }
-    #endif
+#if WEB_SUPPORT
+    if (_relay_report_ws) {
+        wsPost(_relayWebSocketUpdate);
+        _relay_report_ws = false;
+    }
+#endif
 }
 
 // Dummy relays for virtual light switches (hardware-less), Sonoff Dual, Sonoff RF Bridge and Tuya

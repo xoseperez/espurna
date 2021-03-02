@@ -2138,23 +2138,27 @@
                 <div><input name="relayLastSch" data-settings-real-name="relayLastSch" type="checkbox" /></div>
             </div>
             <div class="pure-g module module-mqtt">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
-                <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroup" class="pure-u-1" tabindex="0" data="0" action="reconnect" /></div>
+                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic subscription</label></div>
+                <div class="pure-u-1 pure-u-lg-3-4"><input name="relayTopicSub" class="pure-u-1" action="reconnect" /></div>
             </div>
             <div class="pure-g module module-mqtt">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group sync</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="mqttGroupSync">
-                    <option value="0">Same</option>
+                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic publish</label></div>
+                <div class="pure-u-1 pure-u-lg-3-4"><input name="relayTopicPub" class="pure-u-1" action="reconnect" /></div>
+            </div>
+            <div class="pure-g module module-mqtt">
+                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic mode</label></div>
+                <select class="pure-u-1 pure-u-lg-3-4" name="relayTopicMode">
+                    <option value="0">Normal</option>
                     <option value="1">Inverse</option>
-                    <option value="2">Receive Only</option>
                 </select>
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc">
-                    <option value="0">Don't change</option>
-                    <option value="1">Turn the switch OFF</option>
-                    <option value="2">Turn the switch ON</option>
+                <select class="pure-u-1 pure-u-lg-3-4" name="relayMqttDisc">
+                    <option value="255">Do nothing</option>
+                    <option value="0">Turn OFF</option>
+                    <option value="1">Turn ON</option>
+                    <option value="2">Toggle</option>
                 </select>
             </div>
         </div>

@@ -134,6 +134,58 @@ constexpr RelayProvider _relayProvider(unsigned char index) {
         (index == 4) ? (RELAY5_PROVIDER) :
         (index == 5) ? (RELAY6_PROVIDER) :
         (index == 6) ? (RELAY7_PROVIDER) :
-        (index == 7) ? (RELAY8_PROVIDER) : RelayProvider::None
+        (index == 7) ? (RELAY8_PROVIDER) : RELAY_PROVIDER_NONE
+    );
+}
+
+constexpr RelayMqttTopicMode _relayMqttTopicMode(unsigned char index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_TOPIC_MODE) :
+        (index == 1) ? (RELAY2_MQTT_TOPIC_MODE) :
+        (index == 2) ? (RELAY3_MQTT_TOPIC_MODE) :
+        (index == 3) ? (RELAY4_MQTT_TOPIC_MODE) :
+        (index == 4) ? (RELAY5_MQTT_TOPIC_MODE) :
+        (index == 5) ? (RELAY6_MQTT_TOPIC_MODE) :
+        (index == 6) ? (RELAY7_MQTT_TOPIC_MODE) :
+        (index == 7) ? (RELAY8_MQTT_TOPIC_MODE) : RELAY_MQTT_TOPIC_MODE
+    );
+}
+
+constexpr const char* _relayMqttTopicSub(unsigned char index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_TOPIC_SUB) :
+        (index == 1) ? (RELAY2_MQTT_TOPIC_SUB) :
+        (index == 2) ? (RELAY3_MQTT_TOPIC_SUB) :
+        (index == 3) ? (RELAY4_MQTT_TOPIC_SUB) :
+        (index == 4) ? (RELAY5_MQTT_TOPIC_SUB) :
+        (index == 5) ? (RELAY6_MQTT_TOPIC_SUB) :
+        (index == 6) ? (RELAY7_MQTT_TOPIC_SUB) :
+        (index == 7) ? (RELAY8_MQTT_TOPIC_SUB) : ""
+    );
+}
+
+constexpr const char* _relayMqttTopicPub(unsigned char index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_TOPIC_PUB) :
+        (index == 1) ? (RELAY2_MQTT_TOPIC_PUB) :
+        (index == 2) ? (RELAY3_MQTT_TOPIC_PUB) :
+        (index == 3) ? (RELAY4_MQTT_TOPIC_PUB) :
+        (index == 4) ? (RELAY5_MQTT_TOPIC_PUB) :
+        (index == 5) ? (RELAY6_MQTT_TOPIC_PUB) :
+        (index == 6) ? (RELAY7_MQTT_TOPIC_PUB) :
+        (index == 7) ? (RELAY8_MQTT_TOPIC_PUB) : ""
+    );
+}
+
+constexpr PayloadStatus _relayMqttDisconnectionStatus(unsigned char index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_DISCONNECT_STATUS) :
+        (index == 1) ? (RELAY2_MQTT_DISCONNECT_STATUS) :
+        (index == 2) ? (RELAY3_MQTT_DISCONNECT_STATUS) :
+        (index == 3) ? (RELAY4_MQTT_DISCONNECT_STATUS) :
+        (index == 4) ? (RELAY5_MQTT_DISCONNECT_STATUS) :
+        (index == 5) ? (RELAY6_MQTT_DISCONNECT_STATUS) :
+        (index == 6) ? (RELAY7_MQTT_DISCONNECT_STATUS) :
+        (index == 7) ? (RELAY8_MQTT_DISCONNECT_STATUS) : RELAY_MQTT_DISCONNECT_NONE
     );
 }
