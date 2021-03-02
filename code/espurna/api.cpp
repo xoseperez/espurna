@@ -126,11 +126,10 @@ bool PathParts::match(const PathParts& path) const {
     }
 
     auto lhs = begin();
-    auto rhs = path.begin();
-
     auto lhs_end = end();
-    auto rhs_end = path.end();
 
+    auto rhs = path.begin();
+    auto rhs_end = path.end();
 loop:
     if (lhs == lhs_end) {
         goto check_end;
@@ -141,7 +140,6 @@ loop:
         if (
             (rhs != rhs_end)
             && ((*rhs).type == PathPart::Type::Value)
-            && ((*rhs).offset == (*lhs).offset)
             && ((*rhs).length == (*lhs).length)
         ) {
             if (0 == std::memcmp(
