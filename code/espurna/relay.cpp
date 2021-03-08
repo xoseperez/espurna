@@ -1985,9 +1985,10 @@ RelayProviderBasePtr _relaySetupProvider(unsigned char index) {
 }
 
 void _relaySetup() {
-    _relays.reserve(_relayAdhocPins());
+    auto relays = _relays.size();
+    _relays.reserve(relays + _relayAdhocPins());
 
-    for (unsigned char id = 0; id < RelaysMax; ++id) {
+    for (unsigned char id = relays; id < RelaysMax; ++id) {
         auto impl = _relaySetupProvider(id);
         if (!impl) {
             break;
