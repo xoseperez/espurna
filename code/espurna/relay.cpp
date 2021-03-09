@@ -1041,7 +1041,7 @@ void relayToggle(unsigned char id) {
     #endif
 }
 
-unsigned char relayCount() {
+size_t relayCount() {
     return _relays.size();
 }
 
@@ -1217,6 +1217,24 @@ void _relayWebSocketUpdate(JsonObject& root) {
     }
 }
 
+void _relayWebSocketRelayConfig(JsonArray& relay, size_t id) {
+    relay.add(static_cast<uint8_t>(getSetting({"relayProv", id}, _relayProvider(id))));
+    relay.add(getSetting({"relayName", id}));
+    relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
+
+#if MQTT_SUPPORT
+    relay.add(getSetting({"relayTopicSub", id}, _relayMqttTopicSub(id)));
+    relay.add(getSetting({"relayTopicPub", id}, _relayMqttTopicPub(id)));
+    relay.add(static_cast<uint8_t>(getSetting({"relayTopicMode", id},
+            _relayMqttTopicMode(id))));
+    relay.add(static_cast<uint8_t>(getSetting({"relayMqttDisc", id},
+            _relayMqttDisconnectionStatus(id))));
+#endif
+
+    relay.add(static_cast<uint8_t>(_relays[id].pulse));
+    relay.add(_relays[id].pulse_ms / 1000.0);
+}
+
 void _relayWebSocketSendRelays(JsonObject& root) {
     if (!relayCount()) {
         return;
@@ -1228,21 +1246,18 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     config["start"] = 0;
 
     {
-        const char* schema_keys[] = {
-            "prov",
-            "name",
-            "boot",
-#if SCHEDULER_SUPPORT
-            "sch_last",
-#endif
+        static constexpr const char* const schema_keys[] PROGMEM = {
+            "relayProv",
+            "relayName",
+            "relayBoot",
 #if MQTT_SUPPORT
-            "topic_pub",
-            "topic_sub",
-            "topic_mode",
-            "mqtt_disc",
+            "relayTopicPub",
+            "relayTopicSub",
+            "relayTopicMode",
+            "relayMqttDisc",
 #endif
-            "pulse",
-            "pulse_time"
+            "relayPulse",
+            "relayTime"
         };
 
         JsonArray& schema = config.createNestedArray("schema");
@@ -1250,29 +1265,14 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     }
 
     {
-        JsonArray& relays = config.createNestedArray("relays");
+        JsonArray& cfg = config.createNestedArray("cfg");
+        JsonArray& desc = config.createNestedArray("desc");
 
-        for (unsigned char id = 0; id < relayCount(); ++id) {
-            JsonArray& relay = relays.createNestedArray();
-            relay.add(_relays[id].provider->id());
-            relay.add(getSetting({"relayName", id}));
-            relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
+        for (size_t id = 0; id < relayCount(); ++id) {
+            desc.add(_relays[id].provider->id());
 
-#if SCHEDULER_SUPPORT
-            relay.add(getSetting({"relayLastSch", id}, SCHEDULER_RESTORE_LAST_SCHEDULE));
-#endif
-
-#if MQTT_SUPPORT
-            relay.add(getSetting({"relayTopicSub", id}, _relayMqttTopicSub(id)));
-            relay.add(getSetting({"relayTopicPub", id}, _relayMqttTopicPub(id)));
-            relay.add(static_cast<int>(getSetting({"relayTopicMode", id},
-                    _relayMqttTopicMode(id))));
-            relay.add(static_cast<int>(getSetting({"relayMqttDisc", id},
-                    _relayMqttDisconnectionStatus(id))));
-#endif
-
-            relay.add(static_cast<uint8_t>(_relays[id].pulse));
-            relay.add(_relays[id].pulse_ms / 1000.0);
+            JsonArray& relay = cfg.createNestedArray();
+            _relayWebSocketRelayConfig(relay, id);
         }
     }
 }

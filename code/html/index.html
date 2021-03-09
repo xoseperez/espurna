@@ -879,7 +879,7 @@
 
                                 <legend>Networks</legend>
 
-                                <div id="networks" class="group-settings" data-settings-target="ssid pass" ></div>
+                                <div id="networks" class="settings-group" data-settings-target="ssid pass" ></div>
 
                                 <button type="button" class="pure-button button-add-network">Add network</button>
 
@@ -900,7 +900,7 @@
 
                             <fieldset>
 
-                                <div id="schedules" class="group-settings" data-settings-max="10" data-settings-target="schSwitch schType" ></div>
+                                <div id="schedules" class="settings-group" data-settings-max="10" data-settings-target="schSwitch schType" ></div>
 
                                 <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
                                 <!-- removeIf(!light) -->
@@ -941,7 +941,7 @@
 
                                 <legend>Specific topics</legend>
 
-                                <div id="mapping" class="group-settings" ></div>
+                                <div id="mapping" class="settings-group" ></div>
 
                                 <button type="button" class="pure-button button-add-mapping">Add</button>
 
@@ -1395,10 +1395,10 @@
                                     <div class="pure-u-1 hint">Set IDX to 0 to disable notifications from that component.</div>
                                 </div>
 
-                                <div id="dczRelays" class="group-settings" ></div>
+                                <div id="dczRelays" class="settings-group" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="dczMagnitudes" class="group-settings" ></div>
+                                <div id="dczMagnitudes" class="settings-group" ></div>
                                 <!-- endRemoveIf(!sensor) -->
 
                             </fieldset>
@@ -1510,10 +1510,10 @@
                                     <div class="pure-u-1 hint">Enter the field number to send each data to, 0 disable notifications from that component.</div>
                                 </div>
 
-                                <div id="tspkRelays" class="group-settings" ></div>
+                                <div id="tspkRelays" class="settings-group" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="tspkMagnitudes" class="group-settings" ></div>
+                                <div id="tspkMagnitudes" class="settings-group" ></div>
                                 <!-- endRemoveIf(!sensor) -->
 
                             </fieldset>
@@ -1608,7 +1608,7 @@
 
                                 <legend>Rules</legend>
 
-                                <div id="rpnRules" class="group-settings" data-settings-target="rpnRule" ></div>
+                                <div id="rpnRules" class="settings-group" data-settings-target="rpnRule" ></div>
                                 <button type="button" class="pure-button button-add-rpnrule">Add</button>
 
                                 <legend>MQTT</legend>
@@ -1618,7 +1618,7 @@
                                     <div class="pure-u-1-3">Variable Name</div>
                                 </div>
 
-                                <div id="rpnTopics" class="group-settings" data-settings-target="rpnTopic" ></div>
+                                <div id="rpnTopics" class="settings-group" data-settings-target="rpnTopic" ></div>
                                 <button type="button" class="pure-button button-add-rpntopic">Add</button>
 
                             </fieldset>
@@ -2036,61 +2036,75 @@
                 </div>
                 <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday etc., comma separated</div>
 
-                <div id="schActionDiv" class="pure-u-1">
+                <div id="schActionDiv" class="pure-u-1 pure-u-lg-1">
                 </div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">Restore on boot</label>
+                <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schRestore" /></div>
+
+                <div class="pure-u-0 pure-u-lg-1-2"></div>
 
                 <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
                 <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schEnabled" /></div>
 
-                <div class="pure-u-1 pure-u-lg-1-2"></div>
-                <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
+                <div class="pure-u-1 pure-u-lg-1-4"></div>
+                    <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
+                </div>
+                <div class="pure-u-0 pure-u-lg-3-4"></div>
             </div>
         </div>
 
         <div id="switchActionTemplate" class="template">
-            <label class="pure-u-1 pure-u-lg-1-4">Action</label>
-            <div class="pure-u-1 pure-u-lg-1-5">
-                <select class="pure-u-1 pure-u-lg-23-24" name="schAction" haschanged="true">
-                    <option value="0">Turn OFF</option>
-                    <option value="1">Turn ON</option>
-                    <option value="2">Toggle</option>
-                </select>
+            <div class="pure-form pure-form-aligned">
+                <label class="pure-u-1 pure-u-lg-1-4">Action</label>
+                <div class="pure-u-1 pure-u-lg-1-5">
+                    <select class="pure-u-1 pure-u-lg-23-24" name="schAction" haschanged="true">
+
+                        <option value="0">Turn OFF</option>
+                        <option value="1">Turn ON</option>
+                        <option value="2">Toggle</option>
+                    </select>
+                </div>
+                <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch" ></select>
+                <input type="hidden" name="schType" value="1">
             </div>
-            <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch" ></select>
-            <input type="hidden" name="schType" value="1">
         </div>
 
         <!-- removeIf(!light) -->
         <div id="lightActionTemplate" class="template">
-            <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
-            <div class="pure-u-1 pure-u-lg-1-5">
-                <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="255" value="0" />
+            <div class="pure-form pure-form-aligned">
+                <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
+                <div class="pure-u-1 pure-u-lg-1-5">
+                    <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="255" value="0" />
+                </div>
+                <select class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" ></select>
+                <input type="hidden" name="schType" value="2">
             </div>
-            <select class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch" ></select>
-            <input type="hidden" name="schType" value="2">
         </div>
         <!-- endRemoveIf(!light) -->
 
         <!-- removeIf(!curtain) -->
         <div id="curtainActionTemplate" class="template">
-            <label class="pure-u-1 pure-u-lg-1-4">Curtain position (0 = open to 100 = closed)</label>
-            <div class="pure-u-1 pure-u-lg-1-5">
-                <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="100" value="0" />
+            <div class="pure-form pure-form-aligned">
+                <label class="pure-u-1 pure-u-lg-1-4">Curtain position (0 = open to 100 = closed)</label>
+                <div class="pure-u-1 pure-u-lg-1-5">
+                    <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="100" value="0" />
+                </div>
+                <select class="pure-u-1 pure-u-lg-1-5 iscurtain" name="schSwitch" ></select>
+                <input type="hidden" name="schType" value="3">
             </div>
-            <select class="pure-u-1 pure-u-lg-1-5 iscurtain" name="schSwitch" ></select>
-            <input type="hidden" name="schType" value="3">
         </div>
         <!-- endRemoveIf(!curtain) -->
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4"><span class="relay-name"></span></label>
+                <label class="pure-u-1 pure-u-lg-1-4"><span class="relayName"></span></label>
                 <div><input name="relay" type="checkbox" on="ON" off="OFF" /></div>
             </div>
         </div>
 
         <div id="relayConfigTemplate" class="template">
-            <legend><span class="name"></span> (<span class="prov"></span>)</legend>
+            <legend><span class="relayName"></span> (<span class="relayProv"></span>)</legend>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
                 <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">
@@ -2113,10 +2127,6 @@
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse time (s)</label></div>
                 <div class="pure-u-1 pure-u-lg-1-4"><input name="relayTime" class="pure-u-1" type="number" min="0" step="0.1" max="3600" /></div>
-            </div>
-            <div class="pure-g module module-sch">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Restore last schedule</label></div>
-                <div><input name="relayLastSch" data-settings-real-name="relayLastSch" type="checkbox" /></div>
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic subscription</label></div>

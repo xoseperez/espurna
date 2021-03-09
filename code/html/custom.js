@@ -306,7 +306,7 @@ function getData(form, changed, cleanup) {
     // Hack: clean-up leftover arrays.
     // When empty, the receiving side will prune all keys greater than the current one.
     if (cleanup) {
-        $(".group-settings").each(function() {
+        $(".settings-group").each(function() {
             var haschanged = ("true" === $(this).attr("hasChanged"));
             if (haschanged && !this.children.length) {
                 var targets = this.dataset.settingsTarget;
@@ -448,6 +448,37 @@ function initSelectGPIO(select) {
     }
 }
 
+function fillTemplateLineFromCfg(line, id, cfg) {
+    for (var [key, value] of Object.entries(cfg)) {
+        var span = $(`span.${key}`, line);
+        if (span.length) {
+            span.html(cfg[key]);
+            continue;
+        }
+
+        var input = $(`input[name='${key}']`, line);
+        if (input.length) {
+            if (input.is("[type='checkbox']")) {
+                var realId = key + id;
+                input.prop("checked", cfg[key])
+                    .attr("id", realId)
+                    .attr("name", realId)
+                    .next().attr("for", realId);
+            } else {
+                input.val(cfg[key]);
+            }
+            continue;
+        }
+
+        var select = $(`select[name='${key}']`, line);
+        if (select.length) {
+            select.prop("value", cfg[key]);
+            continue;
+        }
+    }
+
+    setOriginalsFromValues($("input,select", line));
+}
 
 // -----------------------------------------------------------------------------
 // Actions
@@ -484,7 +515,7 @@ function setOriginalsFromValues(elems) {
 
 function resetOriginals() {
     setOriginalsFromValues();
-    $(".group-settings").attr("haschanged", "false")
+    $(".settings-group").attr("haschanged", "false")
     numReboot = numReconnect = numReload = 0;
     configurationSaved = false;
 }
@@ -1011,53 +1042,49 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function addSchedule(values) {
+function addSchedule(cfg, payload) {
 
-    var schedules = numSchedules();
-    if (schedules >= maxSchedules()) {
+    var id = numSchedules();
+    if (id >= maxSchedules()) {
         alert("Max number of schedules reached");
         return null;
     }
 
-    if (values === undefined) {
-        values = {};
+    if (cfg === undefined) {
+        return null;
+    }
+
+    if (payload === undefined) {
+        payload = {};
     }
 
     var line = loadConfigTemplate("scheduleTemplate");
 
     var type = "none";
-    switch(values.schType) {
-        case 1:
-            type = "switch";
-            break;
-        case 2:
-            type = "light";
-            break;
-        case 3:
-            type = "curtain";
-            break;
+    switch(cfg.schType) {
+    case 1:
+        type = "switch";
+        break;
+    case 2:
+        type = "light";
+        break;
+    case 3:
+        type = "curtain";
+        break;
     }
 
-    var actions = $("#" + type + "ActionTemplate").children();
-    $(line).find("#schActionDiv").append(actions.clone());
+    $("#schActionDiv", line)
+        .append(loadConfigTemplate(type + "ActionTemplate"));
 
-    $(line).find(".button-del-schedule").on("click", delSchedule);
-    $(line).find(".button-more-schedule").on("click", moreSchedule);
+    $(".button-del-schedule", line)
+        .on("click", delSchedule);
+    $(".button-more-schedule", line)
+        .on("click", moreSchedule);
 
-    var schUTC_id = "schUTC" + schedules;
-    $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
+    $("input[type='checkbox']", line)
+        .prop("checked", false);
 
-    var schEnabled_id = "schEnabled" + schedules;
-    $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
-
-    $(line).find("input[type='checkbox']").prop("checked", false);
-
-    Object.entries(values).forEach(function(kv) {
-        var key = kv[0], value = kv[1];
-        $("input[name='" + key + "']", line).val(value);
-        $("select[name='" + key + "']", line).prop("value", value);
-        $("input[type='checkbox'][name='" + key + "']", line).prop("checked", value);
-    });
+    fillTemplateLineFromCfg(line, id, cfg);
     line.appendTo("#schedules");
 
     return line;
@@ -1068,55 +1095,34 @@ function addSchedule(values) {
 // Relays
 // -----------------------------------------------------------------------------
 
-function initRelayFromSchema(id, relay, schema) {
-    var result = fromSchema(relay, schema)
-    if (!result.name.length) {
-        result.name = "Switch #" + id;
-    }
+function initRelay(id, cfg, payload) {
+    var line = loadConfigTemplate("relayTemplate");
+    $("span.relayName", line)
+        .text(cfg.relayName)
+        .attr("data-id", id)
+        .attr("title", payload["desc"][id]);
 
-    return result;
-}
+    $("input[type='checkbox']", line)
+        .prop('checked', false)
+        .prop('disabled', true)
+        .attr("data-id", id)
+        .prop("id", "relay" + id)
+        .on("change", function (event) {
+            var target= parseInt($(event.target).attr("data-id"), 10);
+            var status = $(event.target).prop("checked");
+            doToggle(target, status);
+        });
 
-function initRelays(data) {
+    $("label.toggle", line)
+        .prop("for", "relay" + id);
 
-    var current = $("#relays > div").length;
-    if (current > 0) { return; }
-
-    var schema = data.schema;
-
-    data["relays"].forEach(function(relay, id) {
-        var _relay = initRelayFromSchema(id, relay, schema);
-
-        var line = loadConfigTemplate("relayTemplate");
-
-        $("span.relay-name", line)
-            .text(_relay.name)
-            .attr("data-id", id);
-
-        $("input[type='checkbox']", line)
-            .prop('checked', false)
-            .prop('disabled', true)
-            .attr("data-id", id)
-            .prop("id", "relay" + id)
-            .on("change", function (event) {
-                var target= parseInt($(event.target).attr("data-id"), 10);
-                var status = $(event.target).prop("checked");
-                doToggle(target, status);
-            });
-
-        $("label.toggle", line)
-            .prop("for", "relay" + id);
-
-        line.appendTo("#relays");
-
-    });
-
+    line.appendTo("#relays");
 }
 
 function updateRelays(data) {
     var size = data.size;
     for (var i=0; i<size; ++i) {
-        var elem = $("input[name='relay'][data='" + i + "']");
+        var elem = $("input[name='relay'][data-id='" + i + "']");
         elem.prop("checked", data.status[i]);
         var lock = {
             0: false,
@@ -1144,54 +1150,18 @@ function createCheckboxes() {
 
 }
 
-function initRelayConfig(data) {
+function initRelayConfig(id, cfg, payload) {
+    var line = loadConfigTemplate("relayConfigTemplate");
+    fillTemplateLineFromCfg(line, id, cfg);
 
-    var current = $("#relayConfig > legend").length; // there is a legend per relay
-    if (current > 0) { return; }
+    line.appendTo("#relayConfig");
 
-    var schema = data.schema;
-
-    data["relays"].forEach(function(relay, id) {
-        var _relay = initRelayFromSchema(id, relay, schema);
-        var line = loadConfigTemplate("relayConfigTemplate");
-
-        $("span.name", line).html(_relay.name);
-        $("span.prov", line).html(_relay.prov);
-        $("select[name='relayBoot']", line).val(_relay.boot);
-        $("select[name='relayPulse']", line).val(_relay.pulse);
-        $("input[name='relayTime']", line).val(_relay.pulse_time);
-
-        if (schema.includes("sch_last")) {
-            $("input[name='relayLastSch']", line)
-                .prop("checked", _relay.sch_last)
-                .attr("id", "relayLastSch" + id)
-                .attr("name", "relayLastSch" + id)
-                .next().attr("for","relayLastSch" + (id));
-        }
-
-        if (schema.includes("group")) {
-            $("input[name='mqttGroup']", line).val(_relay.group);
-        }
-        if (schema.includes("group_sync")) {
-            $("select[name='mqttGroupSync']", line).val(_relay.group_sync);
-        }
-        if (schema.includes("on_disc")) {
-            $("select[name='relayOnDisc']", line).val(_relay.on_disc);
-        }
-
-        setOriginalsFromValues($("input,select", line));
-        line.appendTo("#relayConfig");
-
-        // Populate the relay SELECTs on the configuration panel
-        $("select.isrelay").append(
-            $("<option></option>")
-                .attr("value", id)
-                .text(name)
-        );
-
-        ++id;
-    });
-
+    // Populate the relay SELECTs on the configuration panel
+    $("select.isrelay").append(
+        $("<option></option>")
+            .attr("value", id)
+            .text(name)
+    );
 }
 
 // -----------------------------------------------------------------------------
@@ -1886,18 +1856,16 @@ function processData(data) {
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
-        if ("schedules" === key) {
-            $("#schedules").attr("data-settings-max", value.max);
-            for (var i=0; i<value.size; ++i) {
-                // XXX: no
-                var sch_map = {};
-                Object.keys(value).forEach(function(key) {
-                    if ("size" == key) return;
-                    if ("max" == key) return;
-                    sch_map[key] = value[key][i];
-                });
-                addSchedule(sch_map);
-            }
+        if ("schConfig" === key) {
+            $("#schedules")
+                .attr("data-settings-max", value.max);
+
+            let schema = value.schema;
+            value["schedules"].forEach((entries, id) => {
+                let cfg = fromSchema(entries, id);
+                addSchedule(cfg, value);
+            });
+
             return;
         }
 
@@ -1906,8 +1874,25 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("relayConfig" === key) {
-            initRelays(value);
-            initRelayConfig(value);
+            if ($("#relays > div").length) {
+                return;
+            }
+
+            if ($("#relayConfig > legend").length) {
+                return;
+            }
+
+            let schema = value.schema;
+            value["relays"].forEach((entries, id) => {
+                let cfg = fromSchema(entries, schema);
+                var name = cfg["relayName"];
+                if (!cfg.relayName.length) {
+                    cfg.relayName = "Switch #" + id;
+                }
+
+                initRelay(id, cfg, value);
+                initRelayConfig(id, cfg, value);
+            });
             return;
         }
 
@@ -2379,7 +2364,7 @@ $(function() {
 
     resetOriginals();
 
-    $(".group-settings").each(function() {
+    $(".settings-group").each(function() {
         groupSettingsObserver.observe(this, {childList: true});
     });
 

@@ -82,7 +82,7 @@ bool relayStatusTarget(unsigned char id);
 void relayToggle(unsigned char id, bool report, bool group_report);
 void relayToggle(unsigned char id);
 
-unsigned char relayCount();
+size_t relayCount();
 
 const String& relayPayloadOn();
 const String& relayPayloadOff();
