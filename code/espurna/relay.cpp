@@ -1423,21 +1423,81 @@ const char* relayPayload(PayloadStatus status) {
 
 #if MQTT_SUPPORT
 
+namespace {
+
+// TODO: it *will* handle the duplicates, but we waste memory storing them
+// TODO: mqttSubscribe(...) also happens multiple times
+//
+// this is not really an intended use-case though, but it is techically possible...
+
+struct RelayCustomTopicBase {
+    RelayCustomTopicBase() = delete;
+    RelayCustomTopicBase(const RelayCustomTopicBase&) = delete;
+    RelayCustomTopicBase(RelayCustomTopicBase&& other) noexcept :
+        _value(std::move(other._value)),
+        _mode(other._mode)
+    {}
+
+    template <typename T>
+    RelayCustomTopicBase(T&& value, RelayMqttTopicMode mode) :
+        _value(std::forward<T>(value)),
+        _mode(mode)
+    {}
+
+    RelayCustomTopicBase& operator=(const char* const value) {
+        _value = value;
+        return *this;
+    }
+
+    RelayCustomTopicBase& operator=(const String& value) {
+        _value = value;
+        return *this;
+    }
+
+    RelayCustomTopicBase& operator=(String&& value) noexcept {
+        _value = std::move(value);
+        return *this;
+    }
+
+    RelayCustomTopicBase& operator=(RelayMqttTopicMode mode) noexcept {
+        _mode = mode;
+        return *this;
+    }
+
+    String&& get() && {
+        return std::move(_value);
+    }
+
+    const String& value() const {
+        return _value;
+    }
+
+    RelayMqttTopicMode mode() const {
+        return _mode;
+    }
+
+private:
+    String _value;
+    RelayMqttTopicMode _mode;
+};
 struct RelayCustomTopic {
     RelayCustomTopic() = delete;
     RelayCustomTopic(const RelayCustomTopic&) = delete;
     RelayCustomTopic(RelayCustomTopic&&) = delete;
 
-    template <typename T>
-    RelayCustomTopic(unsigned char id, T&& topic, RelayMqttTopicMode mode) :
+    RelayCustomTopic(size_t id, RelayCustomTopicBase&& base) :
         _id(id),
-        _topic(std::forward<T>(topic)),
+        _topic(std::move(base).get()),
         _parts(_topic),
-        _mode(mode)
+        _mode(base.mode())
     {}
 
     unsigned char id() const {
         return _id;
+    }
+
+    const char* const c_str() const {
+        return _topic.c_str();
     }
 
     const String& topic() const {
@@ -1470,28 +1530,15 @@ private:
 
 std::forward_list<RelayCustomTopic> _relay_custom_topics;
 
-// TODO: it *will* handle the duplicates, but we waste memory storing them
-// TODO: mqttSubscribe(...) also happens multiple times
-//
-// this is not really an intended use-case though, but it is techically possible...
-
 void _relayMqttSubscribeCustomTopics() {
     const size_t relays { relayCount() };
     if (!relays) {
         return;
     }
 
-    struct CustomTopic {
-        String value;
-        RelayMqttTopicMode mode;
-    };
-
-    std::vector<CustomTopic> topics;
-    topics.reserve(relays);
-
-    for (unsigned char id = 0; id < relays; ++id) {
-        topics[id].value = _relayMqttTopicSub(id);
-        topics[id].mode = _relayMqttTopicMode(id);
+    static std::vector<RelayCustomTopicBase> topics;
+    for (size_t id = 0; id < relays; ++id) {
+        topics.emplace_back(_relayMqttTopicSub(id), _relayMqttTopicMode(id));
     }
 
     settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
@@ -1512,26 +1559,29 @@ void _relayMqttSubscribeCustomTopics() {
 
         if (key.startsWith(SubPrefix)) {
             if (_relayTryParseId(key.c_str() + strlen(SubPrefix), id)) {
-                topics[id].value = std::move(kv.value.read());
+                topics[id] = std::move(kv.value.read());
             }
         } else if (key.startsWith(ModePrefix)) {
             using namespace settings::internal;
             if (_relayTryParseId(key.c_str() + strlen(ModePrefix), id)) {
-                topics[id].mode = convert<RelayMqttTopicMode>(kv.value.read());
+                topics[id] = convert<RelayMqttTopicMode>(kv.value.read());
             }
         }
     });
 
     _relay_custom_topics.clear();
     for (unsigned char id = 0; id < relays; ++id) {
-        auto& topic = topics[id];
-        if (!topic.value.length()) {
+        RelayCustomTopicBase& topic = topics[id];
+        auto& value = topic.value();
+        if (!value.length()) {
             continue;
         }
 
-        mqttSubscribeRaw(topic.value.c_str());
-        _relay_custom_topics.emplace_front(id, std::move(topic.value), topic.mode);
+        mqttSubscribeRaw(value.c_str());
+        _relay_custom_topics.emplace_front(id, std::move(topic));
     }
+
+    topics.clear();
 }
 
 void _relayMqttPublishCustomTopic(unsigned char id) {
@@ -1549,6 +1599,8 @@ void _relayMqttPublishCustomTopic(unsigned char id) {
 
     mqttSendRaw(topic.c_str(), relayPayload(status));
 }
+
+} // namespace
 
 void _relayMqttReport(unsigned char id) {
     if (id < _relays.size()) {
