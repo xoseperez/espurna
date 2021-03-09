@@ -12,16 +12,17 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Ticker.h>
 #include <ArduinoJson.h>
-#include <vector>
-#include <functional>
 #include <bitset>
+#include <cstring>
+#include <functional>
+#include <vector>
 
 #include "api.h"
-#include "broker.h"
 #include "mqtt.h"
 #include "rpc.h"
 #include "rtcmem.h"
 #include "settings.h"
+#include "terminal.h"
 #include "storage_eeprom.h"
 #include "utils.h"
 #include "ws.h"
@@ -286,8 +287,8 @@ bool _relay_sync_locked = false;
 Ticker _relay_save_timer;
 Ticker _relay_sync_timer;
 
-RelayStatusCallback _relay_status_notify { nullptr };
-RelayStatusCallback _relay_status_change { nullptr };
+std::forward_list<RelayStatusCallback> _relay_status_notify;
+std::forward_list<RelayStatusCallback> _relay_status_change;
 
 #if WEB_SUPPORT
 
@@ -332,11 +333,11 @@ void RelayProviderBase::notify(bool) {
 // Direct status notifications
 
 void relaySetStatusNotify(RelayStatusCallback callback) {
-    _relay_status_notify = callback;
+    _relay_status_notify.push_front(callback);
 }
 
 void relaySetStatusChange(RelayStatusCallback callback) {
-    _relay_status_change = callback;
+    _relay_status_change.push_front(callback);
 }
 
 // No-op provider, available for purely virtual relays that are controlled only via API
@@ -418,7 +419,7 @@ struct GpioProvider : public RelayProviderBase {
     }
 
 private:
-    unsigned char _id { RELAY_NONE };
+    unsigned char _id { RelaysMax };
     RelayType _type { RelayType::Normal };
     std::unique_ptr<BasePin> _pin;
     std::unique_ptr<BasePin> _reset_pin;
@@ -620,16 +621,16 @@ bool _relayTryParseIdFromPath(const String& endpoint, unsigned char& relayID) {
     return _relayTryParseId(p, relayID);
 }
 
-void _relayHandleStatus(unsigned char relayID, PayloadStatus status) {
+void _relayHandleStatus(unsigned char id, PayloadStatus status) {
     switch (status) {
     case PayloadStatus::Off:
-        relayStatus(relayID, false);
+        relayStatus(id, false);
         break;
     case PayloadStatus::On:
-        relayStatus(relayID, true);
+        relayStatus(id, true);
         break;
     case PayloadStatus::Toggle:
-        relayToggle(relayID);
+        relayToggle(id);
         break;
     case PayloadStatus::Unknown:
         break;
@@ -832,7 +833,7 @@ void relayPulse(unsigned char id) {
     }
 
     if ((mode == RelayPulse::On) != relay.current_status) {
-        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
         relay.pulse = getSetting({"relayPulse", id}, _relayPulseMode(id));
@@ -845,11 +846,12 @@ void relayPulse(unsigned char id) {
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report) {
 
-    if (id == RELAY_NONE) return false;
-    if (id >= _relays.size()) return false;
+    if ((id >= RelaysMax) || (id >= _relays.size())) {
+        return false;
+    }
 
     if (!_relayStatusLock(id, status)) {
-        DEBUG_MSG_P(PSTR("[RELAY] #%d is locked to %s\n"), id, _relays[id].current_status ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[RELAY] #%u is locked to %s\n"), id, _relays[id].current_status ? "ON" : "OFF");
         _relays[id].report = true;
         _relays[id].group_report = true;
         return false;
@@ -860,7 +862,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
     if (_relays[id].current_status == status) {
 
         if (_relays[id].target_status != status) {
-            DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled change cancelled\n"), id);
+            DEBUG_MSG_P(PSTR("[RELAY] #%u scheduled change cancelled\n"), id);
             _relays[id].target_status = status;
             _relays[id].report = false;
             _relays[id].group_report = false;
@@ -869,8 +871,8 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
         }
 
         _relays[id].provider->notify(status);
-        if (_relay_status_notify) {
-            _relay_status_notify(id, status);
+        for (auto& notify : _relay_status_notify) {
+            notify(id, status);
         }
 
         // Update the pulse counter if the relay is already in the non-normal state (#454)
@@ -911,7 +913,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
         relaySync(id);
 
-        DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled %s in %u ms\n"),
+        DEBUG_MSG_P(PSTR("[RELAY] #%u scheduled %s in %u ms\n"),
             id, status ? "ON" : "OFF", _relays[id].change_delay
         );
 
@@ -1407,16 +1409,17 @@ const String& relayPayloadToggle() {
 
 const char* relayPayload(PayloadStatus status) {
     switch (status) {
-        case PayloadStatus::Off:
-            return _relay_rpc_payload_off.c_str();
-        case PayloadStatus::On:
-            return _relay_rpc_payload_on.c_str();
-        case PayloadStatus::Toggle:
-            return _relay_rpc_payload_toggle.c_str();
-        case PayloadStatus::Unknown:
-        default:
-            return "";
+    case PayloadStatus::Off:
+        return _relay_rpc_payload_off.c_str();
+    case PayloadStatus::On:
+        return _relay_rpc_payload_on.c_str();
+    case PayloadStatus::Toggle:
+        return _relay_rpc_payload_toggle.c_str();
+    case PayloadStatus::Unknown:
+        break;
     }
+
+    return "";
 }
 
 #endif // MQTT_SUPPORT || API_SUPPORT
@@ -1480,6 +1483,7 @@ private:
     String _value;
     RelayMqttTopicMode _mode;
 };
+
 struct RelayCustomTopic {
     RelayCustomTopic() = delete;
     RelayCustomTopic(const RelayCustomTopic&) = delete;
@@ -1836,9 +1840,9 @@ void _relayInitCommands() {
 //------------------------------------------------------------------------------
 
 void _relayReport(unsigned char id [[gnu::unused]], bool status [[gnu::unused]]) {
-#if BROKER_SUPPORT
-    StatusBroker::Publish(MQTT_TOPIC_RELAY, id, status);
-#endif
+    for (auto& change : _relay_status_change) {
+        change(id, status);
+    }
 #if MQTT_SUPPORT
     _relayMqttReport(id);
 #endif
@@ -1873,15 +1877,11 @@ void _relayProcess(bool mode) {
         _relays[id].change_delay = 0;
         changed = true;
 
-        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[RELAY] #%u set to %s\n"), id, target ? "ON" : "OFF");
 
         // Call the provider to perform the action
         _relays[id].current_status = target;
         _relays[id].provider->change(target);
-        if (_relay_status_change) {
-            _relay_status_change(id, target);
-        }
-
         _relayReport(id, target);
 
         if (!_relayRecursive) {
@@ -1926,11 +1926,14 @@ void _relayLoop() {
 // Dummy relays for virtual light switches (hardware-less), Sonoff Dual, Sonoff RF Bridge and Tuya
 
 void relaySetupDummy(size_t size, bool reconfigure) {
-
-    if (size == _relayDummy) return;
+    if (size == _relayDummy) {
+        return;
+    }
 
     const size_t new_size = ((_relays.size() - _relayDummy) + size);
-    if (new_size > RelaysMax) return;
+    if (new_size > RelaysMax) {
+        return;
+    }
 
     _relayDummy = size;
     _relays.resize(new_size);
@@ -1938,11 +1941,6 @@ void relaySetupDummy(size_t size, bool reconfigure) {
     if (reconfigure) {
         _relayConfigure();
     }
-
-    #if BROKER_SUPPORT
-        ConfigBroker::Publish("relayDummy", String(int(size)));
-    #endif
-
 }
 
 constexpr size_t _relayAdhocPins() {
@@ -1976,8 +1974,8 @@ constexpr size_t _relayAdhocPins() {
 
 struct RelayGpioProviderCfg {
     GpioBase* base;
-    unsigned char main;
-    unsigned char reset;
+    uint8_t main;
+    uint8_t reset;
 };
 
 RelayGpioProviderCfg _relayGpioProviderCfg(unsigned char index) {
@@ -1987,8 +1985,6 @@ RelayGpioProviderCfg _relayGpioProviderCfg(unsigned char index) {
         getSetting({"relayResetGPIO", index}, _relayResetPin(index))};
 }
 
-using GpioCheck = bool(*)(unsigned char);
-
 std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType type) {
     auto cfg = _relayGpioProviderCfg(index);
     if (!cfg.base) {
@@ -1996,14 +1992,13 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType 
     }
 
     auto main = gpioRegister(*cfg.base, cfg.main);
-    if (!main) {
-        return nullptr;
+    if (main) {
+        auto reset = gpioRegister(*cfg.base, cfg.reset);
+        return std::make_unique<GpioProvider>(
+            index, type, std::move(main), std::move(reset));
     }
 
-    auto reset = gpioRegister(*cfg.base, cfg.reset);
-    return std::make_unique<GpioProvider>(
-        index, type, std::move(main), std::move(reset)
-    );
+    return nullptr;
 }
 
 RelayProviderBasePtr _relaySetupProvider(unsigned char index) {

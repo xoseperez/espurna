@@ -12,7 +12,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <memory>
 
-#include "broker.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
@@ -87,16 +86,9 @@ AsyncClientState _tspk_state = AsyncClientState::Disconnected;
 
 // -----------------------------------------------------------------------------
 
-void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
-
-    // Only process status messages for switches
-    if (!topic.equals(MQTT_TOPIC_RELAY)) {
-        return;
-    }
-
-    tspkEnqueueRelay(id, value > 0);
+void _tspkRelayStatus(size_t id, bool status) {
+    tspkEnqueueRelay(id, status);
     tspkFlush();
-
 }
 
 #if WEB_SUPPORT
@@ -464,7 +456,9 @@ void tspkSetup() {
             .onKeyCheck(_tspkWebSocketOnKeyCheck);
     #endif
 
-    StatusBroker::Register(_tspkBrokerCallback);
+    #if RELAY_SUPPORT
+        relaySetStatusChange(_tspkRelayStatus);
+    #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
         THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",

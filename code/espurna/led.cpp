@@ -12,7 +12,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <algorithm>
 
-#include "broker.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
@@ -231,15 +230,6 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 }
 
 #endif
-
-void _ledBrokerCallback(const String& topic, unsigned char, unsigned int) {
-
-    // Only process status messages for switches
-    if (topic.equals(MQTT_TOPIC_RELAY)) {
-        ledUpdate(true);
-    }
-
-}
 
 #if MQTT_SUPPORT
 void _ledMQTTCallback(unsigned int type, const char * topic, const char * payload) {
@@ -497,7 +487,11 @@ void ledSetup() {
             .onKeyCheck(_ledWebSocketOnKeyCheck);
     #endif
 
-    StatusBroker::Register(_ledBrokerCallback);
+    #if RELAY_SUPPORT
+        relaySetStatusNotify([](size_t, bool) {
+            ledUpdate(true);
+        });
+    #endif
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 

@@ -14,8 +14,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "system.h"
 #include "utils.h"
 
-BrokerBind(StatusBroker);
-
 bool rpcHandleAction(const String& action) {
     bool result = false;
     if (action.equals("reboot")) {

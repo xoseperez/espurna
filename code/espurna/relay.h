@@ -11,7 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "espurna.h"
 #include "rpc.h"
 
-constexpr size_t RelaysMax = 32;
+constexpr size_t RelaysMax { 32ul };
 
 enum class RelayPulse : uint8_t {
     None,
@@ -94,7 +94,7 @@ void relayPulse(unsigned char id);
 void relaySync(unsigned char id);
 void relaySave(bool persist);
 
-using RelayStatusCallback = void(*)(unsigned char id, bool status);
+using RelayStatusCallback = void(*)(size_t id, bool status);
 using RelayProviderBasePtr = std::unique_ptr<RelayProviderBase>;
 
 bool relayAdd(RelayProviderBasePtr&& provider);

@@ -44,7 +44,7 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination);
 
 char* ltrim(char* s);
 char* strnstr(const char* buffer, const char* token, size_t n);
-bool isNumber(const char* s);
+bool isNumber(const String&);
 
 void nice_delay(unsigned long ms);
 

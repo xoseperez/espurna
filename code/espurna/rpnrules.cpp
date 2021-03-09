@@ -12,7 +12,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <rpnlib.h>
 
-#include "broker.h"
 #include "light.h"
 #include "mqtt.h"
 #include "ntp.h"
@@ -147,29 +146,32 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
 #endif // MQTT_SUPPORT
 
 void _rpnConfigure() {
-    #if MQTT_SUPPORT
-        if (mqttConnected()) _rpnMQTTSubscribe();
-    #endif
+#if MQTT_SUPPORT
+    if (mqttConnected()) {
+        _rpnMQTTSubscribe();
+    }
+#endif
     _rpn_delay = getSetting("rpnDelay", RPN_DELAY);
 }
 
-void _rpnBrokerCallback(const String& topic, unsigned char id, double value, const char*) {
+void _rpnRelayStatus(size_t id, bool status) {
+    char name[32] = {0};
+    snprintf(name, sizeof(name), "relay%u", id);
+
+    rpn_variable_set(_rpn_ctxt, name, rpn_value(std::forward<T>(value)));
+    _rpn_run = true;
+}
+
+void _rpnLightStatus() {
+    auto channels = lightChannels();
 
     char name[32] = {0};
-    snprintf(name, sizeof(name), "%s%u", topic.c_str(), id);
-
-    if (topic == MQTT_TOPIC_RELAY) {
-        rpn_variable_set(_rpn_ctxt, name, rpn_value(static_cast<bool>(value)));
-    } else {
-        rpn_variable_set(_rpn_ctxt, name, rpn_value(value));
+    for (decltype(channels) channel = 0; channel < channels; ++channel) {
+        snprintf(name, sizeof(name), "channel%u", channel);
+        rpn_variable_set(_rpn_ctxt, name, rpn_value(lightChannel(channel)));
     }
 
     _rpn_run = true;
-
-}
-
-void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value) {
-    _rpnBrokerCallback(topic, id, double(value), nullptr);
 }
 
 #if NTP_SUPPORT
@@ -1019,7 +1021,13 @@ void rpnSetup() {
     });
 #endif
 
-    StatusBroker::Register(_rpnBrokerStatus);
+#if RELAY_SUPPORT
+    relaySetStatusChange(_rpnRelayStatus);
+#endif
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    lightSetReportListener(_rpnLightStatus);
+#endif
 
     #if RFB_SUPPORT
         _rpnRfbSetup();

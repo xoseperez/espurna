@@ -17,11 +17,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
-#include "broker.h"
 #include "storage_eeprom.h"
 #include "settings_embedis.h"
-
-BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
 
 // --------------------------------------------------------------------------
 

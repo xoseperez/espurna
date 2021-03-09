@@ -12,7 +12,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 #include "api.h"
-#include "broker.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
@@ -286,7 +285,7 @@ Ticker _light_save_ticker;
 
 unsigned long _light_report_delay = LIGHT_REPORT_DELAY;
 Ticker _light_report_ticker;
-LightReportListener _light_report;
+std::forward_list<LightReportListener> _light_report;
 
 bool _light_has_controls = false;
 bool _light_has_color = false;
@@ -1554,20 +1553,6 @@ void lightMQTTGroup() {
 #endif
 
 // -----------------------------------------------------------------------------
-// Broker
-// -----------------------------------------------------------------------------
-
-#if BROKER_SUPPORT
-
-void lightBroker() {
-    for (unsigned int id = 0; id < _light_channels.size(); ++id) {
-        StatusBroker::Publish(MQTT_TOPIC_CHANNEL, id, _light_channels[id].value);
-    }
-}
-
-#endif
-
-// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 
@@ -2037,7 +2022,7 @@ void lightHs(long hue, long saturation) {
 // -----------------------------------------------------------------------------
 
 void lightSetReportListener(LightReportListener func) {
-    _light_report = func;
+    _light_report.push_front(func);
 }
 
 void _lightReport(int report) {
@@ -2057,14 +2042,8 @@ void _lightReport(int report) {
     }
 #endif
 
-#if BROKER_SUPPORT
-    if (report & Light::Report::Broker) {
-        lightBroker();
-    }
-#endif
-
-    if (_light_report) {
-        _light_report();
+    for (auto& report : _light_report) {
+        report();
     }
 }
 

@@ -404,25 +404,46 @@ void nice_delay(unsigned long ms) {
     while (millis() - start < ms) delay(1);
 }
 
-bool isNumber(const char * s) {
-    unsigned char len = strlen(s);
-    if (0 == len) return false;
-    bool decimal = false;
-    bool digit = false;
-    for (unsigned char i=0; i<len; i++) {
-        if (('-' == s[i]) || ('+' == s[i])) {
-            if (i>0) return false;
-        } else if (s[i] == '.') {
-            if (!digit) return false;
-            if (decimal) return false;
-            decimal = true;
-        } else if (!isdigit(s[i])) {
-            return false;
-        } else {
-            digit = true;
+bool isNumber(const String& value) {
+    if (value.length()) {
+        const char* begin { value.c_str() };
+        const char* end { value.c_str() + value.length() };
+
+        bool dot { false };
+        bool digit { false };
+        const char* ptr { begin };
+
+        while (ptr != end) {
+            switch (*ptr) {
+            case '\0':
+                break;
+            case '-':
+            case '+':
+                if (ptr != begin) {
+                    return false;
+                }
+                break;
+            case '.':
+                if (dot) {
+                    return false;
+                }
+                dot = true;
+                break;
+            case '0' ... '9':
+                digit = true;
+                break;
+            case 'a' ... 'z':
+            case 'A' ... 'Z':
+                return false;
+            }
+
+            ++ptr;
         }
+
+        return digit;
     }
-    return digit;
+
+    return false;
 }
 
 // ref: lwip2 lwip_strnstr with strnlen
