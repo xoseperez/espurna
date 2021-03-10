@@ -62,7 +62,7 @@ struct RelayMaskHelper {
         _mask.reset();
     }
 
-    void set(unsigned char id, bool status) {
+    void set(size_t id, bool status) {
         _mask.set(id, status);
     }
 
@@ -255,8 +255,8 @@ std::vector<relay_t> _relays;
 bool _relayRecursive { false };
 size_t _relayDummy { 0ul };
 
-unsigned long _relay_flood_window { _relayFloodWindowMs() };
-unsigned long _relay_flood_changes { _relayFloodChanges() };
+unsigned long _relay_flood_window { relay::build::floodWindowMs() };
+unsigned long _relay_flood_changes { relay::build::floodChanges() };
 
 unsigned long _relay_delay_interlock;
 int _relay_sync_mode { RELAY_SYNC_ANY };
@@ -337,7 +337,7 @@ RelayProviderBase* _relayDummyProvider() {
 // Real GPIO provider, using BasePin interface to implement writers
 
 struct GpioProvider : public RelayProviderBase {
-    GpioProvider(unsigned char id, RelayType type, std::unique_ptr<BasePin>&& pin, std::unique_ptr<BasePin>&& reset_pin) :
+    GpioProvider(size_t id, RelayType type, std::unique_ptr<BasePin>&& pin, std::unique_ptr<BasePin>&& reset_pin) :
         _id(id),
         _type(type),
         _pin(std::move(pin)),
@@ -397,7 +397,7 @@ struct GpioProvider : public RelayProviderBase {
     }
 
 private:
-    unsigned char _id { RelaysMax };
+    size_t _id { RelaysMax };
     RelayType _type { RelayType::Normal };
     std::unique_ptr<BasePin> _pin;
     std::unique_ptr<BasePin> _reset_pin;
@@ -410,7 +410,7 @@ private:
 class DualProvider : public RelayProviderBase {
 public:
     DualProvider() = delete;
-    explicit DualProvider(unsigned char id) : _id(id) {
+    explicit DualProvider(size_t id) : _id(id) {
         _instances.push_back(this);
     }
 
@@ -444,7 +444,7 @@ public:
         }
     }
 
-    unsigned char relayId() const {
+    size_t relayId() const {
         return _id;
     }
 
@@ -465,7 +465,7 @@ public:
     static void flush() {
         bool sync { true };
         RelayMaskHelper mask;
-        for (unsigned char index = 0; index < _instances.size(); ++index) {
+        for (size_t index = 0; index < _instances.size(); ++index) {
             bool status { relayStatus(_instances[index]->relayId()) };
             sync = sync && status;
             mask.set(index, status);
@@ -505,13 +505,13 @@ public:
         }
 
         // Then, manage relays individually
-        for (unsigned char index = 0; index < _instances.size(); ++index) {
+        for (size_t index = 0; index < _instances.size(); ++index) {
             relayStatus(_instances[index]->relayId(), mask[index]);
         }
     }
 
 private:
-    unsigned char _id { 0 };
+    size_t _id;
 
     static std::vector<DualProvider*> _instances;
 };
@@ -527,7 +527,7 @@ std::vector<DualProvider*> DualProvider::_instances;
 class StmProvider : public RelayProviderBase {
 public:
     StmProvider() = delete;
-    explicit StmProvider(unsigned char id) :
+    explicit StmProvider(size_t id) :
         _id(id)
     {}
 
@@ -564,7 +564,7 @@ public:
     }
 
 private:
-    unsigned char _id;
+    size_t _id;
 };
 
 #endif // RELAY_PROVIDER_STM_SUPPORT
@@ -573,18 +573,11 @@ private:
 // UTILITY
 // -----------------------------------------------------------------------------
 
-bool _relayTryParseId(const char* p, unsigned char& relayID) {
-    char* endp { nullptr };
-    const unsigned long result { strtoul(p, &endp, 10) };
-    if ((endp == p) || (*endp != '\0') || (result >= relayCount())) {
-        return false;
-    }
-
-    relayID = result;
-    return true;
+bool _relayTryParseId(const char* p, size_t& id) {
+    return tryParseId(p, relayCount, id);
 }
 
-bool _relayTryParseIdFromPath(const String& endpoint, unsigned char& relayID) {
+bool _relayTryParseIdFromPath(const String& endpoint, size_t& id) {
     int next_slash { endpoint.lastIndexOf('/') };
     if (next_slash < 0) {
         return false;
@@ -596,10 +589,10 @@ bool _relayTryParseIdFromPath(const String& endpoint, unsigned char& relayID) {
         return false;
     }
 
-    return _relayTryParseId(p, relayID);
+    return _relayTryParseId(p, id);
 }
 
-void _relayHandleStatus(unsigned char id, PayloadStatus status) {
+void _relayHandleStatus(size_t id, PayloadStatus status) {
     switch (status) {
     case PayloadStatus::Off:
         relayStatus(id, false);
@@ -615,7 +608,7 @@ void _relayHandleStatus(unsigned char id, PayloadStatus status) {
     }
 }
 
-bool _relayHandlePayload(unsigned char id, const char* payload) {
+bool _relayHandlePayload(size_t id, const char* payload) {
     auto status = relayParsePayload(payload);
     if (status != PayloadStatus::Unknown) {
         _relayHandleStatus(id, status);
@@ -626,11 +619,11 @@ bool _relayHandlePayload(unsigned char id, const char* payload) {
     return false;
 }
 
-bool _relayHandlePayload(unsigned char id, const String& payload) {
+bool _relayHandlePayload(size_t id, const String& payload) {
     return _relayHandlePayload(id, payload.c_str());
 }
 
-bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
+bool _relayHandlePulsePayload(size_t id, const char* payload) {
     unsigned long pulse = 1000 * atof(payload);
     if (!pulse) {
         return false;
@@ -647,7 +640,7 @@ bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
     return true;
 }
 
-bool _relayHandlePulsePayload(unsigned char id, const String& payload) {
+bool _relayHandlePulsePayload(size_t id, const String& payload) {
     return _relayHandlePulsePayload(id, payload.c_str());
 }
 
@@ -665,7 +658,7 @@ PayloadStatus _relayInvertStatus(PayloadStatus status) {
     return PayloadStatus::Unknown;
 }
 
-PayloadStatus _relayPayloadStatus(unsigned char id) {
+PayloadStatus _relayPayloadStatus(size_t id) {
     if (id < _relays.size()) {
         return _relays[id].current_status
             ? PayloadStatus::On
@@ -689,7 +682,7 @@ void _relayUnlockAll() {
     _relay_sync_locked = false;
 }
 
-bool _relayStatusLock(unsigned char id, bool status) {
+bool _relayStatusLock(size_t id, bool status) {
     if (_relays[id].lock != RelayLock::None) {
         bool lock = _relays[id].lock == RelayLock::On;
         if ((lock != status) || (lock != _relays[id].target_status)) {
@@ -705,7 +698,7 @@ bool _relayStatusLock(unsigned char id, bool status) {
 // https://github.com/xoseperez/espurna/issues/1510#issuecomment-461894516
 // completely reset timing on the other relay to sync with this one
 // to ensure that they change state sequentially
-void _relaySyncRelaysDelay(unsigned char first, unsigned char second) {
+void _relaySyncRelaysDelay(size_t first, size_t second) {
     _relays[second].fw_start = _relays[first].change_start;
     _relays[second].fw_count = 1;
     _relays[second].change_delay = std::max({
@@ -780,7 +773,7 @@ inline void _relayMaskSettings(const RelayMaskHelper& mask) {
 // Pulse timers (timer after ON or OFF event)
 // TODO: integrate with scheduled ON or OFF
 
-void relayPulse(unsigned char id) {
+void relayPulse(size_t id) {
 
     auto& relay = _relays[id];
     if (!relay.pulseTicker) {
@@ -814,15 +807,15 @@ void relayPulse(unsigned char id) {
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
-        relay.pulse = getSetting({"relayPulse", id}, _relayPulseMode(id));
-        relay.pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, _relayPulseTime(id)));
+        relay.pulse = getSetting({"relayPulse", id},relay::build::pulseMode(id));
+        relay.pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, relay::build::pulseTime(id)));
     }
 
 }
 
 // General relay status control
 
-bool relayStatus(unsigned char id, bool status, bool report, bool group_report) {
+bool relayStatus(size_t id, bool status, bool report, bool group_report) {
 
     if ((id >= RelaysMax) || (id >= _relays.size())) {
         return false;
@@ -903,7 +896,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
 }
 
-bool relayStatus(unsigned char id, bool status) {
+bool relayStatus(size_t id, bool status) {
 #if MQTT_SUPPORT
     return relayStatus(id, status, mqttForward(), true);
 #else
@@ -911,7 +904,7 @@ bool relayStatus(unsigned char id, bool status) {
 #endif
 }
 
-bool relayStatus(unsigned char id) {
+bool relayStatus(size_t id) {
 
     // Check that relay ID is valid
     if (id >= _relays.size()) return false;
@@ -921,35 +914,40 @@ bool relayStatus(unsigned char id) {
 
 }
 
-bool relayStatusTarget(unsigned char id) {
+bool relayStatusTarget(size_t id) {
     if (id >= _relays.size()) return false;
     return _relays[id].target_status;
 }
 
-void relaySync(unsigned char id) {
-
-    // No sync if none or only one relay
-    if (_relays.size() < 2) return;
+void relaySync(size_t target) {
 
     // Do not go on if we are comming from a previous sync
-    if (_relayRecursive) return;
-
-    // Flag sync mode
+    if (_relayRecursive) {
+        return;
+    }
     _relayRecursive = true;
 
-    bool status = _relays[id].target_status;
+    // No sync if none or only one relay
+    auto relays = _relays.size();
+    if (relays < 2) {
+        return;
+    }
+
+    bool status = _relays[target].target_status;
 
     // If RELAY_SYNC_SAME all relays should have the same state
     if (_relay_sync_mode == RELAY_SYNC_SAME) {
-        for (unsigned short i=0; i<_relays.size(); i++) {
-            if (i != id) relayStatus(i, status);
+        for (decltype(relays) id = 0; id < relays; ++id) {
+            if (id != target) {
+                relayStatus(id, status);
+            }
         }
 
     // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
     } else if (_relay_sync_mode == RELAY_SYNC_FIRST) {
-        if (id == 0) {
-            for (unsigned short i=1; i<_relays.size(); i++) {
-                relayStatus(i, status);
+        if (target == 0) {
+            for (decltype(relays) id = 1; id < relays; ++id) {
+                relayStatus(id, status);
             }
         }
 
@@ -957,11 +955,11 @@ void relaySync(unsigned char id) {
         // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
         if (status) {
             if (_relay_sync_mode != RELAY_SYNC_ANY) {
-                for (unsigned short other_id=0; other_id<_relays.size(); other_id++) {
-                    if (other_id != id) {
-                        relayStatus(other_id, false);
-                        if (relayStatus(other_id)) {
-                            _relaySyncRelaysDelay(other_id, id);
+                for (decltype(relays) id = 0; id < relays; ++id) {
+                    if (id != target) {
+                        relayStatus(id, false);
+                        if (relayStatus(id)) {
+                            _relaySyncRelaysDelay(id, target);
                         }
                     }
                 }
@@ -969,22 +967,21 @@ void relaySync(unsigned char id) {
         // If ONLY_ONE and setting OFF we should set ON the other one
         } else {
             if (_relay_sync_mode == RELAY_SYNC_ONE) {
-                unsigned char other_id = (id + 1) % _relays.size();
-                _relaySyncRelaysDelay(id, other_id);
-                relayStatus(other_id, true);
+                auto id = (target + 1) % relays;
+                _relaySyncRelaysDelay(target, id);
+                relayStatus(id, true);
             }
         }
         _relayLockAll();
     }
 
-    // Unflag sync mode
     _relayRecursive = false;
 
 }
 
 void relaySave(bool persist) {
     RelayMaskHelper mask;
-    for (unsigned char id = 0; id < _relays.size(); ++id) {
+    for (size_t id = 0; id < _relays.size(); ++id) {
         mask.set(id, _relays[id].current_status);
     }
 
@@ -1008,13 +1005,13 @@ void relaySave() {
     relaySave(false);
 }
 
-void relayToggle(unsigned char id, bool report, bool group_report) {
+void relayToggle(size_t id, bool report, bool group_report) {
     if (id < _relays.size()) {
         relayStatus(id, !relayStatus(id), report, group_report);
     }
 }
 
-void relayToggle(unsigned char id) {
+void relayToggle(size_t id) {
 #if MQTT_SUPPORT
     relayToggle(id, mqttForward(), true);
 #else
@@ -1050,7 +1047,7 @@ void _relaySettingsMigrate(int version) {
         moveSetting("relayDelayInterlock", "relayIlkDelay");
 
         // groups use a new set of keys
-        for (unsigned char index = 0; index < RelaysMax; ++index) {
+        for (size_t index = 0; index < RelaysMax; ++index) {
             auto group = getSetting({"mqttGroup", index});
             if (!group.length()) {
                 break;
@@ -1072,7 +1069,7 @@ void _relaySettingsMigrate(int version) {
             "mqttGroup",     // migrated to relayTopic
             "mqttGroupSync", // migrated to relayTopic
             "relayOnDisc",   // replaced with relayMqttDisc
-            "relayGPIO",     // avoid depending on migrate.ino
+            "relayGpio",     // avoid depending on migrate.ino
             "relayProvider", // different type
             "relayType",     // different type
         });
@@ -1080,8 +1077,8 @@ void _relaySettingsMigrate(int version) {
     }
 }
 
-void _relayBoot(unsigned char index, const RelayMaskHelper& mask) {
-    const auto boot_mode = getSetting({"relayBoot", index}, _relayBootMode(index));
+void _relayBoot(size_t index, const RelayMaskHelper& mask) {
+    const auto boot_mode = getSetting({"relayBoot", index}, relay::build::bootMode(index));
 
     auto status = false;
     auto lock = RelayLock::None;
@@ -1154,24 +1151,24 @@ void _relayBootAll() {
 void _relayConfigure() {
     auto relays = _relays.size();
     for (decltype(relays) id = 0; id < relays; ++id) {
-        _relays[id].pulse = getSetting({"relayPulse", id}, _relayPulseMode(id));
-        _relays[id].pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", i}, _relayPulseTime(i)));
+        _relays[id].pulse = getSetting({"relayPulse", id}, relay::build::pulseMode(id));
+        _relays[id].pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, relay::build::pulseTime(id)));
 
-        _relays[id].delay_on = getSetting({"relayDelayOn", id}, _relayDelayOn(id));
-        _relays[id].delay_off = getSetting({"relayDelayOff", id}, _relayDelayOff(id));
+        _relays[id].delay_on = getSetting({"relayDelayOn", id}, relay::build::delayOn(id));
+        _relays[id].delay_off = getSetting({"relayDelayOff", id}, relay::build::delayOff(id));
     }
 
-    _relay_flood_window = (1000.0f * getSetting("relayFloodTime", _relayFloodWindow()));
-    _relay_flood_changes = getSetting("relayFloodChanges", _relayFloodChanges());
+    _relay_flood_window = (1000.0f * getSetting("relayFloodTime", relay::build::floodWindow()));
+    _relay_flood_changes = getSetting("relayFloodChanges", relay::build::floodChanges());
 
-    _relay_delay_interlock = getSetting("relayIlkDelay", _relayInterlockDelay());
-    _relay_sync_mode = getSetting("relaySync", _relaySyncMode());
+    _relay_delay_interlock = getSetting("relayIlkDelay", relay::build::interlockDelay());
+    _relay_sync_mode = getSetting("relaySync", relay::build::syncMode());
 
     #if MQTT_SUPPORT || API_SUPPORT
         settingsProcessConfig({
-            {_relay_rpc_payload_on,     "relayPayloadOn",     _relayMqttPayloadOn()},
-            {_relay_rpc_payload_off,    "relayPayloadOff",    _relayMqttPayloadOff()},
-            {_relay_rpc_payload_toggle, "relayPayloadToggle", _relayMqttPayloadToggle()},
+            {_relay_rpc_payload_on,     "relayPayloadOn",     relay::build::mqttPayloadOn()},
+            {_relay_rpc_payload_off,    "relayPayloadOff",    relay::build::mqttPayloadOff()},
+            {_relay_rpc_payload_toggle, "relayPayloadToggle", relay::build::mqttPayloadToggle()},
         });
     #endif // MQTT_SUPPORT
 }
@@ -1202,17 +1199,17 @@ void _relayWebSocketUpdate(JsonObject& root) {
 }
 
 void _relayWebSocketRelayConfig(JsonArray& relay, size_t id) {
-    relay.add(static_cast<uint8_t>(getSetting({"relayProv", id}, _relayProvider(id))));
+    relay.add(static_cast<uint8_t>(getSetting({"relayProv", id}, relay::build::provider(id))));
     relay.add(getSetting({"relayName", id}));
-    relay.add(getSetting({"relayBoot", id}, _relayBootMode(id)));
+    relay.add(getSetting({"relayBoot", id}, relay::build::bootMode(id)));
 
 #if MQTT_SUPPORT
-    relay.add(getSetting({"relayTopicSub", id}, _relayMqttTopicSub(id)));
-    relay.add(getSetting({"relayTopicPub", id}, _relayMqttTopicPub(id)));
+    relay.add(getSetting({"relayTopicSub", id}, relay::build::mqttTopicSub(id)));
+    relay.add(getSetting({"relayTopicPub", id}, relay::build::mqttTopicPub(id)));
     relay.add(static_cast<uint8_t>(getSetting({"relayTopicMode", id},
-            _relayMqttTopicMode(id))));
+            relay::build::mqttTopicMode(id))));
     relay.add(static_cast<uint8_t>(getSetting({"relayMqttDisc", id},
-            _relayMqttDisconnectionStatus(id))));
+            relay::build::mqttDisconnectionStatus(id))));
 #endif
 
     relay.add(static_cast<uint8_t>(_relays[id].pulse));
@@ -1266,8 +1263,8 @@ void _relayWebSocketOnVisible(JsonObject& root) {
 
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
-        root["relaySync"] = static_cast<uint8_t>(getSetting("relaySync", _relaySyncMode()));
-        root["relayIlkDelay"] = getSetting("relayIlkDelay", _relayInterlockDelay());
+        root["relaySync"] = static_cast<uint8_t>(getSetting("relaySync", relay::build::syncMode()));
+        root["relayIlkDelay"] = getSetting("relayIlkDelay", relay::build::interlockDelay());
     }
 
     root["relayVisible"] = 1;
@@ -1314,7 +1311,7 @@ void relaySetupWS() {
 template <typename T>
 bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
     auto id_param = request.wildcard(0);
-    unsigned char id;
+    size_t id;
     if (!_relayTryParseId(id_param.c_str(), id)) {
         return false;
     }
@@ -1331,7 +1328,7 @@ void relaySetupAPI() {
     apiRegister(F(MQTT_TOPIC_RELAY),
         [](ApiRequest&, JsonObject& root) {
             JsonArray& relays = root.createNestedArray("relayStatus");
-            for (unsigned char id = 0; id < relayCount(); ++id) {
+            for (size_t id = 0; id < relayCount(); ++id) {
                 relays.add(_relays[id].target_status ? 1 : 0);
             }
             return true;
@@ -1341,13 +1338,13 @@ void relaySetupAPI() {
 
     apiRegister(F(MQTT_TOPIC_RELAY "/+"),
         [](ApiRequest& request) {
-            return _relayApiTryHandle(request, [&](unsigned char id) {
+            return _relayApiTryHandle(request, [&](size_t id) {
                 request.send(String(_relays[id].target_status ? 1 : 0));
                 return true;
             });
         },
         [](ApiRequest& request) {
-            return _relayApiTryHandle(request, [&](unsigned char id) {
+            return _relayApiTryHandle(request, [&](size_t id) {
                 return _relayHandlePayload(id, request.param(F("value")));
             });
         }
@@ -1355,13 +1352,13 @@ void relaySetupAPI() {
 
     apiRegister(F(MQTT_TOPIC_PULSE "/+"),
         [](ApiRequest& request) {
-            return _relayApiTryHandle(request, [&](unsigned char id) {
+            return _relayApiTryHandle(request, [&](size_t id) {
                 request.send(String(static_cast<double>(_relays[id].pulse_ms) / 1000));
                 return true;
             });
         },
         [](ApiRequest& request) {
-            return _relayApiTryHandle(request, [&](unsigned char id) {
+            return _relayApiTryHandle(request, [&](size_t id) {
                 return _relayHandlePulsePayload(id, request.param(F("value")));
             });
         }
@@ -1478,7 +1475,7 @@ struct RelayCustomTopic {
         _mode(base.mode())
     {}
 
-    unsigned char id() const {
+    size_t id() const {
         return _id;
     }
 
@@ -1508,7 +1505,7 @@ struct RelayCustomTopic {
     }
 
 private:
-    unsigned char _id;
+    size_t _id;
     String _topic;
     PathParts _parts;
     RelayMqttTopicMode _mode;
@@ -1524,7 +1521,7 @@ void _relayMqttSubscribeCustomTopics() {
 
     static std::vector<RelayCustomTopicBase> topics;
     for (size_t id = 0; id < relays; ++id) {
-        topics.emplace_back(_relayMqttTopicSub(id), _relayMqttTopicMode(id));
+        topics.emplace_back(relay::build::mqttTopicSub(id), relay::build::mqttTopicMode(id));
     }
 
     settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
@@ -1541,22 +1538,21 @@ void _relayMqttSubscribeCustomTopics() {
         }
 
         const auto key = kv.key.read();
-        unsigned char id;
+        size_t id;
 
         if (key.startsWith(SubPrefix)) {
             if (_relayTryParseId(key.c_str() + strlen(SubPrefix), id)) {
                 topics[id] = std::move(kv.value.read());
             }
         } else if (key.startsWith(ModePrefix)) {
-            using namespace settings::internal;
             if (_relayTryParseId(key.c_str() + strlen(ModePrefix), id)) {
-                topics[id] = convert<RelayMqttTopicMode>(kv.value.read());
+                topics[id] = settings::internal::convert<RelayMqttTopicMode>(kv.value.read());
             }
         }
     });
 
     _relay_custom_topics.clear();
-    for (unsigned char id = 0; id < relays; ++id) {
+    for (size_t id = 0; id < relays; ++id) {
         RelayCustomTopicBase& topic = topics[id];
         auto& value = topic.value();
         if (!value.length()) {
@@ -1570,15 +1566,15 @@ void _relayMqttSubscribeCustomTopics() {
     topics.clear();
 }
 
-void _relayMqttPublishCustomTopic(unsigned char id) {
-    const String topic = getSetting({"relayTopicPub", id}, _relayMqttTopicPub(id));
+void _relayMqttPublishCustomTopic(size_t id) {
+    const String topic = getSetting({"relayTopicPub", id}, relay::build::mqttTopicPub(id));
     if (!topic.length()) {
         return;
     }
 
     auto status = _relayPayloadStatus(id);
 
-    auto mode = getSetting({"relayTopicMode", id}, _relayMqttTopicMode(id));
+    auto mode = getSetting({"relayTopicMode", id}, relay::build::mqttTopicMode(id));
     if (mode == RelayMqttTopicMode::Inverse) {
         status = _relayInvertStatus(status);
     }
@@ -1588,7 +1584,7 @@ void _relayMqttPublishCustomTopic(unsigned char id) {
 
 } // namespace
 
-void _relayMqttReport(unsigned char id) {
+void _relayMqttReport(size_t id) {
     if (id < _relays.size()) {
         if (_relays[id].report) {
             _relays[id].report = false;
@@ -1608,7 +1604,7 @@ void _relayMqttReportAll() {
     }
 }
 
-void relayStatusWrap(unsigned char id, PayloadStatus value, bool is_group_topic) {
+void relayStatusWrap(size_t id, PayloadStatus value, bool is_group_topic) {
     #if MQTT_SUPPORT
         const auto forward = mqttForward();
     #else
@@ -1664,7 +1660,7 @@ void _relayMqttHandleDisconnect() {
 
         const auto key = kv.key.read();
         if (key.startsWith(prefix)) {
-            unsigned char id;
+            size_t id;
             if (_relayTryParseId(key.c_str() + strlen(prefix), id)) {
                 const auto value = kv.value.read();
                 _relayHandleStatus(id, relayParsePayload(value.c_str()));
@@ -1704,7 +1700,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         auto is_relay = t.startsWith(MQTT_TOPIC_RELAY);
         auto is_pulse = t.startsWith(MQTT_TOPIC_PULSE);
         if (is_relay || is_pulse) {
-            unsigned char id;
+            size_t id;
             if (!_relayTryParseIdFromPath(t.c_str(), id)) {
                 return;
             }
@@ -1752,8 +1748,8 @@ void relaySetupMQTT() {
 void _relayInitCommands() {
 
     terminalRegisterCommand(F("RELAY"), [](const terminal::CommandContext& ctx) {
-        auto showRelays = [&](unsigned char start, unsigned char stop, bool full = true) {
-            for (unsigned char index = start; index < stop; ++index) {
+        auto showRelays = [&](size_t start, size_t stop, bool full = true) {
+            for (size_t index = start; index < stop; ++index) {
                 auto& relay = _relays[index];
 
                 char pulse_info[64] = "";
@@ -1795,7 +1791,7 @@ void _relayInitCommands() {
             return;
         }
 
-        unsigned char id;
+        size_t id;
         if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
             terminalError(ctx, F("Invalid relayID"));
             return;
@@ -1821,7 +1817,7 @@ void _relayInitCommands() {
 
 //------------------------------------------------------------------------------
 
-void _relayReport(unsigned char id [[gnu::unused]], bool status [[gnu::unused]]) {
+void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]]) {
     for (auto& change : _relay_status_change) {
         change(id, status);
     }
@@ -1873,7 +1869,7 @@ void _relayProcess(bool mode) {
 
             // We will trigger a eeprom save only if
             // we care about current relay status on boot
-            const auto boot_mode = getSetting({"relayBoot", id}, _relayBootMode(id));
+            const auto boot_mode = getSetting({"relayBoot", id}, relay::build::bootMode(id));
             const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
@@ -1887,7 +1883,7 @@ void _relayProcess(bool mode) {
     // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
     switch (_relay_sync_mode) {
     case RELAY_SYNC_ONE:
-    case RELAY_SYNC_NONE_OR_ONE
+    case RELAY_SYNC_NONE_OR_ONE:
         if (_relay_sync_locked && changed) {
             _relaySyncUnlock();
         }
@@ -1969,14 +1965,14 @@ struct RelayGpioProviderCfg {
     uint8_t reset;
 };
 
-RelayGpioProviderCfg _relayGpioProviderCfg(unsigned char index) {
+RelayGpioProviderCfg _relayGpioProviderCfg(size_t index) {
     return {
-        gpioBase(getSetting({"relayGPIOType", index}, _relayPinType(index))),
-        getSetting({"relayGPIO", index}, _relayPin(index)),
-        getSetting({"relayResetGPIO", index}, _relayResetPin(index))};
+        gpioBase(getSetting({"relayGpioType", index}, relay::build::pinType(index))),
+        getSetting({"relayGpio", index}, relay::build::pin(index)),
+        getSetting({"relayResetGpio", index}, relay::build::resetPin(index))};
 }
 
-std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType type) {
+std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
     auto cfg = _relayGpioProviderCfg(index);
     if (!cfg.base) {
         return nullptr;
@@ -1992,9 +1988,9 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(unsigned char index, RelayType 
     return nullptr;
 }
 
-RelayProviderBasePtr _relaySetupProvider(unsigned char index) {
-    auto provider = getSetting({"relayProv", index}, _relayProvider(index));
-    auto type = getSetting({"relayType", index}, _relayType(index));
+RelayProviderBasePtr _relaySetupProvider(size_t index) {
+    auto provider = getSetting({"relayProv", index}, relay::build::provider(index));
+    auto type = getSetting({"relayType", index}, relay::build::type(index));
 
     RelayProviderBasePtr result;
 
@@ -2026,7 +2022,7 @@ void _relaySetup() {
     auto relays = _relays.size();
     _relays.reserve(relays + _relayAdhocPins());
 
-    for (unsigned char id = relays; id < RelaysMax; ++id) {
+    for (size_t id = relays; id < RelaysMax; ++id) {
         auto impl = _relaySetupProvider(id);
         if (!impl) {
             break;
@@ -2037,7 +2033,7 @@ void _relaySetup() {
         _relays.emplace_back(std::move(impl));
     }
 
-    relaySetupDummy(getSetting("relayDummy", DUMMY_RELAY_COUNT));
+    relaySetupDummy(getSetting("relayDummy", relay::build::dummyCount()));
 }
 
 void relaySetup() {

@@ -199,16 +199,16 @@
 // LED
 //------------------------------------------------------------------------------
 
-#define LED_MODE_MANUAL             0       // LED will be managed manually (OFF by default)
-#define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW             2       // LED will follow state of linked LED#_RELAY relay ID
-#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked LED#_RELAY relay ID
-#define LED_MODE_FINDME             4       // LED will be ON if all relays are OFF
-#define LED_MODE_FINDME_WIFI        5       // A mixture between WIFI and FINDME
-#define LED_MODE_ON                 6       // LED always ON
-#define LED_MODE_OFF                7       // LED always OFF
-#define LED_MODE_RELAY              8       // If any relay is ON, LED will be ON, otherwise OFF
-#define LED_MODE_RELAY_WIFI         9       // A mixture between WIFI and RELAY, the reverse of MIXED
+#define LED_MODE_MANUAL             LedMode::Manual         // LED will be managed manually (OFF by default)
+#define LED_MODE_WIFI               LedMode::WiFi           // LED will blink according to the WIFI status
+#define LED_MODE_FOLLOW             LedMode::Follow         // LED will follow state of linked LED#_RELAY relay ID
+#define LED_MODE_FOLLOW_INVERSE     LedMode::FollowInverse  // LED will follow the opposite state of linked LED#_RELAY relay ID
+#define LED_MODE_FINDME             LedMode::FindMe         // LED will be ON if all relays are OFF
+#define LED_MODE_FINDME_WIFI        LedMode::FindMeWiFi     // A mixture between WIFI and FINDME
+#define LED_MODE_ON                 LedMode::On             // LED always ON
+#define LED_MODE_OFF                LedMode::Off            // LED always OFF
+#define LED_MODE_RELAY              LedMode::Relay          // If any relay is ON, LED will be ON, otherwise OFF
+#define LED_MODE_RELAY_WIFI         LedMode::RelayWiFi      // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // UI

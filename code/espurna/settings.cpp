@@ -211,33 +211,39 @@ String settingsQueryDefaults(const String& key) {
     return String();
 }
 
-settings_move_key_t _moveKeys(const String& from, const String& to, unsigned char index) {
+settings_move_key_t _moveKeys(const String& from, const String& to, size_t index) {
     return settings_move_key_t {{from, index}, {to, index}};
 }
 
 void moveSetting(const String& from, const String& to) {
-    const auto value = getSetting(from);
-    if (value.length() > 0) setSetting(to, value);
+    auto result = settings::kv_store.get(from);
+    if (result) {
+        setSetting(to, result.ref());
+    }
     delSetting(from);
 }
 
 void moveSetting(const String& from, const String& to, unsigned char index) {
     const auto keys = _moveKeys(from, to, index);
-    const auto value = getSetting(keys.first);
-    if (value.length() > 0) setSetting(keys.second, value);
+
+    auto result = settings::kv_store.get(keys.first.value());
+    if (result) {
+        setSetting(keys.second, result.ref());
+    }
 
     delSetting(keys.first);
 }
 
 void moveSettings(const String& from, const String& to) {
-    unsigned char index = 0;
-    while (index < 100) {
+    for (size_t index = 0; index < 100; ++index) {
         const auto keys = _moveKeys(from, to, index);
-        const auto value = getSetting(keys.first);
-        if (value.length() == 0) break;
-        setSetting(keys.second, value);
+        auto result = settings::kv_store.get(keys.first.value());
+        if (!result) {
+            break;
+        }
+
+        setSetting(keys.second, result.ref());
         delSetting(keys.first);
-        ++index;
     }
 }
 
@@ -516,7 +522,7 @@ void _settingsInitCommands() {
                 continue;
             }
 
-            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), result.value.c_str());
+            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), result.c_str());
         }
 
         terminalOK(ctx);

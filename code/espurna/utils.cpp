@@ -11,6 +11,18 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "board.h"
 #include "ntp.h"
 
+bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
+    static_assert(std::numeric_limits<size_t>::max() >= std::numeric_limits<unsigned long>::max(), "");
+
+    char* endp { nullptr };
+    out = strtoul(p, &endp, 10);
+    if ((endp == p) || (*endp != '\0') || (out >= limit())) {
+        return false;
+    }
+
+    return true;
+}
+
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
         setSetting("hostname", F(HOSTNAME));

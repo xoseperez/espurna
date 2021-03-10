@@ -52,3 +52,6 @@ double roundTo(double num, unsigned char positions);
 
 size_t hexEncode(const uint8_t* in, size_t in_size, char* out, size_t out_size);
 size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size);
+
+using TryParseIdFunc = size_t(*)();
+bool tryParseId(const char* ptr, TryParseIdFunc limit, size_t& out);

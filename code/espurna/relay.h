@@ -70,17 +70,17 @@ public:
 
 PayloadStatus relayParsePayload(const char * payload);
 
-bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
-bool relayStatus(unsigned char id, bool status);
+bool relayStatus(size_t id, bool status, bool report, bool group_report);
+bool relayStatus(size_t id, bool status);
 
 // gets either current or target status, where current is the status that we are
 // actually in and target is the status we would be, eventually, unless
 // relayStatus(id, relayStatus()) is called
-bool relayStatus(unsigned char id);
-bool relayStatusTarget(unsigned char id);
+bool relayStatus(size_t id);
+bool relayStatusTarget(size_t id);
 
-void relayToggle(unsigned char id, bool report, bool group_report);
-void relayToggle(unsigned char id);
+void relayToggle(size_t id, bool report, bool group_report);
+void relayToggle(size_t id);
 
 size_t relayCount();
 
@@ -90,8 +90,8 @@ const String& relayPayloadToggle();
 
 const char* relayPayload(PayloadStatus status);
 
-void relayPulse(unsigned char id);
-void relaySync(unsigned char id);
+void relayPulse(size_t id);
+void relaySync(size_t id);
 void relaySave(bool persist);
 
 using RelayStatusCallback = void(*)(size_t id, bool status);

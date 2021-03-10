@@ -8,7 +8,39 @@ LED MODULE
 
 #include "espurna.h"
 
-constexpr const unsigned char _ledPin(unsigned char index) {
+namespace led {
+namespace build {
+
+constexpr size_t preconfiguredLeds() {
+    return 0ul
+    #if LED1_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED2_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED3_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED4_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED5_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED6_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED7_PIN != GPIO_NONE
+        + 1ul
+    #endif
+    #if LED8_PIN != GPIO_NONE
+        + 1ul
+    #endif
+        ;
+}
+
+constexpr unsigned char pin(size_t index) {
     return (
         (index == 0) ? LED1_PIN :
         (index == 1) ? LED2_PIN :
@@ -21,7 +53,7 @@ constexpr const unsigned char _ledPin(unsigned char index) {
     );
 }
 
-constexpr const unsigned char _ledMode(unsigned char index) {
+constexpr LedMode mode(size_t index) {
     return (
         (index == 0) ? LED1_MODE :
         (index == 1) ? LED2_MODE :
@@ -30,11 +62,11 @@ constexpr const unsigned char _ledMode(unsigned char index) {
         (index == 4) ? LED5_MODE :
         (index == 5) ? LED6_MODE :
         (index == 6) ? LED7_MODE :
-        (index == 7) ? LED8_MODE : LED_MODE_WIFI
+        (index == 7) ? LED8_MODE : LedMode::Manual
     );
 }
 
-constexpr const unsigned char _ledRelay(unsigned char index) {
+constexpr unsigned char relay(size_t index) {
     return (
         (index == 0) ? (LED1_RELAY - 1) :
         (index == 1) ? (LED2_RELAY - 1) :
@@ -47,7 +79,7 @@ constexpr const unsigned char _ledRelay(unsigned char index) {
     );
 }
 
-constexpr const bool _ledInverse(unsigned char index) {
+constexpr bool inverse(size_t index) {
     return (
         (index == 0) ? (1 == LED1_PIN_INVERSE) :
         (index == 1) ? (1 == LED2_PIN_INVERSE) :
@@ -59,3 +91,6 @@ constexpr const bool _ledInverse(unsigned char index) {
         (index == 7) ? (1 == LED8_PIN_INVERSE) : false
     );
 }
+
+} // namespace build
+} // namespace led

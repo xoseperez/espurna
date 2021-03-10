@@ -16,7 +16,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 // Scans input string with format
 // '<on1>,<off1>,<repeats1> <on2>,<off2>,<repeats2> ...'
-// Directly changing `led.pattern.delays` contents
+// Directly changing `LedPattern::delays` contents
 
 void _ledLoadPattern(led_t& led, const char* input) {
     char buffer[16];
@@ -28,7 +28,8 @@ void _ledLoadPattern(led_t& led, const char* input) {
     const char* p = input;
     const char* marker;
 
-    led.pattern.delays.clear();
+    auto& pattern = led.pattern();
+    pattern.delays.clear();
 
 loop:
 const char *yyt1;const char *yyt2;const char *yyt3;
@@ -153,9 +154,7 @@ yy17:
             buffer[int(p - d3)] = '\0';
             repeats = strtoul(buffer, nullptr, 10);
 
-            led.pattern.delays.emplace_back(
-                on, off, repeats
-            );
+            pattern.delays.emplace_back(on, off, repeats);
 
             goto loop;
         }

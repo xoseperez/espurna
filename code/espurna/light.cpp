@@ -75,7 +75,7 @@ constexpr long Hsv::ValueMax;
 class LightChannelProvider : public RelayProviderBase {
 public:
     LightChannelProvider() = delete;
-    explicit LightChannelProvider(unsigned char id) :
+    explicit LightChannelProvider(size_t id) :
         _id(id)
     {}
 
@@ -90,7 +90,7 @@ public:
     }
 
 private:
-    unsigned char _id { RELAY_NONE };
+    size_t _id { RelaysMax };
 };
 
 class LightGlobalProvider : public RelayProviderBase {
@@ -382,8 +382,8 @@ my92xx_model_t convert(const String& value) {
 
 #endif
 
-bool _setValue(unsigned char, unsigned int) __attribute__((warn_unused_result));
-bool _setValue(unsigned char id, unsigned int value) {
+bool _setValue(size_t, unsigned int) __attribute__((warn_unused_result));
+bool _setValue(size_t id, unsigned int value) {
     if (_light_channels[id].value != value) {
         _light_channels[id].value = value;
         return true;
@@ -392,7 +392,7 @@ bool _setValue(unsigned char id, unsigned int value) {
     return false;
 }
 
-void _setInputValue(unsigned char id, long value) {
+void _setInputValue(size_t id, long value) {
     _light_channels[id].inputValue = std::clamp(value, Light::ValueMin, Light::ValueMax);
 }
 
@@ -408,7 +408,7 @@ bool _lightApplyBrightnessChannels(size_t channels) {
     channels = std::min(channels, lightChannels());
     OnceFlag changed;
 
-    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+    for (size_t channel = 0; channel < lightChannels(); ++channel) {
         if (channel >= channels) {
             scale = 1.0f;
         }
@@ -468,32 +468,33 @@ bool _lightApplyBrightnessColor() {
     // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
     unsigned char max_in = std::max({_light_channels[0].inputValue, _light_channels[1].inputValue, _light_channels[2].inputValue});
     unsigned char max_out = std::max({_light_channels[0].value, _light_channels[1].value, _light_channels[2].value, _light_channels[3].value});
-    unsigned char channelSize = _light_use_cct ? 5 : 4;
+
+    size_t channelSize = _light_use_cct ? 5 : 4;
 
     if (_light_use_cct) {
         max_out = std::max(max_out, _light_channels[4].value);
     }
 
     double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
-    for (unsigned char i=0; i < channelSize; i++) {
+    for (size_t i = 0; i < channelSize; ++i) {
         changed = _setValue(i, lround((double) _light_channels[i].value * factor * brightness));
     }
 
     // Scale white channel to match brightness
-    for (unsigned char i=3; i < channelSize; i++) {
+    for (size_t i = 3; i < channelSize; ++i) {
         changed = _setValue(i, constrain(static_cast<unsigned int>(_light_channels[i].value * LIGHT_WHITE_FACTOR), Light::BrightnessMin, Light::BrightnessMax));
     }
 
     // For the rest of channels, don't apply brightness, it is already in the inputValue
     // i should be 4 when RGBW and 5 when RGBWW
-    for (unsigned char i=channelSize; i < _light_channels.size(); i++) {
+    for (size_t i = channelSize; i < _light_channels.size(); ++i) {
         changed = _setValue(i, _light_channels[i].inputValue);
     }
 
     return changed.get();
 }
 
-char _lightTag(size_t channels, unsigned char index) {
+char _lightTag(size_t channels, size_t index) {
     constexpr size_t Columns { 5ul };
     constexpr size_t Rows { 5ul };
 
@@ -513,12 +514,12 @@ char _lightTag(size_t channels, unsigned char index) {
     return 0;
 }
 
-char _lightTag(unsigned char index) {
+char _lightTag(size_t index) {
     return _lightTag(_light_channels.size(), index);
 }
 
 // UI hint about channel distribution
-const char* _lightDesc(size_t channels, unsigned char index) {
+const char* _lightDesc(size_t channels, size_t index) {
     const __FlashStringHelper* ptr { F("UNKNOWN") };
     switch (_lightTag(channels, index)) {
     case 'W':
@@ -541,7 +542,7 @@ const char* _lightDesc(size_t channels, unsigned char index) {
     return reinterpret_cast<const char*>(ptr);
 }
 
-const char* _lightDesc(unsigned char index) {
+const char* _lightDesc(size_t index) {
     return _lightDesc(_light_channels.size(), index);
 }
 
@@ -827,11 +828,11 @@ void _lightAdjustBrightness(const String& payload) {
     _lightAdjustBrightness(payload.c_str());
 }
 
-void _lightAdjustChannel(unsigned char id, const char* payload) {
+void _lightAdjustChannel(size_t id, const char* payload) {
     lightChannel(id, _lightAdjustValue(lightChannel(id), payload));
 }
 
-void _lightAdjustChannel(unsigned char id, const String& payload) {
+void _lightAdjustChannel(size_t id, const String& payload) {
     _lightAdjustChannel(id, payload.c_str());
 }
 
@@ -967,7 +968,7 @@ public:
             state(_state);
         }
 
-        for (unsigned char index = 0; index < _transitions.size(); ++index) {
+        for (size_t index = 0; index < _transitions.size(); ++index) {
             auto& transition = _transitions[index];
             if (!transition.count) {
                 continue;
@@ -1118,7 +1119,7 @@ inline bool _lightPwmMap(long value, long& result) {
 }
 
 // both require original values to be scaled into a PWM frequency
-void _lightProviderHandleValue(unsigned char channel, float value) {
+void _lightProviderHandleValue(size_t channel, float value) {
     long pwm;
     if (!_lightPwmMap(std::lround(value), pwm)) {
         return;
@@ -1145,7 +1146,7 @@ void _lightProviderHandleState(bool state) {
     _light_provider->state(state);
 }
 
-void _lightProviderHandleValue(unsigned char channel, float value) {
+void _lightProviderHandleValue(size_t channel, float value) {
     _light_provider->channel(channel, value);
 }
 
@@ -1281,7 +1282,7 @@ void lightSave(bool save) {
 
 void _lightSaveRtcmem() {
     auto channels = LightRtcmem::defaultChannels();
-    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+    for (size_t channel = 0; channel < lightChannels(); ++channel) {
         channels[channel] = _light_channels[channel].inputValue;
     }
 
@@ -1294,7 +1295,7 @@ void _lightRestoreRtcmem() {
     LightRtcmem light(value);
 
     auto& channels = light.channels();
-    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+    for (size_t channel = 0; channel < lightChannels(); ++channel) {
         _light_channels[channel].inputValue = channels[channel];
     }
 
@@ -1307,7 +1308,7 @@ void _lightSaveSettings() {
         return;
     }
 
-    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+    for (size_t channel = 0; channel < lightChannels(); ++channel) {
         setSetting({"ch", channel}, _light_channels[channel].inputValue);
     }
 
@@ -1318,7 +1319,7 @@ void _lightSaveSettings() {
 }
 
 void _lightRestoreSettings() {
-    for (unsigned char channel = 0; channel < lightChannels(); ++channel) {
+    for (size_t channel = 0; channel < lightChannels(); ++channel) {
         auto value = getSetting({"ch", channel}, (channel == 0) ? Light::ValueMax : Light::ValueMin);
         _light_channels[channel].inputValue = value;
     }
@@ -1349,16 +1350,8 @@ bool _lightParsePayload(const String& payload) {
     return _lightParsePayload(payload.c_str());
 }
 
-bool _lightTryParseChannel(const char* p, unsigned char& id) {
-    char* endp { nullptr };
-    const unsigned long result { strtoul(p, &endp, 10) };
-    if ((endp == p) || (*endp != '\0') || (result >= lightChannels())) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Invalid channelID (%s)\n"), p);
-        return false;
-    }
-
-    id = result;
-    return true;
+bool _lightTryParseChannel(const char* p, size_t& id) {
+    return tryParseId(p, lightChannels, id);
 }
 
 // -----------------------------------------------------------------------------
@@ -1485,7 +1478,7 @@ void _lightMqttCallback(unsigned int type, const char * topic, const char * payl
 
         // Channel
         if (t.startsWith(MQTT_TOPIC_CHANNEL)) {
-            unsigned char id;
+            size_t id;
             if (!_lightTryParseChannel(t.c_str() + strlen(MQTT_TOPIC_CHANNEL) + 1, id)) {
                 return;
             }
@@ -1561,7 +1554,7 @@ void lightMQTTGroup() {
 template <typename T>
 bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
     auto id_param = request.wildcard(0);
-    unsigned char id;
+    size_t id;
     if (!_lightTryParseChannel(id_param.c_str(), id)) {
         return false;
     }
@@ -1659,13 +1652,13 @@ void _lightApiSetup() {
 
     apiRegister(F(MQTT_TOPIC_CHANNEL "/+"),
         [](ApiRequest& request) {
-            return _lightApiTryHandle(request, [&](unsigned char id) {
+            return _lightApiTryHandle(request, [&](size_t id) {
                 request.send(String(static_cast<int>(_light_channels[id].target)));
                 return true;
             });
         },
         [](ApiRequest& request) {
-            return _lightApiTryHandle(request, [&](unsigned char id) {
+            return _lightApiTryHandle(request, [&](size_t id) {
                 _lightAdjustChannel(id, request.param(F("value")));
                 lightUpdate();
                 return true;
@@ -1716,7 +1709,7 @@ void _lightWebSocketStatus(JsonObject& root) {
         root["useCCT"] = _light_use_cct;
     }
     JsonArray& channels = root.createNestedArray("channels");
-    for (unsigned char id=0; id < _light_channels.size(); id++) {
+    for (size_t id = 0; id < _light_channels.size(); ++id) {
         channels.add(lightChannel(id));
     }
     root["brightness"] = lightBrightness();
@@ -1813,29 +1806,26 @@ void _lightInitCommands() {
             return;
         }
 
-        auto id = -1;
-        if (ctx.argc > 1) {
-            id = ctx.argv[1].toInt();
-        }
-
-        auto description = [&](unsigned char channel) {
-            ctx.output.printf("#%hhu (%s): %hhu\n", channel, _lightDesc(channels, channel), _light_channels[channel].inputValue);
+        auto description = [&](size_t channel) {
+            ctx.output.printf("#%u (%s): %hhu\n", channel, _lightDesc(channels, channel), _light_channels[channel].inputValue);
         };
 
-        if (id < 0 || id >= static_cast<decltype(id)>(channels)) {
-            for (unsigned char index = 0; index < channels; ++index) {
-                description(index);
-            }
-            terminalOK(ctx);
-            return;
-        }
-
         if (ctx.argc > 2) {
+            size_t id;
+            if (!_lightTryParseChannel(ctx.argv[1].c_str(), id)) {
+                terminalError(ctx, F("Invalid channel ID"));
+                return;
+            }
+
             _lightAdjustChannel(id, ctx.argv[2].c_str());
             lightUpdate();
+            description(id);
+        } else {
+            for (size_t index = 0; index < channels; ++index) {
+                description(index);
+            }
         }
 
-        description(id);
         terminalOK(ctx);
     });
 
@@ -2116,17 +2106,19 @@ void lightUpdate() {
     lightUpdate(lightTransition());
 }
 
-void lightState(unsigned char id, bool state) {
-    if (id >= _light_channels.size()) return;
-    if (_light_channels[id].state != state) {
+void lightState(size_t id, bool state) {
+    if ((id < _light_channels.size()) && _light_channels[id].state != state) {
         _light_channels[id].state = state;
         _light_state_changed = true;
     }
 }
 
-bool lightState(unsigned char id) {
-    if (id >= _light_channels.size()) return false;
-    return _light_channels[id].state;
+bool lightState(size_t id) {
+    if (id < _light_channels.size()) {
+        return _light_channels[id].state;
+    }
+
+    return false;
 }
 
 void lightState(bool state) {
@@ -2232,18 +2224,22 @@ Light::MiredsRange lightMiredsRange() {
     return { _light_cold_mireds, _light_warm_mireds };
 }
 
-long lightChannel(unsigned char id) {
-    if (id >= _light_channels.size()) return 0;
-    return _light_channels[id].inputValue;
+long lightChannel(size_t id) {
+    if (id < _light_channels.size()) {
+        return _light_channels[id].inputValue;
+    }
+
+    return 0l;
 }
 
-void lightChannel(unsigned char id, long value) {
-    if (id >= _light_channels.size()) return;
-    _setInputValue(id, value);
+void lightChannel(size_t id, long value) {
+    if (id < _light_channels.size()) {
+        _setInputValue(id, value);
+    }
 }
 
-void lightChannelStep(unsigned char id, long steps, long multiplier) {
-    lightChannel(id, static_cast<int>(lightChannel(id)) + (steps * multiplier));
+void lightChannelStep(size_t id, long steps, long multiplier) {
+    lightChannel(id, lightChannel(id) + (steps * multiplier));
 }
 
 long lightBrightness() {
@@ -2316,7 +2312,7 @@ const unsigned long _light_iofunc[16] PROGMEM = {
 
 namespace {
 
-inline bool _lightUseGamma(size_t channels, unsigned char index) {
+inline bool _lightUseGamma(size_t channels, size_t index) {
     switch (_lightTag(channels, index)) {
     case 'R':
     case 'G':
@@ -2327,7 +2323,7 @@ inline bool _lightUseGamma(size_t channels, unsigned char index) {
     return false;
 }
 
-inline bool _lightUseGamma(unsigned char index) {
+inline bool _lightUseGamma(size_t index) {
     return _lightUseGamma(_light_channels.size(), index);
 }
 
@@ -2376,7 +2372,7 @@ void _lightConfigure() {
     _light_transition_step = getSetting("ltStep", LIGHT_TRANSITION_STEP);
 
     _light_use_gamma = getSetting("useGamma", 1 == LIGHT_USE_GAMMA);
-    for (unsigned char index = 0; index < lightChannels(); ++index) {
+    for (size_t index = 0; index < lightChannels(); ++index) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
         _light_my92xx_channel_map[index] = getSetting({"ltMy92xxCh", index}, Light::build::my92xxChannel(index));
 #endif
@@ -2535,7 +2531,7 @@ void lightSetup() {
             getSetting("ltMy92xxDiGPIO", Light::build::my92xxDiPin()),
             getSetting("ltMy92xxDckiGPIO", Light::build::my92xxDckiPin()),
             Light::build::my92xxCommand());
-        for (unsigned char index = 0; index < channels; ++index) {
+        for (size_t index = 0; index < channels; ++index) {
             _light_channels.emplace_back(GPIO_NONE);
         }
     }
@@ -2547,7 +2543,7 @@ void lightSetup() {
         // 3-tuples of MUX_REGISTER, MUX_VALUE and GPIO number
         uint32_t io_info[Light::ChannelsMax][3];
 
-        for (unsigned char index = 0; index < Light::ChannelsMax; ++index) {
+        for (size_t index = 0; index < Light::ChannelsMax; ++index) {
 
             // Load up until first GPIO_NONE. Allow settings to override, but not remove values
             const auto pin = getSetting({"ltDimmerGPIO", index}, Light::build::channelPin(index));

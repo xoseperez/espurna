@@ -26,7 +26,8 @@ void _ledLoadPattern(led_t& led, const char* input) {
     const char* p = input;
     const char* marker;
 
-    led.pattern.delays.clear();
+    auto& pattern = led.pattern;
+    pattern.delays.clear();
 
 loop:
 /*!stags:re2c format = 'const char *@@;'; */
@@ -61,9 +62,7 @@ loop:
             buffer[int(p - d3)] = '\0';
             repeats = strtoul(buffer, nullptr, 10);
 
-            led.pattern.delays.emplace_back(
-                on, off, repeats
-            );
+            pattern.delays.emplace_back(on, off, repeats);
 
             goto loop;
         }

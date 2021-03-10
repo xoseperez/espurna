@@ -10,8 +10,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-#include "broker.h"
-
 #include "libs/BasePin.h"
 #include "libs/DebounceEvent.h"
 
@@ -28,7 +26,7 @@ enum class ButtonProvider : int {
     Analog
 };
 
-enum class button_event_t {
+enum class ButtonEvent {
     None,
     Pressed,
     Released,
@@ -71,9 +69,9 @@ struct ButtonActions {
     ButtonAction trplclick;
 };
 
-struct button_event_delays_t {
-    button_event_delays_t();
-    button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick);
+struct ButtonEventDelays {
+    ButtonEventDelays();
+    ButtonEventDelays(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick);
 
     unsigned long debounce;
     unsigned long repeat;
@@ -82,28 +80,27 @@ struct button_event_delays_t {
 };
 
 struct button_t {
-    button_t(ButtonActions&& actions, button_event_delays_t&& delays);
+    button_t(ButtonActions&& actions, ButtonEventDelays&& delays);
     button_t(BasePinPtr&& pin, const debounce_event::types::Config& config,
-        ButtonActions&& actions, button_event_delays_t&& delays);
+        ButtonActions&& actions, ButtonEventDelays&& delays);
 
     bool state();
-    button_event_t loop();
+    ButtonEvent loop();
 
     std::unique_ptr<debounce_event::EventEmitter> event_emitter;
 
     ButtonActions actions;
-    button_event_delays_t event_delays;
+    ButtonEventDelays event_delays;
 };
 
-BrokerDeclare(ButtonBroker, void(unsigned char id, button_event_t event));
+using ButtonEventHandler = void(*)(size_t id, ButtonEvent event);
+void buttonSetCustomAction(ButtonEventHandler);
+void buttonSetNotifyAction(ButtonEventHandler);
 
-using ButtonCustomAction = void(*)(unsigned char id, button_event_t event);
-void buttonSetCustomAction(ButtonCustomAction);
+bool buttonState(size_t id);
+ButtonAction buttonAction(size_t id, const ButtonEvent event);
 
-bool buttonState(unsigned char id);
-ButtonAction buttonAction(unsigned char id, const button_event_t event);
+void buttonEvent(size_t id, ButtonEvent event);
 
-void buttonEvent(unsigned char id, button_event_t event);
-
-unsigned char buttonCount();
+size_t buttonCount();
 void buttonSetup();

@@ -3,6 +3,7 @@
 BUTTON MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -30,9 +31,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "button_config.h"
 
-BrokerBind(ButtonBroker);
-
-// TODO: if we are using such conversion helpers across the codebase, should convert() be in internal ns?
+// -----------------------------------------------------------------------------
 
 namespace settings {
 namespace internal {
@@ -169,93 +168,77 @@ ButtonAction convert(const String& value) {
 
 // -----------------------------------------------------------------------------
 
-constexpr debounce_event::types::Config _buttonDecodeConfigBitmask(int bitmask) {
-    return {
-        ((bitmask & ButtonMask::Pushbutton)
-            ? debounce_event::types::Mode::Pushbutton
-            : debounce_event::types::Mode::Switch),
-        ((bitmask & ButtonMask::DefaultLow) ? debounce_event::types::PinValue::Low
-         : (bitmask & ButtonMask::DefaultHigh) ? debounce_event::types::PinValue::High
-         : (bitmask & ButtonMask::DefaultBoot) ? debounce_event::types::PinValue::Initial
-            : debounce_event::types::PinValue::Low),
-        ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup
-            : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown
-            : debounce_event::types::PinMode::Input)
-    };
-}
-
-constexpr ButtonAction _buttonDecodeEventAction(const ButtonActions& actions, button_event_t event) {
+constexpr ButtonAction _buttonDecodeEventAction(const ButtonActions& actions, ButtonEvent event) {
     return (
-        (event == button_event_t::Pressed) ? actions.pressed :
-        (event == button_event_t::Released) ? actions.released :
-        (event == button_event_t::Click) ? actions.click :
-        (event == button_event_t::DoubleClick) ? actions.dblclick :
-        (event == button_event_t::LongClick) ? actions.lngclick :
-        (event == button_event_t::LongLongClick) ? actions.lnglngclick :
-        (event == button_event_t::TripleClick) ? actions.trplclick : ButtonAction::None
+        (event == ButtonEvent::Pressed) ? actions.pressed :
+        (event == ButtonEvent::Released) ? actions.released :
+        (event == ButtonEvent::Click) ? actions.click :
+        (event == ButtonEvent::DoubleClick) ? actions.dblclick :
+        (event == ButtonEvent::LongClick) ? actions.lngclick :
+        (event == ButtonEvent::LongLongClick) ? actions.lnglngclick :
+        (event == ButtonEvent::TripleClick) ? actions.trplclick : ButtonAction::None
     );
 }
 
-constexpr button_event_t _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+constexpr ButtonEvent _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
     return (
-        (0 == count) ? button_event_t::Released :
+        (0 == count) ? ButtonEvent::Released :
         (1 == count) ? (
-            (length > lnglngclick_delay) ? button_event_t::LongLongClick :
-            (length > lngclick_delay) ? button_event_t::LongClick : button_event_t::Click
+            (length > lnglngclick_delay) ? ButtonEvent::LongLongClick :
+            (length > lngclick_delay) ? ButtonEvent::LongClick : ButtonEvent::Click
         ) :
-        (2 == count) ? button_event_t::DoubleClick :
-        (3 == count) ? button_event_t::TripleClick :
-        button_event_t::None
+        (2 == count) ? ButtonEvent::DoubleClick :
+        (3 == count) ? ButtonEvent::TripleClick :
+        ButtonEvent::None
     );
 }
 
-ButtonActions _buttonConstructActions(unsigned char index) {
+ButtonActions _buttonConstructActions(size_t index) {
     return {
-        _buttonPress(index),
-        _buttonRelease(index),
-        _buttonClick(index),
-        _buttonDoubleClick(index),
-        _buttonLongClick(index),
-        _buttonLongLongClick(index),
-        _buttonTripleClick(index)
+        button::build::press(index),
+        button::build::release(index),
+        button::build::click(index),
+        button::build::doubleClick(index),
+        button::build::longClick(index),
+        button::build::longLongClick(index),
+        button::build::tripleClick(index)
     };
 }
 
-debounce_event::types::Config _buttonRuntimeConfig(unsigned char index) {
-    const auto config = _buttonDecodeConfigBitmask(_buttonConfigBitmask(index));
+debounce_event::types::Config _buttonRuntimeConfig(size_t index) {
     return {
-        getSetting({"btnMode", index}, config.mode),
-        getSetting({"btnDefVal", index}, config.default_value),
-        getSetting({"btnPinMode", index}, config.pin_mode)
+        getSetting({"btnMode", index}, button::build::mode(index)),
+        getSetting({"btnDefVal", index}, button::build::defaultValue(index)),
+        getSetting({"btnPinMode", index}, button::build::pinMode(index))
     };
 }
 
-int _buttonEventNumber(button_event_t event) {
+int _buttonEventNumber(ButtonEvent event) {
     return static_cast<int>(event);
 }
 
 // -----------------------------------------------------------------------------
 
-button_event_delays_t::button_event_delays_t() :
-    debounce(_buttonDebounceDelay()),
-    repeat(_buttonRepeatDelay()),
-    lngclick(_buttonLongClickDelay()),
-    lnglngclick(_buttonLongLongClickDelay())
+ButtonEventDelays::ButtonEventDelays() :
+    debounce(button::build::debounceDelay()),
+    repeat(button::build::repeatDelay()),
+    lngclick(button::build::longClickDelay()),
+    lnglngclick(button::build::longLongClickDelay())
 {}
 
-button_event_delays_t::button_event_delays_t(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick) :
+ButtonEventDelays::ButtonEventDelays(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick) :
     debounce(debounce),
     repeat(repeat),
     lngclick(lngclick),
     lnglngclick(lnglngclick)
 {}
 
-button_t::button_t(ButtonActions&& actions_, button_event_delays_t&& delays_) :
+button_t::button_t(ButtonActions&& actions_, ButtonEventDelays&& delays_) :
     actions(std::move(actions_)),
     event_delays(std::move(delays_))
 {}
 
-button_t::button_t(BasePinPtr&& pin, const debounce_event::types::Config& config, ButtonActions&& actions_, button_event_delays_t&& delays_) :
+button_t::button_t(BasePinPtr&& pin, const debounce_event::types::Config& config, ButtonActions&& actions_, ButtonEventDelays&& delays_) :
     event_emitter(std::make_unique<debounce_event::EventEmitter>(std::move(pin), config, delays_.debounce, delays_.repeat)),
     actions(std::move(actions_)),
     event_delays(std::move(delays_))
@@ -265,11 +248,11 @@ bool button_t::state() {
     return event_emitter->isPressed();
 }
 
-button_event_t button_t::loop() {
+ButtonEvent button_t::loop() {
     if (event_emitter) {
         switch (event_emitter->loop()) {
         case debounce_event::types::EventPressed:
-            return button_event_t::Pressed;
+            return ButtonEvent::Pressed;
         case debounce_event::types::EventReleased: {
             return _buttonMapReleased(
                 event_emitter->getEventCount(),
@@ -283,203 +266,44 @@ button_event_t button_t::loop() {
         }
     }
 
-    return button_event_t::None;
+    return ButtonEvent::None;
 }
 
 std::vector<button_t> _buttons;
 
 // -----------------------------------------------------------------------------
 
-unsigned char buttonCount() {
+size_t buttonCount() {
     return _buttons.size();
 }
 
 #if MQTT_SUPPORT
 
 std::bitset<ButtonsMax> _buttons_mqtt_send_all(
-    (1 == BUTTON_MQTT_SEND_ALL_EVENTS) ? 0xFFFFFFFFUL : 0UL
+    button::build::mqttSendAllEvents()
+    ? std::numeric_limits<unsigned long>::max()
+    : std::numeric_limits<unsigned long>::min()
 );
 std::bitset<ButtonsMax> _buttons_mqtt_retain(
-    (1 == BUTTON_MQTT_RETAIN) ? 0xFFFFFFFFUL : 0UL
+    button::build::mqttRetain()
+    ? std::numeric_limits<unsigned long>::max()
+    : std::numeric_limits<unsigned long>::min()
 );
 
 #endif
 
-#if WEB_SUPPORT
-
-void _buttonWebSocketOnVisible(JsonObject& root) {
-    if (buttonCount() > 0) {
-        root["btnVisible"] = 1;
-    }
-}
-
-void _buttonWebSocketOnConnected(JsonObject& root) {
-    root["btnRepDel"] = getSetting("btnRepDel", _buttonRepeatDelay());
-
-    // XXX: unused! pending webui changes
-
-#if 0
-    if (buttonCount() < 1) return;
-
-    JsonObject& module = root.createNestedObject("btn");
-
-    // TODO: hardware can sometimes use a different providers
-    //       e.g. Sonoff Dual does not need `Pin`, `Mode` or any of `Del`
-    // TODO: schema names are uppercase to easily match settings?
-    // TODO: schema name->type map to generate WebUI elements?
-
-    JsonArray& schema = module.createNestedArray("_schema");
-
-    schema.add("Prov");
-
-    schema.add("GPIO");
-    schema.add("Mode");
-    schema.add("DefVal");
-    schema.add("PinMode");
-
-    schema.add("Press");
-    schema.add("Click");
-    schema.add("Dclk");
-    schema.add("Lclk");
-    schema.add("LLclk");
-    schema.add("Tclk");
-
-    schema.add("DebDel");
-    schema.add("RepDel");
-    schema.add("LclkDel");
-    schema.add("LLclkDel");
-
-#if RELAY_SUPPORT
-    schema.add("Relay");
-#endif
-
-#if MQTT_SUPPORT
-    schema.add("MqttSendAll");
-    schema.add("MqttRetain");
-#endif
-
-    JsonArray& buttons = module.createNestedArray("list");
-
-    for (unsigned char i=0; i<buttonCount(); i++) {
-        JsonArray& button = buttons.createNestedArray();
-
-        // TODO: configure PIN object instead of button specifically, link PIN<->BUTTON
-        button.add(getSetting({"btnProv", index}, _buttonProvider(index)));
-        if (_buttons[i].pin()) {
-            button.add(getSetting({"btnGPIO", index}, _buttonPin(index)));
-            const auto config = _buttonRuntimeConfig(index);
-            button.add(static_cast<int>(config.mode));
-            button.add(static_cast<int>(config.default_value));
-            button.add(static_cast<int>(config.pin_mode));
-        } else {
-            button.add(GPIO_NONE);
-            button.add(static_cast<int>(BUTTON_PUSHBUTTON));
-            button.add(0);
-            button.add(0);
-            button.add(0);
-        }
-
-        button.add(_buttons[i].actions.pressed);
-        button.add(_buttons[i].actions.click);
-        button.add(_buttons[i].actions.dblclick);
-        button.add(_buttons[i].actions.lngclick);
-        button.add(_buttons[i].actions.lnglngclick);
-        button.add(_buttons[i].actions.trplclick);
-
-        button.add(_buttons[i].event_delays.debounce);
-        button.add(_buttons[i].event_delays.repeat);
-        button.add(_buttons[i].event_delays.lngclick);
-        button.add(_buttons[i].event_delays.lnglngclick);
-
-#if RELAY_SUPPORT
-        button.add(_buttons[i].relayID);
-#endif
-
-        // TODO: send bitmask as number?
-#if MQTT_SUPPORT
-        button.add(_buttons_mqtt_send_all[i] ? 1 : 0);
-        button.add(_buttons_mqtt_retain[i] ? 1 : 0);
-#endif
-    }
-#endif
-}
-
-bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "btn", 3) == 0);
-}
-
-#endif // WEB_SUPPORT
-
-ButtonCustomAction _button_custom_action { nullptr };
-
-void buttonSetCustomAction(ButtonCustomAction action) {
-    _button_custom_action = action;
-}
-
-bool buttonState(unsigned char id) {
-    return (id < _buttons.size())
-        ? _buttons[id].state()
-        : false;
-}
-
-ButtonAction buttonAction(unsigned char id, const button_event_t event) {
-    return (id < _buttons.size())
-        ? _buttonDecodeEventAction(_buttons[id].actions, event)
-        : ButtonAction::None;
-}
-
-// Note that we don't directly return F(...), but use a temporary to assign it conditionally
-// (ref. https://github.com/esp8266/Arduino/pull/6950 "PROGMEM footprint cleanup for responseCodeToString")
-// In this particular case, saves 76 bytes (120 vs 44)
-
-String _buttonEventString(button_event_t event) {
-    const __FlashStringHelper* ptr = nullptr;
-    switch (event) {
-        case button_event_t::Pressed:
-            ptr = F("pressed");
-            break;
-        case button_event_t::Released:
-            ptr = F("released");
-            break;
-        case button_event_t::Click:
-            ptr = F("click");
-            break;
-        case button_event_t::DoubleClick:
-            ptr = F("double-click");
-            break;
-        case button_event_t::LongClick:
-            ptr = F("long-click");
-            break;
-        case button_event_t::LongLongClick:
-            ptr = F("looong-click");
-            break;
-        case button_event_t::TripleClick:
-            ptr = F("triple-click");
-            break;
-        case button_event_t::None:
-            ptr = F("none");
-            break;
-    }
-    return String(ptr);
-}
+// -----------------------------------------------------------------------------
 
 #if RELAY_SUPPORT
 
-unsigned char _buttonRelaySetting(unsigned char id) {
-    static std::vector<uint8_t> relays;
+std::vector<unsigned char> _button_relays;
 
-    if (!relays.size()) {
-        relays.reserve(_buttons.size());
-        for (unsigned char button = 0; button < _buttons.size(); ++button) {
-            relays.push_back(getSetting({"btnRelay", button}, _buttonRelay(button)));
-        }
-    }
-
-    return relays[id];
+size_t _buttonRelay(size_t id) {
+    return _button_relays[id];
 }
 
-void _buttonRelayAction(unsigned char id, ButtonAction action) {
-    auto relayId = _buttonRelaySetting(id);
+void _buttonRelayAction(size_t id, ButtonAction action) {
+    auto relayId = _buttonRelay(id);
 
     switch (action) {
     case ButtonAction::Toggle:
@@ -505,20 +329,111 @@ void _buttonRelayAction(unsigned char id, ButtonAction action) {
 
 #endif // RELAY_SUPPORT
 
-void buttonEvent(unsigned char id, button_event_t event) {
+// -----------------------------------------------------------------------------
+
+#if WEB_SUPPORT
+
+namespace {
+
+void _buttonWebSocketOnVisible(JsonObject& root) {
+    if (buttonCount()) {
+        root["btnVisible"] = 1;
+    }
+}
+
+void _buttonWebSocketOnConnected(JsonObject& root) {
+    if (buttonCount()) {
+        root["btnRepDel"] = getSetting("btnRepDel", button::build::repeatDelay());
+    }
+}
+
+bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
+    return (strncmp(key, "btn", 3) == 0);
+}
+
+} // namespace
+
+#endif // WEB_SUPPORT
+
+//------------------------------------------------------------------------------
+
+ButtonEventHandler _button_custom_action { nullptr };
+
+void buttonSetCustomAction(ButtonEventHandler handler) {
+    _button_custom_action = handler;
+}
+
+std::forward_list<ButtonEventHandler> _button_notify_event;
+
+void buttonSetEventNotify(ButtonEventHandler handler) {
+    _button_notify_event.push_front(handler);
+}
+
+//------------------------------------------------------------------------------
+
+bool buttonState(size_t id) {
+    return (id < _buttons.size())
+        ? _buttons[id].state()
+        : false;
+}
+
+ButtonAction buttonAction(size_t id, ButtonEvent event) {
+    return (id < _buttons.size())
+        ? _buttonDecodeEventAction(_buttons[id].actions, event)
+        : ButtonAction::None;
+}
+
+// Note that we don't directly return F(...), but use a temporary to assign it conditionally
+// (ref. https://github.com/esp8266/Arduino/pull/6950 "PROGMEM footprint cleanup for responseCodeToString")
+// In this particular case, saves 76 bytes (120 vs 44)
+
+String _buttonEventString(ButtonEvent event) {
+    const __FlashStringHelper* ptr = nullptr;
+    switch (event) {
+    case ButtonEvent::Pressed:
+        ptr = F("pressed");
+        break;
+    case ButtonEvent::Released:
+        ptr = F("released");
+        break;
+    case ButtonEvent::Click:
+        ptr = F("click");
+        break;
+    case ButtonEvent::DoubleClick:
+        ptr = F("double-click");
+        break;
+    case ButtonEvent::LongClick:
+        ptr = F("long-click");
+        break;
+    case ButtonEvent::LongLongClick:
+        ptr = F("looong-click");
+        break;
+    case ButtonEvent::TripleClick:
+        ptr = F("triple-click");
+        break;
+    case ButtonEvent::None:
+        ptr = F("none");
+        break;
+    }
+    return String(ptr);
+}
+
+void buttonEvent(size_t id, ButtonEvent event) {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %d (%s)\n"),
         id, _buttonEventNumber(event), _buttonEventString(event).c_str()
     );
-    if (event == button_event_t::None) return;
+
+    if (event == ButtonEvent::None) {
+        return;
+    }
 
     auto& button = _buttons[id];
 
     auto action = _buttonDecodeEventAction(button.actions, event);
-
-#if BROKER_SUPPORT
-    ButtonBroker::Publish(id, event);
-#endif
+    for (auto& notify : _button_notify_event) {
+        notify(id, event);
+    }
 
 #if MQTT_SUPPORT
     if ((action != ButtonAction::None) || _buttons_mqtt_send_all[id]) {
@@ -617,24 +532,54 @@ void buttonEvent(unsigned char id, button_event_t event) {
 }
 
 void _buttonConfigure() {
-    #if MQTT_SUPPORT
-        for (unsigned char index = 0; index < _buttons.size(); ++index) {
-            _buttons_mqtt_send_all[index] = getSetting({"btnMqttSendAll", index}, _buttonMqttSendAllEvents(index));
-            _buttons_mqtt_retain[index] = getSetting({"btnMqttRetain", index}, _buttonMqttRetain(index));
-        }
-    #endif
+    auto buttons = _buttons.size();
+
+#if RELAY_SUPPORT
+    _button_relays.clear();
+#endif
+
+    for (decltype(buttons) id = 0; id < buttons; ++id) {
+#if RELAY_SUPPORT
+        _button_relays.push_back(getSetting({"btnRelay", id}, button::build::relay(id)));
+#endif
+#if MQTT_SUPPORT
+        _buttons_mqtt_send_all[id] = getSetting({"btnMqttSendAll", id}, button::build::mqttSendAllEvents(id));
+        _buttons_mqtt_retain[id] = getSetting({"btnMqttRetain", id}, button::build::mqttRetain(id));
+#endif
+    }
 }
 
 // TODO: compatibility proxy, fetch global key before indexed
-template<typename T>
-unsigned long _buttonGetSetting(const char* key, unsigned char index, T default_value) {
-    return getSetting({key, index}, getSetting(key, default_value));
+unsigned long _buttonGetDelay(const char* key, size_t index, unsigned long default_value) {
+    unsigned long result { default_value };
+
+    bool found { false };
+    auto indexed = SettingsKey(key, index);
+    auto global = String(key);
+
+    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+        if (found) {
+            return;
+        }
+
+        if ((kv.key.length != indexed.length()) && (kv.key.length != global.length())) {
+            return;
+        }
+
+        auto other = kv.key.read();
+        found = indexed == other;
+        if (found || (global == other)) {
+            result = settings::internal::convert<unsigned long>(kv.value.read());
+        }
+    });
+
+    return result;
 }
 
 void buttonLoop() {
     for (size_t id = 0; id < _buttons.size(); ++id) {
         auto event = _buttons[id].loop();
-        if (event != button_event_t::None) {
+        if (event != ButtonEvent::None) {
             buttonEvent(id, event);
         }
     }
@@ -773,15 +718,15 @@ std::vector<AnalogPin*> AnalogPin::pins;
 
 #endif // BUTTON_PROVIDER_ANALOG_SUPPORT
 
-BasePinPtr _buttonGpioPin(unsigned char index, ButtonProvider provider) {
+BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
     BasePinPtr result;
 
-    auto pin = getSetting({"btnGPIO", index}, _buttonPin(index));
+    auto pin = getSetting({"btnGpio", index}, button::build::pin(index));
 
     switch (provider) {
     case ButtonProvider::Gpio: {
 #if BUTTON_PROVIDER_GPIO_SUPPORT
-        auto* base = gpioBase(getSetting({"btnGPIOType", index}, _buttonPinType(index)));
+        auto* base = gpioBase(getSetting({"btnGpioType", index}, button::build::pinType(index)));
         if (!base) {
             break;
         }
@@ -801,7 +746,7 @@ BasePinPtr _buttonGpioPin(unsigned char index, ButtonProvider provider) {
             break;
         }
 
-        auto level = getSetting({"btnLevel", index}, _buttonAnalogLevel(index));
+        auto level = getSetting({"btnLevel", index}, button::build::analogLevel(index));
         if (!AnalogPin::checkExpectedLevel(level)) {
             break;
         }
@@ -818,30 +763,30 @@ BasePinPtr _buttonGpioPin(unsigned char index, ButtonProvider provider) {
     return result;
 }
 
-ButtonActions _buttonActions(unsigned char index) {
+ButtonActions _buttonActions(size_t index) {
     return {
-        getSetting({"btnPress", index}, _buttonPress(index)),
-        getSetting({"btnRlse", index}, _buttonRelease(index)),
-        getSetting({"btnClick", index}, _buttonClick(index)),
-        getSetting({"btnDclk", index}, _buttonDoubleClick(index)),
-        getSetting({"btnLclk", index}, _buttonLongClick(index)),
-        getSetting({"btnLLclk", index}, _buttonLongLongClick(index)),
-        getSetting({"btnTclk", index}, _buttonTripleClick(index))
+        getSetting({"btnPress", index}, button::build::press(index)),
+        getSetting({"btnRlse", index}, button::build::release(index)),
+        getSetting({"btnClick", index}, button::build::click(index)),
+        getSetting({"btnDclk", index}, button::build::doubleClick(index)),
+        getSetting({"btnLclk", index}, button::build::longClick(index)),
+        getSetting({"btnLLclk", index}, button::build::longLongClick(index)),
+        getSetting({"btnTclk", index}, button::build::tripleClick(index))
     };
 }
 
 // Note that we use settings without indexes as default values to preserve backwards compatibility
 
-button_event_delays_t _buttonDelays(unsigned char index) {
+ButtonEventDelays _buttonDelays(size_t index) {
     return {
-        _buttonGetSetting("btnDebDel", index, _buttonDebounceDelay(index)),
-        _buttonGetSetting("btnRepDel", index, _buttonRepeatDelay(index)),
-        _buttonGetSetting("btnLclkDel", index, _buttonLongClickDelay(index)),
-        _buttonGetSetting("btnLLclkDel", index, _buttonLongLongClickDelay(index)),
+        _buttonGetDelay("btnDebDel", index, button::build::debounceDelay(index)),
+        _buttonGetDelay("btnRepDel", index, button::build::repeatDelay(index)),
+        _buttonGetDelay("btnLclkDel", index, button::build::longClickDelay(index)),
+        _buttonGetDelay("btnLLclkDel", index, button::build::longLongClickDelay(index)),
     };
 }
 
-bool _buttonSetupProvider(unsigned char index, ButtonProvider provider) {
+bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
     bool result { false };
 
     switch (provider) {
@@ -883,8 +828,8 @@ void _buttonSettingsMigrate(int version) {
 void buttonSetup() {
     _buttonSettingsMigrate(migrateVersion());
 
-    for (unsigned char index = 0; index < ButtonsMax; ++index) {
-        auto provider = getSetting({"btnProv", index}, _buttonProvider(index));
+    for (size_t index = 0; index < ButtonsMax; ++index) {
+        auto provider = getSetting({"btnProv", index}, button::build::provider(index));
         if (!_buttonSetupProvider(index, provider)) {
             break;
         }
@@ -892,9 +837,6 @@ void buttonSetup() {
 
     auto count = _buttons.size();
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), count);
-    if (!count) {
-        return;
-    }
 
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("BUTTON"), [](const terminal::CommandContext& ctx) {
@@ -913,19 +855,19 @@ void buttonSetup() {
     });
 #endif
 
-    _buttonConfigure();
-
-    // Websocket Callbacks
-    #if WEB_SUPPORT
+    if (count) {
+#if WEB_SUPPORT
         wsRegister()
             .onVisible(_buttonWebSocketOnVisible)
             .onConnected(_buttonWebSocketOnConnected)
             .onKeyCheck(_buttonWebSocketOnKeyCheck);
-    #endif
+#endif
 
-    // Register system callbacks
-    espurnaRegisterLoop(buttonLoop);
-    espurnaRegisterReload(_buttonConfigure);
+        _buttonConfigure();
+        espurnaRegisterReload(_buttonConfigure);
+
+        espurnaRegisterLoop(buttonLoop);
+    }
 }
 
 #endif // BUTTON_SUPPORT

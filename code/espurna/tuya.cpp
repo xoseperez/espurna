@@ -139,7 +139,7 @@ namespace tuya {
             }
         }
 
-        void channel(unsigned char channel, float value) override {
+        void channel(size_t channel, float value) override {
             // XXX: can't handle channel values when OFF, and will turn the lights ON
             if (!_last_state) {
                 return;
@@ -520,7 +520,7 @@ error:
 
     namespace build {
 
-    constexpr unsigned char channelDpId(unsigned char index) {
+    constexpr unsigned char channelDpId(size_t index) {
         return (index == 0) ? TUYA_CH1_DPID :
             (index == 1) ? TUYA_CH2_DPID :
             (index == 2) ? TUYA_CH3_DPID :
@@ -528,7 +528,7 @@ error:
             (index == 4) ? TUYA_CH5_DPID : 0u;
     }
 
-    constexpr unsigned char switchDpId(unsigned char index) {
+    constexpr unsigned char switchDpId(size_t index) {
         return (index == 0) ? TUYA_SW1_DPID :
             (index == 1) ? TUYA_SW2_DPID :
             (index == 2) ? TUYA_SW3_DPID :
@@ -551,7 +551,7 @@ error:
 
     void setupSwitches() {
         bool done { false };
-        for (unsigned char id = 0; id < RelaysMax; ++id) {
+        for (size_t id = 0; id < RelaysMax; ++id) {
             auto dp = getSetting({"tuyaSwitch", id}, build::switchDpId(id));
             if (!dp) {
                 break;
@@ -577,7 +577,7 @@ error:
 
     void setupChannels() {
         bool done { false };
-        for (unsigned char id = 0; id < Light::ChannelsMax; ++id) {
+        for (size_t id = 0; id < Light::ChannelsMax; ++id) {
             auto dp = getSetting({"tuyaChannel", id}, build::channelDpId(id));
             if (!dp) {
                 break;

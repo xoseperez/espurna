@@ -489,11 +489,9 @@ class KeyValueStore {
 
             auto key_result = kv.key.read();
             if (key_result == key) {
-                if (read_value) {
-                    out = std::move(kv.value.read();
-                } else {
-                    out = String();
-                }
+                out = read_value
+                    ? std::move(kv.value.read())
+                    : String();
                 break;
             }
         } while (_state != State::End);

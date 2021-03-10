@@ -19,13 +19,13 @@ BrokerDeclare(RfbridgeBroker, void(unsigned char protocol, const char* code));
 void rfbSend(const char* code);
 void rfbSend(const String& code);
 
-void rfbStatus(unsigned char id, bool status);
-void rfbLearn(unsigned char id, bool status);
+void rfbStatus(size_t id, bool status);
+void rfbLearn(size_t id, bool status);
 
-String rfbRetrieve(unsigned char id, bool status);
-void rfbStore(unsigned char id, bool status, const char * code);
+String rfbRetrieve(size_t id, bool status);
+void rfbStore(size_t id, bool status, const char* code);
 
-void rfbForget(unsigned char id, bool status);
+void rfbForget(size_t id, bool status);
 void rfbSetup();
 
 #endif // RFB_SUPPORT == 1
