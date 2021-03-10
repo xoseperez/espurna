@@ -8,7 +8,29 @@ RELAY MODULE
 
 #include "espurna.h"
 
-constexpr double _relayPulseTime(unsigned char index) {
+constexpr int _relaySyncMode() {
+    return RELAY_SYNC;
+}
+
+constexpr float _relayFloodWindow() {
+    return RELAY_FLOOD_WINDOW;
+}
+
+static_assert(_relayFloodWindow() >= 0.0f, "");
+
+constexpr unsigned long _relayFloodWindowMs() {
+    return static_cast<unsigned long>(_relayFloodWindow() * 1000.0f);
+}
+
+constexpr unsigned long _relayFloodChanges() {
+    return RELAY_FLOOD_CHANGES;
+}
+
+constexpr unsigned long _relayInterlockDelay() {
+    return RELAY_DELAY_INTERLOCK;
+}
+
+constexpr float _relayPulseTime(unsigned char index) {
     return (
         (index == 0) ? RELAY1_PULSE_TIME :
         (index == 1) ? RELAY2_PULSE_TIME :
@@ -20,6 +42,15 @@ constexpr double _relayPulseTime(unsigned char index) {
         (index == 7) ? RELAY8_PULSE_TIME : RELAY_PULSE_TIME
     );
 }
+
+static_assert(_relayPulseTime(0) >= 0.0f, "");
+static_assert(_relayPulseTime(1) >= 0.0f, "");
+static_assert(_relayPulseTime(2) >= 0.0f, "");
+static_assert(_relayPulseTime(3) >= 0.0f, "");
+static_assert(_relayPulseTime(4) >= 0.0f, "");
+static_assert(_relayPulseTime(5) >= 0.0f, "");
+static_assert(_relayPulseTime(6) >= 0.0f, "");
+static_assert(_relayPulseTime(7) >= 0.0f, "");
 
 constexpr RelayPulse _relayPulseMode(unsigned char index) {
     return (
@@ -43,7 +74,7 @@ constexpr unsigned long _relayDelayOn(unsigned char index) {
         (index == 4) ? RELAY5_DELAY_ON :
         (index == 5) ? RELAY6_DELAY_ON :
         (index == 6) ? RELAY7_DELAY_ON :
-        (index == 7) ? RELAY8_DELAY_ON : 0
+        (index == 7) ? RELAY8_DELAY_ON : 0ul
     );
 }
 
@@ -56,7 +87,7 @@ constexpr unsigned long _relayDelayOff(unsigned char index) {
         (index == 4) ? RELAY5_DELAY_OFF :
         (index == 5) ? RELAY6_DELAY_OFF :
         (index == 6) ? RELAY7_DELAY_OFF :
-        (index == 7) ? RELAY8_DELAY_OFF : 0
+        (index == 7) ? RELAY8_DELAY_OFF : 0ul
     );
 }
 
@@ -121,7 +152,7 @@ constexpr int _relayBootMode(unsigned char index) {
         (index == 4) ? RELAY5_BOOT_MODE :
         (index == 5) ? RELAY6_BOOT_MODE :
         (index == 6) ? RELAY7_BOOT_MODE :
-        (index == 7) ? RELAY8_BOOT_MODE : GPIO_NONE
+        (index == 7) ? RELAY8_BOOT_MODE : RELAY_BOOT_OFF
     );
 }
 
@@ -151,7 +182,19 @@ constexpr RelayMqttTopicMode _relayMqttTopicMode(unsigned char index) {
     );
 }
 
-constexpr const char* _relayMqttTopicSub(unsigned char index) {
+constexpr const char* const _relayMqttPayloadOn() {
+    return RELAY_MQTT_ON;
+}
+
+constexpr const char* const _relayMqttPayloadOff() {
+    return RELAY_MQTT_OFF;
+}
+
+constexpr const char* const _relayMqttPayloadToggle() {
+    return RELAY_MQTT_TOGGLE;
+}
+
+constexpr const char* const _relayMqttTopicSub(unsigned char index) {
     return (
         (index == 0) ? (RELAY1_MQTT_TOPIC_SUB) :
         (index == 1) ? (RELAY2_MQTT_TOPIC_SUB) :
@@ -164,7 +207,7 @@ constexpr const char* _relayMqttTopicSub(unsigned char index) {
     );
 }
 
-constexpr const char* _relayMqttTopicPub(unsigned char index) {
+constexpr const char* const _relayMqttTopicPub(unsigned char index) {
     return (
         (index == 0) ? (RELAY1_MQTT_TOPIC_PUB) :
         (index == 1) ? (RELAY2_MQTT_TOPIC_PUB) :

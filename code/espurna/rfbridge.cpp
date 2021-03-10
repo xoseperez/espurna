@@ -1088,7 +1088,6 @@ void _rfbInitCommands() {
 
 #if RELAY_SUPPORT
     terminalRegisterCommand(F("RFB.LEARN"), [](const terminal::CommandContext& ctx) {
-
         if (ctx.argc != 3) {
             terminalError(ctx, F("RFB.LEARN <ID> <STATUS>"));
             return;
@@ -1229,13 +1228,14 @@ void _rfbSettingsMigrate(int version) {
 
     String buffer;
 
-    for (unsigned char index = 0; index < relayCount(); ++index) {
-        SettingsKey on_key {F("rfbON"), index};
+    auto relays = relayCount();
+    for (decltype(relays) id = 0; id < relays; ++id) {
+        SettingsKey on_key {F("rfbON"), id};
         if (migrate_code(buffer, getSetting(on_key))) {
             setSetting(on_key, buffer);
         }
 
-        SettingsKey off_key {F("rfbOFF"), index};
+        SettingsKey off_key {F("rfbOFF"), id};
         if (migrate_code(buffer, getSetting(off_key))) {
             setSetting(off_key, buffer);
         }

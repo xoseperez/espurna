@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Ticker.h>
 #include <ArduinoJson.h>
+
 #include <bitset>
 #include <cstring>
 #include <functional>
@@ -30,29 +31,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/BasePin.h"
 #include "relay_config.h"
 
-// Relay statuses are kept in a mutable bitmask struct
-// TODO: u32toString should be convert(...) ?
-
 namespace {
-
-String u32toString(uint32_t value, int base) {
-    String result;
-    result.reserve(32 + 2);
-
-    if (base == 2) {
-        result += "0b";
-    } else if (base == 8) {
-        result += "0o";
-    } else if (base == 16) {
-        result += "0x";
-    }
-
-    char buffer[33] = {0};
-    ultoa(value, buffer, base);
-    result += buffer;
-
-    return result;
-}
 
 using RelayMask = std::bitset<RelaysMax>;
 
@@ -72,7 +51,7 @@ struct RelayMaskHelper {
     }
 
     String toString() const {
-        return u32toString(toUnsigned(), 2);
+        return settings::internal::serialize(toUnsigned(), 2);
     }
 
     const RelayMask& mask() const {
@@ -94,8 +73,6 @@ struct RelayMaskHelper {
 private:
     RelayMask _mask { 0ul };
 };
-
-} // namespace
 
 template <typename T>
 T _relayPayloadToTristate(const char* payload) {
@@ -145,6 +122,8 @@ const char* _relayPulseToPayload(RelayPulse pulse) {
 const char* _relayLockToPayload(RelayLock lock) {
     return _relayTristateToPayload(lock);
 }
+
+} // namespace
 
 namespace settings {
 namespace internal {
@@ -219,8 +198,7 @@ RelayMaskHelper convert(const String& value) {
     return RelayMaskHelper(convert<unsigned long>(value));
 }
 
-template <>
-String serialize(const RelayMaskHelper& mask) {
+String serialize(RelayMaskHelper mask) {
     return mask.toString();
 }
 
@@ -274,15 +252,15 @@ public:
 };
 
 std::vector<relay_t> _relays;
-bool _relayRecursive = false;
-size_t _relayDummy = 0;
+bool _relayRecursive { false };
+size_t _relayDummy { 0ul };
 
-unsigned long _relay_flood_window = (1000 * RELAY_FLOOD_WINDOW);
-unsigned long _relay_flood_changes = RELAY_FLOOD_CHANGES;
+unsigned long _relay_flood_window { _relayFloodWindowMs() };
+unsigned long _relay_flood_changes { _relayFloodChanges() };
 
 unsigned long _relay_delay_interlock;
-unsigned char _relay_sync_mode = RELAY_SYNC_ANY;
-bool _relay_sync_locked = false;
+int _relay_sync_mode { RELAY_SYNC_ANY };
+bool _relay_sync_locked { false };
 
 Ticker _relay_save_timer;
 Ticker _relay_sync_timer;
@@ -637,10 +615,10 @@ void _relayHandleStatus(unsigned char id, PayloadStatus status) {
     }
 }
 
-bool _relayHandlePayload(unsigned char relayID, const char* payload) {
+bool _relayHandlePayload(unsigned char id, const char* payload) {
     auto status = relayParsePayload(payload);
     if (status != PayloadStatus::Unknown) {
-        _relayHandleStatus(relayID, status);
+        _relayHandleStatus(id, status);
         return true;
     }
 
@@ -648,8 +626,8 @@ bool _relayHandlePayload(unsigned char relayID, const char* payload) {
     return false;
 }
 
-bool _relayHandlePayload(unsigned char relayID, const String& payload) {
-    return _relayHandlePayload(relayID, payload.c_str());
+bool _relayHandlePayload(unsigned char id, const String& payload) {
+    return _relayHandlePayload(id, payload.c_str());
 }
 
 bool _relayHandlePulsePayload(unsigned char id, const char* payload) {
@@ -837,7 +815,7 @@ void relayPulse(unsigned char id) {
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
         relay.pulse = getSetting({"relayPulse", id}, _relayPulseMode(id));
-        relay.pulse_ms = static_cast<unsigned long>(1000.0 * getSetting({"relayTime", id}, _relayPulseTime(id)));
+        relay.pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, _relayPulseTime(id)));
     }
 
 }
@@ -926,11 +904,11 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    #if MQTT_SUPPORT
-        return relayStatus(id, status, mqttForward(), true);
-    #else
-        return relayStatus(id, status, false, true);
-    #endif
+#if MQTT_SUPPORT
+    return relayStatus(id, status, mqttForward(), true);
+#else
+    return relayStatus(id, status, false, true);
+#endif
 }
 
 bool relayStatus(unsigned char id) {
@@ -1031,16 +1009,17 @@ void relaySave() {
 }
 
 void relayToggle(unsigned char id, bool report, bool group_report) {
-    if (id >= _relays.size()) return;
-    relayStatus(id, !relayStatus(id), report, group_report);
+    if (id < _relays.size()) {
+        relayStatus(id, !relayStatus(id), report, group_report);
+    }
 }
 
 void relayToggle(unsigned char id) {
-    #if MQTT_SUPPORT
-        relayToggle(id, mqttForward(), true);
-    #else
-        relayToggle(id, false, true);
-    #endif
+#if MQTT_SUPPORT
+    relayToggle(id, mqttForward(), true);
+#else
+    relayToggle(id, false, true);
+#endif
 }
 
 size_t relayCount() {
@@ -1153,14 +1132,15 @@ void _relayBootAll() {
 
     bool once { true };
     static RelayMask done;
-    for (unsigned char id = 0; id < relayCount(); ++id) {
+    auto relays = relayCount();
+    for (decltype(relays) id = 0; id < relays; ++id) {
         if (done[id]) {
             continue;
         }
 
         if (once) {
             DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
-                _relays.size(), mask.toString().c_str());
+                relays, mask.toString().c_str());
             once = false;
         }
 
@@ -1172,25 +1152,26 @@ void _relayBootAll() {
 }
 
 void _relayConfigure() {
-    for (unsigned char i = 0, relays = _relays.size() ; (i < relays); ++i) {
-        _relays[i].pulse = getSetting({"relayPulse", i}, _relayPulseMode(i));
-        _relays[i].pulse_ms = static_cast<unsigned long>(1000.0 * getSetting({"relayTime", i}, _relayPulseTime(i)));
+    auto relays = _relays.size();
+    for (decltype(relays) id = 0; id < relays; ++id) {
+        _relays[id].pulse = getSetting({"relayPulse", id}, _relayPulseMode(id));
+        _relays[id].pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", i}, _relayPulseTime(i)));
 
-        _relays[i].delay_on = getSetting({"relayDelayOn", i}, _relayDelayOn(i));
-        _relays[i].delay_off = getSetting({"relayDelayOff", i}, _relayDelayOff(i));
+        _relays[id].delay_on = getSetting({"relayDelayOn", id}, _relayDelayOn(id));
+        _relays[id].delay_off = getSetting({"relayDelayOff", id}, _relayDelayOff(id));
     }
 
-    _relay_flood_window = (1000 * getSetting("relayFloodTime", RELAY_FLOOD_WINDOW));
-    _relay_flood_changes = getSetting("relayFloodChanges", RELAY_FLOOD_CHANGES);
+    _relay_flood_window = (1000.0f * getSetting("relayFloodTime", _relayFloodWindow()));
+    _relay_flood_changes = getSetting("relayFloodChanges", _relayFloodChanges());
 
-    _relay_delay_interlock = getSetting("relayIlkDelay", RELAY_DELAY_INTERLOCK);
-    _relay_sync_mode = getSetting("relaySync", RELAY_SYNC);
+    _relay_delay_interlock = getSetting("relayIlkDelay", _relayInterlockDelay());
+    _relay_sync_mode = getSetting("relaySync", _relaySyncMode());
 
     #if MQTT_SUPPORT || API_SUPPORT
         settingsProcessConfig({
-            {_relay_rpc_payload_on,     "relayPayloadOn",     RELAY_MQTT_ON},
-            {_relay_rpc_payload_off,    "relayPayloadOff",    RELAY_MQTT_OFF},
-            {_relay_rpc_payload_toggle, "relayPayloadToggle", RELAY_MQTT_TOGGLE},
+            {_relay_rpc_payload_on,     "relayPayloadOn",     _relayMqttPayloadOn()},
+            {_relay_rpc_payload_off,    "relayPayloadOff",    _relayMqttPayloadOff()},
+            {_relay_rpc_payload_toggle, "relayPayloadToggle", _relayMqttPayloadToggle()},
         });
     #endif // MQTT_SUPPORT
 }
@@ -1213,9 +1194,10 @@ void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& lock = state.createNestedArray("lock");
 
     // Note: we use byte instead of bool to ever so slightly compress json output
-    for (unsigned char i=0; i<relayCount(); i++) {
-        status.add<uint8_t>(_relays[i].target_status);
-        lock.add(static_cast<uint8_t>(_relays[i].lock));
+    auto relays = relayCount();
+    for (decltype(relays) id = 0; id < relays; ++id) {
+        status.add(_relays[id].target_status ? 1 : 0);
+        lock.add(static_cast<uint8_t>(_relays[id].lock));
     }
 }
 
@@ -1284,8 +1266,8 @@ void _relayWebSocketOnVisible(JsonObject& root) {
 
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
-        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
-        root["relayIlkDelay"] = getSetting("relayIlkDelay", RELAY_DELAY_INTERLOCK);
+        root["relaySync"] = static_cast<uint8_t>(getSetting("relaySync", _relaySyncMode()));
+        root["relayIlkDelay"] = getSetting("relayIlkDelay", _relayInterlockDelay());
     }
 
     root["relayVisible"] = 1;
@@ -1860,7 +1842,8 @@ void _relayProcess(bool mode) {
 
     bool changed = false;
 
-    for (unsigned char id = 0; id < _relays.size(); id++) {
+    auto relays = _relays.size();
+    for (decltype(relays) id = 0; id < relays; ++id) {
 
         bool target = _relays[id].target_status;
 
@@ -1902,9 +1885,17 @@ void _relayProcess(bool mode) {
     }
 
     // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
-    const bool needs_unlock = ((_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) || (_relay_sync_mode == RELAY_SYNC_ONE));
-    if (_relay_sync_locked && needs_unlock && changed) {
-        _relaySyncUnlock();
+    switch (_relay_sync_mode) {
+    case RELAY_SYNC_ONE:
+    case RELAY_SYNC_NONE_OR_ONE
+        if (_relay_sync_locked && changed) {
+            _relaySyncUnlock();
+        }
+        break;
+    case RELAY_SYNC_ANY:
+    case RELAY_SYNC_SAME:
+    case RELAY_SYNC_FIRST:
+        break;
     }
 }
 

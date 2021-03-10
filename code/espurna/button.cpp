@@ -48,8 +48,7 @@ debounce_event::types::Mode convert(const String& value) {
     }
 }
 
-template<>
-String serialize(const debounce_event::types::Mode& value) {
+String serialize(debounce_event::types::Mode value) {
     String result;
     switch (value) {
         case debounce_event::types::Mode::Switch:
@@ -76,8 +75,7 @@ debounce_event::types::PinValue convert(const String& value) {
     }
 }
 
-template<>
-String serialize(const debounce_event::types::PinValue& value) {
+String serialize(debounce_event::types::PinValue value) {
     String result;
     switch (value) {
         case debounce_event::types::PinValue::Low:
@@ -106,8 +104,7 @@ debounce_event::types::PinMode convert(const String& value) {
     }
 }
 
-template<>
-String serialize(const debounce_event::types::PinMode& mode) {
+String serialize(debounce_event::types::PinMode mode) {
     String result;
     switch (mode) {
         case debounce_event::types::PinMode::InputPullup:

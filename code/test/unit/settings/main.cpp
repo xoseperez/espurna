@@ -133,8 +133,8 @@ template <typename T>
 void check_kv(T& instance, const String& key, const String& value) {
     auto result = instance.kvs.get(key);
     TEST_ASSERT_MESSAGE(static_cast<bool>(result), key.c_str());
-    TEST_ASSERT(result.value.length());
-    TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
+    TEST_ASSERT(result.length());
+    TEST_ASSERT_EQUAL_STRING(value.c_str(), result.c_str());
 };
 
 void test_sizes() {
@@ -274,7 +274,7 @@ void test_small_gaps() {
     auto check_empty = [&instance](const String& key) {
         auto result = instance.kvs.get(key);
         TEST_ASSERT(static_cast<bool>(result));
-        TEST_ASSERT_FALSE(result.value.length());
+        TEST_ASSERT_FALSE(result.length());
     };
 
     check_empty("empty_again");
@@ -285,8 +285,8 @@ void test_small_gaps() {
     auto check_value = [&instance](const String& key, const String& value) {
         auto result = instance.kvs.get(key);
         TEST_ASSERT(static_cast<bool>(result));
-        TEST_ASSERT(result.value.length());
-        TEST_ASSERT_EQUAL_STRING(value.c_str(), result.value.c_str());
+        TEST_ASSERT(result.length());
+        TEST_ASSERT_EQUAL_STRING(value.c_str(), result.c_str());
     };
 
     check_value("finally", "avalue");
@@ -354,7 +354,7 @@ void test_basic() {
     for (auto& kv : kvs) {
         auto result = instance.kvs.get(kv.first);
         TEST_ASSERT(static_cast<bool>(result));
-        TEST_ASSERT_EQUAL_STRING(kv.second.c_str(), result.value.c_str());
+        TEST_ASSERT_EQUAL_STRING(kv.second.c_str(), result.c_str());
     }
 
 }
@@ -403,7 +403,7 @@ void test_storage() {
         TEST_ASSERT_EQUAL(0, slice.available());
         auto result = slice.get("key1");
         TEST_ASSERT(static_cast<bool>(result));
-        TEST_ASSERT_EQUAL_STRING("value1", result.value.c_str());
+        TEST_ASSERT_EQUAL_STRING("value1", result.c_str());
     }
 
     // ensure that right offset also works
@@ -414,7 +414,7 @@ void test_storage() {
         TEST_ASSERT_EQUAL((Size - kvsize - kvsize), slice.available());
         auto result = slice.get("key2");
         TEST_ASSERT(static_cast<bool>(result));
-        TEST_ASSERT_EQUAL_STRING("value2", result.value.c_str());
+        TEST_ASSERT_EQUAL_STRING("value2", result.c_str());
     }
 
     // ensure offset does not introduce offset bugs
@@ -431,8 +431,8 @@ void test_storage() {
         auto key1 = slice.get("key1");
         TEST_ASSERT(static_cast<bool>(key1));
 
-        String updated(key1.value);
-        for (size_t index = 0; index < key1.value.length(); ++index) {
+        String updated(key1.ref());
+        for (size_t index = 0; index < key1.length(); ++index) {
             updated[index] = 'A';
         }
 
@@ -443,11 +443,11 @@ void test_storage() {
 
         auto check_key1 = slice.get("key1");
         TEST_ASSERT(static_cast<bool>(check_key1));
-        TEST_ASSERT_EQUAL_STRING(updated.c_str(), check_key1.value.c_str());
+        TEST_ASSERT_EQUAL_STRING(updated.c_str(), check_key1.c_str());
 
         auto check_key2 = slice.get("key2");
         TEST_ASSERT(static_cast<bool>(check_key2));
-        TEST_ASSERT_EQUAL_STRING(updated.c_str(), check_key2.value.c_str());
+        TEST_ASSERT_EQUAL_STRING(updated.c_str(), check_key2.c_str());
 
         TEST_ASSERT_EQUAL(available - offset, slice.available());
     }

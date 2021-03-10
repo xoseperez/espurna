@@ -315,8 +315,7 @@ void debugSetup() {
 namespace settings {
 namespace internal {
 
-template<>
-String serialize(const DebugLogMode& value) {
+String serialize(DebugLogMode value) {
     String result;
     switch (value) {
         case DebugLogMode::Disabled:

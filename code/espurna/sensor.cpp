@@ -2365,21 +2365,25 @@ namespace internal {
 
 template <>
 sensor::Unit convert(const String& string) {
-    const int value = string.toInt();
-    if ((value > static_cast<int>(sensor::Unit::Min_)) && (value < static_cast<int>(sensor::Unit::Max_))) {
-        return static_cast<sensor::Unit>(value);
+    auto len = value.length();
+    if (len && isNumber(value)) {
+        constexpr int Min { static_cast<int>(sensor::Unit::Min_) };
+        constexpr int Max { static_cast<int>(sensor::Unit::Max_) };
+        auto num = convert<int>(value);
+        if ((Min < num) && (num < Max)) {
+            return static_cast<sensor::Unit>(num);
+        }
     }
 
     return sensor::Unit::None;
 }
 
-template <>
-String serialize(const sensor::Unit& unit) {
-    return String(static_cast<int>(unit));
+String serialize(sensor::Unit unit) {
+    return serialize(static_cast<int>(unit));
 }
 
-} // ns settings::internal
-} // ns settings
+} // namespace internal
+} // namespace settings
 
 void _sensorConfigure() {
 
@@ -2654,36 +2658,32 @@ String magnitudeTopicIndex(unsigned char index) {
 
 // -----------------------------------------------------------------------------
 
-void _sensorBackwards() {
-
+void _sensorBackwards(int version) {
     // Some keys from older versions were longer
-    moveSetting("powerUnits", "pwrUnits");
-    moveSetting("energyUnits", "eneUnits");
-
-    // Energy is now indexed (based on magnitude.index_global)
-    moveSetting("eneTotal", "eneTotal0");
-
-	// Update PZEM004T energy total across multiple devices
-    moveSettings("pzEneTotal", "eneTotal");
-
-    // Unit ID is no longer shared, drop when equal to Min_ or None
-    const char *keys[3] = {
-        "pwrUnits", "eneUnits", "tmpUnits"
-    };
-
-    for (auto* key : keys) {
-        const auto units = getSetting(key);
-        if (units.length() && (units.equals("0") || units.equals("1"))) {
-            delSetting(key);
-        }
+    if (version < 3) {
+        moveSetting("powerUnits", "pwrUnits");
+        moveSetting("energyUnits", "eneUnits");
     }
 
+    // Energy is now indexed (based on magnitude.index_global)
+	// Also update PZEM004T energy total across multiple devices
+    if (version < 5) {
+        moveSetting("eneTotal", "eneTotal0");
+        moveSettings("pzEneTotal", "eneTotal");
+    }
+
+    // Unit ID is no longer shared, drop when equal to Min_ or None
+    if (version < 5) {
+        delSetting("pwrUnits");
+        delSetting("eneUnits");
+        delSetting("tmpUnits");
+    }
 }
 
 void sensorSetup() {
 
     // Settings backwards compatibility
-    _sensorBackwards();
+    _sensorBackwards(migrateVersion());
 
     // Load configured sensors and set up all of magnitudes
     _sensorLoad();
