@@ -250,18 +250,27 @@ void _ledWebSocketOnVisible(JsonObject& root) {
 }
 
 void _ledWebSocketOnConnected(JsonObject& root) {
-    if (!ledCount()) return;
-    JsonObject& module = root.createNestedObject("led");
+    if (!ledCount()) {
+        return;
+    }
 
-    JsonArray& schema = module.createNestedArray("schema");
-    schema.add("GPIO");
-    schema.add("Inv");
-    schema.add("Mode");
+    JsonObject& config = root.createNestedObject("ledConfig");
+
+    {
+        static constexpr const char* const schema_keys[] PROGMEM = {
+            "ledGpio",
+            "ledInv",
+            "ledMode"
 #if RELAY_SUPPORT
-    schema.add("Relay");
+            ,"ledRelay"
 #endif
+        };
 
-    JsonArray& leds = module.createNestedArray("list");
+        JsonArray& schema = config.createNestedArray("schema");
+        schema.copyFrom(schema_keys, sizeof(schema_keys) / sizeof(*schema_keys));
+    }
+
+    JsonArray& leds = config.createNestedArray("leds");
 
     for (size_t index = 0; index < ledCount(); ++index) {
         JsonArray& led = leds.createNestedArray();

@@ -64,7 +64,7 @@ function followScroll(id, threshold) {
 
 function fromSchema(source, schema) {
     if (schema.length !== source.length) {
-        throw "Schema mismatch!";
+        throw `Schema mismatch! Expected length ${schema.length} vs. ${source.length}`;
     }
 
     var target = {};
@@ -1023,6 +1023,20 @@ function addNetwork(network) {
 // Relays scheduler
 // -----------------------------------------------------------------------------
 
+function addLed(id, cfg, payload) {
+    var line = loadConfigTemplate("ledConfigTemplate");
+
+    fillTemplateLineFromCfg(line, id, cfg);
+    $("span.id", line)
+        .html(id);
+
+    line.appendTo("#ledConfig");
+}
+
+// -----------------------------------------------------------------------------
+// Relays scheduler
+// -----------------------------------------------------------------------------
+
 function numSchedules() {
     return $("#schedules > div").length;
 }
@@ -1862,7 +1876,7 @@ function processData(data) {
 
             let schema = value.schema;
             value["schedules"].forEach((entries, id) => {
-                let cfg = fromSchema(entries, id);
+                let cfg = fromSchema(entries, schema);
                 addSchedule(cfg, value);
             });
 
@@ -1921,28 +1935,14 @@ function processData(data) {
         // LEDs
         // ---------------------------------------------------------------------
 
-        if ("led" === key) {
-            if($("#ledConfig > div").length > 0) return;
+        if ("ledConfig" === key) {
+            if ($("#ledConfig > div").length > 0) {
+                return;
+            }
 
-            var schema = value["schema"];
-            value["list"].forEach(function(led_data, index) {
-                var line = loadConfigTemplate("ledConfigTemplate");
-
-                $("span.id", line).html(index);
-                $("select", line).attr("data", index);
-                $("input", line).attr("data", index);
-
-                var led = fromSchema(led_data, schema);
-
-                $("select[name='ledGPIO']", line).val(led.GPIO);
-                // XXX: checkbox implementation depends on unique id
-                // $("input[name='ledInv']", line).val(led.Inv);
-                $("select[name='ledMode']", line).val(led.Mode);
-                $("input[name='ledRelay']", line).val(led.Relay);
-
-                setOriginalsFromValues($("input,select", line));
-
-                line.appendTo("#ledConfig");
+            let schema = value["schema"];
+            value["leds"].forEach((entries, id) => {
+                addLed(id, fromSchema(entries, schema), value);
             });
 
             return;
