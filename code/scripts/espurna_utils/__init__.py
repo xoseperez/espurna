@@ -22,7 +22,6 @@
 from .checks import check_cppcheck, check_printsize
 from .float_support import remove_float_support
 from .ldscripts import ldscripts_inject_libpath
-from .libalgobsec import libalgobsec_inject_patcher
 from .postmortem import dummy_ets_printf
 from .git import app_inject_revision
 from .release import copy_release
@@ -33,7 +32,6 @@ __all__ = [
     "check_printsize",
     "remove_float_support",
     "ldscripts_inject_libpath",
-    "libalgobsec_inject_patcher",
     "dummy_ets_printf",
     "app_inject_revision",
     "app_inject_flags",
