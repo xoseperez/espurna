@@ -37,16 +37,15 @@ unsigned char schedulableCount() {
 
 #if API_SUPPORT
 
-void _schPrintSchedule(unsigned char id, JsonObject& root) {
-    root["enabled"] = getSetting({"schEnabled", id}, false);
-    root["utc"] = getSetting({"schUTC", id}, false);
-    root["switch"] = getSetting({"schSwitch", id}, 0);
-    root["action"] = getSetting({"schAction", id}, 0);
-    root["type"] = getSetting({"schType", id}, SCHEDULER_TYPE_SWITCH);
-    root["hour"] = getSetting({"schHour", id}, 0);
-    root["minute"] = getSetting({"schMinute", id}, 0);
-    root["weekdays"] = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
-    root["switch"] = getSetting({"schSwitch", id}, 0);
+void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
+    root["enabled"]     = getSetting({"schEnabled", id}, false);
+    root["utc"]         = getSetting({"schUTC", id}, false);
+    root["switch"]      = getSetting({"schSwitch", id}, 0);
+    root["action"]      = getSetting({"schAction", id}, 0);
+    root["type"]        = getSetting({"schType", id}, SCHEDULER_TYPE_SWITCH);
+    root["hour"]        = getSetting({"schHour", id}, 0);
+    root["minute"]      = getSetting({"schMinute", id}, 0);
+    root["weekdays"]    = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
 }
 
 #endif  // API_SUPPORT
@@ -365,9 +364,9 @@ void schSetup() {
         [](ApiRequest&, JsonObject& root) {
             JsonArray& scheds = root.createNestedArray("schedules");
             for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; ++i) {
-                if (!getSetting({"schSwitch", i}).length()) continue;
+                if (!hasSetting({"schSwitch", i})) continue;
                 auto& sched = scheds.createNestedObject();
-                _schPrintSchedule(i, sched);
+                _schApiPrintSchedule(i, sched);
             }
             return true;
         },
