@@ -11,8 +11,10 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
+#include "api.h"
 #include "broker.h"
 #include "light.h"
+#include "mqtt.h"
 #include "ntp.h"
 #include "ntp_timelib.h"
 #include "relay.h"
@@ -32,6 +34,22 @@ unsigned char schedulableCount() {
 }
 
 // -----------------------------------------------------------------------------
+
+#if API_SUPPORT
+
+void _schPrintSchedule(unsigned char id, JsonObject& root) {
+    root["enabled"] = getSetting({"schEnabled", id}, false);
+    root["utc"] = getSetting({"schUTC", id}, false);
+    root["switch"] = getSetting({"schSwitch", id}, 0);
+    root["action"] = getSetting({"schAction", id}, 0);
+    root["type"] = getSetting({"schType", id}, SCHEDULER_TYPE_SWITCH);
+    root["hour"] = getSetting({"schHour", id}, 0);
+    root["minute"] = getSetting({"schMinute", id}, 0);
+    root["weekdays"] = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
+    root["switch"] = getSetting({"schSwitch", id}, 0);
+}
+
+#endif  // API_SUPPORT
 
 #if WEB_SUPPORT
 
@@ -339,6 +357,21 @@ void schSetup() {
             .onVisible(_schWebSocketOnVisible)
             .onConnected(_schWebSocketOnConnected)
             .onKeyCheck(_schWebSocketOnKeyCheck);
+    #endif
+
+    #if API_SUPPORT
+    apiRegister(
+        F(MQTT_TOPIC_SCHEDULE),
+        [](ApiRequest&, JsonObject& root) {
+            JsonArray& scheds = root.createNestedArray("schedules");
+            for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; ++i) {
+                if (!getSetting({"schSwitch", i}).length()) continue;
+                auto& sched = scheds.createNestedObject();
+                _schPrintSchedule(i, sched);
+            }
+            return true;
+        },
+        nullptr);
     #endif
 
     static bool restore_once = true;
