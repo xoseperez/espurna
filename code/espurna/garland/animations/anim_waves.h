@@ -3,8 +3,6 @@
 #include "../anim.h"
 #include "../palette.h"
 
-#define _BRA_OFFSET 65
-
 //------------------------------------------------------------------------------
 class AnimWaves : public Anim {
     private:

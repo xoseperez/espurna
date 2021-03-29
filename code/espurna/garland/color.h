@@ -98,9 +98,9 @@ struct Color
         Serial.print(("b="));Serial.println(b);
     }
 
-    std::string to_str() {
+    String to_str() {
         char buf[20];
-        sprintf(buf, "r=%3d, g=%3d, b=%3d", r, g, b);
+        sprintf(buf, "r=%hhu, g=%hhu, b=%hhu", r, g, b);
         return buf;
     }
 
