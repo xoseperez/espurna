@@ -146,7 +146,6 @@ uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
 void systemStabilityCounter(uint8_t count);
 
-void systemCheck(bool stable);
 bool systemCheck();
 
 void customResetReason(CustomResetReason reason);

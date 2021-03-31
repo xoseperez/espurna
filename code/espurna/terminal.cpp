@@ -348,10 +348,11 @@ void _terminalInitCommands() {
     });
 
     terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
+        auto count = 1;
         if (ctx.argc == 2) {
-            auto arg = ctx.argv[1].toInt();
+            count = ctx.argv[1].toInt();
             if (arg < SYSTEM_CHECK_MAX) {
-                systemStabilityCounter(arg);
+                systemStabilityCounter(count);
             }
         }
 
