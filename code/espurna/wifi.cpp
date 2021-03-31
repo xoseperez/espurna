@@ -1898,13 +1898,14 @@ void onScan(uint32_t client_id) {
         wifi::SsidInfo result(*found);
         wsPost(client_id, [result](JsonObject& root) {
             JsonArray& scan = root.createNestedArray("scanResult");
-            scan.add(result.ssid());
 
             auto& info = result.info();
-            scan.add(info.rssi());
-            scan.add(info.authmode());
-            scan.add(info.channel());
             scan.add(wifi::debug::mac(info.bssid()));
+            scan.add(wifi::debug::authmode(info.authmode()));
+            scan.add(info.rssi());
+            scan.add(info.channel());
+
+            scan.add(result.ssid());
         });
     },
     [client_id](wifi::ScanError error) {

@@ -790,7 +790,7 @@ function doToggle(id, value) {
 }
 
 function doScan() {
-    $("#scanResult").html("");
+    $("#scanResult > tbody").html("");
     $("div.scan.loading").show();
     $("#button-wifi-scan").attr("disabled", true);
     sendAction("scan", {});
@@ -1006,6 +1006,20 @@ function addNetwork(network) {
 
     return line;
 
+}
+
+function scanResult(values) {
+    $("div.scan.loading").hide();
+    $("#button-wifi-scan").attr("disabled", false);
+
+    let table = document.getElementById("scanResult");
+    table.style.display = "table";
+
+    let row = table.tBodies[0].insertRow();
+    for (let value of values) {
+        let cell = row.insertCell();
+        cell.appendChild(document.createTextNode(value));
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -1850,9 +1864,8 @@ function processData(data) {
         }
 
         if ("scanResult" === key) {
-            $("div.scan.loading").hide();
-            $("#button-wifi-scan").attr("disabled", false);
-            $("#scanResult").show();
+            scanResult(value);
+            return;
         }
 
         // -----------------------------------------------------------------------------
