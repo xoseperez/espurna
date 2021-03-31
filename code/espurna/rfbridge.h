@@ -12,9 +12,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFB_SUPPORT
 
-#include "broker.h"
-
-BrokerDeclare(RfbridgeBroker, void(unsigned char protocol, const char* code));
+using RfbCodeHandler = void(*)(unsigned char protocol, const char* code);
+void rfbSetCodeHandler(RfbCodeHandler);
 
 void rfbSend(const char* code);
 void rfbSend(const String& code);

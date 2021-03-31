@@ -351,7 +351,7 @@ void _terminalInitCommands() {
         auto count = 1;
         if (ctx.argc == 2) {
             count = ctx.argv[1].toInt();
-            if (arg < SYSTEM_CHECK_MAX) {
+            if (count < SYSTEM_CHECK_MAX) {
                 systemStabilityCounter(count);
             }
         }

@@ -1,6 +1,5 @@
 #define ALEXA_SUPPORT           0
 #define API_SUPPORT             0
-#define BROKER_SUPPORT          0
 #define DEBUG_SERIAL_SUPPORT    0
 #define DEBUG_TELNET_SUPPORT    0
 #define DEBUG_WEB_SUPPORT       0

@@ -13,9 +13,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <map>
 #include <memory>
 
-#include "broker.h"
 #include "mqtt.h"
 #include "rpc.h"
+#include "relay.h"
 #include "sensor.h"
 #include "terminal.h"
 #include "ws.h"
@@ -157,7 +157,7 @@ void _idbConfigure() {
     if (_idb_enabled && !_idb_client) _idbInitClient();
 }
 
-void _idbBrokerSensor(const String& topic, unsigned char id, double, const char* value) {
+void _idbSendSensor(const String& topic, unsigned char id, double, const char* value) {
     idbSend(topic.c_str(), id, value);
 }
 
@@ -297,7 +297,7 @@ void idbSetup() {
     #endif
 
     #if SENSOR_SUPPORT
-        SensorReportBroker::Register(_idbBrokerSensor);
+        sensorSetMagnitudeReport(_idbSendSensor);
     #endif
 
     espurnaRegisterReload(_idbConfigure);

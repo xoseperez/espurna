@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "alexa.h"
 #include "api.h"
-#include "broker.h"
 #include "button.h"
 #include "crash.h"
 #include "curtain_kingart.h"

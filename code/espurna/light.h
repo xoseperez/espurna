@@ -41,8 +41,7 @@ enum class Report {
     None = 0,
     Web = 1 << 0,
     Mqtt = 1 << 1,
-    MqttGroup = 1 << 2,
-    Broker = 1 << 3
+    MqttGroup = 1 << 2
 };
 
 constexpr int operator|(Report lhs, int rhs) {
@@ -66,7 +65,7 @@ constexpr int operator&(Report lhs, int rhs) {
 }
 
 constexpr int DefaultReport {
-    Report::Web | Report::Mqtt | Report::MqttGroup | Report::Broker
+    Report::Web | Report::Mqtt | Report::MqttGroup
 };
 
 struct Hsv {

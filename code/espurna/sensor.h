@@ -11,8 +11,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "espurna.h"
 
-#include "broker.h"
-
 //--------------------------------------------------------------------------------
 
 namespace sensor {
@@ -137,8 +135,9 @@ struct Value {
 
 }
 
-BrokerDeclare(SensorReadBroker, void(const String&, unsigned char, double, const char*));
-BrokerDeclare(SensorReportBroker, void(const String&, unsigned char, double, const char*));
+using MagnitudeReadHandler = void(*)(const String&, unsigned char, double, const char*);
+void sensorSetMagnitudeRead(MagnitudeReadHandler handler);
+void sensorSetMagnitudeReport(MagnitudeReadHandler handler);
 
 String magnitudeUnits(unsigned char index);
 String magnitudeDescription(unsigned char index);

@@ -1340,7 +1340,7 @@ bool scanning() {
 // esp32 only has a generic onEvent, but event names are not compatible with the esp8266 version.
 
 void init() {
-    static auto status = WiFi.onStationModeDisconnected([](const auto& src) {
+    static auto status = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& src) { // aka const auto&
         connection::internal::connected = false;
     });
     disconnect();
@@ -2385,6 +2385,10 @@ void wifiToggleAp() {
 
 void wifiToggleSta() {
     wifi::sta::toggle();
+}
+
+void wifiStartAp() {
+    wifi::action(wifi::Action::AccessPointStart);
 }
 
 void wifiTurnOff() {

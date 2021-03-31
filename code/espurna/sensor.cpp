@@ -11,7 +11,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if SENSOR_SUPPORT
 
 #include "api.h"
-#include "broker.h"
 #include "domoticz.h"
 #include "i2c.h"
 #include "mqtt.h"
@@ -528,9 +527,6 @@ void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
 
 // ---------------------------------------------------------------------------
 
-BrokerBind(SensorReadBroker);
-BrokerBind(SensorReportBroker);
-
 std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
 bool _sensors_ready = false;
@@ -538,6 +534,22 @@ bool _sensors_ready = false;
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
+
+// ---------------------------------------------------------------------------
+
+using MagnitudeReadHandlers = std::forward_list<MagnitudeReadHandler>;
+
+MagnitudeReadHandlers _magnitude_read_handlers;
+
+void sensorSetMagnitudeRead(MagnitudeReadHandler handler) {
+    _magnitude_read_handlers.push_front(handler);
+}
+
+MagnitudeReadHandlers _magnitude_report_handlers;
+
+void sensorSetMagnitudeReport(MagnitudeReadHandler handler) {
+    _magnitude_report_handlers.push_front(handler);
+}
 
 // -----------------------------------------------------------------------------
 // Private
@@ -2258,9 +2270,9 @@ void _sensorReport(unsigned char index, const sensor_magnitude_t& magnitude) {
     char buffer[64];
     dtostrf(magnitude.reported, 1, magnitude.decimals, buffer);
 
-#if BROKER_SUPPORT
-    SensorReportBroker::Publish(magnitudeTopic(magnitude.type), magnitude.index_global, magnitude.reported, buffer);
-#endif
+    for (auto& handler : _magnitude_report_handlers) {
+        handler(magnitudeTopic(magnitude.type), magnitude.index_global, magnitude.reported, buffer);
+    }
 
 #if MQTT_SUPPORT
     {
@@ -2364,7 +2376,7 @@ namespace settings {
 namespace internal {
 
 template <>
-sensor::Unit convert(const String& string) {
+sensor::Unit convert(const String& value) {
     auto len = value.length();
     if (len && isNumber(value)) {
         constexpr int Min { static_cast<int>(sensor::Unit::Min_) };
@@ -2811,13 +2823,13 @@ void sensorLoop() {
             // -------------------------------------------------------------
 
             value_show = _magnitudeProcess(magnitude, value_raw);
-#if BROKER_SUPPORT
             {
                 char buffer[64];
                 dtostrf(value_show, 1, magnitude.decimals, buffer);
-                SensorReadBroker::Publish(magnitudeTopic(magnitude.type), magnitude.index_global, value_show, buffer);
+                for (auto& handler : _magnitude_read_handlers) {
+                    handler(magnitudeTopic(magnitude.type), magnitude.index_global, value_show, buffer);
+                }
             }
-#endif
 
             // -------------------------------------------------------------
             // Debug

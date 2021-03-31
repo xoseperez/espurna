@@ -158,7 +158,7 @@ void _rpnRelayStatus(size_t id, bool status) {
     char name[32] = {0};
     snprintf(name, sizeof(name), "relay%u", id);
 
-    rpn_variable_set(_rpn_ctxt, name, rpn_value(std::forward<T>(value)));
+    rpn_variable_set(_rpn_ctxt, name, rpn_value(status));
     _rpn_run = true;
 }
 
@@ -167,12 +167,29 @@ void _rpnLightStatus() {
 
     char name[32] = {0};
     for (decltype(channels) channel = 0; channel < channels; ++channel) {
+        auto value = rpn_value(static_cast<rpn_int>(lightChannel(channel)));
         snprintf(name, sizeof(name), "channel%u", channel);
-        rpn_variable_set(_rpn_ctxt, name, rpn_value(lightChannel(channel)));
+        rpn_variable_set(_rpn_ctxt, name, std::move(value));
     }
 
     _rpn_run = true;
 }
+
+#if SENSOR_SUPPORT
+
+void _rpnSensorMagnitudeRead(const String& topic, unsigned char index, double reading, const char*) {
+    static_assert(sizeof(double) == sizeof(rpn_float), "");
+
+    String name;
+    name.reserve(topic.length() + 3);
+
+    name += topic;
+    name += index;
+
+    rpn_variable_set(_rpn_ctxt, name, rpn_value(static_cast<rpn_float>(reading)));
+}
+
+#endif
 
 #if NTP_SUPPORT
 
@@ -494,7 +511,7 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
-void _rpnBrokerRfbridgeCallback(unsigned char protocol, const char* raw_code) {
+void _rpnRfbridgeCodeHandler(unsigned char protocol, const char* raw_code) {
 
     // remove really old codes that we have not seen in a while to avoid memory exhaustion
     auto ts = millis();
@@ -525,7 +542,7 @@ void _rpnRfbSetup() {
     // - Repeat window is an arbitrary time, just about 3-4 more times it takes for
     //   a code to be sent again when holding a generic remote button
     //   Code counter is reset to 0 when outside of the window.
-    // - Stale delay allows broker callback to remove really old codes.
+    // - Stale delay allows the handler to remove really old codes.
     //   (TODO: can this happen in loop() cb instead?)
     _rfb_code_repeat_window = getSetting("rfbRepeatWindow", 2000ul);
     _rfb_code_match_window = getSetting("rfbMatchWindow", 2000ul);
@@ -548,23 +565,27 @@ void _rpnRfbSetup() {
 #endif
 
     // Main bulk of the processing goes on in here
-    RfbridgeBroker::Register(_rpnBrokerRfbridgeCallback);
+    rfbSetCodeHandler(_rpnRfbridgeCodeHandler);
 }
 
 #endif // RFB_SUPPORT
 
 void _rpnDeepSleep(uint64_t duration, RFMode mode);
 
+void _rpnDeepSleepSchedule(uint64_t duration, RFMode mode) {
+    schedule_function([duration, mode]() {
+        _rpnDeepSleep(duration, mode);
+    });
+}
+
 void _rpnDeepSleep(uint64_t duration, RFMode mode) {
     if (WiFi.getMode() != WIFI_OFF) {
         wifiTurnOff();
-        schedule_function([duration, mode]() {
-            _rpnDeepSleep(duration, mode);
-        });
+        _rpnDeepSleepSchedule(duration, mode);
         return;
     }
 
-    deepSleep(duration, mode);
+    ESP.deepSleep(duration, mode);
 }
 
 void _rpnShowStack(Print& print) {
@@ -1015,13 +1036,13 @@ void rpnSetup() {
     lightSetReportListener(_rpnLightStatus);
 #endif
 
-    #if RFB_SUPPORT
-        _rpnRfbSetup();
-    #endif
+#if RFB_SUPPORT
+    _rpnRfbSetup();
+#endif
 
-    #if SENSOR_SUPPORT
-        SensorReadBroker::Register(_rpnBrokerCallback);
-    #endif
+#if SENSOR_SUPPORT
+    sensorSetMagnitudeRead(_rpnSensorMagnitudeRead);
+#endif
 
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);

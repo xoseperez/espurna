@@ -12,7 +12,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #if TUYA_SUPPORT
 
-#include "broker.h"
 #include "light.h"
 #include "relay.h"
 #include "rpc.h"

@@ -17,8 +17,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "utils.h"
 
-BrokerBind(RfbridgeBroker);
-
 #include <algorithm>
 #include <bitset>
 #include <cstring>
@@ -44,6 +42,12 @@ constexpr bool _rfb_receive { true };
 constexpr bool _rfb_transmit { true };
 
 #endif
+
+std::forward_list<RfbCodeHandler> _rfb_code_handlers;
+
+void rfbSetCodeHandler(RfbCodeHandler handler) {
+    _rfb_code_handlers.push_front(handler);
+}
 
 // -----------------------------------------------------------------------------
 // MATCH RECEIVED CODE WITH THE SPECIFIC RELAY ID
@@ -531,7 +535,7 @@ void _rfbLearnStartFromPayload(const char* payload) {
     std::copy(payload, sep, relay);
 
     size_t id;
-    if (!tryParseId(relay, relayCount(), id)) {
+    if (!tryParseId(relay, relayCount, id)) {
         DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
         return;
     }
@@ -645,9 +649,9 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
             mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
 
-#if BROKER_SUPPORT
-            RfbridgeBroker::Publish(RfbDefaultProtocol, buffer + 12);
-#endif
+            for (auto& handler : _rfb_code_handlers) {
+                handler(RfbDefaultProtocol, buffer + 12);
+            }
         }
         break;
     }
@@ -665,10 +669,10 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
             mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
 
-#if BROKER_SUPPORT
             // ref. https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/0xA6#example-of-a-received-decoded-protocol
-            RfbridgeBroker::Publish(payload[0], buffer + 2);
-#endif
+            for (auto& handler : _rfb_code_handlers) {
+                handler(payload[0], buffer + 2);
+            }
         } else {
             DEBUG_MSG_P(PSTR("[RF] Received 0x%02X (%u bytes)\n"), code, payload.size());
         }
@@ -882,9 +886,9 @@ void _rfbReceiveImpl() {
         mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
 
-#if BROKER_SUPPORT
-        RfbridgeBroker::Publish(message[1], buffer + 10);
-#endif
+        for (auto& handler : _rfb_code_handlers) {
+            handler(message[1], buffer + 10);
+        }
     }
 
     _rfb_modem->resetAvailable();

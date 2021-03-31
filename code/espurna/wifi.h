@@ -86,7 +86,9 @@ IPAddress wifiStaIp();
 
 // Request to change the current STA / AP status
 // Current state persists until reset or configuration reload
+void wifiStartAp();
 void wifiToggleAp();
+
 void wifiToggleSta();
 
 // Disconnects STA intefrace
