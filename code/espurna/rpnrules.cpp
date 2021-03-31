@@ -1008,7 +1008,7 @@ void rpnSetup() {
     #endif
 
 #if NTP_SUPPORT
-    NtpBroker::Register([](NtpTick tick, time_t, const String&) {
+    ntpOnTick([](NtpTick tick) {
         switch (tick) {
         case NtpTick::EveryMinute:
             _rpn_ntp_tick_minute = true;

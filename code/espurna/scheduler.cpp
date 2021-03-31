@@ -368,16 +368,17 @@ void schSetup() {
     #endif
 
     static bool restore_once = true;
-    NtpBroker::Register([](NtpTick tick, time_t, const String&) {
-        if (NtpTick::EveryMinute != tick) {
+    ntpOnTick([](NtpTick tick) {
+        switch (tick) {
+        case NtpTick::EveryHour:
             return;
-        }
-
-        if (restore_once) {
-            auto targets = schedulableCount();
-            for (unsigned char i = 0; i < targets; i++) {
-                if (getSetting({"schRestore", i}, scheduler::build::restoreLast())) {
-                    _schCheck(i, 0);
+        case NtpTick::EveryMinute:
+            if (restore_once) {
+                auto targets = schedulableCount();
+                for (size_t i = 0; i < targets; i++) {
+                    if (getSetting({"schRestore", i}, scheduler::build::restoreLast())) {
+                        _schCheck(i, 0);
+                    }
                 }
             }
             restore_once = false;
