@@ -33,16 +33,12 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <Schedule.h>
 #include <Stream.h>
 
-#if LWIP_VERSION_MAJOR != 1
-
 // not yet CONNECTING or LISTENING
 extern struct tcp_pcb *tcp_bound_pcbs;
 // accepting or sending data
 extern struct tcp_pcb *tcp_active_pcbs;
 // // TIME-WAIT status
 extern struct tcp_pcb *tcp_tw_pcbs;
-
-#endif
 
 namespace {
 
@@ -202,87 +198,73 @@ void _terminalHelpCommand(const terminal::CommandContext& ctx) {
     terminalOK(ctx.output);
 }
 
-#if LWIP_VERSION_MAJOR != 1
+namespace dns {
 
-namespace {
+using Callback = std::function<void(const char* name, const ip_addr_t* addr, void* arg)>;
 
-inline String _terminalPcbStateToString(unsigned char state) {
-    switch (state) {
-        case 0: return F("CLOSED");
-        case 1: return F("LISTEN");
-        case 2: return F("SYN_SENT");
-        case 3: return F("SYN_RCVD");
-        case 4: return F("ESTABLISHED");
-        case 5: return F("FIN_WAIT_1");
-        case 6: return F("FIN_WAIT_2");
-        case 7: return F("CLOSE_WAIT");
-        case 8: return F("CLOSING");
-        case 9: return F("LAST_ACK");
-        case 10: return F("TIME_WAIT");
-        default: return String(int(state));
-    };
-}
+namespace internal {
 
-void _terminalPrintTcpPcb(tcp_pcb* pcb) {
+struct Task {
+    Task() = delete;
+    explicit Task(String&& hostname, Callback&& callback) :
+        _hostname(std::move(hostname)),
+        _callback(std::move(callback))
+    {}
 
-    char remote_ip[32] = {0};
-    char local_ip[32] = {0};
-
-    inet_ntoa_r((pcb->local_ip), local_ip, sizeof(local_ip));
-    inet_ntoa_r((pcb->remote_ip), remote_ip, sizeof(remote_ip));
-
-    DEBUG_MSG_P(PSTR("state=%s local=%s:%u remote=%s:%u snd_queuelen=%u lastack=%u send_wnd=%u rto=%u\n"),
-            _terminalPcbStateToString(pcb->state).c_str(),
-            local_ip, pcb->local_port,
-            remote_ip, pcb->remote_port,
-            pcb->snd_queuelen, pcb->lastack,
-            pcb->snd_wnd, pcb->rto
-    );
-
-}
-
-void _terminalPrintTcpPcbs() {
-
-    tcp_pcb *pcb;
-    //DEBUG_MSG_P(PSTR("Active PCB states:\n"));
-    for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
-        _terminalPrintTcpPcb(pcb);
-    }
-    //DEBUG_MSG_P(PSTR("TIME-WAIT PCB states:\n"));
-    for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
-        _terminalPrintTcpPcb(pcb);
-    }
-    //DEBUG_MSG_P(PSTR("BOUND PCB states:\n"));
-    for (pcb = tcp_bound_pcbs; pcb != NULL; pcb = pcb->next) {
-        _terminalPrintTcpPcb(pcb);
+    ip_addr_t* addr() {
+        return &_addr;
     }
 
-}
-
-void _terminalPrintDnsResult(const char* name, const ip_addr_t* address) {
-    // TODO fix asynctcp building with lwip-ipv6
-    /*
-    #if LWIP_IPV6
-        if (IP_IS_V6(address)) {
-            DEBUG_MSG_P(PSTR("[DNS] %s has IPV6 address %s\n"), name, ip6addr_ntoa(ip_2_ip6(address)));
-        }
-    #endif
-    */
-    DEBUG_MSG_P(PSTR("[DNS] %s has address %s\n"), name, ipaddr_ntoa(address));
-}
-
-void _terminalDnsFound(const char* name, const ip_addr_t* result, void*) {
-    if (!result) {
-        DEBUG_MSG_P(PSTR("[DNS] %s not found\n"), name);
-        return;
+    const char* hostname() const {
+        return _hostname.c_str();
     }
 
-    _terminalPrintDnsResult(name, result);
+    void callback(const char* name, const ip_addr_t* addr, void* arg) {
+        _callback(name, addr, arg);
+    }
+
+    void callback() {
+        _callback(hostname(), addr(), nullptr);
+    }
+
+private:
+    String _hostname;
+    Callback _callback;
+    ip_addr_t _addr { IPADDR_NONE };
+};
+
+using TaskPtr = std::unique_ptr<Task>;
+TaskPtr task;
+
+void callback(const char* name, const ip_addr_t* addr, void* arg) {
+    if (task) {
+        task->callback(name, addr, arg);
+    }
+    task.reset();
 }
 
-} // namespace
+} // namespace internal
 
-#endif // LWIP_VERSION_MAJOR != 1
+bool started() {
+    return static_cast<bool>(internal::task);
+}
+
+void start(String&& hostname, Callback&& callback) {
+    auto task = std::make_unique<internal::Task>(std::move(hostname), std::move(callback));
+
+    switch (dns_gethostbyname(task->hostname(), task->addr(), internal::callback, nullptr)) {
+    case ERR_OK:
+        task->callback();
+        break;
+    case ERR_INPROGRESS:
+        internal::task = std::move(task);
+        break;
+    default:
+        break;
+    }
+}
+
+} // namespace dns
 
 void _terminalInitCommands() {
 
@@ -382,53 +364,64 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-        terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
-            if (ctx.argc != 3) {
-                terminalError(F("[url] [value]"));
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+    terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 3) {
+            terminalError(F("[url] [value]"));
+            return;
+        }
+
+        URL _url(ctx.argv[1]);
+        uint16_t requested_mfln = atol(ctx.argv[2].c_str());
+
+        auto client = std::make_unique<BearSSL::WiFiClientSecure>();
+        client->setInsecure();
+
+        if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
+            terminalOK();
+        } else {
+            terminalError(F("Buffer size not supported"));
+        }
+    });
+#endif
+
+    terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 2) {
+            terminalError(ctx, F("HOST <hostname>"));
+            return;
+        }
+
+        dns::start(String(ctx.argv[1]), [&](const char* name, const ip_addr_t* addr, void*) {
+            if (!addr) {
+                ctx.output.printf_P(PSTR("%s not found\n"), name);
                 return;
             }
 
-            URL _url(ctx.argv[1]);
-            uint16_t requested_mfln = atol(ctx.argv[2].c_str());
-
-            auto client = std::make_unique<BearSSL::WiFiClientSecure>();
-            client->setInsecure();
-
-            if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
-                terminalOK();
-            } else {
-                terminalError(F("Buffer size not supported"));
-            }
-        });
-    #endif
-
-    #if LWIP_VERSION_MAJOR != 1
-        terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
-            if (ctx.argc != 2) {
-                terminalError(F("HOST [hostname]"));
-                return;
-            }
-
-            ip_addr_t result;
-            auto error = dns_gethostbyname(ctx.argv[1].c_str(), &result, _terminalDnsFound, nullptr);
-            if (error == ERR_OK) {
-                _terminalPrintDnsResult(ctx.argv[1].c_str(), &result);
-                terminalOK();
-                return;
-            } else if (error != ERR_INPROGRESS) {
-                DEBUG_MSG_P(PSTR("[DNS] dns_gethostbyname error: %s\n"), lwip_strerr(error));
-                return;
-            }
-
+            ctx.output.printf_P(PSTR("%s has address %s\n"),
+                name, IPAddress(addr).toString().c_str());
         });
 
-        terminalRegisterCommand(F("NETSTAT"), [](const terminal::CommandContext&) {
-            _terminalPrintTcpPcbs();
-        });
+        while (dns::started()) {
+            delay(100);
+        }
+    });
 
-    #endif // LWIP_VERSION_MAJOR != 1
+    terminalRegisterCommand(F("NETSTAT"), [](const terminal::CommandContext& ctx) {
+        auto print = [](Print& out, tcp_pcb* list) {
+            for (tcp_pcb* pcb = list; pcb != nullptr; pcb = pcb->next) {
+                out.printf_P(PSTR("state %s local %s:%hu remote %s:%hu\n"),
+                        tcp_debug_state_str(pcb->state),
+                        IPAddress(pcb->local_ip).toString().c_str(),
+                        pcb->local_port,
+                        IPAddress(pcb->remote_ip).toString().c_str(),
+                        pcb->remote_port);
+            }
+        };
 
+        print(ctx.output, tcp_active_pcbs);
+        print(ctx.output, tcp_tw_pcbs);
+        print(ctx.output, tcp_bound_pcbs);
+    });
 }
 
 void _terminalLoop() {
