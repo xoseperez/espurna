@@ -342,7 +342,7 @@ void _KACurtainResult() {
 
     // Handle configuration button presses
     if (buffer.indexOf("enterESPTOUCH") > 0) {
-        wifiStartAP();
+        wifiStartAp();
     } else if (buffer.indexOf("exitESPTOUCH") > 0) {
         deferredReset(100, CustomResetReason::Hardware);
     } else { //In any other case, update as it could be a move action
