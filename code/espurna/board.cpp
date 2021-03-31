@@ -63,7 +63,7 @@ PROGMEM const char espurna_modules[] =
         "LLMNR "
     #endif
     #if MDNS_SERVER_SUPPORT
-        "MDNS"
+        "MDNS "
     #endif
     #if MQTT_SUPPORT
         "MQTT "
