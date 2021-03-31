@@ -951,7 +951,7 @@ function addRPNRule() {
 }
 
 function addRPNTopic() {
-    addFromTemplate("rpnRuleTemplate", "rpnTopics");
+    addFromTemplate("rpnTopicTemplate", "rpnTopics");
 }
 
 // -----------------------------------------------------------------------------
@@ -986,8 +986,8 @@ function moreNetwork() {
 
 function addNetwork(network) {
 
-    var number = numNetworks();
-    if (number >= maxNetworks) {
+    var id = numNetworks();
+    if (id >= maxNetworks) {
         alert("Max number of networks reached");
         return null;
     }
@@ -1001,18 +1001,7 @@ function addNetwork(network) {
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
 
-    Object.entries(network).forEach(function(pair) {
-        // XXX: UI deleting this network will only re-use stored values.
-        var key = pair[0],
-            val = pair[1];
-        if (key === "stored") {
-            $(line).find(".button-del-network").prop("disabled", val);
-            return;
-        }
-        $("input[name='" + key + "']", line).val(val);
-    });
-
-
+    fillTemplateLineFromCfg(line, id, network);
     line.appendTo("#networks");
 
     return line;
@@ -1852,7 +1841,7 @@ function processData(data) {
         // WiFi
         // ---------------------------------------------------------------------
 
-        if ("wifi" === key) {
+        if ("wifiConfig" === key) {
             maxNetworks = parseInt(value["max"], 10);
             value["networks"].forEach(function(network) {
                 addNetwork(fromSchema(network, value.schema));
@@ -1897,7 +1886,7 @@ function processData(data) {
             }
 
             let schema = value.schema;
-            value["relays"].forEach((entries, id) => {
+            value["cfg"].forEach((entries, id) => {
                 let cfg = fromSchema(entries, schema);
                 var name = cfg["relayName"];
                 if (!cfg.relayName.length) {
