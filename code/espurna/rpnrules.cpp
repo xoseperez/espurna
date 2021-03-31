@@ -553,6 +553,20 @@ void _rpnRfbSetup() {
 
 #endif // RFB_SUPPORT
 
+void _rpnDeepSleep(uint64_t duration, RFMode mode);
+
+void _rpnDeepSleep(uint64_t duration, RFMode mode) {
+    if (WiFi.getMode() != WIFI_OFF) {
+        wifiTurnOff();
+        schedule_function([duration, mode]() {
+            _rpnDeepSleep(duration, mode);
+        });
+        return;
+    }
+
+    deepSleep(duration, mode);
+}
+
 void _rpnShowStack(Print& print) {
     print.println(F("Stack:"));
 
@@ -737,7 +751,9 @@ void _rpnInit() {
 
     rpn_operator_set(_rpn_ctxt, "sleep", 2, [](rpn_context & ctxt) -> rpn_error {
         static bool once { false };
-        if (once) return rpn_operator_error::CannotContinue;
+        if (once) {
+            return rpn_operator_error::CannotContinue;
+        }
 
         auto value = rpn_stack_pop(ctxt).checkedToUint();
         if (!value.ok()) {
@@ -752,17 +768,17 @@ void _rpnInit() {
         auto mode = rpn_stack_pop(ctxt).toUint();
 
         once = true;
-        schedule_function([duration, mode]() {
-            wifiTurnOff();
-            ESP.deepSleep(duration * 1000000ull, static_cast<RFMode>(mode));
-        });
+        _rpnDeepSleep(duration * 1000000ull, static_cast<RFMode>(mode));
 
         return 0;
     });
 
     rpn_operator_set(_rpn_ctxt, "stations", 0, [](rpn_context & ctxt) -> rpn_error {
-        if (!(WiFi.getMode() & WIFI_AP)) return rpn_operator_error::CannotContinue;
-        rpn_stack_push(ctxt, rpn_value(static_cast<rpn_uint>(WiFi.softAPgetStationNum())));
+        rpn_uint out = (WiFi.getMode() & WIFI_AP)
+            ? static_cast<rpn_uint>(WiFi.softAPgetStationNum())
+            : 0u;
+
+        rpn_stack_push(ctxt, rpn_value(out));
         return 0;
     });
 
@@ -773,9 +789,11 @@ void _rpnInit() {
     });
 
     rpn_operator_set(_rpn_ctxt, "rssi", 0, [](rpn_context & ctxt) -> rpn_error {
-        if (!wifiConnected()) return rpn_operator_error::CannotContinue;
-        rpn_stack_push(ctxt, rpn_value(static_cast<rpn_int>(WiFi.RSSI())));
-        return 0;
+        if (wifiConnected()) {
+            rpn_stack_push(ctxt, rpn_value(static_cast<rpn_int>(WiFi.RSSI())));
+            return 0;
+        }
+        return rpn_operator_error::CannotContinue;
     });
 
     rpn_operator_set(_rpn_ctxt, "delay", 1, [](rpn_context & ctxt) -> rpn_error {
