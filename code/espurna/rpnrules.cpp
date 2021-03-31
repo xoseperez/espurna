@@ -575,10 +575,7 @@ void _rpnInit() {
     // Init context
     rpn_init(_rpn_ctxt);
 
-    // Time functions need NTP support
-    // TODO: since 1.15.0, timelib+ntpclientlib are no longer used with latest Cores
-    //       `now` is always in UTC, `utc_...` functions to be used instead to convert time
-    #if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+    #if NTP_SUPPORT
     {
         constexpr size_t time_t_argc { split_t<time_t>{} ? 2 : 1 };
 
@@ -623,35 +620,6 @@ void _rpnInit() {
             return _rpnNtpFunc(ctxt, minute);
         });
     }
-    #endif
-
-    // TODO: 1.14.0 weekday(...) conversion seemed to have 0..6 range with Monday as 0
-    //       using classic Sunday as first, but instead of 0 it is 1
-    //       Implementation above also uses 1 for Sunday, staying compatible with TimeLib
-    #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) -> rpn_error {
-            if (!ntpSynced()) return rpn_operator_error::CannotContinue;
-            rpn_value ts { static_cast<rpn_int>(ntpLocal2UTC(now())) };
-            rpn_stack_push(ctxt, ts);
-            return 0;
-        });
-        rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
-
-        rpn_operator_set(_rpn_ctxt, "month", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, month);
-        });
-        rpn_operator_set(_rpn_ctxt, "day", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, day);
-        });
-        rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, weekday);
-        });
-        rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, hour);
-        });
-        rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, minute);
-        });
     #endif
 
     // Accept relay number and numeric API status value (0, 1 and 2)

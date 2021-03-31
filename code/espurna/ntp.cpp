@@ -13,7 +13,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "ntp.h"
 
-#if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+#if NTP_SUPPORT
 
 #include <Arduino.h>
 #include <coredecls.h>
@@ -503,4 +503,4 @@ void ntpSetup() {
 
 }
 
-#endif // NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+#endif // NTP_SUPPORT

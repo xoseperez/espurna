@@ -101,9 +101,7 @@ const String& getVersion() {
 }
 
 String buildTime() {
-#if NTP_LEGACY_SUPPORT && NTP_SUPPORT
-    return ntpDateTime(__UNIX_TIMESTAMP__);
-#elif NTP_SUPPORT
+#if NTP_SUPPORT
     constexpr const time_t ts = __UNIX_TIMESTAMP__;
     tm timestruct;
     gmtime_r(&ts, &timestruct);

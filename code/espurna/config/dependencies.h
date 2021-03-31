@@ -173,15 +173,6 @@
 #endif
 
 //------------------------------------------------------------------------------
-// Change ntp module depending on Core version
-
-#if NTP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#define NTP_LEGACY_SUPPORT 1
-#else
-#define NTP_LEGACY_SUPPORT 0
-#endif
-
-//------------------------------------------------------------------------------
 // It looks more natural that one click will enable display
 // and long click will switch relay
 

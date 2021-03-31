@@ -191,11 +191,7 @@ struct SecureClientChecks {
                 client.setFingerprint(_buffer);
             }
         } else if (check == SECURE_CLIENT_CHECK_CA) {
-            #if NTP_LEGACY_SUPPORT
-                client.setX509Time(ntpLocal2UTC(now()));
-            #else
-                client.setX509Time(now());
-            #endif
+            client.setX509Time(now());
             if (!certs.getCount()) {
                 if (config.on_certificate) certs.append(config.on_certificate());
             }

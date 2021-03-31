@@ -215,23 +215,6 @@ void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
     }
 }
 
-#if NTP_LEGACY_SUPPORT
-
-NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
-    if (daybefore > 0) {
-        timestamp = timestamp - ((hour(timestamp) * SECS_PER_HOUR) + ((minute(timestamp) + 1) * SECS_PER_MIN) + second(timestamp) + (daybefore * SECS_PER_DAY));
-    }
-
-    // XXX: no
-    time_t utc_timestamp = ntpLocal2UTC(timestamp);
-    return NtpCalendarWeekday {
-        weekday(timestamp), hour(timestamp), minute(timestamp),
-        weekday(utc_timestamp), hour(utc_timestamp), minute(utc_timestamp)
-    };
-}
-
-#else
-
 constexpr time_t secondsPerMinute = 60;
 constexpr time_t secondsPerHour = 3600;
 constexpr time_t secondsPerDay = secondsPerHour * 24;
@@ -255,8 +238,6 @@ NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
         utc_time.tm_wday + 1, utc_time.tm_hour, utc_time.tm_min
     };
 }
-
-#endif
 
 // If daybefore and target is -1, check with current timestamp
 // Otherwise, modify it by moving 'daybefore' days back and only use the 'target' id
