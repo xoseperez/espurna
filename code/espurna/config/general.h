@@ -823,8 +823,8 @@
 #define WS_AUTHENTICATION           1           // WS authentication ON by default (see #507)
 #endif
 
-#ifndef WS_BUFFER_SIZE
-#define WS_BUFFER_SIZE              5           // Max number of secured websocket connections
+#ifndef WS_MAX_CLIENTS
+#define WS_MAX_CLIENTS              5           // Max number of websocket connections
 #endif
 
 #ifndef WS_TIMEOUT

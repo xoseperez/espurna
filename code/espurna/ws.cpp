@@ -164,22 +164,26 @@ ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
 // WS authentication
 // -----------------------------------------------------------------------------
 
-WsTicket _ws_tickets[WS_BUFFER_SIZE];
+constexpr size_t WsMaxClients { WS_MAX_CLIENTS };
 
-void _onAuth(AsyncWebServerRequest *request) {
+WsTicket _ws_tickets[WsMaxClients];
 
+void _onAuth(AsyncWebServerRequest* request) {
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication();
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication();
+    }
 
     IPAddress ip = request->client()->remoteIP();
     unsigned long now = millis();
-    unsigned short index;
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
+
+    size_t index;
+    for (index = 0; index < WsMaxClients; ++index) {
         if (_ws_tickets[index].ip == ip) break;
         if (_ws_tickets[index].timestamp == 0) break;
         if (now - _ws_tickets[index].timestamp > WS_TIMEOUT) break;
     }
-    if (index == WS_BUFFER_SIZE) {
+    if (index == WS_MAX_CLIENTS) {
         request->send(429);
     } else {
         _ws_tickets[index].ip = ip;
@@ -189,22 +193,30 @@ void _onAuth(AsyncWebServerRequest *request) {
 
 }
 
-bool _wsAuth(AsyncWebSocketClient * client) {
+void _wsAuthUpdate(AsyncWebSocketClient* client) {
+    IPAddress ip = client->remoteIP();
+    for (auto& ticket : _ws_tickets) {
+        if (ticket.ip == ip) {
+            ticket.timestamp = millis();
+            break;
+        }
+    }
+}
 
+bool _wsAuth(AsyncWebSocketClient* client) {
     IPAddress ip = client->remoteIP();
     unsigned long now = millis();
-    unsigned short index = 0;
 
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if ((_ws_tickets[index].ip == ip) && (now - _ws_tickets[index].timestamp < WS_TIMEOUT)) break;
+    for (auto& ticket : _ws_tickets) {
+        if (ticket.ip == ip) {
+            if (now - ticket.timestamp < WS_TIMEOUT) {
+                return true;
+            }
+            return false;
+        }
     }
 
-    if (index == WS_BUFFER_SIZE) {
-        return false;
-    }
-
-    return true;
-
+    return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -344,6 +356,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     if (action) {
         if (strcmp(action, "ping") == 0) {
             wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            _wsAuthUpdate(client);
             return;
         }
 
@@ -520,18 +533,18 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
     if (type == WS_EVT_CONNECT) {
 
         client->_tempObject = nullptr;
-        IPAddress ip = client->remoteIP();
+        String ip = client->remoteIP().toString();
 
 #ifndef NOWSAUTH
         if (!_wsAuth(client)) {
             wsSend_P(client->id(), PSTR("{\"action\": \"reload\", \"message\": \"Session expired.\"}"));
-            DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired, ip: %d.%d.%d.%d\n"), client->id(), ip[0], ip[1], ip[2], ip[3]);
+            DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"), client->id(), ip.c_str());
             client->close();
             return;
         }
 #endif
 
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %s, url: %s\n"), client->id(), ip.c_str(), server->url());
         _wsConnected(client->id());
         _wsResetUpdateTimer();
         client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
