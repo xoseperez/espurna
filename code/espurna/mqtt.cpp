@@ -642,7 +642,7 @@ bool _mqttHeartbeat(heartbeat::Mask mask) {
         mqttSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
 
     if (mask & heartbeat::Report::Ip)
-        mqttSend(MQTT_TOPIC_IP, getIP().c_str());
+        mqttSend(MQTT_TOPIC_IP, wifiStaIp().toString().c_str());
 
     if (mask & heartbeat::Report::Mac)
         mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
@@ -974,7 +974,7 @@ void mqttFlush() {
     root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname", getIdentifier());
 #endif
 #if MQTT_ENQUEUE_IP
-    root[MQTT_TOPIC_IP] = getIP();
+    root[MQTT_TOPIC_IP] = wifiStaIp().toString();
 #endif
 #if MQTT_ENQUEUE_MESSAGE_ID
     root[MQTT_TOPIC_MESSAGE_ID] = (Rtcmem->mqtt)++;
@@ -1148,7 +1148,7 @@ void _mqttConnect() {
     if (_mqtt.connected() || (_mqtt_state != AsyncClientState::Disconnected)) return;
 
     // Do not connect if disabled or no WiFi
-    if (!_mqtt_enabled || (WiFi.status() != WL_CONNECTED)) return;
+    if (!_mqtt_enabled || (!wifiConnected())) return;
 
     // Check reconnect interval
     if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;

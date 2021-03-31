@@ -81,18 +81,24 @@ void mdnsServerSetup() {
         return;
     }
 
-    wifiRegister([](justwifi_messages_t code, char * parameter) {
-        if (code == MESSAGE_CONNECTED) {
-            _mdnsServerStart();
+    // 2.7.4 and older require MDNS.begin() when interface is UP
+    // 3.0.0 and newer only need to do MDNS.begin() once at setup()
+    // (TODO: this is techically a constexpr, but not in 2.7.4 :/)
+    const static bool OldCore { esp8266::coreVersionNumeric() <= 20704000 };
+
+    wifiRegister([](wifi::Event event) {
+        if (event == wifi::Event::StationConnected) {
 #if MQTT_SUPPORT
             _mdnsFindMQTT();
 #endif
-        }
-
-        if (code == MESSAGE_ACCESSPOINT_CREATED) {
+        } else if (OldCore && (event == wifi::Event::Mode)) {
             _mdnsServerStart();
         }
     });
+
+    if (!OldCore) {
+        _mdnsServerStart();
+    }
 }
 
 #endif // MDNS_SERVER_SUPPORT

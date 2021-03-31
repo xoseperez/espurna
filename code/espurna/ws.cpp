@@ -13,9 +13,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #include "system.h"
-#include "web.h"
 #include "ntp.h"
 #include "utils.h"
+#include "web.h"
+#include "wifi.h"
 #include "ws_internal.h"
 
 #include "libs/WebSocketIncommingBuffer.h"
@@ -243,9 +244,12 @@ void WsDebug::send(bool connected) {
 }
 
 bool wsDebugSend(const char* prefix, const char* message) {
-    if (!wsConnected()) return false;
-    _ws_debug.add(prefix, message);
-    return true;
+    if (wifiConnected() && wsConnected()) {
+        _ws_debug.add(prefix, message);
+        return true;
+    }
+
+    return false;
 }
 
 #endif
@@ -480,8 +484,8 @@ void _wsOnConnected(JsonObject& root) {
     root["channel"] = WiFi.channel();
     root["hostname"] = getSetting("hostname");
     root["desc"] = getSetting("desc");
-    root["network"] = getNetwork();
-    root["deviceip"] = getIP();
+    root["network"] = wifiStaSsid();
+    root["deviceip"] = wifiStaIp().toString();
     root["sketch_size"] = ESP.getSketchSize();
     root["free_size"] = ESP.getFreeSketchSpace();
     root["sdk"] = ESP.getSdkVersion();
@@ -530,7 +534,6 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsConnected(client->id());
         _wsResetUpdateTimer();
-        wifiReconnectCheck();
         client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 
     } else if(type == WS_EVT_DISCONNECT) {
@@ -538,7 +541,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
         }
-        wifiReconnectCheck();
+        wifiApCheck();
 
     } else if(type == WS_EVT_ERROR) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);

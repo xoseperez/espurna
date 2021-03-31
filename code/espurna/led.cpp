@@ -68,7 +68,6 @@ void LedPattern::stop() {
 // For network-based modes, cycle ON & OFF (time in milliseconds)
 // XXX: internals convert these to clock cycles, delay cannot be longer than 25000 / 50000 ms
 static const LedDelay _ledDelays[] {
-    {100, 100},   // Autoconfig
     {100, 4900},  // Connected
     {4900, 100},  // Connected (inverse)
     {100, 900},   // Config / AP
@@ -76,19 +75,16 @@ static const LedDelay _ledDelays[] {
     {500, 500}    // Idle
 };
 
-enum class LedDelayName {
-    NetworkAutoconfig,
+enum class LedDelayName : int {
     NetworkConnected,
     NetworkConnectedInverse,
     NetworkConfig,
     NetworkConfigInverse,
-    NetworkIdle,
-    None
+    NetworkIdle
 };
 
-bool _led_update { false };
-
 std::vector<led_t> _leds;
+bool _led_update { false };
 
 // -----------------------------------------------------------------------------
 
@@ -186,12 +182,17 @@ bool ledStatus(size_t id) {
     return false;
 }
 
-const LedDelay& _ledDelayFromName(LedDelayName pattern) {
-    static_assert(
-        (sizeof(_ledDelays) / sizeof(_ledDelays[0])) <= static_cast<int>(LedDelayName::None),
-        "Out-of-bounds"
-    );
-    return _ledDelays[static_cast<int>(pattern)];
+const LedDelay& _ledDelayFromName(LedDelayName name) {
+    switch (name) {
+    case LedDelayName::NetworkConnected:
+    case LedDelayName::NetworkConnectedInverse:
+    case LedDelayName::NetworkConfig:
+    case LedDelayName::NetworkConfigInverse:
+    case LedDelayName::NetworkIdle:
+        return _ledDelays[static_cast<int>(name)];
+    }
+
+    return _ledDelays[static_cast<int>(LedDelayName::NetworkIdle)];
 }
 
 void _ledPattern(led_t& led) {
@@ -359,83 +360,77 @@ void ledUpdate(bool do_update) {
 }
 
 void ledLoop() {
-    const auto wifi_state = wifiState();
-
     for (size_t id = 0; id < _leds.size(); ++id) {
         auto& led = _leds[id];
 
         switch (led.mode()) {
 
-            case LED_MODE_MANUAL:
-                break;
+        case LED_MODE_MANUAL:
+            break;
 
-            case LED_MODE_WIFI:
-                if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
-                    _ledBlink(led, LedDelayName::NetworkAutoconfig);
-                } else if (wifi_state & WIFI_STATE_STA) {
+        case LED_MODE_WIFI:
+            if (wifiConnected()) {
+                _ledBlink(led, LedDelayName::NetworkConnected);
+            } else if (wifiConnectable()) {
+                _ledBlink(led, LedDelayName::NetworkConfig);
+            } else {
+                _ledBlink(led, LedDelayName::NetworkIdle);
+            }
+            break;
+
+#if RELAY_SUPPORT
+
+        case LED_MODE_FINDME_WIFI:
+            if (wifiConnected()) {
+                if (relayStatus(_led_relays[id])) {
                     _ledBlink(led, LedDelayName::NetworkConnected);
-                } else if (wifi_state & WIFI_STATE_AP) {
+                } else {
+                    _ledBlink(led, LedDelayName::NetworkConnectedInverse);
+                }
+            } else if (wifiConnectable()) {
+                if (relayStatus(_led_relays[id])) {
                     _ledBlink(led, LedDelayName::NetworkConfig);
                 } else {
-                    _ledBlink(led, LedDelayName::NetworkIdle);
+                    _ledBlink(led, LedDelayName::NetworkConfigInverse);
                 }
+            } else {
+                _ledBlink(led, LedDelayName::NetworkIdle);
+            }
                 break;
 
-        #if RELAY_SUPPORT
-
-            case LED_MODE_FINDME_WIFI:
-                if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
-                    _ledBlink(led, LedDelayName::NetworkAutoconfig);
-                } else if (wifi_state & WIFI_STATE_STA) {
-                    if (relayStatus(_led_relays[id])) {
-                        _ledBlink(led, LedDelayName::NetworkConnected);
-                    } else {
-                        _ledBlink(led, LedDelayName::NetworkConnectedInverse);
-                    }
-                } else if (wifi_state & WIFI_STATE_AP) {
-                    if (relayStatus(_led_relays[id])) {
-                        _ledBlink(led, LedDelayName::NetworkConfig);
-                    } else {
-                        _ledBlink(led, LedDelayName::NetworkConfigInverse);
-                    }
+        case LED_MODE_RELAY_WIFI:
+            if (wifiConnected()) {
+                if (relayStatus(_led_relays[id])) {
+                    _ledBlink(led, LedDelayName::NetworkConnected);
                 } else {
-                    _ledBlink(led, LedDelayName::NetworkIdle);
+                    _ledBlink(led, LedDelayName::NetworkConnectedInverse);
                 }
-                break;
-
-            case LED_MODE_RELAY_WIFI:
-                if ((wifi_state & WIFI_STATE_WPS) || (wifi_state & WIFI_STATE_SMARTCONFIG)) {
-                    _ledBlink(led, LedDelayName::NetworkAutoconfig);
-                } else if (wifi_state & WIFI_STATE_STA) {
-                    if (relayStatus(_led_relays[id])) {
-                        _ledBlink(led, LedDelayName::NetworkConnected);
-                    } else {
-                        _ledBlink(led, LedDelayName::NetworkConnectedInverse);
-                    }
-                } else if (wifi_state & WIFI_STATE_AP) {
-                    if (relayStatus(_led_relays[id])) {
-                        _ledBlink(led, LedDelayName::NetworkConfig);
-                    } else {
-                        _ledBlink(led, LedDelayName::NetworkConfigInverse);
-                    }
+            } else if (wifiConnectable()) {
+                if (relayStatus(_led_relays[id])) {
+                    _ledBlink(led, LedDelayName::NetworkConfig);
                 } else {
-                    _ledBlink(led, LedDelayName::NetworkIdle);
+                    _ledBlink(led, LedDelayName::NetworkConfigInverse);
                 }
-                break;
+            } else {
+                _ledBlink(led, LedDelayName::NetworkIdle);
+            }
+            break;
 
-            case LED_MODE_FOLLOW:
-                if (!_led_update) break;
+        case LED_MODE_FOLLOW:
+            if (_led_update) {
                 _ledStatus(led, relayStatus(_led_relays[id]));
-                break;
+            }
+            break;
 
-            case LED_MODE_FOLLOW_INVERSE:
-                if (!_led_update) break;
+        case LED_MODE_FOLLOW_INVERSE:
+            if (_led_update) {
                 led.status(!relayStatus(_led_relays[id]));
                 _ledStatus(led, !relayStatus(_led_relays[id]));
-                break;
+            }
+            break;
 
-            case LED_MODE_FINDME: {
-                if (!_led_update) break;
+        case LED_MODE_FINDME:
+            if (_led_update) {
                 bool status = true;
                 for (size_t relayId = 0; relayId < relayCount(); ++relayId) {
                     if (relayStatus(relayId)) {
@@ -444,11 +439,11 @@ void ledLoop() {
                     }
                 }
                 _ledStatus(led, status);
-                break;
             }
+            break;
 
-            case LED_MODE_RELAY: {
-                if (!_led_update) break;
+        case LED_MODE_RELAY:
+            if (_led_update) {
                 bool status = false;
                 for (size_t relayId = 0; relayId < relayCount(); ++relayId) {
                     if (relayStatus(relayId)) {
@@ -457,20 +452,22 @@ void ledLoop() {
                     }
                 }
                 _ledStatus(led, status);
-                break;
             }
+            break;
 
-        #endif // RELAY_SUPPORT == 1
+#endif // RELAY_SUPPORT == 1
 
-            case LED_MODE_ON:
-                if (!_led_update) break;
+        case LED_MODE_ON:
+            if (_led_update) {
                 _ledStatus(led, true);
-                break;
+            }
+            break;
 
-            case LED_MODE_OFF:
-                if (!_led_update) break;
+        case LED_MODE_OFF:
+            if (_led_update) {
                 _ledStatus(led, false);
-                break;
+            }
+            break;
 
         }
 

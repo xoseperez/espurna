@@ -166,11 +166,11 @@ namespace tuya {
     // --------------------------------------------
 
     uint8_t getWiFiState() {
-
-        uint8_t state = wifiState();
-        if (state & WIFI_STATE_SMARTCONFIG) return 0x00;
-        if (state & WIFI_STATE_AP) return 0x01;
-        if (state & WIFI_STATE_STA) return 0x04;
+        if (wifiConnected()) {
+            return 0x04;
+        } else if (wifiConnectable()) {
+            return 0x01;
+        }
 
         return 0x02;
     }
@@ -651,9 +651,12 @@ error:
         TUYA_SERIAL.begin(SerialSpeed);
 
         ::espurnaRegisterLoop(loop);
-        ::wifiRegister([](justwifi_messages_t code, char * parameter) {
-            if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
+        ::wifiRegister([](wifi::Event event) {
+            switch (event) {
+            case wifi::Event::StationConnected:
+            case wifi::Event::StationDisconnected:
                 sendWiFiStatus();
+                break;
             }
         });
     }

@@ -47,15 +47,15 @@ struct LedDelay {
         LedDelay(on_ms, off_ms, 0)
     {}
 
-    LedDelayMode mode() const {
+    constexpr LedDelayMode mode() const {
         return _mode;
     }
 
-    unsigned long on() const {
+    constexpr unsigned long on() const {
         return _on;
     }
 
-    unsigned long off() const {
+    constexpr unsigned long off() const {
         return _off;
     }
 

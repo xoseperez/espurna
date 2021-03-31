@@ -453,11 +453,7 @@ void buttonEvent(size_t id, ButtonEvent event) {
 #endif
 
     case ButtonAction::AccessPoint:
-        if (wifiState() & WIFI_STATE_AP) {
-            wifiStartSTA();
-        } else {
-            wifiStartAP();
-        }
+        wifiToggleAp();
         break;
 
     case ButtonAction::Reset:
@@ -469,15 +465,9 @@ void buttonEvent(size_t id, ButtonEvent event) {
         break;
 
     case ButtonAction::Wps:
-#if defined(JUSTWIFI_ENABLE_WPS)
-        wifiStartWPS();
-#endif
         break;
 
     case ButtonAction::SmartConfig:
-#if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        wifiStartSmartConfig();
-#endif
         break;
 
     case ButtonAction::BrightnessIncrease:

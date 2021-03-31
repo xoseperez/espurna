@@ -208,8 +208,9 @@ void alexaSetup() {
     #endif
 
     // Register wifi callback
-    wifiRegister([](justwifi_messages_t code, char * parameter) {
-        if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
+    wifiRegister([](wifi::Event event) {
+        if ((event == wifi::Event::StationConnected)
+            || (event == wifi::Event::StationDisconnected)) {
             _alexaConfigure();
         }
     });
