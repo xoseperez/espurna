@@ -42,9 +42,9 @@ void _arduinoOtaOnStart() {
 
     DEBUG_MSG_P(PSTR("[OTA] Start\n"));
 
-    #if WEB_SUPPORT
-        wsSend_P(PSTR("{\"message\": 2}"));
-    #endif
+#if WEB_SUPPORT
+    wsSend_P(PSTR("{\"message\": \"OTA update started.\"}"));
+#endif
 
 }
 

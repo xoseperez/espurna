@@ -13,7 +13,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <queue>
 
 #include "api.h"
-#include "broker.h"
 #include "light.h"
 #include "mqtt.h"
 #include "relay.h"
@@ -24,15 +23,39 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <fauxmoESP.h>
 #include <ArduinoJson.h>
 
-struct alexa_queue_element_t {
-    unsigned char device_id;
-    bool state;
-    unsigned char value;
+namespace {
+
+struct AlexaEvent {
+    AlexaEvent() = delete;
+    AlexaEvent(unsigned char id, bool state, unsigned char value) :
+        _id(id),
+        _state(state),
+        _value(value)
+    {}
+
+    unsigned char id() const {
+        return _id;
+    }
+
+    unsigned char value() const {
+        return _value;
+    }
+
+    bool state() const {
+        return _state;
+    }
+
+private:
+    unsigned char _id;
+    bool _state;
+    unsigned char _value;
 };
 
-static std::queue<alexa_queue_element_t> _alexa_queue;
+std::queue<AlexaEvent> _alexa_events;
 
 fauxmoESP _alexa;
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // ALEXA
@@ -62,25 +85,27 @@ void _alexaConfigure() {
     }
 #endif
 
-void _alexaBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
-    
-    // Only process status messages for switches and channels
-    if (!topic.equals(MQTT_TOPIC_CHANNEL)
-        && !topic.equals(MQTT_TOPIC_RELAY)) {
-        return;
-    }
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
-    if (topic.equals(MQTT_TOPIC_CHANNEL)) {
-        _alexa.setState(id + 1, value > 0, value);
-    }
+void _alexaUpdateLights() {
+    _alexa.setState(static_cast<unsigned char>(0u), lightState(), lightState() ? 255u : 0u);
 
-    if (topic.equals(MQTT_TOPIC_RELAY)) {
-        if (id > 0) return;
-        _alexa.setState(id, value, value > 0 ? 255 : 0);
+    auto channels = lightChannels();
+    for (decltype(channels) channel = 0; channel < channels; ++channel) {
+        auto value = lightChannel(channel);
+        _alexa.setState(channel + 1, value > 0, value);
     }
-
 }
 
+#endif
+
+#if RELAY_SUPPORT
+
+void _alexaUpdateRelay(size_t id, bool status) {
+    _alexa.setState(id, status, status ? 255 : 0);
+}
+
+#endif
 // -----------------------------------------------------------------------------
 
 bool alexaEnabled() {
@@ -91,67 +116,83 @@ void alexaLoop() {
 
     _alexa.handle();
 
-    while (!_alexa_queue.empty()) {
+    while (!_alexa_events.empty()) {
+        auto& event = _alexa_events.front();
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%hhu state=#%s value=%hhu\n"),
+            event.id(), event.state() ? 't' : 'f', event.value());
 
-        alexa_queue_element_t element = _alexa_queue.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d\n"), element.device_id, element.state ? "ON" : "OFF", element.value);
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        if (0 == event.id()) {
+            lightState(event.state());
+        } else {
+            lightState(event.id() - 1, event.state());
+            lightChannel(event.id() - 1, event.value());
+            lightUpdate();
+        }
+#else
+        relayStatus(event.id(), event.state());
+#endif
 
-        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-            if (0 == element.device_id) {
-                lightState(element.state);
-            } else {
-                lightState(element.device_id - 1, element.state);
-                lightChannel(element.device_id - 1, element.value);
-                lightUpdate();
-            }
-        #else
-            relayStatus(element.device_id, element.state);
-        #endif
-
-        _alexa_queue.pop();
+        _alexa_events.pop();
     }
 
 }
 
-void alexaSetup() {
+constexpr bool _alexaCreateServer() {
+    return !WEB_SUPPORT;
+}
 
+constexpr const char* _alexaHostname() {
+    return ALEXA_HOSTNAME;
+}
+
+
+void _alexaSettingsMigrate(int version) {
+    if (version && (version < 3)) {
+        moveSetting("fauxmoEnabled", "alexaEnabled");
+    }
+}
+
+void alexaSetup() {
     // Backwards compatibility
-    moveSetting("fauxmoEnabled", "alexaEnabled");
+    _alexaSettingsMigrate(migrateVersion());
 
     // Basic fauxmoESP configuration
-    _alexa.createServer(!WEB_SUPPORT);
+    _alexa.createServer(_alexaCreateServer());
     _alexa.setPort(80);
 
     // Use custom alexa hostname if defined, device hostname otherwise
-    String hostname = getSetting("alexaName", ALEXA_HOSTNAME);
-    if (hostname.length() == 0) {
-        hostname = getSetting("hostname");
+    String hostname = getSetting("alexaName", _alexaHostname());
+    if (!hostname.length()) {
+        hostname = getSetting("hostname", getIdentifier());
     }
 
-    // Lights
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    auto deviceName = [&](size_t index) {
+        auto name = hostname;
+        name += ' ';
+        name += index;
+        return name;
+    };
 
-        // Global switch
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    // 1st is the global state, the rest are mapped to channel values
+    _alexa.addDevice(hostname.c_str());
+    for (size_t channel = 1; channel <= lightChannels(); ++channel) {
+        _alexa.addDevice(deviceName(channel).c_str());
+    }
+
+    // Relays are mapped 1-to-1
+#elif RELAY_SUPPORT
+    auto relays = relayCount();
+    if (relays > 1) {
+        for (decltype(relays) id = 1; id <= relays; ++id) {
+            _alexa.addDevice(deviceName(id).c_str());
+        }
+    } else {
         _alexa.addDevice(hostname.c_str());
+    }
 
-        // For each channel
-        for (unsigned char i = 1; i <= lightChannels(); i++) {
-            _alexa.addDevice((hostname + " " + i).c_str());
-        }
-
-    // Relays
-    #else
-
-        unsigned int relays = relayCount();
-        if (relays == 1) {
-            _alexa.addDevice(hostname.c_str());
-        } else {
-            for (unsigned int i=1; i<=relays; i++) {
-                _alexa.addDevice((hostname + " " + i).c_str());
-            }
-        }
-
-    #endif
+#endif
 
     // Load & cache settings
     _alexaConfigure();
@@ -167,23 +208,25 @@ void alexaSetup() {
     #endif
 
     // Register wifi callback
-    wifiRegister([](justwifi_messages_t code, char * parameter) {
-        if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
+    wifiRegister([](wifi::Event event) {
+        if ((event == wifi::Event::StationConnected)
+            || (event == wifi::Event::StationDisconnected)) {
             _alexaConfigure();
         }
     });
 
     // Callback
-    _alexa.onSetState([&](unsigned char device_id, const char * name, bool state, unsigned char value) {
-        alexa_queue_element_t element;
-        element.device_id = device_id;
-        element.state = state;
-        element.value = value;
-        _alexa_queue.push(element);
+    _alexa.onSetState([&](unsigned char device_id, const char*, bool state, unsigned char value) {
+        _alexa_events.emplace(device_id, state, value);
     });
 
     // Register main callbacks
-    StatusBroker::Register(_alexaBrokerCallback);
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    lightSetReportListener(_alexaUpdateLights);
+#else
+    relaySetStatusChange(_alexaUpdateRelay);
+#endif
+
     espurnaRegisterReload(_alexaConfigure);
     espurnaRegisterLoop(alexaLoop);
 

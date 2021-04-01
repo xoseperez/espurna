@@ -10,12 +10,13 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #pragma once
 
 #include "espurna.h"
-#include "broker.h"
 
 enum class NtpTick {
     EveryMinute,
     EveryHour
 };
+
+using NtpTickCallback = void(*)(NtpTick);
 
 struct NtpCalendarWeekday {
     int local_wday;
@@ -34,13 +35,8 @@ struct NtpInfo {
     time_t now;
 };
 
-BrokerDeclare(NtpBroker, void(NtpTick, time_t, const String&));
-
+void ntpOnTick(NtpTickCallback);
 NtpInfo ntpInfo();
-
-#if NTP_LEGACY_SUPPORT
-time_t ntpLocal2UTC(time_t local);
-#endif
 
 String ntpDateTime(tm* timestruct);
 String ntpDateTime(time_t ts);

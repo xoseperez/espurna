@@ -13,9 +13,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #include "system.h"
-#include "web.h"
 #include "ntp.h"
 #include "utils.h"
+#include "web.h"
+#include "wifi.h"
 #include "ws_internal.h"
 
 #include "libs/WebSocketIncommingBuffer.h"
@@ -163,22 +164,26 @@ ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
 // WS authentication
 // -----------------------------------------------------------------------------
 
-WsTicket _ws_tickets[WS_BUFFER_SIZE];
+constexpr size_t WsMaxClients { WS_MAX_CLIENTS };
 
-void _onAuth(AsyncWebServerRequest *request) {
+WsTicket _ws_tickets[WsMaxClients];
 
+void _onAuth(AsyncWebServerRequest* request) {
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication();
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication();
+    }
 
     IPAddress ip = request->client()->remoteIP();
     unsigned long now = millis();
-    unsigned short index;
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
+
+    size_t index;
+    for (index = 0; index < WsMaxClients; ++index) {
         if (_ws_tickets[index].ip == ip) break;
         if (_ws_tickets[index].timestamp == 0) break;
         if (now - _ws_tickets[index].timestamp > WS_TIMEOUT) break;
     }
-    if (index == WS_BUFFER_SIZE) {
+    if (index == WS_MAX_CLIENTS) {
         request->send(429);
     } else {
         _ws_tickets[index].ip = ip;
@@ -188,22 +193,30 @@ void _onAuth(AsyncWebServerRequest *request) {
 
 }
 
-bool _wsAuth(AsyncWebSocketClient * client) {
+void _wsAuthUpdate(AsyncWebSocketClient* client) {
+    IPAddress ip = client->remoteIP();
+    for (auto& ticket : _ws_tickets) {
+        if (ticket.ip == ip) {
+            ticket.timestamp = millis();
+            break;
+        }
+    }
+}
 
+bool _wsAuth(AsyncWebSocketClient* client) {
     IPAddress ip = client->remoteIP();
     unsigned long now = millis();
-    unsigned short index = 0;
 
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if ((_ws_tickets[index].ip == ip) && (now - _ws_tickets[index].timestamp < WS_TIMEOUT)) break;
+    for (auto& ticket : _ws_tickets) {
+        if (ticket.ip == ip) {
+            if (now - ticket.timestamp < WS_TIMEOUT) {
+                return true;
+            }
+            return false;
+        }
     }
 
-    if (index == WS_BUFFER_SIZE) {
-        return false;
-    }
-
-    return true;
-
+    return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -243,9 +256,12 @@ void WsDebug::send(bool connected) {
 }
 
 bool wsDebugSend(const char* prefix, const char* message) {
-    if (!wsConnected()) return false;
-    _ws_debug.add(prefix, message);
-    return true;
+    if (wifiConnected() && wsConnected()) {
+        _ws_debug.add(prefix, message);
+        return true;
+    }
+
+    return false;
 }
 
 #endif
@@ -330,7 +346,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
-        wsSend_P(client_id, PSTR("{\"message\": 3}"));
+        wsSend_P(client_id, PSTR("{\"message\": \"Cannot parse the data!\"}"));
         return;
     }
 
@@ -340,6 +356,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     if (action) {
         if (strcmp(action, "ping") == 0) {
             wsSend_P(client_id, PSTR("{\"pong\": 1}"));
+            _wsAuthUpdate(client);
             return;
         }
 
@@ -366,9 +383,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
             if (strcmp(action, "restore") == 0) {
                 if (settingsRestoreJson(data)) {
-                    wsSend_P(client_id, PSTR("{\"message\": 5}"));
+                    wsSend_P(client_id, PSTR("{\"message\": \"Changes saved, you should be able to reboot now.\"}"));
                 } else {
-                    wsSend_P(client_id, PSTR("{\"message\": 4}"));
+                    wsSend_P(client_id, PSTR("{\"message\": \"Could not restore the configuration, see the debug log for more information.\"}"));
                 }
                 return;
             }
@@ -407,7 +424,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                         wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
                     }
                 } else {
-                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
+                    wsSend_P(client_id, PSTR("{\"message\": \"Passwords do not match!\"}"));
                 }
                 continue;
             }
@@ -445,11 +462,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // Persist settings
             saveSettings();
 
-            wsSend_P(client_id, PSTR("{\"message\": 8}"));
+            wsSend_P(client_id, PSTR("{\"saved\": true, \"message\": \"Changes saved.\"}"));
 
         } else {
 
-            wsSend_P(client_id, PSTR("{\"message\": 9}"));
+            wsSend_P(client_id, PSTR("{\"message\": \"No changes detected.\"}"));
 
         }
 
@@ -480,8 +497,8 @@ void _wsOnConnected(JsonObject& root) {
     root["channel"] = WiFi.channel();
     root["hostname"] = getSetting("hostname");
     root["desc"] = getSetting("desc");
-    root["network"] = getNetwork();
-    root["deviceip"] = getIP();
+    root["network"] = wifiStaSsid();
+    root["deviceip"] = wifiStaIp().toString();
     root["sketch_size"] = ESP.getSketchSize();
     root["free_size"] = ESP.getFreeSketchSpace();
     root["sdk"] = ESP.getSdkVersion();
@@ -516,21 +533,20 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
     if (type == WS_EVT_CONNECT) {
 
         client->_tempObject = nullptr;
+        String ip = client->remoteIP().toString();
 
-        #ifndef NOWSAUTH
-            if (!_wsAuth(client)) {
-                wsSend_P(client->id(), PSTR("{\"message\": 10}"));
-                DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-                client->close();
-                return;
-            }
-        #endif
+#ifndef NOWSAUTH
+        if (!_wsAuth(client)) {
+            wsSend_P(client->id(), PSTR("{\"action\": \"reload\", \"message\": \"Session expired.\"}"));
+            DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"), client->id(), ip.c_str());
+            client->close();
+            return;
+        }
+#endif
 
-        IPAddress ip = client->remoteIP();
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %s, url: %s\n"), client->id(), ip.c_str(), server->url());
         _wsConnected(client->id());
         _wsResetUpdateTimer();
-        wifiReconnectCheck();
         client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 
     } else if(type == WS_EVT_DISCONNECT) {
@@ -538,7 +554,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
         }
-        wifiReconnectCheck();
+        wifiApCheck();
 
     } else if(type == WS_EVT_ERROR) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);

@@ -444,10 +444,6 @@
 #define RELAY_SAVE_DELAY            1000
 #endif
 
-#ifndef RELAY_REPORT_STATUS
-#define RELAY_REPORT_STATUS         1
-#endif
-
 // Configure the MQTT payload for ON, OFF and TOGGLE
 #ifndef RELAY_MQTT_OFF
 #define RELAY_MQTT_OFF              "0"
@@ -459,6 +455,14 @@
 
 #ifndef RELAY_MQTT_TOGGLE
 #define RELAY_MQTT_TOGGLE           "2"
+#endif
+
+#ifndef RELAY_MQTT_TOPIC_MODE
+#define RELAY_MQTT_TOPIC_MODE       RELAY_MQTT_TOPIC_NORMAL
+#endif
+
+#ifndef RELAY_MQTT_DISCONNECT_STATUS
+#define RELAY_MQTT_DISCONNECT_STATUS    RELAY_MQTT_DISCONNECT_NONE
 #endif
 
 //------------------------------------------------------------------------------
@@ -532,26 +536,46 @@
 // WIFI
 // -----------------------------------------------------------------------------
 
-#ifndef WIFI_CONNECT_TIMEOUT
-#define WIFI_CONNECT_TIMEOUT        60000                  // Connecting timeout for WIFI in ms
+#ifndef WIFI_CONNECT_RETRIES
+#define WIFI_CONNECT_RETRIES        3                      // Number of times before changing to the next configured network
+#endif
+
+#ifndef WIFI_CONNECT_INTERVAL
+#define WIFI_CONNECT_INTERVAL       3000                   // Time (ms) between connection attempts
 #endif
 
 #ifndef WIFI_RECONNECT_INTERVAL
-#define WIFI_RECONNECT_INTERVAL     180000                 // If could not connect to WIFI, retry after this time in ms
+#define WIFI_RECONNECT_INTERVAL     120000                 // When all retries on all networks are exhausted, wait for this time (ms) and start from the beginning
 #endif
 
 #ifndef WIFI_MAX_NETWORKS
-#define WIFI_MAX_NETWORKS           5                      // Max number of WIFI connection configurations
+#define WIFI_MAX_NETWORKS           5                      // Maximum number of WiFi configurations in settings
 #endif
 
-#ifndef WIFI_AP_CAPTIVE
-#define WIFI_AP_CAPTIVE             1                      // Captive portal enabled when in AP mode
+#ifndef WIFI_AP_CAPTIVE_SUPPORT
+#define WIFI_AP_CAPTIVE_SUPPORT     1                      // Captive portal for AP mode
+#endif
+
+#ifndef WIFI_AP_CAPTIVE_ENABLED
+#define WIFI_AP_CAPTIVE_ENABLED     1                      // Enabled by default
+#endif
+
+#ifndef WIFI_STA_MODE
+#define WIFI_STA_MODE               wifi::StaMode::Enabled  // By default, turn on STA interface and try to connect to configured networks
+                                                            // - wifi::StaMode::Enabled (default)
+                                                            // - wifi::StaMode::Disabled keeps STA disabled
 #endif
 
 #ifndef WIFI_AP_MODE
-#define WIFI_AP_MODE                WiFiApMode::Fallback   // By default, fallback to AP mode if no STA connection
-                                                           // Use WiFiApMode::Enabled to start it when the device boots
-                                                           // Use WiFiApMode::Disabled to disable AP mode completely
+#define WIFI_AP_MODE                wifi::ApMode::Fallback  // By default, enable AP if there is no STA connection
+                                                            // - wifi::ApMode::Fallback (default)
+                                                            // - wifi::ApMode::Enabled keeps AP enabled independent of STA
+                                                            // - wifi::ApMode::Disabled keeps AP disabled
+#endif
+
+#ifndef WIFI_FALLBACK_TIMEOUT
+#define WIFI_FALLBACK_TIMEOUT       60000                  // When AP is in FALLBACK mode and STA is connected,
+                                                           // how long to wait until stopping the AP
 #endif
 
 #ifndef WIFI_AP_SSID
@@ -569,15 +593,34 @@
                                                            // Use `set wifiApLease# MAC`, where MAC is a valid 12-byte HEX number without colons
 #endif
 
+#ifndef WIFI_AP_CHANNEL
+#define WIFI_AP_CHANNEL             1
+#endif
+
 #ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP        // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
 #endif
 
 #ifndef WIFI_SCAN_NETWORKS
-#define WIFI_SCAN_NETWORKS          1                      // Perform a network scan before connecting
+#define WIFI_SCAN_NETWORKS              1                  // Perform a network scan before connecting and when RSSI threshold is reached
 #endif
 
-// Optional hardcoded configuration (up to 5 networks, depending on WIFI_MAX_NETWORKS and espurna/wifi_config.h)
+#ifndef WIFI_SCAN_RSSI_THRESHOLD
+#define WIFI_SCAN_RSSI_THRESHOLD        -73                // Consider current network for a reconnection cycle
+                                                           // when it's RSSI value is below the specified threshold
+#endif
+
+#ifndef WIFI_SCAN_RSSI_CHECKS
+#define WIFI_SCAN_RSSI_CHECKS           3                  // Amount of RSSI threshold checks before starting a scan
+#endif
+
+#ifndef WIFI_SCAN_RSSI_CHECK_INTERVAL
+#define WIFI_SCAN_RSSI_CHECK_INTERVAL   60000              // Time (ms) between RSSI checks
+#endif
+
+// Optional hardcoded configuration
+// NOTICE that these values become factory-defaults
+
 #ifndef WIFI1_SSID
 #define WIFI1_SSID                  ""
 #endif
@@ -698,14 +741,6 @@
 #define WIFI5_DNS                   ""
 #endif
 
-#ifndef WIFI_RSSI_1M
-#define WIFI_RSSI_1M                -30         // Calibrate it with your router reading the RSSI at 1m
-#endif
-
-#ifndef WIFI_PROPAGATION_CONST
-#define WIFI_PROPAGATION_CONST      4           // This is typically something between 2.7 to 4.3 (free space is 2)
-#endif
-
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
 // ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546
 //
@@ -788,8 +823,8 @@
 #define WS_AUTHENTICATION           1           // WS authentication ON by default (see #507)
 #endif
 
-#ifndef WS_BUFFER_SIZE
-#define WS_BUFFER_SIZE              5           // Max number of secured websocket connections
+#ifndef WS_MAX_CLIENTS
+#define WS_MAX_CLIENTS              5           // Max number of websocket connections
 #endif
 
 #ifndef WS_TIMEOUT
@@ -1197,14 +1232,6 @@
 
 #ifndef MQTT_SETTER
 #define MQTT_SETTER                 "/set"
-#endif
-
-// -----------------------------------------------------------------------------
-// BROKER
-// -----------------------------------------------------------------------------
-
-#ifndef BROKER_SUPPORT
-#define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
 #endif
 
 // -----------------------------------------------------------------------------

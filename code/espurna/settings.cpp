@@ -18,8 +18,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
-BrokerBind(ConfigBroker);
-
 // -----------------------------------------------------------------------------
 
 namespace settings {
@@ -76,6 +74,16 @@ double convert(const String& value) {
 }
 
 template <>
+signed char convert(const String& value) {
+    return value.toInt();
+}
+
+template <>
+short convert(const String& value) {
+    return value.toInt();
+}
+
+template <>
 int convert(const String& value) {
     return value.toInt();
 }
@@ -107,28 +115,57 @@ bool convert(const String& value) {
 }
 
 template <>
-unsigned long convert(const String& value) {
+uint32_t convert(const String& value) {
     if (!value.length()) {
         return 0;
     }
 
     int base = 10;
     if (value.length() > 2) {
-        if (value.startsWith("0b")) {
-            base = 2;
-        } else if (value.startsWith("0o")) {
-            base = 8;
-        } else if (value.startsWith("0x")) {
-            base = 16;
+        auto* ptr = value.c_str();
+        if (*ptr == '0') {
+            switch (*(ptr + 1)) {
+            case 'b':
+                base = 2;
+                break;
+            case 'o':
+                base = 8;
+                break;
+            case 'x':
+                base = 16;
+                break;
+            }
         }
     }
 
     return u32fromString((base == 10) ? value : value.substring(2), base);
 }
 
+String serialize(uint32_t value, int base) {
+    constexpr size_t Size { 4 * sizeof(decltype(value)) };
+    constexpr size_t Length { Size - 1 };
+
+    String result;
+    result.reserve(Length);
+
+    if (base == 2) {
+        result += "0b";
+    } else if (base == 8) {
+        result += "0o";
+    } else if (base == 16) {
+        result += "0x";
+    }
+
+    char buffer[Size] = {0};
+    ultoa(value, buffer, base);
+    result += buffer;
+
+    return result;
+}
+
 template <>
-unsigned int convert(const String& value) {
-    return convert<unsigned long>(value);
+unsigned long convert(const String& value) {
+    return convert<unsigned int>(value);
 }
 
 template <>
@@ -145,67 +182,10 @@ unsigned char convert(const String& value) {
 } // namespace settings
 
 // -----------------------------------------------------------------------------
+// Key-value API
+// -----------------------------------------------------------------------------
 
-/*
-struct SettingsKeys {
-
-    struct iterator {
-        iterator(size_t total) :
-            total(total)
-        {}
-
-        iterator& operator++() {
-            if (total && (current_index < (total - 1))) {
-                ++current_index
-                current_value = settingsKeyName(current_index);
-                return *this;
-            }
-            return end();
-        }
-
-        iterator operator++(int) {
-            iterator val = *this;
-            ++(*this);
-            return val;
-        }
-
-        operator String() {
-            return (current_index < total) ? current_value : empty_value;
-        }
-
-        bool operator ==(iterator& const other) const {
-            return (total == other.total) && (current_index == other.current_index);
-        }
-
-        bool operator !=(iterator& const other) const {
-            return !(*this == other);
-        }
-
-        using difference_type = size_t;
-        using value_type = size_t;
-        using pointer = const size_t*;
-        using reference = const size_t&;
-        using iterator_category = std::forward_iterator_tag;
-
-        const size_t total;
-
-        String empty_value;
-        String current_value;
-        size_t current_index = 0;
-    };
-
-    iterator begin() {
-        return iterator {total};
-    }
-
-    iterator end() {
-        return iterator {0};
-    }
-
-};
-*/
-
-// Note: we prefer things sorted via this function, not kv_store.keys() directly
+// TODO: UI needs this to avoid showing keys in storage order
 std::vector<String> settingsKeys() {
     auto keys = settings::kv_store.keys();
     std::sort(keys.begin(), keys.end(), [](const String& rhs, const String& lhs) -> bool {
@@ -231,37 +211,39 @@ String settingsQueryDefaults(const String& key) {
     return String();
 }
 
-// -----------------------------------------------------------------------------
-// Key-value API
-// -----------------------------------------------------------------------------
-
-settings_move_key_t _moveKeys(const String& from, const String& to, unsigned char index) {
+settings_move_key_t _moveKeys(const String& from, const String& to, size_t index) {
     return settings_move_key_t {{from, index}, {to, index}};
 }
 
 void moveSetting(const String& from, const String& to) {
-    const auto value = getSetting(from);
-    if (value.length() > 0) setSetting(to, value);
+    auto result = settings::kv_store.get(from);
+    if (result) {
+        setSetting(to, result.ref());
+    }
     delSetting(from);
 }
 
 void moveSetting(const String& from, const String& to, unsigned char index) {
     const auto keys = _moveKeys(from, to, index);
-    const auto value = getSetting(keys.first);
-    if (value.length() > 0) setSetting(keys.second, value);
+
+    auto result = settings::kv_store.get(keys.first.value());
+    if (result) {
+        setSetting(keys.second, result.ref());
+    }
 
     delSetting(keys.first);
 }
 
 void moveSettings(const String& from, const String& to) {
-    unsigned char index = 0;
-    while (index < 100) {
+    for (size_t index = 0; index < 100; ++index) {
         const auto keys = _moveKeys(from, to, index);
-        const auto value = getSetting(keys.first);
-        if (value.length() == 0) break;
-        setSetting(keys.second, value);
+        auto result = settings::kv_store.get(keys.first.value());
+        if (!result) {
+            break;
+        }
+
+        setSetting(keys.second, result.ref());
         delSetting(keys.first);
-        ++index;
     }
 }
 
@@ -293,7 +275,7 @@ template
 double getSetting(const SettingsKey& key, double defaultValue);
 
 String getSetting(const String& key) {
-    return settings::kv_store.get(key).value;
+    return std::move(settings::kv_store.get(key)).get();
 }
 
 String getSetting(const __FlashStringHelper* key) {
@@ -318,21 +300,21 @@ String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValu
 }
 
 String getSetting(const SettingsKey& key, const String& defaultValue) {
-    auto result = settings::kv_store.get(key.toString());
-    if (!result) {
-        result.value = defaultValue;
+    auto result = settings::kv_store.get(key.value());
+    if (result) {
+        return std::move(result).get();
     }
 
-    return result.value;
+    return defaultValue;
 }
 
 String getSetting(const SettingsKey& key, String&& defaultValue) {
-    auto result = settings::kv_store.get(key.toString());
-    if (!result) {
-        result.value = std::move(defaultValue);
+    auto result = settings::kv_store.get(key.value());
+    if (result) {
+        return std::move(result).get();
     }
 
-    return result.value;
+    return std::move(defaultValue);
 }
 
 bool delSetting(const String& key) {
@@ -340,7 +322,7 @@ bool delSetting(const String& key) {
 }
 
 bool delSetting(const SettingsKey& key) {
-    return delSetting(key.toString());
+    return delSetting(key.value());
 }
 
 bool delSetting(const char* key) {
@@ -356,7 +338,7 @@ bool hasSetting(const String& key) {
 }
 
 bool hasSetting(const SettingsKey& key) {
-    return hasSetting(key.toString());
+    return hasSetting(key.value());
 }
 
 bool hasSetting(const char* key) {
@@ -461,8 +443,9 @@ void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t 
 // Initialization
 // -----------------------------------------------------------------------------
 
-void settingsSetup() {
+#if TERMINAL_SUPPORT
 
+void _settingsInitCommands() {
     terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext& ctx) {
         // TODO: enough of a buffer?
         DynamicJsonBuffer jsonBuffer(1024);
@@ -539,7 +522,7 @@ void settingsSetup() {
                 continue;
             }
 
-            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), result.value.c_str());
+            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), result.c_str());
         }
 
         terminalOK(ctx);
@@ -561,5 +544,12 @@ void settingsSetup() {
         terminalOK(ctx);
     });
 #endif
+}
 
+#endif
+
+void settingsSetup() {
+#if TERMINAL_SUPPORT
+    _settingsInitCommands();
+#endif
 }

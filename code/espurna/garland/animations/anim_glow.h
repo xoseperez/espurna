@@ -22,7 +22,7 @@ class AnimGlow : public Anim {
                 glowForEachLed(i);
             }
         } else {
-            for (int i = 0; i < numLeds; ++i) {
+            for (int i = numLeds - 1 ; i >= 0; --i) {
                 leds[i] = curColor;
                 glowForEachLed(i);
             }

@@ -20,7 +20,10 @@ constexpr int SetPulldown { 1 << 6 };
 
 } // namespace ButtonMask
 
-constexpr unsigned char _buttonPin(unsigned char index) {
+namespace button {
+namespace build {
+
+constexpr size_t pin(size_t index) {
     return (
         (index == 0) ? BUTTON1_PIN :
         (index == 1) ? BUTTON2_PIN :
@@ -33,7 +36,7 @@ constexpr unsigned char _buttonPin(unsigned char index) {
     );
 }
 
-constexpr GpioType _buttonPinType(unsigned char index) {
+constexpr GpioType pinType(size_t index) {
     return (
         (index == 0) ? BUTTON1_PIN_TYPE :
         (index == 1) ? BUTTON2_PIN_TYPE :
@@ -46,7 +49,7 @@ constexpr GpioType _buttonPinType(unsigned char index) {
     );
 }
 
-constexpr int _buttonConfigBitmask(unsigned char index) {
+constexpr int configBitmask(size_t index) {
     return (
         (index == 0) ? (BUTTON1_CONFIG) :
         (index == 1) ? (BUTTON2_CONFIG) :
@@ -59,7 +62,38 @@ constexpr int _buttonConfigBitmask(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonRelease(unsigned char index) {
+namespace internal {
+
+constexpr debounce_event::types::Config decode(int bitmask) {
+    return {
+        ((bitmask & ButtonMask::Pushbutton)
+            ? debounce_event::types::Mode::Pushbutton
+            : debounce_event::types::Mode::Switch),
+        ((bitmask & ButtonMask::DefaultLow) ? debounce_event::types::PinValue::Low
+         : (bitmask & ButtonMask::DefaultHigh) ? debounce_event::types::PinValue::High
+         : (bitmask & ButtonMask::DefaultBoot) ? debounce_event::types::PinValue::Initial
+            : debounce_event::types::PinValue::Low),
+        ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup
+            : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown
+            : debounce_event::types::PinMode::Input)
+    };
+}
+
+} // namespace internal
+
+constexpr debounce_event::types::Mode mode(size_t index) {
+    return internal::decode(configBitmask(index)).mode;
+}
+
+constexpr debounce_event::types::PinValue defaultValue(size_t index) {
+    return internal::decode(configBitmask(index)).default_value;
+}
+
+constexpr debounce_event::types::PinMode pinMode(size_t index) {
+    return internal::decode(configBitmask(index)).pin_mode;
+}
+
+constexpr ButtonAction release(size_t index) {
     return (
         (index == 0) ? BUTTON1_RELEASE :
         (index == 1) ? BUTTON2_RELEASE :
@@ -72,7 +106,7 @@ constexpr ButtonAction _buttonRelease(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonPress(unsigned char index) {
+constexpr ButtonAction press(size_t index) {
     return (
         (index == 0) ? BUTTON1_PRESS :
         (index == 1) ? BUTTON2_PRESS :
@@ -85,7 +119,7 @@ constexpr ButtonAction _buttonPress(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonClick(unsigned char index) {
+constexpr ButtonAction click(size_t index) {
     return (
         (index == 0) ? BUTTON1_CLICK :
         (index == 1) ? BUTTON2_CLICK :
@@ -98,7 +132,7 @@ constexpr ButtonAction _buttonClick(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonDoubleClick(unsigned char index) {
+constexpr ButtonAction doubleClick(size_t index) {
     return (
         (index == 0) ? BUTTON1_DBLCLICK :
         (index == 1) ? BUTTON2_DBLCLICK :
@@ -111,7 +145,7 @@ constexpr ButtonAction _buttonDoubleClick(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonTripleClick(unsigned char index) {
+constexpr ButtonAction tripleClick(size_t index) {
     return (
         (index == 0) ? BUTTON1_TRIPLECLICK :
         (index == 1) ? BUTTON2_TRIPLECLICK :
@@ -124,7 +158,7 @@ constexpr ButtonAction _buttonTripleClick(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonLongClick(unsigned char index) {
+constexpr ButtonAction longClick(size_t index) {
     return (
         (index == 0) ? BUTTON1_LNGCLICK :
         (index == 1) ? BUTTON2_LNGCLICK :
@@ -137,7 +171,7 @@ constexpr ButtonAction _buttonLongClick(unsigned char index) {
     );
 }
 
-constexpr ButtonAction _buttonLongLongClick(unsigned char index) {
+constexpr ButtonAction longLongClick(size_t index) {
     return (
         (index == 0) ? BUTTON1_LNGLNGCLICK :
         (index == 1) ? BUTTON2_LNGLNGCLICK :
@@ -150,7 +184,7 @@ constexpr ButtonAction _buttonLongLongClick(unsigned char index) {
     );
 }
 
-constexpr unsigned char _buttonRelay(unsigned char index) {
+constexpr size_t relay(size_t index) {
     return (
         (index == 0) ? (BUTTON1_RELAY - 1) :
         (index == 1) ? (BUTTON2_RELAY - 1) :
@@ -163,11 +197,11 @@ constexpr unsigned char _buttonRelay(unsigned char index) {
     );
 }
 
-constexpr unsigned long _buttonDebounceDelay() {
+constexpr unsigned long debounceDelay() {
     return BUTTON_DEBOUNCE_DELAY;
 }
 
-constexpr unsigned long _buttonDebounceDelay(unsigned char index) {
+constexpr unsigned long debounceDelay(size_t index) {
     return (
         (index == 0) ? BUTTON1_DEBOUNCE_DELAY :
         (index == 1) ? BUTTON2_DEBOUNCE_DELAY :
@@ -176,15 +210,15 @@ constexpr unsigned long _buttonDebounceDelay(unsigned char index) {
         (index == 4) ? BUTTON5_DEBOUNCE_DELAY :
         (index == 5) ? BUTTON6_DEBOUNCE_DELAY :
         (index == 6) ? BUTTON7_DEBOUNCE_DELAY :
-        (index == 7) ? BUTTON8_DEBOUNCE_DELAY : _buttonDebounceDelay()
+        (index == 7) ? BUTTON8_DEBOUNCE_DELAY : debounceDelay()
     );
 }
 
-constexpr unsigned long _buttonRepeatDelay() {
+constexpr unsigned long repeatDelay() {
     return BUTTON_REPEAT_DELAY;
 }
 
-constexpr unsigned long _buttonRepeatDelay(unsigned char index) {
+constexpr unsigned long repeatDelay(size_t index) {
     return (
         (index == 0) ? BUTTON1_REPEAT_DELAY :
         (index == 1) ? BUTTON2_REPEAT_DELAY :
@@ -193,15 +227,15 @@ constexpr unsigned long _buttonRepeatDelay(unsigned char index) {
         (index == 4) ? BUTTON5_REPEAT_DELAY :
         (index == 5) ? BUTTON6_REPEAT_DELAY :
         (index == 6) ? BUTTON7_REPEAT_DELAY :
-        (index == 7) ? BUTTON8_REPEAT_DELAY : _buttonRepeatDelay()
+        (index == 7) ? BUTTON8_REPEAT_DELAY : repeatDelay()
     );
 }
 
-constexpr unsigned long _buttonLongClickDelay() {
+constexpr unsigned long longClickDelay() {
     return BUTTON_LNGCLICK_DELAY;
 }
 
-constexpr unsigned long _buttonLongClickDelay(unsigned char index) {
+constexpr unsigned long longClickDelay(size_t index) {
     return (
         (index == 0) ? BUTTON1_LNGCLICK_DELAY :
         (index == 1) ? BUTTON2_LNGCLICK_DELAY :
@@ -210,15 +244,15 @@ constexpr unsigned long _buttonLongClickDelay(unsigned char index) {
         (index == 4) ? BUTTON5_LNGCLICK_DELAY :
         (index == 5) ? BUTTON6_LNGCLICK_DELAY :
         (index == 6) ? BUTTON7_LNGCLICK_DELAY :
-        (index == 7) ? BUTTON8_LNGCLICK_DELAY : _buttonLongClickDelay()
+        (index == 7) ? BUTTON8_LNGCLICK_DELAY : longClickDelay()
     );
 }
 
-constexpr unsigned long _buttonLongLongClickDelay() {
+constexpr unsigned long longLongClickDelay() {
     return BUTTON_LNGLNGCLICK_DELAY;
 }
 
-constexpr unsigned long _buttonLongLongClickDelay(unsigned char index) {
+constexpr unsigned long longLongClickDelay(size_t index) {
     return (
         (index == 0) ? BUTTON1_LNGLNGCLICK_DELAY :
         (index == 1) ? BUTTON2_LNGLNGCLICK_DELAY :
@@ -227,11 +261,15 @@ constexpr unsigned long _buttonLongLongClickDelay(unsigned char index) {
         (index == 4) ? BUTTON5_LNGLNGCLICK_DELAY :
         (index == 5) ? BUTTON6_LNGLNGCLICK_DELAY :
         (index == 6) ? BUTTON7_LNGLNGCLICK_DELAY :
-        (index == 7) ? BUTTON8_LNGLNGCLICK_DELAY : _buttonLongLongClickDelay()
+        (index == 7) ? BUTTON8_LNGLNGCLICK_DELAY : longLongClickDelay()
     );
 }
 
-constexpr bool _buttonMqttSendAllEvents(unsigned char index) {
+constexpr bool mqttSendAllEvents() {
+    return (1 == BUTTON_MQTT_SEND_ALL_EVENTS);
+}
+
+constexpr bool mqttSendAllEvents(size_t index) {
     return (
         (index == 0) ? (1 == BUTTON1_MQTT_SEND_ALL_EVENTS) :
         (index == 1) ? (1 == BUTTON2_MQTT_SEND_ALL_EVENTS) :
@@ -240,11 +278,15 @@ constexpr bool _buttonMqttSendAllEvents(unsigned char index) {
         (index == 4) ? (1 == BUTTON5_MQTT_SEND_ALL_EVENTS) :
         (index == 5) ? (1 == BUTTON6_MQTT_SEND_ALL_EVENTS) :
         (index == 6) ? (1 == BUTTON7_MQTT_SEND_ALL_EVENTS) :
-        (index == 7) ? (1 == BUTTON8_MQTT_SEND_ALL_EVENTS) : (1 == BUTTON_MQTT_SEND_ALL_EVENTS)
+        (index == 7) ? (1 == BUTTON8_MQTT_SEND_ALL_EVENTS) : mqttSendAllEvents()
     );
 }
 
-constexpr bool _buttonMqttRetain(unsigned char index) {
+constexpr bool mqttRetain() {
+    return (1 == BUTTON_MQTT_RETAIN);
+}
+
+constexpr bool mqttRetain(size_t index) {
     return (
         (index == 0) ? (1 == BUTTON1_MQTT_RETAIN) :
         (index == 1) ? (1 == BUTTON2_MQTT_RETAIN) :
@@ -253,11 +295,11 @@ constexpr bool _buttonMqttRetain(unsigned char index) {
         (index == 4) ? (1 == BUTTON5_MQTT_RETAIN) :
         (index == 5) ? (1 == BUTTON6_MQTT_RETAIN) :
         (index == 6) ? (1 == BUTTON7_MQTT_RETAIN) :
-        (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : (1 == BUTTON_MQTT_RETAIN)
+        (index == 7) ? (1 == BUTTON8_MQTT_RETAIN) : mqttRetain()
     );
 }
 
-constexpr ButtonProvider _buttonProvider(unsigned char index) {
+constexpr ButtonProvider provider(size_t index) {
     return (
         (index == 0) ? (BUTTON1_PROVIDER) :
         (index == 1) ? (BUTTON2_PROVIDER) :
@@ -270,7 +312,7 @@ constexpr ButtonProvider _buttonProvider(unsigned char index) {
     );
 }
 
-constexpr int _buttonAnalogLevel(unsigned char index) {
+constexpr int analogLevel(size_t index) {
     return (
         (index == 0) ? (BUTTON1_ANALOG_LEVEL) :
         (index == 1) ? (BUTTON2_ANALOG_LEVEL) :
@@ -282,3 +324,6 @@ constexpr int _buttonAnalogLevel(unsigned char index) {
         (index == 7) ? (BUTTON8_ANALOG_LEVEL) : 0
     );
 }
+
+} // namespace build
+} // namespace button

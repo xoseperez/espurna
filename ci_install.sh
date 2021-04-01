@@ -13,11 +13,16 @@ pio_install() {
     pio platform update -p
 }
 
+host_install() {
+    pio platform install native
+}
+
 cd code
 
 case "$1" in
 ("host")
     pio_install
+    host_install
     ;;
 ("webui")
     npm_install

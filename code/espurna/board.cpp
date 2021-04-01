@@ -17,9 +17,6 @@ PROGMEM const char espurna_modules[] =
     #if API_SUPPORT
         "API "
     #endif
-    #if BROKER_SUPPORT
-        "BROKER "
-    #endif
     #if BUTTON_SUPPORT
         "BUTTON "
     #endif
@@ -63,7 +60,7 @@ PROGMEM const char espurna_modules[] =
         "LLMNR "
     #endif
     #if MDNS_SERVER_SUPPORT
-        "MDNS"
+        "MDNS "
     #endif
     #if MQTT_SUPPORT
         "MQTT "

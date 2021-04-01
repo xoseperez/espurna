@@ -12,7 +12,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #if TUYA_SUPPORT
 
-#include "broker.h"
 #include "light.h"
 #include "relay.h"
 #include "rpc.h"
@@ -139,7 +138,7 @@ namespace tuya {
             }
         }
 
-        void channel(unsigned char channel, float value) override {
+        void channel(size_t channel, float value) override {
             // XXX: can't handle channel values when OFF, and will turn the lights ON
             if (!_last_state) {
                 return;
@@ -166,11 +165,11 @@ namespace tuya {
     // --------------------------------------------
 
     uint8_t getWiFiState() {
-
-        uint8_t state = wifiState();
-        if (state & WIFI_STATE_SMARTCONFIG) return 0x00;
-        if (state & WIFI_STATE_AP) return 0x01;
-        if (state & WIFI_STATE_STA) return 0x04;
+        if (wifiConnected()) {
+            return 0x04;
+        } else if (wifiConnectable()) {
+            return 0x01;
+        }
 
         return 0x02;
     }
@@ -520,7 +519,7 @@ error:
 
     namespace build {
 
-    constexpr unsigned char channelDpId(unsigned char index) {
+    constexpr unsigned char channelDpId(size_t index) {
         return (index == 0) ? TUYA_CH1_DPID :
             (index == 1) ? TUYA_CH2_DPID :
             (index == 2) ? TUYA_CH3_DPID :
@@ -528,7 +527,7 @@ error:
             (index == 4) ? TUYA_CH5_DPID : 0u;
     }
 
-    constexpr unsigned char switchDpId(unsigned char index) {
+    constexpr unsigned char switchDpId(size_t index) {
         return (index == 0) ? TUYA_SW1_DPID :
             (index == 1) ? TUYA_SW2_DPID :
             (index == 2) ? TUYA_SW3_DPID :
@@ -551,7 +550,7 @@ error:
 
     void setupSwitches() {
         bool done { false };
-        for (unsigned char id = 0; id < RelaysMax; ++id) {
+        for (size_t id = 0; id < RelaysMax; ++id) {
             auto dp = getSetting({"tuyaSwitch", id}, build::switchDpId(id));
             if (!dp) {
                 break;
@@ -577,7 +576,7 @@ error:
 
     void setupChannels() {
         bool done { false };
-        for (unsigned char id = 0; id < Light::ChannelsMax; ++id) {
+        for (size_t id = 0; id < Light::ChannelsMax; ++id) {
             auto dp = getSetting({"tuyaChannel", id}, build::channelDpId(id));
             if (!dp) {
                 break;
@@ -651,9 +650,12 @@ error:
         TUYA_SERIAL.begin(SerialSpeed);
 
         ::espurnaRegisterLoop(loop);
-        ::wifiRegister([](justwifi_messages_t code, char * parameter) {
-            if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
+        ::wifiRegister([](wifi::Event event) {
+            switch (event) {
+            case wifi::Event::StationConnected:
+            case wifi::Event::StationDisconnected:
                 sendWiFiStatus();
+                break;
             }
         });
     }

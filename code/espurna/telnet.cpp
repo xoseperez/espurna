@@ -169,8 +169,8 @@ static std::vector<char> _telnet_data_buffer;
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->stop();
     _telnetClients[clientId] = nullptr;
-    wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
+    wifiApCheck();
 }
 
 #elif TELNET_SERVER == TELNET_SERVER_ASYNC
@@ -180,8 +180,8 @@ void _telnetCleanUp() {
         for (unsigned char clientId=0; clientId < TELNET_MAX_CLIENTS; ++clientId) {
             if (!_telnetClients[clientId]->connected()) {
                 _telnetClients[clientId] = nullptr;
-                wifiReconnectCheck();
                 DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
+                wifiApCheck();
             }
         }
     });
@@ -363,7 +363,6 @@ void _telnetNotifyConnected(unsigned char i) {
     // If there is no terminal support automatically dump info and crash data
     #if DEBUG_SUPPORT
     #if not TERMINAL_SUPPORT
-        wifiDebug();
         crashDump(terminalDefaultStream());
         crashClear();
     #endif
@@ -381,8 +380,6 @@ void _telnetNotifyConnected(unsigned char i) {
     } else {
         _telnetClientsAuth[i] = true;
     }
-
-    wifiReconnectCheck();
 
 }
 

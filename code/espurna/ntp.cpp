@@ -13,7 +13,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "ntp.h"
 
-#if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+#if NTP_SUPPORT
 
 #include <Arduino.h>
 #include <coredecls.h>
@@ -21,6 +21,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <lwip/apps/sntp.h>
 #include <TZ.h>
+
+#include <forward_list>
 
 static_assert(
     (SNTP_SERVER_DNS == 1),
@@ -30,10 +32,7 @@ static_assert(
 #include "config/buildtime.h"
 
 #include "ntp_timelib.h"
-#include "broker.h"
 #include "ws.h"
-
-BrokerBind(NtpBroker);
 
 // Arduino/esp8266 lwip2 custom functions that can be redefined
 // Must return time in milliseconds, legacy settings are in seconds.
@@ -54,7 +53,6 @@ uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
 // We also must shim TimeLib functions until everything else is ported.
 // We can't sometimes avoid TimeLib as dependancy though, which would be really bad
 
-static Ticker _ntp_broker_timer;
 static bool _ntp_synced = false;
 
 static time_t _ntp_last = 0;
@@ -296,20 +294,20 @@ String ntpDateTime() {
 
 // -----------------------------------------------------------------------------
 
-#if BROKER_SUPPORT
+using NtpTickCallbacks = std::forward_list<NtpTickCallback>;
+NtpTickCallbacks _ntp_tick_callbacks;
 
-void _ntpBrokerSchedule(int offset);
+static Ticker _ntp_tick;
 
-void _ntpBrokerCallback() {
+void _ntpTickSchedule(int offset);
 
+void _ntpTickCallback() {
     if (!ntpSynced()) {
-        _ntpBrokerSchedule(60);
+        _ntpTickSchedule(60);
         return;
     }
 
     const auto ts = now();
-
-    // current  time and formatter string is in local TZ
     tm local_tm;
     localtime_r(&ts, &local_tm);
 
@@ -319,48 +317,48 @@ void _ntpBrokerCallback() {
     static int last_hour = -1;
     static int last_minute = -1;
 
-    String datetime;
-
-    if ((last_minute != now_minute) || (last_hour != now_hour)) {
-        datetime = ntpDateTime(&local_tm);
-    }
-
     // notify subscribers about each tick interval (note that both can happen simultaneously)
     if (last_hour != now_hour) {
         last_hour = now_hour;
-        NtpBroker::Publish(NtpTick::EveryHour, ts, datetime);
+        for (auto& callback : _ntp_tick_callbacks) {
+            callback(NtpTick::EveryHour);
+        }
     }
 
     if (last_minute != now_minute) {
         last_minute = now_minute;
-        NtpBroker::Publish(NtpTick::EveryMinute, ts, datetime);
+        for (auto& callback : _ntp_tick_callbacks) {
+            callback(NtpTick::EveryMinute);
+        }
     }
 
     // try to autocorrect each invocation
-    _ntpBrokerSchedule(60 - local_tm.tm_sec);
-
+    _ntpTickSchedule(60 - local_tm.tm_sec);
 }
 
-// XXX: Nonos docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
-void _ntpBrokerSchedule(int offset) {
-    _ntp_broker_timer.once_scheduled(offset ?: 1, _ntpBrokerCallback);
+// XXX: NONOS SDK docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
+void _ntpTickSchedule(int offset) {
+    static bool scheduled { false };
+    if (!scheduled) {
+        scheduled = true;
+        _ntp_tick.once_scheduled(offset ? offset : 1, []() {
+            scheduled = false;
+            _ntpTickCallback();
+        });
+    }
 }
-
-#endif
 
 void _ntpSetTimeOfDayCallback() {
     _ntp_synced = true;
     _ntp_last = time(nullptr);
-    #if BROKER_SUPPORT
     static bool once = true;
     if (once) {
-        schedule_function(_ntpBrokerCallback);
+        schedule_function(_ntpTickCallback);
         once = false;
     }
-    #endif
-    #if WEB_SUPPORT
-        wsPost(_ntpWebSocketOnData);
-    #endif
+#if WEB_SUPPORT
+    wsPost(_ntpWebSocketOnData);
+#endif
     schedule_function(_ntpReport);
 }
 
@@ -385,13 +383,13 @@ void _ntpConvertLegacyOffsets() {
         if (key == F("ntpTZ")) {
             save = false;
         } else if (key == F("ntpOffset")) {
-            offset = kv.value.read().toInt();
+            offset = settings::internal::convert<int>(kv.value.read());
             found = true;
         } else if (key == F("ntpDST")) {
-            dst = (1 == kv.value.read().toInt());
+            dst = settings::internal::convert<bool>(kv.value.read());
             found = true;
         } else if (key == F("ntpRegion")) {
-            europe = (0 == kv.value.read().toInt());
+            europe = (0 == settings::internal::convert<int>(kv.value.read()));
             found = true;
         }
     });
@@ -421,6 +419,10 @@ void _ntpConvertLegacyOffsets() {
     delSetting("ntpOffset");
     delSetting("ntpDST");
     delSetting("ntpRegion");
+}
+
+void ntpOnTick(NtpTickCallback callback) {
+    _ntp_tick_callbacks.push_front(callback);
 }
 
 void ntpSetup() {
@@ -501,4 +503,4 @@ void ntpSetup() {
 
 }
 
-#endif // NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+#endif // NTP_SUPPORT

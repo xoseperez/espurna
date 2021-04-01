@@ -2,7 +2,6 @@ var debug = false;
 var websock;
 var password = false;
 var maxNetworks;
-var messages = [];
 var free_size = 0;
 
 var urls = {};
@@ -37,22 +36,6 @@ var MagnitudePrefixTypes = {};
 //endRemoveIf(!sensor)
 
 // -----------------------------------------------------------------------------
-// Messages
-// -----------------------------------------------------------------------------
-
-function initMessages() {
-    messages[1]  = "Remote update started";
-    messages[2]  = "OTA update started";
-    messages[3]  = "Error parsing data!";
-    messages[4]  = "The file does not look like a valid configuration backup or is corrupted";
-    messages[5]  = "Changes saved. You should reboot your board now";
-    messages[7]  = "Passwords do not match!";
-    messages[8]  = "Changes saved";
-    messages[9]  = "No changes detected";
-    messages[10] = "Session expired, please reload page...";
-}
-
-// -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
 
@@ -81,7 +64,7 @@ function followScroll(id, threshold) {
 
 function fromSchema(source, schema) {
     if (schema.length !== source.length) {
-        throw "Schema mismatch!";
+        throw `Schema mismatch! Expected length ${schema.length} vs. ${source.length}`;
     }
 
     var target = {};
@@ -129,7 +112,7 @@ function validatePassword(password) {
 }
 
 function validateFormPasswords(form) {
-    var passwords = $("input[name='adminPass1'],input[name='adminPass2']", form);
+    var passwords = $("input[name='adminPass0'],input[name='adminPass1']", form);
     var adminPass1 = passwords.first().val(),
         adminPass2 = passwords.last().val();
 
@@ -223,23 +206,6 @@ var groupSettingsObserver = new MutationObserver(function(mutations) {
     });
 });
 
-// These fields will always be a list of values
-function isGroupValue(value) {
-    var names = [
-        "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime", "relayLastSch",
-        "mqttGroup", "mqttGroupSync", "relayOnDisc",
-        "dczRelayIdx", "dczMagnitude",
-        "tspkRelay", "tspkMagnitude",
-        "ledGPIO", "ledMode", "ledRelay",
-        "adminPass",
-        "node", "key", "topic",
-        "rpnRule", "rpnTopic", "rpnName"
-    ];
-    return names.indexOf(value) >= 0;
-}
-
 function bitsetToValues(bitset) {
     var values = [];
     for (var index = 0; index < 31; ++index) {
@@ -276,21 +242,6 @@ function getValue(element) {
 
 }
 
-function addValue(data, name, value) {
-
-    if (name in data) {
-        if (!Array.isArray(data[name])) {
-            data[name] = [data[name]];
-        }
-        data[name].push(value);
-    } else if (isGroupValue(name)) {
-        data[name] = [value];
-    } else {
-        data[name] = value;
-    }
-
-}
-
 function getData(form, changed, cleanup) {
 
     // Populate two sets of data, ones that had been changed and ones that stayed the same
@@ -310,6 +261,9 @@ function getData(form, changed, cleanup) {
         }
 
         var name = $(this).attr("name");
+        if (name === undefined) {
+            return;
+        }
 
         var real_name = $(this).attr("data-settings-real-name");
         if (real_name !== undefined) {
@@ -325,7 +279,17 @@ function getData(form, changed, cleanup) {
                 changed_data.push(name);
             }
 
-            addValue(data, name, value);
+            // make sure to group keys from templates (or, manually flagged as such)
+            var is_group = $(this).attr("data-settings-group") !== undefined;
+            if (is_group) {
+                if (name in data) {
+                    data[name].push(value);
+                } else {
+                    data[name] = [value];
+                }
+            } else {
+                data[name] = value;
+            }
         }
     });
 
@@ -342,7 +306,7 @@ function getData(form, changed, cleanup) {
     // Hack: clean-up leftover arrays.
     // When empty, the receiving side will prune all keys greater than the current one.
     if (cleanup) {
-        $(".group-settings").each(function() {
+        $(".settings-group").each(function() {
             var haschanged = ("true" === $(this).attr("hasChanged"));
             if (haschanged && !this.children.length) {
                 var targets = this.dataset.settingsTarget;
@@ -425,14 +389,6 @@ function doGeneratePassword() {
     return false;
 }
 
-function getJson(str) {
-    try {
-        return JSON.parse(str);
-    } catch (e) {
-        return false;
-    }
-}
-
 function moduleVisible(module) {
     if (module == "sch") {
         $("li.module-" + module).css("display", "inherit");
@@ -492,6 +448,37 @@ function initSelectGPIO(select) {
     }
 }
 
+function fillTemplateLineFromCfg(line, id, cfg) {
+    for (var [key, value] of Object.entries(cfg)) {
+        var span = $(`span.${key}`, line);
+        if (span.length) {
+            span.html(cfg[key]);
+            continue;
+        }
+
+        var input = $(`input[name='${key}']`, line);
+        if (input.length) {
+            if (input.is("[type='checkbox']")) {
+                var realId = key + id;
+                input.prop("checked", cfg[key])
+                    .attr("id", realId)
+                    .attr("name", realId)
+                    .next().attr("for", realId);
+            } else {
+                input.val(cfg[key]);
+            }
+            continue;
+        }
+
+        var select = $(`select[name='${key}']`, line);
+        if (select.length) {
+            select.prop("value", cfg[key]);
+            continue;
+        }
+    }
+
+    setOriginalsFromValues($("input,select", line));
+}
 
 // -----------------------------------------------------------------------------
 // Actions
@@ -528,7 +515,7 @@ function setOriginalsFromValues(elems) {
 
 function resetOriginals() {
     setOriginalsFromValues();
-    $(".group-settings").attr("haschanged", "false")
+    $(".settings-group").attr("haschanged", "false")
     numReboot = numReconnect = numReload = 0;
     configurationSaved = false;
 }
@@ -720,21 +707,22 @@ function waitForSave(){
 
 function doUpdate() {
 
+    // Since we have 2-page config, make sure we select the active one
     var forms = $(".form-settings");
     if (validateForm(forms)) {
 
-        // Get data
         sendConfig(getData(forms));
 
-        // Empty special fields
+//removeIf(!sensor)
+        // Energy reset is handled via these keys
+        // TODO: replace these with actions, not settings
         $(".pwrExpected").val(0);
         $("input[name='snsResetCalibration']").prop("checked", false);
         $("input[name='pwrResetCalibration']").prop("checked", false);
         $("input[name='pwrResetE']").prop("checked", false);
+//endRemoveIf(!sensor)
 
-        // Change handling
         numChanged = 0;
-
         waitForSave();
 
     }
@@ -764,11 +752,11 @@ function onFileUpload(event) {
 
     var reader = new FileReader();
     reader.onload = function(e) {
-        var data = getJson(e.target.result);
-        if (data) {
+        try {
+            var data = JSON.parse(e.target.result);
             sendAction("restore", data);
-        } else {
-            window.alert(messages[4]);
+        } catch (e) {
+            window.alert(e);
         }
     };
     reader.readAsText(inputFile);
@@ -802,7 +790,7 @@ function doToggle(id, value) {
 }
 
 function doScan() {
-    $("#scanResult").html("");
+    $("#scanResult > tbody").html("");
     $("div.scan.loading").show();
     $("#button-wifi-scan").attr("disabled", true);
     sendAction("scan", {});
@@ -894,6 +882,19 @@ function showPanel() {
     $("#" + $(this).attr("data")).show();
 }
 
+function loadTemplate(name) {
+    let template = $(`#${name}.template`);
+    let clone = $(template).clone();
+    return clone.children();
+}
+
+function loadConfigTemplate(name) {
+    let template = loadTemplate(name);
+    $("input,select", template)
+        .attr("data-settings-group", "");
+    return template;
+}
+
 // -----------------------------------------------------------------------------
 // Relays & magnitudes mapping
 // -----------------------------------------------------------------------------
@@ -903,11 +904,10 @@ function createRelayList(data, container, template_name) {
     var current = $("#" + container + " > div").length;
     if (current > 0) { return; }
 
-    var template = $("#" + template_name + " .pure-g")[0];
+    var template = loadConfigTemplate(template_name);
     for (var i in data) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
-        $("input", line).attr("tabindex", 40 + i).val(data[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
@@ -920,14 +920,13 @@ function createMagnitudeList(data, container, template_name) {
     var current = $("#" + container + " > div").length;
     if (current > 0) { return; }
 
-    var template = $("#" + template_name + " .pure-g")[0];
+    var template = loadConfigTemplate(template_name);
     var size = data.size;
 
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
         $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(Magnitudes[i].description);
-        $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
@@ -935,32 +934,24 @@ function createMagnitudeList(data, container, template_name) {
 }
 //endRemoveIf(!sensor)
 
+function addFromTemplate(template, target) {
+    var line = loadConfigTemplate(template);
+    $("button", line)
+        .on('click', delParent);
+    setOriginalsFromValues($("input", line));
+    line.appendTo("#" + target);
+}
+
 // -----------------------------------------------------------------------------
 // RPN Rules
 // -----------------------------------------------------------------------------
 
 function addRPNRule() {
-    var template = $("#rpnRuleTemplate .pure-g")[0];
-    var line = $(template).clone();
-    var tabindex = $("#rpnRules > div").length + 100;
-    $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex++);
-    });
-    $(line).find("button").on('click', delParent);
-    setOriginalsFromValues($("input", line));
-    line.appendTo("#rpnRules");
+    addFromTemplate("rpnRuleTemplate", "rpnRules");
 }
 
 function addRPNTopic() {
-    var template = $("#rpnTopicTemplate .pure-g")[0];
-    var line = $(template).clone();
-    var tabindex = $("#rpnTopics > div").length + 120;
-    $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex++);
-    });
-    $(line).find("button").on('click', delParent);
-    setOriginalsFromValues($("input", line));
-    line.appendTo("#rpnTopics");
+    addFromTemplate("rpnTopicTemplate", "rpnTopics");
 }
 
 // -----------------------------------------------------------------------------
@@ -970,15 +961,7 @@ function addRPNTopic() {
 //removeIf(!rfm69)
 
 function addMapping() {
-    var template = $("#nodeTemplate .pure-g")[0];
-    var line = $(template).clone();
-    var tabindex = $("#mapping > div").length * 3 + 50;
-    $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex++);
-    });
-    $(line).find("button").on('click', delParent);
-    setOriginalsFromValues($("input", line));
-    line.appendTo("#mapping");
+    addFromTemplate("nodeTemplate", "mapping");
 }
 
 //endRemoveIf(!rfm69)
@@ -1003,8 +986,8 @@ function moreNetwork() {
 
 function addNetwork(network) {
 
-    var number = numNetworks();
-    if (number >= maxNetworks) {
+    var id = numNetworks();
+    if (id >= maxNetworks) {
         alert("Max number of networks reached");
         return null;
     }
@@ -1013,33 +996,44 @@ function addNetwork(network) {
         network = {};
     }
 
-    var tabindex = 200 + number * 10;
-    var template = $("#networkTemplate").children();
-    var line = $(template).clone();
-    $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex);
-        tabindex++;
-    });
+    var line = loadConfigTemplate("networkTemplate");
     $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
 
-    Object.entries(network).forEach(function(pair) {
-        // XXX: UI deleting this network will only re-use stored values.
-        var key = pair[0],
-            val = pair[1];
-        if (key === "stored") {
-            $(line).find(".button-del-network").prop("disabled", val);
-            return;
-        }
-        $("input[name='" + key + "']", line).val(val);
-    });
-
-
+    fillTemplateLineFromCfg(line, id, network);
     line.appendTo("#networks");
 
     return line;
 
+}
+
+function scanResult(values) {
+    $("div.scan.loading").hide();
+    $("#button-wifi-scan").attr("disabled", false);
+
+    let table = document.getElementById("scanResult");
+    table.style.display = "table";
+
+    let row = table.tBodies[0].insertRow();
+    for (let value of values) {
+        let cell = row.insertCell();
+        cell.appendChild(document.createTextNode(value));
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Relays scheduler
+// -----------------------------------------------------------------------------
+
+function addLed(id, cfg, payload) {
+    var line = loadConfigTemplate("ledConfigTemplate");
+
+    fillTemplateLineFromCfg(line, id, cfg);
+    $("span.id", line)
+        .html(id);
+
+    line.appendTo("#ledConfig");
 }
 
 // -----------------------------------------------------------------------------
@@ -1065,59 +1059,49 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function addSchedule(values) {
+function addSchedule(cfg, payload) {
 
-    var schedules = numSchedules();
-    if (schedules >= maxSchedules()) {
+    var id = numSchedules();
+    if (id >= maxSchedules()) {
         alert("Max number of schedules reached");
         return null;
     }
 
-    if (values === undefined) {
-        values = {};
+    if (cfg === undefined) {
+        return null;
     }
 
-    var tabindex = 200 + schedules * 10;
-    var template = $("#scheduleTemplate").children();
-    var line = $(template).clone();
+    if (payload === undefined) {
+        payload = {};
+    }
+
+    var line = loadConfigTemplate("scheduleTemplate");
 
     var type = "none";
-    switch(values.schType) {
-        case 1:
-            type = "switch";
-            break;
-        case 2:
-            type = "light";
-            break;
-        case 3:
-            type = "curtain";
-            break;
+    switch(cfg.schType) {
+    case 1:
+        type = "switch";
+        break;
+    case 2:
+        type = "light";
+        break;
+    case 3:
+        type = "curtain";
+        break;
     }
 
-    template = $("#" + type + "ActionTemplate").children();
-    $(line).find("#schActionDiv").append(template.clone());
+    $("#schActionDiv", line)
+        .append(loadConfigTemplate(type + "ActionTemplate"));
 
-    $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex);
-        tabindex++;
-    });
-    $(line).find(".button-del-schedule").on("click", delSchedule);
-    $(line).find(".button-more-schedule").on("click", moreSchedule);
+    $(".button-del-schedule", line)
+        .on("click", delSchedule);
+    $(".button-more-schedule", line)
+        .on("click", moreSchedule);
 
-    var schUTC_id = "schUTC" + schedules;
-    $(line).find("input[name='schUTC']").prop("id", schUTC_id).next().prop("for", schUTC_id);
+    $("input[type='checkbox']", line)
+        .prop("checked", false);
 
-    var schEnabled_id = "schEnabled" + schedules;
-    $(line).find("input[name='schEnabled']").prop("id", schEnabled_id).next().prop("for", schEnabled_id);
-
-    $(line).find("input[type='checkbox']").prop("checked", false);
-
-    Object.entries(values).forEach(function(kv) {
-        var key = kv[0], value = kv[1];
-        $("input[name='" + key + "']", line).val(value);
-        $("select[name='" + key + "']", line).prop("value", value);
-        $("input[type='checkbox'][name='" + key + "']", line).prop("checked", value);
-    });
+    fillTemplateLineFromCfg(line, id, cfg);
     line.appendTo("#schedules");
 
     return line;
@@ -1128,56 +1112,34 @@ function addSchedule(values) {
 // Relays
 // -----------------------------------------------------------------------------
 
-function initRelayFromSchema(id, relay, schema) {
-    var result = fromSchema(relay, schema)
-    if (!result.name.length) {
-        result.name = "Switch #" + id;
-    }
+function initRelay(id, cfg, payload) {
+    var line = loadConfigTemplate("relayTemplate");
+    $("span.relayName", line)
+        .text(cfg.relayName)
+        .attr("data-id", id)
+        .attr("title", payload["desc"][id]);
 
-    return result;
-}
+    $("input[type='checkbox']", line)
+        .prop('checked', false)
+        .prop('disabled', true)
+        .attr("data-id", id)
+        .prop("id", "relay" + id)
+        .on("change", function (event) {
+            var target= parseInt($(event.target).attr("data-id"), 10);
+            var status = $(event.target).prop("checked");
+            doToggle(target, status);
+        });
 
-function initRelays(data) {
+    $("label.toggle", line)
+        .prop("for", "relay" + id);
 
-    var current = $("#relays > div").length;
-    if (current > 0) { return; }
-
-    var schema = data.schema;
-    var template = $("#relayTemplate .pure-g")[0];
-
-    data["relays"].forEach(function(relay, id) {
-        var _relay = initRelayFromSchema(id, relay, schema);
-
-        var line = $(template).clone();
-
-        $("span.relay-name", line)
-            .text(_relay.name)
-            .attr("data", id);
-
-        $("input[type='checkbox']", line)
-            .prop('checked', false)
-            .prop('disabled', true)
-            .attr("data", id)
-            .prop("id", "relay" + id)
-            .on("change", function (event) {
-                var target= parseInt($(event.target).attr("data"), 10);
-                var status = $(event.target).prop("checked");
-                doToggle(target, status);
-            });
-
-        $("label.toggle", line)
-            .prop("for", "relay" + id);
-
-        line.appendTo("#relays");
-
-    });
-
+    line.appendTo("#relays");
 }
 
 function updateRelays(data) {
     var size = data.size;
     for (var i=0; i<size; ++i) {
-        var elem = $("input[name='relay'][data='" + i + "']");
+        var elem = $("input[name='relay'][data-id='" + i + "']");
         elem.prop("checked", data.status[i]);
         var lock = {
             0: false,
@@ -1191,64 +1153,32 @@ function updateRelays(data) {
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
+        let name = $(this).prop("name")
+        if ($(this).prop("name")) {
+            $(this).prop("id", $(this).prop("name"));
+        }
 
-        if($(this).prop("name"))$(this).prop("id", $(this).prop("name"));
-        $(this).parent().addClass("toggleWrapper");
-        $(this).after('<label for="' + $(this).prop("name") + '" class="toggle"><span class="toggle__handler"></span></label>')
+        $(this)
+            .parent().addClass("toggleWrapper");
+        $(this)
+            .after('<label for="' + $(this).prop("name") + '" class="toggle"><span class="toggle__handler"></span></label>')
 
     });
 
 }
 
-function initRelayConfig(data) {
+function initRelayConfig(id, cfg, payload) {
+    var line = loadConfigTemplate("relayConfigTemplate");
+    fillTemplateLineFromCfg(line, id, cfg);
 
-    var current = $("#relayConfig > legend").length; // there is a legend per relay
-    if (current > 0) { return; }
+    line.appendTo("#relayConfig");
 
-    var template = $("#relayConfigTemplate").children();
-    var schema = data.schema;
-
-    data["relays"].forEach(function(relay, id) {
-        var _relay = initRelayFromSchema(id, relay, schema);
-        var line = $(template).clone();
-
-        $("span.name", line).html(_relay.name);
-        $("span.prov", line).html(_relay.prov);
-        $("select[name='relayBoot']", line).val(_relay.boot);
-        $("select[name='relayPulse']", line).val(_relay.pulse);
-        $("input[name='relayTime']", line).val(_relay.pulse_time);
-
-        if (schema.includes("sch_last")) {
-            $("input[name='relayLastSch']", line)
-                .prop("checked", _relay.sch_last)
-                .attr("id", "relayLastSch" + id)
-                .attr("name", "relayLastSch" + id)
-                .next().attr("for","relayLastSch" + (id));
-        }
-
-        if (schema.includes("group")) {
-            $("input[name='mqttGroup']", line).val(_relay.group);
-        }
-        if (schema.includes("group_sync")) {
-            $("select[name='mqttGroupSync']", line).val(_relay.group_sync);
-        }
-        if (schema.includes("on_disc")) {
-            $("select[name='relayOnDisc']", line).val(_relay.on_disc);
-        }
-
-        setOriginalsFromValues($("input,select", line));
-        line.appendTo("#relayConfig");
-
-        // Populate the relay SELECTs on the configuration panel
-        $("select.isrelay").append(
-            $("<option></option>")
-                .attr("value", id)
-                .text(name)
-        );
-
-        ++id;
-    });
-
+    // Populate the relay SELECTs on the configuration panel
+    $("select.isrelay").append(
+        $("<option></option>")
+            .attr("value", id)
+            .text(name)
+    );
 }
 
 // -----------------------------------------------------------------------------
@@ -1264,9 +1194,6 @@ function initMagnitudes(data) {
 
     var size = data.size;
 
-    // add templates
-    var template = $("#magnitudeTemplate").children();
-
     for (var i=0; i<size; ++i) {
         var magnitude = {
             "name": MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10),
@@ -1275,7 +1202,7 @@ function initMagnitudes(data) {
         };
         Magnitudes.push(magnitude);
 
-        var line = $(template).clone();
+        var line = loadConfigTemplate("magnitudeTemplate");
         $("label", line).html(magnitude.name);
         $("input", line).attr("data", i);
         $("div.sns-desc", line).html(magnitude.description);
@@ -1299,10 +1226,8 @@ function initCurtain(data) {
     var current = $("#curtains > div").length;
     if (current > 0) { return; }
 
-    // add curtain template (prepare multi switches)
-    var template = $("#curtainTemplate").children();
-    var line = $(template).clone();
-    // init curtain button
+    // add and init curtain template, prepare multi switches
+    var line = loadConfigTemplate("curtainTemplate");
     $(line).find(".button-curtain-open").on("click", function() {
         sendAction("curtainAction", {button: 1});
         $(this).css('background', 'red');
@@ -1457,11 +1382,10 @@ function initChannels(num) {
 
     // add channel templates
     var i = 0;
-    var template = $("#channelTemplate").children();
     for (i=0; i<max; i++) {
 
         var channel_id = start + i;
-        var line = $(template).clone();
+        var line = loadTemplate("channelTemplate");
         $("span.slider", line).attr("data", channel_id);
         $("input.slider", line).attr("data", channel_id).on("change", onChannelSliderChange);
         $("label", line).html("Channel #" + channel_id);
@@ -1477,8 +1401,7 @@ function initChannels(num) {
     }
 
     // add brightness template
-    var template = $("#brightnessTemplate").children();
-    var line = $(template).clone();
+    var line = loadTemplate("brightnessTemplate");
     line.appendTo("#channels");
 
     // init bright slider
@@ -1520,8 +1443,7 @@ function addRfbNode() {
 
     var numNodes = $("#rfbNodes > legend").length;
 
-    var template = $("#rfbNodeTemplate").children();
-    var line = $(template).clone();
+    var line = loadTemplate("rfbNodeTemplate");
     $("span", line).html(numNodes);
     $(line).find("input").each(function() {
         this.dataset["id"] = numNodes;
@@ -1553,11 +1475,9 @@ function initLightfox(data, relayCount) {
 
     var numNodes = data.length;
 
-    var template = $("#lightfoxNodeTemplate").children();
-
     var i, j;
     for (i=0; i<numNodes; i++) {
-        var $line = $(template).clone();
+        var $line = loadTemplate("lightfoxNodeTemplate");
         $line.find("label > span").text(data[i]["id"]);
         $line.find("select").each(function() {
             $(this).attr("name", "btnRelay" + data[i]["id"]);
@@ -1619,7 +1539,9 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("action" === key) {
-            if ("reload" === data.action) { doReload(1000); }
+            if ("reload" === data.action) {
+                doReload(1000);
+            }
             return;
         }
 
@@ -1643,9 +1565,17 @@ function processData(data) {
             var processOn = ((rfb.on !== undefined) && (rfb.on.length > 0));
             var processOff = ((rfb.off !== undefined) && (rfb.off.length > 0));
 
-            for (var i=0; i<size; ++i) {
-                if (processOn) $("input[name='rfbcode'][data-id='" + (i + start) + "'][data-status='1']").val(rfb.on[i]);
-                if (processOff) $("input[name='rfbcode'][data-id='" + (i + start) + "'][data-status='0']").val(rfb.off[i]);
+            for (let i = 0; i < size; ++i) {
+                let selector = template`input[name='rfbcode'][data-id='${id}'][data-status='${status}']`;
+                let id = i + start;
+                if (processOn) {
+                    $(selector({"id": id, "status": 1}))
+                        .val(rfb.on[i]);
+                }
+                if (processOff) {
+                    $(selector({"id": id, "status": 0}))
+                        .val(rfb.off[i]);
+                }
             }
 
             return;
@@ -1864,23 +1794,6 @@ function processData(data) {
 
         //removeIf(!sensor)
 
-        {
-            var position = key.indexOf("Correction");
-            if (position > 0 && position === key.length - 10) {
-                var template = $("#magnitudeCorrectionTemplate > div")[0];
-                var elem = $(template).clone();
-
-                var prefix = key.slice(0, position);
-                $("label", elem).html(MagnitudeNames[MagnitudePrefixTypes[prefix]]);
-                $("input", elem).attr("name", key).val(value);
-
-                setOriginalsFromValues($("input", elem));
-                elem.appendTo("#magnitude-corrections");
-                moduleVisible("magnitude-corrections");
-                return;
-            }
-        }
-
         if ("snsErrors" === key) {
             for (var index in value) {
                 var type = value[index][0];
@@ -1942,7 +1855,7 @@ function processData(data) {
         // WiFi
         // ---------------------------------------------------------------------
 
-        if ("wifi" === key) {
+        if ("wifiConfig" === key) {
             maxNetworks = parseInt(value["max"], 10);
             value["networks"].forEach(function(network) {
                 addNetwork(fromSchema(network, value.schema));
@@ -1951,27 +1864,24 @@ function processData(data) {
         }
 
         if ("scanResult" === key) {
-            $("div.scan.loading").hide();
-            $("#button-wifi-scan").attr("disabled", false);
-            $("#scanResult").show();
+            scanResult(value);
+            return;
         }
 
         // -----------------------------------------------------------------------------
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
-        if ("schedules" === key) {
-            $("#schedules").attr("data-settings-max", value.max);
-            for (var i=0; i<value.size; ++i) {
-                // XXX: no
-                var sch_map = {};
-                Object.keys(value).forEach(function(key) {
-                    if ("size" == key) return;
-                    if ("max" == key) return;
-                    sch_map[key] = value[key][i];
-                });
-                addSchedule(sch_map);
-            }
+        if ("schConfig" === key) {
+            $("#schedules")
+                .attr("data-settings-max", value.max);
+
+            let schema = value.schema;
+            value["schedules"].forEach((entries, id) => {
+                let cfg = fromSchema(entries, schema);
+                addSchedule(cfg, value);
+            });
+
             return;
         }
 
@@ -1980,8 +1890,25 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("relayConfig" === key) {
-            initRelays(value);
-            initRelayConfig(value);
+            if ($("#relays > div").length) {
+                return;
+            }
+
+            if ($("#relayConfig > legend").length) {
+                return;
+            }
+
+            let schema = value.schema;
+            value["cfg"].forEach((entries, id) => {
+                let cfg = fromSchema(entries, schema);
+                var name = cfg["relayName"];
+                if (!cfg.relayName.length) {
+                    cfg.relayName = "Switch #" + id;
+                }
+
+                initRelay(id, cfg, value);
+                initRelayConfig(id, cfg, value);
+            });
             return;
         }
 
@@ -2010,28 +1937,14 @@ function processData(data) {
         // LEDs
         // ---------------------------------------------------------------------
 
-        if ("led" === key) {
-            if($("#ledConfig > div").length > 0) return;
+        if ("ledConfig" === key) {
+            if ($("#ledConfig > div").length > 0) {
+                return;
+            }
 
-            var schema = value["schema"];
-            value["list"].forEach(function(led_data, index) {
-                var line = $($("#ledConfigTemplate").children()).clone();
-
-                $("span.id", line).html(index);
-                $("select", line).attr("data", index);
-                $("input", line).attr("data", index);
-
-                var led = fromSchema(led_data, schema);
-
-                $("select[name='ledGPIO']", line).val(led.GPIO);
-                // XXX: checkbox implementation depends on unique id
-                // $("input[name='ledInv']", line).val(led.Inv);
-                $("select[name='ledMode']", line).val(led.Mode);
-                $("input[name='ledRelay']", line).val(led.Relay);
-
-                setOriginalsFromValues($("input,select", line));
-
-                line.appendTo("#ledConfig");
+            let schema = value["schema"];
+            value["leds"].forEach((entries, id) => {
+                addLed(id, fromSchema(entries, schema), value);
             });
 
             return;
@@ -2088,12 +2001,13 @@ function processData(data) {
         // General
         // ---------------------------------------------------------------------
 
-        // Messages
+        if ("saved" === key) {
+            configurationSaved = value;
+            return;
+        }
+
         if ("message" === key) {
-            if (value == 8) {
-                configurationSaved = true;
-            }
-            window.alert(messages[value]);
+            window.alert(value);
             return;
         }
 
@@ -2298,10 +2212,17 @@ function connectToURL(url) {
         if (websock) { websock.close(); }
         websock = new WebSocket(urls.ws.href);
         websock.onmessage = function(evt) {
-            var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-            if (data) {
-                processData(data);
+            var data = {};
+            try {
+                data = JSON.parse(evt.data
+                    .replace(/\n/g, "\\n")
+                    .replace(/\r/g, "\\r")
+                    .replace(/\t/g, "\\t"));
+            } catch (e) {
+                console.log(e);
             }
+
+            processData(data);
         };
         websock.onclose = function(evt) {
             clearInterval(ws_pingpong);
@@ -2333,8 +2254,14 @@ function connectToCurrentURL() {
 
 $(function() {
 
-    initMessages();
+    // most of the time, we want this unconditionally for all <a href="..."></a>
+    $("a.external")
+        .attr("target", "_blank")
+        .attr("rel", "noopener")
+        .attr("tabindex", "-1");
+
     createCheckboxes();
+
     setInterval(function() { keepTime(); }, 1000);
 
     $(".password-reveal").on("click", toggleVisiblePassword);
@@ -2439,7 +2366,7 @@ $(function() {
 
     resetOriginals();
 
-    $(".group-settings").each(function() {
+    $(".settings-group").each(function() {
         groupSettingsObserver.observe(this, {childList: true});
     });
 

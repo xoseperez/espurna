@@ -10,6 +10,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #if GARLAND_SUPPORT
 
 #include <Arduino.h>
+#include <string>
 
 struct Color
 {
@@ -47,18 +48,34 @@ struct Color
     }
 
     //fades (decreases all RGB channels brightness) this color by k
-    void fade(byte k) {
+    Color& fade(byte k) {
         if (r>=k) { r=r-k; } else { r=0; }
         if (g>=k) { g=g-k; } else { g=0; }
         if (b>=k) { b=b-k; } else { b=0; }
+        return *this;
     }
 
     //fades color separately for each channel
-    void fade3(byte dr, byte dg, byte db) {
+    Color& fade3(byte dr, byte dg, byte db) {
         if (r>=dr) { r=r-dr; } else { r=0; }
         if (g>=dg) { g=g-dg; } else { g=0; }
         if (b>=db) { b=b-db; } else { b=0; }
+        return *this;
     }  
+
+    Color max_bright() {
+        if (r==255 || g==255 || b==255)
+            return Color(r, g, b);
+        double kr = 255.0/r;
+        double kg = 255.0/g;
+        double kb = 255.0/b;
+        double k1 = kr < kg ? kr : kg;
+        double k2 = k1 < kb ? k1 : kb;
+        int r0 = r * k2;
+        int g0 = g * k2;
+        int b0 = b * k2;
+        return Color(r0, g0, b0);
+    }
 
     //checks whether this color is visually close to given one
     bool isCloseTo(Color c) const {
@@ -79,6 +96,12 @@ struct Color
         Serial.print(("r="));Serial.print(r);Serial.print((" "));
         Serial.print(("g="));Serial.print(g);Serial.print( (" "));
         Serial.print(("b="));Serial.println(b);
+    }
+
+    String to_str() {
+        char buf[20];
+        sprintf(buf, "r=%hhu, g=%hhu, b=%hhu", r, g, b);
+        return buf;
     }
 
     friend bool operator== (const Color &c1, const Color &c2);

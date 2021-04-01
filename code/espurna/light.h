@@ -41,8 +41,7 @@ enum class Report {
     None = 0,
     Web = 1 << 0,
     Mqtt = 1 << 1,
-    MqttGroup = 1 << 2,
-    Broker = 1 << 3
+    MqttGroup = 1 << 2
 };
 
 constexpr int operator|(Report lhs, int rhs) {
@@ -66,7 +65,7 @@ constexpr int operator&(Report lhs, int rhs) {
 }
 
 constexpr int DefaultReport {
-    Report::Web | Report::Mqtt | Report::MqttGroup | Report::Broker
+    Report::Web | Report::Mqtt | Report::MqttGroup
 };
 
 struct Hsv {
@@ -164,7 +163,7 @@ class LightProvider {
 public:
     virtual void update() = 0;
     virtual void state(bool) = 0;
-    virtual void channel(unsigned char ch, float value) = 0;
+    virtual void channel(size_t ch, float value) = 0;
 };
 
 struct LightTransition {
@@ -221,8 +220,8 @@ long lightColdWhite();
 void lightWarmWhite(long value);
 long lightWarmWhite();
 
-void lightState(unsigned char i, bool state);
-bool lightState(unsigned char i);
+void lightState(size_t id, bool state);
+bool lightState(size_t id);
 
 void lightState(bool state);
 bool lightState();
@@ -230,11 +229,11 @@ bool lightState();
 void lightBrightness(long brightness);
 long lightBrightness();
 
-long lightChannel(unsigned char id);
-void lightChannel(unsigned char id, long value);
+long lightChannel(size_t id);
+void lightChannel(size_t id, long value);
 
 void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
-void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP);
+void lightChannelStep(size_t id, long steps, long multiplier = LIGHT_STEP);
 
 void lightUpdate(bool save, LightTransition transition, Light::Report report);
 void lightUpdate(bool save, LightTransition transition, int report);

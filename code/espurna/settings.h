@@ -3,6 +3,7 @@
 SETTINGS MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -17,11 +18,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
-#include "broker.h"
 #include "storage_eeprom.h"
-#include "settings_embedis.h"
 
-BrokerDeclare(ConfigBroker, void(const String& key, const String& value));
+#include "settings_helpers.h"
+#include "settings_embedis.h"
+#include "terminal.h"
 
 // --------------------------------------------------------------------------
 
@@ -56,66 +57,8 @@ extern kvs_type kv_store;
 
 // --------------------------------------------------------------------------
 
-class SettingsKey {
-public:
-    SettingsKey(const char* key) :
-        _key(key)
-    {}
-
-    SettingsKey(const String& key) :
-        _key(key)
-    {}
-
-    SettingsKey(String&& key) :
-        _key(std::move(key))
-    {}
-
-    SettingsKey(const String& prefix, unsigned char index) {
-        _key.reserve(prefix.length());
-        _key += prefix;
-        _key += index;
-    }
-
-    SettingsKey(String&& prefix, unsigned char index) :
-        _key(std::move(prefix))
-    {
-        _key += index;
-    }
-
-    SettingsKey(const char* prefix, unsigned char index) :
-        _key(prefix)
-    {
-        _key += index;
-    }
-
-    bool operator==(const char* other) const {
-        return _key == other;
-    }
-
-    bool operator==(const String& other) const {
-        return _key == other;
-    }
-
-    const String& toString() const {
-        return _key;
-    }
-
-    explicit operator String() const & {
-        return _key;
-    }
-
-    explicit operator String() && {
-        return std::move(_key);
-    }
-
-private:
-    String _key;
-};
-
 using settings_move_key_t = std::pair<SettingsKey, SettingsKey>;
 using settings_filter_t = std::function<String(String& value)>;
-
-// --------------------------------------------------------------------------
 
 struct settings_cfg_t {
     String& setting;
@@ -141,18 +84,20 @@ using enable_if_not_arduino_string = std::enable_if<!is_arduino_string<T>::value
 
 // --------------------------------------------------------------------------
 
-uint32_t u32fromString(const String& string, int base);
-
 template <typename T>
 T convert(const String& value);
-
-// --------------------------------------------------------------------------
 
 template <>
 float convert(const String& value);
 
 template <>
 double convert(const String& value);
+
+template <>
+signed char convert(const String& value);
+
+template <>
+short convert(const String& value);
 
 template <>
 int convert(const String& value);
@@ -175,8 +120,51 @@ unsigned short convert(const String& value);
 template <>
 unsigned char convert(const String& value);
 
-template<typename T>
-String serialize(const T& value);
+inline String serialize(uint8_t value, int base = 10) {
+    return String(value, base);
+}
+
+inline String serialize(uint16_t value, int base = 10) {
+    return String(value, base);
+}
+
+String serialize(uint32_t value, int base = 10);
+
+inline String serialize(unsigned long value, int base = 10) {
+    static_assert(sizeof(unsigned long) == sizeof(uint32_t), "");
+    static_assert(sizeof(unsigned int) == sizeof(unsigned long), "");
+    return serialize(static_cast<unsigned int>(value), base);
+}
+
+inline String serialize(int16_t value, int base = 10) {
+    return String(value, base);
+}
+
+inline String serialize(int8_t value, int base = 10) {
+    return serialize(static_cast<int16_t>(value), base);
+}
+
+inline String serialize(long value, int base = 10) {
+    return String(value, base);
+}
+
+inline String serialize(int value, int base = 10) {
+    static_assert(sizeof(long) == sizeof(int32_t), "");
+    static_assert(sizeof(int) == sizeof(long), "");
+    return serialize(static_cast<long>(value), base);
+}
+
+inline String serialize(float value) {
+    return String(value, 3);
+}
+
+inline String serialize(double value) {
+    return String(value, 3);
+}
+
+inline String serialize(bool value) {
+    return value ? "true" : "false";
+}
 
 } // namespace internal
 } // namespace settings
@@ -205,11 +193,11 @@ T getSetting(const SettingsKey& key, T defaultValue) __attribute__((noinline));
 
 template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
 T getSetting(const SettingsKey& key, T defaultValue) {
-    auto result = settings::kv_store.get(key.toString());
-    if (!result) {
-        return defaultValue;
+    auto result = settings::kv_store.get(key.value());
+    if (result) {
+        return settings::internal::convert<T>(result.ref());
     }
-    return settings::internal::convert<T>(result.value);
+    return defaultValue;
 }
 
 String getSetting(const char* key);
@@ -225,7 +213,7 @@ String getSetting(const SettingsKey& key, String&& defaultValue);
 
 template<typename T, typename = typename settings::internal::enable_if_arduino_string<T>::type>
 bool setSetting(const SettingsKey& key, T&& value) {
-    return settings::kv_store.set(key.toString(), value);
+    return settings::kv_store.set(key.value(), value);
 }
 
 template<typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>

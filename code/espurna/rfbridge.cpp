@@ -17,8 +17,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "utils.h"
 
-BrokerBind(RfbridgeBroker);
-
 #include <algorithm>
 #include <bitset>
 #include <cstring>
@@ -45,6 +43,12 @@ constexpr bool _rfb_transmit { true };
 
 #endif
 
+std::forward_list<RfbCodeHandler> _rfb_code_handlers;
+
+void rfbSetCodeHandler(RfbCodeHandler handler) {
+    _rfb_code_handlers.push_front(handler);
+}
+
 // -----------------------------------------------------------------------------
 // MATCH RECEIVED CODE WITH THE SPECIFIC RELAY ID
 // -----------------------------------------------------------------------------
@@ -53,33 +57,39 @@ constexpr bool _rfb_transmit { true };
 
 struct RfbRelayMatch {
     RfbRelayMatch() = default;
-    RfbRelayMatch(unsigned char id_, PayloadStatus status_) :
-        id(id_),
-        status(status_),
+    RfbRelayMatch(size_t id, PayloadStatus status) :
+        _id(id),
+        _status(status),
         _found(true)
     {}
 
-    bool ok() {
-        return _found;
-    }
-
-    void reset(unsigned char id_, PayloadStatus status_) {
-        id = id_;
-        status = status_;
+    void reset(size_t id, PayloadStatus status) {
+        _id = id;
+        _status = status;
         _found = true;
     }
 
-    unsigned char id { 0u };
-    PayloadStatus status { PayloadStatus::Unknown };
+    size_t id() const {
+        return _id;
+    }
 
-    private:
+    PayloadStatus status() const {
+        return _status;
+    }
 
+    explicit operator bool() const {
+        return _found;
+    }
+
+private:
+    size_t _id { RelaysMax };
+    PayloadStatus _status { PayloadStatus::Unknown };
     bool _found { false };
 };
 
 struct RfbLearn {
     unsigned long ts;
-    unsigned char id;
+    size_t id;
     bool status;
 };
 
@@ -332,7 +342,7 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 
 #if RELAY_SUPPORT
 
-void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned char size) {
+void _rfbWebSocketSendCodeArray(JsonObject& root, size_t start, size_t size) {
     JsonObject& rfb = root.createNestedObject("rfb");
     rfb["size"] = size;
     rfb["start"] = start;
@@ -340,14 +350,14 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
     JsonArray& on = rfb.createNestedArray("on");
     JsonArray& off = rfb.createNestedArray("off");
 
-    for (uint8_t id=start; id<start+size; id++) {
+    for (auto id = start; id < (start + size); ++id) {
         on.add(rfbRetrieve(id, true));
         off.add(rfbRetrieve(id, false));
     }
 }
 
 void _rfbWebSocketOnData(JsonObject& root) {
-    _rfbWebSocketSendCodeArray(root, 0, relayCount());
+    _rfbWebSocketSendCodeArray(root, 0ul, relayCount());
 }
 
 #endif // RELAY_SUPPORT
@@ -447,23 +457,18 @@ RfbRelayMatch _rfbMatch(const char* code) {
             return;
         }
 
-        char *endptr = nullptr;
-        const auto id = strtoul(id_ptr, &endptr, 10);
-        if (endptr == id_ptr || endptr[0] != '\0' || id > std::numeric_limits<uint8_t>::max() || id >= relayCount()) {
+        size_t id;
+        if (!tryParseId(id_ptr, relayCount, id)) {
             return;
         }
 
         // when we see the same id twice, we match the opposite statuses
-        if (matched.ok() && (id == matched.id)) {
-            matched.status = PayloadStatus::Toggle;
+        if (matched && (id == matched.id())) {
+            matched.reset(matched.id(), PayloadStatus::Toggle);
             return;
         }
 
-        matched.reset(matched.ok()
-            ? std::min(static_cast<uint8_t>(id), matched.id)
-            : static_cast<uint8_t>(id),
-            status
-        );
+        matched.reset(matched ? std::min(id, matched.id()) : id, status);
     });
 
 
@@ -482,7 +487,7 @@ void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
 #if WEB_SUPPORT
     auto id = learn->id;
     wsPost([id](JsonObject& root) {
-        _rfbWebSocketSendCodeArray(root, id, 1);
+        _rfbWebSocketSendCodeArray(root, id, 1ul);
     });
 #endif
 
@@ -493,18 +498,18 @@ bool _rfbRelayHandler(const char* buffer, bool locked = false) {
     bool result { false };
 
     auto match = _rfbMatch(buffer);
-    if (match.ok()) {
-        DEBUG_MSG_P(PSTR("[RF] Matched with the relay ID %u\n"), match.id);
-        _rfb_relay_status_lock.set(match.id, locked);
+    if (match) {
+        DEBUG_MSG_P(PSTR("[RF] Matched with the relay ID %u\n"), match.id());
+        _rfb_relay_status_lock.set(match.id(), locked);
 
-        switch (match.status) {
+        switch (match.status()) {
         case PayloadStatus::On:
         case PayloadStatus::Off:
-            relayStatus(match.id, (PayloadStatus::On == match.status));
+            relayStatus(match.id(), (PayloadStatus::On == match.status()));
             result = true;
             break;
         case PayloadStatus::Toggle:
-            relayToggle(match.id);
+            relayToggle(match.id());
             result = true;
         case PayloadStatus::Unknown:
             break;
@@ -529,13 +534,8 @@ void _rfbLearnStartFromPayload(const char* payload) {
 
     std::copy(payload, sep, relay);
 
-    char *endptr = nullptr;
-    const auto id = strtoul(relay, &endptr, 10);
-    if (endptr == &relay[0] || endptr[0] != '\0') {
-        return;
-    }
-
-    if (id >= relayCount()) {
+    size_t id;
+    if (!tryParseId(relay, relayCount, id)) {
         DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
         return;
     }
@@ -580,7 +580,7 @@ bool _rfbEnqueue(const char* code, size_t length, unsigned char repeats = 1u) {
     return false;
 }
 
-void _rfbSendRaw(const uint8_t* message, unsigned char size) {
+void _rfbSendRaw(const uint8_t* message, size_t size) {
     Serial.write(message, size);
 }
 
@@ -649,9 +649,9 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
             mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
 
-#if BROKER_SUPPORT
-            RfbridgeBroker::Publish(RfbDefaultProtocol, buffer + 12);
-#endif
+            for (auto& handler : _rfb_code_handlers) {
+                handler(RfbDefaultProtocol, buffer + 12);
+            }
         }
         break;
     }
@@ -669,10 +669,10 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
             mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
 
-#if BROKER_SUPPORT
             // ref. https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/0xA6#example-of-a-received-decoded-protocol
-            RfbridgeBroker::Publish(payload[0], buffer + 2);
-#endif
+            for (auto& handler : _rfb_code_handlers) {
+                handler(payload[0], buffer + 2);
+            }
         } else {
             DEBUG_MSG_P(PSTR("[RF] Received 0x%02X (%u bytes)\n"), code, payload.size());
         }
@@ -886,9 +886,9 @@ void _rfbReceiveImpl() {
         mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
 #endif
 
-#if BROKER_SUPPORT
-        RfbridgeBroker::Publish(message[1], buffer + 10);
-#endif
+        for (auto& handler : _rfb_code_handlers) {
+            handler(message[1], buffer + 10);
+        }
     }
 
     _rfb_modem->resetAvailable();
@@ -1075,6 +1075,20 @@ void _rfbApiSetup() {
 
 #if TERMINAL_SUPPORT
 
+void _rfbCommandStatusDispatch(const terminal::CommandContext& ctx, size_t id, const String& payload, RelayStatusCallback callback) {
+    auto parsed = rpcParsePayload(payload.c_str());
+    switch (parsed) {
+    case PayloadStatus::On:
+    case PayloadStatus::Off:
+        callback(id, (parsed == PayloadStatus::On));
+        return;
+    case PayloadStatus::Toggle:
+    case PayloadStatus::Unknown:
+        terminalError(ctx, F("Invalid status"));
+        break;
+    }
+}
+
 void _rfbInitCommands() {
 
     terminalRegisterCommand(F("RFB.SEND"), [](const terminal::CommandContext& ctx) {
@@ -1088,43 +1102,39 @@ void _rfbInitCommands() {
 
 #if RELAY_SUPPORT
     terminalRegisterCommand(F("RFB.LEARN"), [](const terminal::CommandContext& ctx) {
-
         if (ctx.argc != 3) {
             terminalError(ctx, F("RFB.LEARN <ID> <STATUS>"));
             return;
         }
 
-        int id = ctx.argv[1].toInt();
-        if (id >= relayCount()) {
+        size_t id;
+        if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
             terminalError(ctx, F("Invalid relay ID"));
             return;
         }
 
-        rfbLearn(id, (ctx.argv[2].toInt()) == 1);
-
-        terminalOK(ctx);
-
+        _rfbCommandStatusDispatch(ctx, id, ctx.argv[2], rfbLearn);
     });
 
     terminalRegisterCommand(F("RFB.FORGET"), [](const terminal::CommandContext& ctx) {
-
         if (ctx.argc < 2) {
             terminalError(ctx, F("RFB.FORGET <ID> [<STATUS>]"));
             return;
         }
 
-        int id = ctx.argv[1].toInt();
-        if (id >= relayCount()) {
+        size_t id;
+        if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
             terminalError(ctx, F("Invalid relay ID"));
             return;
         }
 
         if (ctx.argc == 3) {
-            rfbForget(id, (ctx.argv[2].toInt()) == 1);
-        } else {
-            rfbForget(id, true);
-            rfbForget(id, false);
+            _rfbCommandStatusDispatch(ctx, id, ctx.argv[2], rfbForget);
+            return;
         }
+
+        rfbForget(id, true);
+        rfbForget(id, false);
 
         terminalOK(ctx);
     });
@@ -1149,19 +1159,19 @@ void _rfbInitCommands() {
 // PUBLIC
 // -----------------------------------------------------------------------------
 
-void rfbStore(unsigned char id, bool status, const char * code) {
+void rfbStore(size_t id, bool status, const char * code) {
     SettingsKey key { status ? F("rfbON") : F("rfbOFF"), id };
     setSetting(key, code);
-    DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.toString().c_str(), code);
+    DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.c_str(), code);
 }
 
-String rfbRetrieve(unsigned char id, bool status) {
+String rfbRetrieve(size_t id, bool status) {
     return getSetting({ status ? F("rfbON") : F("rfbOFF"), id });
 }
 
 #if RELAY_SUPPORT
 
-void rfbStatus(unsigned char id, bool status) {
+void rfbStatus(size_t id, bool status) {
     // TODO: This is a left-over from the old implementation. Right now we set this lock when relay handler
     //       is called within the receiver, while this is called from either relayStatus or relay loop calling
     //       this via provider callback. This prevents us from re-sending the code we just received.
@@ -1174,12 +1184,12 @@ void rfbStatus(unsigned char id, bool status) {
     _rfb_relay_status_lock[id] = false;
 }
 
-void rfbLearn(unsigned char id, bool status) {
+void rfbLearn(size_t id, bool status) {
     _rfb_learn.reset(new RfbLearn { millis(), id, status });
     _rfbLearnImpl();
 }
 
-void rfbForget(unsigned char id, bool status) {
+void rfbForget(size_t id, bool status) {
 
     delSetting({status ? F("rfbON") : F("rfbOFF"), id});
 
@@ -1187,7 +1197,7 @@ void rfbForget(unsigned char id, bool status) {
     // we send these in bulk is at the very start of the connection
 #if WEB_SUPPORT
     wsPost([id](JsonObject& root) {
-        _rfbWebSocketSendCodeArray(root, id, 1);
+        _rfbWebSocketSendCodeArray(root, id, 1ul);
     });
 #endif
 
@@ -1229,13 +1239,14 @@ void _rfbSettingsMigrate(int version) {
 
     String buffer;
 
-    for (unsigned char index = 0; index < relayCount(); ++index) {
-        SettingsKey on_key {F("rfbON"), index};
+    auto relays = relayCount();
+    for (decltype(relays) id = 0; id < relays; ++id) {
+        SettingsKey on_key {F("rfbON"), id};
         if (migrate_code(buffer, getSetting(on_key))) {
             setSetting(on_key, buffer);
         }
 
-        SettingsKey off_key {F("rfbOFF"), index};
+        SettingsKey off_key {F("rfbOFF"), id};
         if (migrate_code(buffer, getSetting(off_key))) {
             setSetting(off_key, buffer);
         }

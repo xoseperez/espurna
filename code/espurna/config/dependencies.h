@@ -36,32 +36,16 @@
 #endif
 
 #if ALEXA_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
 #undef RELAY_SUPPORT
 #define RELAY_SUPPORT               1               // and switches
 #endif
 
 #if RPN_RULES_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1               // If RPN Rules enabled enable BROKER
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1
 #endif
 
-#if LED_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1               // If LED is enabled enable BROKER to supply status changes
-#endif
-
-#if INFLUXDB_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1               // If InfluxDB enabled enable BROKER
-#endif
-
 #if DOMOTICZ_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1               // If Domoticz enabled enable BROKER
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
 #endif
@@ -69,11 +53,6 @@
 #if HOMEASSISTANT_SUPPORT
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1               // If Home Assistant enabled enable MQTT
-#endif
-
-#if THINGSPEAK_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
 
 #if THERMOSTAT_SUPPORT
@@ -86,8 +65,6 @@
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP to work
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1           // Scheduler needs Broker to trigger every minute
 #undef RELAY_SUPPORT
 #define RELAY_SUPPORT               1           // Scheduler needs relays
 #endif
@@ -102,8 +79,6 @@
 #endif
 
 #if TUYA_SUPPORT
-#undef BROKER_SUPPORT
-#define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
 #undef RELAY_SUPPORT
 #define RELAY_SUPPORT               1           // Most of the time we require it
 #endif
@@ -170,15 +145,6 @@
 #if SSDP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
 #undef SSDP_SUPPORT
 #define SSDP_SUPPORT 0
-#endif
-
-//------------------------------------------------------------------------------
-// Change ntp module depending on Core version
-
-#if NTP_SUPPORT && defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-#define NTP_LEGACY_SUPPORT 1
-#else
-#define NTP_LEGACY_SUPPORT 0
 #endif
 
 //------------------------------------------------------------------------------

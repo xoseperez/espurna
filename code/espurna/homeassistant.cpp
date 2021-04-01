@@ -718,7 +718,7 @@ public:
             return false;
         }
 
-        return (--_retry < 0);
+        return (--_retry > 0);
     }
 
     Context& context() {
@@ -797,7 +797,13 @@ void send(TaskPtr ptr, FlagPtr flag_ptr);
 
 void stop(bool done) {
     timer.detach();
-    state = done ? State::Sent : State::Pending;
+    if (done) {
+        DEBUG_MSG_P(PSTR("[HA] Stopping discovery\n"));
+        state = State::Sent;
+    } else {
+        DEBUG_MSG_P(PSTR("[HA] Discovery error\n"));
+        state = State::Pending;
+    }
 }
 
 void schedule(unsigned long wait, TaskPtr ptr, FlagPtr flag_ptr) {
@@ -861,10 +867,7 @@ void send(TaskPtr ptr, FlagPtr flag_ptr) {
         return;
     }
 
-    if (task.done()) {
-        stop(true);
-        return;
-    }
+    stop(false);
 }
 
 } // namespace internal

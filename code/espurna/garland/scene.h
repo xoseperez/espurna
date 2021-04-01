@@ -27,6 +27,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #include "animations/anim_spread.h"
 #include "animations/anim_stars.h"
 #include "animations/anim_start.h"
+#include "animations/anim_waves.h"
 
 class Adafruit_NeoPixel;
 class Palette;

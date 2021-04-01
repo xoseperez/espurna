@@ -13,9 +13,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <map>
 #include <memory>
 
-#include "broker.h"
 #include "mqtt.h"
 #include "rpc.h"
+#include "relay.h"
 #include "sensor.h"
 #include "terminal.h"
 #include "ws.h"
@@ -157,12 +157,12 @@ void _idbConfigure() {
     if (_idb_enabled && !_idb_client) _idbInitClient();
 }
 
-void _idbBrokerSensor(const String& topic, unsigned char id, double, const char* value) {
+void _idbSendSensor(const String& topic, unsigned char id, double, const char* value) {
     idbSend(topic.c_str(), id, value);
 }
 
-void _idbBrokerStatus(const String& topic, unsigned char id, unsigned int value) {
-    idbSend(topic.c_str(), id, String(int(value)).c_str());
+void _idbSendStatus(size_t id, bool status) {
+    idbSend(MQTT_TOPIC_RELAY, id, status ? "1" : "0"); // "status" ?
 }
 
 // -----------------------------------------------------------------------------
@@ -219,7 +219,7 @@ void _idbFlush() {
 
     _idb_client->payload = "";
     for (auto& pair : _idb_client->values) {
-        if (!isNumber(pair.second.c_str())) {
+        if (!isNumber(pair.second)) {
             String quoted;
             quoted.reserve(pair.second.length() + 2);
             quoted += '"';
@@ -292,10 +292,12 @@ void idbSetup() {
             .onKeyCheck(_idbWebSocketOnKeyCheck);
     #endif
 
-    StatusBroker::Register(_idbBrokerStatus);
+    #if RELAY_SUPPORT
+        relaySetStatusChange(_idbSendStatus);
+    #endif
 
     #if SENSOR_SUPPORT
-        SensorReportBroker::Register(_idbBrokerSensor);
+        sensorSetMagnitudeReport(_idbSendSensor);
     #endif
 
     espurnaRegisterReload(_idbConfigure);

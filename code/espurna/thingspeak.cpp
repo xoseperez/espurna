@@ -12,7 +12,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <memory>
 
-#include "broker.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "rpc.h"
@@ -51,7 +50,7 @@ const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
 bool _tspk_enabled = false;
 bool _tspk_clear = false;
 
-char * _tspk_queue[THINGSPEAK_FIELDS] = {NULL};
+String _tspk_fields[THINGSPEAK_FIELDS];
 String _tspk_data;
 
 bool _tspk_flush = false;
@@ -87,16 +86,9 @@ AsyncClientState _tspk_state = AsyncClientState::Disconnected;
 
 // -----------------------------------------------------------------------------
 
-void _tspkBrokerCallback(const String& topic, unsigned char id, unsigned int value) {
-
-    // Only process status messages for switches
-    if (!topic.equals(MQTT_TOPIC_RELAY)) {
-        return;
-    }
-
-    tspkEnqueueRelay(id, value > 0);
+void _tspkRelayStatus(size_t id, bool status) {
+    tspkEnqueueRelay(id, status);
     tspkFlush();
-
 }
 
 #if WEB_SUPPORT
@@ -144,14 +136,11 @@ void _tspkConfigure() {
     #endif
 }
 
-void _tspkClearQueue() {
+void _tspkClearFields() {
     _tspk_tries = THINGSPEAK_TRIES;
     if (_tspk_clear) {
-        for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
-            if (_tspk_queue[id] != NULL) {
-                free(_tspk_queue[id]);
-                _tspk_queue[id] = NULL;
-            }
+        for (size_t id = 0; id < THINGSPEAK_FIELDS; ++id) {
+            _tspk_fields[id] = "";
         }
     }
 }
@@ -161,7 +150,7 @@ void _tspkRetry(int code) {
         _tspk_flush = true;
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
     } else {
-        _tspkClearQueue();
+        _tspkClearFields();
     }
 }
 
@@ -377,11 +366,11 @@ void _tspkPost(const String& address) {
 
 #endif // THINGSPEAK_USE_ASYNC
 
-void _tspkEnqueue(unsigned char index, const char * payload) {
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%u with value %s\n"), index, payload);
-    --index;
-    if (_tspk_queue[index] != NULL) free(_tspk_queue[index]);
-    _tspk_queue[index] = strdup(payload);
+void _tspkEnqueue(size_t index, const char* payload) {
+    if (index > 0) {
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%hhu with value %s\n"), index, payload);
+        _tspk_fields[--index] = payload;
+    }
 }
 
 void _tspkFlush() {
@@ -398,11 +387,11 @@ void _tspkFlush() {
     _tspk_data.reserve(tspkDataBufferSize);
 
     // Walk the fields, numbered 1...THINGSPEAK_FIELDS
-    for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
-        if (_tspk_queue[id] != NULL) {
+    for (size_t id = 0; id<THINGSPEAK_FIELDS; id++) {
+        if (_tspk_fields[id].length()) {
             if (_tspk_data.length() > 0) _tspk_data.concat("&");
             char buf[32] = {0};
-            snprintf_P(buf, sizeof(buf), PSTR("field%u=%s"), (id + 1), _tspk_queue[id]);
+            snprintf_P(buf, sizeof(buf), PSTR("field%u=%s"), (id + 1), _tspk_fields[id].c_str());
             _tspk_data.concat(buf);
         }
     }
@@ -419,14 +408,17 @@ void _tspkFlush() {
 
 // -----------------------------------------------------------------------------
 
-bool tspkEnqueueRelay(unsigned char index, bool status) {
-    if (!_tspk_enabled) return true;
-    unsigned char id = getSetting({"tspkRelay", index}, 0);
-    if (id > 0) {
-        _tspkEnqueue(id, status ? "1" : "0");
-        return true;
+bool tspkEnqueueRelay(size_t index, bool status) {
+    if (_tspk_enabled) {
+        unsigned char id = getSetting({"tspkRelay", index}, 0);
+        if (id > 0) {
+            _tspkEnqueue(id, status ? "1" : "0");
+            return true;
+        }
+        return false;
     }
-    return false;
+
+    return true;
 }
 
 bool tspkEnqueueMeasurement(unsigned char index, const char * payload) {
@@ -464,7 +456,9 @@ void tspkSetup() {
             .onKeyCheck(_tspkWebSocketOnKeyCheck);
     #endif
 
-    StatusBroker::Register(_tspkBrokerCallback);
+    #if RELAY_SUPPORT
+        relaySetStatusChange(_tspkRelayStatus);
+    #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
         THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",

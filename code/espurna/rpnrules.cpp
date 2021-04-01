@@ -12,7 +12,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <rpnlib.h>
 
-#include "broker.h"
 #include "light.h"
 #include "mqtt.h"
 #include "ntp.h"
@@ -147,30 +146,50 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
 #endif // MQTT_SUPPORT
 
 void _rpnConfigure() {
-    #if MQTT_SUPPORT
-        if (mqttConnected()) _rpnMQTTSubscribe();
-    #endif
+#if MQTT_SUPPORT
+    if (mqttConnected()) {
+        _rpnMQTTSubscribe();
+    }
+#endif
     _rpn_delay = getSetting("rpnDelay", RPN_DELAY);
 }
 
-void _rpnBrokerCallback(const String& topic, unsigned char id, double value, const char*) {
+void _rpnRelayStatus(size_t id, bool status) {
+    char name[32] = {0};
+    snprintf(name, sizeof(name), "relay%u", id);
+
+    rpn_variable_set(_rpn_ctxt, name, rpn_value(status));
+    _rpn_run = true;
+}
+
+void _rpnLightStatus() {
+    auto channels = lightChannels();
 
     char name[32] = {0};
-    snprintf(name, sizeof(name), "%s%u", topic.c_str(), id);
-
-    if (topic == MQTT_TOPIC_RELAY) {
-        rpn_variable_set(_rpn_ctxt, name, rpn_value(static_cast<bool>(value)));
-    } else {
-        rpn_variable_set(_rpn_ctxt, name, rpn_value(value));
+    for (decltype(channels) channel = 0; channel < channels; ++channel) {
+        auto value = rpn_value(static_cast<rpn_int>(lightChannel(channel)));
+        snprintf(name, sizeof(name), "channel%u", channel);
+        rpn_variable_set(_rpn_ctxt, name, std::move(value));
     }
 
     _rpn_run = true;
-
 }
 
-void _rpnBrokerStatus(const String& topic, unsigned char id, unsigned int value) {
-    _rpnBrokerCallback(topic, id, double(value), nullptr);
+#if SENSOR_SUPPORT
+
+void _rpnSensorMagnitudeRead(const String& topic, unsigned char index, double reading, const char*) {
+    static_assert(sizeof(double) == sizeof(rpn_float), "");
+
+    String name;
+    name.reserve(topic.length() + 3);
+
+    name += topic;
+    name += index;
+
+    rpn_variable_set(_rpn_ctxt, name, rpn_value(static_cast<rpn_float>(reading)));
 }
+
+#endif
 
 #if NTP_SUPPORT
 
@@ -492,7 +511,7 @@ rpn_error _rpnRfbMatcher(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
-void _rpnBrokerRfbridgeCallback(unsigned char protocol, const char* raw_code) {
+void _rpnRfbridgeCodeHandler(unsigned char protocol, const char* raw_code) {
 
     // remove really old codes that we have not seen in a while to avoid memory exhaustion
     auto ts = millis();
@@ -523,7 +542,7 @@ void _rpnRfbSetup() {
     // - Repeat window is an arbitrary time, just about 3-4 more times it takes for
     //   a code to be sent again when holding a generic remote button
     //   Code counter is reset to 0 when outside of the window.
-    // - Stale delay allows broker callback to remove really old codes.
+    // - Stale delay allows the handler to remove really old codes.
     //   (TODO: can this happen in loop() cb instead?)
     _rfb_code_repeat_window = getSetting("rfbRepeatWindow", 2000ul);
     _rfb_code_match_window = getSetting("rfbMatchWindow", 2000ul);
@@ -546,10 +565,28 @@ void _rpnRfbSetup() {
 #endif
 
     // Main bulk of the processing goes on in here
-    RfbridgeBroker::Register(_rpnBrokerRfbridgeCallback);
+    rfbSetCodeHandler(_rpnRfbridgeCodeHandler);
 }
 
 #endif // RFB_SUPPORT
+
+void _rpnDeepSleep(uint64_t duration, RFMode mode);
+
+void _rpnDeepSleepSchedule(uint64_t duration, RFMode mode) {
+    schedule_function([duration, mode]() {
+        _rpnDeepSleep(duration, mode);
+    });
+}
+
+void _rpnDeepSleep(uint64_t duration, RFMode mode) {
+    if (WiFi.getMode() != WIFI_OFF) {
+        wifiTurnOff();
+        _rpnDeepSleepSchedule(duration, mode);
+        return;
+    }
+
+    ESP.deepSleep(duration, mode);
+}
 
 void _rpnShowStack(Print& print) {
     print.println(F("Stack:"));
@@ -573,10 +610,7 @@ void _rpnInit() {
     // Init context
     rpn_init(_rpn_ctxt);
 
-    // Time functions need NTP support
-    // TODO: since 1.15.0, timelib+ntpclientlib are no longer used with latest Cores
-    //       `now` is always in UTC, `utc_...` functions to be used instead to convert time
-    #if NTP_SUPPORT && !NTP_LEGACY_SUPPORT
+    #if NTP_SUPPORT
     {
         constexpr size_t time_t_argc { split_t<time_t>{} ? 2 : 1 };
 
@@ -621,35 +655,6 @@ void _rpnInit() {
             return _rpnNtpFunc(ctxt, minute);
         });
     }
-    #endif
-
-    // TODO: 1.14.0 weekday(...) conversion seemed to have 0..6 range with Monday as 0
-    //       using classic Sunday as first, but instead of 0 it is 1
-    //       Implementation above also uses 1 for Sunday, staying compatible with TimeLib
-    #if NTP_SUPPORT && NTP_LEGACY_SUPPORT
-        rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) -> rpn_error {
-            if (!ntpSynced()) return rpn_operator_error::CannotContinue;
-            rpn_value ts { static_cast<rpn_int>(ntpLocal2UTC(now())) };
-            rpn_stack_push(ctxt, ts);
-            return 0;
-        });
-        rpn_operator_set(_rpn_ctxt, "now", 0, _rpnNtpNow);
-
-        rpn_operator_set(_rpn_ctxt, "month", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, month);
-        });
-        rpn_operator_set(_rpn_ctxt, "day", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, day);
-        });
-        rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, weekday);
-        });
-        rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, hour);
-        });
-        rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
-            return _rpnNtpFunc(ctxt, minute);
-        });
     #endif
 
     // Accept relay number and numeric API status value (0, 1 and 2)
@@ -767,7 +772,9 @@ void _rpnInit() {
 
     rpn_operator_set(_rpn_ctxt, "sleep", 2, [](rpn_context & ctxt) -> rpn_error {
         static bool once { false };
-        if (once) return rpn_operator_error::CannotContinue;
+        if (once) {
+            return rpn_operator_error::CannotContinue;
+        }
 
         auto value = rpn_stack_pop(ctxt).checkedToUint();
         if (!value.ok()) {
@@ -782,17 +789,17 @@ void _rpnInit() {
         auto mode = rpn_stack_pop(ctxt).toUint();
 
         once = true;
-        schedule_function([duration, mode]() {
-            wifiTurnOff();
-            ESP.deepSleep(duration * 1000000ull, static_cast<RFMode>(mode));
-        });
+        _rpnDeepSleep(duration * 1000000ull, static_cast<RFMode>(mode));
 
         return 0;
     });
 
     rpn_operator_set(_rpn_ctxt, "stations", 0, [](rpn_context & ctxt) -> rpn_error {
-        if (!(WiFi.getMode() & WIFI_AP)) return rpn_operator_error::CannotContinue;
-        rpn_stack_push(ctxt, rpn_value(static_cast<rpn_uint>(WiFi.softAPgetStationNum())));
+        rpn_uint out = (WiFi.getMode() & WIFI_AP)
+            ? static_cast<rpn_uint>(WiFi.softAPgetStationNum())
+            : 0u;
+
+        rpn_stack_push(ctxt, rpn_value(out));
         return 0;
     });
 
@@ -803,9 +810,11 @@ void _rpnInit() {
     });
 
     rpn_operator_set(_rpn_ctxt, "rssi", 0, [](rpn_context & ctxt) -> rpn_error {
-        if (!wifiConnected()) return rpn_operator_error::CannotContinue;
-        rpn_stack_push(ctxt, rpn_value(static_cast<rpn_int>(WiFi.RSSI())));
-        return 0;
+        if (wifiConnected()) {
+            rpn_stack_push(ctxt, rpn_value(static_cast<rpn_int>(WiFi.RSSI())));
+            return 0;
+        }
+        return rpn_operator_error::CannotContinue;
     });
 
     rpn_operator_set(_rpn_ctxt, "delay", 1, [](rpn_context & ctxt) -> rpn_error {
@@ -1006,7 +1015,7 @@ void rpnSetup() {
     #endif
 
 #if NTP_SUPPORT
-    NtpBroker::Register([](NtpTick tick, time_t, const String&) {
+    ntpOnTick([](NtpTick tick) {
         switch (tick) {
         case NtpTick::EveryMinute:
             _rpn_ntp_tick_minute = true;
@@ -1019,15 +1028,21 @@ void rpnSetup() {
     });
 #endif
 
-    StatusBroker::Register(_rpnBrokerStatus);
+#if RELAY_SUPPORT
+    relaySetStatusChange(_rpnRelayStatus);
+#endif
 
-    #if RFB_SUPPORT
-        _rpnRfbSetup();
-    #endif
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    lightSetReportListener(_rpnLightStatus);
+#endif
 
-    #if SENSOR_SUPPORT
-        SensorReadBroker::Register(_rpnBrokerCallback);
-    #endif
+#if RFB_SUPPORT
+    _rpnRfbSetup();
+#endif
+
+#if SENSOR_SUPPORT
+    sensorSetMagnitudeRead(_rpnSensorMagnitudeRead);
+#endif
 
     espurnaRegisterReload(_rpnConfigure);
     espurnaRegisterLoop(_rpnLoop);

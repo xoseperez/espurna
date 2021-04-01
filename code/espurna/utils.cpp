@@ -11,6 +11,18 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "board.h"
 #include "ntp.h"
 
+bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
+    static_assert(std::numeric_limits<size_t>::max() >= std::numeric_limits<unsigned long>::max(), "");
+
+    char* endp { nullptr };
+    out = strtoul(p, &endp, 10);
+    if ((endp == p) || (*endp != '\0') || (out >= limit())) {
+        return false;
+    }
+
+    return true;
+}
+
 void setDefaultHostname() {
     if (strlen(HOSTNAME) > 0) {
         setSetting("hostname", F(HOSTNAME));
@@ -89,9 +101,7 @@ const String& getVersion() {
 }
 
 String buildTime() {
-#if NTP_LEGACY_SUPPORT && NTP_SUPPORT
-    return ntpDateTime(__UNIX_TIMESTAMP__);
-#elif NTP_SUPPORT
+#if NTP_SUPPORT
     constexpr const time_t ts = __UNIX_TIMESTAMP__;
     tm timestruct;
     gmtime_r(&ts, &timestruct);
@@ -404,25 +414,46 @@ void nice_delay(unsigned long ms) {
     while (millis() - start < ms) delay(1);
 }
 
-bool isNumber(const char * s) {
-    unsigned char len = strlen(s);
-    if (0 == len) return false;
-    bool decimal = false;
-    bool digit = false;
-    for (unsigned char i=0; i<len; i++) {
-        if (('-' == s[i]) || ('+' == s[i])) {
-            if (i>0) return false;
-        } else if (s[i] == '.') {
-            if (!digit) return false;
-            if (decimal) return false;
-            decimal = true;
-        } else if (!isdigit(s[i])) {
-            return false;
-        } else {
-            digit = true;
+bool isNumber(const String& value) {
+    if (value.length()) {
+        const char* begin { value.c_str() };
+        const char* end { value.c_str() + value.length() };
+
+        bool dot { false };
+        bool digit { false };
+        const char* ptr { begin };
+
+        while (ptr != end) {
+            switch (*ptr) {
+            case '\0':
+                break;
+            case '-':
+            case '+':
+                if (ptr != begin) {
+                    return false;
+                }
+                break;
+            case '.':
+                if (dot) {
+                    return false;
+                }
+                dot = true;
+                break;
+            case '0' ... '9':
+                digit = true;
+                break;
+            case 'a' ... 'z':
+            case 'A' ... 'Z':
+                return false;
+            }
+
+            ++ptr;
         }
+
+        return digit;
     }
-    return digit;
+
+    return false;
 }
 
 // ref: lwip2 lwip_strnstr with strnlen

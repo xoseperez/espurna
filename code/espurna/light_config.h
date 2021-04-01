@@ -15,7 +15,7 @@ constexpr unsigned char enablePin() {
     return LIGHT_ENABLE_PIN;
 }
 
-constexpr unsigned char channelPin(unsigned char index) {
+constexpr unsigned char channelPin(size_t index) {
     return (
         (index == 0) ? LIGHT_CH1_PIN :
         (index == 1) ? LIGHT_CH2_PIN :
@@ -25,7 +25,7 @@ constexpr unsigned char channelPin(unsigned char index) {
     );
 }
 
-constexpr bool inverse(unsigned char index) {
+constexpr bool inverse(size_t index) {
     return (
         (index == 0) ? (1 == LIGHT_CH1_INVERSE) :
         (index == 1) ? (1 == LIGHT_CH2_INVERSE) :
@@ -41,7 +41,7 @@ constexpr my92xx_cmd_t my92xxCommand() {
     return MY92XX_COMMAND;
 }
 
-constexpr unsigned char my92xxChannels() {
+constexpr size_t my92xxChannels() {
     return MY92XX_CHANNELS;
 }
 
@@ -67,15 +67,15 @@ constexpr unsigned char _my92xx_mapping[MY92XX_CHANNELS] {
     MY92XX_MAPPING
 };
 
-constexpr unsigned char my92xxChannel(unsigned char)
+constexpr unsigned char my92xxChannel(size_t)
     __attribute__((deprecated("MY92XX_CH# flags should be used instead of MY92XX_MAPPING")));
-constexpr unsigned char my92xxChannel(unsigned char channel) {
+constexpr unsigned char my92xxChannel(size_t channel) {
     return _my92xx_mapping[channel];
 }
 
 #else
 
-constexpr unsigned char my92xxChannel(unsigned char channel) {
+constexpr unsigned char my92xxChannel(size_t channel) {
     return (channel == 0) ? MY92XX_CH1 :
         (channel == 1) ? MY92XX_CH2 :
         (channel == 2) ? MY92XX_CH3 :

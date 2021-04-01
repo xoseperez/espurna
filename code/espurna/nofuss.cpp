@@ -132,9 +132,9 @@ void nofussSetup() {
     	    DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
         	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
         	DEBUG_MSG_P(PSTR("         File System: %s\n"), (char *) NoFUSSClient.getNewFileSystem().c_str());
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"message\": 1}"));
-            #endif
+#if WEB_SUPPORT
+            wsSend_P(PSTR("{\"message\": \"Automatic OTA started.\"}"));
+#endif
 
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
             eepromRotate(false);
