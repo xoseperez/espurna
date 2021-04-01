@@ -22,6 +22,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "mqtt.h"
 #include "relay.h"
 #include "system.h"
+#include "thermostat.h"
 #include "ws.h"
 
 #include "libs/BasePin.h"

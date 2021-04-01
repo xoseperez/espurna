@@ -77,7 +77,7 @@ temp_range_t _temp_range;
 thermostat_t _thermostat;
 
 enum thermostat_cycle_type {cooling, heating};
-unsigned int _thermostat_cycle = heating;
+unsigned int _thermostat_cycle = _thermostat_mode_cooler ? heating : cooling;
 String thermostat_remote_sensor_topic;
 
 //------------------------------------------------------------------------------
@@ -306,11 +306,12 @@ void setThermostatState(bool state) {
 }
 
 //------------------------------------------------------------------------------
-void debugPrintSwitch(bool state, double temp) {
+void debugPrintSwitch(bool state, double temp, const char* reason) {
   char tmp_str[16];
   dtostrf(temp, 1, 1, tmp_str);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d\n"),
-   state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER", relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d, reason: %s\n"),
+   state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER",
+   relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch, reason);
 }
 
 //------------------------------------------------------------------------------
@@ -319,53 +320,40 @@ inline bool lastSwitchEarlierThan(unsigned int comparing_time) {
 }
 
 //------------------------------------------------------------------------------
-inline void switchThermostat(bool state, double temp) {
-    debugPrintSwitch(state, temp);
+inline void switchThermostat(bool state, double temp, const char* reason) {
+    debugPrintSwitch(state, temp, reason);
     setThermostatState(state);
 }
 
 //------------------------------------------------------------------------------
-//----------- Main function that make decision ---------------------------------
+//----------- Main function that make decision and relay controling ------------
 //------------------------------------------------------------------------------
 void checkTempAndAdjustRelay(double temp) {
-  if (_thermostat_mode_cooler == false) { // Main operation mode. Thermostat is HEATER.
-    // if thermostat switched ON and t > max - switch it OFF and start cooling
-    if (relayStatus(THERMOSTAT_RELAY) && temp > _temp_range.max) {
-      _thermostat_cycle = cooling;
-      switchThermostat(false, temp);
-    // if thermostat switched ON for max time - switch it OFF for rest
+  // if t < min - start heating cycle
+  if (temp < _temp_range.min) {
+    DEBUG_MSG_P(PSTR("[THERMOSTAT] starting HEATING cycle because the temperature dropped below minimum.\n"));
+    _thermostat_cycle = heating;
+    // if t > max - start cooling cycle
+  } else if (temp > _temp_range.max) {
+    DEBUG_MSG_P(PSTR("[THERMOSTAT] starting COOLING cycle because the temperature has risen above the maximum.\n"));
+    _thermostat_cycle = cooling;
+  }
+
+  // active cycle
+  if ((_thermostat_mode_cooler && _thermostat_cycle == cooling) ||
+     (!_thermostat_mode_cooler && _thermostat_cycle == heating)) {
+      // if relay is OFF switch it ON if min_off_time passed by
+    if (!relayStatus(THERMOSTAT_RELAY) &&
+        (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
+      switchThermostat(true, temp, _thermostat_mode_cooler ? "start/continue cooling" : "start/continue heating");
+      // if thermostat works more than max_on_time it need rest
     } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
-      switchThermostat(false, temp);
-    // if t < min and thermostat switched OFF for at least minimum time - switch it ON and start
-    } else if (!relayStatus(THERMOSTAT_RELAY) && temp < _temp_range.min
-        && (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
-      _thermostat_cycle = heating;
-      switchThermostat(true, temp);
-    // if heating cycle and thermostat switchaed OFF for more than min time - switch it ON
-    // continue heating cycle
-    } else if (!relayStatus(THERMOSTAT_RELAY) && _thermostat_cycle == heating
-        && lastSwitchEarlierThan(_thermostat_min_off_time)) {
-      switchThermostat(true, temp);
+      switchThermostat(false, temp, "thermostat need rest");
     }
-  } else { // Thermostat is COOLER. Inverse logic.
-    // if thermostat switched ON and t < min - switch it OFF and start heating
-    if (relayStatus(THERMOSTAT_RELAY) && temp < _temp_range.min) {
-      _thermostat_cycle = heating;
-      switchThermostat(false, temp);
-    // if thermostat switched ON for max time - switch it OFF for rest
-    } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
-      switchThermostat(false, temp);
-    // if t > max and thermostat switched OFF for at least minimum time - switch it ON and start
-    } else if (!relayStatus(THERMOSTAT_RELAY) && temp > _temp_range.max
-        && (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
-      _thermostat_cycle = cooling;
-      switchThermostat(true, temp);
-    // if cooling cycle and thermostat switchaed OFF for more than min time - switch it ON
-    // continue cooling cycle
-    } else if (!relayStatus(THERMOSTAT_RELAY) && _thermostat_cycle == cooling
-        && lastSwitchEarlierThan(_thermostat_min_off_time)) {
-      switchThermostat(true, temp);
-    }
+    // pasive cycle
+  } else if (relayStatus(THERMOSTAT_RELAY)) {
+    // if relay is ON - switch it OFF
+      switchThermostat(false, temp, _thermostat_mode_cooler ? "start heating cycle" : "start cooling cycle");
   }
 }
 

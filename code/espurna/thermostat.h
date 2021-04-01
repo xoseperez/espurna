@@ -8,6 +8,8 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #pragma once
 
+#if THERMOSTAT_SUPPORT
+
 #include "espurna.h"
 
 #define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
@@ -65,3 +67,11 @@ void thermostatModeCooler(bool cooler);
 bool thermostatModeCooler();
 
 void thermostatSetup();
+
+#if THERMOSTAT_DISPLAY_SUPPORT
+void displayOn();
+void displaySetup();
+void displayLoop();
+#endif
+
+#endif
