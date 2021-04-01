@@ -306,9 +306,7 @@ void setThermostatState(bool state) {
 }
 
 //------------------------------------------------------------------------------
-void debugPrintSwitch(bool state, double temp, const char* reason) {
-  char tmp_str[16];
-  dtostrf(temp, 1, 1, tmp_str);
+void debugPrintSwitch(bool state, const char* tmp_str, const char* reason) {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d, reason: %s\n"),
    state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER",
    relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch, reason);
@@ -320,8 +318,8 @@ inline bool lastSwitchEarlierThan(unsigned int comparing_time) {
 }
 
 //------------------------------------------------------------------------------
-inline void switchThermostat(bool state, double temp, const char* reason) {
-    debugPrintSwitch(state, temp, reason);
+inline void switchThermostat(bool state, const char* tmp_str, const char* reason) {
+    debugPrintSwitch(state, tmp_str, reason);
     setThermostatState(state);
 }
 
@@ -329,31 +327,37 @@ inline void switchThermostat(bool state, double temp, const char* reason) {
 //----------- Main function that make decision and relay controling ------------
 //------------------------------------------------------------------------------
 void checkTempAndAdjustRelay(double temp) {
+  char tmp_str[16];
+  dtostrf(temp, 1, 1, tmp_str);
   // if t < min - start heating cycle
-  if (temp < _temp_range.min) {
-    DEBUG_MSG_P(PSTR("[THERMOSTAT] starting HEATING cycle because the temperature dropped below minimum.\n"));
+  if (_thermostat_cycle == cooling && temp < _temp_range.min) {
+    DEBUG_MSG_P(PSTR("[THERMOSTAT] starting HEATING cycle because the temperature %s dropped below minimum %d\n"), tmp_str, _temp_range.min);
     _thermostat_cycle = heating;
     // if t > max - start cooling cycle
-  } else if (temp > _temp_range.max) {
-    DEBUG_MSG_P(PSTR("[THERMOSTAT] starting COOLING cycle because the temperature has risen above the maximum.\n"));
+  } else if (_thermostat_cycle == heating && temp > _temp_range.max) {
+    DEBUG_MSG_P(PSTR("[THERMOSTAT] starting COOLING cycle because the temperature %s has risen above the maximum %d\n"), tmp_str, _temp_range.max);
     _thermostat_cycle = cooling;
   }
 
   // active cycle
   if ((_thermostat_mode_cooler && _thermostat_cycle == cooling) ||
      (!_thermostat_mode_cooler && _thermostat_cycle == heating)) {
-      // if relay is OFF switch it ON if min_off_time passed by
-    if (!relayStatus(THERMOSTAT_RELAY) &&
-        (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
-      switchThermostat(true, temp, _thermostat_mode_cooler ? "start/continue cooling" : "start/continue heating");
+    if (!relayStatus(THERMOSTAT_RELAY)) {
+        // if relay is OFF switch it ON if min_off_time passed by
+        if (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time)) {
+          switchThermostat(true, tmp_str, _thermostat_mode_cooler ? "start/continue cooling" : "start/continue heating");
+        } else {
+          int rest_mins_left = (_thermostat_min_off_time - (millis() - _thermostat.last_switch))/MILLIS_IN_MIN + 1;
+          DEBUG_MSG_P(PSTR("[THERMOSTAT] thermostat is in rest state for %d min\n"), rest_mins_left);
+        }
       // if thermostat works more than max_on_time it need rest
     } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
-      switchThermostat(false, temp, "thermostat need rest");
+      switchThermostat(false, tmp_str, "thermostat switch OFF for 10 min to give rest for heater/cooler");
     }
     // pasive cycle
   } else if (relayStatus(THERMOSTAT_RELAY)) {
     // if relay is ON - switch it OFF
-      switchThermostat(false, temp, _thermostat_mode_cooler ? "start heating cycle" : "start cooling cycle");
+      switchThermostat(false, tmp_str, _thermostat_mode_cooler ? "start heating cycle" : "start cooling cycle");
   }
 }
 
