@@ -11,7 +11,9 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
+#include "api.h"
 #include "light.h"
+#include "mqtt.h"
 #include "ntp.h"
 #include "ntp_timelib.h"
 #include "relay.h"
@@ -59,6 +61,84 @@ constexpr bool restoreLast() {
 } // namespace scheduler
 
 // -----------------------------------------------------------------------------
+
+#if API_SUPPORT
+
+// UTILS
+
+template <typename V = const char*>
+bool _setJsonVariant(const SettingsKey& k, const JsonVariant& v) {
+    if (!v.is<V>()) {
+        return false;
+    }
+    return setSetting(k, v.as<V>());
+}
+
+template <>
+bool _setJsonVariant<const char*>(const SettingsKey& k, const JsonVariant& v) {
+    const auto& tmp = v.as<const char*>();
+    if (tmp == nullptr) {
+        return false;
+    }
+    return setSetting(k, tmp);
+}
+
+template <typename T = const char*, typename ObjKey>
+bool _setJsonKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
+    if (!o.containsKey(key)) {
+        return false;
+    }
+    return _setJsonVariant<T>(k, o[key]);
+}
+
+//ENDPOINTS
+
+void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
+    root["enabled"]     = getSetting({"schEnabled", id}, false);
+    root["utc"]         = getSetting({"schUTC", id}, false);
+    root["switch"]      = getSetting({"schSwitch", id}, 0);
+    root["action"]      = getSetting({"schAction", id}, 0);
+    root["type"]        = getSetting({"schType", id}, scheduler::build::defaultType());
+    root["hour"]        = getSetting({"schHour", id}, 0);
+    root["minute"]      = getSetting({"schMinute", id}, 0);
+    root["weekdays"]    = getSetting({"schWDs", id}, scheduler::build::weekdays());
+}
+
+
+bool _schApiSetSchedule(const unsigned char id, JsonObject& sched) {
+    if (!_setJsonKey<int>({"schSwitch", id}, sched, "switch")) {
+        return false;
+    }
+    if (sched.containsKey("enabled")) {
+        const auto& enabled = sched["enabled"];
+        if (!_setJsonVariant<bool>({"schEnabled", id}, enabled)) {
+            setSetting({"schEnabled", id}, enabled.as<String>());
+        }
+    }
+    if (sched.containsKey("utc")) {
+        const auto& utc = sched["utc"];
+        if (!_setJsonVariant<bool>({"schUTC", id}, utc)) {
+            setSetting({"schUTC", id}, utc.as<String>());
+        }
+    }
+
+    if (sched.containsKey("action")) {
+        const auto& action = sched["action"];
+        if (action.is<const char*>()) {
+            setSetting({"schAction", id}, int(relayParsePayload(action.as<const char*>())));
+        } else {
+            _setJsonVariant<int>({"schAction", id}, action);
+        }
+    }
+
+    _setJsonKey<int>({"schType", id}, sched, "type");
+    _setJsonKey<int>({"schHour", id}, sched, "hour");
+    _setJsonKey<int>({"schMinute", id}, sched, "minute");
+    _setJsonKey({"schWDs", id}, sched, "weekdays");
+    return true;
+}
+
+#endif  // API_SUPPORT
 
 #if WEB_SUPPORT
 
@@ -345,6 +425,50 @@ void schSetup() {
             .onVisible(_schWebSocketOnVisible)
             .onConnected(_schWebSocketOnConnected)
             .onKeyCheck(_schWebSocketOnKeyCheck);
+    #endif
+
+    #if API_SUPPORT
+        apiRegister(
+            F(MQTT_TOPIC_SCHEDULE),
+            [](ApiRequest&, JsonObject& root) {
+                JsonArray& scheds = root.createNestedArray("schedules");
+                for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; ++i) {
+                    if (!hasSetting({"schSwitch", i})) continue;
+                    auto& sched = scheds.createNestedObject();
+                    _schApiPrintSchedule(i, sched);
+                }
+                return true;
+            },
+            [](ApiRequest&, JsonObject& root) {
+                unsigned char id = 0;
+                while (hasSetting({"schSwitch", id})) id++;
+                if (id > scheduler::build::max()) {
+                    return false;
+                }
+                _schApiSetSchedule(id, root);
+                _schConfigure();
+                return true;
+            });
+        apiRegister(
+            F(MQTT_TOPIC_SCHEDULE "/+"),
+            [](ApiRequest& r, JsonObject& root) {
+                const auto& id_param = r.wildcard(0);
+                size_t id;
+                if (!tryParseId(id_param.c_str(), scheduler::build::max, id)) {
+                    return false;
+                }
+                _schApiPrintSchedule(id, root);
+                return true;
+            },
+            [](ApiRequest& r, JsonObject& root) {
+                const auto& id_param = r.wildcard(0);
+                size_t id;
+                if (!tryParseId(id_param.c_str(), scheduler::build::max, id)) {
+                    return false;
+                }
+                _schApiSetSchedule(id, root);
+                return true;
+            });
     #endif
 
     static bool restore_once = true;
