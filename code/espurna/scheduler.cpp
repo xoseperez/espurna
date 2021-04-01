@@ -37,16 +37,7 @@ unsigned char schedulableCount() {
 
 #if API_SUPPORT
 
-void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
-    root["enabled"]     = getSetting({"schEnabled", id}, false);
-    root["utc"]         = getSetting({"schUTC", id}, false);
-    root["switch"]      = getSetting({"schSwitch", id}, 0);
-    root["action"]      = getSetting({"schAction", id}, 0);
-    root["type"]        = getSetting({"schType", id}, SCHEDULER_TYPE_SWITCH);
-    root["hour"]        = getSetting({"schHour", id}, 0);
-    root["minute"]      = getSetting({"schMinute", id}, 0);
-    root["weekdays"]    = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
-}
+// UTILS
 
 template <typename V = const char*>
 bool _setJsonVariant(const SettingsKey& k, const JsonVariant& v) {
@@ -72,6 +63,32 @@ bool _setJsonKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
     }
     return _setJsonVariant<T>(k, o[key]);
 }
+
+// taken from relay.cpp
+bool _schTryParseId(const char* p, unsigned char& schID) {
+    char* endp { nullptr };
+    const unsigned long result { strtoul(p, &endp, 10) };
+    if ((endp == p) || (*endp != '\0') || (result > SCHEDULER_MAX_SCHEDULES)) {
+        return false;
+    }
+
+    schID = result;
+    return true;
+}
+
+//ENDPOINTS
+
+void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
+    root["enabled"]     = getSetting({"schEnabled", id}, false);
+    root["utc"]         = getSetting({"schUTC", id}, false);
+    root["switch"]      = getSetting({"schSwitch", id}, 0);
+    root["action"]      = getSetting({"schAction", id}, 0);
+    root["type"]        = getSetting({"schType", id}, SCHEDULER_TYPE_SWITCH);
+    root["hour"]        = getSetting({"schHour", id}, 0);
+    root["minute"]      = getSetting({"schMinute", id}, 0);
+    root["weekdays"]    = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
+}
+
 
 bool _schApiSetSchedule(const unsigned char id, JsonObject& sched) {
     if (!_setJsonKey<int>({"schSwitch", id}, sched, "switch")) {
@@ -433,6 +450,26 @@ void schSetup() {
                 while (hasSetting({"schSwitch", id})) id++;
                 _schApiSetSchedule(id, root);
                 _schConfigure();
+                return true;
+            });
+        apiRegister(
+            F(MQTT_TOPIC_SCHEDULE "/+"),
+            [](ApiRequest& r, JsonObject& root) {
+                const auto& id_param = r.wildcard(0);
+                unsigned char id;
+                if (!_schTryParseId(id_param.c_str(), id)) {
+                    return false;
+                }
+                _schApiPrintSchedule(id, root);
+                return true;
+            },
+            [](ApiRequest& r, JsonObject& root) {
+                const auto& id_param = r.wildcard(0);
+                unsigned char id;
+                if (!_schTryParseId(id_param.c_str(), id)) {
+                    return false;
+                }
+                _schApiSetSchedule(id, root);
                 return true;
             });
 #endif
