@@ -71,7 +71,7 @@ bool _setJsonVariant(const SettingsKey& k, const JsonVariant& v) {
     if (!v.is<V>()) {
         return false;
     }
-    return setSetting(k, std::move(v.as<V>()));
+    return setSetting(k, v.as<V>());
 }
 
 template <>
@@ -80,7 +80,7 @@ bool _setJsonVariant<const char*>(const SettingsKey& k, const JsonVariant& v) {
     if (tmp == nullptr) {
         return false;
     }
-    return setSetting(k, std::move(tmp));
+    return setSetting(k, tmp);
 }
 
 template <typename T = const char*, typename ObjKey>
@@ -91,18 +91,6 @@ bool _setJsonKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
     return _setJsonVariant<T>(k, o[key]);
 }
 
-// taken from relay.cpp
-bool _schTryParseId(const char* p, unsigned char& schID) {
-    char* endp { nullptr };
-    const unsigned long result { strtoul(p, &endp, 10) };
-    if ((endp == p) || (*endp != '\0') || (result > SCHEDULER_MAX_SCHEDULES)) {
-        return false;
-    }
-
-    schID = result;
-    return true;
-}
-
 //ENDPOINTS
 
 void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
@@ -110,10 +98,10 @@ void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
     root["utc"]         = getSetting({"schUTC", id}, false);
     root["switch"]      = getSetting({"schSwitch", id}, 0);
     root["action"]      = getSetting({"schAction", id}, 0);
-    root["type"]        = getSetting({"schType", id}, SCHEDULER_TYPE_SWITCH);
+    root["type"]        = getSetting({"schType", id}, scheduler::build::defaultType());
     root["hour"]        = getSetting({"schHour", id}, 0);
     root["minute"]      = getSetting({"schMinute", id}, 0);
-    root["weekdays"]    = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
+    root["weekdays"]    = getSetting({"schWDs", id}, scheduler::build::weekdays());
 }
 
 
@@ -124,13 +112,13 @@ bool _schApiSetSchedule(const unsigned char id, JsonObject& sched) {
     if (sched.containsKey("enabled")) {
         const auto& enabled = sched["enabled"];
         if (!_setJsonVariant<bool>({"schEnabled", id}, enabled)) {
-            setSetting({"schEnabled", id}, std::move(enabled.as<String>()));
+            setSetting({"schEnabled", id}, enabled.as<String>());
         }
     }
     if (sched.containsKey("utc")) {
         const auto& utc = sched["utc"];
         if (!_setJsonVariant<bool>({"schUTC", id}, utc)) {
-            setSetting({"schUTC", id}, std::move(utc.as<String>()));
+            setSetting({"schUTC", id}, utc.as<String>());
         }
     }
 
@@ -454,6 +442,9 @@ void schSetup() {
             [](ApiRequest&, JsonObject& root) {
                 unsigned char id = 0;
                 while (hasSetting({"schSwitch", id})) id++;
+                if (id > scheduler::build::max()) {
+                    return false;
+                }
                 _schApiSetSchedule(id, root);
                 _schConfigure();
                 return true;
@@ -462,8 +453,8 @@ void schSetup() {
             F(MQTT_TOPIC_SCHEDULE "/+"),
             [](ApiRequest& r, JsonObject& root) {
                 const auto& id_param = r.wildcard(0);
-                unsigned char id;
-                if (!_schTryParseId(id_param.c_str(), id)) {
+                size_t id;
+                if (!tryParseId(id_param.c_str(), scheduler::build::max, id)) {
                     return false;
                 }
                 _schApiPrintSchedule(id, root);
@@ -471,14 +462,14 @@ void schSetup() {
             },
             [](ApiRequest& r, JsonObject& root) {
                 const auto& id_param = r.wildcard(0);
-                unsigned char id;
-                if (!_schTryParseId(id_param.c_str(), id)) {
+                size_t id;
+                if (!tryParseId(id_param.c_str(), scheduler::build::max, id)) {
                     return false;
                 }
                 _schApiSetSchedule(id, root);
                 return true;
             });
-#endif
+    #endif
 
     static bool restore_once = true;
     ntpOnTick([](NtpTick tick) {
