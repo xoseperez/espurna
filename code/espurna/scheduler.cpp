@@ -48,6 +48,64 @@ void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
     root["weekdays"]    = getSetting({"schWDs", id}, SCHEDULER_WEEKDAYS);
 }
 
+template <typename V = const char*>
+bool _setJsonVariant(const SettingsKey& k, const JsonVariant& v) {
+    if (!v.is<V>()) {
+        return false;
+    }
+    return setSetting(k, std::move(v.as<V>()));
+}
+
+template <>
+bool _setJsonVariant<const char*>(const SettingsKey& k, const JsonVariant& v) {
+    const auto& tmp = v.as<const char*>();
+    if (tmp == nullptr) {
+        return false;
+    }
+    return setSetting(k, std::move(tmp));
+}
+
+template <typename T = const char*, typename ObjKey>
+bool _setJsonKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
+    if (!o.containsKey(key)) {
+        return false;
+    }
+    return _setJsonVariant<T>(k, o[key]);
+}
+
+bool _schApiSetSchedule(const unsigned char id, JsonObject& sched) {
+    if (!_setJsonKey<int>({"schSwitch", id}, sched, "switch")) {
+        return false;
+    }
+    if (sched.containsKey("enabled")) {
+        const auto& enabled = sched["enabled"];
+        if (!_setJsonVariant<bool>({"schEnabled", id}, enabled)) {
+            setSetting({"schEnabled", id}, std::move(enabled.as<String>()));
+        }
+    }
+    if (sched.containsKey("utc")) {
+        const auto& utc = sched["utc"];
+        if (!_setJsonVariant<bool>({"schUTC", id}, utc)) {
+            setSetting({"schUTC", id}, std::move(utc.as<String>()));
+        }
+    }
+
+    if (sched.containsKey("action")) {
+        const auto& action = sched["action"];
+        if (action.is<const char*>()) {
+            setSetting({"schAction", id}, int(relayParsePayload(action.as<const char*>())));
+        } else {
+            _setJsonVariant<int>({"schAction", id}, action);
+        }
+    }
+
+    _setJsonKey<int>({"schType", id}, sched, "type");
+    _setJsonKey<int>({"schHour", id}, sched, "hour");
+    _setJsonKey<int>({"schMinute", id}, sched, "minute");
+    _setJsonKey({"schWDs", id}, sched, "weekdays");
+    return true;
+}
+
 #endif  // API_SUPPORT
 
 #if WEB_SUPPORT
@@ -359,19 +417,25 @@ void schSetup() {
     #endif
 
     #if API_SUPPORT
-    apiRegister(
-        F(MQTT_TOPIC_SCHEDULE),
-        [](ApiRequest&, JsonObject& root) {
-            JsonArray& scheds = root.createNestedArray("schedules");
-            for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; ++i) {
-                if (!hasSetting({"schSwitch", i})) continue;
-                auto& sched = scheds.createNestedObject();
-                _schApiPrintSchedule(i, sched);
-            }
-            return true;
-        },
-        nullptr);
-    #endif
+        apiRegister(
+            F(MQTT_TOPIC_SCHEDULE),
+            [](ApiRequest&, JsonObject& root) {
+                JsonArray& scheds = root.createNestedArray("schedules");
+                for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; ++i) {
+                    if (!hasSetting({"schSwitch", i})) continue;
+                    auto& sched = scheds.createNestedObject();
+                    _schApiPrintSchedule(i, sched);
+                }
+                return true;
+            },
+            [](ApiRequest&, JsonObject& root) {
+                unsigned char id = 0;
+                while (hasSetting({"schSwitch", id})) id++;
+                _schApiSetSchedule(id, root);
+                _schConfigure();
+                return true;
+            });
+#endif
 
     static bool restore_once = true;
     NtpBroker::Register([](NtpTick tick, time_t, const String&) {
