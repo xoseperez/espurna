@@ -81,10 +81,11 @@ void mdnsServerSetup() {
         return;
     }
 
-    // 2.7.4 and older require MDNS.begin() when interface is UP
+    // 2.7.x and older require MDNS.begin() when interface is UP
     // 3.0.0 and newer only need to do MDNS.begin() once at setup()
-    // (TODO: this is techically a constexpr, but not in 2.7.4 :/)
-    const static bool OldCore { esp8266::coreVersionNumeric() <= 20704000 };
+    // (XXX: this is techically a constexpr, but not in 2.7.4 :/)
+    // (XXX: 2.7.4 ... 3.0.0 reports 20702...)
+    const static bool OldCore { esp8266::coreVersionNumeric() <= 20702000 };
 
     wifiRegister([](wifi::Event event) {
         if (event == wifi::Event::StationConnected) {
