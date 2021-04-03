@@ -1834,7 +1834,7 @@ void _lightInitCommands() {
             _lightFromRgbPayload(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.println(lightRgbPayload());
+        ctx.output.printf_P(PSTR("rgb %s\n"), lightRgbPayload().c_str());
         terminalOK(ctx);
     });
 
@@ -1843,7 +1843,7 @@ void _lightInitCommands() {
             _lightFromHsvPayload(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.println(lightHsvPayload());
+        ctx.output.printf_P(PSTR("hsv %s\n"), lightHsvPayload().c_str());
         terminalOK(ctx);
     });
 
@@ -1852,7 +1852,7 @@ void _lightInitCommands() {
             _lightAdjustKelvin(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.printf("%ld\n", _toKelvin(_light_mireds));
+        ctx.output.printf_P(PSTR("kelvin %ld\n"), _toKelvin(_light_mireds));
         terminalOK(ctx);
     });
 
@@ -1861,7 +1861,7 @@ void _lightInitCommands() {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();
         }
-        ctx.output.printf("%ld\n", _light_mireds);
+        ctx.output.printf_P(PSTR("mireds %ld\n"), _light_mireds);
         terminalOK(ctx);
     });
 

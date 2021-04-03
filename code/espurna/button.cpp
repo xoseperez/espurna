@@ -832,13 +832,14 @@ void buttonSetup() {
     terminalRegisterCommand(F("BUTTON"), [](const terminal::CommandContext& ctx) {
         unsigned index { 0u };
         for (auto& button : _buttons) {
-            ctx.output.printf("%u - ", index++);
+            ctx.output.printf_P(PSTR("%u - "), index++);
             if (button.event_emitter) {
                 auto& pin = button.event_emitter->pin();
-                ctx.output.println(pin->description());
+                ctx.output.print(pin->description());
             } else {
-                ctx.output.println(F("Virtual"));
+                ctx.output.print(F("Virtual"));
             }
+            ctx.output.print('\n');
         }
 
         terminalOK(ctx);

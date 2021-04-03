@@ -1784,7 +1784,7 @@ void init() {
                     wifi::debug::mac(network.bssid).c_str(),
                     network.rssi, network.channel, network.ssid.c_str());
             } else {
-                ctx.output.println(F("STA: disconnected"));
+                ctx.output.print(F("STA: disconnected\n"));
             }
         }
 

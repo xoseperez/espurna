@@ -458,15 +458,18 @@ void _settingsInitCommands() {
     terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
         auto keys = settingsKeys();
 
-        ctx.output.println(F("Current settings:"));
+        ctx.output.printf_P(PSTR("Current settings:"));
+
+        String value;
         for (unsigned int i=0; i<keys.size(); i++) {
-            const auto value = getSetting(keys[i]);
-            ctx.output.printf("> %s => \"%s\"\n", (keys[i]).c_str(), value.c_str());
+            value = getSetting(keys[i]);
+            ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
         }
 
         auto available [[gnu::unused]] = settings::kv_store.available();
-        ctx.output.printf("Number of keys: %u\n", keys.size());
-        ctx.output.printf("Available: %u bytes (%u%%)\n", available, (100 * available) / settings::kv_store.size());
+        ctx.output.printf_P(PSTR("Number of keys: %u\n"), keys.size());
+        ctx.output.printf_P(PSTR("Available: %u bytes (%u%%)\n"),
+                available, (100 * available) / settings::kv_store.size());
 
         terminalOK(ctx);
     });
@@ -515,14 +518,14 @@ void _settingsInitCommands() {
             if (!result) {
                 const auto maybeDefault = settingsQueryDefaults(key);
                 if (maybeDefault.length()) {
-                    ctx.output.printf("> %s => %s (default)\n", key.c_str(), maybeDefault.c_str());
+                    ctx.output.printf_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeDefault.c_str());
                 } else {
-                    ctx.output.printf("> %s =>\n", key.c_str());
+                    ctx.output.printf_P(PSTR("> %s =>\n"), key.c_str());
                 }
                 continue;
             }
 
-            ctx.output.printf("> %s => \"%s\"\n", key.c_str(), result.c_str());
+            ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), key.c_str(), result.c_str());
         }
 
         terminalOK(ctx);

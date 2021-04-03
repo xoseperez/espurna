@@ -553,14 +553,12 @@ void _rpnRfbSetup() {
         for (auto& code : _rfb_codes) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("proto=%u raw=\"%s\" count=%u last=%u"),
-                code.protocol,
-                code.raw.c_str(),
-                code.count,
-                code.last
-            );
-            ctx.output.println(buffer);
+                PSTR("proto=%u raw=\"%s\" count=%u last=%u\n"),
+                code.protocol, code.raw.c_str(), code.count, code.last);
+            ctx.output.print(buffer);
         }
+
+        terminalOK(ctx);
     });
 #endif
 
@@ -589,20 +587,19 @@ void _rpnDeepSleep(uint64_t duration, RFMode mode) {
 }
 
 void _rpnShowStack(Print& print) {
-    print.println(F("Stack:"));
+    print.print(F("Stack:\n"));
 
     auto index = rpn_stack_size(_rpn_ctxt);
-    if (!index) {
-        print.println(F("      (empty)"));
+    if (index) {
+        rpn_stack_foreach(_rpn_ctxt, [&index, &print](rpn_stack_value::Type type, const rpn_value& value) {
+            print.printf_P(PSTR("%c      %02u: %s\n"),
+                _rpnStackTypeTag(type), index--,
+                _rpnValueToString(value).c_str());
+        });
         return;
     }
 
-    rpn_stack_foreach(_rpn_ctxt, [&index, &print](rpn_stack_value::Type type, const rpn_value& value) {
-        print.printf("%c      %02u: %s\n",
-            _rpnStackTypeTag(type), index--,
-            _rpnValueToString(value).c_str()
-        );
-    });
+    print.print(F("      (empty)\n"));
 }
 
 void _rpnInit() {
@@ -872,11 +869,10 @@ void _rpnInitCommands() {
 
         for (auto& runner : _rpn_runners) {
             char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms"),
+            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms\n"),
                 &runner, (RpnRunner::Policy::Periodic == runner.policy) ? "every" : "one-shot",
-                runner.period, runner.last
-            );
-            ctx.output.println(buffer);
+                runner.period, runner.last);
+            ctx.output.print(buffer);
         }
 
         terminalOK(ctx);
@@ -885,8 +881,8 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext& ctx) {
         rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
             char buffer[256] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s"), name.c_str(), _rpnValueToString(value).c_str());
-            ctx.output.println(buffer);
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
+            ctx.output.print(buffer);
         });
         terminalOK(ctx);
     });
@@ -894,8 +890,8 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext& ctx) {
         rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
             char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)"), name.c_str(), argc);
-            ctx.output.println(buffer);
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)\n"), name.c_str(), argc);
+            ctx.output.print(buffer);
         });
         terminalOK(ctx);
     });
@@ -906,10 +902,10 @@ void _rpnInitCommands() {
             return;
         }
 
-        ctx.output.print(F("Running RPN expression: "));
-        ctx.output.println(ctx.argv[1].c_str());
+        const char* ptr = ctx.argv[1].c_str();
+        ctx.output.printf_P(PSTR("Expression: \"%s\"\n"), ctx.argv[1].c_str());
 
-        if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
+        if (!rpn_process(_rpn_ctxt, ptr)) {
             rpn_stack_clear(_rpn_ctxt);
             char buffer[64] = {0};
             snprintf_P(buffer, sizeof(buffer), PSTR("position=%u category=%d code=%d"),

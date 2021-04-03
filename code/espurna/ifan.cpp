@@ -351,7 +351,9 @@ void setup() {
             updateSpeedFromPayload(ctx.argv[1]);
         }
 
-        ctx.output.println(speedToPayload(config.speed));
+        ctx.output.printf_P(PSTR("%s %s\n"),
+            (config.speed != FanSpeed::Off) ? "speed" : "fan is",
+            speedToPayload(config.speed));
         terminalOK(ctx);
     });
 #endif

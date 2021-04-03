@@ -128,8 +128,10 @@ struct TerminalIO final : public Stream {
     // Buffer data until we encounter line break, then flush via Raw debug method
     // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
 #if DEBUG_SUPPORT
-        if (!size) return 0;
-        if (buffer[size-1] == '\0') return 0;
+        if (!size || ((size > 0) && buffer[size - 1] == '\0')) {
+            return 0;
+        }
+
         if (_output.capacity() < (size + 2)) {
             _output.reserve(_output.size() + size + 2);
         }
@@ -137,6 +139,7 @@ struct TerminalIO final : public Stream {
             reinterpret_cast<const char*>(buffer),
             reinterpret_cast<const char*>(buffer) + size
         );
+
         if (_output.end() != std::find(_output.begin(), _output.end(), '\n')) {
             _output.push_back('\0');
             debugSendRaw(_output.data());
@@ -283,7 +286,7 @@ void _terminalInitCommands() {
             ? ctx.argv[1].toInt()
             : A0;
 
-        ctx.output.println(analogRead(pin));
+        ctx.output.printf_P(PSTR("value %d\n"), analogRead(pin));
         terminalOK(ctx);
     });
 
@@ -361,7 +364,7 @@ void _terminalInitCommands() {
     });
 
     terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext& ctx) {
-        ctx.output.println(getUptime());
+        ctx.output.printf_P(PSTR("uptime %s\n"), getUptime().c_str());
         terminalOK(ctx);
     });
 
@@ -641,11 +644,11 @@ void terminalRegisterCommand(const __FlashStringHelper* name, terminal::Terminal
 };
 
 void terminalOK(Print& print) {
-    print.print(F("+OK\n"));
+    print.printf_P(PSTR("+%s\n"), "OK");
 }
 
 void terminalError(Print& print, const String& error) {
-    print.printf("-ERROR: %s\n", error.c_str());
+    print.printf_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
 void terminalOK(const terminal::CommandContext& ctx) {
