@@ -749,10 +749,7 @@ int8_t rssi() {
     return wifi_station_get_rssi();
 }
 
-// Note that authmode is a spefific threshold selected by the Arduino WiFi.begin()
-// (ref. Arduino ESP8266WiFi default, which is AUTH_WPA_WPA2_PSK in the current 3.0.0)
-// Also, it is not really clear whether `wifi_get_channel()` will work correctly in the future versions,
-// since the API seems to be related to the promiscuous WiFi (aka sniffer), but it does return the correct values.
+// Note that authmode field is a our threshold, not the one selected by an AP
 
 wifi::Info info(const station_config& config) {
     return wifi::Info{
@@ -996,12 +993,12 @@ void disconnect() {
 void enable() {
     if (WiFi.enableSTA(true)) {
         disconnect();
-        ETS_UART_INTR_DISABLE();
-        wifi_station_set_reconnect_policy(false);
+        if (wifi_station_get_reconnect_policy()) {
+            wifi_station_set_reconnect_policy(false);
+        }
         if (wifi_station_get_auto_connect()) {
             wifi_station_set_auto_connect(false);
         }
-        ETS_UART_INTR_ENABLE();
         return;
     }
 
@@ -1021,6 +1018,13 @@ namespace connection {
 namespace internal {
 
 struct Task {
+    static constexpr size_t SsidMax { sizeof(station_config::ssid) };
+
+    static constexpr size_t PassphraseMin { 8ul };
+    static constexpr size_t PassphraseMax { sizeof(station_config::password) };
+
+    static constexpr int8_t RssiThreshold { -127 };
+
     using Iterator = wifi::Networks::iterator;
 
     Task() = delete;
@@ -1061,9 +1065,6 @@ struct Task {
         return false;
     }
 
-    // Sanity checks for SSID & PASSPHRASE lengths are performed by the WiFi.begin()
-    // (or, failing connection, if we ever use raw SDK API)
-
     bool connect() const {
         if (!done() && wifi::sta::enabled()) {
             wifi::sta::disconnect();
@@ -1079,11 +1080,61 @@ struct Task {
             // esp8266 specific Arduino-specific - this sets lwip internal structs related to the DHCPc
             WiFi.hostname(_hostname);
 
-            if (network.channel()) {
-                WiFi.begin(network.ssid(), network.passphrase(),
-                        network.channel(), network.bssid().data());
+            // The rest is related to the connection routine
+            // SSID & Passphrase are u8 arrays, with 0 at the end when the string is less than it's size
+            // Perform checks earlier, before calling SDK config functions, since it would not reflect in the connection
+            // state correctly, and we would need to use the Event API once again.
+
+            station_config config{};
+
+            constexpr size_t SsidMax { sizeof(station_config::ssid) };
+            auto& ssid = network.ssid();
+            if (!ssid.length() || (ssid.length() > SsidMax)) {
+                return false;
+            }
+
+            std::copy(ssid.c_str(), ssid.c_str() + ssid.length(),
+                    reinterpret_cast<char*>(config.ssid));
+            if (ssid.length() < SsidMax) {
+                config.ssid[ssid.length()] = 0;
+            }
+
+            auto& pass = network.passphrase();
+            if (pass.length()) {
+                if ((pass.length() < PassphraseMin) || (pass.length() > PassphraseMax)) {
+                    return false;
+                }
+                config.threshold.authmode = AUTH_WPA_PSK;
+                std::copy(pass.c_str(), pass.c_str() + pass.length(),
+                        reinterpret_cast<char*>(config.password));
+                if (pass.length() < PassphraseMax) {
+                    config.password[pass.length()] = 0;
+                }
             } else {
-                WiFi.begin(network.ssid(), network.passphrase());
+                config.threshold.authmode = AUTH_OPEN;
+                config.password[0] = 0;
+            }
+
+            config.threshold.rssi = RssiThreshold;
+
+            if (network.channel()) {
+                auto& bssid = network.bssid();
+                std::copy(bssid.begin(), bssid.end(), config.bssid);
+                config.bssid_set = 1;
+            }
+
+            // TODO: check return values? after starting up the connect, only
+            // way forward is to wait for the status results and SDK does not
+            // seem to perform any checks in the setter
+
+            wifi_station_set_config_current(&config);
+            wifi_station_connect();
+            if (network.channel()) {
+                wifi_set_channel(network.channel());
+            }
+
+            if (network.dhcp() && (wifi_station_dhcpc_status() != DHCP_STARTED)) {
+                wifi_station_dhcpc_start();
             }
 
             return true;
@@ -1340,7 +1391,7 @@ bool scanning() {
 // esp32 only has a generic onEvent, but event names are not compatible with the esp8266 version.
 
 void init() {
-    static auto status = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& src) { // aka const auto&
+    static auto status = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected&) { // aka const auto&
         connection::internal::connected = false;
     });
     disconnect();
