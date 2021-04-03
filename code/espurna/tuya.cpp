@@ -652,11 +652,8 @@ error:
 
         ::espurnaRegisterLoop(loop);
         ::wifiRegister([](wifi::Event event) {
-            switch (event) {
-            case wifi::Event::StationConnected:
-            case wifi::Event::StationDisconnected:
+            if ((event == wifi::Event::StationConnected) || (event == wifi::Event::StationDisconnected)) {
                 sendWiFiStatus();
-                break;
             }
         });
     }
