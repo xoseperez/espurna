@@ -462,7 +462,7 @@ String convertSsid(const bss_info& info) {
 }
 
 String convertSsid(const station_config& config) {
-    constexpr size_t SsidSize { sizeof(softap_config::ssid) };
+    constexpr size_t SsidSize { sizeof(station_config::ssid) };
 
     const char* ptr { reinterpret_cast<const char*>(config.ssid) };
     char ssid[SsidSize + 1];
