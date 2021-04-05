@@ -351,8 +351,10 @@ void checkTempAndAdjustRelay(double temp) {
           DEBUG_MSG_P(PSTR("[THERMOSTAT] thermostat is in rest state for %d min\n"), rest_mins_left);
         }
       // if thermostat works more than max_on_time it need rest
-    } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
+    } else if (lastSwitchEarlierThan(_thermostat_max_on_time)) {
       switchThermostat(false, tmp_str, "thermostat switch OFF for 10 min to give rest for heater/cooler");
+    } else {
+      DEBUG_MSG_P(PSTR("[THERMOSTAT] thermostat is active.\n"));
     }
     // pasive cycle
   } else if (relayStatus(THERMOSTAT_RELAY)) {
