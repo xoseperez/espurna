@@ -26,6 +26,8 @@ import os
 
 CI = "true" == os.environ.get("CI")
 
+env.ProcessFlags("-Wl,-Map -Wl,${BUILD_DIR}/${PROGNAME}.map")
+
 # Always show warnings for project code
 projenv.ProcessUnFlags("-w")
 
