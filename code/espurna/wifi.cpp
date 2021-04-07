@@ -1618,7 +1618,7 @@ void init() {
     disable();
 }
 
-uint8_t stations() {
+size_t stations() {
     return WiFi.softAPgetStationNum();
 }
 
@@ -2453,6 +2453,14 @@ void wifiTurnOn() {
 
 void wifiApCheck() {
     wifi::action(wifi::Action::AccessPointFallbackCheck);
+}
+
+size_t wifiApStations() {
+    if (wifi::ap::enabled()) {
+        return wifi::ap::stations();
+    }
+
+    return 0;
 }
 
 void wifiSetup() {

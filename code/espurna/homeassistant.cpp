@@ -65,7 +65,7 @@ public:
         Strings(const Strings&) = delete;
 
         Strings(Strings&&) = default;
-        Strings(String&& prefix_, String&& name_, const String& identifier_, const String& version_, const String& manufacturer_, const String& device_) :
+        Strings(String&& prefix_, String&& name_, const String& identifier_, const char* version_, const char* manufacturer_, const char* device_) :
             prefix(std::move(prefix_)),
             name(std::move(name_)),
             identifier(identifier_),
@@ -80,9 +80,9 @@ public:
         String prefix;
         String name;
         String identifier;
-        String version;
-        String manufacturer;
-        String device;
+        const char* version;
+        const char* manufacturer;
+        const char* device;
     };
 
     using StringsPtr = std::unique_ptr<Strings>;
@@ -96,7 +96,7 @@ public:
     Device(const Device&) = delete;
 
     Device(Device&&) = default;
-    Device(String&& prefix, String&& name, const String& identifier, const String& version, const String& manufacturer, const String& device) :
+    Device(String&& prefix, String&& name, const String& identifier, const char* version, const char* manufacturer, const char* device) :
         _strings(std::make_unique<Strings>(std::move(prefix), std::move(name), identifier, version, manufacturer, device)),
         _buffer(std::make_unique<Buffer>()),
         _root(_buffer->createObject())
@@ -105,9 +105,9 @@ public:
         ids.add(_strings->identifier.c_str());
 
         _root["name"] = _strings->name.c_str();
-        _root["sw"] = _strings->version.c_str();
-        _root["mf"] = _strings->manufacturer.c_str();
-        _root["mdl"] = _strings->device.c_str();
+        _root["sw"] = _strings->version;
+        _root["mf"] = _strings->manufacturer;
+        _root["mdl"] = _strings->device;
     }
 
     const String& name() const {

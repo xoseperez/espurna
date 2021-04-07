@@ -35,7 +35,6 @@ char _udp_syslog_header[64];
 
 bool _debug_enabled = false;
 
-
 // -----------------------------------------------------------------------------
 // printf-like debug methods
 // -----------------------------------------------------------------------------
@@ -376,8 +375,11 @@ bool _debugHeartbeat(heartbeat::Mask mask) {
     if (mask & heartbeat::Report::Uptime)
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
 
-    if (mask & heartbeat::Report::Freeheap)
-        infoHeapStats();
+    if (mask & heartbeat::Report::Freeheap) {
+        auto stats = systemHeapStats();
+        DEBUG_MSG_P(PSTR("[MAIN] %5u / %5u bytes available (%5u contiguous)\n"),
+            stats.available, systemInitialFreeHeap(), stats.usable);
+    }
 
     if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
         DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());

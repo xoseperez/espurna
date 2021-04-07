@@ -23,6 +23,8 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #include <vector>
 
 #include "board.h"
+#include "crash.h"
+#include "terminal.h"
 #include "ws.h"
 
 #if TELNET_SERVER == TELNET_SERVER_ASYNC
@@ -360,14 +362,6 @@ void _telnetNotifyConnected(unsigned char i) {
 
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
 
-    // If there is no terminal support automatically dump info and crash data
-    #if DEBUG_SUPPORT
-    #if not TERMINAL_SUPPORT
-        crashDump(terminalDefaultStream());
-        crashClear();
-    #endif
-    #endif
-
     if (!isEspurnaCore()) {
         _telnetClientsAuth[i] = !_telnetAuth;
         if (_telnetAuth) {
@@ -380,6 +374,10 @@ void _telnetNotifyConnected(unsigned char i) {
     } else {
         _telnetClientsAuth[i] = true;
     }
+
+#if DEBUG_SUPPORT
+    crashResetReason(terminalDefaultStream());
+#endif
 
 }
 

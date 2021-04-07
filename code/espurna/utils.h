@@ -12,19 +12,19 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 
-#define INLINE inline __attribute__((always_inline))
-
 extern "C" uint32_t _SPIFFS_start;
 extern "C" uint32_t _SPIFFS_end;
 
 void setDefaultHostname();
 void setBoardName();
 
-const String& getDevice();
-const String& getManufacturer();
 const String& getCoreVersion();
 const String& getCoreRevision();
-const String& getVersion();
+
+const char* getFlashChipMode();
+const char* getVersion();
+const char* getDevice();
+const char* getManufacturer();
 
 String getAdminPass();
 String getBoardName();
@@ -36,7 +36,6 @@ String getUptime();
 void infoHeapStats(const char* name, const HeapStats& stats);
 void infoHeapStats(bool show_frag_stats = false);
 void infoMemory(const char* name, unsigned int total_memory, unsigned int free_memory);
-void info(bool first = false);
 
 bool sslCheckFingerPrint(const char * fingerprint);
 bool sslFingerPrintArray(const char * fingerprint, unsigned char * bytearray);

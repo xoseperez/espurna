@@ -12,6 +12,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if TERMINAL_SUPPORT
 
 #include "api.h"
+#include "crash.h"
 #include "settings.h"
 #include "system.h"
 #include "telnet.h"
@@ -269,6 +270,107 @@ void start(String&& hostname, Callback&& callback) {
 
 } // namespace dns
 
+extern "C" uint32_t _FS_start;
+extern "C" uint32_t _FS_end;
+
+struct Layout {
+    Layout() = delete;
+
+    constexpr Layout(const Layout&) = default;
+    constexpr Layout(Layout&&) = default;
+    constexpr Layout(const char* const name, uint32_t start, uint32_t end) :
+        _name(name),
+        _start(start),
+        _end(end)
+    {}
+
+    constexpr uint32_t size() const {
+        return _end - _start;
+    }
+
+    constexpr uint32_t start() const {
+        return _start;
+    }
+
+    constexpr uint32_t end() const {
+        return _end;
+    }
+
+    constexpr const char* name() const {
+        return _name;
+    }
+
+private:
+    const char* const _name;
+    uint32_t _start;
+    uint32_t _end;
+};
+
+struct Layouts {
+    using List = std::forward_list<Layout>;
+
+    Layouts() = delete;
+    explicit Layouts(uint32_t size) :
+        _size(size),
+        _current(size),
+        _sectors(size / SPI_FLASH_SEC_SIZE)
+    {}
+
+    const Layout* head() const {
+        if (_list.empty()) {
+            return nullptr;
+        }
+
+        return &_list.front();
+    }
+
+    bool lock() {
+        if (_lock) {
+            return true;
+        }
+
+        _lock = true;
+        return false;
+    }
+
+    uint32_t sectors() const {
+        return _sectors;
+    }
+
+    uint32_t size() const {
+        return _size - _current;
+    }
+
+    uint32_t current() const {
+        return _current;
+    }
+
+    Layouts& add(const char* const name, uint32_t size) {
+        if (!_lock && _current >= size) {
+            Layout layout(name, _current - size, _current);
+            _current -= layout.size();
+            _list.push_front(layout);
+        }
+
+        return *this;
+    }
+
+    template <typename T>
+    void foreach(T&& callback) {
+        for (auto& layout : _list) {
+            callback(layout);
+        }
+    }
+
+private:
+    bool _lock { false };
+    List _list;
+    uint32_t _size;
+    uint32_t _current;
+    uint32_t _sectors;
+};
+
+
 void _terminalInitCommands() {
 
     terminalRegisterCommand(F("COMMANDS"), _terminalHelpCommand);
@@ -345,9 +447,62 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext&) {
-        info();
-        terminalOK();
+    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext& ctx) {
+        if (!systemCheck()) {
+            ctx.output.print(F("\n\n!!! device is in safe mode !!!\n\n"));
+        }
+
+        ctx.output.printf_P(PSTR(APP_NAME " %s built %s\n"), getVersion(), buildTime().c_str());
+        ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s\n"), getFullChipId().c_str());
+        ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
+                ESP.getSdkVersion(), getCoreVersion().c_str());
+        ctx.output.printf_P(PSTR("md5: %s\n"), ESP.getSketchMD5().c_str());
+        ctx.output.printf_P(PSTR("support: %s\n"), getEspurnaModules());
+#if SENSOR_SUPPORT
+        ctx.output.printf_P(PSTR("sensors: %s\n"), getEspurnaSensors());
+#endif
+
+#if DEBUG_SUPPORT
+        crashResetReason(ctx.output);
+#endif
+        terminalOK(ctx);
+    });
+
+    terminalRegisterCommand(F("STORAGE"), [](const terminal::CommandContext& ctx) {
+        ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+        ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
+        ctx.output.printf_P(PSTR("mode: %s\n"), getFlashChipMode());
+
+        ctx.output.printf_P(PSTR("size: %u (SPI), %u (SDK)\n"),
+            ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
+
+        Layouts layout(ESP.getFlashChipRealSize());
+
+        // SDK specifies a hard-coded layout, there's no data beyond
+        // (...addressable by the Core, since it adheres the setting)
+        if (ESP.getFlashChipRealSize() > ESP.getFlashChipSize()) {
+            layout.add("unused", ESP.getFlashChipRealSize() - ESP.getFlashChipSize());
+        }
+
+        // app is at a normal location, [0...size), but... since it is offset by the free space, make sure it is aligned
+        // to the sector size (...and it is expected from the getFreeSketchSpace, as the app will align to use the fixed
+        // sector address for OTA writes).
+
+        layout.add("sdk", 4 * SPI_FLASH_SEC_SIZE);
+        layout.add("eeprom", eepromSpace());
+
+        auto app_size = (ESP.getSketchSize() + FLASH_SECTOR_SIZE - 1) & (~(FLASH_SECTOR_SIZE - 1));
+        auto ota_size = layout.current() - app_size;
+
+        // OTA is allowed to use all but one eeprom sectors that, leaving the last one
+        // for the settings snapshot during the update
+
+        layout.add("ota", ota_size);
+        layout.add("app", app_size);
+
+        layout.foreach([&](const Layout& l) {
+            ctx.output.printf_P("%-6s [%08X...%08X) (%u bytes)\n", l.name(), l.start(), l.end(), l.size());
+        });
     });
 
     terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
@@ -371,7 +526,7 @@ void _terminalInitCommands() {
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
     terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc != 3) {
-            terminalError(F("[url] [value]"));
+            terminalError(ctx, F("<url> <value>"));
             return;
         }
 
@@ -382,16 +537,17 @@ void _terminalInitCommands() {
         client->setInsecure();
 
         if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
-            terminalOK();
-        } else {
-            terminalError(F("Buffer size not supported"));
+            terminalOK(ctx);
+            return;
         }
+
+        terminalError(ctx, F("Buffer size not supported"));
     });
 #endif
 
     terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc != 2) {
-            terminalError(ctx, F("HOST <hostname>"));
+            terminalError(ctx, F("<hostname>"));
             return;
         }
 
@@ -430,11 +586,11 @@ void _terminalInitCommands() {
 
 void _terminalLoop() {
 
-    #if DEBUG_SERIAL_SUPPORT
-        while (DEBUG_PORT.available()) {
-            _io.inject(DEBUG_PORT.read());
-        }
-    #endif
+#if DEBUG_SERIAL_SUPPORT
+    while (DEBUG_PORT.available()) {
+        _io.inject(DEBUG_PORT.read());
+    }
+#endif
 
     _terminal.process([](terminal::Terminal::Result result) {
         bool out = false;
@@ -623,12 +779,12 @@ void terminalWebApiSetup() {
 
 #endif // TERMINAL_WEB_API_SUPPORT
 
-Stream & terminalDefaultStream() {
+Stream& terminalDefaultStream() {
     return (Stream &) _io;
 }
 
 size_t terminalCapacity() {
-    return _io.capacity();
+    return Io::capacity();
 }
 
 void terminalInject(void *data, size_t len) {
@@ -644,7 +800,7 @@ void terminalRegisterCommand(const __FlashStringHelper* name, terminal::Terminal
 };
 
 void terminalOK(Print& print) {
-    print.printf_P(PSTR("+%s\n"), "OK");
+    print.print(F("OK\n"));
 }
 
 void terminalError(Print& print, const String& error) {

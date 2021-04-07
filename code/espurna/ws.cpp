@@ -256,7 +256,7 @@ void WsDebug::send(bool connected) {
 }
 
 bool wsDebugSend(const char* prefix, const char* message) {
-    if (wifiConnected() && wsConnected()) {
+    if ((wifiConnected() || wifiApStations()) && wsConnected()) {
         _ws_debug.add(prefix, message);
         return true;
     }
@@ -487,15 +487,15 @@ void _wsOnConnected(JsonObject& root) {
     root["webMode"] = WEB_MODE_NORMAL;
 
     root["app_name"] = APP_NAME;
-    root["app_version"] = getVersion().c_str();
+    root["app_version"] = getVersion();
     root["app_build"] = buildTime();
-    root["device"] = getDevice().c_str();
-    root["manufacturer"] = getManufacturer().c_str();
+    root["device"] = getDevice();
+    root["manufacturer"] = getManufacturer();
     root["chipid"] = getChipId().c_str();
-    root["mac"] = WiFi.macAddress();
+    root["mac"] = getFullChipId().c_str();
     root["bssid"] = WiFi.BSSIDstr();
     root["channel"] = WiFi.channel();
-    root["hostname"] = getSetting("hostname");
+    root["hostname"] = getSetting("hostname", getIdentifier());
     root["desc"] = getSetting("desc");
     root["network"] = wifiStaSsid();
     root["deviceip"] = wifiStaIp().toString();
