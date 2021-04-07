@@ -206,7 +206,7 @@ ActionsQueue& actions() {
 // TODO(esp32): Null mode turns off radio, no need for these
 
 bool sleep() {
-    if ((opmode() == ::wifi::OpmodeNull) && (wifi_fpm_get_sleep_type() == NONE_SLEEP_T)) {
+    if (opmode() == ::wifi::OpmodeNull) {
         wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
         yield();
         wifi_fpm_open();
