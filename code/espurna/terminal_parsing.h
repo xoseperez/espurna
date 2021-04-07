@@ -18,8 +18,10 @@ namespace parsing {
 // Generic command line parser
 // - split each arg from the input line and put them into the argv array
 // - argc is expected to be equal to the argv
+using Argv = std::vector<String>;
+
 struct CommandLine {
-    std::vector<String> argv;
+    Argv argv;
     size_t argc;
 };
 
