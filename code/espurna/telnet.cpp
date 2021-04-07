@@ -354,7 +354,7 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
 
     // Inject command
     #if TERMINAL_SUPPORT
-        terminalInject((void*)data, len);
+        terminalInject(reinterpret_cast<const char*>(data), len);
     #endif
 }
 

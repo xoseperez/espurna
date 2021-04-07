@@ -46,34 +46,26 @@ namespace {
 // Based on libs/StreamInjector.h by Xose Pérez <xose dot perez at gmail dot com> (see git-log for more info)
 // Instead of custom write(uint8_t) callback, we provide writer implementation in-place
 
+template <size_t Capacity>
 struct TerminalIO final : public Stream {
-
-    TerminalIO(size_t capacity = 128) :
-        _buffer(new char[capacity]),
-        _capacity(capacity),
-        _write(0),
-        _read(0)
-    {}
-
-    ~TerminalIO() {
-        delete[] _buffer;
-    }
+    using Buffer = std::array<char, Capacity>;
 
     // ---------------------------------------------------------------------
-    // Injects data into the internal buffer so we can read() it
+    // Stream part of the interface injects data into the internal buffer,
+    // so we can later use the ::read()
     // ---------------------------------------------------------------------
 
-    size_t capacity() {
-        return _capacity;
+    static constexpr size_t capacity() {
+        return Capacity;
     }
 
     size_t inject(char ch) {
         _buffer[_write] = ch;
-        _write = (_write + 1) % _capacity;
+        _write = (_write + 1) % Capacity;
         return 1;
     }
 
-    size_t inject(char *data, size_t len) {
+    size_t inject(const char* data, size_t len) {
         for (size_t index = 0; index < len; ++index) {
             inject(data[index]);
         }
@@ -86,10 +78,11 @@ struct TerminalIO final : public Stream {
     // ---------------------------------------------------------------------
 
     // Return data from the internal buffer
+    // Note that this cannot be negative, but the API requires `int`
     int available() override {
-        unsigned int bytes = 0;
+        size_t bytes = 0;
         if (_read > _write) {
-            bytes += (_write - _read + _capacity);
+            bytes += (_write - _read + Capacity);
         } else if (_read < _write) {
             bytes += (_write - _read);
         }
@@ -108,7 +101,7 @@ struct TerminalIO final : public Stream {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
-            _read = (_read + 1) % _capacity;
+            _read = (_read + 1) % Capacity;
         }
         return ch;
     }
@@ -125,27 +118,9 @@ struct TerminalIO final : public Stream {
         _read = _write;
     }
 
-    size_t write(const uint8_t* buffer, size_t size) override {
-    // Buffer data until we encounter line break, then flush via Raw debug method
-    // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
+    size_t write(const uint8_t* bytes, size_t size) override {
 #if DEBUG_SUPPORT
-        if (!size || ((size > 0) && buffer[size - 1] == '\0')) {
-            return 0;
-        }
-
-        if (_output.capacity() < (size + 2)) {
-            _output.reserve(_output.size() + size + 2);
-        }
-        _output.insert(_output.end(),
-            reinterpret_cast<const char*>(buffer),
-            reinterpret_cast<const char*>(buffer) + size
-        );
-
-        if (_output.end() != std::find(_output.begin(), _output.end(), '\n')) {
-            _output.push_back('\0');
-            debugSendRaw(_output.data());
-            _output.clear();
-        }
+        debugSendBytes(bytes, size);
 #endif
         return size;
     }
@@ -155,21 +130,22 @@ struct TerminalIO final : public Stream {
         return write(buffer, 1);
     }
 
-    private:
-
-#if DEBUG_SUPPORT
-    std::vector<char> _output;
-#endif
-
-    char * _buffer;
-    unsigned char _capacity;
-    unsigned char _write;
-    unsigned char _read;
-
+private:
+    Buffer _buffer {};
+    size_t _write { 0ul };
+    size_t _read { 0ul };
 };
 
-auto _io = TerminalIO(TERMINAL_SHARED_BUFFER_SIZE);
-terminal::Terminal _terminal(_io, _io.capacity());
+constexpr size_t _terminalBufferSize() {
+    return TERMINAL_SHARED_BUFFER_SIZE;
+}
+
+namespace {
+
+using Io = TerminalIO<_terminalBufferSize()>;
+
+Io _io;
+terminal::Terminal _terminal(_io, Io::capacity());
 
 // TODO: re-evaluate how and why this is used
 #if SERIAL_RX_ENABLED
@@ -179,6 +155,8 @@ char _serial_rx_buffer[SerialRxBufferSize];
 static unsigned char _serial_rx_pointer = 0;
 
 #endif // SERIAL_RX_ENABLED
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Commands
@@ -787,8 +765,8 @@ size_t terminalCapacity() {
     return Io::capacity();
 }
 
-void terminalInject(void *data, size_t len) {
-    _io.inject((char *) data, len);
+void terminalInject(const char* data, size_t len) {
+    _io.inject(data, len);
 }
 
 void terminalInject(char ch) {
