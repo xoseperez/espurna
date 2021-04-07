@@ -118,7 +118,7 @@ void alexaLoop() {
 
     while (!_alexa_events.empty()) {
         auto& event = _alexa_events.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%hhu state=#%s value=%hhu\n"),
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%hhu state=#%c value=%hhu\n"),
             event.id(), event.state() ? 't' : 'f', event.value());
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -193,9 +193,6 @@ void alexaSetup() {
     }
 
 #endif
-
-    // Load & cache settings
-    _alexaConfigure();
 
     // Websockets
     #if WEB_SUPPORT
