@@ -79,7 +79,7 @@ const String& getCoreRevision() {
 }
 
 const char* getVersion() {
-    static const char version[] PROGMEM {
+    static const char version[] {
 #if defined(APP_REVISION)
         APP_VERSION APP_REVISION
 #else
@@ -91,12 +91,12 @@ const char* getVersion() {
 }
 
 const char* getDevice() {
-    static const char device[] PROGMEM = DEVICE;
+    static const char device[] = DEVICE;
     return device;
 }
 
 const char* getManufacturer() {
-    static const char manufacturer[] PROGMEM = MANUFACTURER;
+    static const char manufacturer[] = MANUFACTURER;
     return manufacturer;
 }
 
