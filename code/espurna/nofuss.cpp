@@ -64,7 +64,7 @@ void _nofussConfigure() {
         NoFUSSClient.setBuild(timestamp);
 
         DEBUG_MSG_P(PSTR("[NOFUSS] Server: %s\n"), nofussServer.c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device)
+        DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device);
         DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), getVersion());
         DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), timestamp.c_str());
         return;
