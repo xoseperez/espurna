@@ -430,7 +430,7 @@ void _terminalInitCommands() {
             ctx.output.print(F("\n\n!!! device is in safe mode !!!\n\n"));
         }
 
-        ctx.output.printf_P(PSTR(APP_NAME " %s built %s\n"), getVersion(), buildTime().c_str());
+        ctx.output.printf_P(PSTR("%s %s built %s\n"), getAppName(), getVersion(), buildTime().c_str());
         ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s\n"), getFullChipId().c_str());
         ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
                 ESP.getSdkVersion(), getCoreVersion().c_str());

@@ -373,7 +373,7 @@ bool settingsRestoreJson(JsonObject& data) {
 
     // Note: we try to match what /config generates, expect {"app":"ESPURNA",...}
     const char* app = data["app"];
-    if (!app || strcmp(app, APP_NAME) != 0) {
+    if (!app || strcmp(app, getAppName()) != 0) {
         DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key\n"));
         return false;
     }

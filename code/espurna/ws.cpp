@@ -486,7 +486,7 @@ bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
 void _wsOnConnected(JsonObject& root) {
     root["webMode"] = WEB_MODE_NORMAL;
 
-    root["app_name"] = APP_NAME;
+    root["app_name"] = getAppName();
     root["app_version"] = getVersion();
     root["app_build"] = buildTime();
     root["device"] = getDevice();

@@ -23,6 +23,9 @@ const String& getCoreRevision();
 
 const char* getFlashChipMode();
 const char* getVersion();
+const char* getAppName();
+const char* getAppAuthor();
+const char* getAppWebsite();
 const char* getDevice();
 const char* getManufacturer();
 

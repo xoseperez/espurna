@@ -25,7 +25,7 @@ const String& getChipId() {
 const String& getIdentifier() {
     static String value;
     if (!value.length()) {
-        value += APP_NAME;
+        value += getAppName();
         value += '-';
         value += getChipId();
     }
@@ -388,9 +388,9 @@ void boardSetup() {
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " %s built %s\n"), getVersion(), buildTime().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] %s %s built %s\n"), getAppName(), getVersion(), buildTime().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), getAppAuthor());
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), getAppWebsite());
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: %s\n"), getFullChipId().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] SDK: %s\n"), ESP.getSdkVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Arduino Core: %s\n"), getCoreVersion().c_str());

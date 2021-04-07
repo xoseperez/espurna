@@ -61,7 +61,7 @@ void mdnsServerSetup() {
 
 #if OTA_ARDUINOOTA_SUPPORT
     {
-        MDNS.addServiceTxt("arduino", "tcp", "app_name", APP_NAME);
+        MDNS.addServiceTxt("arduino", "tcp", "app_name", getAppName());
         MDNS.addServiceTxt("arduino", "tcp", "app_version", getVersion());
         MDNS.addServiceTxt("arduino", "tcp", "build_date", buildTime());
         MDNS.addServiceTxt("arduino", "tcp", "mac", WiFi.macAddress());

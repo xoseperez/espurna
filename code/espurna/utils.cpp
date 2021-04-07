@@ -90,6 +90,21 @@ const char* getVersion() {
     return version;
 }
 
+const char* getAppName() {
+    static const char app[] = APP_NAME;
+    return app;
+}
+
+const char* getAppAuthor() {
+    static const char author[] = APP_AUTHOR;
+    return author;
+}
+
+const char* getAppWebsite() {
+    static const char website[] = APP_WEBSITE;
+    return website;
+}
+
 const char* getDevice() {
     static const char device[] = DEVICE;
     return device;
