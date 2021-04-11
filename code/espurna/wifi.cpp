@@ -1693,10 +1693,10 @@ wifi::Networks networks() {
         }
     }
 
-    auto leftover = std::unique(out.begin(), out.end(), [](const wifi::Network& lhs, const wifi::Network& rhs) {
+    auto duplicates = std::unique(out.begin(), out.end(), [](const wifi::Network& lhs, const wifi::Network& rhs) {
         return lhs.ssid() == rhs.ssid();
     });
-    out.erase(leftover, out.end());
+    out.erase(duplicates, out.end());
 
     return out;
 }
