@@ -1055,7 +1055,7 @@ struct Task {
 
     bool next() {
         if (!done()) {
-            if (_retry-- < 0) {
+            if (--_retry < 0) {
                 _retry = _retries;
                 _current = std::next(_current);
             }
