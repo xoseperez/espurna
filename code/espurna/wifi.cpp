@@ -1123,12 +1123,15 @@ struct Task {
                 config.bssid_set = 1;
             }
 
-            // TODO: check return values? after starting up the connect, only
-            // way forward is to wait for the status results and SDK does not
-            // seem to perform any checks in the setter
+            // TODO: check every return value?
+            // TODO: is it sufficient for the event to fire? otherwise,
+            // there needs to be a manual timeout code after this returns true
 
             wifi_station_set_config_current(&config);
-            wifi_station_connect();
+            if (!wifi_station_connect()) {
+                return false;
+            }
+
             if (network.channel()) {
                 wifi_set_channel(network.channel());
             }
@@ -1216,8 +1219,8 @@ private:
     int _retry;
 };
 
-station_status_t last { STATION_IDLE };
 bool connected { false };
+bool wait { false };
 
 Ticker timer;
 bool persist { false };
@@ -1259,14 +1262,17 @@ bool started() {
     return static_cast<bool>(internal::task);
 }
 
-void start(String&& hostname, Networks&& networks, int retries) {
+bool start(String&& hostname, Networks&& networks, int retries) {
     if (!locked()) {
         internal::task = std::make_unique<internal::Task>(
             std::move(hostname),
             std::move(networks),
             retries);
         internal::timer.detach();
+        return true;
     }
+
+    return false;
 }
 
 void schedule(decltype(millis()) ms, wifi::Action next) {
@@ -1277,11 +1283,15 @@ void schedule(decltype(millis()) ms, wifi::Action next) {
     lock();
 }
 
-void continued() {
+bool scheduled() {
+    return internal::timer.active();
+}
+
+void schedule_continue() {
     schedule(wifi::sta::ConnectionInterval, wifi::Action::StationContinueConnect);
 }
 
-void initial() {
+void schedule_initial() {
     schedule(wifi::sta::ReconnectionInterval, wifi::Action::StationConnect);
 }
 
@@ -1290,7 +1300,12 @@ bool next() {
 }
 
 bool connect() {
-    return internal::task->connect();
+    if (internal::task->connect()) {
+        internal::wait = true;
+        return true;
+    }
+
+    return false;
 }
 
 bool filter(const wifi::Info& info) {
@@ -1301,33 +1316,15 @@ void sort(scan::SsidInfosPtr&& infos) {
     internal::task->sort(std::move(infos));
 }
 
-station_status_t last() {
-    return internal::last;
-}
-
-// Note that `wifi_station_get_connect_status()` only makes sence when something is setting `wifi_set_event_handler_cb(...)`
-// *and*, it should only be expected to work when STA is not yet connected. After a successful connection, we should track the network interface and / or SDK events.
-// Events are already enabled in the Arduino Core (and heavily wired through-out it, so we can't override b/c only one handler is allowed).
+// Note that `wifi_station_get_connect_status()` may never actually change the state from CONNECTING when AP is not available.
+// Wait for the WiFi stack event instead (handled on setup with a static object) and continue after it is either connected or disconnected
 
 bool wait() {
-    internal::last = wifi_station_get_connect_status();
-    bool out { false };
-
-    switch (internal::last) {
-    case STATION_CONNECTING:
-        out = true;
-        break;
-    case STATION_GOT_IP:
-        internal::connected = true;
-        break;
-    case STATION_IDLE:
-    case STATION_NO_AP_FOUND:
-    case STATION_CONNECT_FAIL:
-    case STATION_WRONG_PASSWORD:
-        break;
+    if (internal::wait) {
+        return true;
     }
 
-    return out;
+    return false;
 }
 
 // TODO(Core 2.7.4): `WiFi.isConnected()` is a simple `wifi_station_get_connect_status() == STATION_GOT_IP`,
@@ -1358,18 +1355,12 @@ bool connecting() {
 bool lost() {
     static bool last { internal::connected };
 
-    bool out { false };
     if (internal::connected != last) {
         last = internal::connected;
-        if (!last) {
-            if (persist() && !connecting()) {
-                schedule(wifi::sta::ConnectionInterval * wifi::sta::ConnectionRetries, wifi::Action::StationConnect);
-            }
-            out = true;
-        }
+        return !last;
     }
 
-    return out;
+    return false;
 }
 
 } // namespace connection
@@ -1391,8 +1382,13 @@ bool scanning() {
 // esp32 only has a generic onEvent, but event names are not compatible with the esp8266 version.
 
 void init() {
-    static auto status = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected&) { // aka const auto&
+    static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected&) {
+        connection::internal::wait = false;
         connection::internal::connected = false;
+    });
+    static auto connected = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP&) {
+        connection::internal::wait = false;
+        connection::internal::connected = true;
     });
     disconnect();
     disable();
@@ -2208,11 +2204,12 @@ State handleAction(State& state, Action action) {
 bool prepareConnection() {
     if (wifi::sta::enabled()) {
         auto networks = wifi::settings::networks();
-        if (networks.size()) {
-            wifi::sta::connection::start(
-                    wifi::settings::hostname(), std::move(networks), wifi::sta::ConnectionRetries);
-            return true;
+        if (!networks.size()) {
+            return false;
         }
+
+        return wifi::sta::connection::start(
+                wifi::settings::hostname(), std::move(networks), wifi::sta::ConnectionRetries);
     }
 
     return false;
@@ -2234,8 +2231,8 @@ void loop() {
     switch (state) {
 
     case State::Boot:
-        publish(wifi::Event::Initial);
         state = State::Idle;
+        publish(wifi::Event::Initial);
         break;
 
     case State::Init: {
@@ -2265,10 +2262,10 @@ void loop() {
         break;
 
     case State::Fallback:
-        publish(wifi::Event::StationReconnect);
-        wifi::sta::connection::initial();
-        wifi::action(wifi::Action::AccessPointFallback);
         state = State::Idle;
+        wifi::sta::connection::schedule_initial();
+        wifi::action(wifi::Action::AccessPointFallback);
+        publish(wifi::Event::StationReconnect);
         break;
 
     case State::WaitScan:
@@ -2323,8 +2320,8 @@ void loop() {
     case State::Timeout:
         wifi::sta::connection::unlock();
         if (wifi::sta::connecting() && wifi::sta::connection::next()) {
-            wifi::sta::connection::continued();
             state = State::Idle;
+            wifi::sta::connection::schedule_continue();
             publish(wifi::Event::StationTimeout);
         } else {
             wifi::sta::connection::stop();
@@ -2359,6 +2356,12 @@ void loop() {
     // or being disconnected when the wireless signal is lost.
     // Thus, provide a specific connected -> disconnected event specific to the IP network availability.
     if (wifi::sta::connection::lost()) {
+        wifi::sta::scan::periodic::stop();
+        if (wifi::sta::connection::persist()) {
+            wifi::sta::connection::schedule(
+                wifi::sta::ConnectionInterval * wifi::sta::ConnectionRetries,
+                wifi::Action::StationConnect);
+        }
         publish(wifi::Event::StationDisconnected);
     }
 
