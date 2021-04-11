@@ -1745,9 +1745,9 @@ void configure() {
 // TERMINAL
 // -----------------------------------------------------------------------------
 
-namespace terminal {
-
 #if TERMINAL_SUPPORT
+
+namespace terminal {
 
 void init() {
 
