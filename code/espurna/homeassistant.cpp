@@ -187,7 +187,7 @@ private:
     String _prefix;
     DevicePtr _device;
 
-    JsonBufferPtr _json;
+    JsonBufferPtr _json { nullptr };
     size_t _capacity { 0ul };
 };
 
@@ -272,19 +272,7 @@ public:
         _ctx(ctx),
         _relay(makeRelayContext()),
         _relays(relayCount())
-    {
-        if (!_relays) {
-            return;
-        }
-
-        auto& json = root();
-        json["dev"] = _ctx.device();
-        json["avty_t"] = _relay.availability.c_str();
-        json["pl_avail"] = _relay.payload_available.c_str();
-        json["pl_not_avail"] = _relay.payload_not_available.c_str();
-        json["pl_on"] = _relay.payload_on.c_str();
-        json["pl_off"] = _relay.payload_off.c_str();
-    }
+    {}
 
     JsonObject& root() {
         if (!_root) {
@@ -318,6 +306,12 @@ public:
     const String& message() override {
         if (!_message.length()) {
             auto& json = root();
+            json["dev"] = _ctx.device();
+            json["avty_t"] = _relay.availability.c_str();
+            json["pl_avail"] = _relay.payload_available.c_str();
+            json["pl_not_avail"] = _relay.payload_not_available.c_str();
+            json["pl_on"] = _relay.payload_on.c_str();
+            json["pl_off"] = _relay.payload_off.c_str();
             json["uniq_id"] = uniqueId();
             json["name"] = _ctx.name() + ' ' + _index;
             json["stat_t"] = mqttTopic(MQTT_TOPIC_RELAY, _index, false);
