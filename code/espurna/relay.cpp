@@ -252,7 +252,6 @@ public:
 };
 
 std::vector<relay_t> _relays;
-bool _relayRecursive { false };
 size_t _relayDummy { 0ul };
 
 unsigned long _relay_flood_window { relay::build::floodWindowMs() };
@@ -260,6 +259,7 @@ unsigned long _relay_flood_changes { relay::build::floodChanges() };
 
 unsigned long _relay_delay_interlock;
 int _relay_sync_mode { RELAY_SYNC_ANY };
+bool _relay_sync_reent { false };
 bool _relay_sync_locked { false };
 
 Ticker _relay_save_timer;
@@ -804,11 +804,11 @@ void relayPulse(size_t id) {
     }
 
     if ((mode == RelayPulse::On) != relay.current_status) {
-        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
         relay.pulse = getSetting({"relayPulse", id},relay::build::pulseMode(id));
         relay.pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, relay::build::pulseTime(id)));
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
     }
 
 }
@@ -920,18 +920,17 @@ bool relayStatusTarget(size_t id) {
 }
 
 void relaySync(size_t target) {
-
-    // Do not go on if we are comming from a previous sync
-    if (_relayRecursive) {
-        return;
-    }
-    _relayRecursive = true;
-
     // No sync if none or only one relay
     auto relays = _relays.size();
     if (relays < 2) {
         return;
     }
+
+    // Only call once when coming from the relayStatus(id, status)
+    if (_relay_sync_reent) {
+        return;
+    }
+    _relay_sync_reent = true;
 
     bool status = _relays[target].target_status;
 
@@ -975,17 +974,20 @@ void relaySync(size_t target) {
         _relayLockAll();
     }
 
-    _relayRecursive = false;
-
+    _relay_sync_reent = false;
 }
 
-void relaySave(bool persist) {
+RelayMaskHelper _relayMaskCurrent() {
     RelayMaskHelper mask;
     for (size_t id = 0; id < _relays.size(); ++id) {
         mask.set(id, _relays[id].current_status);
     }
+    return mask;
+}
 
+void relaySave(bool persist) {
     // Persist only to rtcmem, unless requested to save to settings
+    auto mask = _relayMaskCurrent();
     DEBUG_MSG_P(PSTR("[RELAY] Relay mask: %s\n"), mask.toString().c_str());
     _relayMaskRtcmem(mask);
 
@@ -1125,27 +1127,22 @@ void _relayBootAll() {
         ? _relayMaskRtcmem()
         : _relayMaskSettings();
 
-    _relayRecursive = true;
+    bool log { false };
 
-    bool once { true };
     static RelayMask done;
     auto relays = relayCount();
     for (decltype(relays) id = 0; id < relays; ++id) {
-        if (done[id]) {
-            continue;
+        if (!done[id]) {
+            done.set(id, true);
+            _relayBoot(id, mask);
+            log = true;
         }
-
-        if (once) {
-            DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
-                relays, mask.toString().c_str());
-            once = false;
-        }
-
-        done.set(id, true);
-        _relayBoot(id, mask);
     }
 
-    _relayRecursive = false;
+    if (log) {
+        DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
+            relays, mask.toString().c_str());
+    }
 }
 
 void _relayConfigure() {
@@ -1585,16 +1582,14 @@ void _relayMqttPublishCustomTopic(size_t id) {
 } // namespace
 
 void _relayMqttReport(size_t id) {
-    if (id < _relays.size()) {
-        if (_relays[id].report) {
-            _relays[id].report = false;
-            mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
-        }
+    if (_relays[id].report) {
+        _relays[id].report = false;
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
+    }
 
-        if (_relays[id].group_report) {
-            _relays[id].group_report = false;
-            _relayMqttPublishCustomTopic(id);
-        }
+    if (_relays[id].group_report) {
+        _relays[id].group_report = false;
+        _relayMqttPublishCustomTopic(id);
     }
 }
 
@@ -1840,44 +1835,34 @@ void _relayProcess(bool mode) {
 
     auto relays = _relays.size();
     for (decltype(relays) id = 0; id < relays; ++id) {
-
         bool target = _relays[id].target_status;
 
-        // Only process the relays we have to change
-        if (target == _relays[id].current_status) continue;
+        // Only process the relays:
+        // - target mode in the one requested by the arg
+        // - target status is different from the current one
+        // - change delay has expired
 
-        // Only process the relays we have to change to the requested mode
-        if (target != mode) continue;
+        if ((target != _relays[id].current_status)
+            && (target == mode)
+            && (!_relays[id].change_delay || (millis() - _relays[id].change_start > _relays[id].change_delay)))
+        {
+            _relays[id].change_delay = 0; // will be reset back to the correct value via relayStatus
+            _relays[id].current_status = target;
+            _relays[id].provider->change(target);
 
-        // Only process if the change delay has expired
-        if (_relays[id].change_delay && (millis() - _relays[id].change_start < _relays[id].change_delay)) continue;
-
-        // Purge existing delay in case of cancelation
-        _relays[id].change_delay = 0;
-        changed = true;
-
-        DEBUG_MSG_P(PSTR("[RELAY] #%u set to %s\n"), id, target ? "ON" : "OFF");
-
-        // Call the provider to perform the action
-        _relays[id].current_status = target;
-        _relays[id].provider->change(target);
-        _relayReport(id, target);
-
-        if (!_relayRecursive) {
-
+            _relayReport(id, target);
             relayPulse(id);
 
-            // We will trigger a eeprom save only if
-            // we care about current relay status on boot
-            const auto boot_mode = getSetting({"relayBoot", id}, relay::build::bootMode(id));
-            const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
-            _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
+            {
+                const auto boot_mode = getSetting({"relayBoot", id}, relay::build::bootMode(id));
+                _relay_save_timer.once_ms(relay::build::saveDelay(), relaySave,
+                    (RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            }
 
+            DEBUG_MSG_P(PSTR("[RELAY] #%u set to %s\n"), id, target ? "ON" : "OFF");
+
+            changed = true;
         }
-
-        _relays[id].report = false;
-        _relays[id].group_report = false;
-
     }
 
     // Whenever we are using sync modes and any relay had changed the state, check if we can unlock
