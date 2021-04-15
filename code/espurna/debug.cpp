@@ -403,8 +403,9 @@ void debugConfigureBoot() {
 }
 
 bool _debugHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Uptime)
+    if (mask & heartbeat::Report::Uptime) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
+    }
 
     if (mask & heartbeat::Report::Freeheap) {
         auto stats = systemHeapStats();
@@ -412,12 +413,14 @@ bool _debugHeartbeat(heartbeat::Mask mask) {
             stats.available, systemInitialFreeHeap(), stats.usable);
     }
 
-    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
-        DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
+    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC)) {
+        DEBUG_MSG_P(PSTR("[MAIN] VCC: %lu mV\n"), ESP.getVcc());
+    }
 
 #if NTP_SUPPORT
-    if ((mask & heartbeat::Report::Datetime) && (ntpSynced()))
+    if ((mask & heartbeat::Report::Datetime) && (ntpSynced())) {
         DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), ntpDateTime().c_str());
+    }
 #endif
 
     return true;
