@@ -21,48 +21,83 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "led_pattern.h"
 #include "led_config.h"
 
-void led_t::init() {
+struct Led {
+    Led() = delete;
+    Led(unsigned char pin, bool inverse, LedMode mode) :
+        _pin(pin),
+        _inverse(inverse),
+        _mode(mode)
+    {
+        init();
+    }
+
+    unsigned char pin() const {
+        return _pin;
+    }
+
+    LedMode mode() const {
+        return _mode;
+    }
+
+    void mode(LedMode mode) {
+        _mode = mode;
+    }
+
+    bool inverse() const {
+        return _inverse;
+    }
+
+    LedPattern& pattern() {
+        return _pattern;
+    }
+
+    void pattern(LedPattern&& pattern) {
+        _pattern = std::move(pattern);
+    }
+
+    void start() {
+        _pattern.reset();
+    }
+
+    bool started() {
+        return _pattern.started();
+    }
+
+    void stop() {
+        _pattern.reset();
+    }
+
+    void init();
+
+    bool status();
+    bool status(bool new_status);
+
+    bool toggle();
+
+private:
+    unsigned char _pin;
+    bool _inverse;
+    LedMode _mode;
+    LedPattern _pattern;
+};
+
+void Led::init() {
     pinMode(_pin, OUTPUT);
     status(false);
 }
 
-bool led_t::status() {
+bool Led::status() {
     bool result = digitalRead(_pin);
     return _inverse ? !result : result;
 }
 
-bool led_t::status(bool new_status) {
+bool Led::status(bool new_status) {
     digitalWrite(_pin, _inverse ? !new_status : new_status);
     return new_status;
 }
 
-bool led_t::toggle() {
+bool Led::toggle() {
     return status(!status());
-}
-
-LedPattern::LedPattern(const LedPattern::Delays& delays) :
-    delays(delays),
-    queue(),
-    clock_last(ESP.getCycleCount()),
-    clock_delay(delays.size() ? delays.back().on() : 0)
-{}
-
-bool LedPattern::started() {
-    return queue.size() > 0;
-}
-
-bool LedPattern::ready() {
-    return delays.size() > 0;
-}
-
-void LedPattern::start() {
-    clock_last = ESP.getCycleCount();
-    clock_delay = 0;
-    queue = { delays.rbegin(), delays.rend() };
-}
-
-void LedPattern::stop() {
-    queue.clear();
 }
 
 // For network-based modes, cycle ON & OFF (time in milliseconds)
@@ -83,7 +118,7 @@ enum class LedDelayName : int {
     NetworkIdle
 };
 
-std::vector<led_t> _leds;
+std::vector<Led> _leds;
 bool _led_update { false };
 
 // -----------------------------------------------------------------------------
@@ -130,15 +165,37 @@ LedMode convert(const String& value) {
 
 // -----------------------------------------------------------------------------
 
-size_t ledCount() {
-    return _leds.size();
+namespace led {
+namespace settings {
+
+unsigned char pin(size_t id) {
+    return getSetting({"ledGpio", id}, build::pin(id));
 }
 
-bool _ledStatus(led_t& led) {
+LedMode mode(size_t id) {
+    return getSetting({"ledMode", id}, build::mode(id));
+}
+
+bool inverse(size_t id) {
+    return getSetting({"ledInv", id}, build::inverse(id));
+}
+
+size_t relay(size_t id) {
+    return getSetting({"ledRelay", id}, build::relay(id));
+}
+
+LedPattern pattern(size_t id) {
+    return _ledLoadPattern(getSetting({"ledPattern", id}));
+}
+
+} // namespace settings
+} // namespace led
+
+bool _ledStatus(Led& led) {
     return led.started() || led.status();
 }
 
-bool _ledStatus(led_t& led, bool status) {
+bool _ledStatus(Led& led, bool status) {
     bool result = false;
 
     // when led has pattern, status depends on whether it's running
@@ -150,7 +207,7 @@ bool _ledStatus(led_t& led, bool status) {
             }
             result = true;
         } else {
-            pattern.stop();
+            pattern.reset();
             led.status(false);
             result = false;
         }
@@ -162,7 +219,12 @@ bool _ledStatus(led_t& led, bool status) {
     return result;
 }
 
-bool _ledToggle(led_t& led) {
+void _ledPattern(Led& led, LedPattern&& pattern) {
+    led.pattern(std::move(pattern));
+    _ledStatus(led, true);
+}
+
+bool _ledToggle(Led& led) {
     return _ledStatus(led, !_ledStatus(led));
 }
 
@@ -195,7 +257,7 @@ const LedDelay& _ledDelayFromName(LedDelayName name) {
     return _ledDelays[static_cast<int>(LedDelayName::NetworkIdle)];
 }
 
-void _ledPattern(led_t& led) {
+void _ledPattern(Led& led) {
     const auto clock_current = ESP.getCycleCount();
 
     auto& pattern = led.pattern();
@@ -223,7 +285,7 @@ void _ledPattern(led_t& led) {
     }
 }
 
-void _ledBlink(led_t& led, const LedDelay& delays) {
+void _ledBlink(Led& led, const LedDelay& delays) {
     static auto clock_last = ESP.getCycleCount();
     static auto delay_for = delays.on();
 
@@ -234,7 +296,7 @@ void _ledBlink(led_t& led, const LedDelay& delays) {
     }
 }
 
-inline void _ledBlink(led_t& led, LedDelayName name) {
+inline void _ledBlink(Led& led, LedDelayName name) {
     _ledBlink(led, _ledDelayFromName(name));
 }
 
@@ -275,11 +337,11 @@ void _ledWebSocketOnConnected(JsonObject& root) {
 
     for (size_t index = 0; index < ledCount(); ++index) {
         JsonArray& led = leds.createNestedArray();
-        led.add(getSetting({"ledGpio", index}, led::build::pin(index)));
-        led.add(static_cast<int>(getSetting({"ledInv", index}, led::build::inverse(index))));
-        led.add(static_cast<int>(getSetting({"ledMode", index}, led::build::mode(index))));
+        led.add(led::settings::pin(index));
+        led.add(static_cast<int>(led::settings::inverse(index)));
+        led.add(static_cast<int>(led::settings::mode(index)));
 #if RELAY_SUPPORT
-        led.add(getSetting({"ledRelay", index}, led::build::relay(index)));
+        led.add(led::settings::relay(index));
 #endif
     }
 }
@@ -318,14 +380,12 @@ void _ledMQTTCallback(unsigned int type, const char* topic, const char* payload)
         case PayloadStatus::On:
         case PayloadStatus::Off:
             _ledStatus(led, (value == PayloadStatus::On));
-            break;
+            return;
         case PayloadStatus::Toggle:
             _ledToggle(led);
-            break;
+            return;
         case PayloadStatus::Unknown:
-        default:
-            _ledLoadPattern(led, payload);
-            _ledStatus(led, true);
+            _ledPattern(led, _ledLoadPattern(payload));
             break;
         }
     }
@@ -340,19 +400,18 @@ std::vector<size_t> _led_relays;
 void _ledConfigure() {
     for (size_t id = 0; id < _leds.size(); ++id) {
 #if RELAY_SUPPORT
-        _led_relays[id] = getSetting({"ledRelay", id}, led::build::relay(id));
+        _led_relays[id] = led::settings::relay(id);
 #endif
-        _leds[id].mode(getSetting({"ledMode", id}, led::build::mode(id)));
-        _leds[id].stop();
-        _ledLoadPattern(_leds[id], getSetting({"ledPattern", id}).c_str());
+        _leds[id].mode(led::settings::mode(id));
+        _leds[id].pattern(led::settings::pattern(id));
     }
     _led_update = true;
 }
 
 // -----------------------------------------------------------------------------
 
-void ledUpdate(bool do_update) {
-    _led_update = do_update;
+size_t ledCount() {
+    return _leds.size();
 }
 
 void ledLoop() {
@@ -493,15 +552,15 @@ void ledSetup() {
     _ledSettingsMigrate(migrateVersion());
     _leds.reserve(led::build::preconfiguredLeds());
 
-    for (size_t index = 0; index < LedsMax; ++index) {
-        const auto pin = getSetting({"ledGpio", index}, led::build::pin(index));
+    for (size_t index = 0; index < led::build::LedsMax; ++index) {
+        const auto pin = led::settings::pin(index);
         if (!gpioLock(pin)) {
             break;
         }
 
         _leds.emplace_back(pin,
-            getSetting({"ledInv", index}, led::build::inverse(index)),
-            getSetting({"ledMode", index}, led::build::mode(index)));
+            led::settings::inverse(index),
+            led::settings::mode(index));
     }
 
     auto leds = _leds.size();

@@ -12,8 +12,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <vector>
 
-constexpr size_t LedsMax { 8ul };
-
 enum class LedMode {
     Manual,
     WiFi,
@@ -78,83 +76,8 @@ private:
     unsigned char _repeats;
 };
 
-struct LedPattern {
-    using Delays = std::vector<LedDelay>;
-
-    LedPattern() = default;
-    LedPattern(const Delays& delays);
-
-    void start();
-    void stop();
-
-    bool started();
-    bool ready();
-
-    Delays delays;
-    Delays queue;
-    unsigned long clock_last;
-    unsigned long clock_delay;
-};
-
-struct led_t {
-    led_t() = delete;
-    led_t(unsigned char pin, bool inverse, LedMode mode) :
-        _pin(pin),
-        _inverse(inverse),
-        _mode(mode)
-    {
-        init();
-    }
-
-    unsigned char pin() const {
-        return _pin;
-    }
-
-    LedMode mode() const {
-        return _mode;
-    }
-
-    void mode(LedMode mode) {
-        _mode = mode;
-    }
-
-    bool inverse() const {
-        return _inverse;
-    }
-
-    LedPattern& pattern() {
-        return _pattern;
-    }
-
-    void init();
-
-    void start() {
-        _pattern.stop();
-    }
-
-    bool started() {
-        return _pattern.started();
-    }
-
-    void stop() {
-        _pattern.stop();
-    }
-
-    bool status();
-    bool status(bool new_status);
-
-    bool toggle();
-
-private:
-    unsigned char _pin;
-    bool _inverse;
-    LedMode _mode;
-    LedPattern _pattern;
-};
-
 size_t ledCount();
 
-void ledUpdate(bool do_update);
 bool ledStatus(size_t id, bool status);
 bool ledStatus(size_t id);
 void ledSetup();
