@@ -1225,7 +1225,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     config["start"] = 0;
 
     {
-        static constexpr const char* const schema_keys[] PROGMEM = {
+        static const char* const schema_keys[] PROGMEM = {
             "relayProv",
             "relayName",
             "relayBoot",

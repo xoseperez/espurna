@@ -320,7 +320,7 @@ void _ledWebSocketOnConnected(JsonObject& root) {
     JsonObject& config = root.createNestedObject("ledConfig");
 
     {
-        static constexpr const char* const schema_keys[] PROGMEM = {
+        static const char* const schema_keys[] PROGMEM = {
             "ledGpio",
             "ledInv",
             "ledMode"

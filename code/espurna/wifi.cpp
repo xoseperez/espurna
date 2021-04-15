@@ -1903,7 +1903,7 @@ void onConnected(JsonObject& root) {
     root["max"] = wifi::build::NetworksMax;
 
     {
-        const char* schema_keys[] = {
+        static const char* const schema_keys[] PROGMEM = {
             "ssid",
             "pass",
             "ip",

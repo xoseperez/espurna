@@ -159,7 +159,7 @@ void _schWebSocketOnConnected(JsonObject &root){
     config["max"] = scheduler::build::max();
 
     {
-        static constexpr const char* const schema_keys[] PROGMEM = {
+        static const char* const schema_keys[] PROGMEM = {
             "schEnabled",
             "schRestore",
             "schType",
