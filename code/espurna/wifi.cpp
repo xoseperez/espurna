@@ -2149,6 +2149,7 @@ State handleAction(State& state, Action action) {
                 wifi::settings::softApSsid(),
                 wifi::settings::softApPassphrase(),
                 wifi::settings::softApChannel());
+            publish(wifi::Event::Mode);
             if ((Action::AccessPointFallback == action)
                     && wifi::ap::fallback::enabled()) {
                 wifi::ap::fallback::schedule();
@@ -2181,6 +2182,7 @@ State handleAction(State& state, Action action) {
             wifi::sta::disconnect();
             wifi::sta::disable();
             wifi::disable();
+            publish(wifi::Event::Mode);
             if (!wifi::sleep()) {
                 wifi::action(wifi::Action::TurnOn);
                 break;

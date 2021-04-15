@@ -94,17 +94,21 @@ void mdnsServerSetup() {
     });
 
     // 2.7.x and older require MDNS.begin() when interface is UP
+    //       issue tracker suggest doing begin() for each mode change, but...
+    //       this does seem to imply pairing it with end() (aka close()),
+    //       which will completely reset the MDNS object and require a setup once again.
+    //       this does not seem to work reliably :/ only support STA for the time being
     // 3.0.0 and newer only need to do MDNS.begin() once at setup()
-    // (XXX: this is techically a constexpr, but not in 2.7.4 :/)
-    // (XXX: 2.7.4 ... 3.0.0 reports 20702...)
-    const static bool OldCore { esp8266::coreVersionNumeric() <= 20702000 };
+    const static bool OldCore {
+        (esp8266::coreVersionNumeric() >= 20702000) && (esp8266::coreVersionNumeric() <= 20703003) };
 
     wifiRegister([](wifi::Event event) {
-        if (event == wifi::Event::StationConnected) {
 #if MQTT_SUPPORT
+        if (event == wifi::Event::StationConnected) {
             _mdnsFindMQTT();
+        }
 #endif
-        } else if (OldCore && (event == wifi::Event::Mode)) {
+        if (OldCore && (event == wifi::Event::StationConnected) && !MDNS.isRunning()) {
             _mdnsServerStart();
         }
     });
