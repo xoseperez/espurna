@@ -338,10 +338,6 @@ std::vector<size_t> _led_relays;
 #endif
 
 void _ledConfigure() {
-#if RELAY_SUPPORT
-    _led_relays.resize(relayCount(), RelaysMax);
-#endif
-
     for (size_t id = 0; id < _leds.size(); ++id) {
 #if RELAY_SUPPORT
         _led_relays[id] = getSetting({"ledRelay", id}, led::build::relay(id));
@@ -512,8 +508,6 @@ void ledSetup() {
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %u\n"), leds);
     if (leds) {
-        _ledConfigure();
-
 #if MQTT_SUPPORT
         mqttRegister(_ledMQTTCallback);
 #endif
@@ -526,13 +520,18 @@ void ledSetup() {
 #endif
 
 #if RELAY_SUPPORT
-        relaySetStatusNotify([](size_t, bool) {
-            ledUpdate(true);
+        // TODO: grab a specific LED from the relay module itself?
+        // either for global status, or a specific relay
+        _led_relays.resize(leds, RelaysMax);
+        relaySetStatusChange([](size_t, bool) {
+            _led_update = true;
         });
 #endif
 
         espurnaRegisterLoop(ledLoop);
+
         espurnaRegisterReload(_ledConfigure);
+        _ledConfigure();
     }
 }
 
