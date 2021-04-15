@@ -20,11 +20,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 void _arduinoOtaConfigure() {
 
     ArduinoOTA.setPort(OTA_PORT);
-    ArduinoOTA.setHostname(getSetting("hostname").c_str());
-    #if USE_PASSWORD
-        ArduinoOTA.setPassword(getAdminPass().c_str());
-    #endif
-    ArduinoOTA.begin();
+#if USE_PASSWORD
+    ArduinoOTA.setPassword(getAdminPass().c_str());
+#endif
+    ArduinoOTA.begin(false);
 
 }
 

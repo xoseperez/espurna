@@ -32,8 +32,12 @@ void _mdnsFindMQTT() {
 
 #endif
 
+String _mdnsHostname() {
+    return getSetting("hostname", getIdentifier());
+}
+
 void _mdnsServerStart() {
-    if (MDNS.begin(getSetting("hostname", getIdentifier()))) {
+    if (MDNS.begin(_mdnsHostname())) {
         DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     } else {
         DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
@@ -45,6 +49,8 @@ void _mdnsServerStart() {
 void mdnsServerSetup() {
     bool done { false };
 
+    MDNS.setHostname(_mdnsHostname());
+
 #if WEB_SUPPORT
     {
         MDNS.addService("http", "tcp", getSetting("webPort", static_cast<uint16_t>(WEB_PORT)));
@@ -54,32 +60,38 @@ void mdnsServerSetup() {
 
 #if TELNET_SUPPORT
     {
-        MDNS.addService("telnet", "tcp", TELNET_PORT);
+        MDNS.addService("telnet", "tcp", static_cast<uint16_t>(TELNET_PORT));
         done = true;
     }
 #endif
 
 #if OTA_ARDUINOOTA_SUPPORT
     {
-        MDNS.addServiceTxt("arduino", "tcp", "app_name", getAppName());
-        MDNS.addServiceTxt("arduino", "tcp", "app_version", getVersion());
-        MDNS.addServiceTxt("arduino", "tcp", "build_date", buildTime());
-        MDNS.addServiceTxt("arduino", "tcp", "mac", WiFi.macAddress());
-        MDNS.addServiceTxt("arduino", "tcp", "target_board", getBoardName());
+        if (MDNS.enableArduino(OTA_PORT, getAdminPass().length() > 0)) {
+            MDNS.addServiceTxt("arduino", "tcp", "app_name", getAppName());
+            MDNS.addServiceTxt("arduino", "tcp", "app_version", getVersion());
+            MDNS.addServiceTxt("arduino", "tcp", "build_date", buildTime());
+            MDNS.addServiceTxt("arduino", "tcp", "mac", getFullChipId());
+            MDNS.addServiceTxt("arduino", "tcp", "target_board", getBoardName());
 
-        MDNS.addServiceTxt("arduino", "tcp", "mem_size",
-                String(static_cast<int>(ESP.getFlashChipRealSize() / 1024), 10));
-        MDNS.addServiceTxt("arduino", "tcp", "sdk_size",
-                String(static_cast<int>(ESP.getFlashChipSize() / 1024), 10));
-        MDNS.addServiceTxt("arduino", "tcp", "free_space",
-                String(static_cast<int>(ESP.getFreeSketchSpace() / 1024), 10));
-        done = true;
+            MDNS.addServiceTxt("arduino", "tcp", "mem_size",
+                    String(static_cast<int>(ESP.getFlashChipRealSize() / 1024), 10));
+            MDNS.addServiceTxt("arduino", "tcp", "sdk_size",
+                    String(static_cast<int>(ESP.getFlashChipSize() / 1024), 10));
+            MDNS.addServiceTxt("arduino", "tcp", "free_space",
+                    String(static_cast<int>(ESP.getFreeSketchSpace() / 1024), 10));
+            done = true;
+        }
     }
 #endif
 
     if (!done) {
         return;
     }
+
+    espurnaRegisterLoop([]() {
+        MDNS.update();
+    });
 
     // 2.7.x and older require MDNS.begin() when interface is UP
     // 3.0.0 and newer only need to do MDNS.begin() once at setup()
