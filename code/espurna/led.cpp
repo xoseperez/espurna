@@ -544,6 +544,7 @@ void _ledSettingsMigrate(int version) {
 
     delSettingPrefix({
         "ledGPIO",
+        "ledGpio",
         "ledLogic"
     });
 }

@@ -1071,7 +1071,8 @@ void _relaySettingsMigrate(int version) {
             "mqttGroup",     // migrated to relayTopic
             "mqttGroupSync", // migrated to relayTopic
             "relayOnDisc",   // replaced with relayMqttDisc
-            "relayGpio",     // avoid depending on migrate.ino
+            "relayGPIO",     // avoid depending on migrate.ino
+            "relayGpio",     //
             "relayProvider", // different type
             "relayType",     // different type
         });
