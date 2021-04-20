@@ -4982,6 +4982,23 @@
     #define LIGHT_CH2_PIN                 4       // COLD WHITE LED PWM PIN
     #define LIGHT_CH2_INVERSE             0
 
+// -----------------------------------------------------------------------------
+// Mirabella Genio White A60
+// https://www.woolworths.com.au/shop/productdetails/877102/mirabella-smart-led-gls-es-9w-cool-white
+// Like https://www.mirabellagenio.com.au/product-range/mirabella-genio-wi-fi-dimmable-9w-led-gls-bulb/ 
+// but in cardboard box, Item # I002604
+// -----------------------------------------------------------------------------
+
+#elif defined(MIRABELLA_GENIO_W_A60)
+
+    // Info
+    #define MANUFACTURER        "MIRABELLA"
+    #define DEVICE              "GENIO_W_A60"
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+
+    // Light
+    #define LIGHT_CH1_PIN       14       // WHITE
+
 #else
 
     #error "UNSUPPORTED HARDWARE!!"
