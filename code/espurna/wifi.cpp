@@ -1067,7 +1067,16 @@ struct Task {
 
     bool connect() const {
         if (!done() && wifi::sta::enabled()) {
+            // Need to call this to cancel SDK tasks (previous scan, connection, etc.)
+            // Otherwise, it will fail the initial attempt and force a retry.
             wifi::sta::disconnect();
+
+            // SDK sends EVENT_STAMODE_DISCONNECTED right after the disconnect() call, which is likely to happen
+            // after being connected and disconnecting for the first time. Not doing this will cause the connection loop
+            // to cancel the `wait` lock too early, forcing the Timeout state despite the EVENT_STAMODE_GOTIP coming in later.
+            // Allow the event to come in right now to allow `wifi_station_connect()` down below trigger a real one.
+            yield();
+
             auto& network = *_current;
             if (!network.dhcp()) {
                 auto& ipsettings = network.ipSettings();
@@ -1392,6 +1401,7 @@ void init() {
     });
     disconnect();
     disable();
+    yield();
 }
 
 void toggle() {
