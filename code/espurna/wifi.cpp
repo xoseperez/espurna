@@ -27,6 +27,19 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <queue>
 #include <vector>
 
+// ref.
+// https://github.com/d-a-v/esp82xx-nonos-linklayer/blob/master/README.md#how-it-works
+//
+// Current esp8266 Arduino Core is based on the NONOS SDK using the lwip1.4 APIs
+// To handle static IPs, these need to be called when current IP differs from the one set via the setting.
+//
+// Can't include the original headers, since they refer to the ip_addr_t and IPAddress depends on a specific overload to extract v4 addresses
+// (SDK layer *only* works with ipv4 addresses)
+
+#undef netif_set_addr
+extern "C" netif* eagle_lwip_getif(int);
+extern "C" void netif_set_addr(netif* netif, ip4_addr_t*, ip4_addr_t*, ip4_addr_t*);
+
 // -----------------------------------------------------------------------------
 // SETTINGS
 // -----------------------------------------------------------------------------
@@ -606,11 +619,11 @@ struct IpSettings {
     IpSettings& operator=(const IpSettings&) = default;
     IpSettings& operator=(IpSettings&&) = default;
 
-    template <typename Ip, typename Gateway, typename Netmask, typename Dns>
-    IpSettings(Ip&& ip, Gateway&& gateway, Netmask&& netmask, Dns&& dns) :
+    template <typename Ip, typename Netmask, typename Gateway, typename Dns>
+    IpSettings(Ip&& ip, Netmask&& netmask, Gateway&& gateway, Dns&& dns) :
         _ip(std::forward<Ip>(ip)),
-        _gateway(std::forward<Gateway>(gateway)),
         _netmask(std::forward<Netmask>(netmask)),
+        _gateway(std::forward<Gateway>(gateway)),
         _dns(std::forward<Dns>(dns))
     {}
 
@@ -618,12 +631,12 @@ struct IpSettings {
         return _ip;
     }
 
-    const IPAddress& gateway() const {
-        return _gateway;
-    }
-
     const IPAddress& netmask() const {
         return _netmask;
+    }
+
+    const IPAddress& gateway() const {
+        return _gateway;
     }
 
     const IPAddress& dns() const {
@@ -632,15 +645,24 @@ struct IpSettings {
 
     explicit operator bool() const {
         return _ip.isSet()
-            && _gateway.isSet()
             && _netmask.isSet()
+            && _gateway.isSet()
             && _dns.isSet();
+    }
+
+    ip_info toIpInfo() const {
+        ip_info info{};
+        info.ip.addr = _ip.v4();
+        info.netmask.addr = _netmask.v4();
+        info.gw.addr = _gateway.v4();
+
+        return info;
     }
 
 private:
     IPAddress _ip;
-    IPAddress _gateway;
     IPAddress _netmask;
+    IPAddress _gateway;
     IPAddress _dns;
 };
 
@@ -768,8 +790,8 @@ wifi::Info info() {
 wifi::IpSettings ipsettings() {
     return {
         WiFi.localIP(),
-        WiFi.gatewayIP(),
         WiFi.subnetMask(),
+        WiFi.gatewayIP(),
         WiFi.dnsIP()};
 }
 
@@ -962,7 +984,7 @@ SsidInfosPtr ssidinfos() {
             infos->emplace_front(std::move(pair));
         },
         [infos](wifi::ScanError) {
-            infos->clear();   
+            infos->clear();
         });
 
     return infos;
@@ -1008,7 +1030,7 @@ void enable() {
     abort();
 }
 
-void disable() { 
+void disable() {
     if (!WiFi.enableSTA(false)) {
         abort();
     }
@@ -1080,8 +1102,22 @@ struct Task {
             auto& network = *_current;
             if (!network.dhcp()) {
                 auto& ipsettings = network.ipSettings();
-                if (!WiFi.config(ipsettings.ip(), ipsettings.gateway(), ipsettings.netmask(), ipsettings.dns())) {
+
+                wifi_station_dhcpc_stop();
+
+                ip_info current;
+                wifi_get_ip_info(STATION_IF, &current);
+
+                ip_info info = ipsettings.toIpInfo();
+                if (!wifi_set_ip_info(STATION_IF, &info)) {
                     return false;
+                }
+
+                dns_setserver(0, ipsettings.dns());
+
+                if ((current.ip.addr != 0) && (current.ip.addr != info.ip.addr)) {
+#undef netif_set_addr
+                    netif_set_addr(eagle_lwip_getif(STATION_IF), &info.ip, &info.netmask, &info.gw);
                 }
             }
 
@@ -1192,7 +1228,7 @@ struct Task {
                         && (info.authmode() == AUTH_OPEN)) {
                     continue;
                 }
-                
+
                 *network = wifi::Network(std::move(*network), info.bssid(), info.channel());
                 if (network != head) {
                     std::swap(*network, *head);
@@ -1339,7 +1375,7 @@ bool wait() {
 // TODO(Core 2.7.4): `WiFi.isConnected()` is a simple `wifi_station_get_connect_status() == STATION_GOT_IP`,
 // Meaning, it will never detect link up / down updates when AP silently kills the connection or something else unexpected happens.
 // Running JustWiFi with autoconnect + reconnect enabled, it silently avoided the issue b/c the SDK reconnect routine disconnected the STA,
-// causing our state machine to immediatly cancel it (since `WL_CONNECTED != WiFi.status()`) and then try to connect again using it's own loop.
+// causing our state machine to immediately cancel it (since `WL_CONNECTED != WiFi.status()`) and then try to connect again using it's own loop.
 // We could either (* is used currently):
 // - (*) listen for the SDK event through the `WiFi.onStationModeDisconnected()`
 // - ( ) poll NETIF_FLAG_LINK_UP for the lwip's netif, since the SDK will bring the link down on disconnection
@@ -1596,7 +1632,7 @@ void start(String&& ssid, String&& passphrase, uint8_t channel) {
     WiFi.softAP(ssid, passphrase, channel);
 
 #if WIFI_AP_CAPTIVE_SUPPORT
-    if (internal::captive) { 
+    if (internal::captive) {
         internal::dns.setErrorReplyCode(DNSReplyCode::NoError);
         internal::dns.start(53, "*", WiFi.softAPIP());
     } else {
@@ -1697,7 +1733,7 @@ wifi::Networks networks() {
         auto ip = staIp(id);
         if (ip.isSet()) {
             out.emplace_back(std::move(ssid), std::move(pass),
-                wifi::IpSettings{std::move(ip), staGateway(id), staMask(id), staDns(id)});
+                wifi::IpSettings{std::move(ip), staMask(id), staGateway(id), staDns(id)});
         } else {
             out.emplace_back(std::move(ssid), std::move(pass));
         }
@@ -2102,7 +2138,7 @@ namespace {
 
 } // namespace
 
-State handleAction(State& state, Action action) { 
+State handleAction(State& state, Action action) {
     switch (action) {
     case Action::StationConnect:
         if (!wifi::sta::connecting() && !wifi::sta::connected()) {
@@ -2129,7 +2165,7 @@ State handleAction(State& state, Action action) {
             wifi::sta::disconnect();
         }
 
-        if (wifi::sta::connecting()) { 
+        if (wifi::sta::connecting()) {
             wifi::sta::connection::unlock();
             wifi::sta::connection::stop();
         }
