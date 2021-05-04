@@ -928,6 +928,7 @@ function createMagnitudeList(data, container, template_name) {
         var line = $(template).clone();
         $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(Magnitudes[i].description);
+        $("input", line).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
