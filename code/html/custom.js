@@ -908,6 +908,7 @@ function createRelayList(data, container, template_name) {
     for (var i in data) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
+        $("input", line).val(data[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
