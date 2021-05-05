@@ -908,6 +908,7 @@ function createRelayList(data, container, template_name) {
     for (var i in data) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
+        $("input", line).val(data[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
@@ -927,6 +928,7 @@ function createMagnitudeList(data, container, template_name) {
         var line = $(template).clone();
         $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
         $("div.hint", line).html(Magnitudes[i].description);
+        $("input", line).val(data.idx[i]);
         setOriginalsFromValues($("input", line));
         line.appendTo("#" + container);
     }
