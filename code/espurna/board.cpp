@@ -339,6 +339,9 @@ const char* getEspurnaSensors() {
 #if SI7021_SUPPORT
     "SI7021 "
 #endif
+#if SM300D2_SUPPORT
+    "SM300D2 "
+#endif
 #if SONAR_SUPPORT
     "SONAR "
 #endif

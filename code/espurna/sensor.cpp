@@ -168,6 +168,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "sensors/SI7021Sensor.h"
 #endif
 
+#if SM300D2_SUPPORT
+    #include "sensors/SM300D2Sensor.h"
+#endif
+
 #if SONAR_SUPPORT
     #include "sensors/SonarSensor.h"
 #endif
@@ -753,6 +757,12 @@ String magnitudeTopic(unsigned char type) {
         case MAGNITUDE_FREQUENCY:
             result = F("frequency");
             break;
+        case MAGNITUDE_TVOC:
+            result = F("tvoc");
+            break;
+        case MAGNITUDE_CH2O:
+            result = F("ch2o");
+            break;
         case MAGNITUDE_NONE:
         default:
             result = F("unknown");
@@ -1023,6 +1033,8 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     case MAGNITUDE_RESISTANCE: return "res";
     case MAGNITUDE_PH: return "ph";
     case MAGNITUDE_FREQUENCY: return "freq";
+    case MAGNITUDE_TVOC: return "tvoc";
+    case MAGNITUDE_CH2O: return "ch2o";
     default: return nullptr;
     }
 }
@@ -1288,6 +1300,12 @@ String magnitudeName(unsigned char type) {
             break;
         case MAGNITUDE_FREQUENCY:
             result = F("Frequency");
+            break;
+        case MAGNITUDE_TVOC:
+            result = F("TVOC");
+            break;
+        case MAGNITUDE_CH2O:
+            result = F("CH2O");
             break;
         case MAGNITUDE_NONE:
         default:
@@ -2116,6 +2134,14 @@ void _sensorLoad() {
     {
         SI7021Sensor * sensor = new SI7021Sensor();
         sensor->setAddress(SI7021_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SM300D2_SUPPORT
+    {
+        SM300D2Sensor * sensor = new SM300D2Sensor();
+        sensor->setRX(SM300D2_RX_PIN);
         _sensors.push_back(sensor);
     }
     #endif
