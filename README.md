@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smar
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
 [![version](https://img.shields.io/badge/version-1.15.0--dev-brightgreen.svg)](CHANGELOG.md)
-[![branch](https://img.shields.io/badge/branch-sm300d2-orange.svg)](https://github.com/xoseperez/espurna/tree/sm300d2/)
+[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![ci build](https://github.com/xoseperez/espurna/workflows/ESPurna%20build/badge.svg?branch=dev)](https://github.com/xoseperez/espurna/actions)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
