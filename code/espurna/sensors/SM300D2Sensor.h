@@ -163,9 +163,10 @@ class SM300D2Sensor : public BaseSensor {
         void _parse() {
 
             #if SENSOR_DEBUG
-            char tmp[50];
-            for (unsigned char i=0; i<17; i++) sprintf(&tmp[2*i], "%02X", _buffer[i]);
-            DEBUG_MSG("[SENSOR] SM300D2: %s\n", tmp);
+            char hex[(sizeof(_buffer)*2)+1] = {0};
+            if (hexEncode(_buffer, sizeof(_buffer), hex, sizeof(hex))) {
+                DEBUG_MSG("[SENSOR] SM300D2: %s\n", hex);
+            }
             #endif
 
             // check second header byte
@@ -202,7 +203,10 @@ class SM300D2Sensor : public BaseSensor {
             _pm100 = 256 * _buffer[10] + _buffer[11];
 
             // Temperature
-            _temperature = _buffer[12] + (float) _buffer[13] / 10.0;
+            _temperature = (_buffer[12] & 0x7F) + (float) _buffer[13] / 10.0;
+            if ((_buffer[12] & 0x80) == 0x80) {
+                _temperature = -_temperature;
+            }
 
             // Humidity
             _humidity = _buffer[14] + (float) _buffer[15] / 10.0;
