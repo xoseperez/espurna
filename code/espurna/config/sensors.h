@@ -1045,6 +1045,23 @@
 #endif
 
 //------------------------------------------------------------------------------
+// SM300D2 sensor
+// Enable support by passing SM300D2_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SM300D2_SUPPORT
+#define SM300D2_SUPPORT                   0
+#endif
+
+#ifndef SM300D2_RX_PIN
+#define SM300D2_RX_PIN                    13
+#endif
+
+#ifndef SM300D2_BAUDRATE
+#define SM300D2_BAUDRATE                  9600
+#endif
+
+//------------------------------------------------------------------------------
 // HDC1080 / 831R temperature & humidity sensor
 // Enable support by passing HDC1080_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1397,6 +1414,7 @@
     SHT3X_I2C_SUPPORT || \
     SI1145_SUPPORT || \
     SI7021_SUPPORT || \
+    SM300D2_SUPPORT || \
     SONAR_SUPPORT || \
     T6613_SUPPORT || \
     THERMOSTAT_SUPPORT || \
