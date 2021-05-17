@@ -49,6 +49,10 @@ constexpr int defaultType() {
     return SCHEDULER_TYPE_SWITCH;
 }
 
+constexpr bool utc() {
+    return false;
+}
+
 constexpr const char* const weekdays() {
     return SCHEDULER_WEEKDAYS;
 }
@@ -160,13 +164,13 @@ void _schWebSocketOnConnected(JsonObject &root){
 
     {
         static const char* const schema_keys[] PROGMEM = {
-            "schEnabled",
-            "schRestore",
-            "schType",
-            "schSwitch",
             "schAction",
+            "schEnabled",
             "schHour",
             "schMinute",
+            "schRestore",
+            "schSwitch",
+            "schType",
             "schUTC",
             "schWDs"
         };
@@ -188,18 +192,17 @@ void _schWebSocketOnConnected(JsonObject &root){
         JsonArray& entry = schedules.createNestedArray();
         ++size;
 
-        entry.add(getSetting({"schEnabled", id}, false) ? 1 : 0);
-        entry.add(getSetting({"schRestore", id}, scheduler::build::restoreLast()) ? 1 : 0);
-
-        entry.add(getSetting({"schType", id}, scheduler::build::defaultType()));
-        entry.add(schedulerSwitch);
         entry.add(getSetting({"schAction", id}, 0));
-
+        entry.add(getSetting({"schEnabled", id}, false));
         entry.add(getSetting({"schHour", id}, 0));
         entry.add(getSetting({"schMinute", id}, 0));
 
+        entry.add(getSetting({"schRestore", id}, scheduler::build::restoreLast()) ? 1 : 0);
+        entry.add(schedulerSwitch);
+
+        entry.add(getSetting({"schType", id}, scheduler::build::defaultType()));
+        entry.add(getSetting({"schUTC", id}, scheduler::build::utc()));
         entry.add(getSetting({"schWDs", id}, scheduler::build::weekdays()));
-        entry.add(getSetting({"schUTC", id}, 0));
     }
 
     config["size"] = size;
@@ -230,8 +233,8 @@ void _schConfigure() {
             int sch_action = getSetting({"schAction", i}, 0);
             int sch_hour = getSetting({"schHour", i}, 0);
             int sch_minute = getSetting({"schMinute", i}, 0);
-            bool sch_utc = getSetting({"schUTC", i}, false);
-            String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
+            bool sch_utc = getSetting({"schUTC", i}, scheduler::build::utc());
+            String sch_weekdays = getSetting({"schWDs", i}, scheduler::build::weekdays());
 
             int type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
             const auto sch_type =
@@ -338,15 +341,15 @@ void _schCheck(int target, int daybefore) {
         if (!getSetting({"schEnabled", i}, false)) continue;
 
         // Get the datetime used for the calculation
-        const bool sch_utc = getSetting({"schUTC", i}, false);
+        const bool sch_utc = getSetting({"schUTC", i}, scheduler::build::utc());
 
-        String sch_weekdays = getSetting({"schWDs", i}, SCHEDULER_WEEKDAYS);
+        String sch_weekdays = getSetting({"schWDs", i}, scheduler::build::weekdays());
         if (_schIsThisWeekday(sch_utc ? calendar_weekday.utc_wday : calendar_weekday.local_wday, sch_weekdays)) {
 
             int sch_hour = getSetting({"schHour", i}, 0);
             int sch_minute = getSetting({"schMinute", i}, 0);
             int sch_action = getSetting({"schAction", i}, 0);
-            int sch_type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
+            int sch_type = getSetting({"schType", i}, scheduler::build::defaultType());
 
             int minutes_to_trigger = _schMinutesLeft(
                 sch_utc ? calendar_weekday.utc_hour : calendar_weekday.local_hour,
