@@ -1176,11 +1176,13 @@ function initRelayConfig(id, cfg, payload) {
     line.appendTo("#relayConfig");
 
     // Populate the relay SELECTs on the configuration panel
+    // TODO right now this is only the Scheduler, consider moving it there?
+    // right now this modifies template + anything that happened to be added
+    // into the document
     $("select.isrelay").append(
         $("<option></option>")
             .attr("value", id)
-            .text(name)
-    );
+            .text(cfg.relayName));
 }
 
 // -----------------------------------------------------------------------------
