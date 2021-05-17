@@ -462,7 +462,6 @@ function fillTemplateLineFromCfg(line, id, cfg) {
                 var realId = key + id;
                 input.prop("checked", cfg[key])
                     .attr("id", realId)
-                    .attr("name", realId)
                     .next().attr("for", realId);
             } else {
                 input.val(cfg[key]);
