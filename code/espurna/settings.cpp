@@ -142,12 +142,9 @@ uint32_t convert(const String& value) {
 }
 
 String serialize(uint32_t value, int base) {
-    constexpr size_t Size { 4 * sizeof(decltype(value)) };
-    constexpr size_t Length { Size - 1 };
+    constexpr size_t Size { 8 * sizeof(decltype(value)) };
 
     String result;
-    result.reserve(Length);
-
     if (base == 2) {
         result += "0b";
     } else if (base == 8) {
@@ -156,7 +153,7 @@ String serialize(uint32_t value, int base) {
         result += "0x";
     }
 
-    char buffer[Size] = {0};
+    char buffer[Size + 1] = {0};
     ultoa(value, buffer, base);
     result += buffer;
 
