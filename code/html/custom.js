@@ -2325,17 +2325,17 @@ $(function() {
     });
 
     $(".button-add-switch-schedule").on("click", function() {
-        addSchedule({schType: 1, schSwitch: -1});
+        addSchedule({schType: 1, schTarget: -1});
     });
     //removeIf(!light)
     $(".button-add-light-schedule").on("click", function() {
-        addSchedule({schType: 2, schSwitch: -1});
+        addSchedule({schType: 2, schTarget: -1});
     });
     //endRemoveIf(!light)
 
     //removeIf(!curtain)
     $(".button-add-curtain-schedule").on("click", function() {
-        addSchedule({schType: 3, schSwitch: -1});
+        addSchedule({schType: 3, schTarget: -1});
     });
     //endRemoveIf(!curtain)
 

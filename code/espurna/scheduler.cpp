@@ -20,22 +20,6 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 #include "curtain_kingart.h"
 
-constexpr int SchedulerDummySwitchId { 0xff };
-
-#if RELAY_SUPPORT
-
-size_t schedulableCount() {
-    return relayCount();
-}
-
-#elif CURTAIN_SUPPORT
-
-size_t schedulableCount() {
-    return curtainCount()
-}
-
-#endif
-
 // -----------------------------------------------------------------------------
 
 namespace scheduler {
@@ -45,12 +29,32 @@ constexpr size_t max() {
     return SCHEDULER_MAX_SCHEDULES;
 }
 
+constexpr int restoreOffsetMax() {
+    return 2; // today and yesterday
+}
+
+constexpr size_t defaultTarget() {
+    return 0; // aka relay#0 or channel#0
+}
+
 constexpr int defaultType() {
-    return SCHEDULER_TYPE_SWITCH;
+    return SCHEDULER_TYPE_NONE;
 }
 
 constexpr bool utc() {
-    return false;
+    return false; // use local time by default
+}
+
+constexpr int hour() {
+    return 0;
+}
+
+constexpr int minute() {
+    return 0;
+}
+
+constexpr int action() {
+    return 0;
 }
 
 constexpr const char* const weekdays() {
@@ -62,16 +66,230 @@ constexpr bool restoreLast() {
 }
 
 } // namespace build
-} // namespace scheduler
+
+bool schedulable() {
+    return false
+#if RELAY_SUPPORT
+    || relayCount()
+#endif
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    || lightChannels()
+#endif
+#if CURTAIN_SUPPORT
+    || curtainCount()
+#endif
+    ;
+}
+
+struct Weekdays {
+    Weekdays() = default;
+
+    // TimeLib mask, with Monday as 1 and Sunday as 7
+    // ctime order is Sunday as 0 and Saturday as 6
+    explicit Weekdays(const String& pattern) {
+        const char* p = pattern.c_str();
+        while (*p != '\0') {
+            switch (*p) {
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+                _mask |= 1 << (*p - '1');
+                break;
+            }
+            ++p;
+        }
+    }
+
+    String toString() const {
+        String out;
+        for (int day = 0; day < 7; ++day) {
+            if (_mask & (1 << day)) {
+                if (out.length()) {
+                    out += ',';
+                }
+                out += static_cast<char>('0' + day + 1);
+            }
+        }
+
+        return out;
+    }
+
+    bool match(const tm& other) const {
+        switch (other.tm_wday) {
+        case 0:
+            return _mask & (1 << 6);
+        case 1 ... 6:
+            return _mask & (1 << (other.tm_wday - 1));
+        }
+
+        return false;
+    }
+
+    int mask() const {
+        return _mask;
+    }
+
+private:
+    int _mask { 0 };
+};
+
+struct Schedule {
+    bool enabled;
+    size_t target;
+    int type;
+    int action;
+    bool restore;
+    bool utc;
+    Weekdays weekdays;
+    int hour;
+    int minute;
+};
+
+using Schedules = std::vector<Schedule>;
+
+namespace debug {
+
+const char* type(int type) {
+    switch (type) {
+    case SCHEDULER_TYPE_NONE:
+        return "none";
+    case SCHEDULER_TYPE_SWITCH:
+        return "switch";
+    case SCHEDULER_TYPE_DIM:
+        return "channel";
+    case SCHEDULER_TYPE_CURTAIN:
+        return "curtain";
+    }
+
+    return "unknown";
+}
+
+const char* type(const Schedule& schedule) {
+    return type(schedule.type);
+}
+
+void show(const Schedules& schedules) {
+    size_t index { 0 };
+    for (auto& schedule : schedules) {
+        DEBUG_MSG_P(
+            PSTR("[SCH] #%d: %s #%d => %d at %02d:%02d (%s) on %s%s\n"),
+            index++, scheduler::debug::type(schedule), schedule.target,
+            schedule.action, schedule.hour, schedule.minute,
+            schedule.utc ? "UTC" : "local time",
+            schedule.weekdays.toString().c_str(),
+            schedule.enabled ? "" : " (disabled)");
+    }
+}
+
+} // namespace debug
+
+namespace settings {
+
+const char* const schema_keys[] PROGMEM = {
+    "schEnabled",
+    "schTarget",
+    "schType",
+    "schAction",
+    "schRestore",
+    "schUTC",
+    "schWDs"
+    "schHour",
+    "schMinute",
+};
+
+bool enabled(size_t index) {
+    return getSetting({"schEnabled", index}, false);
+}
+
+size_t target(size_t index) {
+    return getSetting({"schTarget", index}, build::defaultTarget());
+}
+
+int type(size_t index) {
+    return getSetting({"schType", index}, build::defaultType());
+}
+
+int action(size_t index) {
+    return getSetting({"schAction", index}, build::action());
+}
+
+bool restore(size_t index) {
+    return getSetting({"schRestore", index}, build::restoreLast());
+}
+
+Weekdays weekdays(size_t index) {
+    return Weekdays(getSetting({"schWDs", index}, build::weekdays()));
+}
+
+bool utc(size_t index) {
+    return getSetting({"schUTC", index}, build::utc());
+}
+
+int hour(size_t index) {
+    return getSetting({"schHour", index}, build::hour());
+}
+
+int minute(size_t index) {
+    return getSetting({"schMinute", index}, build::minute());
+}
+
+Schedule schedule(size_t index) {
+    return Schedule{
+        enabled(index),
+        target(index),
+        type(index),
+        action(index),
+        restore(index),
+        utc(index),
+        weekdays(index),
+        hour(index),
+        minute(index)};
+}
+
+void gc(size_t total) {
+    for (size_t i = total; i < build::max(); ++i) {
+        for (auto* key : schema_keys) {
+            delSetting({key, i});
+        }
+    }
+}
+
+Schedules schedules() {
+    Schedules out;
+    out.reserve(build::max());
+
+    for (size_t i = 0; i < build::max(); ++i) {
+        auto current = schedule(i);
+        if (current.type == SCHEDULER_TYPE_NONE) {
+            break;
+        }
+        out.push_back(std::move(current));
+    }
+
+    return out;
+}
+
+void migrate(int version) {
+    if (version && (version < 6)) {
+        moveSettings("schSwitch", "schTarget");
+    }
+}
+
+} // namespace settings
 
 // -----------------------------------------------------------------------------
 
+namespace api {
 #if API_SUPPORT
 
-// UTILS
+namespace internal {
 
 template <typename V = const char*>
-bool _setJsonVariant(const SettingsKey& k, const JsonVariant& v) {
+bool setKey(const SettingsKey& k, const JsonVariant& v) {
     if (!v.is<V>()) {
         return false;
     }
@@ -79,7 +297,7 @@ bool _setJsonVariant(const SettingsKey& k, const JsonVariant& v) {
 }
 
 template <>
-bool _setJsonVariant<const char*>(const SettingsKey& k, const JsonVariant& v) {
+bool setKey<const char*>(const SettingsKey& k, const JsonVariant& v) {
     const auto& tmp = v.as<const char*>();
     if (tmp == nullptr) {
         return false;
@@ -88,346 +306,301 @@ bool _setJsonVariant<const char*>(const SettingsKey& k, const JsonVariant& v) {
 }
 
 template <typename T = const char*, typename ObjKey>
-bool _setJsonKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
+bool setKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
     if (!o.containsKey(key)) {
         return false;
     }
-    return _setJsonVariant<T>(k, o[key]);
+    return setKey<T>(k, o[key]);
 }
 
-//ENDPOINTS
+} // namespace internal
 
-void _schApiPrintSchedule(unsigned char id, JsonObject& root) {
-    root["enabled"]     = getSetting({"schEnabled", id}, false);
-    root["utc"]         = getSetting({"schUTC", id}, false);
-    root["switch"]      = getSetting({"schSwitch", id}, 0);
-    root["action"]      = getSetting({"schAction", id}, 0);
-    root["type"]        = getSetting({"schType", id}, scheduler::build::defaultType());
-    root["hour"]        = getSetting({"schHour", id}, 0);
-    root["minute"]      = getSetting({"schMinute", id}, 0);
-    root["weekdays"]    = getSetting({"schWDs", id}, scheduler::build::weekdays());
+void print(size_t id, JsonObject& root) {
+    auto schedule = settings::schedule(id);
+    root["enabled"] = schedule.enabled;
+    root["target"] = schedule.target;
+    root["type"] = schedule.type;
+    root["action"] = schedule.action;
+    root["restore"] = schedule.restore;
+    root["utc"] = schedule.utc;
+    root["weekdays"] = schedule.weekdays.toString();
+    root["hour"] = schedule.hour;
+    root["minute"] = schedule.minute;
 }
 
-
-bool _schApiSetSchedule(const unsigned char id, JsonObject& sched) {
-    if (!_setJsonKey<int>({"schSwitch", id}, sched, "switch")) {
+bool set(const size_t id, JsonObject& root) {
+    if (!internal::setKey<int>({"schType", id}, root, "type")) {
         return false;
     }
-    if (sched.containsKey("enabled")) {
-        const auto& enabled = sched["enabled"];
-        if (!_setJsonVariant<bool>({"schEnabled", id}, enabled)) {
+
+    if (!internal::setKey<int>({"schTarget", id}, root, "target")) {
+        return false;
+    }
+
+    if (root.containsKey("enabled")) {
+        const auto& enabled = root["enabled"];
+        if (!internal::setKey<bool>({"schEnabled", id}, enabled)) {
             setSetting({"schEnabled", id}, enabled.as<String>());
         }
     }
-    if (sched.containsKey("utc")) {
-        const auto& utc = sched["utc"];
-        if (!_setJsonVariant<bool>({"schUTC", id}, utc)) {
+
+    if (root.containsKey("utc")) {
+        const auto& utc = root["utc"];
+        if (!internal::setKey<bool>({"schUTC", id}, utc)) {
             setSetting({"schUTC", id}, utc.as<String>());
         }
     }
 
-    if (sched.containsKey("action")) {
-        const auto& action = sched["action"];
+    if (root.containsKey("action")) {
+        const auto& action = root["action"];
         if (action.is<const char*>()) {
             setSetting({"schAction", id}, int(relayParsePayload(action.as<const char*>())));
         } else {
-            _setJsonVariant<int>({"schAction", id}, action);
+            internal::setKey<int>({"schAction", id}, action);
         }
     }
 
-    _setJsonKey<int>({"schType", id}, sched, "type");
-    _setJsonKey<int>({"schHour", id}, sched, "hour");
-    _setJsonKey<int>({"schMinute", id}, sched, "minute");
-    _setJsonKey({"schWDs", id}, sched, "weekdays");
+    internal::setKey<int>({"schHour", id}, root, "hour");
+    internal::setKey<int>({"schMinute", id}, root, "minute");
+    internal::setKey({"schWDs", id}, root, "weekdays");
+
     return true;
 }
 
 #endif  // API_SUPPORT
+} // namespace api
 
+// -----------------------------------------------------------------------------
+
+namespace web {
 #if WEB_SUPPORT
 
-bool _schWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool onKey(const char* key, JsonVariant&) {
     return (strncmp(key, "sch", 3) == 0);
 }
 
-void _schWebSocketOnVisible(JsonObject& root) {
-    if (!schedulableCount()) return;
-    root["schVisible"] = 1;
+void onVisible(JsonObject& root) {
+    if (schedulable()) {
+        root["schVisible"] = 1;
+    }
 }
 
-void _schWebSocketOnConnected(JsonObject &root){
-
-    if (!schedulableCount()) return;
+void onConnected(JsonObject &root){
+    if (!schedulable()) return;
 
     JsonObject& config = root.createNestedObject("schConfig");
-    config["max"] = scheduler::build::max();
+    config["max"] = build::max();
 
-    {
-        static const char* const schema_keys[] PROGMEM = {
-            "schAction",
-            "schEnabled",
-            "schHour",
-            "schMinute",
-            "schRestore",
-            "schSwitch",
-            "schType",
-            "schUTC",
-            "schWDs"
-        };
-
-        JsonArray& schema = config.createNestedArray("schema");
-        schema.copyFrom(schema_keys, sizeof(schema_keys) / sizeof(*schema_keys));
-    }
+    JsonArray& schema = config.createNestedArray("schema");
+    schema.copyFrom(settings::schema_keys, sizeof(settings::schema_keys) / sizeof(*settings::schema_keys));
 
     uint8_t size = 0;
 
     JsonArray& schedules = config.createNestedArray("schedules");
 
-    for (size_t id = 0; id < scheduler::build::max(); ++id) {
-        auto schedulerSwitch = getSetting({"schSwitch", id});
-        if (!schedulerSwitch.length()) {
+    for (size_t id = 0; id < build::max(); ++id) {
+        auto schedule = settings::schedule(id);
+        if (schedule.type == SCHEDULER_TYPE_NONE) {
             break;
         }
 
         JsonArray& entry = schedules.createNestedArray();
         ++size;
 
-        entry.add(getSetting({"schAction", id}, 0));
-        entry.add(getSetting({"schEnabled", id}, false));
-        entry.add(getSetting({"schHour", id}, 0));
-        entry.add(getSetting({"schMinute", id}, 0));
+        entry.add(schedule.enabled);
 
-        entry.add(getSetting({"schRestore", id}, scheduler::build::restoreLast()) ? 1 : 0);
-        entry.add(schedulerSwitch);
+        entry.add(schedule.target);
+        entry.add(schedule.type);
+        entry.add(schedule.action);
 
-        entry.add(getSetting({"schType", id}, scheduler::build::defaultType()));
-        entry.add(getSetting({"schUTC", id}, scheduler::build::utc()));
-        entry.add(getSetting({"schWDs", id}, scheduler::build::weekdays()));
+        entry.add(schedule.restore);
+        entry.add(schedule.utc);
+
+        entry.add(schedule.weekdays.toString());
+        entry.add(schedule.hour);
+        entry.add(schedule.minute);
     }
 
     config["size"] = size;
     config["start"] = 0;
-
 }
 
-#endif // WEB_SUPPORT
+#endif
+} // namespace web
 
-// -----------------------------------------------------------------------------
-
-void _schConfigure() {
-    for (unsigned char i = 0; i < scheduler::build::max(); i++) {
-        int sch_switch = getSetting({"schSwitch", i}, SchedulerDummySwitchId);
-        if (sch_switch == SchedulerDummySwitchId) {
-            delSetting({"schEnabled", i});
-            delSetting({"schRestore", i});
-            delSetting({"schSwitch", i});
-            delSetting({"schAction", i});
-            delSetting({"schHour", i});
-            delSetting({"schMinute", i});
-            delSetting({"schWDs", i});
-            delSetting({"schType", i});
-            delSetting({"schUTC", i});
+void action(int type, size_t target, int action) {
+    if (SCHEDULER_TYPE_SWITCH == type) {
+        if (action == 2) {
+            relayToggle(target);
         } else {
-#if DEBUG_SUPPORT
-            bool sch_enabled = getSetting({"schEnabled", i}, false);
-            int sch_action = getSetting({"schAction", i}, 0);
-            int sch_hour = getSetting({"schHour", i}, 0);
-            int sch_minute = getSetting({"schMinute", i}, 0);
-            bool sch_utc = getSetting({"schUTC", i}, scheduler::build::utc());
-            String sch_weekdays = getSetting({"schWDs", i}, scheduler::build::weekdays());
-
-            int type = getSetting({"schType", i}, SCHEDULER_TYPE_SWITCH);
-            const auto sch_type =
-                (SCHEDULER_TYPE_SWITCH == type) ? "switch" :
-                (SCHEDULER_TYPE_CURTAIN == type) ? "curtain" :
-                (SCHEDULER_TYPE_DIM == type) ? "channel" : "unknown";
-
-            DEBUG_MSG_P(
-                PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
-                i, sch_type, sch_switch,
-                sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
-                sch_weekdays.c_str(),
-                sch_enabled ? "" : " (disabled)"
-            );
-#endif // DEBUG_SUPPORT
-        }
-    }
-}
-
-bool _schIsThisWeekday(int day, const String& weekdays){
-
-    // Convert from Sunday to Monday as day 1
-    int w = day - 1;
-    if (0 == w) w = 7;
-
-    char pch;
-    char * p = (char *) weekdays.c_str();
-    unsigned char position = 0;
-    while ((pch = p[position++])) {
-        if ((pch - '0') == w) return true;
-    }
-    return false;
-
-}
-
-int _schMinutesLeft(int current_hour, int current_minute, int schedule_hour, int schedule_minute) {
-    return (schedule_hour - current_hour) * 60 + schedule_minute - current_minute;
-}
-
-void _schAction(unsigned char sch_id, int sch_action, int sch_switch) {
-    const auto sch_type = getSetting({"schType", sch_id}, SCHEDULER_TYPE_SWITCH);
-
-    if (SCHEDULER_TYPE_SWITCH == sch_type) {
-        DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
-        if (sch_action == 2) {
-            relayToggle(sch_switch);
-        } else {
-            relayStatus(sch_switch, sch_action);
+            relayStatus(target, action);
         }
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    } else if (SCHEDULER_TYPE_DIM == sch_type) {
-        DEBUG_MSG_P(PSTR("[SCH] Set channel %d value to %d\n"), sch_switch, sch_action);
-        lightChannel(sch_switch, sch_action);
+    } else if (SCHEDULER_TYPE_DIM == type) {
+        lightChannel(target, action);
         lightUpdate();
-#elif CURTAIN_SUPPORT
+#endif
+#if CURTAIN_SUPPORT
     } else if (SCHEDULER_TYPE_CURTAIN == sch_type) {
-    DEBUG_MSG_P(PSTR("[SCH] Set curtain %d value to %d\n"), sch_switch, sch_action);
-    curtainSetPosition(sch_switch, sch_action);
+        curtainSetPosition(target, action);
 #endif
     }
 }
 
-constexpr time_t secondsPerMinute = 60;
-constexpr time_t secondsPerHour = 3600;
-constexpr time_t secondsPerDay = secondsPerHour * 24;
-
-NtpCalendarWeekday _schGetWeekday(time_t timestamp, int daybefore) {
-    tm utc_time;
-    tm local_time;
-
-    gmtime_r(&timestamp, &utc_time);
-    if (daybefore > 0) {
-        timestamp = timestamp - ((utc_time.tm_hour * secondsPerHour) + ((utc_time.tm_min + 1) * secondsPerMinute) + utc_time.tm_sec + (daybefore * secondsPerDay));
-        gmtime_r(&timestamp, &utc_time);
-        localtime_r(&timestamp, &local_time);
-    } else {
-        localtime_r(&timestamp, &local_time);
-    }
-
-    // TimeLib sunday is 1 instead of 0
-    return NtpCalendarWeekday {
-        local_time.tm_wday + 1, local_time.tm_hour, local_time.tm_min,
-        utc_time.tm_wday + 1, utc_time.tm_hour, utc_time.tm_min
-    };
+void action(const Schedule& schedule) {
+    action(schedule.type, schedule.target, schedule.action);
 }
 
-// If daybefore and target is -1, check with current timestamp
-// Otherwise, modify it by moving 'daybefore' days back and only use the 'target' id
-void _schCheck(int target, int daybefore) {
-    time_t timestamp = now();
-    auto calendar_weekday = _schGetWeekday(timestamp, daybefore);
+// libc underlying implementation allows us to shift month's day (even making it negative)
+// although, it is preferable to return the 'correct' struct with all of the fields updated
+// XXX: newlib does not support `timegm`, this only makes sense for local time
+// but, technically, this *could* do tzset and restore the original TZ before returning
 
-    int minimum_restore_time = -(60 * 24);
-    int saved_action = -1;
-    int saved_sch = -1;
+tm localtimeDaysAgo(tm day, int days) {
+    if (days) {
+        day.tm_mday -= days;
+        day.tm_hour = 0;
+        day.tm_min = 0;
+        day.tm_sec = 0;
 
-    // Check schedules
-    for (unsigned char i = 0; i < scheduler::build::max(); i++) {
+        auto ts = mktime(&day);
+        tm out{};
+        localtime_r(&ts, &out);
+        day = out;
+    }
 
-        int sch_switch = getSetting({"schSwitch", i}, SchedulerDummySwitchId);
-        if (sch_switch == SchedulerDummySwitchId) break;
+    return day;
+}
 
-        // Skip disabled schedules
-        if (!getSetting({"schEnabled", i}, false)) continue;
+int minutesLeft(const Schedule& schedule, int hour, int minute) {
+    return (schedule.hour - hour) * 60 + schedule.minute - minute;
+}
 
-        // Get the datetime used for the calculation
-        const bool sch_utc = getSetting({"schUTC", i}, scheduler::build::utc());
+int minutesLeft(const Schedule& schedule, const tm& now) {
+    return minutesLeft(schedule, now.tm_hour, now.tm_min);
+}
 
-        String sch_weekdays = getSetting({"schWDs", i}, scheduler::build::weekdays());
-        if (_schIsThisWeekday(sch_utc ? calendar_weekday.utc_wday : calendar_weekday.local_wday, sch_weekdays)) {
+// For 'restore'able schedules, do the most recent action, Normal check will take care of the current setting
+// Note that this only works for local-time schedules, b/c there is no timegm to compliment mktime to offset the `tm` by a specific number of days
 
-            int sch_hour = getSetting({"schHour", i}, 0);
-            int sch_minute = getSetting({"schMinute", i}, 0);
-            int sch_action = getSetting({"schAction", i}, 0);
-            int sch_type = getSetting({"schType", i}, scheduler::build::defaultType());
+struct RestoredAction {
+    size_t target;
+    int type;
+    int action;
+    int hour;
+    int minute;
+    int daysAgo;
+};
 
-            int minutes_to_trigger = _schMinutesLeft(
-                sch_utc ? calendar_weekday.utc_hour : calendar_weekday.local_hour,
-                sch_utc ? calendar_weekday.utc_minute : calendar_weekday.local_minute,
-                sch_hour, sch_minute
-            );
+using RestoredActions = std::forward_list<RestoredAction>;
 
-            if (sch_type == SCHEDULER_TYPE_SWITCH && sch_switch == target && sch_action != 2 && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
-                minimum_restore_time = minutes_to_trigger;
-                saved_action = sch_action;
-                saved_sch = i;
-            }
+RestoredAction prepareAction(const Schedule& schedule, int daysAgo) {
+    return {schedule.target, schedule.type, schedule.action,
+        schedule.hour, schedule.minute, daysAgo};
+}
 
-            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                if (SCHEDULER_TYPE_DIM == sch_type && sch_switch == target && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
-                    minimum_restore_time = minutes_to_trigger;
-                    saved_action = sch_action;
-                    saved_sch = i;
-                }
-            #endif
+void restore(time_t timestamp, const Schedules& schedules) {
+    RestoredActions restored;
 
-             #if CURTAIN_SUPPORT == 1
-                if (SCHEDULER_TYPE_CURTAIN == sch_type && sch_switch == target && minutes_to_trigger < 0 && minutes_to_trigger > minimum_restore_time) {
-                    minimum_restore_time = minutes_to_trigger;
-                    saved_action = sch_action;
-                    saved_sch = i;
-                }
-            #endif
+    tm today;
+    localtime_r(&timestamp, &today);
 
-            if (minutes_to_trigger == 0 && target == -1) {
+    for (auto& schedule : schedules) {
+        if (schedule.enabled && schedule.restore && !schedule.utc) {
+            for (int offset = 0; offset < build::restoreOffsetMax(); ++offset) {
+                auto offsetDay = localtimeDaysAgo(today, offset);
 
-                _schAction(i, sch_action, sch_switch);
-                DEBUG_MSG_P(PSTR("[SCH] Schedule #%u TRIGGERED!!\n"), i);
+                // If it is going to happen later this day or right now, simply skip and allow check() to handle it
+                // Otherwise, make sure `restored` only contains actions that happened today (or N days ago), and
+                // filter by the most recent ones of the same type (i.e. max hour and minute, but min daysAgo)
 
-            // Show minutes to trigger every 15 minutes
-            // or every minute if less than 15 minutes to scheduled time.
-            // This only works for schedules on this same day.
-            // For instance, if your scheduler is set for 00:01 you will only
-            // get one notification before the trigger (at 00:00)
-            } else if (minutes_to_trigger > 0 && target == -1) {
-
-                #if DEBUG_SUPPORT
-                    if ((minutes_to_trigger % 15 == 0) || (minutes_to_trigger < 15)) {
-                        DEBUG_MSG_P(
-                            PSTR("[SCH] %d minutes to trigger schedule #%u\n"),
-                            minutes_to_trigger, i
-                        );
+                if (schedule.weekdays.match(offsetDay)) {
+                    if ((offset == 0) && (minutesLeft(schedule, offsetDay) >= 0)) {
+                        continue;
                     }
-                #endif
 
+                    auto pending = prepareAction(schedule, offset);
+                    auto found = std::find_if(std::begin(restored), std::end(restored),
+                            [&](const RestoredAction& lhs) {
+                                return (lhs.type == pending.type) && (lhs.target == pending.target);
+                            });
+
+                    if (found != std::end(restored)) {
+                        if (((*found).daysAgo >= pending.daysAgo)
+                         && ((*found).hour <= pending.hour)
+                         && ((*found).minute <= pending.minute)) {
+                            *found = pending;
+                        }
+                    } else {
+                        restored.push_front(pending);
+                    }
+                    break;
+                }
             }
+        }
+    }
 
+    for (auto& v : restored) {
+        DEBUG_MSG_P(PSTR("[SCH] Restoring %s #%u => %u (scheduled at %02d:%02d %d day(s) ago)\n"),
+                scheduler::debug::type(v.type), v.target, v.action,
+                v.hour, v.minute, v.daysAgo);
+        action(v.type, v.target, v.action);
+    }
+}
+
+void check(time_t timestamp, const Schedules& schedules) {
+    tm utc;
+    gmtime_r(&timestamp, &utc);
+
+    tm local;
+    localtime_r(&timestamp, &local);
+
+    for (auto& schedule : schedules) {
+        if (!schedule.enabled) {
+            continue;
         }
 
-    }
+        auto& today = schedule.utc
+            ? utc
+            : local;
 
-    if (daybefore >= 0 && daybefore < 7 && minimum_restore_time == -(60 * 24) && saved_action == -1) {
-        _schCheck(target, ++daybefore);
-        return;
-    }
+        if (!schedule.weekdays.match(today)) {
+            continue;
+        }
 
-    if (minimum_restore_time != -(60 * 24) && saved_action != -1 && saved_sch != -1) {
-        _schAction(saved_sch, saved_action, target);
-    }
+        // 'Next scheduled' only happens at exactly the -15min
+        // e.g. at 0:00 updating the scheduler to trigger at 0:14 will not show the notification
 
+        auto left = minutesLeft(schedule, today);
+        if (left == 0) {
+            DEBUG_MSG_P(PSTR("[SCH] Action at %02d:%02d (%s #%u => %u)\n"),
+                    schedule.hour, schedule.minute,
+                    scheduler::debug::type(schedule),
+                    schedule.target, schedule.action);
+            action(schedule);
+#if DEBUG_SUPPORT
+        } else if (left > 0) {
+            if ((left % 15 == 0) || (left < 15)) {
+                DEBUG_MSG_P(PSTR("[SCH] Next scheduled action at %02d:%02d\n"),
+                        schedule.hour, schedule.minute);
+            }
+#endif
+        }
+    }
 }
+
+} // namespace scheduler
 
 // -----------------------------------------------------------------------------
 
 void schSetup() {
-
-    _schConfigure();
+    scheduler::settings::migrate(migrateVersion());
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible(_schWebSocketOnVisible)
-            .onConnected(_schWebSocketOnConnected)
-            .onKeyCheck(_schWebSocketOnKeyCheck);
+            .onVisible(scheduler::web::onVisible)
+            .onConnected(scheduler::web::onConnected)
+            .onKeyCheck(scheduler::web::onKey);
     #endif
 
     #if API_SUPPORT
@@ -435,66 +608,62 @@ void schSetup() {
             F(MQTT_TOPIC_SCHEDULE),
             [](ApiRequest&, JsonObject& root) {
                 JsonArray& scheds = root.createNestedArray("schedules");
-                for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; ++i) {
-                    if (!hasSetting({"schSwitch", i})) continue;
-                    auto& sched = scheds.createNestedObject();
-                    _schApiPrintSchedule(i, sched);
+                for (size_t i = 0; i < scheduler::build::max(); ++i) {
+                    if (hasSetting({"schTarget", i})) {
+                        auto& root = scheds.createNestedObject();
+                        scheduler::api::print(i, root);
+                    }
                 }
                 return true;
             },
             [](ApiRequest&, JsonObject& root) {
-                unsigned char id = 0;
-                while (hasSetting({"schSwitch", id})) id++;
-                if (id > scheduler::build::max()) {
-                    return false;
+                size_t id = 0;
+                while (hasSetting({"schType", id})) {
+                    ++id;
                 }
-                _schApiSetSchedule(id, root);
-                _schConfigure();
-                return true;
+
+                if (id < scheduler::build::max()) {
+                    return scheduler::api::set(id, root);
+                }
+
+                return false;
             });
+
         apiRegister(
             F(MQTT_TOPIC_SCHEDULE "/+"),
             [](ApiRequest& r, JsonObject& root) {
                 const auto& id_param = r.wildcard(0);
                 size_t id;
-                if (!tryParseId(id_param.c_str(), scheduler::build::max, id)) {
-                    return false;
+                if (tryParseId(id_param.c_str(), scheduler::build::max, id)) {
+                    scheduler::api::print(id, root);
+                    return true;
                 }
-                _schApiPrintSchedule(id, root);
-                return true;
+                return false;
             },
             [](ApiRequest& r, JsonObject& root) {
                 const auto& id_param = r.wildcard(0);
                 size_t id;
-                if (!tryParseId(id_param.c_str(), scheduler::build::max, id)) {
-                    return false;
+                if (tryParseId(id_param.c_str(), scheduler::build::max, id)) {
+                    return scheduler::api::set(id, root);
                 }
-                _schApiSetSchedule(id, root);
-                return true;
+                return false;
             });
     #endif
 
-    static bool restore_once = true;
+    static bool initial { true };
     ntpOnTick([](NtpTick tick) {
-        switch (tick) {
-        case NtpTick::EveryHour:
-            return;
-        case NtpTick::EveryMinute:
-            if (restore_once) {
-                auto targets = schedulableCount();
-                for (size_t i = 0; i < targets; i++) {
-                    if (getSetting({"schRestore", i}, scheduler::build::restoreLast())) {
-                        _schCheck(i, 0);
-                    }
-                }
-            }
-            restore_once = false;
+        auto timestamp = now();
+        auto schedules = scheduler::settings::schedules();
+        if (initial) {
+            initial = false;
+            scheduler::settings::gc(schedules.size());
+#if DEBUG_SUPPORT
+            scheduler::debug::show(schedules);
+#endif
+            scheduler::restore(timestamp, schedules);
         }
-        _schCheck(-1, -1);
+        scheduler::check(timestamp, schedules);
     });
-
-    espurnaRegisterReload(_schConfigure);
-
 }
 
 #endif // SCHEDULER_SUPPORT

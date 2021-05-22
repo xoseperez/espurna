@@ -225,6 +225,7 @@
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
+#define SCHEDULER_TYPE_NONE         0
 #define SCHEDULER_TYPE_SWITCH       1
 #define SCHEDULER_TYPE_DIM          2
 #define SCHEDULER_TYPE_CURTAIN      3
