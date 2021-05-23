@@ -286,37 +286,7 @@ void migrate(int version) {
 namespace api {
 #if API_SUPPORT
 
-namespace internal {
-
-template <typename V = const char*>
-bool setKey(const SettingsKey& k, const JsonVariant& v) {
-    if (!v.is<V>()) {
-        return false;
-    }
-    return setSetting(k, v.as<V>());
-}
-
-template <>
-bool setKey<const char*>(const SettingsKey& k, const JsonVariant& v) {
-    const auto& tmp = v.as<const char*>();
-    if (tmp == nullptr) {
-        return false;
-    }
-    return setSetting(k, tmp);
-}
-
-template <typename T = const char*, typename ObjKey>
-bool setKey(const SettingsKey& k, const JsonObject& o, const ObjKey& key) {
-    if (!o.containsKey(key)) {
-        return false;
-    }
-    return setKey<T>(k, o[key]);
-}
-
-} // namespace internal
-
-void print(size_t id, JsonObject& root) {
-    auto schedule = settings::schedule(id);
+void print(JsonObject& root, const Schedule& schedule) {
     root["enabled"] = schedule.enabled;
     root["target"] = schedule.target;
     root["type"] = schedule.type;
@@ -328,43 +298,40 @@ void print(size_t id, JsonObject& root) {
     root["minute"] = schedule.minute;
 }
 
-bool set(const size_t id, JsonObject& root) {
-    if (!internal::setKey<int>({"schType", id}, root, "type")) {
-        return false;
+template <typename T>
+bool setFromJsonIf(JsonObject& root, SettingsKey&& key, const char* const jsonKey) {
+    if (root.containsKey(jsonKey) && root.is<T>(jsonKey)) {
+        setSetting(key, ::settings::internal::serialize(root[jsonKey].as<T>()));
+        return true;
     }
 
-    if (!internal::setKey<int>({"schTarget", id}, root, "target")) {
-        return false;
+    return false;
+}
+
+template <>
+bool setFromJsonIf<String>(JsonObject& root, SettingsKey&& key, const char* const jsonKey) {
+    if (root.containsKey(jsonKey) && root.is<String>(jsonKey)) {
+        setSetting(key, root[jsonKey].as<String>());
+        return true;
     }
 
-    if (root.containsKey("enabled")) {
-        const auto& enabled = root["enabled"];
-        if (!internal::setKey<bool>({"schEnabled", id}, enabled)) {
-            setSetting({"schEnabled", id}, enabled.as<String>());
-        }
+    return false;
+}
+
+bool set(JsonObject& root, const size_t id) {
+    if (setFromJsonIf<int>(root, {"schType", id}, "type")) {
+        setFromJsonIf<bool>(root, {"schEnabled", id}, "enabled");
+        setFromJsonIf<int>(root, {"schTarget", id}, "target");
+        setFromJsonIf<int>(root, {"schAction", id}, "action");
+        setFromJsonIf<bool>(root, {"schRestore", id}, "restore");
+        setFromJsonIf<bool>(root, {"schUTC", id}, "utc");
+        setFromJsonIf<String>(root, {"schWDs", id}, "weekdays");
+        setFromJsonIf<int>(root, {"schHour", id}, "hour");
+        setFromJsonIf<int>(root, {"schMinute", id}, "minute");
+        return true;
     }
 
-    if (root.containsKey("utc")) {
-        const auto& utc = root["utc"];
-        if (!internal::setKey<bool>({"schUTC", id}, utc)) {
-            setSetting({"schUTC", id}, utc.as<String>());
-        }
-    }
-
-    if (root.containsKey("action")) {
-        const auto& action = root["action"];
-        if (action.is<const char*>()) {
-            setSetting({"schAction", id}, int(relayParsePayload(action.as<const char*>())));
-        } else {
-            internal::setKey<int>({"schAction", id}, action);
-        }
-    }
-
-    internal::setKey<int>({"schHour", id}, root, "hour");
-    internal::setKey<int>({"schMinute", id}, root, "minute");
-    internal::setKey({"schWDs", id}, root, "weekdays");
-
-    return true;
+    return false;
 }
 
 #endif  // API_SUPPORT
@@ -607,13 +574,14 @@ void schSetup() {
         apiRegister(
             F(MQTT_TOPIC_SCHEDULE),
             [](ApiRequest&, JsonObject& root) {
-                JsonArray& scheds = root.createNestedArray("schedules");
-                for (size_t i = 0; i < scheduler::build::max(); ++i) {
-                    if (hasSetting({"schTarget", i})) {
-                        auto& root = scheds.createNestedObject();
-                        scheduler::api::print(i, root);
-                    }
+                JsonArray& out = root.createNestedArray("schedules");
+
+                auto schedules = scheduler::settings::schedules();
+                for (auto& schedule : schedules) {
+                    auto& root = out.createNestedObject();
+                    scheduler::api::print(root, schedule);
                 }
+
                 return true;
             },
             [](ApiRequest&, JsonObject& root) {
@@ -623,7 +591,7 @@ void schSetup() {
                 }
 
                 if (id < scheduler::build::max()) {
-                    return scheduler::api::set(id, root);
+                    return scheduler::api::set(root, id);
                 }
 
                 return false;
@@ -631,20 +599,18 @@ void schSetup() {
 
         apiRegister(
             F(MQTT_TOPIC_SCHEDULE "/+"),
-            [](ApiRequest& r, JsonObject& root) {
-                const auto& id_param = r.wildcard(0);
+            [](ApiRequest& req, JsonObject& root) {
                 size_t id;
-                if (tryParseId(id_param.c_str(), scheduler::build::max, id)) {
-                    scheduler::api::print(id, root);
+                if (tryParseId(req.wildcard(0).c_str(), scheduler::build::max, id)) {
+                    scheduler::api::print(root, scheduler::settings::schedule(id));
                     return true;
                 }
                 return false;
             },
-            [](ApiRequest& r, JsonObject& root) {
-                const auto& id_param = r.wildcard(0);
+            [](ApiRequest& req, JsonObject& root) {
                 size_t id;
-                if (tryParseId(id_param.c_str(), scheduler::build::max, id)) {
-                    return scheduler::api::set(id, root);
+                if (tryParseId(req.wildcard(0).c_str(), scheduler::build::max, id)) {
+                    return scheduler::api::set(root, id);
                 }
                 return false;
             });
