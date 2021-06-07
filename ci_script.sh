@@ -10,6 +10,7 @@ case "$1" in
     ;;
 ("webui")
     ./build.sh -f environments
+    git --no-pager diff --stat
     ;;
 ("build")
     # shellcheck disable=SC2086
