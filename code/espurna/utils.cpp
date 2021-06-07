@@ -79,14 +79,7 @@ const String& getCoreRevision() {
 }
 
 const char* getVersion() {
-    static const char version[] {
-#if defined(APP_REVISION)
-        APP_VERSION APP_REVISION
-#else
-        APP_VERSION
-#endif
-    };
-
+    static const char version[] = APP_VERSION;
     return version;
 }
 

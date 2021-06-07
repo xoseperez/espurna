@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import argparse
 import re
 import shlex
 import configparser
 import collections
 
-CI = "true" == os.environ.get("CI", "false")
 Build = collections.namedtuple("Build", "env extends build_flags src_build_flags")
 
 
@@ -96,12 +94,11 @@ def generate_lines(builds, ignore):
             flags.append('PLATFORMIO_BUILD_FLAGS="{}"'.format(build.build_flags))
         if build.src_build_flags:
             flags.append('ESPURNA_FLAGS="{}"'.format(build.src_build_flags))
-        flags.append('ESPURNA_RELEASE_NAME="{env}"'.format(env=build.env))
-        flags.append("ESPURNA_BUILD_SINGLE_SOURCE=1")
+        flags.append('ESPURNA_BUILD_NAME="{env}"'.format(env=build.env))
 
         cmd = ["env"]
         cmd.extend(flags)
-        cmd.extend(["pio", "run", "-e", build.extends, "-s", "-t", "release"])
+        cmd.extend(["pio", "run", "-e", build.extends, "-s", "-t", "build-and-copy"])
 
         line = " ".join(cmd)
 
@@ -123,22 +120,50 @@ def every(seq, nth, total):
         index = (index + 1) % total
 
 
-if __name__ == "__main__":
-    if not CI:
-        raise ValueError("* Not in CI *")
-
+def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", required=True)
-    parser.add_argument("--destination", required=True)
-    parser.add_argument("--ignore", action="append")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--destination", help="Where to place the resulting .bin", required=True
+    )
+    parser.add_argument(
+        "--single-source",
+        help="Combine .cpp files into one to speed up compilation",
+        default=True,
+    )
+    parser.add_argument(
+        "--ignore", help="Do not build envs that contain the string(s)", action="append"
+    )
+
+    builder_thread = parser.add_argument_group(
+        title="Builder thread control for CI parallel builds"
+    )
+    builder_thread.add_argument("--builder-thread", type=int, required=True)
+    builder_thread.add_argument("--builder-total-threads", type=int, required=True)
+
+    full_version = parser.add_argument_group(
+        title="Fully replace the version string for the build system"
+    )
+    full_version.add_argument("--full-version")
+
+    version_parts = parser.add_argument_group(
+        "Replace parts of the version string that would have been detected by the build system"
+    )
+    version_parts.add_argument("--version")
+    version_parts.add_argument("--revision")
+    version_parts.add_argument("--suffix")
+
+    parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
 
     Config = configparser.ConfigParser()
     with open("platformio.ini", "r") as f:
         Config.read_file(f)
 
-    builder_total_threads = int(os.environ["BUILDER_TOTAL_THREADS"])
-    builder_thread = int(os.environ["BUILDER_THREAD"])
+    builder_total_threads = args.builder_total_threads
+    builder_thread = args.builder_thread
     if builder_thread >= builder_total_threads:
         raise ValueError("* Builder thread index out of range *")
 
@@ -146,9 +171,18 @@ if __name__ == "__main__":
 
     print("#!/bin/bash")
     print("set -e -x")
-    print('export ESPURNA_RELEASE_VERSION="{}"'.format(args.version))
-    print('export ESPURNA_RELEASE_DESTINATION="{}"'.format(args.destination))
-    print('trap "ls -l ${ESPURNA_RELEASE_DESTINATION}" EXIT')
+    print('export ESPURNA_BUILD_DESTINATION="{}"'.format(args.destination))
+    print("export ESPURNA_BUILD_SINGLE_SOURCE={}".format(int(args.single_source)))
+    if args.full_version:
+        print('export ESPURNA_BUILD_FULL_VERSION="{}"'.format(args.full_version))
+    else:
+        if args.version:
+            print('export ESPURNA_BUILD_VERSION="{}"'.format(args.version))
+        if args.suffix:
+            print('export ESPURNA_BUILD_REVISION="{}"'.format(args.revision))
+        if args.suffix:
+            print('export ESPURNA_BUILD_VERSION_SUFFIX="{}"'.format(args.suffix))
+    print('trap "ls -R ${ESPURNA_BUILD_DESTINATION}" EXIT')
     print(
         'echo "Selected thread #{} out of {}"'.format(
             builder_thread + 1, builder_total_threads

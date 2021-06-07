@@ -19,8 +19,7 @@ import sys
 
 from SCons.Script import ARGUMENTS
 
-from espurna_utils.release import merge_cpp
-
+from espurna_utils.build import merge_cpp
 
 CI = "true" == os.environ.get("CI")
 PIO_PLATFORM = env.PioPlatform()
@@ -112,14 +111,19 @@ if ESPURNA_OTA_PORT:
 else:
     env.Replace(UPLOAD_PROTOCOL="esptool")
 
-# handle `-t release` parameters
-if CI:
-    env.Append(
-        ESPURNA_RELEASE_REVISION=os.environ.get("ESPURNA_RELEASE_REVISION", ""),
-        ESPURNA_RELEASE_NAME=os.environ.get("ESPURNA_RELEASE_NAME", ""),
-        ESPURNA_RELEASE_VERSION=os.environ.get("ESPURNA_RELEASE_VERSION", ""),
-        ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", ""),
-    )
+# handle `-t build-and-copy` parameters
+env.Append(
+    # what is the name suffix of the .bin
+    ESPURNA_BUILD_NAME=os.environ.get("ESPURNA_BUILD_NAME", ""),
+    # where to copy the resulting .bin
+    ESPURNA_BUILD_DESTINATION=os.environ.get("ESPURNA_BUILD_DESTINATION", ""),
+    # set the full string for the build, no need to change individual parts
+    ESPURNA_BUILD_FULL_VERSION=os.environ.get("ESPURNA_BUILD_FULL_VERSION", ""),
+    # or, replace parts of the version string that would've been auto-detected
+    ESPURNA_BUILD_VERSION=os.environ.get("ESPURNA_BUILD_VERSION", ""),
+    ESPURNA_BUILD_REVISION=os.environ.get("ESPURNA_BUILD_REVISION", ""),
+    ESPURNA_BUILD_VERSION_SUFFIX=os.environ.get("ESPURNA_BUILD_VERSION_SUFFIX", ""),
+)
 
 # updates arduino core git to the latest master commit
 if CI:

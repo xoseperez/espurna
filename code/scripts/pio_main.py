@@ -13,10 +13,10 @@ from espurna_utils import (
     check_printsize,
     remove_float_support,
     ldscripts_inject_libpath,
-    app_inject_revision,
+    app_inject_version,
     dummy_ets_printf,
     app_inject_flags,
-    copy_release,
+    app_add_target_build_and_copy
 )
 
 
@@ -46,11 +46,11 @@ if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
         "$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf
     )
 
-# when using git, add -DAPP_REVISION=(git-commit-hash)
-app_inject_revision(projenv)
+# handle add -DAPP_VERSION=... that was set and / or detected
+app_inject_version(projenv)
 
 # handle OTA board and flags here, since projenv is not available in pre-scripts
 app_inject_flags(projenv)
 
-# handle `-t release` when CI does a tagged build
-env.AlwaysBuild(env.Alias("release", "${BUILD_DIR}/${PROGNAME}.bin", copy_release))
+# handle when CI does a tagged build or user explicitly asked to store the firmware.bin
+app_add_target_build_and_copy(projenv)
