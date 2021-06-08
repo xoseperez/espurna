@@ -5,10 +5,7 @@ set -e
 
 script_build_environments=true
 script_build_webui=true
-script_build_release=false
-
 destination=../firmware
-release_args=""
 
 # ALL env: sections from the .ini, even including those we don't want to build
 list_all_envs() {
@@ -48,18 +45,6 @@ build_webui() {
     node node_modules/gulp/bin/gulp.js || exit
 }
 
-build_release() {
-    echo "--------------------------------------------------------------"
-    echo "Building release images..."
-
-    set -x
-    python scripts/generate_release_sh.py $release_args > release.sh
-    bash release.sh
-    set +x
-
-    echo "--------------------------------------------------------------"
-}
-
 build_environments() {
     echo "--------------------------------------------------------------"
     echo "Building environment images..."
@@ -93,16 +78,13 @@ Options:
   -f VALUE    Filter build stage by name to skip it
               Supported VALUEs are "environments" and "webui"
               Can be specified multiple times. 
-  -r          Release mode. Instead of building specified environments,
-              build every available one with an external script (ref. scripts/generate_release_sh.py)
-  -a          When in 'Release mode', append the string to the builder script arguments list
   -l          Print available environments
   -d VALUE    Destination to move the .bin file after building the environment
   -h          Display this message
 EOF
 }
 
-while getopts "f:lra:pd:h" opt; do
+while getopts "f:ld:h" opt; do
   case $opt in
     f)
         case "$OPTARG" in
@@ -121,17 +103,6 @@ while getopts "f:lra:pd:h" opt; do
     d)
         destination=$OPTARG
         ;;
-    r)
-        script_build_environments=false
-        script_build_release=true
-        ;;
-    a)
-        if ! $script_build_release ; then
-            echo Must be in release mode to append arguments
-            exit 1
-        fi
-        release_args="$release_args $OPTARG"
-        ;;
     h)
         print_getopts_help
         exit
@@ -148,8 +119,6 @@ if $script_build_webui ; then
     build_webui
 fi
 
-if $script_build_release ; then
-    build_release
-elif $script_build_environments ; then
+if $script_build_environments ; then
     build_environments $@
 fi

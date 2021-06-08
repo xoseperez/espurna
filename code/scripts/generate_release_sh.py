@@ -152,7 +152,7 @@ def parse_args():
     version_parts.add_argument("--revision")
     version_parts.add_argument("--suffix")
 
-    parser.parse_args()
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -171,17 +171,19 @@ if __name__ == "__main__":
 
     print("#!/bin/bash")
     print("set -e -x")
-    print('export ESPURNA_BUILD_DESTINATION="{}"'.format(args.destination))
-    print("export ESPURNA_BUILD_SINGLE_SOURCE={}".format(int(args.single_source)))
-    if args.full_version:
-        print('export ESPURNA_BUILD_FULL_VERSION="{}"'.format(args.full_version))
-    else:
-        if args.version:
-            print('export ESPURNA_BUILD_VERSION="{}"'.format(args.version))
-        if args.suffix:
-            print('export ESPURNA_BUILD_REVISION="{}"'.format(args.revision))
-        if args.suffix:
-            print('export ESPURNA_BUILD_VERSION_SUFFIX="{}"'.format(args.suffix))
+
+    variables = [
+        ["ESPURNA_BUILD_DESTINATION", args.destination],
+        ["ESPURNA_BUILD_SINGLE_SOURCE", int(args.single_source)],
+        ["ESPURNA_BUILD_FULL_VERSION", args.full_version],
+        ["ESPURNA_BUILD_VERSION", args.version],
+        ["ESPURNA_BUILD_REVISION", args.revision],
+        ["ESPURNA_BUILD_VERSION_SUFFIX", args.suffix]]
+
+    for var, value in variables:
+        if value or not value is None:
+            print("export {}=\"{}\"".format(var, value))
+
     print('trap "ls -R ${ESPURNA_BUILD_DESTINATION}" EXIT')
     print(
         'echo "Selected thread #{} out of {}"'.format(
