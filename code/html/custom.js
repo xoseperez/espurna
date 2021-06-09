@@ -1474,31 +1474,6 @@ function lightfoxClear() {
     sendAction("lightfoxClear", {});
 }
 
-function initLightfox(data, relayCount) {
-
-    var numNodes = data.length;
-
-    var i, j;
-    for (i=0; i<numNodes; i++) {
-        var $line = loadTemplate("lightfoxNodeTemplate");
-        $line.find("label > span").text(data[i]["id"]);
-        $line.find("select").each(function() {
-            $(this).attr("name", "btnRelay" + data[i]["id"]);
-            for (j=0; j < relayCount; j++) {
-                $(this).append($("<option >").attr("value", j).text("Switch #" + j));
-            }
-            $(this).val(data[i]["relay"]);
-            status = !status;
-        });
-        setOriginalsFromValues($("input,select", $line));
-        $line.appendTo("#lightfoxNodes");
-    }
-
-    var $panel = $("#panel-lightfox")
-    $(".button-lightfox-learn").off("click").click(lightfoxLearn);
-    $(".button-lightfox-clear").off("click").click(lightfoxClear);
-
-}
 //endRemoveIf(!lightfox)
 
 // -----------------------------------------------------------------------------
@@ -1585,19 +1560,6 @@ function processData(data) {
         }
 
         //endRemoveIf(!rfbridge)
-
-        // ---------------------------------------------------------------------
-        // LightFox
-        // ---------------------------------------------------------------------
-
-        //removeIf(!lightfox)
-
-        if ("lightfoxButtons" === key) {
-            initLightfox(data["lightfoxButtons"], data["lightfoxRelayCount"]);
-            return;
-        }
-
-        //endRemoveIf(!lightfox)
 
         // ---------------------------------------------------------------------
         // RFM69
@@ -2343,6 +2305,15 @@ $(function() {
     $(".button-add-rpntopic").on('click', addRPNTopic);
 
     $(".button-del-parent").on('click', delParent);
+
+    //removeIf(!lightfox)
+    $(".button-lightfox-learn")
+        .off("click")
+        .click(lightfoxLearn);
+    $(".button-lightfox-clear")
+        .off("click")
+        .click(lightfoxClear);
+    //endRemoveIf(!lightfox)
 
     //removeIf(!rfm69)
     $(".button-add-mapping").on('click', addMapping);

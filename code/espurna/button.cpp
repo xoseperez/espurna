@@ -244,10 +244,6 @@ button_t::button_t(BasePinPtr&& pin, const debounce_event::types::Config& config
     event_delays(std::move(delays_))
 {}
 
-bool button_t::state() {
-    return event_emitter->isPressed();
-}
-
 ButtonEvent button_t::loop() {
     if (event_emitter) {
         switch (event_emitter->loop()) {
@@ -370,12 +366,6 @@ void buttonSetEventNotify(ButtonEventHandler handler) {
 }
 
 //------------------------------------------------------------------------------
-
-bool buttonState(size_t id) {
-    return (id < _buttons.size())
-        ? _buttons[id].state()
-        : false;
-}
 
 ButtonAction buttonAction(size_t id, ButtonEvent event) {
     return (id < _buttons.size())
@@ -780,7 +770,6 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
     bool result { false };
 
     switch (provider) {
-
     case ButtonProvider::Analog:
     case ButtonProvider::Gpio: {
 #if BUTTON_PROVIDER_GPIO_SUPPORT || BUTTON_PROVIDER_ANALOG_SUPPORT
@@ -813,6 +802,18 @@ void _buttonSettingsMigrate(int version) {
 
     delSettingPrefix("btnGPIO");
     moveSetting("btnDelay", "btnRepDel");
+}
+
+bool buttonAdd() {
+    const size_t index { buttonCount() };
+    if ((index + 1) < ButtonsMax) {
+        _buttons.emplace_back(
+            _buttonActions(index),
+            _buttonDelays(index));
+        return true;
+    }
+
+    return false;
 }
 
 void buttonSetup() {

@@ -4294,14 +4294,20 @@
     #define SERIAL_BAUDRATE         19200
 
     // Relays
-    #define RELAY_PROVIDER_DUAL_SUPPORT 1
+    #define LIGHTFOX_RELAYS         2
 
-    #define RELAY1_PROVIDER         RELAY_PROVIDER_DUAL
-    #define RELAY2_PROVIDER         RELAY_PROVIDER_DUAL
+    // Buttons
+    #define LIGHTFOX_BUTTONS        4
 
-    // No need to include generic GPIO support
-    // "Buttons" are attached to a secondary MCU and RELAY_PROVIDER_DUAL handles that
-    #define BUTTON_PROVIDER_GPIO_SUPPORT    0
+    #define BUTTON1_CLICK           BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK           BUTTON_ACTION_TOGGLE
+    #define BUTTON3_CLICK           BUTTON_ACTION_TOGGLE
+    #define BUTTON4_CLICK           BUTTON_ACTION_TOGGLE
+
+    #define BUTTON1_RELAY           1
+    #define BUTTON2_RELAY           2
+    #define BUTTON3_RELAY           2
+    #define BUTTON4_RELAY           1
 
     // Conflicts with relay operation
     #define DEBUG_SERIAL_SUPPORT            0
