@@ -26,6 +26,7 @@ import os
 
 CI = "true" == os.environ.get("CI")
 
+# See what happens in-between linking .cpp.o + .a into the resulting .elf
 env.ProcessFlags("-Wl,-Map -Wl,\\\"${BUILD_DIR}/${PROGNAME}.map\\\"")
 
 # Always show warnings for project code
@@ -46,10 +47,12 @@ if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
         "$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf
     )
 
-# handle add -DAPP_VERSION=... that was set and / or detected
+# override static version flag from the espurna/config/version.h
+# either completely, or change the version / revision / suffix part separately
 app_inject_version(projenv)
 
-# handle OTA board and flags here, since projenv is not available in pre-scripts
+# handle ESPURNA_BOARD and ESPURNA_FLAGS here, since projenv is not available in pre-scripts
+# TODO: prefer PLATFORMIO_SRC_BUILD_FLAGS instead? both of these only allow -D...
 app_inject_flags(projenv)
 
 # handle when CI does a tagged build or user explicitly asked to store the firmware.bin
