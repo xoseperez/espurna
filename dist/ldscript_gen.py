@@ -71,7 +71,6 @@ MEMORY
 {{
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
   dram0_0_seg :                         org = 0x3FFE8000, len = 0x14000
-  iram1_0_seg :                         org = 0x40100000, len = 0x8000
   irom0_0_seg :                         org = 0x40201010, len = {size:#x}
 }}
 
@@ -137,28 +136,24 @@ def flash_map(flashsize, fs, sectors):
     return result
 
 
-def render(variant, legacy):
+def render(variant):
     name = variant_name(variant)
     name = "eagle.flash.{}.ld".format(name)
 
     ld_include = "local.eagle.app.v6.common.ld"
     ld_dir = "ld/latest"
-    if legacy:
-        ld_include = "eagle.app.v6.common.ld"
-        ld_dir = "ld/pre_2.5.0"
 
     path = os.path.join(ld_dir, name)
 
     log.info("render %s (INCLUDE %s)", name, ld_include)
 
-    with open(path, "w") as f:
+    with open(path, "w", newline="\n") as f:
         f.write(TEMPLATE.format(include=ld_include, **flash_map(*variant)))
 
 
 def render_all():
     for variant in VARIANTS:
-        render(variant, True)
-        render(variant, False)
+        render(variant)
 
 
 if __name__ == "__main__":
@@ -167,7 +162,6 @@ if __name__ == "__main__":
     choices.extend(variants.keys())
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--legacy", action="store_true", default=False)
     parser.add_argument("--verbose", action="store_true", default=False)
     parser.add_argument("variant", choices=choices)
 
@@ -178,4 +172,4 @@ if __name__ == "__main__":
     if args.variant == "all":
         render_all()
     else:
-        render(variants[args.variant], args.legacy)
+        render(variants[args.variant])
