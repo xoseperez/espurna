@@ -111,7 +111,7 @@ struct timer_regs {
 };
 static struct timer_regs* timer = (struct timer_regs*)(0x60000600);
 
-static void ICACHE_RAM_ATTR
+static void IRAM_ATTR
 pwm_intr_handler(void)
 {
 	if ((pwm_state.current_set[pwm_state.current_phase].off_mask == 0) &&

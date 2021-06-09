@@ -116,7 +116,7 @@ class PulseMeterSensor : public BaseEmonSensor {
         }
 
         // Handle interrupt calls
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
+        void IRAM_ATTR handleInterrupt(unsigned char gpio) {
             static unsigned long last = 0;
 
             if (millis() - last > _debounce) {
@@ -176,23 +176,23 @@ class PulseMeterSensor : public BaseEmonSensor {
 
 PulseMeterSensor * _pulsemeter_sensor_instance[10] = {NULL};
 
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr(unsigned char gpio) {
+void IRAM_ATTR _pulsemeter_sensor_isr(unsigned char gpio) {
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_pulsemeter_sensor_instance[index]) {
         _pulsemeter_sensor_instance[index]->handleInterrupt(gpio);
     }
 }
 
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_0() { _pulsemeter_sensor_isr(0); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_1() { _pulsemeter_sensor_isr(1); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_2() { _pulsemeter_sensor_isr(2); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_3() { _pulsemeter_sensor_isr(3); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_4() { _pulsemeter_sensor_isr(4); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_5() { _pulsemeter_sensor_isr(5); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_12() { _pulsemeter_sensor_isr(12); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_13() { _pulsemeter_sensor_isr(13); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_14() { _pulsemeter_sensor_isr(14); }
-void ICACHE_RAM_ATTR _pulsemeter_sensor_isr_15() { _pulsemeter_sensor_isr(15); }
+void IRAM_ATTR _pulsemeter_sensor_isr_0() { _pulsemeter_sensor_isr(0); }
+void IRAM_ATTR _pulsemeter_sensor_isr_1() { _pulsemeter_sensor_isr(1); }
+void IRAM_ATTR _pulsemeter_sensor_isr_2() { _pulsemeter_sensor_isr(2); }
+void IRAM_ATTR _pulsemeter_sensor_isr_3() { _pulsemeter_sensor_isr(3); }
+void IRAM_ATTR _pulsemeter_sensor_isr_4() { _pulsemeter_sensor_isr(4); }
+void IRAM_ATTR _pulsemeter_sensor_isr_5() { _pulsemeter_sensor_isr(5); }
+void IRAM_ATTR _pulsemeter_sensor_isr_12() { _pulsemeter_sensor_isr(12); }
+void IRAM_ATTR _pulsemeter_sensor_isr_13() { _pulsemeter_sensor_isr(13); }
+void IRAM_ATTR _pulsemeter_sensor_isr_14() { _pulsemeter_sensor_isr(14); }
+void IRAM_ATTR _pulsemeter_sensor_isr_15() { _pulsemeter_sensor_isr(15); }
 
 static void (*_pulsemeter_sensor_isr_list[10])() = {
     _pulsemeter_sensor_isr_0, _pulsemeter_sensor_isr_1, _pulsemeter_sensor_isr_2,

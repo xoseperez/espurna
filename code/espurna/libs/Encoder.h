@@ -97,7 +97,7 @@ namespace EncoderLibrary {
 
     // update() is not meant to be called from outside Encoder,
     // but it is public to allow static interrupt routines.
-    void ICACHE_RAM_ATTR update(encoder_values_t *target) {
+    void IRAM_ATTR update(encoder_values_t *target) {
         uint8_t p1val = GPIP(target->pin1);
         uint8_t p2val = GPIP(target->pin2);
         uint8_t state = target->state & 3;
@@ -121,11 +121,11 @@ namespace EncoderLibrary {
     }
 
     // 2 pins per encoder, 1 isr per encoder
-    void ICACHE_RAM_ATTR isr0() { update(EncoderValues[0]); }
-    void ICACHE_RAM_ATTR isr1() { update(EncoderValues[1]); }
-    void ICACHE_RAM_ATTR isr2() { update(EncoderValues[2]); }
-    void ICACHE_RAM_ATTR isr3() { update(EncoderValues[3]); }
-    void ICACHE_RAM_ATTR isr4() { update(EncoderValues[4]); }
+    void IRAM_ATTR isr0() { update(EncoderValues[0]); }
+    void IRAM_ATTR isr1() { update(EncoderValues[1]); }
+    void IRAM_ATTR isr2() { update(EncoderValues[2]); }
+    void IRAM_ATTR isr3() { update(EncoderValues[3]); }
+    void IRAM_ATTR isr4() { update(EncoderValues[4]); }
 
     constexpr void (*_isr_funcs[5])() = {
         isr0, isr1, isr2, isr3, isr4
