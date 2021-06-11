@@ -2354,9 +2354,8 @@ void _sensorInit() {
 
         // Initialize sensor magnitudes
         for (unsigned char magnitude_index = 0; magnitude_index < sensor->count(); ++magnitude_index) {
-
             const auto magnitude_type = sensor->type(magnitude_index);
-            const auto magnitude_local = sensor->local(magnitude_type);
+            const auto magnitude_local = sensor->local(magnitude_index);
             _magnitudes.emplace_back(
                 magnitude_index,     // id of the magnitude, unique to the sensor
                 magnitude_local,     // index_local, # of the magnitude
@@ -2365,18 +2364,17 @@ void _sensorInit() {
                 sensor               // bind the sensor to allow us to reference it later
             );
 
+            auto& magnitude = _magnitudes.back();
             if (_sensorIsEmon(sensor) && (MAGNITUDE_ENERGY == magnitude_type)) {
-                const auto index_global = _magnitudes.back().index_global;
+                const auto index_global = magnitude.index_global;
                 auto* ptr = static_cast<BaseEmonSensor*>(sensor);
-                ptr->resetEnergy(magnitude_local, _sensorEnergyTotal(index_global));
+                ptr->resetEnergy(magnitude.index_local, _sensorEnergyTotal(index_global));
                 _sensor_save_count.push_back(0);
             }
 
             DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%u\n"),
-                magnitudeTopic(magnitude_type).c_str(),
-                sensor_magnitude_t::counts(magnitude_type)
-            );
-
+                magnitudeTopic(magnitude.type).c_str(),
+                sensor_magnitude_t::counts(magnitude.type));
         }
 
         // Custom initializations are based on IDs
