@@ -120,8 +120,7 @@ class SI7021Sensor : public I2CSensor<> {
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
 
                 _count = 0;
-                i2cReleaseLock(_address);
-                _previous_address = 0;
+                _sensor_address.unlock();
                 _error = SENSOR_ERROR_UNKNOWN_ID;
 
                 // Setting _address to 0 forces auto-discover

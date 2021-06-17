@@ -38,6 +38,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "sensors/BaseSensor.h"
 #include "sensors/BaseEmonSensor.h"
+#include "sensors/BaseAnalogEmonSensor.h"
 #include "sensors/BaseAnalogSensor.h"
 
 #if AM2320_SUPPORT
@@ -414,7 +415,11 @@ std::vector<unsigned char> _sensor_save_count;
 unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
 
 bool _sensorIsEmon(BaseSensor* sensor) {
-    return sensor->type() & sensor::type::Emon;
+    return sensor->type() & (sensor::type::Emon | sensor::type::AnalogEmon);
+}
+
+bool _sensorIsAnalogEmon(BaseSensor* sensor) {
+    return sensor->type() & sensor::type::AnalogEmon;
 }
 
 sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
@@ -1846,34 +1851,38 @@ void _sensorLoad() {
         EmonADC121Sensor * sensor = new EmonADC121Sensor();
         sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+        sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
         _sensors.push_back(sensor);
     }
     #endif
 
     #if EMON_ADS1X15_SUPPORT
     {
-        EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
-        sensor->setAddress(EMON_ADS1X15_I2C_ADDRESS);
-        sensor->setType(EMON_ADS1X15_TYPE);
-        sensor->setMask(EMON_ADS1X15_MASK);
-        sensor->setGain(EMON_ADS1X15_GAIN);
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(1, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(2, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(3, EMON_CURRENT_RATIO);
-        _sensors.push_back(sensor);
+        auto port = std::make_shared<EmonADS1X15Sensor::I2CPort>(EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_TYPE);
+
+        unsigned char channel { 0 };
+        unsigned char mask { EMON_ADS1X15_MASK };
+        constexpr unsigned char FirstBit { 1 };
+
+        while (mask) {
+            if (mask & FirstBit) {
+                auto* sensor = new EmonADS1X15Sensor(port);
+                sensor->setGain(EMON_ADS1X15_GAIN);
+                sensor->setVoltage(EMON_MAINS_VOLTAGE);
+                sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
+                sensor->setChannel(channel);
+                _sensors.push_back(sensor);
+            }
+            ++channel;
+        }
     }
     #endif
 
     #if EMON_ANALOG_SUPPORT
     {
-        EmonAnalogSensor * sensor = new EmonAnalogSensor();
+        auto* sensor = new EmonAnalogSensor();
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+        sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
         _sensors.push_back(sensor);
     }
     #endif
@@ -2509,6 +2518,7 @@ void _sensorConfigure() {
             // process emon-specific settings first. ensure that settings use global index and we access sensor with the local one
             if (_sensorIsEmon(magnitude.sensor)) {
                 // TODO: compatibility proxy, fetch global key before indexed
+                // TODO: *remove* local index, favour separate sensor instances instead of index magic
                 auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
                     return getSetting({key, index}, getSetting(key, default_value));
                 };
@@ -2530,9 +2540,6 @@ void _sensorConfigure() {
                     sensor->setVoltageRatio(
                         magnitude.index_local, get_ratio("pwrRatioV", magnitude.index_global, sensor->defaultVoltageRatio())
                     );
-                    sensor->setVoltage(
-                        magnitude.index_local, get_ratio("pwrVoltage", magnitude.index_global, sensor->defaultVoltage())
-                    );
                     break;
                 case MAGNITUDE_ENERGY:
                     sensor->setEnergyRatio(
@@ -2542,6 +2549,17 @@ void _sensorConfigure() {
                 default:
                     break;
                 }
+            }
+
+            // analog variant of emon sensor has some additional settings
+            if (_sensorIsAnalogEmon(magnitude.sensor) && magnitude.type == MAGNITUDE_VOLTAGE) {
+                auto* sensor = static_cast<BaseAnalogEmonSensor*>(magnitude.sensor);
+                sensor->setVoltage(
+                    getSetting({_magnitudeSettingsKey(magnitude, F("Mains")), magnitude.index_global},
+                    sensor->defaultVoltage()));
+                sensor->setReferenceVoltage(
+                    getSetting({_magnitudeSettingsKey(magnitude, F("Reference")), magnitude.index_global},
+                    sensor->defaultReferenceVoltage()));
             }
 
             // adjust type-specific units

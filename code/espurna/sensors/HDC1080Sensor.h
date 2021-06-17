@@ -116,8 +116,7 @@ class HDC1080Sensor : public I2CSensor<> {
             DEBUG_MSG_P(PSTR("[HDC1080] ERROR: Expected Device ID %04X, received %04X\n"), HDC1080_DEVICE_ID, _device_id);
 
             _count = 0;
-            i2cReleaseLock(_address);
-            _previous_address = 0;
+            _sensor_address.unlock();
             _error = SENSOR_ERROR_UNKNOWN_ID;
 
             // Setting _address to 0 forces auto-discover
