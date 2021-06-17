@@ -185,7 +185,7 @@ String settingsQueryDefaults(const String& key);
 // --------------------------------------------------------------------------
 
 void moveSetting(const String& from, const String& to);
-void moveSetting(const String& from, const String& to, unsigned int index);
+void moveSetting(const String& from, const String& to, size_t index);
 void moveSettings(const String& from, const String& to);
 
 template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>

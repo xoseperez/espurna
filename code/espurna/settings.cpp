@@ -220,7 +220,7 @@ void moveSetting(const String& from, const String& to) {
     delSetting(from);
 }
 
-void moveSetting(const String& from, const String& to, unsigned char index) {
+void moveSetting(const String& from, const String& to, size_t index) {
     const auto keys = _moveKeys(from, to, index);
 
     auto result = settings::kv_store.get(keys.first.value());

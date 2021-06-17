@@ -1045,12 +1045,16 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
 }
 
 template <typename T>
+String _magnitudeSettingsKey(unsigned char type, T&& suffix) {
+    return String(_magnitudeSettingsPrefix(type)) + suffix;
+}
+
+template <typename T>
 String _magnitudeSettingsKey(sensor_magnitude_t& magnitude, T&& suffix) {
-    return String(_magnitudeSettingsPrefix(magnitude.type)) + suffix;
+    return _magnitudeSettingsKey(magnitude.type, std::forward<T>(suffix));
 }
 
 bool _sensorMatchKeyPrefix(const char * key) {
-
     if (strncmp(key, "sns", 3) == 0) return true;
     if (strncmp(key, "pwr", 3) == 0) return true;
 
@@ -1058,8 +1062,19 @@ bool _sensorMatchKeyPrefix(const char * key) {
         const char* const prefix { _magnitudeSettingsPrefix(type) };
         return (strncmp(prefix, key, strlen(prefix)) == 0);
     });
-
 }
+
+SettingsKey _magnitudeSettingsRatioKey(unsigned char type, size_t index) {
+    return {_magnitudeSettingsKey(type, F("Ratio")), index};
+}
+
+SettingsKey _magnitudeSettingsRatioKey(const sensor_magnitude_t& magnitude) {
+    return _magnitudeSettingsRatioKey(magnitude.type, magnitude.index_global);
+}
+
+double _magnitudeSettingsRatio(const sensor_magnitude_t& magnitude, double defaultValue) {
+    return getSetting(_magnitudeSettingsRatioKey(magnitude), defaultValue);
+};
 
 const String _sensorQueryDefault(const String& key) {
 
@@ -1083,16 +1098,13 @@ const String _sensorQueryDefault(const String& key) {
     auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> SettingsKey {
         switch (magnitude.type) {
         case MAGNITUDE_CURRENT:
-            return {"pwrRatioC", magnitude.index_global};
         case MAGNITUDE_VOLTAGE:
-            return {"pwrRatioV", magnitude.index_global};
         case MAGNITUDE_POWER_ACTIVE:
-            return {"pwrRatioP", magnitude.index_global};
         case MAGNITUDE_ENERGY:
-            return {"pwrRatioE", magnitude.index_global};
-        default:
-            return "";
+            return _magnitudeSettingsRatioKey(magnitude);
         }
+
+        return "";
     };
 
     unsigned char type = MAGNITUDE_NONE;
@@ -1416,11 +1428,9 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             root["pwrVisible"] = 1;
         }
 
-        #if EMON_ANALOG_SUPPORT
-            if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
-            }
-        #endif
+        if (_sensorIsAnalogEmon(sensor)) {
+            root["voltMains0"] = static_cast<BaseAnalogEmonSensor*>(sensor)->getVoltage();
+        }
 
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
@@ -1448,7 +1458,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         #if PULSEMETER_SUPPORT
             if (sensor->getID() == SENSOR_PULSEMETER_ID) {
                 root["pmVisible"] = 1;
-                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
+                root["eneRatio0"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
             }
         #endif
 
@@ -2474,19 +2484,19 @@ void _sensorConfigure() {
             if ((value = getSetting("pwrExpectedC", 0.0))) {
                 sensor->expectedCurrent(value);
                 delSetting("pwrExpectedC");
-                setSetting("pwrRatioC", sensor->getCurrentRatio());
+                setSetting(_magnitudeSettingsRatioKey(MAGNITUDE_CURRENT, 0), sensor->getCurrentRatio());
             }
 
             if ((value = getSetting("pwrExpectedV", 0.0))) {
                 delSetting("pwrExpectedV");
                 sensor->expectedVoltage(value);
-                setSetting("pwrRatioV", sensor->getVoltageRatio());
+                setSetting(_magnitudeSettingsRatioKey(MAGNITUDE_VOLTAGE, 0), sensor->getVoltageRatio());
             }
 
             if ((value = getSetting("pwrExpectedP", 0.0))) {
                 delSetting("pwrExpectedP");
                 sensor->expectedPower(value);
-                setSetting("pwrRatioP", sensor->getPowerRatio());
+                setSetting(_magnitudeSettingsRatioKey(MAGNITUDE_POWER_ACTIVE, 0), sensor->getPowerRatio());
             }
 
             if (getSetting("pwrResetE", false)) {
@@ -2499,9 +2509,9 @@ void _sensorConfigure() {
 
             if (getSetting("pwrResetCalibration", false)) {
                 delSetting("pwrResetCalibration");
-                delSetting("pwrRatioC");
-                delSetting("pwrRatioV");
-                delSetting("pwrRatioP");
+                delSetting(_magnitudeSettingsRatioKey(MAGNITUDE_CURRENT, 0));
+                delSetting(_magnitudeSettingsRatioKey(MAGNITUDE_VOLTAGE, 0));
+                delSetting(_magnitudeSettingsRatioKey(MAGNITUDE_ENERGY, 0));
                 sensor->resetRatios();
             }
 
@@ -2511,7 +2521,7 @@ void _sensorConfigure() {
 
     // Update magnitude config, filter sizes and reset energy if needed
     {
-        for (unsigned char index = 0; index < _magnitudes.size(); ++index) {
+        for (size_t index = 0; index < _magnitudes.size(); ++index) {
 
             auto& magnitude = _magnitudes.at(index);
 
@@ -2519,32 +2529,25 @@ void _sensorConfigure() {
             if (_sensorIsEmon(magnitude.sensor)) {
                 // TODO: compatibility proxy, fetch global key before indexed
                 // TODO: *remove* local index, favour separate sensor instances instead of index magic
-                auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
-                    return getSetting({key, index}, getSetting(key, default_value));
-                };
 
                 auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
 
                 switch (magnitude.type) {
                 case MAGNITUDE_CURRENT:
                     sensor->setCurrentRatio(
-                        magnitude.index_local, get_ratio("pwrRatioC", magnitude.index_global, sensor->defaultCurrentRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultCurrentRatio()));
                     break;
                 case MAGNITUDE_POWER_ACTIVE:
                     sensor->setPowerRatio(
-                        magnitude.index_local, get_ratio("pwrRatioP", magnitude.index_global, sensor->defaultPowerRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultPowerRatio()));
                     break;
                 case MAGNITUDE_VOLTAGE:
                     sensor->setVoltageRatio(
-                        magnitude.index_local, get_ratio("pwrRatioV", magnitude.index_global, sensor->defaultVoltageRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultVoltageRatio()));
                     break;
                 case MAGNITUDE_ENERGY:
                     sensor->setEnergyRatio(
-                        magnitude.index_local, get_ratio("pwrRatioE", magnitude.index_global, sensor->defaultEnergyRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultEnergyRatio()));
                     break;
                 default:
                     break;
@@ -2731,6 +2734,15 @@ void _sensorBackwards(int version) {
         delSetting("pwrUnits");
         delSetting("eneUnits");
         delSetting("tmpUnits");
+    }
+
+    // generic pwr settings have magnitude prefixes
+    if (version < 7) {
+        moveSetting(F("pwrVoltage"), _magnitudeSettingsKey(MAGNITUDE_VOLTAGE, F("Mains0")));
+        moveSetting(F("pwrRatioC"), _magnitudeSettingsRatioKey(MAGNITUDE_CURRENT, 0).value());
+        moveSetting(F("pwrRatioV"), _magnitudeSettingsRatioKey(MAGNITUDE_VOLTAGE, 0).value());
+        moveSetting(F("pwrRatioP"), _magnitudeSettingsRatioKey(MAGNITUDE_POWER_ACTIVE, 0).value());
+        moveSetting(F("pwrRatioE"), _magnitudeSettingsRatioKey(MAGNITUDE_ENERGY, 0).value());
     }
 }
 
