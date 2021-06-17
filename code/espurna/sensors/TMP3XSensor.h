@@ -43,7 +43,6 @@ class TMP3XSensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-            pinMode(0, INPUT);
             _ready = true;
         }
 
@@ -61,7 +60,7 @@ class TMP3XSensor : public BaseSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            return String("0");
+            return String("A0");
         }
 
         // Type for slot # index
