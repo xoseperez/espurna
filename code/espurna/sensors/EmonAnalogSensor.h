@@ -44,9 +44,24 @@ public:
         return String(F("A0"));
     }
 
+    // Cannot hammer analogRead() all the time:
+    // https://github.com/esp8266/Arduino/issues/1634
+
     unsigned int analogRead() override {
-        return ::analogRead(A0);
+        auto cycles = ESP.getCycleCount();
+        if (cycles - _last > _interval) {
+            _last = cycles;
+            _value = ::analogRead(A0);
+        }
+
+        return _value;
     }
+
+private:
+    unsigned long _interval { microsecondsToClockCycles(200u) };
+    unsigned long _last { ESP.getCycleCount() };
+
+    unsigned int _value { 0 };
 };
 
 #endif // SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
