@@ -47,11 +47,11 @@ public:
         return sensor::type::AnalogEmon;
     }
 
-    constexpr double defaultVoltage() const {
+    double defaultVoltage() const {
         return EMON_MAINS_VOLTAGE;
     }
 
-    constexpr double defaultReferenceVoltage() const {
+    double defaultReferenceVoltage() const {
         return EMON_REFERENCE_VOLTAGE;
     }
 
