@@ -1522,7 +1522,7 @@ void _relayMqttSubscribeCustomTopics() {
         topics.emplace_back(relay::build::mqttTopicSub(id), relay::build::mqttTopicMode(id));
     }
 
-    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         const char* const SubPrefix = "relayTopicSub";
         const char* const ModePrefix = "relayTopicMode";
 
@@ -1648,7 +1648,7 @@ void _relayMqttHandleCustomTopic(const String& topic, const char* payload) {
 }
 
 void _relayMqttHandleDisconnect() {
-    settings::kv_store.foreach([](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([](settings::kvs_type::KeyValueResult&& kv) {
         const char* const prefix = "relayMqttDisc";
         if (kv.key.length <= strlen(prefix)) {
             return;

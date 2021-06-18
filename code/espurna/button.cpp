@@ -537,7 +537,7 @@ unsigned long _buttonGetDelay(const char* key, size_t index, unsigned long defau
     auto indexed = SettingsKey(key, index);
     auto global = String(key);
 
-    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         if (found) {
             return;
         }
@@ -701,7 +701,7 @@ std::vector<AnalogPin*> AnalogPin::pins;
 BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
     BasePinPtr result;
 
-    auto pin = getSetting({"btnGpio", index}, button::build::pin(index));
+    auto pin [[gnu::unused]] = getSetting({"btnGpio", index}, button::build::pin(index));
 
     switch (provider) {
     case ButtonProvider::Gpio: {

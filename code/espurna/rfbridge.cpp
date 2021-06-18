@@ -430,8 +430,7 @@ RfbRelayMatch _rfbMatch(const char* code) {
     // scan kvs only once, since we want both ON and OFF options and don't want to depend on the relayCount()
     RfbRelayMatch matched;
 
-    using namespace settings;
-    kv_store.foreach([code, len, &matched](kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([code, len, &matched](settings::kvs_type::KeyValueResult&& kv) {
         const auto key = kv.key.read();
         PayloadStatus status = key.startsWith(F("rfbON"))
             ? PayloadStatus::On : key.startsWith(F("rfbOFF"))

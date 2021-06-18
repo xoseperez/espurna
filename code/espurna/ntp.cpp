@@ -378,7 +378,7 @@ void _ntpConvertLegacyOffsets() {
     bool dst { true };
     int offset { 60 };
 
-    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         const auto key = kv.key.read();
         if (key == F("ntpTZ")) {
             save = false;

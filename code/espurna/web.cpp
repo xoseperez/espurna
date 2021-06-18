@@ -276,7 +276,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     }
     out->concat(buffer, prefix_len);
 
-    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();
         auto value = kv.value.read();
 

@@ -37,14 +37,44 @@ kvs_type kv_store(
 
 } // namespace settings
 
-size_t settingsSize() {
-    return settings::kv_store.size() - settings::kv_store.available();
-}
-
 // --------------------------------------------------------------------------
 
 namespace settings {
 namespace internal {
+
+ValueResult get(const String& key) {
+    return kv_store.get(key);
+}
+
+bool set(const String& key, const String& value) {
+    return kv_store.set(key, value);
+}
+
+bool del(const String& key) {
+    return kv_store.del(key);
+}
+
+bool has(const String& key) {
+    return kv_store.has(key);
+}
+
+Keys keys() {
+    return kv_store.keys();
+}
+
+size_t available() {
+    return kv_store.available();
+}
+
+size_t size() {
+    return kv_store.size();
+}
+
+void foreach(KeyValueResultCallback&& callback) {
+    kv_store.foreach(callback);
+}
+
+// --------------------------------------------------------------------------
 
 uint32_t u32fromString(const String& string, int base) {
 
@@ -182,16 +212,19 @@ unsigned char convert(const String& value) {
 // Key-value API
 // -----------------------------------------------------------------------------
 
+size_t settingsSize() {
+    return settings::internal::size() - settings::internal::available();
+}
+
 // TODO: UI needs this to avoid showing keys in storage order
 std::vector<String> settingsKeys() {
-    auto keys = settings::kv_store.keys();
+    auto keys = settings::internal::keys();
     std::sort(keys.begin(), keys.end(), [](const String& rhs, const String& lhs) -> bool {
         return lhs.compareTo(rhs) > 0;
     });
 
     return keys;
 }
-
 
 static std::vector<settings_key_match_t> _settings_matchers;
 
@@ -213,7 +246,7 @@ settings_move_key_t _moveKeys(const String& from, const String& to, size_t index
 }
 
 void moveSetting(const String& from, const String& to) {
-    auto result = settings::kv_store.get(from);
+    auto result = settings::internal::get(from);
     if (result) {
         setSetting(to, result.ref());
     }
@@ -223,7 +256,7 @@ void moveSetting(const String& from, const String& to) {
 void moveSetting(const String& from, const String& to, size_t index) {
     const auto keys = _moveKeys(from, to, index);
 
-    auto result = settings::kv_store.get(keys.first.value());
+    auto result = settings::internal::get(keys.first.value());
     if (result) {
         setSetting(keys.second, result.ref());
     }
@@ -234,7 +267,7 @@ void moveSetting(const String& from, const String& to, size_t index) {
 void moveSettings(const String& from, const String& to) {
     for (size_t index = 0; index < 100; ++index) {
         const auto keys = _moveKeys(from, to, index);
-        auto result = settings::kv_store.get(keys.first.value());
+        auto result = settings::internal::get(keys.first.value());
         if (!result) {
             break;
         }
@@ -272,7 +305,7 @@ template
 double getSetting(const SettingsKey& key, double defaultValue);
 
 String getSetting(const String& key) {
-    return std::move(settings::kv_store.get(key)).get();
+    return std::move(settings::internal::get(key)).get();
 }
 
 String getSetting(const __FlashStringHelper* key) {
@@ -297,7 +330,7 @@ String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValu
 }
 
 String getSetting(const SettingsKey& key, const String& defaultValue) {
-    auto result = settings::kv_store.get(key.value());
+    auto result = settings::internal::get(key.value());
     if (result) {
         return std::move(result).get();
     }
@@ -306,7 +339,7 @@ String getSetting(const SettingsKey& key, const String& defaultValue) {
 }
 
 String getSetting(const SettingsKey& key, String&& defaultValue) {
-    auto result = settings::kv_store.get(key.value());
+    auto result = settings::internal::get(key.value());
     if (result) {
         return std::move(result).get();
     }
@@ -315,7 +348,7 @@ String getSetting(const SettingsKey& key, String&& defaultValue) {
 }
 
 bool delSetting(const String& key) {
-    return settings::kv_store.del(key);
+    return settings::internal::del(key);
 }
 
 bool delSetting(const SettingsKey& key) {
@@ -331,7 +364,7 @@ bool delSetting(const __FlashStringHelper* key) {
 }
 
 bool hasSetting(const String& key) {
-    return settings::kv_store.has(key);
+    return settings::internal::has(key);
 }
 
 bool hasSetting(const SettingsKey& key) {
@@ -463,10 +496,10 @@ void _settingsInitCommands() {
             ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
         }
 
-        auto available [[gnu::unused]] = settings::kv_store.available();
+        auto available [[gnu::unused]] = settings::internal::available();
         ctx.output.printf_P(PSTR("Number of keys: %u\n"), keys.size());
         ctx.output.printf_P(PSTR("Available: %u bytes (%u%%)\n"),
-                available, (100 * available) / settings::kv_store.size());
+                available, (100 * available) / settings::internal::size());
 
         terminalOK(ctx);
     });
@@ -479,7 +512,7 @@ void _settingsInitCommands() {
 
         int result = 0;
         for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
-            result += settings::kv_store.del(*it);
+            result += settings::internal::del(*it);
         }
 
         if (result) {
@@ -495,7 +528,7 @@ void _settingsInitCommands() {
             return;
         }
 
-        if (settings::kv_store.set(ctx.argv[1], ctx.argv[2])) {
+        if (settings::internal::set(ctx.argv[1], ctx.argv[2])) {
             terminalOK(ctx);
             return;
         }
@@ -511,7 +544,7 @@ void _settingsInitCommands() {
 
         for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
             const String& key = *it;
-            auto result = settings::kv_store.get(key);
+            auto result = settings::internal::get(key);
             if (!result) {
                 const auto maybeDefault = settingsQueryDefaults(key);
                 if (maybeDefault.length()) {

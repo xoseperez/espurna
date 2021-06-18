@@ -15,8 +15,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 void delSettingPrefix(const std::initializer_list<const char*>& prefixes) {
     std::vector<String> to_purge;
 
-    using namespace settings;
-    kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();
         for (const auto* prefix : prefixes) {
             if (key.startsWith(prefix)) {
