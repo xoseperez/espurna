@@ -395,6 +395,9 @@ void onConnected(JsonObject &root){
 #endif
 } // namespace web
 
+// TODO: consider providing action as a string, which could be parsed by the
+// respective module API (e.g. for lights, there could be + / - offsets)
+
 void action(int type, size_t target, int action) {
     if (SCHEDULER_TYPE_SWITCH == type) {
         if (action == 2) {
@@ -408,7 +411,7 @@ void action(int type, size_t target, int action) {
         lightUpdate();
 #endif
 #if CURTAIN_SUPPORT
-    } else if (SCHEDULER_TYPE_CURTAIN == sch_type) {
+    } else if (SCHEDULER_TYPE_CURTAIN == type) {
         curtainSetPosition(target, action);
 #endif
     }
