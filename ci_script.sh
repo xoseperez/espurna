@@ -13,8 +13,7 @@ case "$1" in
     git --no-pager diff --stat
     ;;
 ("build")
-    # shellcheck disable=SC2086
-    scripts/test_build.py -e "$TEST_ENV" $TEST_EXTRA_ARGS
+    scripts/test_build.py -e $2
     ;;
 ("release")
     ./build.sh -r
