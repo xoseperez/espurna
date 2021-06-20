@@ -21,7 +21,12 @@ from SCons.Script import ARGUMENTS
 
 from espurna_utils.build import merge_cpp
 
-CI = "true" == os.environ.get("CI", "false")
+
+def check_env(name, default):
+    return os.environ.get(name, default) in ("1", "y", "yes", "true")
+
+
+CI = check_env("CI", "false")
 PIO_PLATFORM = env.PioPlatform()
 CONFIG = env.GetProjectConfig()
 VERBOSE = "1" == ARGUMENTS.get("PIOVERBOSE", "0")
@@ -110,7 +115,7 @@ if CI:
             break
 
 # to speed-up build process, install libraries in a way they are shared between our envs
-if "1" == os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES", "0"):
+if check_env("ESPURNA_PIO_SHARED_LIBRARIES", "0"):
     storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
     subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
 
@@ -125,7 +130,7 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
     env.AddMethod(ConvertInoToCpp)
 
 # merge every .cpp into a single file and **only** build that single file
-if "1" == os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
+if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
     cpp_files = []
     for root, dirs, filenames in os.walk("espurna"):
         for name in filenames:

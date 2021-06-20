@@ -47,7 +47,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      ESPURNA_PIO_SHARED_LIBRARIES: "y"
+      ESPURNA_PIO_SHARED_LIBRARIES: "1"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
