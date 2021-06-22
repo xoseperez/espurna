@@ -622,7 +622,7 @@ public:
             json["uniq_id"] = uniqueId();
 
             json["name"] = _ctx.name() + ' ' + name() + ' ' + localId();
-            json["stat_t"] = mqttTopic(magnitudeTopicIndex(_index).c_str(), false);
+            json["stat_t"] = mqttTopic(magnitudeTopicIndex(_index), false);
             json["unit_of_meas"] = magnitudeUnits(_index);
 
             json.printTo(_message);
