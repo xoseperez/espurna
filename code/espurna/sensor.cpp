@@ -1868,7 +1868,8 @@ void _sensorLoad() {
 
     #if EMON_ADS1X15_SUPPORT
     {
-        auto port = std::make_shared<EmonADS1X15Sensor::I2CPort>(EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_TYPE);
+        auto port = std::make_shared<EmonADS1X15Sensor::I2CPort>(
+            EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_TYPE, EMON_ADS1X15_GAIN, EMON_ADS1X15_DATARATE);
 
         unsigned char channel { 0 };
         unsigned char mask { EMON_ADS1X15_MASK };
@@ -1877,9 +1878,7 @@ void _sensorLoad() {
         while (mask) {
             if (mask & FirstBit) {
                 auto* sensor = new EmonADS1X15Sensor(port);
-                sensor->setGain(EMON_ADS1X15_GAIN);
                 sensor->setVoltage(EMON_MAINS_VOLTAGE);
-                sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
                 sensor->setChannel(channel);
                 _sensors.push_back(sensor);
             }

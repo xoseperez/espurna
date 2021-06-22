@@ -105,9 +105,11 @@ public:
     public:
         I2CPort() = default;
 
-        explicit I2CPort(uint8_t address, uint8_t type) :
+        explicit I2CPort(uint8_t address, uint8_t type, uint16_t gain, uint16_t datarate) :
             _address(address),
-            _type(type)
+            _type(type),
+            _gain(gain),
+            _datarate(datarate)
         {}
 
         bool lock(uint8_t address) {
@@ -127,19 +129,57 @@ public:
             return _type;
         }
 
-        template <typename T>
-        unsigned int read(T& sensor) {
-            if (_channel != sensor._channel) {
-                sensor.config(sensor._channel, true, false);
-                sensor.config(sensor._channel, false, false);
-                sensor.config(sensor._channel, false, true);
-                nice_delay(10);
-                sensor.read();
-                _channel = sensor._channel;
+        void config(unsigned char channel, bool continuous, bool start) {
+            // Start with default values
+            uint16_t config = 0;
+            config |= _gain;                                // Set PGA/voltage range (0x0200)
+            config |= _datarate;                            // Default is at max speed (0x00E0)
+            //config |= ADS1X15_REG_CONFIG_CMODE_TRAD;        // Traditional comparator (default val) (0x0000)
+            //config |= ADS1X15_REG_CONFIG_CPOL_ACTVLOW;      // Alert/Rdy active low   (default val) (0x0000)
+            //config |= ADS1X15_REG_CONFIG_CLAT_NONLAT;       // Non-latching (default val) (0x0000)
+            config |= ADS1X15_REG_CONFIG_CQUE_NONE;         // Disable the comparator (default val) (0x0003)
+            if (start) {
+                config |= ADS1X15_REG_CONFIG_OS_SINGLE;     // Start a single-conversion (0x8000)
             }
-            sensor.config(_channel, true, true);  
-            
-            return sensor.read();
+            if (continuous) {
+                //config |= ADS1X15_REG_CONFIG_MODE_CONTIN;   // Continuous mode (default) (0x0000)
+            } else {
+                config |= ADS1X15_REG_CONFIG_MODE_SINGLE;   // Single-shot mode (0x0100)
+            }
+            config |= ((channel + 4) << 12);                // Set single-ended input channel (0x4000 - 0x7000)
+
+            // Write config register to the ADC
+            i2c_write_uint16(_sensor_address.address(), ADS1X15_REG_POINTER_CONFIG, config);
+        }
+
+        uint16_t gain() const {
+            return _gain;
+        }
+
+        unsigned int read(unsigned char channel) {
+            // Make sure we configure the correct channel for reading
+            // Force stop by setting single mode and back to continuous
+            // (as we can't read from all channels at once)
+            if (_channel != channel) {
+                _channel = channel;
+                config(_channel, true, false);
+                config(_channel, false, false);
+                config(_channel, false, true);
+                nice_delay(10);
+                read();
+            }
+            config(_channel, true, true);
+
+            return read();
+        }
+
+        unsigned int read() {
+            unsigned int value = i2c_read_uint16(_sensor_address.address(), ADS1X15_REG_POINTER_CONVERT);
+            if (_type == ADS1X15_CHIP_ADS1015) {
+                value >>= ADS1015_BIT_SHIFT;
+            }
+            delayMicroseconds(500);
+            return value;
         }
 
     private:
@@ -147,6 +187,8 @@ public:
         uint8_t _channel { 0xff };
         uint8_t _address { 0x00 };
         uint8_t _type { ADS1X15_CHIP_ADS1115 };
+        uint16_t _gain { ADS1X15_REG_CONFIG_PGA_4_096V };
+        uint16_t _datarate { ADS1X15_REG_CONFIG_DR_MASK };
     };
 
     friend class I2CPort;
@@ -161,17 +203,6 @@ public:
 
     // ---------------------------------------------------------------------
 
-    void setGain(uint16_t gain) {
-        if (_gain != gain) {
-            _gain = gain;
-            _dirty = true;
-        }
-    }
-
-    uint16_t getGain() {
-        return _gain;
-    }
-
     void setChannel(unsigned char channel) {
         if ((_channel != channel) && (channel < 4)) {
             _channel = channel;
@@ -182,7 +213,7 @@ public:
     // ---------------------------------------------------------------------
     // Sensor API
     // ---------------------------------------------------------------------
-    
+
     // Initialization method, must be idempotent
     void begin() override {
         if (!_dirty) {
@@ -195,7 +226,7 @@ public:
         }
 
         setResolution(ADS1X15_RESOLUTION);
-        setReferenceVoltage(gainToReference(_gain));
+        setReferenceVoltage(gainToReference(_port->gain()));
         BaseAnalogEmonSensor::begin();
         BaseAnalogEmonSensor::sampleCurrent();
 
@@ -232,46 +263,10 @@ public:
     }
 
     unsigned int analogRead() override {
-        return _port->read(*this);
+        return _port->read(_channel);
     }
 
 private:
-    unsigned int read() {
-        unsigned int value = i2c_read_uint16(_port->address(), ADS1X15_REG_POINTER_CONVERT);
-        if (_port->type() == ADS1X15_CHIP_ADS1015) {
-            value >>= ADS1015_BIT_SHIFT;
-        }
-        delayMicroseconds(500);
-        return value;
-    }
-
-    // Make sure we configure the correct channel for reading
-    // Force stop by setting single mode and back to continuous
-    // (as we can't read from all channels at once)
-
-    void config(unsigned char channel, bool continuous, bool start) {
-        // Start with default values
-        uint16_t config = 0;
-        config |= _gain;                                // Set PGA/voltage range (0x0200)
-        config |= ADS1X15_REG_CONFIG_DR_MASK;           // Always at max speed (0x00E0)
-        //config |= ADS1X15_REG_CONFIG_CMODE_TRAD;        // Traditional comparator (default val) (0x0000)
-        //config |= ADS1X15_REG_CONFIG_CPOL_ACTVLOW;      // Alert/Rdy active low   (default val) (0x0000)
-        //config |= ADS1X15_REG_CONFIG_CLAT_NONLAT;       // Non-latching (default val) (0x0000)
-        config |= ADS1X15_REG_CONFIG_CQUE_NONE;         // Disable the comparator (default val) (0x0003)
-        if (start) {
-            config |= ADS1X15_REG_CONFIG_OS_SINGLE;     // Start a single-conversion (0x8000)
-        }
-        if (continuous) {
-            //config |= ADS1X15_REG_CONFIG_MODE_CONTIN;   // Continuous mode (default) (0x0000)
-        } else {
-            config |= ADS1X15_REG_CONFIG_MODE_SINGLE;   // Single-shot mode (0x0100)
-        }
-        config |= ((channel + 4) << 12);                // Set single-ended input channel (0x4000 - 0x7000)
-
-        // Write config register to the ADC
-        i2c_write_uint16(_port->address(), ADS1X15_REG_POINTER_CONFIG, config);
-    }
-
     static double gainToReference(uint16_t gain) {
         switch (gain) {
         case ADS1X15_REG_CONFIG_PGA_6_144V:
@@ -293,8 +288,6 @@ private:
 
     PortPtr _port;
     unsigned char _channel { 0 };
-
-    uint16_t _gain { EMON_ADS1X15_GAIN };
 };
 
 #endif // SENSOR_SUPPORT && EMON_ADS1X15_SUPPORT

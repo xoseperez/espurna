@@ -488,6 +488,10 @@
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
 #endif
 
+#ifndef EMON_ADS1X15_DATARATE
+#define EMON_ADS1X15_DATARATE           ADS1X15_REG_CONFIG_DR_MASK
+#endif
+
 #ifndef EMON_ADS1X15_MASK
 #define EMON_ADS1X15_MASK               0x0F    // A0=1 aka 0b1
                                                 // A1=2 aka 0b10
