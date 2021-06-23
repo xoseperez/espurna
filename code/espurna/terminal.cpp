@@ -778,7 +778,7 @@ void terminalRegisterCommand(const __FlashStringHelper* name, terminal::Terminal
 };
 
 void terminalOK(Print& print) {
-    print.print(F("OK\n"));
+    print.print(F("+OK\n"));
 }
 
 void terminalError(Print& print, const String& error) {
