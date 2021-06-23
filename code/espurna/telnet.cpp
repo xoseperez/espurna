@@ -495,6 +495,10 @@ void _telnetNewClient(AsyncClient* client) {
 // Public API
 // -----------------------------------------------------------------------------
 
+uint16_t telnetPort() {
+    return TELNET_PORT;
+}
+
 bool telnetConnected() {
     for (auto& client : _telnetClients) {
         if (client && client->connected()) return true;
