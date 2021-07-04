@@ -449,32 +449,25 @@ function initSelectGPIO(select) {
 }
 
 function fillTemplateLineFromCfg(line, id, cfg) {
-    for (var [key, value] of Object.entries(cfg)) {
-        var span = $(`span.${key}`, line);
-        if (span.length) {
-            span.html(cfg[key]);
-            continue;
-        }
-
-        var input = $(`input[name='${key}']`, line);
-        if (input.length) {
-            if (input.is("[type='checkbox']")) {
-                var realId = key + id;
-                input.prop("checked", cfg[key])
-                    .attr("id", realId)
-                    .next().attr("for", realId);
-            } else {
-                input.val(cfg[key]);
+    $("input,select,span", line).each(function(_, elem) {
+        if (elem.name in cfg) {
+            switch (elem.tagName) {
+            case "INPUT":
+            case "SELECT":
+                elem.value = cfg[elem.name];
+                break;
+            case "SPAN":
+                elem.textContent = cfg[elem.name];
+                break;
             }
-            continue;
         }
 
-        var select = $(`select[name='${key}']`, line);
-        if (select.length) {
-            select.prop("value", cfg[key]);
-            continue;
+        if (elem.tagName === "INPUT" && elem.type === "checkbox") {
+            const realId = elem.name.concat(id);
+            elem.id = realId;
+            elem.nextElementSibling.htmlFor = realId;
         }
-    }
+    });
 
     setOriginalsFromValues($("input,select", line));
 }
