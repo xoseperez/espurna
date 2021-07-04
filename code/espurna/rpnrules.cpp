@@ -25,6 +25,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "wifi.h"
 #include "ws.h"
 
+#include <forward_list>
 #include <list>
 #include <type_traits>
 #include <vector>
@@ -110,6 +111,13 @@ void _rpnWebSocketOnConnected(JsonObject& root) {
 
 #if MQTT_SUPPORT
 
+struct RpnMqttVariable {
+    String name;
+    rpn_value value;
+};
+
+static std::forward_list<RpnMqttVariable> _rpn_mqtt_variables;
+
 void _rpnMQTTSubscribe() {
     unsigned char i = 0;
     String rpn_topic = getSetting({"rpnTopic", i});
@@ -132,10 +140,17 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
             if (rpn_topic.equals(topic)) {
                 String rpn_name = getSetting({"rpnName", i});
                 if (rpn_name.length()) {
-                    rpn_value value { atof(payload) };
-                    rpn_variable_set(_rpn_ctxt, rpn_name, value);
+                    for (auto& variable : _rpn_mqtt_variables) {
+                        if (variable.name == rpn_name) {
+                            variable.value = rpn_value{atof(payload)};
+                            return;
+                        }
+                    }
+
+                    _rpn_mqtt_variables.emplace_front(RpnMqttVariable{
+                            std::move(rpn_name), rpn_value{atof(payload)}});
                     _rpn_run = true;
-                    break;
+                    return;
                 }
             }
             rpn_topic = getSetting({"rpnTopic", ++i});
@@ -962,6 +977,13 @@ void _rpnRun() {
 
     _rpn_last = millis();
     _rpn_run = false;
+
+#if MQTT_SUPPORT
+    for (auto& variable : _rpn_mqtt_variables) {
+        rpn_variable_set(_rpn_ctxt, variable.name, variable.value);
+    }
+    _rpn_mqtt_variables.clear();
+#endif
 
     String rule;
     unsigned char i = 0;
