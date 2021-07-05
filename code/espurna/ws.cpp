@@ -289,29 +289,33 @@ bool _wsStore(const String& key, const String& value) {
 // Store indexed key (key0, key1, etc.) from array
 // -----------------------------------------------------------------------------
 
-bool _wsStore(const String& key, JsonArray& values) {
+bool _wsStore(const String& prefix, JsonArray& values) {
+    bool changed { false };
 
-    bool changed = false;
-
-    unsigned char index = 0;
+    size_t index { 0 };
     for (auto& element : values) {
         const auto value = element.as<String>();
-        auto setting = SettingsKey {key, index};
-        if (!hasSetting(setting) || value != getSetting(setting)) {
-            setSetting(setting, value);
+        const auto key = SettingsKey {prefix, index};
+
+        auto kv = settings::internal::get(key.value());
+        if (!kv || (value != kv.ref())) {
+            setSetting(key, value);
             changed = true;
         }
         ++index;
     }
 
-    // Delete further values
-    for (unsigned char next_index=index; next_index < SETTINGS_MAX_LIST_COUNT; ++next_index) {
-        if (!delSetting({key, next_index})) break;
+    // Remove every key with index greater than the array size
+    // TODO: should this be delegated to the modules, since they know better how much entities they could store?
+    constexpr size_t SettingsMaxListCount { SETTINGS_MAX_LIST_COUNT };
+    for (auto next_index = index; next_index < SettingsMaxListCount; ++next_index) {
+        if (!delSetting({prefix, next_index})) {
+            break;
+        }
         changed = true;
     }
 
     return changed;
-
 }
 
 bool _wsCheckKey(const String& key, JsonVariant& value) {
