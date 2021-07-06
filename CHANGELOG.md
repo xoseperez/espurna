@@ -209,6 +209,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Tweak analogRead() frequency in Emon sensor [c136678a](https://github.com/xoseperez/espurna/commit/c136678a4f02b7cae2e59fe843c3910a660f49d1)
 #### Terminal
 - Rework boot info and terminal commands [7ea73554](https://github.com/xoseperez/espurna/commit/7ea735548bcd41742fac32e8733b2084c4c334cd)
+#### RPN Rules
+- Set MQTT variables just before running the rules [32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509)
 #### WebUI
 - Use [iro.js](https://github.com/jaames/iro.js) as color picker [808981ca](https://github.com/xoseperez/espurna/commit/808981ca3938d11d4ddd87005e2881433cc7707b)
 - Use [terser](https://github.com/terser/terser) as js minifier, webui is no longer limited to ES5 feature set [cfd6e36d](https://github.com/xoseperez/espurna/commit/cfd6e36dbe94ee0e8098351357f903c060fd5dc9)

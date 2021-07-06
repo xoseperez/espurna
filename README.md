@@ -7,7 +7,6 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![ci build](https://github.com/xoseperez/espurna/workflows/ESPurna%20build/badge.svg?branch=dev)](https://github.com/xoseperez/espurna/actions)
-[![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 <br />
 [![latest master build](https://img.shields.io/github/release/xoseperez/espurna/all.svg?label=latest%20master%20build)](https://github.com/xoseperez/espurna/releases/latest)
 [![latest dev build](https://img.shields.io/github/release/mcspr/espurna-nightly-builder/all.svg?label=latest%20dev%20build)](https://github.com/mcspr/espurna-nightly-builder/releases)
@@ -84,6 +83,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Supports MQTT auto-discover feature (switches, lights and sensors)
     * Integration via MQTT Discover or copy-pasting configuration code
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
+* [**Prometheus**](https://prometheus.io/) metrics integration via HTTP API
 * [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
 * **Sonoff RF Bridge** support
     * Multiple virtual switches (tested with up to 16)
@@ -161,6 +161,11 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Works great behind a secured reverse proxy
 * **RPC API** (enable/disable from web interface)
     * Remote reset the board
+* **RPN Rules - on-device automation**
+    * Relays on/off/toggle
+    * Lights control
+    * Publish / subscribe to MQTT
+    * RF receiver integration
 * **Over-The-Air** (OTA) updates even for 1Mb boards
     * Manually from PlatformIO or Arduino IDE
     * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
@@ -173,7 +178,7 @@ Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a co
     * Shows debug info and allows to run terminal commands
 * **NTP** for time synchronization
     * Supports worldwide time zones
-    * Compatible with DST (EU and USA)
+    * Compatible with DST (based on [POSIX TZ variable](https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html) support)
 * **Unstable system check**
     * Detects unstable system (crashes on boot continuously) and defaults to a stable system
     * Only WiFi AP, OTA and Telnet available if system is flagged as unstable
