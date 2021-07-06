@@ -149,7 +149,6 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
 
                     _rpn_mqtt_variables.emplace_front(RpnMqttVariable{
                             std::move(rpn_name), rpn_value{atof(payload)}});
-                    _rpn_run = true;
                     return;
                 }
             }
@@ -966,6 +965,16 @@ void _rpnRunnersReset() {
 }
 
 void _rpnRun() {
+#if MQTT_SUPPORT
+    if (!_rpn_mqtt_variables.empty()) {
+        _rpn_run = true;
+    }
+
+    for (auto& variable : _rpn_mqtt_variables) {
+        rpn_variable_set(_rpn_ctxt, variable.name, variable.value);
+    }
+    _rpn_mqtt_variables.clear();
+#endif
 
     if (!_rpn_run) {
         return;
@@ -977,13 +986,6 @@ void _rpnRun() {
 
     _rpn_last = millis();
     _rpn_run = false;
-
-#if MQTT_SUPPORT
-    for (auto& variable : _rpn_mqtt_variables) {
-        rpn_variable_set(_rpn_ctxt, variable.name, variable.value);
-    }
-    _rpn_mqtt_variables.clear();
-#endif
 
     String rule;
     unsigned char i = 0;
