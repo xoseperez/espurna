@@ -1,0 +1,13 @@
+*.s#?
+*.b#?
+.modgit
+firmware*
+*.gch
+.pio*
+.clang_complete
+.gcc-flags.json
+.sconsign.dblite
+.python
+.env
+.DS_Store
+.vscode
