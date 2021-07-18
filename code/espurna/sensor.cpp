@@ -1142,26 +1142,30 @@ bool _sensorWebSocketOnKeyCheck(const char* key, JsonVariant&) {
 }
 
 // Used by modules to generate magnitude_id<->module_id mapping for the WebUI
+// WS produces tuples <prefix>Magnitudes that contain type, sensor's global index and module's index
+// Settings use <prefix>Magnitude<index_global> keys to allow us to retrieve module's index
 
 void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
+    const String wsKey = prefix + F("Magnitudes");
+    const String confKey = wsKey.substring(0, wsKey.length() - 1);
 
-    // ws produces flat list <prefix>Magnitudes
-    const String ws_name = prefix + "Magnitudes";
+    JsonObject& namedList = root.createNestedObject(wsKey);
 
-    // config uses <prefix>Magnitude<index> (cut 's')
-    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
+    static const char* const keys[] PROGMEM = {
+        "type", "index_global", "index_module"
+    };
 
-    JsonObject& list = root.createNestedObject(ws_name);
-    list["size"] = magnitudeCount();
+    JsonArray& schema = namedList.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
-    JsonArray& type = list.createNestedArray("type");
-    JsonArray& index = list.createNestedArray("index");
-    JsonArray& idx = list.createNestedArray("idx");
+    JsonArray& values = namedList.createNestedArray("values");
+    for (size_t index = 0; index < _magnitudes.size(); ++index) {
+        JsonArray& tuple = values.createNestedArray();
 
-    for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        type.add(magnitudeType(i));
-        index.add(magnitudeIndex(i));
-        idx.add(getSetting({conf_name, i}, 0));
+        auto& magnitude = _magnitudes[index];
+        tuple.add(magnitude.type);
+        tuple.add(magnitude.index_global);
+        tuple.add(getSetting({confKey, index}, 0));
     }
 }
 
@@ -1332,95 +1336,106 @@ String magnitudeName(unsigned char type) {
     return String(result);
 }
 
-void _sensorWebSocketOnVisible(JsonObject& root) {
+// prepare available magnitude, unit and error types
 
-    root["snsVisible"] = 1;
+void _sensorWebSocketTypes(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("types");
+    static const char* const keys[] PROGMEM = {
+        "type", "prefix", "name"
+    };
 
-    // prepare available magnitude types
-    JsonArray& magnitudes = root.createNestedArray("snsMagnitudes");
-    _magnitudeForEachCounted([&magnitudes](unsigned char type) {
-        JsonArray& tuple = magnitudes.createNestedArray();
-        tuple.add(type);
-        tuple.add(_magnitudeSettingsPrefix(type));
-        tuple.add(magnitudeName(type));
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& values = container.createNestedArray("values");
+    _magnitudeForEachCounted([&](unsigned char type) {
+        JsonArray& value = values.createNestedArray();
+        value.add(type);
+        value.add(_magnitudeSettingsPrefix(type));
+        value.add(magnitudeName(type));
     });
+}
 
-    // and available error types
-    JsonArray& errors = root.createNestedArray("snsErrors");
-    _sensorForEachError([&errors](unsigned char error) {
-        JsonArray& tuple = errors.createNestedArray();
-        tuple.add(error);
-        tuple.add(sensorError(error));
+void _sensorWebSocketErrors(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("errors");
+    static const char* const keys[] PROGMEM = {
+        "type", "name"
+    };
+
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& values = container.createNestedArray("values");
+    _sensorForEachError([&](unsigned char type) {
+        JsonArray& value = values.createNestedArray();
+        value.add(type);
+        value.add(sensorError(type));
     });
+}
 
+void _sensorWebSocketMagnitudes(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("magnitudes");
+    static const char* const keys[] PROGMEM = {
+        "index_global", "type", "units", "description"
+    };
+
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& values = container.createNestedArray("values");
+    for (auto& magnitude : _magnitudes) {
+        JsonArray& value = values.createNestedArray();
+        value.add(magnitude.index_global);
+        value.add(magnitude.type);
+        value.add(_magnitudeUnits(magnitude));
+        value.add(_magnitudeDescription(magnitude));
+    }
 }
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
-
-    JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
-    uint8_t size = 0;
-
-    JsonArray& index = magnitudes.createNestedArray("index");
-    JsonArray& type = magnitudes.createNestedArray("type");
-    JsonArray& units = magnitudes.createNestedArray("units");
-    JsonArray& description = magnitudes.createNestedArray("description");
-
-    for (auto& magnitude : _magnitudes) {
-
-        // TODO: we don't display event for some reason?
-        if (magnitude.type == MAGNITUDE_EVENT) continue;
-        ++size;
-
-        index.add<uint8_t>(magnitude.index_global);
-        type.add<uint8_t>(magnitude.type);
-        units.add(_magnitudeUnits(magnitude));
-        description.add(_magnitudeDescription(magnitude));
-
-    }
-
-    magnitudes["size"] = size;
-
+    JsonObject& container = root.createNestedObject("magnitudesConfig");
+    _sensorWebSocketTypes(container);
+    _sensorWebSocketErrors(container);
+    _sensorWebSocketMagnitudes(container);
 }
 
 void _sensorWebSocketSendData(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("magnitudes");
+    static const char* const keys[] PROGMEM = {
+        "value", "error", "info"
+    };
+
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
     char buffer[64];
-
-    JsonObject& magnitudes = root.createNestedObject("magnitudes");
-    uint8_t size = 0;
-
-    JsonArray& value = magnitudes.createNestedArray("value");
-    JsonArray& error = magnitudes.createNestedArray("error");
-    #if NTP_SUPPORT
-        JsonArray& info = magnitudes.createNestedArray("info");
-    #endif
-
+    JsonArray& values = container.createNestedArray("values");
     for (auto& magnitude : _magnitudes) {
-        if (magnitude.type == MAGNITUDE_EVENT) continue;
-        ++size;
-
+        JsonArray& entry = values.createNestedArray();
         dtostrf(_magnitudeProcess(magnitude, magnitude.last), 1, magnitude.decimals, buffer);
 
-        value.add(buffer);
-        error.add(magnitude.sensor->error());
+        entry.add(buffer);
+        entry.add(magnitude.sensor->error());
 
-        #if NTP_SUPPORT
-            if ((_sensor_save_every > 0) && (magnitude.type == MAGNITUDE_ENERGY)) {
-                String string = F("Last saved: ");
-                string += getSetting({"eneTime", magnitude.index_global}, F("(unknown)"));
-                info.add(string);
-            } else {
-                info.add((uint8_t)0);
-            }
-        #endif
+#if NTP_SUPPORT
+        if ((_sensor_save_every > 0) && (magnitude.type == MAGNITUDE_ENERGY)) {
+            String string = F("Last saved: ");
+            string += getSetting({"eneTime", magnitude.index_global}, F("(unknown)"));
+            entry.add(string);
+        } else {
+            entry.add("");
+        }
+#else
+        entry.add("");
+#endif
     }
+}
 
-    magnitudes["size"] = size;
-
+void _sensorWebSocketOnVisible(JsonObject& root) {
+    root["snsVisible"] = 1;
 }
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
-
     for (auto* sensor [[gnu::unused]] : _sensors) {
 
         if (_sensorIsEmon(sensor)) {
@@ -1481,7 +1496,6 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         root["snsSave"] = _sensor_save_every;
         _sensorWebSocketMagnitudesConfig(root);
     }
-
 }
 
 #endif // WEB_SUPPORT

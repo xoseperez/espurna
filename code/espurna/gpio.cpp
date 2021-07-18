@@ -16,6 +16,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "gpio_pin.h"
 #include "mcp23s08_pin.h"
 
+#include "ws.h"
+
 namespace settings {
 namespace internal {
 
@@ -151,5 +153,42 @@ BasePinPtr gpioRegister(unsigned char gpio) {
     return gpioRegister(hardwareGpio(), gpio);
 }
 
+#if WEB_SUPPORT
+
+void _gpioWebSocketOnVisible(JsonObject& root) {
+    JsonObject& config = root.createNestedObject("gpioConfig");
+
+    constexpr GpioType known_types[] {
+        GpioType::Hardware,
+#if MCP23S08_SUPPORT
+        GpioType::Mcp23s08,
+#endif
+    };
+
+    JsonArray& types = config.createNestedArray("types");
+
+    for (auto& type : known_types) {
+        auto* base = gpioBase(type);
+        if (base) {
+            JsonArray& entry = types.createNestedArray();
+            entry.add(base->id());
+            entry.add(static_cast<int>(type));
+
+            JsonArray& pins = config.createNestedArray(base->id());
+            for (unsigned char pin = 0; pin < base->pins(); ++pin) {
+                if (base->valid(pin)) {
+                    pins.add(pin);
+                }
+            }
+        }
+    }
+}
+
+#endif
+
 void gpioSetup() {
+#if WEB_SUPPORT
+    wsRegister()
+        .onVisible(_gpioWebSocketOnVisible);
+#endif
 }

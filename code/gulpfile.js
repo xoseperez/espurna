@@ -31,7 +31,6 @@ const path = require('path');
 const gulp = require('gulp');
 const through = require('through2');
 
-const htmllint = require('gulp-htmllint');
 const csslint = require('gulp-csslint');
 
 const htmlmin = require('html-minifier');
@@ -98,22 +97,6 @@ var toHeader = function(name, debug) {
 
     });
 
-};
-
-var htmllintReporter = function(filepath, issues) {
-    if (issues.length > 0) {
-        issues.forEach(function (issue) {
-            console.info(
-                '[gulp-htmllint] ' +
-                filepath + ' [' +
-                issue.line + ',' +
-                issue.column + ']: ' +
-                '(' + issue.code + ') ' +
-                issue.msg
-            );
-        });
-        process.exitCode = 1;
-    }
 };
 
 // TODO: this is a roughly equivalent port of the gulp-remove-code,
@@ -246,15 +229,6 @@ var buildWebUI = function(module) {
     }
 
     return gulp.src(htmlFolder + '*.html').
-        pipe(htmllint({
-            'failOnError': true,
-            'rules': {
-                'id-class-style': false,
-                'label-req-for': false,
-                'line-end-style': false,
-                'attr-req-value': false
-            }
-        }, htmllintReporter)).
         pipe(htmlRemover(modules)).
         pipe(inline({handlers: [inlineHandler(modules)]})).
         pipe(toMinifiedHtml({

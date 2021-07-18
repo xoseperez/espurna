@@ -1,13 +1,23 @@
 module.exports = {
     "env": {
-        "commonjs": true,
         "es2021": true,
-        "node": true
+        "browser": true
     },
-    "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 12
+        "ecmaVersion": 2021
+    },
+    "extends": [
+        "eslint:recommended"
+    ],
+    "globals": {
+        "document": "readonly",
+        "navigator": "readonly",
+        "window": "readonly",
+        "iro": "readonly"
     },
     "rules": {
+        "no-invalid-this": "error",
+        "eqeqeq": "error",
+        "prefer-arrow-callback": "error"
     }
 };

@@ -1183,20 +1183,26 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonObject& state = root.createNestedObject("relayState");
-    state["size"] = relayCount();
 
-    JsonArray& status = state.createNestedArray("status");
-    JsonArray& lock = state.createNestedArray("lock");
+    static const char* const keys[] PROGMEM {
+        "status", "lock"
+    };
+    JsonArray& schema = state.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
-    // Note: we use byte instead of bool to ever so slightly compress json output
-    auto relays = relayCount();
-    for (decltype(relays) id = 0; id < relays; ++id) {
-        status.add(_relays[id].target_status ? 1 : 0);
-        lock.add(static_cast<uint8_t>(_relays[id].lock));
+    // Byte instead of bool in case payload has lot of relays
+    JsonArray& relays = state.createNestedArray("states");
+
+    size_t Relays { relayCount() };
+    for (decltype(Relays) id = 0; id < Relays; ++id) {
+        JsonArray& relay = relays.createNestedArray();
+        relay.add(_relays[id].target_status ? 1 : 0);
+        relay.add(static_cast<uint8_t>(_relays[id].lock));
     }
 }
 
 void _relayWebSocketRelayConfig(JsonArray& relay, size_t id) {
+    relay.add(_relays[id].provider->id());
     relay.add(static_cast<uint8_t>(getSetting({"relayProv", id}, relay::build::provider(id))));
     relay.add(getSetting({"relayName", id}));
     relay.add(getSetting({"relayBoot", id}, relay::build::bootMode(id)));
@@ -1225,7 +1231,8 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     config["start"] = 0;
 
     {
-        static const char* const schema_keys[] PROGMEM = {
+        static const char* const keys[] PROGMEM = {
+            "relayDesc",
             "relayProv",
             "relayName",
             "relayBoot",
@@ -1240,19 +1247,13 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         };
 
         JsonArray& schema = config.createNestedArray("schema");
-        schema.copyFrom(schema_keys, sizeof(schema_keys) / sizeof(*schema_keys));
+        schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
     }
 
-    {
-        JsonArray& cfg = config.createNestedArray("cfg");
-        JsonArray& desc = config.createNestedArray("desc");
-
-        for (size_t id = 0; id < relayCount(); ++id) {
-            desc.add(_relays[id].provider->id());
-
-            JsonArray& relay = cfg.createNestedArray();
-            _relayWebSocketRelayConfig(relay, id);
-        }
+    JsonArray& relays = config.createNestedArray("relays");
+    for (size_t id = 0; id < relayCount(); ++id) {
+        JsonArray& relay = relays.createNestedArray();
+        _relayWebSocketRelayConfig(relay, id);
     }
 }
 
@@ -1272,21 +1273,14 @@ void _relayWebSocketOnConnected(JsonObject& root) {
     _relayWebSocketSendRelays(root);
 }
 
-void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-
-    if (strcmp(action, "relay") != 0) return;
-
-    if (data.containsKey("status")) {
-
-        unsigned int relayID = 0;
-        if (data.containsKey("id") && data.is<int>("id")) {
-            relayID = data["id"];
+void _relayWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
+    if (strcmp(action, "relay") == 0) {
+        if (!data.is<size_t>("id") || !data.is<String>("status")) {
+            return;
         }
 
-        _relayHandlePayload(relayID, data["status"].as<const char*>());
-
+        _relayHandlePayload(data["id"].as<size_t>(), data["status"].as<String>().c_str());
     }
-
 }
 
 void relaySetupWS() {

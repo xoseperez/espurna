@@ -344,15 +344,14 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 
 void _rfbWebSocketSendCodeArray(JsonObject& root, size_t start, size_t size) {
     JsonObject& rfb = root.createNestedObject("rfb");
-    rfb["size"] = size;
     rfb["start"] = start;
 
-    JsonArray& on = rfb.createNestedArray("on");
-    JsonArray& off = rfb.createNestedArray("off");
+    JsonArray& codes = rfb.createNestedArray("codes");
 
     for (auto id = start; id < (start + size); ++id) {
-        on.add(rfbRetrieve(id, true));
-        off.add(rfbRetrieve(id, false));
+        JsonArray& pair = codes.createNestedArray();
+        pair.add(rfbRetrieve(id, false));
+        pair.add(rfbRetrieve(id, true));
     }
 }
 

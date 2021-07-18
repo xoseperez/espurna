@@ -1,30 +1,67 @@
-var debug = false;
-var websock;
-var password = false;
-var maxNetworks;
-var free_size = 0;
+var Debug = false;
 
-var urls = {};
+class UrlsBase {
+    constructor(root) {
+        this.root = root;
 
-var numChanged = 0;
-var numReboot = 0;
-var numReconnect = 0;
-var numReload = 0;
-var configurationSaved = false;
-var ws_pingpong;
+        const paths = ["ws", "upgrade", "config", "auth"];
+        paths.forEach((path) => {
+            this[path] = new URL(path, root);
+            this[path].protocol = root.protocol;
+        });
+
+        if (this.root.protocol === "https:") {
+            this.ws.protocol = "wss:";
+        } else {
+            this.ws.protocol = "ws:";
+        }
+    }
+}
+
+var Urls = null;
+
+var WebsockPingPong = null;
+var Websock = {
+    send: function() {
+    },
+    close: function() {
+    }
+};
+
+class SettingsBase {
+    constructor() {
+        this.counters = {};
+        this.counters.changed = 0;
+        this.counters.reboot = 0;
+        this.counters.reconnect = 0;
+        this.counters.reload = 0;
+        this.saved = false;
+    }
+
+    resetCounters() {
+        this.counters.changed = 0;
+        this.counters.reboot = 0;
+        this.counters.reconnect = 0;
+        this.counters.reload = 0;
+    }
+}
+
+var Settings = new SettingsBase();
+
+var Enumerable = {};
+
+var FreeSize = 0;
+var Now = 0;
+var Ago = 0;
 
 //removeIf(!light)
-var colorPicker;
-var useWhite = false;
-var useCCT = false;
+var ColorPicker;
 //endRemoveIf(!light)
 
-var now = 0;
-var ago = 0;
-
 //removeIf(!rfm69)
-var packets;
-var filters = [];
+var Rfm69 = {
+    filters: {}
+};
 //endRemoveIf(!rfm69)
 
 //removeIf(!sensor)
@@ -39,25 +76,38 @@ var MagnitudePrefixTypes = {};
 // Utils
 // -----------------------------------------------------------------------------
 
-$.fn.enterKey = function (fnc) {
-    return this.each(function () {
-        $(this).keypress(function (ev) {
-            var keycode = parseInt(ev.keyCode ? ev.keyCode : ev.which, 10);
-            if (13 === keycode) {
-                return fnc.call(this, ev);
-            }
-        });
-    });
-};
+function notifyError(message, source, lineno, colno, error) {
+    let container = document.getElementById("error-notification");
+    if (container.childElementCount > 0) {
+        return;
+    }
 
-function followScroll(id, threshold) {
+    container.style.display = "inherit";
+    container.style.whiteSpace = "pre-wrap";
+
+    let notification = document.createElement("div");
+    notification.classList.add("pure-u-1");
+    notification.classList.add("pure-u-lg-1");
+    if (error) {
+        notification.textContent += error.stack;
+    } else {
+        notification.textContent += message;
+    }
+    notification.textContent += "\n\nFor more info see the Developer Tools console.";
+    container.appendChild(notification);
+
+    return false;
+}
+
+window.onerror = notifyError;
+
+function followScroll(elem, threshold) {
     if (threshold === undefined) {
         threshold = 90;
     }
 
-    var elem = document.getElementById(id);
-    var offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
-    if (offset > threshold) {
+    const offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
+    if (!threshold || (offset >= threshold)) {
         elem.scrollTop = elem.scrollHeight;
     }
 }
@@ -68,7 +118,7 @@ function fromSchema(source, schema) {
     }
 
     var target = {};
-    schema.forEach(function(key, index) {
+    schema.forEach((key, index) => {
         target[key] = source[index];
     });
 
@@ -76,17 +126,39 @@ function fromSchema(source, schema) {
 }
 
 function keepTime() {
+    document.querySelector("span[data-key='ago']").textContent = Ago;
+    ++Ago;
 
-    $("span[name='ago']").html(ago);
-    ago++;
+    if (0 === Now) {
+        return;
+    }
 
-    if (0 === now) { return; }
-    var date = new Date(now * 1000);
-    var text = date.toISOString().substring(0, 19).replace("T", " ");
-    $("input[name='now']").val(text);
-    $("span[name='now']").html(text);
-    now++;
+    let text = (new Date(Now * 1000))
+        .toISOString().substring(0, 19)
+        .replace("T", " ");
 
+    document.querySelector("span[data-key='now']").textContent = text;
+    ++Now;
+}
+
+function setUptime(value) {
+    let uptime = parseInt(value, 10);
+
+    let seconds = uptime % 60;
+    uptime = parseInt(uptime / 60, 10);
+
+    let minutes = uptime % 60;
+    uptime = parseInt(uptime / 60, 10);
+
+    let hours = uptime % 24;
+    uptime = parseInt(uptime / 24, 10);
+
+    let days = uptime;
+
+    let container = document.querySelector("span[data-key='uptime']");
+    container.textContent = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
+
+    Ago = 0;
 }
 
 function zeroPad(number, positions) {
@@ -102,148 +174,299 @@ function validatePassword(password) {
     // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
     // https://github.com/xoseperez/espurna/issues/1151
 
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
+    const Pattern = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*()<>,.?;:{}[\]\\|]{8,63}t/;
     return (
         (password !== undefined)
         && (typeof password === "string")
         && (password.length > 0)
-        && re_password.test(password)
-    );
+        && Pattern.test(password));
 }
 
-function validateFormPasswords(form) {
-    var passwords = $("input[name='adminPass0'],input[name='adminPass1']", form);
-    var adminPass1 = passwords.first().val(),
-        adminPass2 = passwords.last().val();
+// Try to validate 'adminPass{0,1}', searching the first form containing both.
+// In case we on normal settings page, avoid checking things when both fields were not changed
+// Allow to enforce validation for the setup page
+function validateFormPasswords(forms, required) {
+    let [passwords] = Array.from(forms).filter(
+        form => form.elements.adminPass0 && form.elements.adminPass1);
 
-    var formValidity = passwords.first()[0].checkValidity();
-    if (formValidity && (adminPass1.length === 0) && (adminPass2.length === 0)) {
-        return true;
-    }
+    if (passwords) {
+        let first = passwords.elements.adminPass0;
+        let second = passwords.elements.adminPass1;
 
-    var validPass1 = validatePassword(adminPass1),
-        validPass2 = validatePassword(adminPass2);
+        if (!required && !first.value.length && !second.value.length) {
+            return true;
+        }
 
-    if (formValidity && validPass1 && validPass2) {
-        return true;
-    }
+        let firstValid = first.checkValidity() && validatePassword(first.value);
+        let secondValid = second.checkValidity() && validatePassword(second.value);
+        if (firstValid && secondValid) {
+            if (first.value === second.value) {
+                return true;
+            }
 
-    if (!formValidity || (adminPass1.length > 0 && !validPass1)) {
+            alert("Passwords are different!");
+            return false;
+        }
+
         alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
     }
 
-    if (adminPass1 !== adminPass2) {
-        alert("Passwords are different!");
-    }
-
     return false;
 }
 
-function validateFormHostname(form) {
-    // RFCs mandate that a hostname's labels may contain only
-    // the ASCII letters 'a' through 'z' (case-insensitive),
-    // the digits '0' through '9', and the hyphen.
+// Same as above, but only applies to the general settings page.
+// Find the first available form that contains 'hostname' input
+function validateFormHostname(forms) {
+    // per. [RFC1035](https://datatracker.ietf.org/doc/html/rfc1035)
+    // Hostname may contain:
+    // - the ASCII letters 'a' through 'z' (case-insensitive),
+    // - the digits '0' through '9', and the hyphen.
     // Hostname labels cannot begin or end with a hyphen.
     // No other symbols, punctuation characters, or blank spaces are permitted.
-
-    // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
-
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
-
-    var hostname = $("input[name='hostname']", form);
-    if ("true" !== hostname.attr("hasChanged")) {
+    let [hostname] = Array.from(forms).filter(form => form.elements.hostname);
+    if (!hostname) {
         return true;
     }
 
-    if (re_hostname.test(hostname.val())) {
-        return true;
+    // Validation pattern is attached to the element itself, so just check that.
+    // (and, we also re-use the hostname for fallback SSID, thus limited to 1...32 chars instead of 1...63)
+
+    hostname = hostname.elements.hostname;
+    let result = hostname.value.length
+        && (!isChangedElement(hostname) || hostname.checkValidity());
+
+    if (!result) {
+        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
     }
 
-    alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
-
-    return false;
+    return result;
 }
 
-function validateForm(form) {
-    return validateFormPasswords(form) && validateFormHostname(form);
+function validateForms(forms) {
+    return validateFormPasswords(forms) && validateFormHostname(forms);
 }
 
-// Observe all group settings to selectively update originals based on the current data
-var groupSettingsObserver = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        // If any new elements are added, set "settings-target" element as changed to forcibly send the data
-        var targets = $(mutation.target).attr("data-settings-target");
-        if (targets !== undefined) {
-            mutation.addedNodes.forEach(function(node) {
-                var overrides = [];
-                targets.split(" ").forEach(function(target) {
-                    var elem = $("[name='" + target + "']", node);
-                    if (!elem.length) return;
+// Right now, group additions happen from:
+// - WebSocket, likely to happen exactly once per connection through processData handler(s). Specific keys trigger functions that append into the container element.
+// - User input. Same functions are triggered, but with an additional event for the container element that causes most recent element to be marked as changed.
+// Removal only happens from user input. MutationObserver will refresh checkboxes and cause everything to be marked as changed.
+//
+// TODO: distinguish 'current' state to avoid sending keys when adding and immediatly removing the latest node?
+// TODO: previous implementation relied on defaultValue and / or jquery $(...).val(), but this does not really work where 'line' only has <select>
 
-                    var value = getValue(elem);
-                    if ((value === null) || (value === elem[0].defaultValue)) {
-                        overrides.push(elem);
-                    }
-                });
-                setOriginalsFromValues($("input,select", node));
-                overrides.forEach(function(elem) {
-                    elem.attr("hasChanged", "true");
-                    if (elem.prop("tagName") === "SELECT") {
-                        elem.prop("value", 0);
-                    }
-                });
-            });
+function groupSettingsHandleUpdate(event) {
+    if (!event.target.children.length) {
+        return;
+    }
+
+    let last = event.target.children[event.target.children.length - 1];
+    for (let target of settingsTargets(event.target)) {
+        let elem = last.querySelector(`[name='${target}']`);
+        if (elem) {
+            setChangedElement(elem);
+        }
+    }
+}
+
+function groupSettingsOnAdd(elementId, listener) {
+    document.getElementById(elementId).addEventListener("settings-group-add", listener);
+}
+
+var GroupSettingsObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (isChangedElement(mutation.target) || mutation.removedNodes.length) {
+            setChangedForNode(mutation.target);
         }
 
-        // If anything was removed, forcibly send **all** of the group to avoid having any outdated keys
-        // TODO: hide instead of remove?
-        var changed = $(mutation.target).attr("hasChanged") === "true";
-        if (changed || mutation.removedNodes.length) {
-            $(mutation.target).attr("hasChanged", "true");
-            $("input,select", mutation.target.childNodes).attr("hasChanged", "true");
+        if (mutation.removedNodes.length) {
+            updateCheckboxes(mutation.target);
         }
     });
 });
 
-function bitsetToValues(bitset) {
-    var values = [];
-    for (var index = 0; index < 31; ++index) {
+// When receiving / returning data, <select multiple=true> <option> values are treated as bitset (u32) indexes (i.e. individual bits that are set)
+// For example 0b101 is translated to ["0", "2"], or 0b1111 is translated to ["0", "1", "2", "3"]
+
+function bitsetToSelectedValues(bitset) {
+    let values = [];
+    for (let index = 0; index < 31; ++index) {
         if (bitset & (1 << index)) {
-            values.push(String(index));
+            values.push(index.toString());
         }
     }
 
     return values;
 }
 
-function valuesToBitset(values) {
-    var result = 0;
-    for (var value of values) {
-        result |= 1 << parseInt(value);
+function bitsetFromSelectedValues(select) {
+    let result = 0;
+    for (let option of select.selectedOptions) {
+        result |= 1 << parseInt(option.value);
     }
 
     return result;
 }
 
-function getValue(element) {
+// <select data-original="..."> is read / saved as:
+// - multiple=false -> value string of the selected option
+// - multiple=true -> comma-separated values of all selected options
+//
+// If selectedIndex is -1, it means we never selected anything
+// (TODO: could this actually happen with defaultValue'ed <select>?)
 
-    if ($(element).attr("type") === "checkbox") {
-        return $(element).prop("checked") ? 1 : 0;
-    } else if ($(element).attr("type") === "radio") {
-        if (!$(element).prop("checked")) {
-            return null;
-        }
-    } else if ($(element).attr("multiple") !== undefined) {
-        return valuesToBitset($(element).val());
+function stringifySelectedValues(select) {
+    if (select.multiple) {
+        return Array.from(select.selectedOptions)
+            .map(option => option.value)
+            .join(",");
+    } else if (select.selectedIndex >= 0) {
+        return select.options[select.selectedIndex].value;
     }
 
-    return $(element).val();
-
+    return "";
 }
 
-function getData(form, changed, cleanup) {
+function elementSelectorListener(selector, event, listener) {
+    for (let elem of document.querySelectorAll(selector)) {
+        elem.addEventListener(event, listener);
+    }
+}
 
+function elementSelectorOnClick(selector, listener) {
+    elementSelectorListener(selector, "click", listener);
+}
+
+function isChangedElement(elem) {
+    return "true" === elem.dataset["changed"];
+}
+
+function setChangedElement(elem) {
+    elem.dataset["changed"] = "true";
+}
+
+function setChangedForNode(node) {
+    setChangedElement(node);
+    for (let elem of node.querySelectorAll("input,select")) {
+        setChangedElement(elem);
+    }
+}
+
+function resetChangedElement(elem) {
+    elem.dataset["changed"] = "false";
+}
+
+function resetChangedGroups() {
+    const elems = document.getElementsByClassName("settings-group");
+    for (let elem of elems) {
+        resetChangedElement(elem);
+    }
+}
+
+function isGroupElement(elem) {
+    return elem.dataset["settingsGroupElement"] !== undefined;
+}
+
+function isIgnoredElement(elem) {
+    return elem.dataset["settingsIngore"] !== undefined;
+}
+
+function settingsTargets(elem) {
+    let targets = elem.dataset["settingsTarget"];
+    if (!targets) {
+        return [];
+    }
+
+    return targets.split(" ");
+}
+
+function stringToBoolean(value) {
+    return (value === "1")
+        || (value === "y")
+        || (value === "yes")
+        || (value === "true")
+        || (value === "on");
+}
+
+function booleanToString(value) {
+    return value ? "true" : "false";
+}
+
+function setInputValue(input, value) {
+    switch (input.type) {
+    case "checkbox":
+    case "radio":
+        input.checked =
+            (typeof(value) === "boolean") ? value :
+            (typeof(value) === "string") ? stringToBoolean(value) :
+            (typeof(value) === "number") ? (value !== 0) : false;
+        break;
+    case "text":
+    case "password":
+    case "number":
+        input.value = value;
+        break;
+    }
+}
+
+function setSpanValue(span, value) {
+    if (Array.isArray(value)) {
+        value.forEach((text) => {
+            setSpanValue(span, text);
+            span.appendChild(document.createElement("br"));
+        });
+    } else {
+        let content = "";
+        if (span.attributes.pre) {
+            content += span.attributes.pre.value;
+        }
+        content += value;
+        if (span.attributes.post) {
+            content += span.attributes.post.value;
+        }
+        span.textContent = content;
+    }
+}
+
+function setSelectValue(select, value) {
+    let values = select.multiple
+        ? bitsetToSelectedValues(value)
+        : [value.toString()];
+
+    Array.from(select.options)
+        .filter((option) => values.includes(option.value))
+        .forEach((option) => {
+            option.selected = true;
+        });
+}
+
+function getDataForElement(element) {
+    switch (element.tagName) {
+    case "INPUT":
+        switch (element.type) {
+        case "checkbox":
+        case "radio":
+            return element.checked ? 1 : 0;
+        case "number":
+        case "text":
+        case "password":
+        case "hidden":
+        case "range":
+            // notice that we set directly to storage, thus strings are just fine
+            return element.value;
+        }
+        break;
+    case "SELECT":
+        if (element.multiple) {
+            return bitsetFromSelectedValues(element);
+        } else if (element.selectedIndex >= 0) {
+            return element.options[element.selectedIndex].value;
+        }
+    }
+
+    return null;
+}
+
+function getData(forms, changed, cleanup) {
     // Populate two sets of data, ones that had been changed and ones that stayed the same
     var data = {};
     var changed_data = [];
@@ -255,49 +478,47 @@ function getData(form, changed, cleanup) {
         changed = true;
     }
 
-    $("input,select", form).each(function() {
-        if ($(this).attr("data-settings-ignore") === "true") {
-            return;
-        }
-
-        var name = $(this).attr("name");
-        if (name === undefined) {
-            return;
-        }
-
-        var real_name = $(this).attr("data-settings-real-name");
-        if (real_name !== undefined) {
-            name = real_name;
-        }
-
-        var value = getValue(this);
-        if (null !== value) {
-            var haschanged = ("true" === $(this).attr("hasChanged"));
-            var indexed = changed_data.indexOf(name) >= 0;
-
-            if ((haschanged || !changed) && !indexed) {
-                changed_data.push(name);
+    for (let form of forms) {
+        for (let elem of form.elements) {
+            if ((elem.tagName !== "SELECT") && (elem.tagName !== "INPUT")) {
+                continue;
             }
 
-            // make sure to group keys from templates (or, manually flagged as such)
-            var is_group = $(this).attr("data-settings-group") !== undefined;
-            if (is_group) {
-                if (name in data) {
-                    data[name].push(value);
-                } else {
-                    data[name] = [value];
+            if (isIgnoredElement(elem)) {
+                continue;
+            }
+
+            if (elem.name === undefined) {
+                continue;
+            }
+
+            let name = elem.dataset["settingsRealName"] || elem.name;
+            let value = getDataForElement(elem);
+            if (null !== value) {
+                var indexed = changed_data.indexOf(name) >= 0;
+                if ((isChangedElement(elem) || !changed) && !indexed) {
+                    changed_data.push(name);
                 }
-            } else {
-                data[name] = value;
+
+                // make sure to group keys from templates (or, manually flagged as such)
+                if (isGroupElement(elem)) {
+                    if (name in data) {
+                        data[name].push(value);
+                    } else {
+                        data[name] = [value];
+                    }
+                } else {
+                    data[name] = value;
+                }
             }
         }
-    });
+    }
 
     // Finally, filter out only fields that had changed.
     // Note: We need to preserve dynamic lists like schedules, wifi etc.
     // so we don't accidentally break when user deletes entry in the middle
     var resulting_data = {};
-    for (var value in data) {
+    for (let value in data) {
         if (changed_data.indexOf(value) >= 0) {
             resulting_data[value] = data[value];
         }
@@ -306,19 +527,13 @@ function getData(form, changed, cleanup) {
     // Hack: clean-up leftover arrays.
     // When empty, the receiving side will prune all keys greater than the current one.
     if (cleanup) {
-        $(".settings-group").each(function() {
-            let haschanged = ("true" === $(this).attr("hasChanged"));
-            if (haschanged && !this.children.length) {
-                let targets = $(this).attr("data-settings-target");
-                if (targets === undefined) {
-                    return;
-                }
-
-                targets.split(" ").forEach(function(target) {
+        for (let group of document.getElementsByClassName("settings-group")) {
+            if (isChangedElement(group) && !group.children.length) {
+                settingsTargets(group).forEach((target) => {
                     resulting_data[target] = [];
                 });
             }
-        });
+        }
     }
 
     return resulting_data;
@@ -345,24 +560,21 @@ function randomString(length, args) {
     var source = new Uint32Array(length);
     var result = new Array(length);
 
-    window.crypto.getRandomValues(source).forEach(function(value, i) {
+    window.crypto.getRandomValues(source).forEach((value, i) => {
         result[i] = mask[value % mask.length];
     });
 
     return result.join("");
 }
 
-function generateAPIKey() {
-    var apikey = randomString(16, {hex: true});
-    $("input[name='apiKey']")
-        .val(apikey)
-        .attr("original", "-".repeat(16))
-        .attr("haschanged", "true");
-    return false;
+function generateApiKey() {
+    let elem = document.forms["form-admin"].elements.apiKey;
+    elem.value = randomString(16, {hex: true});
+    setChangedElement(elem);
 }
 
 function generatePassword() {
-    var password = "";
+    let password = "";
     do {
         password = randomString(10);
     } while (!validatePassword(password));
@@ -370,96 +582,160 @@ function generatePassword() {
     return password;
 }
 
-function toggleVisiblePassword() {
-    var elem = this.previousElementSibling;
+function toggleVisiblePassword(event) {
+    let elem = event.target.previousElementSibling;
     if (elem.type === "password") {
         elem.type = "text";
     } else {
         elem.type = "password";
     }
-    return false;
 }
 
 function doGeneratePassword() {
-    var elems = $("input", $("#formPassword"));
-    elems
-        .val(generatePassword())
-        .attr("haschanged", "true")
-        .each(function() {
-            this.type = "text";
-        });
-    return false;
+    let value = generatePassword();
+
+    let input = document.getElementById("form-setup-password");
+    for (let elem of [input.elements.adminPass0, input.elements.adminPass1]) {
+        setChangedElement(elem);
+        elem.type = "text";
+        elem.value = value;
+    }
 }
 
 function moduleVisible(module) {
-    if (module == "sch") {
-        $("li.module-" + module).css("display", "inherit");
-        $("div.module-" + module).css("display", "flex");
-        return;
-    }
-    $(".module-" + module).css("display", "inherit");
-}
-
-//removeIf(!thermostat)
-function checkTempRangeMin() {
-    var min = parseInt($("#tempRangeMinInput").val(), 10);
-    var max = parseInt($("#tempRangeMaxInput").val(), 10);
-    if (min > max - 1) {
-        $("#tempRangeMinInput").val(max - 1);
-    }
-}
-
-function checkTempRangeMax() {
-    var min = parseInt($("#tempRangeMinInput").val(), 10);
-    var max = parseInt($("#tempRangeMaxInput").val(), 10);
-    if (max < min + 1) {
-        $("#tempRangeMaxInput").val(min + 1);
+    const elems = document.getElementsByClassName(`module-${module}`);
+    for (let elem of elems) {
+        if (module === "sch") {
+            switch (elem.tagName) {
+            case "LI":
+                elem.style.display = "inherit";
+                break;
+            case "DIV":
+                elem.style.display = "flex";
+                break;
+            }
+        } else {
+            elem.style.display = "inherit";
+        }
     }
 }
 
-function doResetThermostatCounters(ask) {
-    var question = (typeof ask === "undefined" || false === ask) ?
-        null :
-        "Are you sure you want to reset burning counters?";
-    return doAction(question, "thermostat_reset_counters");
-}
-//endRemoveIf(!thermostat)
+// <select> initialization from simple {id: ..., name: ...} that map as <option> value=... and textContent
+// To avoid depending on order of incoming messages, always store real value inside of dataset["original"] and provide a way to re-initialize every 'enumerable' <select> element on the page
+//
+// Notice that <select multiple> input and output format is u32 number, but the 'original' string is comma-separated <option> value=... attributes
 
-function initSelectGPIO(select) {
-    // TODO: properly lock used GPIOs via locking and apply the mask here
-    var mapping = [
-        [153, "NONE"],
-        [0, "0 (FLASH)"],
-        [1, "1 (U0TXD)"],
-        [2, "2 (U1TXD)"],
-        [3, "3 (U0RXD)"],
-        [4, "4 (SDA)"],
-        [5, "5 (SCL)"],
-        [9, "9 (SDD2)"],
-        [10, "10 (SDD3)"],
-        [12, "12 (MTDI)"],
-        [13, "13 (MTCK)"],
-        [14, "14 (MTMS)"],
-        [15, "15 (MTDO)"],
-        [16, "16 (WAKE)"],
-    ];
-    for (n in mapping) {
-        var elem = $('<option value="' + mapping[n][0] + '">');
-        elem.html(mapping[n][1]);
-        elem.appendTo(select);
+function initSelect(select, values) {
+    for (let value of values) {
+        let option = document.createElement("option");
+        option.setAttribute("value", value["id"]);
+        option.textContent = value["name"];
+        select.appendChild(option);
     }
 }
+
+function initEnumerableSelect(select, callback) {
+    for (let className of select.classList) {
+        const prefix = "enumerable-";
+        if (className.startsWith(prefix)) {
+            const name = className.replace(prefix, "");
+            if ((Enumerable[name] !== undefined) && Enumerable[name].length) {
+                callback(select, Enumerable[name]);
+            }
+            break;
+        }
+    }
+}
+
+function refreshEnumerableSelect(name) {
+    const selector = (name !== undefined)
+        ? `select.enumerable.enumerable-${name}`
+        : "select.enumerable";
+
+    for (let select of document.querySelectorAll(selector)) {
+        initEnumerableSelect(select, (_, enumerable) => {
+            while (select.childElementCount) {
+                select.removeChild(select.firstElementChild);
+            }
+
+            initSelect(select, enumerable);
+
+            let original = select.dataset["original"];
+            if (original && original.length) {
+                let options = original.split(",");
+                for (let option of options) {
+                    select.options[option].selected = true;
+                }
+            }
+        });
+    }
+}
+
+function addEnumerables(name, enumerables) {
+    Enumerable[name] = enumerables;
+    refreshEnumerableSelect(name);
+}
+
+function addSimpleEnumerables(name, prettyName, count) {
+    if (count) {
+        let enumerables = [];
+        for (let id = 0; id < count; ++id) {
+            enumerables.push({"id": id, "name": `${prettyName} #${id}`});
+        }
+
+        addEnumerables(name, enumerables);
+    }
+}
+
+// Handle plain kv pairs when they are already on the page, and don't need special template handlers
+// Notice that <span> uses a custom data attribute data-key=..., instead of name=...
+
+function initGenericKeyValueElement(key, value) {
+    let span = document.querySelector(`span[data-key='${key}']`);
+    if (span) {
+        setSpanValue(span, value);
+    }
+
+    let inputs = [];
+    for (let elem of document.querySelectorAll(`[name='${key}'`)) {
+        switch (elem.tagName) {
+        case "INPUT":
+            setInputValue(elem, value);
+            inputs.push(elem);
+            break;
+        case "SELECT":
+            setSelectValue(elem, value);
+            inputs.push(elem);
+            break;
+        }
+    }
+
+    setOriginalsFromValues(inputs);
+}
+
+// Or, handle special id-counted 'line' that was created from template
+// Optional cfg kv object that will be used to pull values for input / select / span
+//
+// Additional handler for checkbox elements, since we need a document-wide unique id=...
+// (also see {create,update}Checkboxes())
 
 function fillTemplateLineFromCfg(line, id, cfg) {
-    $("input,select,span", line).each(function(_, elem) {
-        if (elem.name in cfg) {
+    if (cfg === undefined) {
+        cfg = {};
+    }
+
+    for (let elem of line.querySelectorAll("input,select,span")) {
+        let key = elem.name || elem.dataset.key;
+        if (key && (key in cfg)) {
             switch (elem.tagName) {
             case "INPUT":
+                setInputValue(elem, cfg[key]);
+                break;
             case "SELECT":
-                elem.value = cfg[elem.name];
+                setSelectValue(elem, cfg[key]);
                 break;
             case "SPAN":
-                elem.textContent = cfg[elem.name];
+                setSpanValue(elem, cfg[key]);
                 break;
             }
         }
@@ -469,63 +745,116 @@ function fillTemplateLineFromCfg(line, id, cfg) {
             elem.id = realId;
             elem.nextElementSibling.htmlFor = realId;
         }
-    });
+    }
 
-    setOriginalsFromValues($("input,select", line));
+    setOriginalsFromValuesForNode(line);
+}
+
+
+function delParent(event) {
+    event.target.parentElement.remove();
+}
+
+function moreParentElem(parent) {
+    for (let elem of parent.querySelectorAll(".more")) {
+        elem.style.display = (elem.style.display === "")
+            ? "inherit" : "";
+    }
+}
+
+function moreParent(event) {
+    moreParentElem(event.target.parentElement.parentElement);
+}
+
+function idForTemplateContainer(container) {
+    let id = container.childElementCount;
+
+    let settingsMax = container.dataset["settingsMax"];
+    if (settingsMax === undefined) {
+        return id;
+    }
+
+    let max = parseInt(settingsMax, 10);
+    if (id < max) {
+        return id;
+    }
+    
+    alert(`Max number of ${container.id} has been reached (${id} out of ${max})`);
+    return -1;
 }
 
 // -----------------------------------------------------------------------------
 // Actions
 // -----------------------------------------------------------------------------
 
-function send(json) {
-    if (debug) console.log(json);
-    websock.send(json);
+function send(payload) {
+    if (Debug) {
+        console.log(payload);
+    }
+    Websock.send(payload);
 }
+
+// RPC-like actions
 
 function sendAction(action, data) {
-    send(JSON.stringify({action: action, data: data}));
+    send(JSON.stringify({action, data}));
 }
 
-function sendConfig(data) {
-    send(JSON.stringify({config: data}));
+// Settings kv as either {key: value} or {key: [value0, value1, ...etc...]}
+
+function sendConfig(config) {
+    send(JSON.stringify({config}));
+}
+
+// Track with <input> and <select> elements were received via the WebSocket
+// Generic change handler below will compare the user input with the original value, allowing to send configuration in parts instead of all of it at once.
+
+function setOriginalsFromValuesForNode(node, elems) {
+    if (elems === undefined) {
+        elems = [...node.querySelectorAll("input,select")];
+    }
+
+    for (let elem of elems) {
+        switch (elem.tagName) {
+        case "INPUT":
+            if ((elem.type === "checkbox") || (elem.type === "radio")) {
+                elem.dataset["original"] = booleanToString(elem.checked);
+            } else {
+                elem.dataset["original"] = elem.value;
+            }
+            break;
+        case "SELECT":
+            elem.dataset["original"] = stringifySelectedValues(elem);
+            break;
+        }
+        resetChangedElement(elem);
+    }
 }
 
 function setOriginalsFromValues(elems) {
-    if (typeof elems == "undefined") {
-        elems = $("input,select");
-    }
-    elems.each(function() {
-        var value;
-        if ($(this).attr("type") === "checkbox") {
-            value = $(this).prop("checked");
-        } else {
-            value = $(this).val();
-        }
-        $(this).attr("original", value);
-        hasChanged.call(this);
-    });
+    setOriginalsFromValuesForNode(document, elems);
 }
 
 function resetOriginals() {
     setOriginalsFromValues();
-    $(".settings-group").attr("haschanged", "false")
-    numReboot = numReconnect = numReload = 0;
-    configurationSaved = false;
+    resetChangedGroups();
+    Settings.resetCounters();
+    Settings.saved = false;
 }
 
 function doReload(milliseconds) {
-    setTimeout(function() {
+    setTimeout(() => {
         window.location.reload();
     }, parseInt(milliseconds, 10));
 }
 
-/**
- * Check a file object to see if it is a valid firmware image
- * The file first byte should be 0xE9
- * @param  {file}       file        File object
- * @param  {Function}   callback    Function to call back with the result
- */
+// Check whether the file object contains some known bytes
+// - handle magic numbers at the start
+// - handle SDK flash modes (and compare with the current one)
+//
+// Result is handled through callback:
+// - success as callback(true)
+// - failure as callback(false)
 function checkFirmware(file, callback) {
 
     var reader = new FileReader();
@@ -560,22 +889,22 @@ function checkFirmware(file, callback) {
 
 }
 
-function doUpgrade() {
+function doUpgrade(event) {
+    event.preventDefault();
 
-    var file = $("input[name='upgrade']")[0].files[0];
-
+    let upgrade = document.querySelector("input[name='upgrade']");
+    let file = upgrade.files[0];
     if (typeof file === "undefined") {
         alert("First you have to select a file from your computer.");
-        return false;
+        return;
     }
 
-    if (file.size > free_size) {
+    if (file.size > FreeSize) {
         alert("Image it too large to fit in the available space for OTA. Consider doing a two-step update.");
-        return false;
+        return;
     }
 
-    checkFirmware(file, function(ok) {
-
+    checkFirmware(file, (ok) => {
         if (!ok) {
             return;
         }
@@ -594,8 +923,9 @@ function doUpgrade() {
         xhr.addEventListener("error", network_error, false);
         xhr.addEventListener("abort", network_error, false);
 
-        xhr.addEventListener("load", function(e) {
-            $("#upgrade-progress").hide();
+        let progress = document.getElementById("upgrade-progress");
+        xhr.addEventListener("load", () => {
+            progress.style.display = "none";
             if ("OK" === xhr.responseText) {
                 alert(msg_ok);
                 doReload(5000);
@@ -604,86 +934,73 @@ function doUpgrade() {
             }
         }, false);
 
-        xhr.upload.addEventListener("progress", function(e) {
-            $("#upgrade-progress").show();
-            if (e.lengthComputable) {
-                $("progress").attr({ value: e.loaded, max: e.total });
+        xhr.upload.addEventListener("progress", (event) => {
+            progress.style.display = "inherit";
+            if (event.lengthComputable) {
+                progress.value = event.loaded;
+                progress.max = event.total;
             }
         }, false);
 
-        xhr.open("POST", urls.upgrade.href);
+        xhr.open("POST", Urls.upgrade.href);
         xhr.send(data);
-
     });
-
-    return false;
-
 }
 
-function doUpdatePassword() {
-    var form = $("#formPassword");
-    if (validateFormPasswords(form)) {
-        sendConfig(getData(form, true, false));
+// Initial page, when webMode only allows to change the password
+function doSetupPassword(event) {
+    let forms = [document.forms["form-setup-password"]];
+    if (validateFormPasswords(forms, true)) {
+        sendConfig(getData(forms, true, false));
     }
-    return false;
+
+    event.preventDefault();
 }
 
 function checkChanges() {
-
-    if (numChanged > 0) {
+    if (Settings.counters.changed > 0) {
         var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
         if (response) {
             doUpdate();
         }
     }
-
 }
 
-function doAction(question, action) {
+function doAction(event, question, action) {
+    event.preventDefault();
 
     checkChanges();
-
-    if (question) {
-        var response = window.confirm(question);
-        if (false === response) {
-            return false;
-        }
+    if (question && !window.confirm(question)) {
+        return;
     }
 
     sendAction(action, {});
     doReload(5000);
-    return false;
-
 }
 
-function doReboot(ask) {
-
-    var question = (typeof ask === "undefined" || false === ask) ?
-        null :
-        "Are you sure you want to reboot the device?";
-    return doAction(question, "reboot");
-
+function doReboot(event) {
+    doAction(event, "Are you sure you want to reboot the device?", "reboot");
 }
 
 function doReconnect(ask) {
-
     var question = (typeof ask === "undefined" || false === ask) ?
         null :
         "Are you sure you want to disconnect from the current WIFI network?";
     return doAction(question, "reconnect");
-
 }
 
 function doCheckOriginals() {
     var response;
 
-    if (numReboot > 0) {
+    if (Settings.counters.reboot > 0) {
         response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-        if (response) { doReboot(false); }
-    } else if (numReconnect > 0) {
+        if (response) {
+            doReboot(false);
+        }
+    } else if (Settings.counters.reconnect > 0) {
         response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
         if (response) { doReconnect(false); }
-    } else if (numReload > 0) {
+    } else if (Settings.counters.reload > 0) {
         response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
         if (response) { doReload(0); }
     }
@@ -692,7 +1009,7 @@ function doCheckOriginals() {
 }
 
 function waitForSave(){
-    if (!configurationSaved) {
+    if (!Settings.saved) {
         setTimeout(waitForSave, 1000);
     } else {
         doCheckOriginals();
@@ -700,46 +1017,51 @@ function waitForSave(){
 }
 
 function doUpdate() {
-
     // Since we have 2-page config, make sure we select the active one
-    var forms = $(".form-settings");
-    if (validateForm(forms)) {
-
+    let forms = document.getElementsByClassName("form-settings");
+    if (validateForms(forms)) {
         sendConfig(getData(forms));
 
 //removeIf(!sensor)
         // Energy reset is handled via these keys
         // TODO: replace these with actions, not settings
-        $(".pwrExpected").val(0);
-        $("input[name='snsResetCalibration']").prop("checked", false);
-        $("input[name='pwrResetCalibration']").prop("checked", false);
-        $("input[name='pwrResetE']").prop("checked", false);
+        for (let elem of document.getElementsByClassName("pwrExpected")) {
+            elem.value = 0;
+        }
+
+        for (let form of document.forms) {
+            if (form.elements.snsResetCalibration) {
+                form.elements.snsResetCalibration.checked = false;
+            }
+            if (form.elements.pwrResetCalibration) {
+                form.elements.pwrResetCalibration.checked = false;
+            }
+            if (form.elements.pwrResetE) {
+                form.elements.pwrResetE.checked = false;
+            }
+        }
 //endRemoveIf(!sensor)
 
-        numChanged = 0;
+        Settings.counters.changed = 0;
         waitForSave();
-
     }
 
     return false;
-
 }
 
 function doBackup() {
-    document.getElementById("downloader").src = urls.config.href;
-    return false;
+    document.getElementById("downloader").click();
 }
 
 function onFileUpload(event) {
-
-    var inputFiles = this.files;
+    var inputFiles = event.target.files;
     if (typeof inputFiles === "undefined" || inputFiles.length === 0) {
         return false;
     }
     var inputFile = inputFiles[0];
-    this.value = "";
+    event.target.value = "";
 
-    var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore this settings?");
+    var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore from this file?");
     if (!response) {
         return false;
     }
@@ -755,263 +1077,298 @@ function onFileUpload(event) {
     };
     reader.readAsText(inputFile);
 
-    return false;
-
+    event.preventDefault();
 }
 
-function doRestore() {
-    if (typeof window.FileReader !== "function") {
-        alert("The file API isn't supported on this browser yet.");
+function doRestore(event) {
+    if (typeof window.FileReader === "function") {
+        document.getElementById("uploader").click();
     } else {
-        $("#uploader").click();
+        alert("The file API isn't supported on this browser yet.");
     }
-    return false;
+    event.preventDefault();
 }
 
-function doFactoryReset() {
-    var response = window.confirm("Are you sure you want to restore to factory settings?");
-    if (!response) {
-        return false;
+function doFactoryReset(event) {
+    let response = window.confirm("Are you sure you want to restore to factory settings?");
+    if (response) {
+        sendAction("factory_reset", {});
+        doReload(5000);
     }
-    sendAction("factory_reset", {});
-    doReload(5000);
-    return false;
+    event.preventDefault();
 }
 
-function doToggle(id, value) {
-    sendAction("relay", {id: id, status: value ? 1 : 0 });
-    return false;
-}
+function doScan(event) {
+    let [results] = document.getElementById("scanResult").tBodies;
+    while (results.rows.length) {
+        results.deleteRow(0);
+    }
 
-function doScan() {
-    $("#scanResult > tbody").html("");
-    $("div.scan.loading").show();
-    $("#button-wifi-scan").attr("disabled", true);
+    let loading = document.querySelector("div.scan.loading");
+    loading.style.display = "inherit";
+
+    for (let button of document.querySelectorAll(".button-wifi-scan")) {
+        button.disabled = true;
+    }
+
     sendAction("scan", {});
-    return false;
+    event.preventDefault();
 }
 
-function doDebugCommand() {
-    var el = $("input[name='dbgcmd']");
-    var command = el.val();
-    el.val("");
+function doDebugCommand(command) {
     sendAction("dbgcmd", {command: command});
-    followScroll("weblog", 0);
-    return false;
+    followScroll(document.getElementById("weblog"), 0);
 }
 
-function doDebugClear() {
-    $("#weblog").text("");
-    return false;
+function doDebugClear(event) {
+    let elem = document.getElementById("weblog");
+    elem.textContent = "";
+    event.preventDefault();
 }
 
 //removeIf(!rfm69)
 
-function doClearCounts() {
-    sendAction("clear-counts", {});
+function rfm69AddMapping(cfg) {
+    addFromTemplate(document.getElementById("rfm69-mapping"), "rfm69-node", cfg);
+}
+
+function rfm69Messages() {
+    let [body] = document.getElementById("rfm69-messages").tBodies;
+    return body;
+}
+
+function rfm69AddMessage(message) {
+    let timestamp = (new Date()).toLocaleTimeString("en-US", {hour12: false});
+
+    let container = rfm69Messages();
+    let row = container.insertRow();
+    for (let value of [timestamp, ...message]) {
+        let cell = row.insertCell();
+        cell.appendChild(document.createTextNode(value));
+        rfm69FilterRow(Rfm69.filters, row);
+    }
+}
+
+function rfm69ClearCounters() {
+    sendAction("rfm69Clear", {});
     return false;
 }
 
-function doClearMessages() {
-    packets.clear().draw(false);
+function rfm69ClearMessages() {
+    let container = rfm69Messages();
+    while (container.rows.length) {
+        container.deleteRow(0);
+    }
     return false;
 }
 
-function doFilter(e) {
-    var index = packets.cell(this).index();
-    if (index == 'undefined') return;
-    var c = index.column;
-    var column = packets.column(c);
-    if (filters[c]) {
-        filters[c] = false;
-        column.search("");
-        $(column.header()).removeClass("filtered");
+function rfm69FilterRow(filters, row) {
+    row.style.display = "table-row";
+    for (const [cell, filter] of Object.entries(filters)) {
+        if (row.cells[cell].textContent !== filter) {
+            row.style.display = "none";
+        }
+    }
+}
+
+function rfm69Filter(filters, rows) {
+    for (let row of rows) {
+        rfm69FilterRow(filters, row);
+    }
+}
+
+function rfm69FilterEvent(event) {
+    if (event.target.classList.contains("filtered")) {
+        delete Rfm69.filters[event.target.cellIndex];
     } else {
-        filters[c] = true;
-        var data = packets.row(this).data();
-        if (e.which == 1) {
-            column.search('^' + data[c] + '$', true, false );
-        } else {
-            column.search('^((?!(' + data[c] + ')).)*$', true, false );
-        }
-        $(column.header()).addClass("filtered");
+        Rfm69.filters[event.target.cellIndex] = event.target.textContent;
     }
-    column.draw();
-    return false;
+    event.target.classList.toggle("filtered");
+
+    rfm69Filter(Rfm69.filters, rfm69Messages().rows);
 }
 
-function doClearFilters() {
-    for (var i = 0; i < packets.columns()[0].length; i++) {
-        if (filters[i]) {
-            filters[i] = false;
-            var column = packets.column(i);
-            column.search("");
-            $(column.header()).removeClass("filtered");
-            column.draw();
-        }
+function rfm69ClearFilters() {
+    let container = rfm69Messages();
+    for (let elem of container.querySelectorAll("filtered")) {
+        elem.classList.remove("filtered");
     }
-    return false;
+
+    Rfm69.filters = {};
+    rfm69Filter(Rfm69.filters, container.rows);
 }
 
 //endRemoveIf(!rfm69)
-
-function delParent() {
-    var parent = $(this).parent().parent();
-    $(parent).remove();
-}
 
 // -----------------------------------------------------------------------------
 // Visualization
 // -----------------------------------------------------------------------------
 
-function toggleMenu() {
-    $("#layout").toggleClass("active");
-    $("#menu").toggleClass("active");
-    $("#menuLink").toggleClass("active");
+function toggleMenu(event) {
+    if (event !== undefined && event.cancelable) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    for (const id of ["layout", "menu", "menu-link"]) {
+        document.getElementById(id).classList.toggle("active");
+    }
 }
 
-function showPanel() {
-    $(".panel").hide();
-    if ($("#layout").hasClass("active")) { toggleMenu(); }
-    $("#" + $(this).attr("data")).show();
+function showPanel(event) {
+    for (let panel of document.querySelectorAll(".panel")) {
+        panel.style.display = "none";
+    }
+
+    let layout = document.getElementById("layout");
+    if ("active" in layout.classList) {
+        toggleMenu();
+    }
+
+    let panel = event.target.dataset["panel"];
+    document.getElementById(`panel-${panel}`).style.display = "inherit";
+
+    event.preventDefault();
+    event.stopPropagation();
 }
 
 function loadTemplate(name) {
-    let template = $(`#${name}.template`);
-    let clone = $(template).clone();
-    return clone.children();
+    let template = document.getElementById(`template-${name}`);
+    return document.importNode(template.content, true);
 }
 
-function loadConfigTemplate(name) {
-    let template = loadTemplate(name);
-    $("input,select", template)
-        .attr("data-settings-group", "");
+function loadConfigTemplate(id) {
+    let template = loadTemplate(id);
+    for (let elem of template.querySelectorAll("input,select")) {
+        elem.dataset["settingsGroupElement"] = "true";
+    }
+
+    for (let elem of template.querySelectorAll("button.button-del-parent")) {
+        elem.addEventListener("click", delParent);
+    }
+
+    for (let elem of template.querySelectorAll("button.button-more-parent")) {
+        elem.addEventListener("click", moreParent);
+    }
+
+    for (let elem of template.querySelectorAll("select.enumerable")) {
+        initEnumerableSelect(elem, initSelect);
+    }
+
+    createCheckboxes(template);
     return template;
+}
+
+function mergeTemplate(target, template) {
+    for (let child of Array.from(template.children)) {
+        target.appendChild(child);
+    }
+}
+
+function addFromTemplate(container, template, cfg) {
+    let line = loadConfigTemplate(template);
+    fillTemplateLineFromCfg(line, container.childElementCount, cfg);
+
+    mergeTemplate(container, line);
 }
 
 // -----------------------------------------------------------------------------
 // Relays & magnitudes mapping
 // -----------------------------------------------------------------------------
 
-function createRelayList(data, container, template_name) {
+function createRelayList(values, container, template_name) {
+    let target = document.getElementById(container);
+    if (target.childElementCount > 0) { return; }
 
-    var current = $("#" + container + " > div").length;
-    if (current > 0) { return; }
+    let template = loadConfigTemplate(template_name);
+    values.forEach((value, index) => {
+        let line = template.cloneNode(true);
+        line.querySelector("label").textContent += " #".concat(index)
 
-    var template = loadConfigTemplate(template_name);
-    for (var i in data) {
-        var line = $(template).clone();
-        $("label", line).html("Switch #" + i);
-        $("input", line).val(data[i]);
-        setOriginalsFromValues($("input", line));
-        line.appendTo("#" + container);
-    }
+        let input = line.querySelector("input");
+        input.value = value;
+        input.dataset["original"] = value;
 
+        mergeTemplate(target, line);
+    });
 }
 
 //removeIf(!sensor)
+//
 function createMagnitudeList(data, container, template_name) {
+    let target = document.getElementById(container);
+    if (target.childElementCount > 0) { return; }
 
-    var current = $("#" + container + " > div").length;
-    if (current > 0) { return; }
+    data.values.forEach((values) => {
+        let [type, index_global, index_module] = values;
 
-    var template = loadConfigTemplate(template_name);
-    var size = data.size;
+        let line = loadConfigTemplate(template_name);
+        line.querySelector("label").textContent =
+            MagnitudeNames[type].concat(" #").concat(parseInt(index_global, 10));
+        line.querySelector("div.hint").textContent =
+            Magnitudes[index_global].description;
 
-    for (var i=0; i<size; ++i) {
-        var line = $(template).clone();
-        $("label", line).html(MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(Magnitudes[i].description);
-        $("input", line).val(data.idx[i]);
-        setOriginalsFromValues($("input", line));
-        line.appendTo("#" + container);
-    }
+        let input = line.querySelector("input");
+        input.value = index_module;
+        input.dataset["original"] = input.value;
 
+        mergeTemplate(target, line);
+    });
 }
+
 //endRemoveIf(!sensor)
-
-function addFromTemplate(template, target) {
-    var line = loadConfigTemplate(template);
-    $("button", line)
-        .on('click', delParent);
-    setOriginalsFromValues($("input", line));
-    line.appendTo("#" + target);
-}
 
 // -----------------------------------------------------------------------------
 // RPN Rules
 // -----------------------------------------------------------------------------
 
-function addRPNRule() {
-    addFromTemplate("rpnRuleTemplate", "rpnRules");
+function rpnAddRule(cfg) {
+    addFromTemplate(document.getElementById("rpn-rules"), "rpn-rule", cfg);
 }
 
-function addRPNTopic() {
-    addFromTemplate("rpnTopicTemplate", "rpnTopics");
+function rpnAddTopic(cfg) {
+    addFromTemplate(document.getElementById("rpn-topics"), "rpn-topic", cfg);
 }
-
-// -----------------------------------------------------------------------------
-// RFM69
-// -----------------------------------------------------------------------------
-
-//removeIf(!rfm69)
-
-function addMapping() {
-    addFromTemplate("nodeTemplate", "mapping");
-}
-
-//endRemoveIf(!rfm69)
 
 // -----------------------------------------------------------------------------
 // Wifi
 // -----------------------------------------------------------------------------
 
-function numNetworks() {
-    return $("#networks > div").length;
-}
+function networkAdd(cfg, showMore) {
+    let container = document.getElementById("networks");
 
-function delNetwork() {
-    var parent = $(this).parents(".pure-g");
-    $(parent).remove();
-}
-
-function moreNetwork() {
-    var parent = $(this).parents(".pure-g");
-    $(".more", parent).toggle();
-}
-
-function addNetwork(network) {
-
-    var id = numNetworks();
-    if (id >= maxNetworks) {
-        alert("Max number of networks reached");
-        return null;
+    let id = idForTemplateContainer(container);
+    if (id < 0) {
+        return;
     }
 
-    if (network === undefined) {
-        network = {};
+    if (showMore === undefined) {
+        showMore = true;
     }
 
-    var line = loadConfigTemplate("networkTemplate");
-    $(".password-reveal", line).on("click", toggleVisiblePassword);
-    $(line).find(".button-del-network").on("click", delNetwork);
-    $(line).find(".button-more-network").on("click", moreNetwork);
+    let line = loadConfigTemplate("network-config");
+    fillTemplateLineFromCfg(line, id, cfg);
+    if (showMore) {
+        moreParentElem(line);
+    }
 
-    fillTemplateLineFromCfg(line, id, network);
-    line.appendTo("#networks");
-
-    return line;
-
+    mergeTemplate(container, line);
+    return;
 }
 
-function scanResult(values) {
-    $("div.scan.loading").hide();
-    $("#button-wifi-scan").attr("disabled", false);
+function networkScanResult(values) {
+    let loading = document.querySelector("div.scan.loading");
+    loading.style.display = "none";
+
+    for (let button of document.querySelectorAll(".button-wifi-scan")) {
+        button.disabled = false;
+    }
 
     let table = document.getElementById("scanResult");
     table.style.display = "table";
 
-    let row = table.tBodies[0].insertRow();
+    let [results] = table.tBodies;
+    let row = results.insertRow();
     for (let value of values) {
         let cell = row.insertCell();
         cell.appendChild(document.createTextNode(value));
@@ -1019,164 +1376,154 @@ function scanResult(values) {
 }
 
 // -----------------------------------------------------------------------------
-// Relays scheduler
+// Simple LEDs configuration
 // -----------------------------------------------------------------------------
 
-function addLed(id, cfg, payload) {
-    var line = loadConfigTemplate("ledConfigTemplate");
+function ledAdd(cfg) {
+    let container = document.getElementById("leds");
+
+    let id = idForTemplateContainer(container);
+    if (id < 0) {
+        return;
+    }
+
+    let line = loadConfigTemplate("led-config");
+    line.querySelector("span").textContent = id;
+    fillTemplateLineFromCfg(line, id, cfg);
+
+    mergeTemplate(container, line);
+}
+
+// -----------------------------------------------------------------------------
+// Date and time scheduler
+// -----------------------------------------------------------------------------
+
+function schAdd(cfg) {
+    if (cfg.schType === undefined) {
+        return;
+    }
+
+    let container = document.getElementById("schedules");
+
+    let id = idForTemplateContainer(container);
+    if (id < 0) {
+        return;
+    }
+
+    let line = loadConfigTemplate("schedule-config");
+
+    const type = (cfg.schType === 1) ? "relay" :
+        (cfg.schType === 2) ? "light" :
+        (cfg.schType === 3) ? "curtain" :
+        "none";
+    if (type !== "none") {
+        mergeTemplate(line.querySelector(".schedule-action"),
+            loadConfigTemplate("schedule-action-".concat(type)));
+    }
 
     fillTemplateLineFromCfg(line, id, cfg);
-    $("span.id", line)
-        .html(id);
-
-    line.appendTo("#ledConfig");
-}
-
-// -----------------------------------------------------------------------------
-// Relays scheduler
-// -----------------------------------------------------------------------------
-
-function numSchedules() {
-    return $("#schedules > div").length;
-}
-
-function maxSchedules() {
-    var value = $("#schedules").attr("data-settings-max");
-    return parseInt(value === undefined ? 0 : value, 10);
-}
-
-function delSchedule() {
-    var parent = $(this).parents(".pure-g");
-    $(parent).remove();
-}
-
-function moreSchedule() {
-    var parent = $(this).parents(".pure-g");
-    $("div.more", parent).toggle();
-}
-
-function addSchedule(cfg, payload) {
-
-    var id = numSchedules();
-    if (id >= maxSchedules()) {
-        alert("Max number of schedules reached");
-        return null;
-    }
-
-    if (cfg === undefined) {
-        return null;
-    }
-
-    if (payload === undefined) {
-        payload = {};
-    }
-
-    var line = loadConfigTemplate("scheduleTemplate");
-
-    var type = "none";
-    switch(cfg.schType) {
-    case 1:
-        type = "switch";
-        break;
-    case 2:
-        type = "light";
-        break;
-    case 3:
-        type = "curtain";
-        break;
-    }
-
-    $("#schActionDiv", line)
-        .append(loadConfigTemplate(type + "ActionTemplate"));
-
-    $(".button-del-schedule", line)
-        .on("click", delSchedule);
-    $(".button-more-schedule", line)
-        .on("click", moreSchedule);
-
-    $("input[type='checkbox']", line)
-        .prop("checked", false);
-
-    fillTemplateLineFromCfg(line, id, cfg);
-    line.appendTo("#schedules");
-
-    return line;
-
+    mergeTemplate(container, line);
+    return;
 }
 
 // -----------------------------------------------------------------------------
 // Relays
 // -----------------------------------------------------------------------------
 
-function initRelay(id, cfg, payload) {
-    var line = loadConfigTemplate("relayTemplate");
-    $("span.relayName", line)
-        .text(cfg.relayName)
-        .attr("data-id", id)
-        .attr("title", payload["desc"][id]);
+function relayToggle(event) {
+    sendAction("relay", {
+        id: parseInt(event.target.dataset["id"], 10),
+        status: event.target.checked ? "1" : "0"});
+    event.preventDefault();
+}
 
-    $("input[type='checkbox']", line)
-        .prop('checked', false)
-        .prop('disabled', true)
-        .attr("data-id", id)
-        .prop("id", "relay" + id)
-        .on("change", function (event) {
-            var target= parseInt($(event.target).attr("data-id"), 10);
-            var status = $(event.target).prop("checked");
-            doToggle(target, status);
-        });
+function initRelayToggle(id, cfg) {
+    let line = loadConfigTemplate("relay-control");
 
-    $("label.toggle", line)
-        .prop("for", "relay" + id);
+    let name = line.querySelector("span[data-key='relayName']");
+    name.textContent = cfg.relayName;
+    name.dataset["id"] = id;
+    name.setAttribute("title", cfg.relayDesc);
 
-    line.appendTo("#relays");
+    let realId = "relay".concat(id);
+
+    let toggle = line.querySelector("input[type='checkbox']");
+    toggle.checked = false;
+    toggle.disabled = true;
+    toggle.dataset["id"] = id;
+    toggle.addEventListener("change", relayToggle);
+
+    toggle.setAttribute("id", realId);
+    toggle.nextElementSibling.setAttribute("for", realId);
+
+    mergeTemplate(document.getElementById("relays"), line);
 }
 
 function updateRelays(data) {
-    var size = data.size;
-    for (var i=0; i<size; ++i) {
-        var elem = $("input[name='relay'][data-id='" + i + "']");
-        elem.prop("checked", data.status[i]);
-        var lock = {
+    data.states.forEach((state, id) => {
+        const relay = fromSchema(state, data.schema);
+
+        let elem = document.querySelector(`input[name='relay'][data-id='${id}']`);
+        elem.checked = relay.status;
+        elem.disabled = ({
             0: false,
-            1: !data.status[i],
-            2: data.status[i]
-        };
-        elem.prop("disabled", lock[data.lock[i]]); // RELAY_LOCK_DISABLED=0
+            1: !relay.status,
+            2: relay.status
+        })[relay.lock]; // TODO: specify lock statuses earlier?
+    });
+}
+
+// TODO: per https://www.chromestatus.com/feature/6140064063029248, using <base target="_blank"> should be enough with recent browsers
+// but, side menu needs to be reworked for it to correctly handle panel switching, since it uses <a href="#" ...>
+// TODO: also could be done in htmlparser2 + gulp (even, preferably)
+
+function initExternalLinks() {
+    for (let elem of document.getElementsByClassName("external")) {
+        if (elem.tagName === "A") {
+            elem.setAttribute("target", "_blank");
+            elem.setAttribute("rel", "noopener");
+            elem.setAttribute("tabindex", "-1");
+        }
     }
 }
 
-function createCheckboxes() {
+// TODO: ids are generated based on the current position of the element
+// when removing nodes, id=... and label for=... must remain unique, thus everything needs to be reset
+// based on the new number and position of nodes
 
-    $("input[type='checkbox']").each(function() {
-        let name = $(this).prop("name")
-        if ($(this).prop("name")) {
-            $(this).prop("id", $(this).prop("name"));
-        }
+function createCheckboxes(node) {
+    let checkboxes = node.querySelectorAll("input[type='checkbox']");
+    for (let checkbox of checkboxes) {
+        checkbox.id = checkbox.name;
+        checkbox.parentElement.classList.add("toggleWrapper");
 
-        $(this)
-            .parent().addClass("toggleWrapper");
-        $(this)
-            .after('<label for="' + $(this).prop("name") + '" class="toggle"><span class="toggle__handler"></span></label>')
+        let label = document.createElement("label");
+        label.classList.add("toggle");
+        label.htmlFor = checkbox.id;
 
-    });
+        let span = document.createElement("span");
+        span.classList.add("toggle__handler");
+        label.appendChild(span);
 
+        checkbox.parentElement.appendChild(label);
+    }
 }
 
-function initRelayConfig(id, cfg, payload) {
-    var line = loadConfigTemplate("relayConfigTemplate");
+function updateCheckboxes(node) {
+    for (let id = 0; id < node.childElementCount; ++id) {
+        let schedule = node.children[id];
+        for (let checkbox of schedule.querySelectorAll("input[type='checkbox']")) {
+            let realId = checkbox.name.concat(id);
+            checkbox.setAttribute("id", realId);
+            checkbox.nextElementSibling.setAttribute("for", realId);
+        }
+    }
+}
+
+function initRelayConfig(id, cfg) {
+    let line = loadConfigTemplate("relay-config");
     fillTemplateLineFromCfg(line, id, cfg);
-
-    line.appendTo("#relayConfig");
-
-    // Populate the relay SELECTs on the configuration panel
-    // TODO right now this is only the Scheduler, consider moving it there?
-    // right now this modifies template + anything that happened to be added
-    // into the document
-    $("select.isrelay").append(
-        $("<option></option>")
-            .attr("value", id)
-            .text(cfg.relayName));
+    mergeTemplate(document.getElementById("relayConfig"), line);
 }
 
 // -----------------------------------------------------------------------------
@@ -1184,32 +1531,91 @@ function initRelayConfig(id, cfg, payload) {
 // -----------------------------------------------------------------------------
 
 //removeIf(!sensor)
+
 function initMagnitudes(data) {
-
-    // check if already initialized (each magnitude is inside div.pure-g)
-    var done = $("#magnitudes > div").length;
-    if (done > 0) { return; }
-
-    var size = data.size;
-
-    for (var i=0; i<size; ++i) {
-        var magnitude = {
-            "name": MagnitudeNames[data.type[i]] + " #" + parseInt(data.index[i], 10),
-            "units": data.units[i],
-            "description": data.description[i]
-        };
-        Magnitudes.push(magnitude);
-
-        var line = loadConfigTemplate("magnitudeTemplate");
-        $("label", line).html(magnitude.name);
-        $("input", line).attr("data", i);
-        $("div.sns-desc", line).html(magnitude.description);
-        $("div.sns-info", line).hide();
-        line.appendTo("#magnitudes");
+    let container = document.getElementById("magnitudes");
+    if (container.childElementCount > 0) {
+        return;
     }
 
+    data.types.values.forEach((cfg) => {
+        const info = fromSchema(cfg, data.types.schema);
+        MagnitudeNames[info.type] = info.name;
+        MagnitudeTypePrefixes[info.type] = info.prefix;
+        MagnitudePrefixTypes[info.prefix] = info.type;
+    });
+
+    data.errors.values.forEach((cfg) => {
+        const error = fromSchema(cfg, data.errors.schema);
+        MagnitudeErrors[error.type] = error.name;
+    });
+
+    data.magnitudes.values.forEach((cfg, index) => {
+        const magnitude = fromSchema(cfg, data.magnitudes.schema);
+
+        const prettyName = MagnitudeNames[magnitude.type]
+            .concat(" #").concat(parseInt(magnitude.index_global, 10));
+        Magnitudes.push({
+            name: prettyName,
+            units: magnitude.units,
+            description: magnitude.description
+        });
+
+        let info = loadTemplate("magnitude-info");
+        info.querySelector("label").textContent = prettyName;
+        info.querySelector("input").dataset["id"] = index;
+        info.querySelector("input").dataset["type"] = magnitude.type;
+        info.querySelector("div.sns-desc").textContent = magnitude.description;
+        info.querySelector("div.sns-info").style.display = "none";
+
+        mergeTemplate(container, info);
+    });
 }
+
+function updateMagnitudes(data) {
+    data.values.forEach((cfg, id) => {
+        const magnitude = fromSchema(cfg, data.schema);
+
+        let input = document.querySelector(`input[name='magnitude'][data-id='${id}']`);
+        input.value = (0 === magnitude.error)
+            ? (magnitude.value + Magnitudes[id].units)
+            : MagnitudeErrors[magnitude.error];
+
+        if (magnitude.info.length) {
+            let info = input.parentElement.parentElement.querySelector("div.sns-info");
+            info.style.display = "inherit";
+            info.textContent = magnitude.info;
+        }
+
+    });
+}
+
 //endRemoveIf(!sensor)
+
+// -----------------------------------------------------------------------------
+// Thermostat
+// -----------------------------------------------------------------------------
+
+//removeIf(!thermostat)
+
+function thermostatCheckTempRange(event) {
+    const min = document.getElementById("tempRangeMinInput");
+    const max = document.getElementById("tempRangeMaxInput");
+
+    if (event.target.id === max.id) {
+        const maxValue = parseInt(max.value, 10) - 1;
+        if (parseInt(min.value, 10) > maxValue) {
+            min.value = maxValue;
+        }
+    } else {
+        const minValue = parseInt(min.value, 10) + 1;
+        if (parseInt(max.value, 10) < minValue) {
+            max.value = minValue;
+        }
+    }
+}
+
+//endRemoveIf(!thermostat)
 
 // -----------------------------------------------------------------------------
 // Curtains
@@ -1217,50 +1623,108 @@ function initMagnitudes(data) {
 
 //removeIf(!curtain)
 
-//Create the controls for one curtain. It is called when curtain is updated (so created the first time)
-//Let this there as we plan to have more than one curtain per switch
-function initCurtain(data) {
+function curtainButtonHandler(event) {
+    if (event.type !== "click") {
+        return;
+    }
 
-    var current = $("#curtains > div").length;
-    if (current > 0) { return; }
+    let code = -1;
 
-    // add and init curtain template, prepare multi switches
-    var line = loadConfigTemplate("curtainTemplate");
-    $(line).find(".button-curtain-open").on("click", function() {
-        sendAction("curtainAction", {button: 1});
-        $(this).css('background', 'red');
-    });
-    $(line).find(".button-curtain-pause").on("click", function() {
-        sendAction("curtainAction", {button: 0});
-        $(this).css('background', 'red');
-    });
-    $(line).find(".button-curtain-close").on("click", function() {
-        sendAction("curtainAction", {button: 2});
-        $(this).css('background', 'red');
-    });
-    line.appendTo("#curtains");
+    let list = event.target.classList;
+    if (list.contains("button-curtain-pause")) {
+        code = 0;
+    } else if (list.contains("button-curtain-open")) {
+        code = 1;
+    } else if (list.contains("button-curtain-close")) {
+        code = 2;
+    }
 
-    // init curtain slider
-    $("#curtainSet").on("change", function() {
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("curtainAction", {position: value});
-    });
+    if (code >= 0) {
+        sendAction("curtainAction", {button: code});
+        event.target.style.background = "red";
+    }
 
+    event.preventDefault();
+    event.stopPropagation();
 }
 
-function initCurtainConfig(data) {
+function curtainSetHandler(event) {
+    sendAction("curtainAction", {position: event.target.value});
+}
 
-    var current = $("#curtainConfig > legend").length; // there is a legend per relay
-    if (current > 0) { return; }
+//Create the controls for one curtain. It is called when curtain is updated (so created the first time)
+//Let this there as we plan to have more than one curtain per switch
+function initCurtain() {
+    let container = document.getElementById("curtains");
+    if (container.childElementCount > 0) {
+        return;
+    }
 
-    // Populate the curtain select
-    $("select.iscurtain").append(
-        $("<option></option>")
-            .attr("value", "0")
-            .text("Curtain #" + "0")
-    );
+    // simple position slider
+    document.getElementById("curtainSet").addEventListener("change", curtainSetHandler);
+
+    // add and init curtain template, prepare multi switches
+    let line = loadConfigTemplate("curtain-control");
+    line.querySelector(".button-curtain-open").addEventListener("click", curtainButtonHandler);
+    line.querySelector(".button-curtain-pause").addEventListener("click", curtainButtonHandler);
+    line.querySelector(".button-curtain-close").addEventListener("click", curtainButtonHandler);
+    mergeTemplate(container, line);
+
+    addSimpleEnumerables("curtain", "Curtain", 1);
+}
+
+function setCurtainBackground(a, b) {
+    let elem = document.getElementById("curtainGetPicture");
+    elem.style.background = `linear-gradient(${a}, black ${b}%, #a0d6ff ${b}%)`;
+}
+
+function setCurtainBackgroundTwoSides(a, b) {
+    let elem = document.getElementById("curtainGetPicture");
+    elem.style.background = `linear-gradient(90deg, black ${a}%, #a0d6ff ${a}% ${b}%, black ${b}%)`;
+}
+
+function updateCurtain(value) {
+    switch(value.type) {
+    case '1': //One side left to right
+        setCurtainBackground('90deg', value.get);
+        break;
+    case '2': //One side right to left
+        setCurtainBackground('270deg', value.get);
+        break;
+    case '3': //Two sides
+        setCurtainBackgroundTwoSides(value.get / 2, (100 - value.get/2));
+        break;
+    case '0': //Roller
+    default:
+        setCurtainBackground('180deg', value.get);
+        break;
+    }
+
+    let set = document.getElementById("curtainSet");
+    set.value = value.set;
+
+    const backgroundMoving = 'rgb(192, 0, 0)';
+    const backgroundStopped = 'rgb(64, 184, 221)';
+
+    if (!value.moving) {
+        let button = document.querySelector("button.curtain-button");
+        button.style.background = backgroundStopped;
+    } else {
+        if (!value.button) {
+            let pause = document.querySelector("button.curtain-pause");
+            pause.style.background = backgroundMoving;
+        } else {
+            let open = document.querySelector("button.button-curtain-open");
+            let close = document.querySelector("button.button-curtain-close");
+            if (value.button === 1) {
+                open.style.background = backgroundMoving;
+                close.style.background = backgroundStopped;
+            } else if (value.button === 2) {
+                open.style.background = backgroundStopped;
+                close.style.background = backgroundMoving;
+            }
+        }
+    }
 }
 
 //endRemoveIf(!curtain)
@@ -1300,11 +1764,11 @@ function colorBox() {
 }
 
 function updateColor(mode, value) {
-    if (colorPicker) {
+    if (ColorPicker) {
         if (mode === "rgb") {
-            colorPicker.color.hexString = value;
+            ColorPicker.color.hexString = value;
         } else if (mode === "hsv") {
-            colorPicker.color.hsv = hsvStringToColor(value);
+            ColorPicker.color.hsv = hsvStringToColor(value);
         }
         return;
     }
@@ -1325,8 +1789,11 @@ function updateColor(mode, value) {
         layout: layout
     };
 
-    colorPicker = new iro.ColorPicker("#color", options);
-    colorPicker.on("input:change", function(color) {
+    // TODO: ref. #2451, this causes pretty fast updates.
+    // since we immediatly start the transition, debug print's yield() may interrupt us mid initialization
+    // api could also wait and hold the value for a bit, applying only some of the values between start and end, and then apply the last one
+    ColorPicker = new iro.ColorPicker("#color", options);
+    ColorPicker.on("input:change", (color) => {
         if (mode === "rgb") {
             sendAction("color", {rgb: color.hexString});
         } else if (mode === "hsv") {
@@ -1335,82 +1802,100 @@ function updateColor(mode, value) {
     });
 }
 
-function initCCT() {
-
-  // check if already initialized
-  var done = $("#cct > div").length;
-  if (done > 0) { return; }
-
-  $("#miredsTemplate").children().clone().appendTo("#cct");
-
-  $("#mireds").on("change", function() {
-    var value = $(this).val();
-    var parent = $(this).parents(".pure-g");
-    $("span", parent).html(value);
-    sendAction("mireds", {mireds: value});
-  });
+function onChannelSliderChange(event) {
+    event.target.nextElementSibling.textContent = event.target.value;
+    sendAction("channel", {id: event.target.dataset["id"], value: event.target.value});
 }
 
-function initChannels(num) {
+function onBrightnessSliderChange(event) {
+    event.target.nextElementSibling.textContent = event.target.value;
+    sendAction("brightness", {value: event.target.value});
+}
 
-    // check if already initialized
-    var done = $("#channels > div").length > 0;
-    if (done) { return; }
-
-    // calculate channels to create
-    var max = num;
-    if (colorPicker) {
-        max = num % 3;
-        if ((max > 0) & useWhite) {
-            max--;
-            if (useCCT) {
-              max--;
-            }
-        }
-    }
-    var start = num - max;
-
-    var onChannelSliderChange = function() {
-        var id = $(this).attr("data");
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("channel", {id: id, value: value});
-    };
-
-    // add channel templates
-    var i = 0;
-    for (i=0; i<max; i++) {
-
-        var channel_id = start + i;
-        var line = loadTemplate("channelTemplate");
-        $("span.slider", line).attr("data", channel_id);
-        $("input.slider", line).attr("data", channel_id).on("change", onChannelSliderChange);
-        $("label", line).html("Channel #" + channel_id);
-
-        line.appendTo("#channels");
-
+function updateMireds(value) {
+    let mireds = document.getElementById("mireds");
+    if (mireds !== null) {
+        mireds.setAttribute("min", value.cold);
+        mireds.setAttribute("max", value.warm);
+        mireds.value = value.value;
+        mireds.nextElementSibling.textContent = value.value;
+        return;
     }
 
-    // Init channel dropdowns
-    for (i=0; i<num; i++) {
-        $("select.islight").append(
-            $("<option></option>").attr("value",i).text("Channel #" + i));
-    }
-
-    // add brightness template
-    var line = loadTemplate("brightnessTemplate");
-    line.appendTo("#channels");
-
-    // init bright slider
-    $("#brightness").on("change", function() {
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("brightness", {value: value});
+    let control = loadTemplate("mireds-control");
+    control.getElementById("mireds").addEventListener("change", (event) => {
+        event.target.nextElementSibling.textContent = event.target.value;
+        sendAction("mireds", {mireds: event.target.value});
     });
-
+    mergeTemplate(document.getElementById("cct"), control);
+    updateMireds(value);
 }
+
+function updateBrightness(value) {
+    let brightness = document.getElementById("brightness");
+    if (brightness !== null) {
+        brightness.value = value;
+        brightness.nextElementSibling.textContent = value;
+        return;
+    }
+
+    let template = loadTemplate("brightness-control");
+
+    let slider = template.getElementById("brightness");
+    slider.value = value;
+    slider.nextElementSibling.textContent = value;
+    slider.addEventListener("change", onBrightnessSliderChange);
+    mergeTemplate(document.getElementById("light"), template);
+}
+
+function initChannels(container, channels) {
+    channels.forEach((value, channel) => {
+        let line = loadTemplate("channel-control");
+        line.querySelector("span.slider").dataset["id"] = channel;
+
+        let slider = line.querySelector("input.slider");
+        slider.value = value;
+        slider.nextElementSibling.textContent = value;
+        slider.dataset["id"] = channel;
+        slider.addEventListener("change", onChannelSliderChange);
+
+        line.querySelector("label").textContent = "Channel #".concat(channel);
+        mergeTemplate(container, line);
+    });
+}
+
+function updateChannels(channels) {
+    let container = document.getElementById("channels");
+    if (container.childElementCount > 0) {
+        channels.forEach((value, channel) => {
+            let slider = container.querySelector(`input.slider[data-id='${channel}']`);
+            if (!slider) {
+                return;
+            }
+
+            // If there are RGB controls, no need for raw channel sliders
+            if (ColorPicker && (channel < 3)) {
+                slider.parentElement.style.display = "none";
+            }
+
+            // Or, when there are CCT controls
+            if ((channel === 3) || (channel === 4)) {
+                let cct = document.getElementById("cct");
+                if (cct.childElementCount > 0) {
+                    slider.parentElement.style.display = "none";
+                }
+            }
+
+            slider.value = value;
+            slider.nextElementSibling.textContent = value;
+        });
+        return;
+    }
+
+    initChannels(container, channels);
+    updateChannels(channels);
+}
+
 //endRemoveIf(!light)
 
 // -----------------------------------------------------------------------------
@@ -1419,40 +1904,56 @@ function initChannels(num) {
 
 //removeIf(!rfbridge)
 
-function rfbLearn() {
-    var parent = $(this).parents(".pure-g");
-    var input = $("input", parent);
-    sendAction("rfblearn", {id: input.attr("data-id"), status: input.attr("data-status")});
+function rfbAction(event) {
+    const prefix = "button-rfb-";
+    let [action] = Array.from(event.target.classList)
+        .filter(x => x.startsWith(prefix));
+
+    if (action) {
+        let container = event.target.parentElement.parentElement;
+        let input = container.querySelector("input");
+
+        action = action.replace(prefix, "");
+        sendAction(`rfb${action}`, {
+            id: input.dataset["id"],
+            status: input.dataset["status"]
+        });
+    }
 }
 
-function rfbForget() {
-    var parent = $(this).parents(".pure-g");
-    var input = $("input", parent);
-    sendAction("rfbforget", {id: input.attr("data-id"), status: input.attr("data-status")});
+function rfbAdd() {
+    let container = document.getElementById("rfbNodes");
+
+    const id = container.childElementCount;
+    let line = loadTemplate("rfb-node");
+    line.querySelector("span").textContent = id;
+
+    for (let input of line.querySelectorAll("input")) {
+        input.dataset["id"] = id;
+    }
+
+    elementSelectorOnClick(".button-rfb-learn", rfbAction);
+    elementSelectorOnClick(".button-rfb-forget", rfbAction);
+    elementSelectorOnClick(".button-rfb-send", rfbAction);
+
+    mergeTemplate(container, line);
+
+    return false;
 }
 
-function rfbSend() {
-    var parent = $(this).parents(".pure-g");
-    var input = $("input", parent);
-    sendAction("rfbsend", {id: input.attr("data-id"), status: input.attr("data-status"), data: input.val()});
+function rfbSelector(id, status) {
+    return `input[name='rfbcode'][data-id='${id}'][data-status='${status}']`;
 }
 
-function addRfbNode() {
-
-    var numNodes = $("#rfbNodes > legend").length;
-
-    var line = loadTemplate("rfbNodeTemplate");
-    $("span", line).html(numNodes);
-    $(line).find("input").each(function() {
-        this.dataset["id"] = numNodes;
+function rfbHandleCodes(value) {
+    value.codes.forEach((codes, id) => {
+        let realId = id + value.start;
+        let [off, on] = codes;
+        document.querySelector(rfbSelector(realId, 0)).value = off;
+        document.querySelector(rfbSelector(realId, 1)).value = on;
     });
-    $(line).find(".button-rfb-learn").on("click", rfbLearn);
-    $(line).find(".button-rfb-forget").on("click", rfbForget);
-    $(line).find(".button-rfb-send").on("click", rfbSend);
-    line.appendTo("#rfbNodes");
-
-    return line;
 }
+
 //endRemoveIf(!rfbridge)
 
 // -----------------------------------------------------------------------------
@@ -1476,14 +1977,16 @@ function lightfoxClear() {
 // -----------------------------------------------------------------------------
 
 function processData(data) {
-
-    if (debug) console.log(data);
+    if (Debug) {
+        console.log(data);
+    }
 
     // title
     if ("app_name" in data) {
-        var title = data.app_name;
+        let title = data.app_name;
         if ("app_version" in data) {
-            $("span[name=title]").html(data.app_version);
+            let span = document.querySelector("span[data-key='title']");
+            span.textContent = data.app_version;
             title = title + " " + data.app_version;
         }
         if ("hostname" in data) {
@@ -1492,19 +1995,57 @@ function processData(data) {
         document.title = title;
     }
 
-    Object.keys(data).forEach(function(key) {
-
-        var i;
-        var value = data[key];
+    Object.keys(data).forEach((key) => {
+        let value = data[key];
 
         // ---------------------------------------------------------------------
-        // Web mode
+        // Web mode & modules
         // ---------------------------------------------------------------------
 
         if ("webMode" === key) {
-            password = (1 === value);
-            $("#layout").toggle(!password);
-            $("#password").toggle(password);
+            let initial = (1 === value);
+
+            let layout = document.getElementById("layout");
+            layout.style.display = initial ? "none" : "inherit";
+
+            let password = document.getElementById("password");
+            password.style.display = initial ? "inherit" : "none";
+
+            return;
+        }
+
+        if (key.endsWith("Visible")) {
+            // TODO: Move to another 'module' that saves the energy data and have a common setting?
+            if ("pzemVisible" === key) {
+                let save = document.querySelector("input[name='snsSave']");
+                save.disabled = true;
+            }
+
+            let module = key.slice(0, -7);
+            if (module.length) {
+                moduleVisible(module);
+            }
+            return;
+        }
+
+        if ("gpioConfig" === key) {
+            let types = [];
+
+            for (const [type, id] of value.types) {
+                types.push({
+                    "id": id,
+                    "name": type
+                });
+
+                let gpios = [{"id": 153, "name": "NONE"}];
+                value[type].forEach((pin) => {
+                    gpios.push({"id": pin, "name": `GPIO${pin}`});
+                });
+                addEnumerables(`gpio-${type}`, gpios);
+            }
+
+            addEnumerables("gpio-types", types);
+            return;
         }
 
         // ---------------------------------------------------------------------
@@ -1525,32 +2066,14 @@ function processData(data) {
         //removeIf(!rfbridge)
 
         if ("rfbCount" === key) {
-            for (i=0; i<data.rfbCount; i++) { addRfbNode(); }
+            for (let i = 0; i < data.rfbCount; ++i) {
+                rfbAdd();
+            }
             return;
         }
 
         if ("rfb" === key) {
-            var rfb = data.rfb;
-
-            var size = rfb.size;
-            var start = rfb.start;
-
-            var processOn = ((rfb.on !== undefined) && (rfb.on.length > 0));
-            var processOff = ((rfb.off !== undefined) && (rfb.off.length > 0));
-
-            for (let i = 0; i < size; ++i) {
-                let selector = template`input[name='rfbcode'][data-id='${id}'][data-status='${status}']`;
-                let id = i + start;
-                if (processOn) {
-                    $(selector({"id": id, "status": 1}))
-                        .val(rfb.on[i]);
-                }
-                if (processOff) {
-                    $(selector({"id": id, "status": 0}))
-                        .val(rfb.off[i]);
-                }
-            }
-
+            rfbHandleCodes(value);
             return;
         }
 
@@ -1562,42 +2085,18 @@ function processData(data) {
 
         //removeIf(!rfm69)
 
-        if (key == "packet") {
-            var packet = data.packet;
-            var d = new Date();
-            packets.row.add([
-                d.toLocaleTimeString('en-US', { hour12: false }),
-                packet.senderID,
-                packet.packetID,
-                packet.targetID,
-                packet.key,
-                packet.value,
-                packet.rssi,
-                packet.duplicates,
-                packet.missing,
-            ]).draw(false);
-            return;
-        }
-
-        if (key == "mapping") {
-            for (var i in data.mapping) {
-
-                // add a new row
-                addMapping();
-
-                // get group
-                var line = $("#mapping .pure-g")[i];
-
-                // fill in the blanks
-                var mapping = data.mapping[i];
-                Object.keys(mapping).forEach(function(key) {
-                    var id = "input[name=" + key + "]";
-                    if ($(id, line).length) $(id, line).val(mapping[key]);
-                });
-
-                setOriginalsFromValues($("input", line));
+        if ("rfm69" === key) {
+            if (value.message !== undefined) {
+                rfm69AddMessage(value.message);
+                return;
             }
-            return;
+
+            if (value.mapping !== undefined) {
+                value.mapping.forEach((mapping) => {
+                    rfm69AddMapping(fromSchema(mapping, value.schema));
+                });
+                return;
+            }
         }
 
         //endRemoveIf(!rfm69)
@@ -1606,47 +2105,19 @@ function processData(data) {
         // RPN Rules
         // ---------------------------------------------------------------------
 
-        if (key == "rpnRules") {
-			for (var i in data.rpnRules) {
-
-				// add a new row
-				addRPNRule();
-
-				// get group
-				var line = $("#rpnRules .pure-g")[i];
-
-				// fill in the blanks
-				var rule = data.rpnRules[i];
-                $("input", line).val(rule);
-
-                setOriginalsFromValues($("input", line));
-
+        if ("rpnRules" === key) {
+			for (let rule of value) {
+				rpnAddRule({"rpnRule": rule});
             }
 			return;
 		}
 
-        if (key == "rpnTopics") {
-			for (var i in data.rpnTopics) {
-
-				// add a new row
-				addRPNTopic();
-
-				// get group
-				var line = $("#rpnTopics .pure-g")[i];
-
-				// fill in the blanks
-				var topic = data.rpnTopics[i];
-				var name = data.rpnNames[i];
-                $("input[name='rpnTopic']", line).val(topic);
-                $("input[name='rpnName']", line).val(name);
-
-                setOriginalsFromValues($("input", line));
-
-            }
+        if ("rpnTopics" === key) {
+            value.topics.forEach((topic) => {
+                rpnAddTopic(fromSchema(topic, value.schema));
+            });
 			return;
         }
-
-        if (key == "rpnNames") return;
 
         // ---------------------------------------------------------------------
         // Curtains
@@ -1654,46 +2125,12 @@ function processData(data) {
 
         //removeIf(!curtain)
 
-        function applyCurtain(a, b) {
-            $("#curtainGetPicture").css('background', 'linear-gradient(' + a + ', black ' + b + '%, #a0d6ff ' + b + '%)');
-        }
-
         if ("curtainState" === key) {
             initCurtain();
-            switch(value.type) {
-                case '0': //Roller
-                default:
-                    applyCurtain('180deg', value.get);
-                    break;
-                case '1': //One side left to right
-                    applyCurtain('90deg', value.get);
-                    break;
-                case '2': //One side right to left
-                    applyCurtain('270deg', value.get);
-                    break;
-                case '3': //Two sides
-                    $("#curtainGetPicture").css('background', 'linear-gradient(90deg, black ' + value.get/2 + '%, #a0d6ff ' + value.get/2 + '% ' + (100 - value.get/2) + '%, black ' + (100 - value.get/2) + '%)');
-                    break;
-            }
-            $("#curtainSet").val(value.set);
-
-            if(!value.moving) {
-                $("button.curtain-button").css('background', 'rgb(66, 184, 221)');
-            } else {
-                if(!value.button)
-                    $("button.button-curtain-pause").css('background', 'rgb(192, 0, 0)');
-                else if(value.button == 1) {
-                    $("button.button-curtain-close").css('background', 'rgb(66, 184, 221)');
-                    $("button.button-curtain-open").css('background', 'rgb(192, 0, 0)');
-                }
-                else if(value.button == 2) {
-                    $("button.button-curtain-open").css('background', 'rgb(66, 184, 221)');
-                    $("button.button-curtain-close").css('background', 'rgb(192, 0, 0)');
-
-                }
-            }
+            updateCurtain(value);
             return;
         }
+
         //endRemoveIf(!curtain)
 
         // ---------------------------------------------------------------------
@@ -1703,7 +2140,8 @@ function processData(data) {
         //removeIf(!light)
 
         if ("lightstate" === key) {
-            $("#color").toggle(value);
+            let color = document.getElementById("color");
+            color.style.display = value ? "inherit" : "none";
             return;
         }
 
@@ -1713,37 +2151,19 @@ function processData(data) {
         }
 
         if ("brightness" === key) {
-            $("#brightness").val(value);
-            $("span.brightness").html(value);
+            updateBrightness(value);
             return;
         }
 
         if ("channels" === key) {
-            var len = value.length;
-            initChannels(len);
-            for (i in value) {
-                var ch = value[i];
-                $("input.slider[data=" + i + "]").val(ch);
-                $("span.slider[data=" + i + "]").html(ch);
-            }
+            updateChannels(value);
+            addSimpleEnumerables("channel", "Channel", value.length);
             return;
         }
 
         if ("mireds" === key) {
-            $("#mireds").attr("min", value["cold"]);
-            $("#mireds").attr("max", value["warm"]);
-            $("#mireds").val(value["value"]);
-            $("span.mireds").html(value["value"]);
+            updateMireds(value);
             return;
-        }
-
-        if ("useWhite" === key) {
-            useWhite = value;
-        }
-
-        if ("useCCT" === key) {
-            initCCT();
-            useCCT = value;
         }
 
         //endRemoveIf(!light)
@@ -1754,58 +2174,13 @@ function processData(data) {
 
         //removeIf(!sensor)
 
-        if ("snsErrors" === key) {
-            for (var index in value) {
-                var type = value[index][0];
-                var name = value[index][1];
-                MagnitudeErrors[type] = name;
-            }
-            return;
-        }
-
-        if ("snsMagnitudes" === key) {
-            for (var index in value) {
-                var type = value[index][0];
-                var prefix = value[index][1];
-                var name = value[index][2];
-                MagnitudeNames[type] = name;
-                MagnitudeTypePrefixes[type] = prefix;
-                MagnitudePrefixTypes[prefix] = type;
-                moduleVisible(prefix);
-            }
-            return;
-        }
-
         if ("magnitudesConfig" === key) {
             initMagnitudes(value);
             return;
         }
 
         if ("magnitudes" === key) {
-            for (var i=0; i<value.size; ++i) {
-                var inputElem = $("input[name='magnitude'][data='" + i + "']");
-                var infoElem = inputElem.parent().parent().find("div.sns-info");
-
-                var error = value.error[i] || 0;
-                var text = (0 === error)
-                    ? value.value[i] + Magnitudes[i].units
-                    : MagnitudeErrors[error];
-                inputElem.val(text);
-
-                if (value.info !== undefined) {
-                    var info = value.info[i] || 0;
-                    infoElem.toggle(info != 0);
-                    infoElem.text(info);
-                }
-            }
-            return;
-        }
-
-        if ("pzemVisible" === key) {
-            $("input[name='snsSave']").prop("disabled", true);
-            $("input[name='snsSave']")
-                .parent().parent().find(".hint")
-                .text("PZEM004 module saves the energy data on it's own")
+            updateMagnitudes(value);
             return;
         }
 
@@ -1816,15 +2191,17 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("wifiConfig" === key) {
-            maxNetworks = parseInt(value["max"], 10);
-            value["networks"].forEach(function(network) {
-                addNetwork(fromSchema(network, value.schema));
+            let container = document.getElementById("networks");
+            container.dataset["settingsMax"] = value.max;
+
+            value.networks.forEach((entries) => {
+                networkAdd(fromSchema(entries, value.schema), false);
             });
             return;
         }
 
         if ("scanResult" === key) {
-            scanResult(value);
+            networkScanResult(value);
             return;
         }
 
@@ -1833,13 +2210,11 @@ function processData(data) {
         // -----------------------------------------------------------------------------
 
         if ("schConfig" === key) {
-            $("#schedules")
-                .attr("data-settings-max", value.max);
+            let container = document.getElementById("schedules");
+            container.dataset["settingsMax"] = value.max;
 
-            let schema = value.schema;
-            value["schedules"].forEach((entries, id) => {
-                let cfg = fromSchema(entries, schema);
-                addSchedule(cfg, value);
+            value.schedules.forEach((entries) => {
+                schAdd(fromSchema(entries, value.schema));
             });
 
             return;
@@ -1850,25 +2225,28 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("relayConfig" === key) {
-            if ($("#relays > div").length) {
+            let container = document.getElementById("relays");
+            if (container.childElementCount > 0) {
                 return;
             }
 
-            if ($("#relayConfig > legend").length) {
-                return;
-            }
-
-            let schema = value.schema;
-            value["cfg"].forEach((entries, id) => {
-                let cfg = fromSchema(entries, schema);
-                var name = cfg["relayName"];
-                if (!cfg.relayName.length) {
-                    cfg.relayName = "Switch #" + id;
+            let relays = [];
+            value.relays.forEach((entries, id) => {
+                let cfg = fromSchema(entries, value.schema);
+                if (!cfg.relayName || !cfg.relayName.length) {
+                    cfg.relayName = `Switch #${id}`;
                 }
 
-                initRelay(id, cfg, value);
-                initRelayConfig(id, cfg, value);
+                relays.push({
+                    "id": id,
+                    "name": `${cfg.relayName} (${cfg.relayDesc})`
+                });
+
+                initRelayToggle(id, cfg);
+                initRelayConfig(id, cfg);
             });
+
+            addEnumerables("relay", relays);
             return;
         }
 
@@ -1878,35 +2256,20 @@ function processData(data) {
         }
 
         // ---------------------------------------------------------------------
-        // Curtain(s)
-        // ---------------------------------------------------------------------
-
-        //removeIf(!curtain)
-
-        // Relay configuration
-        if ("curtainConfig" === key) {
-            initCurtainConfig(value);
-            return;
-        }
-
-        //endRemoveIf(!curtain)
-
-
-
-        // ---------------------------------------------------------------------
         // LEDs
         // ---------------------------------------------------------------------
 
         if ("ledConfig" === key) {
-            if ($("#ledConfig > div").length > 0) {
+            let container = document.getElementById("leds");
+            if (container.childElementCount > 0) {
                 return;
             }
 
-            let schema = value["schema"];
-            value["leds"].forEach((entries, id) => {
-                addLed(id, fromSchema(entries, schema), value);
+            value.leds.forEach((entries) => {
+                ledAdd(fromSchema(entries, value.schema));
             });
 
+            addSimpleEnumerables("led", "LED", value.leds.length);
             return;
         }
 
@@ -1916,14 +2279,14 @@ function processData(data) {
 
         // Domoticz - Relays
         if ("dczRelays" === key) {
-            createRelayList(value, "dczRelays", "dczRelayTemplate");
+            createRelayList(value, "dczRelays", "dcz-relay");
             return;
         }
 
         // Domoticz - Magnitudes
         //removeIf(!sensor)
         if ("dczMagnitudes" === key) {
-            createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
+            createMagnitudeList(value, "dczMagnitudes", "dcz-magnitude");
             return;
         }
         //endRemoveIf(!sensor)
@@ -1934,35 +2297,24 @@ function processData(data) {
 
         // Thingspeak - Relays
         if ("tspkRelays" === key) {
-            createRelayList(value, "tspkRelays", "tspkRelayTemplate");
+            createRelayList(value, "tspkRelays", "tspk-relay");
             return;
         }
 
         // Thingspeak - Magnitudes
         //removeIf(!sensor)
         if ("tspkMagnitudes" === key) {
-            createMagnitudeList(value, "tspkMagnitudes", "tspkMagnitudeTemplate");
+            createMagnitudeList(value, "tspkMagnitudes", "tspk-magnitude");
             return;
         }
         //endRemoveIf(!sensor)
-
-        // ---------------------------------------------------------------------
-        // HTTP API
-        // ---------------------------------------------------------------------
-
-        // Auto generate an APIKey if none defined yet
-        if ("apiVisible" === key) {
-            if (data.apiKey === undefined || data.apiKey === "") {
-                generateAPIKey();
-            }
-        }
 
         // ---------------------------------------------------------------------
         // General
         // ---------------------------------------------------------------------
 
         if ("saved" === key) {
-            configurationSaved = value;
+            Settings.saved = value;
             return;
         }
 
@@ -1971,234 +2323,174 @@ function processData(data) {
             return;
         }
 
-        // Web log
+        // TODO: squash into a single message, needs a reworked debug buffering
         if ("weblog" === key) {
             send("{}");
 
-            var msg = value["msg"];
-            var pre = value["pre"];
+            let msg = value["msg"];
+            let pre = value["pre"];
 
-            for (var i=0; i < msg.length; ++i) {
+            let container = document.getElementById("weblog");
+            for (let i = 0; i < msg.length; ++i) {
                 if (pre[i]) {
-                    $("#weblog").append(new Text(pre[i]));
+                    container.appendChild(new Text(pre[i]));
                 }
-                $("#weblog").append(new Text(msg[i]));
+                container.appendChild(new Text(msg[i]));
             }
 
-            followScroll("weblog");
-            return;
-        }
-
-        // Enable options
-        var position = key.indexOf("Visible");
-        if (position > 0 && position === key.length - 7) {
-            var module = key.slice(0,-7);
-            moduleVisible(module);
+            followScroll(container);
             return;
         }
 
         if ("deviceip" === key) {
-            var a_href = $("span[name='" + key + "']").parent();
-            a_href.attr("href", "//" + value);
-            a_href.next().attr("href", "telnet://" + value);
+            let span = document.querySelector(`span[data-key='${key}']`);
+            span.textContent = value;
+            span.parentElement.setAttribute("href", "//".concat(value));
+            span.parentElement.nextElementSibling.setAttribute("href", "telnet://".concat(value));
+            return;
+        }
+
+        if ("uptime" === key) {
+            setUptime(value);
+            return;
         }
 
         if ("now" === key) {
-            now = parseInt(value, 10);
+            Now = parseInt(value, 10);
             return;
         }
 
         if ("free_size" === key) {
-            free_size = parseInt(value, 10);
+            FreeSize = parseInt(value, 10);
+            initGenericKeyValueElement(key, value);
+            return;
         }
 
-        // Pre-process
         if ("mqttStatus" === key) {
-            value = value ? "CONNECTED" : "NOT CONNECTED";
+            initGenericKeyValueElement(key, value ? "CONNECTED" : "DISCONNECTED");
+            return;
         }
+
         if ("ntpStatus" === key) {
-            value = value ? "SYNC'D" : "NOT SYNC'D";
-        }
-        if ("uptime" === key) {
-            ago = 0;
-            var uptime  = parseInt(value, 10);
-            var seconds = uptime % 60; uptime = parseInt(uptime / 60, 10);
-            var minutes = uptime % 60; uptime = parseInt(uptime / 60, 10);
-            var hours   = uptime % 24; uptime = parseInt(uptime / 24, 10);
-            var days    = uptime;
-            value = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
-        }
-        //removeIf(!thermostat)
-        if ("tmpUnits" == key) {
-            $("span.tmpUnit").html(data[key] == 3 ? "ºF" : "ºC");
-        }
-        //endRemoveIf(!thermostat)
-
-        // ---------------------------------------------------------------------
-        // Matching
-        // ---------------------------------------------------------------------
-        var elems = [];
-
-        var pre;
-        var post;
-
-        // Look for INPUTs
-        var input = $("input[name='" + key + "']");
-        if (input.length > 0) {
-            if (input.attr("type") === "checkbox") {
-                input.prop("checked", value);
-            } else if (input.attr("type") === "radio") {
-                input.val([value]);
-            } else {
-                pre = input.attr("pre") || "";
-                post = input.attr("post") || "";
-                input.val(pre + value + post);
-            }
-            elems.push(input);
+            initGenericKeyValueElement(key, value ? "SYNC'D" : "NOT SYNC'D");
+            return;
         }
 
-        // Look for SPANs
-        var span = $("span[name='" + key + "']");
-        if (span.length > 0) {
-            if (Array.isArray(value)) {
-                value.forEach(function(elem) {
-                    span.append(elem);
-                    span.append('</br>');
-                    elems.push(span);
-                });
-            } else {
-                pre = span.attr("pre") || "";
-                post = span.attr("post") || "";
-                span.html(pre + value + post);
-                elems.push(span);
-            }
-        }
-
-        // Look for SELECTs
-        var select = $("select[name='" + key + "']");
-        if (select.length > 0) {
-            if (select.attr("multiple") !== undefined) {
-                select.val(bitsetToValues(value));
-            } else {
-                select.val(value);
-            }
-            elems.push(select);
-        }
-
-        setOriginalsFromValues($(elems));
-
+        initGenericKeyValueElement(key, value);
     });
-
 }
 
-function hasChanged() {
+function updateChanged(event) {
+    let action = event.target.dataset["action"];
+    if ("none" === action) {
+        return;
+    }
 
-    var newValue, originalValue;
-    if ($(this).attr("type") === "checkbox") {
-        newValue = $(this).prop("checked");
-        originalValue = ($(this).attr("original") === "true");
+    let originalValue = event.target.dataset["original"];
+    let newValue;
+
+    if ((event.target.tagName === "INPUT") && (event.target.type === "checkbox")) {
+        originalValue = stringToBoolean(originalValue);
+        newValue = event.target.checked;
+    } else if (event.target.tagName === "SELECT") {
+        newValue = stringifySelectedValues(event.target);
     } else {
-        newValue = $(this).val();
-        originalValue = $(this).attr("original");
+        newValue = event.target.value;
     }
 
-    if ($(this).attr("multiple") !== undefined) {
-        newValue = newValue.join(",");
+    if (typeof originalValue === "undefined") {
+        return;
     }
 
-    var hasChanged = ("true" === $(this).attr("hasChanged"));
-    var action = $(this).attr("action");
-
-    if (typeof originalValue === "undefined") { return; }
-    if ("none" === action) { return; }
-
+    let changed = isChangedElement(event.target);
     if (newValue !== originalValue) {
-        if (!hasChanged) {
-            ++numChanged;
-            if ("reconnect" === action) { ++numReconnect; }
-            if ("reboot" === action) { ++numReboot; }
-            if ("reload" === action) { ++numReload; }
+        if (!changed) {
+            ++Settings.counters.changed;
+            if (action in Settings.counters) {
+                ++Settings.counters[action];
+            }
         }
-        $(this).attr("hasChanged", true);
+        setChangedElement(event.target);
     } else {
-        if (hasChanged) {
-            --numChanged;
-            if ("reconnect" === action) { --numReconnect; }
-            if ("reboot" === action) { --numReboot; }
-            if ("reload" === action) { --numReload; }
+        if (changed) {
+            --Settings.counters.changed;
+            if (action in Settings.counters) {
+                --Settings.counters[action];
+            }
         }
-        $(this).attr("hasChanged", false);
+        resetChangedElement(event.target);
     }
+}
 
+function listenChanged(selector) {
+    for (let elem of document.querySelectorAll(selector)) {
+        elem.addEventListener("change", updateChanged);
+    }
 }
 
 // -----------------------------------------------------------------------------
 // Init & connect
 // -----------------------------------------------------------------------------
 
-function initUrls(root) {
-
-    var paths = ["ws", "upgrade", "config", "auth"];
-
-    urls["root"] = root;
-    paths.forEach(function(path) {
-        urls[path] = new URL(path, root);
-        urls[path].protocol = root.protocol;
-    });
-
-    if (root.protocol == "https:") {
-        urls.ws.protocol = "wss:";
-    } else {
-        urls.ws.protocol = "ws:";
+function onWebSocketMessage(event) {
+    var data = {};
+    try {
+        data = JSON.parse(event.data
+            .replace(/\n/g, "\\n")
+            .replace(/\r/g, "\\r")
+            .replace(/\t/g, "\\t"));
+    } catch (e) {
+        notifyError(null, null, 0, 0, e);
     }
 
+    processData(data);
+}
+
+function webSocketPing() {
+    sendAction("ping", {});
+}
+
+function onWebSocketOpen() {
+    WebsockPingPong = setInterval(webSocketPing, 5000);
+}
+
+function onWebSocketClose() {
+    clearInterval(WebsockPingPong);
+    if (window.confirm("Connection lost with the device, click OK to refresh the page")) {
+        let layout = document.getElementById("layout");
+        layout.style.display = "none";
+        window.location.reload();
+    }
 }
 
 function connectToURL(url) {
+    Urls = new UrlsBase(url);
 
-    initUrls(url);
-
-    fetch(urls.auth.href, {
+    fetch(Urls.auth.href, {
         'method': 'GET',
         'cors': true,
         'credentials': 'same-origin'
-    }).then(function(response) {
-        // Nothing to do, reload page and retry
-        if (response.status != 200) {
-            doReload(5000);
+    }).then((response) => {
+        if (response.status === 200) {
+            if (Websock) {
+                Websock.close();
+            }
+
+            Websock = new WebSocket(Urls.ws.href);
+            Websock.onmessage = onWebSocketMessage;
+            Websock.onclose = onWebSocketClose;
+            Websock.onopen = onWebSocketOpen;
+
+            document.getElementById("downloader").href = Urls.config.href;
             return;
         }
-        // update websock object
-        if (websock) { websock.close(); }
-        websock = new WebSocket(urls.ws.href);
-        websock.onmessage = function(evt) {
-            var data = {};
-            try {
-                data = JSON.parse(evt.data
-                    .replace(/\n/g, "\\n")
-                    .replace(/\r/g, "\\r")
-                    .replace(/\t/g, "\\t"));
-            } catch (e) {
-                console.log(e);
-            }
 
-            processData(data);
-        };
-        websock.onclose = function(evt) {
-            clearInterval(ws_pingpong);
-            if (window.confirm("Connection lost with the device, click OK to refresh the page")) {
-                $("#layout").toggle(false);
-                window.location.reload();
-            }
-        }
-        websock.onopen = function(evt) {
-            ws_pingpong = setInterval(function() { sendAction("ping", {}); }, 5000);
-        }
-    }).catch(function(error) {
-        console.log(error);
+        // Nothing to do, reload page and retry on errors
+        doReload(5000);
+    }).catch((error) => {
+        notifyError(null, null, 0, 0, error);
         doReload(5000);
     });
-
 }
 
 function connect(host) {
@@ -2212,132 +2504,162 @@ function connectToCurrentURL() {
     connectToURL(new URL(window.location));
 }
 
-$(function() {
+// TODO: modularize initialization with separate files?
 
-    // most of the time, we want this unconditionally for all <a href="..."></a>
-    $("a.external")
-        .attr("target", "_blank")
-        .attr("rel", "noopener")
-        .attr("tabindex", "-1");
+function main() {
+    initExternalLinks();
+    createCheckboxes(document);
+    setInterval(() => keepTime(), 1000);
 
-    createCheckboxes();
+    elementSelectorOnClick(".menu-link", toggleMenu);
+    elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
+    elementSelectorOnClick(".pure-menu-link", showPanel);
 
-    setInterval(function() { keepTime(); }, 1000);
+    elementSelectorOnClick(".button-wifi-scan", doScan);
+    elementSelectorOnClick(".button-reboot", doReboot);
+    elementSelectorOnClick(".button-reconnect", doReconnect);
 
-    $(".password-reveal").on("click", toggleVisiblePassword);
+    // while the settings are grouped using forms, actual submit is useless here
+    // b/c the data is intended to be sent with the websocket connection and never separately
+    for (let form of document.forms) {
+        if (form.id === "form-dbg") {
+            form.addEventListener("submit", (event) => {
+                doDebugCommand(event.target.elements.dbgcmd.value);
+                event.target.elements.dbgcmd.value = "";
+                event.preventDefault();
+            });
+        } else {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+            });
+        }
+    }
+    elementSelectorOnClick(".button-dbg-clear", doDebugClear);
 
-    $("#menuLink").on("click", toggleMenu);
-    $(".pure-menu-link").on("click", showPanel);
-    $("progress").attr({ value: 0, max: 100 });
+    elementSelectorOnClick(".button-settings-backup", doBackup);
+    elementSelectorOnClick(".button-settings-restore", doRestore);
+    elementSelectorOnClick(".button-settings-factory", doFactoryReset);
 
-    $("#button-wifi-scan").on("click", doScan);
+    elementSelectorOnClick(".button-update", doUpdate);
+    elementSelectorOnClick(".button-setup-password", doSetupPassword);
+    elementSelectorOnClick(".button-generate-password", doGeneratePassword);
 
-    $(".button-update").on("click", doUpdate);
-    $(".button-update-password").on("click", doUpdatePassword);
-    $(".button-generate-password").on("click", doGeneratePassword);
-    $(".button-reboot").on("click", doReboot);
-    $(".button-reconnect").on("click", doReconnect);
-    $(".button-dbgcmd").on("click", doDebugCommand);
-    $("input[name='dbgcmd']").enterKey(doDebugCommand);
-    $(".button-dbg-clear").on("click", doDebugClear);
-    $(".button-settings-backup").on("click", doBackup);
-    $(".button-settings-restore").on("click", doRestore);
-    $(".button-settings-factory").on("click", doFactoryReset);
-    $("#uploader").on("change", onFileUpload);
-    $(".button-upgrade").on("click", doUpgrade);
+    elementSelectorOnClick(".button-upgrade", doUpgrade);
+    document.getElementById("uploader").addEventListener("change", onFileUpload);
+
+    elementSelectorOnClick(".button-apikey", generateApiKey);
+
+    let upgrade = document.querySelector("input[name='upgrade']");
+    elementSelectorOnClick(".button-upgrade-browse", () => {
+        upgrade.click();
+    });
+    upgrade.addEventListener("change", (event) => {
+        document.querySelector("input[name='filename']").value = event.target.files[0].name;
+    });
+
+    elementSelectorOnClick(".button-add-settings-group", (event) => {
+        const prefix = "settingsGroupDetail";
+        const elem = event.target;
+
+        let eventInit = {detail: null};
+        for (let key of Object.keys(elem.dataset)) {
+            if (!key.startsWith(prefix)) {
+                continue
+            }
+            if (eventInit.detail === null) {
+                eventInit.detail = {};
+            }
+
+            let eventKey = key.replace(prefix, "");
+            eventKey = eventKey[0].toLowerCase() + eventKey.slice(1);
+            eventInit.detail[eventKey] = elem.dataset[key];
+        }
+
+        const group = document.getElementById(elem.dataset["settingsGroup"]);
+        group.dispatchEvent(new CustomEvent("settings-group-add", eventInit));
+    });
+    //endRemoveIf(!curtain)
 
     //removeIf(!garland)
-    $(".checkbox-garland-enable").on("change", function() {
-        sendAction("garland_switch", {status: $(this).prop("checked") ? 1 : 0});
+    elementSelectorListener(".checkbox-garland-enable", "change", (event) => {
+        sendAction("garland_switch", {status: event.target.checked ? 1 : 0});
     });
 
-    $(".slider-garland-brightness").on("change", function() {
-        sendAction("garland_set_brightness", {brightness: $(this)[0].value});
+    elementSelectorListener(".slider-garland-brightness", "change", (event) => {
+        sendAction("garland_set_brightness", {brightness: event.target.value});
+    });
+    elementSelectorListener(".slider-garland-speed", "change", (event) => {
+        sendAction("garland_set_speed", {speed: event.target.value});
     });
 
-    $(".slider-garland-speed").on("change", function() {
-        sendAction("garland_set_speed", {speed: $(this)[0].value});
-    });
-
-    $(".button-garland-set-default").on("click", function() {
+    elementSelectorOnClick(".button-garland-set-default", () => {
         sendAction("garland_set_default", {});
     });
     //endRemoveIf(!garland)
 
     //removeIf(!thermostat)
-    $(".button-thermostat-reset-counters").on('click', doResetThermostatCounters);
+    elementSelectorOnClick(".button-thermostat-reset-counters", () => {
+        doAction("Are you sure you want to reset burning counters?", "thermostat_reset_counters");
+    });
+    elementSelectorListener("#tempRangeMaxInput", "change", thermostatCheckTempRange);
+    elementSelectorListener("#tempRangeMinInput", "change", thermostatCheckTempRange);
     //endRemoveIf(!thermostat)
 
-    $(".button-apikey").on("click", generateAPIKey);
-    $(".button-upgrade-browse").on("click", function() {
-        $("input[name='upgrade']")[0].click();
-        return false;
-    });
-    $("input[name='upgrade']").change(function (){
-        var file = this.files[0];
-        $("input[name='filename']").val(file.name);
-    });
-    $(".button-add-network").on("click", function() {
-        $(".more", addNetwork()).toggle();
-    });
-
-    $(".button-add-switch-schedule").on("click", function() {
-        addSchedule({schType: 1, schTarget: -1});
-    });
-    //removeIf(!light)
-    $(".button-add-light-schedule").on("click", function() {
-        addSchedule({schType: 2, schTarget: -1});
-    });
-    //endRemoveIf(!light)
-
-    //removeIf(!curtain)
-    $(".button-add-curtain-schedule").on("click", function() {
-        addSchedule({schType: 3, schTarget: -1});
-    });
-    //endRemoveIf(!curtain)
-
-    $(".button-add-rpnrule").on('click', addRPNRule);
-    $(".button-add-rpntopic").on('click', addRPNTopic);
-
-    $(".button-del-parent").on('click', delParent);
-
     //removeIf(!lightfox)
-    $(".button-lightfox-learn")
-        .off("click")
-        .click(lightfoxLearn);
-    $(".button-lightfox-clear")
-        .off("click")
-        .click(lightfoxClear);
+    elementSelectorOnClick(".button-lightfox-learn", lightfoxLearn);
+    elementSelectorOnClick(".button-lightfox-clear", lightfoxClear);
     //endRemoveIf(!lightfox)
 
     //removeIf(!rfm69)
-    $(".button-add-mapping").on('click', addMapping);
-    $(".button-clear-counts").on('click', doClearCounts);
-    $(".button-clear-messages").on('click', doClearMessages);
-    $(".button-clear-filters").on('click', doClearFilters);
-    $('#packets tbody').on('mousedown', 'td', doFilter);
-    packets = $('#packets').DataTable({
-        "paging": false
+    elementSelectorOnClick(".button-clear-counts", rfm69ClearCounters);
+    elementSelectorOnClick(".button-clear-messages", rfm69ClearMessages);
+
+    elementSelectorOnClick(".button-clear-filters", rfm69ClearFilters);
+    elementSelectorOnClick("#rfm69-messages tbody", rfm69FilterEvent);
+
+    groupSettingsOnAdd("rfm69-mapping", () => {
+        rfm69AddMapping();
     });
-    for (var i = 0; i < packets.columns()[0].length; i++) {
-        filters[i] = false;
-    }
     //endRemoveIf(!rfm69)
 
-    $(".gpio-select").each(function(_, elem) {
-        initSelectGPIO(elem)
-    });
-
-    $(document).on("change", "input", hasChanged);
-    $(document).on("change", "select", hasChanged);
-
-    $("textarea").on("dblclick", function() { this.select(); });
+    listenChanged(".settings-group");
+    listenChanged("input,select");
 
     resetOriginals();
 
-    $(".settings-group").each(function() {
-        groupSettingsObserver.observe(this, {childList: true});
+    groupSettingsOnAdd("networks", () => {
+        networkAdd();
     });
+    groupSettingsOnAdd("leds", () => {
+        ledAdd();
+    });
+    groupSettingsOnAdd("schedules", () => {
+        const type = (event.detail.target === "switch") ? 1 :
+            (event.detail.target === "light") ? 2 :
+            (event.detail.target === "curtain") ? 3 : 0;
+
+        if (type !== 0) {
+            schAdd({schType: type});
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    groupSettingsOnAdd("rpn-rules", () => {
+        rpnAddRule();
+    });
+    groupSettingsOnAdd("rpn-topics", () => {
+        rpnAddTopic();
+    });
+
+    // TODO: make sure to never register new handlers for settings-group-add after this point
+    for (let group of document.querySelectorAll(".settings-group")) {
+        GroupSettingsObserver.observe(group, {childList: true});
+        group.addEventListener("settings-group-add", groupSettingsHandleUpdate, false);
+    }
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
@@ -2346,7 +2668,7 @@ $(function() {
     }
 
     // Check host param in query string
-    var search = new URLSearchParams(window.location.search),
+    const search = new URLSearchParams(window.location.search),
         host = search.get("host");
 
     if (host !== null) {
@@ -2354,5 +2676,6 @@ $(function() {
     } else {
         connectToCurrentURL();
     }
+}
 
-});
+document.addEventListener("DOMContentLoaded", main);

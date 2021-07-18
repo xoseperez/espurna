@@ -1,0 +1,12 @@
+{
+  "elements": [
+    "html5"
+  ],
+  "extends": [
+    "html-validate:recommended"
+  ],
+  "rules": {
+    "wcag/h32": "off",
+    "wcag/h71": "off"
+  }
+}

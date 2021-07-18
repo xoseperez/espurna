@@ -1944,9 +1944,13 @@ bool onKeyCheck(const char * key, JsonVariant& value) {
 
 void onConnected(JsonObject& root) {
     root["wifiScan"] = wifi::settings::scanNetworks();
+    root["wifiScanRssi"] = wifi::settings::scanRssiThreshold();
+
+    root["wifiApSsid"] = wifi::settings::softApSsid();
+    root["wifiApPass"] = wifi::settings::softApPassphrase();
 
     JsonObject& wifi = root.createNestedObject("wifiConfig");
-    root["max"] = wifi::build::NetworksMax;
+    wifi["max"] = wifi::build::NetworksMax;
 
     {
         static const char* const schema_keys[] PROGMEM = {

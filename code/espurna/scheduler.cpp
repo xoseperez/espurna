@@ -188,18 +188,31 @@ void show(const Schedules& schedules) {
 } // namespace debug
 
 namespace settings {
+namespace {
 
-const char* const schema_keys[] PROGMEM = {
+constexpr std::array<const char* const, 9> keys PROGMEM {
     "schEnabled",
     "schTarget",
     "schType",
     "schAction",
     "schRestore",
     "schUTC",
-    "schWDs"
+    "schWDs",
     "schHour",
-    "schMinute",
+    "schMinute"
 };
+
+static_assert(keys[0] != nullptr, "");
+static_assert(keys[1] != nullptr, "");
+static_assert(keys[2] != nullptr, "");
+static_assert(keys[3] != nullptr, "");
+static_assert(keys[4] != nullptr, "");
+static_assert(keys[5] != nullptr, "");
+static_assert(keys[6] != nullptr, "");
+static_assert(keys[7] != nullptr, "");
+static_assert(keys[8] != nullptr, "");
+
+} // namespace
 
 bool enabled(size_t index) {
     return getSetting({"schEnabled", index}, false);
@@ -252,7 +265,7 @@ Schedule schedule(size_t index) {
 
 void gc(size_t total) {
     for (size_t i = total; i < build::max(); ++i) {
-        for (auto* key : schema_keys) {
+        for (auto* key : keys) {
             delSetting({key, i});
         }
     }
@@ -352,6 +365,18 @@ void onVisible(JsonObject& root) {
     }
 }
 
+void fillEntry(JsonArray& entry, const Schedule& schedule) {
+    entry.add(schedule.enabled);
+    entry.add(schedule.target);
+    entry.add(schedule.type);
+    entry.add(schedule.action);
+    entry.add(schedule.restore);
+    entry.add(schedule.utc);
+    entry.add(schedule.weekdays.toString());
+    entry.add(schedule.hour);
+    entry.add(schedule.minute);
+}
+
 void onConnected(JsonObject &root){
     if (!schedulable()) return;
 
@@ -359,7 +384,7 @@ void onConnected(JsonObject &root){
     config["max"] = build::max();
 
     JsonArray& schema = config.createNestedArray("schema");
-    schema.copyFrom(settings::schema_keys, sizeof(settings::schema_keys) / sizeof(*settings::schema_keys));
+    schema.copyFrom(settings::keys.data(), settings::keys.size());
 
     uint8_t size = 0;
 
@@ -372,20 +397,8 @@ void onConnected(JsonObject &root){
         }
 
         JsonArray& entry = schedules.createNestedArray();
+        fillEntry(entry, schedule);
         ++size;
-
-        entry.add(schedule.enabled);
-
-        entry.add(schedule.target);
-        entry.add(schedule.type);
-        entry.add(schedule.action);
-
-        entry.add(schedule.restore);
-        entry.add(schedule.utc);
-
-        entry.add(schedule.weekdays.toString());
-        entry.add(schedule.hour);
-        entry.add(schedule.minute);
     }
 
     config["size"] = size;

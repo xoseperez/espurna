@@ -3,8 +3,12 @@
   "description": "Gulp based build system for ESP8266 file system files",
   "main": "gulpfile.js",
   "author": "Xose Pérez <xose.perez@gmail.com>",
+  "contributors": [
+    "Maxim Prokhorov <prokhorov.max@outlook.com>"
+  ],
   "license": "GPL-3.0",
   "devDependencies": {
+    "eslint": "^7.30.0",
     "gulp": "^4.0.2",
     "gulp-csslint": "^1.0.0",
     "gulp-gzip": "^1.4.0",
@@ -13,6 +17,7 @@
     "gulp-inline-source-html": "^1.0.3",
     "gulp-rename": "^2.0.0",
     "gulp-replace": "^1.0.0",
-    "html-minifier": "^4.0.0"
+    "html-minifier": "^4.0.0",
+    "html-validate": "^5.1.1"
   }
 }
