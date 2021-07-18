@@ -557,6 +557,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
+            client->_tempObject = nullptr;
         }
         wifiApCheck();
 
