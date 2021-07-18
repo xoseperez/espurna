@@ -14,8 +14,8 @@ case "$1" in
     ;;
 ("webui")
     # TODO: both can only parse one file at a time
-    npx eslint html/custom.js
-    npx html-validate html/index.html
+    npm exec --no eslint html/custom.js
+    npm exec --no html-validate html/index.html
     # checks whether the webui can be built
     ./build.sh -f environments
     git --no-pager diff --stat
