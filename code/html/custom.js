@@ -968,14 +968,14 @@ function sendAction(action, data) {
 
 function askSaveSettings(ask) {
     if (Settings.counters.changed > 0) {
-        return ask("Some changes have not been saved yet, do you want to save them first?");
+        return ask("There are pending changes to the settings, continue the operation without saving?");
     }
 
     return true;
 }
 
 function askDisconnect(ask) {
-    return ask("Are you sure you want to disconnect from the current WIFI network?");
+    return ask("Are you sure you want to disconnect from the current WiFi network?");
 }
 
 function askReboot(ask) {
@@ -1100,7 +1100,6 @@ function handleFirmwareUpgrade(event) {
             progress.style.display = "none";
             if ("OK" === xhr.responseText) {
                 alert(msg_ok);
-                pageReloadIn(5000);
             } else {
                 alert(msg_err + xhr.status.toString() + " " + xhr.statusText + ", " + xhr.responseText);
             }
@@ -2520,6 +2519,7 @@ function connectToURL(url) {
         }
 
         // Nothing to do, reload page and retry on errors
+        notifyError(`${Urls.ws.href} responded with status code ${response.status}, reloading the page`, null, 0, 0, null);
         pageReloadIn(5000);
     }).catch((error) => {
         notifyError(null, null, 0, 0, error);
