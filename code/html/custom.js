@@ -101,6 +101,20 @@ function notifyError(message, source, lineno, colno, error) {
 
 window.onerror = notifyError;
 
+// TODO: per https://www.chromestatus.com/feature/6140064063029248, using <base target="_blank"> should be enough with recent browsers
+// but, side menu needs to be reworked for it to correctly handle panel switching, since it uses <a href="#" ...>
+// TODO: also could be done in htmlparser2 + gulp (even, preferably)
+
+function initExternalLinks() {
+    for (let elem of document.getElementsByClassName("external")) {
+        if (elem.tagName === "A") {
+            elem.setAttribute("target", "_blank");
+            elem.setAttribute("rel", "noopener");
+            elem.setAttribute("tabindex", "-1");
+        }
+    }
+}
+
 function followScroll(elem, threshold) {
     if (threshold === undefined) {
         threshold = 90;
@@ -268,8 +282,117 @@ function groupSettingsHandleUpdate(event) {
     }
 }
 
+// -----------------------------------------------------------------------------
+// Settings groups & templates
+// -----------------------------------------------------------------------------
+
+// Styled checkboxes require unique label for=... and input id=..., which are
+// generated based on the current position of the element. When removing the node,
+// elements must be re-enumerated and assigned new id's to remain unique
+// (and avoid having one line's checkbox affecting some other one)
+
+function createCheckboxes(node) {
+    let checkboxes = node.querySelectorAll("input[type='checkbox']");
+    for (let checkbox of checkboxes) {
+        checkbox.id = checkbox.name;
+        checkbox.parentElement.classList.add("toggleWrapper");
+
+        let label = document.createElement("label");
+        label.classList.add("toggle");
+        label.htmlFor = checkbox.id;
+
+        let span = document.createElement("span");
+        span.classList.add("toggle__handler");
+        label.appendChild(span);
+
+        checkbox.parentElement.appendChild(label);
+    }
+}
+
+function updateCheckboxes(node) {
+    for (let id = 0; id < node.childElementCount; ++id) {
+        let schedule = node.children[id];
+        for (let checkbox of schedule.querySelectorAll("input[type='checkbox']")) {
+            let realId = checkbox.name.concat(id);
+            checkbox.setAttribute("id", realId);
+            checkbox.nextElementSibling.setAttribute("for", realId);
+        }
+    }
+}
+
+// Generic parts of the HTML are placed into <template> container, which requires
+// us to 'import' it into the currently loaded page to actually use it.
+// (and notice that document.querySelector(...) won't be able to read inside of these)
+
+function loadTemplate(name) {
+    let template = document.getElementById(`template-${name}`);
+    return document.importNode(template.content, true);
+}
+
+function loadConfigTemplate(id) {
+    let template = loadTemplate(id);
+    for (let elem of template.querySelectorAll("input,select")) {
+        elem.dataset["settingsGroupElement"] = "true";
+    }
+
+    for (let elem of template.querySelectorAll("button.button-del-parent")) {
+        elem.addEventListener("click", delParent);
+    }
+
+    for (let elem of template.querySelectorAll("button.button-more-parent")) {
+        elem.addEventListener("click", moreParent);
+    }
+
+    for (let elem of template.querySelectorAll("select.enumerable")) {
+        initEnumerableSelect(elem, initSelect);
+    }
+
+    createCheckboxes(template);
+    return template;
+}
+
+function mergeTemplate(target, template) {
+    for (let child of Array.from(template.children)) {
+        target.appendChild(child);
+    }
+}
+
+function addFromTemplate(container, template, cfg) {
+    let line = loadConfigTemplate(template);
+    fillTemplateLineFromCfg(line, container.childElementCount, cfg);
+
+    mergeTemplate(container, line);
+}
+
+// Group settings are special elements on the page that represent kv that are indexed in settings
+// Special 'add' element will trigger update on the specified '.settings-group' element id, which
+// needs to have 'settings-group-add' event handler attached to it.
+
 function groupSettingsOnAdd(elementId, listener) {
     document.getElementById(elementId).addEventListener("settings-group-add", listener);
+}
+
+function groupSettingsAdd(event) {
+    const prefix = "settingsGroupDetail";
+    const elem = event.target;
+
+    // TODO: note that still has the dataset format, thus every hyphen capitalizes the next word
+    let eventInit = {detail: null};
+    for (let key of Object.keys(elem.dataset)) {
+        if (!key.startsWith(prefix)) {
+            continue
+        }
+        if (eventInit.detail === null) {
+            eventInit.detail = {};
+        }
+
+        let eventKey = key.replace(prefix, "");
+        eventKey = eventKey[0].toLowerCase() + eventKey.slice(1);
+        eventInit.detail[eventKey] = elem.dataset[key];
+    }
+
+    const group = document.getElementById(elem.dataset["settingsGroup"]);
+    group.dispatchEvent(new CustomEvent("settings-group-add", eventInit));
 }
 
 var GroupSettingsObserver = new MutationObserver((mutations) => {
@@ -286,6 +409,7 @@ var GroupSettingsObserver = new MutationObserver((mutations) => {
 
 // When receiving / returning data, <select multiple=true> <option> values are treated as bitset (u32) indexes (i.e. individual bits that are set)
 // For example 0b101 is translated to ["0", "2"], or 0b1111 is translated to ["0", "1", "2", "3"]
+// Right now only `hbReport` uses such format, but it is not yet clear how such select element should behave when value is not an integer
 
 function bitsetToSelectedValues(bitset) {
     let values = [];
@@ -312,7 +436,7 @@ function bitsetFromSelectedValues(select) {
 // - multiple=true -> comma-separated values of all selected options
 //
 // If selectedIndex is -1, it means we never selected anything
-// (TODO: could this actually happen with defaultValue'ed <select>?)
+// (TODO: could this actually happen with anything other than empty <select>?)
 
 function stringifySelectedValues(select) {
     if (select.multiple) {
@@ -393,8 +517,10 @@ function booleanToString(value) {
 
 function setInputValue(input, value) {
     switch (input.type) {
-    case "checkbox":
     case "radio":
+        input.checked = (value === input.value);
+        break;
+    case "checkbox":
         input.checked =
             (typeof(value) === "boolean") ? value :
             (typeof(value) === "string") ? stringToBoolean(value) :
@@ -439,12 +565,23 @@ function setSelectValue(select, value) {
         });
 }
 
+// TODO: <input type="radio"> is a special beast, since the actual value is one of 'checked' elements with the same name=... attribute.
+// Right now, WebUI does not use this kind of input, but in case it does this needs a once-over that the actual input value is picked up correctly through all of changed / original comparisons.
+
+// Not all of available forms are used for settings:
+// - terminal input, which is implemented with an input field. it is attributed with `action="none"`, so settings handler never treats it as 'changed'
+// - initial setup. it is shown programatically, but is still available from the global list of forms
+
 function getDataForElement(element) {
     switch (element.tagName) {
     case "INPUT":
         switch (element.type) {
-        case "checkbox":
         case "radio":
+            if (element.checked) {
+                return element.value;
+            }
+            return null;
+        case "checkbox":
             return element.checked ? 1 : 0;
         case "number":
         case "text":
@@ -478,6 +615,9 @@ function getData(forms, changed, cleanup) {
         changed = true;
     }
 
+    // TODO: <input type="radio"> can be found as both individual elements and as a `RadioNodeList` view.
+    // matching will extract the specific radio element, but will ignore the list b/c it has no tagName
+    // TODO: actually use type="radio" in the WebUI to check whether this works
     for (let form of forms) {
         for (let elem of form.elements) {
             if ((elem.tagName !== "SELECT") && (elem.tagName !== "INPUT")) {
@@ -488,12 +628,12 @@ function getData(forms, changed, cleanup) {
                 continue;
             }
 
-            if (elem.name === undefined) {
+            const name = elem.dataset.settingsRealName || elem.name;
+            if (name === undefined) {
                 continue;
             }
 
-            let name = elem.dataset["settingsRealName"] || elem.name;
-            let value = getDataForElement(elem);
+            const value = getDataForElement(elem);
             if (null !== value) {
                 var indexed = changed_data.indexOf(name) >= 0;
                 if ((isChangedElement(elem) || !changed) && !indexed) {
@@ -517,7 +657,7 @@ function getData(forms, changed, cleanup) {
     // Finally, filter out only fields that had changed.
     // Note: We need to preserve dynamic lists like schedules, wifi etc.
     // so we don't accidentally break when user deletes entry in the middle
-    var resulting_data = {};
+    const resulting_data = {};
     for (let value in data) {
         if (changed_data.indexOf(value) >= 0) {
             resulting_data[value] = data[value];
@@ -537,7 +677,6 @@ function getData(forms, changed, cleanup) {
     }
 
     return resulting_data;
-
 }
 
 function randomString(length, args) {
@@ -591,11 +730,11 @@ function toggleVisiblePassword(event) {
     }
 }
 
-function doGeneratePassword() {
+function generatePasswordsForForm(name) {
     let value = generatePassword();
 
-    let input = document.getElementById("form-setup-password");
-    for (let elem of [input.elements.adminPass0, input.elements.adminPass1]) {
+    let form = document.forms[name];
+    for (let elem of [form.elements.adminPass0, form.elements.adminPass1]) {
         setChangedElement(elem);
         elem.type = "text";
         elem.value = value;
@@ -618,6 +757,35 @@ function moduleVisible(module) {
             elem.style.display = "inherit";
         }
     }
+}
+
+// Update <input> and <select> elements that were set externally. Generic change handler will allow to compare with user input,
+// allowing to send configuration in parts instead of all of it at once.
+
+function setOriginalsFromValuesForNode(node, elems) {
+    if (elems === undefined) {
+        elems = [...node.querySelectorAll("input,select")];
+    }
+
+    for (let elem of elems) {
+        switch (elem.tagName) {
+        case "INPUT":
+            if (elem.type === "checkbox") {
+                elem.dataset["original"] = booleanToString(elem.checked);
+            } else {
+                elem.dataset["original"] = elem.value;
+            }
+            break;
+        case "SELECT":
+            elem.dataset["original"] = stringifySelectedValues(elem);
+            break;
+        }
+        resetChangedElement(elem);
+    }
+}
+
+function setOriginalsFromValues(elems) {
+    setOriginalsFromValuesForNode(document, elems);
 }
 
 // <select> initialization from simple {id: ..., name: ...} that map as <option> value=... and textContent
@@ -660,12 +828,9 @@ function refreshEnumerableSelect(name) {
 
             initSelect(select, enumerable);
 
-            let original = select.dataset["original"];
-            if (original && original.length) {
-                let options = original.split(",");
-                for (let option of options) {
-                    select.options[option].selected = true;
-                }
+            const original = select.dataset["original"];
+            if (typeof original === "string" && original.length) {
+                setSelectValue(select, original);
             }
         });
     }
@@ -755,15 +920,15 @@ function delParent(event) {
     event.target.parentElement.remove();
 }
 
-function moreParentElem(parent) {
-    for (let elem of parent.querySelectorAll(".more")) {
+function moreElem(container) {
+    for (let elem of container.querySelectorAll(".more")) {
         elem.style.display = (elem.style.display === "")
             ? "inherit" : "";
     }
 }
 
 function moreParent(event) {
-    moreParentElem(event.target.parentElement.parentElement);
+    moreElem(event.target.parentElement.parentElement);
 }
 
 function idForTemplateContainer(container) {
@@ -784,7 +949,7 @@ function idForTemplateContainer(container) {
 }
 
 // -----------------------------------------------------------------------------
-// Actions
+// WebSocket Actions
 // -----------------------------------------------------------------------------
 
 function send(payload) {
@@ -794,45 +959,55 @@ function send(payload) {
     Websock.send(payload);
 }
 
-// RPC-like actions
-
 function sendAction(action, data) {
+    if (data === undefined) {
+        data = {};
+    }
     send(JSON.stringify({action, data}));
+}
+
+function askSaveSettings(ask) {
+    if (Settings.counters.changed > 0) {
+        return ask("Some changes have not been saved yet, do you want to save them first?");
+    }
+
+    return true;
+}
+
+function askDisconnect(ask) {
+    return ask("Are you sure you want to disconnect from the current WIFI network?");
+}
+
+function askReboot(ask) {
+    return ask("Are you sure you want to reboot the device?");
+}
+
+function askAndCall(questions, callback) {
+    for (let question of questions) {
+        if (!question(window.confirm)) {
+            return;
+        }
+    }
+
+    callback();
+}
+
+function askAndCallReconnect() {
+    askAndCall([askSaveSettings, askDisconnect], () => {
+        sendAction("reconnect");
+    });
+}
+
+function askAndCallReboot() {
+    askAndCall([askSaveSettings, askReboot], () => {
+        sendAction("reboot");
+    });
 }
 
 // Settings kv as either {key: value} or {key: [value0, value1, ...etc...]}
 
 function sendConfig(config) {
     send(JSON.stringify({config}));
-}
-
-// Track with <input> and <select> elements were received via the WebSocket
-// Generic change handler below will compare the user input with the original value, allowing to send configuration in parts instead of all of it at once.
-
-function setOriginalsFromValuesForNode(node, elems) {
-    if (elems === undefined) {
-        elems = [...node.querySelectorAll("input,select")];
-    }
-
-    for (let elem of elems) {
-        switch (elem.tagName) {
-        case "INPUT":
-            if ((elem.type === "checkbox") || (elem.type === "radio")) {
-                elem.dataset["original"] = booleanToString(elem.checked);
-            } else {
-                elem.dataset["original"] = elem.value;
-            }
-            break;
-        case "SELECT":
-            elem.dataset["original"] = stringifySelectedValues(elem);
-            break;
-        }
-        resetChangedElement(elem);
-    }
-}
-
-function setOriginalsFromValues(elems) {
-    setOriginalsFromValuesForNode(document, elems);
 }
 
 function resetOriginals() {
@@ -842,7 +1017,7 @@ function resetOriginals() {
     Settings.saved = false;
 }
 
-function doReload(milliseconds) {
+function pageReloadIn(milliseconds) {
     setTimeout(() => {
         window.location.reload();
     }, parseInt(milliseconds, 10));
@@ -855,14 +1030,13 @@ function doReload(milliseconds) {
 // Result is handled through callback:
 // - success as callback(true)
 // - failure as callback(false)
+
 function checkFirmware(file, callback) {
-
-    var reader = new FileReader();
-
-    reader.onloadend = function(evt) {
-        if (FileReader.DONE === evt.target.readyState) {
-            var magic = evt.target.result.charCodeAt(0);
-            if ((0x1F === magic) && (0x8B === evt.target.result.charCodeAt(1))) {
+    const reader = new FileReader();
+    reader.onloadend = function(event) {
+        if (FileReader.DONE === event.target.readyState) {
+            const magic = event.target.result.charCodeAt(0);
+            if ((0x1F === magic) && (0x8B === event.target.result.charCodeAt(1))) {
                 callback(true);
                 return;
             }
@@ -873,23 +1047,21 @@ function checkFirmware(file, callback) {
                 return;
             }
 
-            var modes = ['QIO', 'QOUT', 'DIO', 'DOUT'];
-            var flash_mode = evt.target.result.charCodeAt(2);
+            const flash_mode = event.target.result.charCodeAt(2);
             if (0x03 !== flash_mode) {
-                var response = window.confirm("Binary image is using " + modes[flash_mode] + " flash mode! Make sure that the device supports it before proceeding.");
-                callback(response);
+                const modes = ['QIO', 'QOUT', 'DIO', 'DOUT'];
+                callback(window.confirm(`Binary image is using ${modes[flash_mode]} flash mode! Make sure that the device supports it before proceeding.`));
             } else {
                 callback(true);
             }
         }
     };
 
-    var blob = file.slice(0, 3);
+    const blob = file.slice(0, 3);
     reader.readAsBinaryString(blob);
-
 }
 
-function doUpgrade(event) {
+function handleFirmwareUpgrade(event) {
     event.preventDefault();
 
     let upgrade = document.querySelector("input[name='upgrade']");
@@ -928,7 +1100,7 @@ function doUpgrade(event) {
             progress.style.display = "none";
             if ("OK" === xhr.responseText) {
                 alert(msg_ok);
-                doReload(5000);
+                pageReloadIn(5000);
             } else {
                 alert(msg_err + xhr.status.toString() + " " + xhr.statusText + ", " + xhr.responseText);
             }
@@ -948,75 +1120,45 @@ function doUpgrade(event) {
 }
 
 // Initial page, when webMode only allows to change the password
-function doSetupPassword(event) {
-    let forms = [document.forms["form-setup-password"]];
+function sendPasswordConfig(name) {
+    let forms = [document.forms[name]];
     if (validateFormPasswords(forms, true)) {
         sendConfig(getData(forms, true, false));
     }
-
-    event.preventDefault();
 }
 
-function checkChanges() {
-    if (Settings.counters.changed > 0) {
-        var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
-        if (response) {
-            doUpdate();
-        }
-    }
-}
-
-function doAction(event, question, action) {
-    event.preventDefault();
-
-    checkChanges();
-    if (question && !window.confirm(question)) {
-        return;
-    }
-
-    sendAction(action, {});
-    doReload(5000);
-}
-
-function doReboot(event) {
-    doAction(event, "Are you sure you want to reboot the device?", "reboot");
-}
-
-function doReconnect(ask) {
-    var question = (typeof ask === "undefined" || false === ask) ?
-        null :
-        "Are you sure you want to disconnect from the current WIFI network?";
-    return doAction(question, "reconnect");
-}
-
-function doCheckOriginals() {
+function afterSaved() {
     var response;
 
     if (Settings.counters.reboot > 0) {
         response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
         if (response) {
-            doReboot(false);
+            sendAction("reboot");
         }
     } else if (Settings.counters.reconnect > 0) {
         response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-        if (response) { doReconnect(false); }
+        if (response) {
+            sendAction("reconnect");
+        }
     } else if (Settings.counters.reload > 0) {
         response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-        if (response) { doReload(0); }
+        if (response) {
+            pageReloadIn(0);
+        }
     }
 
     resetOriginals();
 }
 
-function waitForSave(){
+function waitForSaved(){
     if (!Settings.saved) {
-        setTimeout(waitForSave, 1000);
+        setTimeout(waitForSaved, 1000);
     } else {
-        doCheckOriginals();
+        afterSaved();
     }
 }
 
-function doUpdate() {
+function sendConfigFromAllForms() {
     // Since we have 2-page config, make sure we select the active one
     let forms = document.getElementsByClassName("form-settings");
     if (validateForms(forms)) {
@@ -1043,88 +1185,141 @@ function doUpdate() {
 //endRemoveIf(!sensor)
 
         Settings.counters.changed = 0;
-        waitForSave();
+        waitForSaved();
     }
 
     return false;
 }
 
-function doBackup() {
-    document.getElementById("downloader").click();
-}
+function handleSettingsFile(event) {
+    event.preventDefault();
 
-function onFileUpload(event) {
-    var inputFiles = event.target.files;
+    const inputFiles = event.target.files;
     if (typeof inputFiles === "undefined" || inputFiles.length === 0) {
         return false;
     }
-    var inputFile = inputFiles[0];
+
+    const inputFile = inputFiles[0];
     event.target.value = "";
 
-    var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore from this file?");
-    if (!response) {
+    if (!window.confirm("Previous settings will be overwritten. Are you sure you want to restore from this file?")) {
         return false;
     }
 
-    var reader = new FileReader();
-    reader.onload = function(e) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
         try {
-            var data = JSON.parse(e.target.result);
+            var data = JSON.parse(event.target.result);
             sendAction("restore", data);
         } catch (e) {
-            window.alert(e);
+            notifyError(null, null, 0, 0, e);
         }
     };
     reader.readAsText(inputFile);
-
-    event.preventDefault();
 }
 
-function doRestore(event) {
-    if (typeof window.FileReader === "function") {
-        document.getElementById("uploader").click();
-    } else {
-        alert("The file API isn't supported on this browser yet.");
-    }
+function resetToFactoryDefaults(event) {
     event.preventDefault();
-}
 
-function doFactoryReset(event) {
-    let response = window.confirm("Are you sure you want to restore to factory settings?");
+    let response = window.confirm("Are you sure you want to erase all settings from the device?");
     if (response) {
-        sendAction("factory_reset", {});
-        doReload(5000);
+        sendAction("factory_reset");
     }
-    event.preventDefault();
 }
 
-function doScan(event) {
-    let [results] = document.getElementById("scanResult").tBodies;
-    while (results.rows.length) {
-        results.deleteRow(0);
-    }
+// -----------------------------------------------------------------------------
+// Visualization
+// -----------------------------------------------------------------------------
 
-    let loading = document.querySelector("div.scan.loading");
-    loading.style.display = "inherit";
-
-    for (let button of document.querySelectorAll(".button-wifi-scan")) {
-        button.disabled = true;
+function toggleMenu(event) {
+    if (event !== undefined && event.cancelable) {
+        event.preventDefault();
     }
 
-    sendAction("scan", {});
-    event.preventDefault();
+    for (const id of ["layout", "menu", "menu-link"]) {
+        document.getElementById(id).classList.toggle("active");
+    }
 }
 
-function doDebugCommand(command) {
-    sendAction("dbgcmd", {command: command});
-    followScroll(document.getElementById("weblog"), 0);
+function showPanel(event) {
+    event.preventDefault();
+
+    for (let panel of document.querySelectorAll(".panel")) {
+        panel.style.display = "none";
+    }
+
+    let layout = document.getElementById("layout");
+    if (layout.classList.contains("active")) {
+        toggleMenu();
+    }
+
+    let panel = event.target.dataset["panel"];
+    document.getElementById(`panel-${panel}`).style.display = "inherit";
 }
 
-function doDebugClear(event) {
-    let elem = document.getElementById("weblog");
-    elem.textContent = "";
-    event.preventDefault();
+// -----------------------------------------------------------------------------
+// Relays & magnitudes mapping
+// -----------------------------------------------------------------------------
+
+function createRelayList(values, container, template_name) {
+    let target = document.getElementById(container);
+    if (target.childElementCount > 0) {
+        return;
+    }
+
+    let template = loadConfigTemplate(template_name);
+    values.forEach((value, index) => {
+        let line = template.cloneNode(true);
+        line.querySelector("label").textContent += " #".concat(index)
+
+        let input = line.querySelector("input");
+        input.value = value;
+        input.dataset["original"] = value;
+
+        mergeTemplate(target, line);
+    });
 }
+
+//removeIf(!sensor)
+
+function createMagnitudeList(data, container, template_name) {
+    let target = document.getElementById(container);
+    if (target.childElementCount > 0) { return; }
+
+    data.values.forEach((values) => {
+        let [type, index_global, index_module] = values;
+
+        let line = loadConfigTemplate(template_name);
+        line.querySelector("label").textContent =
+            MagnitudeNames[type].concat(" #").concat(parseInt(index_global, 10));
+        line.querySelector("div.hint").textContent =
+            Magnitudes[index_global].description;
+
+        let input = line.querySelector("input");
+        input.value = index_module;
+        input.dataset["original"] = input.value;
+
+        mergeTemplate(target, line);
+    });
+}
+
+//endRemoveIf(!sensor)
+
+// -----------------------------------------------------------------------------
+// RPN Rules
+// -----------------------------------------------------------------------------
+
+function rpnAddRule(cfg) {
+    addFromTemplate(document.getElementById("rpn-rules"), "rpn-rule", cfg);
+}
+
+function rpnAddTopic(cfg) {
+    addFromTemplate(document.getElementById("rpn-topics"), "rpn-topic", cfg);
+}
+
+// -----------------------------------------------------------------------------
+// RFM69
+// -----------------------------------------------------------------------------
 
 //removeIf(!rfm69)
 
@@ -1150,7 +1345,7 @@ function rfm69AddMessage(message) {
 }
 
 function rfm69ClearCounters() {
-    sendAction("rfm69Clear", {});
+    sendAction("rfm69Clear");
     return false;
 }
 
@@ -1200,141 +1395,12 @@ function rfm69ClearFilters() {
 
 //endRemoveIf(!rfm69)
 
-// -----------------------------------------------------------------------------
-// Visualization
-// -----------------------------------------------------------------------------
-
-function toggleMenu(event) {
-    if (event !== undefined && event.cancelable) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-
-    for (const id of ["layout", "menu", "menu-link"]) {
-        document.getElementById(id).classList.toggle("active");
-    }
-}
-
-function showPanel(event) {
-    for (let panel of document.querySelectorAll(".panel")) {
-        panel.style.display = "none";
-    }
-
-    let layout = document.getElementById("layout");
-    if ("active" in layout.classList) {
-        toggleMenu();
-    }
-
-    let panel = event.target.dataset["panel"];
-    document.getElementById(`panel-${panel}`).style.display = "inherit";
-
-    event.preventDefault();
-    event.stopPropagation();
-}
-
-function loadTemplate(name) {
-    let template = document.getElementById(`template-${name}`);
-    return document.importNode(template.content, true);
-}
-
-function loadConfigTemplate(id) {
-    let template = loadTemplate(id);
-    for (let elem of template.querySelectorAll("input,select")) {
-        elem.dataset["settingsGroupElement"] = "true";
-    }
-
-    for (let elem of template.querySelectorAll("button.button-del-parent")) {
-        elem.addEventListener("click", delParent);
-    }
-
-    for (let elem of template.querySelectorAll("button.button-more-parent")) {
-        elem.addEventListener("click", moreParent);
-    }
-
-    for (let elem of template.querySelectorAll("select.enumerable")) {
-        initEnumerableSelect(elem, initSelect);
-    }
-
-    createCheckboxes(template);
-    return template;
-}
-
-function mergeTemplate(target, template) {
-    for (let child of Array.from(template.children)) {
-        target.appendChild(child);
-    }
-}
-
-function addFromTemplate(container, template, cfg) {
-    let line = loadConfigTemplate(template);
-    fillTemplateLineFromCfg(line, container.childElementCount, cfg);
-
-    mergeTemplate(container, line);
-}
-
-// -----------------------------------------------------------------------------
-// Relays & magnitudes mapping
-// -----------------------------------------------------------------------------
-
-function createRelayList(values, container, template_name) {
-    let target = document.getElementById(container);
-    if (target.childElementCount > 0) { return; }
-
-    let template = loadConfigTemplate(template_name);
-    values.forEach((value, index) => {
-        let line = template.cloneNode(true);
-        line.querySelector("label").textContent += " #".concat(index)
-
-        let input = line.querySelector("input");
-        input.value = value;
-        input.dataset["original"] = value;
-
-        mergeTemplate(target, line);
-    });
-}
-
-//removeIf(!sensor)
-//
-function createMagnitudeList(data, container, template_name) {
-    let target = document.getElementById(container);
-    if (target.childElementCount > 0) { return; }
-
-    data.values.forEach((values) => {
-        let [type, index_global, index_module] = values;
-
-        let line = loadConfigTemplate(template_name);
-        line.querySelector("label").textContent =
-            MagnitudeNames[type].concat(" #").concat(parseInt(index_global, 10));
-        line.querySelector("div.hint").textContent =
-            Magnitudes[index_global].description;
-
-        let input = line.querySelector("input");
-        input.value = index_module;
-        input.dataset["original"] = input.value;
-
-        mergeTemplate(target, line);
-    });
-}
-
-//endRemoveIf(!sensor)
-
-// -----------------------------------------------------------------------------
-// RPN Rules
-// -----------------------------------------------------------------------------
-
-function rpnAddRule(cfg) {
-    addFromTemplate(document.getElementById("rpn-rules"), "rpn-rule", cfg);
-}
-
-function rpnAddTopic(cfg) {
-    addFromTemplate(document.getElementById("rpn-topics"), "rpn-topic", cfg);
-}
 
 // -----------------------------------------------------------------------------
 // Wifi
 // -----------------------------------------------------------------------------
 
-function networkAdd(cfg, showMore) {
+function wifiNetworkAdd(cfg, showMore) {
     let container = document.getElementById("networks");
 
     let id = idForTemplateContainer(container);
@@ -1349,14 +1415,14 @@ function networkAdd(cfg, showMore) {
     let line = loadConfigTemplate("network-config");
     fillTemplateLineFromCfg(line, id, cfg);
     if (showMore) {
-        moreParentElem(line);
+        moreElem(line);
     }
 
     mergeTemplate(container, line);
     return;
 }
 
-function networkScanResult(values) {
+function wifiScanResult(values) {
     let loading = document.querySelector("div.scan.loading");
     loading.style.display = "none";
 
@@ -1373,6 +1439,24 @@ function networkScanResult(values) {
         let cell = row.insertCell();
         cell.appendChild(document.createTextNode(value));
     }
+}
+
+function startWifiScan(event) {
+    event.preventDefault();
+
+    let [results] = document.getElementById("scanResult").tBodies;
+    while (results.rows.length) {
+        results.deleteRow(0);
+    }
+
+    let loading = document.querySelector("div.scan.loading");
+    loading.style.display = "inherit";
+
+    for (let button of document.querySelectorAll(".button-wifi-scan")) {
+        button.disabled = true;
+    }
+
+    sendAction("scan");
 }
 
 // -----------------------------------------------------------------------------
@@ -1431,10 +1515,10 @@ function schAdd(cfg) {
 // -----------------------------------------------------------------------------
 
 function relayToggle(event) {
+    event.preventDefault();
     sendAction("relay", {
         id: parseInt(event.target.dataset["id"], 10),
         status: event.target.checked ? "1" : "0"});
-    event.preventDefault();
 }
 
 function initRelayToggle(id, cfg) {
@@ -1471,53 +1555,6 @@ function updateRelays(data) {
             2: relay.status
         })[relay.lock]; // TODO: specify lock statuses earlier?
     });
-}
-
-// TODO: per https://www.chromestatus.com/feature/6140064063029248, using <base target="_blank"> should be enough with recent browsers
-// but, side menu needs to be reworked for it to correctly handle panel switching, since it uses <a href="#" ...>
-// TODO: also could be done in htmlparser2 + gulp (even, preferably)
-
-function initExternalLinks() {
-    for (let elem of document.getElementsByClassName("external")) {
-        if (elem.tagName === "A") {
-            elem.setAttribute("target", "_blank");
-            elem.setAttribute("rel", "noopener");
-            elem.setAttribute("tabindex", "-1");
-        }
-    }
-}
-
-// TODO: ids are generated based on the current position of the element
-// when removing nodes, id=... and label for=... must remain unique, thus everything needs to be reset
-// based on the new number and position of nodes
-
-function createCheckboxes(node) {
-    let checkboxes = node.querySelectorAll("input[type='checkbox']");
-    for (let checkbox of checkboxes) {
-        checkbox.id = checkbox.name;
-        checkbox.parentElement.classList.add("toggleWrapper");
-
-        let label = document.createElement("label");
-        label.classList.add("toggle");
-        label.htmlFor = checkbox.id;
-
-        let span = document.createElement("span");
-        span.classList.add("toggle__handler");
-        label.appendChild(span);
-
-        checkbox.parentElement.appendChild(label);
-    }
-}
-
-function updateCheckboxes(node) {
-    for (let id = 0; id < node.childElementCount; ++id) {
-        let schedule = node.children[id];
-        for (let checkbox of schedule.querySelectorAll("input[type='checkbox']")) {
-            let realId = checkbox.name.concat(id);
-            checkbox.setAttribute("id", realId);
-            checkbox.nextElementSibling.setAttribute("for", realId);
-        }
-    }
 }
 
 function initRelayConfig(id, cfg) {
@@ -1628,9 +1665,11 @@ function curtainButtonHandler(event) {
         return;
     }
 
+    event.preventDefault();
+
     let code = -1;
 
-    let list = event.target.classList;
+    const list = event.target.classList;
     if (list.contains("button-curtain-pause")) {
         code = 0;
     } else if (list.contains("button-curtain-open")) {
@@ -1643,9 +1682,6 @@ function curtainButtonHandler(event) {
         sendAction("curtainAction", {button: code});
         event.target.style.background = "red";
     }
-
-    event.preventDefault();
-    event.stopPropagation();
 }
 
 function curtainSetHandler(event) {
@@ -1709,20 +1745,18 @@ function updateCurtain(value) {
     if (!value.moving) {
         let button = document.querySelector("button.curtain-button");
         button.style.background = backgroundStopped;
+    } else if (!value.button) {
+        let pause = document.querySelector("button.curtain-pause");
+        pause.style.background = backgroundMoving;
     } else {
-        if (!value.button) {
-            let pause = document.querySelector("button.curtain-pause");
-            pause.style.background = backgroundMoving;
-        } else {
-            let open = document.querySelector("button.button-curtain-open");
-            let close = document.querySelector("button.button-curtain-close");
-            if (value.button === 1) {
-                open.style.background = backgroundMoving;
-                close.style.background = backgroundStopped;
-            } else if (value.button === 2) {
-                open.style.background = backgroundStopped;
-                close.style.background = backgroundMoving;
-            }
+        let open = document.querySelector("button.button-curtain-open");
+        let close = document.querySelector("button.button-curtain-close");
+        if (value.button === 1) {
+            open.style.background = backgroundMoving;
+            close.style.background = backgroundStopped;
+        } else if (value.button === 2) {
+            open.style.background = backgroundStopped;
+            close.style.background = backgroundMoving;
         }
     }
 }
@@ -1845,6 +1879,7 @@ function updateBrightness(value) {
     slider.value = value;
     slider.nextElementSibling.textContent = value;
     slider.addEventListener("change", onBrightnessSliderChange);
+
     mergeTemplate(document.getElementById("light"), template);
 }
 
@@ -1963,11 +1998,11 @@ function rfbHandleCodes(value) {
 //removeIf(!lightfox)
 
 function lightfoxLearn() {
-    sendAction("lightfoxLearn", {});
+    sendAction("lightfoxLearn");
 }
 
 function lightfoxClear() {
-    sendAction("lightfoxClear", {});
+    sendAction("lightfoxClear");
 }
 
 //endRemoveIf(!lightfox)
@@ -2054,7 +2089,7 @@ function processData(data) {
 
         if ("action" === key) {
             if ("reload" === data.action) {
-                doReload(1000);
+                pageReloadIn(1000);
             }
             return;
         }
@@ -2088,15 +2123,13 @@ function processData(data) {
         if ("rfm69" === key) {
             if (value.message !== undefined) {
                 rfm69AddMessage(value.message);
-                return;
             }
-
             if (value.mapping !== undefined) {
                 value.mapping.forEach((mapping) => {
                     rfm69AddMapping(fromSchema(mapping, value.schema));
                 });
-                return;
             }
+            return;
         }
 
         //endRemoveIf(!rfm69)
@@ -2195,13 +2228,13 @@ function processData(data) {
             container.dataset["settingsMax"] = value.max;
 
             value.networks.forEach((entries) => {
-                networkAdd(fromSchema(entries, value.schema), false);
+                wifiNetworkAdd(fromSchema(entries, value.schema), false);
             });
             return;
         }
 
         if ("scanResult" === key) {
-            networkScanResult(value);
+            wifiScanResult(value);
             return;
         }
 
@@ -2380,7 +2413,7 @@ function processData(data) {
     });
 }
 
-function updateChanged(event) {
+function onElementChange(event) {
     let action = event.target.dataset["action"];
     if ("none" === action) {
         return;
@@ -2424,7 +2457,7 @@ function updateChanged(event) {
 
 function listenChanged(selector) {
     for (let elem of document.querySelectorAll(selector)) {
-        elem.addEventListener("change", updateChanged);
+        elem.addEventListener("change", onElementChange);
     }
 }
 
@@ -2447,7 +2480,7 @@ function onWebSocketMessage(event) {
 }
 
 function webSocketPing() {
-    sendAction("ping", {});
+    sendAction("ping");
 }
 
 function onWebSocketOpen() {
@@ -2465,6 +2498,7 @@ function onWebSocketClose() {
 
 function connectToURL(url) {
     Urls = new UrlsBase(url);
+    setInterval(() => keepTime(), 1000);
 
     fetch(Urls.auth.href, {
         'method': 'GET',
@@ -2486,10 +2520,10 @@ function connectToURL(url) {
         }
 
         // Nothing to do, reload page and retry on errors
-        doReload(5000);
+        pageReloadIn(5000);
     }).catch((error) => {
         notifyError(null, null, 0, 0, error);
-        doReload(5000);
+        pageReloadIn(5000);
     });
 }
 
@@ -2509,47 +2543,32 @@ function connectToCurrentURL() {
 function main() {
     initExternalLinks();
     createCheckboxes(document);
-    setInterval(() => keepTime(), 1000);
 
-    elementSelectorOnClick(".menu-link", toggleMenu);
+    // Password handling for the initial screen and the rest of inputs that are supposed to be 'secret'
     elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
+    elementSelectorOnClick(".button-setup-password", (event) => {
+        event.preventDefault();
+        sendPasswordConfig("panel-password");
+    });
+    elementSelectorOnClick(".button-generate-password", (event) => {
+        event.preventDefault();
+        generatePasswordsForForm("panel-password");
+    });
+
+    // Sidebar menu & buttons
+    elementSelectorOnClick(".menu-link", toggleMenu);
     elementSelectorOnClick(".pure-menu-link", showPanel);
+    elementSelectorOnClick(".button-update", (event) => {
+        event.preventDefault();
+        sendConfigFromAllForms();
+    });
+    elementSelectorOnClick(".button-reconnect", askAndCallReconnect);
+    elementSelectorOnClick(".button-reboot", askAndCallReboot);
 
-    elementSelectorOnClick(".button-wifi-scan", doScan);
-    elementSelectorOnClick(".button-reboot", doReboot);
-    elementSelectorOnClick(".button-reconnect", doReconnect);
+    // WiFi config
+    elementSelectorOnClick(".button-wifi-scan", startWifiScan);
 
-    // while the settings are grouped using forms, actual submit is useless here
-    // b/c the data is intended to be sent with the websocket connection and never separately
-    for (let form of document.forms) {
-        if (form.id === "form-dbg") {
-            form.addEventListener("submit", (event) => {
-                doDebugCommand(event.target.elements.dbgcmd.value);
-                event.target.elements.dbgcmd.value = "";
-                event.preventDefault();
-            });
-        } else {
-            form.addEventListener("submit", (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-            });
-        }
-    }
-    elementSelectorOnClick(".button-dbg-clear", doDebugClear);
-
-    elementSelectorOnClick(".button-settings-backup", doBackup);
-    elementSelectorOnClick(".button-settings-restore", doRestore);
-    elementSelectorOnClick(".button-settings-factory", doFactoryReset);
-
-    elementSelectorOnClick(".button-update", doUpdate);
-    elementSelectorOnClick(".button-setup-password", doSetupPassword);
-    elementSelectorOnClick(".button-generate-password", doGeneratePassword);
-
-    elementSelectorOnClick(".button-upgrade", doUpgrade);
-    document.getElementById("uploader").addEventListener("change", onFileUpload);
-
-    elementSelectorOnClick(".button-apikey", generateApiKey);
-
+    // OTA
     let upgrade = document.querySelector("input[name='upgrade']");
     elementSelectorOnClick(".button-upgrade-browse", () => {
         upgrade.click();
@@ -2558,28 +2577,7 @@ function main() {
         document.querySelector("input[name='filename']").value = event.target.files[0].name;
     });
 
-    elementSelectorOnClick(".button-add-settings-group", (event) => {
-        const prefix = "settingsGroupDetail";
-        const elem = event.target;
-
-        let eventInit = {detail: null};
-        for (let key of Object.keys(elem.dataset)) {
-            if (!key.startsWith(prefix)) {
-                continue
-            }
-            if (eventInit.detail === null) {
-                eventInit.detail = {};
-            }
-
-            let eventKey = key.replace(prefix, "");
-            eventKey = eventKey[0].toLowerCase() + eventKey.slice(1);
-            eventInit.detail[eventKey] = elem.dataset[key];
-        }
-
-        const group = document.getElementById(elem.dataset["settingsGroup"]);
-        group.dispatchEvent(new CustomEvent("settings-group-add", eventInit));
-    });
-    //endRemoveIf(!curtain)
+    // Module specific elements
 
     //removeIf(!garland)
     elementSelectorListener(".checkbox-garland-enable", "change", (event) => {
@@ -2600,7 +2598,10 @@ function main() {
 
     //removeIf(!thermostat)
     elementSelectorOnClick(".button-thermostat-reset-counters", () => {
-        doAction("Are you sure you want to reset burning counters?", "thermostat_reset_counters");
+        const questions = [askSaveSettings, (ask) => ask("Are you sure you want to reset burning counters?")];
+        askAndCall(questions, () => {
+            sendAction("thermostat_reset_counters");
+        });
     });
     elementSelectorListener("#tempRangeMaxInput", "change", thermostatCheckTempRange);
     elementSelectorListener("#tempRangeMinInput", "change", thermostatCheckTempRange);
@@ -2623,17 +2624,59 @@ function main() {
     });
     //endRemoveIf(!rfm69)
 
+    // -----------------------------------------------------------------------------
+
+    // While the settings are grouped using forms, actual submit is useless here
+    // b/c the data is intended to be sent with the websocket connection and never through some http endpoint
+    // *NOTICE* that manual event cancellation should happen asap, any exceptions will stop the specific
+    // handler function, but will not stop anything else left in the chain.
+    for (let form of document.forms) {
+        if (form.id === "form-dbg") {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                sendAction("dbgcmd", {command: event.target.elements.dbgcmd.value});
+                event.target.elements.dbgcmd.value = "";
+                followScroll(document.getElementById("weblog"), 0);
+            });
+        } else {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+            });
+        }
+    }
+
+    elementSelectorOnClick(".button-dbg-clear", (event) => {
+        event.preventDefault();
+        document.getElementById("weblog").textContent = "";
+    });
+
+    elementSelectorOnClick(".button-settings-backup", () => {
+        document.getElementById("downloader").click();
+    });
+    elementSelectorOnClick(".button-settings-factory", resetToFactoryDefaults);
+    elementSelectorOnClick(".button-upgrade", handleFirmwareUpgrade);
+
+    document.getElementById("uploader").addEventListener("change", handleSettingsFile);
+    elementSelectorOnClick(".button-settings-restore", () => {
+        document.getElementById("uploader").click();
+    });
+
+    elementSelectorOnClick(".button-apikey", generateApiKey);
+
     listenChanged(".settings-group");
     listenChanged("input,select");
-
     resetOriginals();
 
+    elementSelectorOnClick(".button-add-settings-group", groupSettingsAdd);
+
     groupSettingsOnAdd("networks", () => {
-        networkAdd();
+        wifiNetworkAdd();
     });
+
     groupSettingsOnAdd("leds", () => {
         ledAdd();
     });
+
     groupSettingsOnAdd("schedules", () => {
         const type = (event.detail.target === "switch") ? 1 :
             (event.detail.target === "light") ? 2 :
@@ -2643,9 +2686,6 @@ function main() {
             schAdd({schType: type});
             return;
         }
-
-        event.preventDefault();
-        event.stopPropagation();
     });
 
     groupSettingsOnAdd("rpn-rules", () => {
@@ -2655,7 +2695,11 @@ function main() {
         rpnAddTopic();
     });
 
-    // TODO: make sure to never register new handlers for settings-group-add after this point
+    // -----------------------------------------------------------------------------
+
+    // No group handler should be registered after this point, since we depend on the order
+    // of registration to trigger 'after-add' handler and update group attributes *after*
+    // module function finishes modifying the container
     for (let group of document.querySelectorAll(".settings-group")) {
         GroupSettingsObserver.observe(group, {childList: true});
         group.addEventListener("settings-group-add", groupSettingsHandleUpdate, false);
@@ -2667,7 +2711,8 @@ function main() {
         return;
     }
 
-    // Check host param in query string
+    // Optionally, support host=... param that could redirect to somewhere else
+    // Note of the Cross-Origin rules that apply, and require device to handle them
     const search = new URLSearchParams(window.location.search),
         host = search.get("host");
 
