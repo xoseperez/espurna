@@ -63,7 +63,14 @@ constexpr long Hsv::SaturationMax;
 constexpr long Hsv::ValueMin;
 constexpr long Hsv::ValueMax;
 
+static_assert(MiredsCold < MiredsWarm, "");
+constexpr long MiredsDefault { (MiredsCold + MiredsWarm) / 2L };
+
+unsigned long Rgb::asUlong() const {
+    return (_red << 16) | (_green << 8) | _blue;
 }
+
+} // namespace Light
 
 // -----------------------------------------------------------------------------
 
@@ -255,26 +262,29 @@ private:
 
 } // namespace Light
 
+namespace {
+
 Light::Mapping _light_mapping;
 
-void _lightUpdateMapping(size_t channels) {
-    switch (channels) {
+template <typename T>
+void _lightUpdateMapping(T& channels) {
+    switch (channels.size()) {
     case 0:
         break;
     case 1:
-        _light_mapping.update(nullptr, nullptr, nullptr, &_light_channels[0], nullptr);
+        _light_mapping.update(nullptr, nullptr, nullptr, &channels[0], nullptr);
         break;
     case 2:
-        _light_mapping.update(nullptr, nullptr, nullptr, &_light_channels[0], &_light_channels[1]);
+        _light_mapping.update(nullptr, nullptr, nullptr, &channels[0], &channels[1]);
         break;
     case 3:
-        _light_mapping.update(&_light_channels[0], &_light_channels[1], &_light_channels[2], nullptr, nullptr);
+        _light_mapping.update(&_light_channels[0], &channels[1], &channels[2], nullptr, nullptr);
         break;
     case 4:
-        _light_mapping.update(&_light_channels[0], &_light_channels[1], &_light_channels[2], &_light_channels[3], nullptr);
+        _light_mapping.update(&channels[0], &channels[1], &channels[2], &channels[3], nullptr);
         break;
     case 5:
-        _light_mapping.update(&_light_channels[0], &_light_channels[1], &_light_channels[2], &_light_channels[3], &_light_channels[4]);
+        _light_mapping.update(&channels[0], &channels[1], &channels[2], &channels[3], &channels[4]);
         break;
     }
 }
@@ -305,23 +315,13 @@ long _light_brightness = Light::BrightnessMax;
 // - by brightness function in R G B CW and R G B CW WW as a factor for CW and WW channels
 // - by setter in CW and CW WW modes
 
-static_assert(Light::MiredsCold < Light::MiredsWarm, "");
-
 long _light_cold_mireds = Light::MiredsCold;
 long _light_warm_mireds = Light::MiredsWarm;
 
 long _light_cold_kelvin = (1000000L / _light_cold_mireds);
 long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
-namespace Light {
-
-constexpr long MiredsDefault { (MiredsCold + MiredsWarm) / 2L };
-
-} // namespace Light
-
 long _light_mireds { Light::MiredsDefault };
-
-namespace {
 
 // In case we somehow forgot to initialize the brightness func, make sure to trigger an exception.
 // Just using an `nullptr` may not always trigger an error
@@ -331,8 +331,6 @@ bool _lightApplyBrightnessStub() {
     panic();
     return false;
 }
-
-} // namespace
 
 using LightBrightnessFunc = bool(*)();
 LightBrightnessFunc _light_brightness_func = _lightApplyBrightnessStub;
@@ -347,6 +345,8 @@ my92xx* _my92xx { nullptr };
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
 std::unique_ptr<LightProvider> _light_provider;
 #endif
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -381,6 +381,8 @@ my92xx_model_t convert(const String& value) {
 } // namespace settings
 
 #endif
+
+namespace {
 
 bool _setValue(size_t, unsigned int) __attribute__((warn_unused_result));
 bool _setValue(size_t id, unsigned int value) {
@@ -514,10 +516,6 @@ char _lightTag(size_t channels, size_t index) {
     return 0;
 }
 
-char _lightTag(size_t index) {
-    return _lightTag(_light_channels.size(), index);
-}
-
 // UI hint about channel distribution
 const char* _lightDesc(size_t channels, size_t index) {
     const __FlashStringHelper* ptr { F("UNKNOWN") };
@@ -542,13 +540,13 @@ const char* _lightDesc(size_t channels, size_t index) {
     return reinterpret_cast<const char*>(ptr);
 }
 
-const char* _lightDesc(size_t index) {
-    return _lightDesc(_light_channels.size(), index);
-}
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Input Values
 // -----------------------------------------------------------------------------
+
+namespace {
 
 void _lightFromInteger(unsigned long value, bool brightness) {
     if (brightness) {
@@ -620,19 +618,19 @@ void _lightFromHsvPayload(const char* hsv) {
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
-long _toKelvin(const long mireds) {
+long _toKelvin(long mireds) {
     return constrain(static_cast<long>(1000000L / mireds), _light_warm_kelvin, _light_cold_kelvin);
 }
 
-long _toMireds(const long kelvin) {
+long _toMireds(long kelvin) {
     return constrain(static_cast<long>(lround(1000000L / kelvin)), _light_cold_mireds, _light_warm_mireds);
 }
 
-void _lightMireds(const long kelvin) {
+void _lightMireds(long kelvin) {
     _light_mireds = _toMireds(kelvin);
 }
 
-void _lightMiredsCCT(const long kelvin) {
+void _lightMiredsCCT(long kelvin) {
     _lightMireds(kelvin);
     const auto factor = _lightMiredFactor();
 
@@ -694,21 +692,17 @@ void _fromKelvin(long kelvin) {
 
 }
 
-void _fromMireds(const long mireds) {
+void _fromMireds(long mireds) {
     _fromKelvin(_toKelvin(mireds));
 }
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Output Values
 // -----------------------------------------------------------------------------
 
-namespace Light {
-
-unsigned long Rgb::asUlong() const {
-    return (_red << 16) | (_green << 8) | _blue;
-}
-
-} // namespace Light
+namespace {
 
 Light::Rgb _lightToRgb(bool target) {
     return {
@@ -852,6 +846,8 @@ void _lightAdjustMireds(const String& payload) {
     _lightAdjustMireds(payload.c_str());
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // PROVIDER
 // -----------------------------------------------------------------------------
@@ -913,8 +909,6 @@ public:
             reset();
             return;
         }
-
-        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"), _time, _step);
     }
 
     bool prepare(channel_t& channel, bool state) {
@@ -931,27 +925,24 @@ public:
         }
 
         float diff = static_cast<float>(target) - channel.current;
-        if (isImmediate(target_state, diff)) {
-            Transition transition { channel.current, target, diff, 1};
+        if (!isImmediate(target_state, diff)) {
+            float step = (diff > 0.0) ? 1.0f : -1.0f;
+            float every = static_cast<double>(_time) / std::abs(diff);
+            if (every < _step) {
+                auto step_ref = static_cast<float>(_step);
+                step *= (step_ref / every);
+                every = step_ref;
+            }
+            size_t count = _time / every;
+
+            Transition transition { channel.current, target, step, count };
             _transitions.push_back(std::move(transition));
-            return false;
+            return true;
         }
 
-        float step = (diff > 0.0) ? 1.0f : -1.0f;
-        float every = static_cast<double>(_time) / std::abs(diff);
-        if (every < _step) {
-            auto step_ref = static_cast<float>(_step);
-            step *= (step_ref / every);
-            every = step_ref;
-        }
-        size_t count = _time / every;
-
-        Transition transition { channel.current, target, step, count };
+        Transition transition { channel.current, target, diff, 1};
         _transitions.push_back(std::move(transition));
-
-        show(transition);
-
-        return true;
+        return false;
     }
 
     void reset() {
@@ -994,30 +985,25 @@ public:
         return next;
     }
 
-    bool state() const {
-        return _state;
+    const std::vector<Transition> transitions() const {
+        return _transitions;
     }
 
-    unsigned long step() const {
-        return _step;
+    bool state() const {
+        return _state;
     }
 
     unsigned long time() const {
         return _time;
     }
 
+    unsigned long step() const {
+        return _step;
+    }
+
 private:
     bool isImmediate(bool state, float diff) {
         return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
-    }
-
-    static void show(const Transition& transition [[gnu::unused]]) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %ld (step %s, %u times)\n"),
-            String(transition.value, 2).c_str(),
-            transition.target,
-            String(transition.step, 2).c_str(),
-            transition.count
-        );
     }
 
     std::vector<Transition> _transitions;
@@ -1028,58 +1014,50 @@ private:
     unsigned long _step;
 };
 
-} // namespace
+struct LightUpdate {
+    bool save { false };
+    LightTransition transition { 0, 0 };
+    int report { 0 };
+};
 
 struct LightUpdateHandler {
     LightUpdateHandler() = default;
+    LightUpdateHandler(const LightUpdateHandler&) = delete;
+    LightUpdateHandler(LightUpdateHandler&&) = delete;
 
-    explicit operator bool() {
+    LightUpdateHandler& operator=(const LightUpdateHandler&) = delete;
+    LightUpdateHandler& operator=(LightUpdateHandler&&) = delete;
+
+    // TODO: (esp8266) there is only a single thread, and explicit context switch via yield()
+    //       callback() below is allowed to yield() and possibly reset the values, but we already have a copy
+    // TODO: (esp32?) set() and run() need locking, in case there are multiple threads *and* set() may be called outside of the main one
+
+    explicit operator bool() const {
         return _run;
     }
 
-    void lock() {
-        _lock = true;
-    }
-
-    void unlock() {
-        _lock = false;
-    }
-
-    void reset() {
-        _lock = false;
-        _run = false;
-    }
-
     void set(bool save, LightTransition transition, int report) {
-        if (_lock) {
-            panic();
-        }
-
+        _update.save = save;
+        _update.transition = transition;
+        _update.report = report;
         _run = true;
+    }
 
-        _save = save;
-        _transition = transition;
-        _report = report;
+    void cancel() {
+        _run = false;
     }
 
     template <typename T>
     void run(T&& callback) {
-        if (!_run) {
-            panic();
+        if (_run) {
+            LightUpdate update{_update};
+            callback(update.save, update.transition, update.report);
         }
-
-        lock();
-        callback(_save, _transition, _report);
-        reset();
     }
 
 private:
-    bool _save;
-    LightTransition _transition;
-    int _report;
-
+    LightUpdate _update;
     bool _run { false };
-    bool _lock { false };
 };
 
 LightUpdateHandler _light_update;
@@ -1109,9 +1087,9 @@ void _lightProviderHandleState(bool state [[gnu::unused]]) {
 
 // See cores/esp8266/WMath.cpp::map
 inline bool _lightPwmMap(long value, long& result) {
-    constexpr auto divisor = (Light::ValueMax - Light::ValueMin);
-    if (divisor != 0l){
-        result = (value - Light::ValueMin) * (Light::PwmLimit - Light::PwmMin) / divisor + Light::PwmMin;
+    constexpr auto Divisor = (Light::ValueMax - Light::ValueMin);
+    if (Divisor != 0l){
+        result = (value - Light::ValueMin) * (Light::PwmLimit - Light::PwmMin) / Divisor + Light::PwmMin;
         return true;
     }
 
@@ -1185,6 +1163,8 @@ void _lightProviderSchedule(unsigned long ms) {
         _light_provider_update = true;
     });
 }
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // PERSISTANCE
@@ -1280,6 +1260,8 @@ void lightSave(bool save) {
     _light_save = save;
 }
 
+namespace {
+
 void _lightSaveRtcmem() {
     auto channels = LightRtcmem::defaultChannels();
     for (size_t channel = 0; channel < lightChannels(); ++channel) {
@@ -1354,9 +1336,13 @@ bool _lightTryParseChannel(const char* p, size_t& id) {
     return tryParseId(p, lightChannels, id);
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
+
+namespace {
 
 int _lightMqttReportMask() {
     return Light::DefaultReport & ~(static_cast<int>(mqttForward() ? Light::Report::None : Light::Report::Mqtt));
@@ -1503,6 +1489,8 @@ void _lightMqttSetup() {
     mqttRegister(_lightMqttCallback);
 }
 
+} // namespace
+
 void lightMQTT() {
     char buffer[20];
 
@@ -1550,6 +1538,8 @@ void lightMQTTGroup() {
 // -----------------------------------------------------------------------------
 
 #if API_SUPPORT
+
+namespace {
 
 template <typename T>
 bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
@@ -1681,10 +1671,13 @@ void _lightApiSetup() {
     }
 }
 
+} // namespace
+
 #endif // API_SUPPORT
 
-
 #if WEB_SUPPORT
+
+namespace {
 
 bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "light", 5) == 0) return true;
@@ -1735,15 +1728,13 @@ void _lightWebSocketOnConnected(JsonObject& root) {
 #endif
 }
 
-void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-
+void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
     if (_light_has_color) {
         if (strcmp(action, "color") == 0) {
             if (data.containsKey("rgb")) {
                 _lightFromRgbPayload(data["rgb"].as<const char*>());
                 lightUpdate();
-            }
-            if (data.containsKey("hsv")) {
+            } else if (data.containsKey("hsv")) {
                 _lightFromHsvPayload(data["hsv"].as<const char*>());
                 lightUpdate();
             }
@@ -1751,29 +1742,30 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     }
 
     if (strcmp(action, "mireds") == 0) {
-        _fromMireds(data["mireds"]);
-        lightUpdate();
-    }
-
-    if (strcmp(action, "channel") == 0) {
+        if (data.containsKey("mireds")) {
+            _fromMireds(data["mireds"].as<long>());
+            lightUpdate();
+        }
+    } else if (strcmp(action, "channel") == 0) {
         if (data.containsKey("id") && data.containsKey("value")) {
-            lightChannel(data["id"].as<unsigned char>(), data["value"].as<int>());
+            lightChannel(data["id"].as<size_t>(), data["value"].as<long>());
             lightUpdate();
         }
-    }
-
-    if (strcmp(action, "brightness") == 0) {
+    } else if (strcmp(action, "brightness") == 0) {
         if (data.containsKey("value")) {
-            lightBrightness(data["value"].as<int>());
+            lightBrightness(data["value"].as<long>());
             lightUpdate();
         }
     }
-
 }
+
+} // namespace
 
 #endif
 
 #if TERMINAL_SUPPORT
+
+namespace {
 
 void _lightInitCommands() {
 
@@ -1864,8 +1856,9 @@ void _lightInitCommands() {
         ctx.output.printf_P(PSTR("mireds %ld\n"), _light_mireds);
         terminalOK(ctx);
     });
-
 }
+
+} // namespace
 
 #endif // TERMINAL_SUPPORT
 
@@ -1894,6 +1887,8 @@ Light::Rgb lightRgb() {
 void lightRgb(Light::Rgb rgb) {
     _setRGBInputValue(rgb.red(), rgb.green(), rgb.blue());
 }
+
+namespace {
 
 Light::Hsv _lightHsv(Light::Rgb rgb) {
     auto r = static_cast<double>(rgb.red()) / Light::ValueMax;
@@ -1936,6 +1931,8 @@ Light::Hsv _lightHsv(Light::Rgb rgb) {
     return Light::Hsv(Light::Hsv::HueMin, Light::Hsv::SaturationMin, v);
 
 }
+
+} // namespace
 
 Light::Hsv lightHsv() {
     return _lightHsv(lightRgb());
@@ -2015,6 +2012,8 @@ void lightSetReportListener(LightReportListener func) {
     _light_report.push_front(func);
 }
 
+namespace {
+
 void _lightReport(int report) {
 #if MQTT_SUPPORT
     if (report & Light::Report::Mqtt) {
@@ -2037,11 +2036,18 @@ void _lightReport(int report) {
     }
 }
 
-void _lightReport(Light::Report report) {
-    _lightReport(static_cast<int>(report));
-}
-
 // Called in the loop() when we received lightUpdate(...) values
+
+void _lightUpdateDebug(const LightTransitionHandler& handler) {
+    DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"), handler.time(), handler.step());
+    for (auto& transition : handler.transitions()) {
+        if (transition.count > 1) {
+            DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %ld (step %s, %u times)\n"),
+                    String(transition.value, 2).c_str(), transition.target,
+                    String(transition.step, 2).c_str(), transition.count);
+        }
+    }
+}
 
 void _lightUpdate() {
     if (!_light_update) {
@@ -2050,17 +2056,17 @@ void _lightUpdate() {
 
     auto changed = _light_brightness_func();
     if (!_light_state_changed && !changed) {
-        _light_update.reset();
+        _light_update.cancel();
         return;
     }
 
     _light_state_changed = false;
-
     _light_update.run([](bool save, LightTransition transition, int report) {
         // Channel output values will be set by the handler class and the specified provider
         // We either set the values immediately or schedule an ongoing transition
         _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, _light_state, transition);
         _lightProviderSchedule(_light_transition->step());
+        _lightUpdateDebug(*_light_transition);
 
         // Send current state to all available 'report' targets
         // (make sure to delay the report, in case lightUpdate is called repeatedly)
@@ -2075,6 +2081,8 @@ void _lightUpdate() {
         }
     });
 }
+
+} // namespace
 
 void lightUpdate(bool save, LightTransition transition, int report) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
@@ -2293,6 +2301,8 @@ void lightTransition(LightTransition transition) {
 // SETUP
 // -----------------------------------------------------------------------------
 
+namespace {
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 const unsigned long _light_iomux[16] PROGMEM = {
     PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_U0RXD_U,
@@ -2309,8 +2319,6 @@ const unsigned long _light_iofunc[16] PROGMEM = {
 };
 
 #endif
-
-namespace {
 
 inline bool _lightUseGamma(size_t channels, size_t index) {
     switch (_lightTag(channels, index)) {
@@ -2405,12 +2413,11 @@ void _lightRelaySupport() {
 #endif
 
 void _lightBoot() {
-    auto channels = _light_channels.size();
-    if (channels) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), channels);
+    const size_t Channels { _light_channels.size() };
+    if (Channels) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), Channels);
 
-        _lightUpdateMapping(channels);
-
+        _lightUpdateMapping(_light_channels);
         _lightConfigure();
         if (rtcmemStatus()) {
             _lightRestoreRtcmem();
@@ -2472,6 +2479,8 @@ bool lightAdd() {
 
 #endif // LIGHT_PROVIDER_CUSTOM
 
+namespace {
+
 void _lightProviderDebug() {
     DEBUG_MSG_P(PSTR("[LIGHT] Provider: "
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_NONE
@@ -2506,6 +2515,10 @@ void _lightSettingsMigrate(int version) {
     moveSetting("lightWarmMired", "ltWarmMired");
 }
 
+} // namespace
+
+// -----------------------------------------------------------------------------
+
 void lightSetup() {
     _lightSettingsMigrate(migrateVersion());
 
@@ -2516,7 +2529,6 @@ void lightSetup() {
     }
 
     _light_channels.reserve(Light::ChannelsMax);
-
     _lightProviderDebug();
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -2598,7 +2610,6 @@ void lightSetup() {
         _lightUpdate();
         _lightProviderUpdate();
     });
-
 }
 
 #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
