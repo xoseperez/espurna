@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 #### Alexa
 - Fix device discovery / state callback ([#2388](https://github.com/xoseperez/espurna/issues/2388)), thanks to **[@aL1aL7](https://github.com/aL1aL7)**
+- Display the used name in the WebUI [6b2c34ea](https://github.com/xoseperez/espurna/commit/6b2c34eaae92f196deaaea82ae2864ff2fc6e4cc)
 #### Domoticz
 - Add workaround for pressure sensors ([#2215](https://github.com/xoseperez/espurna/issues/2215))
 - Do not put floats into nvalue ([#2230](https://github.com/xoseperez/espurna/issues/2230))
@@ -67,6 +68,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - External url clean-up [d60fb47c](https://github.com/xoseperez/espurna/commit/d60fb47ca9be2f591b82f72678b36b02c1c79beb)
 - Remove hard-coded group keys list [1627e311](https://github.com/xoseperez/espurna/commit/1627e3119fe9084398b8e8c0ec794b8ed3a4f6b6)
 - Send alert messages directly [458fb7d9](https://github.com/xoseperez/espurna/commit/458fb7d936ec9d266cfce275f999dd629fb82e2f)
+- Set websocket buffer to `nullptr` before returning control to the webserver, which will try to `free()` it [256e790e](https://github.com/xoseperez/espurna/commit/256e790e4d7374e12430dad57e25ece7b880be25)
 
 ### Added
 #### Buttons
@@ -169,6 +171,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Convert .ino -> .cpp ([#1306](https://github.com/xoseperez/espurna/issues/1306), [#2228](https://github.com/xoseperez/espurna/issues/2228), [#2234](https://github.com/xoseperez/espurna/issues/2234), [#2236](https://github.com/xoseperez/espurna/issues/2236))
 - Rework build.sh & new release script generator [75b51f1e](https://github.com/xoseperez/espurna/commit/75b51f1e80260e2325709e7426fc5b2ebd88ada9), [74e18a59](https://github.com/xoseperez/espurna/commit/74e18a59bcbe7a2ea72fccb6d4e5e484bf348bb9)
 - Use python 3.x in CI and move to Github Actions.
+- Use eslint and html-validate in CI [433f399d](https://github.com/xoseperez/espurna/commit/433f399d9ce769e57ce660d93161649f6287e054)
 - Simplify version + revision into just version [f0f6f1b8](https://github.com/xoseperez/espurna/commit/f0f6f1b8c907fbf188704e3055210d8202a12f21)
 - Remove Core 2.3.0 support from .ld scripts [a1e7941f](https://github.com/xoseperez/espurna/commit/a1e7941fa60339fed84f259033523e1e17e3f17d)
 #### PlatformIO
@@ -212,6 +215,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### RPN Rules
 - Set MQTT variables just before running the rules [32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509)
 #### WebUI
+- Remove jquery dependencies and clean-up websocket API [fa3deeff](https://github.com/xoseperez/espurna/commit/fa3deeffbfa622ecd1869af2563940fb3143e94e), [84a7f633](https://github.com/xoseperez/espurna/commit/84a7f6337f72b011512b3e95efe36f2d661e5065), [8e5ab5c9](https://github.com/xoseperez/espurna/commit/8e5ab5c902a23dfd774dd9e768963856d4f26bd3)
 - Use [iro.js](https://github.com/jaames/iro.js) as color picker [808981ca](https://github.com/xoseperez/espurna/commit/808981ca3938d11d4ddd87005e2881433cc7707b)
 - Use [terser](https://github.com/terser/terser) as js minifier, webui is no longer limited to ES5 feature set [cfd6e36d](https://github.com/xoseperez/espurna/commit/cfd6e36dbe94ee0e8098351357f903c060fd5dc9)
 #### Settings
