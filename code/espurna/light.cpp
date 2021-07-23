@@ -1689,7 +1689,7 @@ bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 void _lightWebSocketStatus(JsonObject& root) {
     if (_light_has_color) {
         if (_light_use_rgb) {
-            root["rgb"] = lightRgbPayload();
+            root["rgb"] = _lightRgbHexPayload(false);
         } else {
             root["hsv"] = lightHsvPayload();
         }
@@ -1721,6 +1721,7 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["useTransitions"] = _light_use_transitions;
     root["useRGB"] = _light_use_rgb;
     root["ltSave"] = _light_save;
+    root["ltSaveDelay"] = _light_save_delay;
     root["ltTime"] = _light_transition_time;
     root["ltStep"] = _light_transition_step;
 #if RELAY_SUPPORT
