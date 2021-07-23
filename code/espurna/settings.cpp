@@ -505,7 +505,7 @@ void _settingsInitCommands() {
     });
 
     terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
+        if (ctx.argc < 2) {
             terminalError(ctx, F("del <key> [<key>...]"));
             return;
         }
@@ -538,7 +538,7 @@ void _settingsInitCommands() {
 
     terminalRegisterCommand(F("GET"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc < 2) {
-            terminalError(ctx, F("Wrong arguments"));
+            terminalError(ctx, F("get <key> [<key>...]"));
             return;
         }
 
