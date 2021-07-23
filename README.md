@@ -13,7 +13,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![downloads](https://img.shields.io/github/downloads/xoseperez/espurna/total.svg)](https://github.com/xoseperez/espurna/releases)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
-[![gitter](https://img.shields.io/gitter/room/tinkermant-cat/espurna.svg)](https://gitter.im/tinkerman-cat/espurna)
+[![gitter](https://img.shields.io/gitter/room/tinkerman-cat/espurna?logo=gitter)](https://gitter.im/tinkerman-cat/espurna)
+[![matrix](https://img.shields.io/gitter/room/tinkerman-cat/espurna?logo=matrix)](https://matrix.to/#/#tinkerman-cat_espurna:gitter.im)
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
