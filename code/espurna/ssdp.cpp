@@ -56,9 +56,9 @@ void ssdpSetup() {
             SSDP_DEVICE_TYPE,                   // device type
             getSetting("hostname").c_str(),     // friendlyName
             chipId,                             // serialNumber
-            APP_NAME,                           // modelName
-            APP_VERSION,                        // modelNumber
-            APP_WEBSITE,                        // modelURL
+            getAppName(),                       // modelName
+            getVersion(),                       // modelNumber
+            getAppWebsite(),                    // modelURL
             getBoardName().c_str(),             // manufacturer
             "",                                 // manufacturerURL
             chipId                              // UUID
@@ -73,9 +73,9 @@ void ssdpSetup() {
     SSDP.setDeviceType(SSDP_DEVICE_TYPE); //https://github.com/esp8266/Arduino/issues/2283
 
     SSDP.setSerialNumber(String(ESP.getChipId()));
-    SSDP.setModelName(APP_NAME);
-    SSDP.setModelNumber(APP_VERSION);
-    SSDP.setModelURL(APP_WEBSITE);
+    SSDP.setModelName(getAppName());
+    SSDP.setModelNumber(getVersion());
+    SSDP.setModelURL(getAppWebsite());
     SSDP.setManufacturer(getBoardName());
     SSDP.setManufacturerURL("");
     SSDP.setURL("/");

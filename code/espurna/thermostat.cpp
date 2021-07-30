@@ -408,7 +408,18 @@ double _getLocalValue(const char* description, unsigned char type) {
         return value.get();
     }
 #endif
-  return std::numeric_limits<double>::quiet_NaN();
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+String _getLocalUnit(unsigned char type) {
+#if SENSOR_SUPPORT
+    for (unsigned char index = 0; index < magnitudeCount(); ++index) {
+        if (magnitudeType(index) == type) {
+            return magnitudeUnits(index);
+        }
+    }
+#endif
+    return F("none");
 }
 
 double getLocalTemperature() {
@@ -761,6 +772,7 @@ void _thermostatWebSocketOnConnected(JsonObject& root) {
   root["thermostatEnabled"] = thermostatEnabled();
   root["thermostatMode"] = thermostatModeCooler();
   root["thermostatVisible"] = 1;
+  root["thermostatTmpUnits"] = _getLocalUnit(MAGNITUDE_TEMPERATURE);
   root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
   root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
   root[NAME_REMOTE_SENSOR_NAME] = _thermostat.remote_sensor_name;

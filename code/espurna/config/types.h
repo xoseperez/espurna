@@ -225,6 +225,7 @@
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
+#define SCHEDULER_TYPE_NONE         0
 #define SCHEDULER_TYPE_SWITCH       1
 #define SCHEDULER_TYPE_DIM          2
 #define SCHEDULER_TYPE_CURTAIN      3
@@ -326,6 +327,7 @@
 #define SENSOR_HDC1080_ID           40
 #define SENSOR_PZEM004TV30_ID       41
 #define SENSOR_BME680_ID            42
+#define SENSOR_SM300D2_ID           43
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -369,8 +371,10 @@
 #define MAGNITUDE_IAQ_ACCURACY      34
 #define MAGNITUDE_IAQ_STATIC        35
 #define MAGNITUDE_VOC               36
+#define MAGNITUDE_TVOC              37
+#define MAGNITUDE_CH2O              38
 
-#define MAGNITUDE_MAX               38
+#define MAGNITUDE_MAX               39
 
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range

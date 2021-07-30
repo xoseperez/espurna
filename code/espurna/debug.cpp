@@ -35,7 +35,6 @@ char _udp_syslog_header[64];
 
 bool _debug_enabled = false;
 
-
 // -----------------------------------------------------------------------------
 // printf-like debug methods
 // -----------------------------------------------------------------------------
@@ -69,13 +68,50 @@ void _debugSend(const char * format, va_list args) {
 }
 
 void debugSendRaw(const char* line, bool timestamp) {
-    if (!_debug_enabled) return;
-    _debugSendInternal(line, timestamp);
+    if (_debug_enabled) {
+        _debugSendInternal(line, timestamp);
+    }
+}
+
+// Buffer data until we encounter line break, then flush via Raw debug method
+// (which is supposed to 1-to-1 copy the data, without adding the timestamp)
+
+namespace {
+std::vector<char> _dbg_raw_output;
+}
+
+void debugSendBytes(const uint8_t* bytes, size_t size) {
+    static bool lock { false };
+    if (lock) {
+        return;
+    }
+
+    if (!size || ((size > 0) && bytes[size - 1] == '\0')) {
+        return;
+    }
+
+    lock = true;
+
+    if (_dbg_raw_output.capacity() < (size + 2)) {
+        _dbg_raw_output.reserve(_dbg_raw_output.size() + size + 2);
+    }
+    _dbg_raw_output.insert(_dbg_raw_output.end(),
+        reinterpret_cast<const char*>(bytes),
+        reinterpret_cast<const char*>(bytes) + size);
+
+    if (_dbg_raw_output.end() != std::find(_dbg_raw_output.begin(), _dbg_raw_output.end(), '\n')) {
+        _dbg_raw_output.push_back('\0');
+        debugSendRaw(_dbg_raw_output.data());
+        _dbg_raw_output.clear();
+    }
+
+    lock = false;
 }
 
 void debugSend(const char* format, ...) {
-
-    if (!_debug_enabled) return;
+    if (!_debug_enabled) {
+        return;
+    }
 
     va_list args;
     va_start(args, format);
@@ -83,12 +119,12 @@ void debugSend(const char* format, ...) {
     _debugSend(format, args);
 
     va_end(args);
-
 }
 
 void debugSend_P(const char* format_P, ...) {
-
-    if (!_debug_enabled) return;
+    if (!_debug_enabled) {
+        return;
+    }
 
     char format[strlen_P(format_P) + 1];
     memcpy_P(format, format_P, sizeof(format));
@@ -99,7 +135,6 @@ void debugSend_P(const char* format_P, ...) {
     _debugSend(format, args);
 
     va_end(args);
-
 }
 
 // -----------------------------------------------------------------------------
@@ -142,7 +177,7 @@ void _debugLogBuffer(const char* prefix, const char* data) {
     _debug_log_buffer.insert(_debug_log_buffer.end(), data, data + data_len);
 }
 
-void _debugLogBufferDump() {
+void _debugLogBufferDump(Print& out) {
     size_t index = 0;
     do {
         if (index >= _debug_log_buffer.size()) {
@@ -155,7 +190,7 @@ void _debugLogBufferDump() {
 
         auto value = _debug_log_buffer[index + len];
         _debug_log_buffer[index + len] = '\0';
-        _debugSendInternal(_debug_log_buffer.data() + index, false);
+        out.print(_debug_log_buffer.data() + index);
         _debug_log_buffer[index + len] = value;
 
         index += len;
@@ -229,26 +264,31 @@ void _debugSendInternal(const char * message, bool add_timestamp) {
 
 #if DEBUG_WEB_SUPPORT
 
+#if TERMINAL_SUPPORT
 void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+    if (strcmp(action, "dbgcmd") != 0) {
+        return;
+    }
 
-        #if TERMINAL_SUPPORT
-            if (strcmp(action, "dbgcmd") == 0) {
-                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
-                const char* command = data["command"];
-                if (command && strlen(command)) {
-                    auto command = data.get<const char*>("command");
-                    terminalInject((void*) command, strlen(command));
-                    terminalInject('\n');
-                }
-            }
-        #endif
+    if (!data.containsKey("command") || !data["command"].is<const char*>()) {
+        return;
+    }
+
+    const char* command = data["command"];
+    auto len = command ? strlen(command) : 0ul;
+
+    terminalInject(command, len);
+    terminalInject('\n');
 }
+#endif
 
 void debugWebSetup() {
 
     wsRegister()
-        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
-        .onAction(_debugWebSocketOnAction);
+#if TERMINAL_SUPPORT
+        .onAction(_debugWebSocketOnAction)
+#endif
+        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; });
 
 }
 
@@ -261,13 +301,10 @@ void debugWebSetup() {
 // - https://github.com/xoseperez/espurna/issues/2312/
 
 void debugUdpSyslogConfigure() {
-
     snprintf_P(
         _udp_syslog_header, sizeof(_udp_syslog_header),
         PSTR("<%u>1 - %s ESPurna - - - "), DEBUG_UDP_FAC_PRI,
-        getSetting("hostname", getIdentifier()).c_str()
-    );
-
+        getSetting("hostname", getIdentifier()).c_str());
 }
 
 #endif // DEBUG_UDP_SUPPORT
@@ -276,39 +313,32 @@ void debugUdpSyslogConfigure() {
 
 void debugSetup() {
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.begin(SERIAL_BAUDRATE);
-    #endif
+#if DEBUG_SERIAL_SUPPORT
+    DEBUG_PORT.begin(SERIAL_BAUDRATE);
+#endif
 
-    #if DEBUG_UDP_SUPPORT
-        if (_udp_syslog_enabled) {
-            debugUdpSyslogConfigure();
-            espurnaRegisterReload(debugUdpSyslogConfigure);
+#if DEBUG_UDP_SUPPORT
+    if (_udp_syslog_enabled) {
+        debugUdpSyslogConfigure();
+        espurnaRegisterReload(debugUdpSyslogConfigure);
+    }
+#endif
+
+#if TERMINAL_SUPPORT && DEBUG_LOG_BUFFER_SUPPORT
+    terminalRegisterCommand(F("DEBUG.BUFFER"), [](const terminal::CommandContext& ctx) {
+        _debug_log_buffer_enabled = false;
+        if (!_debug_log_buffer.size()) {
+            terminalError(ctx, F("buffer is empty\n"));
+            return;
         }
-    #endif
 
-    #if TERMINAL_SUPPORT
-
-    #if DEBUG_LOG_BUFFER_SUPPORT
-
-        terminalRegisterCommand(F("DEBUG.BUFFER"), [](const terminal::CommandContext&) {
-            _debug_log_buffer_enabled = false;
-            if (!_debug_log_buffer.size()) {
-                DEBUG_MSG_P(PSTR("[DEBUG] Buffer is empty\n"));
-                return;
-            }
-            DEBUG_MSG_P(PSTR("[DEBUG] Buffer size: %u / %u bytes\n"),
-                _debug_log_buffer.size(),
-                _debug_log_buffer.capacity()
-            );
-
-            _debugLogBufferDump();
-        });
-
-    #endif // DEBUG_LOG_BUFFER_SUPPORT
-
-    #endif // TERMINAL_SUPPORT
-
+        ctx.output.printf_P(PSTR("Buffer size: %u / %u bytes\n"),
+            _debug_log_buffer.size(),
+            _debug_log_buffer.capacity());
+        _debugLogBufferDump(ctx.output);
+        terminalOK(ctx);
+    });
+#endif // TERMINAL_SUPPORT
 
 }
 
@@ -345,8 +375,8 @@ DebugLogMode convert(const String& value) {
     }
 }
 
-}
-}
+} // namespace internal
+} // namespace settings
 
 void debugConfigureBoot() {
     static_assert(
@@ -373,18 +403,24 @@ void debugConfigureBoot() {
 }
 
 bool _debugHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Uptime)
+    if (mask & heartbeat::Report::Uptime) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
+    }
 
-    if (mask & heartbeat::Report::Freeheap)
-        infoHeapStats();
+    if (mask & heartbeat::Report::Freeheap) {
+        auto stats = systemHeapStats();
+        DEBUG_MSG_P(PSTR("[MAIN] %5u / %5u bytes available (%5u contiguous)\n"),
+            stats.available, systemInitialFreeHeap(), stats.usable);
+    }
 
-    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
-        DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
+    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC)) {
+        DEBUG_MSG_P(PSTR("[MAIN] VCC: %lu mV\n"), ESP.getVcc());
+    }
 
 #if NTP_SUPPORT
-    if ((mask & heartbeat::Report::Datetime) && (ntpSynced()))
+    if ((mask & heartbeat::Report::Datetime) && (ntpSynced())) {
         DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), ntpDateTime().c_str());
+    }
 #endif
 
     return true;

@@ -224,41 +224,41 @@ unsigned long _lastreport_sv = _lastreport_cpm;
 
 GeigerSensor * _geiger_sensor_instance[10] = {NULL};
 
-void ICACHE_RAM_ATTR _geiger_sensor_isr(unsigned char gpio) {
+void IRAM_ATTR _geiger_sensor_isr(unsigned char gpio) {
         unsigned char index = gpio > 5 ? gpio-6 : gpio;
         if (_geiger_sensor_instance[index]) {
                 _geiger_sensor_instance[index]->handleInterrupt(gpio);
         }
 }
 
-void ICACHE_RAM_ATTR _geiger_sensor_isr_0() {
+void IRAM_ATTR _geiger_sensor_isr_0() {
         _geiger_sensor_isr(0);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_1() {
+void IRAM_ATTR _geiger_sensor_isr_1() {
         _geiger_sensor_isr(1);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_2() {
+void IRAM_ATTR _geiger_sensor_isr_2() {
         _geiger_sensor_isr(2);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_3() {
+void IRAM_ATTR _geiger_sensor_isr_3() {
         _geiger_sensor_isr(3);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_4() {
+void IRAM_ATTR _geiger_sensor_isr_4() {
         _geiger_sensor_isr(4);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_5() {
+void IRAM_ATTR _geiger_sensor_isr_5() {
         _geiger_sensor_isr(5);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_12() {
+void IRAM_ATTR _geiger_sensor_isr_12() {
         _geiger_sensor_isr(12);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_13() {
+void IRAM_ATTR _geiger_sensor_isr_13() {
         _geiger_sensor_isr(13);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_14() {
+void IRAM_ATTR _geiger_sensor_isr_14() {
         _geiger_sensor_isr(14);
 }
-void ICACHE_RAM_ATTR _geiger_sensor_isr_15() {
+void IRAM_ATTR _geiger_sensor_isr_15() {
         _geiger_sensor_isr(15);
 }
 

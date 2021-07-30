@@ -21,7 +21,10 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <stdarg.h>
 
 #include "system.h"
+#include "rtcmem.h"
 #include "storage_eeprom.h"
+
+constexpr uint32_t EmptyTimestamp { 0xffffffff };
 
 bool _save_crash_enabled = true;
 
@@ -101,8 +104,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
  * Clears crash info CRASH_TIME value, later checked in crashDump()
  */
 void crashClear() {
-    uint32_t crash_time = 0xFFFFFFFF;
-    eepromPut(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
+    eepromPut(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, EmptyTimestamp);
     eepromCommit();
 }
 
@@ -119,14 +121,14 @@ void _crashDump(Print& print, bool check) {
     uint32_t crash_time;
     eepromGet(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
 
-    bool crash_time_erased = ((crash_time == 0) || (crash_time == 0xFFFFFFFF));
+    bool crash_time_erased = ((crash_time == 0) || (crash_time == EmptyTimestamp));
     if (check && crash_time_erased) {
         return;
     }
 
     uint8_t reason = eepromRead(EepromCrashBegin + SAVE_CRASH_RESTART_REASON);
     if (!crash_time_erased) {
-        snprintf_P(buffer, sizeof(buffer), PSTR("\nLatest crash was at %lu ms after boot\n"), crash_time);
+        snprintf_P(buffer, sizeof(buffer), PSTR("\nlatest crash was at %lu ms after boot\n"), crash_time);
         print.print(buffer);
     }
 
@@ -214,12 +216,7 @@ void _crashDump(Print& print, bool check) {
 #if TERMINAL_SUPPORT
 
 void _crashTerminalCommand(const terminal::CommandContext& ctx) {
-    if ((ctx.argc == 2) && (ctx.argv[1].equals(F("force")))) {
-        crashForceDump(ctx.output);
-    } else {
-        crashDump(ctx.output);
-        crashClear();
-    }
+    crashForceDump(ctx.output);
     terminalOK(ctx);
 }
 
@@ -235,14 +232,30 @@ void crashDump(Print& print) {
     _crashDump(print, true);
 }
 
-void crashSetup() {
+void crashResetReason(Print& print) {
+    auto reason = customResetReason();
+    bool custom { CustomResetReason::None != reason };
+    print.printf_P(PSTR("last reset reason: %s\n"), custom
+        ? customResetReasonToPayload(reason).c_str()
+        : ESP.getResetReason().c_str());
 
-    #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("CRASH"), _crashTerminalCommand);
-    #endif
+    if (!custom) {
+        print.printf_P(PSTR("extra info: %s\n"), ESP.getResetInfo().c_str());
+    }
+
+    crashDump(print);
+}
+
+void crashSetup() {
+    if (!rtcmemStatus()) {
+        crashClear();
+    }
+
+#if TERMINAL_SUPPORT
+    terminalRegisterCommand(F("CRASH"), _crashTerminalCommand);
+#endif
 
     _save_crash_enabled = getSetting("sysCrashSave", 1 == SAVE_CRASH_ENABLED);
-
 }
 
 #endif // DEBUG_SUPPORT

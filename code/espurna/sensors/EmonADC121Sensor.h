@@ -9,7 +9,8 @@
 
 
 #include "../utils.h"
-#include "EmonSensor.h"
+#include "BaseAnalogEmonSensor.h"
+#include "I2CSensor.h"
 
 // ADC121 Registers
 #define ADC121_REG_RESULT       0x00
@@ -24,129 +25,104 @@
 #define ADC121_RESOLUTION       12
 #define ADC121_CHANNELS         1
 
-class EmonADC121Sensor : public EmonSensor {
-
+class EmonADC121Sensor : public SimpleAnalogEmonSensor {
+private:
+    class I2CPort {
     public:
+        I2CPort() = default;
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
+        explicit I2CPort(uint8_t address) :
+            _address(address)
+        {}
 
-        EmonADC121Sensor() {
-            _channels = ADC121_CHANNELS;
-            _sensor_id = SENSOR_EMON_ADC121_ID;
-            init();
+        bool lock(uint8_t address) {
+            static uint8_t addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
+
+            return _sensor_address.lock(address) || _sensor_address.findAndLock(sizeof(addresses), addresses);
         }
 
-        // ---------------------------------------------------------------------
-        // Sensor API
-        // ---------------------------------------------------------------------
-
-        // Initialization method, must be idempotent
-        void begin() {
-
-            if (!_dirty) return;
-            _dirty = false;
-
-            // Discover
-            unsigned char addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
-
-            // Init sensor
-            _init();
-
-            // Just one channel
-            _count = _magnitudes;
-
-            // Bit depth
-            _resolution = ADC121_RESOLUTION;
-
-            // Call the parent class method
-            EmonSensor::begin();
-
-            // warmup channel 0 (the only one)
-            read(0);
-
+        bool lock() {
+            return lock(_address);
         }
 
-        // Descriptive name of the sensor
-        String description() {
-            char buffer[30];
-            snprintf(buffer, sizeof(buffer), "EMON @ ADC121 @ I2C (0x%02X)", _address);
-            return String(buffer);
+        uint8_t address() const {
+            return _sensor_address.address();
         }
 
-        // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+    private:
+        I2CSensorAddress _sensor_address;
+        uint8_t _address { 0x00 };
+    };
 
-            if (_address == 0) {
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-                return;
-            }
+public:
+    EmonADC121Sensor() {
+        _sensor_id = SENSOR_EMON_ADC121_ID;
+    }
 
-            // only 1 channel, see ADC121_CHANNELS
+    void setAddress(uint8_t address) {
+        if (_address != address) {
+            _address = address;
+            _dirty = true;
+        }
+    }
 
-            _current[0] = read(0);
+    unsigned int analogRead() override {
+        constexpr uint16_t Mask { 0x0fff };
+        return i2c_read_uint16(_port.address(), ADC121_REG_RESULT) & Mask;
+    }
 
-            #if EMON_REPORT_ENERGY
-                static unsigned long last = 0;
-                _energy[0] += sensor::Ws {
-                    static_cast<uint32_t>(_current[0] * _voltage * (millis() - last) / 1000)
-                };
-                last = millis();
-            #endif
+    // ---------------------------------------------------------------------
+    // Sensor API
+    // ---------------------------------------------------------------------
 
-            _error = SENSOR_ERROR_OK;
-
+    // Initialization method, must be idempotent
+    void begin() {
+        if (!_dirty) {
+            return;
         }
 
-        // Type for slot # index
-        unsigned char type(unsigned char index) {
-            unsigned char i=0;
-            #if EMON_REPORT_CURRENT
-                if (index == i++) return MAGNITUDE_CURRENT;
-            #endif
-            #if EMON_REPORT_POWER
-                if (index == i++) return MAGNITUDE_POWER_APPARENT;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (index == i) return MAGNITUDE_ENERGY;
-            #endif
-            return MAGNITUDE_NONE;
+        // Discover
+        if (!_port.lock(_address)) {
+            _error = SENSOR_ERROR_I2C;
+            return;
         }
 
-        // Current value for slot # index
-        double value(unsigned char index) {
-            unsigned char channel = local(index);
-            unsigned char i=0;
-            #if EMON_REPORT_CURRENT
-                if (index == i++) return _current[channel];
-            #endif
-            #if EMON_REPORT_POWER
-                if (index == i++) return _current[channel] * _voltage;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (index == i) return _energy[channel].asDouble();
-            #endif
-            return 0;
-        }
+        config();
 
-    protected:
+        // Init base class and do a warm-up run
+        setResolution(ADC121_RESOLUTION);
+        BaseAnalogEmonSensor::begin();
+        BaseAnalogEmonSensor::sampleCurrent();
 
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
+        _dirty = false;
+    }
 
-        void _init() {
-            i2c_write_uint8(_address, ADC121_REG_CONFIG, 0);
-        }
+    // Descriptive name of the sensor
+    String description() override {
+        char buffer[30];
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("EMON @ ADC121 A0 @ I2C (0x%02X)"),
+            _port.address());
+        return String(buffer);
+    }
 
-        unsigned int readADC(unsigned char) {
-            unsigned int value = i2c_read_uint16(_address, ADC121_REG_RESULT) & 0x0FFF;
-            return value;
-        }
+    String description(unsigned char) override {
+        return description();
+    }
 
+    String address(unsigned char) override {
+        char buffer[10];
+        snprintf(buffer, sizeof(buffer), "A0 @ 0x%02X", _port.address());
+        return String(buffer);
+    }
+
+private:
+    void config() {
+        i2c_write_uint8(_port.address(), ADC121_REG_CONFIG, 0);
+    }
+
+    uint8_t _address { 0x00 };
+    I2CPort _port;
 };
 
 #endif // SENSOR_SUPPORT && EMON_ADC121_SUPPORT

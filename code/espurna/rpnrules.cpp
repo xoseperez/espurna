@@ -25,6 +25,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "wifi.h"
 #include "ws.h"
 
+#include <forward_list>
 #include <list>
 #include <type_traits>
 #include <vector>
@@ -32,11 +33,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 // Custom commands
 // -----------------------------------------------------------------------------
-
-rpn_context _rpn_ctxt;
-bool _rpn_run = false;
-unsigned long _rpn_delay = RPN_DELAY;
-unsigned long _rpn_last = 0;
 
 struct RpnRunner {
     enum class Policy {
@@ -58,6 +54,14 @@ struct RpnRunner {
     bool expired { false };
 };
 
+// -----------------------------------------------------------------------------
+
+namespace {
+
+rpn_context _rpn_ctxt;
+bool _rpn_run = false;
+unsigned long _rpn_delay = 0;
+unsigned long _rpn_last = 0;
 std::vector<RpnRunner> _rpn_runners;
 
 rpn_operator_error _rpnRunnerHandler(rpn_context & ctxt, RpnRunner::Policy policy, uint32_t time) {
@@ -74,6 +78,48 @@ rpn_operator_error _rpnRunnerHandler(rpn_context & ctxt, RpnRunner::Policy polic
     return rpn_operator_error::CannotContinue;
 }
 
+} // namespace
+
+// -----------------------------------------------------------------------------
+
+namespace rpnrules {
+namespace build {
+
+constexpr bool sticky() {
+    return 1 == RPN_STICKY;
+}
+
+constexpr unsigned long delay() {
+    return RPN_DELAY;
+}
+
+} // namespace build
+
+namespace settings {
+
+bool sticky() {
+    return getSetting("rpnSticky", build::sticky());
+}
+
+unsigned long delay() {
+    return getSetting("rpnDelay", build::delay());
+}
+
+String rule(size_t index) {
+    return getSetting({"rpnRule", index});
+}
+
+String topic(size_t index) {
+    return getSetting({"rpnTopic", index});
+}
+
+String name(size_t index) {
+    return getSetting({"rpnName", index});
+}
+
+} // namespace settings
+} // namespace rpnrules
+
 // -----------------------------------------------------------------------------
 
 bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
@@ -81,41 +127,76 @@ bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _rpnWebSocketOnConnected(JsonObject& root) {
+    root["rpnSticky"] = rpnrules::settings::sticky();
+    root["rpnDelay"] = rpnrules::settings::delay();
 
-    root["rpnSticky"] = getSetting("rpnSticky", 1 == RPN_STICKY);
-    root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY);
     JsonArray& rules = root.createNestedArray("rpnRules");
 
-    unsigned char i = 0;
-    String rule = getSetting({"rpnRule", i});
-    while (rule.length()) {
+    size_t index { 0 };
+    String rule;
+    for (;;) {
+        rule = rpnrules::settings::rule(index++);
+        if (!rule.length()) {
+            break;
+        }
+
         rules.add(rule);
-        rule = getSetting({"rpnRule", ++i});
     }
 
-    #if MQTT_SUPPORT
-        i=0;
-        JsonArray& topics = root.createNestedArray("rpnTopics");
-        JsonArray& names = root.createNestedArray("rpnNames");
-        String rpn_topic = getSetting({"rpnTopic", i});
-        while (rpn_topic.length() > 0) {
-            String rpn_name = getSetting({"rpnName", i});
-            topics.add(rpn_topic);
-            names.add(rpn_name);
-            rpn_topic = getSetting({"rpnTopic", ++i});
+#if MQTT_SUPPORT
+    {
+        JsonObject& topicsConfig = root.createNestedObject("rpnTopics");
+
+        static const char* const keys[] PROGMEM {
+            "rpnName", "rpnTopic"
+        };
+
+        JsonArray& schema = topicsConfig.createNestedArray("schema");
+        schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+        JsonArray& topics = topicsConfig.createNestedArray("topics");
+
+        size_t index { 0 };
+        String name;
+        String topic;
+        for (;;) {
+            name = rpnrules::settings::name(index);
+            topic = rpnrules::settings::topic(index);
+            ++index;
+
+            if (!name.length() || !topic.length()) {
+                break;
+            }
+
+            JsonArray& entry = topics.createNestedArray();
+            entry.add(name);
+            entry.add(topic);
         }
-    #endif
+    }
+#endif
 
 }
 
 #if MQTT_SUPPORT
 
+struct RpnMqttVariable {
+    String name;
+    rpn_value value;
+};
+
+static std::forward_list<RpnMqttVariable> _rpn_mqtt_variables;
+
 void _rpnMQTTSubscribe() {
-    unsigned char i = 0;
-    String rpn_topic = getSetting({"rpnTopic", i});
-    while (rpn_topic.length()) {
-        mqttSubscribeRaw(rpn_topic.c_str());
-        rpn_topic = getSetting({"rpnTopic", ++i});
+    size_t index { 0 };
+    String topic;
+
+    for(;;) {
+        topic = rpnrules::settings::topic(index++);
+        if (!topic.length()) {
+            break;
+        }
+
+        mqttSubscribeRaw(topic.c_str());
     }
 }
 
@@ -126,19 +207,32 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        unsigned char i = 0;
-        String rpn_topic = getSetting({"rpnTopic", i});
-        while (rpn_topic.length()) {
-            if (rpn_topic.equals(topic)) {
-                String rpn_name = getSetting({"rpnName", i});
-                if (rpn_name.length()) {
-                    rpn_value value { atof(payload) };
-                    rpn_variable_set(_rpn_ctxt, rpn_name, value);
-                    _rpn_run = true;
+        size_t index { 0 };
+        String rpnTopic;
+
+        for (;;) {
+            rpnTopic = rpnrules::settings::topic(index++);
+            if (!rpnTopic.length()) {
+                break;
+            }
+
+            if (rpnTopic == topic) {
+                auto name = rpnrules::settings::name(index);
+                if (!name.length()) {
                     break;
                 }
+
+                for (auto& variable : _rpn_mqtt_variables) {
+                    if (variable.name == name) {
+                        variable.value = rpn_value{atof(payload)};
+                        return;
+                    }
+                }
+
+                _rpn_mqtt_variables.emplace_front(RpnMqttVariable{
+                        std::move(name), rpn_value{atof(payload)}});
+                return;
             }
-            rpn_topic = getSetting({"rpnTopic", ++i});
         }
     }
 
@@ -151,7 +245,7 @@ void _rpnConfigure() {
         _rpnMQTTSubscribe();
     }
 #endif
-    _rpn_delay = getSetting("rpnDelay", RPN_DELAY);
+    _rpn_delay = rpnrules::settings::delay();
 }
 
 void _rpnRelayStatus(size_t id, bool status) {
@@ -553,14 +647,12 @@ void _rpnRfbSetup() {
         for (auto& code : _rfb_codes) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("proto=%u raw=\"%s\" count=%u last=%u"),
-                code.protocol,
-                code.raw.c_str(),
-                code.count,
-                code.last
-            );
-            ctx.output.println(buffer);
+                PSTR("proto=%u raw=\"%s\" count=%u last=%u\n"),
+                code.protocol, code.raw.c_str(), code.count, code.last);
+            ctx.output.print(buffer);
         }
+
+        terminalOK(ctx);
     });
 #endif
 
@@ -589,20 +681,19 @@ void _rpnDeepSleep(uint64_t duration, RFMode mode) {
 }
 
 void _rpnShowStack(Print& print) {
-    print.println(F("Stack:"));
+    print.print(F("Stack:\n"));
 
     auto index = rpn_stack_size(_rpn_ctxt);
-    if (!index) {
-        print.println(F("      (empty)"));
+    if (index) {
+        rpn_stack_foreach(_rpn_ctxt, [&index, &print](rpn_stack_value::Type type, const rpn_value& value) {
+            print.printf_P(PSTR("%c      %02u: %s\n"),
+                _rpnStackTypeTag(type), index--,
+                _rpnValueToString(value).c_str());
+        });
         return;
     }
 
-    rpn_stack_foreach(_rpn_ctxt, [&index, &print](rpn_stack_value::Type type, const rpn_value& value) {
-        print.printf("%c      %02u: %s\n",
-            _rpnStackTypeTag(type), index--,
-            _rpnValueToString(value).c_str()
-        );
-    });
+    print.print(F("      (empty)\n"));
 }
 
 void _rpnInit() {
@@ -872,11 +963,10 @@ void _rpnInitCommands() {
 
         for (auto& runner : _rpn_runners) {
             char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms"),
+            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms\n"),
                 &runner, (RpnRunner::Policy::Periodic == runner.policy) ? "every" : "one-shot",
-                runner.period, runner.last
-            );
-            ctx.output.println(buffer);
+                runner.period, runner.last);
+            ctx.output.print(buffer);
         }
 
         terminalOK(ctx);
@@ -885,8 +975,8 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.VARS"), [](const terminal::CommandContext& ctx) {
         rpn_variables_foreach(_rpn_ctxt, [&ctx](const String& name, const rpn_value& value) {
             char buffer[256] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s"), name.c_str(), _rpnValueToString(value).c_str());
-            ctx.output.println(buffer);
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s\n"), name.c_str(), _rpnValueToString(value).c_str());
+            ctx.output.print(buffer);
         });
         terminalOK(ctx);
     });
@@ -894,8 +984,8 @@ void _rpnInitCommands() {
     terminalRegisterCommand(F("RPN.OPS"), [](const terminal::CommandContext& ctx) {
         rpn_operators_foreach(_rpn_ctxt, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
             char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)"), name.c_str(), argc);
-            ctx.output.println(buffer);
+            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)\n"), name.c_str(), argc);
+            ctx.output.print(buffer);
         });
         terminalOK(ctx);
     });
@@ -906,10 +996,10 @@ void _rpnInitCommands() {
             return;
         }
 
-        ctx.output.print(F("Running RPN expression: "));
-        ctx.output.println(ctx.argv[1].c_str());
+        const char* ptr = ctx.argv[1].c_str();
+        ctx.output.printf_P(PSTR("Expression: \"%s\"\n"), ctx.argv[1].c_str());
 
-        if (!rpn_process(_rpn_ctxt, ctx.argv[1].c_str())) {
+        if (!rpn_process(_rpn_ctxt, ptr)) {
             rpn_stack_clear(_rpn_ctxt);
             char buffer[64] = {0};
             snprintf_P(buffer, sizeof(buffer), PSTR("position=%u category=%d code=%d"),
@@ -955,6 +1045,16 @@ void _rpnRunnersReset() {
 }
 
 void _rpnRun() {
+#if MQTT_SUPPORT
+    if (!_rpn_mqtt_variables.empty()) {
+        _rpn_run = true;
+    }
+
+    for (auto& variable : _rpn_mqtt_variables) {
+        rpn_variable_set(_rpn_ctxt, variable.name, variable.value);
+    }
+    _rpn_mqtt_variables.clear();
+#endif
 
     if (!_rpn_run) {
         return;
@@ -967,29 +1067,31 @@ void _rpnRun() {
     _rpn_last = millis();
     _rpn_run = false;
 
+    size_t index { 0 };
     String rule;
-    unsigned char i = 0;
-    while ((rule = getSetting({"rpnRule", i++})).length()) {
+    for (;;) {
+        rule = rpnrules::settings::rule(index++);
+        if (!rule.length()) {
+            break;
+        }
+
         rpn_process(_rpn_ctxt, rule.c_str());
         rpn_stack_clear(_rpn_ctxt);
     }
 
-    if (!getSetting("rpnSticky", 1 == RPN_STICKY)) {
+    if (!rpnrules::settings::sticky()) {
         rpn_variables_clear(_rpn_ctxt);
     }
 
 }
 
 void _rpnLoop() {
-
     _rpnRunnersCheck();
     _rpnRun();
     _rpnRunnersReset();
-
 }
 
 void rpnSetup() {
-
     // Init context
     _rpnInit();
 
@@ -1049,7 +1151,6 @@ void rpnSetup() {
 
     _rpn_last = millis();
     _rpn_run = true;
-
 }
 
 #endif // RPN_RULES_SUPPORT

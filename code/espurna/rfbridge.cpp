@@ -344,15 +344,14 @@ void _rfbWebSocketOnVisible(JsonObject& root) {
 
 void _rfbWebSocketSendCodeArray(JsonObject& root, size_t start, size_t size) {
     JsonObject& rfb = root.createNestedObject("rfb");
-    rfb["size"] = size;
     rfb["start"] = start;
 
-    JsonArray& on = rfb.createNestedArray("on");
-    JsonArray& off = rfb.createNestedArray("off");
+    JsonArray& codes = rfb.createNestedArray("codes");
 
     for (auto id = start; id < (start + size); ++id) {
-        on.add(rfbRetrieve(id, true));
-        off.add(rfbRetrieve(id, false));
+        JsonArray& pair = codes.createNestedArray();
+        pair.add(rfbRetrieve(id, false));
+        pair.add(rfbRetrieve(id, true));
     }
 }
 
@@ -430,8 +429,7 @@ RfbRelayMatch _rfbMatch(const char* code) {
     // scan kvs only once, since we want both ON and OFF options and don't want to depend on the relayCount()
     RfbRelayMatch matched;
 
-    using namespace settings;
-    kv_store.foreach([code, len, &matched](kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([code, len, &matched](settings::kvs_type::KeyValueResult&& kv) {
         const auto key = kv.key.read();
         PayloadStatus status = key.startsWith(F("rfbON"))
             ? PayloadStatus::On : key.startsWith(F("rfbOFF"))

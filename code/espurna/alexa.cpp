@@ -52,10 +52,52 @@ private:
 };
 
 std::queue<AlexaEvent> _alexa_events;
-
 fauxmoESP _alexa;
 
-} // namespace
+namespace alexa {
+namespace build {
+
+constexpr bool createServer() {
+    return !WEB_SUPPORT;
+}
+
+constexpr uint16_t port() {
+    return 80;
+}
+
+const __FlashStringHelper* hostname() {
+    return F(ALEXA_HOSTNAME);
+}
+
+constexpr bool enabled() {
+    return 1 == ALEXA_ENABLED;
+}
+
+} // namespace build
+namespace settings {
+
+bool enabled() {
+    return getSetting("alexaEnabled", build::enabled());
+}
+
+// Use custom alexa hostname if defined, device hostname otherwise
+String hostname() {
+    auto out = getSetting("alexaName", build::hostname());
+    if (!out.length()) {
+        out = getSetting("hostname", getIdentifier());
+    }
+
+    return out;
+}
+
+} // namespace settings
+} // namespace alexa
+
+void _alexaSettingsMigrate(int version) {
+    if (version && (version < 3)) {
+        moveSetting("fauxmoEnabled", "alexaEnabled");
+    }
+}
 
 // -----------------------------------------------------------------------------
 // ALEXA
@@ -66,12 +108,12 @@ bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _alexaWebSocketOnConnected(JsonObject& root) {
-    root["alexaEnabled"] = alexaEnabled();
-    root["alexaName"] = getSetting("alexaName");
+    root["alexaEnabled"] = alexa::settings::enabled();
+    root["alexaName"] = alexa::settings::hostname();
 }
 
 void _alexaConfigure() {
-    _alexa.enable(wifiConnected() && alexaEnabled());
+    _alexa.enable(wifiConnected() && alexa::settings::enabled());
 }
 
 #if WEB_SUPPORT
@@ -106,19 +148,13 @@ void _alexaUpdateRelay(size_t id, bool status) {
 }
 
 #endif
-// -----------------------------------------------------------------------------
 
-bool alexaEnabled() {
-    return getSetting("alexaEnabled", 1 == ALEXA_ENABLED);
-}
-
-void alexaLoop() {
-
+void _alexaLoop() {
     _alexa.handle();
 
     while (!_alexa_events.empty()) {
         auto& event = _alexa_events.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%hhu state=#%s value=%hhu\n"),
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%hhu state=#%c value=%hhu\n"),
             event.id(), event.state() ? 't' : 'f', event.value());
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -135,22 +171,14 @@ void alexaLoop() {
 
         _alexa_events.pop();
     }
-
 }
 
-constexpr bool _alexaCreateServer() {
-    return !WEB_SUPPORT;
-}
+} // namespace
 
-constexpr const char* _alexaHostname() {
-    return ALEXA_HOSTNAME;
-}
+// -----------------------------------------------------------------------------
 
-
-void _alexaSettingsMigrate(int version) {
-    if (version && (version < 3)) {
-        moveSetting("fauxmoEnabled", "alexaEnabled");
-    }
+bool alexaEnabled() {
+    return alexa::settings::enabled();
 }
 
 void alexaSetup() {
@@ -158,15 +186,10 @@ void alexaSetup() {
     _alexaSettingsMigrate(migrateVersion());
 
     // Basic fauxmoESP configuration
-    _alexa.createServer(_alexaCreateServer());
-    _alexa.setPort(80);
+    _alexa.createServer(alexa::build::createServer());
+    _alexa.setPort(alexa::build::port());
 
-    // Use custom alexa hostname if defined, device hostname otherwise
-    String hostname = getSetting("alexaName", _alexaHostname());
-    if (!hostname.length()) {
-        hostname = getSetting("hostname", getIdentifier());
-    }
-
+    auto hostname = alexa::settings::hostname();
     auto deviceName = [&](size_t index) {
         auto name = hostname;
         name += ' ';
@@ -193,9 +216,6 @@ void alexaSetup() {
     }
 
 #endif
-
-    // Load & cache settings
-    _alexaConfigure();
 
     // Websockets
     #if WEB_SUPPORT
@@ -228,8 +248,7 @@ void alexaSetup() {
 #endif
 
     espurnaRegisterReload(_alexaConfigure);
-    espurnaRegisterLoop(alexaLoop);
-
+    espurnaRegisterLoop(_alexaLoop);
 }
 
 #endif

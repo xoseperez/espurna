@@ -12,6 +12,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if TERMINAL_SUPPORT
 
 #include "api.h"
+#include "crash.h"
 #include "settings.h"
 #include "system.h"
 #include "telnet.h"
@@ -45,34 +46,26 @@ namespace {
 // Based on libs/StreamInjector.h by Xose Pérez <xose dot perez at gmail dot com> (see git-log for more info)
 // Instead of custom write(uint8_t) callback, we provide writer implementation in-place
 
+template <size_t Capacity>
 struct TerminalIO final : public Stream {
-
-    TerminalIO(size_t capacity = 128) :
-        _buffer(new char[capacity]),
-        _capacity(capacity),
-        _write(0),
-        _read(0)
-    {}
-
-    ~TerminalIO() {
-        delete[] _buffer;
-    }
+    using Buffer = std::array<char, Capacity>;
 
     // ---------------------------------------------------------------------
-    // Injects data into the internal buffer so we can read() it
+    // Stream part of the interface injects data into the internal buffer,
+    // so we can later use the ::read()
     // ---------------------------------------------------------------------
 
-    size_t capacity() {
-        return _capacity;
+    static constexpr size_t capacity() {
+        return Capacity;
     }
 
     size_t inject(char ch) {
         _buffer[_write] = ch;
-        _write = (_write + 1) % _capacity;
+        _write = (_write + 1) % Capacity;
         return 1;
     }
 
-    size_t inject(char *data, size_t len) {
+    size_t inject(const char* data, size_t len) {
         for (size_t index = 0; index < len; ++index) {
             inject(data[index]);
         }
@@ -85,10 +78,11 @@ struct TerminalIO final : public Stream {
     // ---------------------------------------------------------------------
 
     // Return data from the internal buffer
+    // Note that this cannot be negative, but the API requires `int`
     int available() override {
-        unsigned int bytes = 0;
+        size_t bytes = 0;
         if (_read > _write) {
-            bytes += (_write - _read + _capacity);
+            bytes += (_write - _read + Capacity);
         } else if (_read < _write) {
             bytes += (_write - _read);
         }
@@ -107,7 +101,7 @@ struct TerminalIO final : public Stream {
         int ch = -1;
         if (_read != _write) {
             ch = _buffer[_read];
-            _read = (_read + 1) % _capacity;
+            _read = (_read + 1) % Capacity;
         }
         return ch;
     }
@@ -124,24 +118,9 @@ struct TerminalIO final : public Stream {
         _read = _write;
     }
 
-    size_t write(const uint8_t* buffer, size_t size) override {
-    // Buffer data until we encounter line break, then flush via Raw debug method
-    // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
+    size_t write(const uint8_t* bytes, size_t size) override {
 #if DEBUG_SUPPORT
-        if (!size) return 0;
-        if (buffer[size-1] == '\0') return 0;
-        if (_output.capacity() < (size + 2)) {
-            _output.reserve(_output.size() + size + 2);
-        }
-        _output.insert(_output.end(),
-            reinterpret_cast<const char*>(buffer),
-            reinterpret_cast<const char*>(buffer) + size
-        );
-        if (_output.end() != std::find(_output.begin(), _output.end(), '\n')) {
-            _output.push_back('\0');
-            debugSendRaw(_output.data());
-            _output.clear();
-        }
+        debugSendBytes(bytes, size);
 #endif
         return size;
     }
@@ -151,21 +130,22 @@ struct TerminalIO final : public Stream {
         return write(buffer, 1);
     }
 
-    private:
-
-#if DEBUG_SUPPORT
-    std::vector<char> _output;
-#endif
-
-    char * _buffer;
-    unsigned char _capacity;
-    unsigned char _write;
-    unsigned char _read;
-
+private:
+    Buffer _buffer {};
+    size_t _write { 0ul };
+    size_t _read { 0ul };
 };
 
-auto _io = TerminalIO(TERMINAL_SHARED_BUFFER_SIZE);
-terminal::Terminal _terminal(_io, _io.capacity());
+constexpr size_t _terminalBufferSize() {
+    return TERMINAL_SHARED_BUFFER_SIZE;
+}
+
+namespace {
+
+using Io = TerminalIO<_terminalBufferSize()>;
+
+Io _io;
+terminal::Terminal _terminal(_io, Io::capacity());
 
 // TODO: re-evaluate how and why this is used
 #if SERIAL_RX_ENABLED
@@ -175,6 +155,8 @@ char _serial_rx_buffer[SerialRxBufferSize];
 static unsigned char _serial_rx_pointer = 0;
 
 #endif // SERIAL_RX_ENABLED
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Commands
@@ -266,6 +248,107 @@ void start(String&& hostname, Callback&& callback) {
 
 } // namespace dns
 
+extern "C" uint32_t _FS_start;
+extern "C" uint32_t _FS_end;
+
+struct Layout {
+    Layout() = delete;
+
+    constexpr Layout(const Layout&) = default;
+    constexpr Layout(Layout&&) = default;
+    constexpr Layout(const char* const name, uint32_t start, uint32_t end) :
+        _name(name),
+        _start(start),
+        _end(end)
+    {}
+
+    constexpr uint32_t size() const {
+        return _end - _start;
+    }
+
+    constexpr uint32_t start() const {
+        return _start;
+    }
+
+    constexpr uint32_t end() const {
+        return _end;
+    }
+
+    constexpr const char* name() const {
+        return _name;
+    }
+
+private:
+    const char* const _name;
+    uint32_t _start;
+    uint32_t _end;
+};
+
+struct Layouts {
+    using List = std::forward_list<Layout>;
+
+    Layouts() = delete;
+    explicit Layouts(uint32_t size) :
+        _size(size),
+        _current(size),
+        _sectors(size / SPI_FLASH_SEC_SIZE)
+    {}
+
+    const Layout* head() const {
+        if (_list.empty()) {
+            return nullptr;
+        }
+
+        return &_list.front();
+    }
+
+    bool lock() {
+        if (_lock) {
+            return true;
+        }
+
+        _lock = true;
+        return false;
+    }
+
+    uint32_t sectors() const {
+        return _sectors;
+    }
+
+    uint32_t size() const {
+        return _size - _current;
+    }
+
+    uint32_t current() const {
+        return _current;
+    }
+
+    Layouts& add(const char* const name, uint32_t size) {
+        if (!_lock && _current >= size) {
+            Layout layout(name, _current - size, _current);
+            _current -= layout.size();
+            _list.push_front(layout);
+        }
+
+        return *this;
+    }
+
+    template <typename T>
+    void foreach(T&& callback) {
+        for (auto& layout : _list) {
+            callback(layout);
+        }
+    }
+
+private:
+    bool _lock { false };
+    List _list;
+    uint32_t _size;
+    uint32_t _current;
+    uint32_t _sectors;
+};
+
+
 void _terminalInitCommands() {
 
     terminalRegisterCommand(F("COMMANDS"), _terminalHelpCommand);
@@ -283,7 +366,7 @@ void _terminalInitCommands() {
             ? ctx.argv[1].toInt()
             : A0;
 
-        ctx.output.println(analogRead(pin));
+        ctx.output.printf_P(PSTR("value %d\n"), analogRead(pin));
         terminalOK(ctx);
     });
 
@@ -342,9 +425,62 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext&) {
-        info();
-        terminalOK();
+    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext& ctx) {
+        if (!systemCheck()) {
+            ctx.output.print(F("\n\n!!! device is in safe mode !!!\n\n"));
+        }
+
+        ctx.output.printf_P(PSTR("%s %s built %s\n"), getAppName(), getVersion(), buildTime().c_str());
+        ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s\n"), getFullChipId().c_str());
+        ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
+                ESP.getSdkVersion(), getCoreVersion().c_str());
+        ctx.output.printf_P(PSTR("md5: %s\n"), ESP.getSketchMD5().c_str());
+        ctx.output.printf_P(PSTR("support: %s\n"), getEspurnaModules());
+#if SENSOR_SUPPORT
+        ctx.output.printf_P(PSTR("sensors: %s\n"), getEspurnaSensors());
+#endif
+
+#if DEBUG_SUPPORT
+        crashResetReason(ctx.output);
+#endif
+        terminalOK(ctx);
+    });
+
+    terminalRegisterCommand(F("STORAGE"), [](const terminal::CommandContext& ctx) {
+        ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+        ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
+        ctx.output.printf_P(PSTR("mode: %s\n"), getFlashChipMode());
+
+        ctx.output.printf_P(PSTR("size: %u (SPI), %u (SDK)\n"),
+            ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
+
+        Layouts layout(ESP.getFlashChipRealSize());
+
+        // SDK specifies a hard-coded layout, there's no data beyond
+        // (...addressable by the Core, since it adheres the setting)
+        if (ESP.getFlashChipRealSize() > ESP.getFlashChipSize()) {
+            layout.add("unused", ESP.getFlashChipRealSize() - ESP.getFlashChipSize());
+        }
+
+        // app is at a normal location, [0...size), but... since it is offset by the free space, make sure it is aligned
+        // to the sector size (...and it is expected from the getFreeSketchSpace, as the app will align to use the fixed
+        // sector address for OTA writes).
+
+        layout.add("sdk", 4 * SPI_FLASH_SEC_SIZE);
+        layout.add("eeprom", eepromSpace());
+
+        auto app_size = (ESP.getSketchSize() + FLASH_SECTOR_SIZE - 1) & (~(FLASH_SECTOR_SIZE - 1));
+        auto ota_size = layout.current() - app_size;
+
+        // OTA is allowed to use all but one eeprom sectors that, leaving the last one
+        // for the settings snapshot during the update
+
+        layout.add("ota", ota_size);
+        layout.add("app", app_size);
+
+        layout.foreach([&](const Layout& l) {
+            ctx.output.printf_P("%-6s [%08X...%08X) (%u bytes)\n", l.name(), l.start(), l.end(), l.size());
+        });
     });
 
     terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
@@ -361,14 +497,14 @@ void _terminalInitCommands() {
     });
 
     terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext& ctx) {
-        ctx.output.println(getUptime());
+        ctx.output.printf_P(PSTR("uptime %s\n"), getUptime().c_str());
         terminalOK(ctx);
     });
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
     terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc != 3) {
-            terminalError(F("[url] [value]"));
+            terminalError(ctx, F("<url> <value>"));
             return;
         }
 
@@ -379,16 +515,17 @@ void _terminalInitCommands() {
         client->setInsecure();
 
         if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
-            terminalOK();
-        } else {
-            terminalError(F("Buffer size not supported"));
+            terminalOK(ctx);
+            return;
         }
+
+        terminalError(ctx, F("Buffer size not supported"));
     });
 #endif
 
     terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc != 2) {
-            terminalError(ctx, F("HOST <hostname>"));
+            terminalError(ctx, F("<hostname>"));
             return;
         }
 
@@ -427,11 +564,11 @@ void _terminalInitCommands() {
 
 void _terminalLoop() {
 
-    #if DEBUG_SERIAL_SUPPORT
-        while (DEBUG_PORT.available()) {
-            _io.inject(DEBUG_PORT.read());
-        }
-    #endif
+#if DEBUG_SERIAL_SUPPORT
+    while (DEBUG_PORT.available()) {
+        _io.inject(DEBUG_PORT.read());
+    }
+#endif
 
     _terminal.process([](terminal::Terminal::Result result) {
         bool out = false;
@@ -620,16 +757,16 @@ void terminalWebApiSetup() {
 
 #endif // TERMINAL_WEB_API_SUPPORT
 
-Stream & terminalDefaultStream() {
+Stream& terminalDefaultStream() {
     return (Stream &) _io;
 }
 
 size_t terminalCapacity() {
-    return _io.capacity();
+    return Io::capacity();
 }
 
-void terminalInject(void *data, size_t len) {
-    _io.inject((char *) data, len);
+void terminalInject(const char* data, size_t len) {
+    _io.inject(data, len);
 }
 
 void terminalInject(char ch) {
@@ -645,7 +782,7 @@ void terminalOK(Print& print) {
 }
 
 void terminalError(Print& print, const String& error) {
-    print.printf("-ERROR: %s\n", error.c_str());
+    print.printf_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
 void terminalOK(const terminal::CommandContext& ctx) {

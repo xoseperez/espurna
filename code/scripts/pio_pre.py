@@ -19,10 +19,14 @@ import sys
 
 from SCons.Script import ARGUMENTS
 
-from espurna_utils.release import merge_cpp
+from espurna_utils.build import merge_cpp
 
 
-CI = "true" == os.environ.get("CI")
+def check_env(name, default):
+    return os.environ.get(name, default) in ("1", "y", "yes", "true")
+
+
+CI = check_env("CI", "false")
 PIO_PLATFORM = env.PioPlatform()
 CONFIG = env.GetProjectConfig()
 VERBOSE = "1" == ARGUMENTS.get("PIOVERBOSE", "0")
@@ -38,42 +42,18 @@ def log(message, verbose=False, file=sys.stderr):
 
 
 # Most portable way, without depending on platformio internals
-def subprocess_libdeps(lib_deps, storage=None, verbose=False):
+def subprocess_libdeps(lib_deps, storage, verbose=False):
     import subprocess
 
-    args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib"]
-    if not storage:
-        args.append("-g")
-    else:
-        args.extend(["-d", storage])
-    args.append("install")
+    args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib", "-d", storage, "install"]
     if not verbose:
         args.append("-s")
 
     args.extend(lib_deps)
-
     subprocess.check_call(args)
 
 
-# Avoid spawning pio lib every time, hook into the LibraryManager API (sort-of internal)
-def library_manager_libdeps(lib_deps, storage=None):
-    from platformio.managers.lib import LibraryManager
-    from platformio.project.helpers import get_project_global_lib_dir
-
-    if not storage:
-        manager = LibraryManager(get_project_global_lib_dir())
-    else:
-        manager = LibraryManager(storage)
-
-    for lib in lib_deps:
-        if manager.get_package_dir(*manager.parse_pkg_uri(lib)):
-            continue
-        log("installing: {}".format(lib))
-        manager.install(lib)
-
-
 def get_shared_libdeps_dir(section, name):
-
     if not CONFIG.has_option(section, name):
         raise ExtraScriptError("{}.{} is required to be set".format(section, name))
 
@@ -112,14 +92,19 @@ if ESPURNA_OTA_PORT:
 else:
     env.Replace(UPLOAD_PROTOCOL="esptool")
 
-# handle `-t release` parameters
-if CI:
-    env.Append(
-        ESPURNA_RELEASE_REVISION=os.environ.get("ESPURNA_RELEASE_REVISION", ""),
-        ESPURNA_RELEASE_NAME=os.environ.get("ESPURNA_RELEASE_NAME", ""),
-        ESPURNA_RELEASE_VERSION=os.environ.get("ESPURNA_RELEASE_VERSION", ""),
-        ESPURNA_RELEASE_DESTINATION=os.environ.get("ESPURNA_RELEASE_DESTINATION", ""),
-    )
+# handle `-t build-and-copy` parameters
+env.Append(
+    # what is the name suffix of the .bin
+    ESPURNA_BUILD_NAME=os.environ.get("ESPURNA_BUILD_NAME", ""),
+    # where to copy the resulting .bin
+    ESPURNA_BUILD_DESTINATION=os.environ.get("ESPURNA_BUILD_DESTINATION", ""),
+    # set the full string for the build, no need to change individual parts
+    ESPURNA_BUILD_FULL_VERSION=os.environ.get("ESPURNA_BUILD_FULL_VERSION", ""),
+    # or, replace parts of the version string that would've been auto-detected
+    ESPURNA_BUILD_VERSION=os.environ.get("ESPURNA_BUILD_VERSION", ""),
+    ESPURNA_BUILD_REVISION=os.environ.get("ESPURNA_BUILD_REVISION", ""),
+    ESPURNA_BUILD_VERSION_SUFFIX=os.environ.get("ESPURNA_BUILD_VERSION_SUFFIX", ""),
+)
 
 # updates arduino core git to the latest master commit
 if CI:
@@ -129,15 +114,9 @@ if CI:
             ensure_platform_updated()
             break
 
-# to speed-up build process, install libraries in either global or local shared storage
-if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
-    if CI:
-        storage = None
-        log("using global library storage")
-    else:
-        storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
-        log("using shared library storage: {}".format(storage))
-
+# to speed-up build process, install libraries in a way they are shared between our envs
+if check_env("ESPURNA_PIO_SHARED_LIBRARIES", "0"):
+    storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
     subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
 
 # tweak build system to ignore espurna.ino, but include user code
@@ -151,7 +130,7 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
     env.AddMethod(ConvertInoToCpp)
 
 # merge every .cpp into a single file and **only** build that single file
-if "1" == os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
+if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
     cpp_files = []
     for root, dirs, filenames in os.walk("espurna"):
         for name in filenames:
@@ -164,15 +143,3 @@ if "1" == os.environ.get("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
             relpath = os.path.relpath(abspath, "espurna")
             cpp_files.append(relpath)
     merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
-
-# make sure to register as a valid command. however, it is always called right here
-# (--list-targets is a kind-of inefficient for finding this, though, since it *will* install libs into .pio/ anyways...)
-def install_libs_dummy(target, source, env):
-    pass
-env.AddCustomTarget("install-libs", None, install_libs_dummy)
-
-from SCons.Script import COMMAND_LINE_TARGETS
-if "install-libs" in COMMAND_LINE_TARGETS:
-    storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
-    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
-    sys.exit(0)

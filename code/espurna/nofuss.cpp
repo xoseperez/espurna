@@ -43,7 +43,6 @@ void _nofussWebSocketOnConnected(JsonObject& root) {
 #endif
 
 void _nofussConfigure() {
-
     String nofussServer = getSetting("nofussServer", NOFUSS_SERVER);
     if (!nofussServer.length()) {
         setSetting("nofussEnabled", 0);
@@ -54,25 +53,24 @@ void _nofussConfigure() {
     _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL);
     _nofussLastCheck = 0;
 
-    if (!_nofussEnabled) {
+    if (_nofussEnabled) {
+        char device[256];
+        sprintf_P(device, PSTR("%s_%s"), getAppName(), getDevice());
 
-        DEBUG_MSG_P(PSTR("[NOFUSS] Disabled\n"));
-
-    } else {
-
+        auto timestamp = String(__UNIX_TIMESTAMP__);
         NoFUSSClient.setServer(nofussServer);
-        NoFUSSClient.setDevice(APP_NAME "_" DEVICE);
-        NoFUSSClient.setVersion(APP_VERSION);
-        NoFUSSClient.setBuild(String(__UNIX_TIMESTAMP__));
+        NoFUSSClient.setDevice(device);
+        NoFUSSClient.setVersion(getVersion());
+        NoFUSSClient.setBuild(timestamp);
 
-        DEBUG_MSG_P(PSTR("[NOFUSS] Server : %s\n"), nofussServer.c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), APP_NAME "_" DEVICE);
-        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), APP_VERSION);
-        DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), String(__UNIX_TIMESTAMP__).c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Enabled\n"));
-
+        DEBUG_MSG_P(PSTR("[NOFUSS] Server: %s\n"), nofussServer.c_str());
+        DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), getVersion());
+        DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), timestamp.c_str());
+        return;
     }
 
+    DEBUG_MSG_P(PSTR("[NOFUSS] Disabled\n"));
 }
 
 // -----------------------------------------------------------------------------

@@ -120,7 +120,7 @@ class EventSensor : public BaseSensor {
         // Handle interrupt calls from isr[GPIO] functions
         // Cannot be nested, since the esp8266/Arduino Core already masks all GPIO handlers before calling this function
 
-        void ICACHE_RAM_ATTR handleDebouncedInterrupt() {
+        void IRAM_ATTR handleDebouncedInterrupt() {
             // Debounce is based around ccount (32bit value), overflowing every:
             // ~53s when F_CPU is 80MHz
             // ~26s when F_CPU is 160MHz
@@ -138,7 +138,7 @@ class EventSensor : public BaseSensor {
             }
         }
 
-        void ICACHE_RAM_ATTR handleInterrupt() {
+        void IRAM_ATTR handleInterrupt() {
             ++_counter;
         }
 
@@ -184,7 +184,7 @@ class EventSensor : public BaseSensor {
 
 EventSensor * _event_sensor_instance[EVENTS_SENSORS_MAX] = {nullptr};
 
-void ICACHE_RAM_ATTR _event_sensor_isr(EventSensor* instance) {
+void IRAM_ATTR _event_sensor_isr(EventSensor* instance) {
     if (instance->getDebounceTime()) {
         instance->handleDebouncedInterrupt();
     } else {
@@ -192,16 +192,16 @@ void ICACHE_RAM_ATTR _event_sensor_isr(EventSensor* instance) {
     }
 }
 
-void ICACHE_RAM_ATTR _event_sensor_isr_0() { _event_sensor_isr(_event_sensor_instance[0]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_1() { _event_sensor_isr(_event_sensor_instance[1]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_2() { _event_sensor_isr(_event_sensor_instance[2]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_3() { _event_sensor_isr(_event_sensor_instance[3]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_4() { _event_sensor_isr(_event_sensor_instance[4]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_5() { _event_sensor_isr(_event_sensor_instance[5]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_12() { _event_sensor_isr(_event_sensor_instance[6]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_13() { _event_sensor_isr(_event_sensor_instance[7]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_14() { _event_sensor_isr(_event_sensor_instance[8]); }
-void ICACHE_RAM_ATTR _event_sensor_isr_15() { _event_sensor_isr(_event_sensor_instance[9]); }
+void IRAM_ATTR _event_sensor_isr_0() { _event_sensor_isr(_event_sensor_instance[0]); }
+void IRAM_ATTR _event_sensor_isr_1() { _event_sensor_isr(_event_sensor_instance[1]); }
+void IRAM_ATTR _event_sensor_isr_2() { _event_sensor_isr(_event_sensor_instance[2]); }
+void IRAM_ATTR _event_sensor_isr_3() { _event_sensor_isr(_event_sensor_instance[3]); }
+void IRAM_ATTR _event_sensor_isr_4() { _event_sensor_isr(_event_sensor_instance[4]); }
+void IRAM_ATTR _event_sensor_isr_5() { _event_sensor_isr(_event_sensor_instance[5]); }
+void IRAM_ATTR _event_sensor_isr_12() { _event_sensor_isr(_event_sensor_instance[6]); }
+void IRAM_ATTR _event_sensor_isr_13() { _event_sensor_isr(_event_sensor_instance[7]); }
+void IRAM_ATTR _event_sensor_isr_14() { _event_sensor_isr(_event_sensor_instance[8]); }
+void IRAM_ATTR _event_sensor_isr_15() { _event_sensor_isr(_event_sensor_instance[9]); }
 
 static void (*_event_sensor_isr_list[10])() = {
     _event_sensor_isr_0, _event_sensor_isr_1, _event_sensor_isr_2,

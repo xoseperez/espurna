@@ -17,11 +17,10 @@ namespace sensor {
 
 namespace type {
 
-enum Type : unsigned char {
-    Base = 0,
-    Emon = 1 << 0,
-    Analog = 1 << 1
-};
+static constexpr unsigned char Base { 0 };
+static constexpr unsigned char Emon { 1 << 0 };
+static constexpr unsigned char AnalogEmon { 1 << 1 };
+static constexpr unsigned char Analog { 1 << 2 };
 
 } // namespace type
 

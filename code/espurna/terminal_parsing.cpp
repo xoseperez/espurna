@@ -92,8 +92,8 @@ static char hex_digit_to_int(char c) {
 CommandLine parse_commandline(const char *line) {
     const char *p = line;
 
-    CommandLine result {{}, 0};
-    result.argv.reserve(4);
+    Argv argv;
+    argv.reserve(4);
 
     String current;
 
@@ -186,18 +186,18 @@ CommandLine parse_commandline(const char *line) {
                 if (*p) p++;
             }
             /* add the token to the vector */
-            result.argv.emplace_back(std::move(current));
-            ++result.argc;
+            argv.emplace_back(std::move(current));
         } else {
             /* Even on empty input string return something not NULL. */
-            return result;
+            goto out;
         }
     }
 
 err:
-    result.argc = 0;
-    result.argv.clear();
-    return result;
+    argv.clear();
+out:
+    size_t argc = argv.size();
+    return CommandLine{std::move(argv), argc};
 }
 
 // Fowler–Noll–Vo hash function to hash command strings that treats input as lowercase

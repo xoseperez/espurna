@@ -6,16 +6,26 @@ cd code
 
 case "$1" in
 ("host")
-    cd test/ && pio test
+    # runs PIO unit tests, using the host compiler
+    # (see https://github.com/ThrowTheSwitch/Unity)
+    pushd test
+    pio test
+    popd
     ;;
 ("webui")
+    # TODO: both can only parse one file at a time
+    npm exec --no eslint html/custom.js
+    npm exec --no html-validate html/index.html
+    # checks whether the webui can be built
     ./build.sh -f environments
+    git --no-pager diff --stat
     ;;
 ("build")
-    # shellcheck disable=SC2086
-    scripts/test_build.py -e "$TEST_ENV" $TEST_EXTRA_ARGS
+    # run generic build test with the specified environment as base
+    scripts/test_build.py -e $2
     ;;
 ("release")
+    # TODO: pending removal in favour of code/scripts/generate_release_sh.py
     ./build.sh -r
     ;;
 (*)

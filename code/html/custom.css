@@ -55,7 +55,7 @@ h2 {
 }
 
 .hint {
-    color: #ccc;
+    color: #9e9e9e;
     font-size: 80%;
     margin: -10px 0 10px 0;
 }
@@ -179,18 +179,13 @@ div.state {
 .main-buttons button {
     width: 100px;
 }
-.button-del-schedule {
-    margin-top: 15px;
-}
 
 .button-reboot,
 .button-reconnect,
 .button-ha-del,
 .button-rfb-forget,
 .button-lightfox-clear,
-.button-del-network,
 .button-del-parent,
-.button-del-schedule,
 .button-dbg-clear,
 .button-upgrade,
 .button-clear-filters,
@@ -201,11 +196,8 @@ div.state {
 }
 
 .button-update,
-.button-update-password,
-.button-add-network,
-.button-add-mapping,
-.button-add-rpnrule,
-.button-add-rpntopic,
+.button-setup-password,
+.button-add-settings-group,
 .button-upgrade-browse,
 .button-rfb-learn,
 .button-lightfox-learn,
@@ -219,16 +211,8 @@ div.state {
     background: rgb(0, 192, 0); /* green */
 }
 
-.button-add-switch-schedule,
-.button-add-light-schedule,
-.button-add-curtain-schedule {
-    background: rgb(0, 192, 0); /* green */
-    display: none;
-}
-
-#button-wifi-scan,
-.button-more-network,
-.button-more-schedule,
+.button-wifi-scan,
+.button-more-parent,
 .button-rfb-send {
     background: rgb(255, 128, 0); /* orange */
 }
@@ -448,6 +432,7 @@ input[disabled] + .toggle .toggle__handler {
     width: 100%;
 }
 
+#error-notification,
 #uploader,
 #downloader {
     display: none;
@@ -479,20 +464,25 @@ input[disabled] + .toggle .toggle__handler {
     Table
    -------------------------------------------------------------------------- */
 
+#rfm69-messages {
+    margin-bottom: 1em;
+}
+
+summary {
+    font-weight: bold;
+}
+
 .right {
     text-align: right;
 }
 
-table.dataTable.display tbody td {
+.center {
     text-align: center;
-}
-
-#packets_filter {
-    display: none;
 }
 
 .filtered {
     color: rgb(202, 60, 60);
+    font-weight: bold;
 }
 
 /* -----------------------------------------------------------------------------
@@ -552,4 +542,9 @@ input::-ms-input-placeholder {
 
 input::placeholder {
     color: #ccc;
+}
+
+#error-notification {
+    width: 100%;
+    box-shadow: 0 1px 2px 1px rgb(192 0 0 / 25%)
 }

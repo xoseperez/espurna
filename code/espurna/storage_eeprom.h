@@ -48,7 +48,7 @@ void eepromSetup();
 extern EEPROM_Rotate EEPROMr;
 
 inline unsigned long eepromSpace() {
-    return EEPROMr.reserved() * SPI_FLASH_SEC_SIZE;
+    return EEPROMr.size() * SPI_FLASH_SEC_SIZE;
 }
 
 inline void eepromClear() {

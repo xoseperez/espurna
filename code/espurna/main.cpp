@@ -116,9 +116,7 @@ void setup() {
     }
     setBoardName();
 
-    // Show welcome message and system configuration
-    info(true);
-
+    boardSetup();
     wifiSetup();
     otaSetup();
 
@@ -290,6 +288,7 @@ void setup() {
     if (_loop_delay != loop_delay) {
         setSetting("loopDelay", _loop_delay);
     }
+
 }
 
 void loop() {

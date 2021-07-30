@@ -51,8 +51,6 @@ void commit() {
 
 using kvs_type = embedis::KeyValueStore<EepromStorage>;
 
-extern kvs_type kv_store;
-
 } // namespace settings
 
 // --------------------------------------------------------------------------
@@ -81,6 +79,20 @@ using enable_if_arduino_string = std::enable_if<is_arduino_string<T>::value>;
 
 template <typename T>
 using enable_if_not_arduino_string = std::enable_if<!is_arduino_string<T>::value>;
+
+ValueResult get(const String& key);
+bool set(const String& key, const String& value);
+bool del(const String& key);
+bool has(const String& key);
+
+using Keys = std::vector<String>;
+Keys keys();
+
+size_t available();
+size_t size();
+
+using KeyValueResultCallback = std::function<void(settings::kvs_type::KeyValueResult&&)>;
+void foreach(KeyValueResultCallback&& callback);
 
 // --------------------------------------------------------------------------
 
@@ -185,7 +197,7 @@ String settingsQueryDefaults(const String& key);
 // --------------------------------------------------------------------------
 
 void moveSetting(const String& from, const String& to);
-void moveSetting(const String& from, const String& to, unsigned int index);
+void moveSetting(const String& from, const String& to, size_t index);
 void moveSettings(const String& from, const String& to);
 
 template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
@@ -193,7 +205,7 @@ T getSetting(const SettingsKey& key, T defaultValue) __attribute__((noinline));
 
 template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
 T getSetting(const SettingsKey& key, T defaultValue) {
-    auto result = settings::kv_store.get(key.value());
+    auto result = settings::internal::get(key.value());
     if (result) {
         return settings::internal::convert<T>(result.ref());
     }
@@ -213,7 +225,7 @@ String getSetting(const SettingsKey& key, String&& defaultValue);
 
 template<typename T, typename = typename settings::internal::enable_if_arduino_string<T>::type>
 bool setSetting(const SettingsKey& key, T&& value) {
-    return settings::kv_store.set(key.value(), value);
+    return settings::internal::set(key.value(), value);
 }
 
 template<typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>

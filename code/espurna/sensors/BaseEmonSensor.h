@@ -21,7 +21,7 @@ class BaseEmonSensor : public BaseSensor {
             BaseEmonSensor(1)
         {}
 
-        unsigned char type() {
+        unsigned char type() override {
             return sensor::type::Emon;
         }
 
@@ -64,24 +64,6 @@ class BaseEmonSensor : public BaseSensor {
 
         virtual double getEnergy() {
             return getEnergy(0);
-        }
-
-        // --- configuration ---
-
-        virtual double defaultVoltage() {
-            return 0.0;
-        }
-
-        // when sensor needs explicit mains voltage value
-        virtual void setVoltage(double) {}
-        virtual void setVoltage(unsigned char index, double value) {
-            setVoltage(value);
-        }
-        virtual double getVoltage() {
-            return defaultVoltage();
-        }
-        virtual double getVoltage(unsigned char index) {
-            return getVoltage();
         }
 
         // when sensor implements ratios / multipliers
@@ -169,4 +151,3 @@ class BaseEmonSensor : public BaseSensor {
         size_t _devices;
 
 };
-

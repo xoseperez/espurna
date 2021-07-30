@@ -245,10 +245,6 @@ button_t::button_t(BasePinPtr&& pin, const debounce_event::types::Config& config
     event_delays(std::move(delays_))
 {}
 
-bool button_t::state() {
-    return event_emitter->isPressed();
-}
-
 ButtonEvent button_t::loop() {
     if (event_emitter) {
         switch (event_emitter->loop()) {
@@ -371,12 +367,6 @@ void buttonSetEventNotify(ButtonEventHandler handler) {
 }
 
 //------------------------------------------------------------------------------
-
-bool buttonState(size_t id) {
-    return (id < _buttons.size())
-        ? _buttons[id].state()
-        : false;
-}
 
 ButtonAction buttonAction(size_t id, ButtonEvent event) {
     return (id < _buttons.size())
@@ -548,7 +538,7 @@ unsigned long _buttonGetDelay(const char* key, size_t index, unsigned long defau
     auto indexed = SettingsKey(key, index);
     auto global = String(key);
 
-    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         if (found) {
             return;
         }
@@ -712,7 +702,7 @@ std::vector<AnalogPin*> AnalogPin::pins;
 BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
     BasePinPtr result;
 
-    auto pin = getSetting({"btnGpio", index}, button::build::pin(index));
+    auto pin [[gnu::unused]] = getSetting({"btnGpio", index}, button::build::pin(index));
 
     switch (provider) {
     case ButtonProvider::Gpio: {
@@ -781,7 +771,6 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
     bool result { false };
 
     switch (provider) {
-
     case ButtonProvider::Analog:
     case ButtonProvider::Gpio: {
 #if BUTTON_PROVIDER_GPIO_SUPPORT || BUTTON_PROVIDER_ANALOG_SUPPORT
@@ -816,6 +805,18 @@ void _buttonSettingsMigrate(int version) {
     moveSetting("btnDelay", "btnRepDel");
 }
 
+bool buttonAdd() {
+    const size_t index { buttonCount() };
+    if ((index + 1) < ButtonsMax) {
+        _buttons.emplace_back(
+            _buttonActions(index),
+            _buttonDelays(index));
+        return true;
+    }
+
+    return false;
+}
+
 void buttonSetup() {
     _buttonSettingsMigrate(migrateVersion());
 
@@ -833,13 +834,14 @@ void buttonSetup() {
     terminalRegisterCommand(F("BUTTON"), [](const terminal::CommandContext& ctx) {
         unsigned index { 0u };
         for (auto& button : _buttons) {
-            ctx.output.printf("%u - ", index++);
+            ctx.output.printf_P(PSTR("%u - "), index++);
             if (button.event_emitter) {
                 auto& pin = button.event_emitter->pin();
-                ctx.output.println(pin->description());
+                ctx.output.print(pin->description());
             } else {
-                ctx.output.println(F("Virtual"));
+                ctx.output.print(F("Virtual"));
             }
+            ctx.output.print('\n');
         }
 
         terminalOK(ctx);

@@ -65,8 +65,11 @@ void mqttRegister(mqtt_callback_f callback);
 void mqttOnPublish(uint16_t pid, mqtt_pid_callback_f);
 void mqttOnSubscribe(uint16_t pid, mqtt_pid_callback_f);
 
-String mqttTopic(const char * magnitude, bool is_set);
-String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
+String mqttTopic(const String& magnitude, bool is_set);
+String mqttTopic(const char* magnitude, bool is_set);
+
+String mqttTopic(const String& magnitude, unsigned int index, bool is_set);
+String mqttTopic(const char* magnitude, unsigned int index, bool is_set);
 
 String mqttMagnitude(const char* topic);
 

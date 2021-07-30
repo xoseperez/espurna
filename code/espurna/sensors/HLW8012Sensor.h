@@ -283,7 +283,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         #endif // HLW8012_USE_INTERRUPTS == 0
 
         // Handle interrupt calls
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
+        void IRAM_ATTR handleInterrupt(unsigned char gpio) {
             if (gpio == _cf) _hlw8012->cf_interrupt();
             if (gpio == _cf1) _hlw8012->cf1_interrupt();
         }
@@ -361,23 +361,23 @@ class HLW8012Sensor : public BaseEmonSensor {
 
 HLW8012Sensor * _hlw8012_sensor_instance[10] = {NULL};
 
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr(unsigned char gpio) {
+void IRAM_ATTR _hlw8012_sensor_isr(unsigned char gpio) {
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_hlw8012_sensor_instance[index]) {
         _hlw8012_sensor_instance[index]->handleInterrupt(gpio);
     }
 }
 
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_0() { _hlw8012_sensor_isr(0); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_1() { _hlw8012_sensor_isr(1); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_2() { _hlw8012_sensor_isr(2); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_3() { _hlw8012_sensor_isr(3); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_4() { _hlw8012_sensor_isr(4); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_5() { _hlw8012_sensor_isr(5); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_12() { _hlw8012_sensor_isr(12); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_13() { _hlw8012_sensor_isr(13); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_14() { _hlw8012_sensor_isr(14); }
-void ICACHE_RAM_ATTR _hlw8012_sensor_isr_15() { _hlw8012_sensor_isr(15); }
+void IRAM_ATTR _hlw8012_sensor_isr_0() { _hlw8012_sensor_isr(0); }
+void IRAM_ATTR _hlw8012_sensor_isr_1() { _hlw8012_sensor_isr(1); }
+void IRAM_ATTR _hlw8012_sensor_isr_2() { _hlw8012_sensor_isr(2); }
+void IRAM_ATTR _hlw8012_sensor_isr_3() { _hlw8012_sensor_isr(3); }
+void IRAM_ATTR _hlw8012_sensor_isr_4() { _hlw8012_sensor_isr(4); }
+void IRAM_ATTR _hlw8012_sensor_isr_5() { _hlw8012_sensor_isr(5); }
+void IRAM_ATTR _hlw8012_sensor_isr_12() { _hlw8012_sensor_isr(12); }
+void IRAM_ATTR _hlw8012_sensor_isr_13() { _hlw8012_sensor_isr(13); }
+void IRAM_ATTR _hlw8012_sensor_isr_14() { _hlw8012_sensor_isr(14); }
+void IRAM_ATTR _hlw8012_sensor_isr_15() { _hlw8012_sensor_isr(15); }
 
 static void (*_hlw8012_sensor_isr_list[10])() = {
     _hlw8012_sensor_isr_0, _hlw8012_sensor_isr_1, _hlw8012_sensor_isr_2,

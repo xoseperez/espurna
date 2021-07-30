@@ -2,7 +2,7 @@
 
 LED MODULE
 
-Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -14,9 +14,47 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 // Scans input string with format
 // '<on1>,<off1>,<repeats1> <on2>,<off2>,<repeats2> ...'
-// Directly changing `led.pattern.delays` contents
+// And returns a list of Delay objects for the pattern
 
-void _ledLoadPattern(led_t& led, const char* input) {
+struct LedPattern {
+    using Delays = std::vector<LedDelay>;
+
+    LedPattern() = default;
+
+    LedPattern(LedPattern&&) = default;
+    LedPattern& operator=(LedPattern&&) = default;
+
+    explicit LedPattern(Delays&& delays_) :
+        delays(std::move(delays_)),
+        clock_last(ESP.getCycleCount()),
+        clock_delay(delays.size() ? delays.back().on() : 0)
+    {}
+
+    void start() {
+        clock_last = ESP.getCycleCount();
+        clock_delay = 0;
+        queue = { delays.rbegin(), delays.rend() };
+    }
+
+    void reset() {
+        queue.clear();
+    }
+
+    bool ready() const {
+        return delays.size() > 0;
+    }
+
+    bool started() const {
+        return queue.size() > 0;
+    }
+
+    Delays delays;
+    Delays queue;
+    unsigned long clock_last;
+    unsigned long clock_delay;
+};
+
+LedPattern _ledLoadPattern(const char* input) {
     char buffer[16];
 
     const char* d1;
@@ -26,8 +64,7 @@ void _ledLoadPattern(led_t& led, const char* input) {
     const char* p = input;
     const char* marker;
 
-    auto& pattern = led.pattern;
-    pattern.delays.clear();
+    LedPattern::Delays delays;
 
 loop:
 /*!stags:re2c format = 'const char *@@;'; */
@@ -43,7 +80,7 @@ loop:
         wsp = [ \t]+;
         num = [0-9]+;
 
-        * { return; }
+        * { goto out; }
         wsp { goto loop; }
         @d1 num [,] @d2 num [,] @d3 num {
             unsigned long on;
@@ -62,9 +99,16 @@ loop:
             buffer[int(p - d3)] = '\0';
             repeats = strtoul(buffer, nullptr, 10);
 
-            pattern.delays.emplace_back(on, off, repeats);
+            delays.emplace_back(on, off, repeats);
 
             goto loop;
         }
 */
+
+out:
+    return LedPattern(std::move(delays));
+}
+
+LedPattern _ledLoadPattern(const String& pattern) {
+    return _ledLoadPattern(pattern.c_str());
 }

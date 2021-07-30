@@ -11,6 +11,8 @@ LED MODULE
 namespace led {
 namespace build {
 
+constexpr size_t LedsMax { 8ul };
+
 constexpr size_t preconfiguredLeds() {
     return 0ul
     #if LED1_PIN != GPIO_NONE

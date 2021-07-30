@@ -11,6 +11,10 @@ RELAY MODULE
 namespace relay {
 namespace build {
 
+constexpr unsigned long saveDelay() {
+    return RELAY_SAVE_DELAY;
+}
+
 constexpr size_t dummyCount() {
     return DUMMY_RELAY_COUNT;
 }

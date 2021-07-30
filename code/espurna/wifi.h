@@ -79,6 +79,7 @@ bool wifiConnected();
 
 // Whether the AP is up and running
 bool wifiConnectable();
+size_t wifiApStations();
 
 // Current STA connection
 String wifiStaSsid();

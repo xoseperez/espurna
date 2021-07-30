@@ -8,7 +8,8 @@
 #pragma once
 
 
-#include "EmonSensor.h"
+#include "BaseAnalogEmonSensor.h"
+#include "I2CSensor.h"
 
 
 #define ADS1X15_CHANNELS                (4)
@@ -93,217 +94,52 @@
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
 
-class EmonADS1X15Sensor : public EmonSensor {
+class EmonADS1X15Sensor : public SimpleAnalogEmonSensor {
+public:
 
+    // ---------------------------------------------------------------------
+    // ADS1X15Sensor-specific
+    // ---------------------------------------------------------------------
+
+    class I2CPort {
     public:
+        I2CPort() = default;
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
+        explicit I2CPort(uint8_t address, uint8_t type, uint16_t gain, uint16_t datarate) :
+            _address(address),
+            _type(type),
+            _gain(gain),
+            _datarate(datarate)
+        {}
 
-        EmonADS1X15Sensor() {
-            _channels = ADS1X15_CHANNELS;
-            _sensor_id = SENSOR_EMON_ADS1X15_ID;
-            init();
+        bool lock(uint8_t address) {
+            static uint8_t addresses[] = {0x48, 0x49, 0x4A, 0x4B};
+            return _sensor_address.lock(address) || _sensor_address.findAndLock(sizeof(addresses), addresses);
         }
 
-        // ---------------------------------------------------------------------
-
-        void setType(unsigned char type) {
-            if (_type == type) return;
-            _type = type;
-            _dirty = true;
+        bool lock() {
+            return lock(_address);
         }
 
-        void setMask(unsigned char mask) {
-            if (_mask == mask) return;
-            _mask = mask;
-            _dirty = true;
+        uint8_t address() const {
+            return _sensor_address.address();
         }
 
-        void setGain(unsigned int gain) {
-            if (_gain == gain) return;
-            _gain = gain;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getType() {
+        uint8_t type() const {
             return _type;
         }
 
-        unsigned char getMask() {
-            return _mask;
-        }
-
-        unsigned char getGain() {
-            return _gain;
-        }
-
-        // ---------------------------------------------------------------------
-        // Sensor API
-        // ---------------------------------------------------------------------
-
-        // Convert slot # index to a magnitude # index
-        unsigned char local(unsigned char index) override {
-            return (_ports) ? (index / _ports) : 0u;
-        }
-
-        // Initialization method, must be idempotent
-        void begin() {
-
-            if (!_dirty) return;
-
-            // Discover
-            unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
-
-            // Calculate ports
-            _ports = 0;
-            unsigned char mask = _mask;
-            while (mask) {
-                if (mask & 0x01) ++_ports;
-                mask = mask >> 1;
-            }
-
-            resizeDevices(_ports);
-            _count = _ports * _magnitudes;
-
-            // Bit depth
-            _resolution = ADS1X15_RESOLUTION;
-
-            // Reference based on gain
-            if (_gain == ADS1X15_REG_CONFIG_PGA_6_144V) _reference = 12.288;
-            if (_gain == ADS1X15_REG_CONFIG_PGA_4_096V) _reference = 8.192;
-            if (_gain == ADS1X15_REG_CONFIG_PGA_2_048V) _reference = 4.096;
-            if (_gain == ADS1X15_REG_CONFIG_PGA_1_024V) _reference = 2.048;
-            if (_gain == ADS1X15_REG_CONFIG_PGA_0_512V) _reference = 1.024;
-            if (_gain == ADS1X15_REG_CONFIG_PGA_0_256V) _reference = 0.512;
-
-            // Call the parent class method
-            EmonSensor::begin();
-
-            // warmup all channels
-            warmup();
-
-        }
-
-        // Descriptive name of the sensor
-        String description() {
-            char buffer[30];
-            snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, _address);
-            return String(buffer);
-        }
-
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            char buffer[35];
-            unsigned char channel = getChannel(index % _ports);
-            snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 (A%d) @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, channel, _address);
-            return String(buffer);
-        }
-
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[10];
-            unsigned char channel = getChannel(index % _ports);
-            snprintf(buffer, sizeof(buffer), "0x%02X:%u", _address, channel);
-            return String(buffer);
-        }
-
-        // Type for slot # index
-        unsigned char type(unsigned char index) {
-            unsigned char magnitude = index / _ports;
-            unsigned char i=0;
-            #if EMON_REPORT_CURRENT
-                if (magnitude == i++) return MAGNITUDE_CURRENT;
-            #endif
-            #if EMON_REPORT_POWER
-                if (magnitude == i++) return MAGNITUDE_POWER_APPARENT;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (magnitude == i) return MAGNITUDE_ENERGY;
-            #endif
-            return MAGNITUDE_NONE;
-        }
-
-        void pre() {
-            static unsigned long last = 0;
-            for (unsigned char port=0; port<_ports; port++) {
-                unsigned char channel = getChannel(port);
-                _current[port] = getCurrent(channel);
-                #if EMON_REPORT_ENERGY
-                    _energy[port] += sensor::Ws {
-                        static_cast<uint32_t>(_current[port] * _voltage * (millis() - last) / 1000)
-                    };
-                #endif
-            }
-            last = millis();
-            _error = SENSOR_ERROR_OK;
-        }
-
-        // Current value for slot # index
-        double value(unsigned char index) {
-            unsigned char port = index % _ports;
-            unsigned char magnitude = index / _ports;
-            unsigned char i=0;
-            #if EMON_REPORT_CURRENT
-                if (magnitude == i++) return _current[port];
-            #endif
-            #if EMON_REPORT_POWER
-                if (magnitude == i++) return _current[port] * _voltage;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (magnitude == i) return _energy[port].asDouble();
-            #endif
-            return 0;
-        }
-
-    protected:
-
-        //----------------------------------------------------------------------
-        // Protected
-        //----------------------------------------------------------------------
-
-        unsigned char getChannel(unsigned char port) {
-            unsigned char count = 0;
-            unsigned char bit = 1;
-            for (unsigned char channel=0; channel<ADS1X15_CHANNELS; channel++) {
-                if ((_mask & bit) == bit) {
-                    if (count == port) return channel;
-                    ++count;
-                }
-                bit <<= 1;
-            }
-            return 0;
-        }
-
-        void warmup() {
-            for (unsigned char port=0; port<_ports; port++) {
-                unsigned char channel = getChannel(port);
-                _pivot[channel] = _adc_counts >> 1;
-                getCurrent(channel);
-            }
-        }
-
-        //----------------------------------------------------------------------
-        // I2C
-        //----------------------------------------------------------------------
-
-        void setConfigRegistry(unsigned char channel, bool continuous, bool start) {
-
+        void config(unsigned char channel, bool continuous, bool start) {
             // Start with default values
             uint16_t config = 0;
             config |= _gain;                                // Set PGA/voltage range (0x0200)
-            config |= ADS1X15_REG_CONFIG_DR_MASK;           // Always at max speed (0x00E0)
+            config |= _datarate;                            // Default is at max speed (0x00E0)
             //config |= ADS1X15_REG_CONFIG_CMODE_TRAD;        // Traditional comparator (default val) (0x0000)
             //config |= ADS1X15_REG_CONFIG_CPOL_ACTVLOW;      // Alert/Rdy active low   (default val) (0x0000)
             //config |= ADS1X15_REG_CONFIG_CLAT_NONLAT;       // Non-latching (default val) (0x0000)
             config |= ADS1X15_REG_CONFIG_CQUE_NONE;         // Disable the comparator (default val) (0x0003)
             if (start) {
-                config |= ADS1X15_REG_CONFIG_OS_SINGLE;         // Start a single-conversion (0x8000)
+                config |= ADS1X15_REG_CONFIG_OS_SINGLE;     // Start a single-conversion (0x8000)
             }
             if (continuous) {
                 //config |= ADS1X15_REG_CONFIG_MODE_CONTIN;   // Continuous mode (default) (0x0000)
@@ -313,41 +149,145 @@ class EmonADS1X15Sensor : public EmonSensor {
             config |= ((channel + 4) << 12);                // Set single-ended input channel (0x4000 - 0x7000)
 
             // Write config register to the ADC
-            i2c_write_uint16(_address, ADS1X15_REG_POINTER_CONFIG, config);
-
+            i2c_write_uint16(_sensor_address.address(), ADS1X15_REG_POINTER_CONFIG, config);
         }
 
-        double getCurrent(unsigned char channel) {
+        uint16_t gain() const {
+            return _gain;
+        }
 
+        unsigned int read(unsigned char channel) {
+            // Make sure we configure the correct channel for reading
             // Force stop by setting single mode and back to continuous
-            static unsigned char previous = 9;
-            if (previous != channel) {
-                setConfigRegistry(channel, true, false);
-                setConfigRegistry(channel, false, false);
-                setConfigRegistry(channel, false, true);
+            // (as we can't read from all channels at once)
+            if (_channel != channel) {
+                _channel = channel;
+                config(_channel, true, false);
+                config(_channel, false, false);
+                config(_channel, false, true);
                 nice_delay(10);
-                readADC(channel);
-                previous = channel;
+                read();
             }
-            setConfigRegistry(channel, true, true);
+            config(_channel, true, true);
 
-            return read(channel);
-
+            return read();
         }
 
-        unsigned int readADC(unsigned char) {
-            unsigned int value = i2c_read_uint16(_address, ADS1X15_REG_POINTER_CONVERT);
-            if (_type == ADS1X15_CHIP_ADS1015) value >>= ADS1015_BIT_SHIFT;
+        unsigned int read() {
+            unsigned int value = i2c_read_uint16(_sensor_address.address(), ADS1X15_REG_POINTER_CONVERT);
+            if (_type == ADS1X15_CHIP_ADS1015) {
+                value >>= ADS1015_BIT_SHIFT;
+            }
             delayMicroseconds(500);
             return value;
         }
 
-        unsigned char _type = ADS1X15_CHIP_ADS1115;
-        unsigned char _mask = 0x0F;
-        unsigned int _gain = ADS1X15_REG_CONFIG_PGA_4_096V;
-        unsigned char _ports;
+    private:
+        I2CSensorAddress _sensor_address;
+        uint8_t _channel { 0xff };
+        uint8_t _address { 0x00 };
+        uint8_t _type { ADS1X15_CHIP_ADS1115 };
+        uint16_t _gain { ADS1X15_REG_CONFIG_PGA_4_096V };
+        uint16_t _datarate { ADS1X15_REG_CONFIG_DR_MASK };
+    };
 
+    friend class I2CPort;
+    using PortPtr = std::shared_ptr<I2CPort>;
 
+    EmonADS1X15Sensor() = delete;
+    EmonADS1X15Sensor(PortPtr port) :
+        _port(port)
+    {
+        _sensor_id = SENSOR_EMON_ADS1X15_ID;
+    }
+
+    // ---------------------------------------------------------------------
+
+    void setChannel(unsigned char channel) {
+        if ((_channel != channel) && (channel < 4)) {
+            _channel = channel;
+            _dirty = true;
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Sensor API
+    // ---------------------------------------------------------------------
+
+    // Initialization method, must be idempotent
+    void begin() override {
+        if (!_dirty) {
+            return;
+        }
+
+        if (!_port->lock()) {
+            _error = SENSOR_ERROR_I2C;
+            return;
+        }
+
+        setResolution(ADS1X15_RESOLUTION);
+        setReferenceVoltage(gainToReference(_port->gain()));
+        BaseAnalogEmonSensor::begin();
+        BaseAnalogEmonSensor::sampleCurrent();
+
+        _dirty = false;
+    }
+
+    // Descriptive name of the sensor
+    String description() override {
+        char buffer[30];
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("EMON @ ADS1%c15 @ I2C (0x%02X)"),
+            _port->type() == ADS1X15_CHIP_ADS1015 ? '0' : '1',
+            _port->address());
+        return String(buffer);
+    }
+
+    // Descriptive name of the slot # index
+    String description(unsigned char) override {
+        char buffer[35];
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("EMON @ ADS1%c15 (A%hhu) @ I2C (0x%02X)"),
+            _port->type() == ADS1X15_CHIP_ADS1015 ? '0' : '1',
+            _channel, _port->address());
+        return String(buffer);
+    }
+
+    // Address of the sensor (it could be the GPIO or I2C address)
+    String address(unsigned char) override {
+        char buffer[18];
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("A%hhu @ I2C (0x%02X)"),
+            _channel, _port->address());
+        return String(buffer);
+    }
+
+    unsigned int analogRead() override {
+        return _port->read(_channel);
+    }
+
+private:
+    static double gainToReference(uint16_t gain) {
+        switch (gain) {
+        case ADS1X15_REG_CONFIG_PGA_6_144V:
+            return 12.288;
+        case ADS1X15_REG_CONFIG_PGA_2_048V:
+            return 4.096;
+        case ADS1X15_REG_CONFIG_PGA_1_024V:
+            return 2.048;
+        case ADS1X15_REG_CONFIG_PGA_0_512V:
+            return 1.024;
+        case ADS1X15_REG_CONFIG_PGA_0_256V:
+            return 0.512;
+        case ADS1X15_REG_CONFIG_PGA_4_096V:
+            break;
+        }
+
+        return 8.192;
+    }
+
+    PortPtr _port;
+    unsigned char _channel { 0 };
 };
 
 #endif // SENSOR_SUPPORT && EMON_ADS1X15_SUPPORT

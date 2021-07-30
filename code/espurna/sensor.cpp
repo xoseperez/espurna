@@ -38,6 +38,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "sensors/BaseSensor.h"
 #include "sensors/BaseEmonSensor.h"
+#include "sensors/BaseAnalogEmonSensor.h"
 #include "sensors/BaseAnalogSensor.h"
 
 #if AM2320_SUPPORT
@@ -166,6 +167,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SI7021_SUPPORT
     #include "sensors/SI7021Sensor.h"
+#endif
+
+#if SM300D2_SUPPORT
+    #include "sensors/SM300D2Sensor.h"
 #endif
 
 #if SONAR_SUPPORT
@@ -410,7 +415,11 @@ std::vector<unsigned char> _sensor_save_count;
 unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
 
 bool _sensorIsEmon(BaseSensor* sensor) {
-    return sensor->type() & sensor::type::Emon;
+    return sensor->type() & (sensor::type::Emon | sensor::type::AnalogEmon);
+}
+
+bool _sensorIsAnalogEmon(BaseSensor* sensor) {
+    return sensor->type() & sensor::type::AnalogEmon;
 }
 
 sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
@@ -753,6 +762,12 @@ String magnitudeTopic(unsigned char type) {
         case MAGNITUDE_FREQUENCY:
             result = F("frequency");
             break;
+        case MAGNITUDE_TVOC:
+            result = F("tvoc");
+            break;
+        case MAGNITUDE_CH2O:
+            result = F("ch2o");
+            break;
         case MAGNITUDE_NONE:
         default:
             result = F("unknown");
@@ -1023,17 +1038,23 @@ const char * const _magnitudeSettingsPrefix(unsigned char type) {
     case MAGNITUDE_RESISTANCE: return "res";
     case MAGNITUDE_PH: return "ph";
     case MAGNITUDE_FREQUENCY: return "freq";
+    case MAGNITUDE_TVOC: return "tvoc";
+    case MAGNITUDE_CH2O: return "ch2o";
     default: return nullptr;
     }
 }
 
 template <typename T>
+String _magnitudeSettingsKey(unsigned char type, T&& suffix) {
+    return String(_magnitudeSettingsPrefix(type)) + suffix;
+}
+
+template <typename T>
 String _magnitudeSettingsKey(sensor_magnitude_t& magnitude, T&& suffix) {
-    return String(_magnitudeSettingsPrefix(magnitude.type)) + suffix;
+    return _magnitudeSettingsKey(magnitude.type, std::forward<T>(suffix));
 }
 
 bool _sensorMatchKeyPrefix(const char * key) {
-
     if (strncmp(key, "sns", 3) == 0) return true;
     if (strncmp(key, "pwr", 3) == 0) return true;
 
@@ -1041,8 +1062,19 @@ bool _sensorMatchKeyPrefix(const char * key) {
         const char* const prefix { _magnitudeSettingsPrefix(type) };
         return (strncmp(prefix, key, strlen(prefix)) == 0);
     });
-
 }
+
+SettingsKey _magnitudeSettingsRatioKey(unsigned char type, size_t index) {
+    return {_magnitudeSettingsKey(type, F("Ratio")), index};
+}
+
+SettingsKey _magnitudeSettingsRatioKey(const sensor_magnitude_t& magnitude) {
+    return _magnitudeSettingsRatioKey(magnitude.type, magnitude.index_global);
+}
+
+double _magnitudeSettingsRatio(const sensor_magnitude_t& magnitude, double defaultValue) {
+    return getSetting(_magnitudeSettingsRatioKey(magnitude), defaultValue);
+};
 
 const String _sensorQueryDefault(const String& key) {
 
@@ -1066,16 +1098,13 @@ const String _sensorQueryDefault(const String& key) {
     auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> SettingsKey {
         switch (magnitude.type) {
         case MAGNITUDE_CURRENT:
-            return {"pwrRatioC", magnitude.index_global};
         case MAGNITUDE_VOLTAGE:
-            return {"pwrRatioV", magnitude.index_global};
         case MAGNITUDE_POWER_ACTIVE:
-            return {"pwrRatioP", magnitude.index_global};
         case MAGNITUDE_ENERGY:
-            return {"pwrRatioE", magnitude.index_global};
-        default:
-            return "";
+            return _magnitudeSettingsRatioKey(magnitude);
         }
+
+        return "";
     };
 
     unsigned char type = MAGNITUDE_NONE;
@@ -1113,26 +1142,30 @@ bool _sensorWebSocketOnKeyCheck(const char* key, JsonVariant&) {
 }
 
 // Used by modules to generate magnitude_id<->module_id mapping for the WebUI
+// WS produces tuples <prefix>Magnitudes that contain type, sensor's global index and module's index
+// Settings use <prefix>Magnitude<index_global> keys to allow us to retrieve module's index
 
 void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
+    const String wsKey = prefix + F("Magnitudes");
+    const String confKey = wsKey.substring(0, wsKey.length() - 1);
 
-    // ws produces flat list <prefix>Magnitudes
-    const String ws_name = prefix + "Magnitudes";
+    JsonObject& namedList = root.createNestedObject(wsKey);
 
-    // config uses <prefix>Magnitude<index> (cut 's')
-    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
+    static const char* const keys[] PROGMEM = {
+        "type", "index_global", "index_module"
+    };
 
-    JsonObject& list = root.createNestedObject(ws_name);
-    list["size"] = magnitudeCount();
+    JsonArray& schema = namedList.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
-    JsonArray& type = list.createNestedArray("type");
-    JsonArray& index = list.createNestedArray("index");
-    JsonArray& idx = list.createNestedArray("idx");
+    JsonArray& values = namedList.createNestedArray("values");
+    for (size_t index = 0; index < _magnitudes.size(); ++index) {
+        JsonArray& tuple = values.createNestedArray();
 
-    for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        type.add(magnitudeType(i));
-        index.add(magnitudeIndex(i));
-        idx.add(getSetting({conf_name, i}, 0));
+        auto& magnitude = _magnitudes[index];
+        tuple.add(magnitude.type);
+        tuple.add(magnitude.index_global);
+        tuple.add(getSetting({confKey, index}, 0));
     }
 }
 
@@ -1289,6 +1322,12 @@ String magnitudeName(unsigned char type) {
         case MAGNITUDE_FREQUENCY:
             result = F("Frequency");
             break;
+        case MAGNITUDE_TVOC:
+            result = F("TVOC");
+            break;
+        case MAGNITUDE_CH2O:
+            result = F("CH2O");
+            break;
         case MAGNITUDE_NONE:
         default:
             break;
@@ -1297,95 +1336,106 @@ String magnitudeName(unsigned char type) {
     return String(result);
 }
 
-void _sensorWebSocketOnVisible(JsonObject& root) {
+// prepare available magnitude, unit and error types
 
-    root["snsVisible"] = 1;
+void _sensorWebSocketTypes(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("types");
+    static const char* const keys[] PROGMEM = {
+        "type", "prefix", "name"
+    };
 
-    // prepare available magnitude types
-    JsonArray& magnitudes = root.createNestedArray("snsMagnitudes");
-    _magnitudeForEachCounted([&magnitudes](unsigned char type) {
-        JsonArray& tuple = magnitudes.createNestedArray();
-        tuple.add(type);
-        tuple.add(_magnitudeSettingsPrefix(type));
-        tuple.add(magnitudeName(type));
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& values = container.createNestedArray("values");
+    _magnitudeForEachCounted([&](unsigned char type) {
+        JsonArray& value = values.createNestedArray();
+        value.add(type);
+        value.add(_magnitudeSettingsPrefix(type));
+        value.add(magnitudeName(type));
     });
+}
 
-    // and available error types
-    JsonArray& errors = root.createNestedArray("snsErrors");
-    _sensorForEachError([&errors](unsigned char error) {
-        JsonArray& tuple = errors.createNestedArray();
-        tuple.add(error);
-        tuple.add(sensorError(error));
+void _sensorWebSocketErrors(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("errors");
+    static const char* const keys[] PROGMEM = {
+        "type", "name"
+    };
+
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& values = container.createNestedArray("values");
+    _sensorForEachError([&](unsigned char type) {
+        JsonArray& value = values.createNestedArray();
+        value.add(type);
+        value.add(sensorError(type));
     });
+}
 
+void _sensorWebSocketMagnitudes(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("magnitudes");
+    static const char* const keys[] PROGMEM = {
+        "index_global", "type", "units", "description"
+    };
+
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& values = container.createNestedArray("values");
+    for (auto& magnitude : _magnitudes) {
+        JsonArray& value = values.createNestedArray();
+        value.add(magnitude.index_global);
+        value.add(magnitude.type);
+        value.add(_magnitudeUnits(magnitude));
+        value.add(_magnitudeDescription(magnitude));
+    }
 }
 
 void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
-
-    JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
-    uint8_t size = 0;
-
-    JsonArray& index = magnitudes.createNestedArray("index");
-    JsonArray& type = magnitudes.createNestedArray("type");
-    JsonArray& units = magnitudes.createNestedArray("units");
-    JsonArray& description = magnitudes.createNestedArray("description");
-
-    for (auto& magnitude : _magnitudes) {
-
-        // TODO: we don't display event for some reason?
-        if (magnitude.type == MAGNITUDE_EVENT) continue;
-        ++size;
-
-        index.add<uint8_t>(magnitude.index_global);
-        type.add<uint8_t>(magnitude.type);
-        units.add(_magnitudeUnits(magnitude));
-        description.add(_magnitudeDescription(magnitude));
-
-    }
-
-    magnitudes["size"] = size;
-
+    JsonObject& container = root.createNestedObject("magnitudesConfig");
+    _sensorWebSocketTypes(container);
+    _sensorWebSocketErrors(container);
+    _sensorWebSocketMagnitudes(container);
 }
 
 void _sensorWebSocketSendData(JsonObject& root) {
+    JsonObject& container = root.createNestedObject("magnitudes");
+    static const char* const keys[] PROGMEM = {
+        "value", "error", "info"
+    };
+
+    JsonArray& schema = container.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
     char buffer[64];
-
-    JsonObject& magnitudes = root.createNestedObject("magnitudes");
-    uint8_t size = 0;
-
-    JsonArray& value = magnitudes.createNestedArray("value");
-    JsonArray& error = magnitudes.createNestedArray("error");
-    #if NTP_SUPPORT
-        JsonArray& info = magnitudes.createNestedArray("info");
-    #endif
-
+    JsonArray& values = container.createNestedArray("values");
     for (auto& magnitude : _magnitudes) {
-        if (magnitude.type == MAGNITUDE_EVENT) continue;
-        ++size;
-
+        JsonArray& entry = values.createNestedArray();
         dtostrf(_magnitudeProcess(magnitude, magnitude.last), 1, magnitude.decimals, buffer);
 
-        value.add(buffer);
-        error.add(magnitude.sensor->error());
+        entry.add(buffer);
+        entry.add(magnitude.sensor->error());
 
-        #if NTP_SUPPORT
-            if ((_sensor_save_every > 0) && (magnitude.type == MAGNITUDE_ENERGY)) {
-                String string = F("Last saved: ");
-                string += getSetting({"eneTime", magnitude.index_global}, F("(unknown)"));
-                info.add(string);
-            } else {
-                info.add((uint8_t)0);
-            }
-        #endif
+#if NTP_SUPPORT
+        if ((_sensor_save_every > 0) && (magnitude.type == MAGNITUDE_ENERGY)) {
+            String string = F("Last saved: ");
+            string += getSetting({"eneTime", magnitude.index_global}, F("(unknown)"));
+            entry.add(string);
+        } else {
+            entry.add("");
+        }
+#else
+        entry.add("");
+#endif
     }
+}
 
-    magnitudes["size"] = size;
-
+void _sensorWebSocketOnVisible(JsonObject& root) {
+    root["snsVisible"] = 1;
 }
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
-
     for (auto* sensor [[gnu::unused]] : _sensors) {
 
         if (_sensorIsEmon(sensor)) {
@@ -1393,11 +1443,9 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             root["pwrVisible"] = 1;
         }
 
-        #if EMON_ANALOG_SUPPORT
-            if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
-            }
-        #endif
+        if (_sensorIsAnalogEmon(sensor)) {
+            root["voltMains0"] = static_cast<BaseAnalogEmonSensor*>(sensor)->getVoltage();
+        }
 
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
@@ -1425,7 +1473,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         #if PULSEMETER_SUPPORT
             if (sensor->getID() == SENSOR_PULSEMETER_ID) {
                 root["pmVisible"] = 1;
-                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
+                root["eneRatio0"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
             }
         #endif
 
@@ -1448,7 +1496,6 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
         root["snsSave"] = _sensor_save_every;
         _sensorWebSocketMagnitudesConfig(root);
     }
-
 }
 
 #endif // WEB_SUPPORT
@@ -1828,34 +1875,37 @@ void _sensorLoad() {
         EmonADC121Sensor * sensor = new EmonADC121Sensor();
         sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+        sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
         _sensors.push_back(sensor);
     }
     #endif
 
     #if EMON_ADS1X15_SUPPORT
     {
-        EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
-        sensor->setAddress(EMON_ADS1X15_I2C_ADDRESS);
-        sensor->setType(EMON_ADS1X15_TYPE);
-        sensor->setMask(EMON_ADS1X15_MASK);
-        sensor->setGain(EMON_ADS1X15_GAIN);
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(1, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(2, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(3, EMON_CURRENT_RATIO);
-        _sensors.push_back(sensor);
+        auto port = std::make_shared<EmonADS1X15Sensor::I2CPort>(
+            EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_TYPE, EMON_ADS1X15_GAIN, EMON_ADS1X15_DATARATE);
+
+        unsigned char channel { 0 };
+        unsigned char mask { EMON_ADS1X15_MASK };
+        constexpr unsigned char FirstBit { 1 };
+
+        while (mask) {
+            if (mask & FirstBit) {
+                auto* sensor = new EmonADS1X15Sensor(port);
+                sensor->setVoltage(EMON_MAINS_VOLTAGE);
+                sensor->setChannel(channel);
+                _sensors.push_back(sensor);
+            }
+            ++channel;
+        }
     }
     #endif
 
     #if EMON_ANALOG_SUPPORT
     {
-        EmonAnalogSensor * sensor = new EmonAnalogSensor();
+        auto* sensor = new EmonAnalogSensor();
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+        sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
         _sensors.push_back(sensor);
     }
     #endif
@@ -2120,6 +2170,14 @@ void _sensorLoad() {
     }
     #endif
 
+    #if SM300D2_SUPPORT
+    {
+        SM300D2Sensor * sensor = new SM300D2Sensor();
+        sensor->setRX(SM300D2_RX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if T6613_SUPPORT
     {
         T6613Sensor * sensor = new T6613Sensor();
@@ -2328,9 +2386,8 @@ void _sensorInit() {
 
         // Initialize sensor magnitudes
         for (unsigned char magnitude_index = 0; magnitude_index < sensor->count(); ++magnitude_index) {
-
             const auto magnitude_type = sensor->type(magnitude_index);
-            const auto magnitude_local = sensor->local(magnitude_type);
+            const auto magnitude_local = sensor->local(magnitude_index);
             _magnitudes.emplace_back(
                 magnitude_index,     // id of the magnitude, unique to the sensor
                 magnitude_local,     // index_local, # of the magnitude
@@ -2339,18 +2396,17 @@ void _sensorInit() {
                 sensor               // bind the sensor to allow us to reference it later
             );
 
+            auto& magnitude = _magnitudes.back();
             if (_sensorIsEmon(sensor) && (MAGNITUDE_ENERGY == magnitude_type)) {
-                const auto index_global = _magnitudes.back().index_global;
+                const auto index_global = magnitude.index_global;
                 auto* ptr = static_cast<BaseEmonSensor*>(sensor);
-                ptr->resetEnergy(magnitude_local, _sensorEnergyTotal(index_global));
+                ptr->resetEnergy(magnitude.index_local, _sensorEnergyTotal(index_global));
                 _sensor_save_count.push_back(0);
             }
 
             DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%u\n"),
-                magnitudeTopic(magnitude_type).c_str(),
-                sensor_magnitude_t::counts(magnitude_type)
-            );
-
+                magnitudeTopic(magnitude.type).c_str(),
+                sensor_magnitude_t::counts(magnitude.type));
         }
 
         // Custom initializations are based on IDs
@@ -2441,19 +2497,19 @@ void _sensorConfigure() {
             if ((value = getSetting("pwrExpectedC", 0.0))) {
                 sensor->expectedCurrent(value);
                 delSetting("pwrExpectedC");
-                setSetting("pwrRatioC", sensor->getCurrentRatio());
+                setSetting(_magnitudeSettingsRatioKey(MAGNITUDE_CURRENT, 0), sensor->getCurrentRatio());
             }
 
             if ((value = getSetting("pwrExpectedV", 0.0))) {
                 delSetting("pwrExpectedV");
                 sensor->expectedVoltage(value);
-                setSetting("pwrRatioV", sensor->getVoltageRatio());
+                setSetting(_magnitudeSettingsRatioKey(MAGNITUDE_VOLTAGE, 0), sensor->getVoltageRatio());
             }
 
             if ((value = getSetting("pwrExpectedP", 0.0))) {
                 delSetting("pwrExpectedP");
                 sensor->expectedPower(value);
-                setSetting("pwrRatioP", sensor->getPowerRatio());
+                setSetting(_magnitudeSettingsRatioKey(MAGNITUDE_POWER_ACTIVE, 0), sensor->getPowerRatio());
             }
 
             if (getSetting("pwrResetE", false)) {
@@ -2466,9 +2522,9 @@ void _sensorConfigure() {
 
             if (getSetting("pwrResetCalibration", false)) {
                 delSetting("pwrResetCalibration");
-                delSetting("pwrRatioC");
-                delSetting("pwrRatioV");
-                delSetting("pwrRatioP");
+                delSetting(_magnitudeSettingsRatioKey(MAGNITUDE_CURRENT, 0));
+                delSetting(_magnitudeSettingsRatioKey(MAGNITUDE_VOLTAGE, 0));
+                delSetting(_magnitudeSettingsRatioKey(MAGNITUDE_ENERGY, 0));
                 sensor->resetRatios();
             }
 
@@ -2478,46 +2534,48 @@ void _sensorConfigure() {
 
     // Update magnitude config, filter sizes and reset energy if needed
     {
-        for (unsigned char index = 0; index < _magnitudes.size(); ++index) {
+        for (size_t index = 0; index < _magnitudes.size(); ++index) {
 
             auto& magnitude = _magnitudes.at(index);
 
             // process emon-specific settings first. ensure that settings use global index and we access sensor with the local one
             if (_sensorIsEmon(magnitude.sensor)) {
                 // TODO: compatibility proxy, fetch global key before indexed
-                auto get_ratio = [](const char* key, unsigned char index, double default_value) -> double {
-                    return getSetting({key, index}, getSetting(key, default_value));
-                };
+                // TODO: *remove* local index, favour separate sensor instances instead of index magic
 
                 auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
 
                 switch (magnitude.type) {
                 case MAGNITUDE_CURRENT:
                     sensor->setCurrentRatio(
-                        magnitude.index_local, get_ratio("pwrRatioC", magnitude.index_global, sensor->defaultCurrentRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultCurrentRatio()));
                     break;
                 case MAGNITUDE_POWER_ACTIVE:
                     sensor->setPowerRatio(
-                        magnitude.index_local, get_ratio("pwrRatioP", magnitude.index_global, sensor->defaultPowerRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultPowerRatio()));
                     break;
                 case MAGNITUDE_VOLTAGE:
                     sensor->setVoltageRatio(
-                        magnitude.index_local, get_ratio("pwrRatioV", magnitude.index_global, sensor->defaultVoltageRatio())
-                    );
-                    sensor->setVoltage(
-                        magnitude.index_local, get_ratio("pwrVoltage", magnitude.index_global, sensor->defaultVoltage())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultVoltageRatio()));
                     break;
                 case MAGNITUDE_ENERGY:
                     sensor->setEnergyRatio(
-                        magnitude.index_local, get_ratio("pwrRatioE", magnitude.index_global, sensor->defaultEnergyRatio())
-                    );
+                        magnitude.index_local, _magnitudeSettingsRatio(magnitude, sensor->defaultEnergyRatio()));
                     break;
                 default:
                     break;
                 }
+            }
+
+            // analog variant of emon sensor has some additional settings
+            if (_sensorIsAnalogEmon(magnitude.sensor) && magnitude.type == MAGNITUDE_VOLTAGE) {
+                auto* sensor = static_cast<BaseAnalogEmonSensor*>(magnitude.sensor);
+                sensor->setVoltage(
+                    getSetting({_magnitudeSettingsKey(magnitude, F("Mains")), magnitude.index_global},
+                    sensor->defaultVoltage()));
+                sensor->setReferenceVoltage(
+                    getSetting({_magnitudeSettingsKey(magnitude, F("Reference")), magnitude.index_global},
+                    sensor->defaultReferenceVoltage()));
             }
 
             // adjust type-specific units
@@ -2689,6 +2747,15 @@ void _sensorBackwards(int version) {
         delSetting("pwrUnits");
         delSetting("eneUnits");
         delSetting("tmpUnits");
+    }
+
+    // generic pwr settings have magnitude prefixes
+    if (version < 7) {
+        moveSetting(F("pwrVoltage"), _magnitudeSettingsKey(MAGNITUDE_VOLTAGE, F("Mains0")));
+        moveSetting(F("pwrRatioC"), _magnitudeSettingsRatioKey(MAGNITUDE_CURRENT, 0).value());
+        moveSetting(F("pwrRatioV"), _magnitudeSettingsRatioKey(MAGNITUDE_VOLTAGE, 0).value());
+        moveSetting(F("pwrRatioP"), _magnitudeSettingsRatioKey(MAGNITUDE_POWER_ACTIVE, 0).value());
+        moveSetting(F("pwrRatioE"), _magnitudeSettingsRatioKey(MAGNITUDE_ENERGY, 0).value());
     }
 }
 

@@ -132,6 +132,7 @@
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
 //#define MAGICHOME_ZJ_WFMN_C_11
+//#define MIRABELLA_GENIO_W_A60
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUK007S
@@ -260,6 +261,7 @@
 //#define SENSEAIR_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
+//#define SM300D2_SUPPORT        1
 //#define SONAR_SUPPORT          1
 //#define T6613_SUPPORT          1
 //#define THERMOSTAT_SUPPORT     1

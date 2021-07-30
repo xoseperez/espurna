@@ -7,119 +7,61 @@
 
 #pragma once
 
+#include "BaseAnalogEmonSensor.h"
 
-#include "EmonSensor.h"
+// Notice that esp8266 only has one analog pin and the only possible way to have more is to use an extension board
+// (see EmonADC121Sensor.h, EmonADS1X15Sensor.h, etc.)
 
-#define EMON_ANALOG_RESOLUTION      10
-#define EMON_ANALOG_CHANNELS        1
+class EmonAnalogSensor : public SimpleAnalogEmonSensor {
+public:
+    EmonAnalogSensor() {
+        _sensor_id = SENSOR_EMON_ANALOG_ID;
+    }
 
-class EmonAnalogSensor : public EmonSensor {
+    // ---------------------------------------------------------------------
+    // Sensor API
+    // ---------------------------------------------------------------------
 
-    public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        EmonAnalogSensor() {
-            _channels = EMON_ANALOG_CHANNELS;
-            _sensor_id = SENSOR_EMON_ANALOG_ID;
-            init();
-        }
-
-        // ---------------------------------------------------------------------
-        // Sensor API
-        // ---------------------------------------------------------------------
-
-        // Initialization method, must be idempotent
-        void begin() {
-
-            if (!_dirty) return;
+    // Initialization method, must be idempotent
+    void begin() {
+        if (_dirty) {
+            BaseAnalogEmonSensor::begin();
+            BaseAnalogEmonSensor::sampleCurrent();
             _dirty = false;
+        }
+        _ready = true;
+    }
 
-            // Number of slots
-            _count = _magnitudes;
+    String description() {
+        return String("EMON @ A0");
+    }
 
-            // Bit depth
-            _resolution = EMON_ANALOG_RESOLUTION;
+    String description(unsigned char) {
+        return description();
+    }
 
-            // Init analog PIN)
-            pinMode(0, INPUT);
+    String address(unsigned char index) {
+        return String(F("A0"));
+    }
 
-            // Call the parent class method
-            EmonSensor::begin();
+    // Cannot hammer analogRead() all the time:
+    // https://github.com/esp8266/Arduino/issues/1634
 
-            // warmup channel 0 (the only one)
-            read(0);
-
+    unsigned int analogRead() override {
+        auto cycles = ESP.getCycleCount();
+        if (cycles - _last > _interval) {
+            _last = cycles;
+            _value = ::analogRead(A0);
         }
 
-        // Descriptive name of the sensor
-        String description() {
-            return String("EMON @ ANALOG @ GPIO0");
-        }
+        return _value;
+    }
 
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String("0");
-        }
+private:
+    unsigned long _interval { microsecondsToClockCycles(200u) };
+    unsigned long _last { ESP.getCycleCount() };
 
-        // Type for slot # index
-        unsigned char type(unsigned char index) {
-            unsigned char i=0;
-            #if EMON_REPORT_CURRENT
-                if (index == i++) return MAGNITUDE_CURRENT;
-            #endif
-            #if EMON_REPORT_POWER
-                if (index == i++) return MAGNITUDE_POWER_APPARENT;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (index == i) return MAGNITUDE_ENERGY;
-            #endif
-            return MAGNITUDE_NONE;
-        }
-
-        // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
-
-            _current[0] = read(0);
-
-            #if EMON_REPORT_ENERGY
-                static unsigned long last = 0;
-                for (unsigned char channel = 0; channel < _channels; ++channel) {
-                    _energy[channel] += sensor::Ws {
-                        static_cast<uint32_t>(_current[channel] * _voltage * (millis() - last) / 1000)
-                    };
-                }
-                last = millis();
-            #endif
-
-            _error = SENSOR_ERROR_OK;
-
-        }
-
-        // Current value for slot # index
-        double value(unsigned char index) {
-            unsigned char channel = index / _magnitudes;
-            unsigned char i=0;
-            #if EMON_REPORT_CURRENT
-                if (index == i++) return _current[channel];
-            #endif
-            #if EMON_REPORT_POWER
-                if (index == i++) return _current[channel] * _voltage;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (index == i) return _energy[channel].asDouble();
-            #endif
-            return 0;
-        }
-
-    protected:
-
-        unsigned int readADC(unsigned char) {
-            return analogRead(0);
-        }
-
+    unsigned int _value { 0 };
 };
 
 #endif // SENSOR_SUPPORT && EMON_ANALOG_SUPPORT

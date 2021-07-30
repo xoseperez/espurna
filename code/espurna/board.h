@@ -9,14 +9,11 @@ BOARD MODULE
 #include <Arduino.h>
 
 const String& getChipId();
+const String& getFullChipId();
 const String& getIdentifier();
 
-String getEspurnaModules();
-String getEspurnaOTAModules();
-String getEspurnaSensors();
+const char* getEspurnaModules();
+const char* getEspurnaSensors();
+const char* getEspurnaWebUI();
 
-String getEspurnaWebUI();
-
-bool isEspurnaCore();
-
-int getBoardId();
+void boardSetup();

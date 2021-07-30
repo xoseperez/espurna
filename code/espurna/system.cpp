@@ -9,7 +9,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "espurna.h"
 
 #include <Ticker.h>
-#include <Schedule.h>
 
 #include "rtcmem.h"
 #include "ws.h"
@@ -380,6 +379,25 @@ struct CallbackRunner {
 
 std::vector<CallbackRunner> runners;
 
+namespace internal {
+
+bool scheduled { false };
+
+} // namespace internal
+
+void schedule() {
+    internal::scheduled = true;
+}
+
+bool scheduled() {
+    if (internal::scheduled) {
+        internal::scheduled = false;
+        return true;
+    }
+
+    return false;
+}
+
 } // namespace heartbeat
 
 void _systemHeartbeat();
@@ -411,15 +429,7 @@ void systemHeartbeat(heartbeat::Callback callback, heartbeat::Mode mode, heartbe
     });
 
     heartbeat::timer.detach();
-    static bool scheduled { false };
-
-    if (!scheduled) {
-        scheduled = true;
-        schedule_function([]() {
-            scheduled = false;
-            _systemHeartbeat();
-        });
-    }
+    heartbeat::schedule();
 }
 
 void systemHeartbeat(heartbeat::Callback callback, heartbeat::Mode mode) {
@@ -482,7 +492,7 @@ void _systemHeartbeat() {
         next = BeatMin;
     }
 
-    timer.once_ms_scheduled(next.count(), _systemHeartbeat);
+    timer.once_ms(next.count(), heartbeat::schedule);
 }
 
 void systemScheduleHeartbeat() {
@@ -490,7 +500,7 @@ void systemScheduleHeartbeat() {
     for (auto& runner : heartbeat::runners) {
         runner.last = ts - runner.interval - heartbeat::Milliseconds(1ul);
     }
-    schedule_function(_systemHeartbeat);
+    heartbeat::schedule();
 }
 
 void _systemUpdateLoadAverage() {
@@ -536,6 +546,10 @@ void systemLoop() {
     if (checkNeedsReset()) {
         reset();
         return;
+    }
+
+    if (heartbeat::scheduled()) {
+        _systemHeartbeat();
     }
 
     _systemUpdateLoadAverage();
@@ -585,6 +599,6 @@ void systemSetup() {
 
     espurnaRegisterLoop(systemLoop);
 
-    schedule_function(_systemHeartbeat);
+    heartbeat::schedule();
 
 }

@@ -118,8 +118,7 @@ class BMP180Sensor : public I2CSensor<> {
             if (_chip != BMP180_CHIP_ID) {
 
                 _chip = 0;
-                i2cReleaseLock(_address);
-                _previous_address = 0;
+                _sensor_address.unlock();
                 _error = SENSOR_ERROR_UNKNOWN_ID;
 
                 // Setting _address to 0 forces auto-discover

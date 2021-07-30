@@ -31,16 +31,6 @@ void setDefaultHostname() {
     }
 }
 
-const String& getDevice() {
-    static const String value(F(DEVICE));
-    return value;
-}
-
-const String& getManufacturer() {
-    static const String value(F(MANUFACTURER));
-    return value;
-}
-
 String getBoardName() {
     return getSetting("boardName", F(DEVICE_NAME));
 }
@@ -88,16 +78,34 @@ const String& getCoreRevision() {
     return revision;
 }
 
-const String& getVersion() {
-    static const String value {
-#if defined(APP_REVISION)
-        F(APP_VERSION APP_REVISION)
-#else
-        F(APP_VERSION)
-#endif
-    };
+const char* getVersion() {
+    static const char version[] = APP_VERSION;
+    return version;
+}
 
-    return value;
+const char* getAppName() {
+    static const char app[] = APP_NAME;
+    return app;
+}
+
+const char* getAppAuthor() {
+    static const char author[] = APP_AUTHOR;
+    return author;
+}
+
+const char* getAppWebsite() {
+    static const char website[] = APP_WEBSITE;
+    return website;
+}
+
+const char* getDevice() {
+    static const char device[] = DEVICE;
+    return device;
+}
+
+const char* getManufacturer() {
+    static const char manufacturer[] = MANUFACTURER;
+    return manufacturer;
 }
 
 String buildTime() {
@@ -140,219 +148,6 @@ String getUptime() {
 }
 
 #endif // NTP_SUPPORT
-
-// -----------------------------------------------------------------------------
-// INFO
-// -----------------------------------------------------------------------------
-
-extern "C" uint32_t _SPIFFS_start;
-extern "C" uint32_t _SPIFFS_end;
-
-unsigned int info_bytes2sectors(size_t size) {
-    return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
-}
-
-unsigned long info_ota_space() {
-    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-}
-
-unsigned long info_filesystem_space() {
-    return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
-}
-
-void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool reset) {
-    static unsigned long index = 0;
-    if (reset) index = 0;
-    if (0 == bytes) return;
-    unsigned int _sectors = info_bytes2sectors(bytes);
-    DEBUG_MSG_P(PSTR("[MAIN] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
-    index += _sectors;
-}
-
-void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
-    _info_print_memory_layout_line(name, bytes, false);
-}
-
-void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
-
-    DEBUG_MSG_P(
-        PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
-        name,
-        total_memory,
-        total_memory - free_memory,
-        100 * (total_memory - free_memory) / total_memory,
-        free_memory,
-        100 * free_memory / total_memory
-    );
-
-}
-
-void infoMemory(const char* name, const HeapStats& stats) {
-    infoMemory(name, systemInitialFreeHeap(), stats.available);
-}
-
-void infoHeapStats(const char* name, const HeapStats& stats) {
-    DEBUG_MSG_P(
-        PSTR("[MAIN] %-6s: %5u contiguous bytes available (%u%% fragmentation)\n"),
-        name,
-        stats.usable,
-        stats.frag_pct
-    );
-}
-
-void infoHeapStats(bool show_frag_stats) {
-    auto stats = systemHeapStats();
-    infoMemory("Heap", stats);
-    if (show_frag_stats) {
-        infoHeapStats("Heap", stats);
-    }
-}
-
-const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
-    switch (type) {
-    case WIFI_NONE_SLEEP:
-        return "NONE";
-    case WIFI_LIGHT_SLEEP:
-        return "LIGHT";
-    case WIFI_MODEM_SLEEP:
-        return "MODEM";
-    default:
-        break;
-    }
-
-    return "UNKNOWN";
-}
-
-void info(bool first) {
-#if DEBUG_SUPPORT
-#if DEBUG_LOG_BUFFER_SUPPORT
-    if (first && debugLogBuffer()) return;
-#endif
-
-    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
-
-    // -------------------------------------------------------------------------
-
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " %s\n"), getVersion().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
-    DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
-    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
-    DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
-    DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
-    DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Built: %s\n"), buildTime().c_str());
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    FlashMode_t mode [[gnu::unused]] = ESP.getFlashChipMode();
-
-    DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
-    DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
-    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
-    _info_print_memory_layout_line("Flash size (SDK)", ESP.getFlashChipSize(), true);
-    _info_print_memory_layout_line("Reserved", 1 * SPI_FLASH_SEC_SIZE, true);
-    _info_print_memory_layout_line("Firmware size", ESP.getSketchSize());
-    _info_print_memory_layout_line("Max OTA size", info_ota_space());
-    _info_print_memory_layout_line("SPIFFS size", info_filesystem_space());
-    _info_print_memory_layout_line("EEPROM size", eepromSpace());
-    _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    #if SPIFFS_SUPPORT
-        FSInfo fs_info;
-        bool fs = SPIFFS.info(fs_info);
-        if (fs) {
-            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, info_bytes2sectors(fs_info.totalBytes));
-            DEBUG_MSG_P(PSTR("[MAIN]        used size    : %8u bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("[MAIN]        block size   : %8u bytes\n"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        page size    : %8u bytes\n"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        max files    : %8u\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("[MAIN]        max length   : %8u\n"), fs_info.maxPathLength);
-        } else {
-            DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
-        }
-        DEBUG_MSG_P(PSTR("\n"));
-    #endif
-
-    // -------------------------------------------------------------------------
-
-    eepromSectorsDebug();
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
-    infoHeapStats(!first);
-    infoMemory("Stack", CONT_STACKSIZE, systemFreeStack());
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
-    DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
-
-    auto reason = customResetReason();
-    if (CustomResetReason::None != reason) {
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), customResetReasonToPayload(reason).c_str());
-    } else {
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), ESP.getResetReason().c_str());
-        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), ESP.getResetInfo().c_str());
-    }
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] OTA: %s\n"), getEspurnaOTAModules().c_str());
-#if SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
-#endif
-    DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s\n"), getEspurnaWebUI().c_str());
-    DEBUG_MSG_P(PSTR("\n"));
-
-    // -------------------------------------------------------------------------
-
-    if (!first) {
-        DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
-    }
-
-    if (ADC_MODE_VALUE == ADC_VCC) {
-        DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
-    }
-    if (espurnaLoopDelay()) {
-        DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), espurnaLoopDelay());
-    }
-
-    const WiFiSleepType_t sleep_mode = WiFi.getSleepMode();
-    if (sleep_mode != WIFI_NONE_SLEEP) {
-        DEBUG_MSG_P(PSTR("[MAIN] WiFi Sleep Mode: %s\n"), _info_wifi_sleep_mode(sleep_mode));
-    }
-
-    // -------------------------------------------------------------------------
-
-#if SYSTEM_CHECK_ENABLED
-    if (!systemCheck()) {
-        DEBUG_MSG_P(PSTR("\n"));
-        DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
-    }
-#endif
-
-    // -------------------------------------------------------------------------
-
-    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
-
-#endif // DEBUG_SUPPORT == 1
-}
 
 // -----------------------------------------------------------------------------
 // SSL
@@ -528,4 +323,30 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
     }
 
     return out_index;
+}
+
+const char* getFlashChipMode() {
+    const char* mode { nullptr };
+    if (!mode) {
+        switch (ESP.getFlashChipMode()) {
+        case FM_QIO:
+            mode = "QIO";
+            break;
+        case FM_QOUT:
+            mode = "QOUT";
+            break;
+        case FM_DIO:
+            mode = "DIO";
+            break;
+        case FM_DOUT:
+            mode = "DOUT";
+            break;
+        case FM_UNKNOWN:
+        default:
+            mode = "UNKNOWN";
+            break;
+        }
+    }
+
+    return mode;
 }

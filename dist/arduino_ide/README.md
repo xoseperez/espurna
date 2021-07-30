@@ -13,8 +13,7 @@ Place boards.local.txt into Arduino hardware directory, in the same directory as
 - macOS (boards manager): `~/Library/Arduino15/packages/esp2866/hardware/esp8266/<version>`
 - macOS (git): `<application-directory>/Arduino.app/Contents/Java/hardware/esp8266com/esp8266`
 
-Use `2.3.0/boards.local.txt` for Core version 2.3.0  
-Use `latest/boards.local.txt` for all the others
+Use `latest/boards.local.txt` for Cores 2.7.4+
 
 
 ### Arduino documentation

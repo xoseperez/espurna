@@ -58,6 +58,7 @@ constexpr size_t CrashTraceReservedSize = CrashReservedSize - SAVE_CRASH_STACK_T
 
 size_t crashReservedSize();
 
+void crashResetReason(Print&);
 void crashForceDump(Print&);
 void crashDump(Print&);
 void crashClear();

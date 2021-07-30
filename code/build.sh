@@ -1,76 +1,34 @@
 #!/bin/bash
 set -e
 
-# Utility
-is_git() {
-    command -v git >/dev/null 2>&1 || return 1
-    command git rev-parse >/dev/null 2>&1 || return 1
+# defaults
 
-    return 0
-}
-
-stat_bytes() {
-    case "$(uname -s)" in
-        Darwin) stat -f %z "$1";;
-        *) stat -c %s "$1";;
-    esac
-}
-
-# Script settings
-
-destination=../firmware
-version_file=espurna/config/version.h
-version=$(grep -E '^#define APP_VERSION' $version_file | awk '{print $3}' | sed 's/"//g')
 script_build_environments=true
 script_build_webui=true
+destination=../firmware
 
-release_mode=false
-
-if ${CI:-false}; then
-    git_revision=${GITHUB_SHA::8}
-    git_tag=$(echo -n $GITHUB_REF | grep '^refs/tags/' | cut -d '/' -f 2)
-elif is_git; then
-    git_revision=$(git rev-parse --short HEAD)
-    git_tag=$(git tag --contains HEAD)
-else
-    git_revision=unknown
-    git_tag=
-fi
-
-if [[ -n $git_tag ]]; then
-    new_version=${version/-*}
-    sed -i -e "s@$version@$new_version@" $version_file
-    version=$new_version
-    trap "git checkout -- $version_file" EXIT
-fi
-
-# Available environments
-list_envs() {
+# ALL env: sections from the .ini, even including those we don't want to build
+list_all_envs() {
     grep -E '^\[env:' platformio.ini | sed 's/\[env:\(.*\)\]/\1/g'
 }
 
-available=$(list_envs | grep -Ev -- '-ota$|-ssl$|-secure-client.*$|^esp8266-.*base$' | sort)
+# -base is only supposed to be used through `extends = ...-base` for another env:
+# -ssl / -secure-client hard-code certificates, so not very useful to distribute those
+# -ota is a legacy option to conditionally load upload args, no longer needed
+list_available_envs() {
+    list_all_envs | grep -Ev -- '-ota$|-ssl$|-secure-client.*$|^esp8266-.*base$' | sort
+}
 
-# Functions
 print_available() {
     echo "--------------------------------------------------------------"
     echo "Available environments:"
-    for environment in $available; do
-        echo "* $environment"
-    done
-}
-
-print_environments() {
-    echo "--------------------------------------------------------------"
-    echo "Current environments:"
-    for environment in $environments; do
+    for environment in $(list_available_envs); do
         echo "* $environment"
     done
 }
 
 set_default_environments() {
-    # Fallback to all available environments
-    environments=$available
+    environments=$(list_available_envs)
 }
 
 build_webui() {
@@ -78,43 +36,33 @@ build_webui() {
     if [ ! -e node_modules/gulp/bin/gulp.js ]; then
         echo "--------------------------------------------------------------"
         echo "Installing dependencies..."
-        npm install --only=dev
+        npm ci
     fi
 
     # Recreate web interface (espurna/data/index.html.*.gz.h)
     echo "--------------------------------------------------------------"
     echo "Building web interface..."
     node node_modules/gulp/bin/gulp.js || exit
-
-    # TODO: do something if webui files are different?
-    if ${CI:-false}; then
-        git --no-pager diff --stat
-    fi
-}
-
-build_release() {
-    echo "--------------------------------------------------------------"
-    echo "Building release images..."
-    python scripts/generate_release_sh.py \
-        --ignore secure-client \
-        --version $version \
-        --destination $destination/espurna-$version > release.sh
-    bash release.sh
-    echo "--------------------------------------------------------------"
 }
 
 build_environments() {
     echo "--------------------------------------------------------------"
-    echo "Building firmware images..."
-    mkdir -p $destination/espurna-$version
+    echo "Building environment images..."
 
+    local environments=$@
+    if [ $# -eq 0 ]; then
+        environments=$(list_available_envs)
+    fi
+
+    set -x
     for environment in $environments; do
-        echo "* espurna-$version-$environment.bin"
-        platformio run --silent --environment $environment || exit 1
-        echo -n "SIZE:    "
-        stat_bytes .pio/build/$environment/firmware.bin
-        mv .pio/build/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
+        env ESPURNA_BUILD_NAME=$environment \
+            ESPURNA_BUILD_DESTINATION="$destination" \
+            ESPURNA_BUILD_SINGLE_SOURCE="1" \
+            pio run --silent --environment $environment -t build-and-copy
     done
+    set +x
+
     echo "--------------------------------------------------------------"
 }
 
@@ -130,20 +78,22 @@ Options:
   -f VALUE    Filter build stage by name to skip it
               Supported VALUEs are "environments" and "webui"
               Can be specified multiple times. 
-  -r          Release mode
-              Generate build list through an external script.
   -l          Print available environments
-  -d VALUE    Destination to move .bin files after building environments
+  -d VALUE    Destination to move the .bin file after building the environment
   -h          Display this message
 EOF
 }
 
-while getopts "f:lrpd:h" opt; do
+while getopts "f:ld:h" opt; do
   case $opt in
     f)
         case "$OPTARG" in
             webui) script_build_webui=false ;;
             environments) script_build_environments=false ;;
+            *)
+                echo Must be either webui or environments
+                exit
+                ;;
         esac
         ;;
     l)
@@ -152,9 +102,6 @@ while getopts "f:lrpd:h" opt; do
         ;;
     d)
         destination=$OPTARG
-        ;;
-    r)
-        release_mode=true
         ;;
     h)
         print_getopts_help
@@ -167,24 +114,11 @@ shift $((OPTIND-1))
 # Welcome
 echo "--------------------------------------------------------------"
 echo "ESPURNA FIRMWARE BUILDER"
-echo "Building for version ${version}" ${git_revision:+($git_revision)}
-
-# Environments to build
-environments=$@
 
 if $script_build_webui ; then
     build_webui
 fi
 
 if $script_build_environments ; then
-    if [ $# -eq 0 ]; then
-        set_default_environments
-    fi
-
-    if $release_mode ; then
-        build_release
-    else
-        build_environments
-    fi
+    build_environments $@
 fi
-

@@ -252,7 +252,6 @@ public:
 };
 
 std::vector<relay_t> _relays;
-bool _relayRecursive { false };
 size_t _relayDummy { 0ul };
 
 unsigned long _relay_flood_window { relay::build::floodWindowMs() };
@@ -260,6 +259,7 @@ unsigned long _relay_flood_changes { relay::build::floodChanges() };
 
 unsigned long _relay_delay_interlock;
 int _relay_sync_mode { RELAY_SYNC_ANY };
+bool _relay_sync_reent { false };
 bool _relay_sync_locked { false };
 
 Ticker _relay_save_timer;
@@ -804,11 +804,11 @@ void relayPulse(size_t id) {
     }
 
     if ((mode == RelayPulse::On) != relay.current_status) {
-        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
         relay.pulse = getSetting({"relayPulse", id},relay::build::pulseMode(id));
         relay.pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, relay::build::pulseTime(id)));
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
     }
 
 }
@@ -920,18 +920,17 @@ bool relayStatusTarget(size_t id) {
 }
 
 void relaySync(size_t target) {
-
-    // Do not go on if we are comming from a previous sync
-    if (_relayRecursive) {
-        return;
-    }
-    _relayRecursive = true;
-
     // No sync if none or only one relay
     auto relays = _relays.size();
     if (relays < 2) {
         return;
     }
+
+    // Only call once when coming from the relayStatus(id, status)
+    if (_relay_sync_reent) {
+        return;
+    }
+    _relay_sync_reent = true;
 
     bool status = _relays[target].target_status;
 
@@ -975,17 +974,20 @@ void relaySync(size_t target) {
         _relayLockAll();
     }
 
-    _relayRecursive = false;
-
+    _relay_sync_reent = false;
 }
 
-void relaySave(bool persist) {
+RelayMaskHelper _relayMaskCurrent() {
     RelayMaskHelper mask;
     for (size_t id = 0; id < _relays.size(); ++id) {
         mask.set(id, _relays[id].current_status);
     }
+    return mask;
+}
 
+void relaySave(bool persist) {
     // Persist only to rtcmem, unless requested to save to settings
+    auto mask = _relayMaskCurrent();
     DEBUG_MSG_P(PSTR("[RELAY] Relay mask: %s\n"), mask.toString().c_str());
     _relayMaskRtcmem(mask);
 
@@ -1069,7 +1071,8 @@ void _relaySettingsMigrate(int version) {
             "mqttGroup",     // migrated to relayTopic
             "mqttGroupSync", // migrated to relayTopic
             "relayOnDisc",   // replaced with relayMqttDisc
-            "relayGpio",     // avoid depending on migrate.ino
+            "relayGPIO",     // avoid depending on migrate.ino
+            "relayGpio",     //
             "relayProvider", // different type
             "relayType",     // different type
         });
@@ -1125,27 +1128,22 @@ void _relayBootAll() {
         ? _relayMaskRtcmem()
         : _relayMaskSettings();
 
-    _relayRecursive = true;
+    bool log { false };
 
-    bool once { true };
     static RelayMask done;
     auto relays = relayCount();
     for (decltype(relays) id = 0; id < relays; ++id) {
-        if (done[id]) {
-            continue;
+        if (!done[id]) {
+            done.set(id, true);
+            _relayBoot(id, mask);
+            log = true;
         }
-
-        if (once) {
-            DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
-                relays, mask.toString().c_str());
-            once = false;
-        }
-
-        done.set(id, true);
-        _relayBoot(id, mask);
     }
 
-    _relayRecursive = false;
+    if (log) {
+        DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %u, boot mask: %s\n"),
+            relays, mask.toString().c_str());
+    }
 }
 
 void _relayConfigure() {
@@ -1185,20 +1183,26 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonObject& state = root.createNestedObject("relayState");
-    state["size"] = relayCount();
 
-    JsonArray& status = state.createNestedArray("status");
-    JsonArray& lock = state.createNestedArray("lock");
+    static const char* const keys[] PROGMEM {
+        "status", "lock"
+    };
+    JsonArray& schema = state.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
 
-    // Note: we use byte instead of bool to ever so slightly compress json output
-    auto relays = relayCount();
-    for (decltype(relays) id = 0; id < relays; ++id) {
-        status.add(_relays[id].target_status ? 1 : 0);
-        lock.add(static_cast<uint8_t>(_relays[id].lock));
+    // Byte instead of bool in case payload has lot of relays
+    JsonArray& relays = state.createNestedArray("states");
+
+    size_t Relays { relayCount() };
+    for (decltype(Relays) id = 0; id < Relays; ++id) {
+        JsonArray& relay = relays.createNestedArray();
+        relay.add(_relays[id].target_status ? 1 : 0);
+        relay.add(static_cast<uint8_t>(_relays[id].lock));
     }
 }
 
 void _relayWebSocketRelayConfig(JsonArray& relay, size_t id) {
+    relay.add(_relays[id].provider->id());
     relay.add(static_cast<uint8_t>(getSetting({"relayProv", id}, relay::build::provider(id))));
     relay.add(getSetting({"relayName", id}));
     relay.add(getSetting({"relayBoot", id}, relay::build::bootMode(id)));
@@ -1227,7 +1231,8 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     config["start"] = 0;
 
     {
-        static constexpr const char* const schema_keys[] PROGMEM = {
+        static const char* const keys[] PROGMEM = {
+            "relayDesc",
             "relayProv",
             "relayName",
             "relayBoot",
@@ -1242,19 +1247,13 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         };
 
         JsonArray& schema = config.createNestedArray("schema");
-        schema.copyFrom(schema_keys, sizeof(schema_keys) / sizeof(*schema_keys));
+        schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
     }
 
-    {
-        JsonArray& cfg = config.createNestedArray("cfg");
-        JsonArray& desc = config.createNestedArray("desc");
-
-        for (size_t id = 0; id < relayCount(); ++id) {
-            desc.add(_relays[id].provider->id());
-
-            JsonArray& relay = cfg.createNestedArray();
-            _relayWebSocketRelayConfig(relay, id);
-        }
+    JsonArray& relays = config.createNestedArray("relays");
+    for (size_t id = 0; id < relayCount(); ++id) {
+        JsonArray& relay = relays.createNestedArray();
+        _relayWebSocketRelayConfig(relay, id);
     }
 }
 
@@ -1274,21 +1273,14 @@ void _relayWebSocketOnConnected(JsonObject& root) {
     _relayWebSocketSendRelays(root);
 }
 
-void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-
-    if (strcmp(action, "relay") != 0) return;
-
-    if (data.containsKey("status")) {
-
-        unsigned int relayID = 0;
-        if (data.containsKey("id") && data.is<int>("id")) {
-            relayID = data["id"];
+void _relayWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
+    if (strcmp(action, "relay") == 0) {
+        if (!data.is<size_t>("id") || !data.is<String>("status")) {
+            return;
         }
 
-        _relayHandlePayload(relayID, data["status"].as<const char*>());
-
+        _relayHandlePayload(data["id"].as<size_t>(), data["status"].as<String>().c_str());
     }
-
 }
 
 void relaySetupWS() {
@@ -1524,7 +1516,7 @@ void _relayMqttSubscribeCustomTopics() {
         topics.emplace_back(relay::build::mqttTopicSub(id), relay::build::mqttTopicMode(id));
     }
 
-    settings::kv_store.foreach([&](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
         const char* const SubPrefix = "relayTopicSub";
         const char* const ModePrefix = "relayTopicMode";
 
@@ -1585,16 +1577,14 @@ void _relayMqttPublishCustomTopic(size_t id) {
 } // namespace
 
 void _relayMqttReport(size_t id) {
-    if (id < _relays.size()) {
-        if (_relays[id].report) {
-            _relays[id].report = false;
-            mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
-        }
+    if (_relays[id].report) {
+        _relays[id].report = false;
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
+    }
 
-        if (_relays[id].group_report) {
-            _relays[id].group_report = false;
-            _relayMqttPublishCustomTopic(id);
-        }
+    if (_relays[id].group_report) {
+        _relays[id].group_report = false;
+        _relayMqttPublishCustomTopic(id);
     }
 }
 
@@ -1652,7 +1642,7 @@ void _relayMqttHandleCustomTopic(const String& topic, const char* payload) {
 }
 
 void _relayMqttHandleDisconnect() {
-    settings::kv_store.foreach([](settings::kvs_type::KeyValueResult&& kv) {
+    settings::internal::foreach([](settings::kvs_type::KeyValueResult&& kv) {
         const char* const prefix = "relayMqttDisc";
         if (kv.key.length <= strlen(prefix)) {
             return;
@@ -1840,44 +1830,34 @@ void _relayProcess(bool mode) {
 
     auto relays = _relays.size();
     for (decltype(relays) id = 0; id < relays; ++id) {
-
         bool target = _relays[id].target_status;
 
-        // Only process the relays we have to change
-        if (target == _relays[id].current_status) continue;
+        // Only process the relays:
+        // - target mode in the one requested by the arg
+        // - target status is different from the current one
+        // - change delay has expired
 
-        // Only process the relays we have to change to the requested mode
-        if (target != mode) continue;
+        if ((target != _relays[id].current_status)
+            && (target == mode)
+            && (!_relays[id].change_delay || (millis() - _relays[id].change_start > _relays[id].change_delay)))
+        {
+            _relays[id].change_delay = 0; // will be reset back to the correct value via relayStatus
+            _relays[id].current_status = target;
+            _relays[id].provider->change(target);
 
-        // Only process if the change delay has expired
-        if (_relays[id].change_delay && (millis() - _relays[id].change_start < _relays[id].change_delay)) continue;
-
-        // Purge existing delay in case of cancelation
-        _relays[id].change_delay = 0;
-        changed = true;
-
-        DEBUG_MSG_P(PSTR("[RELAY] #%u set to %s\n"), id, target ? "ON" : "OFF");
-
-        // Call the provider to perform the action
-        _relays[id].current_status = target;
-        _relays[id].provider->change(target);
-        _relayReport(id, target);
-
-        if (!_relayRecursive) {
-
+            _relayReport(id, target);
             relayPulse(id);
 
-            // We will trigger a eeprom save only if
-            // we care about current relay status on boot
-            const auto boot_mode = getSetting({"relayBoot", id}, relay::build::bootMode(id));
-            const bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
-            _relay_save_timer.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
+            {
+                const auto boot_mode = getSetting({"relayBoot", id}, relay::build::bootMode(id));
+                _relay_save_timer.once_ms(relay::build::saveDelay(), relaySave,
+                    (RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            }
 
+            DEBUG_MSG_P(PSTR("[RELAY] #%u set to %s\n"), id, target ? "ON" : "OFF");
+
+            changed = true;
         }
-
-        _relays[id].report = false;
-        _relays[id].group_report = false;
-
     }
 
     // Whenever we are using sync modes and any relay had changed the state, check if we can unlock

@@ -27,6 +27,19 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <queue>
 #include <vector>
 
+// ref.
+// https://github.com/d-a-v/esp82xx-nonos-linklayer/blob/master/README.md#how-it-works
+//
+// Current esp8266 Arduino Core is based on the NONOS SDK using the lwip1.4 APIs
+// To handle static IPs, these need to be called when current IP differs from the one set via the setting.
+//
+// Can't include the original headers, since they refer to the ip_addr_t and IPAddress depends on a specific overload to extract v4 addresses
+// (SDK layer *only* works with ipv4 addresses)
+
+#undef netif_set_addr
+extern "C" netif* eagle_lwip_getif(int);
+extern "C" void netif_set_addr(netif* netif, ip4_addr_t*, ip4_addr_t*, ip4_addr_t*);
+
 // -----------------------------------------------------------------------------
 // SETTINGS
 // -----------------------------------------------------------------------------
@@ -206,7 +219,7 @@ ActionsQueue& actions() {
 // TODO(esp32): Null mode turns off radio, no need for these
 
 bool sleep() {
-    if ((opmode() == ::wifi::OpmodeNull) && (wifi_fpm_get_sleep_type() == NONE_SLEEP_T)) {
+    if (opmode() == ::wifi::OpmodeNull) {
         wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
         yield();
         wifi_fpm_open();
@@ -462,7 +475,7 @@ String convertSsid(const bss_info& info) {
 }
 
 String convertSsid(const station_config& config) {
-    constexpr size_t SsidSize { sizeof(softap_config::ssid) };
+    constexpr size_t SsidSize { sizeof(station_config::ssid) };
 
     const char* ptr { reinterpret_cast<const char*>(config.ssid) };
     char ssid[SsidSize + 1];
@@ -606,11 +619,11 @@ struct IpSettings {
     IpSettings& operator=(const IpSettings&) = default;
     IpSettings& operator=(IpSettings&&) = default;
 
-    template <typename Ip, typename Gateway, typename Netmask, typename Dns>
-    IpSettings(Ip&& ip, Gateway&& gateway, Netmask&& netmask, Dns&& dns) :
+    template <typename Ip, typename Netmask, typename Gateway, typename Dns>
+    IpSettings(Ip&& ip, Netmask&& netmask, Gateway&& gateway, Dns&& dns) :
         _ip(std::forward<Ip>(ip)),
-        _gateway(std::forward<Gateway>(gateway)),
         _netmask(std::forward<Netmask>(netmask)),
+        _gateway(std::forward<Gateway>(gateway)),
         _dns(std::forward<Dns>(dns))
     {}
 
@@ -618,12 +631,12 @@ struct IpSettings {
         return _ip;
     }
 
-    const IPAddress& gateway() const {
-        return _gateway;
-    }
-
     const IPAddress& netmask() const {
         return _netmask;
+    }
+
+    const IPAddress& gateway() const {
+        return _gateway;
     }
 
     const IPAddress& dns() const {
@@ -632,15 +645,24 @@ struct IpSettings {
 
     explicit operator bool() const {
         return _ip.isSet()
-            && _gateway.isSet()
             && _netmask.isSet()
+            && _gateway.isSet()
             && _dns.isSet();
+    }
+
+    ip_info toIpInfo() const {
+        ip_info info{};
+        info.ip.addr = _ip.v4();
+        info.netmask.addr = _netmask.v4();
+        info.gw.addr = _gateway.v4();
+
+        return info;
     }
 
 private:
     IPAddress _ip;
-    IPAddress _gateway;
     IPAddress _netmask;
+    IPAddress _gateway;
     IPAddress _dns;
 };
 
@@ -749,10 +771,7 @@ int8_t rssi() {
     return wifi_station_get_rssi();
 }
 
-// Note that authmode is a spefific threshold selected by the Arduino WiFi.begin()
-// (ref. Arduino ESP8266WiFi default, which is AUTH_WPA_WPA2_PSK in the current 3.0.0)
-// Also, it is not really clear whether `wifi_get_channel()` will work correctly in the future versions,
-// since the API seems to be related to the promiscuous WiFi (aka sniffer), but it does return the correct values.
+// Note that authmode field is a our threshold, not the one selected by an AP
 
 wifi::Info info(const station_config& config) {
     return wifi::Info{
@@ -771,8 +790,8 @@ wifi::Info info() {
 wifi::IpSettings ipsettings() {
     return {
         WiFi.localIP(),
-        WiFi.gatewayIP(),
         WiFi.subnetMask(),
+        WiFi.gatewayIP(),
         WiFi.dnsIP()};
 }
 
@@ -965,7 +984,7 @@ SsidInfosPtr ssidinfos() {
             infos->emplace_front(std::move(pair));
         },
         [infos](wifi::ScanError) {
-            infos->clear();   
+            infos->clear();
         });
 
     return infos;
@@ -996,12 +1015,12 @@ void disconnect() {
 void enable() {
     if (WiFi.enableSTA(true)) {
         disconnect();
-        ETS_UART_INTR_DISABLE();
-        wifi_station_set_reconnect_policy(false);
+        if (wifi_station_get_reconnect_policy()) {
+            wifi_station_set_reconnect_policy(false);
+        }
         if (wifi_station_get_auto_connect()) {
             wifi_station_set_auto_connect(false);
         }
-        ETS_UART_INTR_ENABLE();
         return;
     }
 
@@ -1011,7 +1030,7 @@ void enable() {
     abort();
 }
 
-void disable() { 
+void disable() {
     if (!WiFi.enableSTA(false)) {
         abort();
     }
@@ -1021,6 +1040,13 @@ namespace connection {
 namespace internal {
 
 struct Task {
+    static constexpr size_t SsidMax { sizeof(station_config::ssid) };
+
+    static constexpr size_t PassphraseMin { 8ul };
+    static constexpr size_t PassphraseMax { sizeof(station_config::password) };
+
+    static constexpr int8_t RssiThreshold { -127 };
+
     using Iterator = wifi::Networks::iterator;
 
     Task() = delete;
@@ -1051,7 +1077,7 @@ struct Task {
 
     bool next() {
         if (!done()) {
-            if (_retry-- < 0) {
+            if (--_retry < 0) {
                 _retry = _retries;
                 _current = std::next(_current);
             }
@@ -1061,17 +1087,37 @@ struct Task {
         return false;
     }
 
-    // Sanity checks for SSID & PASSPHRASE lengths are performed by the WiFi.begin()
-    // (or, failing connection, if we ever use raw SDK API)
-
     bool connect() const {
         if (!done() && wifi::sta::enabled()) {
+            // Need to call this to cancel SDK tasks (previous scan, connection, etc.)
+            // Otherwise, it will fail the initial attempt and force a retry.
             wifi::sta::disconnect();
+
+            // SDK sends EVENT_STAMODE_DISCONNECTED right after the disconnect() call, which is likely to happen
+            // after being connected and disconnecting for the first time. Not doing this will cause the connection loop
+            // to cancel the `wait` lock too early, forcing the Timeout state despite the EVENT_STAMODE_GOTIP coming in later.
+            // Allow the event to come in right now to allow `wifi_station_connect()` down below trigger a real one.
+            yield();
+
             auto& network = *_current;
             if (!network.dhcp()) {
                 auto& ipsettings = network.ipSettings();
-                if (!WiFi.config(ipsettings.ip(), ipsettings.gateway(), ipsettings.netmask(), ipsettings.dns())) {
+
+                wifi_station_dhcpc_stop();
+
+                ip_info current;
+                wifi_get_ip_info(STATION_IF, &current);
+
+                ip_info info = ipsettings.toIpInfo();
+                if (!wifi_set_ip_info(STATION_IF, &info)) {
                     return false;
+                }
+
+                dns_setserver(0, ipsettings.dns());
+
+                if ((current.ip.addr != 0) && (current.ip.addr != info.ip.addr)) {
+#undef netif_set_addr
+                    netif_set_addr(eagle_lwip_getif(STATION_IF), &info.ip, &info.netmask, &info.gw);
                 }
             }
 
@@ -1079,11 +1125,64 @@ struct Task {
             // esp8266 specific Arduino-specific - this sets lwip internal structs related to the DHCPc
             WiFi.hostname(_hostname);
 
-            if (network.channel()) {
-                WiFi.begin(network.ssid(), network.passphrase(),
-                        network.channel(), network.bssid().data());
+            // The rest is related to the connection routine
+            // SSID & Passphrase are u8 arrays, with 0 at the end when the string is less than it's size
+            // Perform checks earlier, before calling SDK config functions, since it would not reflect in the connection
+            // state correctly, and we would need to use the Event API once again.
+
+            station_config config{};
+
+            constexpr size_t SsidMax { sizeof(station_config::ssid) };
+            auto& ssid = network.ssid();
+            if (!ssid.length() || (ssid.length() > SsidMax)) {
+                return false;
+            }
+
+            std::copy(ssid.c_str(), ssid.c_str() + ssid.length(),
+                    reinterpret_cast<char*>(config.ssid));
+            if (ssid.length() < SsidMax) {
+                config.ssid[ssid.length()] = 0;
+            }
+
+            auto& pass = network.passphrase();
+            if (pass.length()) {
+                if ((pass.length() < PassphraseMin) || (pass.length() > PassphraseMax)) {
+                    return false;
+                }
+                config.threshold.authmode = AUTH_WPA_PSK;
+                std::copy(pass.c_str(), pass.c_str() + pass.length(),
+                        reinterpret_cast<char*>(config.password));
+                if (pass.length() < PassphraseMax) {
+                    config.password[pass.length()] = 0;
+                }
             } else {
-                WiFi.begin(network.ssid(), network.passphrase());
+                config.threshold.authmode = AUTH_OPEN;
+                config.password[0] = 0;
+            }
+
+            config.threshold.rssi = RssiThreshold;
+
+            if (network.channel()) {
+                auto& bssid = network.bssid();
+                std::copy(bssid.begin(), bssid.end(), config.bssid);
+                config.bssid_set = 1;
+            }
+
+            // TODO: check every return value?
+            // TODO: is it sufficient for the event to fire? otherwise,
+            // there needs to be a manual timeout code after this returns true
+
+            wifi_station_set_config_current(&config);
+            if (!wifi_station_connect()) {
+                return false;
+            }
+
+            if (network.channel()) {
+                wifi_set_channel(network.channel());
+            }
+
+            if (network.dhcp() && (wifi_station_dhcpc_status() != DHCP_STARTED)) {
+                wifi_station_dhcpc_start();
             }
 
             return true;
@@ -1129,7 +1228,7 @@ struct Task {
                         && (info.authmode() == AUTH_OPEN)) {
                     continue;
                 }
-                
+
                 *network = wifi::Network(std::move(*network), info.bssid(), info.channel());
                 if (network != head) {
                     std::swap(*network, *head);
@@ -1165,8 +1264,8 @@ private:
     int _retry;
 };
 
-station_status_t last { STATION_IDLE };
 bool connected { false };
+bool wait { false };
 
 Ticker timer;
 bool persist { false };
@@ -1208,14 +1307,17 @@ bool started() {
     return static_cast<bool>(internal::task);
 }
 
-void start(String&& hostname, Networks&& networks, int retries) {
+bool start(String&& hostname, Networks&& networks, int retries) {
     if (!locked()) {
         internal::task = std::make_unique<internal::Task>(
             std::move(hostname),
             std::move(networks),
             retries);
         internal::timer.detach();
+        return true;
     }
+
+    return false;
 }
 
 void schedule(decltype(millis()) ms, wifi::Action next) {
@@ -1226,11 +1328,15 @@ void schedule(decltype(millis()) ms, wifi::Action next) {
     lock();
 }
 
-void continued() {
+bool scheduled() {
+    return internal::timer.active();
+}
+
+void schedule_continue() {
     schedule(wifi::sta::ConnectionInterval, wifi::Action::StationContinueConnect);
 }
 
-void initial() {
+void schedule_initial() {
     schedule(wifi::sta::ReconnectionInterval, wifi::Action::StationConnect);
 }
 
@@ -1239,7 +1345,12 @@ bool next() {
 }
 
 bool connect() {
-    return internal::task->connect();
+    if (internal::task->connect()) {
+        internal::wait = true;
+        return true;
+    }
+
+    return false;
 }
 
 bool filter(const wifi::Info& info) {
@@ -1250,39 +1361,21 @@ void sort(scan::SsidInfosPtr&& infos) {
     internal::task->sort(std::move(infos));
 }
 
-station_status_t last() {
-    return internal::last;
-}
-
-// Note that `wifi_station_get_connect_status()` only makes sence when something is setting `wifi_set_event_handler_cb(...)`
-// *and*, it should only be expected to work when STA is not yet connected. After a successful connection, we should track the network interface and / or SDK events.
-// Events are already enabled in the Arduino Core (and heavily wired through-out it, so we can't override b/c only one handler is allowed).
+// Note that `wifi_station_get_connect_status()` may never actually change the state from CONNECTING when AP is not available.
+// Wait for the WiFi stack event instead (handled on setup with a static object) and continue after it is either connected or disconnected
 
 bool wait() {
-    internal::last = wifi_station_get_connect_status();
-    bool out { false };
-
-    switch (internal::last) {
-    case STATION_CONNECTING:
-        out = true;
-        break;
-    case STATION_GOT_IP:
-        internal::connected = true;
-        break;
-    case STATION_IDLE:
-    case STATION_NO_AP_FOUND:
-    case STATION_CONNECT_FAIL:
-    case STATION_WRONG_PASSWORD:
-        break;
+    if (internal::wait) {
+        return true;
     }
 
-    return out;
+    return false;
 }
 
 // TODO(Core 2.7.4): `WiFi.isConnected()` is a simple `wifi_station_get_connect_status() == STATION_GOT_IP`,
 // Meaning, it will never detect link up / down updates when AP silently kills the connection or something else unexpected happens.
 // Running JustWiFi with autoconnect + reconnect enabled, it silently avoided the issue b/c the SDK reconnect routine disconnected the STA,
-// causing our state machine to immediatly cancel it (since `WL_CONNECTED != WiFi.status()`) and then try to connect again using it's own loop.
+// causing our state machine to immediately cancel it (since `WL_CONNECTED != WiFi.status()`) and then try to connect again using it's own loop.
 // We could either (* is used currently):
 // - (*) listen for the SDK event through the `WiFi.onStationModeDisconnected()`
 // - ( ) poll NETIF_FLAG_LINK_UP for the lwip's netif, since the SDK will bring the link down on disconnection
@@ -1307,18 +1400,12 @@ bool connecting() {
 bool lost() {
     static bool last { internal::connected };
 
-    bool out { false };
     if (internal::connected != last) {
         last = internal::connected;
-        if (!last) {
-            if (persist() && !connecting()) {
-                schedule(wifi::sta::ConnectionInterval * wifi::sta::ConnectionRetries, wifi::Action::StationConnect);
-            }
-            out = true;
-        }
+        return !last;
     }
 
-    return out;
+    return false;
 }
 
 } // namespace connection
@@ -1340,11 +1427,17 @@ bool scanning() {
 // esp32 only has a generic onEvent, but event names are not compatible with the esp8266 version.
 
 void init() {
-    static auto status = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& src) { // aka const auto&
+    static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected&) {
+        connection::internal::wait = false;
         connection::internal::connected = false;
+    });
+    static auto connected = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP&) {
+        connection::internal::wait = false;
+        connection::internal::connected = true;
     });
     disconnect();
     disable();
+    yield();
 }
 
 void toggle() {
@@ -1539,7 +1632,7 @@ void start(String&& ssid, String&& passphrase, uint8_t channel) {
     WiFi.softAP(ssid, passphrase, channel);
 
 #if WIFI_AP_CAPTIVE_SUPPORT
-    if (internal::captive) { 
+    if (internal::captive) {
         internal::dns.setErrorReplyCode(DNSReplyCode::NoError);
         internal::dns.start(53, "*", WiFi.softAPIP());
     } else {
@@ -1567,7 +1660,7 @@ void init() {
     disable();
 }
 
-uint8_t stations() {
+size_t stations() {
     return WiFi.softAPgetStationNum();
 }
 
@@ -1640,16 +1733,16 @@ wifi::Networks networks() {
         auto ip = staIp(id);
         if (ip.isSet()) {
             out.emplace_back(std::move(ssid), std::move(pass),
-                wifi::IpSettings{std::move(ip), staGateway(id), staMask(id), staDns(id)});
+                wifi::IpSettings{std::move(ip), staMask(id), staGateway(id), staDns(id)});
         } else {
             out.emplace_back(std::move(ssid), std::move(pass));
         }
     }
 
-    auto leftover = std::unique(out.begin(), out.end(), [](const wifi::Network& lhs, const wifi::Network& rhs) {
+    auto duplicates = std::unique(out.begin(), out.end(), [](const wifi::Network& lhs, const wifi::Network& rhs) {
         return lhs.ssid() == rhs.ssid();
     });
-    out.erase(leftover, out.end());
+    out.erase(duplicates, out.end());
 
     return out;
 }
@@ -1698,9 +1791,9 @@ void configure() {
 // TERMINAL
 // -----------------------------------------------------------------------------
 
-namespace terminal {
-
 #if TERMINAL_SUPPORT
+
+namespace terminal {
 
 void init() {
 
@@ -1784,7 +1877,7 @@ void init() {
                     wifi::debug::mac(network.bssid).c_str(),
                     network.rssi, network.channel, network.ssid.c_str());
             } else {
-                ctx.output.println(F("STA: disconnected"));
+                ctx.output.print(F("STA: disconnected\n"));
             }
         }
 
@@ -1851,12 +1944,16 @@ bool onKeyCheck(const char * key, JsonVariant& value) {
 
 void onConnected(JsonObject& root) {
     root["wifiScan"] = wifi::settings::scanNetworks();
+    root["wifiScanRssi"] = wifi::settings::scanRssiThreshold();
+
+    root["wifiApSsid"] = wifi::settings::softApSsid();
+    root["wifiApPass"] = wifi::settings::softApPassphrase();
 
     JsonObject& wifi = root.createNestedObject("wifiConfig");
-    root["max"] = wifi::build::NetworksMax;
+    wifi["max"] = wifi::build::NetworksMax;
 
     {
-        const char* schema_keys[] = {
+        static const char* const schema_keys[] PROGMEM = {
             "ssid",
             "pass",
             "ip",
@@ -2045,7 +2142,7 @@ namespace {
 
 } // namespace
 
-State handleAction(State& state, Action action) { 
+State handleAction(State& state, Action action) {
     switch (action) {
     case Action::StationConnect:
         if (!wifi::sta::connecting() && !wifi::sta::connected()) {
@@ -2072,7 +2169,7 @@ State handleAction(State& state, Action action) {
             wifi::sta::disconnect();
         }
 
-        if (wifi::sta::connecting()) { 
+        if (wifi::sta::connecting()) {
             wifi::sta::connection::unlock();
             wifi::sta::connection::stop();
         }
@@ -2102,6 +2199,7 @@ State handleAction(State& state, Action action) {
                 wifi::settings::softApSsid(),
                 wifi::settings::softApPassphrase(),
                 wifi::settings::softApChannel());
+            publish(wifi::Event::Mode);
             if ((Action::AccessPointFallback == action)
                     && wifi::ap::fallback::enabled()) {
                 wifi::ap::fallback::schedule();
@@ -2134,6 +2232,7 @@ State handleAction(State& state, Action action) {
             wifi::sta::disconnect();
             wifi::sta::disable();
             wifi::disable();
+            publish(wifi::Event::Mode);
             if (!wifi::sleep()) {
                 wifi::action(wifi::Action::TurnOn);
                 break;
@@ -2157,11 +2256,12 @@ State handleAction(State& state, Action action) {
 bool prepareConnection() {
     if (wifi::sta::enabled()) {
         auto networks = wifi::settings::networks();
-        if (networks.size()) {
-            wifi::sta::connection::start(
-                    wifi::settings::hostname(), std::move(networks), wifi::sta::ConnectionRetries);
-            return true;
+        if (!networks.size()) {
+            return false;
         }
+
+        return wifi::sta::connection::start(
+                wifi::settings::hostname(), std::move(networks), wifi::sta::ConnectionRetries);
     }
 
     return false;
@@ -2183,8 +2283,8 @@ void loop() {
     switch (state) {
 
     case State::Boot:
-        publish(wifi::Event::Initial);
         state = State::Idle;
+        publish(wifi::Event::Initial);
         break;
 
     case State::Init: {
@@ -2214,10 +2314,10 @@ void loop() {
         break;
 
     case State::Fallback:
-        publish(wifi::Event::StationReconnect);
-        wifi::sta::connection::initial();
-        wifi::action(wifi::Action::AccessPointFallback);
         state = State::Idle;
+        wifi::sta::connection::schedule_initial();
+        wifi::action(wifi::Action::AccessPointFallback);
+        publish(wifi::Event::StationReconnect);
         break;
 
     case State::WaitScan:
@@ -2272,8 +2372,8 @@ void loop() {
     case State::Timeout:
         wifi::sta::connection::unlock();
         if (wifi::sta::connecting() && wifi::sta::connection::next()) {
-            wifi::sta::connection::continued();
             state = State::Idle;
+            wifi::sta::connection::schedule_continue();
             publish(wifi::Event::StationTimeout);
         } else {
             wifi::sta::connection::stop();
@@ -2308,6 +2408,12 @@ void loop() {
     // or being disconnected when the wireless signal is lost.
     // Thus, provide a specific connected -> disconnected event specific to the IP network availability.
     if (wifi::sta::connection::lost()) {
+        wifi::sta::scan::periodic::stop();
+        if (wifi::sta::connection::persist()) {
+            wifi::sta::connection::schedule(
+                wifi::sta::ConnectionInterval * wifi::sta::ConnectionRetries,
+                wifi::Action::StationConnect);
+        }
         publish(wifi::Event::StationDisconnected);
     }
 
@@ -2402,6 +2508,14 @@ void wifiTurnOn() {
 
 void wifiApCheck() {
     wifi::action(wifi::Action::AccessPointFallbackCheck);
+}
+
+size_t wifiApStations() {
+    if (wifi::ap::enabled()) {
+        return wifi::ap::stations();
+    }
+
+    return 0;
 }
 
 void wifiSetup() {

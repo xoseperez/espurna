@@ -418,10 +418,21 @@
 // Energy Monitor general settings
 //------------------------------------------------------------------------------
 
+#ifndef EMON_MAX_SAMPLES
 #define EMON_MAX_SAMPLES                1000        // Max number of samples to get
+#endif
+
+#ifndef EMON_MAX_TIME
 #define EMON_MAX_TIME                   250         // Max time in ms to sample
+#endif
+
+#ifndef EMON_FILTER_SPEED
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
+#endif
+
+#ifndef EMON_REFERENCE_VOLTAGE
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
+#endif
 
 #ifndef EMON_MAINS_VOLTAGE
 #define EMON_MAINS_VOLTAGE              230         // Mains voltage
@@ -432,7 +443,6 @@
 #endif
 
 #ifndef EMON_REPORT_CURRENT
-
 #define EMON_REPORT_CURRENT             0           // Report current
 #endif
 
@@ -470,9 +480,24 @@
 #define EMON_ADS1X15_I2C_ADDRESS        0x00    // 0x00 means auto
 #endif
 
+#ifndef EMON_ADS1X15_TYPE
 #define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
+#endif
+
+#ifndef EMON_ADS1X15_GAIN
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
-#define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
+#endif
+
+#ifndef EMON_ADS1X15_DATARATE
+#define EMON_ADS1X15_DATARATE           ADS1X15_REG_CONFIG_DR_MASK
+#endif
+
+#ifndef EMON_ADS1X15_MASK
+#define EMON_ADS1X15_MASK               0x0F    // A0=1 aka 0b1
+                                                // A1=2 aka 0b10
+                                                // A2=4 aka 0b100
+                                                // A3=8 aka 0b1000
+#endif
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
@@ -1045,6 +1070,23 @@
 #endif
 
 //------------------------------------------------------------------------------
+// SM300D2 sensor
+// Enable support by passing SM300D2_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SM300D2_SUPPORT
+#define SM300D2_SUPPORT                   0
+#endif
+
+#ifndef SM300D2_RX_PIN
+#define SM300D2_RX_PIN                    13
+#endif
+
+#ifndef SM300D2_BAUDRATE
+#define SM300D2_BAUDRATE                  9600
+#endif
+
+//------------------------------------------------------------------------------
 // HDC1080 / 831R temperature & humidity sensor
 // Enable support by passing HDC1080_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1397,6 +1439,7 @@
     SHT3X_I2C_SUPPORT || \
     SI1145_SUPPORT || \
     SI7021_SUPPORT || \
+    SM300D2_SUPPORT || \
     SONAR_SUPPORT || \
     T6613_SUPPORT || \
     THERMOSTAT_SUPPORT || \

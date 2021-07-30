@@ -613,12 +613,13 @@ error:
 
             terminalRegisterCommand(F("TUYA.SHOW"), [](const terminal::CommandContext& ctx) {
                 ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
-                ctx.output.println(F("\nConfig:"));
+
+                ctx.output.print(F("\nConfig:\n"));
                 for (auto& kv : config) {
                     ctx.output.printf_P(PSTR("\"%s\" => \"%s\"\n"), kv.key.c_str(), kv.value.c_str());
                 }
 
-                ctx.output.println(F("\nKnown DP(s):"));
+                ctx.output.print(F("\nKnown DP(s):\n"));
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
                 if (channelStateId) {
                     ctx.output.printf_P(PSTR("%u (bool) => lights state\n"), channelStateId.id());
@@ -651,11 +652,8 @@ error:
 
         ::espurnaRegisterLoop(loop);
         ::wifiRegister([](wifi::Event event) {
-            switch (event) {
-            case wifi::Event::StationConnected:
-            case wifi::Event::StationDisconnected:
+            if ((event == wifi::Event::StationConnected) || (event == wifi::Event::StationDisconnected)) {
                 sendWiFiStatus();
-                break;
             }
         });
     }

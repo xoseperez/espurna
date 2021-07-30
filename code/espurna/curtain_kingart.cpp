@@ -390,7 +390,6 @@ void _curtainMQTTCallback(unsigned int type, const char * topic, char * payload)
 void _curtainWebSocketOnConnected(JsonObject& root) {
     root["curtainType"] = getSetting("curtainType", "0");
     root["curtainBoot"] = getSetting("curtainBoot", "0");
-    root["curtainConfig"] = 1;
 }
 
 //------------------------------------------------------------------------------

@@ -20,81 +20,193 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 
 // -----------------------------------------------------------------------------
-// Locals
+// PRIVATE
 // -----------------------------------------------------------------------------
 
-struct packet_t {
-    unsigned long messageID;
+namespace rfm69 {
+
+struct Message {
+    unsigned long id;
     unsigned char packetID;
     unsigned char senderID;
     unsigned char targetID;
-    char * key;
-    char * value;
+    String key;
+    String value;
     int16_t rssi;
 };
 
-struct _node_t {
+struct Node {
     unsigned long count = 0;
     unsigned long missing = 0;
     unsigned long duplicates = 0;
     unsigned char lastPacketID = 0;
 };
 
-_node_t _rfm69_node_info[RFM69_MAX_NODES];
-unsigned char _rfm69_node_count;
-unsigned long _rfm69_packet_count;
+struct Mapping {
+    size_t node;
+    String key;
+    String topic;
+};
 
-void _rfm69Clear() {
-    for(unsigned int i=0; i<RFM69_MAX_NODES; i++) {
-        _rfm69_node_info[i].duplicates = 0;
-        _rfm69_node_info[i].missing = 0;
-        _rfm69_node_info[i].count = 0;
-    }
-    _rfm69_node_count = 0;
-    _rfm69_packet_count = 0;
+namespace build {
+
+constexpr size_t maxTopics() {
+    return RFM69_MAX_TOPICS;
 }
+
+constexpr size_t maxNodes() {
+    return RFM69_MAX_NODES;
+}
+
+constexpr uint8_t cs() {
+    return RFM69_CS_PIN;
+}
+
+constexpr uint8_t irq() {
+    return RFM69_IRQ_PIN;
+}
+
+constexpr bool hardware() {
+    return 1 == RFM69_IS_RFM69HW;
+}
+
+constexpr uint8_t frequency() {
+    return RFM69_FREQUENCY;
+}
+
+constexpr uint16_t nodeId() {
+    return RFM69_NODE_ID;
+}
+
+constexpr uint8_t networkId() {
+    return RFM69_NETWORK_ID;
+}
+
+constexpr uint8_t gatewayId() {
+    return RFM69_GATEWAY_ID;
+}
+
+const char* const encryptionKey() {
+    return RFM69_ENCRYPTKEY;
+}
+
+constexpr bool promiscuous() {
+    return 1 == RFM69_PROMISCUOUS;
+}
+
+constexpr bool promiscuousSends() {
+    return 1 == RFM69_PROMISCUOUS_SENDS;
+}
+
+const __FlashStringHelper* rootTopic() {
+    return F(RFM69_DEFAULT_TOPIC);
+}
+
+constexpr size_t node(size_t) {
+    return 0;
+}
+
+} // namespace build
+
+namespace settings {
+
+String rootTopic() {
+    return getSetting("rfm69Topic", build::rootTopic());
+}
+
+String topic(size_t index) {
+    return getSetting({"rfm69Topic", index});
+}
+
+String key(size_t index) {
+    return getSetting({"rfm69Key", index});
+}
+
+size_t node(size_t index) {
+    return getSetting({"rfm69Node", index}, build::node(index));
+}
+
+template <typename T>
+void foreachMapping(T&& callback) {
+    for (size_t index = 0; index < build::maxTopics(); ++index) {
+        auto currentNode = node(index);
+        if (0 == currentNode) {
+            break;
+        }
+
+        Mapping entry{currentNode, key(index), topic(index)};
+        if (!entry.key.length() || !entry.topic.length()) {
+            break;
+        }
+
+        if (!callback(std::move(entry))) {
+            break;
+        }
+    }
+}
+
+std::vector<Mapping> mapping() {
+    std::vector<Mapping> out;
+    foreachMapping([&](rfm69::Mapping&& entry) {
+        out.emplace_back(std::move(entry));
+        return true;
+    });
+
+    return out;
+}
+
+} // namespace settings
+} // namespace rfm69
 
 // -----------------------------------------------------------------------------
 
 class RFM69Wrap: public RFM69_ATC {
+public:
+    using RFM69_ATC::RFM69_ATC;
 
-    public:
+protected:
+    // overriding SPI_CLOCK for ESP8266
+    void select() {
+        noInterrupts();
 
-        RFM69Wrap(uint8_t slaveSelectPin=RF69_SPI_CS, uint8_t interruptPin=RF69_IRQ_PIN, bool isRFM69HW=false):
-            RFM69_ATC(slaveSelectPin, interruptPin, isRFM69HW) {};
+#if defined (SPCR) && defined (SPSR)
+        // save current SPI settings
+        _SPCR = SPCR;
+        _SPSR = SPSR;
+#endif
 
-    protected:
+        // set RFM69 SPI settings
+        SPI.setDataMode(SPI_MODE0);
+        SPI.setBitOrder(MSBFIRST);
 
-        // overriding SPI_CLOCK for ESP8266
-        void select() {
+#if defined(__arm__)
+        SPI.setClockDivider(SPI_CLOCK_DIV16);
+#elif defined(ARDUINO_ARCH_ESP8266)
+        SPI.setClockDivider(SPI_CLOCK_DIV2); // speeding it up for the ESP8266
+#else
+        SPI.setClockDivider(SPI_CLOCK_DIV4);
+#endif
 
-            noInterrupts();
-
-            #if defined (SPCR) && defined (SPSR)
-                // save current SPI settings
-                _SPCR = SPCR;
-                _SPSR = SPSR;
-            #endif
-
-            // set RFM69 SPI settings
-            SPI.setDataMode(SPI_MODE0);
-            SPI.setBitOrder(MSBFIRST);
-
-            #if defined(__arm__)
-            	SPI.setClockDivider(SPI_CLOCK_DIV16);
-            #elif defined(ARDUINO_ARCH_ESP8266)
-                SPI.setClockDivider(SPI_CLOCK_DIV2); // speeding it up for the ESP8266
-            #else
-                SPI.setClockDivider(SPI_CLOCK_DIV4);
-            #endif
-
-            digitalWrite(_slaveSelectPin, LOW);
-
-        }
-
+        digitalWrite(_slaveSelectPin, LOW);
+    }
 };
 
-RFM69Wrap * _rfm69_radio;
+namespace {
+
+std::unique_ptr<RFM69Wrap> _rfm69_radio;
+rfm69::Node _rfm69_node_info[rfm69::build::maxNodes()];
+size_t _rfm69_node_count;
+size_t _rfm69_packet_count;
+
+void _rfm69Clear() {
+    for (auto& info : _rfm69_node_info) {
+        info.duplicates = 0;
+        info.missing = 0;
+        info.count = 0;
+    }
+    _rfm69_node_count = 0;
+    _rfm69_packet_count = 0;
+}
 
 // -----------------------------------------------------------------------------
 // WEB
@@ -102,158 +214,169 @@ RFM69Wrap * _rfm69_radio;
 
 #if WEB_SUPPORT
 
-void _rfm69WebSocketOnConnected(JsonObject& root) {
-
+void _rfm69WebSocketOnVisible(JsonObject& root) {
     root["rfm69Visible"] = 1;
-    root["rfm69Topic"] = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
-    root["packetCount"] = _rfm69_packet_count;
-    root["nodeCount"] = _rfm69_node_count;
-    JsonArray& mappings = root.createNestedArray("mapping");
-    for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
-        auto node = getSetting({"node", i}, 0);
-        if (0 == node) break;
-        JsonObject& mapping = mappings.createNestedObject();
-        mapping["node"] = node;
-        mapping["key"] = getSetting({"key", i});
-        mapping["topic"] = getSetting({"topic", i});
-    }
+}
 
+void _rfm69WebSocketOnConnected(JsonObject& root) {
+    root["rfm69Topic"] = rfm69::settings::rootTopic();
+
+    JsonObject& rfm69 = root.createNestedObject("rfm69");
+    rfm69["packets"] = _rfm69_packet_count; // TODO: unused?
+    rfm69["nodes"] = _rfm69_node_count; // TODO: unused?
+
+    static const char* const keys[] {
+        "rfm69Node", "rfm69Key", "rfm69Topic"
+    };
+    JsonArray& schema = rfm69.createNestedArray("schema");
+    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
+
+    JsonArray& mappings = rfm69.createNestedArray("mapping");
+    for (auto& mapping : rfm69::settings::mapping()) {
+        JsonArray& entry = mappings.createNestedArray();
+        entry.add(mapping.node);
+        entry.add(mapping.key);
+        entry.add(mapping.topic);
+    }
 }
 
 bool _rfm69WebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, "rfm69", 5) == 0) return true;
-    if (strncmp(key, "node", 4) == 0) return true;
-    if (strncmp(key, "key", 3) == 0) return true;
-    if (strncmp(key, "topic", 5) == 0) return true;
-    return false;
+    return (strncmp(key, "rfm69", 5) == 0);
 }
 
-void _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "clear-counts") == 0) _rfm69Clear();
+void _rfm69WebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
+    if (strcmp(action, "rfm69Clear") == 0) {
+        _rfm69Clear();
+    }
 }
-
 
 #endif // WEB_SUPPORT
 
-void _rfm69CleanNodes(unsigned char num) {
+void _rfm69CleanNodes(size_t max) {
+    size_t id { 0 };
+    rfm69::settings::foreachMapping([&](rfm69::Mapping&&) {
+        if (id < max) {
+            return false;
+        }
 
-    // Look for the last defined node
-    unsigned char id = 0;
-    while (id < num) {
-        if (0 == getSetting({"node", id}, 0)) break;
-        if (!getSetting({"key", id}).length()) break;
-        if (!getSetting({"topic", id}).length()) break;
+        ++id;
+        return true;
+    });
+
+    while (id < rfm69::build::maxTopics()) {
+        delSetting({"rfm69Node", id});
+        delSetting({"rfm69Key", id});
+        delSetting({"rfm69Topic", id});
         ++id;
     }
-
-    // Delete all other settings
-    while (id < SETTINGS_MAX_LIST_COUNT) {
-        delSetting({"node", id});
-        delSetting({"key", id});
-        delSetting({"topic", id});
-        ++id;
-    }
-
 }
 
 void _rfm69Configure() {
-    _rfm69CleanNodes(RFM69_MAX_TOPICS);
+    _rfm69CleanNodes(rfm69::build::maxTopics());
 }
 
 // -----------------------------------------------------------------------------
 // Radio
 // -----------------------------------------------------------------------------
 
-void _rfm69Debug(const char * level, packet_t * data) {
-
-    DEBUG_MSG_P(
-        PSTR("[RFM69] %s: messageID:%05d senderID:%03d targetID:%03d packetID:%03d rssi:%-04d key:%s value:%s\n"),
-        level,
-        data->messageID,
-        data->senderID,
-        data->targetID,
-        data->packetID,
-        data->rssi,
-        data->key,
-        data->value
-    );
-
+void _rfm69Debug(const char* prefix, const rfm69::Message& message) {
+    DEBUG_MSG_P(PSTR("[RFM69] %s: message ID:%05u sender:%03hhu target:%03hhu packet:%03hhu rssi:%-04hd key:%s value:%s\n"),
+        prefix,
+        message.id, message.senderID, message.targetID, message.packetID,
+        message.rssi, message.key.c_str(), message.value.c_str());
 }
 
-void _rfm69Process(packet_t * data) {
-
+void _rfm69Process(const rfm69::Message& message) {
     // Is node beyond RFM69_MAX_NODES?
-    if (data->senderID >= RFM69_MAX_NODES) return;
+    if (message.senderID >= rfm69::build::maxNodes()) {
+        return;
+    }
 
     // Count seen nodes
-    if (_rfm69_node_info[data->senderID].count == 0) ++_rfm69_node_count;
+    if (_rfm69_node_info[message.senderID].count == 0) {
+        ++_rfm69_node_count;
+    }
 
-    // Detect duplicates and missing packets
-    // packetID==0 means device is not sending packetID info
-    if (data->packetID > 0) {
-        if (_rfm69_node_info[data->senderID].count > 0) {
-
-            unsigned char gap = data->packetID - _rfm69_node_info[data->senderID].lastPacketID;
-
+    // Detect duplicates and missing messages
+    // message ID==0 means device is not sending this info
+    if (message.id > 0) {
+        if (_rfm69_node_info[message.senderID].count > 0) {
+            auto gap = message.packetID - _rfm69_node_info[message.senderID].lastPacketID;
             if (gap == 0) {
-                _rfm69_node_info[data->senderID].duplicates = _rfm69_node_info[data->senderID].duplicates + 1;
-                //_rfm69Debug("DUP", data);
+                _rfm69_node_info[message.senderID].duplicates = _rfm69_node_info[message.senderID].duplicates + 1;
                 return;
             }
 
-            if ((gap > 1) && (data->packetID > 1)) {
-                _rfm69_node_info[data->senderID].missing = _rfm69_node_info[data->senderID].missing + gap - 1;
-                DEBUG_MSG_P(PSTR("[RFM69] %u missing packets detected\n"), gap - 1);
+            constexpr decltype(gap) Offset { 1 };
+            if ((gap > Offset) && (message.id > Offset)) {
+                _rfm69_node_info[message.senderID].missing = _rfm69_node_info[message.senderID].missing + gap - Offset;
+                DEBUG_MSG_P(PSTR("[RFM69] %hhu missing messages detected\n"), gap - Offset);
             }
         }
-
     }
 
-    _rfm69Debug("OK ", data);
+    _rfm69Debug("OK", message);
 
-    _rfm69_node_info[data->senderID].lastPacketID = data->packetID;
-    _rfm69_node_info[data->senderID].count = _rfm69_node_info[data->senderID].count + 1;
+    _rfm69_node_info[message.senderID].lastPacketID = message.packetID;
+    _rfm69_node_info[message.senderID].count += 1;
 
-    // Send info to websocket clients
+#if WEB_SUPPORT
     {
-        char buffer[200];
-        snprintf_P(
-            buffer,
-            sizeof(buffer) - 1,
-            PSTR("{\"nodeCount\": %d, \"packetCount\": %lu, \"packet\": {\"senderID\": %u, \"targetID\": %u, \"packetID\": %u, \"key\": \"%s\", \"value\": \"%s\", \"rssi\": %d, \"duplicates\": %d, \"missing\": %d}}"),
-            _rfm69_node_count, _rfm69_packet_count,
-            data->senderID, data->targetID, data->packetID, data->key, data->value, data->rssi,
-            _rfm69_node_info[data->senderID].duplicates , _rfm69_node_info[data->senderID].missing);
-        wsSend(buffer);
+        auto& info = _rfm69_node_info[message.senderID];
+
+        auto duplicates = info.duplicates;
+        auto missing = info.missing;
+
+        wsPost([message, duplicates, missing](JsonObject& root) {
+            JsonObject& rfm69 = root.createNestedObject("rfm69");
+            rfm69["packets"] = _rfm69_packet_count; // TODO: unused?
+            rfm69["nodes"] = _rfm69_node_count; // TODO: unused?
+
+            JsonArray& msg = rfm69.createNestedArray("message");
+            msg.add(message.packetID);
+            msg.add(message.senderID);
+            msg.add(message.targetID);
+            msg.add(message.key);
+            msg.add(message.value);
+            msg.add(message.rssi);
+            msg.add(duplicates);
+            msg.add(missing);
+        });
     }
+#endif
 
     // If we are the target of the message, forward it via MQTT, otherwise quit
-    if (!RFM69_PROMISCUOUS_SENDS && (RFM69_GATEWAY_ID != data->targetID)) return;
-
-    // Try to find a matching mapping
-    for (unsigned char i=0; i<RFM69_MAX_TOPICS; i++) {
-        auto node = getSetting({"node", i}, 0);
-        if (0 == node) break;
-        if ((node == data->senderID) && (getSetting({"key", i}).equals(data->key))) {
-            mqttSendRaw((char *) getSetting({"topic", i}).c_str(), (char *) String(data->value).c_str());
-            return;
-        }
+    if (!rfm69::build::promiscuousSends() && (rfm69::build::gatewayId() != message.targetID)) {
+        return;
     }
+
+#if MQTT_SUPPORT
+    // Try to find a matching mapping
+    bool found { false };
+    rfm69::settings::foreachMapping([&](rfm69::Mapping&& mapping) {
+        if ((mapping.node == message.senderID) && (mapping.key == message.key)) {
+            found = true;
+            mqttSendRaw(mapping.topic.c_str(), message.value.c_str());
+            return false;
+        }
+
+        return true;
+    });
 
     // Mapping not found, use default topic
-    String topic = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
-    if (topic.length() > 0) {
-        topic.replace("{node}", String(data->senderID));
-        topic.replace("{key}", String(data->key));
-        mqttSendRaw((char *) topic.c_str(), (char *) String(data->value).c_str());
+    if (!found) {
+        auto topic = rfm69::settings::rootTopic();
+        if (topic.length() > 0) {
+            topic.replace("{node}", String(message.senderID, 10));
+            topic.replace("{key}", message.key);
+            mqttSendRaw(topic.c_str(), message.value.c_str());
+        }
     }
-
+#endif
 }
 
 void _rfm69Loop() {
-
     if (_rfm69_radio->receiveDone()) {
-
         uint8_t senderID = _rfm69_radio->SENDERID;
         uint8_t targetID = _rfm69_radio->TARGETID;
         int16_t rssi = _rfm69_radio->RSSI;
@@ -264,78 +387,91 @@ void _rfm69Loop() {
 
         // Do not send ACKs in promiscuous mode,
         // we want to listen without being heard
-        if (!RFM69_PROMISCUOUS) {
-            if (_rfm69_radio->ACKRequested()) _rfm69_radio->sendACK();
+        if (!rfm69::build::promiscuous()) {
+            if (_rfm69_radio->ACKRequested()) {
+                _rfm69_radio->sendACK();
+            }
         }
 
         uint8_t parts = 1;
-        for (uint8_t i=0; i<length; i++) {
-            if (buffer[i] == RFM69_PACKET_SEPARATOR) ++parts;
+        for (uint8_t i = 0; i < length; ++i) {
+            if (buffer[i] == RFM69_PACKET_SEPARATOR) {
+                ++parts;
+            }
         }
 
         if (parts > 1) {
-
             char sep[2] = {RFM69_PACKET_SEPARATOR, 0};
 
             uint8_t packetID = 0;
-            char * key = strtok(buffer, sep);
-            char * value = strtok(NULL, sep);
+            char* key = strtok(buffer, sep);
+            char* value = strtok(NULL, sep);
             if (parts > 2) {
                 char * packet = strtok(NULL, sep);
                 packetID = atoi(packet);
             }
 
-            packet_t message;
-
-            message.messageID = ++_rfm69_packet_count;
-            message.packetID = packetID;
-            message.senderID = senderID;
-            message.targetID = targetID;
-            message.key = key;
-            message.value = value;
-            message.rssi = rssi;
-
-            _rfm69Process(&message);
-
+            _rfm69Process(rfm69::Message{
+                ++_rfm69_packet_count,
+                packetID,
+                senderID,
+                targetID,
+                key,
+                value,
+                rssi
+            });
         }
-
     }
-
 }
+
+void _rfm69Migrate(int version) {
+    if (version && (version < 8)) {
+        moveSettings("node", "rfm69Node");
+        moveSettings("key", "rfm69Key");
+        moveSettings("topic", "rfm69Topic");
+    }
+}
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // RFM69
 // -----------------------------------------------------------------------------
 
 void rfm69Setup() {
-
     delay(10);
 
+    _rfm69Migrate(migrateVersion());
     _rfm69Configure();
 
-    _rfm69_radio = new RFM69Wrap(RFM69_CS_PIN, RFM69_IRQ_PIN, RFM69_IS_RFM69HW);
-    _rfm69_radio->initialize(RFM69_FREQUENCY, RFM69_NODE_ID, RFM69_NETWORK_ID);
-    _rfm69_radio->encrypt(RFM69_ENCRYPTKEY);
-    _rfm69_radio->spyMode(1 == RFM69_PROMISCUOUS);
+    _rfm69_radio = std::make_unique<RFM69Wrap>(rfm69::build::cs(), rfm69::build::irq(), rfm69::build::hardware());
+    _rfm69_radio->initialize(rfm69::build::frequency(), rfm69::build::nodeId(), rfm69::build::networkId());
+    _rfm69_radio->encrypt(rfm69::build::encryptionKey());
+    _rfm69_radio->spyMode(rfm69::build::promiscuous());
     _rfm69_radio->enableAutoPower(0);
-    if (RFM69_IS_RFM69HW) _rfm69_radio->setHighPower();
+    if (rfm69::build::hardware()) {
+        _rfm69_radio->setHighPower();
+    }
 
-    DEBUG_MSG_P(PSTR("[RFM69] Working at %u MHz\n"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
-    DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), RFM69_NODE_ID);
-    DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), RFM69_NETWORK_ID);
-    DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s\n"), RFM69_PROMISCUOUS ? "ON" : "OFF");
+    DEBUG_MSG_P(PSTR("[RFM69] Working at %d MHz\n"),
+            (rfm69::build::frequency() == RF69_433MHZ) ? 433 :
+            (rfm69::build::frequency() == RF69_868MHZ) ? 868 : 915);
+    DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), rfm69::build::nodeId());
+    DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), rfm69::build::networkId());
+    if (rfm69::build::promiscuous()) {
+        DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode\n"));
+    }
 
-    #if WEB_SUPPORT
-        wsRegister()
-            .onConnected(_rfm69WebSocketOnConnected)
-            .onAction(_rfm69WebSocketOnAction)
-            .onKeyCheck(_rfm69WebSocketOnKeyCheck);
-    #endif
+#if WEB_SUPPORT
+    wsRegister()
+        .onVisible(_rfm69WebSocketOnVisible)
+        .onConnected(_rfm69WebSocketOnConnected)
+        .onAction(_rfm69WebSocketOnAction)
+        .onKeyCheck(_rfm69WebSocketOnKeyCheck);
+#endif
 
-    // Main callbacks
     espurnaRegisterLoop(_rfm69Loop);
     espurnaRegisterReload(_rfm69Configure);
-
 }
 
 #endif // RFM69_SUPPORT

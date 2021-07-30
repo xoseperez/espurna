@@ -119,7 +119,7 @@ class ECH1560Sensor : public BaseEmonSensor {
             return 0;
         }
 
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char) {
+        void IRAM_ATTR handleInterrupt(unsigned char) {
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
             if (_dosync == false) {
 
@@ -305,23 +305,23 @@ class ECH1560Sensor : public BaseEmonSensor {
 
 ECH1560Sensor * _ech1560_sensor_instance[10] = {NULL};
 
-void ICACHE_RAM_ATTR _ech1560_sensor_isr(unsigned char gpio) {
+void IRAM_ATTR _ech1560_sensor_isr(unsigned char gpio) {
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_ech1560_sensor_instance[index]) {
         _ech1560_sensor_instance[index]->handleInterrupt(gpio);
     }
 }
 
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_0() { _ech1560_sensor_isr(0); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_1() { _ech1560_sensor_isr(1); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_2() { _ech1560_sensor_isr(2); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_3() { _ech1560_sensor_isr(3); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_4() { _ech1560_sensor_isr(4); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_5() { _ech1560_sensor_isr(5); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_12() { _ech1560_sensor_isr(12); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_13() { _ech1560_sensor_isr(13); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_14() { _ech1560_sensor_isr(14); }
-void ICACHE_RAM_ATTR _ech1560_sensor_isr_15() { _ech1560_sensor_isr(15); }
+void IRAM_ATTR _ech1560_sensor_isr_0() { _ech1560_sensor_isr(0); }
+void IRAM_ATTR _ech1560_sensor_isr_1() { _ech1560_sensor_isr(1); }
+void IRAM_ATTR _ech1560_sensor_isr_2() { _ech1560_sensor_isr(2); }
+void IRAM_ATTR _ech1560_sensor_isr_3() { _ech1560_sensor_isr(3); }
+void IRAM_ATTR _ech1560_sensor_isr_4() { _ech1560_sensor_isr(4); }
+void IRAM_ATTR _ech1560_sensor_isr_5() { _ech1560_sensor_isr(5); }
+void IRAM_ATTR _ech1560_sensor_isr_12() { _ech1560_sensor_isr(12); }
+void IRAM_ATTR _ech1560_sensor_isr_13() { _ech1560_sensor_isr(13); }
+void IRAM_ATTR _ech1560_sensor_isr_14() { _ech1560_sensor_isr(14); }
+void IRAM_ATTR _ech1560_sensor_isr_15() { _ech1560_sensor_isr(15); }
 
 static void (*_ech1560_sensor_isr_list[10])() = {
     _ech1560_sensor_isr_0, _ech1560_sensor_isr_1, _ech1560_sensor_isr_2,

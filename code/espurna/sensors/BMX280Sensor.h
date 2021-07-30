@@ -173,8 +173,7 @@ class BMX280Sensor : public I2CSensor<> {
             if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
 
                 _chip = 0;
-                i2cReleaseLock(_address);
-                _previous_address = 0;
+                _sensor_address.unlock();
                 _error = SENSOR_ERROR_UNKNOWN_ID;
 
                 // Setting _address to 0 forces auto-discover

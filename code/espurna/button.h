@@ -79,6 +79,8 @@ struct ButtonEventDelays {
     unsigned long lnglngclick;
 };
 
+using ButtonEventEmitterPtr = std::unique_ptr<debounce_event::EventEmitter>;
+
 struct button_t {
     button_t(ButtonActions&& actions, ButtonEventDelays&& delays);
     button_t(BasePinPtr&& pin, const debounce_event::types::Config& config,
@@ -87,7 +89,7 @@ struct button_t {
     bool state();
     ButtonEvent loop();
 
-    std::unique_ptr<debounce_event::EventEmitter> event_emitter;
+    ButtonEventEmitterPtr event_emitter;
 
     ButtonActions actions;
     ButtonEventDelays event_delays;
@@ -97,10 +99,10 @@ using ButtonEventHandler = void(*)(size_t id, ButtonEvent event);
 void buttonSetCustomAction(ButtonEventHandler);
 void buttonSetNotifyAction(ButtonEventHandler);
 
-bool buttonState(size_t id);
 ButtonAction buttonAction(size_t id, const ButtonEvent event);
-
 void buttonEvent(size_t id, ButtonEvent event);
+
+bool buttonAdd();
 
 size_t buttonCount();
 void buttonSetup();
