@@ -197,9 +197,8 @@ function validatePassword(password) {
 }
 
 // Try to validate 'adminPass{0,1}', searching the first form containing both.
-// In case we on normal settings page, avoid checking things when both fields were not changed
-// Allow to enforce validation for the setup page
-function validateFormPasswords(forms, required) {
+// In case it's default webMode, avoid checking things when both fields are empty (`required === false`)
+function validateFormsPasswords(forms, required) {
     let [passwords] = Array.from(forms).filter(
         form => form.elements.adminPass0 && form.elements.adminPass1);
 
@@ -230,7 +229,7 @@ function validateFormPasswords(forms, required) {
 
 // Same as above, but only applies to the general settings page.
 // Find the first available form that contains 'hostname' input
-function validateFormHostname(forms) {
+function validateFormsHostname(forms) {
     // per. [RFC1035](https://datatracker.ietf.org/doc/html/rfc1035)
     // Hostname may contain:
     // - the ASCII letters 'a' through 'z' (case-insensitive),
@@ -257,7 +256,7 @@ function validateFormHostname(forms) {
 }
 
 function validateForms(forms) {
-    return validateFormPasswords(forms) && validateFormHostname(forms);
+    return validateFormsPasswords(forms) && validateFormsHostname(forms);
 }
 
 // Right now, group additions happen from:
@@ -730,15 +729,27 @@ function toggleVisiblePassword(event) {
     }
 }
 
-function generatePasswordsForForm(name) {
-    let value = generatePassword();
-
-    let form = document.forms[name];
+function generatePasswordsForForm(form) {
+    const value = generatePassword();
     for (let elem of [form.elements.adminPass0, form.elements.adminPass1]) {
         setChangedElement(elem);
         elem.type = "text";
         elem.value = value;
     }
+}
+
+function initSetupPassword(form) {
+    elementSelectorOnClick(".button-setup-password", (event) => {
+        event.preventDefault();
+        const forms = [form];
+        if (validateFormsPasswords(forms, true)) {
+            sendConfig(getData(forms, true, false));
+        }
+    });
+    elementSelectorOnClick(".button-generate-password", (event) => {
+        event.preventDefault();
+        generatePasswordsForForm(form);
+    });
 }
 
 function moduleVisible(module) {
@@ -1116,14 +1127,6 @@ function handleFirmwareUpgrade(event) {
         xhr.open("POST", Urls.upgrade.href);
         xhr.send(data);
     });
-}
-
-// Initial page, when webMode only allows to change the password
-function sendPasswordConfig(name) {
-    let forms = [document.forms[name]];
-    if (validateFormPasswords(forms, true)) {
-        sendConfig(getData(forms, true, false));
-    }
 }
 
 function afterSaved() {
@@ -2544,16 +2547,8 @@ function main() {
     initExternalLinks();
     createCheckboxes(document);
 
-    // Password handling for the initial screen and the rest of inputs that are supposed to be 'secret'
-    elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
-    elementSelectorOnClick(".button-setup-password", (event) => {
-        event.preventDefault();
-        sendPasswordConfig("panel-password");
-    });
-    elementSelectorOnClick(".button-generate-password", (event) => {
-        event.preventDefault();
-        generatePasswordsForForm("panel-password");
-    });
+    // Initial page, when webMode only allows to change the password
+    initSetupPassword(document.forms["form-setup-password"]);
 
     // Sidebar menu & buttons
     elementSelectorOnClick(".menu-link", toggleMenu);
@@ -2644,6 +2639,8 @@ function main() {
             });
         }
     }
+
+    elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
 
     elementSelectorOnClick(".button-dbg-clear", (event) => {
         event.preventDefault();
