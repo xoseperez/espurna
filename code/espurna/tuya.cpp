@@ -184,8 +184,8 @@ namespace tuya {
     void updatePins(uint8_t led, uint8_t rst) {
         static bool done { false };
         if (!done) {
-            addConfig("ledGPIO0", String(led));
-            addConfig("btnGPIO0", String(rst));
+            addConfig("ledGpio0", String(led));
+            addConfig("btnGpio0", String(rst));
             done = true;
         }
     }
