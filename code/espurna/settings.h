@@ -264,6 +264,9 @@ void settingsSetup();
 // Configuration updates
 // -----------------------------------------------------------------------------
 
+using MigrateVersionCallback = void(*)(int);
+
+void migrateVersion(MigrateVersionCallback);
 int migrateVersion();
 void migrate();
 

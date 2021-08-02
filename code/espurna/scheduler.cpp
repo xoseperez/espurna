@@ -287,7 +287,7 @@ Schedules schedules() {
 }
 
 void migrate(int version) {
-    if (version && (version < 6)) {
+    if (version < 6) {
         moveSettings("schSwitch", "schTarget");
     }
 }
@@ -577,7 +577,7 @@ void check(time_t timestamp, const Schedules& schedules) {
 // -----------------------------------------------------------------------------
 
 void schSetup() {
-    scheduler::settings::migrate(migrateVersion());
+    migrateVersion(scheduler::settings::migrate);
 
     #if WEB_SUPPORT
         wsRegister()

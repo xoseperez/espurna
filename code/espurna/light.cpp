@@ -2502,23 +2502,21 @@ void _lightProviderDebug() {
 }
 
 void _lightSettingsMigrate(int version) {
-    if (!version || (version >= 5)) {
-        return;
+    if (version < 5) {
+        delSettingPrefix({
+            "chGPIO",
+            "chLogic",
+            "myChips",
+            "myDCKGPIO",
+            "myDIGPIO"
+        });
+        delSetting("lightProvider");
+        delSetting("useCSS");
+
+        moveSetting("lightTime", "ltTime");
+        moveSetting("lightColdMired", "ltColdMired");
+        moveSetting("lightWarmMired", "ltWarmMired");
     }
-
-    delSettingPrefix({
-        "chGPIO",
-        "chLogic",
-        "myChips",
-        "myDCKGPIO",
-        "myDIGPIO"
-    });
-    delSetting("lightProvider");
-    delSetting("useCSS");
-
-    moveSetting("lightTime", "ltTime");
-    moveSetting("lightColdMired", "ltColdMired");
-    moveSetting("lightWarmMired", "ltWarmMired");
 }
 
 } // namespace
@@ -2526,7 +2524,7 @@ void _lightSettingsMigrate(int version) {
 // -----------------------------------------------------------------------------
 
 void lightSetup() {
-    _lightSettingsMigrate(migrateVersion());
+    migrateVersion(_lightSettingsMigrate);
 
     const auto enable_pin = getSetting("ltEnableGPIO", Light::build::enablePin());
     if (enable_pin != GPIO_NONE) {

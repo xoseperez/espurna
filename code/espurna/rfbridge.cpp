@@ -1209,60 +1209,59 @@ void rfbForget(size_t id, bool status) {
 
 #if RELAY_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_RCSWITCH)
 
+namespace {
+
 // TODO: remove this in 1.16.0
 
-void _rfbSettingsMigrate(int version) {
-    if (!version || (version > 4)) {
-        return;
+bool _rfbSettingsMigrateCode(String& out, const String& in) {
+    out = "";
+
+    if (18 == in.length()) {
+        uint8_t bits { 0u };
+        if (!hexDecode(in.c_str() + 8, 2, &bits, 1)) {
+            return false;
+        }
+
+        auto bytes = _rfb_bytes_for_bits(bits);
+        out = in.substring(0, 10);
+        out += (in.c_str() + in.length() - (2 * bytes));
+
+        return in != out;
     }
 
-    auto migrate_code = [](String& out, const String& in) -> bool {
-        out = "";
+    return false;
+}
 
-        if (18 == in.length()) {
-            uint8_t bits { 0u };
-            if (!hexDecode(in.c_str() + 8, 2, &bits, 1)) {
-                return false;
+void _rfbSettingsMigrate(int version) {
+    if (version < 4) {
+        String buffer;
+
+        auto relays = relayCount();
+        for (decltype(relays) id = 0; id < relays; ++id) {
+            SettingsKey on_key {F("rfbON"), id};
+            if (_rfbSettingsMigrateCode(buffer, getSetting(on_key))) {
+                setSetting(on_key, buffer);
             }
 
-            auto bytes = _rfb_bytes_for_bits(bits);
-            out = in.substring(0, 10);
-            out += (in.c_str() + in.length() - (2 * bytes));
-
-            return in != out;
-        }
-
-        return false;
-    };
-
-    String buffer;
-
-    auto relays = relayCount();
-    for (decltype(relays) id = 0; id < relays; ++id) {
-        SettingsKey on_key {F("rfbON"), id};
-        if (migrate_code(buffer, getSetting(on_key))) {
-            setSetting(on_key, buffer);
-        }
-
-        SettingsKey off_key {F("rfbOFF"), id};
-        if (migrate_code(buffer, getSetting(off_key))) {
-            setSetting(off_key, buffer);
+            SettingsKey off_key {F("rfbOFF"), id};
+            if (_rfbSettingsMigrateCode(buffer, getSetting(off_key))) {
+                setSetting(off_key, buffer);
+            }
         }
     }
 }
 
+} // namespace
+
 #endif
 
 void rfbSetup() {
-
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-
     _rfb_parser.reserve(RfbParser::MessageSizeBasic);
-
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
 #if RELAY_SUPPORT
-    _rfbSettingsMigrate(migrateVersion());
+    migrateVersion(_rfbSettingsMigrate);
 #endif
 
     {

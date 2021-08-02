@@ -2728,7 +2728,9 @@ String magnitudeTopicIndex(unsigned char index) {
 
 // -----------------------------------------------------------------------------
 
-void _sensorBackwards(int version) {
+namespace {
+
+void _sensorSettingsMigrate(int version) {
     // Some keys from older versions were longer
     if (version < 3) {
         moveSetting("powerUnits", "pwrUnits");
@@ -2767,10 +2769,12 @@ void _sensorBackwards(int version) {
 #endif
 }
 
+} // namespace
+
 void sensorSetup() {
 
     // Settings backwards compatibility
-    _sensorBackwards(migrateVersion());
+    migrateVersion(_sensorSettingsMigrate);
 
     // Load configured sensors and set up all of magnitudes
     _sensorLoad();

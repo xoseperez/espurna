@@ -424,8 +424,8 @@ void _rfm69Loop() {
     }
 }
 
-void _rfm69Migrate(int version) {
-    if (version && (version < 8)) {
+void _rfm69SettingsMigrate(int version) {
+    if (version < 8) {
         moveSettings("node", "rfm69Node");
         moveSettings("key", "rfm69Key");
         moveSettings("topic", "rfm69Topic");
@@ -441,7 +441,7 @@ void _rfm69Migrate(int version) {
 void rfm69Setup() {
     delay(10);
 
-    _rfm69Migrate(migrateVersion());
+    migrateVersion(_rfm69SettingsMigrate);
     _rfm69Configure();
 
     _rfm69_radio = std::make_unique<RFM69Wrap>(rfm69::build::cs(), rfm69::build::irq(), rfm69::build::hardware());

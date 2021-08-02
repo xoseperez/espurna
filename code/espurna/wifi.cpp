@@ -525,7 +525,7 @@ String opmode(uint8_t mode) {
 namespace settings {
 
 void migrate(int version) {
-    if (version && (version < 5)) {
+    if (version < 5) {
         moveSetting("apmode", "wifiApMode");
     }
 }
@@ -2613,7 +2613,8 @@ size_t wifiApStations() {
 
 void wifiSetup() {
     wifi::internal::init();
-    wifi::settings::migrate(migrateVersion());
+
+    migrateVersion(wifi::settings::migrate);
     wifi::settings::configure();
 
 #if SYSTEM_CHECK_ENABLED

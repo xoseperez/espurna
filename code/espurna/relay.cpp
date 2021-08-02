@@ -1044,7 +1044,7 @@ PayloadStatus relayParsePayload(const char * payload) {
 }
 
 void _relaySettingsMigrate(int version) {
-    if (version && (version < 5)) {
+    if (version < 5) {
         // just a rename
         moveSetting("relayDelayInterlock", "relayIlkDelay");
 
@@ -2017,7 +2017,7 @@ void _relaySetup() {
 }
 
 void relaySetup() {
-    _relaySettingsMigrate(migrateVersion());
+    migrateVersion(_relaySettingsMigrate);
 
     _relaySetup();
 

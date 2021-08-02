@@ -94,7 +94,7 @@ String hostname() {
 } // namespace alexa
 
 void _alexaSettingsMigrate(int version) {
-    if (version && (version < 3)) {
+    if (version < 3) {
         moveSetting("fauxmoEnabled", "alexaEnabled");
     }
 }
@@ -183,7 +183,7 @@ bool alexaEnabled() {
 
 void alexaSetup() {
     // Backwards compatibility
-    _alexaSettingsMigrate(migrateVersion());
+    migrateVersion(_alexaSettingsMigrate);
 
     // Basic fauxmoESP configuration
     _alexa.createServer(alexa::build::createServer());

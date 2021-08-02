@@ -796,12 +796,10 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
 }
 
 void _buttonSettingsMigrate(int version) {
-    if (!version || (version >= 5)) {
-        return;
+    if (version < 5) {
+        delSettingPrefix("btnGPIO");
+        moveSetting("btnDelay", "btnRepDel");
     }
-
-    delSettingPrefix("btnGPIO");
-    moveSetting("btnDelay", "btnRepDel");
 }
 
 bool buttonAdd() {
@@ -817,7 +815,7 @@ bool buttonAdd() {
 }
 
 void buttonSetup() {
-    _buttonSettingsMigrate(migrateVersion());
+    migrateVersion(_buttonSettingsMigrate);
 
     for (size_t index = 0; index < ButtonsMax; ++index) {
         auto provider = getSetting({"btnProv", index}, button::build::provider(index));

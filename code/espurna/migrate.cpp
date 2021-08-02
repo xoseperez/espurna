@@ -48,11 +48,18 @@ void delSettingPrefix(const String& prefix) {
 
 int migrateVersion() {
     const static auto version = getSetting("cfg", CFG_VERSION);
-    if (version == CFG_VERSION) {
-        return 0;
+    if (version != CFG_VERSION) {
+        return version;
     }
 
-    return version;
+    return 0;
+}
+
+void migrateVersion(MigrateVersionCallback callback) {
+    int version = migrateVersion();
+    if (version) {
+        callback(version);
+    }
 }
 
 void migrate() {
@@ -61,19 +68,17 @@ void migrate() {
     const auto version = migrateVersion();
     setSetting("cfg", CFG_VERSION);
 
-    if (!version) {
-        return;
-    }
-
     // get rid of old keys that were never used until now
     // and some very old keys that were forced via migrate.ino
-    switch (version) {
-    case 2:
-    case 3:
-    case 4:
-        delSetting("board");
-        break;
-    }
+    if (version) {
+        switch (version) {
+        case 2:
+        case 3:
+        case 4:
+            delSetting("board");
+            break;
+        }
 
-    saveSettings();
+        saveSettings();
+    }
 }

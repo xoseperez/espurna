@@ -538,19 +538,17 @@ void ledLoop() {
 }
 
 void _ledSettingsMigrate(int version) {
-    if (!version || (version >= 5)) {
-        return;
+    if (version < 5) {
+        delSettingPrefix({
+            "ledGPIO",
+            "ledGpio",
+            "ledLogic"
+        });
     }
-
-    delSettingPrefix({
-        "ledGPIO",
-        "ledGpio",
-        "ledLogic"
-    });
 }
 
 void ledSetup() {
-    _ledSettingsMigrate(migrateVersion());
+    migrateVersion(_ledSettingsMigrate);
     _leds.reserve(led::build::preconfiguredLeds());
 
     for (size_t index = 0; index < led::build::LedsMax; ++index) {
