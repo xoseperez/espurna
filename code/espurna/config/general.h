@@ -588,11 +588,6 @@
                                                            // By default or when empty, admin password is used instead.
 #endif
 
-#ifndef WIFI_AP_LEASES_SUPPORT
-#define WIFI_AP_LEASES_SUPPORT      0                      // (optional) Specify softAp MAC<->IP DHCP reservations
-                                                           // Use `set wifiApLease# MAC`, where MAC is a valid 12-byte HEX number without colons
-#endif
-
 #ifndef WIFI_AP_CHANNEL
 #define WIFI_AP_CHANNEL             1
 #endif

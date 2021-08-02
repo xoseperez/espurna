@@ -154,7 +154,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
 - Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
 #### WiFi
-- SoftAP DHCP leases ([#2320](https://github.com/xoseperez/espurna/issues/2320))
 - Try to connect to a better AP, when the current RSSI is below -73dBm (only when WiFi scanning is enabled).
 #### Relays
 - Support multiple provider types (GPIO, virtual, IO expanders, etc.)
