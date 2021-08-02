@@ -2017,9 +2017,9 @@ void _sensorLoad() {
     #if HLW8012_SUPPORT
     {
         HLW8012Sensor * sensor = new HLW8012Sensor();
-        sensor->setSEL(getSetting("snsHlw8012SelGPIO", HLW8012_SEL_PIN));
-        sensor->setCF(getSetting("snsHlw8012CfGPIO", HLW8012_CF_PIN));
-        sensor->setCF1(getSetting("snsHlw8012Cf1GPIO", HLW8012_CF1_PIN));
+        sensor->setSEL(getSetting(F("hlw8012SEL"), HLW8012_SEL_PIN));
+        sensor->setCF(getSetting(F("hlw8012CF"), HLW8012_CF_PIN));
+        sensor->setCF1(getSetting(F("hlw8012CF1"), HLW8012_CF1_PIN));
         sensor->setSELCurrent(HLW8012_SEL_CURRENT);
         _sensors.push_back(sensor);
     }
@@ -2757,6 +2757,14 @@ void _sensorBackwards(int version) {
         moveSetting(F("pwrRatioP"), _magnitudeSettingsRatioKey(MAGNITUDE_POWER_ACTIVE, 0).value());
         moveSetting(F("pwrRatioE"), _magnitudeSettingsRatioKey(MAGNITUDE_ENERGY, 0).value());
     }
+
+#if HLW8012_SUPPORT
+    if (version < 9) {
+        moveSetting(F("snsHlw8012SelGPIO"), F("hlw8012SEL"));
+        moveSetting(F("snsHlw8012CfGPIO"), F("hlw8012CF"));
+        moveSetting(F("snsHlw8012Cf1GPIO"), F("hlw8012CF1"));
+    }
+#endif
 }
 
 void sensorSetup() {
