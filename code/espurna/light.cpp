@@ -1800,7 +1800,12 @@ void _lightInitCommands() {
         }
 
         auto description = [&](size_t channel) {
-            ctx.output.printf("#%u (%s): %hhu\n", channel, _lightDesc(channels, channel), _light_channels[channel].inputValue);
+            ctx.output.printf("#%u (%s): input:%hhu value:%hhu target:%hhu current:%s\n",
+                    channel, _lightDesc(channels, channel),
+                    _light_channels[channel].inputValue,
+                    _light_channels[channel].value,
+                    _light_channels[channel].target,
+                    String(_light_channels[channel].current).c_str());
         };
 
         if (ctx.argc > 2) {
