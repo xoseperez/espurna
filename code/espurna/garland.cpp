@@ -164,32 +164,6 @@ std::array<Anim*, 15> anims {
 Anim* _currentAnim       = anims[1];
 Palette* _currentPalette = &pals[0];
 auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
-//------------------------------------------------------------------------------
-void garlandDisable() {
-    pixels.clear();
-}
-
-//------------------------------------------------------------------------------
-void garlandEnabled(bool enabled) {
-    _garland_enabled = enabled;
-    setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
-    if (!_garland_enabled) {
-        schedule_function([]() {
-            pixels.clear();
-            pixels.show();
-        });
-    }
-#if WEB_SUPPORT
-    char buffer[128];
-    snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandEnabled\": %s}"), enabled ? "true" : "false");
-    wsSend(buffer);
-#endif
-}
-
-//------------------------------------------------------------------------------
-bool garlandEnabled() {
-    return _garland_enabled;
-}
 
 //------------------------------------------------------------------------------
 // Setup
@@ -690,11 +664,8 @@ void Anim::glowForEachLed(int i) {
     leds[i] = leds[i].brightness(bra);
 }
 
-void Anim::glowRun() { braPhase += braPhaseSpd; }
-
-bool operator== (const Color &c1, const Color &c2)
-{
-    return (c1.r == c2.r && c1.g == c2.g && c1.b == c2.b);
+void Anim::glowRun() {
+    braPhase += braPhaseSpd;
 }
 
 unsigned int Anim::rng() {
@@ -715,6 +686,31 @@ byte Anim::rngb() {
 } // namespace
 
 //------------------------------------------------------------------------------
+
+void garlandEnabled(bool enabled) {
+    _garland_enabled = enabled;
+    setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
+    if (!_garland_enabled) {
+        schedule_function([]() {
+            pixels.clear();
+            pixels.show();
+        });
+    }
+
+#if WEB_SUPPORT
+    wsPost([](JsonObject& root) {
+        root["garlandEnabled"] = _garland_enabled;
+    });
+#endif
+}
+
+bool garlandEnabled() {
+    return _garland_enabled;
+}
+
+void garlandDisable() {
+    pixels.clear();
+}
 
 void garlandSetup() {
     _garlandConfigure();

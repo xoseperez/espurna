@@ -7,13 +7,8 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 #pragma once
 
-#if GARLAND_SUPPORT
-
-#include <Arduino.h>
-#include <string>
-
-struct Color
-{
+class Color {
+public:
     byte r = 0;
     byte g = 0;
     byte b = 0;
@@ -24,6 +19,10 @@ struct Color
 
     Color& operator=(const Color&) = default;
     Color& operator=(Color&&) = default;
+
+    bool operator==(const Color& other) const {
+        return (r == other.r) && (g == other.g) && (b == other.b);
+    }
 
     // allow construction from R, G, B
     Color(uint8_t ir, uint8_t ig, uint8_t ib)
@@ -108,8 +107,4 @@ struct Color
         sprintf(buf, "r=%hhu, g=%hhu, b=%hhu", r, g, b);
         return buf;
     }
-
-    friend bool operator== (const Color &c1, const Color &c2);
 };
-
-#endif // GARLAND_SUPPORT

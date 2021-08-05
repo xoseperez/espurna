@@ -7,11 +7,6 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 #pragma once
 
-#if GARLAND_SUPPORT
-
-#include <array>
-#include <vector>
-
 #include "anim.h"
 #include "animations/anim_assemble.h"
 #include "animations/anim_comets.h"
@@ -116,5 +111,3 @@ private:
 
     void setupImpl();
 };
-
-#endif  // GARLAND_SUPPORT

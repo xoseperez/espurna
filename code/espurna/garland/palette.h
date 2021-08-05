@@ -7,10 +7,6 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 #pragma once
 
-#if GARLAND_SUPPORT
-
-#include <vector>
-
 #include "color.h"
 
 class Palette {
@@ -91,5 +87,3 @@ class Palette {
     std::vector<Color> _colors;
     std::vector<Color> _cache;
 };
-
-#endif  // GARLAND_SUPPORT
