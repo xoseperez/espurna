@@ -1115,11 +1115,7 @@ SsidInfosPtr ssidinfos() {
 
     start(
         [infos](bss_info* found) {
-            wifi::SsidInfo pair(*found);
-            infos->remove_if([&](const wifi::SsidInfo& current) {
-                return (current.ssid() == pair.ssid()) && (current.info() < pair.info());
-            });
-            infos->emplace_front(std::move(pair));
+            infos->emplace_front(*found);
         },
         [infos](wifi::ScanError) {
             infos->clear();
@@ -1355,7 +1351,7 @@ void action_new() {
 }
 
 wifi::sta::scan::SsidInfosPtr scanResults;
-wifi::Networks candidateNetworks;
+wifi::Networks preparedNetworks;
 
 bool connected { false };
 bool wait { false };
@@ -1385,12 +1381,13 @@ bool start(String&& hostname) {
     if (!internal::task) {
         internal::task = std::make_unique<internal::Task>(
             std::move(hostname),
-            std::move(internal::candidateNetworks),
+            std::move(internal::preparedNetworks),
             wifi::sta::ConnectionRetries);
         internal::timer.detach();
         return true;
     }
 
+    internal::preparedNetworks.clear();
     return false;
 }
 
@@ -1469,6 +1466,14 @@ bool lost() {
     }
 
     return false;
+}
+
+void prepare(Networks&& networks) {
+    internal::preparedNetworks = std::move(networks);
+}
+
+bool prepared() {
+    return internal::preparedNetworks.size();
 }
 
 } // namespace connection
@@ -1580,66 +1585,58 @@ bool check() {
 
 namespace connection {
 
-enum class ScanSort {
-    KeepExisting,
-    OnlyScanned
-};
-
-void prepare(Networks&& networks) {
-    internal::candidateNetworks = std::move(networks);
-}
-
-bool prepared() {
-    return internal::candidateNetworks.size();
-}
+// After scan attempt, generate a new networks list based on the results sorted by the rssi value.
+// For the initial connection, add every matching network with the scan result bssid and channel info.
+// For the attempt to find a better network, filter out every network with worse than the current network's rssi
 
 void scanNetworks() {
     internal::scanResults = wifi::sta::scan::ssidinfos();
 }
 
-void scanSort(ScanSort mode) {
+bool suitableNetwork(const Network& network, const SsidInfo& ssidInfo) {
+    return (ssidInfo.ssid() == network.ssid())
+        && ((ssidInfo.info().authmode() != AUTH_OPEN)
+                ? network.passphrase().length()
+                : !network.passphrase().length());
+}
+
+bool scanProcessResults(int8_t threshold) {
     if (internal::scanResults) {
-        Networks networks(std::move(internal::candidateNetworks));
-        internal::scanResults->sort();
+        auto results = std::move(internal::scanResults);
+        results->sort();
 
-        for (auto& pair : *internal::scanResults) {
+        if (threshold < 0) {
+            results->remove_if([threshold](const wifi::SsidInfo& result) {
+                return result.info().rssi() < threshold;
+            });
+
+        }
+
+        Networks networks(std::move(internal::preparedNetworks));
+        Networks sortedNetworks;
+
+        for (auto& result : *results) {
             for (auto& network : networks) {
-                if (pair.ssid() != network.ssid()) {
-                    continue;
+                if (suitableNetwork(network, result)) {
+                    sortedNetworks.emplace_back(network, result.info().bssid(), result.info().channel());
+                    break;
                 }
-
-                auto& info = pair.info();
-                if (network.passphrase().length()
-                        && (info.authmode() == AUTH_OPEN)) {
-                    continue;
-                }
-
-                internal::candidateNetworks.emplace_back(
-                        network, info.bssid(), info.channel());
-                break;
             }
         }
 
-        switch (mode) {
-        case ScanSort::KeepExisting:
-            std::move(networks.begin(), networks.end(),
-                    std::back_inserter(internal::candidateNetworks));
-            break;
-        case ScanSort::OnlyScanned:
-            break;
-        }
-
+        internal::preparedNetworks = std::move(sortedNetworks);
         internal::scanResults.reset();
     }
+
+    return internal::preparedNetworks.size();
 }
 
-bool filtered(const wifi::Info& info) {
-    scanSort(ScanSort::OnlyScanned);
-    internal::candidateNetworks.remove_if([&](const wifi::Network& network) {
-        return network.bssid() == info.bssid();
-    });
+bool scanProcessResults(const wifi::Info& info) {
+    return scanProcessResults(info.rssi());
+}
 
-    return internal::candidateNetworks.size();
+bool scanProcessResults() {
+    return scanProcessResults(0);
 }
 
 } // namespace connection
@@ -2385,16 +2382,29 @@ void loop() {
 
         wifi::sta::scan::periodic::stop();
         if (wifi::settings::scanNetworks()) {
+            if (wifi::sta::scanning()) {
+                break;
+            }
             wifi::sta::connection::scanNetworks();
             state = State::WaitScan;
             break;
         }
+
         state = State::Connect;
         break;
     }
 
     case State::TryConnectBetter:
-        if (wifi::settings::scanNetworks() && prepareConnection()) {
+        if (wifi::settings::scanNetworks()) {
+            if (wifi::sta::scanning()) {
+                break;
+            }
+
+            if (!prepareConnection()) {
+                state = State::Idle;
+                break;
+            }
+
             wifi::sta::scan::periodic::stop();
             wifi::sta::connection::scanNetworks();
             state = State::WaitScanWithoutCurrent;
@@ -2415,8 +2425,7 @@ void loop() {
             break;
         }
 
-        wifi::sta::connection::scanSort(
-            wifi::sta::connection::ScanSort::KeepExisting);
+        wifi::sta::connection::scanProcessResults();
         state = State::Connect;
         break;
 
@@ -2425,7 +2434,7 @@ void loop() {
             break;
         }
 
-        if (wifi::sta::connection::filtered(wifi::sta::info())) {
+        if (wifi::sta::connection::scanProcessResults(wifi::sta::info())) {
             wifi::sta::disconnect();
             state = State::Connect;
             break;
