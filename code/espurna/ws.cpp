@@ -268,21 +268,12 @@ bool wsDebugSend(const char* prefix, const char* message) {
 
 // Check the existing setting before saving it
 // TODO: this should know of the default values, somehow?
-// TODO: move webPort handling somewhere else?
 bool _wsStore(const String& key, const String& value) {
-
-    if (key == "webPort") {
-        if ((value.toInt() == 0) || (value.toInt() == 80)) {
-            return delSetting(key);
-        }
-    }
-
     if (!hasSetting(key) || value != getSetting(key)) {
         return setSetting(key, value);
     }
 
     return false;
-
 }
 
 // -----------------------------------------------------------------------------
@@ -318,13 +309,60 @@ bool _wsStore(const String& prefix, JsonArray& values) {
     return changed;
 }
 
-bool _wsCheckKey(const String& key, JsonVariant& value) {
+// TODO: generate "accepted" keys in the initial phase of the connection?
+// TODO: is value ever used... by anything?
+bool _wsCheckKey(const char* key, JsonVariant& value) {
     for (auto& callback : _ws_callbacks.on_keycheck) {
-        if (callback(key.c_str(), value)) return true;
-        // TODO: remove this to call all OnKeyCheckCallbacks with the
-        // current key/value
+        if (callback(key, value)) {
+            return true;
+        }
     }
     return false;
+}
+
+bool _wsProcessAdminPass(JsonVariant& value) {
+    auto current = getAdminPass();
+    if (value.is<String>()) {
+        auto string = value.as<String>();
+        if (!current.equalsConstantTime(string)) {
+            setSetting("adminPass", string);
+            return true;
+        }
+    } else if (value.is<JsonArray&>()) {
+        JsonArray& values = value.as<JsonArray&>();
+        if (values.size() == 2) {
+            auto lhs = values[0].as<String>();
+            auto rhs = values[1].as<String>();
+            if ((lhs == rhs) && (!current.equalsConstantTime(lhs))) {
+                setSetting("adminPass", lhs);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void _wsPostParse(uint32_t client_id, bool save, bool reload) {
+    if (save) {
+        saveSettings();
+        espurnaReload();
+
+        wsPost(client_id, [save, reload](JsonObject& root) {
+            if (reload) {
+                root["action"] = F("reload");
+            } else if (save) {
+                root["saved"] = true;
+            }
+            root["message"] = F("Changes saved");
+        });
+
+        return;
+    }
+
+    wsPost(client_id, [](JsonObject& root) {
+        root["message"] = F("No changes detected");
+    });
 }
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
@@ -407,30 +445,27 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data\n"));
 
-        String adminPass;
         bool save = false;
+        bool reload = false;
 
-        for (auto kv: config) {
-
+        for (auto& kv : config) {
             bool changed = false;
+
             String key = kv.key;
             JsonVariant& value = kv.value;
 
             if (key == "adminPass") {
-                if (!value.is<JsonArray&>()) continue;
-                JsonArray& values = value.as<JsonArray&>();
-                if (values.size() != 2) continue;
-                if (values[0].as<String>().equals(values[1].as<String>())) {
-                    String password = values[0].as<String>();
-                    if (password.length() > 0) {
-                        setSetting(key, password);
-                        save = true;
-                        wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
-                    }
-                } else {
-                    wsSend_P(client_id, PSTR("{\"message\": \"Passwords do not match!\"}"));
+                if (_wsProcessAdminPass(value)) {
+                    save = true;
+                    reload = true;
+                    continue;
                 }
-                continue;
+            } else if (key == "webPort") {
+                if (value.as<int>() == 0) {
+                    continue;
+                } else if (value.as<int>() > static_cast<int>(std::numeric_limits<uint16_t>::max())) {
+                    continue;
+                }
             }
 #if NTP_SUPPORT
             else if (key == "ntpTZ") {
@@ -438,7 +473,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             }
 #endif
 
-            if (!_wsCheckKey(key, value)) {
+            if (!_wsCheckKey(key.c_str(), value)) {
                 delSetting(key);
                 continue;
             }
@@ -454,28 +489,10 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             if (changed) {
                 save = true;
             }
-
         }
 
-        // Save settings
-        if (save) {
-
-            // Callbacks
-            espurnaReload();
-
-            // Persist settings
-            saveSettings();
-
-            wsSend_P(client_id, PSTR("{\"saved\": true, \"message\": \"Changes saved.\"}"));
-
-        } else {
-
-            wsSend_P(client_id, PSTR("{\"message\": \"No changes detected.\"}"));
-
-        }
-
+        _wsPostParse(client_id, save, reload);
     }
-
 }
 
 bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
