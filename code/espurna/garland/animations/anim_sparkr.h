@@ -23,7 +23,6 @@ class AnimSparkr : public Anim {
     void Run() override {
         for (int i = 0; i < numLeds; ++i) {
             byte pos = seq[i];
-
             leds[pos] = (i > phase) ? prevColor
                                     : (i == phase) ? sparkleColor
                                                    : curColor;

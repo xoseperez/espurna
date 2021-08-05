@@ -25,8 +25,7 @@ class AnimSalut : public Anim {
 
         for (auto& c : shots) {
             if (!c.Run(leds)) {
-                Shot new_shot(palette, numLeds);
-                std::swap(c, new_shot);
+                c = Shot(palette, numLeds);
             }
         }
     }
