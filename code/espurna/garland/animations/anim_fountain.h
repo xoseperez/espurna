@@ -56,7 +56,7 @@ class AnimFountain : public Anim {
         Fountain(Palette* pal, uint16_t numLeds) : start(secureRandom(len, numLeds - len)), /*color(pal->getRndInterpColor()),*/ points(len) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Fountain created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
             if (secureRandom(10) > 5) {
-                start = numLeds - start;
+                start = numLeds - start - 1;
                 dir = -1;
             }
 
