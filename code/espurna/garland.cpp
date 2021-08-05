@@ -43,44 +43,49 @@ duration does not set), otherwise it just set scene parameters.
 Infinite commands can be interrupted by immediate command or by reset command.
 */
 
-#include "garland.h"
+#include "espurna.h"
 
 #if GARLAND_SUPPORT
 
 #include <Adafruit_NeoPixel.h>
 
+#include <array>
 #include <memory>
 #include <vector>
+
+#include "garland.h"
+#include "mqtt.h"
+#include "ws.h"
+
+namespace {
 
 #include "garland/color.h"
 #include "garland/palette.h"
 #include "garland/scene.h"
-#include "mqtt.h"
-#include "ws.h"
 
-const char* NAME_GARLAND_ENABLED        = "garlandEnabled";
-const char* NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
-const char* NAME_GARLAND_SPEED          = "garlandSpeed";
+const char* const NAME_GARLAND_ENABLED        = "garlandEnabled";
+const char* const NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
+const char* const NAME_GARLAND_SPEED          = "garlandSpeed";
 
-const char* NAME_GARLAND_SWITCH         = "garland_switch";
-const char* NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
-const char* NAME_GARLAND_SET_SPEED      = "garland_set_speed";
-const char* NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
+const char* const NAME_GARLAND_SWITCH         = "garland_switch";
+const char* const NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
+const char* const NAME_GARLAND_SET_SPEED      = "garland_set_speed";
+const char* const NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
 
-const char* MQTT_TOPIC_GARLAND          = "garland";
+const char* const MQTT_TOPIC_GARLAND          = "garland";
 
-const char* MQTT_PAYLOAD_COMMAND        = "command";
-const char* MQTT_PAYLOAD_ENABLE         = "enable";
-const char* MQTT_PAYLOAD_BRIGHTNESS     = "brightness";
-const char* MQTT_PAYLOAD_ANIM_SPEED     = "speed";
-const char* MQTT_PAYLOAD_ANIMATION      = "animation";
-const char* MQTT_PAYLOAD_PALETTE        = "palette";
-const char* MQTT_PAYLOAD_DURATION       = "duration";
+const char* const MQTT_PAYLOAD_COMMAND        = "command";
+const char* const MQTT_PAYLOAD_ENABLE         = "enable";
+const char* const MQTT_PAYLOAD_BRIGHTNESS     = "brightness";
+const char* const MQTT_PAYLOAD_ANIM_SPEED     = "speed";
+const char* const MQTT_PAYLOAD_ANIMATION      = "animation";
+const char* const MQTT_PAYLOAD_PALETTE        = "palette";
+const char* const MQTT_PAYLOAD_DURATION       = "duration";
 
-const char* MQTT_COMMAND_IMMEDIATE      = "immediate";
-const char* MQTT_COMMAND_RESET          = "reset"; // reset queue
-const char* MQTT_COMMAND_QUEUE          = "queue"; // enqueue command payload
-const char* MQTT_COMMAND_SEQUENCE       = "sequence"; // place command to sequence
+const char* const MQTT_COMMAND_IMMEDIATE      = "immediate";
+const char* const MQTT_COMMAND_RESET          = "reset"; // reset queue
+const char* const MQTT_COMMAND_QUEUE          = "queue"; // enqueue command payload
+const char* const MQTT_COMMAND_SEQUENCE       = "sequence"; // place command to sequence
 
 #define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
@@ -96,7 +101,7 @@ std::queue<String>  _command_queue;
 std::vector<String> _command_sequence;
 
 // Palette should
-Palette pals[] = {
+std::array<Palette, 10> pals {
     // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
     // RGB: Red,Green,Blue sequence
     Palette("RGB", {0xFF0000, 0x00FF00, 0x0000FF}),
@@ -131,17 +136,29 @@ Palette pals[] = {
     Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
 
     // Pastel: Pastel Fruity Mixture
-    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})};
+    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})
+};
 
-constexpr size_t palsSize() { return sizeof(pals)/sizeof(pals[0]); }
-
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(GARLAND_LEDS, GARLAND_D_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(GARLAND_LEDS, GARLAND_DATA_PIN, NEO_GRB + NEO_KHZ800);
 Scene scene(&pixels);
 
-Anim* anims[] = {new AnimGlow(), new AnimStart(), new AnimPixieDust(), new AnimSparkr(), new AnimRun(), new AnimStars(), new AnimSpread(),
-                 new AnimRandCyc(), new AnimFly(), new AnimComets(), new AnimAssemble(), new AnimDolphins(), new AnimSalut(), new AnimFountain(), new AnimWaves()};
-
-constexpr size_t animsSize() { return sizeof(anims)/sizeof(anims[0]); }
+std::array<Anim*, 15> anims {
+    new AnimGlow(),
+    new AnimStart(),
+    new AnimPixieDust(),
+    new AnimSparkr(),
+    new AnimRun(),
+    new AnimStars(),
+    new AnimSpread(),
+    new AnimRandCyc(),
+    new AnimFly(),
+    new AnimComets(),
+    new AnimAssemble(),
+    new AnimDolphins(),
+    new AnimSalut(),
+    new AnimFountain(),
+    new AnimWaves()
+};
 
 #define START_ANIMATION  1
 Anim* _currentAnim       = anims[1];
@@ -313,7 +330,7 @@ bool executeCommand(const String& command) {
     Anim* newAnim = _currentAnim;
     if (root.containsKey(MQTT_PAYLOAD_ANIMATION)) {
         auto animation = root[MQTT_PAYLOAD_ANIMATION].as<const char*>();
-        for (size_t i = 0; i < animsSize(); ++i) {
+        for (size_t i = 0; i < anims.size(); ++i) {
             auto anim_name = anims[i]->name();
             if (strcmp(animation, anim_name) == 0) {
                 newAnim = anims[i];
@@ -331,7 +348,7 @@ bool executeCommand(const String& command) {
         } else {
             auto palette = root[MQTT_PAYLOAD_PALETTE].as<const char*>();
             bool palette_found = false;
-            for (size_t i = 0; i < palsSize(); ++i) {
+            for (size_t i = 0; i < pals.size(); ++i) {
                 auto pal_name = pals[i].name();
                 if (strcmp(palette, pal_name) == 0) {
                     newPalette = &pals[i];
@@ -393,12 +410,12 @@ void garlandLoop(void) {
         if (!scene_setup_done) {
             Anim* newAnim = _currentAnim;
             while (newAnim == _currentAnim) {
-                newAnim = anims[secureRandom(START_ANIMATION + 1, animsSize())];
+                newAnim = anims[secureRandom(START_ANIMATION + 1, anims.size())];
             }
 
             Palette* newPalette = _currentPalette;
             while (newPalette == _currentPalette) {
-                newPalette = &pals[secureRandom(palsSize())];
+                newPalette = &pals[secureRandom(pals.size())];
             }
 
             unsigned long newAnimDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
@@ -450,30 +467,6 @@ void garlandMqttCallback(unsigned int type, const char * topic, const char * pay
             }
         }
     }
-}
-
-//------------------------------------------------------------------------------
-void garlandSetup() {
-    _garlandConfigure();
-
-    mqttRegister(garlandMqttCallback);
-// Websockets
-#if WEB_SUPPORT
-    wsRegister()
-        .onConnected(_garlandWebSocketOnConnected)
-        .onKeyCheck(_garlandWebSocketOnKeyCheck)
-        .onAction(_garlandWebSocketOnAction);
-#endif
-
-    espurnaRegisterLoop(garlandLoop);
-    espurnaRegisterReload(_garlandReload);
-
-    pixels.begin();
-    scene.setAnim(_currentAnim);
-    scene.setPalette(_currentPalette);
-    scene.setup();
-
-    _currentDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
 }
 
 /*#######################################################################
@@ -627,7 +620,7 @@ void Scene::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(_palette, _numLeds, _leds, &_ledstmp[0], &_seq[0]);
+        _anim->Setup(_palette, _numLeds, _leds, _ledstmp.data(), _seq.data());
     }
 }
 
@@ -704,7 +697,7 @@ bool operator== (const Color &c1, const Color &c2)
     return (c1.r == c2.r && c1.g == c2.g && c1.b == c2.b);
 }
 
-unsigned int rng() {
+unsigned int Anim::rng() {
     static unsigned int y = 0;
     y += micros();  // seeded with changing number
     y ^= y << 2;
@@ -713,8 +706,37 @@ unsigned int rng() {
     return (y);
 }
 
-// Ranom numbers generator in byte range (256) much faster than secureRandom.
+// Random numbers generator in byte range (256) much faster than secureRandom.
 // For usage in time-critical places.
-byte rngb() { return (byte)rng(); }
+byte Anim::rngb() {
+    return static_cast<byte>(rng());
+}
+
+} // namespace
+
+//------------------------------------------------------------------------------
+
+void garlandSetup() {
+    _garlandConfigure();
+
+    mqttRegister(garlandMqttCallback);
+// Websockets
+#if WEB_SUPPORT
+    wsRegister()
+        .onConnected(_garlandWebSocketOnConnected)
+        .onKeyCheck(_garlandWebSocketOnKeyCheck)
+        .onAction(_garlandWebSocketOnAction);
+#endif
+
+    espurnaRegisterLoop(garlandLoop);
+    espurnaRegisterReload(_garlandReload);
+
+    pixels.begin();
+    scene.setAnim(_currentAnim);
+    scene.setPalette(_currentPalette);
+    scene.setup();
+
+    _currentDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+}
 
 #endif  // GARLAND_SUPPORT

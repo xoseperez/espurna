@@ -29,9 +29,6 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #include "animations/anim_start.h"
 #include "animations/anim_waves.h"
 
-class Adafruit_NeoPixel;
-class Palette;
-
 class Scene {
 public:
     Scene(Adafruit_NeoPixel* pixels);

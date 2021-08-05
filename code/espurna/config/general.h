@@ -251,8 +251,8 @@
 #define GARLAND_SUPPORT             0
 #endif
 
-#ifndef GARLAND_D_PIN
-#define GARLAND_D_PIN               4           // WS2812 pin number (default: D2 / GPIO4)
+#ifndef GARLAND_DATA_PIN
+#define GARLAND_DATA_PIN            4           // WS2812 data pin (default: D2 / GPIO4)
 #endif
 
 #ifndef GARLAND_LEDS
