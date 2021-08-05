@@ -1016,10 +1016,9 @@ using Error = std::function<void(wifi::ScanError)>;
 struct Task {
     Task() = delete;
 
-    template <typename S, typename E>
-    Task(S&& success, E&& error) :
-        _success(std::forward<S>(success)),
-        _error(std::forward<E>(error))
+    Task(Success&& success, Error&& error) :
+        _success(std::move(success)),
+        _error(std::move(error))
     {}
 
     void success(bss_info* info) {
