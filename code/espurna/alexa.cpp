@@ -139,9 +139,7 @@ void _alexaUpdateLights() {
     }
 }
 
-#endif
-
-#if RELAY_SUPPORT
+#elif RELAY_SUPPORT
 
 void _alexaUpdateRelay(size_t id, bool status) {
     _alexa.setState(id, status, status ? 255 : 0);
@@ -243,7 +241,7 @@ void alexaSetup() {
     // Register main callbacks
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     lightSetReportListener(_alexaUpdateLights);
-#else
+#elif RELAY_SUPPORT
     relaySetStatusChange(_alexaUpdateRelay);
 #endif
 
