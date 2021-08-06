@@ -128,6 +128,7 @@ def parse_args():
     parser.add_argument(
         "--single-source",
         help="Combine .cpp files into one to speed up compilation",
+        action="store_true",
         default=True,
     )
     parser.add_argument(

@@ -1,0 +1,111 @@
+# TODO: declare as action so this becomes `uses: blah/espurna-release`?
+# ref. https://github.com/mcspr/espurna-nightly-builder/blob/builder/.github/workflows/nightly.yml
+# instead of revision + current date, use tag value as full version of the binary
+
+name: Release
+
+on:
+  push:
+    branches-ignore: '**'
+    tags: '**'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.result.outputs.version }}
+    steps:
+      - name: Prepare release workflow
+        id: result
+        run: |
+          version=${GITHUB_REF/refs\/tags\//}
+          echo "::set-output name=version::"$version
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-20.04
+    env:
+      ESPURNA_PIO_SHARED_LIBRARIES: "1"
+    strategy:
+      matrix:
+        thread: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: espurna
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Cache Node
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('espurna/code/package-lock.json', 'espurna/code/package.json') }}
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v2
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('espurna/code/platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: |
+          pip install -U platformio
+          pio upgrade --dev
+
+      - name: Build
+        run: |
+          git config --global advice.detachedHead false
+          pushd espurna/code
+          npm ci
+          node node_modules/gulp/bin/gulp.js
+          # each "thread" only builds every Nth environment
+          # numbers are hard-coded above (...until there's a better idea for doing this)
+          ./scripts/generate_release_sh.py \
+              --ignore secure-client \
+              --destination ${GITHUB_WORKSPACE}/binaries \
+              --builder-thread ${{ matrix.thread }} \
+              --builder-total-threads 4 \
+              --full-version ${{ needs.prepare.outputs.version }} \
+              >> release.sh
+          bash release.sh
+          popd
+
+      - name: Archive
+        run: |
+          pushd binaries
+          zip -j -q -r ../Binaries_${{ matrix.thread }}.zip ./
+          popd
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Binaries
+          path: Binaries_${{ matrix.thread }}.zip
+
+  upload:
+    needs: [prepare, build]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - uses: actions/download-artifact@v2
+        with:
+          path: artifacts/
+
+      - name: Unpack
+        run: unzip -d binaries "artifacts/Binaries/*.zip"
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "binaries/*.bin"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: https://github.com/xoseperez/espurna/blob/${{ needs.prepare.outputs.version }}/CHANGELOG.md
+          draft: true
