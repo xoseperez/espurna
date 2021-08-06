@@ -4,6 +4,179 @@
 
 #pragma once
 
+// **NOTICE** that erasing settings storage will restore to these values.
+// make sure these are set to some sane defaults that won't break anything
+
+// -----------------------------------------------------------------------------
+// WiFi
+// -----------------------------------------------------------------------------
+
+// (required) SSID must be set for network to be considered enabled.
+// (optional) PASS with some value will require the network to use WPA (or better) authentication, otherwise it must be an OPEN network.
+// (optional) IP, GW, MASK and DNS must all be defined for static configuration to be applied.
+// (optional) BSSID and CHANNEL are only used when WIFI_SCAN_NETWORKS is disabled.
+
+#ifndef WIFI1_SSID
+#define WIFI1_SSID                  ""
+#endif
+
+#ifndef WIFI1_PASS
+#define WIFI1_PASS                  ""
+#endif
+
+#ifndef WIFI1_IP
+#define WIFI1_IP                    ""
+#endif
+
+#ifndef WIFI1_GW
+#define WIFI1_GW                    ""
+#endif
+
+#ifndef WIFI1_MASK
+#define WIFI1_MASK                  ""
+#endif
+
+#ifndef WIFI1_DNS
+#define WIFI1_DNS                   ""
+#endif
+
+#ifndef WIFI1_BSSID
+#define WIFI1_BSSID                 ""
+#endif
+
+#ifndef WIFI1_CHANNEL
+#define WIFI1_CHANNEL               0
+#endif
+
+#ifndef WIFI2_SSID
+#define WIFI2_SSID                  ""
+#endif
+
+#ifndef WIFI2_PASS
+#define WIFI2_PASS                  ""
+#endif
+
+#ifndef WIFI2_IP
+#define WIFI2_IP                    ""
+#endif
+
+#ifndef WIFI2_GW
+#define WIFI2_GW                    ""
+#endif
+
+#ifndef WIFI2_MASK
+#define WIFI2_MASK                  ""
+#endif
+
+#ifndef WIFI2_DNS
+#define WIFI2_DNS                   ""
+#endif
+
+#ifndef WIFI2_BSSID
+#define WIFI2_BSSID                 ""
+#endif
+
+#ifndef WIFI2_CHANNEL
+#define WIFI2_CHANNEL               0
+#endif
+
+#ifndef WIFI3_SSID
+#define WIFI3_SSID                  ""
+#endif
+
+#ifndef WIFI3_PASS
+#define WIFI3_PASS                  ""
+#endif
+
+#ifndef WIFI3_IP
+#define WIFI3_IP                    ""
+#endif
+
+#ifndef WIFI3_GW
+#define WIFI3_GW                    ""
+#endif
+
+#ifndef WIFI3_MASK
+#define WIFI3_MASK                  ""
+#endif
+
+#ifndef WIFI3_DNS
+#define WIFI3_DNS                   ""
+#endif
+
+#ifndef WIFI3_BSSID
+#define WIFI3_BSSID                 ""
+#endif
+
+#ifndef WIFI3_CHANNEL
+#define WIFI3_CHANNEL               0
+#endif
+
+#ifndef WIFI4_SSID
+#define WIFI4_SSID                  ""
+#endif
+
+#ifndef WIFI4_PASS
+#define WIFI4_PASS                  ""
+#endif
+
+#ifndef WIFI4_IP
+#define WIFI4_IP                    ""
+#endif
+
+#ifndef WIFI4_GW
+#define WIFI4_GW                    ""
+#endif
+
+#ifndef WIFI4_MASK
+#define WIFI4_MASK                  ""
+#endif
+
+#ifndef WIFI4_DNS
+#define WIFI4_DNS                   ""
+#endif
+
+#ifndef WIFI4_BSSID
+#define WIFI4_BSSID                 ""
+#endif
+
+#ifndef WIFI4_CHANNEL
+#define WIFI4_CHANNEL               0
+#endif
+
+#ifndef WIFI5_SSID
+#define WIFI5_SSID                  ""
+#endif
+
+#ifndef WIFI5_PASS
+#define WIFI5_PASS                  ""
+#endif
+
+#ifndef WIFI5_IP
+#define WIFI5_IP                    ""
+#endif
+
+#ifndef WIFI5_GW
+#define WIFI5_GW                    ""
+#endif
+
+#ifndef WIFI5_MASK
+#define WIFI5_MASK                  ""
+#endif
+
+#ifndef WIFI5_DNS
+#define WIFI5_DNS                   ""
+#endif
+
+#ifndef WIFI5_BSSID
+#define WIFI5_BSSID                 ""
+#endif
+
+#ifndef WIFI5_CHANNEL
+#define WIFI5_CHANNEL               0
+#endif
+
+
 // -----------------------------------------------------------------------------
 // Buttons
 // -----------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Do not change this file unless you know what you are doing
 // To override user configuration, please see custom.h
 //------------------------------------------------------------------------------
@@ -589,7 +589,7 @@
 #endif
 
 #ifndef WIFI_AP_CHANNEL
-#define WIFI_AP_CHANNEL             1
+#define WIFI_AP_CHANNEL             1                      // Which WiFi channel to use for softAP.
 #endif
 
 #ifndef WIFI_SLEEP_MODE
@@ -598,6 +598,7 @@
 
 #ifndef WIFI_SCAN_NETWORKS
 #define WIFI_SCAN_NETWORKS              1                  // Perform a network scan before connecting and when RSSI threshold is reached
+                                                           // Configured networks are used in order.
 #endif
 
 #ifndef WIFI_SCAN_RSSI_THRESHOLD
@@ -611,169 +612,6 @@
 
 #ifndef WIFI_SCAN_RSSI_CHECK_INTERVAL
 #define WIFI_SCAN_RSSI_CHECK_INTERVAL   60000              // Time (ms) between RSSI checks
-#endif
-
-// Optional hardcoded configuration
-// NOTICE that these values become factory-defaults
-
-#ifndef WIFI1_SSID
-#define WIFI1_SSID                  ""
-#endif
-
-#ifndef WIFI1_PASS
-#define WIFI1_PASS                  ""
-#endif
-
-#ifndef WIFI1_IP
-#define WIFI1_IP                    ""
-#endif
-
-#ifndef WIFI1_GW
-#define WIFI1_GW                    ""
-#endif
-
-#ifndef WIFI1_MASK
-#define WIFI1_MASK                  ""
-#endif
-
-#ifndef WIFI1_DNS
-#define WIFI1_DNS                   ""
-#endif
-
-#ifndef WIFI1_BSSID
-#define WIFI1_BSSID                 ""
-#endif
-
-#ifndef WIFI1_CHANNEL
-#define WIFI1_CHANNEL               0
-#endif
-
-#ifndef WIFI2_SSID
-#define WIFI2_SSID                  ""
-#endif
-
-#ifndef WIFI2_PASS
-#define WIFI2_PASS                  ""
-#endif
-
-#ifndef WIFI2_IP
-#define WIFI2_IP                    ""
-#endif
-
-#ifndef WIFI2_GW
-#define WIFI2_GW                    ""
-#endif
-
-#ifndef WIFI2_MASK
-#define WIFI2_MASK                  ""
-#endif
-
-#ifndef WIFI2_DNS
-#define WIFI2_DNS                   ""
-#endif
-
-#ifndef WIFI2_BSSID
-#define WIFI2_BSSID                 ""
-#endif
-
-#ifndef WIFI2_CHANNEL
-#define WIFI2_CHANNEL               0
-#endif
-
-#ifndef WIFI3_SSID
-#define WIFI3_SSID                  ""
-#endif
-
-#ifndef WIFI3_PASS
-#define WIFI3_PASS                  ""
-#endif
-
-#ifndef WIFI3_IP
-#define WIFI3_IP                    ""
-#endif
-
-#ifndef WIFI3_GW
-#define WIFI3_GW                    ""
-#endif
-
-#ifndef WIFI3_MASK
-#define WIFI3_MASK                  ""
-#endif
-
-#ifndef WIFI3_DNS
-#define WIFI3_DNS                   ""
-#endif
-
-#ifndef WIFI3_BSSID
-#define WIFI3_BSSID                 ""
-#endif
-
-#ifndef WIFI3_CHANNEL
-#define WIFI3_CHANNEL               0
-#endif
-
-#ifndef WIFI4_SSID
-#define WIFI4_SSID                  ""
-#endif
-
-#ifndef WIFI4_PASS
-#define WIFI4_PASS                  ""
-#endif
-
-#ifndef WIFI4_IP
-#define WIFI4_IP                    ""
-#endif
-
-#ifndef WIFI4_GW
-#define WIFI4_GW                    ""
-#endif
-
-#ifndef WIFI4_MASK
-#define WIFI4_MASK                  ""
-#endif
-
-#ifndef WIFI4_DNS
-#define WIFI4_DNS                   ""
-#endif
-
-#ifndef WIFI4_BSSID
-#define WIFI4_BSSID                 ""
-#endif
-
-#ifndef WIFI4_CHANNEL
-#define WIFI4_CHANNEL               0
-#endif
-
-#ifndef WIFI5_SSID
-#define WIFI5_SSID                  ""
-#endif
-
-#ifndef WIFI5_PASS
-#define WIFI5_PASS                  ""
-#endif
-
-#ifndef WIFI5_IP
-#define WIFI5_IP                    ""
-#endif
-
-#ifndef WIFI5_GW
-#define WIFI5_GW                    ""
-#endif
-
-#ifndef WIFI5_MASK
-#define WIFI5_MASK                  ""
-#endif
-
-#ifndef WIFI5_DNS
-#define WIFI5_DNS                   ""
-#endif
-
-#ifndef WIFI5_BSSID
-#define WIFI5_BSSID                 ""
-#endif
-
-#ifndef WIFI5_CHANNEL
-#define WIFI5_CHANNEL               0
 #endif
 
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
@@ -1294,7 +1132,7 @@
 // 5 channels => RGBWW
 
 #ifndef LIGHT_PROVIDER
-#define LIGHT_PROVIDER LIGHT_PROVIDER_NONE
+#define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif
 
 #ifndef LIGHT_REPORT_DELAY
@@ -1538,11 +1376,16 @@
 #endif // ifndef THINGSPEAK_ADDRESS
 
 #ifndef THINGSPEAK_TRIES
-#define THINGSPEAK_TRIES            3               // Number of tries when sending data (minimum 1)
+#define THINGSPEAK_TRIES            3               // Number of attemps to send the data (minimum 1)
 #endif
 
-#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
-#define THINGSPEAK_FIELDS           8               // Number of fields
+#ifndef THINGSPEAK_MIN_INTERVAL
+#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (ms)
+#endif
+
+#ifndef THINGSPEAK_FIELDS
+#define THINGSPEAK_FIELDS           8               // Maximum number of fields that will be prepared
+#endif
 
 // -----------------------------------------------------------------------------
 // SCHEDULER
@@ -1553,7 +1396,7 @@
 #endif
 
 #ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES     10              // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10              // Max schedules allowed
 #endif
 
 #ifndef SCHEDULER_RESTORE_LAST_SCHEDULE
@@ -1589,11 +1432,11 @@
 #endif
 
 #ifndef NTP_SERVER
-#define NTP_SERVER                  "pool.ntp.org"  // Default NTP server
+#define NTP_SERVER                  "pool.ntp.org"  // Default NTP server (string)
 #endif
 
 #ifndef NTP_TIMEZONE
-#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable. Default to UTC from TZ.h (which is PSTR("UTC0"))
+#define NTP_TIMEZONE                TZ_Etc_UTC      // POSIX TZ variable (string). Default to value from, TZ.h which is "UTC0"
                                                     // For the format documentation, see:
                                                     // - https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
                                                     // ESP8266 Core provides human-readable aliases for POSIX format, see:
@@ -1628,24 +1471,20 @@
 #define ALEXA_SUPPORT               1               // Enable Alexa support by default (10.84Kb)
 #endif
 
-// This is default value for the alexaEnabled setting that defines whether
-// this device should be discoberable and respond to Alexa commands.
-// Both ALEXA_SUPPORT and alexaEnabled should be 1 for Alexa support to work.
 #ifndef ALEXA_ENABLED
-#define ALEXA_ENABLED               1
+#define ALEXA_ENABLED               1               // Start Alexa HTTP server by default
 #endif
 
 #ifndef ALEXA_HOSTNAME
-#define ALEXA_HOSTNAME              ""
+#define ALEXA_HOSTNAME              ""              // Alexa device name. When this value is empty, HOSTNAME will be used.
 #endif
-
 
 // -----------------------------------------------------------------------------
 // RF BRIDGE
 // -----------------------------------------------------------------------------
 
 #ifndef RFB_SUPPORT
-#define RFB_SUPPORT                  0
+#define RFB_SUPPORT                  0               // Enable RFBridge support (disabled by default)
 #endif
 
 #ifndef RFB_SEND_REPEATS
