@@ -640,6 +640,14 @@
 #define WIFI1_DNS                   ""
 #endif
 
+#ifndef WIFI1_BSSID
+#define WIFI1_BSSID                 ""
+#endif
+
+#ifndef WIFI1_CHANNEL
+#define WIFI1_CHANNEL               0
+#endif
+
 #ifndef WIFI2_SSID
 #define WIFI2_SSID                  ""
 #endif
@@ -662,6 +670,14 @@
 
 #ifndef WIFI2_DNS
 #define WIFI2_DNS                   ""
+#endif
+
+#ifndef WIFI2_BSSID
+#define WIFI2_BSSID                 ""
+#endif
+
+#ifndef WIFI2_CHANNEL
+#define WIFI2_CHANNEL               0
 #endif
 
 #ifndef WIFI3_SSID
@@ -688,6 +704,14 @@
 #define WIFI3_DNS                   ""
 #endif
 
+#ifndef WIFI3_BSSID
+#define WIFI3_BSSID                 ""
+#endif
+
+#ifndef WIFI3_CHANNEL
+#define WIFI3_CHANNEL               0
+#endif
+
 #ifndef WIFI4_SSID
 #define WIFI4_SSID                  ""
 #endif
@@ -712,6 +736,14 @@
 #define WIFI4_DNS                   ""
 #endif
 
+#ifndef WIFI4_BSSID
+#define WIFI4_BSSID                 ""
+#endif
+
+#ifndef WIFI4_CHANNEL
+#define WIFI4_CHANNEL               0
+#endif
+
 #ifndef WIFI5_SSID
 #define WIFI5_SSID                  ""
 #endif
@@ -734,6 +766,14 @@
 
 #ifndef WIFI5_DNS
 #define WIFI5_DNS                   ""
+#endif
+
+#ifndef WIFI5_BSSID
+#define WIFI5_BSSID                 ""
+#endif
+
+#ifndef WIFI5_CHANNEL
+#define WIFI5_CHANNEL               0
 #endif
 
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp

@@ -45,6 +45,9 @@ extern "C" void netif_set_addr(netif* netif, ip4_addr_t*, ip4_addr_t*, ip4_addr_
 
 namespace wifi {
 namespace {
+
+using Mac = std::array<uint8_t, 6>;
+
 namespace build {
 
 constexpr size_t NetworksMax { WIFI_MAX_NETWORKS };
@@ -211,6 +214,26 @@ const __FlashStringHelper* dns(size_t index) {
     );
 }
 
+const __FlashStringHelper* bssid(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_BSSID) :
+        (index == 1) ? F(WIFI2_BSSID) :
+        (index == 2) ? F(WIFI3_BSSID) :
+        (index == 3) ? F(WIFI4_BSSID) :
+        (index == 4) ? F(WIFI5_BSSID) : nullptr
+    );
+}
+
+constexpr uint8_t channel(size_t index) {
+    return (
+        (index == 0) ? WIFI1_CHANNEL :
+        (index == 1) ? WIFI2_CHANNEL :
+        (index == 2) ? WIFI3_CHANNEL :
+        (index == 3) ? WIFI4_CHANNEL :
+        (index == 4) ? WIFI5_CHANNEL : 0
+    );
+}
+
 } // namespace build
 } // namespace
 } // namespace wifi
@@ -260,6 +283,36 @@ IPAddress convert(const String& value) {
     return out;
 }
 
+template <>
+wifi::Mac convert(const String& value) {
+    wifi::Mac out { 0u, 0u, 0u, 0u, 0u, 0u };
+
+    switch (value.length()) {
+    // xxxxxxxxxx
+    case 12:
+        hexDecode(value.c_str(), value.length(), out.data(), out.size());
+        break;
+
+    // xx:xx:xx:xx:xx:xx
+    case 17: {
+        String buffer;
+        buffer.reserve(value.length());
+
+        for (auto it = value.begin(); it != value.end(); ++it) {
+            if ((*it) != ':') {
+                buffer += *it;
+            }
+        }
+
+        hexDecode(buffer.c_str(), buffer.length(), out.data(), out.size());
+        break;
+    }
+
+    }
+
+    return out;
+}
+
 // XXX: "(IP unset)" when not set, no point saving these :/
 // XXX: both 0.0.0.0 and 255.255.255.255 will be saved as empty string
 
@@ -280,9 +333,6 @@ constexpr uint8_t OpmodeNull { NULL_MODE };
 constexpr uint8_t OpmodeSta { STATION_MODE };
 constexpr uint8_t OpmodeAp { SOFTAP_MODE };
 constexpr uint8_t OpmodeApSta { OpmodeSta | OpmodeAp };
-
-using Mac = std::array<uint8_t, 6>;
-using Macs = std::vector<Mac>;
 
 enum class ScanError {
     None,
@@ -586,6 +636,15 @@ IPAddress staDns(size_t index) {
         getSetting({"dns", index}, wifi::build::dns(index)));
 }
 
+wifi::Mac staBssid(size_t index) {
+    return ::settings::internal::convert<wifi::Mac>(
+        getSetting({"bssid", index}, wifi::build::bssid(index)));
+}
+
+int8_t staChannel(size_t index) {
+    return getSetting({"chan", index}, wifi::build::channel(index));
+}
+
 bool softApCaptive() {
     return getSetting("wifiApCaptive", wifi::build::softApCaptive());
 }
@@ -610,7 +669,7 @@ String softApPassphrase() {
         : getAdminPass());
 }
 
-int8_t softApChannel() {
+uint8_t softApChannel() {
     return getSetting("wifiApChannel", wifi::build::softApChannel());
 }
 
@@ -1827,19 +1886,20 @@ wifi::Networks networks() {
         }
 
         auto pass = wifi::settings::staPassphrase(id);
+
         auto ip = staIp(id);
-        if (ip.isSet()) {
-            out.emplace_back(std::move(ssid), std::move(pass),
-                wifi::IpSettings{std::move(ip), staMask(id), staGateway(id), staDns(id)});
+        auto ipSettings = ip.isSet()
+            ? wifi::IpSettings{std::move(ip), staMask(id), staGateway(id), staDns(id)}
+            : wifi::IpSettings{};
+
+        Network network(std::move(ssid), staPassphrase(id), std::move(ipSettings));
+        auto channel = staChannel(id);
+        if (channel) {
+            out.emplace_back(std::move(network), staBssid(id), channel);
         } else {
-            out.emplace_back(std::move(ssid), std::move(pass));
+            out.push_back(std::move(network));
         }
     }
-
-    auto duplicates = std::unique(out.begin(), out.end(), [](const wifi::Network& lhs, const wifi::Network& rhs) {
-        return lhs.ssid() == rhs.ssid();
-    });
-    out.erase(duplicates, out.end());
 
     return out;
 }
@@ -2036,6 +2096,8 @@ bool onKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "gw", 2) == 0) return true;
     if (strncmp(key, "mask", 4) == 0) return true;
     if (strncmp(key, "dns", 3) == 0) return true;
+    if (strncmp(key, "bssid", 5) == 0) return true;
+    if (strncmp(key, "chan", 4) == 0) return true;
     return false;
 }
 
