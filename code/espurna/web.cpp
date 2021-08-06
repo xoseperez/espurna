@@ -30,6 +30,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_EMBEDDED
 
+namespace {
+
 #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
     #include "static/index.small.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
@@ -52,13 +54,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     #include "static/index.all.html.gz.h"
 #endif
 
+} // namespace
+
 #endif // WEB_EMBEDDED
 
 #if WEB_SSL_ENABLED
 #include "static/server.cer.h"
 #include "static/server.key.h"
 #endif // WEB_SSL_ENABLED
-
 
 AsyncWebPrint::AsyncWebPrint(const AsyncWebPrintConfig& config, AsyncWebServerRequest* request) :
     mimeType(config.mimeType),
@@ -206,6 +209,8 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
 
 // -----------------------------------------------------------------------------
 
+namespace {
+
 AsyncWebServer* _server;
 char _last_modified[50];
 std::vector<uint8_t> * _webConfigBuffer;
@@ -216,9 +221,13 @@ std::vector<web_body_callback_f> _web_body_callbacks;
 
 constexpr unsigned long WebConfigBufferMax { 4096ul };
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // HOOKS
 // -----------------------------------------------------------------------------
+
+namespace {
 
 void _webRequestAuth(AsyncWebServerRequest* request) {
     request->requestAuthentication(getSetting("hostname", getIdentifier()).c_str(), true);
@@ -546,6 +555,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 }
 
+} // namespace
 
 // -----------------------------------------------------------------------------
 

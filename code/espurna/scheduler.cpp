@@ -23,6 +23,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 namespace scheduler {
+namespace {
 namespace build {
 
 constexpr size_t max() {
@@ -572,6 +573,7 @@ void check(time_t timestamp, const Schedules& schedules) {
     }
 }
 
+} // namespace
 } // namespace scheduler
 
 // -----------------------------------------------------------------------------

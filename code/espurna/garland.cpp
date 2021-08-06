@@ -50,6 +50,7 @@ Infinite commands can be interrupted by immediate command or by reset command.
 #include <Adafruit_NeoPixel.h>
 
 #include <array>
+#include <list>
 #include <memory>
 #include <vector>
 

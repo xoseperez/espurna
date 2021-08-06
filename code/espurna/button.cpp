@@ -168,6 +168,8 @@ ButtonAction convert(const String& value) {
 
 // -----------------------------------------------------------------------------
 
+namespace {
+
 constexpr ButtonAction _buttonDecodeEventAction(const ButtonActions& actions, ButtonEvent event) {
     return (
         (event == ButtonEvent::Pressed) ? actions.pressed :
@@ -193,18 +195,6 @@ constexpr ButtonEvent _buttonMapReleased(uint8_t count, unsigned long length, un
     );
 }
 
-ButtonActions _buttonConstructActions(size_t index) {
-    return {
-        button::build::press(index),
-        button::build::release(index),
-        button::build::click(index),
-        button::build::doubleClick(index),
-        button::build::longClick(index),
-        button::build::longLongClick(index),
-        button::build::tripleClick(index)
-    };
-}
-
 debounce_event::types::Config _buttonRuntimeConfig(size_t index) {
     return {
         getSetting({"btnMode", index}, button::build::mode(index)),
@@ -213,9 +203,7 @@ debounce_event::types::Config _buttonRuntimeConfig(size_t index) {
     };
 }
 
-int _buttonEventNumber(ButtonEvent event) {
-    return static_cast<int>(event);
-}
+} // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -265,7 +253,7 @@ ButtonEvent button_t::loop() {
     return ButtonEvent::None;
 }
 
-std::vector<button_t> _buttons;
+static std::vector<button_t> _buttons;
 
 // -----------------------------------------------------------------------------
 
@@ -274,6 +262,8 @@ size_t buttonCount() {
 }
 
 #if MQTT_SUPPORT
+
+namespace {
 
 std::bitset<ButtonsMax> _buttons_mqtt_send_all(
     button::build::mqttSendAllEvents()
@@ -286,11 +276,15 @@ std::bitset<ButtonsMax> _buttons_mqtt_retain(
     : std::numeric_limits<unsigned long>::min()
 );
 
+} // namespace
+
 #endif
 
 // -----------------------------------------------------------------------------
 
 #if RELAY_SUPPORT
+
+namespace {
 
 std::vector<unsigned char> _button_relays;
 
@@ -323,6 +317,8 @@ void _buttonRelayAction(size_t id, ButtonAction action) {
     }
 }
 
+} // namespace
+
 #endif // RELAY_SUPPORT
 
 // -----------------------------------------------------------------------------
@@ -353,13 +349,13 @@ bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
 
 //------------------------------------------------------------------------------
 
-ButtonEventHandler _button_custom_action { nullptr };
+static ButtonEventHandler _button_custom_action { nullptr };
 
 void buttonSetCustomAction(ButtonEventHandler handler) {
     _button_custom_action = handler;
 }
 
-std::forward_list<ButtonEventHandler> _button_notify_event;
+static std::forward_list<ButtonEventHandler> _button_notify_event;
 
 void buttonOnEvent(ButtonEventHandler handler) {
     _button_notify_event.push_front(handler);
@@ -373,9 +369,13 @@ ButtonAction buttonAction(size_t id, ButtonEvent event) {
         : ButtonAction::None;
 }
 
+namespace {
+
 // Note that we don't directly return F(...), but use a temporary to assign it conditionally
 // (ref. https://github.com/esp8266/Arduino/pull/6950 "PROGMEM footprint cleanup for responseCodeToString")
 // In this particular case, saves 76 bytes (120 vs 44)
+
+#if DEBUG_SUPPORT || MQTT_SUPPORT
 
 String _buttonEventString(ButtonEvent event) {
     const __FlashStringHelper* ptr = nullptr;
@@ -408,10 +408,14 @@ String _buttonEventString(ButtonEvent event) {
     return String(ptr);
 }
 
+#endif
+
+} // namespace
+
 void buttonEvent(size_t id, ButtonEvent event) {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %d (%s)\n"),
-        id, _buttonEventNumber(event), _buttonEventString(event).c_str()
+        id, static_cast<int>(event), _buttonEventString(event).c_str()
     );
 
     if (event == ButtonEvent::None) {
@@ -511,6 +515,8 @@ void buttonEvent(size_t id, ButtonEvent event) {
 
 }
 
+namespace {
+
 void _buttonConfigure() {
     auto buttons = _buttons.size();
 
@@ -556,6 +562,8 @@ unsigned long _buttonGetDelay(const char* key, size_t index, unsigned long defau
     return result;
 }
 
+} // namespace
+
 void buttonLoop() {
     for (size_t id = 0; id < _buttons.size(); ++id) {
         auto event = _buttons[id].loop();
@@ -572,6 +580,8 @@ void buttonLoop() {
 // - https://github.com/dxinteractive/AnalogMultiButton
 
 #if BUTTON_PROVIDER_ANALOG_SUPPORT
+
+namespace {
 
 class AnalogPin final : public BasePin {
 public:
@@ -696,7 +706,11 @@ private:
 
 std::vector<AnalogPin*> AnalogPin::pins;
 
+} // namespace
+
 #endif // BUTTON_PROVIDER_ANALOG_SUPPORT
+
+namespace {
 
 BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
     BasePinPtr result;
@@ -801,6 +815,8 @@ void _buttonSettingsMigrate(int version) {
         moveSetting("btnDelay", "btnRepDel");
     }
 }
+
+} // namespace
 
 bool buttonAdd() {
     const size_t index { buttonCount() };

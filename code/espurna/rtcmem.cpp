@@ -10,6 +10,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RTCMEM_ADDR);
 
+namespace {
+
 bool _rtcmem_status = false;
 
 void _rtcmemErase() {
@@ -90,6 +92,8 @@ void _rtcmemInitCommands() {
 }
 
 #endif
+
+} // namespace
 
 bool rtcmemStatus() {
     return _rtcmem_status;

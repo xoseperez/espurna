@@ -23,6 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "espurna.h"
 #include "main.h"
 
+// -----------------------------------------------------------------------------
+// GENERAL CALLBACKS
+// -----------------------------------------------------------------------------
+
+namespace {
+
 std::vector<LoopCallback> _loop_callbacks;
 std::vector<LoopCallback> _reload_callbacks;
 
@@ -32,9 +38,7 @@ unsigned long _loop_delay = 0;
 constexpr unsigned long LoopDelayMin { 10ul };
 constexpr unsigned long LoopDelayMax { 300ul };
 
-// -----------------------------------------------------------------------------
-// GENERAL CALLBACKS
-// -----------------------------------------------------------------------------
+} // namespace
 
 void espurnaRegisterLoop(LoopCallback callback) {
     _loop_callbacks.push_back(callback);
@@ -48,12 +52,6 @@ void espurnaReload() {
     _reload_config = true;
 }
 
-void _espurnaReload() {
-    for (const auto& callback : _reload_callbacks) {
-        callback();
-    }
-}
-
 unsigned long espurnaLoopDelay() {
     return _loop_delay;
 }
@@ -62,9 +60,19 @@ void espurnaLoopDelay(unsigned long loop_delay) {
     _loop_delay = loop_delay;
 }
 
+namespace {
+
 constexpr unsigned long _loopDelay() {
     return LOOP_DELAY_TIME;
 }
+
+void _espurnaReload() {
+    for (const auto& callback : _reload_callbacks) {
+        callback();
+    }
+}
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // BOOTING

@@ -9,12 +9,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
-#include "espurna.h"
-
-//--------------------------------------------------------------------------------
-
 namespace sensor {
-
 namespace type {
 
 static constexpr unsigned char Base { 0 };
@@ -132,7 +127,9 @@ struct Value {
     unsigned char decimals;
 };
 
-}
+} // namespace sensor
+
+//--------------------------------------------------------------------------------
 
 using MagnitudeReadHandler = void(*)(const String&, unsigned char, double, const char*);
 void sensorOnMagnitudeRead(MagnitudeReadHandler handler);
@@ -162,4 +159,3 @@ void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix);
 unsigned char sensorCount();
 void sensorSetup();
 void sensorLoop();
-

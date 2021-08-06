@@ -140,8 +140,6 @@ constexpr size_t _terminalBufferSize() {
     return TERMINAL_SHARED_BUFFER_SIZE;
 }
 
-namespace {
-
 using Io = TerminalIO<_terminalBufferSize()>;
 
 Io _io;
@@ -152,11 +150,9 @@ terminal::Terminal _terminal(_io, Io::capacity());
 
 constexpr size_t SerialRxBufferSize { 128u };
 char _serial_rx_buffer[SerialRxBufferSize];
-static unsigned char _serial_rx_pointer = 0;
+unsigned char _serial_rx_pointer = 0;
 
 #endif // SERIAL_RX_ENABLED
-
-} // namespace
 
 // -----------------------------------------------------------------------------
 // Commands
@@ -347,7 +343,6 @@ private:
     uint32_t _current;
     uint32_t _sectors;
 };
-
 
 void _terminalInitCommands() {
 

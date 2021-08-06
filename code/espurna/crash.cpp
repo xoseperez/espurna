@@ -26,7 +26,7 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 constexpr uint32_t EmptyTimestamp { 0xffffffff };
 
-bool _save_crash_enabled = true;
+static bool _save_crash_enabled = true;
 
 size_t crashReservedSize() {
     if (!_save_crash_enabled) return 0;

@@ -37,6 +37,8 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 // -----------------------------------------------------------------------------
 
+namespace {
+
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
     AsyncMqttClient _mqtt;
@@ -114,6 +116,8 @@ String _mqtt_payload_online;
 String _mqtt_payload_offline;
 
 std::forward_list<mqtt_callback_f> _mqtt_callbacks;
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Settings
@@ -326,6 +330,8 @@ uint16_t mfln() {
 // JSON payload
 // -----------------------------------------------------------------------------
 
+namespace {
+
 struct MqttPayload {
     MqttPayload() = delete;
     MqttPayload(const MqttPayload&) = default;
@@ -360,9 +366,13 @@ size_t _mqtt_json_payload_count { 0ul };
 std::forward_list<MqttPayload> _mqtt_json_payload;
 Ticker _mqtt_json_payload_flush;
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // Secure client handlers
 // -----------------------------------------------------------------------------
+
+namespace {
 
 #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
 SecureClientConfig _mqtt_sc_config {
@@ -389,9 +399,13 @@ SecureClientConfig _mqtt_sc_config {
 };
 #endif
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // Client configuration & setup
 // -----------------------------------------------------------------------------
+
+namespace {
 
 // TODO: MQTT standard has some weird rules about session persistance on the broker
 // ref. 3.1.2.4 Clean Session, where we are uniquely identified by the client-id:
@@ -717,9 +731,13 @@ void _mqttInfo() {
 
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
+
+namespace {
 
 #if WEB_SUPPORT
 
@@ -758,9 +776,13 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
 
 #endif
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // SETTINGS
 // -----------------------------------------------------------------------------
+
+namespace {
 
 #if TERMINAL_SUPPORT
 
@@ -781,9 +803,13 @@ void _mqttInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // MQTT Callbacks
 // -----------------------------------------------------------------------------
+
+namespace {
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
@@ -1015,6 +1041,8 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 }
 
 #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -1353,6 +1381,8 @@ void mqttSendStatus() {
 // Initialization
 // -----------------------------------------------------------------------------
 
+namespace {
+
 void _mqttConnect() {
     // Do not connect if already connected or still trying to connect
     if (_mqtt.connected() || (_mqtt_state != AsyncClientState::Disconnected)) return;
@@ -1401,6 +1431,8 @@ void _mqttConnect() {
     #endif
 
 }
+
+} // namespace
 
 void mqttLoop() {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT

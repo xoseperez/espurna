@@ -25,7 +25,7 @@ namespace settings {
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
 // XXX: slightly hacky, because we EEPROMr.length() is 0 before we enter setup() code
-kvs_type kv_store(
+static kvs_type kv_store(
     EepromStorage{},
 #if DEBUG_SUPPORT
     EepromReservedSize + CrashReservedSize,
@@ -475,6 +475,8 @@ void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t 
 
 #if TERMINAL_SUPPORT
 
+namespace {
+
 void _settingsInitCommands() {
     terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext& ctx) {
         // TODO: enough of a buffer?
@@ -578,6 +580,8 @@ void _settingsInitCommands() {
     });
 #endif
 }
+
+} // namespace
 
 #endif
 

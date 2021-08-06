@@ -37,10 +37,12 @@ static_assert(
 // Arduino/esp8266 lwip2 custom functions that can be redefined
 // Must return time in milliseconds, legacy settings are in seconds.
 
-String _ntp_server;
+namespace {
 
 uint32_t _ntp_startup_delay = (NTP_START_DELAY * 1000);
 uint32_t _ntp_update_delay = (NTP_UPDATE_INTERVAL * 1000);
+
+} // namespace
 
 uint32_t sntp_startup_delay_MS_rfc_not_less_than_60000() {
     return _ntp_startup_delay;
@@ -52,6 +54,8 @@ uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
 
 // We also must shim TimeLib functions until everything else is ported.
 // We can't sometimes avoid TimeLib as dependancy though, which would be really bad
+
+namespace {
 
 static bool _ntp_synced = false;
 
@@ -68,6 +72,8 @@ void _ntpTmCache(time_t ts) {
         gmtime_r(&_ntp_ts, &_ntp_tm_utc);
     }
 }
+
+} // namespace
 
 int hour(time_t ts) {
     _ntpTmCache(ts);
@@ -147,6 +153,8 @@ time_t now() {
 
 // -----------------------------------------------------------------------------
 
+namespace {
+
 #if WEB_SUPPORT
 
 bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
@@ -182,6 +190,8 @@ String _ntpGetServer() {
     return server;
 }
 
+} // namespace
+
 NtpInfo ntpInfo() {
     NtpInfo result;
 
@@ -206,6 +216,10 @@ NtpInfo ntpInfo() {
 
     return result;
 }
+
+namespace {
+
+String _ntp_server;
 
 void _ntpReport() {
     if (!ntpSynced()) {
@@ -259,6 +273,8 @@ void _ntpConfigure() {
     }
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 
 bool ntpSynced() {
@@ -294,10 +310,12 @@ String ntpDateTime() {
 
 // -----------------------------------------------------------------------------
 
+namespace {
+
 using NtpTickCallbacks = std::forward_list<NtpTickCallback>;
 NtpTickCallbacks _ntp_tick_callbacks;
 
-static Ticker _ntp_tick;
+Ticker _ntp_tick;
 
 void _ntpTickSchedule(int offset);
 
@@ -368,7 +386,11 @@ void _ntpSetTimestamp(time_t ts) {
     settimeofday(&tv, &tz);
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
+
+namespace {
 
 void _ntpConvertLegacyOffsets() {
     bool save { true };
@@ -420,6 +442,8 @@ void _ntpConvertLegacyOffsets() {
     delSetting("ntpDST");
     delSetting("ntpRegion");
 }
+
+} // namespace
 
 void ntpOnTick(NtpTickCallback callback) {
     _ntp_tick_callbacks.push_front(callback);

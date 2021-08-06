@@ -209,6 +209,8 @@ String serialize(RelayMaskHelper mask) {
 // RELAY CONTROL
 // -----------------------------------------------------------------------------
 
+namespace {
+
 RelayProviderBase* _relayDummyProvider();
 
 struct relay_t {
@@ -286,6 +288,8 @@ String _relay_rpc_payload_toggle;
 
 #endif // MQTT_SUPPORT || API_SUPPORT
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // RELAY PROVIDERS
 // -----------------------------------------------------------------------------
@@ -328,6 +332,8 @@ struct DummyProvider : public RelayProviderBase {
     void change(bool) override {
     }
 };
+
+namespace {
 
 RelayProviderBase* _relayDummyProvider() {
     static DummyProvider provider;
@@ -569,9 +575,13 @@ private:
 
 #endif // RELAY_PROVIDER_STM_SUPPORT
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // UTILITY
 // -----------------------------------------------------------------------------
+
+namespace {
 
 bool _relayTryParseId(const char* p, size_t& id) {
     return tryParseId(p, relayCount, id);
@@ -732,6 +742,8 @@ void _relaySyncUnlock() {
         action();
     }
 }
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // RELAY
@@ -977,6 +989,8 @@ void relaySync(size_t target) {
     _relay_sync_reent = false;
 }
 
+namespace {
+
 RelayMaskHelper _relayMaskCurrent() {
     RelayMaskHelper mask;
     for (size_t id = 0; id < _relays.size(); ++id) {
@@ -984,6 +998,8 @@ RelayMaskHelper _relayMaskCurrent() {
     }
     return mask;
 }
+
+} // namespace
 
 void relaySave(bool persist) {
     // Persist only to rtcmem, unless requested to save to settings
@@ -1042,6 +1058,8 @@ PayloadStatus relayParsePayload(const char * payload) {
     return rpcParsePayload(payload);
 #endif
 }
+
+namespace {
 
 void _relaySettingsMigrate(int version) {
     if (version < 5) {
@@ -1171,11 +1189,15 @@ void _relayConfigure() {
     #endif // MQTT_SUPPORT
 }
 
+} // namespace
+
 //------------------------------------------------------------------------------
 // WEBSOCKETS
 //------------------------------------------------------------------------------
 
 #if WEB_SUPPORT
+
+namespace {
 
 bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "relay", 5) == 0);
@@ -1283,6 +1305,8 @@ void _relayWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
     }
 }
 
+} // namespace
+
 void relaySetupWS() {
     wsRegister()
         .onVisible(_relayWebSocketOnVisible)
@@ -1300,6 +1324,8 @@ void relaySetupWS() {
 
 #if API_SUPPORT
 
+namespace {
+
 template <typename T>
 bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
     auto id_param = request.wildcard(0);
@@ -1310,6 +1336,8 @@ bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
 
     return callback(id);
 }
+
+} // namespace
 
 void relaySetupAPI() {
 
@@ -1574,8 +1602,6 @@ void _relayMqttPublishCustomTopic(size_t id) {
     mqttSendRaw(topic.c_str(), relayPayload(status));
 }
 
-} // namespace
-
 void _relayMqttReport(size_t id) {
     if (_relays[id].report) {
         _relays[id].report = false;
@@ -1593,6 +1619,8 @@ void _relayMqttReportAll() {
         mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
     }
 }
+
+} // namespace
 
 void relayStatusWrap(size_t id, PayloadStatus value, bool is_group_topic) {
     #if MQTT_SUPPORT
@@ -1617,6 +1645,8 @@ void relayStatusWrap(size_t id, PayloadStatus value, bool is_group_topic) {
             break;
     }
 }
+
+namespace {
 
 bool _relayMqttHeartbeat(heartbeat::Mask mask) {
     if (mask & heartbeat::Report::Relay)
@@ -1658,6 +1688,8 @@ void _relayMqttHandleDisconnect() {
         }
     });
 }
+
+} // namespace
 
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -1735,6 +1767,8 @@ void relaySetupMQTT() {
 
 #if TERMINAL_SUPPORT
 
+namespace {
+
 void _relayInitCommands() {
 
     terminalRegisterCommand(F("RELAY"), [](const terminal::CommandContext& ctx) {
@@ -1803,9 +1837,13 @@ void _relayInitCommands() {
 
 }
 
+} // namespace
+
 #endif // TERMINAL_SUPPORT
 
 //------------------------------------------------------------------------------
+
+namespace {
 
 void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]]) {
     for (auto& change : _relay_status_change) {
@@ -1875,9 +1913,13 @@ void _relayProcess(bool mode) {
     }
 }
 
+} // namespace
+
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
+
+namespace {
 
 void _relayLoop() {
     _relayProcess(false);
@@ -1889,6 +1931,8 @@ void _relayLoop() {
     }
 #endif
 }
+
+} // namespace
 
 // Dummy relays for virtual light switches (hardware-less), Sonoff Dual, Sonoff RF Bridge and Tuya
 
@@ -1909,6 +1953,8 @@ void relaySetupDummy(size_t size, bool reconfigure) {
         _relayConfigure();
     }
 }
+
+namespace {
 
 constexpr size_t _relayAdhocPins() {
     return 0
@@ -2015,6 +2061,8 @@ void _relaySetup() {
 
     relaySetupDummy(getSetting("relayDummy", relay::build::dummyCount()));
 }
+
+} // namespace
 
 void relaySetup() {
     migrateVersion(_relaySettingsMigrate);

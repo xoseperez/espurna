@@ -21,6 +21,8 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "led_pattern.h"
 #include "led_config.h"
 
+namespace {
+
 struct Led {
     Led() = delete;
     Led(unsigned char pin, bool inverse, LedMode mode) :
@@ -121,6 +123,8 @@ enum class LedDelayName : int {
 std::vector<Led> _leds;
 bool _led_update { false };
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 
 namespace settings {
@@ -166,6 +170,7 @@ LedMode convert(const String& value) {
 // -----------------------------------------------------------------------------
 
 namespace led {
+namespace {
 namespace settings {
 
 unsigned char pin(size_t id) {
@@ -189,7 +194,10 @@ LedPattern pattern(size_t id) {
 }
 
 } // namespace settings
+} // namespace
 } // namespace led
+
+namespace {
 
 bool _ledStatus(Led& led) {
     return led.started() || led.status();
@@ -219,14 +227,13 @@ bool _ledStatus(Led& led, bool status) {
     return result;
 }
 
+[[gnu::unused]]
 void _ledPattern(Led& led, LedPattern&& pattern) {
     led.pattern(std::move(pattern));
     _ledStatus(led, true);
 }
 
-bool _ledToggle(Led& led) {
-    return _ledStatus(led, !_ledStatus(led));
-}
+} // namespace
 
 bool ledStatus(size_t id, bool status) {
     if (id < ledCount()) {
@@ -243,6 +250,8 @@ bool ledStatus(size_t id) {
 
     return false;
 }
+
+namespace {
 
 const LedDelay& _ledDelayFromName(LedDelayName name) {
     switch (name) {
@@ -300,7 +309,11 @@ inline void _ledBlink(Led& led, LedDelayName name) {
     _ledBlink(led, _ledDelayFromName(name));
 }
 
+} // namespace
+
 #if WEB_SUPPORT
+
+namespace {
 
 bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "led", 3) == 0);
@@ -346,9 +359,14 @@ void _ledWebSocketOnConnected(JsonObject& root) {
     }
 }
 
-#endif
+} // namespace
+
+#endif // WEB_SUPPORT
+
+namespace {
 
 #if MQTT_SUPPORT
+
 void _ledMQTTCallback(unsigned int type, const char* topic, const char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         char buffer[strlen(MQTT_TOPIC_LED) + 3];
@@ -382,7 +400,7 @@ void _ledMQTTCallback(unsigned int type, const char* topic, const char* payload)
             _ledStatus(led, (value == PayloadStatus::On));
             return;
         case PayloadStatus::Toggle:
-            _ledToggle(led);
+            _ledStatus(led, !_ledStatus(led));
             return;
         case PayloadStatus::Unknown:
             _ledPattern(led, _ledLoadPattern(payload));
@@ -391,7 +409,7 @@ void _ledMQTTCallback(unsigned int type, const char* topic, const char* payload)
     }
 }
 
-#endif
+#endif // MQTT_SUPPORT
 
 #if RELAY_SUPPORT
 std::vector<size_t> _led_relays;
@@ -407,6 +425,18 @@ void _ledConfigure() {
     }
     _led_update = true;
 }
+
+void _ledSettingsMigrate(int version) {
+    if (version < 5) {
+        delSettingPrefix({
+            "ledGPIO",
+            "ledGpio",
+            "ledLogic"
+        });
+    }
+}
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -537,16 +567,6 @@ void ledLoop() {
 
 }
 
-void _ledSettingsMigrate(int version) {
-    if (version < 5) {
-        delSettingPrefix({
-            "ledGPIO",
-            "ledGpio",
-            "ledLogic"
-        });
-    }
-}
-
 void ledSetup() {
     migrateVersion(_ledSettingsMigrate);
     _leds.reserve(led::build::preconfiguredLeds());
@@ -592,6 +612,5 @@ void ledSetup() {
         _ledConfigure();
     }
 }
-
 
 #endif // LED_SUPPORT

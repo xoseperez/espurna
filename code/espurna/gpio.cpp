@@ -155,6 +155,8 @@ BasePinPtr gpioRegister(unsigned char gpio) {
 
 #if WEB_SUPPORT
 
+namespace {
+
 void _gpioWebSocketOnVisible(JsonObject& root) {
     JsonObject& config = root.createNestedObject("gpioConfig");
 
@@ -184,7 +186,9 @@ void _gpioWebSocketOnVisible(JsonObject& root) {
     }
 }
 
-#endif
+} // namespace
+
+#endif // WEB_SUPPORT
 
 void gpioSetup() {
 #if WEB_SUPPORT

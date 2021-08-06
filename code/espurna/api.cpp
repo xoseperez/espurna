@@ -234,6 +234,8 @@ size_t ApiRequest::wildcards() const {
 
 #if API_SUPPORT
 
+namespace {
+
 bool _apiAccepts(AsyncWebServerRequest* request, const __FlashStringHelper* str) {
     auto* header = request->getHeader(F("Accept"));
     if (header) {
@@ -658,10 +660,6 @@ private:
     ApiBasicHandler _put;
 };
 
-// -----------------------------------------------------------------------------
-
-namespace {
-
 std::forward_list<ApiBaseWebHandler*> _apis;
 
 template <typename Handler, typename Callback>
@@ -673,6 +671,8 @@ void _apiRegister(const String& path, Callback&& get, Callback&& put) {
 }
 
 } // namespace
+
+// -----------------------------------------------------------------------------
 
 void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put) {
     _apiRegister<ApiBasicWebHandler>(path, std::move(get), std::move(put));
@@ -718,4 +718,3 @@ bool apiError(ApiRequest& request) {
 }
 
 #endif // API_SUPPORT
-

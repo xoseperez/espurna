@@ -21,11 +21,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/WebSocketIncommingBuffer.h"
 
-AsyncWebSocket _ws("/ws");
-
 // -----------------------------------------------------------------------------
 // Periodic updates
 // -----------------------------------------------------------------------------
+
+namespace {
 
 uint32_t _ws_last_update = 0;
 
@@ -73,12 +73,19 @@ void _wsDoUpdate(const bool connected) {
     }
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // WS callbacks
 // -----------------------------------------------------------------------------
 
+namespace {
+
+AsyncWebSocket _ws("/ws");
 std::queue<WsPostponedCallbacks> _ws_queue;
 ws_callbacks_t _ws_callbacks;
+
+} // namespace
 
 void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb) {
     _ws_queue.emplace(client_id, std::move(cb));
@@ -96,10 +103,14 @@ void wsPost(const ws_on_send_callback_f& cb) {
     wsPost(0, cb);
 }
 
+namespace {
+
 template <typename T>
 void _wsPostCallbacks(uint32_t client_id, T&& cbs, WsPostponedCallbacks::Mode mode) {
     _ws_queue.emplace(client_id, std::forward<T>(cbs), mode);
 }
+
+} // namespace
 
 void wsPostAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
     _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::All);
@@ -164,6 +175,8 @@ ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
 // WS authentication
 // -----------------------------------------------------------------------------
 
+namespace {
+
 constexpr size_t WsMaxClients { WS_MAX_CLIENTS };
 
 WsTicket _ws_tickets[WsMaxClients];
@@ -219,15 +232,21 @@ bool _wsAuth(AsyncWebSocketClient* client) {
     return false;
 }
 
+} // namespace
+
 // -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
 
+
 #if DEBUG_WEB_SUPPORT
 
-constexpr size_t WsDebugMessagesMax = 8;
+namespace {
 
+constexpr size_t WsDebugMessagesMax = 8;
 WsDebug _ws_debug(WsDebugMessagesMax);
+
+} // namespace
 
 void WsDebug::send(bool connected) {
     if (!connected && _flush) {
@@ -266,6 +285,12 @@ bool wsDebugSend(const char* prefix, const char* message) {
 
 #endif
 
+// -----------------------------------------------------------------------------
+// Store indexed key (key0, key1, etc.) from array
+// -----------------------------------------------------------------------------
+
+namespace {
+
 // Check the existing setting before saving it
 // TODO: this should know of the default values, somehow?
 bool _wsStore(const String& key, const String& value) {
@@ -275,10 +300,6 @@ bool _wsStore(const String& key, const String& value) {
 
     return false;
 }
-
-// -----------------------------------------------------------------------------
-// Store indexed key (key0, key1, etc.) from array
-// -----------------------------------------------------------------------------
 
 bool _wsStore(const String& prefix, JsonArray& values) {
     bool changed { false };
@@ -595,11 +616,10 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
 }
 
-// TODO: make this generic loop method to queue important ws messages?
-//       or, if something uses ticker / async ctx to send messages,
-//       it needs a retry mechanism built into the callback object
 void _wsHandlePostponedCallbacks(bool connected) {
-
+    // TODO: make this generic loop method to queue important ws messages?
+    //       or, if something uses ticker / async ctx to send messages,
+    //       it needs a retry mechanism built into the callback object
     if (!connected && !_ws_queue.empty()) {
         _ws_queue.pop();
         return;
@@ -660,6 +680,8 @@ void _wsLoop() {
         _ws_debug.send(connected);
     #endif
 }
+
+} // namespace
 
 // -----------------------------------------------------------------------------
 // Public API
