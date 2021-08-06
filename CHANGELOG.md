@@ -128,7 +128,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - rfbridge operators (`rfb_send`, `rfb_pop`, `rfb_info`, `rfb_sequence`, `rfb_match`, `rfb_match_wait`) and mqtt fixes ([#2302](https://github.com/xoseperez/espurna/issues/2302))
 - system operators `sleep` and `rtcmem` ([#2366](https://github.com/xoseperez/espurna/issues/2366))
 #### Sensors
-- HLW8012: gpio runtime configuration ([#2142](https://github.com/xoseperez/espurna/issues/2142))
+- HLW8012: gpio runtime configuration ([#2142 (initial Pull Request)](https://github.com/xoseperez/espurna/issues/2142), [fa5e4f7d](https://github.com/xoseperez/espurna/commit/fa5e4f7d06db6bde01f3bebf4f2c8151893c97aa))
 - Add SI1145 sensor ([#2216](https://github.com/xoseperez/espurna/issues/2216), thanks to **[@HilverinkJ](https://github.com/HilverinkJ)**)
 - Add HDC1080 sensor ([#2227](https://github.com/xoseperez/espurna/issues/2227), thanks to **[@vtochq](https://github.com/vtochq)**)
 - HLW8012: energy\_delta ([#2230](https://github.com/xoseperez/espurna/issues/2230))
@@ -154,7 +154,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
 - Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
 #### WiFi
-- Try to connect to a better AP, when the current RSSI is below -73dBm (only when WiFi scanning is enabled).
+- Try to connect to a better AP, when the current RSSI is below -73dBm (only when WiFi scanning is enabled). [f0f7dcc8](https://github.com/xoseperez/espurna/commit/f0f7dcc874d6f6f4b095b6cb89e69cdb65219150), [dde5f374](https://github.com/xoseperez/espurna/commit/dde5f374dd038afe1fb966d31e16bdac1be581fb), [5a973298 (initial commit)](https://github.com/xoseperez/espurna/commit/5a97329832816219a919c4669e22ad6af0c8d228)
+- Allow to set bssid and channel, when scanning is disabled [c5f70286](https://github.com/xoseperez/espurna/commit/c5f70286d1e63972446c2148914352d9f6acf345)
 #### Relays
 - Support multiple provider types (GPIO, virtual, IO expanders, etc.)
 - Separate MQTT group subscription and publish topics.
