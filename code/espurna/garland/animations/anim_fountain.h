@@ -52,7 +52,7 @@ class AnimFountain : public Anim {
         int head = 0;
         int start;
         // Color color;
-        std::vector<Color> points;
+        std::unique_ptr<Color[]> points;
         Fountain(Palette* pal, uint16_t numLeds) : start(secureRandom(len, numLeds - len)) /*, color(pal->getRndInterpColor())*/ {
             if (secureRandom(10) > 5) {
                 start = numLeds - start - 1;
@@ -60,9 +60,9 @@ class AnimFountain : public Anim {
             }
 
             // DEBUG_MSG_P(PSTR("[GARLAND] Fountain created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
-            points.reserve(len);
+            points.reset(new Color[len]);
             for (int i = 0; i < len; ++i) {
-                points.emplace_back(pal->getRndInterpColor());
+                points[i] = {pal->getRndInterpColor()};
                 // DEBUG_MSG_P(PSTR("[GARLAND] Fountain i=%d cr = %d cg = %d cb = %d\n"), i, points[i].r, points[i].g, points[i].b);
             }
         }

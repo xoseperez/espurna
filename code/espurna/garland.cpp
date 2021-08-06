@@ -139,8 +139,12 @@ std::array<Palette, 10> pals {
     Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})
 };
 
-Adafruit_NeoPixel pixels(GARLAND_LEDS, GARLAND_DATA_PIN, NEO_GRB + NEO_KHZ800);
-Scene scene(&pixels);
+constexpr uint16_t GarlandLeds { GARLAND_LEDS };
+constexpr unsigned char GarlandPin { GARLAND_DATA_PIN };
+constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
+
+Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
+Scene<GarlandLeds> scene(&pixels);
 
 std::array<Anim*, 15> anims {
     new AnimGlow(),
@@ -170,14 +174,14 @@ auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff
 //------------------------------------------------------------------------------
 void _garlandConfigure() {
     _garland_enabled = getSetting(NAME_GARLAND_ENABLED, true);
-    DEBUG_MSG_P(PSTR("[GARLAND] _garland_enabled = %d\n"), _garland_enabled);
-
     byte brightness = getSetting(NAME_GARLAND_BRIGHTNESS, 255);
     scene.setBrightness(brightness);
-    DEBUG_MSG_P(PSTR("[GARLAND] brightness = %d\n"), brightness);
 
     float speed = getSetting(NAME_GARLAND_SPEED, 50);
     scene.setSpeed(speed);
+
+    DEBUG_MSG_P(PSTR("[GARLAND] enabled %s brightness %d speed %s\n"),
+            _garland_enabled ? "YES" : "NO", brightness, String(speed).c_str());
 }
 
 //------------------------------------------------------------------------------
@@ -193,9 +197,10 @@ void setDefault() {
     byte speed = scene.getSpeed();
     setSetting(NAME_GARLAND_SPEED, speed);
 #if WEB_SUPPORT
-    char buffer[128];
-    snprintf_P(buffer, sizeof(buffer), PSTR("{\"garlandBrightness\": %d, \"garlandSpeed\": %d}"), brightness, speed);
-    wsSend(buffer);
+    wsPost([brightness, speed](JsonObject& root) {
+        root["garlandBrightness"] = brightness;
+        root["garlandSpeed"] = speed;
+    });
 #endif
 }
 
@@ -458,52 +463,30 @@ void garlandMqttCallback(unsigned int type, const char * topic, const char * pay
 #define GARLAND_SCENE_DEFAULT_SPEED      50
 #define GARLAND_SCENE_DEFAULT_BRIGHTNESS 255
 
-Scene::Scene(Adafruit_NeoPixel* pixels)
-    : _pixels(pixels),
-      _numLeds(pixels->numPixels()),
-      _leds1(_numLeds),
-      _leds2(_numLeds),
-      _ledstmp(_numLeds),
-      _seq(_numLeds) {
-}
-
-void Scene::setPalette(Palette* palette) {
+template<uint16_t Leds>
+void Scene<Leds>::setPalette(Palette* palette) {
     _palette = palette;
     if (setUpOnPalChange) {
         setupImpl();
     }
 }
 
-void Scene::setBrightness(byte brightness) {
-    DEBUG_MSG_P(PSTR("[GARLAND] Scene::setBrightness = %d\n"), brightness);
-    this->brightness = brightness;
-}
-
-byte Scene::getBrightness() {
-    DEBUG_MSG_P(PSTR("[GARLAND] Scene::getBrightness = %d\n"), brightness);
-    return brightness;
-}
-
 // Speed is reverse to cycleFactor and 10x
-void Scene::setSpeed(byte speed) {
+template<uint16_t Leds>
+void Scene<Leds>::setSpeed(byte speed) {
     this->speed = speed;
     cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
-    DEBUG_MSG_P(PSTR("[GARLAND] Scene::setSpeed %d cycleFactor = %d\n"), speed, (int)(cycleFactor * 1000));
 }
 
-byte Scene::getSpeed() {
-    DEBUG_MSG_P(PSTR("[GARLAND] Scene::getSpeed %d cycleFactor = %d\n"), speed, (int)(cycleFactor * 1000));
-    return speed;
-}
-
-void Scene::setDefault() {
+template<uint16_t Leds>
+void Scene<Leds>::setDefault() {
     speed = GARLAND_SCENE_DEFAULT_SPEED;
     cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
     brightness = GARLAND_SCENE_DEFAULT_BRIGHTNESS;
-    DEBUG_MSG_P(PSTR("[GARLAND] Scene::setDefault speed = %d cycleFactor = %d brightness = %d\n"), speed, (int)(cycleFactor * 1000), brightness);
 }
 
-void Scene::run() {
+template<uint16_t Leds>
+void Scene<Leds>::run() {
     unsigned long iteration_start_time = micros();
 
     if (state == Calculate || cyclesRemain < 1) {
@@ -536,7 +519,7 @@ void Scene::run() {
         Color* leds_prev = (_leds == &_leds1[0]) ? &_leds2[0] : &_leds1[0];
 
         if (transc > 0) {
-            for (int i = 0; i < _numLeds; i++) {
+            for (int i = 0; i < Leds; i++) {
                 // transition is in progress
                 Color c = _leds[i].interpolate(leds_prev[i], transc);
                 byte r = (int)(bri_lvl[c.r]) * brightness / 256;
@@ -545,7 +528,7 @@ void Scene::run() {
                 _pixels->setPixelColor(i, _pixels->Color(r, g, b));
             }
         } else {
-            for (int i = 0; i < _numLeds; i++) {
+            for (int i = 0; i < Leds; i++) {
                 // regular operation
                 byte r = (int)(bri_lvl[_leds[i].r]) * brightness / 256;
                 byte g = (int)(bri_lvl[_leds[i].g]) * brightness / 256;
@@ -568,11 +551,11 @@ void Scene::run() {
         Soft WDT reset. To avoid wdt reset we need to switch soft wdt off for long strips.
         It is not best practice, but assuming that it is only garland, it can be acceptable.
         Tested up to 300 leds. */
-        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+        if (Leds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
             ESP.wdtDisable();
         }
         _pixels->show();
-        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+        if (Leds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
             ESP.wdtEnable(5000);
         }
         sum_show_time += (micros() - iteration_start_time);
@@ -583,7 +566,8 @@ void Scene::run() {
     --cyclesRemain;
 }
 
-void Scene::setupImpl() {
+template<uint16_t Leds>
+void Scene<Leds>::setupImpl() {
     transms = millis() + GARLAND_SCENE_TRANSITION_MS;
 
     // switch operation buffers (for transition to operate)
@@ -594,11 +578,12 @@ void Scene::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(_palette, _numLeds, _leds, _ledstmp.data(), _seq.data());
+        _anim->Setup(_palette, Leds, _leds, _ledstmp.data(), _seq.data());
     }
 }
 
-void Scene::setup() {
+template<uint16_t Leds>
+void Scene<Leds>::setup() {
     sum_calc_time = 0;
     sum_pixl_time = 0;
     sum_show_time = 0;
@@ -611,10 +596,6 @@ void Scene::setup() {
         setupImpl();
     }
 }
-
-unsigned long Scene::getAvgCalcTime() { return sum_calc_time / calc_num; }
-unsigned long Scene::getAvgPixlTime() { return sum_pixl_time / pixl_num; }
-unsigned long Scene::getAvgShowTime() { return sum_show_time / show_num; }
 
 /*#######################################################################
                     _                       _     _
@@ -633,6 +614,7 @@ void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp
     this->leds = leds;
     this->ledstmp = ledstmp;
     this->seq = seq;
+    // TODO: if animation allocates 'stuff', provide some persistent memory locations instead of going to the heap?
     SetupImpl();
 }
 

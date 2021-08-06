@@ -13,9 +13,15 @@ class AnimComets : public Anim {
     }
 
     void SetupImpl() override {
-        comets.clear();
-        for (int i = 0; i < 4; ++i)
-            comets.emplace_back(palette, numLeds);
+        if (comets.size()) {
+            for (auto& c : comets) {
+                c = {palette, numLeds};
+            }
+        } else {
+            for (int i = 0; i < 4; ++i) {
+                comets.emplace_back(palette, numLeds);
+            }
+        }
     }
 
     void Run() override {
@@ -25,7 +31,7 @@ class AnimComets : public Anim {
             int tail = c.head + c.len * -c.dir;
             // Check if Comet out of range and generate it again
             if ((c.head < 0 && tail < 0) || (c.head >= numLeds && tail >= numLeds)) {
-                c = Comet(palette, numLeds);
+                c = {palette, numLeds};
             }
 
             for (int l = 0; l < c.len; ++l) {
@@ -45,7 +51,7 @@ class AnimComets : public Anim {
         float speed = ((float)secureRandom(4, 10)) / 10;
         Color color;
         int dir = 1;
-        std::vector<Color> points;
+        std::unique_ptr<Color[]> points;
         Comet(Palette* pal, uint16_t numLeds) : head(secureRandom(0, numLeds / 2)), color(pal->getRndInterpColor()) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Comet created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
             if (secureRandom(10) > 5) {
@@ -53,9 +59,12 @@ class AnimComets : public Anim {
                 dir = -1;
             }
 
-            points.reserve(len);
+            points.reset(new Color[len]);
             for (int i = 0; i < len; ++i) {
-                points.emplace_back((byte)(color.r * (len - i) / len), (byte)(color.g * (len - i) / len), (byte)(color.b * (len - i) / len));
+                points[i] = {
+                    (byte)(color.r * (len - i) / len),
+                    (byte)(color.g * (len - i) / len),
+                    (byte)(color.b * (len - i) / len)};
             }
         }
     };

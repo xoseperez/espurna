@@ -14,9 +14,15 @@ class AnimDolphins : public Anim {
     }
 
     void SetupImpl() override {
-        dolphins.clear();
-        for (int i = 0; i < 4; ++i)
-            dolphins.emplace_back(palette, numLeds);
+        if (dolphins.size()) {
+            for (auto& d : dolphins) {
+                d = {palette, numLeds};
+            }
+        } else {
+            for (int i = 0; i < 4; ++i) {
+                dolphins.emplace_back(palette, numLeds);
+            }
+        }
     }
 
     void Run() override {
@@ -52,7 +58,7 @@ class AnimDolphins : public Anim {
         int head = 0;
         int start;
         Color color;
-        std::vector<Color> points;
+        std::unique_ptr<Color[]> points;
         Dolphin(Palette* pal, uint16_t numLeds) : start(secureRandom(0, numLeds - len)), color(pal->getRndInterpColor()) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Dolphin created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
             if (secureRandom(10) > 5) {
@@ -62,13 +68,13 @@ class AnimDolphins : public Anim {
 
             int halflen = len / 2;
 
-            points.reserve(len);
+            points.reset(new Color[len]);
             for (int i = 0; i < len; ++i) {
                 int nth = (i > halflen) ? (len - i) : i;
-                points.emplace_back(
+                points[i] = {
                     (byte)(color.r * nth / halflen),
                     (byte)(color.g * nth / halflen),
-                    (byte)(color.b * nth / halflen));
+                    (byte)(color.b * nth / halflen)};
             }
         }
 
