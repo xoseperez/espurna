@@ -101,9 +101,6 @@ const String& mqttPayloadOnline();
 const String& mqttPayloadOffline();
 const char* mqttPayloadStatus(bool status);
 
-void mqttSetBroker(IPAddress ip, uint16_t port);
-void mqttSetBrokerIfNone(IPAddress ip, uint16_t port);
-
 void mqttEnabled(bool status);
 bool mqttEnabled();
 

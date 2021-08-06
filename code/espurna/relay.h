@@ -98,8 +98,8 @@ using RelayStatusCallback = void(*)(size_t id, bool status);
 using RelayProviderBasePtr = std::unique_ptr<RelayProviderBase>;
 
 bool relayAdd(RelayProviderBasePtr&& provider);
-void relaySetStatusNotify(RelayStatusCallback);
-void relaySetStatusChange(RelayStatusCallback);
+void relayOnStatusNotify(RelayStatusCallback);
+void relayOnStatusChange(RelayStatusCallback);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();

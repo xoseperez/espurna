@@ -310,11 +310,11 @@ void RelayProviderBase::notify(bool) {
 
 // Direct status notifications
 
-void relaySetStatusNotify(RelayStatusCallback callback) {
+void relayOnStatusNotify(RelayStatusCallback callback) {
     _relay_status_notify.push_front(callback);
 }
 
-void relaySetStatusChange(RelayStatusCallback callback) {
+void relayOnStatusChange(RelayStatusCallback callback) {
     _relay_status_change.push_front(callback);
 }
 

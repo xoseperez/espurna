@@ -457,7 +457,7 @@ void tspkSetup() {
     #endif
 
     #if RELAY_SUPPORT
-        relaySetStatusChange(_tspkRelayStatus);
+        relayOnStatusChange(_tspkRelayStatus);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),

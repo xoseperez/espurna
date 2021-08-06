@@ -361,7 +361,7 @@ void buttonSetCustomAction(ButtonEventHandler handler) {
 
 std::forward_list<ButtonEventHandler> _button_notify_event;
 
-void buttonSetEventNotify(ButtonEventHandler handler) {
+void buttonOnEvent(ButtonEventHandler handler) {
     _button_notify_event.push_front(handler);
 }
 

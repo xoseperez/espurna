@@ -1291,8 +1291,8 @@ void rfbSetup() {
 #endif
 
 #if RELAY_SUPPORT
-    relaySetStatusNotify(rfbStatus);
-    relaySetStatusChange(rfbStatus);
+    relayOnStatusNotify(rfbStatus);
+    relayOnStatusChange(rfbStatus);
 #endif
 
 #if MQTT_SUPPORT

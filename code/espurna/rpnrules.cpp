@@ -1131,11 +1131,11 @@ void rpnSetup() {
 #endif
 
 #if RELAY_SUPPORT
-    relaySetStatusChange(_rpnRelayStatus);
+    relayOnStatusChange(_rpnRelayStatus);
 #endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    lightSetReportListener(_rpnLightStatus);
+    lightOnReport(_rpnLightStatus);
 #endif
 
 #if RFB_SUPPORT
@@ -1143,7 +1143,7 @@ void rpnSetup() {
 #endif
 
 #if SENSOR_SUPPORT
-    sensorSetMagnitudeRead(_rpnSensorMagnitudeRead);
+    sensorOnMagnitudeRead(_rpnSensorMagnitudeRead);
 #endif
 
     espurnaRegisterReload(_rpnConfigure);

@@ -313,7 +313,7 @@ void domoticzSetup() {
     #endif
 
     #if RELAY_SUPPORT
-        relaySetStatusChange(_domoticzRelayCallback);
+        relayOnStatusChange(_domoticzRelayCallback);
     #endif
 
     // Callbacks

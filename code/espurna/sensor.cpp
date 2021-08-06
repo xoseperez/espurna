@@ -550,13 +550,13 @@ using MagnitudeReadHandlers = std::forward_list<MagnitudeReadHandler>;
 
 MagnitudeReadHandlers _magnitude_read_handlers;
 
-void sensorSetMagnitudeRead(MagnitudeReadHandler handler) {
+void sensorOnMagnitudeRead(MagnitudeReadHandler handler) {
     _magnitude_read_handlers.push_front(handler);
 }
 
 MagnitudeReadHandlers _magnitude_report_handlers;
 
-void sensorSetMagnitudeReport(MagnitudeReadHandler handler) {
+void sensorOnMagnitudeReport(MagnitudeReadHandler handler) {
     _magnitude_report_handlers.push_front(handler);
 }
 

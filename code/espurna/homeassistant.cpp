@@ -26,6 +26,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <memory>
 
 namespace homeassistant {
+namespace {
 
 // Output is supposed to be used as both part of the MQTT config topic and the `uniq_id` field
 // TODO: manage UTF8 strings? in case we somehow receive `desc`, like it was done originally
@@ -952,6 +953,7 @@ bool onKeyCheck(const char* key, JsonVariant& value) {
 #endif
 
 } // namespace web
+} // namespace
 } // namespace homeassistant
 
 // This module no longer implements .yaml generation, since we can't:
@@ -969,15 +971,14 @@ void haSetup() {
 #endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    lightSetReportListener(homeassistant::publishLightJson);
+    lightOnReport(homeassistant::publishLightJson);
     mqttHeartbeat(homeassistant::heartbeat);
 #endif
     mqttRegister(homeassistant::mqttCallback);
 
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("HA.SEND"), [](const terminal::CommandContext& ctx) {
-        using namespace homeassistant::internal;
-        state = State::Pending;
+        homeassistant::internal::state = homeassistant::internal::State::Pending;
         homeassistant::publishDiscovery();
         terminalOK(ctx);
     });

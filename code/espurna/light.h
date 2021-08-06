@@ -246,9 +246,8 @@ bool lightUseRGB();
 bool lightUseCCT();
 
 void lightMQTT();
+void lightOnReport(LightReportListener);
 
-void lightSetReportListener(LightReportListener);
-void lightSetStateListener(LightStateListener);
 void lightSetProvider(std::unique_ptr<LightProvider>&&);
 bool lightAdd();
 

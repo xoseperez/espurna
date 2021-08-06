@@ -581,7 +581,7 @@ void ledSetup() {
         // TODO: grab a specific LED from the relay module itself?
         // either for global status, or a specific relay
         _led_relays.resize(leds, RelaysMax);
-        relaySetStatusChange([](size_t, bool) {
+        relayOnStatusChange([](size_t, bool) {
             _led_update = true;
         });
 #endif

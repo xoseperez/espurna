@@ -293,11 +293,11 @@ void idbSetup() {
     #endif
 
     #if RELAY_SUPPORT
-        relaySetStatusChange(_idbSendStatus);
+        relayOnStatusChange(_idbSendStatus);
     #endif
 
     #if SENSOR_SUPPORT
-        sensorSetMagnitudeReport(_idbSendSensor);
+        sensorOnMagnitudeReport(_idbSendSensor);
     #endif
 
     espurnaRegisterReload(_idbConfigure);

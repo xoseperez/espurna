@@ -135,8 +135,8 @@ struct Value {
 }
 
 using MagnitudeReadHandler = void(*)(const String&, unsigned char, double, const char*);
-void sensorSetMagnitudeRead(MagnitudeReadHandler handler);
-void sensorSetMagnitudeReport(MagnitudeReadHandler handler);
+void sensorOnMagnitudeRead(MagnitudeReadHandler handler);
+void sensorOnMagnitudeReport(MagnitudeReadHandler handler);
 
 String magnitudeUnits(unsigned char index);
 String magnitudeDescription(unsigned char index);

@@ -240,9 +240,9 @@ void alexaSetup() {
 
     // Register main callbacks
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    lightSetReportListener(_alexaUpdateLights);
+    lightOnReport(_alexaUpdateLights);
 #elif RELAY_SUPPORT
-    relaySetStatusChange(_alexaUpdateRelay);
+    relayOnStatusChange(_alexaUpdateRelay);
 #endif
 
     espurnaRegisterReload(_alexaConfigure);

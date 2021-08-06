@@ -2014,7 +2014,7 @@ void lightHs(long hue, long saturation) {
 
 // -----------------------------------------------------------------------------
 
-void lightSetReportListener(LightReportListener func) {
+void lightOnReport(LightReportListener func) {
     _light_report.push_front(func);
 }
 
