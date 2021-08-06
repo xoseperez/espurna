@@ -1,8 +1,11 @@
-# Check the build status for the nighly builder, release or pull request
+name: PlatformIO Build
 
-name: ESPurna build
-
-on: [push, pull_request]
+on:
+  push:
+    branches: [dev]
+    tags-ignore: '**'
+  pull_request:
+    branches: [dev]
 
 jobs:
   test:
@@ -46,6 +49,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [esp8266-4m-base, esp8266-4m-latest-base]
     env:
       ESPURNA_PIO_SHARED_LIBRARIES: "1"
     steps:
@@ -68,6 +74,4 @@ jobs:
         git config --global advice.detachedHead false
         ./ci_install.sh build
     - run: |
-        ./ci_script.sh build esp8266-4m-base
-    - run: |
-        ./ci_script.sh build esp8266-4m-latest-base
+        ./ci_script.sh build ${{ matrix.env }}
