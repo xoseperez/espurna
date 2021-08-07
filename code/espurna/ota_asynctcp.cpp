@@ -32,72 +32,102 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ESPAsyncTCP.h>
 
-const char OTA_REQUEST_TEMPLATE[] PROGMEM =
-    "GET %s HTTP/1.1\r\n"
-    "Host: %s\r\n"
-    "User-Agent: ESPurna\r\n"
-    "Connection: close\r\n\r\n";
+namespace ota {
+namespace {
 
-struct ota_client_t {
-    enum state_t {
-        HEADERS,
-        DATA,
-        END
+namespace asynctcp {
+
+// XXX: this client is not techically a HTTP client, but a simple byte reader that will ignore all received headers and go straight for the data
+// XXX: client state is fragile, make sure to not depend on anything global in callbacks
+//
+
+struct BasicHttpClient {
+    enum class State {
+        Headers,
+        Data,
+        End
     };
 
-    ota_client_t() = delete;
-    ota_client_t(const ota_client_t&) = delete;
+    BasicHttpClient() = delete;
+    BasicHttpClient(const BasicHttpClient&) = delete;
 
-    ota_client_t(URL&& url);
+    explicit BasicHttpClient(URL&& url);
 
     bool connect();
 
-    state_t state = HEADERS;
+    State state { State::Headers };
     size_t size = 0;
 
     const URL url;
     AsyncClient client;
 };
 
-std::unique_ptr<ota_client_t> _ota_client = nullptr;
+void writeHeaders(BasicHttpClient& client) {
+    String headers;
+    headers.reserve(256);
+
+    headers += F("GET ");
+    headers += client.url.path;
+    headers += F( "HTTP/1.1");
+    headers += F("\r\n");
+
+    headers += F("Host: ");
+    headers += client.url.host;
+    headers += F("\r\n");
+
+    headers += F("User-Agent: ESPurna");
+    headers += F("\r\n");
+
+    headers += F("Connection: close");
+    headers += F("\r\n\r\n");
+
+    if (headers.length() != client.client.write(headers.c_str(), headers.length())) {
+        client.client.close(false);
+    }
+}
+
+namespace internal {
+
+std::unique_ptr<BasicHttpClient> client;
+
+void disconnect() {
+    DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
+    client = nullptr;
+}
+
+} // namespace internal
 
 // -----------------------------------------------------------------------------
 
-void _otaClientDisconnect() {
-    DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
-    _ota_client = nullptr;
-}
-
-void _otaClientOnDisconnect(void* arg, AsyncClient* client) {
+void onDisconnect(void* arg, AsyncClient* client) {
     DEBUG_MSG_P(PSTR("\n"));
-    otaFinalize(reinterpret_cast<ota_client_t*>(arg)->size, CustomResetReason::Ota, true);
-    schedule_function(_otaClientDisconnect);
+    otaFinalize(reinterpret_cast<BasicHttpClient*>(arg)->size, CustomResetReason::Ota, true);
+    schedule_function(internal::disconnect);
 }
 
-void _otaClientOnTimeout(void*, AsyncClient * client, uint32_t) {
+void onTimeout(void*, AsyncClient* client, uint32_t) {
     client->close(true);
 }
 
-void _otaClientOnError(void*, AsyncClient* client, err_t error) {
+void onError(void*, AsyncClient* client, err_t error) {
     DEBUG_MSG_P(PSTR("[OTA] ERROR: %s\n"), client->errorToString(error));
 }
 
-void _otaClientOnData(void* arg, AsyncClient* client, void* data, size_t len) {
-
-    ota_client_t* ota_client = reinterpret_cast<ota_client_t*>(arg);
+void onData(void* arg, AsyncClient* client, void* data, size_t len) {
+    auto* ota_client = reinterpret_cast<BasicHttpClient*>(arg);
     auto* ptr = (char *) data;
 
-    // TODO: check status
-    // TODO: check for 3xx, discover `Location:` header and schedule
-    //       another _otaClientFrom(location_header_url)
-    if (_ota_client->state == ota_client_t::HEADERS) {
+    // TODO: this depends on the server sending out these 4 bytes in one packet
+    // TODO: quickly reject Location: ... redirects instead of waiting for data
+    // TODO: check status code?
+    if (ota_client->state == BasicHttpClient::State::Headers) {
         ptr = (char *) strnstr((char *) data, "\r\n\r\n", len);
         if (!ptr) {
             return;
         }
         auto diff = ptr - ((char *) data);
 
-        _ota_client->state = ota_client_t::DATA;
+        ota_client->state = BasicHttpClient::State::Data;
         len -= diff + 4;
         if (!len) {
             return;
@@ -105,19 +135,19 @@ void _otaClientOnData(void* arg, AsyncClient* client, void* data, size_t len) {
         ptr += 4;
     }
 
-    if (ota_client->state == ota_client_t::DATA) {
-
+    if (ota_client->state == BasicHttpClient::State::Data) {
         if (!ota_client->size) {
 
             // Check header before anything is written to the flash
             if (!otaVerifyHeader((uint8_t *) ptr, len)) {
                 DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config"));
                 client->close(true);
-                ota_client->state = ota_client_t::END;
+                ota_client->state = BasicHttpClient::State::End;
                 return;
             }
 
             // XXX: In case of non-chunked response, really parse headers and specify size via content-length value
+            // And make sure to use async mode, b/c it will yield() otherwise
             Update.runAsync(true);
             if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
                 otaPrintError();
@@ -135,22 +165,17 @@ void _otaClientOnData(void* arg, AsyncClient* client, void* data, size_t len) {
         if (Update.write((uint8_t *) ptr, len) != len) {
             otaPrintError();
             client->close(true);
-            ota_client->state = ota_client_t::END;
+            ota_client->state = BasicHttpClient::State::End;
             return;
         }
 
         ota_client->size += len;
         otaProgress(ota_client->size);
-
-        delay(0);
-
     }
-
 }
 
-void _otaClientOnConnect(void* arg, AsyncClient* client) {
-
-    ota_client_t* ota_client = reinterpret_cast<ota_client_t*>(arg);
+void onConnect(void* arg, AsyncClient* client) {
+    auto* ota_client = reinterpret_cast<BasicHttpClient*>(arg);
 
     #if ASYNC_TCP_SSL_ENABLED
         const auto check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK);
@@ -170,106 +195,102 @@ void _otaClientOnConnect(void* arg, AsyncClient* client) {
     eepromRotate(false);
 
     DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), ota_client->url.path.c_str());
-    char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + ota_client->url.path.length() + ota_client->url.host.length()];
-    snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, ota_client->url.path.c_str(), ota_client->url.host.c_str());
-    client->write(buffer);
+    writeHeaders(*ota_client);
 }
 
-ota_client_t::ota_client_t(URL&& url) :
+BasicHttpClient::BasicHttpClient(URL&& url) :
     url(std::move(url))
 {
     client.setRxTimeout(5);
-    client.onError(_otaClientOnError, nullptr);
-    client.onTimeout(_otaClientOnTimeout, nullptr);
-    client.onDisconnect(_otaClientOnDisconnect, this);
-    client.onData(_otaClientOnData, this);
-    client.onConnect(_otaClientOnConnect, this);
+    client.onError(onError, this);
+    client.onTimeout(onTimeout, this);
+    client.onDisconnect(onDisconnect, this);
+    client.onData(onData, this);
+    client.onConnect(onConnect, this);
 }
 
-bool ota_client_t::connect() {
-    #if ASYNC_TCP_SSL_ENABLED
-        return client.connect(url.host.c_str(), url.port, 443 == url.port);
-    #else
-        return client.connect(url.host.c_str(), url.port);
-    #endif
+bool BasicHttpClient::connect() {
+    return client.connect(url.host.c_str(), url.port);
 }
 
 // -----------------------------------------------------------------------------
 
-void _otaClientFrom(const String& url) {
-
-    if (_ota_client) {
-        DEBUG_MSG_P(PSTR("[OTA] Already connected\n"));
-        return;
-    }
-
-    URL _url(url);
-    if (!_url.protocol.equals("http") && !_url.protocol.equals("https")) {
+void clientFromUrl(URL&& url) {
+    if (!url.protocol.equals("http") && !url.protocol.equals("https")) {
         DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
         return;
     }
 
-    _ota_client = std::make_unique<ota_client_t>(std::move(_url));
-    if (!_ota_client->connect()) {
-        DEBUG_MSG_P(PSTR("[OTA] Connection failed\n"));
+    if (internal::client) {
+        auto host = internal::client->url.host;
+        DEBUG_MSG_P(PSTR("[OTA] ERROR: existing client for %s\n"), host.c_str());
+        return;
     }
 
+    internal::client = std::make_unique<BasicHttpClient>(std::move(url));
+    if (!internal::client->connect()) {
+        DEBUG_MSG_P(PSTR("[OTA] Connection failed\n"));
+    }
+}
+
+void clientFromUrl(const String& string) {
+    clientFromUrl(URL(string));
 }
 
 #endif // TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
 #if TERMINAL_SUPPORT
 
-void _otaClientInitCommands() {
-
+void terminalCommands() {
     terminalRegisterCommand(F("OTA"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc < 2) {
-            terminalError(F("OTA <url>"));
-        } else {
-            _otaClientFrom(ctx.argv[1]);
-            terminalOK();
+        if (ctx.argc == 2) {
+            clientFromUrl(ctx.argv[1]);
+            terminalOK(ctx);
+            return;
         }
-    });
 
+        terminalError(ctx, F("OTA <url>"));
+    });
 }
 
 #endif // TERMINAL_SUPPORT
 
 #if OTA_MQTT_SUPPORT
 
-void _otaClientMqttCallback(unsigned int type, const char * topic, const char * payload) {
-
+void mqttCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_OTA);
+        return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
         String t = mqttMagnitude((char *) topic);
         if (t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
-            _otaClientFrom(payload);
+            clientFromPayload(payload);
         }
+        return;
     }
-
 }
 
 #endif // OTA_MQTT_SUPPORT
 
+} // namespace asynctcp
+} // namespace
+} // namespace ota
+
 // -----------------------------------------------------------------------------
 
 void otaClientSetup() {
-
-    // Backwards compatibility
     moveSetting("otafp", "otaFP");
 
-    #if TERMINAL_SUPPORT
-        _otaClientInitCommands();
-    #endif
+#if TERMINAL_SUPPORT
+    ota::asynctcp::terminalCommands();
+#endif
 
-    #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
-        mqttRegister(_otaClientMqttCallback);
-    #endif
-
+#if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
+    mqttRegister(ota::asynctcp::mqttCallback);
+#endif
 }
 
 #endif // OTA_CLIENT == OTA_CLIENT_ASYNCTCP

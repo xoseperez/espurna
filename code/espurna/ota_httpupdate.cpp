@@ -30,6 +30,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
 #include <WiFiClientSecure.h>
 
+namespace {
+
 #if OTA_SECURE_CLIENT_INCLUDE_CA
 #include "static/ota_client_trusted_root_ca.h"
 #else
@@ -39,50 +41,70 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
-// -----------------------------------------------------------------------------
-// Configuration templates
-// -----------------------------------------------------------------------------
+} // namespace
 
-template <typename T>
-t_httpUpdate_return _otaClientUpdate(const std::true_type&, T& instance, WiFiClient* client, const String& url) {
-    return instance.update(*client, url);
-}
-
-template <typename T>
-t_httpUpdate_return _otaClientUpdate(const std::false_type&, T& instance, WiFiClient*, const String& url) {
-    return instance.update(url);
-}
+// -----------------------------------------------------------------------------
 
 namespace ota {
-    template <typename T>
-    using has_WiFiClient_argument_t = decltype(std::declval<T>().update(std::declval<WiFiClient&>(), std::declval<const String&>()));
+namespace {
+namespace httpupdate {
 
-    template <typename T>
-    using has_WiFiClient_argument = is_detected<has_WiFiClient_argument_t, T>;
+// -----------------------------------------------------------------------------
+// Generic update methods
+// -----------------------------------------------------------------------------
+
+void run(WiFiClient* client, const String& url) {
+    // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+    // Must happen right now, since HTTP updater will block until it's done
+    eepromRotate(false);
+
+    DEBUG_MSG_P(PSTR("[OTA] Downloading %s ...\n"), url.c_str());
+    ESPhttpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    ESPhttpUpdate.rebootOnUpdate(false);
+
+    t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
+    result = ESPhttpUpdate.update(client, url);
+
+    switch (result) {
+    case HTTP_UPDATE_FAILED:
+        DEBUG_MSG_P(PSTR("[OTA] Update failed (error %d): %s\n"), ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+        break;
+    case HTTP_UPDATE_NO_UPDATES:
+        DEBUG_MSG_P(PSTR("[OTA] No updates"));
+        break;
+    case HTTP_UPDATE_OK:
+        DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
+        deferredReset(500, CustomResetReason::Ota);
+        return;
+    }
+
+    eepromRotate(true);
 }
 
-// -----------------------------------------------------------------------------
-// Settings helper
-// -----------------------------------------------------------------------------
-
-#if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-SecureClientConfig _ota_sc_config {
-    "OTA",
-    []() -> String {
-        return String(); // NOTE: unused
-    },
-    []() -> int {
-        return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK);
-    },
-    []() -> String {
-        return getSetting("otaFP", OTA_FINGERPRINT);
-    },
-    true
-};
-#endif
+void clientFromHttp(const String& url) {
+    auto client = std::make_unique<WiFiClient>();
+    run(client.get(), url); 
+}
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-SecureClientConfig _ota_sc_config {
+
+void clientFromHttps(const String& url, SecureClientConfig& config) {
+    // Check for NTP early to avoid constructing SecureClient prematurely
+    const int check = config.on_check();
+    if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
+        DEBUG_MSG_P(PSTR("[OTA] Time not synced! Cannot use CA validation\n"));
+        return;
+    }
+
+    auto client = std::make_unique<SecureClient>(config);
+    if (!client->beforeConnected()) {
+        return;
+    }
+
+    run(&client->get(), url);
+}
+
+SecureClientConfig defaultSecureClientConfig {
     "OTA",
     []() -> int {
         return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK);
@@ -98,192 +120,88 @@ SecureClientConfig _ota_sc_config {
     },
     true
 };
-#endif
 
-// -----------------------------------------------------------------------------
-// Generic update methods
-// -----------------------------------------------------------------------------
-
-void _otaClientRunUpdater(__attribute__((unused)) WiFiClient* client, const String& url, __attribute__((unused)) const String& fp = "") {
-
-    // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
-    eepromRotate(false);
-
-    DEBUG_MSG_P(PSTR("[OTA] Downloading %s ...\n"), url.c_str());
-
-    #if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-        ESPhttpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    #endif
-
-    ESPhttpUpdate.rebootOnUpdate(false);
-    t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
-
-    // We expect both .update(url, "", String_fp) and .update(url) to survice until axTLS is removed from the Core
-    #if (SECURE_CLIENT == SECURE_CLIENT_AXTLS)
-        if (url.startsWith("https://")) {
-            result = ESPhttpUpdate.update(url, "", fp);
-        } else {
-            result = ESPhttpUpdate.update(url);
-        }
-    #else
-    // TODO: support currentVersion (string arg after 'url')
-    // TODO: implement through callbacks?
-    //       see https://github.com/esp8266/Arduino/pull/6796
-        result = _otaClientUpdate(ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}, ESPhttpUpdate, client, url);
-    #endif
-
-    switch (result) {
-        case HTTP_UPDATE_FAILED:
-            DEBUG_MSG_P(PSTR("[OTA] Update failed (error %d): %s\n"), ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-            eepromRotate(true);
-            break;
-        case HTTP_UPDATE_NO_UPDATES:
-            DEBUG_MSG_P(PSTR("[OTA] No updates"));
-            eepromRotate(true);
-            break;
-        case HTTP_UPDATE_OK:
-            DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
-            deferredReset(500, CustomResetReason::Ota); // wait a bit more than usual
-            break;
-    }
-
-}
-
-void _otaClientFromHttp(const String& url) {
-    std::unique_ptr<WiFiClient> client(nullptr);
-    if (ota::has_WiFiClient_argument<decltype(ESPhttpUpdate)>{}) {
-        client = std::make_unique<WiFiClient>();
-    }
-    _otaClientRunUpdater(client.get(), url, "");
-}
-
-#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-
-void _otaClientFromHttps(const String& url) {
-
-    // Check for NTP early to avoid constructing SecureClient prematurely
-    const int check = _ota_sc_config.on_check();
-    if (!ntpSynced() && (check == SECURE_CLIENT_CHECK_CA)) {
-        DEBUG_MSG_P(PSTR("[OTA] Time not synced! Cannot use CA validation\n"));
-        return;
-    }
-
-    // unique_ptr self-destructs after exiting function scope
-    // create the client on heap to use less stack space
-    auto client = std::make_unique<SecureClient>(_ota_sc_config);
-    if (!client->beforeConnected()) {
-        return;
-    }
-
-    _otaClientRunUpdater(&client->get(), url);
-
+void runForHttps(const String& url) {
+    runForHttps(url, defaultSecureClientConfig);
 }
 
 #endif // SECURE_CLIENT_BEARSSL
 
-
-#if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-
-void _otaClientFromHttps(const String& url) {
-
-    // Note: this being the legacy option, only supporting legacy methods on ESPHttpUpdate itself
-    //       no way to know when it is connected, so no afterConnected
-    const int check = _ota_sc_config.on_check();
-    const String fp_string = _ota_sc_config.on_fingerprint();
-
-    if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-        if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
-            DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint\n"));
-            return;
-        }
-    }
-
-    _otaClientRunUpdater(nullptr, url, fp_string);
-
-}
-
-#endif // SECURE_CLIENT_AXTLS
-
-void _otaClientFrom(const String& url) {
-
+void clientFromUrl(const String& url) {
     if (url.startsWith("http://")) {
-        _otaClientFromHttp(url);
+        clientFromHttp(url);
         return;
     }
-
-    #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        if (url.startsWith("https://")) {
-            _otaClientFromHttps(url);
-            return;
-        }
-    #endif
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
+    else if (url.startsWith("https://")) {
+        clientFromHttps(url);
+        return;
+    }
+#endif
 
     DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
-
 }
 
 #if TERMINAL_SUPPORT
 
-void _otaClientInitCommands() {
-
+void terminalCommands() {
     terminalRegisterCommand(F("OTA"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc < 2) {
-            terminalError(F("OTA <url>"));
-        } else {
-            _otaClientFrom(ctx.argv[1]);
-            terminalOK();
+        if (ctx.argc == 2) {
+            clientFromUrl(ctx.argv[1]);
+            terminalOK(ctx);
+            return;
         }
-    });
 
+        terminalError(ctx, F("OTA <url>"));
+    });
 }
 
 #endif // TERMINAL_SUPPORT
 
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
 
-bool _ota_do_update = false;
-
-void _otaClientMqttCallback(unsigned int type, const char * topic, const char * payload) {
-
+void mqttCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_OTA);
+        return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
         const String t = mqttMagnitude((char *) topic);
-        if (!_ota_do_update && t.equals(MQTT_TOPIC_OTA)) {
-            DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
-            // TODO: c++14 support is required for `[_payload = String(payload)]() { ... }`
-            //       c++11 also supports basic `std::bind(func, arg)`, but we need to reset the lock
-            _ota_do_update = true;
+        static bool busy { false };
 
-            const String _payload(payload);
-            schedule_function([_payload]() {
-                _otaClientFrom(_payload);
-                _ota_do_update = false;
+        if (!busy && t.equals(MQTT_TOPIC_OTA)) {
+            DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
+
+            const String url(payload);
+            schedule_function([url]() {
+                clientFromUrl(url);
+                busy = false;
             });
         }
-    }
 
+        return;
+    }
 }
 
 #endif // MQTT_SUPPORT
 
+} // namespace httpupdate
+} // namespace
+} // namespace ota
+
 // -----------------------------------------------------------------------------
 
 void otaClientSetup() {
-
-    // Backwards compatibility
     moveSetting("otafp", "otaFP");
 
-    #if TERMINAL_SUPPORT
-        _otaClientInitCommands();
-    #endif
+#if TERMINAL_SUPPORT
+    ota::httpupdate::terminalCommands();
+#endif
 
-    #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
-        mqttRegister(_otaClientMqttCallback);
-    #endif
-
+#if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
+    mqttRegister(ota::httpupdate::mqttCallback);
+#endif
 }
 
 #endif // OTA_CLIENT == OTA_CLIENT_HTTPUPDATE

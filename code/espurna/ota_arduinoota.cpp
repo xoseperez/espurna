@@ -15,98 +15,114 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoOTA.h>
 
-// TODO: allocate ArduinoOTAClass on-demand, stop using global instance
+namespace ota {
+namespace {
+namespace arduino {
 
-void _arduinoOtaConfigure() {
-
+// TODO: Allocate ArduinoOTAClass on-demand, stop using global instance
+// TODO: ArduinoOTAClass and MDNS are tightly coupled together, consider creating a MDNS-less version for internal use?
+// TODO: Merge Updater as well, to provide a way to handle semi-arbitrary flash locations as partitions?
+void configure() {
     ArduinoOTA.setPort(OTA_PORT);
 #if USE_PASSWORD
     ArduinoOTA.setPassword(getAdminPass().c_str());
 #endif
     ArduinoOTA.begin(false);
-
 }
 
-void _arduinoOtaLoop() {
+void loop() {
     ArduinoOTA.handle();
 }
 
-void _arduinoOtaOnStart() {
-
+void start() {
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+    // Because ArduinoOTA is synchronous and will block until either success or error, force backup right now instead of waiting for the next loop()
     eepromRotate(false);
-
-    // Because ArduinoOTA is synchronous, force backup right now instead of waiting for the next loop()
     eepromBackup(0);
 
-    DEBUG_MSG_P(PSTR("[OTA] Start\n"));
-
+    DEBUG_MSG_P(PSTR("[OTA] Started...\n"));
 #if WEB_SUPPORT
-    wsSend_P(PSTR("{\"message\": \"OTA update started.\"}"));
+    wsSend([](JsonObject& root) {
+        root["message"] = F("OTA update started.");
+    });
 #endif
-
 }
 
-void _arduinoOtaOnEnd() {
-
-    DEBUG_MSG_P(PSTR("\n"));
-    DEBUG_MSG_P(PSTR("[OTA] Done, restarting...\n"));
-    #if WEB_SUPPORT
-        wsSend_P(PSTR("{\"action\": \"reload\"}"));
-    #endif
-
-    // Note: ArduinoOTA will reset the board after this callback returns.
+void end() {
+    // ArduinoOTA default behaviour is to reset the board after this callback returns.
+    // Page reload will happen automatically, when WebUI will fail to receive the PING response.
+    DEBUG_MSG_P(PSTR("[OTA] Done, restarting.\n"));
     customResetReason(CustomResetReason::Ota);
     nice_delay(100);
-
 }
 
-void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
-
+void progress(unsigned int progress, unsigned int total) {
     // Removed to avoid websocket ping back during upgrade (see #1574)
-    // TODO: implement as separate from debugging message
-    #if WEB_SUPPORT
-        if (wsConnected()) return;
-    #endif
+    // TODO: implement as a custom payload that reports progress in non-text form?
+#if WEB_SUPPORT
+    if (wsConnected()) {
+        return;
+    }
+#endif
 
-    #if DEBUG_SUPPORT
-        static unsigned int _progOld;
-
-        unsigned int _prog = (progress / (total / 100));
-        if (_prog != _progOld) {
-            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
-            _progOld = _prog;
-        }
-    #endif
-
+#if DEBUG_SUPPORT
+    static unsigned int last;
+    unsigned int current = (progress / (total / 100));
+    if (current != last) {
+        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), current);
+        last = current;
+    }
+#endif
 }
 
-void _arduinoOtaOnError(ota_error_t error) {
+void error(ota_error_t error) {
+#if DEBUG_SUPPORT
+    const __FlashStringHelper* ptr { F("Unknown") };
 
-    #if DEBUG_SUPPORT
-        DEBUG_MSG_P(PSTR("\n[OTA] Error #%u: "), error);
-        if (error == OTA_AUTH_ERROR) DEBUG_MSG_P(PSTR("Auth Failed\n"));
-        else if (error == OTA_BEGIN_ERROR) DEBUG_MSG_P(PSTR("Begin Failed\n"));
-        else if (error == OTA_CONNECT_ERROR) DEBUG_MSG_P(PSTR("Connect Failed\n"));
-        else if (error == OTA_RECEIVE_ERROR) DEBUG_MSG_P(PSTR("Receive Failed\n"));
-        else if (error == OTA_END_ERROR) DEBUG_MSG_P(PSTR("End Failed\n"));
-    #endif
+    switch (error) {
+    case OTA_AUTH_ERROR:
+        ptr = F("Authentication");
+        break;
+    case OTA_BEGIN_ERROR:
+        ptr = F("Begin");
+        break;
+    case OTA_CONNECT_ERROR:
+        ptr = F("Connection");
+        break;
+    case OTA_RECEIVE_ERROR:
+        ptr = F("Receive");
+        break;
+    case OTA_END_ERROR:
+        ptr = F("End");
+        break;
+    }
+
+    DEBUG_MSG_P(PSTR("[OTA] \"%s\" error (#%u)"),
+            reinterpret_cast<const char*>(ptr),
+            static_cast<unsigned int>(error));
+#endif
+
     eepromRotate(true);
-
 }
+
+void setup() {
+    espurnaRegisterLoop(loop);
+    espurnaRegisterReload(configure);
+
+    ArduinoOTA.onStart(start);
+    ArduinoOTA.onEnd(end);
+    ArduinoOTA.onError(error);
+    ArduinoOTA.onProgress(progress);
+
+    configure();
+}
+
+} // namespace arduino
+} // namespace
+} // namespace ota
 
 void arduinoOtaSetup() {
-
-    espurnaRegisterLoop(_arduinoOtaLoop);
-    espurnaRegisterReload(_arduinoOtaConfigure);
-
-    ArduinoOTA.onStart(_arduinoOtaOnStart);
-    ArduinoOTA.onEnd(_arduinoOtaOnEnd);
-    ArduinoOTA.onError(_arduinoOtaOnError);
-    ArduinoOTA.onProgress(_arduinoOtaOnProgress);
-
-    _arduinoOtaConfigure();
-
+    ota::arduino::setup();
 }
 
 #endif // OTA_ARDUINOOTA_SUPPORT

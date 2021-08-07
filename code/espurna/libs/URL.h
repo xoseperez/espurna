@@ -9,26 +9,28 @@
 #pragma once
 
 class URL {
-    public:
+public:
+    URL() = default;
+    URL(const URL&) = default;
+    URL(URL&&) = default;
 
-    URL() :
-        protocol(),
-        host(),
-        path(),
-        port(0)
-    {}
+    URL& operator=(const URL&) = default;
+    URL& operator=(URL&&) = default;
 
     URL(const String& string) {
         _parse(string);
     }
 
+    URL(String&& string) {
+        _parse(std::move(string));
+    }
+
     String protocol;
     String host;
     String path;
-    uint16_t port;
+    uint16_t port { 0 };
 
-    private:
-
+private:
     void _parse(String buffer) {
         // cut the protocol part
         int index = buffer.indexOf("://");
@@ -70,6 +72,4 @@ class URL {
             this->host = _host;
         }
     }
-
 };
-

@@ -782,12 +782,10 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SECURE_CLIENT
-#define SECURE_CLIENT                          SECURE_CLIENT_NONE     // What variant of WiFiClient to use
+#define SECURE_CLIENT                          SECURE_CLIENT_NONE     // What variant of WiFiClient to use:
                                                                       // SECURE_CLIENT_NONE    - No secure client support (default)
-                                                                      // SECURE_CLIENT_AXTLS   - axTLS client secure support (All Core versions, ONLY TLS 1.1)
-                                                                      // SECURE_CLIENT_BEARSSL - BearSSL client secure support (starting with 2.5.0, TLS 1.2)
-                                                                      //
-                                                                      // axTLS marked for derecation since Arduino Core 2.4.2 and **will** be removed in the future
+                                                                      // SECURE_CLIENT_BEARSSL - BearSSL client secure support (with Core versions newer than 2.5.0, TLS 1.2)
+                                                                      // SECURE_CLIENT_AXTLS   - axTLS client secure support (only with Core versions older than 3.0.0, ONLY TLS 1.1, NOT recommended)
 #endif
 
 // Security check that is performed when the connection is established:

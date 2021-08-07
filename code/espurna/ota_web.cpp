@@ -14,8 +14,11 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "web.h"
 #include "ws.h"
 
-void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
+namespace ota {
+namespace {
+namespace web {
 
+void sendResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
     auto *response = request->beginResponseStream("text/plain", 256);
     response->addHeader("Connection", "close");
     response->addHeader("X-XSS-Protection", "1; mode=block");
@@ -39,17 +42,14 @@ void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& 
     }
 
     request->send(response);
-
 }
 
-void _onUpgradeStatusSet(AsyncWebServerRequest *request, int code, const String& payload = "") {
-    _onUpgradeResponse(request, code, payload);
+void setStatus(AsyncWebServerRequest *request, int code, const String& payload = "") {
+    sendResponse(request, code, payload);
     request->_tempObject = malloc(sizeof(bool));
 }
 
-void _onUpgrade(AsyncWebServerRequest *request) {
-
-    webLog(request);
+void onUpgrade(AsyncWebServerRequest *request) {
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
@@ -58,12 +58,10 @@ void _onUpgrade(AsyncWebServerRequest *request) {
         return;
     }
 
-    _onUpgradeResponse(request, 200);
-
+    sendResponse(request, 200);
 }
 
-void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-
+void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
@@ -78,21 +76,20 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     }
 
     if (!index) {
-
         // TODO: stop network activity completely when handling Update through ArduinoOTA or `ota` command?
         if (Update.isRunning()) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: Upgrade in progress"));
+            setStatus(request, 400, F("ERROR: Upgrade in progress"));
             return;
         }
 
         // Check that header is correct and there is more data before anything is written to the flash
         if (final || !len) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: Invalid request"));
+            setStatus(request, 400, F("ERROR: Invalid request"));
             return;
         }
 
         if (!otaVerifyHeader(data, len)) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: No magic byte / invalid flash config"));
+            setStatus(request, 400, F("ERROR: No magic byte / invalid flash config"));
             return;
         }
 
@@ -104,11 +101,10 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
 
         // Note: cannot use request->contentLength() for multipart/form-data
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            _onUpgradeStatusSet(request, 500);
+            setStatus(request, 500);
             eepromRotate(true);
             return;
         }
-
     }
 
     if (request->_tempObject) {
@@ -121,7 +117,7 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     }
 
     if (Update.write(data, len) != len) {
-        _onUpgradeStatusSet(request, 500);
+        setStatus(request, 500);
         Update.end();
         eepromRotate(true);
         return;
@@ -132,11 +128,15 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     } else {
         otaProgress(index + len);
     }
-
 }
 
+} // namespace web
+} // namespace
+} // namespace ota
+
 void otaWebSetup() {
-    webServer().on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
+    webServer().on("/upgrade", HTTP_POST,
+            ota::web::onUpgrade, ota::web::onFile);
     wsRegister().
         onVisible([](JsonObject& root) {
             root["otaVisible"] = 1;
