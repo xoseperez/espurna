@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if RFB_SUPPORT
 
 using RfbCodeHandler = void(*)(unsigned char protocol, const char* code);
-void rfbSetCodeHandler(RfbCodeHandler);
+void rfbOnCode(RfbCodeHandler);
 
 void rfbSend(const char* code);
 void rfbSend(const String& code);

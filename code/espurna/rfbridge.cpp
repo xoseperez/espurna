@@ -45,7 +45,7 @@ constexpr bool _rfb_transmit { true };
 
 std::forward_list<RfbCodeHandler> _rfb_code_handlers;
 
-void rfbSetCodeHandler(RfbCodeHandler handler) {
+void rfbOnCode(RfbCodeHandler handler) {
     _rfb_code_handlers.push_front(handler);
 }
 
