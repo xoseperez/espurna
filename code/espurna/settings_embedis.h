@@ -309,18 +309,6 @@ class KeyValueStore {
         } while (_state != State::End);
     }
 
-    // read every key into a vector
-    std::vector<String> keys() {
-        std::vector<String> out;
-        out.reserve(count());
-
-        foreach([&](KeyValueResult&& kv) {
-            out.push_back(kv.key.read());
-        });
-
-        return out;
-    }
-
     // set or update key with value contents. ensure 'key' isn't empty, 'value' can be empty
     bool set(const String& key, const String& value) {
 

@@ -59,7 +59,12 @@ bool has(const String& key) {
 }
 
 Keys keys() {
-    return kv_store.keys();
+    Keys out;
+    kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
+        out.push_back(kv.key.read());
+    });
+
+    return out;
 }
 
 size_t available() {
