@@ -174,6 +174,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Use eslint and html-validate in CI [433f399d](https://github.com/xoseperez/espurna/commit/433f399d9ce769e57ce660d93161649f6287e054)
 - Simplify version + revision into just version [f0f6f1b8](https://github.com/xoseperez/espurna/commit/f0f6f1b8c907fbf188704e3055210d8202a12f21)
 - Remove Core 2.3.0 support from .ld scripts [a1e7941f](https://github.com/xoseperez/espurna/commit/a1e7941fa60339fed84f259033523e1e17e3f17d)
+#### Domoticz
+- Separate lights IDX from relays, migrate existing configuration from `dczRelayIdx0` to `dczLightIdx` [94f31241](https://github.com/xoseperez/espurna/commit/94f31241dc42508791d6a582cd163bec33a40a56)
 #### PlatformIO
 - Update latest Arduino Core platform to 3.0.1 ([68436f1e](https://github.com/xoseperez/espurna/commit/68436f1e72f87fa90ae36ecfd82bf8cc516f7f02))
 - Use SoftwareSerial library from the Core ([23da0b74](https://github.com/xoseperez/espurna/commit/23da0b74d403cebc27b6ae0ca520da3218bf7a47))

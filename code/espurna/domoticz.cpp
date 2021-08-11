@@ -190,7 +190,7 @@ void status(const JsonObject& root, unsigned char nvalue) {
         // for ColorMode... see:
         // https://github.com/domoticz/domoticz/blob/development/hardware/ColorSwitch.h
         // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Set_a_light_to_a_certain_color_or_color_temperature
-        
+
         auto r = color["r"].as<long>();
         auto g = color["g"].as<long>();
         auto b = color["b"].as<long>();
@@ -394,6 +394,10 @@ void onConnected(JsonObject& root) {
     root["dczEnabled"] = settings::enabled();
     root["dczTopicIn"] = settings::topicIn();
     root["dczTopicOut"] = settings::topicOut();
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    root["dczLightIdx"] = settings::lightIdx().value();
+#endif
 
     const size_t Relays { relayCount() };
 
