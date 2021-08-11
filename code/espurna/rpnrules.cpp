@@ -138,7 +138,7 @@ bool run = false;
 unsigned long run_delay = 0;
 unsigned long run_last = 0;
 
-using Runners = std::vector<Runner>;
+using Runners = std::forward_list<Runner>;
 Runners runners;
 
 } // namespace internal
@@ -195,13 +195,9 @@ struct RunnersHandler {
     }
 
     ~RunnersHandler() {
-        auto old = std::remove_if(_runners.begin(), _runners.end(), [](Runner& runner) {
+        _runners.remove_if([](const Runner& runner) {
             return (Runner::Policy::OneShot == runner.policy()) && static_cast<bool>(runner);
         });
-
-        if (old != _runners.end()) {
-            _runners.erase(old, _runners.end());
-        }
 
         for (auto& runner : _runners) {
             runner.reset();
@@ -268,7 +264,7 @@ void showStack(Print& output) {
 
 void setup() {
     terminalRegisterCommand(F("RPN.RUNNERS"), [](const ::terminal::CommandContext& ctx) {
-        if (!internal::runners.size()) {
+        if (internal::runners.empty()) {
             terminalError(ctx, F("No active runners"));
             return;
         }
@@ -492,7 +488,7 @@ rpn_operator_error handle(rpn_context& ctxt, Runner::Policy policy, unsigned lon
         }
     }
 
-    ::rpnrules::internal::runners.emplace_back(policy, time);
+    ::rpnrules::internal::runners.emplace_front(policy, time);
     return rpn_operator_error::CannotContinue;
 }
 
