@@ -237,8 +237,6 @@ void clientFromUrl(const String& string) {
     clientFromUrl(URL(string));
 }
 
-#endif // TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
-
 #if TERMINAL_SUPPORT
 
 void terminalCommands() {
@@ -267,7 +265,7 @@ void mqttCallback(unsigned int type, const char * topic, const char * payload) {
         String t = mqttMagnitude((char *) topic);
         if (t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
-            clientFromPayload(payload);
+            clientFromUrl(payload);
         }
         return;
     }
@@ -278,6 +276,8 @@ void mqttCallback(unsigned int type, const char * topic, const char * payload) {
 } // namespace asynctcp
 } // namespace
 } // namespace ota
+
+#endif
 
 // -----------------------------------------------------------------------------
 

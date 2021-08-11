@@ -8,6 +8,11 @@
 
 #pragma once
 
+#include <Arduino.h>
+
+#include <cstdint>
+#include <utility>
+
 class URL {
 public:
     URL() = default;
