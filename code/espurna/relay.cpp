@@ -209,25 +209,37 @@ String serialize(RelayMaskHelper mask) {
 // RELAY CONTROL
 // -----------------------------------------------------------------------------
 
-namespace {
+// No-op provider, available for purely virtual relays that are controlled only via API
 
-RelayProviderBase* _relayDummyProvider();
+struct DummyProvider : public RelayProviderBase {
+    const char* id() const override {
+        return "dummy";
+    }
 
-struct relay_t {
+    void change(bool) override {
+    }
+
+    static RelayProviderBase* sharedInstance() {
+        static DummyProvider provider;
+        return &provider;
+    }
+};
+
+class Relay {
 public:
     // Struct defaults to empty relay configuration, as we allow switches to exist without real GPIOs
-    relay_t() = default;
+    Relay() = default;
 
-    relay_t(RelayProviderBasePtr&& provider_) :
-        provider(provider_.release())
+    explicit Relay(RelayProviderBasePtr&& ptr) :
+        provider(ptr.release())
     {}
 
-    relay_t(RelayProviderBase* provider_) :
-        provider(provider_)
+    explicit Relay(RelayProviderBase* ptr) :
+        provider(ptr)
     {}
 
     // ON / OFF actions implementation
-    RelayProviderBase* provider { _relayDummyProvider() };
+    RelayProviderBase* provider { DummyProvider::sharedInstance() };
 
     // Timers
     unsigned long delay_on { 0ul };                // Delay to turn relay ON
@@ -253,7 +265,10 @@ public:
     bool group_report { false };                   // Whether to report to group topic
 };
 
-std::vector<relay_t> _relays;
+namespace {
+
+using Relays = std::vector<Relay>;
+Relays _relays;
 size_t _relayDummy { 0ul };
 
 unsigned long _relay_flood_window { relay::build::floodWindowMs() };
@@ -322,25 +337,9 @@ void relayOnStatusChange(RelayStatusCallback callback) {
     _relay_status_change.push_front(callback);
 }
 
-// No-op provider, available for purely virtual relays that are controlled only via API
-
-struct DummyProvider : public RelayProviderBase {
-    const char* id() const override {
-        return "dummy";
-    }
-
-    void change(bool) override {
-    }
-};
+// Real GPIO provider, using BasePin interface to implement writers
 
 namespace {
-
-RelayProviderBase* _relayDummyProvider() {
-    static DummyProvider provider;
-    return &provider;
-}
-
-// Real GPIO provider, using BasePin interface to implement writers
 
 struct GpioProvider : public RelayProviderBase {
     GpioProvider(size_t id, RelayType type, std::unique_ptr<BasePin>&& pin, std::unique_ptr<BasePin>&& reset_pin) :
@@ -575,13 +574,9 @@ private:
 
 #endif // RELAY_PROVIDER_STM_SUPPORT
 
-} // namespace
-
 // -----------------------------------------------------------------------------
 // UTILITY
 // -----------------------------------------------------------------------------
-
-namespace {
 
 bool _relayTryParseId(const char* p, size_t& id) {
     return tryParseId(p, relayCount, id);
