@@ -28,7 +28,7 @@ namespace settings {
 static kvs_type kv_store(
     EepromStorage{},
 #if DEBUG_SUPPORT
-    EepromReservedSize + CrashReservedSize,
+    EepromReservedSize + crashReservedSize(),
 #else
     EepromReservedSize,
 #endif
