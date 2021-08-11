@@ -126,6 +126,8 @@ std::forward_list<mqtt_callback_f> _mqtt_callbacks;
 namespace mqtt {
 namespace build {
 
+constexpr size_t MessageLogMax { 128ul };
+
 const __FlashStringHelper* server() {
     return F(MQTT_SERVER);
 }
@@ -1008,7 +1010,11 @@ void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessagePrope
         return;
     }
     message[len + index] = '\0';
-    DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s\n"), topic, message);
+    if (len < mqtt::build::MessageLogMax) {
+        DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s\n"), topic, message);
+    } else {
+        DEBUG_MSG_P(PSTR("[MQTT] Received %s => (%u bytes)\n"), topic, len);
+    }
 
     // Call subscribers with the message buffer
     for (auto& callback : _mqtt_callbacks) {
@@ -1126,8 +1132,6 @@ String mqttTopic(const char* magnitude, unsigned int index, bool is_set) {
 // -----------------------------------------------------------------------------
 
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos) {
-    constexpr size_t MessageLogMax { 128ul };
-
     if (_mqtt.connected()) {
         const unsigned int packetId {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
@@ -1146,7 +1150,7 @@ uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int 
             auto begin = message;
             auto end = message + len;
 
-            if ((len > MessageLogMax) || (end != std::find(begin, end, '\n'))) {
+            if ((len > mqtt::build::MessageLogMax) || (end != std::find(begin, end, '\n'))) {
                 DEBUG_MSG_P(PSTR("[MQTT] Sending %s => (%u bytes) (PID %u)\n"), topic, len, packetId);
             } else {
                 DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %u)\n"), topic, message, packetId);
