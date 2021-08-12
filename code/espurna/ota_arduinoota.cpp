@@ -16,8 +16,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoOTA.h>
 
 namespace ota {
-namespace {
 namespace arduino {
+namespace {
 
 // TODO: Allocate ArduinoOTAClass on-demand, stop using global instance
 // TODO: ArduinoOTAClass and MDNS are tightly coupled together, consider creating a MDNS-less version for internal use?
@@ -117,8 +117,8 @@ void setup() {
     configure();
 }
 
-} // namespace arduino
 } // namespace
+} // namespace arduino
 } // namespace ota
 
 void arduinoOtaSetup() {

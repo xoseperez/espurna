@@ -33,9 +33,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 
 namespace ota {
-namespace {
-
 namespace asynctcp {
+namespace {
 
 // XXX: this client is not techically a HTTP client, but a simple byte reader that will ignore all received headers and go straight for the data
 // XXX: client state is fragile, make sure to not depend on anything global in callbacks
@@ -273,8 +272,8 @@ void mqttCallback(unsigned int type, const char * topic, const char * payload) {
 
 #endif // OTA_MQTT_SUPPORT
 
-} // namespace asynctcp
 } // namespace
+} // namespace asynctcp
 } // namespace ota
 
 #endif

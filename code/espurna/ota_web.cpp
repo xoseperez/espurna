@@ -15,8 +15,8 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "ws.h"
 
 namespace ota {
-namespace {
 namespace web {
+namespace {
 
 void sendResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
     auto *response = request->beginResponseStream("text/plain", 256);
@@ -130,8 +130,8 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
     }
 }
 
-} // namespace web
 } // namespace
+} // namespace web
 } // namespace ota
 
 void otaWebSetup() {

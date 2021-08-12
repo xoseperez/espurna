@@ -46,8 +46,8 @@ namespace {
 // -----------------------------------------------------------------------------
 
 namespace ota {
-namespace {
 namespace httpupdate {
+namespace {
 
 // -----------------------------------------------------------------------------
 // Generic update methods
@@ -63,7 +63,7 @@ void run(WiFiClient* client, const String& url) {
     ESPhttpUpdate.rebootOnUpdate(false);
 
     t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
-    result = ESPhttpUpdate.update(client, url);
+    result = ESPhttpUpdate.update(*client, url);
 
     switch (result) {
     case HTTP_UPDATE_FAILED:
@@ -121,8 +121,8 @@ SecureClientConfig defaultSecureClientConfig {
     true
 };
 
-void runForHttps(const String& url) {
-    runForHttps(url, defaultSecureClientConfig);
+void clientFromHttps(const String& url) {
+    clientFromHttps(url, defaultSecureClientConfig);
 }
 
 #endif // SECURE_CLIENT_BEARSSL
@@ -186,8 +186,8 @@ void mqttCallback(unsigned int type, const char * topic, const char * payload) {
 
 #endif // MQTT_SUPPORT
 
-} // namespace httpupdate
 } // namespace
+} // namespace httpupdate
 } // namespace ota
 
 // -----------------------------------------------------------------------------
