@@ -470,7 +470,6 @@ void test_keys_iterator() {
         keys.push_back(kv.key.read());
     });
 
-    TEST_ASSERT(instance.kvs.keys() == keys);
     TEST_ASSERT_EQUAL(2, keys.size());
     TEST_ASSERT_EQUAL(2, instance.kvs.count());
     TEST_ASSERT_EQUAL_STRING("key", keys[0].c_str());
