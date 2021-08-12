@@ -285,16 +285,19 @@ IPAddress convert(const String& value) {
 
 template <>
 wifi::Mac convert(const String& value) {
-    wifi::Mac out { 0u, 0u, 0u, 0u, 0u, 0u };
+    wifi::Mac out{};
+
+    constexpr size_t Min { 12 };
+    constexpr size_t Max { 17 };
 
     switch (value.length()) {
     // xxxxxxxxxx
-    case 12:
+    case Min:
         hexDecode(value.c_str(), value.length(), out.data(), out.size());
         break;
 
     // xx:xx:xx:xx:xx:xx
-    case 17: {
+    case Max: {
         String buffer;
         buffer.reserve(value.length());
 
@@ -303,8 +306,9 @@ wifi::Mac convert(const String& value) {
                 buffer += *it;
             }
         }
-
-        hexDecode(buffer.c_str(), buffer.length(), out.data(), out.size());
+        if (buffer.length() == Min) {
+            hexDecode(buffer.c_str(), buffer.length(), out.data(), out.size());
+        }
         break;
     }
 
@@ -694,6 +698,8 @@ String convertSsid(const bss_info& info) {
 
 template <typename T, size_t SsidSize = sizeof(T::ssid)>
 String convertSsid(const T& config) {
+    static_assert(SsidSize == 32, "");
+
     const char* ptr { reinterpret_cast<const char*>(config.ssid) };
     char ssid[SsidSize + 1];
     std::copy(ptr, ptr + SsidSize, ssid);
@@ -704,8 +710,9 @@ String convertSsid(const T& config) {
 
 template <typename T, size_t PassphraseSize = sizeof(T::password)>
 String convertPassphrase(const T& config) {
-    const char* ptr { reinterpret_cast<const char*>(config.password) };
+    static_assert(PassphraseSize == 64, "");
 
+    const char* ptr { reinterpret_cast<const char*>(config.password) };
     char passphrase[PassphraseSize + 1];
     std::copy(ptr, ptr + PassphraseSize, passphrase);
     passphrase[PassphraseSize] = '\0';
@@ -713,10 +720,11 @@ String convertPassphrase(const T& config) {
     return passphrase;
 }
 
-template <typename T>
+template <typename T, size_t MacSize = sizeof(T::bssid)>
 wifi::Mac convertBssid(const T& info) {
+    static_assert(MacSize == 6, "");
     wifi::Mac mac;
-    std::copy(info.bssid, info.bssid + 6, mac.begin());
+    std::copy(info.bssid, info.bssid + MacSize, mac.begin());
     return mac;
 }
 
@@ -779,8 +787,7 @@ struct Info {
     }
 
 private:
-    //Mac _bssid {{ 0u, 0u, 0u, 0u, 0u, 0u }}; // TODO: gcc4 can't figure out basic aggregate, replace when using gcc10 builds
-    Mac _bssid {};
+    Mac _bssid{};
     AUTH_MODE _authmode { AUTH_OPEN };
     int8_t _rssi { 0 };
     uint8_t _channel { 0u };
