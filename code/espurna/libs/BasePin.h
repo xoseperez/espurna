@@ -17,7 +17,15 @@ constexpr unsigned char GPIO_NONE { 0x99 };
 
 class BasePin {
 public:
+    BasePin() = default;
     virtual ~BasePin() = default;
+
+    BasePin(const BasePin&) = delete;
+    BasePin(BasePin&&) = delete;
+
+    BasePin& operator=(const BasePin&) = delete;
+    BasePin& operator=(BasePin&&) = delete;
+
     virtual String description() const;
 
     virtual const char* id() const = 0;
