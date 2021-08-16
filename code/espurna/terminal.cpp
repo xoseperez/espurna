@@ -448,33 +448,36 @@ void _terminalInitCommands() {
         ctx.output.printf_P(PSTR("size: %u (SPI), %u (SDK)\n"),
             ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
 
-        Layouts layout(ESP.getFlashChipRealSize());
+        Layouts layouts(ESP.getFlashChipRealSize());
 
         // SDK specifies a hard-coded layout, there's no data beyond
         // (...addressable by the Core, since it adheres the setting)
         if (ESP.getFlashChipRealSize() > ESP.getFlashChipSize()) {
-            layout.add("unused", ESP.getFlashChipRealSize() - ESP.getFlashChipSize());
+            layouts.add("unused", ESP.getFlashChipRealSize() - ESP.getFlashChipSize());
         }
 
         // app is at a normal location, [0...size), but... since it is offset by the free space, make sure it is aligned
         // to the sector size (...and it is expected from the getFreeSketchSpace, as the app will align to use the fixed
         // sector address for OTA writes).
 
-        layout.add("sdk", 4 * SPI_FLASH_SEC_SIZE);
-        layout.add("eeprom", eepromSpace());
+        layouts.add("sdk", 4 * SPI_FLASH_SEC_SIZE);
+        layouts.add("eeprom", eepromSpace());
 
         auto app_size = (ESP.getSketchSize() + FLASH_SECTOR_SIZE - 1) & (~(FLASH_SECTOR_SIZE - 1));
-        auto ota_size = layout.current() - app_size;
+        auto ota_size = layouts.current() - app_size;
 
         // OTA is allowed to use all but one eeprom sectors that, leaving the last one
         // for the settings snapshot during the update
 
-        layout.add("ota", ota_size);
-        layout.add("app", app_size);
+        layouts.add("ota", ota_size);
+        layouts.add("app", app_size);
 
-        layout.foreach([&](const Layout& l) {
-            ctx.output.printf_P("%-6s [%08X...%08X) (%u bytes)\n", l.name(), l.start(), l.end(), l.size());
+        layouts.foreach([&](const Layout& layout) {
+            ctx.output.printf_P("%-6s [%08X...%08X) (%u bytes)\n",
+                    layout.name(), layout.start(), layout.end(), layout.size());
         });
+
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {

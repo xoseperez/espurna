@@ -68,9 +68,25 @@ DebugLogMode convert(const String& value) {
 
 namespace debug {
 namespace {
+
+struct Timestamp {
+    Timestamp() = default;
+
+    constexpr Timestamp(bool value) :
+        _value(value)
+    {}
+
+    explicit operator bool() const {
+        return _value;
+    }
+
+private:
+    bool _value { false };
+};
+
 namespace build {
 
-constexpr bool AddTimestamp { 1 == DEBUG_ADD_TIMESTAMP };
+constexpr Timestamp AddTimestamp { 1 == DEBUG_ADD_TIMESTAMP };
 
 constexpr bool coreDebug() {
 #if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)
@@ -149,15 +165,7 @@ void delayedEnable() {
     schedule_function(enable);
 }
 
-void send(const char* message, size_t len, bool add_timestamp);
-
-void send(const char* message, bool timestamp) {
-    send(message, strlen(message), timestamp);
-}
-
-void send(const char* message) {
-    send(message, build::AddTimestamp);
-}
+void send(const char* message, size_t len, Timestamp);
 
 void formatAndSend(const char* format, va_list args) {
     constexpr size_t SmallStringBufferSize { 128 };
@@ -171,7 +179,7 @@ void formatAndSend(const char* format, va_list args) {
     // strlen(...) + '\0' already in temp buffer, avoid (explicit) dynamic memory when possible
     // (TODO: printf might still do it anyway internally?)
     if (static_cast<size_t>(len) < sizeof(temp)) {
-        send(temp, len);
+        send(temp, len, build::AddTimestamp);
         return;
     }
 
@@ -182,7 +190,7 @@ void formatAndSend(const char* format, va_list args) {
     }
 
     vsnprintf_P(buffer, len, format, args);
-    send(buffer, len);
+    send(buffer, len, build::AddTimestamp);
     delete[] buffer;
 }
 
@@ -277,6 +285,24 @@ private:
     bool _value { false };
 };
 
+struct DebugLock {
+    DebugLock() {
+        if (debug::enabled()) {
+            _changed = true;
+            debug::disable();
+        }
+    }
+
+    ~DebugLock() {
+        if (_changed) {
+            debug::enable();
+        }
+    }
+
+private:
+    bool _changed { false };
+};
+
 // Buffer data until we encounter line break, then flush via debug method
 // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
 // TODO: abstract as `PrintLine`, so this becomes generic line buffering output for terminal as well?
@@ -307,10 +333,13 @@ void sendBytes(const uint8_t* bytes, size_t size) {
         reinterpret_cast<const char*>(bytes) + size);
 
     if (internal::line.end() != std::find(internal::line.begin(), internal::line.end(), '\n')) {
+        // TODO: ws and telnet still assume this is a c-string and will try to strlen this pointer
+        auto len = internal::line.size();
         internal::line.push_back('\0');
-        debug::disable();
-        debug::send(internal::line.data());
-        debug::enable();
+
+        DebugLock debugLock;
+        debug::send(internal::line.data(), len, Timestamp(false));
+
         internal::line.clear();
     }
 }
@@ -433,7 +462,7 @@ bool output(const char* message, size_t len) {
 } // namespace syslog
 #endif
 
-void send(const char* message, size_t len, bool timestamp) {
+void send(const char* message, size_t len, Timestamp timestamp) {
     if (!message || !len) {
         return;
     }
@@ -444,7 +473,7 @@ void send(const char* message, size_t len, bool timestamp) {
         snprintf(prefix, sizeof(prefix), "[%06lu] ", millis() % 1000000);
     }
 
-    continue_timestamp = timestamp
+    continue_timestamp = static_cast<bool>(timestamp)
         || (message[len - 1] == '\r')
         || (message[len - 1] == '\n');
 
