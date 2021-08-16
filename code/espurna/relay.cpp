@@ -28,8 +28,248 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "utils.h"
 #include "ws.h"
 
-#include "libs/BasePin.h"
-#include "relay_config.h"
+// -----------------------------------------------------------------------------
+
+namespace relay {
+namespace {
+namespace build {
+
+constexpr unsigned long saveDelay() {
+    return RELAY_SAVE_DELAY;
+}
+
+constexpr size_t dummyCount() {
+    return DUMMY_RELAY_COUNT;
+}
+
+constexpr int syncMode() {
+    return RELAY_SYNC;
+}
+
+constexpr float floodWindow() {
+    return RELAY_FLOOD_WINDOW;
+}
+
+static_assert(floodWindow() >= 0.0f, "");
+
+constexpr unsigned long floodWindowMs() {
+    return static_cast<unsigned long>(floodWindow() * 1000.0f);
+}
+
+constexpr unsigned long floodChanges() {
+    return RELAY_FLOOD_CHANGES;
+}
+
+constexpr unsigned long interlockDelay() {
+    return RELAY_DELAY_INTERLOCK;
+}
+
+constexpr float pulseTime(size_t index) {
+    return (
+        (index == 0) ? RELAY1_PULSE_TIME :
+        (index == 1) ? RELAY2_PULSE_TIME :
+        (index == 2) ? RELAY3_PULSE_TIME :
+        (index == 3) ? RELAY4_PULSE_TIME :
+        (index == 4) ? RELAY5_PULSE_TIME :
+        (index == 5) ? RELAY6_PULSE_TIME :
+        (index == 6) ? RELAY7_PULSE_TIME :
+        (index == 7) ? RELAY8_PULSE_TIME : RELAY_PULSE_TIME
+    );
+}
+
+static_assert(pulseTime(0) >= 0.0f, "");
+static_assert(pulseTime(1) >= 0.0f, "");
+static_assert(pulseTime(2) >= 0.0f, "");
+static_assert(pulseTime(3) >= 0.0f, "");
+static_assert(pulseTime(4) >= 0.0f, "");
+static_assert(pulseTime(5) >= 0.0f, "");
+static_assert(pulseTime(6) >= 0.0f, "");
+static_assert(pulseTime(7) >= 0.0f, "");
+
+constexpr RelayPulse pulseMode(size_t index) {
+    return (
+        (index == 0) ? RELAY1_PULSE_MODE :
+        (index == 1) ? RELAY2_PULSE_MODE :
+        (index == 2) ? RELAY3_PULSE_MODE :
+        (index == 3) ? RELAY4_PULSE_MODE :
+        (index == 4) ? RELAY5_PULSE_MODE :
+        (index == 5) ? RELAY6_PULSE_MODE :
+        (index == 6) ? RELAY7_PULSE_MODE :
+        (index == 7) ? RELAY8_PULSE_MODE : RELAY_PULSE_NONE
+    );
+}
+
+constexpr unsigned long delayOn(size_t index) {
+    return (
+        (index == 0) ? RELAY1_DELAY_ON :
+        (index == 1) ? RELAY2_DELAY_ON :
+        (index == 2) ? RELAY3_DELAY_ON :
+        (index == 3) ? RELAY4_DELAY_ON :
+        (index == 4) ? RELAY5_DELAY_ON :
+        (index == 5) ? RELAY6_DELAY_ON :
+        (index == 6) ? RELAY7_DELAY_ON :
+        (index == 7) ? RELAY8_DELAY_ON : 0ul
+    );
+}
+
+constexpr unsigned long delayOff(size_t index) {
+    return (
+        (index == 0) ? RELAY1_DELAY_OFF :
+        (index == 1) ? RELAY2_DELAY_OFF :
+        (index == 2) ? RELAY3_DELAY_OFF :
+        (index == 3) ? RELAY4_DELAY_OFF :
+        (index == 4) ? RELAY5_DELAY_OFF :
+        (index == 5) ? RELAY6_DELAY_OFF :
+        (index == 6) ? RELAY7_DELAY_OFF :
+        (index == 7) ? RELAY8_DELAY_OFF : 0ul
+    );
+}
+
+constexpr unsigned char pin(size_t index) {
+    return (
+        (index == 0) ? RELAY1_PIN :
+        (index == 1) ? RELAY2_PIN :
+        (index == 2) ? RELAY3_PIN :
+        (index == 3) ? RELAY4_PIN :
+        (index == 4) ? RELAY5_PIN :
+        (index == 5) ? RELAY6_PIN :
+        (index == 6) ? RELAY7_PIN :
+        (index == 7) ? RELAY8_PIN : GPIO_NONE
+    );
+}
+
+constexpr RelayType type(size_t index) {
+    return (
+        (index == 0) ? RELAY1_TYPE :
+        (index == 1) ? RELAY2_TYPE :
+        (index == 2) ? RELAY3_TYPE :
+        (index == 3) ? RELAY4_TYPE :
+        (index == 4) ? RELAY5_TYPE :
+        (index == 5) ? RELAY6_TYPE :
+        (index == 6) ? RELAY7_TYPE :
+        (index == 7) ? RELAY8_TYPE : RELAY_TYPE_NORMAL
+    );
+}
+
+constexpr GpioType pinType(size_t index) {
+    return (
+        (index == 0) ? RELAY1_PIN_TYPE :
+        (index == 1) ? RELAY2_PIN_TYPE :
+        (index == 2) ? RELAY3_PIN_TYPE :
+        (index == 3) ? RELAY4_PIN_TYPE :
+        (index == 4) ? RELAY5_PIN_TYPE :
+        (index == 5) ? RELAY6_PIN_TYPE :
+        (index == 6) ? RELAY7_PIN_TYPE :
+        (index == 7) ? RELAY8_PIN_TYPE : GPIO_TYPE_NONE
+    );
+}
+
+constexpr unsigned char resetPin(size_t index) {
+    return (
+        (index == 0) ? RELAY1_RESET_PIN :
+        (index == 1) ? RELAY2_RESET_PIN :
+        (index == 2) ? RELAY3_RESET_PIN :
+        (index == 3) ? RELAY4_RESET_PIN :
+        (index == 4) ? RELAY5_RESET_PIN :
+        (index == 5) ? RELAY6_RESET_PIN :
+        (index == 6) ? RELAY7_RESET_PIN :
+        (index == 7) ? RELAY8_RESET_PIN : GPIO_NONE
+    );
+}
+
+constexpr int bootMode(size_t index) {
+    return (
+        (index == 0) ? RELAY1_BOOT_MODE :
+        (index == 1) ? RELAY2_BOOT_MODE :
+        (index == 2) ? RELAY3_BOOT_MODE :
+        (index == 3) ? RELAY4_BOOT_MODE :
+        (index == 4) ? RELAY5_BOOT_MODE :
+        (index == 5) ? RELAY6_BOOT_MODE :
+        (index == 6) ? RELAY7_BOOT_MODE :
+        (index == 7) ? RELAY8_BOOT_MODE : RELAY_BOOT_OFF
+    );
+}
+
+constexpr RelayProvider provider(size_t index) {
+    return (
+        (index == 0) ? (RELAY1_PROVIDER) :
+        (index == 1) ? (RELAY2_PROVIDER) :
+        (index == 2) ? (RELAY3_PROVIDER) :
+        (index == 3) ? (RELAY4_PROVIDER) :
+        (index == 4) ? (RELAY5_PROVIDER) :
+        (index == 5) ? (RELAY6_PROVIDER) :
+        (index == 6) ? (RELAY7_PROVIDER) :
+        (index == 7) ? (RELAY8_PROVIDER) : RELAY_PROVIDER_NONE
+    );
+}
+
+constexpr RelayMqttTopicMode mqttTopicMode(size_t index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_TOPIC_MODE) :
+        (index == 1) ? (RELAY2_MQTT_TOPIC_MODE) :
+        (index == 2) ? (RELAY3_MQTT_TOPIC_MODE) :
+        (index == 3) ? (RELAY4_MQTT_TOPIC_MODE) :
+        (index == 4) ? (RELAY5_MQTT_TOPIC_MODE) :
+        (index == 5) ? (RELAY6_MQTT_TOPIC_MODE) :
+        (index == 6) ? (RELAY7_MQTT_TOPIC_MODE) :
+        (index == 7) ? (RELAY8_MQTT_TOPIC_MODE) : RELAY_MQTT_TOPIC_MODE
+    );
+}
+
+const __FlashStringHelper* payloadOn() {
+    return F(RELAY_MQTT_ON);
+}
+
+const __FlashStringHelper* payloadOff() {
+    return F(RELAY_MQTT_OFF);
+}
+
+const __FlashStringHelper* payloadToggle() {
+    return F(RELAY_MQTT_TOGGLE);
+}
+
+constexpr const char* mqttTopicSub(size_t index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_TOPIC_SUB) :
+        (index == 1) ? (RELAY2_MQTT_TOPIC_SUB) :
+        (index == 2) ? (RELAY3_MQTT_TOPIC_SUB) :
+        (index == 3) ? (RELAY4_MQTT_TOPIC_SUB) :
+        (index == 4) ? (RELAY5_MQTT_TOPIC_SUB) :
+        (index == 5) ? (RELAY6_MQTT_TOPIC_SUB) :
+        (index == 6) ? (RELAY7_MQTT_TOPIC_SUB) :
+        (index == 7) ? (RELAY8_MQTT_TOPIC_SUB) : ""
+    );
+}
+
+constexpr const char* mqttTopicPub(size_t index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_TOPIC_PUB) :
+        (index == 1) ? (RELAY2_MQTT_TOPIC_PUB) :
+        (index == 2) ? (RELAY3_MQTT_TOPIC_PUB) :
+        (index == 3) ? (RELAY4_MQTT_TOPIC_PUB) :
+        (index == 4) ? (RELAY5_MQTT_TOPIC_PUB) :
+        (index == 5) ? (RELAY6_MQTT_TOPIC_PUB) :
+        (index == 6) ? (RELAY7_MQTT_TOPIC_PUB) :
+        (index == 7) ? (RELAY8_MQTT_TOPIC_PUB) : ""
+    );
+}
+
+constexpr PayloadStatus mqttDisconnectionStatus(size_t index) {
+    return (
+        (index == 0) ? (RELAY1_MQTT_DISCONNECT_STATUS) :
+        (index == 1) ? (RELAY2_MQTT_DISCONNECT_STATUS) :
+        (index == 2) ? (RELAY3_MQTT_DISCONNECT_STATUS) :
+        (index == 3) ? (RELAY4_MQTT_DISCONNECT_STATUS) :
+        (index == 4) ? (RELAY5_MQTT_DISCONNECT_STATUS) :
+        (index == 5) ? (RELAY6_MQTT_DISCONNECT_STATUS) :
+        (index == 6) ? (RELAY7_MQTT_DISCONNECT_STATUS) :
+        (index == 7) ? (RELAY8_MQTT_DISCONNECT_STATUS) : RELAY_MQTT_DISCONNECT_NONE
+    );
+}
+
+} // namespace build
+} // namespace
+} // namespace relay
 
 namespace {
 
@@ -205,6 +445,129 @@ String serialize(RelayMaskHelper mask) {
 } // namespace internal
 } // namespace settings
 
+namespace relay {
+namespace {
+namespace settings {
+
+String name(size_t index) {
+    return getSetting({"relayName", index});
+}
+
+RelayProvider provider(size_t index) {
+    return getSetting({"relayProv", index}, build::provider(index));
+}
+
+RelayType type(size_t index) {
+    return getSetting({"relayType", index}, build::type(index));
+}
+
+GpioType pinType(size_t index) {
+    return getSetting({"relayGpioType", index}, build::pinType(index));
+}
+
+unsigned char pin(size_t index) {
+    return getSetting({"relayGpio", index}, build::pin(index));
+}
+
+unsigned char resetPin(size_t index) {
+    return getSetting({"relayResetGpio", index}, build::resetPin(index));
+}
+
+int bootMode(size_t index) {
+    return getSetting({"relayBoot", index}, build::bootMode(index));
+}
+
+RelayMaskHelper bootMask() {
+    static RelayMaskHelper defaultMask;
+    return getSetting("relayBootMask", defaultMask);
+}
+
+void bootMask(const String& mask) {
+    setSetting("relayBootMask", mask);
+}
+
+void bootMask(const RelayMaskHelper& mask) {
+    bootMask(::settings::internal::serialize(mask));
+}
+
+RelayPulse pulseMode(size_t index) {
+    return getSetting({"relayPulse", index}, build::pulseMode(index));
+}
+
+// TODO: stronger type for time, time as ms, delays, etc.
+
+float pulseTime(size_t index) {
+    return getSetting({"relayTime", index}, build::pulseTime(index));
+}
+
+unsigned long pulseTimeMs(size_t index) {
+    return static_cast<unsigned long>(1000.0f * pulseTime(index));
+}
+
+unsigned long delayOn(size_t index) {
+    return getSetting({"relayDelayOn", index}, build::delayOn(index));
+}
+
+unsigned long delayOff(size_t index) {
+    return getSetting({"relayDelayOff", index}, build::delayOff(index));
+}
+
+float floodWindow() {
+    return getSetting("relayFloodTime", build::floodWindow());
+}
+
+unsigned long floodWindowMs() {
+    return 1000.0f * floodWindow();
+}
+
+unsigned long floodChanges() {
+    return getSetting("relayFloodChanges", build::floodChanges());
+}
+
+unsigned long interlockDelay() {
+    return getSetting("relayIlkDelay", build::interlockDelay());
+}
+
+int syncMode() {
+    return getSetting("relaySync", build::syncMode());
+}
+
+String payloadOn() {
+    return getSetting("relayPayloadOn", build::payloadOn());
+}
+
+String payloadOff() {
+    return getSetting("relayPayloadOff", build::payloadOff());
+}
+
+String payloadToggle() {
+    return getSetting("relayPayloadToggle", build::payloadToggle());
+}
+
+String mqttTopicSub(size_t index) {
+    return getSetting({"relayTopicSub", index}, build::mqttTopicSub(index));
+}
+
+String mqttTopicPub(size_t index) {
+    return getSetting({"relayTopicPub", index}, build::mqttTopicPub(index));
+}
+
+RelayMqttTopicMode mqttTopicMode(size_t index) {
+    return getSetting({"relayTopicMode", index}, build::mqttTopicMode(index));
+}
+
+PayloadStatus mqttDisconnectionStatus(size_t index) {
+    return getSetting({"relayMqttDisc", index}, build::mqttDisconnectionStatus(index));
+}
+
+size_t dummyCount() {
+    return getSetting("relayDummy", build::dummyCount());
+}
+
+} // namespace settings
+} // namespace
+} // namespace relay
+
 // -----------------------------------------------------------------------------
 // RELAY CONTROL
 // -----------------------------------------------------------------------------
@@ -297,9 +660,9 @@ void _relayWsReport() {
 
 #if MQTT_SUPPORT || API_SUPPORT
 
-String _relay_rpc_payload_on;
-String _relay_rpc_payload_off;
-String _relay_rpc_payload_toggle;
+String _relay_payload_on;
+String _relay_payload_off;
+String _relay_payload_toggle;
 
 #endif // MQTT_SUPPORT || API_SUPPORT
 
@@ -762,19 +1125,6 @@ inline void _relayMaskRtcmem(const RelayMaskHelper& mask) {
     _relayMaskRtcmem(mask.toUnsigned());
 }
 
-RelayMaskHelper _relayMaskSettings() {
-    static RelayMaskHelper defaultMask;
-    return getSetting("relayBootMask", defaultMask);
-}
-
-void _relayMaskSettings(const String& mask) {
-    setSetting("relayBootMask", mask);
-}
-
-inline void _relayMaskSettings(const RelayMaskHelper& mask) {
-    _relayMaskSettings(settings::internal::serialize(mask));
-}
-
 } // namespace
 
 // Pulse timers (timer after ON or OFF event)
@@ -813,8 +1163,8 @@ void relayPulse(size_t id) {
     if ((mode == RelayPulse::On) != relay.current_status) {
         relay.pulseTicker->once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
-        relay.pulse = getSetting({"relayPulse", id},relay::build::pulseMode(id));
-        relay.pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, relay::build::pulseTime(id)));
+        relay.pulse = relay::settings::pulseMode(id);
+        relay.pulse_ms = relay::settings::pulseTimeMs(id);
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
     }
 
@@ -1009,7 +1359,7 @@ void relaySave(bool persist) {
     // Nevertheless, we store the value in the EEPROM buffer so it will be written
     // on the next commit.
     if (persist) {
-        _relayMaskSettings(mask);
+        relay::settings::bootMask(mask);
         eepromCommit(); // TODO: should this respect settings auto-save?
     }
 }
@@ -1039,11 +1389,11 @@ size_t relayCount() {
 PayloadStatus relayParsePayload(const char * payload) {
 #if MQTT_SUPPORT || API_SUPPORT
     return rpcParsePayload(payload, [](const char* payload) {
-        if (_relay_rpc_payload_off.equals(payload)) {
+        if (_relay_payload_off.equals(payload)) {
             return PayloadStatus::Off;
-        } else if (_relay_rpc_payload_on.equals(payload)) {
+        } else if (_relay_payload_on.equals(payload)) {
             return PayloadStatus::On;
-        } else if (_relay_rpc_payload_toggle.equals(payload)) {
+        } else if (_relay_payload_toggle.equals(payload)) {
             return PayloadStatus::Toggle;
         }
 
@@ -1094,12 +1444,10 @@ void _relaySettingsMigrate(int version) {
 }
 
 void _relayBoot(size_t index, const RelayMaskHelper& mask) {
-    const auto boot_mode = getSetting({"relayBoot", index}, relay::build::bootMode(index));
-
     auto status = false;
     auto lock = RelayLock::None;
 
-    switch (boot_mode) {
+    switch (relay::settings::bootMode(index)) {
     case RELAY_BOOT_SAME:
         status = mask[index];
         break;
@@ -1139,7 +1487,7 @@ void _relayBoot(size_t index, const RelayMaskHelper& mask) {
 void _relayBootAll() {
     auto mask = rtcmemStatus()
         ? _relayMaskRtcmem()
-        : _relayMaskSettings();
+        : relay::settings::bootMask();
 
     bool log { false };
 
@@ -1162,26 +1510,24 @@ void _relayBootAll() {
 void _relayConfigure() {
     auto relays = _relays.size();
     for (decltype(relays) id = 0; id < relays; ++id) {
-        _relays[id].pulse = getSetting({"relayPulse", id}, relay::build::pulseMode(id));
-        _relays[id].pulse_ms = static_cast<unsigned long>(1000.0f * getSetting({"relayTime", id}, relay::build::pulseTime(id)));
+        _relays[id].pulse = relay::settings::pulseMode(id);
+        _relays[id].pulse_ms = relay::settings::pulseTimeMs(id);
 
-        _relays[id].delay_on = getSetting({"relayDelayOn", id}, relay::build::delayOn(id));
-        _relays[id].delay_off = getSetting({"relayDelayOff", id}, relay::build::delayOff(id));
+        _relays[id].delay_on = relay::settings::delayOn(id);
+        _relays[id].delay_off = relay::settings::delayOff(id);
     }
 
-    _relay_flood_window = (1000.0f * getSetting("relayFloodTime", relay::build::floodWindow()));
-    _relay_flood_changes = getSetting("relayFloodChanges", relay::build::floodChanges());
+    _relay_flood_window = relay::settings::floodWindowMs();
+    _relay_flood_changes = relay::settings::floodChanges();
 
-    _relay_delay_interlock = getSetting("relayIlkDelay", relay::build::interlockDelay());
-    _relay_sync_mode = getSetting("relaySync", relay::build::syncMode());
+    _relay_delay_interlock = relay::settings::interlockDelay();
+    _relay_sync_mode = relay::settings::syncMode();
 
-    #if MQTT_SUPPORT || API_SUPPORT
-        settingsProcessConfig({
-            {_relay_rpc_payload_on,     "relayPayloadOn",     relay::build::mqttPayloadOn()},
-            {_relay_rpc_payload_off,    "relayPayloadOff",    relay::build::mqttPayloadOff()},
-            {_relay_rpc_payload_toggle, "relayPayloadToggle", relay::build::mqttPayloadToggle()},
-        });
-    #endif // MQTT_SUPPORT
+#if MQTT_SUPPORT || API_SUPPORT
+    _relay_payload_on = relay::settings::payloadOn();
+    _relay_payload_off = relay::settings::payloadOff();
+    _relay_payload_toggle = relay::settings::payloadToggle();
+#endif // MQTT_SUPPORT
 }
 
 } // namespace
@@ -1220,17 +1566,15 @@ void _relayWebSocketUpdate(JsonObject& root) {
 
 void _relayWebSocketRelayConfig(JsonArray& relay, size_t id) {
     relay.add(_relays[id].provider->id());
-    relay.add(static_cast<uint8_t>(getSetting({"relayProv", id}, relay::build::provider(id))));
-    relay.add(getSetting({"relayName", id}));
-    relay.add(getSetting({"relayBoot", id}, relay::build::bootMode(id)));
+    relay.add(static_cast<uint8_t>(relay::settings::provider(id)));
+    relay.add(relay::settings::name(id));
+    relay.add(relay::settings::bootMode(id));
 
 #if MQTT_SUPPORT
-    relay.add(getSetting({"relayTopicSub", id}, relay::build::mqttTopicSub(id)));
-    relay.add(getSetting({"relayTopicPub", id}, relay::build::mqttTopicPub(id)));
-    relay.add(static_cast<uint8_t>(getSetting({"relayTopicMode", id},
-            relay::build::mqttTopicMode(id))));
-    relay.add(static_cast<uint8_t>(getSetting({"relayMqttDisc", id},
-            relay::build::mqttDisconnectionStatus(id))));
+    relay.add(relay::settings::mqttTopicSub(id));
+    relay.add(relay::settings::mqttTopicPub(id));
+    relay.add(static_cast<uint8_t>(relay::settings::mqttTopicMode(id)));
+    relay.add(static_cast<uint8_t>(relay::settings::mqttDisconnectionStatus(id)));
 #endif
 
     relay.add(static_cast<uint8_t>(_relays[id].pulse));
@@ -1279,8 +1623,8 @@ void _relayWebSocketOnVisible(JsonObject& root) {
 
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
-        root["relaySync"] = static_cast<uint8_t>(getSetting("relaySync", relay::build::syncMode()));
-        root["relayIlkDelay"] = getSetting("relayIlkDelay", relay::build::interlockDelay());
+        root["relaySync"] = relay::settings::syncMode();
+        root["relayIlkDelay"] = relay::settings::interlockDelay();
     }
 
     root["relayVisible"] = 1;
@@ -1390,25 +1734,25 @@ void relaySetupAPI() {
 #if MQTT_SUPPORT || API_SUPPORT
 
 const String& relayPayloadOn() {
-    return _relay_rpc_payload_on;
+    return _relay_payload_on;
 }
 
 const String& relayPayloadOff() {
-    return _relay_rpc_payload_off;
+    return _relay_payload_off;
 }
 
 const String& relayPayloadToggle() {
-    return _relay_rpc_payload_toggle;
+    return _relay_payload_toggle;
 }
 
 const char* relayPayload(PayloadStatus status) {
     switch (status) {
     case PayloadStatus::Off:
-        return _relay_rpc_payload_off.c_str();
+        return _relay_payload_off.c_str();
     case PayloadStatus::On:
-        return _relay_rpc_payload_on.c_str();
+        return _relay_payload_on.c_str();
     case PayloadStatus::Toggle:
-        return _relay_rpc_payload_toggle.c_str();
+        return _relay_payload_toggle.c_str();
     case PayloadStatus::Unknown:
         break;
     }
@@ -1582,14 +1926,14 @@ void _relayMqttSubscribeCustomTopics() {
 }
 
 void _relayMqttPublishCustomTopic(size_t id) {
-    const String topic = getSetting({"relayTopicPub", id}, relay::build::mqttTopicPub(id));
+    const String topic = relay::settings::mqttTopicPub(id);
     if (!topic.length()) {
         return;
     }
 
     auto status = _relayPayloadStatus(id);
 
-    auto mode = getSetting({"relayTopicMode", id}, relay::build::mqttTopicMode(id));
+    auto mode = relay::settings::mqttTopicMode(id);
     if (mode == RelayMqttTopicMode::Inverse) {
         status = _relayInvertStatus(status);
     }
@@ -1882,7 +2226,7 @@ void _relayProcess(bool mode) {
             relayPulse(id);
 
             {
-                const auto boot_mode = getSetting({"relayBoot", id}, relay::build::bootMode(id));
+                const auto boot_mode = relay::settings::bootMode(id);
                 _relay_save_timer.once_ms(relay::build::saveDelay(), relaySave,
                     (RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             }
@@ -1988,9 +2332,9 @@ struct RelayGpioProviderCfg {
 
 RelayGpioProviderCfg _relayGpioProviderCfg(size_t index) {
     return {
-        gpioBase(getSetting({"relayGpioType", index}, relay::build::pinType(index))),
-        getSetting({"relayGpio", index}, relay::build::pin(index)),
-        getSetting({"relayResetGpio", index}, relay::build::resetPin(index))};
+        gpioBase(relay::settings::pinType(index)),
+        relay::settings::pin(index),
+        relay::settings::resetPin(index)};
 }
 
 std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
@@ -2010,8 +2354,8 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
 }
 
 RelayProviderBasePtr _relaySetupProvider(size_t index) {
-    auto provider = getSetting({"relayProv", index}, relay::build::provider(index));
-    auto type = getSetting({"relayType", index}, relay::build::type(index));
+    auto provider = relay::settings::provider(index);
+    auto type = relay::settings::type(index);
 
     RelayProviderBasePtr result;
 
@@ -2054,7 +2398,7 @@ void _relaySetup() {
         _relays.emplace_back(std::move(impl));
     }
 
-    relaySetupDummy(getSetting("relayDummy", relay::build::dummyCount()));
+    relaySetupDummy(relay::settings::dummyCount());
 }
 
 } // namespace
