@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Alexa
 - Fix device discovery / state callback ([#2388](https://github.com/xoseperez/espurna/issues/2388)), thanks to **[@aL1aL7](https://github.com/aL1aL7)**
 - Display the used name in the WebUI [6b2c34ea](https://github.com/xoseperez/espurna/commit/6b2c34eaae92f196deaaea82ae2864ff2fc6e4cc)
+#### Debug
+- Don't treat static PROGMEM and generic C-strings differently [b167d616](https://github.com/xoseperez/espurna/commit/b167d61615f65b618999d8ed727851a236867b8a), [d9662bd6](https://github.com/xoseperez/espurna/commit/d9662bd66ae9f902707f393a607a07ba713e1199)
+- Off-by-one error when formatting to allocated buffer [efcb863c](https://github.com/xoseperez/espurna/commit/efcb863ca271d3afa2e9accd990bb6adaa3f9652)
 #### Domoticz
 - Add workaround for pressure sensors ([#2215](https://github.com/xoseperez/espurna/issues/2215))
 - Do not put floats into nvalue ([#2230](https://github.com/xoseperez/espurna/issues/2230))
@@ -177,8 +180,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Domoticz
 - Separate lights IDX from relays, migrate existing configuration from `dczRelayIdx0` to `dczLightIdx` [94f31241](https://github.com/xoseperez/espurna/commit/94f31241dc42508791d6a582cd163bec33a40a56)
 #### PlatformIO
-- Update latest Arduino Core platform to 3.0.1 ([68436f1e](https://github.com/xoseperez/espurna/commit/68436f1e72f87fa90ae36ecfd82bf8cc516f7f02))
-- Use SoftwareSerial library from the Core ([23da0b74](https://github.com/xoseperez/espurna/commit/23da0b74d403cebc27b6ae0ca520da3218bf7a47))
+- Update latest Arduino Core platform to 3.0.2 [1ca8d5e7](https://github.com/xoseperez/espurna/commit/1ca8d5e7a0130c2c23e958208b176bb8e8312d7c)
+- Use SoftwareSerial library from the Core [23da0b74](https://github.com/xoseperez/espurna/commit/23da0b74d403cebc27b6ae0ca520da3218bf7a47)
 - Remove -ota envs, handle OTA condition in extra script ([#2099](https://github.com/xoseperez/espurna/issues/2099))
 - platformio.ini refactoring ([#2212](https://github.com/xoseperez/espurna/issues/2212))
 - Rename generic environments ([#2214](https://github.com/xoseperez/espurna/issues/2214))
