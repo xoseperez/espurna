@@ -21,6 +21,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 namespace settings {
+namespace {
 
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
@@ -35,12 +36,37 @@ static kvs_type kv_store(
     EepromSize
 );
 
+} // namespace
 } // namespace settings
 
 // --------------------------------------------------------------------------
 
 namespace settings {
 namespace internal {
+namespace {
+
+struct SettingsKeyMatcher {
+    SettingsKeyMatcher(String prefix, RetrieveDefault retrieve) :
+        _prefix(std::move(prefix)),
+        _retrieve(retrieve)
+    {}
+
+    const String& prefix() const {
+        return _prefix;
+    }
+
+    String retrieve(const String& key) const {
+        return _retrieve(key);
+    }
+
+private:
+    String _prefix;
+    RetrieveDefault _retrieve;
+};
+
+std::forward_list<SettingsKeyMatcher> matchers;
+
+} // namespace
 
 ValueResult get(const String& key) {
     return kv_store.get(key);
@@ -210,7 +236,7 @@ unsigned char convert(const String& value) {
     return convert<unsigned long>(value);
 }
 
-} // namespace settings::internal
+} // namespace internal
 } // namespace settings
 
 // -----------------------------------------------------------------------------
@@ -231,23 +257,17 @@ std::vector<String> settingsKeys() {
     return keys;
 }
 
-static std::vector<settings_key_match_t> _settings_matchers;
-
-void settingsRegisterDefaults(const settings_key_match_t& matcher) {
-    _settings_matchers.push_back(matcher);
+void settingsRegisterDefaults(const char* const prefix, settings::RetrieveDefault retrieve) {
+    settings::internal::matchers.emplace_front(prefix, retrieve);
 }
 
 String settingsQueryDefaults(const String& key) {
-    for (auto& matcher : _settings_matchers) {
-        if (matcher.match(key.c_str())) {
-            return matcher.key(key);
+    for (auto& matcher : settings::internal::matchers) {
+        if (key.startsWith(matcher.prefix())) {
+            return matcher.retrieve(key);
         }
     }
-    return String();
-}
-
-settings_move_key_t _moveKeys(const String& from, const String& to, size_t index) {
-    return settings_move_key_t {{from, index}, {to, index}};
+    return {};
 }
 
 void moveSetting(const String& from, const String& to) {
@@ -258,8 +278,10 @@ void moveSetting(const String& from, const String& to) {
     delSetting(from);
 }
 
+using SettingsKeyPair = std::pair<SettingsKey, SettingsKey>;
+
 void moveSetting(const String& from, const String& to, size_t index) {
-    const auto keys = _moveKeys(from, to, index);
+    const SettingsKeyPair keys = {{from, index}, {to, index}};
 
     auto result = settings::internal::get(keys.first.value());
     if (result) {
@@ -271,7 +293,7 @@ void moveSetting(const String& from, const String& to, size_t index) {
 
 void moveSettings(const String& from, const String& to) {
     for (size_t index = 0; index < 100; ++index) {
-        const auto keys = _moveKeys(from, to, index);
+        const SettingsKeyPair keys = {{from, index}, {to, index}};
         auto result = settings::internal::get(keys.first.value());
         if (!result) {
             break;
@@ -463,17 +485,6 @@ void settingsGetJson(JsonObject& root) {
 
 }
 
-void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter) {
-    for (auto& entry : config) {
-        String value = getSetting(entry.key, entry.default_value);
-        if (filter) {
-            value = filter(value);
-        }
-        if (value.equals(entry.setting)) continue;
-        entry.setting = std::move(value);
-    }
-}
-
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
@@ -549,8 +560,9 @@ void _settingsInitCommands() {
             return;
         }
 
-        for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
-            const String& key = *it;
+        for (auto it = (ctx.argv.cbegin() + 1); it != ctx.argv.cend(); ++it) {
+            const String& key { *it };
+
             auto result = settings::internal::get(key);
             if (!result) {
                 const auto maybeDefault = settingsQueryDefaults(key);

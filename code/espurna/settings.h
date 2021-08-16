@@ -34,41 +34,21 @@ namespace settings {
 
 class EepromStorage {
 public:
+    uint8_t read(size_t pos) {
+        return eepromRead(pos);
+    }
 
-uint8_t read(size_t pos) {
-    return eepromRead(pos);
-}
+    void write(size_t pos, uint8_t value) {
+        eepromWrite(pos, value);
+    }
 
-void write(size_t pos, uint8_t value) {
-    eepromWrite(pos, value);
-}
-
-void commit() {
-    autosaveSettings();
-}
-
+    void commit() {
+        autosaveSettings();
+    }
 };
 
 using kvs_type = embedis::KeyValueStore<EepromStorage>;
 
-} // namespace settings
-
-// --------------------------------------------------------------------------
-
-using settings_move_key_t = std::pair<SettingsKey, SettingsKey>;
-using settings_filter_t = std::function<String(String& value)>;
-
-struct settings_cfg_t {
-    String& setting;
-    const char* key;
-    const char* default_value;
-};
-
-using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
-
-// --------------------------------------------------------------------------
-
-namespace settings {
 namespace internal {
 
 template <typename T>
@@ -183,15 +163,13 @@ inline String serialize(bool value) {
 
 // --------------------------------------------------------------------------
 
-struct settings_key_match_t {
-    using match_f = bool(*)(const char* key);
-    using key_f = const String(*)(const String& key);
+namespace settings {
 
-    match_f match;
-    key_f key;
-};
+using RetrieveDefault = String(*)(const String& key);
 
-void settingsRegisterDefaults(const settings_key_match_t& matcher);
+} // namespace settings
+
+void settingsRegisterDefaults(const char* const prefix, settings::RetrieveDefault retrieve);
 String settingsQueryDefaults(const String& key);
 
 // --------------------------------------------------------------------------
@@ -254,8 +232,6 @@ bool settingsRestoreJson(JsonObject& data);
 size_t settingsKeyCount();
 std::vector<String> settingsKeys();
 
-void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
-
 size_t settingsSize();
 
 void settingsSetup();
@@ -311,4 +287,3 @@ template<typename T>
 bool delSetting(const String& key, unsigned char index) {
     return delSetting({key, index});
 }
-

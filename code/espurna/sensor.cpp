@@ -1077,8 +1077,7 @@ double _magnitudeSettingsRatio(const sensor_magnitude_t& magnitude, double defau
     return getSetting(_magnitudeSettingsRatioKey(magnitude), defaultValue);
 };
 
-const String _sensorQueryDefault(const String& key) {
-
+String _sensorQueryDefault(const String& key) {
     auto get_defaults = [](unsigned char type, BaseSensor* ptr) -> String {
         if (!ptr) return String();
         auto* sensor = static_cast<BaseEmonSensor*>(ptr);
@@ -1131,9 +1130,7 @@ const String _sensorQueryDefault(const String& key) {
     }
 
 return_defaults:
-
     return get_defaults(type, target);
-
 }
 
 } // namespace
@@ -2822,13 +2819,7 @@ void sensorSetup() {
     _sensorConfigure();
 
     // Allow us to query key default
-    settingsRegisterDefaults({
-        [](const char* key) -> bool {
-            if (strncmp(key, "pwr", 3) == 0) return true;
-            return false;
-        },
-        _sensorQueryDefault
-    });
+    settingsRegisterDefaults("pwr", _sensorQueryDefault);
 
     // Websockets integration, send sensor readings and configuration
     #if WEB_SUPPORT
