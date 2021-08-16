@@ -8,11 +8,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
 
 #include "libs/BasePin.h"
 #include "libs/DebounceEvent.h"
 
+#include <cstdint>
 #include <memory>
 
 constexpr size_t ButtonsActionMax { 255ul };
@@ -81,9 +82,9 @@ struct ButtonEventDelays {
 
 using ButtonEventEmitterPtr = std::unique_ptr<debounce_event::EventEmitter>;
 
-struct button_t {
-    button_t(ButtonActions&& actions, ButtonEventDelays&& delays);
-    button_t(BasePinPtr&& pin, const debounce_event::types::Config& config,
+struct Button {
+    Button(ButtonActions&& actions, ButtonEventDelays&& delays);
+    Button(BasePinPtr&& pin, const debounce_event::types::Config& config,
         ButtonActions&& actions, ButtonEventDelays&& delays);
 
     bool state();
