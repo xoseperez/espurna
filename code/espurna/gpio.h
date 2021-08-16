@@ -21,23 +21,13 @@ enum class GpioType : int {
 
 class GpioBase {
 public:
-virtual const char* id() const = 0;
-virtual size_t pins() const = 0;
-virtual bool lock(unsigned char index) const = 0;
-virtual void lock(unsigned char index, bool value) = 0;
-virtual bool valid(unsigned char index) const = 0;
-virtual BasePinPtr pin(unsigned char index) = 0;
+    virtual const char* id() const = 0;
+    virtual size_t pins() const = 0;
+    virtual bool lock(unsigned char index) const = 0;
+    virtual void lock(unsigned char index, bool value) = 0;
+    virtual bool valid(unsigned char index) const = 0;
+    virtual BasePinPtr pin(unsigned char index) = 0;
 };
-
-namespace settings {
-namespace internal {
-
-template <>
-GpioType convert(const String& value);
-
-} // namespace internal
-} // namespace settings
-
 
 GpioBase& hardwareGpio();
 GpioBase* gpioBase(GpioType);

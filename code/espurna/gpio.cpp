@@ -106,13 +106,21 @@ private:
 
 } // namespace
 
+// Per https://llvm.org/docs/CodingStandards.html#provide-a-virtual-method-anchor-for-classes-in-headers
+// > If a class is defined in a header file and has a vtable (either it has virtual methods or it derives from classes with virtual methods),
+// > it must always have at least one out-of-line virtual method in the class. Without this, the compiler will copy the vtable and RTTI into
+// > every .o file that #includes the header, bloating .o file sizes and increasing link times.
+// - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1263r0.pdf
+// > This technique is unfortunate as it relies on detailed knowledge of how common toolchains work, and it may also require creating
+// > a dummy virtual function.
+//
+// `~BasePin() = default;` is technically inlined, so leaving that in the header.
+// Thus, ::description() implementation here becomes that anchor for the BasePin.
+
 String BasePin::description() const {
     char buffer[64];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s @ GPIO%02u"), id(), pin());
     return buffer;
-}
-
-BasePin::~BasePin() {
 }
 
 GpioBase& hardwareGpio() {

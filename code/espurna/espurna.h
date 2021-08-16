@@ -52,11 +52,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DEBUG_MSG_P(...)
 #endif
 
-using LoopCallback = void (*)();
-
-void espurnaRegisterLoop(LoopCallback callback);
-void espurnaRegisterReload(LoopCallback callback);
+using ReloadCallback = void (*)();
+void espurnaRegisterReload(ReloadCallback);
 void espurnaReload();
+
+using LoopCallback = void (*)();
+void espurnaRegisterLoop(LoopCallback);
 
 unsigned long espurnaLoopDelay();
 void espurnaLoopDelay(unsigned long);

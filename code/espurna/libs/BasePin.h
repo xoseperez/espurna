@@ -13,28 +13,11 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 #include <memory>
 
-#include "../config/types.h"
+constexpr unsigned char GPIO_NONE { 0x99 };
 
 class BasePin {
-    public:
-
-    // TODO: we always need to explicitly call the constructor from the child
-    // class, because we need to set the const `pin` member on construction
-    // - https://isocpp.org/wiki/faq/multiple-inheritance#virtual-inheritance-ctors
-
-    // TODO: vtable anchoring? same applies to every implemented ..._pin.h
-    // not a problem when using single-source aka unity build (build with `env ESPURNA_BUILD_SINGLE_SOURCE=1`)
-    //
-    // Some sources:
-    // - https://llvm.org/docs/CodingStandards.html#provide-a-virtual-method-anchor-for-classes-in-headers
-    // > If a class is defined in a header file and has a vtable (either it has virtual methods or it derives from classes with virtual methods),
-    // > it must always have at least one out-of-line virtual method in the class. Without this, the compiler will copy the vtable and RTTI into
-    // > every .o file that #includes the header, bloating .o file sizes and increasing link times.
-    // - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1263r0.pdf
-    // > This technique is unfortunate as it relies on detailed knowledge of how common toolchains work, and it may also require creating
-    // > a dummy virtual function.
-
-    virtual ~BasePin();
+public:
+    virtual ~BasePin() = default;
     virtual String description() const;
 
     virtual const char* id() const = 0;

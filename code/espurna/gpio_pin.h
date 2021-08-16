@@ -14,6 +14,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 class GpioPin final : public BasePin {
 public:
+    GpioPin() = default;
     explicit GpioPin(unsigned char pin) :
         _pin(pin)
     {}
@@ -50,4 +51,3 @@ public:
 private:
     unsigned char _pin { GPIO_NONE };
 };
-

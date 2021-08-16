@@ -16,10 +16,9 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 #include "libs/BasePin.h"
 #include "mcp23s08.h"
 
-#include <bitset>
-
 class McpGpioPin final : public BasePin {
 public:
+    McpGpioPin() = default;
     explicit McpGpioPin(unsigned char pin) :
         _pin(pin)
     {}
