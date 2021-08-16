@@ -353,6 +353,7 @@ String serialize(LedMode mode) {
     return String(static_cast<int>(mode), 10);
 }
 
+[[gnu::unused]]
 String serialize(const LedPattern& pattern) {
     String out;
 

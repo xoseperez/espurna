@@ -581,6 +581,7 @@ unsigned long longLongClickDelay(size_t index) {
     return internal::indexedThenGlobal("btnLLclkDel", index, build::longLongClickDelay(index));
 }
 
+[[gnu::unused]]
 unsigned long repeatDelay() {
     return getSetting("btnRepDel", build::repeatDelay());
 }
@@ -593,10 +594,12 @@ size_t relay(size_t index) {
     return getSetting({"btnRelay", index}, build::relay(index));
 }
 
+[[gnu::unused]]
 bool mqttSendAllEvents(size_t index) {
     return getSetting({"btnMqttSendAll", index}, build::mqttSendAllEvents(index));
 }
 
+[[gnu::unused]]
 bool mqttRetain(size_t index) {
     return getSetting({"btnMqttRetain", index}, build::mqttRetain(index));
 }

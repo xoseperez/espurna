@@ -2194,6 +2194,7 @@ void onAction(uint32_t client_id, const char* action, JsonObject&) {
 
 namespace debug {
 
+[[gnu::unused]]
 String event(wifi::Event value) {
     String out;
 
@@ -2241,6 +2242,7 @@ String event(wifi::Event value) {
     return out;
 }
 
+[[gnu::unused]]
 const char* state(wifi::State value) {
     switch (value) {
     case wifi::State::Boot:

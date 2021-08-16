@@ -449,6 +449,11 @@ namespace relay {
 namespace {
 namespace settings {
 
+size_t dummyCount() {
+    return getSetting("relayDummy", build::dummyCount());
+}
+
+[[gnu::unused]]
 String name(size_t index) {
     return getSetting({"relayName", index});
 }
@@ -532,18 +537,22 @@ int syncMode() {
     return getSetting("relaySync", build::syncMode());
 }
 
+[[gnu::unused]]
 String payloadOn() {
     return getSetting("relayPayloadOn", build::payloadOn());
 }
 
+[[gnu::unused]]
 String payloadOff() {
     return getSetting("relayPayloadOff", build::payloadOff());
 }
 
+[[gnu::unused]]
 String payloadToggle() {
     return getSetting("relayPayloadToggle", build::payloadToggle());
 }
 
+#if MQTT_SUPPORT
 String mqttTopicSub(size_t index) {
     return getSetting({"relayTopicSub", index}, build::mqttTopicSub(index));
 }
@@ -559,10 +568,7 @@ RelayMqttTopicMode mqttTopicMode(size_t index) {
 PayloadStatus mqttDisconnectionStatus(size_t index) {
     return getSetting({"relayMqttDisc", index}, build::mqttDisconnectionStatus(index));
 }
-
-size_t dummyCount() {
-    return getSetting("relayDummy", build::dummyCount());
-}
+#endif
 
 } // namespace settings
 } // namespace
@@ -945,6 +951,7 @@ bool _relayTryParseId(const char* p, size_t& id) {
     return tryParseId(p, relayCount, id);
 }
 
+[[gnu::unused]]
 bool _relayTryParseIdFromPath(const String& endpoint, size_t& id) {
     int next_slash { endpoint.lastIndexOf('/') };
     if (next_slash < 0) {
@@ -987,10 +994,12 @@ bool _relayHandlePayload(size_t id, const char* payload) {
     return false;
 }
 
+[[gnu::unused]]
 bool _relayHandlePayload(size_t id, const String& payload) {
     return _relayHandlePayload(id, payload.c_str());
 }
 
+[[gnu::unused]]
 bool _relayHandlePulsePayload(size_t id, const char* payload) {
     unsigned long pulse = 1000 * atof(payload);
     if (!pulse) {
@@ -1008,10 +1017,12 @@ bool _relayHandlePulsePayload(size_t id, const char* payload) {
     return true;
 }
 
+[[gnu::unused]]
 bool _relayHandlePulsePayload(size_t id, const String& payload) {
     return _relayHandlePulsePayload(id, payload.c_str());
 }
 
+[[gnu::unused]]
 PayloadStatus _relayInvertStatus(PayloadStatus status) {
     switch (status) {
     case PayloadStatus::On:
@@ -1026,6 +1037,7 @@ PayloadStatus _relayInvertStatus(PayloadStatus status) {
     return PayloadStatus::Unknown;
 }
 
+[[gnu::unused]]
 PayloadStatus _relayPayloadStatus(size_t id) {
     if (id < _relays.size()) {
         return _relays[id].current_status
