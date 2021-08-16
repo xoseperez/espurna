@@ -76,7 +76,7 @@ struct Timestamp {
         _value(value)
     {}
 
-    explicit operator bool() const {
+    constexpr explicit operator bool() const {
         return _value;
     }
 
