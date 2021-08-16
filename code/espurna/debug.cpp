@@ -166,6 +166,9 @@ void delayedEnable() {
 }
 
 void send(const char* message, size_t len, Timestamp);
+void send(const char* message, size_t len) {
+    send(message, len, build::AddTimestamp);
+}
 
 void formatAndSend(const char* format, va_list args) {
     constexpr size_t SmallStringBufferSize { 128 };
@@ -179,18 +182,18 @@ void formatAndSend(const char* format, va_list args) {
     // strlen(...) + '\0' already in temp buffer, avoid (explicit) dynamic memory when possible
     // (TODO: printf might still do it anyway internally?)
     if (static_cast<size_t>(len) < sizeof(temp)) {
-        send(temp, len, build::AddTimestamp);
+        send(temp, len);
         return;
     }
 
-    len += 1;
-    auto* buffer = new (std::nothrow) char[len];
+    const size_t BufferSize { len + 1 };
+    auto* buffer = new (std::nothrow) char[BufferSize];
     if (!buffer) {
         return;
     }
 
-    vsnprintf_P(buffer, len, format, args);
-    send(buffer, len, build::AddTimestamp);
+    vsnprintf_P(buffer, BufferSize, format, args);
+    send(buffer, len);
     delete[] buffer;
 }
 
