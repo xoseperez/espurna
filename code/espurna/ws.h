@@ -36,16 +36,22 @@ using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
 using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;
 using ws_on_keycheck_callback_f = std::function<bool(const char * key, JsonVariant& value)>;
 
+// TODO: use iterators as inputs for Post(), avoid depending on vector / any specific container
 using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
 using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
 using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 
 struct ws_callbacks_t {
-    ws_callbacks_t& onVisible(ws_on_send_callback_f);
-    ws_callbacks_t& onConnected(ws_on_send_callback_f);
-    ws_callbacks_t& onData(ws_on_send_callback_f);
-    ws_callbacks_t& onAction(ws_on_action_callback_f);
-    ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f);
+    using on_send_f = void(*)(JsonObject&);
+    ws_callbacks_t& onVisible(on_send_f);
+    ws_callbacks_t& onConnected(on_send_f);
+    ws_callbacks_t& onData(on_send_f);
+
+    using on_action_f = void(*)(uint32_t, const char*, JsonObject&);
+    ws_callbacks_t& onAction(on_action_f);
+
+    using on_keycheck_f = bool(*)(const char*, JsonVariant&);
+    ws_callbacks_t& onKeyCheck(on_keycheck_f);
 
     ws_on_send_callback_list_t on_visible;
     ws_on_send_callback_list_t on_connected;
@@ -70,7 +76,7 @@ bool wsDebugSend(const char* prefix, const char* message);
 // WARNING: callback lists are taken by reference! make sure that list is ether:
 // - std::move(...)'ed to give control of the callback list to us
 // - persistent and will be available after the current block ends (global, heap-allocated, etc.)
-//   de-allocation is not expected e.g. ws_callbacks_t from wsRegister() is never destroyed
+//   de-allocation is not expected e.g. referenced struct from `wsRegister()` is never destroyed
 
 void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb);
 void wsPost(ws_on_send_callback_f&& cb);

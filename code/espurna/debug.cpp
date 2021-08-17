@@ -186,7 +186,7 @@ void formatAndSend(const char* format, va_list args) {
         return;
     }
 
-    const size_t BufferSize { len + 1 };
+    const size_t BufferSize { static_cast<size_t>(len) + 1 };
     auto* buffer = new (std::nothrow) char[BufferSize];
     if (!buffer) {
         return;

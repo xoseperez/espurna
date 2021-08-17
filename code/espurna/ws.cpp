@@ -146,27 +146,27 @@ void wsPostSequence(const ws_on_send_callback_list_t& cbs) {
 
 // -----------------------------------------------------------------------------
 
-ws_callbacks_t& ws_callbacks_t::onVisible(ws_on_send_callback_f cb) {
+ws_callbacks_t& ws_callbacks_t::onVisible(ws_callbacks_t::on_send_f cb) {
     on_visible.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onConnected(ws_on_send_callback_f cb) {
+ws_callbacks_t& ws_callbacks_t::onConnected(ws_callbacks_t::on_send_f cb) {
     on_connected.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onData(ws_on_send_callback_f cb) {
+ws_callbacks_t& ws_callbacks_t::onData(ws_callbacks_t::on_send_f cb) {
     on_data.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onAction(ws_on_action_callback_f cb) {
+ws_callbacks_t& ws_callbacks_t::onAction(ws_callbacks_t::on_action_f cb) {
     on_action.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
+ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_callbacks_t::on_keycheck_f cb) {
     on_keycheck.push_back(cb);
     return *this;
 }
