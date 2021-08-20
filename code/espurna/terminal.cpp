@@ -614,7 +614,7 @@ void _terminalLoop() {
 
 void _terminalMqttSetup() {
 
-    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+    mqttRegister([](unsigned int type, const char* topic, char* payload) {
         if (type == MQTT_CONNECT_EVENT) {
             mqttSubscribe(MQTT_TOPIC_CMD);
             return;

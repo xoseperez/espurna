@@ -139,7 +139,7 @@ void _telnetReverse(const char * host, uint16_t port) {
 
 #if MQTT_SUPPORT
 
-void _telnetReverseMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+void _telnetReverseMQTTCallback(unsigned int type, const char* topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_TELNET_REVERSE);
     } else if (type == MQTT_MESSAGE_EVENT) {

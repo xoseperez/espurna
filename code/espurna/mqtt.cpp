@@ -813,7 +813,7 @@ void _mqttInitCommands() {
 
 namespace {
 
-void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
+void _mqttCallback(unsigned int type, const char* topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_ACTION);
     }
@@ -1561,7 +1561,7 @@ void mqttSetup() {
             .onConnected(_mqttWebSocketOnConnected)
             .onKeyCheck(_mqttWebSocketOnKeyCheck);
 
-        mqttRegister([](unsigned int type, const char*, const char*) {
+        mqttRegister([](unsigned int type, const char*, char*) {
             if ((type == MQTT_CONNECT_EVENT) || (type == MQTT_DISCONNECT_EVENT)) {
                 wsPost(_mqttWebSocketOnData);
             }

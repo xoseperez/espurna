@@ -258,7 +258,7 @@ void terminalCommands() {
 
 #if OTA_MQTT_SUPPORT
 
-void mqttCallback(unsigned int type, const char * topic, const char * payload) {
+void mqttCallback(unsigned int type, const char* topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_OTA);
         return;

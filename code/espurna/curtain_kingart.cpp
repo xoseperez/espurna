@@ -357,7 +357,7 @@ void _KACurtainResult() {
 #if MQTT_SUPPORT
 
 //------------------------------------------------------------------------------
-void _curtainMQTTCallback(unsigned int type, const char * topic, char * payload) {
+void _curtainMQTTCallback(unsigned int type, const char* topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_CURTAIN);
     } else if (type == MQTT_MESSAGE_EVENT) {

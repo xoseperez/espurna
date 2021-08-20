@@ -86,7 +86,7 @@ Raw messages:
 // MQTT to IR
 #if MQTT_SUPPORT && defined(IR_TX_PIN)
 
-void _irMqttCallback(unsigned int type, const char * topic, const char * payload) {
+void _irMqttCallback(unsigned int type, const char * topic, char* payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_IROUT);

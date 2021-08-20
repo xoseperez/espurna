@@ -68,7 +68,7 @@ void _uartmqttSendUART(const char * message) {
     UART_MQTT_PORT.println(message);
 }
 
-void _uartmqttMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+void _uartmqttMQTTCallback(unsigned int type, const char* topic, char* payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_UARTOUT);

@@ -964,7 +964,7 @@ void rfbSend(const String& code) {
 
 #if MQTT_SUPPORT
 
-void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
+void _rfbMqttCallback(unsigned int type, const char* topic, char* payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
 

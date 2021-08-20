@@ -2042,7 +2042,7 @@ void _relayMqttHandleDisconnect() {
 
 } // namespace
 
-void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+void relayMQTTCallback(unsigned int type, const char* topic, char* payload) {
 
     static bool connected { false };
 

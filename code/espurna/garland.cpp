@@ -406,7 +406,7 @@ void garlandLoop(void) {
 }
 
 //------------------------------------------------------------------------------
-void garlandMqttCallback(unsigned int type, const char * topic, const char * payload) {
+void garlandMqttCallback(unsigned int type, const char * topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_GARLAND);
     }

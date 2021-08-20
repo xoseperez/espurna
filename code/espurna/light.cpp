@@ -1657,7 +1657,7 @@ bool _lightMqttHeartbeat(heartbeat::Mask mask) {
     return mqttConnected();
 }
 
-void _lightMqttCallback(unsigned int type, const char * topic, const char * payload) {
+void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
     String mqtt_group_color = Light::settings::mqttGroup();
 
     if (type == MQTT_CONNECT_EVENT) {

@@ -172,7 +172,7 @@ bool _thermostatMqttHeartbeat(heartbeat::Mask mask) {
     return mqttConnected();
 }
 
-void thermostatMqttCallback(unsigned int type, const char * topic, const char * payload) {
+void thermostatMqttCallback(unsigned int type, const char* topic, char* payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
       mqttSubscribeRaw(thermostat_remote_sensor_topic.c_str());

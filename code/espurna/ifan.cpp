@@ -247,7 +247,7 @@ void updateSpeedFromPayload(const String& payload) {
 
 #if MQTT_SUPPORT
 
-void onMqttEvent(unsigned int type, const char* topic, const char* payload) {
+void onMqttEvent(unsigned int type, const char* topic, char* payload) {
     switch (type) {
 
     case MQTT_CONNECT_EVENT:
