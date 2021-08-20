@@ -38,7 +38,8 @@ namespace {
 
 // XXX: this client is not techically a HTTP client, but a simple byte reader that will ignore all received headers and go straight for the data
 // XXX: client state is fragile, make sure to not depend on anything global in callbacks
-//
+// XXX: since asynctcp connection flow depends on std::function, (most) members should be externally modifiable
+// (or, modifiable by methods)
 
 struct BasicHttpClient {
     enum class State {
@@ -49,15 +50,18 @@ struct BasicHttpClient {
 
     BasicHttpClient() = delete;
     BasicHttpClient(const BasicHttpClient&) = delete;
+    BasicHttpClient(BasicHttpClient&&) = delete;
+
+    BasicHttpClient& operator=(const BasicHttpClient&) = delete;
+    BasicHttpClient& operator=(BasicHttpClient&&) = delete;
 
     explicit BasicHttpClient(URL&& url);
-
     bool connect();
 
     State state { State::Headers };
-    size_t size = 0;
+    size_t size { 0 };
 
-    const URL url;
+    URL url;
     AsyncClient client;
 };
 
@@ -67,7 +71,7 @@ void writeHeaders(BasicHttpClient& client) {
 
     headers += F("GET ");
     headers += client.url.path;
-    headers += F( "HTTP/1.1");
+    headers += F(" HTTP/1.1");
     headers += F("\r\n");
 
     headers += F("Host: ");
