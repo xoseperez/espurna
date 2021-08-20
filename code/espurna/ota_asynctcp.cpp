@@ -265,7 +265,7 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
             clientFromUrl(payload);

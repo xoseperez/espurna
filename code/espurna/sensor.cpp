@@ -1608,7 +1608,7 @@ void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
     static const auto energy_topic = _magnitudeTopic(MAGNITUDE_ENERGY);
     switch (type) {
         case MQTT_MESSAGE_EVENT: {
-            String t = mqttMagnitude((char *) topic);
+            String t = mqttMagnitude(topic);
             if (!t.startsWith(energy_topic)) break;
 
             unsigned int index = t.substring(energy_topic.length() + 1).toInt();

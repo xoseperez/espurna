@@ -362,7 +362,7 @@ void _curtainMQTTCallback(unsigned int type, const char* topic, char* payload) {
         mqttSubscribe(MQTT_TOPIC_CURTAIN);
     } else if (type == MQTT_MESSAGE_EVENT) {
         // Match topic
-        const String t = mqttMagnitude(const_cast<char*>(topic));
+        const String t = mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_CURTAIN)) {
             if (strcmp(payload, "pause") == 0) {
                 _KACurtainSet(CURTAIN_BUTTON_PAUSE);

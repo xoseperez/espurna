@@ -1701,7 +1701,7 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
         }
 
         // Match topic
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
 
         // Color temperature in mireds
         if (t.equals(MQTT_TOPIC_MIRED)) {

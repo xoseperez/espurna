@@ -621,7 +621,7 @@ void _terminalMqttSetup() {
         }
 
         if (type == MQTT_MESSAGE_EVENT) {
-            String t = mqttMagnitude((char *) topic);
+            String t = mqttMagnitude(topic);
             if (!t.startsWith(MQTT_TOPIC_CMD)) return;
             if (!strlen(payload)) return;
 

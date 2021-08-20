@@ -2068,7 +2068,7 @@ void relayMQTTCallback(unsigned int type, const char* topic, char* payload) {
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
 
         auto is_relay = t.startsWith(MQTT_TOPIC_RELAY);
         auto is_pulse = t.startsWith(MQTT_TOPIC_PULSE);

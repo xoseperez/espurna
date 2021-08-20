@@ -888,7 +888,7 @@ void callback(unsigned int type, const char* topic, char* payload) {
     // Only want `led/+/<MQTT_SETTER>`
     // We get the led ID from the `+`
     if (type == MQTT_MESSAGE_EVENT) {
-        const String magnitude = mqttMagnitude((char *) topic);
+        const String magnitude = mqttMagnitude(topic);
         if (!magnitude.startsWith(MQTT_TOPIC_LED)) {
             return;
         }

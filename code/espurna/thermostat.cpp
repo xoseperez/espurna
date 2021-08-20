@@ -182,7 +182,7 @@ void thermostatMqttCallback(unsigned int type, const char* topic, char* payload)
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
 
         if (strcmp(topic, thermostat_remote_sensor_topic.c_str()) != 0
          && !t.equals(MQTT_TOPIC_HOLD_TEMP))

@@ -406,14 +406,14 @@ void garlandLoop(void) {
 }
 
 //------------------------------------------------------------------------------
-void garlandMqttCallback(unsigned int type, const char * topic, char* payload) {
+void garlandMqttCallback(unsigned int type, const char* topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_GARLAND);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
         // Match topic
-        String t = mqttMagnitude((char*)topic);
+        String t = mqttMagnitude(topic);
 
         if (t.equals(MQTT_TOPIC_GARLAND)) {
             // Parse JSON input

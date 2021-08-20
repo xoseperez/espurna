@@ -77,7 +77,7 @@ void _uartmqttMQTTCallback(unsigned int type, const char* topic, char* payload) 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_UARTOUT)) {
             _uartmqttSendUART(payload);
         }

@@ -1072,9 +1072,9 @@ String mqttMagnitude(const char* topic) {
 
         String magnitude(topic);
         if (magnitude.startsWith(start) && magnitude.endsWith(end)) {
-            magnitude.replace(start, "");
-            magnitude.replace(end, "");
             output = std::move(magnitude);
+            output.replace(start, "");
+            output.replace(end, "");
         }
     }
 

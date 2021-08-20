@@ -143,7 +143,7 @@ void _telnetReverseMQTTCallback(unsigned int type, const char* topic, char* payl
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_TELNET_REVERSE);
     } else if (type == MQTT_MESSAGE_EVENT) {
-        String t = mqttMagnitude((char *) topic);
+        String t = mqttMagnitude(topic);
 
         if (t.equals(MQTT_TOPIC_TELNET_REVERSE)) {
             String pl = String(payload);

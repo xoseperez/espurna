@@ -167,7 +167,7 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        const String t = mqttMagnitude((char *) topic);
+        const String t = mqttMagnitude(topic);
         static bool busy { false };
 
         if (!busy && t.equals(MQTT_TOPIC_OTA)) {
