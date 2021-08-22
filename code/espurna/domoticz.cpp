@@ -387,7 +387,9 @@ bool onKeyCheck(const char* key, JsonVariant& value) {
 }
 
 void onVisible(JsonObject& root) {
-    root["dczVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
+    if (haveRelaysOrSensors()) {
+        wsPayloadModule(root, "dcz");
+    }
 }
 
 void onConnected(JsonObject& root) {

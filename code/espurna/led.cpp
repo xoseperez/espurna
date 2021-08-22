@@ -930,9 +930,7 @@ bool onKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void onVisible(JsonObject& root) {
-    if (ledCount() > 0) {
-        root["ledVisible"] = 1;
-    }
+    wsPayloadModule(root, "led");
 }
 
 void onConnected(JsonObject& root) {

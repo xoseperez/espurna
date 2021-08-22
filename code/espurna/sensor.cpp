@@ -1406,15 +1406,15 @@ void _sensorWebSocketSendData(JsonObject& root) {
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
-    root["snsVisible"] = 1;
+    wsPayloadModule(root, "sns");
 }
 
 void _sensorWebSocketOnConnected(JsonObject& root) {
     for (auto* sensor [[gnu::unused]] : _sensors) {
 
         if (_sensorIsEmon(sensor)) {
-            root["emonVisible"] = 1;
-            root["pwrVisible"] = 1;
+            wsPayloadModule(root, "emon");
+            wsPayloadModule(root, "pwr");
         }
 
         if (_sensorIsAnalogEmon(sensor)) {
@@ -1423,13 +1423,13 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
-                root["hlwVisible"] = 1;
+                wsPayloadModule(root, "hlw");
             }
         #endif
 
         #if CSE7766_SUPPORT
             if (sensor->getID() == SENSOR_CSE7766_ID) {
-                root["cseVisible"] = 1;
+                wsPayloadModule(root, "cse");
             }
         #endif
 
@@ -1437,7 +1437,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             switch (sensor->getID()) {
             case SENSOR_PZEM004T_ID:
             case SENSOR_PZEM004TV30_ID:
-                root["pzemVisible"] = 1;
+                wsPayloadModule(root, "pzem");
                 break;
             default:
                 break;
@@ -1446,7 +1446,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
 
         #if PULSEMETER_SUPPORT
             if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                root["pmVisible"] = 1;
+                wsPayloadModule(root, "pm");
                 root["eneRatio0"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
             }
         #endif
@@ -1455,7 +1455,7 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             switch (sensor->getID()) {
             case SENSOR_MICS2710_ID:
             case SENSOR_MICS5525_ID:
-                root["micsVisible"] = 1;
+                wsPayloadModule(root, "mics");
                 break;
             default:
                 break;

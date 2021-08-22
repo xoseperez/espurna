@@ -337,7 +337,10 @@ void _rfbSendImpl(const RfbMessage& message);
 #if WEB_SUPPORT
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
-    root["rfbVisible"] = 1;
+    wsPayloadModule(root, "rfb");
+#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+    wsPayloadModule(root, "rfbdirect");
+#endif
 }
 
 #if RELAY_SUPPORT
@@ -367,7 +370,6 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbCount"] = relayCount();
 #endif
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-    root["rfbdirectVisible"] = 1;
     root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
     root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
 #endif

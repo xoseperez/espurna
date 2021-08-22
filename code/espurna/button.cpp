@@ -773,9 +773,7 @@ void _buttonRelayAction(size_t id, ButtonAction action) {
 namespace {
 
 void _buttonWebSocketOnVisible(JsonObject& root) {
-    if (buttonCount()) {
-        root["btnVisible"] = 1;
-    }
+    wsPayloadModule(root, "btn");
 }
 
 void _buttonWebSocketOnConnected(JsonObject& root) {

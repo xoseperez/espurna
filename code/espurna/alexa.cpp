@@ -103,6 +103,10 @@ void _alexaSettingsMigrate(int version) {
 // ALEXA
 // -----------------------------------------------------------------------------
 
+void _alexaWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, "alexa");
+}
+
 bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "alexa", 5) == 0);
 }
@@ -220,7 +224,7 @@ void alexaSetup() {
         webBodyRegister(_alexaBodyCallback);
         webRequestRegister(_alexaRequestCallback);
         wsRegister()
-            .onVisible([](JsonObject& root) { root["alexaVisible"] = 1; })
+            .onVisible(_alexaWebSocketOnVisible)
             .onConnected(_alexaWebSocketOnConnected)
             .onKeyCheck(_alexaWebSocketOnKeyCheck);
     #endif

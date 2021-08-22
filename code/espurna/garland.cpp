@@ -207,11 +207,14 @@ void setDefault() {
 
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
+void _garlandWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, "garland");
+}
+
 void _garlandWebSocketOnConnected(JsonObject& root) {
     root[NAME_GARLAND_ENABLED] = garlandEnabled();
     root[NAME_GARLAND_BRIGHTNESS] = scene.getBrightness();
     root[NAME_GARLAND_SPEED] = scene.getSpeed();
-    root["garlandVisible"] = 1;
 }
 
 //------------------------------------------------------------------------------
@@ -702,6 +705,7 @@ void garlandSetup() {
 // Websockets
 #if WEB_SUPPORT
     wsRegister()
+        .onVisible(_garlandWebSocketOnVisible)
         .onConnected(_garlandWebSocketOnConnected)
         .onKeyCheck(_garlandWebSocketOnKeyCheck)
         .onAction(_garlandWebSocketOnAction);

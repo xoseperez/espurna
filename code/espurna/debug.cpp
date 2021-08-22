@@ -531,7 +531,7 @@ void onAction(uint32_t client_id, const char * action, JsonObject& data) {
 #endif
 
 void onVisible(JsonObject& root) {
-    root["dbgVisible"] = 1;
+    wsPayloadModule(root, "dbg");
 }
 
 } // namespace web

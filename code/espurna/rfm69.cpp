@@ -215,7 +215,7 @@ void _rfm69Clear() {
 #if WEB_SUPPORT
 
 void _rfm69WebSocketOnVisible(JsonObject& root) {
-    root["rfm69Visible"] = 1;
+    wsPayloadModule(root, "rfm69");
 }
 
 void _rfm69WebSocketOnConnected(JsonObject& root) {

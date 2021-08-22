@@ -695,6 +695,14 @@ bool wsConnected(uint32_t client_id) {
     return _ws.hasClient(client_id);
 }
 
+void wsPayloadModule(JsonObject& root, const char* const name) {
+    const char* const key { "modulesVisible" };
+    JsonArray& modules = root.containsKey(key)
+        ? root[key]
+        : root.createNestedArray(key);
+    modules.add(name);
+}
+
 ws_callbacks_t& wsRegister() {
     return _ws_callbacks;
 }

@@ -362,7 +362,7 @@ bool onKey(const char* key, JsonVariant&) {
 
 void onVisible(JsonObject& root) {
     if (schedulable()) {
-        root["schVisible"] = 1;
+        wsPayloadModule(root, "sch");
     }
 }
 

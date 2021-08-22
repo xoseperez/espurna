@@ -136,7 +136,7 @@ bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _idbWebSocketOnVisible(JsonObject& root) {
-    root["idbVisible"] = 1;
+    wsPayloadModule(root, "idb");
 }
 
 void _idbWebSocketOnConnected(JsonObject& root) {

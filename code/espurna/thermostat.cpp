@@ -120,34 +120,37 @@ void thermostatRegister(thermostat_callback_f callback) {
 //------------------------------------------------------------------------------
 void updateRemoteTemp(bool remote_temp_actual) {
   #if WEB_SUPPORT
-      char tmp_str[16];
+      String out("?");
+
       if (remote_temp_actual) {
-        dtostrf(_remote_temp.temp, 1, 1, tmp_str);
-      } else {
-        strcpy(tmp_str, "\"?\"");
+        char tmp[33] {0};
+        dtostrf(_remote_temp.temp, 1, 1, tmp);
+        out = tmp;
       }
-      char buffer[128];
-      snprintf_P(buffer, sizeof(buffer), PSTR("{\"thermostatVisible\": 1, \"remoteTmp\": %s}"), tmp_str);
-      wsSend(buffer);
+
+      wsPost([out](JsonObject& root) {
+        root["remoteTmp"] = out;
+      });
   #endif
 }
 
 //------------------------------------------------------------------------------
 void updateOperationMode() {
   #if WEB_SUPPORT
-    String message(F("{\"thermostatVisible\": 1, \"thermostatOperationMode\": \""));
+    String message;
     if (_thermostat.temperature_source == temp_remote) {
-      message += F("remote temperature");
+      mode = F("remote temperature");
       updateRemoteTemp(true);
     } else if (_thermostat.temperature_source == temp_local) {
-      message += F("local temperature");
+      message = F("local temperature");
       updateRemoteTemp(false);
     } else {
-      message += F("autonomous");
+      message = F("autonomous");
       updateRemoteTemp(false);
     }
-    message += F("\"}");
-    wsSend(message.c_str());
+    wsPost([message](JsonObject& root) {
+      root[NAME_OPERATION_MODE] = message;
+    });
   #endif
 }
 
@@ -229,11 +232,13 @@ void thermostatMqttCallback(unsigned int type, const char* topic, char* payload)
 
                 DEBUG_MSG_P(PSTR("[THERMOSTAT] Hold temperature range: (%d - %d)\n"), _temp_range.min, _temp_range.max);
                 // Update websocket clients
-                #if WEB_SUPPORT
-                    char buffer[100];
-                    snprintf_P(buffer, sizeof(buffer), PSTR("{\"thermostatVisible\": 1, \"tempRangeMin\": %d, \"tempRangeMax\": %d}"), _temp_range.min, _temp_range.max);
-                    wsSend(buffer);
-                #endif
+#if WEB_SUPPORT
+                auto range = _temp_range;
+                wsPost([range](JsonObject& root) {
+                    root["tempRangeMin"] = range.min;
+                    root["tempRangeMax"] = range.max;
+                });
+#endif
             } else {
                 DEBUG_MSG_P(PSTR("[THERMOSTAT] Error temperature range data\n"));
             }
@@ -774,10 +779,13 @@ void displayLoop() {
 
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
+void _thermostatWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, "thermostat");
+}
+
 void _thermostatWebSocketOnConnected(JsonObject& root) {
   root["thermostatEnabled"] = thermostatEnabled();
   root["thermostatMode"] = thermostatModeCooler();
-  root["thermostatVisible"] = 1;
   root["thermostatTmpUnits"] = _getLocalUnit(MAGNITUDE_TEMPERATURE);
   root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
   root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
@@ -844,6 +852,7 @@ void thermostatSetup() {
   // Websockets
   #if WEB_SUPPORT
       wsRegister()
+          .onVisible(_thermostatWebSocketOnVisible)
           .onConnected(_thermostatWebSocketOnConnected)
           .onKeyCheck(_thermostatWebSocketOnKeyCheck)
           .onAction(_thermostatWebSocketOnAction);

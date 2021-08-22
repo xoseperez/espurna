@@ -1634,12 +1634,12 @@ void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
     if (relayCount() > 1) {
-        root["multirelayVisible"] = 1;
+        wsPayloadModule(root, "multirelay");
         root["relaySync"] = relay::settings::syncMode();
         root["relayIlkDelay"] = relay::settings::interlockDelay();
     }
 
-    root["relayVisible"] = 1;
+    wsPayloadModule(root, "relay");
 }
 
 void _relayWebSocketOnConnected(JsonObject& root) {

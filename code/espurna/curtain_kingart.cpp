@@ -431,7 +431,7 @@ void _curtainWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
 }
 
 void _curtainWebSocketOnVisible(JsonObject& root) {
-    root["curtainVisible"] = 1;
+    wsPayloadModule(root, "curtain");
 }
 
 #endif //WEB_SUPPORT

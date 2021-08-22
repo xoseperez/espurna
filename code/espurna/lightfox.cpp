@@ -138,7 +138,7 @@ size_t _lightfox_buttons { 0 };
 #if WEB_SUPPORT
 
 void _lightfoxWebSocketOnVisible(JsonObject& root) {
-    root["lightfoxVisible"] = 1;
+    wsPayloadModule(root, "lightfox");
 }
 
 void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {

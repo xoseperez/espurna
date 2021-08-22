@@ -1991,7 +1991,7 @@ void _lightWebSocketStatus(JsonObject& root) {
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
-    root["colorVisible"] = 1;
+    wsPayloadModule(root, "color");
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {

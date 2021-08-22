@@ -332,7 +332,7 @@ void setup() {
 namespace web {
 
 void onVisible(JsonObject& root) {
-    root["rpnVisible"] = 1;
+    wsPayloadModule(root, "rpn");
 }
 
 bool onKeyCheck(const char * key, JsonVariant& value) {

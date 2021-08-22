@@ -753,20 +753,14 @@ function initSetupPassword(form) {
 }
 
 function moduleVisible(module) {
-    const elems = document.getElementsByClassName(`module-${module}`);
-    for (let elem of elems) {
-        if (module === "sch") {
-            switch (elem.tagName) {
-            case "LI":
-                elem.style.display = "inherit";
-                break;
-            case "DIV":
-                elem.style.display = "flex";
-                break;
-            }
-        } else {
-            elem.style.display = "inherit";
-        }
+    let style = document.createElement("style");
+    document.head.appendChild(style);
+
+    if (module === "sch") {
+        style.sheet.insertRule(`li.module-${module} { display: inherit; }`, 0);
+        style.sheet.insertRule(`div.module-${module} { display: flex; }`, 0);
+    } else {
+        style.sheet.insertRule(`.module-${module} { display: inherit; }`, 0);
     }
 }
 
@@ -2051,17 +2045,15 @@ function processData(data) {
             return;
         }
 
-        if (key.endsWith("Visible")) {
+        if ("modulesVisible" === key) {
             // TODO: Move to another 'module' that saves the energy data and have a common setting?
-            if ("pzemVisible" === key) {
-                let save = document.querySelector("input[name='snsSave']");
-                save.disabled = true;
+            if (value.includes("pzem")) {
+                document.querySelector("input[name='snsSave']").disabled = true;
             }
 
-            let module = key.slice(0, -7);
-            if (module.length) {
+            value.forEach((module) => {
                 moduleVisible(module);
-            }
+            });
             return;
         }
 

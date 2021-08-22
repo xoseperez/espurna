@@ -18,6 +18,10 @@ namespace ota {
 namespace web {
 namespace {
 
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, "ota");
+}
+
 void sendResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
     auto *response = request->beginResponseStream("text/plain", 256);
     response->addHeader("Connection", "close");
@@ -135,12 +139,10 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
 } // namespace ota
 
 void otaWebSetup() {
-    webServer().on("/upgrade", HTTP_POST,
-            ota::web::onUpgrade, ota::web::onFile);
+    webServer().
+        on("/upgrade", HTTP_POST, ota::web::onUpgrade, ota::web::onFile);
     wsRegister().
-        onVisible([](JsonObject& root) {
-            root["otaVisible"] = 1;
-        });
+        onVisible(ota::web::onVisible);
 }
 
 #endif // OTA_WEB_SUPPORT

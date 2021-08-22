@@ -24,6 +24,10 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "api", 3) == 0);
 }
 
+void _apiWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, "api");
+}
+
 void _apiWebSocketOnConnected(JsonObject& root) {
     root["apiEnabled"] = apiEnabled();
     root["apiKey"] = apiKey();
@@ -88,7 +92,7 @@ bool apiAuthenticate(AsyncWebServerRequest* request) {
 
 void apiCommonSetup() {
     wsRegister()
-        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
+        .onVisible(_apiWebSocketOnVisible)
         .onConnected(_apiWebSocketOnConnected)
         .onKeyCheck(_apiWebSocketOnKeyCheck);
 }

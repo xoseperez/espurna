@@ -95,6 +95,10 @@ bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
 
 #if WEB_SUPPORT
 
+void _telnetWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, "telnet");
+}
+
 bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "telnet", 6) == 0);
 }
@@ -544,7 +548,7 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible([](JsonObject& root) { root["telnetVisible"] = 1; })
+            .onVisible(_telnetWebSocketOnVisible)
             .onConnected(_telnetWebSocketOnConnected)
             .onKeyCheck(_telnetWebSocketOnKeyCheck);
     #endif

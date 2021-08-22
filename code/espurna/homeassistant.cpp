@@ -934,7 +934,7 @@ namespace web {
 #if WEB_SUPPORT
 
 void onVisible(JsonObject& root) {
-    root["haVisible"] = 1;
+    wsPayloadModule(root, "ha");
 }
 
 void onConnected(JsonObject& root) {

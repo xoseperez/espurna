@@ -748,10 +748,10 @@ bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _mqttWebSocketOnVisible(JsonObject& root) {
-    root["mqttVisible"] = 1;
-    #if ASYNC_TCP_SSL_ENABLED
-        root["mqttsslVisible"] = 1;
-    #endif
+    wsPayloadModule(root, "mqtt");
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
+    wsPayloadModule(root, "mqttssl");
+#endif
 }
 
 void _mqttWebSocketOnData(JsonObject& root) {

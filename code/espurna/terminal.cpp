@@ -662,6 +662,14 @@ void _terminalMqttSetup() {
 
 #endif // MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
 
+#if WEB_SUPPORT
+
+void _terminalWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, "cmd");
+}
+
+#endif
+
 } // namespace
 
 // -----------------------------------------------------------------------------
@@ -803,7 +811,7 @@ void terminalSetup() {
     // Show DEBUG panel with input
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
+            .onVisible(_terminalWebSocketOnVisible);
     #endif
 
     // Similar to the above, but we allow only very small and in-place outputs.
