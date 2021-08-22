@@ -139,7 +139,7 @@ void updateOperationMode() {
   #if WEB_SUPPORT
     String message;
     if (_thermostat.temperature_source == temp_remote) {
-      mode = F("remote temperature");
+      message = F("remote temperature");
       updateRemoteTemp(true);
     } else if (_thermostat.temperature_source == temp_local) {
       message = F("local temperature");
