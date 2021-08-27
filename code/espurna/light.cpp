@@ -1333,6 +1333,7 @@ struct LightUpdateHandler {
     template <typename T>
     void run(T&& callback) {
         if (_run) {
+            _run = false;
             LightUpdate update{_update};
             callback(update.save, update.transition, update.report);
         }
