@@ -185,7 +185,7 @@ function validatePassword(password) {
     // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
     // https://github.com/xoseperez/espurna/issues/1151
 
-    const Pattern = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*()<>,.?;:{}[\]\\|]{8,63}t/;
+    const Pattern = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*()<>,.?;:{}[\]\\|]{8,63}/;
     return (
         (password !== undefined)
         && (typeof password === "string")
