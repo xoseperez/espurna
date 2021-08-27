@@ -31,10 +31,7 @@ var Websock = {
 class SettingsBase {
     constructor() {
         this.counters = {};
-        this.counters.changed = 0;
-        this.counters.reboot = 0;
-        this.counters.reconnect = 0;
-        this.counters.reload = 0;
+        this.resetCounters();
         this.saved = false;
     }
 
@@ -753,14 +750,16 @@ function initSetupPassword(form) {
 }
 
 function moduleVisible(module) {
-    let style = document.createElement("style");
+    const style = document.createElement("style");
+    style.setAttribute("type", "text/css");
     document.head.appendChild(style);
 
+    let pos = style.sheet.rules.length;
     if (module === "sch") {
-        style.sheet.insertRule(`li.module-${module} { display: inherit; }`, 0);
-        style.sheet.insertRule(`div.module-${module} { display: flex; }`, 0);
+        style.sheet.insertRule(`li.module-${module} { display: inherit; }`, pos++);
+        style.sheet.insertRule(`div.module-${module} { display: flex; }`, pos++);
     } else {
-        style.sheet.insertRule(`.module-${module} { display: inherit; }`, 0);
+        style.sheet.insertRule(`.module-${module} { display: inherit; }`, pos++);
     }
 }
 
