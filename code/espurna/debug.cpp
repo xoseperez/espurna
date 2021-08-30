@@ -399,12 +399,18 @@ void dump(Print& out) {
 
 } // namespace buffer
 
+#if DEBUG_SERIAL_SUPPORT
+namespace serial {
+
 void output(Print& out, const char (&prefix)[10], const char* message, size_t len) {
     if (prefix[0] != '\0') {
         out.write(&prefix[0], sizeof(prefix) - 1);
     }
     out.write(message, len);
 }
+
+} // namespace serial
+#endif
 
 #if DEBUG_UDP_SUPPORT
 namespace syslog {
@@ -483,7 +489,7 @@ void send(const char* message, size_t len, Timestamp timestamp) {
     bool pause { false };
 
 #if DEBUG_SERIAL_SUPPORT
-    output(DEBUG_PORT, prefix, message, len);
+    serial::output(DEBUG_PORT, prefix, message, len);
 #endif
 
 #if DEBUG_UDP_SUPPORT
