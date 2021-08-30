@@ -112,8 +112,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439]) [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
 - Refactor iFan into a separate module [a40eca30](https://github.com/xoseperez/espurna/commit/a40eca30ad79315afdb67afa0b0743d4c0087e93)
 #### HomeAssistant
-- Reworked discovery [59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f)
-- Advertise lights transition support in discovery message
+- Advertise lights transition support in the discovery message [4d157ccd5](https://github.com/xoseperez/espurna/commit/4d157ccd5bd5ffefa8b0bca79c4b2196c8a3e5dc)
+- Reworked discovery, implement retries and queueing using the MQTT broker ACKs [59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f)
 #### HTTP API
 - Handle received data as terminal command [#2247](https://github.com/xoseperez/espurna/issues/2247))
 - [Prometheus](https://prometheus.io/) metrics support ([#2332](https://github.com/xoseperez/espurna/issues/2332))
@@ -190,6 +190,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Update IRremoteESP8266 to 2.7.4 ([#2182](https://github.com/xoseperez/espurna/issues/2182))
 - Use [fork of fauxmoesp](https://github.com/vintlabs/fauxmoESP), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**
 - Use [fork of rc-switch](https://github.com/1technophile/rc-switch) [7a24806a](https://github.com/xoseperez/espurna/commit/7a24806adb2c3e2357171e004b5b760daf3bdca4)
+#### Lights
+- Controlling global state no longer requires `RELAY_SUPPORT` or specifying a virtual relay in the configuration. Updated modules and APIs to use light controls directly. [2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2)
+- Do not call the provider or run any transitions when channel values remain unchanged [2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2)
+- Color mode white factor calculations no longer ignore the fractional part of the number [32aae703](https://github.com/xoseperez/espurna/commit/32aae70374833bf47a47fd56e89f8416dc28700f)
 #### MQTT
 - Set keepalive to be less than heartbeat interval ([#2154](https://github.com/xoseperez/espurna/issues/2154))
 - Always buffer incoming data ([#2181](https://github.com/xoseperez/espurna/issues/2181))
