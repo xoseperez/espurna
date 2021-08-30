@@ -71,6 +71,8 @@ unsigned long Rgb::asUlong() const {
 namespace {
 namespace build {
 
+constexpr float WhiteFactor { LIGHT_WHITE_FACTOR };
+
 constexpr bool relay() {
     return 1 == LIGHT_RELAY_ENABLED;
 }
@@ -246,13 +248,15 @@ unsigned char my92xxChannel(size_t channel) {
 }
 #endif
 
+// TODO: avoid clamping here in favour of handlers themselves always making sure values are in range?
+
 long value(size_t channel) {
     const long defaultValue { (channel == 0) ? Light::ValueMax : Light::ValueMin };
     return std::clamp(getSetting({"ch", channel}, defaultValue), Light::ValueMin, Light::ValueMax);
 }
 
 void value(size_t channel, long input) {
-    setSetting({"ch", channel}, std::clamp(input, Light::ValueMin, Light::ValueMax));
+    setSetting({"ch", channel}, input);
 }
 
 long mireds() {
@@ -260,23 +264,23 @@ long mireds() {
 }
 
 long miredsCold() {
-    return getSetting("ltColdMired", Light::MiredsCold);
+    return std::clamp(getSetting("ltColdMired", Light::MiredsCold), Light::MiredsCold, Light::MiredsWarm);
 }
 
 long miredsWarm() {
-    return getSetting("ltWarmMired", Light::MiredsWarm);
+    return std::clamp(getSetting("ltWarmMired", Light::MiredsWarm), Light::MiredsCold, Light::MiredsWarm);
 }
 
-void mireds(long value) {
-    setSetting("mireds", std::clamp(value, Light::MiredsCold, Light::MiredsWarm));
+void mireds(long input) {
+    setSetting("mireds", input);
 }
 
 long brightness() {
     return std::clamp(getSetting("brightness", Light::BrightnessMax), Light::BrightnessMin, Light::BrightnessMax);
 }
 
-void brightness(long value) {
-    setSetting("brightness", std::clamp(value, Light::BrightnessMin, Light::BrightnessMax));
+void brightness(long input) {
+    setSetting("brightness", input);
 }
 
 String mqttGroup() {
@@ -397,11 +401,11 @@ public:
 
 #endif
 
-struct channel_t {
-    channel_t() = default;
+struct LightChannel {
+    LightChannel() = default;
 
-    // TODO: set & store pin in the provider
-    explicit channel_t(unsigned char pin_, bool inverse_, bool gamma_) :
+    // TODO: set & store pin in the provider, only hold the channel values
+    LightChannel(unsigned char pin_, bool inverse_, bool gamma_) :
         pin(pin_),
         inverse(inverse_),
         gamma(gamma_)
@@ -409,97 +413,101 @@ struct channel_t {
         pinMode(pin, OUTPUT);
     }
 
-    explicit channel_t(unsigned char pin_) :
+    explicit LightChannel(unsigned char pin_) :
         pin(pin_)
     {
         pinMode(pin, OUTPUT);
     }
 
-    unsigned char pin { GPIO_NONE };    // real GPIO pin
-    bool inverse { false };             // re-map the value from [ValueMin:ValueMax] to [ValueMax:ValueMin]
-    bool gamma { false };               // apply gamma correction to the target value
+    LightChannel& operator=(long input) {
+        inputValue = std::clamp(input, Light::ValueMin, Light::ValueMax);
+        return *this;
+    }
 
-    bool state { true };                // is the channel ON
+    template <typename T>
+    void apply(const T& process) {
+        value = std::clamp(process(inputValue), Light::ValueMin, Light::ValueMax);
+    }
 
-    unsigned char inputValue { Light::ValueMin };   // raw, without the brightness
-    unsigned char value { Light::ValueMin };        // normalized, including brightness
-    unsigned char target { Light::ValueMin };       // resulting value that will be given to the provider
-    float current { Light::ValueMin };              // interim between input and target, used by the transition handler
+    void apply() {
+        value = inputValue;
+    }
+
+    unsigned char pin { GPIO_NONE };       // real GPIO pin
+    bool inverse { false };                // re-map the value from [ValueMin:ValueMax] to [ValueMax:ValueMin]
+    bool gamma { false };                  // apply gamma correction to the target value
+
+    // TODO: remove in favour of global control, since relays are no longer bound to a single channel?
+    bool state { true };                   // is the channel ON
+
+    long inputValue { Light::ValueMin };   // raw, without the brightness
+    long value { Light::ValueMin };        // normalized, including brightness
+    long target { Light::ValueMin };       // resulting value that will be given to the provider
+
+    float current { Light::ValueMin };     // interim between input and target, used by the transition handler
 };
 
-std::vector<channel_t> _light_channels;
+using LightChannels = std::vector<LightChannel>;
+LightChannels _light_channels;
 
 namespace Light {
+namespace {
+
+struct Pointers {
+    Pointers() = default;
+    Pointers(const Pointers&) = default;
+    Pointers(Pointers&&) = default;
+
+    Pointers& operator=(const Pointers&) = default;
+    Pointers& operator=(Pointers&&) = default;
+
+    Pointers(LightChannel* red, LightChannel* green, LightChannel* blue, LightChannel* cold, LightChannel* warm) :
+        _red(red),
+        _green(green),
+        _blue(blue),
+        _cold(cold),
+        _warm(warm)
+    {}
+
+    LightChannel* red() const {
+        return _red;
+    }
+
+    LightChannel* green() const {
+        return _green;
+    }
+
+    LightChannel* blue() const {
+        return _blue;
+    }
+
+    LightChannel* cold() const {
+        return _cold;
+    }
+
+    LightChannel* warm() const {
+        return _warm;
+    }
+
+private:
+    LightChannel* _red { nullptr };
+    LightChannel* _green { nullptr };
+    LightChannel* _blue { nullptr };
+    LightChannel* _cold { nullptr };
+    LightChannel* _warm { nullptr };
+};
 
 struct Mapping {
-    struct Pointers {
-        Pointers() = default;
-        Pointers(const Pointers&) = default;
-        Pointers(Pointers&&) = default;
-
-        Pointers& operator=(const Pointers&) = default;
-        Pointers& operator=(Pointers&&) = default;
-
-        Pointers(channel_t* red, channel_t* green, channel_t* blue, channel_t* cold, channel_t* warm) :
-            _red(red),
-            _green(green),
-            _blue(blue),
-            _cold(cold),
-            _warm(warm)
-        {}
-
-        channel_t* red() {
-            return _red;
-        }
-
-        channel_t* green() {
-            return _green;
-        }
-
-        channel_t* blue() {
-            return _blue;
-        }
-
-        channel_t* cold() {
-            return _cold;
-        }
-
-        channel_t* warm() {
-            return _warm;
-        }
-
-    private:
-        channel_t* _red { nullptr };
-        channel_t* _green { nullptr };
-        channel_t* _blue { nullptr };
-        channel_t* _cold { nullptr };
-        channel_t* _warm { nullptr };
-    };
+    template <typename ...Args>
+    void update(Args&&... args) {
+        _pointers = Pointers(std::forward<Args>(args)...);
+    }
 
     void reset() {
         _pointers = Pointers();
     }
 
-    template <typename ...Args>
-    void update(Args... args) {
-        _pointers = Pointers(std::forward<Args>(args)...);
-    }
-
-    long get(channel_t* ptr) {
-        if (ptr) {
-            return ptr->target;
-        }
-
-        return 0l;
-    }
-
-    void set(channel_t* ptr, long value) {
-        if (ptr) {
-            ptr->inputValue = std::clamp(value, Light::ValueMin, Light::ValueMax);
-        }
-    }
-
-    long red() {
+    long red() const {
         return get(_pointers.red());
     }
 
@@ -507,7 +515,7 @@ struct Mapping {
         set(_pointers.red(), value);
     }
 
-    long green() {
+    long green() const {
         return get(_pointers.green());
     }
 
@@ -515,7 +523,7 @@ struct Mapping {
         set(_pointers.green(), value);
     }
 
-    long blue() {
+    long blue() const {
         return get(_pointers.blue());
     }
 
@@ -523,7 +531,7 @@ struct Mapping {
         set(_pointers.blue(), value);
     }
 
-    long cold() {
+    long cold() const {
         return get(_pointers.cold());
     }
 
@@ -531,7 +539,7 @@ struct Mapping {
         set(_pointers.cold(), value);
     }
 
-    long warm() {
+    long warm() const {
         return get(_pointers.warm());
     }
 
@@ -539,10 +547,29 @@ struct Mapping {
         set(_pointers.warm(), value);
     }
 
+    const Pointers& pointers() const {
+        return _pointers;
+    }
+
 private:
+    long get(LightChannel* ptr) const {
+        if (ptr) {
+            return ptr->target;
+        }
+
+        return Light::ValueMin;
+    }
+
+    void set(LightChannel* ptr, long value) {
+        if (ptr) {
+            *ptr = value;
+        }
+    }
+
     Pointers _pointers;
 };
 
+} // namespace
 } // namespace Light
 
 namespace {
@@ -606,17 +633,10 @@ long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
 long _light_mireds { Light::MiredsDefault };
 
-// In case we somehow forgot to initialize the brightness func, make sure to trigger an exception.
-// Just using an `nullptr` may not always trigger an error
-// (also, so we also don't have to check whether the pointer is not `nullptr`)
+// In case we somehow forgot to initialize the brightness func, nullptr is expected to trigger an exception
 
-bool _lightApplyBrightnessStub() {
-    panic();
-    return false;
-}
-
-using LightBrightnessFunc = bool(*)();
-LightBrightnessFunc _light_brightness_func = _lightApplyBrightnessStub;
+using LightProcessInputValues = void(*)(LightChannels&, long brightness);
+LightProcessInputValues _light_process_input_values { nullptr };
 
 bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
@@ -667,116 +687,213 @@ my92xx_model_t convert(const String& value) {
 
 namespace {
 
-bool _setValue(size_t, unsigned int) __attribute__((warn_unused_result));
-bool _setValue(size_t id, unsigned int value) {
-    if (_light_channels[id].value != value) {
-        _light_channels[id].value = value;
-        return true;
+// After the channel value was updated through the API (i.e. through changing the `inputValue`),
+// these functions are expected to be called. Which one is chosen is based on the current settings values.
+// TODO: existing mapping class handles setting `inputValue` & getting `target` value applied by the transition handler
+// should it also handle setting the `value` so there's no need to refer to channels through numbers?
+
+struct LightBrightness {
+    LightBrightness() = delete;
+
+    explicit LightBrightness(long brightness) :
+        _brightness(std::clamp(brightness, Light::BrightnessMin, Light::BrightnessMax))
+    {}
+
+    long operator()(long input) const {
+        return (input * _brightness) / Light::BrightnessMax;
     }
 
-    return false;
-}
+private:
+    long _brightness;
+};
 
-void _setInputValue(size_t id, long value) {
-    _light_channels[id].inputValue = std::clamp(value, Light::ValueMin, Light::ValueMax);
-}
-
-void _setRGBInputValue(long red, long green, long blue) {
-    _setInputValue(0, red);
-    _setInputValue(1, green);
-    _setInputValue(2, blue);
-}
-
-bool _lightApplyBrightnessChannels(size_t channels) {
-    auto scale = static_cast<float>(_light_brightness) / static_cast<float>(Light::BrightnessMax);
-
-    channels = std::min(channels, lightChannels());
-    OnceFlag changed;
-
-    for (size_t channel = 0; channel < lightChannels(); ++channel) {
-        if (channel >= channels) {
-            scale = 1.0f;
-        }
-        changed = _setValue(channel, _light_channels[channel].inputValue * scale);
+void _lightValuesWithBrightness(LightChannels& channels, long brightness) {
+    const auto Brightness = LightBrightness{brightness};
+    for (auto& channel : channels) {
+        channel.apply(Brightness);
     }
-
-    return changed.get();
 }
 
-bool _lightApplyBrightnessAll() {
-    return _lightApplyBrightnessChannels(lightChannels());
+void _lightValuesWithBrightnessExceptWhite(LightChannels& channels, long brightness) {
+    const auto Brightness = LightBrightness{brightness};
+    auto it = channels.begin();
+
+    (*it).apply(Brightness);
+    ++it;
+
+    (*it).apply(Brightness);
+    ++it;
+
+    (*it).apply(Brightness);
+    ++it;
+
+    while (it != channels.end()) {
+        (*it).apply();
+        ++it;
+    }
 }
 
-bool _lightApplyBrightnessRgb() {
-    return _lightApplyBrightnessChannels(3);
-}
+// When `useWhite` is enabled, white channels are 'detached' from the processing and their value depends on the RGB ones.
+// Common calculation is to subtract 'white value' from the RGB based on the minimum channel value, e.g. [250, 150, 50] becomes [200, 100, 0, 50]
+//
+// With `useCCT` also enabled, value is instead split between Warm and Cold channels based on the current `mireds`.
+// Otherwise, Warm channel is using the remainder and Cold uses the `inputValue` directly.
+//
+// (TODO: notice that this also means HSV mode will hardly agree with our changes and will try to bounce
+// the brigthness all over the place. at least for now, only `useRGB` mode works correctly)
 
 // Map from normal 153...500 to 0...347, so we get a value 0...1
-
 double _lightMiredFactor() {
-    auto cold = static_cast<double>(_light_cold_mireds);
-    auto warm = static_cast<double>(_light_warm_mireds);
-    auto mireds = static_cast<double>(_light_mireds);
-
-    if (cold < warm) {
-        return (mireds - cold) / (warm - cold);
+    if (_light_cold_mireds < _light_warm_mireds) {
+        const auto Cold = static_cast<double>(_light_cold_mireds);
+        const auto Warm = static_cast<double>(_light_warm_mireds);
+        const auto Mireds = static_cast<double>(_light_mireds);
+        return (Mireds - Cold) / (Warm - Cold);
     }
 
     return 0.0;
 }
 
-bool _lightApplyBrightnessColor() {
-    OnceFlag changed;
+Light::MiredsRange _lightCctRange(long value) {
+    const double Factor { _lightMiredFactor() };
+    return {
+        std::lround(Factor * value),
+        std::lround((1.0 - Factor) * value)};
+}
 
-    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BrightnessMax);
+// To handle both 4 and 5 channels, allow to 'adjust' internal factor calculation after construction
+// When processing the channel values, this is the expected sequence:
+// [250,150,0] -> [200,100,0,50] -> [250,125,0,63], factor is 1.25
+//
+// XXX: notice that before 1.15.0, this never did the 3rd step:
+// [250,150,0] -> [200,100,0,50] -> [200,100,0,50], factor is 1 b/c of integer division
 
-    // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
-    unsigned char white = std::min({_light_channels[0].inputValue, _light_channels[1].inputValue, _light_channels[2].inputValue});
-    for (unsigned int i=0; i < 3; i++) {
-        changed = _setValue(i, _light_channels[i].inputValue - white);
+// TODO: instead of bundling LightBrightness as a member, allow to write
+// a 'sequence' of such transformations to be applied one after the other?
+// (and also somehow avoid virtual functions and recursive templates?)
+
+struct LightRgbBrightness {
+    LightRgbBrightness() = delete;
+    LightRgbBrightness(const LightChannels& channels, long brightness) :
+        _common(makeCommon(channels)),
+        _factor(makeFactor(_common)),
+        _brightness(brightness)
+    {}
+
+    long operator()(long input) const {
+        return _brightness(std::lround(static_cast<float>(input - _common.inputMin) * _factor));
     }
 
-    // Split the White Value across 2 White LED Strips.
-    if (_light_use_cct) {
-        const double factor = _lightMiredFactor();
-
-        _light_channels[3].inputValue = 0;
-        changed = _setValue(3, lround((1.0 - factor) * white));
-
-        _light_channels[4].inputValue = 0;
-        changed = _setValue(4, lround(factor * white));
-    } else {
-        _light_channels[3].inputValue = 0;
-        changed = _setValue(3, white);
+    template <typename... Args>
+    void adjustOutput(Args&&... args) {
+        _common.outputMax = std::max({_common.outputMax, std::forward<Args>(args)...});
+        _factor = makeFactor(_common);
     }
 
-    // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
-    unsigned char max_in = std::max({_light_channels[0].inputValue, _light_channels[1].inputValue, _light_channels[2].inputValue});
-    unsigned char max_out = std::max({_light_channels[0].value, _light_channels[1].value, _light_channels[2].value, _light_channels[3].value});
-
-    size_t channelSize = _light_use_cct ? 5 : 4;
-
-    if (_light_use_cct) {
-        max_out = std::max(max_out, _light_channels[4].value);
+    long inputMin() const {
+        return _common.inputMin;
     }
 
-    double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
-    for (size_t i = 0; i < channelSize; ++i) {
-        changed = _setValue(i, lround((double) _light_channels[i].value * factor * brightness));
+    float factor() const {
+        return _factor;
     }
 
-    // Scale white channel to match brightness
-    for (size_t i = 3; i < channelSize; ++i) {
-        changed = _setValue(i, constrain(static_cast<unsigned int>(_light_channels[i].value * LIGHT_WHITE_FACTOR), Light::BrightnessMin, Light::BrightnessMax));
+private:
+    struct Common {
+        long inputMin;
+        long inputMax;
+        long outputMax;
+    };
+
+    static float makeFactor(const Common& common) {
+        return (common.outputMax > 0)
+            ? static_cast<float>(common.inputMax) / static_cast<float>(common.outputMax)
+            : 0.0f;
     }
 
-    // For the rest of channels, don't apply brightness, it is already in the inputValue
-    // i should be 4 when RGBW and 5 when RGBWW
-    for (size_t i = channelSize; i < _light_channels.size(); ++i) {
-        changed = _setValue(i, _light_channels[i].inputValue);
+    static Common makeCommon(const LightChannels& channels) {
+        Common out;
+        out.inputMax = std::max({
+                channels[0].inputValue, channels[1].inputValue, channels[2].inputValue});
+        out.inputMin = std::min({
+                channels[0].inputValue, channels[1].inputValue, channels[2].inputValue});
+        out.outputMax = std::max({
+            channels[0].inputValue - out.inputMin,
+            channels[1].inputValue - out.inputMin,
+            channels[2].inputValue - out.inputMin
+        });
+
+        return out;
     }
 
-    return changed.get();
+    Common _common;
+    float _factor;
+
+    LightBrightness _brightness;
+};
+
+struct LightWhiteBrightness {
+    LightWhiteBrightness() = delete;
+    LightWhiteBrightness(float factor, long brightness) :
+        _factor(factor),
+        _brightness(brightness)
+    {}
+
+    long operator()(long input) const {
+        return _brightness(std::lround(static_cast<float>(input) * _factor * Light::build::WhiteFactor));
+    }
+
+private:
+    float _factor;
+    LightBrightness _brightness;
+};
+
+void _lightValuesWithRgbWhite(LightChannels& channels, long brightness) {
+    auto rgb = LightRgbBrightness{channels, brightness};
+    rgb.adjustOutput(rgb.inputMin());
+
+    auto it = channels.begin();
+    (*it).apply(rgb);
+    ++it;
+
+    (*it).apply(rgb);
+    ++it;
+
+    (*it).apply(rgb);
+    ++it;
+
+    (*it) = rgb.inputMin();
+    (*it).apply(LightWhiteBrightness{rgb.factor(), brightness});
+    ++it;
+
+    if (it != channels.end()) {
+        (*it).apply();
+    }
+}
+
+void _lightValuesWithRgbCct(LightChannels& channels, long brightness) {
+    auto rgb = LightRgbBrightness{channels, brightness};
+
+    const auto Range = _lightCctRange(rgb.inputMin());
+    rgb.adjustOutput(Range.warm(), Range.cold());
+
+    auto it = channels.begin();
+    (*it).apply(rgb);
+    ++it;
+
+    (*it).apply(rgb);
+    ++it;
+
+    (*it).apply(rgb);
+    ++it;
+
+    const auto White = LightWhiteBrightness{rgb.factor(), brightness};
+    (*it) = Range.warm();
+    (*it).apply(White);
+    ++it;
+
+    (*it) = Range.cold();
+    (*it).apply(White);
 }
 
 char _lightTag(size_t channels, size_t index) {
@@ -833,10 +950,14 @@ namespace {
 
 void _lightFromInteger(unsigned long value, bool brightness) {
     if (brightness) {
-        _setRGBInputValue((value >> 24) & 0xFF, (value >> 16) & 0xFF, (value >> 8) & 0xFF);
-        lightBrightness((value & 0xFF) * Light::BrightnessMax / 255);
+        _light_mapping.red((value >> 24) & 0xff);
+        _light_mapping.green((value >> 16) & 0xff);
+        _light_mapping.blue((value >> 8) & 0xff);
+        lightBrightness(value & 0xff);
     } else {
-        _setRGBInputValue((value >> 16) & 0xFF, (value >> 8) & 0xFF, (value) & 0xFF);
+        _light_mapping.red((value >> 16) & 0xff);
+        _light_mapping.green((value >> 8) & 0xff);
+        _light_mapping.blue(value & 0xff);
     }
 }
 
@@ -851,29 +972,34 @@ void _lightFromRgbPayload(const char * rgb) {
         _lightFromInteger(strtoul(rgb + 1, nullptr, 16), strlen(rgb + 1) > 7);
     // With comma separated string, assume decimal values
     } else {
-        const auto channels = _light_channels.size();
+        const size_t Channels { _light_channels.size() };
         unsigned char count = 0;
 
         char buf[16] = {0};
         strncpy(buf, rgb, sizeof(buf) - 1);
         char *tok = strtok(buf, ",");
         while (tok != NULL) {
-            _setInputValue(count, atoi(tok));
-            if (++count == channels) break;
+            _light_channels[count] = atoi(tok);
+            if (++count == Channels) break;
             tok = strtok(NULL, ",");
         }
 
         // If less than 3 values received, set the rest to 0
-        if (count < 2) _setInputValue(1, 0);
-        if (count < 3) _setInputValue(2, 0);
+        if (count < 2) {
+            _light_channels[1] = 0;
+        }
+
+        if (count < 3) {
+            _light_channels[2] = 0;
+        }
         return;
     }
 }
 
 // HSV string is expected to be "H,S,V", where:
-//   0 <= H <= 360
-//   0 <= S <= 100
-//   0 <= V <= 100
+// - H [0...360]
+// - S [0...100]
+// - V [0...100]
 
 void _lightFromHsvPayload(const char* hsv) {
     if (!_light_has_color) return;
@@ -915,13 +1041,10 @@ void _lightMireds(long kelvin) {
 
 void _lightMiredsCCT(long kelvin) {
     _lightMireds(kelvin);
-    const auto factor = _lightMiredFactor();
 
-    auto cold = std::lround(factor * Light::ValueMax);
-    auto warm = std::lround((1.0 - factor) * Light::ValueMax);
-
-    _setInputValue(0, cold);
-    _setInputValue(1, warm);
+    const auto Range = _lightCctRange(Light::ValueMax);
+    _light_mapping.warm(Range.warm());
+    _light_mapping.cold(Range.cold());
 }
 
 // TODO: is there a sane way to deduce this back from RGB variant?
@@ -940,39 +1063,41 @@ long _lightCCTMireds() {
 
 #endif
 
-void _fromKelvin(long kelvin) {
+// TODO: function ptr like for input values?
 
-    if (!_light_has_color) {
-        if (_light_use_cct) {
-            _lightMiredsCCT(kelvin);
+void _fromKelvin(long kelvin) {
+    // work through the brightness function instead of adjusting here
+    // (but, note that +color +cct -white variant will set every rgb channel to 0)
+    if (_light_has_color && _light_use_cct) {
+        if (_light_use_white) {
+            _lightMireds(kelvin);
+        } else {
+            _light_mapping.red(Light::ValueMax);
+            _light_mapping.green(Light::ValueMax);
+            _light_mapping.blue(Light::ValueMax);
         }
         return;
     }
 
-    _lightMireds(kelvin);
-
-    // adjusted by the brightness function
-    if (_light_use_cct) {
-      _setRGBInputValue(Light::ValueMax, Light::ValueMax, Light::ValueMax);
-      return;
+    if (!_light_has_color && _light_use_cct) {
+        _lightMiredsCCT(kelvin);
+        return;
     }
 
-    // Calculate color values for the temperature
+    // otherwise, only apply approximated color values
     kelvin /= 100;
-    const unsigned int red = (kelvin <= 66)
+    _light_mapping.red((kelvin <= 66)
         ? Light::ValueMax
-        : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592);
-    const unsigned int green = (kelvin <= 66)
+        : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592));
+    _light_mapping.green((kelvin <= 66)
         ? 99.4708025861 * fs_log(kelvin) - 161.1195681661
-        : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492);
-    const unsigned int blue = (kelvin >= 66)
+        : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492));
+    _light_mapping.blue((kelvin >= 66)
         ? Light::ValueMax
         : ((kelvin <= 19)
             ? 0
-            : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307);
-
-    _setRGBInputValue(red, green, blue);
-
+            : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307));
+    _lightMireds(kelvin);
 }
 
 void _fromMireds(long mireds) {
@@ -1033,7 +1158,7 @@ void _lightRgbPayload(Light::Rgb rgb, char* out, size_t size) {
         return;
     }
 
-    snprintf_P(out, size, PSTR("%hhu,%hhu,%hhu"), rgb.red(), rgb.green(), rgb.blue());
+    snprintf_P(out, size, PSTR("%ld,%ld,%ld"), rgb.red(), rgb.green(), rgb.blue());
 }
 
 void _lightRgbPayload(char* out, size_t size, bool target) {
@@ -1054,7 +1179,7 @@ void _lightFromGroupPayload(const char* payload) {
     char buffer[16] = {0};
     std::strncpy(buffer, payload, sizeof(buffer) - 1);
 
-    auto channels = lightChannels();
+    auto channels = _light_channels.size();
     decltype(channels) channel = 0;
 
     char* tok = std::strtok(buffer, ",");
@@ -1071,7 +1196,7 @@ void _lightFromGroupPayload(const char* payload) {
 }
 
 String _lightGroupPayload(bool target) {
-    const auto channels = lightChannels();
+    const auto channels = _light_channels.size();
 
     String result;
     result.reserve(4 * channels);
@@ -1168,8 +1293,6 @@ uint8_t _lightGammaMap(uint8_t value) {
 
 class LightTransitionHandler {
 public:
-    using Channels = std::vector<channel_t>;
-
     struct Transition {
         float& value;
         long target;
@@ -1177,7 +1300,7 @@ public:
         size_t count;
     };
 
-    explicit LightTransitionHandler(Channels& channels, bool state, LightTransition transition) :
+    LightTransitionHandler(LightChannels& channels, bool state, LightTransition transition) :
         _state(state),
         _time(transition.time),
         _step(transition.step)
@@ -1194,7 +1317,7 @@ public:
         }
     }
 
-    bool prepare(channel_t& channel, bool state) {
+    bool prepare(LightChannel& channel, bool state) {
         bool target_state = state && channel.state;
         long target = target_state ? channel.value : Light::ValueMin;
 
@@ -1476,28 +1599,35 @@ struct LightRtcmem {
     //   `ddccbbaa 112233ee`
     // Where:
     // - 1122 are mireds
+    //   [153...500]
     // - 33 is brightness
+    //   [0...255]
     // - aabbccddee are channels (from 0 to 5 respectively)
+    //   [0...255]
+    //
+    // Prefer to use u64 value for {de,se}rialization instead of a struct.
+
+    static_assert(Light::ChannelsMax == 5, "");
+    static_assert(Light::ValueMin >= 0, "");
+    static_assert(Light::ValueMax <= 255, "");
+
+    using Values = std::array<long, Light::ChannelsMax>;
+
+    LightRtcmem() = default;
+
     explicit LightRtcmem(uint64_t value) {
         _mireds = (value >> (8ull * 6ull)) & 0xffffull;
         _brightness = (value >> (8ull * 5ull)) & 0xffull;
 
-        _channels[4] = static_cast<uint8_t>((value >> (8ull * 4ull)));
-        _channels[3] = static_cast<uint8_t>((value >> (8ull * 3ull)));
-        _channels[2] = static_cast<uint8_t>((value >> (8ull * 2ull)));
-        _channels[1] = static_cast<uint8_t>((value >> (8ull * 1ull)));
-        _channels[0] = static_cast<uint8_t>((value & 0xffull));
+        _values[4] = ((value >> (8ull * 4ull)) & 0xffull);
+        _values[3] = ((value >> (8ull * 3ull)) & 0xffull);
+        _values[2] = ((value >> (8ull * 2ull)) & 0xffull);
+        _values[1] = ((value >> (8ull * 1ull)) & 0xffull);
+        _values[0] = ((value & 0xffull));
     }
 
-    using Channels = std::array<uint8_t, Light::ChannelsMax>;
-    static_assert(Light::ChannelsMax == 5, "");
-
-    LightRtcmem() {
-        _channels.fill(Light::ValueMin);
-    }
-
-    LightRtcmem(const Channels& channels, long brightness, long mireds) :
-        _channels(channels),
+    LightRtcmem(const Values& values, long brightness, long mireds) :
+        _values(values),
         _brightness(brightness),
         _mireds(mireds)
     {}
@@ -1505,21 +1635,21 @@ struct LightRtcmem {
     uint64_t serialize() const {
         return ((static_cast<uint64_t>(_mireds) & 0xffffull) << (8ull * 6ull))
             | ((static_cast<uint64_t>(_brightness) & 0xffull) << (8ull * 5ull))
-            | (static_cast<uint64_t>(_channels[4]) << (8ull * 4ull))
-            | (static_cast<uint64_t>(_channels[3]) << (8ull * 3ull))
-            | (static_cast<uint64_t>(_channels[2]) << (8ull * 2ull))
-            | (static_cast<uint64_t>(_channels[1]) << (8ull * 1ull))
-            | (static_cast<uint64_t>(_channels[0]));
+            | (static_cast<uint64_t>(_values[4] & 0xffl) << (8ull * 4ull))
+            | (static_cast<uint64_t>(_values[3] & 0xffl) << (8ull * 3ull))
+            | (static_cast<uint64_t>(_values[2] & 0xffl) << (8ull * 2ull))
+            | (static_cast<uint64_t>(_values[1] & 0xffl) << (8ull * 1ull))
+            | (static_cast<uint64_t>(_values[0] & 0xffl));
     }
 
-    static Channels defaultChannels() {
-        Channels out;
+    static Values defaultValues() {
+        Values out;
         out.fill(Light::ValueMin);
         return out;
     }
 
-    const Channels& channels() const {
-        return _channels;
+    const Values& values() const {
+        return _values;
     }
 
     long brightness() const {
@@ -1531,7 +1661,7 @@ struct LightRtcmem {
     }
 
 private:
-    Channels _channels;
+    Values _values = defaultValues();
     long _brightness { Light::BrightnessMax };
     long _mireds { Light::MiredsDefault };
 };
@@ -1547,12 +1677,12 @@ void lightSave(bool save) {
 namespace {
 
 void _lightSaveRtcmem() {
-    auto channels = LightRtcmem::defaultChannels();
-    for (size_t channel = 0; channel < lightChannels(); ++channel) {
-        channels[channel] = _light_channels[channel].inputValue;
+    auto values = LightRtcmem::defaultValues();
+    for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
+        values[channel] = _light_channels[channel].inputValue;
     }
 
-    LightRtcmem light(channels, _light_brightness, _light_mireds);
+    LightRtcmem light(values, _light_brightness, _light_mireds);
     Rtcmem->light = light.serialize();
 }
 
@@ -1560,9 +1690,9 @@ void _lightRestoreRtcmem() {
     uint64_t value = Rtcmem->light;
     LightRtcmem light(value);
 
-    auto& channels = light.channels();
-    for (size_t channel = 0; channel < lightChannels(); ++channel) {
-        _light_channels[channel].inputValue = channels[channel];
+    auto& values = light.values();
+    for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
+        _light_channels[channel] = values[channel];
     }
 
     _light_mireds = light.mireds(); // channels are already set
@@ -1574,7 +1704,7 @@ void _lightSaveSettings() {
         return;
     }
 
-    for (size_t channel = 0; channel < lightChannels(); ++channel) {
+    for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
         Light::settings::value(channel, _light_channels[channel].inputValue);
     }
 
@@ -1585,8 +1715,8 @@ void _lightSaveSettings() {
 }
 
 void _lightRestoreSettings() {
-    for (size_t channel = 0; channel < lightChannels(); ++channel) {
-        _light_mapping.set(&_light_channels[channel], Light::settings::value(channel));
+    for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
+        _light_channels[channel] = Light::settings::value(channel);
     }
 
     _light_mireds = Light::settings::mireds();
@@ -2075,15 +2205,15 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](const terminal::CommandContext& ctx) {
-        auto channels = lightChannels();
-        if (!channels) {
+        const size_t Channels { _light_channels.size() };
+        if (!Channels) {
             terminalError(ctx, F("No channels configured"));
             return;
         }
 
         auto description = [&](size_t channel) {
-            ctx.output.printf("#%u (%s): input:%hhu value:%hhu target:%hhu current:%s\n",
-                    channel, _lightDesc(channels, channel),
+            ctx.output.printf("#%u (%s): input:%ld value:%ld target:%ld current:%s\n",
+                    channel, _lightDesc(Channels, channel),
                     _light_channels[channel].inputValue,
                     _light_channels[channel].value,
                     _light_channels[channel].target,
@@ -2101,7 +2231,7 @@ void _lightInitCommands() {
             lightUpdate();
             description(id);
         } else {
-            for (size_t index = 0; index < channels; ++index) {
+            for (size_t index = 0; index < Channels; ++index) {
                 description(index);
             }
         }
@@ -2173,7 +2303,9 @@ Light::Rgb lightRgb() {
 }
 
 void lightRgb(Light::Rgb rgb) {
-    _setRGBInputValue(rgb.red(), rgb.green(), rgb.blue());
+    _light_mapping.red(rgb.red());
+    _light_mapping.green(rgb.green());
+    _light_mapping.blue(rgb.blue());
 }
 
 namespace {
@@ -2286,8 +2418,10 @@ void lightHsv(Light::Hsv hsv) {
         b = brightness;
     }
 
+    _light_mapping.red(std::lround(r));
+    _light_mapping.green(std::lround(g));
+    _light_mapping.blue(std::lround(b));
     lightBrightness(brightness);
-    _setRGBInputValue(r, g, b);
 }
 
 void lightHs(long hue, long saturation) {
@@ -2337,13 +2471,46 @@ void _lightUpdateDebug(const LightTransitionHandler& handler) {
     }
 }
 
+struct LightValuesObserver {
+    using Values = std::vector<long>;
+
+    LightValuesObserver() = delete;
+    explicit LightValuesObserver(const LightChannels& channels) :
+        _channels(channels)
+    {
+        save(_last);
+    }
+
+    bool changed() const {
+        static Values current;
+        save(current);
+        return current != _last;
+    }
+
+private:
+    void save(Values& output) const {
+        output.clear();
+        output.reserve(_channels.size());
+        for (auto& channel : _channels) {
+            output.push_back(channel.value);
+        }
+    }
+
+    static Values _last;
+    const LightChannels& _channels;
+};
+
+LightValuesObserver::Values LightValuesObserver::_last;
+
 void _lightUpdate() {
     if (!_light_update) {
         return;
     }
 
-    auto changed = _light_brightness_func();
-    if (!_light_state_changed && !changed) {
+    LightValuesObserver observer(_light_channels);
+    _light_process_input_values(_light_channels, _light_brightness);
+
+    if (!_light_state_changed && !observer.changed()) {
         _light_update.cancel();
         return;
     }
@@ -2379,7 +2546,7 @@ void lightUpdate(bool save, LightTransition transition, int report) {
     }
 #endif
 
-    if (!lightChannels()) {
+    if (!_light_channels.size()) {
         return;
     }
 
@@ -2530,7 +2697,7 @@ long lightChannel(size_t id) {
 
 void lightChannel(size_t id, long value) {
     if (id < _light_channels.size()) {
-        _setInputValue(id, value);
+        _light_channels[id] = value;
     }
 }
 
@@ -2543,7 +2710,7 @@ long lightBrightness() {
 }
 
 void lightBrightness(long brightness) {
-    _light_brightness = constrain(brightness, Light::BrightnessMin, Light::BrightnessMax);
+    _light_brightness = std::clamp(brightness, Light::BrightnessMin, Light::BrightnessMax);
 }
 
 void lightBrightnessStep(long steps, long multiplier) {
@@ -2624,38 +2791,38 @@ inline bool _lightUseGamma(size_t index) {
 }
 
 void _lightConfigure() {
-    auto channels = _light_channels.size();
+    const size_t Channels { _light_channels.size() };
 
+    // TODO: just bounce off invalid input, so there's no need for setting values back?
     _light_has_color = Light::settings::color();
-    if (_light_has_color && (channels < 3)) {
+    if (_light_has_color && (Channels < 3)) {
         _light_has_color = false;
         Light::settings::color(false);
     }
 
     _light_use_white = Light::settings::white();
-    if (_light_use_white && (channels < 4) && (channels != 2)) {
+    if (_light_use_white && (Channels < 4) && (Channels != 2)) {
         _light_use_white = false;
         Light::settings::white(false);
     }
 
-    if (_light_has_color) {
-        if (_light_use_white) {
-            _light_brightness_func = _lightApplyBrightnessColor;
-        } else {
-            _light_brightness_func = _lightApplyBrightnessRgb;
-        }
-    } else {
-        _light_brightness_func = _lightApplyBrightnessAll;
-    }
-
     _light_use_cct = Light::settings::cct();
-    if (_light_use_cct && (((channels < 5) && (channels != 2)) || !_light_use_white)) {
+    if (_light_use_cct && (((Channels < 5) && (Channels != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         Light::settings::cct(false);
     }
 
+    // TODO: cct and white can't be enabled at the same time
+    _light_process_input_values =
+        (_light_has_color) ? (
+            (_light_use_cct) ? _lightValuesWithRgbCct :
+            (_light_use_white) ? _lightValuesWithRgbWhite :
+            _lightValuesWithBrightnessExceptWhite) :
+        _lightValuesWithBrightness;
+
     _light_use_rgb = Light::settings::rgb();
 
+    // TODO: provide single entrypoint for colortemp
     _light_cold_mireds = Light::settings::miredsCold();
     _light_warm_mireds = Light::settings::miredsWarm();
     _light_cold_kelvin = (1000000L / _light_cold_mireds);
@@ -2669,23 +2836,18 @@ void _lightConfigure() {
     _light_save_delay = Light::settings::saveDelay();
 
     _light_use_gamma = Light::settings::gamma();
-    for (size_t index = 0; index < lightChannels(); ++index) {
+    for (size_t index = 0; index < Channels; ++index) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
         _light_my92xx_channel_map[index] = Light::settings::my92xxChannel(index);
 #endif
         _light_channels[index].inverse = Light::settings::inverse(index);
-        _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(channels, index);
+        _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(Channels, index);
     }
-
 }
 
 #if RELAY_SUPPORT
 
-void _lightRelaySupport() {
-    if (!Light::settings::relay()) {
-        return;
-    }
-
+void _lightRelayBoot() {
     if (_light_has_controls) {
         return;
     }
@@ -2870,7 +3032,9 @@ void lightSetup() {
     _lightBoot();
 
 #if RELAY_SUPPORT
-    _lightRelaySupport();
+    if (Light::settings::relay()) {
+        _lightRelayBoot();
+    }
 #endif
 
     #if WEB_SUPPORT
