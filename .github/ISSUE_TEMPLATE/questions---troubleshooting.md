@@ -11,7 +11,7 @@ assignees: ''
 
 * *searched the existing [issues](https://github.com/xoseperez/espurna/issues) (both open and closed)*
 * *searched the [wiki](https://github.com/xoseperez/espurna/wiki)*
-* *asked for help in the [chat](https://gitter.im/tinkerman-cat/espurna)*
+* *asked for help in the [gitter chat](https://gitter.im/tinkerman-cat/espurna) ([also available with any Matrix client!](https://matrix.to/#/#tinkerman-cat_espurna:gitter.im))*
 * *done the previous things again :)*
 
 *Fulfilling this template will help developers and contributors help you. Try to be as specific and extensive as possible. If the information provided is not enough the issue will likely be closed.*
@@ -34,9 +34,9 @@ assignees: ''
 
 **Tools used**
 * *Desktop operating system*
-* *Browser & version*
+* *Browser & version, if the problem is related to the WebUI*
 * *IDE & version*
 * *Compiler & version (if not embedded in IDE)*
 
 **Additional context**
-*Add any other context about the problem here.*
+*Add any other information about the problem here.*

@@ -11,7 +11,7 @@ assignees: ''
 
 * *searched the existing [issues](https://github.com/xoseperez/espurna/issues) (both open and closed)*
 * *searched the [wiki](https://github.com/xoseperez/espurna/wiki)*
-* *asked for help in the [chat](https://gitter.im/tinkerman-cat/espurna)*
+* *asked for help in the [gitter chat](https://gitter.im/tinkerman-cat/espurna) ([also available with any Matrix client!](https://matrix.to/#/#tinkerman-cat_espurna:gitter.im))*
 * *done the previous things again :)*
 
 *Fulfilling this template will help developers and contributors to address the issue. Try to be as specific and extensive as possible. If the information provided is not enough the issue will likely be closed.*
@@ -31,15 +31,15 @@ assignees: ''
 *If applicable, add screenshots to help explain your problem.*
 
 **Device information**
-*Copy-paste here the information as it is outputted by the device. You can get this information by typing `info` via serial, terminal or in the debug tab in the web UI. The relevant information is that surrounded by the scissors-cut lines (`---8<-------`).*
+*Copy-paste here the information as it is outputted by the device. You can get this information by using the `info` command in the serial terminal, telnet or in the DEBUG tab of WebUI*
 *If you cannot get this info from the device, please answer this questions:*
-* *Arduino Core version*
-* *ESPurna version*
-* *Flash mode*
 * *Device brand, model and version*
+* *Arduino Core version*
+* *ESPurna git revision or release version*
+* *Flash mode*
 
 **Crash report**
-*Save the crash postmortem message, which may look something like:*
+*Save the crash postmortem message reported by the device (or, by using `info` and `crash` commands, if done remotely), which may look something like:*
 > Exception (28):
 > epc1=0x4021e698 epc2=0x00000000 epc3=0x00000000 excvaddr=0x00000000 depc=0x00000000  
 >   
@@ -58,10 +58,11 @@ assignees: ''
 - `pio device monitor --echo -e $environment -f esp8266_exception_decoder`
 
 **Tools used**
-* *Desktop operating system*
-* *Browser & version*
-* *IDE & version*
-* *Compiler & version (if not embedded in IDE)*
+* *For a custom builds:*
+  * *Operating system*
+  * *PlatformIO platform & environment(s) used*
+  * *(or) ArduinoIDE version, board and the selected menu options*
+* *Browser & version, if the problem is related to the WebUI*
 
 **Additional context**
-*Add any other context about the problem here.*
+*Add any other information about the problem here.*
