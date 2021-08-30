@@ -1226,29 +1226,24 @@ function resetToFactoryDefaults(event) {
 // Visualization
 // -----------------------------------------------------------------------------
 
-function toggleMenu(event) {
-    if (event !== undefined && event.cancelable) {
-        event.preventDefault();
-    }
+// ref. vendor/side-menu.css
 
-    for (const id of ["layout", "menu", "menu-link"]) {
-        document.getElementById(id).classList.toggle("active");
-    }
+function toggleMenu(event) {
+    event.preventDefault();
+    event.target.parentElement.classList.toggle("active");
 }
 
 function showPanel(event) {
     event.preventDefault();
 
-    for (let panel of document.querySelectorAll(".panel")) {
+    for (const panel of document.querySelectorAll(".panel")) {
         panel.style.display = "none";
     }
 
-    let layout = document.getElementById("layout");
-    if (layout.classList.contains("active")) {
-        toggleMenu();
-    }
+    const layout = document.getElementById("layout");
+    layout.classList.remove("active");
 
-    let panel = event.target.dataset["panel"];
+    const panel = event.target.dataset["panel"];
     document.getElementById(`panel-${panel}`).style.display = "inherit";
 }
 
