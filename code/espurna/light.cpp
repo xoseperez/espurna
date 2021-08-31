@@ -401,6 +401,20 @@ public:
 
 #endif
 
+namespace {
+
+template <typename T>
+long _lightChainedValue(long input, const T& process) {
+    return process(input);
+}
+
+template <typename T, typename... Args>
+long _lightChainedValue(long input, const T& process, Args&&... args) {
+    return _lightChainedValue(process(input), std::forward<Args>(args)...);
+}
+
+} // namespace
+
 struct LightChannel {
     LightChannel() = default;
 
@@ -424,13 +438,20 @@ struct LightChannel {
         return *this;
     }
 
+    void apply() {
+        value = inputValue;
+    }
+
     template <typename T>
     void apply(const T& process) {
         value = std::clamp(process(inputValue), Light::ValueMin, Light::ValueMax);
     }
 
-    void apply() {
-        value = inputValue;
+    template <typename T, typename... Args>
+    void apply(const T& process, Args&&... args) {
+        value = std::clamp(
+            _lightChainedValue(process(inputValue), std::forward<Args>(args)...),
+            Light::ValueMin, Light::ValueMax);
     }
 
     unsigned char pin { GPIO_NONE };       // real GPIO pin
@@ -765,23 +786,20 @@ Light::MiredsRange _lightCctRange(long value) {
 // When processing the channel values, this is the expected sequence:
 // [250,150,0] -> [200,100,0,50] -> [250,125,0,63], factor is 1.25
 //
-// XXX: notice that before 1.15.0, this never did the 3rd step:
-// [250,150,0] -> [200,100,0,50] -> [200,100,0,50], factor is 1 b/c of integer division
+// XXX: before 1.15.0:
+// - factor for the example above is 1 b/c of integer division, meaning the sequence is instead:
+// [250,150,0] -> [200,100,0,50] -> [200,100,0,50]
+// - when modified, white channels(s) `inputValue` is always equal to the output `value`
 
-// TODO: instead of bundling LightBrightness as a member, allow to write
-// a 'sequence' of such transformations to be applied one after the other?
-// (and also somehow avoid virtual functions and recursive templates?)
-
-struct LightRgbBrightness {
-    LightRgbBrightness() = delete;
-    LightRgbBrightness(const LightChannels& channels, long brightness) :
+struct LightRgbWithoutWhite {
+    LightRgbWithoutWhite() = delete;
+    LightRgbWithoutWhite(const LightChannels& channels) :
         _common(makeCommon(channels)),
-        _factor(makeFactor(_common)),
-        _brightness(brightness)
+        _factor(makeFactor(_common))
     {}
 
     long operator()(long input) const {
-        return _brightness(std::lround(static_cast<float>(input - _common.inputMin) * _factor));
+        return std::lround(static_cast<float>(input - _common.inputMin) * _factor);
     }
 
     template <typename... Args>
@@ -828,42 +846,42 @@ private:
 
     Common _common;
     float _factor;
-
-    LightBrightness _brightness;
 };
 
-struct LightWhiteBrightness {
-    LightWhiteBrightness() = delete;
-    LightWhiteBrightness(float factor, long brightness) :
-        _factor(factor),
-        _brightness(brightness)
+struct LightScaledWhite {
+    LightScaledWhite() = delete;
+    LightScaledWhite(float factor) :
+        _factor(factor)
     {}
 
     long operator()(long input) const {
-        return _brightness(std::lround(static_cast<float>(input) * _factor * Light::build::WhiteFactor));
+        return std::lround(static_cast<float>(input) * _factor * Light::build::WhiteFactor);
     }
 
 private:
     float _factor;
-    LightBrightness _brightness;
 };
 
+// General case when `useCCT` is disabled, but there are 4 channels and `useWhite` is enabled
+// Keeps 5th channel as-is, without applying the brightness scale or resetting the value to 0
+
 void _lightValuesWithRgbWhite(LightChannels& channels, long brightness) {
-    auto rgb = LightRgbBrightness{channels, brightness};
+    auto rgb = LightRgbWithoutWhite{channels};
     rgb.adjustOutput(rgb.inputMin());
 
+    const auto Brightness = LightBrightness(brightness);
     auto it = channels.begin();
-    (*it).apply(rgb);
+    (*it).apply(rgb, Brightness);
     ++it;
 
-    (*it).apply(rgb);
+    (*it).apply(rgb, Brightness);
     ++it;
 
-    (*it).apply(rgb);
+    (*it).apply(rgb, Brightness);
     ++it;
 
     (*it) = rgb.inputMin();
-    (*it).apply(LightWhiteBrightness{rgb.factor(), brightness});
+    (*it).apply(LightScaledWhite{rgb.factor()}, Brightness);
     ++it;
 
     if (it != channels.end()) {
@@ -871,30 +889,36 @@ void _lightValuesWithRgbWhite(LightChannels& channels, long brightness) {
     }
 }
 
+// Instead of the above, use `mireds` value as a range for warm and cold channels, based on the calculated rgb common values
+// Every value is also scaled by `brightness` after applying all of the previous steps
+
 void _lightValuesWithRgbCct(LightChannels& channels, long brightness) {
-    auto rgb = LightRgbBrightness{channels, brightness};
+    auto rgb = LightRgbWithoutWhite{channels};
 
     const auto Range = _lightCctRange(rgb.inputMin());
     rgb.adjustOutput(Range.warm(), Range.cold());
 
+    const auto Brightness = LightBrightness(brightness);
     auto it = channels.begin();
-    (*it).apply(rgb);
+    (*it).apply(rgb, Brightness);
     ++it;
 
-    (*it).apply(rgb);
+    (*it).apply(rgb, Brightness);
     ++it;
 
-    (*it).apply(rgb);
+    (*it).apply(rgb, Brightness);
     ++it;
 
-    const auto White = LightWhiteBrightness{rgb.factor(), brightness};
+    const auto White = LightScaledWhite{rgb.factor()};
     (*it) = Range.warm();
-    (*it).apply(White);
+    (*it).apply(White, Brightness);
     ++it;
 
     (*it) = Range.cold();
-    (*it).apply(White);
+    (*it).apply(White, Brightness);
 }
+
+// UI hints about channel distribution
 
 char _lightTag(size_t channels, size_t index) {
     constexpr size_t Columns { 5ul };
@@ -916,7 +940,6 @@ char _lightTag(size_t channels, size_t index) {
     return 0;
 }
 
-// UI hint about channel distribution
 const char* _lightDesc(size_t channels, size_t index) {
     const __FlashStringHelper* ptr { F("UNKNOWN") };
     switch (_lightTag(channels, index)) {
@@ -2813,6 +2836,7 @@ void _lightConfigure() {
     }
 
     // TODO: cct and white can't be enabled at the same time
+    const auto last_process_input_values = _light_process_input_values;
     _light_process_input_values =
         (_light_has_color) ? (
             (_light_use_cct) ? _lightValuesWithRgbCct :
@@ -2842,6 +2866,10 @@ void _lightConfigure() {
 #endif
         _light_channels[index].inverse = Light::settings::inverse(index);
         _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(Channels, index);
+    }
+
+    if (!_light_update && (last_process_input_values != _light_process_input_values)) {
+        lightUpdate(false);
     }
 }
 
