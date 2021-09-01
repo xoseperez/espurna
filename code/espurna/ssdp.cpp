@@ -8,7 +8,7 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 
 */
 
-#include "ssdp.h"
+#include "espurna.h"
 
 #if SSDP_SUPPORT
 
@@ -17,16 +17,19 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 #include "web.h"
 #include "utils.h"
 
-const char _ssdp_template[] PROGMEM =
+namespace ssdp {
+namespace {
+
+const char ResponseTemplate[] PROGMEM =
     "<?xml version=\"1.0\"?>"
     "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
         "<specVersion>"
             "<major>1</major>"
             "<minor>0</minor>"
         "</specVersion>"
-        "<URLBase>http://%s:%u/</URLBase>"
+        "<URLBase>http://%.15s:%hu/</URLBase>"
         "<device>"
-            "<deviceType>%s</deviceType>"
+            "<deviceType>%.31s</deviceType>"
             "<friendlyName>%s</friendlyName>"
             "<presentationURL>/</presentationURL>"
             "<serialNumber>%u</serialNumber>"
@@ -40,52 +43,70 @@ const char _ssdp_template[] PROGMEM =
     "</root>\r\n"
     "\r\n";
 
-void ssdpSetup() {
+// ip + port + hostname + chipId (number) + chipId (hex) + rest
+constexpr size_t ResponseOverhead {
+    15 + 5 + 31 + 10 + 6 + 128
+};
 
-    webServer().on("/description.xml", HTTP_GET, [](AsyncWebServerRequest *request) {
+namespace settings {
 
-        DEBUG_MSG_P(PSTR("[SSDP] Schema request\n"));
+String hostname() {
+    return getSetting("hostname", getIdentifier());
+}
 
+} // namespace settings
+
+void setup() {
+    webServer().on("/description.xml", HTTP_GET, [](AsyncWebServerRequest* request) {
         IPAddress ip = WiFi.localIP();
         uint32_t chipId = ESP.getChipId();
 
-        char response[strlen_P(_ssdp_template) + 100];
-        snprintf_P(response, sizeof(response), _ssdp_template,
+        constexpr size_t BufferSize { sizeof(ResponseTemplate) + ResponseOverhead };
+        char response[BufferSize] {0};
+
+        int result = snprintf_P(response, sizeof(response), ResponseTemplate,
             ip.toString().c_str(),              // ip
             webPort(),                          // port
-            SSDP_DEVICE_TYPE,                   // device type
-            getSetting("hostname").c_str(),     // friendlyName
+            settings::hostname().c_str(),       // friendlyName
             chipId,                             // serialNumber
-            getAppName(),                       // modelName
-            getVersion(),                       // modelNumber
-            getAppWebsite(),                    // modelURL
-            getBoardName().c_str(),             // manufacturer
-            "",                                 // manufacturerURL
             chipId                              // UUID
         );
 
-        request->send(200, "text/xml", response);
+        if ((result > 0) && (static_cast<size_t>(result) < BufferSize)) {
+            request->send(200, "text/xml", response);
+            return;
+        }
 
+        request->send(500);
     });
 
     SSDP.setSchemaURL("description.xml");
     SSDP.setHTTPPort(webPort());
-    SSDP.setDeviceType(SSDP_DEVICE_TYPE); //https://github.com/esp8266/Arduino/issues/2283
 
-    SSDP.setSerialNumber(String(ESP.getChipId()));
+    // needs to be in the response
+    // ref. https://github.com/esp8266/Arduino/issues/2283
+    SSDP.setDeviceType(SSDP_DEVICE_TYPE);
+
+    SSDP.setSerialNumber(ESP.getChipId());
     SSDP.setModelName(getAppName());
     SSDP.setModelNumber(getVersion());
     SSDP.setModelURL(getAppWebsite());
     SSDP.setManufacturer(getBoardName());
-    SSDP.setManufacturerURL("");
     SSDP.setURL("/");
 
-    auto hostname = getSetting("hostname", getIdentifier());
-    SSDP.setName(hostname);
+    SSDP.setName(settings::hostname());
     SSDP.begin();
 
-    DEBUG_MSG_P(PSTR("[SSDP] Started for %s\n"), hostname.c_str());
+    espurnaRegisterReload([]() {
+        SSDP.setName(settings::hostname());
+    });
+}
 
+} // namespace
+} // namespace ssdp
+
+void ssdpSetup() {
+    ssdp::setup();
 }
 
 #endif // SSDP_SUPPORT

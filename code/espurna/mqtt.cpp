@@ -1191,9 +1191,15 @@ bool mqttSend(const char * topic, const char * message) {
 }
 
 bool mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
-    char buffer[strlen(topic)+5];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
-    return mqttSend(buffer, message, force, retain);
+    const size_t TopicLen { strlen(topic) };
+    String out;
+    out.reserve(TopicLen + 5);
+
+    out.concat(topic, TopicLen);
+    out += '/';
+    out += index;
+
+    return mqttSend(out.c_str(), message, force, retain);
 }
 
 bool mqttSend(const char * topic, unsigned int index, const char * message, bool force) {

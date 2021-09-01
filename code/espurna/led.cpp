@@ -879,9 +879,7 @@ namespace mqtt {
 
 void callback(unsigned int type, const char* topic, char* payload) {
     if (type == MQTT_CONNECT_EVENT) {
-        char buffer[strlen(MQTT_TOPIC_LED) + 3];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_LED);
-        mqttSubscribe(buffer);
+        mqttSubscribe(MQTT_TOPIC_LED "/+");
         return;
     }
 
