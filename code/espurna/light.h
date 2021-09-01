@@ -79,6 +79,12 @@ struct Hsv {
     static constexpr long ValueMax { 100 };
 
     Hsv() = default;
+    Hsv(const Hsv&) = default;
+    Hsv(Hsv&&) = default;
+
+    Hsv& operator=(const Hsv&) = default;
+    Hsv& operator=(Hsv&&) = default;
+
     Hsv(long hue, long saturation, long value) :
         _hue(std::clamp(hue, HueMin, HueMax)),
         _saturation(std::clamp(saturation, SaturationMin, SaturationMax)),
@@ -108,6 +114,12 @@ struct Rgb {
     static constexpr long Max { 255 };
 
     Rgb() = default;
+    Rgb(const Rgb&) = default;
+    Rgb(Rgb&&) = default;
+
+    Rgb& operator=(const Rgb&) = default;
+    Rgb& operator=(Rgb&&) = default;
+
     Rgb(long red, long green, long blue) :
         _red(std::clamp(red, Min, Max)),
         _green(std::clamp(green, Min, Max)),
@@ -125,8 +137,6 @@ struct Rgb {
     long blue() const {
         return _blue;
     }
-
-    unsigned long asUlong() const;
 
 private:
     long _red { Min };
@@ -187,7 +197,6 @@ void lightColor(const String& color, bool rgb);
 void lightColor(const char* color);
 void lightColor(const String& color);
 
-void lightColor(unsigned long color);
 String lightRgbPayload();
 String lightHsvPayload();
 String lightColor();

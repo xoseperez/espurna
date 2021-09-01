@@ -17,7 +17,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "rpc.h"
 #include "rtcmem.h"
 #include "ws.h"
-#include "libs/OnceFlag.h"
 
 #include <Ticker.h>
 #include <Schedule.h>
@@ -47,8 +46,16 @@ extern "C" {
 
 // -----------------------------------------------------------------------------
 
+#if __GNUC__ > 4
+static_assert(std::is_trivially_copyable<Light::Rgb>::value, "");
+static_assert(std::is_trivially_copyable<Light::Hsv>::value, "");
+static_assert(std::is_trivially_copyable<Light::MiredsRange>::value, "");
+#endif
+
 namespace Light {
 
+// TODO: gcc4 treats these as real statics, so everything needs to be bound to this .cpp
+#if __GNUC__ < 5
 constexpr long Rgb::Min;
 constexpr long Rgb::Max;
 
@@ -60,13 +67,10 @@ constexpr long Hsv::SaturationMax;
 
 constexpr long Hsv::ValueMin;
 constexpr long Hsv::ValueMax;
+#endif
 
 static_assert(MiredsCold < MiredsWarm, "");
 constexpr long MiredsDefault { (MiredsCold + MiredsWarm) / 2L };
-
-unsigned long Rgb::asUlong() const {
-    return (_red << 16) | (_green << 8) | _blue;
-}
 
 namespace {
 namespace build {
@@ -115,6 +119,10 @@ constexpr bool save() {
 
 constexpr unsigned long saveDelay() {
     return LIGHT_SAVE_DELAY;
+}
+
+constexpr unsigned long reportDelay() {
+    return LIGHT_REPORT_DELAY;
 }
 
 constexpr unsigned char enablePin() {
@@ -373,7 +381,7 @@ public:
         _id(id)
     {}
 
-    const char* id() const {
+    const char* id() const override {
         return "light_channel";
     }
 
@@ -389,7 +397,7 @@ private:
 
 class LightGlobalProvider : public RelayProviderBase {
 public:
-    const char* id() const {
+    const char* id() const override {
         return "light_global";
     }
 
@@ -573,7 +581,7 @@ struct Mapping {
     }
 
 private:
-    long get(LightChannel* ptr) const {
+    static long get(LightChannel* ptr) {
         if (ptr) {
             return ptr->target;
         }
@@ -581,7 +589,7 @@ private:
         return Light::ValueMin;
     }
 
-    void set(LightChannel* ptr, long value) {
+    static void set(LightChannel* ptr, long value) {
         if (ptr) {
             *ptr = value;
         }
@@ -620,11 +628,11 @@ void _lightUpdateMapping(T& channels) {
     }
 }
 
-bool _light_save = LIGHT_SAVE_ENABLED;
-unsigned long _light_save_delay = LIGHT_SAVE_DELAY;
+bool _light_save { Light::build::save() };
+unsigned long _light_save_delay { Light::build::saveDelay() };
 Ticker _light_save_ticker;
 
-unsigned long _light_report_delay = LIGHT_REPORT_DELAY;
+unsigned long _light_report_delay { Light::build::reportDelay() };
 Ticker _light_report_ticker;
 std::forward_list<LightReportListener> _light_report;
 
@@ -715,7 +723,6 @@ namespace {
 
 struct LightBrightness {
     LightBrightness() = delete;
-
     explicit LightBrightness(long brightness) :
         _brightness(std::clamp(brightness, Light::BrightnessMin, Light::BrightnessMax))
     {}
@@ -793,7 +800,7 @@ Light::MiredsRange _lightCctRange(long value) {
 
 struct LightRgbWithoutWhite {
     LightRgbWithoutWhite() = delete;
-    LightRgbWithoutWhite(const LightChannels& channels) :
+    explicit LightRgbWithoutWhite(const LightChannels& channels) :
         _common(makeCommon(channels)),
         _factor(makeFactor(_common))
     {}
@@ -850,7 +857,7 @@ private:
 
 struct LightScaledWhite {
     LightScaledWhite() = delete;
-    LightScaledWhite(float factor) :
+    explicit LightScaledWhite(float factor) :
         _factor(factor)
     {}
 
@@ -971,52 +978,77 @@ const char* _lightDesc(size_t channels, size_t index) {
 
 namespace {
 
-void _lightFromInteger(unsigned long value, bool brightness) {
-    if (brightness) {
-        _light_mapping.red((value >> 24) & 0xff);
-        _light_mapping.green((value >> 16) & 0xff);
-        _light_mapping.blue((value >> 8) & 0xff);
-        lightBrightness(value & 0xff);
-    } else {
-        _light_mapping.red((value >> 16) & 0xff);
-        _light_mapping.green((value >> 8) & 0xff);
-        _light_mapping.blue(value & 0xff);
+void _lightFromHexPayload(const char* payload, size_t len) {
+    const bool JustRgb { (len == 6) };
+    const bool WithBrightness { (len == 8) };
+    if (!JustRgb && !WithBrightness) {
+        return;
+    }
+
+    uint8_t values[4] {0, 0, 0, 0};
+    if (hexDecode(payload, len, values, sizeof(values))) {
+        _light_mapping.red(values[0]);
+        _light_mapping.blue(values[1]);
+        _light_mapping.green(values[2]);
+        if (WithBrightness) {
+            lightBrightness(values[3]);
+        }
     }
 }
 
-void _lightFromRgbPayload(const char * rgb) {
-    // 9 char #........ , 11 char ...,...,...
-    if (!_light_has_color) return;
-    if (!rgb || (strlen(rgb) == 0)) return;
+void _lightFromCommaSeparatedPayload(const char* payload, size_t len) {
+    constexpr size_t BufferSize { 16 };
+    if (len < BufferSize) {
+        char buffer[BufferSize] = {0};
+        std::copy(payload, payload + len, buffer);
 
-    // HEX value is always prefixed, like CSS
-    // values are interpreted like RGB + optional brightness
-    if (rgb[0] == '#') {
-        _lightFromInteger(strtoul(rgb + 1, nullptr, 16), strlen(rgb + 1) > 7);
-    // With comma separated string, assume decimal values
-    } else {
-        const size_t Channels { _light_channels.size() };
-        unsigned char count = 0;
+        auto it = _light_channels.begin();
+        char* tok = std::strtok(buffer, ",");
 
-        char buf[16] = {0};
-        strncpy(buf, rgb, sizeof(buf) - 1);
-        char *tok = strtok(buf, ",");
-        while (tok != NULL) {
-            _light_channels[count] = atoi(tok);
-            if (++count == Channels) break;
-            tok = strtok(NULL, ",");
+        while ((it != _light_channels.end()) && (tok != nullptr)) {
+            char* endp { nullptr };
+            auto value = std::strtol(tok, &endp, 10);
+            if ((endp == tok) || (*endp != '\0')) {
+                break;
+            }
+
+            (*it) = value;
+            ++it;
+
+            tok = std::strtok(nullptr, ",");
         }
 
-        // If less than 3 values received, set the rest to 0
-        if (count < 2) {
-            _light_channels[1] = 0;
+        // same as previous versions, set the rest to zeroes
+        while (it != _light_channels.end()) {
+            (*it) = 0;
+            ++it;
         }
+    }
+}
 
-        if (count < 3) {
-            _light_channels[2] = 0;
-        }
+void _lightFromRgbPayload(const char* rgb) {
+    if (!_light_has_color || (_light_channels.size() < 3)) {
+        return;
+
+    }
+
+    if (!rgb || (*rgb == '\0')) {
         return;
     }
+
+    const size_t PayloadLen { strlen(rgb) };
+
+    // HEX value is always prefixed, like CSS
+    // - #AABBCC
+    // Extra byte is interpreted like RGB + brightness
+    // - #AABBCCDD
+    if (rgb[0] == '#') {
+        _lightFromHexPayload(rgb + 1, PayloadLen - 1);
+        return;
+    }
+
+    // Otherwise, assume comma-separated decimal values
+    _lightFromCommaSeparatedPayload(rgb, PayloadLen);
 }
 
 // HSV string is expected to be "H,S,V", where:
@@ -1025,26 +1057,40 @@ void _lightFromRgbPayload(const char * rgb) {
 // - V [0...100]
 
 void _lightFromHsvPayload(const char* hsv) {
-    if (!_light_has_color) return;
-    if (strlen(hsv) == 0) return;
-
-    char buf[16] = {0};
-    strncpy(buf, hsv, sizeof(buf) - 1);
-
-    unsigned char count = 0;
-    long values[3] = {0};
-
-    char * tok = strtok(buf, ",");
-    while ((count < 3) && (tok != nullptr)) {
-        values[count++] = atol(tok);
-        tok = strtok(nullptr, ",");
-    }
-
-    if (count != 3) {
+    if (!hsv || (*hsv == '\0') || !_light_has_color) {
         return;
     }
 
-    lightHsv({values[0], values[1], values[2]});
+    const size_t PayloadLen { strlen(hsv) };
+    constexpr size_t BufferSize { 16 };
+
+    if (PayloadLen < BufferSize) {
+        char buffer[BufferSize] = {0};
+        std::copy(hsv, hsv + PayloadLen, buffer);
+
+        long values[3] {0, 0, 0};
+        char* tok = std::strtok(buffer, ",");
+
+        auto it = std::begin(values);
+        while ((it != std::end(values)) && (tok != nullptr)) {
+            char* endp { nullptr };
+            auto value = std::strtol(tok, &endp, 10);
+            if ((endp == tok) || (*endp != '\0')) {
+                break;
+            }
+
+            (*it) = value;
+            ++it;
+
+            tok = std::strtok(nullptr, ",");
+        }
+
+        if (it != std::end(values)) {
+            return;
+        }
+
+        lightHsv({values[0], values[1], values[2]});
+    }
 }
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
@@ -1111,15 +1157,15 @@ void _fromKelvin(long kelvin) {
     kelvin /= 100;
     _light_mapping.red((kelvin <= 66)
         ? Light::ValueMax
-        : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592));
+        : std::lround(329.698727446 * fs_pow(static_cast<double>(kelvin - 60), -0.1332047592)));
     _light_mapping.green((kelvin <= 66)
-        ? 99.4708025861 * fs_log(kelvin) - 161.1195681661
-        : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492));
+        ? std::lround(99.4708025861 * fs_log(kelvin) - 161.1195681661)
+        : std::lround(288.1221695283 * fs_pow(static_cast<double>(kelvin), -0.0755148492)));
     _light_mapping.blue((kelvin >= 66)
         ? Light::ValueMax
         : ((kelvin <= 19)
-            ? 0
-            : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307));
+            ? Light::ValueMin
+            : std::lround(138.5177312231 * fs_log(static_cast<double>(kelvin - 10)) - 305.0447927307)));
     _lightMireds(kelvin);
 }
 
@@ -1135,146 +1181,234 @@ void _fromMireds(long mireds) {
 
 namespace {
 
-Light::Rgb _lightToRgb(bool target) {
+Light::Rgb _lightToTargetRgb() {
     return {
-        (target ? _light_channels[0].target : _light_channels[0].inputValue),
-        (target ? _light_channels[1].target : _light_channels[1].inputValue),
-        (target ? _light_channels[2].target : _light_channels[2].inputValue)};
+        _light_mapping.red(),
+        _light_mapping.green(),
+        _light_mapping.blue()};
 }
 
-void _lightRgbHexPayload(Light::Rgb rgb, char* out, size_t size) {
-    snprintf_P(out, size, PSTR("#%06X"), rgb.asUlong());
-}
+Light::Rgb _lightToInputRgb() {
+    const auto& ptr = _light_mapping.pointers();
 
-void _lightRgbHexPayload(char* out, size_t size, bool target = false) {
-    _lightRgbHexPayload(_lightToRgb(target), out, size);
-}
-
-String _lightRgbHexPayload(bool target) {
-    char out[64] { 0 };
-    _lightRgbHexPayload(out, sizeof(out), target);
-    return out;
-}
-
-void _lightHsvPayload(Light::Hsv hsv, char* out, size_t len) {
-    snprintf(out, len, "%ld,%ld,%ld", hsv.hue(), hsv.saturation(), hsv.value());
-}
-
-void _lightHsvPayload(char* out, size_t len) {
-    _lightHsvPayload(lightHsv(), out, len);
-}
-
-String _lightHsvPayload() {
-    char out[64] { 0 };
-    _lightHsvPayload(out, sizeof(out));
-    return out;
-}
-
-void _lightRgbPayload(Light::Rgb rgb, char* out, size_t size) {
-    if (!_light_has_color) {
-        static char zeroes[] PROGMEM = "0,0,0";
-        if (!size || (size > sizeof(zeroes))) {
-            return;
-        }
-
-        memcpy_P(out, zeroes, sizeof(zeroes));
-        return;
+    long values[] {0, 0, 0};
+    if (ptr.red() && ptr.green() && ptr.blue()) {
+        values[0] = ptr.red()->inputValue;
+        values[1] = ptr.green()->inputValue;
+        values[2] = ptr.blue()->inputValue;
     }
 
-    snprintf_P(out, size, PSTR("%ld,%ld,%ld"), rgb.red(), rgb.green(), rgb.blue());
+    return {values[0], values[1], values[2]};
 }
 
-void _lightRgbPayload(char* out, size_t size, bool target) {
-    _lightRgbPayload(_lightToRgb(target), out, size);
-}
+String _lightRgbHexPayload(Light::Rgb rgb) {
+    static_assert(Light::Rgb::Min == 0, "");
+    static_assert(Light::Rgb::Max == 255, "");
 
-void _lightRgbPayload(char* out, size_t size) {
-    _lightRgbPayload(out, size, false);
-}
+    uint8_t values[] {
+        static_cast<uint8_t>(rgb.red()),
+        static_cast<uint8_t>(rgb.green()),
+        static_cast<uint8_t>(rgb.blue())};
 
-String _lightRgbPayload(bool target = false) {
-    char out[32] { 0 };
-    _lightRgbPayload(out, sizeof(out), target);
+    String out;
+
+    char buffer[8] {0};
+    if (hexEncode(values, sizeof(values), buffer, sizeof(buffer))) {
+        out.reserve(8);
+        out.concat('#');
+        out.concat(&buffer[0], sizeof(buffer) - 1);
+    }
+
     return out;
+}
+
+String _lightRgbPayload(Light::Rgb rgb) {
+    String out;
+    out.reserve(12);
+
+    out += rgb.red();
+    out += ',';
+
+    out += rgb.green();
+    out += ',';
+
+    out += rgb.blue();
+
+    return out;
+}
+
+String _lightRgbPayload() {
+    return _lightRgbPayload(_lightToInputRgb());
 }
 
 void _lightFromGroupPayload(const char* payload) {
-    char buffer[16] = {0};
-    std::strncpy(buffer, payload, sizeof(buffer) - 1);
+    if (!payload || *payload == '\0') {
+        return;
+    }
 
-    auto channels = _light_channels.size();
-    decltype(channels) channel = 0;
+    constexpr size_t BufferSize { 32 };
+    const size_t PayloadLen { strlen(payload) };
 
-    char* tok = std::strtok(buffer, ",");
-    while ((channel < channels) && (tok != nullptr)) {
-        char* endp { nullptr };
-        auto value = strtol(tok, &endp, 10);
-        if ((endp == tok) || (*endp != '\0') || (value >= Light::ValueMax)) {
-            return;
+    if (PayloadLen < BufferSize) {
+        char buffer[BufferSize] = {0};
+        std::copy(payload, payload + PayloadLen, buffer);
+
+        char* tok = std::strtok(buffer, ",");
+        auto it = _light_channels.begin();
+
+        while ((it != _light_channels.end()) && (tok != nullptr)) {
+            char* endp { nullptr };
+            auto value = std::strtol(tok, &endp, 10);
+            if ((endp == tok) || (*endp != '\0')) {
+                return;
+            }
+
+            (*it) = value;
+            ++it;
+
+            tok = std::strtok(nullptr, ",");
         }
-
-        lightChannel(channel++, value);
-        tok = std::strtok(nullptr, ",");
     }
 }
 
-String _lightGroupPayload(bool target) {
-    const auto channels = _light_channels.size();
+Light::Hsv _lightHsv(Light::Rgb rgb) {
+    auto r = static_cast<double>(rgb.red()) / Light::ValueMax;
+    auto g = static_cast<double>(rgb.green()) / Light::ValueMax;
+    auto b = static_cast<double>(rgb.blue()) / Light::ValueMax;
+
+    auto max = std::max({r, g, b});
+    auto min = std::min({r, g, b});
+
+    auto v = max;
+
+    if (min != max) {
+        auto s = (max - min) / max;
+
+        auto delta = max - min;
+        auto rc = (max - r) / delta;
+        auto gc = (max - g) / delta;
+        auto bc = (max - b) / delta;
+
+        double h { 0.0 };
+        if (r == max) {
+            h = bc - gc;
+        } else if (g == max) {
+            h = 2.0 + rc - bc;
+        } else {
+            h = 4.0 + gc - rc;
+        }
+
+        h = fs_fmod((h / 6.0), 1.0);
+        if (h < 0.0) {
+            h = 1.0 + h;
+        }
+
+        return Light::Hsv(
+            std::lround(h * 360.0),
+            std::lround(s * 100.0),
+            std::lround(v * 100.0));
+    }
+
+    return Light::Hsv(Light::Hsv::HueMin, Light::Hsv::SaturationMin, v);
+
+}
+
+String _lightHsvPayload(Light::Rgb rgb) {
+    String out;
+    out.reserve(12);
+
+    auto hsv = _lightHsv(rgb);
+
+    long values[3] {hsv.hue(), hsv.saturation(), hsv.value()};
+    for (const auto& value : values) {
+        if (out.length()) {
+            out += ',';
+        }
+        out += value;
+    }
+
+    return out;
+}
+
+String _lightHsvPayload() {
+    return _lightHsvPayload(_lightToTargetRgb());
+}
+
+String _lightGroupPayload() {
+    const auto Channels = _light_channels.size();
 
     String result;
-    result.reserve(4 * channels);
+    result.reserve(4 * Channels);
 
-    for (auto& channel : _light_channels) {
-        if (result.length()) result += ',';
-        result += String(target ? channel.target : channel.inputValue);
+    for (const auto& channel : _light_channels) {
+        if (result.length()) {
+            result += ',';
+        }
+        result += String(channel.inputValue);
     }
 
     return result;
 }
 
-int _lightAdjustValue(const int& value, const String& operation) {
-    if (!operation.length()) return value;
+// Basic value adjustments. Expression can be:
+// +offset, -offset or the new value
 
-    // if prefixed with a sign, treat expression as numerical operation
-    // otherwise, use as the new value
-    int updated = operation.toInt();
-    if (operation[0] == '+' || operation[0] == '-') {
-        updated = value + updated;
+long _lightAdjustValue(long value, const String& operation) {
+    if (operation.length()) {
+        char* endp { nullptr };
+        auto updated = std::strtol(operation.c_str(), &endp, 10);
+        if ((endp == operation.c_str()) || (*endp != '\0')) {
+            return value;
+        }
+
+        switch (operation[0]) {
+        case '+':
+        case '-':
+            return updated + value;
+        }
+
+        return updated;
     }
 
-    return updated;
-}
-
-void _lightAdjustBrightness(const char* payload) {
-    lightBrightness(_lightAdjustValue(lightBrightness(), payload));
+    return value;
 }
 
 void _lightAdjustBrightness(const String& payload) {
-    _lightAdjustBrightness(payload.c_str());
+    lightBrightness(_lightAdjustValue(_light_brightness, payload));
 }
 
-void _lightAdjustChannel(size_t id, const char* payload) {
-    lightChannel(id, _lightAdjustValue(lightChannel(id), payload));
+void _lightAdjustBrightness(const char* payload) {
+    _lightAdjustBrightness(String(payload));
+}
+
+void _lightAdjustChannel(LightChannel& channel, const String& payload) {
+    channel = _lightAdjustValue(channel.inputValue, payload);
 }
 
 void _lightAdjustChannel(size_t id, const String& payload) {
-    _lightAdjustChannel(id, payload.c_str());
+    if (id < _light_channels.size()) {
+        _lightAdjustChannel(_light_channels[id], payload);
+    }
 }
 
-void _lightAdjustKelvin(const char* payload) {
-    _fromKelvin(_lightAdjustValue(_toKelvin(_light_mireds), payload));
+void _lightAdjustChannel(size_t id, const char* payload) {
+    _lightAdjustChannel(id, String(payload));
 }
 
 void _lightAdjustKelvin(const String& payload) {
-    _lightAdjustKelvin(payload.c_str());
+    _fromKelvin(_lightAdjustValue(_toKelvin(_light_mireds), payload));
 }
 
-void _lightAdjustMireds(const char* payload) {
-    _fromMireds(_lightAdjustValue(_light_mireds, payload));
+void _lightAdjustKelvin(const char* payload) {
+    _lightAdjustKelvin(String(payload));
 }
 
 void _lightAdjustMireds(const String& payload) {
-    _lightAdjustMireds(payload.c_str());
+    _fromMireds(_lightAdjustValue(_light_mireds, payload));
+}
+
+void _lightAdjustMireds(const char* payload) {
+    _lightAdjustMireds(String(payload));
 }
 
 } // namespace
@@ -1286,9 +1420,14 @@ void _lightAdjustMireds(const String& payload) {
 namespace {
 
 // Gamma Correction lookup table (8 bit, ~2.2)
-// (TODO: could be constexpr, but the gamma table is still loaded into the RAM when marked as if it is a non-constexpr array)
-uint8_t _lightGammaMap(uint8_t value) {
-    static uint8_t gamma[256] PROGMEM {
+// TODO: input value modifier, instead of a transition-only thing?
+// TODO: calculate on the fly instead of limiting this to an 8bit value?
+
+constexpr long LightGammaMin { 0 };
+constexpr long LightGammaMax { 255 };
+
+long _lightGammaMap(size_t index) {
+    const static std::array<uint8_t, 256> Gamma PROGMEM {
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
         3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
@@ -1307,11 +1446,25 @@ uint8_t _lightGammaMap(uint8_t value) {
         223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
     };
 
-    static_assert(Light::ValueMax < (sizeof(gamma) / sizeof(gamma[0])), "Out-of-bounds array access");
-    static_assert(Light::ValueMin >= 0, "Minimal value can't be negative");
-    static_assert(Light::ValueMin < Light::ValueMax, "");
+    if (index < Gamma.size()) {
+        return pgm_read_byte(&Gamma[index]);
+    }
 
-    return pgm_read_byte(&gamma[value]);
+    return 0;
+}
+
+long _lightGammaMap(long value) {
+    static_assert(Light::ValueMin >= 0, "");
+    static_assert(Light::ValueMax >= 0, "");
+
+    constexpr auto Divisor = (Light::ValueMax - Light::ValueMin);
+    if (Divisor != 0l) {
+        const long Scaled {
+            (value - Light::ValueMin) * (LightGammaMax - LightGammaMin) / Divisor + LightGammaMin };
+        return _lightGammaMap(static_cast<size_t>(Scaled));
+    }
+
+    return Light::ValueMin;
 }
 
 class LightTransitionHandler {
@@ -1323,17 +1476,23 @@ public:
         size_t count;
     };
 
+    using Transitions = std::vector<Transition>;
+
     LightTransitionHandler(LightChannels& channels, bool state, LightTransition transition) :
         _state(state),
         _time(transition.time),
         _step(transition.step)
     {
-        OnceFlag delayed;
+        // generate a single transitions list for all the channels that had changed
+        // after that, provider loop will run() the list and assign intermediate target value(s)
+        bool delayed { false };
         for (auto& channel : channels) {
-            delayed = prepare(channel, state);
+            if (prepare(channel, state)) {
+                delayed = true;
+            }
         }
 
-        // if nothing to do, ignore transition step & time and just schedule as soon as possible
+        // target values are already assigned, next provider loop will apply them
         if (!delayed) {
             reset();
             return;
@@ -1341,36 +1500,28 @@ public:
     }
 
     bool prepare(LightChannel& channel, bool state) {
-        bool target_state = state && channel.state;
-        long target = target_state ? channel.value : Light::ValueMin;
+        long target = (state && channel.state)
+            ? channel.value
+            : Light::ValueMin;
 
         channel.target = target;
         if (channel.gamma) {
-            target = _lightGammaMap(static_cast<uint8_t>(target));
+            target = _lightGammaMap(target);
         }
 
         if (channel.inverse) {
             target = Light::ValueMax - target;
         }
 
-        float diff = static_cast<float>(target) - channel.current;
-        if (!isImmediate(target_state, diff)) {
-            float step = (diff > 0.0) ? 1.0f : -1.0f;
-            float every = static_cast<double>(_time) / std::abs(diff);
-            if (every < _step) {
-                auto step_ref = static_cast<float>(_step);
-                step *= (step_ref / every);
-                every = step_ref;
-            }
-            size_t count = _time / every;
-
-            Transition transition { channel.current, target, step, count };
-            _transitions.push_back(std::move(transition));
+        // TODO: hard-limit target & time, so there's no way to break these float casts
+        // TODO: implement different functions when there are multiple steps?
+        const float Diff { static_cast<float>(target) - channel.current };
+        if (!isImmediate(Diff)) {
+            pushGradual(channel.current, target, Diff);
             return true;
         }
 
-        Transition transition { channel.current, target, diff, 1};
-        _transitions.push_back(std::move(transition));
+        pushImmediate(channel.current, target, Diff);
         return false;
     }
 
@@ -1414,7 +1565,7 @@ public:
         return next;
     }
 
-    const std::vector<Transition> transitions() const {
+    const Transitions& transitions() const {
         return _transitions;
     }
 
@@ -1431,11 +1582,37 @@ public:
     }
 
 private:
-    bool isImmediate(bool state, float diff) {
+    void push(float& current, long target, float diff, size_t count) {
+        Transition transition{current, target, diff, count};
+        _transitions.push_back(std::move(transition));
+    }
+
+    void pushImmediate(float& current, long target, float diff) {
+        push(current, target, diff, 1);
+    }
+
+    void pushGradual(float& current, long target, float diff) {
+        const float TotalTime { static_cast<float>(_time) };
+        const float StepTime { static_cast<float>(_step) };
+
+        constexpr float BaseStep { 1.0f };
+        const float Diff { std::abs(diff) };
+        const float Every { TotalTime / Diff };
+
+        float step { (diff > 0.0f) ? BaseStep : -BaseStep };
+        if (Every < StepTime) {
+            step *= (StepTime / Every);
+        }
+
+        const float Count { std::floor(Diff / std::abs(step)) };
+        push(current, target, step, static_cast<size_t>(Count));
+    }
+
+    bool isImmediate(float diff) const {
         return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
     }
 
-    std::vector<Transition> _transitions;
+    Transitions _transitions;
     bool _state_notified { false };
 
     bool _state;
@@ -1497,8 +1674,8 @@ std::unique_ptr<LightTransitionHandler> _light_transition;
 
 Ticker _light_transition_ticker;
 bool _light_use_transitions = false;
-unsigned long _light_transition_time = LIGHT_TRANSITION_TIME;
-unsigned long _light_transition_step = LIGHT_TRANSITION_STEP;
+unsigned long _light_transition_time { Light::build::transitionTime() };
+unsigned long _light_transition_step { Light::build::transitionStep() };
 
 void _lightProviderSchedule(unsigned long ms);
 
@@ -1713,7 +1890,7 @@ void _lightRestoreRtcmem() {
     uint64_t value = Rtcmem->light;
     LightRtcmem light(value);
 
-    auto& values = light.values();
+    const auto& values = light.values();
     for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
         _light_channels[channel] = values[channel];
     }
@@ -1805,8 +1982,9 @@ void _lightUpdateFromMqttGroup() {
 // TODO: implement per-module heartbeat mask? e.g. to exclude unwanted topics based on preference, not settings
 
 bool _lightMqttHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Light)
+    if (mask & heartbeat::Report::Light) {
         lightMQTT();
+    }
 
     return mqttConnected();
 }
@@ -1833,12 +2011,12 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
         mqttSubscribe(MQTT_TOPIC_TRANSITION);
 
         // Group color
-        if (mqtt_group_color.length() > 0) mqttSubscribeRaw(mqtt_group_color.c_str());
+        if (mqtt_group_color.length() > 0) {
+            mqttSubscribeRaw(mqtt_group_color.c_str());
+        }
 
         // Channels
-        char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
-        mqttSubscribe(buffer);
+        mqttSubscribe(MQTT_TOPIC_CHANNEL "/+");
 
         // Global lights control
         if (!_light_has_controls) {
@@ -1927,42 +2105,32 @@ void _lightMqttSetup() {
 } // namespace
 
 void lightMQTT() {
-    char buffer[20];
-
     if (_light_has_color) {
-        _lightRgbHexPayload(buffer, sizeof(buffer), true);
-        mqttSend(MQTT_TOPIC_COLOR_HEX, buffer);
-
-        _lightRgbPayload(buffer, sizeof(buffer), true);
-        mqttSend(MQTT_TOPIC_COLOR_RGB, buffer);
-
-        _lightHsvPayload(buffer, sizeof(buffer));
-        mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
+        auto rgb = _lightToTargetRgb();
+        mqttSend(MQTT_TOPIC_COLOR_HEX, _lightRgbHexPayload(rgb).c_str());
+        mqttSend(MQTT_TOPIC_COLOR_RGB, _lightRgbPayload(rgb).c_str());
+        mqttSend(MQTT_TOPIC_COLOR_HSV, _lightHsvPayload(rgb).c_str());
     }
 
     if (_light_has_color || _light_use_cct) {
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
-        mqttSend(MQTT_TOPIC_MIRED, buffer);
+        mqttSend(MQTT_TOPIC_MIRED, String(_light_mireds).c_str());
     }
 
-    for (unsigned int i=0; i < _light_channels.size(); i++) {
-        itoa(_light_channels[i].target, buffer, 10);
-        mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
+    for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
+        mqttSend(MQTT_TOPIC_CHANNEL, channel, String(_light_channels[channel].target).c_str());
     }
 
-    snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_brightness);
-    mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
+    mqttSend(MQTT_TOPIC_BRIGHTNESS, String(_light_brightness).c_str());
 
     if (!_light_has_controls) {
-        snprintf_P(buffer, sizeof(buffer), "%c", _light_state ? '1' : '0');
-        mqttSend(MQTT_TOPIC_LIGHT, buffer);
+        mqttSend(MQTT_TOPIC_LIGHT, _light_state ? "1" : "0");
     }
 }
 
 void lightMQTTGroup() {
     const String mqtt_group_color = Light::settings::mqttGroup();
     if (mqtt_group_color.length()) {
-        mqttSendRaw(mqtt_group_color.c_str(), _lightGroupPayload(false).c_str());
+        mqttSendRaw(mqtt_group_color.c_str(), _lightGroupPayload().c_str());
     }
 }
 
@@ -1999,7 +2167,7 @@ void _lightApiSetup() {
 
         apiRegister(F(MQTT_TOPIC_COLOR_RGB),
             [](ApiRequest& request) {
-                request.send(_lightRgbPayload(true));
+                request.send(_lightRgbPayload(_lightToTargetRgb()));
                 return true;
             },
             _lightApiRgbSetter
@@ -2007,7 +2175,7 @@ void _lightApiSetup() {
 
         apiRegister(F(MQTT_TOPIC_COLOR_HEX),
             [](ApiRequest& request) {
-                request.send(_lightRgbHexPayload(true));
+                request.send(_lightRgbHexPayload(_lightToTargetRgb()));
                 return true;
             },
             _lightApiRgbSetter
@@ -2114,21 +2282,21 @@ void _lightApiSetup() {
 
 namespace {
 
-bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, "light", 5) == 0) return true;
-    if (strncmp(key, "use", 3) == 0) return true;
-    if (strncmp(key, "lt", 2) == 0) return true;
-    return false;
+bool _lightWebSocketOnKeyCheck(const char* key, JsonVariant&) {
+    return (strncmp(key, "light", 5) == 0)
+        || (strncmp(key, "use", 3) == 0)
+        || (strncmp(key, "lt", 2) == 0);
 }
 
 void _lightWebSocketStatus(JsonObject& root) {
     if (_light_has_color) {
         if (_light_use_rgb) {
-            root["rgb"] = _lightRgbHexPayload(false);
+            root["rgb"] = _lightRgbHexPayload(_lightToInputRgb());
         } else {
-            root["hsv"] = lightHsvPayload();
+            root["hsv"] = _lightHsvPayload(_lightToTargetRgb());
         }
     }
+
     if (_light_use_cct) {
         JsonObject& mireds = root.createNestedObject("mireds");
         mireds["value"] = _light_mireds;
@@ -2136,12 +2304,14 @@ void _lightWebSocketStatus(JsonObject& root) {
         mireds["warm"] = _light_warm_mireds;
         root["useCCT"] = _light_use_cct;
     }
+
     JsonArray& channels = root.createNestedArray("channels");
-    for (size_t id = 0; id < _light_channels.size(); ++id) {
-        channels.add(lightChannel(id));
+    for (auto& channel : _light_channels) {
+        channels.add(channel.inputValue);
     }
-    root["brightness"] = lightBrightness();
-    root["lightstate"] = lightState();
+
+    root["brightness"] = _light_brightness;
+    root["lightstate"] = _light_state;
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
@@ -2220,10 +2390,10 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("BRIGHTNESS"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
-            _lightAdjustBrightness(ctx.argv[1].c_str());
+            _lightAdjustBrightness(ctx.argv[1]);
             lightUpdate();
         }
-        ctx.output.printf("%ld\n", lightBrightness());
+        ctx.output.printf("%ld\n", _light_brightness);
         terminalOK(ctx);
     });
 
@@ -2235,12 +2405,12 @@ void _lightInitCommands() {
         }
 
         auto description = [&](size_t channel) {
-            ctx.output.printf("#%u (%s): input:%ld value:%ld target:%ld current:%s\n",
+            ctx.output.printf("#%u (%s) input:%ld value:%ld target:%ld current:%s\n",
                     channel, _lightDesc(Channels, channel),
                     _light_channels[channel].inputValue,
                     _light_channels[channel].value,
                     _light_channels[channel].target,
-                    String(_light_channels[channel].current).c_str());
+                    String(_light_channels[channel].current, 2).c_str());
         };
 
         if (ctx.argc > 2) {
@@ -2250,7 +2420,7 @@ void _lightInitCommands() {
                 return;
             }
 
-            _lightAdjustChannel(id, ctx.argv[2].c_str());
+            _lightAdjustChannel(id, ctx.argv[2]);
             lightUpdate();
             description(id);
         } else {
@@ -2267,7 +2437,7 @@ void _lightInitCommands() {
             _lightFromRgbPayload(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.printf_P(PSTR("rgb %s\n"), lightRgbPayload().c_str());
+        ctx.output.printf_P(PSTR("rgb %s\n"), _lightRgbPayload(_lightToTargetRgb()).c_str());
         terminalOK(ctx);
     });
 
@@ -2276,13 +2446,13 @@ void _lightInitCommands() {
             _lightFromHsvPayload(ctx.argv[1].c_str());
             lightUpdate();
         }
-        ctx.output.printf_P(PSTR("hsv %s\n"), lightHsvPayload().c_str());
+        ctx.output.printf_P(PSTR("hsv %s\n"), _lightHsvPayload().c_str());
         terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("KELVIN"), [](const terminal::CommandContext& ctx) {
         if (ctx.argc > 1) {
-            _lightAdjustKelvin(ctx.argv[1].c_str());
+            _lightAdjustKelvin(ctx.argv[1]);
             lightUpdate();
         }
         ctx.output.printf_P(PSTR("kelvin %ld\n"), _toKelvin(_light_mireds));
@@ -2322,63 +2492,13 @@ bool lightUseRGB() {
 // -----------------------------------------------------------------------------
 
 Light::Rgb lightRgb() {
-    return {_light_mapping.red(), _light_mapping.green(), _light_mapping.blue()};
+    return _lightToTargetRgb();
 }
 
 void lightRgb(Light::Rgb rgb) {
     _light_mapping.red(rgb.red());
     _light_mapping.green(rgb.green());
     _light_mapping.blue(rgb.blue());
-}
-
-namespace {
-
-Light::Hsv _lightHsv(Light::Rgb rgb) {
-    auto r = static_cast<double>(rgb.red()) / Light::ValueMax;
-    auto g = static_cast<double>(rgb.green()) / Light::ValueMax;
-    auto b = static_cast<double>(rgb.blue()) / Light::ValueMax;
-
-    auto max = std::max({r, g, b});
-    auto min = std::min({r, g, b});
-
-    auto v = max;
-
-    if (min != max) {
-        auto s = (max - min) / max;
-
-        auto delta = max - min;
-        auto rc = (max - r) / delta;
-        auto gc = (max - g) / delta;
-        auto bc = (max - b) / delta;
-
-        double h { 0.0 };
-        if (r == max) {
-            h = bc - gc;
-        } else if (g == max) {
-            h = 2.0 + rc - bc;
-        } else {
-            h = 4.0 + gc - rc;
-        }
-
-        h = fs_fmod((h / 6.0), 1.0);
-        if (h < 0.0) {
-            h = 1.0 + h;
-        }
-
-        return Light::Hsv(
-            std::lround(h * 360.0),
-            std::lround(s * 100.0),
-            std::lround(v * 100.0));
-    }
-
-    return Light::Hsv(Light::Hsv::HueMin, Light::Hsv::SaturationMin, v);
-
-}
-
-} // namespace
-
-Light::Hsv lightHsv() {
-    return _lightHsv(lightRgb());
 }
 
 // HSV to RGB transformation -----------------------------------------------
@@ -2451,6 +2571,10 @@ void lightHs(long hue, long saturation) {
     lightHsv({hue, saturation, Light::Hsv::ValueMax});
 }
 
+Light::Hsv lightHsv() {
+    return _lightHsv(_lightToTargetRgb());
+}
+
 // -----------------------------------------------------------------------------
 
 void lightOnReport(LightReportListener func) {
@@ -2484,7 +2608,12 @@ void _lightReport(int report) {
 // Called in the loop() when we received lightUpdate(...) values
 
 void _lightUpdateDebug(const LightTransitionHandler& handler) {
-    DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"), handler.time(), handler.step());
+    const auto Time = handler.time();
+    const auto Step = handler.step();
+    if (Time - Step) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"), Time, Step);
+    }
+
     for (auto& transition : handler.transitions()) {
         if (transition.count > 1) {
             DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %ld (step %s, %u times)\n"),
@@ -2642,20 +2771,12 @@ void lightColor(const String& color) {
     lightColor(color.c_str());
 }
 
-void lightColor(unsigned long color) {
-    _lightFromInteger(color, false);
-}
-
 String lightRgbPayload() {
-    char str[12];
-    _lightRgbPayload(str, sizeof(str));
-    return str;
+    return _lightRgbPayload();
 }
 
 String lightHsvPayload() {
-    char str[12];
-    _lightHsvPayload(str, sizeof(str));
-    return str;
+    return _lightHsvPayload();
 }
 
 String lightColor() {
