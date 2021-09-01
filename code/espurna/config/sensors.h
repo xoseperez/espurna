@@ -967,16 +967,20 @@
                                                 // ESP8266: Serial1 does not allow receiving data, no point in changing this setting
 #endif
 
-#ifndef PZEM004T_ADDRESSES
-#define PZEM004T_ADDRESSES              "192.168.1.1"  // Device(s) address(es), separated by space, "192.168.1.1 192.168.1.2 192.168.1.3"
-#endif
-
 #ifndef PZEM004T_READ_INTERVAL
 #define PZEM004T_READ_INTERVAL          1500    // Read interval between same device
 #endif
 
-#ifndef PZEM004T_MAX_DEVICES
-#define PZEM004T_MAX_DEVICES            3
+#ifndef PZEM004T_ADDRESS_1
+#define PZEM004T_ADDRESS_1            "192.168.1.1" // Device address, represented as an IPv4 string
+#endif
+
+#ifndef PZEM004T_ADDRESS_2
+#define PZEM004T_ADDRESS_2            ""            // Only one device enabled by default
+#endif
+
+#ifndef PZEM004T_ADDRESS_3
+#define PZEM004T_ADDRESS_3            ""            // Only one device enabled by default
 #endif
 
 //------------------------------------------------------------------------------

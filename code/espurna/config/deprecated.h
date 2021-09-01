@@ -150,3 +150,7 @@
 #undef RFB_SUPPORT
 #define RFB_SUPPORT RF_SUPPORT
 #endif
+
+#ifdef PZEM004T_ADDRESSES
+#warning "PZEM004T_ADDRESSES is deprecated! Addresses can be set by using individual flags PZEM004T_ADDRESS_{1,2,3}"
+#endif

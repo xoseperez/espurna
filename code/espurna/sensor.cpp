@@ -2133,26 +2133,57 @@ void _sensorLoad() {
 
     #if PZEM004T_SUPPORT
     {
-        String addresses = getSetting("pzemAddr", F(PZEM004T_ADDRESSES));
-        if (!addresses.length()) {
-            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
-            return;
+        // TODO: manage indexes like Emon, no need for magic offsets
+        // TODO: ...and the same for the v3
+        PZEM004TSensor * sensor = new PZEM004TSensor();
+
+#if !defined(PZEM004T_ADDRESSES)
+        for (size_t index = 0; index < PZEM004TSensor::DevicesMax; ++index) {
+            auto address = getSetting({"pzemAddr", index}, PZEM004TSensor::defaultAddress(index));
+            if (!address.length()) {
+                break;
+            }
+
+            if (!sensor->addAddress(address)) {
+                break;
+            }
         }
+#else
+        String addrs = getSetting("pzemAddr", F(PZEM004T_ADDRESSES));
 
-        PZEM004TSensor * sensor = PZEM004TSensor::create();
-        sensor->setAddresses(addresses.c_str());
-        sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
-        sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
+        constexpr size_t BufferSize{64};
+        char buffer[BufferSize]{0};
 
-        if (!getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
-            sensor->setSerial(& PZEM004T_HW_PORT);
+        if (addrs.length() < BufferSize) {
+            std::copy(addrs.c_str(), addrs.c_str() + addrs.length(), buffer);
+            buffer[addrs.length()] = '\0';
+
+            char* address{strtok(buffer, " ")};
+            while (address != nullptr) {
+                if (!sensor->addAddress(address)) {
+                    break;
+                }
+
+                address = strtok(nullptr, " ");
+            }
         }
+#endif
 
-        _sensors.push_back(sensor);
+        if (sensor->countDevices()) {
+            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN));
+            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN));
+            if (!getSetting("pzemSoft", 1 == PZEM004T_USE_SOFT)) {
+                sensor->setSerial(& PZEM004T_HW_PORT);
+            }
 
-        #if TERMINAL_SUPPORT
-            pzem004tInitCommands();
-        #endif
+            _sensors.push_back(sensor);
+
+#if TERMINAL_SUPPORT
+            pzem004tInitCommands(sensor);
+#endif
+        } else {
+            delete sensor;
+        }
     }
     #endif
 
