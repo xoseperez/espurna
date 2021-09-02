@@ -39,14 +39,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
-const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
-    "POST %s HTTP/1.1\r\n"
-    "Host: %s\r\n"
-    "User-Agent: ESPurna\r\n"
-    "Connection: close\r\n"
-    "Content-Type: application/x-www-form-urlencoded\r\n"
-    "Content-Length: %d\r\n\r\n";
-
 bool _tspk_enabled = false;
 bool _tspk_clear = false;
 
@@ -256,16 +248,32 @@ void _tspkInitClient(const String& _url) {
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), tspk_client->address.path.c_str(), _tspk_data.c_str());
-        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + tspk_client->address.path.length() + tspk_client->address.host.length() + 1];
-        snprintf_P(headers, sizeof(headers),
-            THINGSPEAK_REQUEST_TEMPLATE,
-            tspk_client->address.path.c_str(),
-            tspk_client->address.host.c_str(),
-            _tspk_data.length()
-        );
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"),
+                tspk_client->address.path.c_str(), _tspk_data.c_str());
+        const size_t HeadersSize { 256 };
 
-        client->write(headers);
+        String headers;
+        headers.reserve(HeadersSize);
+        auto append = [&](const String& key, const String& value) {
+            headers += key;
+            headers += F(": ");
+            headers += value;
+            headers += F("\r\n");
+        };
+
+        headers += F("POST ");
+        headers += tspk_client->address.path;
+        headers += F(" HTTP/1.1");
+        headers += F("\r\n");
+
+        append(F("Host"), tspk_client->address.host);
+        append(F("User-Agent"), getAppName());
+        append(F("Connection"), F("close"));
+        append(F("Content-Type"), F("application/x-www-form-urlencoded"));
+        append(F("Content-Length"), String(_tspk_data.length()));
+        headers += F("\r\n");
+
+        client->write(headers.c_str(), headers.length());
         client->write(_tspk_data.c_str());
 
     }, nullptr);
