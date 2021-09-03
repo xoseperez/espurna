@@ -6,7 +6,7 @@ OTA MODULE
 
 #pragma once
 
-#include "espurna.h"
+#include "system.h"
 
 // Main entrypoint for basic OTA methods
 // (like clients, arduinoota and basic web)

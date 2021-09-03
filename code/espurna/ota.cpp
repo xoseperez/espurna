@@ -4,10 +4,11 @@ OTA MODULE COMMON FUNCTIONS
 
 */
 
+#include "espurna.h"
 #include "ota.h"
+#include "rtcmem.h"
 #include "system.h"
 #include "terminal.h"
-#include "rtcmem.h"
 #include "utils.h"
 #include "ws.h"
 

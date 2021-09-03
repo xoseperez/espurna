@@ -10,13 +10,12 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // OTA by using Core's HTTP(s) updater
 // -----------------------------------------------------------------------------
 
-#include "ota.h"
+#include "espurna.h"
 
 #if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
 
-#include <memory>
-
 #include "mqtt.h"
+#include "ota.h"
 #include "system.h"
 #include "terminal.h"
 

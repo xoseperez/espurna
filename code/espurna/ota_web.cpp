@@ -7,10 +7,11 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "ota.h"
+#include "espurna.h"
 
 #if WEB_SUPPORT && OTA_WEB_SUPPORT
 
+#include "ota.h"
 #include "web.h"
 #include "ws.h"
 
