@@ -163,9 +163,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Refactor deprecated WiFiClientSecure ([#2140](https://github.com/xoseperez/espurna/issues/2140), [#2144](https://github.com/xoseperez/espurna/issues/2144))
 #### WebUI
 - WebUI: alert when WS closes ([#2131](https://github.com/xoseperez/espurna/issues/2131), thanks to **[@foxman69](https://github.com/foxman69)**)
-- Optional Web(UI) OTA ([#2190](https://github.com/xoseperez/espurna/issues/2190))
+- Optional Web(UI) OTA support ([#2190](https://github.com/xoseperez/espurna/issues/2190))
 - Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
 - Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
+- Support Web(UI) OTA upgrades when the default web server is disabled [3ff460db](https://github.com/xoseperez/espurna/commit/3ff460db4af8e0b3df07ed04bb736941d47ca1ae)
 #### WiFi
 - Try to connect to a better AP, when the current RSSI is below -73dBm (only when WiFi scanning is enabled). [f0f7dcc8](https://github.com/xoseperez/espurna/commit/f0f7dcc874d6f6f4b095b6cb89e69cdb65219150), [dde5f374](https://github.com/xoseperez/espurna/commit/dde5f374dd038afe1fb966d31e16bdac1be581fb), [5a973298 (initial commit)](https://github.com/xoseperez/espurna/commit/5a97329832816219a919c4669e22ad6af0c8d228)
 - Allow to set bssid and channel, when scanning is disabled [c5f70286](https://github.com/xoseperez/espurna/commit/c5f70286d1e63972446c2148914352d9f6acf345)

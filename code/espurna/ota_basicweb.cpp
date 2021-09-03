@@ -182,11 +182,20 @@ void setup(Server& server) {
 }
 
 } // namespace
+
+namespace settings {
+
+uint16_t port() {
+    constexpr uint16_t defaultPort { WEB_PORT };
+    return getSetting("webPort", defaultPort);
+}
+
+} // namespace settings
 } // namespace basic_web
 } // namespace ota
 
 void otaWebSetup() {
-    static ESP8266WebServer server(WEB_PORT);
+    static ESP8266WebServer server(ota::basic_web::settings::port());
     ota::basic_web::setup(server);
 
     ::espurnaRegisterLoop([]() {
