@@ -842,7 +842,7 @@
 #endif
 
 #ifndef OTA_WEB_SUPPORT
-#define OTA_WEB_SUPPORT          1              // Support `/upgrade` endpoint and WebUI OTA handler
+#define OTA_WEB_SUPPORT             WEB_SUPPORT             // Support `/upgrade` endpoint and WebUI OTA handler
 #endif
 
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"

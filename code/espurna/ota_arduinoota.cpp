@@ -121,7 +121,7 @@ void setup() {
 } // namespace arduino
 } // namespace ota
 
-void arduinoOtaSetup() {
+void otaArduinoSetup() {
     ota::arduino::setup();
 }
 

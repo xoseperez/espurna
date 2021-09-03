@@ -36,6 +36,10 @@ bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining) {
     return false;
 }
 
+bool otaFinalize(size_t size, CustomResetReason reason) {
+    return otaFinalize(size, reason, false);
+}
+
 // Helper methods from UpdaterClass that need to be called manually for async mode,
 // because we are not using Stream interface to feed it data.
 bool otaVerifyHeader(uint8_t* data, size_t len) {
@@ -82,6 +86,11 @@ void otaProgress(size_t bytes, size_t each) {
     }
 }
 
+void otaProgress(size_t bytes) {
+    constexpr size_t Each { 8192 };
+    otaProgress(bytes, Each);
+}
+
 void otaSetup() {
     // Some magic to allow seamless Tasmota OTA upgrades
     // - inject dummy data sequence that is expected to hold current version info
@@ -117,7 +126,10 @@ void otaSetup() {
     }
 
 #if OTA_ARDUINOOTA_SUPPORT
-    arduinoOtaSetup();
+    otaArduinoSetup();
+#endif
+#if !WEB_SUPPORT && OTA_WEB_SUPPORT
+    otaWebSetup();
 #endif
 #if OTA_CLIENT != OTA_CLIENT_NONE
     otaClientSetup();
