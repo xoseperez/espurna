@@ -1469,6 +1469,10 @@ long _lightGammaMap(long value) {
 
 class LightTransitionHandler {
 public:
+    // internal calculations are done in floats, so hard-limit target & step time to a certain value
+    // that can be representend precisely when casting milliseconds times back and forth
+    static constexpr unsigned long TimeMax { 1ul << 24ul };
+
     struct Transition {
         float& value;
         long target;
@@ -1480,8 +1484,8 @@ public:
 
     LightTransitionHandler(LightChannels& channels, bool state, LightTransition transition) :
         _state(state),
-        _time(transition.time),
-        _step(transition.step)
+        _time(std::min(transition.time, TimeMax)),
+        _step(std::min(transition.step, TimeMax))
     {
         // generate a single transitions list for all the channels that had changed
         // after that, provider loop will run() the list and assign intermediate target value(s)
@@ -1513,7 +1517,6 @@ public:
             target = Light::ValueMax - target;
         }
 
-        // TODO: hard-limit target & time, so there's no way to break these float casts
         // TODO: implement different functions when there are multiple steps?
         const float Diff { static_cast<float>(target) - channel.current };
         if (!isImmediate(Diff)) {
