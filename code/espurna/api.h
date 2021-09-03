@@ -11,12 +11,13 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "espurna.h"
 
-#include "api_impl.h"
-#include "web.h"
-
+#include "api_path.h"
 #include <functional>
 
 #if WEB_SUPPORT
+#include "api_impl.h"
+#include "web.h"
+
 bool apiAuthenticateHeader(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticateParam(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticate(AsyncWebServerRequest*);
@@ -33,9 +34,9 @@ using ApiJsonHandler = std::function<bool(ApiRequest&, JsonObject& reponse)>;
 
 void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put);
 void apiRegister(const String& path, ApiJsonHandler&& get, ApiJsonHandler&& put);
-#endif
-
-void apiSetup();
 
 bool apiError(ApiRequest&);
 bool apiOk(ApiRequest&);
+#endif
+
+void apiSetup();

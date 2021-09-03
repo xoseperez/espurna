@@ -193,6 +193,8 @@ error:
     return false;
 }
 
+#if WEB_SUPPORT
+
 String ApiRequest::wildcard(int index) const {
     if (index < 0) {
         index = std::abs(index + 1);
@@ -229,6 +231,8 @@ size_t ApiRequest::wildcards() const {
 
     return result;
 }
+
+#endif
 
 // -----------------------------------------------------------------------------
 

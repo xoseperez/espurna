@@ -19,6 +19,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "ota.h"
 
 #include <ESP8266WebServer.h>
+#include <StreamString.h>
 
 namespace ota {
 namespace basic_web {
