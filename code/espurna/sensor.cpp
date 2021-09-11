@@ -1926,6 +1926,7 @@ void _sensorLoad() {
         auto* sensor = new EmonAnalogSensor();
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
         sensor->setReferenceVoltage(EMON_REFERENCE_VOLTAGE);
+        sensor->setResolution(EMON_ANALOG_RESOLUTION);
         _sensors.push_back(sensor);
     }
     #endif
