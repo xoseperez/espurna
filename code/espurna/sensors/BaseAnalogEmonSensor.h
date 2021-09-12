@@ -236,8 +236,8 @@ private:
     size_t _samples_max { EMON_MAX_SAMPLES };       // Number of samples, will be adjusted at runtime
     size_t _samples { _samples_max };               // based on the maximum value
 
-    size_t _resolution { 10 };                      // ADC resolution (in bits)
-    size_t _adc_counts { _resolution << 1 };        // Max count
+    size_t _resolution { EMON_ANALOG_RESOLUTION };  // ADC resolution (in bits)
+    size_t _adc_counts { static_cast<size_t>(1) << _resolution };       // Max count
 };
 
 // Provide EMON API helper where we don't care about specifics of how the values are stored

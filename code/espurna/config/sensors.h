@@ -508,6 +508,10 @@
 #define EMON_ANALOG_SUPPORT             0       // Do not build support by default
 #endif
 
+#ifndef EMON_ANALOG_RESOLUTION
+#define EMON_ANALOG_RESOLUTION          10      // ADC resolution (in bits)
+#endif
+
 //------------------------------------------------------------------------------
 // Counter sensor
 // Enable support by passing EVENTS_SUPPORT=1 build flag
