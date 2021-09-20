@@ -192,12 +192,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // Helper functions
 // -----------------------------------------------------------------------------
 
-char* ltrim(char * s) {
-    char *p = s;
-    while ((unsigned char) *p == ' ') ++p;
-    return p;
-}
-
 double roundTo(double num, unsigned char positions) {
     double multiplier = 1;
     while (positions-- > 0) multiplier *= 10;
@@ -267,62 +261,122 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
   return nullptr;
 }
 
+namespace {
+
 // From a byte array to an hexa char array ("A220EE...", double the size)
-size_t hexEncode(const uint8_t * in, size_t in_size, char * out, size_t out_size) {
-    if ((2 * in_size + 1) > (out_size)) return 0;
 
+template <typename T>
+const uint8_t* hexEncodeImpl(const uint8_t* in_begin, const uint8_t* in_end, T&& callback) {
     static const char base16[] = "0123456789ABCDEF";
-    size_t index = 0;
 
-    while (index < in_size) {
-        out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
-        out[(index*2)+1] = base16[(in[index] & 0xf)];
-        ++index;
+    constexpr uint8_t Left { 0xf0 };
+    constexpr uint8_t Right { 0xf };
+    constexpr uint8_t Shift { 4 };
+
+    auto* in_ptr = in_begin;
+    for (; in_ptr != in_end; ++in_ptr) {
+        char buf[2] {
+            base16[((*in_ptr) & Left) >> Shift],
+            base16[(*in_ptr) & Right]};
+        if (!callback(buf)) {
+            break;
+        }
     }
 
-    out[2*index] = '\0';
-
-    return index ? (1 + (2 * index)) : 0;
+    return in_ptr;
 }
 
+} // namespace
+
+char* hexEncode(const uint8_t* in_begin, const uint8_t* in_end, char* out_begin, char* out_end) {
+    char* out_ptr { out_begin };
+
+    hexEncodeImpl(in_begin, in_end, [&](const char (&byte)[2]) {
+        *(out_ptr) = byte[0];
+        ++out_ptr;
+
+        *(out_ptr) = byte[1];
+        ++out_ptr;
+
+        return out_ptr != out_end;
+    });
+
+    return out_ptr;
+}
+
+String hexEncode(const uint8_t* in_begin, const uint8_t* in_end) {
+    String out;
+    out.reserve(in_end - in_begin);
+
+    hexEncodeImpl(in_begin, in_end, [&](const char (&byte)[2]) {
+        out.concat(byte, 2);
+        return true;
+    });
+
+    return out;
+}
+
+size_t hexEncode(const uint8_t* in, size_t in_size, char* out, size_t out_size) {
+    if (out_size >= ((in_size * 2) + 1)) {
+        char* out_ptr = hexEncode(in, in + in_size, out, out + out_size);
+        *out_ptr = '\0';
+        ++out_ptr;
+        return out_ptr - out;
+    }
+
+    return 0;
+}
 
 // From an hexa char array ("A220EE...") to a byte array (half the size)
+
+uint8_t* hexDecode(const char* in_begin, const char* in_end, uint8_t* out_begin, uint8_t* out_end) {
+    // We can only return small values (max 'z' aka 122)
+    constexpr uint8_t InvalidByte { 255u };
+
+    auto char2byte = [](char ch) -> uint8_t {
+        switch (ch) {
+        case '0'...'9':
+            return (ch - '0');
+        case 'a'...'f':
+            return 10 + (ch - 'a');
+        case 'A'...'F':
+            return 10 + (ch - 'A');
+        }
+
+        return InvalidByte;
+    };
+
+    constexpr uint8_t Shift { 4 };
+
+    const char* in_ptr { in_begin };
+    uint8_t* out_ptr { out_begin };
+    while ((in_ptr != in_end) && (out_ptr != out_end)) {
+        uint8_t lhs = char2byte(*in_ptr);
+        if (lhs == InvalidByte) {
+            break;
+        }
+        ++in_ptr;
+
+        uint8_t rhs = char2byte(*in_ptr);
+        if (rhs == InvalidByte) {
+            break;
+        }
+        ++in_ptr;
+
+        (*out_ptr) = (lhs << Shift) | rhs;
+        ++out_ptr;
+    }
+
+    return out_ptr;
+}
+
 size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) {
     if ((in_size & 1) || (out_size < (in_size / 2))) {
         return 0;
     }
 
-    // We can only return small values
-    constexpr uint8_t InvalidByte { 255u };
-
-    auto char2byte = [](char ch) -> uint8_t {
-        if ((ch >= '0') && (ch <= '9')) {
-            return (ch - '0');
-        } else if ((ch >= 'a') && (ch <= 'f')) {
-            return 10 + (ch - 'a');
-        } else if ((ch >= 'A') && (ch <= 'F')) {
-            return 10 + (ch - 'A');
-        } else {
-            return InvalidByte;
-        }
-    };
-
-    size_t index = 0;
-    size_t out_index = 0;
-
-    while (index < in_size) {
-        const uint8_t lhs = char2byte(in[index]) << 4;
-        const uint8_t rhs = char2byte(in[index + 1]);
-        if ((InvalidByte != lhs) && (InvalidByte != rhs)) {
-            out[out_index++] = lhs | rhs;
-            index += 2;
-            continue;
-        }
-        out_index = 0;
-        break;
-    }
-
-    return out_index;
+    uint8_t* out_ptr { hexDecode(in, in + in_size, out, out + out_size) };
+    return out_ptr - out;
 }
 
 const char* getFlashChipMode() {

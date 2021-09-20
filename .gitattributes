@@ -3,4 +3,6 @@
 *.ini     text eol=lf
 *.h       text eol=lf
 *.cpp     text eol=lf
+*.re      text eol=lf
+*.cpp.inc text eol=lf
 *.c       text eol=lf

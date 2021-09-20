@@ -1532,35 +1532,82 @@
 #define IR_SUPPORT                  0               // Do not build with IR support by default (10.25Kb)
 #endif
 
-//#define IR_RX_PIN                   5               // GPIO the receiver is connected to
-//#define IR_TX_PIN                   4               // GPIO the transmitter is connected to
-
-#ifndef IR_USE_RAW
-#define IR_USE_RAW                  0               // Use raw codes
+#ifndef IR_RX_SUPPORT
+#define IR_RX_SUPPORT               1               // (boolean) IR receiver support in the build (~30Kb, enabled by default)
 #endif
 
-#ifndef IR_BUFFER_SIZE
-#define IR_BUFFER_SIZE              1024
+#ifndef IR_RX_PIN
+#define IR_RX_PIN                   GPIO_NONE       // GPIO the receiver is connected to
 #endif
 
-#ifndef IR_TIMEOUT
-#define IR_TIMEOUT                  15U
+#ifndef IR_TX_SUPPORT
+#define IR_TX_SUPPORT               1               // (boolean) IR transmitter support in the build (~8Kb, enabled by default)
 #endif
 
-#ifndef IR_REPEAT
-#define IR_REPEAT                   1
+#ifndef IR_TX_PIN
+#define IR_TX_PIN                   GPIO_NONE       // GPIO the transmitter is connected to
 #endif
 
-#ifndef IR_DELAY
-#define IR_DELAY                    100
+#ifndef IR_RX_BUFFER_SIZE
+#define IR_RX_BUFFER_SIZE           128             // (ms, internal) size of the buffer that will be used to store the captured data
+                                                    // required heap amount is the buffer size multiplied by four (default is 512bytes)
 #endif
 
-#ifndef IR_DEBOUNCE
-#define IR_DEBOUNCE                 500             // IR debounce time in milliseconds
+#ifndef IR_RX_TIMEOUT
+#define IR_RX_TIMEOUT               15              // (ms, internal) amount of time of no IR signal before the library stops capturing the data
 #endif
 
-#ifndef IR_BUTTON_SET
-#define IR_BUTTON_SET               0               // IR button set to use (see ../ir_button.h)
+#ifndef IR_RX_MQTT
+#define IR_RX_MQTT                  1               // (boolean) Report basic codes
+#endif
+
+#ifndef IR_RX_RAW_MQTT
+#define IR_RX_RAW_MQTT              0               // (boolean) Report RAW codes
+#endif
+
+#ifndef IR_RX_MQTT_TOPIC
+#define IR_RX_MQTT_TOPIC            "irin"          // (string) MQTT topic magnitude used to publish the received messages
+#endif
+
+#ifndef IR_TX_MQTT_TOPIC
+#define IR_TX_MQTT_TOPIC            "irout"         // (string) MQTT topic magnitude to subscribe to transmit messages
+#endif
+
+
+#ifndef IR_RX_RAW_MQTT_TOPIC
+#define IR_RX_RAW_MQTT_TOPIC        "irraw"         // (boolean) MQTT topic magnitude to subscribe and publish RAW messages
+#endif
+
+#ifndef IR_TX_RAW_MQTT_TOPIC
+#define IR_TX_RAW_MQTT_TOPIC        "irraw"         // (boolean) MQTT topic magnitude to subscribe and publish RAW messages
+#endif
+
+#ifndef IR_TX_SERIES
+#define IR_TX_SERIES                1               // (number) default number of times that the message will be sent
+                                                    // (can be overriden in the MQTT payload for the specific message)
+#endif
+
+#ifndef IR_TX_DELAY
+#define IR_TX_DELAY                 100             // (ms) minimum amount of time to wait before transmitting another message
+                                                    // (when using series >1, will also wait between the same message)
+#endif
+
+#ifndef IR_RX_DELAY
+#define IR_RX_DELAY                 100             // (ms) minimum amount of time to wait before processing incomming message
+#endif
+
+#ifndef IR_RX_PRESET
+#define IR_RX_PRESET                0               // (number) IR-code-as-button preset to use
+                                                    // 0 - disabled
+                                                    // 1,2,5 - generic remote shipped with the RGB controller
+                                                    // 3 - Samsung AA59-00608A for a generic 8CH module
+                                                    // 4 - Remote for a generic 1CH module
+                                                    // (~1Kb, see ir.cpp for more info about the presets)
+#endif
+
+#ifndef IR_TEST_SUPPORT
+#define IR_TEST_SUPPORT             0               // (boolean) enables internal tests and sanity checks that will be called on boot
+                                                    // (~5Kb, disabled by default and should only be enabled with debug support)
 #endif
 
 //--------------------------------------------------------------------------------

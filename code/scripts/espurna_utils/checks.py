@@ -2,6 +2,9 @@ import os
 
 from .display import Color, clr, print_filler, print_warning
 
+def check_env(name, default):
+    return os.environ.get(name, default) in ("1", "y", "yes", "true")
+
 
 def check_printsize(target, source, env):
     (binary,) = target

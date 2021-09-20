@@ -19,11 +19,8 @@ import sys
 
 from SCons.Script import ARGUMENTS
 
-from espurna_utils.build import merge_cpp
-
-
-def check_env(name, default):
-    return os.environ.get(name, default) in ("1", "y", "yes", "true")
+from espurna_utils import check_env
+from espurna_utils.build import merge_cpp, app_add_target_build_re2c
 
 
 CI = check_env("CI", "false")
@@ -143,3 +140,6 @@ if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
             relpath = os.path.relpath(abspath, "espurna")
             cpp_files.append(relpath)
     merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
+
+# handle explicit dependency for .re, so the source is built correctly
+app_add_target_build_re2c(env)

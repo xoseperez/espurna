@@ -1304,7 +1304,8 @@
     // IR
     #define IR_SUPPORT          1
     #define IR_RX_PIN           4
-    #define IR_BUTTON_SET       1
+    #define IR_TX_SUPPORT       0
+    #define IR_RX_PRESET        1
 
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
@@ -1326,7 +1327,8 @@
     // IR
     #define IR_SUPPORT          1
     #define IR_RX_PIN           4
-    #define IR_BUTTON_SET       1
+    #define IR_TX_SUPPORT       0
+    #define IR_RX_PRESET        1
 
 #elif defined(MAGICHOME_ZJ_WFMN_A_11)
 
@@ -1350,7 +1352,8 @@
     // IR
     #define IR_SUPPORT          1
     #define IR_RX_PIN           4
-    #define IR_BUTTON_SET       1
+    #define IR_TX_SUPPORT       0
+    #define IR_RX_PRESET        1
 
 #elif defined(MAGICHOME_ZJ_WFMN_B_11)
 
@@ -4742,7 +4745,8 @@
     // IR
     #define IR_SUPPORT          1
     #define IR_RX_PIN           0
-    #define IR_BUTTON_SET       5
+    #define IR_TX_SUPPORT       0
+    #define IR_RX_PRESET        5
 
 // -----------------------------------------------------------------------------
 // eHomeDIY WT02

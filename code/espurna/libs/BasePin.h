@@ -35,7 +35,7 @@ public:
     virtual void digitalWrite(int8_t val) = 0;
     virtual int digitalRead() = 0;
 
-    operator bool() const {
+    explicit operator bool() const {
         return GPIO_NONE != pin();
     }
 };

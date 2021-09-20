@@ -6,3 +6,6 @@
 #define LIGHT_CH5_PIN 14
 #define ENCODER_SUPPORT 1
 #define IR_SUPPORT 1
+#define IR_RX_PIN  4
+#define IR_RX_PRESET 1
+#define IR_TX_PIN  5
