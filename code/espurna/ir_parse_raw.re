@@ -93,12 +93,11 @@ ParseResult<Payload> parse(StringView view) {
 
 update_out:
     {
-        Payload result;
-        result.frequency = payload::frequency(StringView{f0, f1});
-        result.series = payload::series(StringView{s0, s1});
-        result.delay = payload::delay(StringView{d0, d1});
-        result.time = std::move(time);
-        out = std::move(result);
+        out = prepare(
+            StringView{f0, f1},
+            StringView{s0, s1},
+            StringView{d0, d1},
+            std::move(time));
     }
 
 return_out:

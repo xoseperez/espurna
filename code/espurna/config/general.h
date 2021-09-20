@@ -1587,6 +1587,11 @@
                                                     // (can be overriden in the MQTT payload for the specific message)
 #endif
 
+#ifndef IR_TX_REPEATS
+#define IR_TX_REPEATS               0               // (number) additional number of times that the message will be sent per series
+                                                    // (can be overriden in the MQTT payload for the specific message)
+#endif
+
 #ifndef IR_TX_DELAY
 #define IR_TX_DELAY                 100             // (ms) minimum amount of time to wait before transmitting another message
                                                     // (when using series >1, will also wait between the same message)

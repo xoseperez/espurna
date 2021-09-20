@@ -279,20 +279,13 @@ yy33:
 
 update_out:
     {
-        Payload result;
-        result.type = payload::type(StringView{p0, p1});
-        result.value = payload::value(StringView{c0, c1});
-        result.bits = payload::bits(StringView{b0, b1});
-        if (r0 && r1) {
-            result.repeats = payload::repeats(StringView{r0, r1});
-        }
-        if (s0 && s1) {
-            result.series = payload::series(StringView{s0, s1});
-        }
-        if (d0 && d1) {
-            result.delay = payload::delay(StringView{d0, d1});
-        }
-        out = std::move(result);
+        out = prepare(
+            StringView{p0, p1},
+            StringView{c0, c1},
+            StringView{b0, b1},
+            StringView{r0, r1},
+            StringView{s0, s1},
+            StringView{d0, d1});
     }
 
 return_out:

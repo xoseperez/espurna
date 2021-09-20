@@ -54,6 +54,119 @@ $ pio run -e ... \
 
 namespace ir {
 namespace {
+namespace tx {
+namespace build {
+
+// pin that the transmitter is attached to
+constexpr unsigned char pin() {
+    return IR_TX_PIN;
+}
+
+// (optional) number of times that the message will be sent immediately
+// (i.e. when the [:<repeats>] is omitted from the MQTT payload)
+constexpr uint16_t repeats() {
+    return IR_TX_REPEATS;
+}
+
+// (optional) number of times that the message will be scheduled in the TX queue
+// (i.e. when the [:<series>] is omitted from the MQTT payload)
+constexpr uint8_t series() {
+    return IR_TX_SERIES;
+}
+
+// (ms)
+constexpr unsigned long delay() {
+    return IR_TX_DELAY;
+}
+
+} // namespace build
+
+namespace settings {
+
+unsigned char pin() {
+    return getSetting("irTx", build::pin());
+}
+
+uint16_t repeats() {
+    return getSetting("rxTxRepeats", build::repeats());
+}
+
+uint8_t series() {
+    return getSetting("rxTxSeries", build::series());
+}
+
+unsigned long delay() {
+    return getSetting("irTxDelay", build::delay());
+}
+
+} // namespace settings
+
+namespace internal {
+
+uint16_t repeats { build::repeats() };
+uint8_t series { build::series() };
+unsigned long delay { build::delay() };
+
+} // namespace internal
+} // namespace tx
+
+namespace rx {
+namespace build {
+
+// pin that the receiver is attached to
+constexpr unsigned char pin() {
+    return IR_TX_PIN;
+}
+
+// internally, lib uses an u16[] of this size
+constexpr uint16_t bufferSize() {
+    return IR_RX_BUFFER_SIZE;
+}
+
+// to be isr-friendly, will allocate second u16[]
+// that will be used as a storage when decode()'ing
+constexpr bool bufferSave() {
+    return true;
+}
+
+// (ms)
+constexpr uint8_t timeout() {
+    return IR_RX_TIMEOUT;
+}
+
+// (ms) minimal time in-between decode() calls
+constexpr unsigned long delay() {
+    return IR_RX_DELAY;
+}
+
+} // namespace build
+
+namespace settings {
+
+unsigned char pin() {
+    return getSetting("irRx", build::pin());
+}
+
+uint16_t bufferSize() {
+    return getSetting("irRxBuffer", build::bufferSize());
+}
+
+unsigned long delay() {
+    return getSetting("irRxDelay", build::delay());
+}
+
+uint8_t timeout() {
+    return getSetting("irRxTimeout", build::timeout());
+}
+
+} // namespace settings
+
+namespace internal {
+
+unsigned long delay { build::delay() };
+
+} // namespace internal
+} // namespace rx
 
 // TODO: some internal-only code instead of std::string_view and std::optional
 //       currently, b/c of the -std=c++11. and might behave slightly different
@@ -256,65 +369,6 @@ unsigned long sized(const StringView& view) {
     return 0;
 }
 
-namespace build {
-
-// gpio settings create two different objects
-// one for transmitting
-constexpr unsigned char tx() {
-    return IR_TX_PIN;
-}
-
-// and one for receiving
-constexpr unsigned char rx() {
-    return IR_TX_PIN;
-}
-
-// internally, lib uses an u16[] of this size
-constexpr uint16_t rxBufferSize() {
-    return IR_RX_BUFFER_SIZE;
-}
-
-// to be isr-friendly, will allocate second u16[]
-// that will be used as a storage when decode()'ing
-constexpr bool rxBufferSave() {
-    return true;
-}
-
-// (optional) number of times that the message will be scheduled in the TX queue
-// (i.e. when the [:<series>] is omitted from the MQTT payload)
-constexpr uint8_t txSeries() {
-    return IR_TX_SERIES;
-}
-
-// (ms)
-constexpr unsigned txDelay() {
-    return IR_TX_DELAY;
-}
-
-// (ms)
-constexpr uint8_t rxTimeout() {
-    return IR_RX_TIMEOUT;
-}
-
-// (ms) minimal time in-between decode() calls
-constexpr unsigned long rxDelay() {
-    return IR_RX_DELAY;
-}
-
-} // namespace build
-
-namespace settings {
-
-unsigned char tx() {
-    return getSetting("irTx", build::tx());
-}
-
-unsigned char rx() {
-    return getSetting("irRx", build::rx());
-}
-
-} // namespace settings
-
 // Simple messages that transmit the numeric 'value' (up to 8 bytes)
 //
 // Transmitting:
@@ -347,12 +401,12 @@ unsigned char rx() {
 namespace simple {
 
 struct Payload {
-    decode_type_t type { decode_type_t::UNKNOWN };
-    uint64_t value { 0 };
-    uint16_t bits { 0 };
-    uint16_t repeats { 0 };
-    uint8_t series { build::txSeries() };
-    unsigned long delay { build::txDelay() };
+    decode_type_t type;
+    uint64_t value;
+    uint16_t bits;
+    uint16_t repeats;
+    uint8_t series;
+    unsigned long delay;
 };
 
 namespace value {
@@ -452,6 +506,33 @@ unsigned long delay(const StringView& value) {
 
 } // namespace payload
 
+Payload prepare(StringView type, StringView value, StringView bits, StringView repeats, StringView series, StringView delay) {
+    Payload result;
+    result.type = payload::type(type);
+    result.value = payload::value(value);
+    result.bits = payload::bits(bits);
+
+    if (repeats) {
+        result.repeats = payload::repeats(repeats);
+    } else {
+        result.repeats = tx::internal::repeats;
+    }
+
+    if (series) {
+        result.series = payload::series(series);
+    } else {
+        result.series = tx::internal::series;
+    }
+
+    if (delay) {
+        result.delay = payload::delay(delay);
+    } else {
+        result.delay = tx::internal::delay;
+    }
+
+    return result;
+}
+
 #include "ir_parse_simple.re.cpp.inc"
 
 } // namespace simple
@@ -473,12 +554,10 @@ unsigned long delay(const StringView& value) {
 
 namespace raw {
 
-constexpr uint16_t DefaultFrequency { 38 }; // kHz
-
 struct Payload {
-    uint16_t frequency { DefaultFrequency };
-    uint8_t series { build::txSeries() };
-    unsigned long delay { build::txDelay() };
+    uint16_t frequency;
+    uint8_t series;
+    unsigned long delay;
     std::vector<uint16_t> time;
 };
 
@@ -539,6 +618,16 @@ uint16_t time(const StringView& value) {
 
 } // namespace payload
 
+Payload prepare(StringView frequency, StringView series, StringView delay, decltype(Payload::time)&& time) {
+    Payload result;
+    result.frequency = payload::frequency(frequency);
+    result.series = payload::series(series);
+    result.delay = payload::delay(delay);
+    result.time = std::move(time);
+
+    return result;
+}
+
 #include "ir_parse_raw.re.cpp.inc"
 
 } // namespace raw
@@ -592,13 +681,17 @@ struct Lock {
     }
 };
 
+void configure() {
+    internal::delay = settings::delay();
+}
+
 void setup(BasePinPtr&& pin) {
     internal::pin = std::move(pin);
     internal::instance = std::make_unique<IRrecv>(
             internal::pin->pin(),
-            build::rxBufferSize(),
-            build::rxTimeout(),
-            build::rxBufferSave());
+            settings::bufferSize(),
+            settings::timeout(),
+            build::bufferSave());
     internal::instance->enableIRIn();
 }
 
@@ -839,6 +932,12 @@ void loop() {
     if (!payload->reschedule()) {
         internal::queue.pop();
     }
+}
+
+void configure() {
+    internal::delay = settings::delay();
+    internal::series = settings::series();
+    internal::repeats = settings::repeats();
 }
 
 void setup(BasePinPtr&& pin) {
@@ -1239,9 +1338,9 @@ void loop() {
             return;
         }
 
-        static unsigned long last { millis() - build::rxDelay() - 1ul };
+        static unsigned long last { millis() - internal::delay - 1ul };
         unsigned long ts { millis() };
-        if (ts - last < build::rxDelay()) {
+        if (ts - last < internal::delay) {
             return;
         }
 
@@ -1291,20 +1390,22 @@ void setup() {
 #endif
 
 void configure() {
+    rx::configure();
+    tx::configure();
 #if MQTT_SUPPORT
     mqtt::configure();
 #endif
 }
 
 void setup() {
-    auto rxPin = gpioRegister(settings::rx());
+    auto rxPin = gpioRegister(rx::settings::pin());
     if (rxPin) {
         DEBUG_MSG_P(PSTR("[IR] Receiver on GPIO%hhu\n"), rxPin->pin());
     } else {
         DEBUG_MSG_P(PSTR("[IR] No receiver configured\n"));
     }
 
-    auto txPin = gpioRegister(settings::tx());
+    auto txPin = gpioRegister(tx::settings::pin());
     if (txPin) {
         DEBUG_MSG_P(PSTR("[IR] Transmitter on GPIO%hhu\n"), txPin->pin());
     } else {
