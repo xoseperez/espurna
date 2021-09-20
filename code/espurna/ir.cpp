@@ -55,6 +55,44 @@ $ pio run -e ... \
 namespace ir {
 namespace {
 namespace tx {
+
+#if not IR_TX_SUPPORT
+
+struct NoopSender {
+    NoopSender(uint16_t) {
+    }
+
+    void begin() {
+    }
+
+    bool send(decode_type_t, uint64_t, uint16_t, uint16_t) {
+        return false;
+    }
+
+    void sendRaw(const uint16_t*, uint16_t, uint16_t) {
+    }
+};
+
+#define IRsend NoopSender
+#endif
+
+struct PayloadSenderBase {
+    PayloadSenderBase() = default;
+    virtual ~PayloadSenderBase() = default;
+
+    PayloadSenderBase(const PayloadSenderBase&) = delete;
+    PayloadSenderBase& operator=(const PayloadSenderBase&) = delete;
+
+    PayloadSenderBase(PayloadSenderBase&&) = delete;
+    PayloadSenderBase& operator=(PayloadSenderBase&&) = delete;
+
+    virtual unsigned long delay() const = 0;
+    virtual bool send(IRsend& sender) const = 0;
+    virtual bool reschedule() = 0;
+};
+
+using PayloadSenderPtr = std::unique_ptr<PayloadSenderBase>;
+
 namespace build {
 
 // pin that the transmitter is attached to
@@ -107,10 +145,36 @@ uint16_t repeats { build::repeats() };
 uint8_t series { build::series() };
 unsigned long delay { build::delay() };
 
+BasePinPtr pin;
+std::unique_ptr<IRsend> instance;
+
+std::queue<PayloadSenderPtr> queue;
+
 } // namespace internal
 } // namespace tx
 
 namespace rx {
+
+#if not IR_RX_SUPPORT
+
+struct NoopReceiver {
+    NoopReceiver(uint16_t, uint16_t, uint8_t, bool) {
+    }
+
+    bool decode(decode_results*) const {
+        return false;
+    }
+
+    void disableIRIn() const {
+    }
+
+    void enableIRIn() const {
+    }
+};
+
+#define IRrecv NoopReceiver
+#endif
+
 namespace build {
 
 // pin that the receiver is attached to
@@ -164,6 +228,9 @@ uint8_t timeout() {
 namespace internal {
 
 unsigned long delay { build::delay() };
+
+BasePinPtr pin;
+std::unique_ptr<IRrecv> instance;
 
 } // namespace internal
 } // namespace rx
@@ -634,33 +701,6 @@ Payload prepare(StringView frequency, StringView series, StringView delay, declt
 
 namespace rx {
 
-#if not IR_RX_SUPPORT
-
-struct NoopReceiver {
-    NoopReceiver(uint16_t, uint16_t, uint8_t, bool) {
-    }
-
-    bool decode(decode_results*) const {
-        return false;
-    }
-
-    void disableIRIn() const {
-    }
-
-    void enableIRIn() const {
-    }
-};
-
-#define IRrecv NoopReceiver
-#endif
-
-namespace internal {
-
-BasePinPtr pin;
-std::unique_ptr<IRrecv> instance;
-
-} // namespace internal
-
 struct Lock {
     Lock(const Lock&) = delete;
     Lock(Lock&&) = delete;
@@ -787,42 +827,7 @@ private:
 
 namespace tx {
 
-#if not IR_TX_SUPPORT
-
-struct NoopSender {
-    NoopSender(uint16_t) {
-    }
-
-    void begin() {
-    }
-
-    bool send(decode_type_t, uint64_t, uint16_t, uint16_t) {
-        return false;
-    }
-
-    void sendRaw(const uint16_t*, uint16_t, uint16_t) {
-    }
-};
-
-#define IRsend NoopSender
-#endif
-
 // TODO: variant instead of virtuals?
-
-struct PayloadSenderBase {
-    PayloadSenderBase() = default;
-    virtual ~PayloadSenderBase() = default;
-
-    PayloadSenderBase(const PayloadSenderBase&) = delete;
-    PayloadSenderBase& operator=(const PayloadSenderBase&) = delete;
-
-    PayloadSenderBase(PayloadSenderBase&&) = delete;
-    PayloadSenderBase& operator=(PayloadSenderBase&&) = delete;
-
-    virtual unsigned long delay() const = 0;
-    virtual bool send(IRsend& sender) const = 0;
-    virtual bool reschedule() = 0;
-};
 
 struct SimplePayloadSender : public PayloadSenderBase {
     SimplePayloadSender() = delete;
@@ -876,17 +881,6 @@ private:
     ir::raw::Payload _payload;
     size_t _series;
 };
-
-using PayloadSenderPtr = std::unique_ptr<PayloadSenderBase>;
-
-namespace internal {
-
-BasePinPtr pin;
-std::unique_ptr<IRsend> instance;
-
-std::queue<PayloadSenderPtr> queue;
-
-} // namespace internal
 
 void enqueue(ir::simple::Payload&& payload) {
     internal::queue.push(std::make_unique<SimplePayloadSender>(std::move(payload)));
