@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix http response parsing, refactor module scope ([#2153](https://github.com/xoseperez/espurna/issues/2153))
 #### IR
 - Fixed build error in case IR TX is not used in raw mode ([#2322](https://github.com/xoseperez/espurna/issues/2322), thanks to **[@alextircovnicu](https://github.com/alextircovnicu)**)
+- Queue outgoing messages and correctly handle both simple and RAW repeat value by storing it in a message-local state instead of the global one ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- Repeat using the method provided by the library, implement delayed repeats using an additional field in both protocols ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 #### MQTT
 - Set MQTT will topic after /get suffix initialization ([#2106](https://github.com/xoseperez/espurna/issues/2106), [#2115](https://github.com/xoseperez/espurna/issues/2115), thanks to **[@tomas-bara](https://github.com/tomas-bara)**)
 #### Nofuss
@@ -118,6 +120,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Handle received data as terminal command [#2247](https://github.com/xoseperez/espurna/issues/2247))
 - [Prometheus](https://prometheus.io/) metrics support ([#2332](https://github.com/xoseperez/espurna/issues/2332))
 - Scheduler API ([#2431](https://github.com/xoseperez/espurna/issues/2431)), thanks to **[@profawk](https://github.com/profawk)**
+#### IR
+- Reworked module to support both simple and raw protocol at the same time ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- Support terminal commands execution when receiving IR code or changing relay state ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 #### MQTT
 - Handle received data as terminal command ([#2247](https://github.com/xoseperez/espurna/issues/2247))
 #### TUYA
@@ -185,10 +190,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - lightfox relay provider & buttonAdd [bd3a5889](https://github.com/xoseperez/espurna/commit/bd3a588977fb8b195f2bba40618839b617767485)
 #### HTTP API
 - Rework plain and JSON implementations ([#2405](https://github.com/xoseperez/espurna/issues/2405))
+#### IR
+- Simple and RAW text protocols reworked ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- IR\_BUTTON\_SET >=0 depends on TERMINAL\_SUPPORT ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 #### Libraries
 - Bump RFM69 version ([#2148](https://github.com/xoseperez/espurna/issues/2148))
 - Pin arduino-mqtt version ([#2154](https://github.com/xoseperez/espurna/issues/2154))
-- Update IRremoteESP8266 to 2.7.4 ([#2182](https://github.com/xoseperez/espurna/issues/2182))
+- Update IRremoteESP8266 to 2.7.20 ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - Use [fork of fauxmoesp](https://github.com/vintlabs/fauxmoESP), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**
 - Use [fork of rc-switch](https://github.com/1technophile/rc-switch) [7a24806a](https://github.com/xoseperez/espurna/commit/7a24806adb2c3e2357171e004b5b760daf3bdca4)
 #### Lights
