@@ -123,6 +123,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### IR
 - Reworked module to support both simple and raw protocol at the same time ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - Support terminal commands execution when receiving IR code or changing relay state ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- More runtime configuration options ([308da556](https://github.com/xoseperez/espurna/commit/308da5563a3d701f0fc84662b93c3b5aa2c71995))
 #### MQTT
 - Handle received data as terminal command ([#2247](https://github.com/xoseperez/espurna/issues/2247))
 #### TUYA
