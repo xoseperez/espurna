@@ -1,5 +1,5 @@
 /*
-Part of the IR MODULE
+IR MODULE
 
 Copyright (C) 2018 by Alexander Kolesnikov (raw and MQTT implementation)
 Copyright (C) 2017-2019 by François Déchery
@@ -316,7 +316,7 @@ unsigned char rx() {
 } // namespace settings
 
 // Simple messages that transmit the numeric 'value' (up to 8 bytes)
-// 
+//
 // Transmitting:
 //   Payload: <protocol>:<value>:<bits>[:<repeats>][:<delay>][:<times>]
 //
@@ -335,7 +335,7 @@ unsigned char rx() {
 //                (defaults to 1 aka once, [1...120))
 //     DELAY    - minimum amount of time (ms) between queued messages
 //                (defaults is IR_TX_DELAY, applies to every message in the series)
-// 
+//
 // Receiving:
 //   Payload: 2:AABBCCDD:32 (<protocol>:<value>:<bits>)
 
@@ -496,7 +496,7 @@ namespace time {
 //
 // For example, current implementation:
 // > 100,200,100,200,200,300,300,300
-//   |A| |B| |A| |B| |B| |C| |C| |C|  
+//   |A| |B| |A| |B| |B| |C| |C| |C|
 // Becomes:
 // > +100-200AbB-300Cc
 //    |A| |B|    |C|
@@ -654,7 +654,7 @@ struct DecodeResult {
             _payload += static_cast<int>(_result.decode_type);
             _payload += ':';
 
-            _payload += value();
+            _payload += asValue();
             _payload += ':';
 
             _payload += static_cast<unsigned int>(_result.bits);
@@ -663,7 +663,7 @@ struct DecodeResult {
         return _payload;
     }
 
-    const String& value() {
+    const String& asValue() {
         static_assert(std::is_same<decltype(decode_results::value), uint64_t>::value, "");
 
         if (!_value.length()) {
@@ -673,7 +673,7 @@ struct DecodeResult {
         return _value;
     }
 
-    const String& time() {
+    const String& asRawTime() {
         if (!_time.length() && (_result.rawlen > 1)) {
             _time = ::ir::raw::time::encode(
                 const_cast<const uint16_t*>(&_result.rawbuf[1]),
@@ -907,18 +907,15 @@ void callback(unsigned int type, const char* topic, char* payload) {
         break;
 
     case MQTT_MESSAGE_EVENT: {
-        String t = mqttMagnitude(topic);        
+        StringView view{payload, payload + strlen(payload)};
 
-        const bool Simple = t.equals(build::topicTx());
-        const bool Raw = !Simple || t.equals(build::topicTxRaw());
-        if (Simple || Raw) {
-            StringView view{payload, payload + strlen(payload)};
-            if (Simple) {
-                ir::tx::enqueue(ir::simple::parse(view));
-            } else if (Raw) {
-                ir::tx::enqueue(ir::raw::parse(view));
-            }
+        String t = mqttMagnitude(topic);
+        if (t.equals(build::topicTx())) {
+            ir::tx::enqueue(ir::simple::parse(view));
+        } else if (t.equals(build::topicTxRaw())) {
+            ir::tx::enqueue(ir::raw::parse(view));
         }
+
         break;
     }
 
@@ -933,7 +930,7 @@ void process(rx::DecodeResult& result) {
     }
 
     if (internal::rxRaw) {
-        mqttSend(build::topicRxRaw(), result.time().c_str());
+        mqttSend(build::topicRxRaw(), result.asRawTime().c_str());
     }
 }
 
@@ -1177,7 +1174,7 @@ void process(rx::DecodeResult& result) {
     if (preset.begin && preset.end && (preset.begin != preset.end)) {
         for (auto* it = preset.begin; it != preset.end; ++it) {
             String other((*it).value);
-            if (other == result.value()) {
+            if (other == result.asValue()) {
                 internal::inject((*it).command);
                 return;
             }
@@ -1187,43 +1184,30 @@ void process(rx::DecodeResult& result) {
 
     String key;
     key += F("irCmd");
-    key += result.value();
+    key += result.asValue();
 
     auto cmd = ::settings::internal::get(key);
     if (cmd) {
         internal::inject(cmd.ref());
-    } 
+    }
 }
 
 void setup() {
-    terminalRegisterCommand(F("IR"), [](const ::terminal::CommandContext& ctx) {
-        if (ir::tx::internal::pin) {
-            ctx.output.printf("Transmitter on GPIO%hhu\n", ir::tx::internal::pin->pin());
-        }
-        if (ir::rx::internal::pin) {
-            ctx.output.printf("Receiver on GPIO%hhu\n", ir::rx::internal::pin->pin());
-        }
-
-        terminalOK(ctx);
-    });
-
-    if (ir::tx::internal::pin) {
-        terminalRegisterCommand(F("IR.SEND"), [](const ::terminal::CommandContext& ctx) {
-            if (ctx.argv.size() == 2) {
-                auto decoded = ir::simple::parse(StringView{ctx.argv[1]});
-                if (decoded.ok()) {
-                    ir::tx::enqueue(std::move(decoded).move());
-                    terminalOK(ctx);
-                    return;
-                }
-
-                terminalError(ctx, F("Invalid payload"));
+    terminalRegisterCommand(F("IR.SEND"), [](const ::terminal::CommandContext& ctx) {
+        if (ctx.argv.size() == 2) {
+            auto decoded = ir::simple::parse(StringView{ctx.argv[1]});
+            if (decoded.ok()) {
+                ir::tx::enqueue(std::move(decoded).move());
+                terminalOK(ctx);
                 return;
             }
 
-            terminalError(ctx, F("IR.SEND <SIMPLE PAYLOAD>"));
-        });
-    }
+            terminalError(ctx, F("Invalid payload"));
+            return;
+        }
+
+        terminalError(ctx, F("IR.SEND <SIMPLE PAYLOAD>"));
+    });
 }
 
 } // namespace terminal
@@ -1266,7 +1250,7 @@ void loop() {
     }
 }
 
-} // namespace tx
+} // namespace rx
 
 #if RELAY_SUPPORT
 namespace relay {
@@ -1349,16 +1333,15 @@ void setup() {
         });
     }
 
-#if TERMINAL_SUPPORT
-    ir::terminal::setup();
-#endif
-
     if (txPin) {
 #if MQTT_SUPPORT
         ir::mqtt::setup();
 #endif
 #if RELAY_SUPPORT
         ir::relay::setup();
+#endif
+#if TERMINAL_SUPPORT
+        ir::terminal::setup();
 #endif
     }
 
@@ -1581,7 +1564,7 @@ void setup() {
             auto& payload = result.get();
             IR_CHECK(payload.type == decode_type_t::RC6);
             IR_CHECK(payload.value == static_cast<uint64_t>(0x7faabbcc));
-            IR_CHECK(payload.bits == 31); 
+            IR_CHECK(payload.bits == 31);
         },
         IR_CHECK_RUNNER() {
             auto result = ir::simple::parse("15:AABBCCDD:25:3");
