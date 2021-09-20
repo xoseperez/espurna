@@ -63,6 +63,7 @@ def app_add_target_build_and_copy(env):
         description="Build and store firmware.bin as $ESPURNA_BUILD_DESTINATION/espurna-<version>-$ESPURNA_BUILD_NAME.bin (default destination is $PROJECT_DIR)",
     )
 
+
 # TODO: *could* be a Builder object, just the same it will detect targets via src_suffix & suffix properties
 #       but, notice that:
 #       - constantly re-generating files in $project_dir only useful in development, as the source tree includes already 'compiled' .re.cpp.inc
@@ -72,12 +73,23 @@ def app_add_target_build_and_copy(env):
 #         scons has a C source scanner that is tracking `#include` directives. but, file may *already* exist at the scanning phase and
 #         it may be assumed something static during the build (as most include directives are for the system, sdk, and the build-tree headers)
 
+
 def app_add_target_build_re2c(env):
     from SCons.Script import COMMAND_LINE_TARGETS
-    targets = [env.File(target) for target in COMMAND_LINE_TARGETS if ".re.cpp.inc" in target]
+
+    targets = [
+        env.File(target) for target in COMMAND_LINE_TARGETS if ".re.cpp.inc" in target
+    ]
     cmd = "re2c --no-generation-date --case-ranges -W -Werror -o {} {}"
     if targets:
-        sources = [target.File("{}".format(target.name.replace(".cpp.inc", ""))) for target in targets]
+        sources = [
+            target.File("{}".format(target.name.replace(".cpp.inc", "")))
+            for target in targets
+        ]
         for target, source in zip(targets, sources):
-            env.Execute(env.VerboseAction(cmd.format(target, source), "Generating {}".format(target.name)))
+            env.Execute(
+                env.VerboseAction(
+                    cmd.format(target, source), "Generating {}".format(target.name)
+                )
+            )
         env.Exit(0)

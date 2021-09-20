@@ -16,7 +16,7 @@ from espurna_utils import (
     app_inject_version,
     dummy_ets_printf,
     app_inject_flags,
-    app_add_target_build_and_copy
+    app_add_target_build_and_copy,
 )
 
 
@@ -27,7 +27,7 @@ import os
 CI = "true" == os.environ.get("CI")
 
 # See what happens in-between linking .cpp.o + .a into the resulting .elf
-env.ProcessFlags("-Wl,-Map -Wl,\\\"${BUILD_DIR}/${PROGNAME}.map\\\"")
+env.ProcessFlags('-Wl,-Map -Wl,\\"${BUILD_DIR}/${PROGNAME}.map\\"')
 
 # Always show warnings for project code
 projenv.ProcessUnFlags("-w")

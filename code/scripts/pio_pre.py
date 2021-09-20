@@ -141,5 +141,5 @@ if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
             cpp_files.append(relpath)
     merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
 
-# handle explicit dependency for .re, so the source is built correctly
+# handle explicit targets that have .re.cpp.inc, build them before falling into the next sconsfile
 app_add_target_build_re2c(env)
