@@ -19,74 +19,118 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 
 namespace ssdp {
 namespace {
-
-const char ResponseTemplate[] PROGMEM =
-    "<?xml version=\"1.0\"?>"
-    "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
-        "<specVersion>"
-            "<major>1</major>"
-            "<minor>0</minor>"
-        "</specVersion>"
-        "<URLBase>http://%.15s:%hu/</URLBase>"
-        "<device>"
-            "<deviceType>%.31s</deviceType>"
-            "<friendlyName>%s</friendlyName>"
-            "<presentationURL>/</presentationURL>"
-            "<serialNumber>%u</serialNumber>"
-            "<modelName>%s</modelName>"
-            "<modelNumber>%s</modelNumber>"
-            "<modelURL>%s</modelURL>"
-            "<manufacturer>%s</manufacturer>"
-            "<manufacturerURL>%s</manufacturerURL>"
-            "<UDN>uuid:38323636-4558-4dda-9188-cda0e6%06x</UDN>"
-        "</device>"
-    "</root>\r\n"
-    "\r\n";
-
-// ip + port + hostname + chipId (number) + chipId (hex) + rest
-constexpr size_t ResponseOverhead {
-    15 + 5 + 31 + 10 + 6 + 128
-};
-
 namespace settings {
 
 String hostname() {
     return getSetting("hostname", getIdentifier());
 }
 
+String name() {
+    return getSetting("ssdpName", hostname());
+}
+
+// needs to be in the response
+// ref. https://github.com/esp8266/Arduino/issues/2283
+
+String type() {
+    return getSetting("ssdpType", F(SSDP_DEVICE_TYPE));
+}
+
+String udn() {
+    String out;
+    out += F("38323636-4558-4dda-9188-cda0e6");
+    out += String(ESP.getChipId(), 16);
+    return out;
+}
+
 } // namespace settings
+
+String response() {
+    String out;
+    out.reserve(512);
+
+    out += F("<?xml version=\"1.0\"?>"
+             "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
+             "<specVersion>"
+                "<major>1</major>"
+                "<minor>0</minor>"
+             "</specVersion>");
+
+    auto entry = [](const String& tag, const String& value) -> String {
+        String out;
+        out.reserve((tag.length() * 2) + value.length() + 16); 
+
+        out += '<';
+        out += tag;
+        out += '>';
+
+        out += value;
+
+        out += F("</");
+        out += tag;
+        out += '>';
+
+        return out;
+    };
+
+    // <URLBase>http://%s:%u/</URLBase>
+    String base;
+    base += F("http://");
+    base += WiFi.localIP().toString();
+    base += ':';
+    base += String(webPort(), 10);
+    base += '/';
+
+    out += entry(F("URLBase"), base);
+
+    // <device> ... </device>
+    String device;
+
+    // <deviceType>%s</deviceType>
+    device += entry(F("deviceType"), settings::type());
+
+    // <friendlyName>%s</friendlyName>
+    device += entry(F("friendlyName"), settings::name());
+
+    // <presentationURL>/</presentationURL>
+    device += entry(F("presentationURL"), String('/'));
+
+    // <serialNumber>%u</serialNumber>
+    device += entry(F("serialNumber"), String(ESP.getChipId(), 10));
+
+    // <modelName>%s</modelName>
+    device += entry(F("modelName"), getAppName());
+
+    // <modelNumber>%s</modelNumber>
+    device += entry(F("modelNumber"), getVersion());
+
+    // <modelURL>%s</modelURL>
+    device += entry(F("modelURL"), getAppWebsite());
+
+    // <manufacturer>%s</manufacturer>
+    device += entry(F("manufacturer"), getBoardName());
+
+    // <manufacturerURL>%s</manufacturerURL>
+    device += entry(F("manufacturerURL"), getAppWebsite());
+
+    // <UDN>uuid:38323636-4558-4dda-9188-cda0e6%06x</UDN>
+    device += entry(F("UDN"), settings::udn());
+
+    out += entry(F("device"), device);
+    out += F("</root>");
+
+    return out;
+}
 
 void setup() {
     webServer().on("/description.xml", HTTP_GET, [](AsyncWebServerRequest* request) {
-        IPAddress ip = WiFi.localIP();
-        uint32_t chipId = ESP.getChipId();
-
-        constexpr size_t BufferSize { sizeof(ResponseTemplate) + ResponseOverhead };
-        char response[BufferSize] {0};
-
-        int result = snprintf_P(response, sizeof(response), ResponseTemplate,
-            ip.toString().c_str(),              // ip
-            webPort(),                          // port
-            settings::hostname().c_str(),       // friendlyName
-            chipId,                             // serialNumber
-            chipId                              // UUID
-        );
-
-        if ((result > 0) && (static_cast<size_t>(result) < BufferSize)) {
-            request->send(200, "text/xml", response);
-            return;
-        }
-
-        request->send(500);
+        request->send(200, "text/xml", response());
     });
 
     SSDP.setSchemaURL("description.xml");
     SSDP.setHTTPPort(webPort());
 
-    // needs to be in the response
-    // ref. https://github.com/esp8266/Arduino/issues/2283
-    SSDP.setDeviceType(SSDP_DEVICE_TYPE);
-
+    SSDP.setDeviceType(settings::type());
     SSDP.setSerialNumber(ESP.getChipId());
     SSDP.setModelName(getAppName());
     SSDP.setModelNumber(getVersion());
@@ -94,11 +138,11 @@ void setup() {
     SSDP.setManufacturer(getBoardName());
     SSDP.setURL("/");
 
-    SSDP.setName(settings::hostname());
+    SSDP.setName(settings::name());
     SSDP.begin();
 
     espurnaRegisterReload([]() {
-        SSDP.setName(settings::hostname());
+        SSDP.setName(settings::name());
     });
 }
 
