@@ -988,8 +988,8 @@ void _lightFromHexPayload(const char* payload, size_t len) {
     uint8_t values[4] {0, 0, 0, 0};
     if (hexDecode(payload, len, values, sizeof(values))) {
         _light_mapping.red(values[0]);
-        _light_mapping.blue(values[1]);
-        _light_mapping.green(values[2]);
+        _light_mapping.green(values[1]);
+        _light_mapping.blue(values[2]);
         if (WithBrightness) {
             lightBrightness(values[3]);
         }
