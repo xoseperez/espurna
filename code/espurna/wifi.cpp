@@ -1558,6 +1558,12 @@ bool scanning() {
 // TODO: generic onEvent is deprecated on esp8266 in favour of the event-specific
 // methods returning 'cancelation' token. Right now it is a basic shared_ptr with an std function inside of it.
 // esp32 only has a generic onEvent, but event names are not compatible with the esp8266 version.
+//
+// TODO: instead of bool, do a state object that is 'armed' before use and it is possible to make sure there's an expected value swap between `true` and `false`
+// (i.e. 'disarmed', 'armed-for', 'received-success', 'received-failure'. where 'armed-for' only reacts on a specific assignment, and the consumer
+// checks whether 'received-success' had happend, and also handles 'received-failure'. when 'disarmed', value status does not change)
+// TODO: ...and a timeout? most of the time, these happen right after switch into the system task. but, since the sdk funcs don't block until success
+// (or at all, for anything), it might be nice to have some safeguards.
 
 void init() {
     static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
