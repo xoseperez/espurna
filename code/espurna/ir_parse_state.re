@@ -10,8 +10,6 @@ For more info:
 
 #pragma once
 
-// TODO: some sanity checks for 'valid' ranges of the parsed values, when state machine reaches individual value decoders?
-
 ParseResult<Payload> parse(StringView view) {
     const char* YYCURSOR { view.begin() };
     const char* YYLIMIT { view.end() };
@@ -19,8 +17,6 @@ ParseResult<Payload> parse(StringView view) {
 
     const char *p0 = nullptr, *p1 = nullptr;
     const char *c0 = nullptr, *c1 = nullptr;
-    const char *b0 = nullptr, *b1 = nullptr;
-    const char *r0 = nullptr, *r1 = nullptr;
     const char *s0 = nullptr, *s1 = nullptr;
     const char *d0 = nullptr, *d1 = nullptr;
 
@@ -36,27 +32,17 @@ ParseResult<Payload> parse(StringView view) {
       re2c:define:YYFILL = "goto return_out;";
 
       dec = [0-9];
-      val = [0-9A-Fa-f]{2,16};
+      val = [0-9A-Fa-f];
 
       @p0 dec+ @p1 [:]
-      @c0 val @c1 [:]
-      @b0 dec+ @b1 { goto update_out; }
+      @c0 val+ @c1 { goto update_out; }
 
       @p0 dec+ @p1 [:]
-      @c0 val @c1 [:]
-      @b0 dec+ @b1 [:]
-      @r0 dec+ @r1 { goto update_out; }
-
-      @p0 dec+ @p1 [:]
-      @c0 val @c1 [:]
-      @b0 dec+ @b1 [:]
-      @r0 dec+ @r1 [:]
+      @c0 val+ @c1 [:]
       @s0 dec+ @s1 { goto update_out; }
 
       @p0 dec+ @p1 [:]
-      @c0 val @c1 [:]
-      @b0 dec+ @b1 [:]
-      @r0 dec+ @r1 [:]
+      @c0 val+ @c1 [:]
       @s0 dec+ @s1 [:]
       @d0 dec+ @d1 { goto update_out; }
 
@@ -70,8 +56,6 @@ update_out:
             out = prepare(
                 StringView{p0, p1},
                 StringView{c0, c1},
-                StringView{b0, b1},
-                StringView{r0, r1},
                 StringView{s0, s1},
                 StringView{d0, d1});
         }

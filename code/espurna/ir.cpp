@@ -13,6 +13,7 @@ To (re)create the string -> Payload decoder .inc files, add `re2c` to the $PATH 
 ```
 $ pio run -e ... \
     -t espurna/ir_parse_simple.re.cpp.inc \
+    -t espurna/ir_parse_state.re.cpp.inc \
     -t espurna/ir_parse_raw.re.cpp.inc
 ```
 (see scripts/pio_pre.py and scripts/espurna_utils/build.py for more info)
@@ -38,10 +39,7 @@ $ pio run -e ... \
 #include <queue>
 #include <vector>
 
-// TODO: note that IRremoteEsp8266 includes a *lot* of built-in protocols. the suggested way to build the library
-// is to append `-D_IR_ENABLE_DEFAULT_=false` to the build flags and specify the `-DSEND_...` and `-DDECODE_...` *only* for the required one(s)
-//
-// TODO: current IRremoteEsp8266 injects a bunch of stuff into the global scope
+// TODO: current library version injects a bunch of stuff into the global scope:
 // - `__STDC_LIMIT_MACROS`, forcing some c99 macros related to integer limits
 // - `enum decode_type_t` with `UNKNOWN` and `UNUSED` symbols in it
 // - various `const T k*` defined in the headers (...that are replacing preprocessor tokens :/)
@@ -56,6 +54,14 @@ namespace ir {
 namespace {
 namespace tx {
 
+// Notice that IRremoteEsp8266 includes a *lot* of built-in protocols. the suggested way to build the library
+// is to append `-D_IR_ENABLE_DEFAULT_=false` to the build flags and specify the individual `-DSEND_...`
+// and `-DDECODE_...` *only* for the required one(s)
+//
+// `-DIR_TX_SUPPORT=0` disables considerable amount of stuff linked inside of the `IRsend` class (~35KiB), but for
+// every category of payloads at the same time; simple, raw and state will all be gone. *It is possible* to introduce
+// a more granular control, but idk if it's really worth it (...and likely result in an inextricable web of `#if`s and `#ifdef`s)
+
 #if not IR_TX_SUPPORT
 
 struct NoopSender {
@@ -63,6 +69,10 @@ struct NoopSender {
     }
 
     void begin() {
+    }
+
+    bool send(decode_type_t, const uint8_t*, uint16_t) {
+        return false;
     }
 
     bool send(decode_type_t, uint64_t, uint16_t, uint16_t) {
@@ -100,6 +110,18 @@ constexpr unsigned char pin() {
     return IR_TX_PIN;
 }
 
+// (optional) whether the LED will turn ON when GPIO is LOW and OFF when it's HIGH
+// (disabled by default)
+constexpr bool inverted() {
+    return IR_TX_INVERTED == 1;
+}
+
+// (optional) enable frequency modulation (ref. IRsend.h, enabled by default and assumes 50% duty cycle)
+// (usage is 'hidden' by the protocol handlers, which use `::enableIROut(frequency, duty)`)
+constexpr bool modulation() {
+    return IR_TX_MODULATION == 1;
+}
+
 // (optional) number of times that the message will be sent immediately
 // (i.e. when the [:<repeats>] is omitted from the MQTT payload)
 constexpr uint16_t repeats() {
@@ -123,6 +145,14 @@ namespace settings {
 
 unsigned char pin() {
     return getSetting("irTx", build::pin());
+}
+
+bool inverted() {
+    return getSetting("irTxInv", build::inverted());
+}
+
+bool modulation() {
+    return getSetting("irTxMod", build::modulation());
 }
 
 uint16_t repeats() {
@@ -155,6 +185,9 @@ std::queue<PayloadSenderPtr> queue;
 
 namespace rx {
 
+// `-DIR_RX_SUPPORT=0` disables everything related to the `IRrecv` class, ~20KiB
+// (note that receiver objects are still techically there, just not doing anything)
+
 #if not IR_RX_SUPPORT
 
 struct NoopReceiver {
@@ -170,6 +203,9 @@ struct NoopReceiver {
 
     void enableIRIn() const {
     }
+
+    void enableIRIn(bool) const {
+    }
 };
 
 #define IRrecv NoopReceiver
@@ -179,7 +215,13 @@ namespace build {
 
 // pin that the receiver is attached to
 constexpr unsigned char pin() {
-    return IR_TX_PIN;
+    return IR_RX_PIN;
+}
+
+// library handles both the isr timer and the pinMode in the same method,
+// can't be set externally and must be passed into the `enableIRIn(bool)`
+constexpr bool pullup() {
+    return IR_RX_PULLUP;
 }
 
 // internally, lib uses an u16[] of this size
@@ -191,6 +233,12 @@ constexpr uint16_t bufferSize() {
 // that will be used as a storage when decode()'ing
 constexpr bool bufferSave() {
     return true;
+}
+
+// allow unknown protocols to pass through to the processing
+// (notice that this *will* cause RAW output to stop working)
+constexpr bool unknown() {
+    return IR_RX_UNKNOWN;
 }
 
 // (ms)
@@ -207,26 +255,40 @@ constexpr unsigned long delay() {
 
 namespace settings {
 
+// specific to the IRrecv
+
 unsigned char pin() {
     return getSetting("irRx", build::pin());
 }
 
-uint16_t bufferSize() {
-    return getSetting("irRxBuffer", build::bufferSize());
+bool pullup() {
+    return getSetting("irRxPullup", build::pullup());
 }
 
-unsigned long delay() {
-    return getSetting("irRxDelay", build::delay());
+uint16_t bufferSize() {
+    return getSetting("irRxBufSize", build::bufferSize());
 }
 
 uint8_t timeout() {
     return getSetting("irRxTimeout", build::timeout());
 }
 
+// local settings
+
+bool unknown() {
+    return getSetting("irRxUnknown", build::unknown());
+}
+
+unsigned long delay() {
+    return getSetting("irRxDelay", build::delay());
+}
+
 } // namespace settings
 
 namespace internal {
 
+bool pullup { build::pullup() };
+bool unknown { build::unknown() };
 unsigned long delay { build::delay() };
 
 BasePinPtr pin;
@@ -235,62 +297,70 @@ std::unique_ptr<IRrecv> instance;
 } // namespace internal
 } // namespace rx
 
-// TODO: some internal-only code instead of std::string_view and std::optional
-//       currently, b/c of the -std=c++11. and might behave slightly different
-//       from the stl alternatives. (like string literals with '\0' embedded,
-//       and an obvious lack of constexpr methods)
-//       may be aliased via `using` and depend on the __cplusplus?
+// TODO: some -std=c++11 things. *almost* direct ports of std::string_view and std::optional
+//       (may be aliased via `using` and depend on the __cplusplus? string view is not 1-to-1 though)
+//       obviously, missing most of constexpr init and std::optional optimization related to trivial ctors & dtors
+//
+// TODO: since the exceptions are disabled, and parsing failure is not really an 'exceptional' result anyway...
+//       result struct may be in need of an additional struct describing the error, instead of just a boolean true or false
+//       (something like std::expected - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0323r8.html)
+//       current implementation may be adjusted, but not the using DecodeResult = std::optional<T> mentioned above
 
 struct StringView {
     StringView() = delete;
     ~StringView() = default;
 
-    StringView(const StringView&) = default;
-    StringView& operator=(const StringView&) = default;
+    constexpr StringView(const StringView&) noexcept = default;
+    constexpr StringView& operator=(const StringView&) noexcept = default;
 
-    StringView(StringView&&) = default;
-    StringView& operator=(StringView&&) = default;
+    constexpr StringView(StringView&&) noexcept = default;
+    constexpr StringView& operator=(StringView&&) noexcept = default;
 
-    StringView(const char* begin, size_t length) :
+    constexpr StringView(std::nullptr_t) noexcept :
+        _begin(nullptr),
+        _length(0)
+    {}
+
+    constexpr StringView(const char* begin, size_t length) noexcept :
         _begin(begin),
         _length(length)
     {}
 
-    StringView(const char* begin, const char* end) :
+    constexpr StringView(const char* begin, const char* end) noexcept :
         StringView(begin, end - begin)
     {}
 
     template <size_t Size>
-    StringView(const char (&string)[Size]) :
+    constexpr StringView(const char (&string)[Size]) noexcept :
         StringView(&string[0], Size - 1)
     {}
 
-    StringView& operator=(const String& string) {
+    StringView& operator=(const String& string) noexcept {
         _begin = string.c_str();
         _length = string.length();
         return *this;
     }
 
-    explicit StringView(const String& string) :
+    explicit StringView(const String& string) noexcept :
         StringView(string.c_str(), string.length())
     {}
 
     template <size_t Size>
-    StringView& operator=(const char (&string)[Size]) {
+    constexpr StringView& operator=(const char (&string)[Size]) noexcept {
         _begin = &string[0];
         _length = Size - 1;
         return *this;
     }
 
-    const char* begin() const {
+    const char* begin() const noexcept {
         return _begin;
     }
 
-    const char* end() const {
+    const char* end() const noexcept {
         return _begin + _length;
     }
 
-    size_t length() const {
+    constexpr size_t length() const noexcept {
         return _length;
     }
 
@@ -336,21 +406,36 @@ struct ParseResult {
         return *this;
     }
 
-    explicit operator bool() const {
+    explicit operator bool() const noexcept {
         return _initialized;
     }
 
-    bool ok() const {
+    T* operator->() {
+        return &_result._value;
+    }
+
+    const T* operator->() const {
+        return &_result._value;
+    }
+
+    bool has_value() const noexcept {
         return _initialized;
     }
 
-    const T& get() const {
+    const T& value() const & {
         return _result._value;
     }
 
-    T move() && {
-        auto out = std::move(_result._value);
-        return out;
+    T& value() & {
+        return _result._value;
+    }
+
+    T&& value() && {
+        return std::move(_result._value);
+    }
+
+    const T&& value() const && {
+        return std::move(_result._value);
     }
 
 private:
@@ -391,6 +476,10 @@ private:
         }
     }
 
+    // TODO: c++ std compliance may enforce weird optimizations if T contains const or reference members, ref.
+    // - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0532r0.pdf
+    // - https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95349
+
     template <typename... Args>
     void init(Args&&... args) {
         if (!_initialized) {
@@ -405,10 +494,11 @@ private:
     Result _result;
 };
 
-// TODO: std::from_chars / re2c parser to convert numbers
+// TODO: std::from_chars works directly with the view. not available with -std=c++11,
+//       and needs some care in regards to the code size
 
 template <typename T>
-T sized(const StringView& view) {
+T sized(StringView view) {
     String value(view);
 
     char* endp { nullptr };
@@ -424,7 +514,7 @@ T sized(const StringView& view) {
 }
 
 template <>
-unsigned long sized(const StringView& view) {
+unsigned long sized(StringView view) {
     String value(view);
 
     char* endp { nullptr };
@@ -460,10 +550,14 @@ unsigned long sized(const StringView& view) {
 // Receiving:
 //   Payload: 2:AABBCCDD:32 (<protocol>:<value>:<bits>)
 
-// TODO: type as text both ways? see
-// - IRutils.h::strToDecodeType(const char*);
-// - IRutils.h::typeToString(decode_type_t);
-// (i.e. additional path for [0-9A-Za-z]?)
+// TODO: type is numeric based on the previous implementation. note that there are
+// `::typeToString(decode_type_t)` and `::strToDecodeType(const char*)` (IRutils.h)
+// And also see `const char kAllProtocolNames*`, which is a global from the IRtext header with
+// \0-terminated chunks of stringivied decode_type_t (counting 'index' will deduce the type)
+//
+// (but, notice that str->type only works with C strings and *will* do a permissive
+// `strToDecodeType(typeToString(static_cast<decode_type_t>(atoi(str))))` when the
+// intial attempt fails)
 
 namespace simple {
 
@@ -487,7 +581,7 @@ namespace value {
 // '075bcd15'
 // (and also notice that old version *always* cast `u64` into `u32` which cut off part of the code)
 
-uint64_t decode(const StringView& view) {
+uint64_t decode(StringView view) {
     constexpr size_t RawSize { sizeof(uint64_t) };
     constexpr size_t BufferSize { (RawSize * 2) + 1 };
 
@@ -536,7 +630,7 @@ String encode(uint64_t input) {
 
 namespace payload {
 
-decode_type_t type(const StringView& view) {
+decode_type_t type(StringView view) {
     static_assert(std::is_same<int, std::underlying_type<decode_type_t>::type>::value, "");
     constexpr int First { -1 };
     constexpr int Last { static_cast<int>(decode_type_t::kLastDecodeType) };
@@ -551,24 +645,40 @@ decode_type_t type(const StringView& view) {
     return decode_type_t::UNKNOWN;
 }
 
-uint64_t value(const StringView& view) {
+uint64_t value(StringView view) {
     return ::ir::simple::value::decode(view);
 }
 
-uint16_t bits(const StringView& value) {
+uint16_t bits(StringView value) {
     return sized<uint16_t>(value);
 }
 
-uint16_t repeats(const StringView& value) {
+uint16_t repeats(StringView value) {
     return sized<uint16_t>(value);
 }
 
-uint8_t series(const StringView& value) {
+uint8_t series(StringView value) {
     return sized<uint8_t>(value);
 }
 
-unsigned long delay(const StringView& value) {
+unsigned long delay(StringView value) {
     return sized<unsigned long>(value);
+}
+
+template <typename T>
+String encode(T& result) {
+    String out;
+    out.reserve(28);
+
+    out += static_cast<int>(result.type());
+    out += ':';
+
+    out += value::encode(result.value());
+    out += ':';
+
+    out += static_cast<unsigned int>(result.bits());
+
+    return out;
 }
 
 } // namespace payload
@@ -619,7 +729,12 @@ Payload prepare(StringView type, StringView value, StringView bits, StringView r
 // The message is encoded as time in microseconds for the IR LED to be in a certain state.
 // First one is always ON, and the second one - OFF.
 
+// Also see IRutils.h's `String resultToTimingInfo(decode_results*)` for all of timing info, with a nice table output
+// Not really applicable here, though
+
 namespace raw {
+
+static_assert((DECODE_HASH), "");
 
 struct Payload {
     uint16_t frequency;
@@ -667,20 +782,30 @@ String encode(const uint16_t* begin, const uint16_t* end) {
 
 namespace payload {
 
-uint16_t frequency(const StringView& value) {
+uint16_t frequency(StringView value) {
     return sized<uint16_t>(value);
 }
 
-uint8_t series(const StringView& value) {
+uint8_t series(StringView value) {
     return sized<uint8_t>(value);
 }
 
-unsigned long delay(const StringView& value) {
+unsigned long delay(StringView value) {
     return sized<unsigned long>(value);
 }
 
-uint16_t time(const StringView& value) {
+uint16_t time(StringView value) {
     return sized<uint16_t>(value);
+}
+
+template <typename T>
+String encode(T& result) {
+    auto raw = result.raw();
+    if (raw) {
+        return time::encode(raw.begin(), raw.end());
+    }
+
+    return F("0");
 }
 
 } // namespace payload
@@ -699,6 +824,133 @@ Payload prepare(StringView frequency, StringView series, StringView delay, declt
 
 } // namespace raw
 
+// TODO: current solution works directly with the internal 'u8 state[]', both for receiving and sending
+// a more complex protocols for HVAC equipment *could* be handled by the IRacUtils (ref. IRac.h)
+// where a generic 'IRac' class will convert certain common properties like temperature, fan speed,
+// fan direction and power toggle (and some more, see 'stdAc::state_t'; or, the specific vendor class)
+//
+// Some problems with state_t, though:
+// - not everything is 1-to-1 convertible with specific-protocol-AC-class to state_t
+//   (or not directly, or with some unexpected limitations)
+// - there's no apparent way to know which properties are supported by the protocol.
+//   protocol-specific classes (e.g. MitsubishiAC) will convert to state_t by omitting certain fields,
+//   and parse it by ignoring them. but, this is hidden in the implementation
+// - some protocols require previous state as a reference for sending, and IRac already has an internal copy
+//   if the state_t struct. but, notice that it is shared between protocols (as a generic way), so mixing
+//   protocols becomes are bit of a headache
+// - size of the payload is as wide as the largest one, so there's always a static blob of N
+//   bytes reserved, both inside and with the proposed API of the library
+//   saving state (to avoid always resetting to defaults on reboot) also becomes a problem,
+//
+// For a generic solution, supporting state_t would mean to allow to set *every* property declared by the struct
+// Common examples and libraries wrapping IRac prefer JSON payload, and both IRac and IRutils contain helpers to convert
+// each property to and from strings.
+//
+// But, preper to split HVAC into a different module, as none of the queueing or generic code facilities are actually useful.
+
+namespace state {
+
+// State messages transmit an arbitrary amount of bytes, by using the assosicated protocol method
+// Repeats are intended to be handled via the respective PROTOCOL method automatically
+// (and, there's no reliable way besides linking every type with it's method from our side)
+//
+// Transmitting:
+//   Payload: <protocol>:<value>[:<series>][:<delay>]
+//
+//   Required parameters:
+//     PROTOCOL - decimal ID, will be converted into a named 'decode_type_t'
+//                (ref. IRremoteESP8266.h and it's protocol descriptions)
+//     VALUE    - hexadecimal representation of the value that will be sent
+//                (big endian, maximum depends on the protocol settings)
+//
+//   Optional payload parameters:
+//     SERIES   - how many times the message will be scheduled for sending
+//                (defaults to 1 aka once, [1...120))
+//     DELAY    - minimum amount of time (ms) between queued messages
+//                (defaults is IR_TX_DELAY, applies to every message in the series)
+//
+// Receiving:
+//   Payload: 52:112233445566778899AABB (<protocol>:<value>)
+
+static_assert(
+    sizeof(decltype(decode_results::state)) >= sizeof(decltype(decode_results::value)),
+    "Unsupported version of IRremoteESP8266");
+
+using Value = std::vector<uint8_t>;
+
+struct Payload {
+    decode_type_t type;
+    Value value;
+    uint8_t series;
+    unsigned long delay;
+};
+
+namespace value {
+
+String encode(const uint8_t* begin, const uint8_t* end) {
+    return hexEncode(begin, end);
+}
+
+template <typename T>
+String encode(T&& range) {
+    return hexEncode(range.begin(), range.end());
+}
+
+Value decode(StringView view) {
+    Value out;
+    if (!(view.length() % 2)) {
+        out.resize(view.length() / 2, static_cast<uint8_t>(0));
+        hexDecode(view.begin(), view.end(),
+                out.data(), out.data() + out.size());
+    }
+
+    return out;
+}
+
+} // namespace value
+
+namespace payload {
+
+template <typename T>
+String encode(T& result) {
+    String out;
+    out.reserve(4 + (result.bytes() * 2));
+
+    out += static_cast<int>(result.type());
+    out += ':';
+
+    auto state = result.state();
+    out += value::encode(state.begin(), state.end());
+
+    return out;
+}
+
+} // namespace payload
+
+Payload prepare(StringView type, StringView value, StringView series, StringView delay) {
+    Payload result;
+    result.type = ::ir::simple::payload::type(type);
+    result.value = value::decode(value);
+
+    if (series) {
+        result.series = simple::payload::series(series);
+    } else {
+        result.series = tx::internal::series;
+    }
+
+    if (delay) {
+        result.delay = simple::payload::delay(delay);
+    } else {
+        result.delay = tx::internal::delay;
+    }
+
+    return result;
+}
+
+#include "ir_parse_state.re.cpp.inc"
+
+} // namespace state
+
 namespace rx {
 
 struct Lock {
@@ -716,13 +968,15 @@ struct Lock {
 
     ~Lock() {
         if (internal::instance) {
-            internal::instance->enableIRIn();
+            internal::instance->enableIRIn(internal::pullup);
         }
     }
 };
 
 void configure() {
     internal::delay = settings::delay();
+    internal::pullup = settings::pullup();
+    internal::unknown = settings::unknown();
 }
 
 void setup(BasePinPtr&& pin) {
@@ -732,15 +986,14 @@ void setup(BasePinPtr&& pin) {
             settings::bufferSize(),
             settings::timeout(),
             build::bufferSave());
-    internal::instance->enableIRIn();
+    internal::instance->enableIRIn(internal::pullup);
 }
-
-// TODO: complex protocols used by HVAC *could* be handled by the IRacUtils (ref. IRac.h)
 
 // Current implementation relies on the HEX-encoded 'value' (previously, decimal)
 //
-// XXX: when protocol is UNKNOWN, `value` is silently replaced with a fnv1 32bit hash
-//      can be disabled with `-DDECODE_HASH=0` in the build flags
+// XXX: when protocol is UNKNOWN, `value` is silently replaced with a fnv1 32bit hash.
+//      can be disabled with `-DDECODE_HASH=0` in the build flags, but it will also
+//      cause RAW output to stop working, as the `IRrecv::decode()` can never succeed :/
 //
 // XXX: library utilizes union as a way to store the data, making this an interesting case
 //      of two-way aliasing inside of the struct. (and sometimes unexpected size requirements)
@@ -755,18 +1008,39 @@ void setup(BasePinPtr&& pin) {
 // >   uint8_t state[kStateSizeMax];  // Multi-byte results.
 // > };
 //
-// From our side, trying to use `state` would mean:
-// - always check `bits` in case decoder replaced it with a shorter value
-//   default state size is 53, based on the largest payload supported by the lib
-// - no `-DDECODE_AC=0` is in the build flags, as it will become u8[0].
-//   *is* a case of undefined behaviour, and will also trigger both `-Wpedantic` and `-Warray-bounds`
+// Where `kStateSizeMax` is either:
+// - deduced from the largest protocol from the `DECODE_AC` group, *if* any of the protocols is enabled
+// - otherwise, it's just `sizeof(uint64_t)`
+// (i.e. only extra data is lost, as union members always start at the beginning of the struct)
 
-// Also see:
-// - `String resultToHumanReadableBasic(decode_results*);` for type + value as a single line
-// - `String resultToTimingInfo(decode_results*)` for all of timing info, with a nice table output
-// Not applicable here, though
+// Also see IRutils.h's `String resultToHumanReadableBasic(decode_results*);` for type + value as a single line
 
 struct DecodeResult {
+    template <typename T>
+    struct Range {
+        Range() = default;
+        Range(const T* begin, const T* end) :
+            _begin(begin),
+            _end(end)
+        {}
+
+        const T* begin() const {
+            return _begin;
+        }
+
+        const T* end() const {
+            return _end;
+        }
+
+        explicit operator bool() const {
+            return _begin && _end && (_begin < _end);
+        }
+
+    private:
+        const T* _begin { nullptr };
+        const T* _end { nullptr };
+    };
+
     DecodeResult() = delete;
     explicit DecodeResult(::decode_results& result) :
         _result(result)
@@ -776,51 +1050,56 @@ struct DecodeResult {
         return _result.decode_type;
     }
 
+    explicit operator bool() const {
+        return type() != decode_type_t::UNKNOWN;
+    }
+
     uint16_t bits() const {
         return _result.bits;
     }
 
-    const String& asSimplePayload() {
-        if (!_payload.length()) {
-            _payload.reserve(28);
-
-            _payload += static_cast<int>(_result.decode_type);
-            _payload += ':';
-
-            _payload += asValue();
-            _payload += ':';
-
-            _payload += static_cast<unsigned int>(_result.bits);
-        }
-
-        return _payload;
+    uint64_t value() const {
+        return _result.value;
     }
 
-    const String& asValue() {
-        static_assert(std::is_same<decltype(decode_results::value), uint64_t>::value, "");
+    // TODO: library examples (and some internal code, too) prefer this to be `bits() / 8`
 
-        if (!_value.length()) {
-            _value = ::ir::simple::value::encode(_result.value);
+    size_t bytes() const {
+        const size_t Bits { bits() };
+        size_t need { 0 };
+
+        size_t out { 0 };
+        while (need < Bits) {
+            need += 8u;
+            out += 1u;
         }
 
-        return _value;
+        return out;
     }
 
-    const String& asRawTime() {
-        if (!_time.length() && (_result.rawlen > 1)) {
-            _time = ::ir::raw::time::encode(
+    using Raw = Range<uint16_t>;
+
+    Raw raw() const {
+        if (_result.rawlen > 1) {
+            return Raw{
                 const_cast<const uint16_t*>(&_result.rawbuf[1]),
-                const_cast<const uint16_t*>(&_result.rawbuf[_result.rawlen]));
+                const_cast<const uint16_t*>(&_result.rawbuf[_result.rawlen])};
         }
 
-        return _time;
+        return {};
+    }
+
+    using State = Range<uint8_t>;
+
+    State state() const {
+        const size_t End { std::min(bytes(), sizeof(decltype(_result.state))) };
+        return State{
+            &_result.state[0],
+            &_result.state[End]};
     }
 
 private:
     const ::decode_results& _result;
-    String _payload;
-    String _value;
-    String _time;
 };
 
 } // namespace rx
@@ -829,43 +1108,82 @@ namespace tx {
 
 // TODO: variant instead of virtuals?
 
-struct SimplePayloadSender : public PayloadSenderBase {
-    SimplePayloadSender() = delete;
-    explicit SimplePayloadSender(ir::simple::Payload&& payload) :
-        _payload(std::move(payload)),
-        _series(_payload.series)
-    {}
+struct ReschedulablePayload : public PayloadSenderBase {
+    static constexpr uint8_t SeriesMax { 120 };
 
-    bool send(IRsend& sender) const override {
-        return _series && sender.send(_payload.type, _payload.value, _payload.bits, _payload.repeats);
-    }
+    ReschedulablePayload() = delete;
+    ~ReschedulablePayload() = default;
+
+    ReschedulablePayload(const ReschedulablePayload&) = delete;
+    ReschedulablePayload& operator=(const ReschedulablePayload&) = delete;
+
+    ReschedulablePayload(ReschedulablePayload&&) = delete;
+    ReschedulablePayload& operator=(ReschedulablePayload&&) = delete;
+
+    ReschedulablePayload(uint8_t series, unsigned long delay) :
+        _series(std::min(series, SeriesMax)),
+        _delay(delay)
+    {}
 
     bool reschedule() override {
         return _series && (--_series);
     }
 
     unsigned long delay() const override {
-        return _payload.delay;
+        return _delay;
+    }
+
+protected:
+    size_t series() const {
+        return _series;
+    }
+
+private:
+    uint8_t _series;
+    unsigned long _delay;
+};
+
+struct SimplePayloadSender : public ReschedulablePayload {
+    SimplePayloadSender() = delete;
+    explicit SimplePayloadSender(ir::simple::Payload&& payload) :
+        ReschedulablePayload(payload.series, payload.delay),
+        _payload(std::move(payload))
+    {}
+
+    bool send(IRsend& sender) const override {
+        return series() && sender.send(_payload.type, _payload.value, _payload.bits, _payload.repeats);
     }
 
 private:
     ir::simple::Payload _payload;
-    size_t _series;
 };
 
-struct RawPayloadSender : public PayloadSenderBase {
-    RawPayloadSender() = delete;
-    explicit RawPayloadSender(ir::raw::Payload&& payload) :
-        _payload(std::move(payload)),
-        _series(_payload.time.size() ? _payload.series : 0)
+struct StatePayloadSender : public ReschedulablePayload {
+    StatePayloadSender() = delete;
+    explicit StatePayloadSender(ir::state::Payload&& payload) :
+        ReschedulablePayload(
+            (payload.value.size() ? payload.series : 0), payload.delay),
+        _payload(std::move(payload))
     {}
 
-    bool reschedule() override {
-        return _series && (--_series);
+    bool send(IRsend& sender) const override {
+        return series() && sender.send(_payload.type, _payload.value.data(), _payload.value.size());
     }
 
+private:
+    ir::state::Payload _payload;
+};
+
+struct RawPayloadSender : public ReschedulablePayload {
+    RawPayloadSender() = delete;
+    explicit RawPayloadSender(ir::raw::Payload&& payload) :
+        ReschedulablePayload(
+            (payload.time.size() ? payload.series : 0), payload.delay),
+        _payload(std::move(payload))
+    {}
+
     bool send(IRsend& sender) const override {
-        if (_series) {
+        if (series()) {
             sender.sendRaw(_payload.time.data(), _payload.time.size(), _payload.frequency);
             return true;
         }
@@ -873,33 +1191,38 @@ struct RawPayloadSender : public PayloadSenderBase {
         return false;
     }
 
-    unsigned long delay() const override {
-        return _payload.delay;
-    }
-
 private:
     ir::raw::Payload _payload;
-    size_t _series;
 };
 
-void enqueue(ir::simple::Payload&& payload) {
-    internal::queue.push(std::make_unique<SimplePayloadSender>(std::move(payload)));
+namespace internal {
+
+PayloadSenderPtr make_sender(ir::simple::Payload&& payload) {
+    return std::make_unique<SimplePayloadSender>(std::move(payload));
 }
 
-void enqueue(ir::ParseResult<ir::simple::Payload>&& result) {
+PayloadSenderPtr make_sender(ir::state::Payload&& payload) {
+    return std::make_unique<StatePayloadSender>(std::move(payload));
+}
+
+PayloadSenderPtr make_sender(ir::raw::Payload&& payload) {
+    return std::make_unique<RawPayloadSender>(std::move(payload));
+}
+
+void enqueue(PayloadSenderPtr&& sender) {
+    queue.push(std::move(sender));
+}
+
+} // namespace internal
+
+template <typename T>
+bool enqueue(typename ir::ParseResult<T>&& result) {
     if (result) {
-        enqueue(std::move(result).move());
+        internal::enqueue(internal::make_sender(std::move(result).value()));
+        return true;
     }
-}
 
-void enqueue(ir::raw::Payload&& payload) {
-    internal::queue.push(std::make_unique<RawPayloadSender>(std::move(payload)));
-}
-
-void enqueue(ir::ParseResult<ir::raw::Payload>&& result) {
-    if (result) {
-        enqueue(std::move(result).move());
-    }
+    return false;
 }
 
 void loop() {
@@ -936,7 +1259,10 @@ void configure() {
 
 void setup(BasePinPtr&& pin) {
     internal::pin = std::move(pin);
-    internal::instance = std::make_unique<IRsend>(internal::pin->pin());
+    internal::instance = std::make_unique<IRsend>(
+            internal::pin->pin(),
+            settings::inverted(),
+            settings::modulation());
     internal::instance->begin();
 }
 
@@ -946,22 +1272,31 @@ void setup(BasePinPtr&& pin) {
 namespace mqtt {
 namespace build {
 
-// (optional) enables MQTT rx output
-constexpr bool rx() {
-    return IR_RX_MQTT == 1;
+// (optional) enables simple protocol MQTT rx output
+constexpr bool rxSimple() {
+    return IR_RX_SIMPLE_MQTT == 1;
 }
 
-// (optional) enables MQTT RAW rx output (aka raw payload's rawbuf TIME * TICK)
+// (optional) enables MQTT RAW rx output (i.e. time values that we received so far)
 constexpr bool rxRaw() {
     return IR_RX_RAW_MQTT == 1;
 }
 
-const char* topicRx() {
-    return IR_RX_MQTT_TOPIC;
+// (optional) enables MQTT state rx output (commonly, HVAC remotes, or anything that has payload larger than 64bit)
+// (*may need* increased timeout setting for the receiver, so it could buffer very large messages consistently and not lose some of the parts)
+// (*requires* increase buffer size. but, depends on the protocol, so adjust accordingly)
+constexpr bool rxState() {
+    return IR_RX_STATE_MQTT == 1;
 }
 
-const char* topicTx() {
-    return IR_TX_MQTT_TOPIC;
+// {root}/{topic}
+
+const char* topicRxSimple() {
+    return IR_RX_SIMPLE_MQTT_TOPIC;
+}
+
+const char* topicTxSimple() {
+    return IR_TX_SIMPLE_MQTT_TOPIC;
 }
 
 const char* topicRxRaw() {
@@ -972,30 +1307,44 @@ const char* topicTxRaw() {
     return IR_TX_RAW_MQTT_TOPIC;
 }
 
+const char* topicRxState() {
+    return IR_RX_STATE_MQTT_TOPIC;
+}
+
+const char* topicTxState() {
+    return IR_TX_STATE_MQTT_TOPIC;
+}
+
 } // namespace build
 
 namespace settings {
 
-bool rx() {
-    return getSetting("irRxMqtt", build::rx());
+bool rxSimple() {
+    return getSetting("irRxMqtt", build::rxSimple());
 }
 
 bool rxRaw() {
     return getSetting("irRxMqttRaw", build::rxRaw());
 }
 
+bool rxState() {
+    return getSetting("irRxMqttState", build::rxState());
+}
+
 } // namespace settings
 
 namespace internal {
 
-bool rx { build::rx() };
-bool rxRaw { build::rxRaw() };
+bool publish_raw { build::rxRaw() };
+bool publish_simple { build::rxSimple() };
+bool publish_state { build::rxState() };
 
 void callback(unsigned int type, const char* topic, char* payload) {
     switch (type) {
 
     case MQTT_CONNECT_EVENT:
-        mqttSubscribe(build::topicTx());
+        mqttSubscribe(build::topicTxSimple());
+        mqttSubscribe(build::topicTxState());
         mqttSubscribe(build::topicTxRaw());
         break;
 
@@ -1003,8 +1352,10 @@ void callback(unsigned int type, const char* topic, char* payload) {
         StringView view{payload, payload + strlen(payload)};
 
         String t = mqttMagnitude(topic);
-        if (t.equals(build::topicTx())) {
+        if (t.equals(build::topicTxSimple())) {
             ir::tx::enqueue(ir::simple::parse(view));
+        } else if (t.equals(build::topicTxState())) {
+            ir::tx::enqueue(ir::state::parse(view));
         } else if (t.equals(build::topicTxRaw())) {
             ir::tx::enqueue(ir::raw::parse(view));
         }
@@ -1018,18 +1369,21 @@ void callback(unsigned int type, const char* topic, char* payload) {
 } // namespace internal
 
 void process(rx::DecodeResult& result) {
-    if (internal::rx) {
-        ::mqttSend(build::topicRx(), result.asSimplePayload().c_str());
+    if (internal::publish_state && result && (result.bytes() > 8)) {
+        ::mqttSend(build::topicRxState(), ::ir::state::payload::encode(result).c_str());
+    } else if (internal::publish_simple) {
+        ::mqttSend(build::topicRxSimple(), ::ir::simple::payload::encode(result).c_str());
     }
 
-    if (internal::rxRaw) {
-        mqttSend(build::topicRxRaw(), result.asRawTime().c_str());
+    if (internal::publish_raw) {
+        ::mqttSend(build::topicRxRaw(), ::ir::raw::payload::encode(result).c_str());
     }
 }
 
 void configure() {
-    internal::rx = settings::rx();
-    internal::rxRaw = settings::rxRaw();
+    internal::publish_raw = settings::rxRaw();
+    internal::publish_simple = settings::rxSimple();
+    internal::publish_state = settings::rxState();
 }
 
 void setup() {
@@ -1057,6 +1411,7 @@ namespace build {
 // TODO: optimize the array itself via PROGMEM? can't be static though, b/c F(...) will be resolved later and the memory is empty in the flash
 //       also note of the alignment requirements that don't always get applied to a simple PROGMEM'ed array (unless explicitly set, or the contained value is aligned)
 //       strings vs. number for values do have a slight overhead (x2 pointers, byte-by-byte cmp instead of a 2byte memcmp), but it seems to be easier to handle here
+//       but... this also means it *could* seamlessly handle state payloads just as simple values, just by changing the value retrieval function
 // TODO: have an actual name for presets (remote, device, etc.)?
 // TODO: user-defined presets?
 // TODO: pub-sub through terminal?
@@ -1262,12 +1617,14 @@ void inject(String command) {
 } // namespace internal
 
 void process(rx::DecodeResult& result) {
+    auto value = ir::simple::value::encode(result.value());
+
 #if IR_RX_PRESET != 0
     auto preset = build::preset();
     if (preset.begin && preset.end && (preset.begin != preset.end)) {
         for (auto* it = preset.begin; it != preset.end; ++it) {
             String other((*it).value);
-            if (other == result.asValue()) {
+            if (other == value) {
                 internal::inject((*it).command);
                 return;
             }
@@ -1277,7 +1634,7 @@ void process(rx::DecodeResult& result) {
 
     String key;
     key += F("irCmd");
-    key += result.asValue();
+    key += value;
 
     auto cmd = ::settings::internal::get(key);
     if (cmd) {
@@ -1288,9 +1645,22 @@ void process(rx::DecodeResult& result) {
 void setup() {
     terminalRegisterCommand(F("IR.SEND"), [](const ::terminal::CommandContext& ctx) {
         if (ctx.argv.size() == 2) {
-            auto decoded = ir::simple::parse(StringView{ctx.argv[1]});
-            if (decoded.ok()) {
-                ir::tx::enqueue(std::move(decoded).move());
+            auto view = StringView{ctx.argv[1]};
+
+            auto simple = ir::simple::parse(view);
+            if (ir::tx::enqueue(std::move(simple))) {
+                terminalOK(ctx);
+                return;
+            }
+
+            auto state = ir::state::parse(view);
+            if (ir::tx::enqueue(std::move(state))) {
+                terminalOK(ctx);
+                return;
+            }
+
+            auto raw = ir::raw::parse(view);
+            if (ir::tx::enqueue(std::move(raw))) {
                 terminalOK(ctx);
                 return;
             }
@@ -1299,23 +1669,39 @@ void setup() {
             return;
         }
 
-        terminalError(ctx, F("IR.SEND <SIMPLE PAYLOAD>"));
+        terminalError(ctx, F("IR.SEND <PAYLOAD>"));
     });
 }
 
 } // namespace terminal
 #endif
 
+#if DEBUG_SUPPORT
+namespace debug {
+
+void log(rx::DecodeResult& result) {
+    if (!result) {
+        DEBUG_MSG_P(PSTR("[IR] IN unknown value %s\n"),
+            ir::simple::value::encode(result.value()).c_str());
+    } else if (result.bytes() > 8) {
+        DEBUG_MSG_P(PSTR("[IR] IN protocol %d state %s\n"),
+            static_cast<int>(result.type()), ir::state::value::encode(result.state()).c_str());
+    } else {
+        DEBUG_MSG_P(PSTR("[IR] IN protocol %d value %s bits %hu\n"),
+            static_cast<int>(result.type()), ir::simple::value::encode(result.value()).c_str(), result.bits());
+    }
+}
+
+} // namespace debug
+#endif
+
 namespace rx {
 
 // TODO: rpnlib support like with rfbridge stringified callbacks?
-// TODO: receiver uses os timers to schedule things, isr and the system task do the actual processing
 
 void process(DecodeResult&& result) {
 #if DEBUG_SUPPORT
-    DEBUG_MSG_P(PSTR("[IR] IN: %.*s\n"),
-        result.asSimplePayload().length(),
-        result.asSimplePayload().c_str());
+    ir::debug::log(result);
 #endif
 #if TERMINAL_SUPPORT
     ir::terminal::process(result);
@@ -1325,10 +1711,19 @@ void process(DecodeResult&& result) {
 #endif
 }
 
+// IRrecv uses os timers to schedule things, isr and the system task do the actual processing
+// Unless `bufferSave()` is set to `true`, raw value buffers will be shared with the ISR task.
+// After `decode()` call, `result` object does not store the actual data though, but references
+// the specific buffer that was allocated by the `instance` constructor.
+
 void loop() {
     static ::decode_results result;
     if (internal::instance->decode(&result)) {
         if (result.overflow) {
+            return;
+        }
+
+        if ((result.decode_type == decode_type_t::UNKNOWN) && !internal::unknown) {
             return;
         }
 
@@ -1546,6 +1941,16 @@ private:
     String _repr;
 };
 
+struct NoopPayloadSender : public ir::tx::ReschedulablePayload {
+    NoopPayloadSender(uint8_t series, unsigned long delay) :
+        ir::tx::ReschedulablePayload(series, delay)
+    {}
+
+    bool send(IRsend&) const override {
+        return series();
+    }
+};
+
 using Reports = std::vector<Report>;
 
 struct Context {
@@ -1613,19 +2018,19 @@ private:
 
 // TODO: anything else header-only? may be a problem though with c++ approach, as most popular frameworks depend on std::ostream
 
-// TODO: for parsers specifically, some fuzzing generating random strings and test order randomization could be useful
+// TODO: for parsers specifically, some fuzzing to randomize inputs and test order could be useful
 //       (also, extending the current set of tests and / or having some helper macro that can fill the boilerplate)
 
-// As a (temporary?) current solution, have these 4 macros that setup a Context object and a list of test runners.
-// Each runner may call `IR_CHECK(<something resolving to bool>)` to immediatly exit current block on failure and save report to the Context object.
+// As a (temporary?) solution for right now, have these 4 macros that setup a Context object and a list of test runners.
+// Each runner may call `IR_TEST(<something resolving to bool>)` to immediatly exit current block on failure and save report to the Context object.
 // On destruction of the Context object, every report is printed to the debug output.
 
-#define IR_CHECK_SETUP_BEGIN() Context runner ## __FILE__ ## __LINE__ {
-#define IR_CHECK_SETUP_END() }
+#define IR_TEST_SETUP_BEGIN() Context runner ## __FILE__ ## __LINE__ {
+#define IR_TEST_SETUP_END() }
 
-#define IR_CHECK_RUNNER() [](Context::View& __context_view)
+#define IR_TEST_RUNNER() [](Context::View& __context_view)
 
-#define IR_CHECK(EXPRESSION) {\
+#define IR_TEST(EXPRESSION) {\
     if (!(EXPRESSION)) {\
         __context_view.report(__LINE__, F(#EXPRESSION));\
         return;\
@@ -1633,90 +2038,146 @@ private:
 }
 
 void setup() {
-    IR_CHECK_SETUP_BEGIN() {
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::simple::parse("").ok());
+    IR_TEST_SETUP_BEGIN() {
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse(""));
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::simple::parse(",").ok());
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse(","));
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::simple::parse("999::").ok());
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse("999::"));
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::simple::parse("-5:doesntmatter").ok());
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse("-5:doesntmatter"));
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::simple::parse("2:0:31").ok());
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse("2:0:31"));
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::simple::parse("2:112233445566778899AA:31").ok());
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse("2:012:31"));
         },
-        IR_CHECK_RUNNER() {
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::simple::parse("2:112233445566778899AA:31"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(::ir::simple::value::encode(0xffaabbccddee) == F("FFAABBCCDDEE"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(::ir::simple::value::encode(0xfaabbccddee) == F("0FAABBCCDDEE"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(::ir::simple::value::encode(0xee) == F("EE"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(::ir::simple::value::encode(0) == F("00"));
+        },
+        IR_TEST_RUNNER() {
             auto result = ir::simple::parse("2:7FAABBCC:31");
-            IR_CHECK(result.ok());
+            IR_TEST(result.has_value());
 
-            auto& payload = result.get();
-            IR_CHECK(payload.type == decode_type_t::RC6);
-            IR_CHECK(payload.value == static_cast<uint64_t>(0x7faabbcc));
-            IR_CHECK(payload.bits == 31);
+            auto& payload = result.value();
+            IR_TEST(payload.type == decode_type_t::RC6);
+            IR_TEST(payload.value == static_cast<uint64_t>(0x7faabbcc));
+            IR_TEST(payload.bits == 31);
         },
-        IR_CHECK_RUNNER() {
+        IR_TEST_RUNNER() {
             auto result = ir::simple::parse("15:AABBCCDD:25:3");
-            IR_CHECK(result.ok());
+            IR_TEST(result.has_value());
 
-            auto& payload = result.get();
-            IR_CHECK(payload.type == decode_type_t::COOLIX);
-            IR_CHECK(payload.value == static_cast<uint64_t>(0xaabbccdd));
-            IR_CHECK(payload.bits == 25);
-            IR_CHECK(payload.repeats == 3);
+            auto& payload = result.value();
+            IR_TEST(payload.type == decode_type_t::COOLIX);
+            IR_TEST(payload.value == static_cast<uint64_t>(0xaabbccdd));
+            IR_TEST(payload.bits == 25);
+            IR_TEST(payload.repeats == 3);
         },
-        IR_CHECK_RUNNER() {
+        IR_TEST_RUNNER() {
             auto result = ir::simple::parse("10:0FEFEFEF:21:2:5:500");
-            IR_CHECK(result.ok());
+            IR_TEST(result.has_value());
 
-            auto& payload = result.get();
-            IR_CHECK(payload.type == decode_type_t::LG);
-            IR_CHECK(payload.value == static_cast<uint64_t>(0x0fefefef));
-            IR_CHECK(payload.bits == 21);
-            IR_CHECK(payload.repeats == 2);
-            IR_CHECK(payload.series == 5);
-            IR_CHECK(payload.delay == 500);
+            auto& payload = result.value();
+            IR_TEST(payload.type == decode_type_t::LG);
+            IR_TEST(payload.value == static_cast<uint64_t>(0x0fefefef));
+            IR_TEST(payload.bits == 21);
+            IR_TEST(payload.repeats == 2);
+            IR_TEST(payload.series == 5);
+            IR_TEST(payload.delay == 500);
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(!ir::raw::parse("-1:1:500:,200,150,250,50,100,100,150").ok());
+        IR_TEST_RUNNER() {
+            auto result = ir::simple::parse("20:1122AABBCCDDEEFF:64:2:3:1000");
+            IR_TEST(result.has_value());
+
+            auto ptr = std::make_unique<NoopPayloadSender>(
+                    result->series, result->delay);
+            IR_TEST(ptr->delay() == 1000);
+
+            IRsend sender(GPIO_NONE);
+            IR_TEST(ptr->send(sender));
+            IR_TEST(ptr->reschedule());
+
+            IR_TEST(ptr->send(sender));
+            IR_TEST(ptr->reschedule());
+
+            IR_TEST(ptr->send(sender));
+            IR_TEST(!ptr->reschedule());
         },
-        IR_CHECK_RUNNER() {
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::state::parse(""));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::state::parse(":"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::state::parse("-1100,100,150"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::state::parse("25:"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::state::parse("30:C"));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(ir::state::parse("45:CD"));
+        },
+        IR_TEST_RUNNER() {
+            auto result = ir::state::parse("20:C7B7966A9B29CD3C5F2AC03B91B0B221");
+            IR_TEST(result.has_value());
+
+            auto& payload = result.value();
+            IR_TEST(payload.type == decode_type_t::MITSUBISHI_AC);
+
+            const uint8_t raw[] {
+                0xc7, 0xb7, 0x96, 0x6a,
+                0x9b, 0x29, 0xcd, 0x3c,
+                0x5f, 0x2a, 0xc0, 0x3b,
+                0x91, 0xb0, 0xb2, 0x21};
+
+            IR_TEST(payload.value.size() == sizeof(raw));
+            IR_TEST(std::equal(std::begin(payload.value), std::end(payload.value),
+                        std::begin(raw)));
+        },
+        IR_TEST_RUNNER() {
+            IR_TEST(!ir::raw::parse("-1:1:500:,200,150,250,50,100,100,150"));
+        },
+        IR_TEST_RUNNER() {
             auto result = ir::raw::parse("38:1:500:100,200,150,250,50,100,100,150");
-            IR_CHECK(result.ok());
+            IR_TEST(result.has_value());
 
-            auto& payload = result.get();
-            IR_CHECK(payload.frequency == 38);
-            IR_CHECK(payload.series == 1);
-            IR_CHECK(payload.delay == 500);
+            auto& payload = result.value();
+            IR_TEST(payload.frequency == 38);
+            IR_TEST(payload.series == 1);
+            IR_TEST(payload.delay == 500);
 
             decltype(ir::raw::Payload::time) expected_time {
                 100, 200, 150, 250, 50, 100, 100, 150};
-            IR_CHECK(expected_time == payload.time);
+            IR_TEST(expected_time == payload.time);
         },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(::ir::simple::value::encode(0xffaabbccddee) == F("FFAABBCCDDEE"));
-        },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(::ir::simple::value::encode(0xfaabbccddee) == F("0FAABBCCDDEE"));
-        },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(::ir::simple::value::encode(0xee) == F("EE"));
-        },
-        IR_CHECK_RUNNER() {
-            IR_CHECK(::ir::simple::value::encode(0) == F("00"));
-        },
-        IR_CHECK_RUNNER() {
+        IR_TEST_RUNNER() {
             const uint16_t raw[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-            IR_CHECK(::ir::raw::time::encode(std::begin(raw), std::end(raw)) == F("2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32"));
+            IR_TEST(::ir::raw::time::encode(std::begin(raw), std::end(raw)) == F("2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32"));
         }
     }
-    IR_CHECK_SETUP_END();
+    IR_TEST_SETUP_END();
 }
 
 } // namespace test

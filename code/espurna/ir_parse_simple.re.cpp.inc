@@ -49,7 +49,7 @@ const char *yyt6 { nullptr };
 		yyt1 = YYCURSOR;
 		goto yy4;
 	default:
-		if (YYLIMIT <= YYCURSOR) goto yy33;
+		if (YYLIMIT <= YYCURSOR) goto yy41;
 		goto yy2;
 	}
 yy2:
@@ -90,6 +90,7 @@ yy8:
 	switch (yych) {
 	case '0' ... '9':
 	case 'A' ... 'F':
+	case 'a' ... 'f':
 		yyt2 = YYCURSOR;
 		goto yy9;
 	default: goto yy7;
@@ -98,14 +99,16 @@ yy9:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy10;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy10;
 	default: goto yy7;
 	}
 yy10:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy11;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy11;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -113,7 +116,8 @@ yy11:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy13;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy13;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -129,7 +133,8 @@ yy13:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy17;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy17;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -150,12 +155,13 @@ yy16:
 	b1 = YYCURSOR;
 #line 43 "espurna\\ir_parse_simple.re"
 	{ goto update_out; }
-#line 154 "espurna\\ir_parse_simple.re.cpp.inc"
+#line 159 "espurna\\ir_parse_simple.re.cpp.inc"
 yy17:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy19;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy19;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -171,7 +177,8 @@ yy19:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy23;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy23;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -194,12 +201,13 @@ yy22:
 	r1 = YYCURSOR;
 #line 48 "espurna\\ir_parse_simple.re"
 	{ goto update_out; }
-#line 198 "espurna\\ir_parse_simple.re.cpp.inc"
+#line 205 "espurna\\ir_parse_simple.re.cpp.inc"
 yy23:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-	case 'A' ... 'F': goto yy25;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy25;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -214,6 +222,9 @@ yy24:
 yy25:
 	yych = *++YYCURSOR;
 	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy29;
 	case ':': goto yy12;
 	default: goto yy7;
 	}
@@ -222,7 +233,7 @@ yy26:
 	yych = *(YYMARKER = ++YYCURSOR);
 	switch (yych) {
 	case '0' ... '9': goto yy26;
-	case ':': goto yy29;
+	case ':': goto yy30;
 	default: goto yy28;
 	}
 yy28:
@@ -238,22 +249,40 @@ yy28:
 	s1 = YYCURSOR;
 #line 54 "espurna\\ir_parse_simple.re"
 	{ goto update_out; }
-#line 242 "espurna\\ir_parse_simple.re.cpp.inc"
+#line 253 "espurna\\ir_parse_simple.re.cpp.inc"
 yy29:
 	yych = *++YYCURSOR;
 	switch (yych) {
 	case '0' ... '9':
-		yyt6 = YYCURSOR;
-		goto yy30;
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy31;
+	case ':': goto yy12;
 	default: goto yy7;
 	}
 yy30:
 	yych = *++YYCURSOR;
 	switch (yych) {
-	case '0' ... '9': goto yy30;
-	default: goto yy32;
+	case '0' ... '9':
+		yyt6 = YYCURSOR;
+		goto yy32;
+	default: goto yy7;
+	}
+yy31:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy35;
+	case ':': goto yy12;
+	default: goto yy7;
 	}
 yy32:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9': goto yy32;
+	default: goto yy34;
+	}
+yy34:
 	p0 = yyt1;
 	c0 = yyt2;
 	b0 = yyt3;
@@ -268,24 +297,77 @@ yy32:
 	d1 = YYCURSOR;
 #line 61 "espurna\\ir_parse_simple.re"
 	{ goto update_out; }
-#line 272 "espurna\\ir_parse_simple.re.cpp.inc"
-yy33:
+#line 301 "espurna\\ir_parse_simple.re.cpp.inc"
+yy35:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy36;
+	case ':': goto yy12;
+	default: goto yy7;
+	}
+yy36:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy37;
+	case ':': goto yy12;
+	default: goto yy7;
+	}
+yy37:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy38;
+	case ':': goto yy12;
+	default: goto yy7;
+	}
+yy38:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy39;
+	case ':': goto yy12;
+	default: goto yy7;
+	}
+yy39:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case '0' ... '9':
+	case 'A' ... 'F':
+	case 'a' ... 'f': goto yy40;
+	case ':': goto yy12;
+	default: goto yy7;
+	}
+yy40:
+	yych = *++YYCURSOR;
+	switch (yych) {
+	case ':': goto yy12;
+	default: goto yy7;
+	}
+yy41:
 #line 64 "espurna\\ir_parse_simple.re"
 	{ goto return_out; }
-#line 276 "espurna\\ir_parse_simple.re.cpp.inc"
+#line 356 "espurna\\ir_parse_simple.re.cpp.inc"
 }
 #line 65 "espurna\\ir_parse_simple.re"
 
 
 update_out:
     {
-        out = prepare(
-            StringView{p0, p1},
-            StringView{c0, c1},
-            StringView{b0, b1},
-            StringView{r0, r1},
-            StringView{s0, s1},
-            StringView{d0, d1});
+        if (!((c1 - c0) % 2)) {
+            out = prepare(
+                StringView{p0, p1},
+                StringView{c0, c1},
+                StringView{b0, b1},
+                StringView{r0, r1},
+                StringView{s0, s1},
+                StringView{d0, d1});
+        }
     }
 
 return_out:

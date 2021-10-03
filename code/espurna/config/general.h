@@ -1529,7 +1529,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef IR_SUPPORT
-#define IR_SUPPORT                  0               // Do not build with IR support by default (10.25Kb)
+#define IR_SUPPORT                  0               // (boolean) Do not build with IR support by default
 #endif
 
 #ifndef IR_RX_SUPPORT
@@ -1540,12 +1540,24 @@
 #define IR_RX_PIN                   GPIO_NONE       // GPIO the receiver is connected to
 #endif
 
+#ifndef IR_RX_PULLUP
+#define IR_RX_PULLUP                0               // (boolean) whether the IR receiver pin is setup with INPUT_PULLUP
+#endif
+
 #ifndef IR_TX_SUPPORT
 #define IR_TX_SUPPORT               1               // (boolean) IR transmitter support in the build (~8Kb, enabled by default)
 #endif
 
 #ifndef IR_TX_PIN
 #define IR_TX_PIN                   GPIO_NONE       // GPIO the transmitter is connected to
+#endif
+
+#ifndef IR_TX_INVERTED
+#define IR_TX_INVERTED              0               // By default, turn LED ON when GPIO is HIGH and OFF when it's LOW
+#endif
+
+#ifndef IR_TX_MODULATION
+#define IR_TX_MODULATION            1               // (boolean, interanl) enable frequency modulation, enabled by default
 #endif
 
 #ifndef IR_RX_BUFFER_SIZE
@@ -1557,39 +1569,54 @@
 #define IR_RX_TIMEOUT               15              // (ms, internal) amount of time of no IR signal before the library stops capturing the data
 #endif
 
-#ifndef IR_RX_MQTT
-#define IR_RX_MQTT                  1               // (boolean) Report basic codes
+#ifndef IR_RX_SIMPLE_MQTT
+#define IR_RX_SIMPLE_MQTT           1               // (boolean) Report simple protocols
 #endif
 
 #ifndef IR_RX_RAW_MQTT
-#define IR_RX_RAW_MQTT              0               // (boolean) Report RAW codes
+#define IR_RX_RAW_MQTT              0               // (boolean) Report RAW payload for everything received (even unknown protocols)
 #endif
 
-#ifndef IR_RX_MQTT_TOPIC
-#define IR_RX_MQTT_TOPIC            "irin"          // (string) MQTT topic magnitude used to publish the received messages
+#ifndef IR_RX_STATE_MQTT
+#define IR_RX_STATE_MQTT            0               // (boolean) Report state payload for supported protocols
 #endif
 
-#ifndef IR_TX_MQTT_TOPIC
-#define IR_TX_MQTT_TOPIC            "irout"         // (string) MQTT topic magnitude to subscribe to transmit messages
+#ifndef IR_RX_SIMPLE_MQTT_TOPIC
+#define IR_RX_SIMPLE_MQTT_TOPIC     "irin"          // (string) MQTT topics are composed as {root}/{topic},
+                                                    // this one will be used to publish simple protocol messages
+                                                    // (or, automatically calculated FNV1 hash values when the protocol type is unknown)
 #endif
 
+#ifndef IR_TX_SIMPLE_MQTT_TOPIC
+#define IR_TX_SIMPLE_MQTT_TOPIC     "irout"         // (string) MQTT topic subscription to transmit the received message
+                                                    // (in a simple format)
+#endif
 
 #ifndef IR_RX_RAW_MQTT_TOPIC
-#define IR_RX_RAW_MQTT_TOPIC        "irraw"         // (boolean) MQTT topic magnitude to subscribe and publish RAW messages
+#define IR_RX_RAW_MQTT_TOPIC        "irraw"         // (string) MQTT topic to publish the received messages in RAW format
 #endif
 
 #ifndef IR_TX_RAW_MQTT_TOPIC
-#define IR_TX_RAW_MQTT_TOPIC        "irraw"         // (boolean) MQTT topic magnitude to subscribe and publish RAW messages
+#define IR_TX_RAW_MQTT_TOPIC        "irraw"         // (string) MQTT topic subscription to transmit the RAW timings
 #endif
 
-#ifndef IR_TX_SERIES
-#define IR_TX_SERIES                1               // (number) default number of times that the message will be sent
-                                                    // (can be overriden in the MQTT payload for the specific message)
+#ifndef IR_RX_STATE_MQTT_TOPIC
+#define IR_RX_STATE_MQTT_TOPIC      "irstate"       // (string) MQTT topic to publish messages with 'state'
+                                                    // (commonly, HVAC with payload size >=64bit, but this depends on the protocol)
+#endif
+
+#ifndef IR_TX_STATE_MQTT_TOPIC
+#define IR_TX_STATE_MQTT_TOPIC      "irstate"       // (string) MQTT topic subscription to transmit the state messages
 #endif
 
 #ifndef IR_TX_REPEATS
 #define IR_TX_REPEATS               0               // (number) additional number of times that the message will be sent per series
-                                                    // (can be overriden in the MQTT payload for the specific message)
+                                                    // (currently, only for simple payloads. *may* be overriden by the protocol or the option)
+#endif
+
+#ifndef IR_TX_SERIES
+#define IR_TX_SERIES                1               // (number) default number of times that the message will be sent
+                                                    // (can be overriden in the MQTT payload option for the specific message)
 #endif
 
 #ifndef IR_TX_DELAY
@@ -1610,9 +1637,14 @@
                                                     // (~1Kb, see ir.cpp for more info about the presets)
 #endif
 
+#ifndef IR_RX_UNKNOWN
+#define IR_RX_UNKNOWN               1               // (boolean) do not discard unknown (-1) protocols by default
+                                                    // (*notice* that disabling this will cause RAW output to stop working)
+#endif
+
 #ifndef IR_TEST_SUPPORT
 #define IR_TEST_SUPPORT             0               // (boolean) enables internal tests and sanity checks that will be called on boot
-                                                    // (~5Kb, disabled by default and should only be enabled with debug support)
+                                                    // (disabled by default and should only be enabled with debug support)
 #endif
 
 //--------------------------------------------------------------------------------
