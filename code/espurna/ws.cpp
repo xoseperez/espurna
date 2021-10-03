@@ -22,6 +22,56 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/WebSocketIncommingBuffer.h"
 
 // -----------------------------------------------------------------------------
+// Helpers / utility functions
+// -----------------------------------------------------------------------------
+
+namespace web {
+namespace ws {
+namespace internal {
+namespace {
+
+template <typename T>
+void populateSchema(JsonArray& schema, const T& pairs) {
+    for (auto& pair : pairs) {
+        schema.add(pair.key);
+    }
+}
+
+template <typename T>
+void populateEntry(JsonArray& entry, const T& pairs, size_t index) {
+    for (auto& pair : pairs) {
+        pair.callback(entry, index);
+    }
+}
+
+} // namespace
+} // namespace internal
+
+EnumerableConfig::EnumerableConfig(JsonObject& root, const __FlashStringHelper* name) :
+    _root(root.createNestedObject(name))
+{}
+
+void EnumerableConfig::operator()(const __FlashStringHelper* name, size_t count, Pairs&& pairs)
+{
+    if (!_root.containsKey(FPSTR(SchemaKey))) {
+        JsonArray& schema = _root.createNestedArray(FPSTR(SchemaKey));
+        internal::populateSchema(schema, pairs);
+
+        JsonArray& entries = _root.createNestedArray(name);
+        for (size_t index = 0; index < count; ++index) {
+            JsonArray& entry = entries.createNestedArray();
+            internal::populateEntry(entry, pairs, index);
+        }
+    }
+}
+
+const char EnumerableConfig::SchemaKey[] PROGMEM = "schema";
+static_assert(alignof(EnumerableConfig::SchemaKey) == 4, "");
+
+} // namespace ws
+} // namespace web
+
+// -----------------------------------------------------------------------------
 // Periodic updates
 // -----------------------------------------------------------------------------
 
@@ -237,7 +287,6 @@ bool _wsAuth(AsyncWebSocketClient* client) {
 // -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
-
 
 #if DEBUG_WEB_SUPPORT
 

@@ -1032,30 +1032,23 @@ void onConnected(JsonObject& root) {
     // TODO: add ledPattern strings from settings?
     // TODO: serialize()? although, bool will produce `true` / `false` and not a short number result. and it would be a dynamic string entry
 
-    JsonObject& config = root.createNestedObject("ledConfig");
-
-    {
-        JsonArray& schema = config.createNestedArray("schema");
-        schema.add("ledGpio");
-        schema.add("ledMode");
-        schema.add("ledInv");
+    ::web::ws::EnumerableConfig config{root, F("ledConfig")};
+    config(F("leds"), ::led::count(), {
+        {F("ledGpio"), [](JsonArray& led, size_t index) {
+            led.add(settings::pin(index));
+        }},
+        {F("ledInv"), [](JsonArray& led, size_t index) {
+            led.add(static_cast<int>(settings::inverse(index)));
+        }},
+        {F("ledMode"), [](JsonArray& led, size_t index) {
+            led.add(static_cast<int>(settings::mode(index)));
+        }},
 #if RELAY_SUPPORT
-        schema.add("ledRelay");
+        {F("ledRelay"), [](JsonArray& led, size_t index) {
+            led.add(settings::relay(index));
+        }}
 #endif
-    }
-
-    JsonArray& leds = config.createNestedArray("leds");
-
-    const size_t Leds { count() };
-    for (size_t index = 0; index < Leds; ++index) {
-        JsonArray& led = leds.createNestedArray();
-        led.add(settings::pin(index));
-        led.add(static_cast<int>(settings::inverse(index)));
-        led.add(static_cast<int>(settings::mode(index)));
-#if RELAY_SUPPORT
-        led.add(settings::relay(index));
-#endif
-    }
+    });
 }
 
 } // namespace web

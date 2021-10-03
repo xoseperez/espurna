@@ -20,6 +20,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "web.h"
 #include "utils.h"
 
+#include "ws_utils.h"
+
 // Generalized WS lifetime callbacks.
 // Each callback is kept as std::function, thus we can use complex objects, and not just basic function pointers.
 //
