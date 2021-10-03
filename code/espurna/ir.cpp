@@ -311,10 +311,15 @@ struct StringView {
     ~StringView() = default;
 
     constexpr StringView(const StringView&) noexcept = default;
-    constexpr StringView& operator=(const StringView&) noexcept = default;
-
     constexpr StringView(StringView&&) noexcept = default;
+
+#if __cplusplus > 201103L
+    constexpr StringView& operator=(const StringView&) noexcept = default;
     constexpr StringView& operator=(StringView&&) noexcept = default;
+#else
+    StringView& operator=(const StringView&) noexcept = default;
+    StringView& operator=(StringView&&) noexcept = default;
+#endif
 
     constexpr StringView(std::nullptr_t) noexcept :
         _begin(nullptr),
