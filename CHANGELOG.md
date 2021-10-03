@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 #### Alexa
-- Fix device discovery / state callback ([#2388](https://github.com/xoseperez/espurna/issues/2388)), thanks to **[@aL1aL7](https://github.com/aL1aL7)**
-- Display the used name in the WebUI [6b2c34ea](https://github.com/xoseperez/espurna/commit/6b2c34eaae92f196deaaea82ae2864ff2fc6e4cc)
+- Fix device discovery / state callback ([#2388](https://github.com/xoseperez/espurna/issues/2388), thanks to **[@aL1aL7](https://github.com/aL1aL7)**)
+- Display the device name in the WebUI ([6b2c34ea](https://github.com/xoseperez/espurna/commit/6b2c34eaae92f196deaaea82ae2864ff2fc6e4cc))
 #### Debug
-- Don't treat static PROGMEM and generic C-strings differently [b167d616](https://github.com/xoseperez/espurna/commit/b167d61615f65b618999d8ed727851a236867b8a), [d9662bd6](https://github.com/xoseperez/espurna/commit/d9662bd66ae9f902707f393a607a07ba713e1199)
-- Off-by-one error when formatting to allocated buffer [efcb863c](https://github.com/xoseperez/espurna/commit/efcb863ca271d3afa2e9accd990bb6adaa3f9652)
+- Don't treat static PROGMEM and generic C-strings differently ([b167d616](https://github.com/xoseperez/espurna/commit/b167d61615f65b618999d8ed727851a236867b8a), [d9662bd6](https://github.com/xoseperez/espurna/commit/d9662bd66ae9f902707f393a607a07ba713e1199))
+- Off-by-one error when formatting to allocated buffer ([efcb863c](https://github.com/xoseperez/espurna/commit/efcb863ca271d3afa2e9accd990bb6adaa3f9652))
 #### Domoticz
 - Add workaround for pressure sensors ([#2215](https://github.com/xoseperez/espurna/issues/2215))
 - Do not put floats into nvalue ([#2230](https://github.com/xoseperez/espurna/issues/2230))
@@ -29,23 +29,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### HomeAssistant
 - Fix swapped device model and manufacturer fields in the discovery ([#2322](https://github.com/xoseperez/espurna/issues/2322), thanks to **[@alextircovnicu](https://github.com/alextircovnicu)**)
 #### I2C
-- Make brzo i2c library buildable again [19f32145](https://github.com/xoseperez/espurna/commit/19f3214578ce3429e9140c6a42d1575e4b7fa498)
+- Make brzo i2c library buildable again ([19f32145](https://github.com/xoseperez/espurna/commit/19f3214578ce3429e9140c6a42d1575e4b7fa498), ref. [pasko-zh/brzo_i2c#44](https://github.com/pasko-zh/brzo_i2c/issues/44))
 #### Influxdb
 - Fix http response parsing, refactor module scope ([#2153](https://github.com/xoseperez/espurna/issues/2153))
 #### IR
 - Fixed build error in case IR TX is not used in raw mode ([#2322](https://github.com/xoseperez/espurna/issues/2322), thanks to **[@alextircovnicu](https://github.com/alextircovnicu)**)
 - Queue outgoing messages and correctly handle both simple and RAW repeat value by storing it in a message-local state instead of the global one ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - Repeat using the method provided by the library, implement delayed repeats using an additional field in both protocols ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- Implement 'state' parser and sender for complex protocols (e.g. HVAC, or longer than 64bit). User-provided payload will be handled by the internal protocol sender. But, notice that the payload needs to be fully formed; things like checksum won't be generated and the payload string will be used as-is ([8bab956f](https://github.com/xoseperez/espurna/commit/8bab956fd095da601769c7d1df98a017fe761009))
+#### Lights
+- Don't crash when GPIO16 is specified as `LIGHT_PROVIDER_DIMMER` channel pin ([b6b7c28c](https://github.com/xoseperes/espurna/commit/b6b7c28c3fc19bf8fb9b87592ff56fd03f269ccc), [#2472](https://github.com/xoseperez/espurna/issues/2472), thanks to **[@hamed-ta](https://github.com/hamed-ta)**)
 #### MQTT
 - Set MQTT will topic after /get suffix initialization ([#2106](https://github.com/xoseperez/espurna/issues/2106), [#2115](https://github.com/xoseperez/espurna/issues/2115), thanks to **[@tomas-bara](https://github.com/tomas-bara)**)
 #### Nofuss
 - Fix nofuss.cpp typo ([#2251](https://github.com/xoseperez/espurna/issues/2251), thanks to **[@CmPi](https://github.com/CmPi)**)
-- Bump to 0.4.0 (fork) to support the latest Core version [0422d61c](https://github.com/xoseperez/espurna/commit/0422d61c6969be9963e83850e10b7b217b6e9190)
+- Bump to 0.4.0 (fork) to support the latest Core version ([0422d61c](https://github.com/xoseperez/espurna/commit/0422d61c6969be9963e83850e10b7b217b6e9190))
 #### PlatformIO
 - Check the return code of the git process and fail early, when trying to generate the version string [bdd821db](https://github.com/xoseperez/espurna/commit/bdd821db8609277fef827ce533570818a7614f55)
 #### Relay
-- Fix sync reentrancy lock [94169dcb](https://github.com/xoseperez/espurna/commit/94169dcbb19b8b83118aaf6c18daf6064cbfa76f)
-- Stable configuration IDs [04569c6a](https://github.com/xoseperez/espurna/commit/04569c6a10afe2a662a22c77c7977746f72ea7e1)
+- Fix sync reentrancy lock ([94169dcb](https://github.com/xoseperez/espurna/commit/94169dcbb19b8b83118aaf6c18daf6064cbfa76f))
+- Stable configuration IDs ([04569c6a](https://github.com/xoseperez/espurna/commit/04569c6a10afe2a662a22c77c7977746f72ea7e1))
 #### RPN rules
 - rpn $relayX variables were not populated on boot ([#2246](https://github.com/xoseperez/espurna/issues/2246), thanks to **[@pezinek](https://github.com/pezinek)**)
 - add missing lights #include for rpn rules ([#2367](https://github.com/xoseperez/espurna/issues/2367), thanks to **[@ngilles](https://github.com/ngilles)**)
@@ -56,31 +59,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixes and updates for thermostat and display ([#2173](https://github.com/xoseperez/espurna/issues/2173), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
 - Properly dispatch emon sensor ratio defaults ([#2241](https://github.com/xoseperez/espurna/issues/2241))
 - Set pH decimals to 3 ([#2306](https://github.com/xoseperez/espurna/issues/2306), thanks to **[@ruimarinho](https://github.com/ruimarinho)**)
-- Fix setting up GPIO0 as INPUT when preparing to use analogRead(A0) [ff11e581](https://github.com/xoseperez/espurna/commit/ff11e5814ff1fc938afa439c15f57fa9909b9e4a)
-- Only change EventSensor counter from the ISR [735e5c0e](https://github.com/xoseperez/espurna/commit/735e5c0ec22fabfdcfa55123b9bceaa3d8f917b8)
-- Fix a typo when getting local index for Nth magnitude [6ba5f95e](https://github.com/xoseperez/espurna/commit/6ba5f95e875468f2b7a93c69b45fc6f6c62f390f)
+- Fix setting up GPIO0 as INPUT when preparing to use analogRead(A0) ([ff11e581](https://github.com/xoseperez/espurna/commit/ff11e5814ff1fc938afa439c15f57fa9909b9e4a))
+- Only change EventSensor counter from the ISR ([735e5c0e](https://github.com/xoseperez/espurna/commit/735e5c0ec22fabfdcfa55123b9bceaa3d8f917b8))
+- Fix a typo when getting local index for Nth magnitude ([6ba5f95e](https://github.com/xoseperez/espurna/commit/6ba5f95e875468f2b7a93c69b45fc6f6c62f390f))
 #### Settings
-- Fix saving base2 integers [71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079)
+- Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System
-- Rework stability counter [474f0e93](https://github.com/xoseperez/espurna/commit/474f0e93693387f2c85fa28d5df7e0c80716c85a)
-- Refactor build configurations [f9211634](https://github.com/xoseperez/espurna/commit/f92116341e141be50f946682404e2d0514fd11f3)
-- Clean-up helper classes & functions [ec220b7d](https://github.com/xoseperez/espurna/commit/ec220b7dd1f3b26e81138cec55beec8e37ab35f9)
+- Rework stability counter ([474f0e93](https://github.com/xoseperez/espurna/commit/474f0e93693387f2c85fa28d5df7e0c80716c85a))
+- Refactor build configurations ([f9211634](https://github.com/xoseperez/espurna/commit/f92116341e141be50f946682404e2d0514fd11f3))
+- Clean-up helper classes & functions ([ec220b7d](https://github.com/xoseperez/espurna/commit/ec220b7dd1f3b26e81138cec55beec8e37ab35f9))
 #### TUYA
-- Send lights channel value directly [012c3818](https://github.com/xoseperez/espurna/commit/012c3818a59cd46cc89e2affc5ddcdea427a17c1)
-- Always run the discovery [2a08ccb2](https://github.com/xoseperez/espurna/commit/2a08ccb2113f8be4495a58aa7b95331591ebcd0b)
+- Send lights channel value directly ([012c3818](https://github.com/xoseperez/espurna/commit/012c3818a59cd46cc89e2affc5ddcdea427a17c1))
+- Always run the discovery ([2a08ccb2](https://github.com/xoseperez/espurna/commit/2a08ccb2113f8be4495a58aa7b95331591ebcd0b))
 #### WebUI
 - Fix scheduler panel tabindex= values ([#2096](https://github.com/xoseperez/espurna/issues/2096), thanks to **[@foxman69](https://github.com/foxman69)**)
 - Directly iterate over internal callbacks array ([#2248](https://github.com/xoseperez/espurna/issues/2248), [#2261](https://github.com/xoseperez/espurna/issues/2261))
-- Get rid of tabindex= property [14c69a4a](https://github.com/xoseperez/espurna/commit/14c69a4a52cc842c0bf294786ea34904acf0aeec)
-- External url clean-up [d60fb47c](https://github.com/xoseperez/espurna/commit/d60fb47ca9be2f591b82f72678b36b02c1c79beb)
-- Remove hard-coded group keys list [1627e311](https://github.com/xoseperez/espurna/commit/1627e3119fe9084398b8e8c0ec794b8ed3a4f6b6)
-- Send alert messages directly [458fb7d9](https://github.com/xoseperez/espurna/commit/458fb7d936ec9d266cfce275f999dd629fb82e2f)
-- Set websocket buffer to `nullptr` before returning control to the webserver, which will try to `free()` it [256e790e](https://github.com/xoseperez/espurna/commit/256e790e4d7374e12430dad57e25ece7b880be25)
+- Get rid of tabindex= property ([14c69a4a](https://github.com/xoseperez/espurna/commit/14c69a4a52cc842c0bf294786ea34904acf0aeec))
+- External url clean-up ([d60fb47c](https://github.com/xoseperez/espurna/commit/d60fb47ca9be2f591b82f72678b36b02c1c79beb))
+- Remove hard-coded group keys list ([1627e311](https://github.com/xoseperez/espurna/commit/1627e3119fe9084398b8e8c0ec794b8ed3a4f6b6))
+- Send alert messages directly ([458fb7d9](https://github.com/xoseperez/espurna/commit/458fb7d936ec9d266cfce275f999dd629fb82e2f))
+- Set websocket buffer to `nullptr` before returning control to the webserver, which will try to `free()` it ([256e790e](https://github.com/xoseperez/espurna/commit/256e790e4d7374e12430dad57e25ece7b880be25))
 
 ### Added
 #### Buttons
 - Runtime configuration. (`btnGpio#`, `btnProv#`, etc.)
-- Custom action type [ef194c9c](https://github.com/xoseperez/espurna/commit/ef194c9c2430ed14ddf5905214e2968c0f5f9980), [8ceeebdb](https://github.com/xoseperez/espurna/commit/8ceeebdb24aa9bd863fa28676a0364497ec193ae)
+- Custom action type ([ef194c9c](https://github.com/xoseperez/espurna/commit/ef194c9c2430ed14ddf5905214e2968c0f5f9980), [8ceeebdb](https://github.com/xoseperez/espurna/commit/8ceeebdb24aa9bd863fa28676a0364497ec193ae))
 #### Garland
 - New module for digital LED strips ([#2408](https://github.com/xoseperez/espurna/issues/2408), [c4d817c4](https://github.com/xoseperez/espurna/commit/c4d817c4fba05d70808b234eef3ac5d1ec2bf8c0), [46daa929](https://github.com/xoseperez/espurna/commit/46daa929f5e284877e105208c4e78f7844ae1b64), [d11f82d0](https://github.com/xoseperez/espurna/commit/d11f82d098a69a4a127a8db3218c5643f9831371), [4923377e](https://github.com/xoseperez/espurna/commit/4923377eacc5158896e8fd9ddbc993d1bb2653be), [6508f6bd](https://github.com/xoseperez/espurna/commit/6508f6bda8da2acef555fd2b909b7e2983b97e83), [24550a5b](https://github.com/xoseperez/espurna/commit/24550a5b80e1a626a7d8090746c0cfda2bfb4b23), [4efc417a](https://github.com/xoseperez/espurna/commit/4efc417a39220638079bdf060b0fc204d777f942), [f640cd8e](https://github.com/xoseperez/espurna/commit/f640cd8ecb3d170e9082d60461b89e29454bbbd4), [518d56b4](https://github.com/xoseperez/espurna/commit/518d56b442dda92c267fdb71e6b51b8a27638c0f), [0f73df7c](https://github.com/xoseperez/espurna/commit/0f73df7c36f940040c6a6416c15d39c7eee213be), [3fe68748](https://github.com/xoseperez/espurna/commit/3fe68748637099f08008fa5afc3650e09551285f), [dad8878c](https://github.com/xoseperez/espurna/commit/dad8878ccfcef68f616fed7296b0f07983d855c3), [660ae138](https://github.com/xoseperez/espurna/commit/660ae138d4a40bd3c48058f46d086d396fb217e0), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
 #### Debug
@@ -111,15 +114,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add support for LSC E27 10W white bulb ([#2375](https://github.com/xoseperez/espurna/issues/2375), thanks to **[@tom-kaltofen](https://github.com/tom-kaltofen)**)
 - Add support for Benexmart GU5.3 RGBWW light ([#2381](https://github.com/xoseperez/espurna/issues/2381), thanks to **[@ngilles](https://github.com/ngilles)**)
 - Add support for Gosund P1 Power Strip ([#2391](https://github.com/xoseperez/espurna/issues/2391), thanks to **[@alextircovnicu](https://github.com/alextircovnicu)**)
-- Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439]) [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
-- Refactor iFan into a separate module [a40eca30](https://github.com/xoseperez/espurna/commit/a40eca30ad79315afdb67afa0b0743d4c0087e93)
+- Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439], [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
+- Refactor iFan into a separate module ([a40eca30](https://github.com/xoseperez/espurna/commit/a40eca30ad79315afdb67afa0b0743d4c0087e93))
 #### HomeAssistant
-- Advertise lights transition support in the discovery message [4d157ccd5](https://github.com/xoseperez/espurna/commit/4d157ccd5bd5ffefa8b0bca79c4b2196c8a3e5dc)
-- Reworked discovery, implement retries and queueing using the MQTT broker ACKs [59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f)
+- Advertise lights transition support in the discovery message ([4d157ccd5](https://github.com/xoseperez/espurna/commit/4d157ccd5bd5ffefa8b0bca79c4b2196c8a3e5dc))
+- Reworked discovery, implement retries and queueing using the MQTT broker ACKs ([59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f))
 #### HTTP API
 - Handle received data as terminal command [#2247](https://github.com/xoseperez/espurna/issues/2247))
 - [Prometheus](https://prometheus.io/) metrics support ([#2332](https://github.com/xoseperez/espurna/issues/2332))
-- Scheduler API ([#2431](https://github.com/xoseperez/espurna/issues/2431)), thanks to **[@profawk](https://github.com/profawk)**
+- Scheduler API ([#2431](https://github.com/xoseperez/espurna/issues/2431), thanks to **[@profawk](https://github.com/profawk)**)
 #### IR
 - Reworked module to support both simple and raw protocol at the same time ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - Support terminal commands execution when receiving IR code or changing relay state ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
@@ -127,20 +130,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### MQTT
 - Handle received data as terminal command ([#2247](https://github.com/xoseperez/espurna/issues/2247))
 #### TUYA
-- Updated build defaults based on [#2414](https://github.com/xoseperez/espurna/issues/2414) discussion [92d5e7be](https://github.com/xoseperez/espurna/commit/92d5e7becba23552c836bda8404305a8dc8eb07d)
+- Updated build defaults based on [#2414](https://github.com/xoseperez/espurna/issues/2414) discussion ([92d5e7be](https://github.com/xoseperez/espurna/commit/92d5e7becba23552c836bda8404305a8dc8eb07d))
 #### PlatformIO
 - Use development version of PlatformIO Core in CI ([#2146](https://github.com/xoseperez/espurna/issues/2146), thanks to **[@ivankravets](https://github.com/ivankravets)**)
 - Add '.example' files. ([#2257](https://github.com/xoseperez/espurna/issues/2257), thanks to **[@davebuk](https://github.com/davebuk)**)
-- Create .map file for the resulting .elf to debug possible compilation issues [21794b78](https://github.com/xoseperez/espurna/commit/21794b789296683b7ae00a209a42f35ab1023fa1), [1ed00f57](https://github.com/xoseperez/espurna/commit/1ed00f57683197608418a482f0b3b262991856f4)
+- Create .map file for the resulting .elf to debug possible compilation issues ([21794b78](https://github.com/xoseperez/espurna/commit/21794b789296683b7ae00a209a42f35ab1023fa1), [1ed00f57](https://github.com/xoseperez/espurna/commit/1ed00f57683197608418a482f0b3b262991856f4))
 #### Relay
 - Runtime configuration. (`relayGpio#`, `relayProv#`, etc.)
 - Support multiple provider types (GPIO, virtual, IO expanders, etc.)
 - Separate MQTT group subscription and publish topics.
-- Support MQTT wildcards (`#` and `+`) in group subscription topic [dcc423ec](https://github.com/xoseperez/espurna/commit/dcc423ecaf556082ea7d358b886167f6ad179a21)
+- Support MQTT wildcards (`#` and `+`) in group subscription topic ([dcc423ec](https://github.com/xoseperez/espurna/commit/dcc423ecaf556082ea7d358b886167f6ad179a21))
 #### RFBridge
-- Keep serial disabled in the sonoff rfbridge hardware.h entry [10519cc2](https://github.com/xoseperez/espurna/commit/10519cc276383b622222a457a19e55d7972d332f)
-- Allow to use `<code>,<times>` in rfbON\# / rfbOFF\# settings keys, just like with the API payload [19947c12](https://github.com/xoseperez/espurna/commit/19947c1231c067301427303c77316565b9163bb4)
-- Terminal commands to send the code [52a244db](https://github.com/xoseperez/espurna/commit/52a244db6e9fe4ad373b580ed4e504c0d84d6afd)
+- Keep serial disabled in the sonoff rfbridge hardware.h entry ([10519cc2](https://github.com/xoseperez/espurna/commit/10519cc276383b622222a457a19e55d7972d332f))
+- Allow to use `<code>,<times>` in rfbON\# / rfbOFF\# settings keys, just like with the API payload ([19947c12](https://github.com/xoseperez/espurna/commit/19947c1231c067301427303c77316565b9163bb4))
+- Terminal commands to send the code ([52a244db](https://github.com/xoseperez/espurna/commit/52a244db6e9fe4ad373b580ed4e504c0d84d6afd))
 - Support all available relay providers, not just the DUMMY variant. Allow to control real GPIO relays with received RF codes.
 #### RPN Rules
 - `oneshot_ms`, `every_ms` timer support.
@@ -172,23 +175,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Optional Web(UI) OTA support ([#2190](https://github.com/xoseperez/espurna/issues/2190))
 - Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
 - Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
-- Support Web(UI) OTA upgrades when the default web server is disabled [3ff460db](https://github.com/xoseperez/espurna/commit/3ff460db4af8e0b3df07ed04bb736941d47ca1ae)
+- Support Web(UI) OTA upgrades when the default web server is disabled ([3ff460db](https://github.com/xoseperez/espurna/commit/3ff460db4af8e0b3df07ed04bb736941d47ca1ae))
 #### WiFi
-- Try to connect to a better AP, when the current RSSI is below -73dBm (only when WiFi scanning is enabled). [f0f7dcc8](https://github.com/xoseperez/espurna/commit/f0f7dcc874d6f6f4b095b6cb89e69cdb65219150), [dde5f374](https://github.com/xoseperez/espurna/commit/dde5f374dd038afe1fb966d31e16bdac1be581fb), [5a973298 (initial commit)](https://github.com/xoseperez/espurna/commit/5a97329832816219a919c4669e22ad6af0c8d228)
-- Allow to set bssid and channel, when scanning is disabled [c5f70286](https://github.com/xoseperez/espurna/commit/c5f70286d1e63972446c2148914352d9f6acf345)
+- Try to connect to a better AP, when the current RSSI is below -73dBm (only when WiFi scanning is enabled) ([f0f7dcc8](https://github.com/xoseperez/espurna/commit/f0f7dcc874d6f6f4b095b6cb89e69cdb65219150), [dde5f374](https://github.com/xoseperez/espurna/commit/dde5f374dd038afe1fb966d31e16bdac1be581fb), [5a973298 (initial commit)](https://github.com/xoseperez/espurna/commit/5a97329832816219a919c4669e22ad6af0c8d228))
+- Allow to set bssid and channel, when scanning is disabled ([c5f70286](https://github.com/xoseperez/espurna/commit/c5f70286d1e63972446c2148914352d9f6acf345))
 
 ### Changed
 #### Build
 - Convert .ino -> .cpp ([#1306](https://github.com/xoseperez/espurna/issues/1306), [#2228](https://github.com/xoseperez/espurna/issues/2228), [#2234](https://github.com/xoseperez/espurna/issues/2234), [#2236](https://github.com/xoseperez/espurna/issues/2236))
-- Rework build.sh & new release script generator [75b51f1e](https://github.com/xoseperez/espurna/commit/75b51f1e80260e2325709e7426fc5b2ebd88ada9), [74e18a59](https://github.com/xoseperez/espurna/commit/74e18a59bcbe7a2ea72fccb6d4e5e484bf348bb9)
+- Rework build.sh & new release script generator ([75b51f1e](https://github.com/xoseperez/espurna/commit/75b51f1e80260e2325709e7426fc5b2ebd88ada9), [74e18a59](https://github.com/xoseperez/espurna/commit/74e18a59bcbe7a2ea72fccb6d4e5e484bf348bb9))
 - Use python 3.x in CI and move to Github Actions.
-- Use eslint and html-validate in CI [433f399d](https://github.com/xoseperez/espurna/commit/433f399d9ce769e57ce660d93161649f6287e054)
-- Simplify version + revision into just version [f0f6f1b8](https://github.com/xoseperez/espurna/commit/f0f6f1b8c907fbf188704e3055210d8202a12f21)
-- Remove Core 2.3.0 support from .ld scripts [a1e7941f](https://github.com/xoseperez/espurna/commit/a1e7941fa60339fed84f259033523e1e17e3f17d)
+- Use eslint and html-validate in CI ([433f399d](https://github.com/xoseperez/espurna/commit/433f399d9ce769e57ce660d93161649f6287e054))
+- Simplify version + revision into just version ([f0f6f1b8](https://github.com/xoseperez/espurna/commit/f0f6f1b8c907fbf188704e3055210d8202a12f21))
+- Remove Core 2.3.0 support from .ld scripts ([a1e7941f](https://github.com/xoseperez/espurna/commit/a1e7941fa60339fed84f259033523e1e17e3f17d))
 #### Domoticz
-- Separate lights IDX from relays, migrate existing configuration from `dczRelayIdx0` to `dczLightIdx` [94f31241](https://github.com/xoseperez/espurna/commit/94f31241dc42508791d6a582cd163bec33a40a56)
+- Separate lights IDX from relays, migrate existing configuration from `dczRelayIdx0` to `dczLightIdx` ([94f31241](https://github.com/xoseperez/espurna/commit/94f31241dc42508791d6a582cd163bec33a40a56))
 #### Hardware
-- lightfox relay provider & buttonAdd [bd3a5889](https://github.com/xoseperez/espurna/commit/bd3a588977fb8b195f2bba40618839b617767485)
+- lightfox relay provider & buttonAdd ([bd3a5889](https://github.com/xoseperez/espurna/commit/bd3a588977fb8b195f2bba40618839b617767485))
 #### HTTP API
 - Rework plain and JSON implementations ([#2405](https://github.com/xoseperez/espurna/issues/2405))
 #### IR
@@ -199,50 +202,50 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Pin arduino-mqtt version ([#2154](https://github.com/xoseperez/espurna/issues/2154))
 - Update IRremoteESP8266 to 2.7.20 ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - Use [fork of fauxmoesp](https://github.com/vintlabs/fauxmoESP), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**
-- Use [fork of rc-switch](https://github.com/1technophile/rc-switch) [7a24806a](https://github.com/xoseperez/espurna/commit/7a24806adb2c3e2357171e004b5b760daf3bdca4)
+- Use [fork of rc-switch](https://github.com/1technophile/rc-switch) ([7a24806a](https://github.com/xoseperez/espurna/commit/7a24806adb2c3e2357171e004b5b760daf3bdca4))
 #### Lights
-- Controlling global state no longer requires `RELAY_SUPPORT` or specifying a virtual relay in the configuration. Updated modules and APIs to use light controls directly. [2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2)
-- Do not call the provider or run any transitions when channel values remain unchanged [2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2)
-- Color mode white factor calculations no longer ignore the fractional part of the number [32aae703](https://github.com/xoseperez/espurna/commit/32aae70374833bf47a47fd56e89f8416dc28700f)
+- Controlling global state no longer requires `RELAY_SUPPORT` or specifying a virtual relay in the configuration. Updated modules and APIs to use light controls directly ([2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2))
+- Do not call the provider or run any transitions when channel values remain unchanged ([2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2))
+- Color mode white factor calculations no longer ignore the fractional part of the number ([32aae703](https://github.com/xoseperez/espurna/commit/32aae70374833bf47a47fd56e89f8416dc28700f))
 #### MQTT
 - Set keepalive to be less than heartbeat interval ([#2154](https://github.com/xoseperez/espurna/issues/2154))
 - Always buffer incoming data ([#2181](https://github.com/xoseperez/espurna/issues/2181))
-- Set default heartbeat mode to repeat [f4726d99](https://github.com/xoseperez/espurna/commit/f4726d996636aeaff2e1b62383e2bc5dc00e4a59)
-- MDNS auto-connect only works when MQTT is enabled [06fa5b1c](https://github.com/xoseperez/espurna/commit/06fa5b1c6d3705df48130ad4fe4d946227d4b08e)
+- Set default heartbeat mode to repeat ([f4726d99](https://github.com/xoseperez/espurna/commit/f4726d996636aeaff2e1b62383e2bc5dc00e4a59))
+- MDNS auto-connect only works when MQTT is enabled ([06fa5b1c](https://github.com/xoseperez/espurna/commit/06fa5b1c6d3705df48130ad4fe4d946227d4b08e))
 #### NTP
 - Use sntp app from lwip on latest Cores, replace NtpClient ([#2132](https://github.com/xoseperez/espurna/issues/2132))
-- Simplify NTP tick callback, dont use broker [13cbc031](https://github.com/xoseperez/espurna/commit/13cbc0310a054309db595451a787bc10f0ab5ca2)
-- Remove legacy module based on [NtpClient](https://github.com/gmag11/NtpClient) [2de44ed5](https://github.com/xoseperez/espurna/commit/2de44ed5d94cc88378b261cebd53c9aa8c4a992e)
+- Simplify NTP tick callback, dont use broker ([13cbc031](https://github.com/xoseperez/espurna/commit/13cbc0310a054309db595451a787bc10f0ab5ca2))
+- Remove legacy module based on [NtpClient](https://github.com/gmag11/NtpClient) ([2de44ed5](https://github.com/xoseperez/espurna/commit/2de44ed5d94cc88378b261cebd53c9aa8c4a992e))
 - Updates to support 64bit time\_t.
 #### PlatformIO
-- Update latest Arduino Core platform to 3.0.2 [1ca8d5e7](https://github.com/xoseperez/espurna/commit/1ca8d5e7a0130c2c23e958208b176bb8e8312d7c)
-- Use SoftwareSerial library from the Core [23da0b74](https://github.com/xoseperez/espurna/commit/23da0b74d403cebc27b6ae0ca520da3218bf7a47)
+- Update latest Arduino Core platform to 3.0.2 ([1ca8d5e7](https://github.com/xoseperez/espurna/commit/1ca8d5e7a0130c2c23e958208b176bb8e8312d7c))
+- Use SoftwareSerial library from the Core ([23da0b74](https://github.com/xoseperez/espurna/commit/23da0b74d403cebc27b6ae0ca520da3218bf7a47))
 - Remove -ota envs, handle OTA condition in extra script ([#2099](https://github.com/xoseperez/espurna/issues/2099))
 - platformio.ini refactoring ([#2212](https://github.com/xoseperez/espurna/issues/2212))
 - Rename generic environments ([#2214](https://github.com/xoseperez/espurna/issues/2214))
     - esp8266-\<flavour\>-\<size\>-base to esp8266-\<size\>-\<flavour\>-base
     - espurna-base to espurna-core-webui
-- Consistent shared libs location with CI and local install, prefer $repo/code/libraries [f18f128e](https://github.com/xoseperez/espurna/commit/f18f128e4bb718f448ca460cdb0e39545187d7fe)
-- Pin libraries versions as \<owner\>/\<name\> to fix possible issues with Trusted Package Registry [a9220ec2b](https://github.com/xoseperez/espurna/commit/a9220ec2b27224b2da79880945f6f58450ba53e8)
-- Add `pio run -e $env -t build-and-copy`, more configuration options for the version string [4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b)
+- Consistent shared libs location with CI and local install, prefer $repo/code/libraries ([f18f128e](https://github.com/xoseperez/espurna/commit/f18f128e4bb718f448ca460cdb0e39545187d7fe))
+- Pin libraries versions as \<owner\>/\<name\> to fix possible issues with Trusted Package Registry ([a9220ec2b](https://github.com/xoseperez/espurna/commit/a9220ec2b27224b2da79880945f6f58450ba53e8))
+- Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
 #### RPN Rules
-- Set MQTT variables just before running the rules [32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509)
+- Set MQTT variables just before running the rules ([32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509))
 #### Sensors
 - Emon refactoring ([#2213](https://github.com/xoseperez/espurna/issues/2213))
-- Further EmonSensor fixes and refactoring [b19905a3](https://github.com/xoseperez/espurna/commit/b19905a3065672412351c38d859fc3f6cd7ad5cd)
-- Rename generic pwr keys with a typed prefix [1a36efb8](https://github.com/xoseperez/espurna/commit/1a36efb8f2032ac81c5aaa51623a71234b1c4287)
-- Tweak analogRead() frequency in Emon sensor [c136678a](https://github.com/xoseperez/espurna/commit/c136678a4f02b7cae2e59fe843c3910a660f49d1)
+- Further EmonSensor fixes and refactoring ([b19905a3](https://github.com/xoseperez/espurna/commit/b19905a3065672412351c38d859fc3f6cd7ad5cd))
+- Rename generic pwr keys with a typed prefix ([1a36efb8](https://github.com/xoseperez/espurna/commit/1a36efb8f2032ac81c5aaa51623a71234b1c4287))
+- Tweak analogRead() frequency in Emon sensor ([c136678a](https://github.com/xoseperez/espurna/commit/c136678a4f02b7cae2e59fe843c3910a660f49d1))
 #### Settings
 - Refactor get/set/del/hasSetting ([#2048](https://github.com/xoseperez/espurna/issues/2048))
 - Update migrate configuration & conditions, allow each module to access the current & previous version ([#2176](https://github.com/xoseperez/espurna/issues/2176))
 #### System
-- Use direct status update functions instead of broker [78b4007f](https://github.com/xoseperez/espurna/commit/78b4007f01e8df9334d16e9550a03443527176f2)
+- Use direct status update functions instead of broker ([78b4007f](https://github.com/xoseperez/espurna/commit/78b4007f01e8df9334d16e9550a03443527176f2))
 #### Terminal
-- Rework boot info and terminal commands [7ea73554](https://github.com/xoseperez/espurna/commit/7ea735548bcd41742fac32e8733b2084c4c334cd)
+- Rework boot info and terminal commands ([7ea73554](https://github.com/xoseperez/espurna/commit/7ea735548bcd41742fac32e8733b2084c4c334cd))
 #### WebUI
-- Remove jquery dependencies and clean-up websocket API [fa3deeff](https://github.com/xoseperez/espurna/commit/fa3deeffbfa622ecd1869af2563940fb3143e94e), [84a7f633](https://github.com/xoseperez/espurna/commit/84a7f6337f72b011512b3e95efe36f2d661e5065), [8e5ab5c9](https://github.com/xoseperez/espurna/commit/8e5ab5c902a23dfd774dd9e768963856d4f26bd3)
-- Use [iro.js](https://github.com/jaames/iro.js) as color picker [808981ca](https://github.com/xoseperez/espurna/commit/808981ca3938d11d4ddd87005e2881433cc7707b)
-- Use [terser](https://github.com/terser/terser) as js minifier, webui is no longer limited to ES5 feature set [cfd6e36d](https://github.com/xoseperez/espurna/commit/cfd6e36dbe94ee0e8098351357f903c060fd5dc9)
+- Remove jquery dependencies and clean-up websocket API ([fa3deeff](https://github.com/xoseperez/espurna/commit/fa3deeffbfa622ecd1869af2563940fb3143e94e), [84a7f633](https://github.com/xoseperez/espurna/commit/84a7f6337f72b011512b3e95efe36f2d661e5065), [8e5ab5c9](https://github.com/xoseperez/espurna/commit/8e5ab5c902a23dfd774dd9e768963856d4f26bd3))
+- Use [iro.js](https://github.com/jaames/iro.js) as color picker ([808981ca](https://github.com/xoseperez/espurna/commit/808981ca3938d11d4ddd87005e2881433cc7707b))
+- Use [terser](https://github.com/terser/terser) as js minifier, webui is no longer limited to ES5 feature set ([cfd6e36d](https://github.com/xoseperez/espurna/commit/cfd6e36dbe94ee0e8098351357f903c060fd5dc9))
 
 ## [1.14.1] 2019-12-31
 
