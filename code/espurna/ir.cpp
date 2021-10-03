@@ -65,7 +65,7 @@ namespace tx {
 #if not IR_TX_SUPPORT
 
 struct NoopSender {
-    NoopSender(uint16_t) {
+    NoopSender(uint16_t, bool, bool) {
     }
 
     void begin() {
@@ -83,7 +83,7 @@ struct NoopSender {
     }
 };
 
-#define IRsend NoopSender
+#define IRsend ::ir::tx::NoopSender
 #endif
 
 struct PayloadSenderBase {
@@ -208,7 +208,7 @@ struct NoopReceiver {
     }
 };
 
-#define IRrecv NoopReceiver
+#define IRrecv ::ir::rx::NoopReceiver
 #endif
 
 namespace build {
