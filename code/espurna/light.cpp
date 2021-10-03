@@ -2906,19 +2906,23 @@ void lightTransition(LightTransition transition) {
 namespace {
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-const unsigned long _light_iomux[16] PROGMEM = {
+const unsigned long _light_iomux[] PROGMEM = {
     PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_U0RXD_U,
     PERIPHS_IO_MUX_GPIO4_U, PERIPHS_IO_MUX_GPIO5_U, PERIPHS_IO_MUX_SD_CLK_U, PERIPHS_IO_MUX_SD_DATA0_U,
     PERIPHS_IO_MUX_SD_DATA1_U, PERIPHS_IO_MUX_SD_DATA2_U, PERIPHS_IO_MUX_SD_DATA3_U, PERIPHS_IO_MUX_SD_CMD_U,
     PERIPHS_IO_MUX_MTDI_U, PERIPHS_IO_MUX_MTCK_U, PERIPHS_IO_MUX_MTMS_U, PERIPHS_IO_MUX_MTDO_U
 };
 
-const unsigned long _light_iofunc[16] PROGMEM = {
+const unsigned long _light_iofunc[] PROGMEM = {
     FUNC_GPIO0, FUNC_GPIO1, FUNC_GPIO2, FUNC_GPIO3,
     FUNC_GPIO4, FUNC_GPIO5, FUNC_GPIO6, FUNC_GPIO7,
     FUNC_GPIO8, FUNC_GPIO9, FUNC_GPIO10, FUNC_GPIO11,
     FUNC_GPIO12, FUNC_GPIO13, FUNC_GPIO14, FUNC_GPIO15
 };
+
+bool _lightIoMuxPin(unsigned char pin) {
+    return (pin < std::size(_light_iofunc)) && (pin < std::size(_light_iomux));
+}
 
 #endif
 
@@ -3162,14 +3166,14 @@ void lightSetup() {
 
             // Load up until first GPIO_NONE. Allow settings to override, but not remove values
             const auto pin = Light::settings::channelPin(index);
-            if (!gpioValid(pin)) {
+            if (!gpioValid(pin) || !_lightIoMuxPin(pin)) {
                 break;
             }
 
             _light_channels.emplace_back(pin);
 
-            io_info[index][0] = pgm_read_dword(&_light_iomux[pin]);
-            io_info[index][1] = pgm_read_dword(&_light_iofunc[pin]);
+            io_info[index][0] = _light_iomux[pin];
+            io_info[index][1] = _light_iofunc[pin];
             io_info[index][2] = pin;
             pinMode(pin, OUTPUT);
 

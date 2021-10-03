@@ -121,6 +121,11 @@ constexpr const T& clamp(const T& value, const T& low, const T& high) {
     return (value < low) ? low : (high < value) ? high : value;
 }
 
+template <typename T, size_t Size>
+constexpr size_t size(const T (&)[Size]) {
+    return Size;
+}
+
 } // namespace std
 
 #endif
