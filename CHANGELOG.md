@@ -128,7 +128,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support terminal commands execution when receiving IR code or changing relay state ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - More runtime configuration options ([308da556](https://github.com/xoseperez/espurna/commit/308da5563a3d701f0fc84662b93c3b5aa2c71995))
 #### MQTT
-- Handle received data as terminal command ([#2247](https://github.com/xoseperez/espurna/issues/2247))
+- Handle received payload as terminal input (by default, `<root topic>/cmd`) ([#2247](https://github.com/xoseperez/espurna/issues/2247))
+- Publish data with `MQTT.SEND <TOPIC> <PAYLOAD>` terminal command ([#2478](https://github.com/xoseperez/espurna/issues/2478), thanks to **[@pbek](https://github.com/pbek)**)
 #### TUYA
 - Updated build defaults based on [#2414](https://github.com/xoseperez/espurna/issues/2414) discussion ([92d5e7be](https://github.com/xoseperez/espurna/commit/92d5e7becba23552c836bda8404305a8dc8eb07d))
 #### PlatformIO
