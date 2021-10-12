@@ -119,7 +119,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [Prometheus](https://prometheus.io/) metrics support ([#2332](https://github.com/xoseperez/espurna/issues/2332))
 - Scheduler API ([#2431](https://github.com/xoseperez/espurna/issues/2431)), thanks to **[@profawk](https://github.com/profawk)**
 #### MQTT
-- Handle received data as terminal command ([#2247](https://github.com/xoseperez/espurna/issues/2247))
+- Handle received payload as terminal input (by default, `<root topic>/cmd`) ([#2247](https://github.com/xoseperez/espurna/issues/2247))
+- Publish data with `MQTT.SEND <TOPIC> <PAYLOAD>` terminal command ([#2478](https://github.com/xoseperez/espurna/issues/2477), thanks to **[@pbek](https://github.com/pbek)**)
 #### TUYA
 - Updated build defaults based on [#2414](https://github.com/xoseperez/espurna/issues/2414) discussion [92d5e7be](https://github.com/xoseperez/espurna/commit/92d5e7becba23552c836bda8404305a8dc8eb07d)
 #### PlatformIO

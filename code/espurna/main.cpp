@@ -279,9 +279,6 @@ void setup() {
     #if GARLAND_SUPPORT
         garlandSetup();
     #endif
-    #if SERIAL_SENSOR_SUPPORT
-        serialSensorSetup();
-    #endif
 
     #if USE_EXTRA
         extraSetup();

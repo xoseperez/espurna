@@ -789,18 +789,29 @@ namespace {
 #if TERMINAL_SUPPORT
 
 void _mqttInitCommands() {
-
-    terminalRegisterCommand(F("MQTT.RESET"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("MQTT.RESET"), [](const terminal::CommandContext& ctx) {
         _mqttConfigure();
         mqttDisconnect();
-        terminalOK();
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("MQTT.INFO"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("MQTT.INFO"), [](const terminal::CommandContext& ctx) {
         _mqttInfo();
-        terminalOK();
+        terminalOK(ctx);
     });
 
+    terminalRegisterCommand(F("MQTT.SEND"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc == 3) {
+            if (mqttSend(ctx.argv[1].c_str(), ctx.argv[2].c_str(), false, false)) {
+                terminalOK(ctx);
+            } else {
+                terminalError(ctx, F("Cannot queue the message"));
+            }
+            return;
+        }
+
+        terminalError(ctx, F("MQTT.SEND <topic> <payload>"));
+    });
 }
 
 #endif // TERMINAL_SUPPORT

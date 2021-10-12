@@ -62,4 +62,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ws.h"
 #include "mcp23s08.h"
 #include "prometheus.h"
-#include "serialsensor.h"
