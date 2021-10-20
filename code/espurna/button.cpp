@@ -880,14 +880,14 @@ void buttonEvent(size_t id, ButtonEvent event) {
 
     switch (action) {
 
-#if RELAY_SUPPORT
     case ButtonAction::Toggle:
     case ButtonAction::On:
     case ButtonAction::Off:
     case ButtonAction::Pulse:
+#if RELAY_SUPPORT
         _buttonRelayAction(id, action);
-        break;
 #endif
+        break;
 
     case ButtonAction::AccessPoint:
         wifiToggleAp();

@@ -118,6 +118,7 @@ struct TerminalIO final : public Stream {
         _read = _write;
     }
 
+    // TODO: allow DEBUG_SUPPORT=0 :/
     size_t write(const uint8_t* bytes, size_t size) override {
 #if DEBUG_SUPPORT
         debugSendBytes(bytes, size);
@@ -562,6 +563,7 @@ void _terminalInitCommands() {
 
 void _terminalLoop() {
 
+    // TODO: custom Stream input, don't depend on debug logging output as input
 #if DEBUG_SERIAL_SUPPORT
     while (DEBUG_PORT.available()) {
         _io.inject(DEBUG_PORT.read());

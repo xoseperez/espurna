@@ -578,11 +578,9 @@ bool inverse(size_t id) {
     return getSetting({"ledInv", id}, build::inverse(id));
 }
 
-#if RELAY_SUPPORT
 size_t relay(size_t id) {
     return getSetting({"ledRelay", id}, build::relay(id));
 }
-#endif
 
 Pattern pattern(size_t id) {
     return Pattern(getSetting({"ledPattern", id}));
@@ -668,8 +666,8 @@ using KeyDefaults = std::array<KeyDefault, 4>;
 KeyDefaults keyDefaults() {
     return {
         KeyDefault{"ledGpio", KEY_DEFAULT_FUNC(pin)},
-        KeyDefault{"ledMode", KEY_DEFAULT_FUNC(mode)},
         KeyDefault{"ledInv", KEY_DEFAULT_FUNC(inverse)},
+        KeyDefault{"ledMode", KEY_DEFAULT_FUNC(mode)},
         KeyDefault{"ledRelay", KEY_DEFAULT_FUNC(relay)}};
 }
 
@@ -878,9 +876,8 @@ void loop(Led& led) {
         }
         break;
 
-#if RELAY_SUPPORT
-
     case LED_MODE_FINDME_WIFI:
+#if RELAY_SUPPORT
         if (wifiConnected()) {
             if (relay::status(led)) {
                 run(led, NetworkConnected);
@@ -896,9 +893,11 @@ void loop(Led& led) {
         } else {
             run(led, NetworkIdle);
         }
-            break;
+#endif
+        break;
 
     case LED_MODE_RELAY_WIFI:
+#if RELAY_SUPPORT
         if (wifiConnected()) {
             if (relay::status(led)) {
                 run(led, NetworkConnected);
@@ -914,33 +913,40 @@ void loop(Led& led) {
         } else {
             run(led, NetworkIdle);
         }
+#endif
         break;
 
     case LED_MODE_FOLLOW:
+#if RELAY_SUPPORT
         if (scheduled()) {
             status(led, relay::status(led));
         }
+#endif
         break;
 
     case LED_MODE_FOLLOW_INVERSE:
+#if RELAY_SUPPORT
         if (scheduled()) {
             status(led, !relay::status(led));
         }
+#endif
         break;
 
     case LED_MODE_FINDME:
+#if RELAY_SUPPORT
         if (scheduled()) {
             led::status(led, !relay::areAnyOn());
         }
+#endif
         break;
 
     case LED_MODE_RELAY:
+#if RELAY_SUPPORT
         if (scheduled()) {
             led::status(led, relay::areAnyOn());
         }
+#endif
         break;
-
-#endif // RELAY_SUPPORT == 1
 
     case LED_MODE_ON:
         if (scheduled()) {

@@ -19,6 +19,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 #if TELNET_SUPPORT
 
+#include <list>
 #include <memory>
 #include <vector>
 

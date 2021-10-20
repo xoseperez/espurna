@@ -61,7 +61,6 @@
     #define ALEXA_SUPPORT           0
     #define API_SUPPORT             0
     #define DEBUG_SERIAL_SUPPORT    0
-    #define DEBUG_TELNET_SUPPORT    0
     #define DEBUG_WEB_SUPPORT       0
     #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
@@ -74,13 +73,14 @@
     #define THINGSPEAK_SUPPORT      0
     #define WEB_SUPPORT             0
 
+    #define DEBUG_TELNET_SUPPORT    1
     #define TELNET_AUTHENTICATION   0
     #define TELNET_STA              1
 
     // Extra light-weight image
-    //#define BUTTON_SUPPORT          0 // don't need / have buttons
-    //#define LED_SUPPORT             0 // don't need wifi indicator
-    //#define RELAY_SUPPORT           0 // don't need to preserve pin state between resets
+    #define BUTTON_SUPPORT          0 // don't need / have buttons
+    #define LED_SUPPORT             0 // don't need wifi indicator
+    #define RELAY_SUPPORT           0 // don't need to preserve pin state between resets
     //#define OTA_ARDUINOOTA_SUPPORT  0 // when only using the `ota` command
     //#define OTA_WEB_SUPPORT         0 //
     //#define MDNS_SERVER_SUPPORT     0 //
@@ -99,10 +99,9 @@
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
     #define API_SUPPORT             0
-    #define DOMOTICZ_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
-    //#define DEBUG_TELNET_SUPPORT    0
-    //#define DEBUG_WEB_SUPPORT       0
+    #define DEBUG_WEB_SUPPORT       0
+    #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
@@ -110,16 +109,22 @@
     #define SCHEDULER_SUPPORT       0
     #define SENSOR_SUPPORT          0
     #define THINGSPEAK_SUPPORT      0
-    //#define WEB_SUPPORT             0
-    #define WEB_FORCE_PASS_CHANGE   0
 
+    // Small webpage to upload the .bin
+    #define MDNS_SERVER_SUPPORT     0
+    #define WEB_SUPPORT             0
+    #define OTA_ARDUINOOTA_SUPPORT  0
+    #define OTA_WEB_SUPPORT         1
+
+    // Keep the generic uploader
+    #define DEBUG_TELNET_SUPPORT    1
     #define TELNET_AUTHENTICATION   0
     #define TELNET_STA              1
 
     // Extra light-weight image
-    #define BUTTON_SUPPORT          0
-    #define LED_SUPPORT             0
-    //#define MDNS_SERVER_SUPPORT     0
+    #define BUTTON_SUPPORT          0 // don't need / have buttons
+    #define LED_SUPPORT             0 // don't need wifi indicator
+    #define RELAY_SUPPORT           0 // don't need to preserve pin state between resets
     //#define TELNET_SUPPORT          0
     //#define TERMINAL_SUPPORT        0
 

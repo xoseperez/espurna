@@ -145,6 +145,9 @@ const char* getEspurnaModules() {
 #if OTA_ARDUINOOTA_SUPPORT
     "ARDUINO_OTA "
 #endif
+#if OTA_WEB_SUPPORT
+    "OTA_WEB "
+#endif
 #if (OTA_CLIENT != OTA_CLIENT_NONE)
     "OTA_CLIENT "
 #endif
