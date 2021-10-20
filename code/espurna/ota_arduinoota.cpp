@@ -98,9 +98,10 @@ void error(ota_error_t error) {
         break;
     }
 
-    DEBUG_MSG_P(PSTR("[OTA] \"%s\" error (#%u)"),
+    DEBUG_MSG_P(PSTR("[OTA] \"%s\" (%u, updater code %u)\n"),
             reinterpret_cast<const char*>(ptr),
-            static_cast<unsigned int>(error));
+            static_cast<unsigned int>(error),
+            Update.getError());
 #endif
 
     eepromRotate(true);
