@@ -1746,7 +1746,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef PROMETHEUS_SUPPORT
-#define PROMETHEUS_SUPPORT          0
+#define PROMETHEUS_SUPPORT          API_SUPPORT
 #endif
 
 //--------------------------------------------------------------------------------
