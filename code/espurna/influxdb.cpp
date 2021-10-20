@@ -215,7 +215,7 @@ void _idbFlush() {
 
     // TODO: should we always store specific pairs like tspk keeps relay / sensor readings?
     //       note that we also send heartbeat data, persistent values should be flagged
-    const String device = getSetting("hostname");
+    const String device = getHostname();
 
     _idb_client->payload = "";
     for (auto& pair : _idb_client->values) {

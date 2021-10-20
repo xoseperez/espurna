@@ -25,13 +25,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 namespace mdns {
 namespace {
-namespace settings {
-
-String hostname() {
-    return getSetting("hostname", getIdentifier());
-}
-
-} // namespace settings
 
 void addServices() {
 #if WEB_SUPPORT
@@ -61,7 +54,7 @@ void addServices() {
 }
 
 void start() {
-    auto hostname = settings::hostname();
+    auto hostname = getHostname();
     if (MDNS.begin(hostname)) {
         DEBUG_MSG_P(PSTR("[MDNS] Started with hostname %s\n"), hostname.c_str());
         addServices();

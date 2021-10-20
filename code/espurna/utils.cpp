@@ -23,11 +23,25 @@ bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
     return true;
 }
 
-void setDefaultHostname() {
+String getDescription() {
+    return getSetting("desc");
+}
+
+String getHostname() {
     if (strlen(HOSTNAME) > 0) {
-        setSetting("hostname", F(HOSTNAME));
-    } else {
-        setSetting("hostname", getIdentifier());
+        return getSetting("hostname", F(HOSTNAME));
+    }
+
+    return getSetting("hostname", getIdentifier());
+}
+
+void setDefaultHostname() {
+    if (!getSetting("hostname").length()) {
+        if (strlen(HOSTNAME) > 0) {
+            setSetting("hostname", F(HOSTNAME));
+        } else {
+            setSetting("hostname", getIdentifier());
+        }
     }
 }
 

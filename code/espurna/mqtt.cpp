@@ -507,7 +507,7 @@ bool _mqttConnectSyncClient(bool secure = false) {
 #endif // (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
 
 String _mqttPlaceholders(String&& text) {
-    text.replace("{hostname}", getSetting("hostname", getIdentifier()));
+    text.replace("{hostname}", getHostname());
     text.replace("{magnitude}", "#");
     text.replace("{mac}", getFullChipId());
     return text;
@@ -875,10 +875,10 @@ bool _mqttHeartbeat(heartbeat::Mask mask) {
         mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
 
     if (mask & heartbeat::Report::Hostname)
-        mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname", getIdentifier()).c_str());
+        mqttSend(MQTT_TOPIC_HOSTNAME, getHostname().c_str());
 
     if (mask & heartbeat::Report::Description) {
-        auto desc = getSetting("desc");
+        auto desc = getDescription();
         if (desc.length()) {
             mqttSend(MQTT_TOPIC_DESCRIPTION, desc.c_str());
         }
@@ -1246,7 +1246,7 @@ void mqttFlush() {
     root[MQTT_TOPIC_MAC] = WiFi.macAddress();
 #endif
 #if MQTT_ENQUEUE_HOSTNAME
-    root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname", getIdentifier());
+    root[MQTT_TOPIC_HOSTNAME] = getHostname();
 #endif
 #if MQTT_ENQUEUE_IP
     root[MQTT_TOPIC_IP] = wifiStaIp().toString();

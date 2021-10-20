@@ -230,7 +230,7 @@ constexpr unsigned long WebConfigBufferMax { 4096ul };
 namespace {
 
 void _webRequestAuth(AsyncWebServerRequest* request) {
-    request->requestAuthentication(getSetting("hostname", getIdentifier()).c_str(), true);
+    request->requestAuthentication(getHostname().c_str(), true);
 }
 
 void _onReset(AsyncWebServerRequest *request) {
@@ -249,7 +249,7 @@ void _onDiscover(AsyncWebServerRequest *request) {
     webLog(request);
 
     const String device = getBoardName();
-    const String hostname = getSetting("hostname");
+    const String hostname = getHostname();
 
     StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
@@ -297,7 +297,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     });
     *out += "\n}";
 
-    auto hostname = getSetting("hostname", getIdentifier());
+    auto hostname = getHostname();
     auto timestamp = String(millis());
 #if NTP_SUPPORT
     if (ntpSynced()) {
@@ -499,7 +499,7 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 bool _onAPModeRequest(AsyncWebServerRequest *request) {
 
     if ((WiFi.getMode() & WIFI_AP) > 0) {
-        const String domain = getSetting("hostname") + ".";
+        const String domain = getHostname() + ".";
         const String host = request->header("Host");
         const String ip = WiFi.softAPIP().toString();
 

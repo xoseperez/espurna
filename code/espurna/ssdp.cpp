@@ -15,18 +15,13 @@ https://github.com/esp8266/Arduino/issues/2283#issuecomment-299635604
 #include <ESP8266SSDP.h>
 
 #include "web.h"
-#include "utils.h"
 
 namespace ssdp {
 namespace {
 namespace settings {
 
-String hostname() {
-    return getSetting("hostname", getIdentifier());
-}
-
 String name() {
-    return getSetting("ssdpName", hostname());
+    return getSetting("ssdpName", getHostname());
 }
 
 // needs to be in the response

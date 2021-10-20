@@ -594,8 +594,8 @@ void _wsOnConnected(JsonObject& root) {
     root["mac"] = getFullChipId().c_str();
     root["bssid"] = WiFi.BSSIDstr();
     root["channel"] = WiFi.channel();
-    root["hostname"] = getSetting("hostname", getIdentifier());
-    root["desc"] = getSetting("desc");
+    root["hostname"] = getHostname();
+    root["desc"] = getDescription();
     root["network"] = wifiStaSsid();
     root["deviceip"] = wifiStaIp().toString();
     root["sketch_size"] = ESP.getSketchSize();

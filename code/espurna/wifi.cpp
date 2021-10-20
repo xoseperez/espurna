@@ -604,10 +604,6 @@ int8_t scanRssiThreshold() {
     return getSetting("wifiScanRssi", wifi::build::scanRssiThreshold());
 }
 
-String hostname() {
-    return getSetting("hostname", getIdentifier());
-}
-
 wifi::StaMode staMode() {
     return getSetting("wifiStaMode", wifi::build::staMode());
 }
@@ -664,7 +660,7 @@ String softApDefaultSsid() {
 String softApSsid() {
     return getSetting("wifiApSsid", wifi::build::hasSoftApSsid()
         ? wifi::build::softApSsid()
-        : hostname());
+        : getHostname());
 }
 
 String softApPassphrase() {
@@ -2521,7 +2517,7 @@ void loop() {
 
     case State::Connect: {
         if (!wifi::sta::connecting()) {
-            if (!wifi::sta::connection::start(wifi::settings::hostname())) {
+            if (!wifi::sta::connection::start(getHostname())) {
                 state = State::Timeout;
                 break;
             }

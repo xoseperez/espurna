@@ -429,13 +429,6 @@ constexpr bool enabled() {
 }
 
 } // namespace build
-namespace settings {
-
-String hostname() {
-    return getSetting("hostname", getIdentifier());
-}
-
-} // namespace settings
 
 namespace internal {
 
@@ -453,7 +446,7 @@ void configure() {
     snprintf_P(
         internal::header, sizeof(internal::header),
         PSTR("<%u>1 - %.31s ESPurna - - - "), DEBUG_UDP_FAC_PRI,
-        settings::hostname().c_str());
+        getHostname().c_str());
 }
 
 bool output(const char* message, size_t len) {

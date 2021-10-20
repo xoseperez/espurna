@@ -119,9 +119,7 @@ void setup() {
     #endif
 
     // Hostname & board name initialization
-    if (getSetting("hostname").length() == 0) {
-        setDefaultHostname();
-    }
+    setDefaultHostname();
     setBoardName();
 
     boardSetup();

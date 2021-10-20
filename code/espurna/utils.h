@@ -29,6 +29,8 @@ const char* getAppWebsite();
 const char* getDevice();
 const char* getManufacturer();
 
+String getDescription();
+String getHostname();
 String getAdminPass();
 String getBoardName();
 String buildTime();

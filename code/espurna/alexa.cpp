@@ -84,7 +84,7 @@ bool enabled() {
 String hostname() {
     auto out = getSetting("alexaName", build::hostname());
     if (!out.length()) {
-        out = getSetting("hostname", getIdentifier());
+        out = getHostname();
     }
 
     return out;

@@ -27,6 +27,37 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 namespace homeassistant {
 namespace {
+namespace build {
+
+const __FlashStringHelper* prefix() {
+    return F(HOMEASSISTANT_PREFIX);
+}
+
+constexpr bool enabled() {
+    return 1 == HOMEASSISTANT_ENABLED;
+}
+
+constexpr bool retain() {
+    return 1 == HOMEASSISTANT_RETAIN;
+}
+
+} // namespace build
+
+namespace settings {
+
+String prefix() {
+    return getSetting("haPrefix", build::prefix());
+}
+
+bool enabled() {
+    return getSetting("haEnabled", build::enabled());
+}
+
+bool retain() {
+    return getSetting("haRetain", build::retain());
+}
+
+} // namespace settings
 
 // Output is supposed to be used as both part of the MQTT config topic and the `uniq_id` field
 // TODO: manage UTF8 strings? in case we somehow receive `desc`, like it was done originally
@@ -61,30 +92,6 @@ return_output:
 
 class Device {
 public:
-    struct Strings {
-        Strings() = delete;
-        Strings(const Strings&) = delete;
-
-        Strings(Strings&&) = default;
-        Strings(String&& prefix_, String&& name_, String identifier_, const char* version_, const char* manufacturer_, const char* device_) :
-            prefix(std::move(prefix_)),
-            name(normalize_ascii(std::move(name_), false)),
-            identifier(normalize_ascii(std::move(identifier_), true)),
-            version(version_),
-            manufacturer(manufacturer_),
-            device(device_)
-        {}
-
-        String prefix;
-        String name;
-        String identifier;
-        const char* version;
-        const char* manufacturer;
-        const char* device;
-    };
-
-    using StringsPtr = std::unique_ptr<Strings>;
-
     static constexpr size_t BufferSize { JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(5) };
 
     using Buffer = StaticJsonBuffer<BufferSize>;
@@ -94,8 +101,10 @@ public:
     Device(const Device&) = delete;
 
     Device(Device&&) = default;
-    Device(String&& prefix, String&& name, const String& identifier, const char* version, const char* manufacturer, const char* device) :
-        _strings(std::make_unique<Strings>(std::move(prefix), std::move(name), identifier, version, manufacturer, device)),
+
+    template <typename... Args>
+    Device(Args&&... args) :
+        _strings(make_strings(std::forward<Args>(args)...)),
         _buffer(std::make_unique<Buffer>()),
         _root(_buffer->createObject())
     {
@@ -125,6 +134,29 @@ public:
     }
 
 private:
+    struct Strings {
+        String prefix;
+        String name;
+        String identifier;
+        const char* version;
+        const char* manufacturer;
+        const char* device;
+    };
+
+    using StringsPtr = std::unique_ptr<Strings>;
+
+    StringsPtr make_strings(String prefix, String name, String identifier, const char* version, const char* manufacturer, const char* device) {
+        return std::make_unique<Strings>(
+            Strings{
+                std::move(prefix),
+                normalize_ascii(std::move(name), false),
+                normalize_ascii(std::move(identifier), true),
+                version,
+                manufacturer,
+                device
+            });
+    }
+
     StringsPtr _strings;
     BufferPtr _buffer;
     JsonObject& _root;
@@ -191,8 +223,8 @@ private:
 
 Context makeContext() {
     auto device = std::make_unique<Device>(
-        getSetting("haPrefix", HOMEASSISTANT_PREFIX),
-        getSetting("hostname", getIdentifier()),
+        settings::prefix(),
+        getHostname(),
         getIdentifier(),
         getVersion(),
         getManufacturer(),
@@ -891,8 +923,8 @@ void publishDiscovery() {
 
 void configure() {
     bool current = internal::enabled;
-    internal::enabled = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
-    internal::retain = getSetting("haRetain", 1 == HOMEASSISTANT_RETAIN);
+    internal::enabled = settings::enabled();
+    internal::retain = settings::retain();
 
     if (internal::enabled != current) {
         internal::state = internal::State::Pending;
@@ -938,9 +970,9 @@ void onVisible(JsonObject& root) {
 }
 
 void onConnected(JsonObject& root) {
-    root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting("haEnabled", 1 == HOMEASSISTANT_ENABLED);
-    root["haRetain"] = getSetting("haRetain", 1 == HOMEASSISTANT_RETAIN);
+    root["haPrefix"] = settings::prefix();
+    root["haEnabled"] = settings::enabled();
+    root["haRetain"] = settings::retain();
 }
 
 bool onKeyCheck(const char* key, JsonVariant& value) {
