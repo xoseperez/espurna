@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "rfm69.h"
+#include "espurna.h"
 
 #if RFM69_SUPPORT
 
@@ -16,6 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <RFM69_ATC.h>
 #include <SPI.h>
 
+#include "rfm69.h"
 #include "mqtt.h"
 #include "ws.h"
 

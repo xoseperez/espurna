@@ -8,7 +8,8 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
+#include <functional>
 
 #define ASK_TEMP_RANGE_INTERVAL_INITIAL      15000  // ask initially once per every 15 seconds
 #define ASK_TEMP_RANGE_INTERVAL_REGULAR      60000  // ask every minute to be sure

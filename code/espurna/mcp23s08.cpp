@@ -11,10 +11,11 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 */
 
-#include "mcp23s08.h"
+#include "espurna.h"
 
 #if MCP23S08_SUPPORT
 
+#include "mcp23s08.h"
 #include "mcp23s08_pin.h"
 
 #include <SPI.h>

@@ -8,9 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
-
-#if RFB_SUPPORT
+#include <Arduino.h>
+#include <cstdint>
 
 using RfbCodeHandler = void(*)(unsigned char protocol, const char* code);
 void rfbOnCode(RfbCodeHandler);
@@ -26,5 +25,3 @@ void rfbStore(size_t id, bool status, const char* code);
 
 void rfbForget(size_t id, bool status);
 void rfbSetup();
-
-#endif // RFB_SUPPORT == 1

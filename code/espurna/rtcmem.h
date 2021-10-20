@@ -11,8 +11,6 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <Arduino.h>
 #include <cstdint>
 
-#include "espurna.h"
-
 // Base address of USER RTC memory
 // https://github.com/esp8266/esp8266-wiki/wiki/Memory-Map#memmory-mapped-io-registers
 #define RTCMEM_ADDR_BASE (0x60001200)

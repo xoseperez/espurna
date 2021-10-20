@@ -6,12 +6,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "rfbridge.h"
+#include "espurna.h"
 
 #if RFB_SUPPORT
 
 #include "api.h"
 #include "relay.h"
+#include "rfbridge.h"
 #include "terminal.h"
 #include "mqtt.h"
 #include "ws.h"

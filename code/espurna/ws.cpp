@@ -6,15 +6,17 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "ws.h"
+#include "espurna.h"
 
 #if WEB_SUPPORT
 
+#include <queue>
 #include <vector>
 
 #include "system.h"
 #include "ntp.h"
 #include "utils.h"
+#include "ws.h"
 #include "web.h"
 #include "wifi.h"
 #include "ws_internal.h"

@@ -7,8 +7,6 @@ Copyright (C) 2019 by Albert Weterings
 
 */
 
-#include "espurna.h"
-
 void kingartCurtainSetup();
 void curtainSetPosition(unsigned char id, long value);
 unsigned char curtainCount();

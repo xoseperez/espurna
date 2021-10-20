@@ -13,11 +13,12 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "api.h"
 #include "crash.h"
+#include "mqtt.h"
 #include "settings.h"
 #include "system.h"
 #include "telnet.h"
+#include "terminal.h"
 #include "utils.h"
-#include "mqtt.h"
 #include "wifi.h"
 #include "ws.h"
 

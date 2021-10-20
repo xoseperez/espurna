@@ -8,7 +8,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <cstdint>
 
 constexpr size_t tspkDataBufferSize { 256ul };
 

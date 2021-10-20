@@ -6,12 +6,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "alexa.h"
+#include "espurna.h"
 
 #if ALEXA_SUPPORT
 
 #include <queue>
 
+#include "alexa.h"
 #include "api.h"
 #include "light.h"
 #include "mqtt.h"

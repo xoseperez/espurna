@@ -6,7 +6,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "relay.h"
+#include "espurna.h"
 
 #if RELAY_SUPPORT
 
@@ -20,11 +20,12 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "api.h"
 #include "mqtt.h"
+#include "relay.h"
 #include "rpc.h"
 #include "rtcmem.h"
 #include "settings.h"
-#include "terminal.h"
 #include "storage_eeprom.h"
+#include "terminal.h"
 #include "utils.h"
 #include "ws.h"
 

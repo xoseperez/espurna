@@ -7,7 +7,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 */
 
-#include "mqtt.h"
+#include "espurna.h"
 
 #if MQTT_SUPPORT
 

@@ -116,21 +116,6 @@ Mode currentMode();
 
 } // namespace heartbeat
 
-namespace settings {
-namespace internal {
-
-template <>
-heartbeat::Mode convert(const String& value);
-
-template <>
-heartbeat::Milliseconds convert(const String& value);
-
-template <>
-heartbeat::Seconds convert(const String& value);
-
-} // namespace internal
-} // namespace settings
-
 unsigned long systemFreeStack();
 
 HeapStats systemHeapStats();

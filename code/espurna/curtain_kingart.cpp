@@ -10,10 +10,11 @@ Copyright (C) 2020 - Eric Chauvet
 
 */
 
-#include "curtain_kingart.h"
+#include "espurna.h"
 
 #if KINGART_CURTAIN_SUPPORT
 
+#include "curtain_kingart.h"
 #include "mqtt.h"
 #include "ntp.h"
 #include "ntp_timelib.h"

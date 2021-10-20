@@ -8,13 +8,14 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 // ref: https://docs.tuya.com/en/mcu/mcu-protocol.html
 
-#include "tuya.h"
+#include "espurna.h"
 
 #if TUYA_SUPPORT
 
 #include "light.h"
 #include "relay.h"
 #include "rpc.h"
+#include "tuya.h"
 
 #include "libs/OnceFlag.h"
 

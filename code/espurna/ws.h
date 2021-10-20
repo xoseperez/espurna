@@ -9,11 +9,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #pragma once
 
-#include "espurna.h"
-
 #include <ArduinoJson.h>
 
-#include <queue>
 #include <functional>
 #include <vector>
 

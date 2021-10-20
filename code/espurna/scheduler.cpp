@@ -7,7 +7,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "scheduler.h"
+#include "espurna.h"
 
 #if SCHEDULER_SUPPORT
 
@@ -16,9 +16,10 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 #include "mqtt.h"
 #include "ntp.h"
 #include "ntp_timelib.h"
-#include "relay.h"
-#include "ws.h"
 #include "curtain_kingart.h"
+#include "relay.h"
+#include "scheduler.h"
+#include "ws.h"
 
 // -----------------------------------------------------------------------------
 

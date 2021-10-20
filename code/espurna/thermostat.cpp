@@ -6,15 +6,16 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 
 */
 
-#include "thermostat.h"
+#include "espurna.h"
 
 #if THERMOSTAT_SUPPORT
 
+#include "mqtt.h"
 #include "ntp.h"
 #include "ntp_timelib.h"
 #include "relay.h"
 #include "sensor.h"
-#include "mqtt.h"
+#include "thermostat.h"
 #include "ws.h"
 
 #include <ArduinoJson.h>

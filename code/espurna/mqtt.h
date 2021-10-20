@@ -9,7 +9,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #pragma once
 
-#include "espurna.h"
+#include "system.h"
 
 #include <functional>
 

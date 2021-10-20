@@ -22,20 +22,22 @@
 // TODO: lowercase
 namespace Light {
 
-constexpr size_t ChannelsMax = 5;
+constexpr size_t ChannelsMax { 5 };
 
-constexpr long ValueMin = LIGHT_MIN_VALUE;
-constexpr long ValueMax = LIGHT_MAX_VALUE;
+constexpr long ValueStep { LIGHT_STEP };
 
-constexpr long BrightnessMin = LIGHT_MIN_BRIGHTNESS;
-constexpr long BrightnessMax = LIGHT_MAX_BRIGHTNESS;
+constexpr long ValueMin { LIGHT_MIN_VALUE };
+constexpr long ValueMax { LIGHT_MAX_VALUE };
 
-constexpr long MiredsCold = LIGHT_COLDWHITE_MIRED;
-constexpr long MiredsWarm = LIGHT_WARMWHITE_MIRED;
+constexpr long BrightnessMin { LIGHT_MIN_BRIGHTNESS };
+constexpr long BrightnessMax { LIGHT_MAX_BRIGHTNESS };
 
-constexpr long PwmMin = LIGHT_MIN_PWM;
-constexpr long PwmMax = LIGHT_MAX_PWM;
-constexpr long PwmLimit = LIGHT_LIMIT_PWM;
+constexpr long MiredsCold { LIGHT_COLDWHITE_MIRED };
+constexpr long MiredsWarm { LIGHT_WARMWHITE_MIRED };
+
+constexpr long PwmMin { LIGHT_MIN_PWM };
+constexpr long PwmMax { LIGHT_MAX_PWM };
+constexpr long PwmLimit { LIGHT_LIMIT_PWM };
 
 enum class Report {
     None = 0,
@@ -235,14 +237,19 @@ bool lightState(size_t id);
 void lightState(bool state);
 bool lightState();
 
+// TODO: overload with struct Percent { ... }, struct Brightness { ... }, etc.
+void lightBrightnessPercent(long percent);
 void lightBrightness(long brightness);
 long lightBrightness();
 
 long lightChannel(size_t id);
 void lightChannel(size_t id, long value);
 
-void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
-void lightChannelStep(size_t id, long steps, long multiplier = LIGHT_STEP);
+void lightBrightnessStep(long steps);
+void lightBrightnessStep(long steps, long multiplier);
+
+void lightChannelStep(size_t id, long steps);
+void lightChannelStep(size_t id, long steps, long multiplier);
 
 void lightUpdate(bool save, LightTransition transition, Light::Report report);
 void lightUpdate(bool save, LightTransition transition, int report);

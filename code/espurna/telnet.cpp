@@ -15,7 +15,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 */
 
-#include "telnet.h"
+#include "espurna.h"
 
 #if TELNET_SUPPORT
 
@@ -24,6 +24,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 #include "board.h"
 #include "crash.h"
+#include "telnet.h"
 #include "terminal.h"
 #include "ws.h"
 

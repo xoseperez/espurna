@@ -2852,8 +2852,16 @@ void lightChannelStep(size_t id, long steps, long multiplier) {
     lightChannel(id, lightChannel(id) + (steps * multiplier));
 }
 
+void lightChannelStep(size_t id, long steps) {
+    lightChannelStep(id, steps, Light::ValueStep);
+}
+
 long lightBrightness() {
     return _light_brightness;
+}
+
+void lightBrightnessPercent(long percent) {
+    lightBrightness((percent / 100l) * Light::BrightnessMax);
 }
 
 void lightBrightness(long brightness) {
@@ -2862,6 +2870,10 @@ void lightBrightness(long brightness) {
 
 void lightBrightnessStep(long steps, long multiplier) {
     lightBrightness(static_cast<int>(_light_brightness) + (steps * multiplier));
+}
+
+void lightBrightnessStep(long steps) {
+    lightBrightnessStep(steps, Light::ValueStep);
 }
 
 unsigned long lightTransitionTime() {
