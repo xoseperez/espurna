@@ -27,7 +27,7 @@ struct StaticArrayStorage {
         _size(blob.size())
     {}
 
-    uint8_t read(size_t index) {
+    uint8_t read(size_t index) const {
         TEST_ASSERT_LESS_THAN(_size, index);
         return _blob[index];
     }

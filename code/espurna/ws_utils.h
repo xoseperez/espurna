@@ -66,7 +66,7 @@ struct EnumerableConfig {
             _step(step)
         {}
 
-        constexpr Iota& operator++() {
+        Iota& operator++() {
             if (_it != _end) {
                 _it = ((_it + _step) > _end)
                     ? _end : (_it + _step);
@@ -75,7 +75,7 @@ struct EnumerableConfig {
             return *this;
         }
 
-        constexpr Iota operator++(int) {
+        Iota operator++(int) {
             Iota out(*this);
             ++out;
             return out;
@@ -94,8 +94,6 @@ struct EnumerableConfig {
         size_t _end { 0 };
         size_t _step { 1 };
     };
-
-    static_assert(std::is_trivially_copyable<Iota>::value, "");
 
     alignas(4)
     static const char SchemaKey[];
@@ -131,21 +129,3 @@ private:
 
 } // namespace ws
 } // namespace web
-
-struct WsJsonEnumerables {
-    using Callback = void(*)(JsonArray&, size_t);
-
-    struct Pair {
-        const __FlashStringHelper* key;
-        Callback callback;
-    };
-
-    using Pairs = std::initializer_list<Pair>;
-
-    WsJsonEnumerables(JsonObject& root, const __FlashStringHelper* name);
-    void operator()(const __FlashStringHelper* name, size_t count, Pairs&& pairs);
-
-private:
-    JsonObject& _root;
-    static const char SchemaKey[];
-};

@@ -52,7 +52,7 @@ struct StateId {
         return *this;
     }
 
-    explicit operator bool() {
+    explicit operator bool() const {
         return _id != 0u;
     }
 
@@ -151,7 +151,7 @@ public:
         Discovery(millis(), timeout)
     {}
 
-    explicit operator bool() {
+    explicit operator bool() const {
         return (millis() - _start > _timeout);
     }
 

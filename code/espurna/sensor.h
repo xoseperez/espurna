@@ -98,7 +98,7 @@ struct Energy {
     // - on cold boot
     // - on overflow
     // - when we call `reset()`
-    operator bool();
+    explicit operator bool() const;
 
     // Generic conversion as-is
     double asDouble();

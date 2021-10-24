@@ -94,7 +94,6 @@ class KeyValueStore {
     //       This **will** cause problems with 'reverse_iterator' or anything like it, as it expects reference to
     //       outlive the iterator object (specifically, result of `return *--tmp`, where `tmp` is created inside of a function block)
     struct Cursor {
-
         Cursor(RawStorageBase& storage, uint16_t position_, uint16_t begin_, uint16_t end_) :
             position(position_),
             begin(begin_),
@@ -126,7 +125,7 @@ class KeyValueStore {
             end = end_;
         }
 
-        uint8_t read() {
+        uint8_t read() const {
             return _storage.read(begin + position);
         }
 
@@ -142,15 +141,15 @@ class KeyValueStore {
             position = end - begin;
         }
 
-        size_t size() {
+        size_t size() const {
             return (end - begin);
         }
 
-        bool inRange(uint16_t position_) {
+        bool inRange(uint16_t position_) const {
             return (position_ < (end - begin));
         }
 
-        operator bool() {
+        explicit operator bool() const {
             return inRange(position);
         }
 
@@ -158,11 +157,11 @@ class KeyValueStore {
             return _storage.read(begin + position_);
         }
 
-        bool operator ==(const Cursor& other) {
+        bool operator ==(const Cursor& other) const {
             return (begin == other.begin) && (end == other.end);
         }
 
-        bool operator !=(const Cursor& other) {
+        bool operator !=(const Cursor& other) const {
             return !(*this == other);
         }
 
@@ -192,10 +191,8 @@ class KeyValueStore {
         uint16_t begin;
         uint16_t end;
 
-        private:
-
+    private:
         RawStorageBase& _storage;
-
     };
 
     public:
@@ -204,22 +201,21 @@ class KeyValueStore {
     // Allows us to skip string creation when just searching for specific values
     // XXX: be cautious that cursor positions **will** break when underlying storage changes
     struct ReadResult {
-
         friend class KeyValueStore<RawStorageBase>;
 
-        ReadResult(const Cursor& cursor_) :
+        explicit ReadResult(const Cursor& cursor_) :
             length(0),
             cursor(cursor_),
             result(false)
         {}
 
-        ReadResult(RawStorageBase& storage) :
+        explicit ReadResult(RawStorageBase& storage) :
             length(0),
             cursor(storage),
             result(false)
         {}
 
-        operator bool() {
+        explicit operator bool() const {
             return result;
         }
 
@@ -243,16 +239,14 @@ class KeyValueStore {
 
         uint16_t length;
 
-        private:
-
+    private:
         Cursor cursor;
         bool result;
-
     };
 
     // Internal storage consists of sequences of <byte-range><length>
     struct KeyValueResult {
-        explicit operator bool() {
+        explicit operator bool() const {
             return (key) && (value) && (key.length > 0);
         }
 

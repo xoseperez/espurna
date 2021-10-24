@@ -364,7 +364,7 @@ Energy Energy::operator +(Ws watt_s) {
     return result;
 }
 
-Energy::operator bool() {
+Energy::operator bool() const {
     return (kwh.value > 0) && (ws.value > 0);
 }
 
@@ -969,8 +969,8 @@ MagnitudeUnitsRange _magnitudeUnitsRange(unsigned char type) {
 
     case MAGNITUDE_POWER_ACTIVE: {
         MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Kilowatt,
-            sensor::Unit::Watt
+            sensor::Unit::Watt,
+            sensor::Unit::Kilowatt
         );
         break;
     }
@@ -1000,8 +1000,8 @@ MagnitudeUnitsRange _magnitudeUnitsRange(unsigned char type) {
 
     case MAGNITUDE_ENERGY: {
         MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::KilowattHour,
-            sensor::Unit::Joule
+            sensor::Unit::Joule,
+            sensor::Unit::KilowattHour
         );
         break;
     }

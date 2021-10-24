@@ -34,15 +34,15 @@ namespace settings {
 
 class EepromStorage {
 public:
-    uint8_t read(size_t pos) {
+    uint8_t read(size_t pos) const {
         return eepromRead(pos);
     }
 
-    void write(size_t pos, uint8_t value) {
+    void write(size_t pos, uint8_t value) const {
         eepromWrite(pos, value);
     }
 
-    void commit() {
+    void commit() const {
         autosaveSettings();
     }
 };
