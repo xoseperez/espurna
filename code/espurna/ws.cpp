@@ -53,17 +53,25 @@ EnumerableConfig::EnumerableConfig(JsonObject& root, const __FlashStringHelper* 
     _root(root.createNestedObject(name))
 {}
 
-void EnumerableConfig::operator()(const __FlashStringHelper* name, size_t count, Pairs&& pairs)
+void EnumerableConfig::operator()(const __FlashStringHelper* name, Iota iota, Check check, Pairs&& pairs)
 {
+    if (!iota) {
+        return;
+    }
+
     if (!_root.containsKey(FPSTR(SchemaKey))) {
         JsonArray& schema = _root.createNestedArray(FPSTR(SchemaKey));
         internal::populateSchema(schema, pairs);
 
         JsonArray& entries = _root.createNestedArray(name);
-        for (size_t index = 0; index < count; ++index) {
-            JsonArray& entry = entries.createNestedArray();
-            internal::populateEntry(entry, pairs, index);
-        }
+        do {
+            if (!check || check(*iota)) {
+                JsonArray& entry = entries.createNestedArray();
+                internal::populateEntry(entry, pairs, (*iota));
+            }
+
+            ++iota;
+        } while (iota);
     }
 }
 

@@ -65,8 +65,10 @@ var Rfm69 = {
 var Magnitudes = [];
 var MagnitudeErrors = {};
 var MagnitudeNames = {};
+var MagnitudeUnits = {};
 var MagnitudeTypePrefixes = {};
 var MagnitudePrefixTypes = {};
+
 //endRemoveIf(!sensor)
 
 // -----------------------------------------------------------------------------
@@ -1272,21 +1274,24 @@ function createRelayList(values, container, template_name) {
 
 //removeIf(!sensor)
 
-function createMagnitudeList(data, container, template_name) {
-    let target = document.getElementById(container);
+function createMagnitudeList(data) {
+    const targetId = `${data.prefix}Magnitudes`;
+
+    let target = document.getElementById(targetId);
     if (target.childElementCount > 0) { return; }
 
     data.values.forEach((values) => {
-        let [type, index_global, index_module] = values;
+        const entry = fromSchema(values, data.schema);
 
-        let line = loadConfigTemplate(template_name);
+        let line = loadConfigTemplate("module-magnitude");
         line.querySelector("label").textContent =
-            MagnitudeNames[type].concat(" #").concat(parseInt(index_global, 10));
+            `${MagnitudeNames[entry.type]} #${entry.index_global}`;
         line.querySelector("div.hint").textContent =
-            Magnitudes[index_global].description;
+            Magnitudes[entry.index_global].description;
 
         let input = line.querySelector("input");
-        input.value = index_module;
+        input.name = `${data.prefix}Magnitude`;
+        input.value = entry.index_module;
         input.dataset["original"] = input.value;
 
         mergeTemplate(target, line);
@@ -1559,12 +1564,7 @@ function initRelayConfig(id, cfg) {
 
 //removeIf(!sensor)
 
-function initMagnitudes(data) {
-    let container = document.getElementById("magnitudes");
-    if (container.childElementCount > 0) {
-        return;
-    }
-
+function initMagnitudesTypes(data) {
     data.types.values.forEach((cfg) => {
         const info = fromSchema(cfg, data.types.schema);
         MagnitudeNames[info.type] = info.name;
@@ -1577,6 +1577,42 @@ function initMagnitudes(data) {
         MagnitudeErrors[error.type] = error.name;
     });
 
+    data.units.values.forEach((cfg) => {
+        const unit = fromSchema(cfg, data.units.schema);
+
+        // XXX: schema, too?
+        let options = [];
+        unit.supported.forEach(([id, name]) => {
+            MagnitudeUnits[id] = name;
+            options.push({id, name});
+        });
+
+        // no need for the select when there's no choice
+        if (options.length < 2) {
+            return;
+        }
+
+        let line = loadTemplate("sns-units");
+        line.querySelector("label").textContent =
+            `${MagnitudeNames[unit.type]} #${unit.index_global}`;
+
+        let select = line.querySelector("select");
+        select.setAttribute("name",
+            `${MagnitudeTypePrefixes[unit.type]}Units${unit.index_global}`);
+
+        initSelect(select, options);
+        setOriginalsFromValuesForNode(line, [select]);
+
+        mergeTemplate(document.getElementById("sns-units-config"), line);
+    });
+}
+
+function initMagnitudes(data) {
+    let container = document.getElementById("magnitudes");
+    if (container.childElementCount > 0) {
+        return;
+    }
+
     data.magnitudes.values.forEach((cfg, index) => {
         const magnitude = fromSchema(cfg, data.magnitudes.schema);
 
@@ -1584,7 +1620,7 @@ function initMagnitudes(data) {
             .concat(" #").concat(parseInt(magnitude.index_global, 10));
         Magnitudes.push({
             name: prettyName,
-            units: magnitude.units,
+            units: MagnitudeUnits[magnitude.units],
             description: magnitude.description
         });
 
@@ -1604,9 +1640,11 @@ function updateMagnitudes(data) {
         const magnitude = fromSchema(cfg, data.schema);
 
         let input = document.querySelector(`input[name='magnitude'][data-id='${id}']`);
-        input.value = (0 === magnitude.error)
-            ? (magnitude.value + Magnitudes[id].units)
-            : MagnitudeErrors[magnitude.error];
+        input.value = (0 !== magnitude.error)
+            ? MagnitudeErrors[magnitude.error]
+            : (("nan" === magnitude.value)
+                ? ""
+                : `${magnitude.value}${Magnitudes[id].units}`);
 
         if (magnitude.info.length) {
             let info = input.parentElement.parentElement.querySelector("div.sns-info");
@@ -2195,8 +2233,18 @@ function processData(data) {
 
         //removeIf(!sensor)
 
+        if ("magnitudesTypes" === key) {
+            initMagnitudesTypes(value);
+            return;
+        }
+
         if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+            return;
+        }
+
+        if ("magnitudesModule" === key) {
+            createMagnitudeList(value);
             return;
         }
 
@@ -2295,40 +2343,18 @@ function processData(data) {
         }
 
         // ---------------------------------------------------------------------
-        // Domoticz
+        // Special mapping for domoticz and thingspeak
         // ---------------------------------------------------------------------
 
-        // Domoticz - Relays
         if ("dczRelays" === key) {
             createRelayList(value, "dczRelays", "dcz-relay");
             return;
         }
 
-        // Domoticz - Magnitudes
-        //removeIf(!sensor)
-        if ("dczMagnitudes" === key) {
-            createMagnitudeList(value, "dczMagnitudes", "dcz-magnitude");
-            return;
-        }
-        //endRemoveIf(!sensor)
-
-        // ---------------------------------------------------------------------
-        // Thingspeak
-        // ---------------------------------------------------------------------
-
-        // Thingspeak - Relays
         if ("tspkRelays" === key) {
             createRelayList(value, "tspkRelays", "tspk-relay");
             return;
         }
-
-        // Thingspeak - Magnitudes
-        //removeIf(!sensor)
-        if ("tspkMagnitudes" === key) {
-            createMagnitudeList(value, "tspkMagnitudes", "tspk-magnitude");
-            return;
-        }
-        //endRemoveIf(!sensor)
 
         // ---------------------------------------------------------------------
         // General

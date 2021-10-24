@@ -154,7 +154,8 @@ String magnitudeName(unsigned char type);
 
 String sensorError(unsigned char error);
 
-void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix);
+using SensorWebSocketMagnitudesCallback = void(*)(JsonArray&, size_t);
+void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback);
 
 unsigned char sensorCount();
 void sensorSetup();

@@ -1774,30 +1774,10 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g module module-pwr">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Power units</label>
-                                    <select name="pwrUnits0" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="13">Watts (W)</option>
-                                        <option value="14">Kilowatts (kW)</option>
-                                    </select>
-                                </div>
+                            </fieldset>
 
-                                <div class="pure-g module module-pwr">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
-                                    <select name="eneUnits0" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="15">Joules (J)</option>
-                                        <option value="16">Kilowatts·hour (kWh)</option>
-                                    </select>
-                                </div>
-
-                                <div class="pure-g module module-tmp">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
-                                    <select name="tmpUnits0" class="pure-u-1 pure-u-lg-1-4">
-                                        <option value="2">Celsius (&deg;C)</option>
-                                        <option value="3">Fahrenheit (&deg;F)</option>
-                                        <option value="4">Kelvin (K)</option>
-                                    </select>
-                                </div>
+                            <fieldset class="module module-mics">
+                                <legend>Calibration</legend>
 
                                 <div class="pure-g module module-mics">
                                     <label class="pure-u-1 pure-u-lg-1-4">Calibrate gas sensor</label>
@@ -1808,8 +1788,8 @@
                                 </div>
                             </fieldset>
 
-                            <fieldset>
-                                <legend class="module module-hlw module-cse module-emon">Energy monitor</legend>
+                            <fieldset class="module module-emon module-cse module-hlw">
+                                <legend>Energy monitor</legend>
 
                                 <div class="pure-g module module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
@@ -1863,6 +1843,13 @@
                                 </div>
 
                             </fieldset>
+
+                            <fieldset>
+                                <legend>Units</legend>
+                                <div id="sns-units-config" class="pure-control-group settings-group">
+                                </div>
+                            </fieldset>
+
                         </div>
 
                     </div>
@@ -2175,6 +2162,24 @@
             </div>
         </template>
 
+        <!-- removeIf(!sensor) -->
+        <template id="template-sns-units">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4"></label>
+                <select class="pure-u-1 pure-u-lg-1-4">
+                </select>
+            </div>
+        </template>
+
+        <template id="template-module-magnitude">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24" type="number" min="0"></div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+            </div>
+        </template>
+        <!-- endRemoveIf(!sensor) -->
+
         <template id="template-dcz-relay">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
@@ -2182,32 +2187,12 @@
             </div>
         </template>
 
-        <!-- removeIf(!sensor) -->
-        <template id="template-dcz-magnitude">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
-                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24" name="dczMagnitude" type="number" min="0"></div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
-            </div>
-        </template>
-        <!-- endRemoveIf(!sensor) -->
-
         <template id="template-tspk-relay" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24" name="tspkRelay" type="number" min="0"></div>
             </div>
         </template>
-
-        <!-- removeIf(!sensor) -->
-        <template id="template-tspk-magnitude" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
-                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24 center" name="tspkMagnitude" type="number" min="0"></div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
-            </div>
-        </template>
-        <!-- endRemoveIf(!sensor) -->
 
         <!-- removeIf(!light) -->
         <template id="template-brightness-control">

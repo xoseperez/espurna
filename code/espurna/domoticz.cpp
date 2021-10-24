@@ -409,7 +409,9 @@ void onConnected(JsonObject& root) {
     }
 
 #if SENSOR_SUPPORT
-    sensorWebSocketMagnitudes(root, "dcz");
+    sensorWebSocketMagnitudes(root, "dcz", [](JsonArray& out, size_t index) {
+        out.add(getSetting({"dczMagnitude", index}, "0"));
+    });
 #endif
 }
 

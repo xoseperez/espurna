@@ -109,7 +109,9 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     }
 
     #if SENSOR_SUPPORT
-        sensorWebSocketMagnitudes(root, "tspk");
+        sensorWebSocketMagnitudes(root, "tspk", [](JsonArray& out, size_t index) {
+            out.add(getSetting({"tspkMagnitude", index}, "0"));
+        });
     #endif
 
 }

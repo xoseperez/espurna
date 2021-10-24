@@ -779,152 +779,326 @@ String _magnitudeTopic(unsigned char type) {
 
 }
 
-String _magnitudeUnits(const sensor_magnitude_t& magnitude) {
+String _magnitudeUnits(sensor::Unit unit) {
+    const __FlashStringHelper* result { F("") };
 
-    const __FlashStringHelper* result = nullptr;
-
-    switch (magnitude.units) {
-        case sensor::Unit::Farenheit:
-            result = F("°F");
-            break;
-        case sensor::Unit::Celcius:
-            result = F("°C");
-            break;
-        case sensor::Unit::Percentage:
-            result = F("%");
-            break;
-        case sensor::Unit::Hectopascal:
-            result = F("hPa");
-            break;
-        case sensor::Unit::Ampere:
-            result = F("A");
-            break;
-        case sensor::Unit::Volt:
-            result = F("V");
-            break;
-        case sensor::Unit::Watt:
-            result = F("W");
-            break;
-        case sensor::Unit::Kilowatt:
-            result = F("kW");
-            break;
-        case sensor::Unit::Voltampere:
-            result = F("VA");
-            break;
-        case sensor::Unit::Kilovoltampere:
-            result = F("kVA");
-            break;
-        case sensor::Unit::VoltampereReactive:
-            result = F("VAR");
-            break;
-        case sensor::Unit::KilovoltampereReactive:
-            result = F("kVAR");
-            break;
-        case sensor::Unit::Joule:
-        //aka case sensor::Unit::WattSecond:
-            result = F("J");
-            break;
-        case sensor::Unit::KilowattHour:
-            result = F("kWh");
-            break;
-        case sensor::Unit::MicrogrammPerCubicMeter:
-            result = F("µg/m³");
-            break;
-        case sensor::Unit::PartsPerMillion:
-            result = F("ppm");
-            break;
-        case sensor::Unit::Lux:
-            result = F("lux");
-            break;
-        case sensor::Unit::Ohm:
-            result = F("ohm");
-            break;
-        case sensor::Unit::MilligrammPerCubicMeter:
-            result = F("mg/m³");
-            break;
-        case sensor::Unit::CountsPerMinute:
-            result = F("cpm");
-            break;
-        case sensor::Unit::MicrosievertPerHour:
-            result = F("µSv/h");
-            break;
-        case sensor::Unit::Meter:
-            result = F("m");
-            break;
-        case sensor::Unit::Hertz:
-            result = F("Hz");
-            break;
-        case sensor::Unit::None:
-        default:
-            result = F("");
-            break;
+    switch (unit) {
+    case sensor::Unit::Farenheit:
+        result = F("°F");
+        break;
+    case sensor::Unit::Celcius:
+        result = F("°C");
+        break;
+    case sensor::Unit::Kelvin:
+        result = F("K");
+        break;
+    case sensor::Unit::Percentage:
+        result = F("%");
+        break;
+    case sensor::Unit::Hectopascal:
+        result = F("hPa");
+        break;
+    case sensor::Unit::Ampere:
+        result = F("A");
+        break;
+    case sensor::Unit::Volt:
+        result = F("V");
+        break;
+    case sensor::Unit::Watt:
+        result = F("W");
+        break;
+    case sensor::Unit::Kilowatt:
+        result = F("kW");
+        break;
+    case sensor::Unit::Voltampere:
+        result = F("VA");
+        break;
+    case sensor::Unit::Kilovoltampere:
+        result = F("kVA");
+        break;
+    case sensor::Unit::VoltampereReactive:
+        result = F("VAR");
+        break;
+    case sensor::Unit::KilovoltampereReactive:
+        result = F("kVAR");
+        break;
+    case sensor::Unit::Joule:
+    //aka case sensor::Unit::WattSecond:
+        result = F("J");
+        break;
+    case sensor::Unit::KilowattHour:
+        result = F("kWh");
+        break;
+    case sensor::Unit::MicrogrammPerCubicMeter:
+        result = F("µg/m³");
+        break;
+    case sensor::Unit::PartsPerMillion:
+        result = F("ppm");
+        break;
+    case sensor::Unit::Lux:
+        result = F("lux");
+        break;
+    case sensor::Unit::UltravioletIndex:
+        break;
+    case sensor::Unit::Ohm:
+        result = F("ohm");
+        break;
+    case sensor::Unit::MilligrammPerCubicMeter:
+        result = F("mg/m³");
+        break;
+    case sensor::Unit::CountsPerMinute:
+        result = F("cpm");
+        break;
+    case sensor::Unit::MicrosievertPerHour:
+        result = F("µSv/h");
+        break;
+    case sensor::Unit::Meter:
+        result = F("m");
+        break;
+    case sensor::Unit::Hertz:
+        result = F("Hz");
+        break;
+    case sensor::Unit::Ph:
+        result = F("pH");
+        break;
+    case sensor::Unit::Min_:
+    case sensor::Unit::Max_:
+    case sensor::Unit::None:
+        break;
     }
 
     return String(result);
+}
 
+String _magnitudeUnits(const sensor_magnitude_t& magnitude) {
+    return _magnitudeUnits(magnitude.units);
 }
 
 } // namespace
 
 String magnitudeUnits(unsigned char index) {
-    if (index >= magnitudeCount()) return String();
-    return _magnitudeUnits(_magnitudes[index]);
+    if (index < _magnitudes.size()) {
+        return _magnitudeUnits(_magnitudes[index]);
+    }
+
+    return String();
 }
 
 namespace {
 
 // Choose unit based on type of magnitude we use
 
-sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::Unit updated) {
-    auto result = magnitude.units;
+struct MagnitudeUnitsRange {
+    MagnitudeUnitsRange() = default;
 
-    switch (magnitude.type) {
+    template <size_t Size>
+    explicit MagnitudeUnitsRange(const sensor::Unit (&units)[Size]) :
+        _begin(std::begin(units)),
+        _end(std::end(units))
+    {}
+
+    template <size_t Size>
+    MagnitudeUnitsRange& operator=(const sensor::Unit (&units)[Size]) {
+        _begin = std::begin(units);
+        _end = std::end(units);
+        return *this;
+    }
+
+    const sensor::Unit* begin() const {
+        return _begin;
+    }
+
+    const sensor::Unit* end() const {
+        return _end;
+    }
+
+private:
+    const sensor::Unit* _begin { nullptr };
+    const sensor::Unit* _end { nullptr };
+};
+
+#define MAGNITUDE_UNITS_RANGE(...)\
+    static const sensor::Unit units[] PROGMEM {\
+        __VA_ARGS__\
+    };\
+\
+    out = units
+
+MagnitudeUnitsRange _magnitudeUnitsRange(unsigned char type) {
+    MagnitudeUnitsRange out;
+
+    switch (type) {
 
     case MAGNITUDE_TEMPERATURE: {
-        switch (updated) {
-        case sensor::Unit::Celcius:
-        case sensor::Unit::Farenheit:
-        case sensor::Unit::Kelvin:
-            result = updated;
-            break;
-        default:
-            break;
-        }
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Celcius,
+            sensor::Unit::Farenheit,
+            sensor::Unit::Kelvin
+        );
+        break;
+    }
+
+    case MAGNITUDE_HUMIDITY:
+    case MAGNITUDE_POWER_FACTOR: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Percentage
+        );
+        break;
+    }
+
+    case MAGNITUDE_PRESSURE: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Hectopascal
+        );
+        break;
+    }
+
+    case MAGNITUDE_CURRENT: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Ampere
+        );
+        break;
+    }
+
+    case MAGNITUDE_VOLTAGE: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Volt
+        );
         break;
     }
 
     case MAGNITUDE_POWER_ACTIVE: {
-        switch (updated) {
-        case sensor::Unit::Kilowatt:
-        case sensor::Unit::Watt:
-            result = updated;
-            break;
-        default:
-            break;
-        }
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Kilowatt,
+            sensor::Unit::Watt
+        );
+        break;
+    }
+
+    case MAGNITUDE_POWER_APPARENT: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Voltampere,
+            sensor::Unit::Kilovoltampere
+        );
+        break;
+    }
+
+    case MAGNITUDE_POWER_REACTIVE: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::VoltampereReactive,
+            sensor::Unit::KilovoltampereReactive
+        );
+        break;
+    }
+
+    case MAGNITUDE_ENERGY_DELTA: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Joule
+        );
         break;
     }
 
     case MAGNITUDE_ENERGY: {
-       switch (updated) {
-       case sensor::Unit::KilowattHour:
-       case sensor::Unit::Joule:
-           result = updated;
-           break;
-       default:
-           break;
-       }
-       break;
-    }
-
-    default:
-        result = updated;
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::KilowattHour,
+            sensor::Unit::Joule
+        );
         break;
+    }
+
+    case MAGNITUDE_PM1dot0:
+    case MAGNITUDE_PM2dot5:
+    case MAGNITUDE_PM10:
+    case MAGNITUDE_TVOC:
+    case MAGNITUDE_CH2O: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::MicrogrammPerCubicMeter,
+            sensor::Unit::MilligrammPerCubicMeter
+        );
+        break;
+    }
+
+    case MAGNITUDE_CO:
+    case MAGNITUDE_CO2:
+    case MAGNITUDE_NO2:
+    case MAGNITUDE_VOC: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::PartsPerMillion
+        );
+        break;
+    }
+
+    case MAGNITUDE_LUX: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Lux
+        );
+        break;
+    }
+
+    case MAGNITUDE_RESISTANCE: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Ohm
+        );
+        break;
+    }
+
+    case MAGNITUDE_HCHO: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::MilligrammPerCubicMeter
+        );
+        break;
+    }
+
+    case MAGNITUDE_GEIGER_CPM: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::CountsPerMinute
+        );
+        break;
+    }
+
+    case MAGNITUDE_GEIGER_SIEVERT: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::MicrosievertPerHour
+        );
+        break;
+    }
+
+    case MAGNITUDE_DISTANCE: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Meter
+        );
+        break;
+    }
+
+    case MAGNITUDE_FREQUENCY: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Hertz
+        );
+        break;
+    }
+
+    case MAGNITUDE_PH: {
+        MAGNITUDE_UNITS_RANGE(
+            sensor::Unit::Ph
+        );
+        break;
+    }
 
     }
 
-    return result;
-};
+    return out;
+}
+
+bool _magnitudeUnitSupported(const sensor_magnitude_t& magnitude, sensor::Unit unit) {
+    const auto range = _magnitudeUnitsRange(magnitude.type);
+    return std::any_of(range.begin(), range.end(), [&](sensor::Unit supported) {
+        return (unit == supported);
+    });
+}
+
+sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::Unit unit) {
+    return _magnitudeUnitSupported(magnitude, unit) ? unit : magnitude.units;
+}
 
 double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
@@ -1310,108 +1484,111 @@ String _magnitudeName(unsigned char type) {
     return String(result);
 }
 
-// prepare available magnitude, unit and error types
+// prepare available types and magnitudes config
+// make sure these are properly ordered, as UI does not delay processing
 
 void _sensorWebSocketTypes(JsonObject& root) {
-    JsonObject& container = root.createNestedObject("types");
-    static const char* const keys[] PROGMEM = {
-        "type", "prefix", "name"
-    };
-
-    JsonArray& schema = container.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-    JsonArray& values = container.createNestedArray("values");
-    _magnitudeForEachCounted([&](unsigned char type) {
-        JsonArray& value = values.createNestedArray();
-        value.add(type);
-        value.add(_magnitudeSettingsPrefix(type));
-        value.add(_magnitudeName(type));
-    });
+    ::web::ws::EnumerableConfig config{root, F("types")};
+    config(F("values"), {MAGNITUDE_NONE + 1, MAGNITUDE_MAX},
+        [](size_t type) {
+            return sensor_magnitude_t::counts(type) > 0;
+        },
+        {
+            {F("type"), [](JsonArray& out, size_t index) {
+                out.add(index);
+            }},
+            {F("prefix"), [](JsonArray& out, size_t index) {
+                out.add(_magnitudeSettingsPrefix(index));
+            }},
+            {F("name"), [](JsonArray& out, size_t index) {
+                out.add(_magnitudeName(index));
+            }}
+        });
 }
 
 void _sensorWebSocketErrors(JsonObject& root) {
-    JsonObject& container = root.createNestedObject("errors");
-    static const char* const keys[] PROGMEM = {
-        "type", "name"
-    };
-
-    JsonArray& schema = container.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-    JsonArray& values = container.createNestedArray("values");
-    _sensorForEachError([&](unsigned char type) {
-        JsonArray& value = values.createNestedArray();
-        value.add(type);
-        value.add(_sensorError(type));
+    ::web::ws::EnumerableConfig config{root, F("errors")};
+    config(F("values"), SENSOR_ERROR_MAX, {
+        {F("type"), [](JsonArray& out, size_t index) {
+            out.add(index);
+        }},
+        {F("name"), [](JsonArray& out, size_t index) {
+            out.add(_sensorError(index));
+        }}
     });
 }
 
-void _sensorWebSocketMagnitudes(JsonObject& root) {
-    JsonObject& container = root.createNestedObject("magnitudes");
-    static const char* const keys[] PROGMEM = {
-        "index_global", "type", "units", "description"
-    };
-
-    JsonArray& schema = container.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-    JsonArray& values = container.createNestedArray("values");
-    for (auto& magnitude : _magnitudes) {
-        JsonArray& value = values.createNestedArray();
-        value.add(magnitude.index_global);
-        value.add(magnitude.type);
-        value.add(_magnitudeUnits(magnitude));
-        value.add(_magnitudeDescription(magnitude));
-    }
+void _sensorWebSocketUnits(JsonObject& root) {
+    ::web::ws::EnumerableConfig config{root, F("units")};
+    config(F("values"), _magnitudes.size(), {
+        {F("type"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].type);
+        }},
+        {F("index_global"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].index_global);
+        }},
+        {F("supported"), [](JsonArray& out, size_t index) {
+            JsonArray& units = out.createNestedArray();
+            const auto range = _magnitudeUnitsRange(_magnitudes[index].type);
+            for (auto it = range.begin(); it != range.end(); ++it) {
+                JsonArray& unit = units.createNestedArray();
+                unit.add(static_cast<int>(*it));
+                unit.add(_magnitudeUnits(*it));
+            }
+        }}
+    });
 }
 
-void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
-    JsonObject& container = root.createNestedObject("magnitudesConfig");
-    _sensorWebSocketTypes(container);
-    _sensorWebSocketErrors(container);
-    _sensorWebSocketMagnitudes(container);
+void _sensorWebSocketConfig(JsonObject& root) {
+    ::web::ws::EnumerableConfig config{root, F("magnitudes")};
+    config(F("values"), _magnitudes.size(), {
+        {F("index_global"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].index_global);
+        }},
+        {F("type"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].type);
+        }},
+        {F("description"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudeDescription(_magnitudes[index]));
+        }},
+        {F("units"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<int>(_magnitudes[index].units));
+        }}
+    });
 }
 
 void _sensorWebSocketSendData(JsonObject& root) {
-    JsonObject& container = root.createNestedObject("magnitudes");
-    static const char* const keys[] PROGMEM = {
-        "value", "error", "info"
-    };
-
-    JsonArray& schema = container.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-    char buffer[64];
-    JsonArray& values = container.createNestedArray("values");
-    for (auto& magnitude : _magnitudes) {
-        JsonArray& entry = values.createNestedArray();
-        dtostrf(_magnitudeProcess(magnitude, magnitude.last), 1, magnitude.decimals, buffer);
-
-        entry.add(buffer);
-        entry.add(magnitude.sensor->error());
-
+    ::web::ws::EnumerableConfig config{root, F("magnitudes")};
+    config(F("values"), _magnitudes.size(), {
+        {F("value"), [](JsonArray& out, size_t index) {
+            char buffer[64];
+            dtostrf(_magnitudeProcess(
+                _magnitudes[index], _magnitudes[index].last),
+                1, _magnitudes[index].decimals, buffer);
+            out.add(buffer);
+        }},
+        {F("error"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].sensor->error());
+        }},
+        {F("info"), [](JsonArray& out, size_t index) {
 #if NTP_SUPPORT
-        if ((_sensor_save_every > 0) && (magnitude.type == MAGNITUDE_ENERGY)) {
-            String string = F("Last saved: ");
-            string += getSetting({"eneTime", magnitude.index_global}, F("(unknown)"));
-            entry.add(string);
-        } else {
-            entry.add("");
-        }
-#else
-        entry.add("");
+            if ((_magnitudes[index].type == MAGNITUDE_ENERGY) && (_sensor_save_every > 0)) {
+                out.add(String(F("Last saved: "))
+                    + getSetting({"eneTime", _magnitudes[index].index_global},
+                        F("(unknown)")));
+            } else {
 #endif
-    }
+                out.add("");
+#if NTP_SUPPORT
+            }
+#endif
+        }}
+    });
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, "sns");
-}
-
-void _sensorWebSocketOnConnected(JsonObject& root) {
     for (auto* sensor [[gnu::unused]] : _sensors) {
-
         if (_sensorIsEmon(sensor)) {
             wsPayloadModule(root, "emon");
             wsPayloadModule(root, "pwr");
@@ -1421,85 +1598,96 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
             root["voltMains0"] = static_cast<BaseAnalogEmonSensor*>(sensor)->getVoltage();
         }
 
-        #if HLW8012_SUPPORT
-            if (sensor->getID() == SENSOR_HLW8012_ID) {
-                wsPayloadModule(root, "hlw");
-            }
-        #endif
-
-        #if CSE7766_SUPPORT
-            if (sensor->getID() == SENSOR_CSE7766_ID) {
-                wsPayloadModule(root, "cse");
-            }
-        #endif
-
-        #if PZEM004T_SUPPORT || PZEM004TV30_SUPPORT
-            switch (sensor->getID()) {
-            case SENSOR_PZEM004T_ID:
-            case SENSOR_PZEM004TV30_ID:
-                wsPayloadModule(root, "pzem");
-                break;
-            default:
-                break;
-            }
-        #endif
-
-        #if PULSEMETER_SUPPORT
-            if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                wsPayloadModule(root, "pm");
-                root["eneRatio0"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
-            }
-        #endif
-
-        #if MICS2710_SUPPORT || MICS5525_SUPPORT
-            switch (sensor->getID()) {
-            case SENSOR_MICS2710_ID:
-            case SENSOR_MICS5525_ID:
-                wsPayloadModule(root, "mics");
-                break;
-            default:
-                break;
-            }
-        #endif
-
+        switch (sensor->getID()) {
+#if HLW8012_SUPPORT
+        case SENSOR_HLW8012_ID:
+            wsPayloadModule(root, "hlw");
+            break;
+#endif
+#if CSE7766_SUPPORT
+        case SENSOR_CSE7766_ID:
+            wsPayloadModule(root, "cse");
+            break;
+#endif
+#if PZEM004T_SUPPORT || PZEM004TV30_SUPPORT
+        case SENSOR_PZEM004T_ID:
+        case SENSOR_PZEM004TV30_ID:
+            wsPayloadModule(root, "pzem");
+            break;
+#endif
+#if PULSEMETER_SUPPORT
+        case SENSOR_PULSEMETER_ID:
+            wsPayloadModule(root, "pm");
+            root["eneRatio0"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
+            break;
+#endif
+#if MICS2710_SUPPORT || MICS5525_SUPPORT
+        case SENSOR_MICS2710_ID:
+        case SENSOR_MICS5525_ID:
+            wsPayloadModule(root, "mics");
+            break;
+#endif
+        }
     }
 
-    if (magnitudeCount()) {
-        root["snsRead"] = _sensor_read_interval / 1000;
-        root["snsReport"] = _sensor_report_every;
-        root["snsSave"] = _sensor_save_every;
-        _sensorWebSocketMagnitudesConfig(root);
+    root["snsRead"] = _sensor_read_interval / 1000;
+    root["snsReport"] = _sensor_report_every;
+    root["snsSave"] = _sensor_save_every;
+}
+
+// Entries related to things reported by the module.
+// - types of magnitudes that are available and the string values associated with them
+// - error types and stringified versions of them
+// - units are the value types of the magnitude
+// TODO: magnitude types have some common keys and some specific ones, only implemented for the type
+// e.g. voltMains is specific to the MAGNITUDE_VOLTAGE but *only* in analog mode, or eneRatio specific to MAGNITUDE_ENERGY
+// but, notice that the sensor will probably be used to 'get' certain properties, to generate certain keys list
+// TODO: report common keys either here or in the data payload
+// some preprocessor magic might need to happen though, as prefixes are retrieved via `_magnitudeSettingsPrefix(type)`
+// (also there is c++17 where string_view and char arrays may be concatenated at compile time)
+
+void _sensorWebSocketOnConnectedTypes(JsonObject& root) {
+    if (!_magnitudes.size()) {
+        return;
     }
+
+    JsonObject& container = root.createNestedObject(F("magnitudesTypes"));
+    _sensorWebSocketTypes(container);
+    _sensorWebSocketErrors(container);
+    _sensorWebSocketUnits(container);
+}
+
+// Entries specific to the sensor_magnitude_t; type, info, description
+
+void _sensorWebSocketOnConnectedConfig(JsonObject& root) {
+    if (!_magnitudes.size()) {
+        return;
+    }
+
+    JsonObject& container = root.createNestedObject(F("magnitudesConfig"));
+    _sensorWebSocketConfig(container);
 }
 
 } // namespace
 
 // Used by modules to generate magnitude_id<->module_id mapping for the WebUI
-// WS produces tuples <prefix>Magnitudes that contain type, sensor's global index and module's index
-// Settings use <prefix>Magnitude<index_global> keys to allow us to retrieve module's index
+// Prefix controls the UI templates, supplied callback should retrieve module-specific value Id
 
-void sensorWebSocketMagnitudes(JsonObject& root, const String& prefix) {
-    const String wsKey = prefix + F("Magnitudes");
-    const String confKey = wsKey.substring(0, wsKey.length() - 1);
+void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback callback) {
+    ::web::ws::EnumerableConfig config{root, F("magnitudesModule")};
 
-    JsonObject& namedList = root.createNestedObject(wsKey);
+    auto& container = config.root();
+    container[F("prefix")] = prefix;
 
-    static const char* const keys[] PROGMEM = {
-        "type", "index_global", "index_module"
-    };
-
-    JsonArray& schema = namedList.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-    JsonArray& values = namedList.createNestedArray("values");
-    for (size_t index = 0; index < _magnitudes.size(); ++index) {
-        JsonArray& tuple = values.createNestedArray();
-
-        auto& magnitude = _magnitudes[index];
-        tuple.add(magnitude.type);
-        tuple.add(magnitude.index_global);
-        tuple.add(getSetting({confKey, index}, 0));
-    }
+    config(F("values"), _magnitudes.size(), {
+        {F("type"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].type);
+        }},
+        {F("index_global"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].index_global);
+        }},
+        {F("index_module"), callback}
+    });
 }
 
 #endif // WEB_SUPPORT
@@ -2857,7 +3045,8 @@ void sensorSetup() {
     #if WEB_SUPPORT
         wsRegister()
             .onVisible(_sensorWebSocketOnVisible)
-            .onConnected(_sensorWebSocketOnConnected)
+            .onConnected(_sensorWebSocketOnConnectedTypes)
+            .onConnected(_sensorWebSocketOnConnectedConfig)
             .onData(_sensorWebSocketSendData)
             .onKeyCheck(_sensorWebSocketOnKeyCheck);
     #endif
