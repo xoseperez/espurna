@@ -1259,10 +1259,12 @@ function createRelayList(values, container, template_name) {
         return;
     }
 
+    // TODO: let schema set the settings key
     let template = loadConfigTemplate(template_name);
     values.forEach((value, index) => {
         let line = template.cloneNode(true);
-        line.querySelector("label").textContent += " #".concat(index)
+        line.querySelector("label").textContent = (Enumerable.relay)
+            ? Enumerable.relay[index].name : `Switch #${index}`;
 
         let input = line.querySelector("input");
         input.value = value;
