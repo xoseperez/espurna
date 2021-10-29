@@ -383,6 +383,38 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     Wire.endTransmission();
 }
 
+void i2c_write_uint(uint8_t address, uint16_t reg, uint32_t input, size_t size) {
+    if (size && (size <= sizeof(input))) {
+        Wire.beginTransmission(address);
+        Wire.write((reg >> 8) & 0xff);
+        Wire.write(reg & 0xff);
+
+        uint8_t buf[sizeof(input)];
+        std::memcpy(&buf[0], &input, sizeof(buf));
+
+        Wire.write(&buf[sizeof(buf) - size], size);
+        Wire.endTransmission();
+    }
+}
+
+uint32_t i2c_read_uint(uint8_t address, uint16_t reg, size_t size, bool stop) {
+    uint32_t out { 0 };
+    if (size <= sizeof(out)) {
+        Wire.beginTransmission(address);
+        Wire.write((reg >> 8) & 0xff);
+        Wire.write(reg & 0xff);
+        Wire.endTransmission(stop);
+
+        if (size == Wire.requestFrom(address, size)) {
+            for (size_t byte = 0; byte < size; --byte) {
+                out = (out << 8ul) | static_cast<uint8_t>(Wire.read());
+            }
+        }
+    }
+
+    return out;
+}
+
 #endif // I2C_USE_BRZO
 
 uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {

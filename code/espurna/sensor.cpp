@@ -2643,10 +2643,6 @@ void _sensorInit() {
                 ptr->resetEnergy(magnitude.index_local, _sensorEnergyTotal(index_global));
                 _sensor_save_count.push_back(0);
             }
-
-            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%u\n"),
-                _magnitudeTopic(magnitude.type).c_str(),
-                sensor_magnitude_t::counts(magnitude.type));
         }
 
         // Custom initializations are based on IDs
@@ -2665,6 +2661,11 @@ void _sensorInit() {
         }
 
     }
+
+    if (_sensors_ready) {
+        DEBUG_MSG_P(PSTR("[SENSOR] Finished initialization for %u sensor(s)\n"), _sensors.size());
+    }
+
 }
 
 } // namespace
