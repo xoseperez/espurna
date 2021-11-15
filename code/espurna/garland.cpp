@@ -52,6 +52,7 @@ Infinite commands can be interrupted by immediate command or by reset command.
 #include <array>
 #include <list>
 #include <memory>
+#include <queue>
 #include <vector>
 
 #include "garland.h"
