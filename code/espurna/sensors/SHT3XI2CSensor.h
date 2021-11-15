@@ -41,7 +41,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
             nice_delay(500);
             _ready = true;
             _dirty = false;
-            
+
         }
 
         // Descriptive name of the sensor
