@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix setting up GPIO0 as INPUT when preparing to use analogRead(A0) ([ff11e581](https://github.com/xoseperez/espurna/commit/ff11e5814ff1fc938afa439c15f57fa9909b9e4a))
 - Only change EventSensor counter from the ISR ([735e5c0e](https://github.com/xoseperez/espurna/commit/735e5c0ec22fabfdcfa55123b9bceaa3d8f917b8))
 - Fix a typo when getting local index for Nth magnitude ([6ba5f95e](https://github.com/xoseperez/espurna/commit/6ba5f95e875468f2b7a93c69b45fc6f6c62f390f))
+- SHT3X: add missing I2C address A (0x44) ([#2484](https://github.com/xoseperez/espurna/issues/2484), thanks to **[@drc38](https://github.com/drc38)**)
 #### Settings
 - Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System
