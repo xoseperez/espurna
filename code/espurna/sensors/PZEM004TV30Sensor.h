@@ -19,33 +19,135 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 #include <array>
 
-#define PZEM_DEBUG_MSG_P(...) if (_debug) DEBUG_MSG_P(__VA_ARGS__)
-
+#if DEBUG_SUPPORT
+#define PZEM_DEBUG_MSG_P(...) \
+    ([&](){ \
+        DEBUG_MSG_P(__VA_ARGS__);\
+    })
+#else
+#define PZEM_DEBUG_MSG_P(...)
+#endif
 
 class PZEM004TV30Sensor : public BaseEmonSensor {
+public:
+    static constexpr unsigned char RxPin { PZEM004TV30_RX_PIN };
+    static constexpr unsigned char TxPin { PZEM004TV30_RX_PIN };
 
-    private:
-
-    PZEM004TV30Sensor() : BaseEmonSensor(0) {
-        _sensor_id = SENSOR_PZEM004TV30_ID;
-        _error = SENSOR_ERROR_OK;
-        _count = 6;
+    static constexpr bool useSoftwareSerial() {
+        return 1 == PZEM004TV30_USE_SOFT;
     }
 
-    ~PZEM004TV30Sensor() {
-        PZEM004TV30Sensor::instance = nullptr;
-    }
-
-    public:
-
-    static PZEM004TV30Sensor* instance;
-    static PZEM004TV30Sensor* create() {
-        if (PZEM004TV30Sensor::instance) return PZEM004TV30Sensor::instance;
-        PZEM004TV30Sensor::instance = new PZEM004TV30Sensor();
-        return PZEM004TV30Sensor::instance;
+    static HardwareSerial* defaultHardwarePort() {
+        return &PZEM004TV30_HW_PORT;
     }
 
     static constexpr unsigned long Baudrate = 9600u;
+
+    struct SerialPort {
+        virtual const char* tag() const = 0;
+        virtual void begin(unsigned long baudrate) = 0;
+        virtual Stream* operator->() = 0;
+
+        SerialPort() = delete;
+        SerialPort(unsigned char rx, unsigned char tx) :
+            _rx(rx),
+            _tx(tx)
+        {}
+
+        unsigned char rx() const {
+            return _rx;
+        }
+
+        unsigned char tx() const {
+            return _tx;
+        }
+
+    private:
+        unsigned char _rx;
+        unsigned char _tx;
+    };
+
+    struct SoftwarePort : public SerialPort {
+        SoftwarePort() = delete;
+        SoftwarePort(unsigned char rx, unsigned char tx) :
+            SerialPort(rx, tx),
+            _serial(std::make_unique<SoftwareSerial>(rx, tx))
+        {}
+
+        const char* tag() const override {
+            return "Sw";
+        }
+
+        void begin(unsigned long baudrate) override {
+            _serial->begin(baudrate);
+        }
+
+        Stream* operator->() override {
+            return static_cast<Stream*>(_serial.get());
+        }
+
+    private:
+        std::unique_ptr<SoftwareSerial> _serial;
+    };
+
+    struct HardwarePort : public SerialPort {
+        HardwarePort() = delete;
+        HardwarePort(HardwareSerial* serial, unsigned char rx, unsigned char tx) :
+            SerialPort(rx, tx),
+            _serial(serial)
+        {
+            if ((rx == 13) && (tx == 15)) {
+                _serial->flush();
+                _serial->swap();
+            }
+        }
+
+        void begin(unsigned long baudrate) override {
+            _serial->begin(baudrate);
+        }
+
+        const char* tag() const override {
+            return "Hw";
+        }
+
+        Stream* operator->() override {
+            return static_cast<Stream*>(_serial);
+        }
+
+    private:
+        HardwareSerial* _serial;
+    };
+
+    using PortPtr = std::unique_ptr<SerialPort>;
+    using Instance = std::unique_ptr<PZEM004TV30Sensor>;
+
+    static PortPtr makeHardwarePort(HardwareSerial* port, unsigned char rx, unsigned char tx) {
+        return std::make_unique<HardwarePort>(port, rx, tx);
+    }
+
+    static PortPtr makeSoftwarePort(unsigned char rx, unsigned char tx) {
+        return std::make_unique<SoftwarePort>(rx, tx);
+    }
+
+    // Note that the device (aka slave) address needs be changed first via
+    // - some external tool. For example, using USB2TTL adapter and a PC app
+    // - `pzem.address` with **only** one device on the line
+    //    (because we would change all 0xf8-addressed devices at the same time)
+    static PZEM004TV30Sensor* make(PortPtr port, uint8_t address, unsigned long read_timeout) {
+        if (!_instance) {
+            _port = std::move(port);
+            _port->begin(Baudrate);
+            (*_port)->setTimeout(read_timeout);
+
+            _address = address;
+            _read_timeout = read_timeout;
+
+            _instance.reset(new PZEM004TV30Sensor());
+            return _instance.get();
+        }
+
+        return nullptr;
+    }
 
     // per MODBUS application protocol specification
     // > 4.1 Protocol description
@@ -64,6 +166,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     // XXX: pzem manual does not specify anything, these are arbitrary values (ms)
     static constexpr unsigned long DefaultReadTimeout = 200u;
     static constexpr unsigned long DefaultUpdateInterval = 200u;
+    static constexpr bool DefaultDebug { 1 == PZEM004TV30_DEBUG };
 
     // Device uses Modbus-RTU protocol and implements the following function codes:
     // - 0x03 (Read Holding Register) (NOT IMPLEMENTED)
@@ -79,26 +182,25 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
 
     // We **can** reset PZEM energy, unlike the original PZEM004T
     // However, we can't set it to a specific value, we can only start from 0
-    void resetEnergy(unsigned char, sensor::Energy) override {}
-
-    void resetEnergy() override {
-        _reset_energy = true;
+    void resetEnergy(unsigned char index, sensor::Energy) override {
+        if (index == 3) {
+            _reset_energy = true;
+        }
     }
 
-    void resetEnergy(unsigned char) override {
-        _reset_energy = true;
+    sensor::Energy totalEnergy(unsigned char index) const override {
+        sensor::Energy out;
+        if (index == 3) {
+            out = _energy;
+        }
+
+        return out;
     }
 
-    double getEnergy(unsigned char index) override {
-        return _energy;
-    }
-
-    sensor::Energy totalEnergy(unsigned char index) override {
-        return getEnergy(index);
-    }
-
-    size_t countDevices() override {
-        return 1;
+    // Same with 'ratio' adjustment, we can't influence what sensor outputs
+    // (and adjusting individual values does not really make sense here)
+    double ratioFromValue(unsigned char, double, double) const override {
+        return BaseEmonSensor::DefaultRatio;
     }
 
     // ---------------------------------------------------------------------
@@ -202,7 +304,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
             return;
         }
 
-        _stream->write(builder.buffer.data(), builder.size);
+        (*_port)->write(builder.buffer.data(), builder.size);
 
         size_t expect = modbusExpect(builder);
         if (!expect) {
@@ -223,7 +325,7 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         // TODO: testing is much easier, b/c we can just grab any modbus simulator and set up multiple devices
         auto ts = millis();
         while ((bytes < expect) && (millis() - ts <= _read_timeout)) {
-            int c = _stream->read();
+            int c = (*_port)->read();
             if (c < 0) {
                 continue;
             }
@@ -388,8 +490,8 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         _current /= 1000.0;
 
         // - Power: 4 bytes, in 0.1W (we return W)
-        _power = take_4();
-        _power /= 10.0;
+        _power_active = take_4();
+        _power_active /= 10.0;
 
         // - Energy: 4 bytes, in Wh (we return kWh)
         _energy = take_4();
@@ -426,71 +528,44 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     }
 
     void flush() {
-        while (_stream->read() >= 0) {
+        while ((*_port)->read() >= 0) {
         }
     }
 
     // ---------------------------------------------------------------------
 
-    // Note that the device (aka slave) address needs be changed first via
-    // - some external tool. For example, using USB2TTL adapter and a PC app
-    // - `pzem.address` with **only** one device on the line
-    //    (because we would change all 0xf8-addressed devices at the same time)
-    void setAddress(uint8_t address) {
-        _address = address;
-    }
-
     void setDebug(bool debug) {
         _debug = debug;
-    }
-
-    void setStream(Stream* stream) {
-        _stream = stream;
-        _stream->setTimeout(_read_timeout);
-    }
-
-    void setReadTimeout(unsigned long value) {
-        _read_timeout = value;
     }
 
     void setUpdateInterval(unsigned long value) {
         _update_interval = value;
     }
 
-    template <typename T>
-    void setDescription(T&& description) {
-        _description = std::forward<T>(description);
-    }
+    static void registerTerminalCommands();
 
     // ---------------------------------------------------------------------
 
+    static constexpr Magnitude Magnitudes[] {
+        MAGNITUDE_VOLTAGE,
+        MAGNITUDE_FREQUENCY,
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_POWER_ACTIVE,
+        MAGNITUDE_ENERGY,
+        MAGNITUDE_POWER_FACTOR
+    };
+
     void begin() override {
-        _ready = (_stream != nullptr);
         _last_reading = millis() - _update_interval;
-        #if TERMINAL_SUPPORT
-            terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
-                if (ctx.argc != 2) {
-                    terminalError(ctx.output, F("PZ.ADDRESS <ADDRESS>"));
-                    return;
-                }
-                uint8_t updated = settings::internal::convert<uint8_t>(ctx.argv[1]);
-
-                PZEM004TV30Sensor::instance->flush();
-                if (PZEM004TV30Sensor::instance->modbusChangeAddress(updated)) {
-                    PZEM004TV30Sensor::instance->setAddress(updated);
-                    setSetting("pzemv30Addr", updated);
-                    terminalOK(ctx.output);
-                    return;
-                }
-
-                terminalError(ctx.output, F("Could not change the address"));
-            });
-        #endif
+        _ready = true;
     }
 
     String description() override {
         static const String base(F("PZEM004T V3.0"));
-        return base + " @ " + _description + ", 0x" + String(_address, 16);
+        return base + " @ "
+            + _port->tag()
+            + F("Serial, 0x")
+            + String(_address, 16);
     }
 
     String description(unsigned char) override {
@@ -502,26 +577,29 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
     }
 
     unsigned char type(unsigned char index) override {
-        switch (index) {
-        case 0: return MAGNITUDE_VOLTAGE;
-        case 1: return MAGNITUDE_CURRENT;
-        case 2: return MAGNITUDE_POWER_ACTIVE;
-        case 3: return MAGNITUDE_ENERGY;
-        case 4: return MAGNITUDE_FREQUENCY;
-        case 5: return MAGNITUDE_POWER_FACTOR;
+        if (index < std::size(Magnitudes)) {
+            return Magnitudes[index].type;
         }
+
         return MAGNITUDE_NONE;
     }
 
     double value(unsigned char index) override {
         switch (index) {
-        case 0: return _voltage;
-        case 1: return _current;
-        case 2: return _power;
-        case 3: return _energy;
-        case 4: return _frequency;
-        case 5: return _power_factor;
+        case 0:
+            return _voltage;
+        case 1:
+            return _frequency;
+        case 2:
+            return _current;
+        case 3:
+            return _power_active;
+        case 4:
+            return _energy;
+        case 5:
+            return _power_factor;
         }
+
         return 0.0;
     }
 
@@ -540,32 +618,66 @@ class PZEM004TV30Sensor : public BaseEmonSensor {
         }
     }
 
-    private:
+private:
+    PZEM004TV30Sensor() {
+        _sensor_id = SENSOR_PZEM004TV30_ID;
+        _error = SENSOR_ERROR_OK;
+        _count = std::size(Magnitudes);
+        findAndAddEnergy(Magnitudes);
+    }
 
-    String _description;
+    static uint8_t _address;
+    static unsigned long _read_timeout;
+    static PortPtr _port;
+    static Instance _instance;
 
     bool _debug { false };
     char _debug_buffer[(BufferSize * 2) + 1];
 
-    Stream* _stream { nullptr };
-    uint8_t _address { DefaultAddress };
-
     bool _reset_energy { false };
 
-    unsigned long _read_timeout { DefaultReadTimeout };
     unsigned long _update_interval { DefaultUpdateInterval };
     unsigned long _last_reading { 0 };
+    bool _alarm { false };
 
     double _voltage { 0.0 };
     double _current { 0.0 };
-    double _power { 0.0 };
+    double _power_active { 0.0 };
     double _energy { 0.0 };
     double _frequency { 0.0 };
     double _power_factor { 0.0 };
-    bool _alarm { false };
-
 };
 
-PZEM004TV30Sensor* PZEM004TV30Sensor::instance = nullptr;
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude PZEM004TV30Sensor::Magnitudes[];
+#endif
+
+uint8_t PZEM004TV30Sensor::_address { PZEM004TV30Sensor::DefaultAddress };
+unsigned long PZEM004TV30Sensor::_read_timeout { PZEM004TV30Sensor::DefaultReadTimeout };
+PZEM004TV30Sensor::Instance PZEM004TV30Sensor::_instance{};
+PZEM004TV30Sensor::PortPtr PZEM004TV30Sensor::_port{};
+
+void PZEM004TV30Sensor::registerTerminalCommands() {
+#if TERMINAL_SUPPORT
+    terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
+        if (ctx.argc != 2) {
+            terminalError(ctx.output, F("PZ.ADDRESS <ADDRESS>"));
+            return;
+        }
+
+        uint8_t updated = settings::internal::convert<uint8_t>(ctx.argv[1]);
+
+        _instance->flush();
+        if (_instance->modbusChangeAddress(updated)) {
+            _instance->_address = updated;
+            setSetting("pzemv30Addr", updated);
+            terminalOK(ctx.output);
+            return;
+        }
+
+        terminalError(ctx.output, F("Could not change the address"));
+    });
+#endif
+}
 
 #undef PZEM_DEBUG_MSG_P

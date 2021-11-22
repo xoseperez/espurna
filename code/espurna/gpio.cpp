@@ -106,6 +106,8 @@ private:
 
 } // namespace
 
+// --------------------------------------------------------------------------
+
 // Per https://llvm.org/docs/CodingStandards.html#provide-a-virtual-method-anchor-for-classes-in-headers
 // > If a class is defined in a header file and has a vtable (either it has virtual methods or it derives from classes with virtual methods),
 // > it must always have at least one out-of-line virtual method in the class. Without this, the compiler will copy the vtable and RTTI into

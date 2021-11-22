@@ -77,7 +77,6 @@ struct KWh {
 };
 
 struct Energy {
-
     constexpr static uint32_t KwhMultiplier = 3600000ul;
     constexpr static uint32_t KwhLimit = ((1ul << 31ul) / KwhMultiplier);
 
@@ -85,11 +84,11 @@ struct Energy {
 
     // TODO: while we accept ws >= the kwh conversion limit,
     // should this be dealt with on the unit level?
-    Energy(double);
-    Energy(KWh, Ws);
-    Energy(KWh);
-    Energy(Wh);
-    Energy(Ws);
+    explicit Energy(double);
+    explicit Energy(KWh, Ws);
+    explicit Energy(KWh);
+    explicit Energy(Wh);
+    explicit Energy(Ws);
 
     // Sets internal counters to zero
     void reset();
@@ -101,10 +100,11 @@ struct Energy {
     explicit operator bool() const;
 
     // Generic conversion as-is
-    double asDouble();
+    double asDouble() const;
+    String asString() const;
 
     // Convert back to input unit, with overflow mechanics when kwh values goes over 32 bit
-    Ws asWs();
+    Ws asWs() const;
 
     // Generic sensors output energy in joules / watt-second
     Energy& operator +=(Ws);
@@ -117,6 +117,12 @@ struct Energy {
     // Using watt-second to avoid loosing precision, we don't expect these to be accessed directly
     KWh kwh;
     Ws ws;
+};
+
+struct ReadValue {
+    double raw;
+    double processed;
+    double filtered;
 };
 
 struct Value {

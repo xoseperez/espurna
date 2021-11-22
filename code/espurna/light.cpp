@@ -54,8 +54,8 @@ static_assert(std::is_trivially_copyable<Light::MiredsRange>::value, "");
 
 namespace Light {
 
-// TODO: gcc4 treats these as real statics, so everything needs to be bound to this .cpp
-#if __GNUC__ < 5
+// TODO: unless we are building with latest Core versions and -std=c++17, these need to be explicitly bound to at least one object file
+#if __cplusplus <= 201703L
 constexpr long Rgb::Min;
 constexpr long Rgb::Max;
 
@@ -1984,8 +1984,8 @@ void _lightUpdateFromMqttGroup() {
 
 // TODO: implement per-module heartbeat mask? e.g. to exclude unwanted topics based on preference, not settings
 
-bool _lightMqttHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Light) {
+bool _lightMqttHeartbeat(espurna::heartbeat::Mask mask) {
+    if (mask & espurna::heartbeat::Report::Light) {
         lightMQTT();
     }
 

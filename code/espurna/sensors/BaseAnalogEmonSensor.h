@@ -18,6 +18,20 @@ extern "C" {
 
 class BaseAnalogEmonSensor : public BaseEmonSensor {
 public:
+    static constexpr double IRef { EMON_CURRENT_RATIO };
+
+    // TODO: mask common magnitudes (...voltage), when there are multiple channels?
+    static constexpr Magnitude Magnitudes[] {
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_VOLTAGE,
+        MAGNITUDE_POWER_APPARENT,
+        MAGNITUDE_ENERGY
+    };
+
+    BaseAnalogEmonSensor() {
+        _count = std::size(Magnitudes);
+    }
+
     virtual unsigned int analogRead() = 0;
 
 	virtual void setVoltage(double) = 0;
@@ -26,24 +40,13 @@ public:
     virtual void setReferenceVoltage(double) = 0;
     virtual double getReferenceVoltage() const = 0;
 
-    virtual void setCurrentRatio(double) = 0;
-    virtual double getCurrentRatio() const = 0;
-
     virtual void setPivot(double) = 0;
     virtual double getPivot() const = 0;
 
     virtual void updateCurrent(double) = 0;
     virtual double getCurrent() const = 0;
 
-    BaseAnalogEmonSensor() {
-        _count = 4;
-    }
-
-    double defaultCurrentRatio() const override {
-        return EMON_CURRENT_RATIO;
-    }
-
-    unsigned char type() override {
+    unsigned char type() const override {
         return sensor::type::AnalogEmon;
     }
 
@@ -67,22 +70,6 @@ public:
         setPivot(_adc_counts >> 1);
     }
 
-    void expectedPower(unsigned int expected) final override {
-        unsigned int actual = getCurrent() * getVoltage();
-        if ((!actual) || (expected == actual)) {
-            return;
-        }
-
-        setCurrentRatio(getCurrentRatio() * ((double) expected / (double) actual));
-        calculateFactors();
-        _dirty = true;
-    }
-
-    void resetRatios() override {
-        setCurrentRatio(defaultCurrentRatio());
-        calculateFactors();
-    }
-
     // ---------------------------------------------------------------------
     // Sensor API
     // ---------------------------------------------------------------------
@@ -96,10 +83,13 @@ public:
         _dirty = false;
 
 #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[EMON] Reference (mV): %d\n"), int(1000 * getReferenceVoltage()));
+        DEBUG_MSG_P(PSTR("[EMON] Reference (mV): %ld\n"),
+                std::lround(1000.0 * getReferenceVoltage()));
         DEBUG_MSG_P(PSTR("[EMON] ADC counts: %lu\n"), _adc_counts);
-        DEBUG_MSG_P(PSTR("[EMON] Channel current ratio (mA/V): %d\n"), int(1000 * getCurrentRatio()));
-        DEBUG_MSG_P(PSTR("[EMON] Channel current factor (mA/bit): %d\n"), int(1000 * _current_factor));
+        DEBUG_MSG_P(PSTR("[EMON] Channel current ratio (mA/V): %ld\n"),
+                std::lround(1000.0 * getRatio(0)));
+        DEBUG_MSG_P(PSTR("[EMON] Channel current factor (mA/bit): %ld\n"),
+                std::lround(1000.0 * _current_factor));
         DEBUG_MSG_P(PSTR("[EMON] Channel multiplier: %u\n"), _multiplier);
 #endif
     }
@@ -120,15 +110,8 @@ public:
     }
 
     unsigned char type(unsigned char index) override {
-        switch (index) {
-        case 0:
-            return MAGNITUDE_CURRENT;
-        case 1:
-            return MAGNITUDE_VOLTAGE;
-        case 2:
-            return MAGNITUDE_POWER_APPARENT;
-        case 3:
-            return MAGNITUDE_ENERGY;
+        if (index < std::size(Magnitudes)) {
+            return Magnitudes[index].type;
         }
 
         return MAGNITUDE_NONE;
@@ -212,7 +195,7 @@ public:
     }
 
     void calculateFactors() {
-        _current_factor = getCurrentRatio() * getReferenceVoltage() / _adc_counts;
+        _current_factor = getRatio(0) * getReferenceVoltage() / _adc_counts;
         unsigned int s = 1;
         unsigned int i = 1;
         unsigned int m = 1;
@@ -239,6 +222,10 @@ private:
     size_t _resolution { EMON_ANALOG_RESOLUTION };  // ADC resolution (in bits)
     size_t _adc_counts { static_cast<size_t>(1) << _resolution };       // Max count
 };
+
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude BaseAnalogEmonSensor::Magnitudes[];
+#endif
 
 // Provide EMON API helper where we don't care about specifics of how the values are stored
 
@@ -270,13 +257,33 @@ public:
         return _reference_voltage;
     }
 
-    void setCurrentRatio(double ratio) override {
-        _current_ratio = ratio;
-        _dirty = true;
+    double defaultRatio(unsigned char index) const override {
+        if (index == 0) {
+            return IRef;
+        }
+
+        return BaseEmonSensor::defaultRatio(index);
     }
 
-    double getCurrentRatio() const override {
-        return _current_ratio;
+    double getRatio(unsigned char index) const override {
+        if (index == 0) {
+            return _current_ratio;
+        }
+
+        return BaseEmonSensor::getRatio(index);
+    }
+
+    void setRatio(unsigned char index, double ratio) override {
+        if ((index == 0) && (ratio > 0.0)) {
+            _current_ratio = ratio;
+            calculateFactors();
+            _dirty = true;
+        }
+    }
+
+    void resetRatios() override {
+        setRatio(0, defaultRatio(0));
+        calculateFactors();
     }
 
     void setPivot(double pivot) override {
@@ -300,8 +307,6 @@ private:
     double _voltage { 0.0 };
     double _reference_voltage { 0.0 };
     double _pivot { 0.0 };
-
-    double _current_ratio { EMON_CURRENT_RATIO };
     double _current { 0.0 };
 };
 

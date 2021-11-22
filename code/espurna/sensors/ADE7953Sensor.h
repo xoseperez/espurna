@@ -50,12 +50,12 @@
 
 class ADE7953Sensor : public BaseEmonSensor {
 private:
-    static constexpr uint8_t Address { 0x38 };
-    static constexpr float LineCycles { 50.0f };
+    static constexpr uint8_t Address { ADE7953_ADDRESS };
+    static constexpr float LineCycles { ADE7953_LINE_CYCLES };
 
     // No-load threshold (20mA), ignore all readings when current is below this value
     // (TODO: pg. 40 "NO-LOAD DETECTION" and {AP,VAR,VA}_NOLOAD registers, implement in config())
-    static constexpr uint32_t CurrentThreshold { 2000 };
+    static constexpr uint32_t CurrentThreshold { ADE7953_CURRENT_THRESHOLD };
 
     struct Reading {
         struct Channel {
@@ -280,7 +280,7 @@ private:
             const auto processChannel = [&](const I2CPort::Reading::Channel& channel) {
                 Reading::Channel out{};
                 out.current = static_cast<double>(channel.current_rms) / (_current_ratio * 10.0);
-                out.active_power = static_cast<double>(channel.active_power) / (_power_ratio / 10.0);
+                out.active_power = static_cast<double>(channel.active_power) / (_power_active_ratio / 10.0);
 
                 if (channel.active_energy) {
                     out.active_energy = (voltage * out.current * (_line_cycles * (1.0f / frequency))) / static_cast<float>(channel.active_energy);
@@ -331,18 +331,26 @@ public:
     // ---------------------------------------------------------------------
     // Sensors API
     // ---------------------------------------------------------------------
-    ADE7953Sensor() {
-        _sensor_id = SENSOR_ADE7953_ID;
-        _count = 14;
-        _energy.resize(2);
-    }
 
-    void setAddress(uint8_t address) {
-        if (_address != address) {
-            _address = address;
-            _dirty = true;
-        }
-    }
+    static constexpr Magnitude Magnitudes[] {
+        // Common
+        MAGNITUDE_VOLTAGE,
+        MAGNITUDE_FREQUENCY,
+        // Channel A
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_POWER_ACTIVE,
+        MAGNITUDE_POWER_REACTIVE,
+        MAGNITUDE_POWER_APPARENT,
+        MAGNITUDE_ENERGY_DELTA,
+        MAGNITUDE_ENERGY,
+        // Channel B
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_POWER_ACTIVE,
+        MAGNITUDE_POWER_REACTIVE,
+        MAGNITUDE_POWER_APPARENT,
+        MAGNITUDE_ENERGY_DELTA,
+        MAGNITUDE_ENERGY
+    };
 
     // Initialization method, must be idempotent
     void begin() {
@@ -388,6 +396,14 @@ public:
         _energy[1] += sensor::Ws(_last_reading.b.active_energy);
     }
 
+    // Sensor has a fixed number of channels
+    ADE7953Sensor() {
+        _sensor_id = SENSOR_ADE7953_ID;
+        _count = std::size(Magnitudes);
+        _dirty = true;
+        findAndAddEnergy(Magnitudes);
+    }
+
     // Current value for slot # index
     double value(unsigned char index) {
         switch (index) {
@@ -426,84 +442,76 @@ public:
 
     // Type for slot # index
     unsigned char type(unsigned char index) {
-        switch (index) {
-        case 0:
-            return MAGNITUDE_VOLTAGE;
-        case 1:
-            return MAGNITUDE_FREQUENCY;
-        case 2:
-            return MAGNITUDE_CURRENT;
-        case 3:
-            return MAGNITUDE_POWER_ACTIVE;
-        case 4:
-            return MAGNITUDE_POWER_REACTIVE;
-        case 5:
-            return MAGNITUDE_POWER_APPARENT;
-        case 6:
-            return MAGNITUDE_ENERGY_DELTA;
-        case 7:
-            return MAGNITUDE_ENERGY;
-        case 8:
-            return MAGNITUDE_CURRENT;
-        case 9:
-            return MAGNITUDE_POWER_ACTIVE;
-        case 10:
-            return MAGNITUDE_POWER_REACTIVE;
-        case 11:
-            return MAGNITUDE_POWER_APPARENT;
-        case 12:
-            return MAGNITUDE_ENERGY_DELTA;
-        case 13:
-            return MAGNITUDE_ENERGY;
+        if (index < std::size(Magnitudes)) {
+            return Magnitudes[index].type;
         }
 
         return MAGNITUDE_NONE;
     }
 
-    // TODO: migrate multiplier to the magnitude, something in addition to correction?
-
     static constexpr double Iref { 10000.0 };
-    double defaultCurrentRatio() const override {
-        return Iref;
-    }
-
     static constexpr double Uref { 26000.0 };
-    double defaultVoltageRatio() const override {
-        return Uref;
-    }
-
     static constexpr double Pref { 1540.0 };
-    double defaultPowerRatio() const override {
-        return Pref;
+
+    double defaultRatio(unsigned char index) const override {
+        switch (index) {
+        case 0:
+            return Uref;
+        case 2:
+        case 8:
+            return Iref;
+        case 3:
+        case 9:
+            return Pref;
+        }
+
+        return BaseEmonSensor::defaultRatio(index);
     }
 
-    double getCurrentRatio() override {
-        return _current_ratio;
+    double getRatio(unsigned char index) const override {
+        switch (index) {
+        case 2:
+            return _current_ratio_a;
+        case 8:
+            return _current_ratio_b;
+        }
+
+        return BaseEmonSensor::getRatio(index);
     }
 
-    void setCurrentRatio(double value) override {
-        _current_ratio = value;
+    void setRatio(unsigned char index, double value) override {
+        switch (index) {
+        case 0:
+            _voltage_ratio = value;
+            break;
+        case 2:
+            _current_ratio_a = value;
+            break;
+        case 3:
+            _power_ratio_a = value;
+            break;
+        case 8:
+            _current_ratio_b = value;
+            break;
+        case 9:
+            _power_ratio_b = value;
+            break;
+        }
     }
 
-    double getVoltageRatio() override {
-        return _voltage_ratio;
-    }
-
-    void setVoltageRatio(double value) override {
-        _voltage_ratio = value;
-    }
-
-    double getPowerRatio() override {
-        return _power_ratio;
-    }
-    void setPowerRatio(double value) override {
-        _power_ratio = value;
+    void setAddress(uint8_t address) {
+        if (address != _address) {
+            _dirty = true;
+            _address = address;
+        }
     }
 
 private:
-    double _current_ratio { Iref };
-    double _voltage_ratio { Uref };
-    double _power_ratio { Pref };
+    double _current_ratio_a { Iref };
+    double _power_ratio_a { Pref };
+
+    double _current_ratio_b { Iref };
+    double _power_ratio_b { Pref };
 
     I2CPort _port;
     uint8_t _address { Address };
@@ -511,5 +519,9 @@ private:
 
     Reading _last_reading;
 };
+
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude ADE7953Sensor::Magnitudes[];
+#endif
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT

@@ -283,7 +283,7 @@ uint8_t i2c_read_uint8(uint8_t address) {
     brzo_i2c_read(buffer, 1, false);
     brzo_i2c_end_transaction();
     return buffer[0];
-};
+}
 
 uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
     uint8_t buffer[1] = {reg};
@@ -292,7 +292,7 @@ uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
     brzo_i2c_read(buffer, 1, false);
     brzo_i2c_end_transaction();
     return buffer[0];
-};
+}
 
 uint16_t i2c_read_uint16(uint8_t address) {
     uint8_t buffer[2] = {0, 0};
@@ -300,7 +300,7 @@ uint16_t i2c_read_uint16(uint8_t address) {
     brzo_i2c_read(buffer, 2, false);
     brzo_i2c_end_transaction();
     return (buffer[0] * 256) | buffer[1];
-};
+}
 
 uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
     uint8_t buffer[2] = {reg, 0};
@@ -309,7 +309,7 @@ uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
     brzo_i2c_read(buffer, 2, false);
     brzo_i2c_end_transaction();
     return (buffer[0] * 256) | buffer[1];
-};
+}
 
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     i2c::start_brzo_transaction(address);
@@ -343,7 +343,7 @@ uint8_t i2c_read_uint8(uint8_t address) {
     value = Wire.read();
     Wire.endTransmission();
     return value;
-};
+}
 
 uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
     uint8_t value;
@@ -354,7 +354,7 @@ uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
     value = Wire.read();
     Wire.endTransmission();
     return value;
-};
+}
 
 uint16_t i2c_read_uint16(uint8_t address) {
     uint16_t value;
@@ -363,7 +363,7 @@ uint16_t i2c_read_uint16(uint8_t address) {
     value = (Wire.read() * 256) | Wire.read();
     Wire.endTransmission();
     return value;
-};
+}
 
 uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
     uint16_t value;
@@ -374,7 +374,7 @@ uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
     value = (Wire.read() * 256) | Wire.read();
     Wire.endTransmission();
     return value;
-};
+}
 
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     Wire.beginTransmission((uint8_t) address);
@@ -445,15 +445,15 @@ uint8_t i2c_write_uint16(uint8_t address, uint16_t value) {
 uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg) {
     uint16_t temp = i2c_read_uint16(address, reg);
     return (temp / 256) | (temp * 256);
-};
+}
 
 int16_t i2c_read_int16(uint8_t address, uint8_t reg) {
     return (int16_t) i2c_read_uint16(address, reg);
-};
+}
 
 int16_t i2c_read_int16_le(uint8_t address, uint8_t reg) {
     return (int16_t) i2c_read_uint16_le(address, reg);
-};
+}
 
 // -----------------------------------------------------------------------------
 // Utils

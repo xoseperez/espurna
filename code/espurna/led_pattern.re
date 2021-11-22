@@ -50,11 +50,11 @@ loop:
         @on1 num @on2 [,] @off1 num @off2 [,] @repeat1 num @repeat2 {
             memcpy(buffer, on1, on2 - on1);
             buffer[on2 - on1] = '\0';
-            time::Milliseconds::rep on { strtoul(buffer, nullptr, 10) };
+            espurna::duration::Milliseconds::rep on { strtoul(buffer, nullptr, 10) };
 
             memcpy(buffer, off1, off2 - off1);
             buffer[off2 - off1] = '\0';
-            time::Milliseconds::rep off { strtoul(buffer, nullptr, 10) };
+            espurna::duration::Milliseconds::rep off { strtoul(buffer, nullptr, 10) };
 
             memcpy(buffer, repeat1, repeat2 - repeat1);
             buffer[repeat2 - repeat1] = '\0';
@@ -64,8 +64,8 @@ loop:
 
             constexpr Repeats RepeatsMax { Delay::RepeatsMax };
             _delays.emplace_back(
-                std::min(time::Milliseconds(on), time::MillisecondsMax),
-                std::min(time::Milliseconds(off), time::MillisecondsMax),
+                std::min(espurna::duration::Milliseconds(on), Delay::MillisecondsMax),
+                std::min(espurna::duration::Milliseconds(off), Delay::MillisecondsMax),
                 std::min(repeats, RepeatsMax));
 
             if (repeats) {

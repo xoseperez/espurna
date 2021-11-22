@@ -18,9 +18,15 @@ class PulseMeterSensor : public BaseEmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_POWER_ACTIVE,
+            MAGNITUDE_ENERGY
+        };
+
         PulseMeterSensor() {
-            _count = 2;
             _sensor_id = SENSOR_PULSEMETER_ID;
+            _count = std::size(Magnitudes);
+            findAndAddEnergy(Magnitudes);
         }
 
         ~PulseMeterSensor() {
@@ -89,22 +95,48 @@ class PulseMeterSensor : public BaseEmonSensor {
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
-
             unsigned long lapse = millis() - _previous_time;
             _previous_time = millis();
             unsigned long pulses = _pulses - _previous_pulses;
             _previous_pulses = _pulses;
 
-            sensor::Ws delta = 1000 * 3600 * pulses / getEnergyRatio();
-            if (lapse > 0) _active = 1000 * delta.value / lapse;
+            sensor::Ws delta = 1000.0 * 3600.0 * static_cast<double>(pulses) / _energy_ratio;
             _energy[0] += delta;
 
+            if (lapse > 0) {
+                _active = 1000.0 * delta.value / lapse;
+            }
+
+        }
+
+        double defaultRatio(unsigned char index) const override {
+            if (index == 1) {
+                return PULSEMETER_ENERGY_RATIO;
+            }
+
+            return BaseEmonSensor::defaultRatio(index);
+        }
+
+        double getRatio(unsigned char index) const override {
+            if (index == 1) {
+                return _energy_ratio;
+            }
+
+            return BaseEmonSensor::getRatio(index);
+        }
+
+        void setRatio(unsigned char index, double value) override {
+            if (index == 1) {
+                _energy_ratio = value;
+            }
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 1) return MAGNITUDE_ENERGY;
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
+
             return MAGNITUDE_NONE;
         }
 
@@ -169,6 +201,10 @@ class PulseMeterSensor : public BaseEmonSensor {
 
 
 };
+
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude PulseMeterSensor::Magnitudes[];
+#endif
 
 // -----------------------------------------------------------------------------
 // Interrupt helpers

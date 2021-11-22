@@ -98,17 +98,19 @@ class BMX280Sensor : public I2CSensor<> {
 
         // Number of decimals for a magnitude (or -1 for default)
         // These numbers of decimals correspond to maximum sensor resolution settings
-        signed char decimals(sensor::Unit unit) {
+        signed char decimals(sensor::Unit unit) const {
             switch (unit) {
-                case sensor::Unit::Celcius:
-                    return 3;
-                case sensor::Unit::Hectopascal:
-                    return 4;
-                case sensor::Unit::Percentage:
-                    return 2;
-                default:
-                    return -1;
+            case sensor::Unit::Celcius:
+                return 3;
+            case sensor::Unit::Hectopascal:
+                return 4;
+            case sensor::Unit::Percentage:
+                return 2;
+            default:
+                break;
             }
+
+            return -1;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)

@@ -2000,8 +2000,8 @@ void relayStatusWrap(size_t id, PayloadStatus value, bool is_group_topic) {
 
 namespace {
 
-bool _relayMqttHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Relay)
+bool _relayMqttHeartbeat(espurna::heartbeat::Mask mask) {
+    if (mask & espurna::heartbeat::Report::Relay)
         _relayMqttReportAll();
 
     return mqttConnected();

@@ -22,13 +22,20 @@ class V9261FSensor : public BaseEmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        V9261FSensor(): _data() {
-            _count = 6;
-            _sensor_id = SENSOR_V9261F_ID;
-        }
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_CURRENT,
+            MAGNITUDE_VOLTAGE,
+            MAGNITUDE_POWER_ACTIVE,
+            MAGNITUDE_POWER_REACTIVE,
+            MAGNITUDE_POWER_APPARENT,
+            MAGNITUDE_POWER_FACTOR,
+            MAGNITUDE_ENERGY
+        };
 
-        ~V9261FSensor() {
-            if (_serial) delete _serial;
+        V9261FSensor() {
+            _sensor_id = SENSOR_V9261F_ID;
+            _count = std::size(Magnitudes);
+            findAndAddEnergy(Magnitudes);
         }
 
         // ---------------------------------------------------------------------
@@ -64,9 +71,11 @@ class V9261FSensor : public BaseEmonSensor {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, -1, _inverted);
+            _serial = std::make_unique<SoftwareSerial>(_pin_rx, -1, _inverted);
             _serial->enableIntTx(false);
             _serial->begin(V9261F_BAUDRATE);
 
@@ -99,13 +108,10 @@ class V9261FSensor : public BaseEmonSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
-            if (index == 4) return MAGNITUDE_POWER_APPARENT;
-            if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            if (index == 6) return MAGNITUDE_ENERGY;
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
+
             return MAGNITUDE_NONE;
         }
 
@@ -119,6 +125,55 @@ class V9261FSensor : public BaseEmonSensor {
             if (index == 5) return _apparent > 0 ? 100 * _active / _apparent : 100;
             if (index == 6) return _energy[0].asDouble();
             return 0;
+        }
+
+        double defaultRatio(unsigned char index) const override {
+            switch (index) {
+            case 0:
+                return V9261F_CURRENT_FACTOR;
+            case 1:
+                return V9261F_VOLTAGE_FACTOR;
+            case 2:
+                return V9261F_POWER_FACTOR;
+            case 3:
+                return V9261F_RPOWER_FACTOR;
+            }
+
+            return BaseEmonSensor::DefaultRatio;
+        }
+
+        void setRatio(unsigned char index, double value) override {
+            if (value > 0.0) {
+                switch (index) {
+                case 0:
+                    _current_ratio = value;
+                    break;
+                case 1:
+                    _voltage_ratio = value;
+                    break;
+                case 2:
+                    _power_active_ratio = value;
+                    break;
+                case 3:
+                    _power_reactive_ratio = value;
+                    break;
+                }
+            }
+        }
+
+        double getRatio(unsigned char index) const override {
+            switch (index) {
+            case 0:
+                return _current_ratio;
+            case 1:
+                return _voltage_ratio;
+            case 2:
+                return _power_active_ratio;
+            case 3:
+                return _power_reactive_ratio;
+            }
+
+            return BaseEmonSensor::getRatio(index);
         }
 
     protected:
@@ -180,28 +235,28 @@ class V9261FSensor : public BaseEmonSensor {
                         (_data[4] << 8) +
                         (_data[5] << 16) +
                         (_data[6] << 24)
-                    ) / _ratioP;
+                    ) / _power_active_ratio;
 
                     _reactive = (double) (
                         (_data[7]) +
                         (_data[8] <<  8) +
                         (_data[9] << 16) +
                         (_data[10] << 24)
-                    ) / _ratioR;
+                    ) / _power_reactive_ratio;
 
                     _voltage = (double) (
                         (_data[11]) +
                         (_data[12] <<  8) +
                         (_data[13] << 16) +
                         (_data[14] << 24)
-                    ) / _ratioV;
+                    ) / _voltage_ratio;
 
                     _current = (double) (
                         (_data[15]) +
                         (_data[16] <<  8) +
                         (_data[17] << 16) +
                         (_data[18] << 24)
-                    ) / _ratioC;
+                    ) / _current_ratio;
 
                     if (_active < 0) _active = 0;
                     if (_reactive < 0) _reactive = 0;
@@ -249,23 +304,22 @@ class V9261FSensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned int _pin_rx = V9261F_PIN;
-        bool _inverted = V9261F_PIN_INVERSE;
-        SoftwareSerial * _serial = NULL;
+        unsigned char _pin_rx { V9261F_PIN };
+        bool _inverted { V9261F_PIN_INVERSE };
+        std::unique_ptr<SoftwareSerial> _serial;
 
-        double _active = 0;
-        double _reactive = 0;
-        double _voltage = 0;
-        double _current = 0;
-        double _apparent = 0;
+        double _active { 0 };
+        double _reactive { 0 };
+        double _voltage { 0 };
+        double _current { 0 };
+        double _apparent { 0 };
 
-        double _ratioP = V9261F_POWER_FACTOR;
-        double _ratioC = V9261F_CURRENT_FACTOR;
-        double _ratioV = V9261F_VOLTAGE_FACTOR;
-        double _ratioR = V9261F_RPOWER_FACTOR;
-
-        unsigned char _data[24];
+        unsigned char _data[24] {0};
 
 };
+
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude V9261FSensor::Magnitudes[];
+#endif
 
 #endif // SENSOR_SUPPORT && V9261F_SUPPORT

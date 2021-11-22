@@ -257,8 +257,8 @@ std::vector<String> settingsKeys() {
     return keys;
 }
 
-void settingsRegisterDefaults(const char* const prefix, settings::RetrieveDefault retrieve) {
-    settings::internal::matchers.emplace_front(prefix, retrieve);
+void settingsRegisterDefaults(String prefix, settings::RetrieveDefault retrieve) {
+    settings::internal::matchers.emplace_front(std::move(prefix), retrieve);
 }
 
 String settingsQueryDefaults(const String& key) {

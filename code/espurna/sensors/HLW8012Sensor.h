@@ -35,25 +35,50 @@ constexpr double _hlw8012_default_current_resistor() {
     return HLW8012_CURRENT_R;
 }
 
-// TODO: ..._RATIO flags are 0, but would it not make a better case for 1.0 as default aka make this a 'multiplier'?
-// TODO: Also note that HLW8012 lib will happily accept 0.0 as multiplier, with no way to recover back through the WebUI as we only adjust 'expected' value
-
 constexpr double _hlw8012_default_current_multiplier() {
-    return (HLW8012_CURRENT_RATIO != 0.0)
-        ? (HLW8012_CURRENT_RATIO)
-        : ( 1000000.0 * 512 * V_REF / _hlw8012_default_current_resistor() / 24.0 / F_OSC );
+    return 1000000.0 * 512.0 * V_REF / _hlw8012_default_current_resistor() / 24.0 / F_OSC;
 }
+
+constexpr double _hlw8012_current_multiplier() {
+    return HLW8012_VOLTAGE_RATIO;
+}
+
+#define HLW8012_DEFAULT_CURRENT_RATIO _hlw8012_default_current_multiplier()
 
 constexpr double _hlw8012_default_voltage_multiplier() {
-    return (HLW8012_VOLTAGE_RATIO != 0.0)
-        ? (HLW8012_VOLTAGE_RATIO)
-        : ( 1000000.0 * 512 * V_REF * _hlw8012_default_voltage_resistor() / 2.0 / F_OSC );
+    return 1000000.0 * 512.0 * V_REF * _hlw8012_default_voltage_resistor() / 2.0 / F_OSC;
 }
 
+constexpr double _hlw8012_voltage_multiplier() {
+    return HLW8012_VOLTAGE_RATIO;
+}
+
+#define HLW8012_DEFAULT_VOLTAGE_RATIO _hlw8012_default_voltage_multiplier()
+
 constexpr double _hlw8012_default_power_multiplier() {
-    return (HLW8012_POWER_RATIO != 0.0)
-        ? (HLW8012_POWER_RATIO)
-        : ( 1000000.0 * 128 * V_REF * V_REF * _hlw8012_default_voltage_resistor() / _hlw8012_default_current_resistor() / 48.0 / F_OSC );
+    return 1000000.0 * 128.0 * V_REF * V_REF * _hlw8012_default_voltage_resistor() / _hlw8012_default_current_resistor() / 48.0 / F_OSC;
+}
+
+constexpr double _hlw8012_power_multiplier() {
+    return HLW8012_POWER_RATIO;
+}
+
+#define HLW8012_DEFAULT_POWER_RATIO _hlw8012_default_power_multiplier()
+
+constexpr bool _hlw8012_use_interrupts() {
+    return 1 == HLW8012_USE_INTERRUPTS;
+}
+
+constexpr bool _hlw8012_wait_for_wifi() {
+    return 1 == HLW8012_WAIT_FOR_WIFI;
+}
+
+constexpr int _hlw8012_interrupt_mode() {
+    return HLW8012_INTERRUPT_ON;
+}
+
+constexpr unsigned long _hlw8012_pulse_timeout() {
+    return _hlw8012_use_interrupts() ? (10000000) : (PULSE_TIMEOUT);
 }
 
 } //namespace
@@ -62,19 +87,29 @@ class HLW8012Sensor : public BaseEmonSensor {
 
     public:
 
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_CURRENT,
+            MAGNITUDE_VOLTAGE,
+            MAGNITUDE_POWER_ACTIVE,
+            MAGNITUDE_POWER_REACTIVE,
+            MAGNITUDE_POWER_APPARENT,
+            MAGNITUDE_POWER_FACTOR,
+            MAGNITUDE_ENERGY_DELTA,
+            MAGNITUDE_ENERGY
+        };
+
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
 
         HLW8012Sensor() {
-            _count = 8;
             _sensor_id = SENSOR_HLW8012_ID;
-            _hlw8012 = new HLW8012();
+            _count = std::size(Magnitudes);
+            findAndAddEnergy(Magnitudes);
         }
 
         ~HLW8012Sensor() {
-            _enableInterrupts(false);
-            delete _hlw8012;
+            _disableInterrupts();
         }
 
         // ---------------------------------------------------------------------
@@ -103,62 +138,53 @@ class HLW8012Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        void expectedCurrent(double expected) override {
-            _hlw8012->expectedCurrent(expected);
-        }
+        double defaultRatio(unsigned char index) const override {
+            switch (index) {
+            case 0:
+                return _hlw8012_current_multiplier();
+            case 1:
+                return _hlw8012_voltage_multiplier();
+            case 2:
+                return _hlw8012_power_multiplier();
+            }
 
-        void expectedVoltage(unsigned int expected) override {
-            _hlw8012->expectedVoltage(expected);
-        }
-
-        void expectedPower(unsigned int expected) override {
-            _hlw8012->expectedActivePower(expected);
-        }
-
-        double defaultCurrentRatio() const override {
-            return _hlw8012_default_current_multiplier();
-        }
-
-        double defaultVoltageRatio() const override {
-            return _hlw8012_default_voltage_multiplier();
-        }
-
-        double defaultPowerRatio() const override {
-            return _hlw8012_default_power_multiplier();
+            return BaseEmonSensor::defaultRatio(index);
         }
 
         void resetRatios() override {
             _defaultRatios();
         }
 
-        void setCurrentRatio(double value) override {
+        void setRatio(unsigned char index, double value) override {
             if (value > 0.0) {
-                _hlw8012->setCurrentMultiplier(value);
+                switch (index) {
+                case 0:
+                    _current_ratio = value;
+                    _hlw8012.setCurrentMultiplier(value);
+                    break;
+                case 1:
+                    _voltage_ratio = value;
+                    _hlw8012.setVoltageMultiplier(value);
+                    break;
+                case 2:
+                    _power_active_ratio = value;
+                    _hlw8012.setPowerMultiplier(value);
+                    break;
+                }
             }
         }
 
-        void setVoltageRatio(double value) override {
-            if (value > 0.0) {
-                _hlw8012->setVoltageMultiplier(value);
+        double getRatio(unsigned char index) const override {
+            switch (index) {
+            case 0:
+                return _current_ratio;
+            case 1:
+                return _voltage_ratio;
+            case 2:
+                return _power_active_ratio;
             }
-        }
 
-        void setPowerRatio(double value) override {
-            if (value > 0.0) {
-                _hlw8012->setPowerMultiplier(value);
-            }
-        }
-
-        double getCurrentRatio() override {
-            return _hlw8012->getCurrentMultiplier();
-        }
-
-        double getVoltageRatio() override {
-            return _hlw8012->getVoltageMultiplier();
-        }
-
-        double getPowerRatio() override {
-            return _hlw8012->getPowerMultiplier();
+            return BaseEmonSensor::getRatio(index);
         }
 
         // ---------------------------------------------------------------------
@@ -193,11 +219,8 @@ class HLW8012Sensor : public BaseEmonSensor {
             // * currentWhen is the value in sel_pin to select current sampling
             // * set use_interrupts to true to use interrupts to monitor pulse widths
             // * leave pulse_timeout to the default value, recommended when using interrupts
-            #if HLW8012_USE_INTERRUPTS
-                _hlw8012->begin(_cf, _cf1, _sel, _sel_current, true);
-            #else
-                _hlw8012->begin(_cf, _cf1, _sel, _sel_current, false, 1000000);
-            #endif
+            _hlw8012.begin(_cf, _cf1, _sel, _sel_current,
+                _hlw8012_use_interrupts(), _hlw8012_pulse_timeout());
 
             // Note that HLW8012 does not initialize the multipliers (aka ratios) after begin(),
             // we need to manually set those based on either resistor values or RATIO flags
@@ -205,20 +228,19 @@ class HLW8012Sensor : public BaseEmonSensor {
             _defaultRatios();
 
             // While we expect begin() to be called only once, try to detach before attaching again
-            // (might be no-op on esp8266, since attachInterrupt will replace the existing func)
-            #if HLW8012_USE_INTERRUPTS && (!HLW8012_WAIT_FOR_WIFI)
-                _enableInterrupts(false);
-                _enableInterrupts(true);
-            #endif
+            if (_hlw8012_use_interrupts() && !_hlw8012_wait_for_wifi()) {
+                _disableInterrupts();
+                _enableInterrupts();
+            }
 
             _ready = true;
-
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "HLW8012 @ GPIO(%u,%u,%u)", _sel, _cf, _cf1);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("HLW8012 @ GPIO(%hhu,%hhu,%hhu)"), _sel, _cf, _cf1);
             return String(buffer);
         }
 
@@ -228,22 +250,19 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
+        String address(unsigned char) {
             char buffer[12];
-            snprintf(buffer, sizeof(buffer), "%u:%u:%u", _sel, _cf, _cf1);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu:%hhu"), _sel, _cf, _cf1);
             return String(buffer);
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
-            if (index == 4) return MAGNITUDE_POWER_APPARENT;
-            if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            if (index == 6) return MAGNITUDE_ENERGY_DELTA;
-            if (index == 7) return MAGNITUDE_ENERGY;
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
+
             return MAGNITUDE_NONE;
         }
 
@@ -253,47 +272,78 @@ class HLW8012Sensor : public BaseEmonSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return _hlw8012->getCurrent();
-            if (index == 1) return _hlw8012->getVoltage();
-            if (index == 2) return _hlw8012->getActivePower();
-            if (index == 3) return _hlw8012->getReactivePower();
-            if (index == 4) return _hlw8012->getApparentPower();
-            if (index == 5) return 100 * _hlw8012->getPowerFactor();
-            if (index == 6) return getEnergyDelta();
-            if (index == 7) return getEnergy();
+            switch (index) {
+            case 0:
+                return _current;
+            case 1:
+                return _voltage;
+            case 2:
+                return _power_active;
+            case 3:
+                return _power_reactive;
+            case 4:
+                return _power_apparent;
+            case 5:
+                return _power_factor;
+            case 6:
+                return _energy_last;
+            case 7:
+                return _energy[0].asDouble();
+            }
+
             return 0.0;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
-            #if HLW8012_USE_INTERRUPTS && HLW8012_WAIT_FOR_WIFI
-                _enableInterrupts(wifiConnected());
-            #endif
+            if (_hlw8012_use_interrupts() && _hlw8012_wait_for_wifi()) {
+                if (wifiConnected()) {
+                    _enableInterrupts();
+                } else {
+                    _disableInterrupts();
+                }
+            }
 
-            _energy_last = _hlw8012->getEnergy();
+            _energy_last = _hlw8012.getEnergy();
             _energy[0] += sensor::Ws { _energy_last };
-            _hlw8012->resetEnergy();
+            _hlw8012.resetEnergy();
+
+            _current = _hlw8012.getCurrent();
+            _voltage = _hlw8012.getVoltage();
+            _power_active = _hlw8012.getActivePower();
+            _power_reactive = _hlw8012.getReactivePower();
+            _power_apparent = _hlw8012.getApparentPower();
+
+            _power_factor = _hlw8012.getPowerFactor() * 100.0;
         }
 
-        #if !HLW8012_USE_INTERRUPTS
-        // Toggle between current and voltage monitoring after reading
-        void post() {
-            _hlw8012->toggleMode();
+        // Special handling for no-interrupts mode, make sure to switch between cf and cf1
+        void post() override {
+            if (!_hlw8012_use_interrupts()) {
+                _hlw8012.toggleMode();
+            }
         }
-        #endif // HLW8012_USE_INTERRUPTS == 0
 
         // Handle interrupt calls
         void IRAM_ATTR handleInterrupt(unsigned char gpio) {
-            if (gpio == _cf) _hlw8012->cf_interrupt();
-            if (gpio == _cf1) _hlw8012->cf1_interrupt();
+            if (gpio == _cf) _hlw8012.cf_interrupt();
+            if (gpio == _cf1) _hlw8012.cf1_interrupt();
         }
 
     protected:
 
         void _defaultRatios() {
-            _hlw8012->setCurrentMultiplier(defaultCurrentRatio());
-            _hlw8012->setVoltageMultiplier(defaultVoltageRatio());
-            _hlw8012->setPowerMultiplier(defaultPowerRatio());
+            auto current = defaultRatio(0);
+            _current_ratio = current;
+            _hlw8012.setCurrentMultiplier(current);
+
+            auto voltage = defaultRatio(1);
+            _voltage_ratio = voltage;
+            _hlw8012.setVoltageMultiplier(voltage);
+
+            auto power = defaultRatio(2);
+            _power_active_ratio = power;
+            _hlw8012.setPowerMultiplier(power);
         }
 
         // ---------------------------------------------------------------------
@@ -303,57 +353,56 @@ class HLW8012Sensor : public BaseEmonSensor {
         void _attach(HLW8012Sensor * instance, unsigned char gpio, unsigned char mode);
         void _detach(unsigned char gpio);
 
-        void _enableInterrupts(bool value) {
-
-            static unsigned char _interrupt_cf = GPIO_NONE;
-            static unsigned char _interrupt_cf1 = GPIO_NONE;
-
-            if (value) {
-
-                if (_interrupt_cf != _cf) {
-                    if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
-                    _attach(this, _cf, HLW8012_INTERRUPT_ON);
-                    _interrupt_cf = _cf;
-                }
-
-                if (_interrupt_cf1 != _cf1) {
-                    if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
-                    _attach(this, _cf1, HLW8012_INTERRUPT_ON);
-                    _interrupt_cf1 = _cf1;
-                }
-
-            } else {
-
-                if (GPIO_NONE != _interrupt_cf) {
-                    _detach(_interrupt_cf);
-                    _interrupt_cf = GPIO_NONE;
-                }
-
-                if (GPIO_NONE != _interrupt_cf1) {
-                    _detach(_interrupt_cf1);
-                    _interrupt_cf1 = GPIO_NONE;
-                }
-
+        void _enableInterrupts() {
+            if (_interrupt_cf != _cf) {
+                if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
+                _attach(this, _cf, HLW8012_INTERRUPT_ON);
+                _interrupt_cf = _cf;
             }
 
+            if (_interrupt_cf1 != _cf1) {
+                if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
+                _attach(this, _cf1, HLW8012_INTERRUPT_ON);
+                _interrupt_cf1 = _cf1;
+            }
+        }
+
+        void _disableInterrupts() {
+            if (GPIO_NONE != _interrupt_cf) {
+                _detach(_interrupt_cf);
+                _interrupt_cf = GPIO_NONE;
+            }
+
+            if (GPIO_NONE != _interrupt_cf1) {
+                _detach(_interrupt_cf1);
+                _interrupt_cf1 = GPIO_NONE;
+            }
         }
 
         // ---------------------------------------------------------------------
 
-        double _initialRatioC;
-        double _initialRatioV;
-        double _initialRatioP;
+        double _current { 0.0 };
+        double _voltage { 0.0 };
+        double _power_active { 0.0 };
+        double _power_reactive { 0.0 };
+        double _power_apparent { 0.0 };
 
-        unsigned char _sel = GPIO_NONE;
-        unsigned char _cf = GPIO_NONE;
-        unsigned char _cf1 = GPIO_NONE;
-        bool _sel_current = true;
+        float _power_factor { 0.0f };
+        uint32_t _energy_last { 0 };
 
-        uint32_t _energy_last = 0;
+        unsigned char _sel { GPIO_NONE };
+        unsigned char _cf { GPIO_NONE };
+        unsigned char _cf1 { GPIO_NONE };
+        bool _sel_current { true };
 
-        HLW8012 * _hlw8012 = NULL;
-
+        unsigned char _interrupt_cf { GPIO_NONE };
+        unsigned char _interrupt_cf1 { GPIO_NONE };
+        HLW8012 _hlw8012{};
 };
+
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude HLW8012Sensor::Magnitudes[];
+#endif
 
 // -----------------------------------------------------------------------------
 // Interrupt helpers

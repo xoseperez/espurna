@@ -738,10 +738,6 @@
 #define API_BASE_PATH               "/api/"
 #endif
 
-#ifndef API_REAL_TIME_VALUES
-#define API_REAL_TIME_VALUES        0           // Show filtered/median values by default (0 => median, 1 => real time)
-#endif
-
 // -----------------------------------------------------------------------------
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------

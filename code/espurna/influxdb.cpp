@@ -251,28 +251,28 @@ bool idbEnabled() {
     return _idb_enabled;
 }
 
-bool _idbHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Uptime)
+bool _idbHeartbeat(espurna::heartbeat::Mask mask) {
+    if (mask & espurna::heartbeat::Report::Uptime)
         idbSend(MQTT_TOPIC_UPTIME, String(systemUptime()).c_str());
 
-    if (mask & heartbeat::Report::Freeheap) {
+    if (mask & espurna::heartbeat::Report::Freeheap) {
         auto stats = systemHeapStats();
         idbSend(MQTT_TOPIC_FREEHEAP, String(stats.available).c_str());
     }
 
-    if (mask & heartbeat::Report::Rssi)
+    if (mask & espurna::heartbeat::Report::Rssi)
         idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
 
-    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+    if ((mask & espurna::heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
         idbSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
 
-    if (mask & heartbeat::Report::Loadavg)
+    if (mask & espurna::heartbeat::Report::Loadavg)
         idbSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
 
-    if (mask & heartbeat::Report::Ssid)
+    if (mask & espurna::heartbeat::Report::Ssid)
         idbSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
 
-    if (mask & heartbeat::Report::Bssid)
+    if (mask & espurna::heartbeat::Report::Bssid)
         idbSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
 
     return true;
@@ -281,8 +281,8 @@ bool _idbHeartbeat(heartbeat::Mask mask) {
 void idbSetup() {
     systemHeartbeat(_idbHeartbeat);
     systemHeartbeat(_idbHeartbeat,
-        getSetting("idbHbMode", heartbeat::currentMode()),
-        getSetting("idbHbIntvl", heartbeat::currentInterval()));
+        getSetting("idbHbMode", espurna::heartbeat::currentMode()),
+        getSetting("idbHbIntvl", espurna::heartbeat::currentInterval()));
 
     _idbConfigure();
 

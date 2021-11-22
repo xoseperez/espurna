@@ -778,17 +778,6 @@
                                 </div>
 
                                 <div class="pure-g module module-api">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Real time API</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="apiRealTime"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        By default, some magnitudes are being preprocessed and filtered to avoid spurious values.
-                                        If you want to get real-time values (not preprocessed) in the API turn on this setting.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g module module-api">
                                     <label class="pure-u-1 pure-u-lg-1-4">HTTP API Key</label>
                                     <input name="apiKey" class="pure-u-3-4 pure-u-lg-1-2" type="text">
                                     <div class="pure-u-1-4 pure-u-lg-1-4"><button type="button" class="pure-button button-apikey pure-u-23-24">Auto</button></div>
@@ -1713,6 +1702,27 @@
 
                 <!-- removeIf(!sensor) -->
                 <form id="form-sns" class="pure-form form-settings">
+                    <div class="panel" id="panel-emon-expected">
+                        <div class="header">
+                            <h1>Expected values</h1>
+                            <h2>Calculate ratios from raw values that can be measured externally. <br>Enter the known values and press <strong>Calculate</strong> to see the resulting ratio values. Press <strong>Apply</strong> to update ratio values on the SENSORS panel. Press <strong>Save</strong> to commit the changes.</h2>
+                        </div>
+
+                        <fieldset>
+                            <legend>Settings</legend>
+                            <div class="pure-button-group" role="group">
+                                <button type="button" class="pure-button button-emon-expected-calculate">Calculate</button>
+                                <button type="button" class="pure-button button-emon-expected-apply">Apply</button>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>Magnitudes</legend>
+                            <div id="emon-expected" class="pure-form pure-form-aligned settings-group">
+                            </div>
+                        </fieldset>
+                    </div>
+
                     <div class="panel" id="panel-sns">
 
                         <div class="header">
@@ -1722,132 +1732,106 @@
                             </h2>
                         </div>
 
-                        <div class="page">
+                        <div class="page pure-form">
 
                             <fieldset>
 
                                 <legend>General</legend>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Read interval</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="snsRead">
-                                        <option value="1">1 second</option>
-                                        <option value="6">6 seconds</option>
-                                        <option value="10">10 seconds</option>
-                                        <option value="15">15 seconds</option>
-                                        <option value="30">30 seconds</option>
-                                        <option value="60">1 minute</option>
-                                        <option value="300">5 minutes</option>
-                                        <option value="600">10 minutes</option>
-                                        <option value="900">15 minutes</option>
-                                        <option value="1800">30 minutes</option>
-                                        <option value="3600">60 minutes</option>
-                                    </select>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Select the interval between readings. These will be filtered and averaged for the report.
-                                        Please mind some sensors do not have fast refresh intervals. Check the sensor datasheet to know the minimum read interval.
-                                        The default and recommended value is 6 seconds.
+                                <div class="pure-form-aligned">
+                                    <div class="pure-u-1 pure-u-lg-1">
+                                        <label>Read every</label>
+                                        <input name="snsRead" type="number" min="1" list="list:snsRead" class="pure-u-1 pure-u-lg-1-4">
+                                        <span> second(s)</span>
+                                        <datalist id="list:snsRead">
+                                            <option value="1"></option>
+                                            <option value="6"></option>
+                                            <option value="10"></option>
+                                            <option value="15"></option>
+                                            <option value="30"></option>
+                                            <option value="60"></option>
+                                            <option value="300"></option>
+                                            <option value="600"></option>
+                                            <option value="900"></option>
+                                            <option value="1800"></option>
+                                            <option value="3600"></option>
+                                        </datalist>
+                                        <span class="pure-form-message-inline">
+                                            Time between the attempts to read from the sensor.
+                                            Please mind some sensors do not have refresh values very often, check the sensor datasheet to know the minimum read interval.
+                                            The default and recommended value is 6 seconds.
+                                        </span>
                                     </div>
-                                </div>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Report every</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="snsReport" class="pure-u-1" type="number" min="1" step="1" max="60"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Select the number of readings to average and report
+                                    <div class="pure-u-1 pure-u-lg-1">
+                                        <label>Report aggregated value every</label>
+                                        <input name="snsReport" type="number" min="1" step="1" max="60">
+                                        <span> reading(s)</span>
                                     </div>
-                                </div>
 
-                                <div class="pure-g module module-pwr">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Save every</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="snsSave" class="pure-u-1" type="number" min="0" step="1" max="200"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Save aggregated data to EEPROM after these many reports. At the moment this only applies to total energy readings.
-                                        Please mind: saving data to EEPROM too often will wear out the flash memory quickly.
-                                        Set it to 0 to disable this feature (default value).
+                                    <div class="pure-u-1 pure-u-lg-1 module module-emon">
+                                        <label>Save aggregated value every</label>
+                                        <input name="snsSave" type="number" min="0" step="1" max="200">
+                                        <span> report(s)</span>
+                                        <span class="pure-form-message-inline">
+                                            At this moment, only applies to total energy readings.
+                                            Set to 0 to disable.
+                                            <br><strong>Note that this feature uses the internal flash. Repeatedly writing to the flash storage will quickly wear it out.</strong>
+                                        </span>
                                     </div>
+
+                                    <div class="pure-u-1 pure-u-lg-1">
+                                        <label>Real time API</label>
+                                        <div><input type="checkbox" name="snsRealTime"></div>
+                                        <span class="pure-form-message-inline">
+                                            Most magnitudes are being preprocessed and filtered to avoid spurious values.
+                                            Enable this to get unfiltered values in the API (HTTP, MQTT, Prometheus, etc.)
+                                        </span>
+                                    </div>
+
                                 </div>
 
                             </fieldset>
 
-                            <fieldset class="module module-mics">
-                                <legend>Calibration</legend>
+                            <fieldset class="module module-analog">
+                                <legend>Analog sensor</legend>
 
                                 <div class="pure-g module module-mics">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Calibrate gas sensor</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="snsResetCalibration"></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Calibrate</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><button type="button" name="analog-calibrate" class="pure-button button-reboot button-simple-action">Reboot</button></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to reset gas sensor calibration. Check the sensor datasheet for calibration conditions.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Reset gas sensor calibration. Check the sensor datasheet for calibration conditions.</div>
                                 </div>
                             </fieldset>
 
-                            <fieldset class="module module-emon module-cse module-hlw">
-                                <legend>Energy monitor</legend>
-
-                                <div class="pure-g module module-emon">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="voltMains0" type="text">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Mains voltage in your system (in V).</div>
+                            <fieldset class="module module-emon">
+                                <legend>Ratios</legend>
+                                <div id="emon-ratios" class="pure-form-aligned settings-group">
                                 </div>
 
-                                <div class="pure-g module module-hlw module-cse">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" placeholder="0">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</div>
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-2"><button type="button" data-panel="emon-expected" class="pure-button button-emon-expected">Calculate ratios from expected values</button></div>
                                 </div>
-
-                                <div class="pure-g module module-hlw module-cse">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Expected Voltage</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedV" type="text" placeholder="0">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
-                                </div>
-
-                                <div class="pure-g module module-hlw module-cse module-emon">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Expected Power</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" placeholder="0">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here its nominal power or use a multimeter.</div>
-                                </div>
-
-                                <div class="pure-g module module-pm">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Energy Ratio</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="eneRatio0" type="text" placeholder="0">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Energy ratio in pulses/kWh.</div>
-                                </div>
-
-                                <div class="pure-g module module-hlw module-cse module-emon">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
-                                </div>
-
-                                <div class="pure-g module module-hlw module-cse module-emon module-pm">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Reset energy</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetE"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to set energy count to 0.</div>
-                                </div>
-
                             </fieldset>
 
                             <fieldset>
                                 <legend>Units</legend>
-                                <div id="sns-units-config" class="pure-control-group settings-group">
+                                <div id="magnitude-units" class="pure-form settings-group">
                                 </div>
+                            </fieldset>
+
+                            <fieldset class="module module-emon">
+                                <legend>Energy monitor</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-2"><button type="button" name="emon-reset-calibration" class="pure-button button-simple-action">Reset <strong>all</strong> internal calibration values</button></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-2"><button type="button" name="emon-reset-energy" class="pure-button button-simple-action">Set the energy count of all sensors to zero</button></div>
+                                </div>
+
                             </fieldset>
 
                         </div>
@@ -2163,7 +2147,31 @@
         </template>
 
         <!-- removeIf(!sensor) -->
-        <template id="template-sns-units">
+        <template id="template-magnitude-info-form">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4"></label>
+                <div class="pure-u-1 pure-u-lg-1-4">
+                    <input readonly class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude">
+                </div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center magnitude-description"></div>
+                <div class="pure-u-1 pure-u-lg-1 hint magnitude-info">
+                </div>
+            </div>
+        </template>
+
+        <template id="template-magnitude-info">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4"></label>
+                <div class="pure-u-1 pure-u-lg-1-4">
+                    <input readonly class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude">
+                </div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center magnitude-description"></div>
+                <div class="pure-u-1 pure-u-lg-1 hint magnitude-info">
+                </div>
+            </div>
+        </template>
+
+        <template id="template-magnitude-units">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4"></label>
                 <select class="pure-u-1 pure-u-lg-1-4">
@@ -2176,6 +2184,27 @@
                 <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24" type="number" min="0"></div>
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+            </div>
+        </template>
+
+        <template id="template-emon-expected">
+            <div class="pure-control-group">
+                <label></label>
+                <div class="pure-u-1 pure-u-lg-1-4">
+                    <input name="expected:" type="text" class="emon-expected-input">
+                    <input readonly name="result:" type="text" class="emon-expected-result">
+                </div>
+                <span class="hint pure-form-message-inline emon-expected-pwrP">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here its nominal power or use a multimeter.</span>
+                <span class="hint pure-form-message-inline emon-expected-volt">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</span>
+                <span class="hint pure-form-message-inline emon-expected-curr">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</span>
+                <span class="hint pure-form-message-inline emon-expected-ene"></span>
+            </div>
+        </template>
+
+        <template id="template-emon-ratios">
+            <div class="pure-control-group">
+                <label></label>
+                <input type="text">
             </div>
         </template>
         <!-- endRemoveIf(!sensor) -->
@@ -2242,20 +2271,6 @@
             </div>
         </template>
         <!-- endRemoveIf(!curtain) -->
-
-        <!-- removeIf(!sensor) -->
-        <template id="template-magnitude-info">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4"></label>
-                <div class="pure-u-1 pure-u-lg-1-4">
-                    <input class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude" data="256" readonly>
-                </div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center sns-desc"></div>
-                <div class="pure-u-1 pure-u-lg-1 hint sns-info">
-                </div>
-            </div>
-        </template>
-        <!-- endRemoveIf(!sensor) -->
 
         <!-- removeIf(!rfm69) -->
         <template id="template-rfm69-node">

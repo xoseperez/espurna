@@ -159,14 +159,14 @@ void updateOperationMode() {
 // MQTT
 //------------------------------------------------------------------------------
 
-bool _thermostatMqttHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Range) {
+bool _thermostatMqttHeartbeat(espurna::heartbeat::Mask mask) {
+    if (mask & espurna::heartbeat::Report::Range) {
         const auto& range = thermostatRange();
         mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MIN, String(range.min).c_str());
         mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(range.max).c_str());
     }
 
-    if (mask & heartbeat::Report::RemoteTemp) {
+    if (mask & espurna::heartbeat::Report::RemoteTemp) {
         const auto& remote_temp = thermostatRemoteTemp();
         char buffer[16];
         dtostrf(remote_temp.temp, 1, 1, buffer);

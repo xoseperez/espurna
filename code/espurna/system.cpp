@@ -34,53 +34,53 @@ namespace settings {
 namespace internal {
 
 template <>
-heartbeat::Mode convert(const String& value) {
+espurna::heartbeat::Mode convert(const String& value) {
     auto len = value.length();
     if (len == 1) {
         switch (*value.c_str()) {
         case '0':
-            return heartbeat::Mode::None;
+            return espurna::heartbeat::Mode::None;
         case '1':
-            return heartbeat::Mode::Once;
+            return espurna::heartbeat::Mode::Once;
         case '2':
-            return heartbeat::Mode::Repeat;
+            return espurna::heartbeat::Mode::Repeat;
         }
     } else if (len > 1) {
         if (value == F("none")) {
-            return heartbeat::Mode::None;
+            return espurna::heartbeat::Mode::None;
         } else if (value == F("once")) {
-            return heartbeat::Mode::Once;
+            return espurna::heartbeat::Mode::Once;
         } else if (value == F("repeat")) {
-            return heartbeat::Mode::Repeat;
+            return espurna::heartbeat::Mode::Repeat;
         }
     }
 
-    return heartbeat::Mode::Repeat;
+    return espurna::heartbeat::Mode::Repeat;
 }
 
 template <>
-heartbeat::Seconds convert(const String& value) {
-    return heartbeat::Seconds(convert<unsigned long>(value));
+espurna::duration::Seconds convert(const String& value) {
+    return espurna::duration::Seconds(convert<espurna::duration::Type>(value));
 }
 
 template <>
-heartbeat::Milliseconds convert(const String& value) {
-    return heartbeat::Milliseconds(convert<unsigned long>(value));
+espurna::duration::Milliseconds convert(const String& value) {
+    return espurna::duration::Milliseconds(convert<espurna::duration::Type>(value));
 }
 
 } // namespace internal
 } // namespace settings
 
-String systemHeartbeatModeToPayload(heartbeat::Mode mode) {
+String systemHeartbeatModeToPayload(espurna::heartbeat::Mode mode) {
     const __FlashStringHelper* ptr { nullptr };
     switch (mode) {
-    case heartbeat::Mode::None:
+    case espurna::heartbeat::Mode::None:
         ptr = F("none");
         break;
-    case heartbeat::Mode::Once:
+    case espurna::heartbeat::Mode::Once:
         ptr = F("once");
         break;
-    case heartbeat::Mode::Repeat:
+    case espurna::heartbeat::Mode::Repeat:
         ptr = F("repeat");
         break;
     }
@@ -311,14 +311,15 @@ unsigned char systemLoadAverage() {
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace heartbeat {
 
 constexpr Mode defaultMode() {
     return HEARTBEAT_MODE;
 }
 
-constexpr Seconds defaultInterval() {
-    return Seconds(HEARTBEAT_INTERVAL);
+constexpr espurna::duration::Seconds defaultInterval() {
+    return espurna::duration::Seconds(HEARTBEAT_INTERVAL);
 }
 
 constexpr Mask defaultValue() {
@@ -360,12 +361,12 @@ Mode currentMode() {
     return getSetting("hbMode", defaultMode());
 }
 
-Seconds currentInterval() {
+espurna::duration::Seconds currentInterval() {
     return getSetting("hbInterval", defaultInterval());
 }
 
-Milliseconds currentIntervalMs() {
-    return Milliseconds(currentInterval());
+espurna::duration::Milliseconds currentIntervalMs() {
+    return espurna::duration::Milliseconds(currentInterval());
 }
 
 Ticker timer;
@@ -373,8 +374,8 @@ Ticker timer;
 struct CallbackRunner {
     Callback callback;
     Mode mode;
-    heartbeat::Milliseconds interval;
-    heartbeat::Milliseconds last;
+    espurna::duration::Milliseconds interval;
+    espurna::duration::Milliseconds last;
 };
 
 std::vector<CallbackRunner> runners;
@@ -399,11 +400,12 @@ bool scheduled() {
 }
 
 } // namespace heartbeat
+} // namespace espurna
 
 void _systemHeartbeat();
 
-void systemStopHeartbeat(heartbeat::Callback callback) {
-    using namespace heartbeat;
+void systemStopHeartbeat(espurna::heartbeat::Callback callback) {
+    using namespace espurna::heartbeat;
     auto found = std::remove_if(runners.begin(), runners.end(),
         [&](const CallbackRunner& runner) {
             return callback == runner.callback;
@@ -411,54 +413,55 @@ void systemStopHeartbeat(heartbeat::Callback callback) {
     runners.erase(found, runners.end());
 }
 
-void systemHeartbeat(heartbeat::Callback callback, heartbeat::Mode mode, heartbeat::Seconds interval) {
-    if (mode == heartbeat::Mode::None) {
+void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode, espurna::duration::Seconds interval) {
+    if (mode == espurna::heartbeat::Mode::None) {
         return;
     }
 
-    auto msec = heartbeat::Milliseconds(interval);
+    auto msec = espurna::duration::Milliseconds(interval);
     if (!msec.count()) {
         return;
     }
 
-    auto offset = heartbeat::Milliseconds(millis() - 1ul);
-    heartbeat::runners.push_back({
+    auto offset = espurna::duration::Milliseconds(millis() - 1ul);
+    espurna::heartbeat::runners.push_back({
         callback, mode,
         msec,
         offset - msec
     });
 
-    heartbeat::timer.detach();
-    heartbeat::schedule();
+    espurna::heartbeat::timer.detach();
+    espurna::heartbeat::schedule();
 }
 
-void systemHeartbeat(heartbeat::Callback callback, heartbeat::Mode mode) {
-    systemHeartbeat(callback, mode, heartbeat::currentInterval());
+void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode) {
+    systemHeartbeat(callback, mode, espurna::heartbeat::currentInterval());
 }
 
-void systemHeartbeat(heartbeat::Callback callback) {
-    systemHeartbeat(callback, heartbeat::currentMode(), heartbeat::currentInterval());
+void systemHeartbeat(espurna::heartbeat::Callback callback) {
+    systemHeartbeat(callback, espurna::heartbeat::currentMode(), espurna::heartbeat::currentInterval());
 }
 
-heartbeat::Seconds systemHeartbeatInterval() {
-    heartbeat::Milliseconds result(0ul);
-    for (auto& runner : heartbeat::runners) {
-        result = heartbeat::Milliseconds(result.count()
+espurna::duration::Seconds systemHeartbeatInterval() {
+    espurna::duration::Milliseconds result(0ul);
+    for (auto& runner : espurna::heartbeat::runners) {
+        result = espurna::duration::Milliseconds(result.count()
                 ? std::min(result, runner.interval) : runner.interval);
     }
 
-    return std::chrono::duration_cast<heartbeat::Seconds>(result);
+    return std::chrono::duration_cast<espurna::duration::Seconds>(result);
 }
 
 void _systemHeartbeat() {
-    using namespace heartbeat;
+    using namespace espurna::heartbeat;
+    using namespace espurna::duration;
 
     constexpr Milliseconds BeatMin { 1000ul };
     constexpr Milliseconds BeatMax { BeatMin * 10 };
 
     auto next = Milliseconds(currentInterval());
 
-    auto ts = Milliseconds(millis());
+    auto ts = espurna::duration::millis();
     if (runners.size()) {
         auto mask = currentValue();
 
@@ -492,15 +495,15 @@ void _systemHeartbeat() {
         next = BeatMin;
     }
 
-    timer.once_ms(next.count(), heartbeat::schedule);
+    timer.once_ms(next.count(), espurna::heartbeat::schedule);
 }
 
 void systemScheduleHeartbeat() {
-    auto ts = heartbeat::Milliseconds(millis());
-    for (auto& runner : heartbeat::runners) {
-        runner.last = ts - runner.interval - heartbeat::Milliseconds(1ul);
+    auto ts = espurna::duration::Milliseconds(millis());
+    for (auto& runner : espurna::heartbeat::runners) {
+        runner.last = ts - runner.interval - espurna::duration::Milliseconds(1ul);
     }
-    heartbeat::schedule();
+    espurna::heartbeat::schedule();
 }
 
 void _systemUpdateLoadAverage() {
@@ -524,7 +527,7 @@ void _systemUpdateLoadAverage() {
 
 #if WEB_SUPPORT
 
-uint8_t _systemHeartbeatModeToId(heartbeat::Mode mode) {
+uint8_t _systemHeartbeatModeToId(espurna::heartbeat::Mode mode) {
     return static_cast<uint8_t>(mode);
 }
 
@@ -535,9 +538,9 @@ bool _systemWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _systemWebSocketOnConnected(JsonObject& root) {
-    root["hbReport"] = heartbeat::currentValue();
-    root["hbInterval"] = getSetting("hbInterval", heartbeat::defaultInterval()).count();
-    root["hbMode"] = _systemHeartbeatModeToId(getSetting("hbMode", heartbeat::defaultMode()));
+    root["hbReport"] = espurna::heartbeat::currentValue();
+    root["hbInterval"] = getSetting("hbInterval", espurna::heartbeat::defaultInterval()).count();
+    root["hbMode"] = _systemHeartbeatModeToId(getSetting("hbMode", espurna::heartbeat::defaultMode()));
 }
 
 #endif
@@ -548,7 +551,7 @@ void systemLoop() {
         return;
     }
 
-    if (heartbeat::scheduled()) {
+    if (espurna::heartbeat::scheduled()) {
         _systemHeartbeat();
     }
 
@@ -599,6 +602,6 @@ void systemSetup() {
 
     espurnaRegisterLoop(systemLoop);
 
-    heartbeat::schedule();
+    espurna::heartbeat::schedule();
 
 }

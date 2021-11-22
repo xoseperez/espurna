@@ -164,9 +164,9 @@
 // Heartbeat
 //------------------------------------------------------------------------------
 
-#define HEARTBEAT_NONE      heartbeat::Mode::None
-#define HEARTBEAT_ONCE      heartbeat::Mode::Once
-#define HEARTBEAT_REPEAT    heartbeat::Mode::Repeat
+#define HEARTBEAT_NONE      espurna::heartbeat::Mode::None
+#define HEARTBEAT_ONCE      espurna::heartbeat::Mode::Once
+#define HEARTBEAT_REPEAT    espurna::heartbeat::Mode::Repeat
 
 //------------------------------------------------------------------------------
 // MQTT

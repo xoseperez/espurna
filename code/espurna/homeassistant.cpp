@@ -508,10 +508,10 @@ private:
     String _message;
 };
 
-bool heartbeat(heartbeat::Mask mask) {
+bool heartbeat(espurna::heartbeat::Mask mask) {
     // TODO: mask json payload specifically?
     // or, find a way to detach masking from the system setting / don't use heartbeat timer
-    if (mask & heartbeat::Report::Light) {
+    if (mask & espurna::heartbeat::Report::Light) {
         DynamicJsonBuffer buffer(512);
         JsonObject& root = buffer.createObject();
 
@@ -551,7 +551,7 @@ bool heartbeat(heartbeat::Mask mask) {
 }
 
 void publishLightJson() {
-    heartbeat(static_cast<heartbeat::Mask>(heartbeat::Report::Light));
+    heartbeat(static_cast<espurna::heartbeat::Mask>(espurna::heartbeat::Report::Light));
 }
 
 void receiveLightJson(char* payload) {

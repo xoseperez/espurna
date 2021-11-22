@@ -38,13 +38,55 @@ enum class CustomResetReason : uint8_t {
     Web
 };
 
+namespace espurna {
+namespace duration {
+
+using Type = uint32_t;
+
+using Seconds = std::chrono::duration<Type>;
+using Milliseconds = std::chrono::duration<Type, std::milli>;
+using ClockCycles = std::chrono::duration<Type, std::ratio<1, F_CPU>>;
+
+inline Milliseconds millis() {
+    return Milliseconds(::millis());
+}
+
+inline Seconds seconds() {
+    return Seconds(std::chrono::duration_cast<Seconds>(millis()));
+}
+
+// TODO: also implement a software source based on boot time in msec / usec?
+// Current NONOS esp8266 gcc + newlib do not implement clock_getttime for REALTIME and MONOTONIC types,
+// everything (system_clock, steady_clock, high_resolution_clock) goes through gettimeofday()
+// RTOS port *does* include monotonic clock through the systick counter, which seems to be implement'able
+// here as well through the use of os_timer delay and a certain fixed tick (e.g. default CONFIG_FREERTOS_HZ, set to 1000)
+
+// TODO: cpu frequency value might not always be true at build-time, detect at boot instead?
+// (also notice the discrepancy when OTA'ing between different values, as CPU *may* keep the old value)
+
+struct ClockCyclesSource {
+    using rep = espurna::duration::Type;
+    using duration = espurna::duration::ClockCycles;
+    using period = duration::period;
+    using time_point = std::chrono::time_point<ClockCyclesSource, duration>;
+
+    static constexpr bool is_steady { true };
+
+    // `"rsr %0, ccount\n" : "=a" (out) :: "memory"` on xtensa
+    // or "soc_get_ccount()" with esp8266-idf
+    // or "cpu_hal_get_cycle_count()" with esp-idf
+    // (and notably, every one of them is 32bit as the Tick)
+    static time_point now() noexcept {
+        return time_point(duration(esp_get_cycle_count()));
+    }
+};
+
+} // namespace duration
+
 namespace heartbeat {
 
 using Mask = int32_t;
 using Callback = bool(*)(Mask);
-
-using Seconds = std::chrono::duration<unsigned long>;
-using Milliseconds = std::chrono::duration<unsigned long, std::milli>;
 
 enum class Mode {
     None,
@@ -108,13 +150,14 @@ constexpr Mask operator&(Report lhs, Report rhs) {
     return static_cast<Mask>(lhs) & static_cast<Mask>(rhs);
 }
 
-Seconds currentInterval();
-Milliseconds currentIntervalMs();
+espurna::duration::Seconds currentInterval();
+espurna::duration::Milliseconds currentIntervalMs();
 
 Mask currentValue();
 Mode currentMode();
 
 } // namespace heartbeat
+} // namespace espurna
 
 unsigned long systemFreeStack();
 
@@ -142,13 +185,13 @@ bool checkNeedsReset();
 
 unsigned char systemLoadAverage();
 
-heartbeat::Seconds systemHeartbeatInterval();
+espurna::duration::Seconds systemHeartbeatInterval();
 void systemScheduleHeartbeat();
 
-void systemStopHeartbeat(heartbeat::Callback);
-void systemHeartbeat(heartbeat::Callback, heartbeat::Mode, heartbeat::Seconds interval);
-void systemHeartbeat(heartbeat::Callback, heartbeat::Mode);
-void systemHeartbeat(heartbeat::Callback);
+void systemStopHeartbeat(espurna::heartbeat::Callback);
+void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode, espurna::duration::Seconds interval);
+void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode);
+void systemHeartbeat(espurna::heartbeat::Callback);
 bool systemHeartbeat();
 
 unsigned long systemUptime();

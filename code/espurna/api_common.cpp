@@ -32,7 +32,6 @@ void _apiWebSocketOnConnected(JsonObject& root) {
     root["apiEnabled"] = apiEnabled();
     root["apiKey"] = apiKey();
     root["apiRestFul"] = apiRestFul();
-    root["apiRealTime"] = getSetting("apiRealTime", 1 == API_REAL_TIME_VALUES);
 }
 
 }

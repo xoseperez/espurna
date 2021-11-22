@@ -45,8 +45,6 @@
 //     UART/TTL-Serial network with single master and multiple slaves:
 //     http://cool-emerald.blogspot.com/2009/10/multidrop-network-for-rs232.html
 
-#if SENSOR_SUPPORT && PZEM004T_SUPPORT
-
 #pragma once
 
 #include <PZEM004T.h>
@@ -57,424 +55,498 @@
 #include "../sensor.h"
 #include "../terminal.h"
 
-#define PZ_MAGNITUDE_COUNT                  4
-
-#define PZ_MAGNITUDE_CURRENT_INDEX          0
-#define PZ_MAGNITUDE_VOLTAGE_INDEX          1
-#define PZ_MAGNITUDE_POWER_ACTIVE_INDEX     2
-#define PZ_MAGNITUDE_ENERGY_INDEX           3
-
-#ifndef PZEM004T_DEVICES_MAX
-#define PZEM004T_DEVICES_MAX 3
-#endif
-
 class PZEM004TSensor : public BaseEmonSensor {
-    public:
-        static constexpr size_t DevicesMax { PZEM004T_DEVICES_MAX };
+private:
+    // Track instances returned by 'make()' in a singly linked list
+    // Compared to stdlib's forward_list, head and tail are reversed
+    static PZEM004TSensor* _head_instance;
+    PZEM004TSensor* _next_instance;
 
-        static String defaultAddress(size_t device) {
-            const __FlashStringHelper* ptr { nullptr };
+    static PZEM004TSensor* _current_instance;
+    static espurna::duration::Milliseconds _last_read;
 
-            switch (device) {
-            case 0:
-                ptr = F(PZEM004T_ADDRESS_1);
-                break;
-            case 1:
-                ptr = F(PZEM004T_ADDRESS_2);
-                break;
-            case 2:
-                ptr = F(PZEM004T_ADDRESS_3);
-                break;
-            }
-
-            String out;
-            if (ptr) {
-                out = ptr;
-            }
-
-            return out;
+    template <typename T>
+    static void foreach(T&& callback) {
+        for (auto it = _head_instance; it; it = it->_next_instance) {
+            callback(*it);
         }
+    }
 
-        // We can only create a single instance of the sensor class.
-        PZEM004TSensor() : BaseEmonSensor(0) {
-            _sensor_id = SENSOR_PZEM004T_ID;
-        }
+    static constexpr float ErrorValue { PZEM_ERROR_VALUE };
+    struct Reading {
+        float voltage { ErrorValue };
+        float current { ErrorValue };
+        float power { ErrorValue };
+        float energy { ErrorValue };
+    };
 
-        // ---------------------------------------------------------------------
+    static constexpr Magnitude Magnitudes[] {
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_VOLTAGE,
+        MAGNITUDE_POWER_ACTIVE,
+        MAGNITUDE_ENERGY
+    };
 
-        // We can't modify PZEM values, just ignore this
-        void resetEnergy() override {}
-        void resetEnergy(unsigned char) override {}
-        void resetEnergy(unsigned char, sensor::Energy) override {}
+public:
+    static constexpr unsigned char RxPin { PZEM004T_RX_PIN };
+    static constexpr unsigned char TxPin { PZEM004T_TX_PIN };
 
-        // Override Base methods that deal with _energy[]
-        size_t countDevices() override {
-            return _addresses.size();
-        }
+    static HardwareSerial* defaultHardwarePort() {
+        return &PZEM004T_HW_PORT;
+    }
 
-        double getEnergy(unsigned char index) override {
-            return _readings[index].energy;
-        }
+    static constexpr bool useSoftwareSerial() {
+        return 1 == PZEM004T_USE_SOFT;
+    }
 
-        sensor::Energy totalEnergy(unsigned char index) override {
-            return getEnergy(index);
-        }
+    static constexpr espurna::duration::Milliseconds ReadInterval { PZEM004T_READ_INTERVAL };
+    static constexpr size_t DevicesMax { PZEM004T_DEVICES_MAX };
 
-        // ---------------------------------------------------------------------
-
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
-            _dirty = true;
-        }
-
-        void setTX(unsigned char pin_tx) {
-            if (_pin_tx == pin_tx) return;
-            _pin_tx = pin_tx;
-            _dirty = true;
-        }
-
-        void setSerial(HardwareSerial * serial) {
-            _serial = serial;
-            _dirty = true;
-        }
-
-        // Set the devices physical addresses managed by this sensor
-        bool addAddress(const IPAddress& address) {
-            if (_addresses.size() < DevicesMax) {
-                reading_t reading;
-                reading.current = PZEM_ERROR_VALUE;
-                reading.voltage = PZEM_ERROR_VALUE;
-                reading.power = PZEM_ERROR_VALUE;
-                reading.energy = PZEM_ERROR_VALUE;
-                _readings.push_back(reading);
-
-                _addresses.push_back(address);
-                _dirty = true;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        // TODO: Arduino API likes C strings :>
-        bool addAddress(const char* address) {
-            IPAddress ip;
-            if (!ip.fromString(address)) {
-                return false;
-            }
-
-            return addAddress(ip);
-        }
-
-        bool addAddress(const String& address) {
-            return addAddress(address.c_str());
-        }
-
-        // Get device physical address based on the device index
-        String getAddress(unsigned char dev) {
-            return _addresses[dev].toString();
-        }
-
-        // Set the device physical address
-        bool setDeviceAddress(const IPAddress& addr) {
-            if (!_busy) {
-                return _pzem->setAddress(addr);
-            }
-
-            return false;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() {
-            return _pin_rx;
-        }
-
-        unsigned char getTX() {
-            return _pin_tx;
-        }
-
-        // ---------------------------------------------------------------------
-        // Sensor API
-        // ---------------------------------------------------------------------
-
-        // Initialization method, must be idempotent
-        void begin() {
-            if (!_dirty) return;
-
-            if (_serial) {
-                _pzem.reset(new PZEM004T(_serial));
-                if ((_pin_tx == 15) && (_pin_rx == 13)) {
-                    _serial->flush();
-                    _serial->swap();
-                }
-            } else {
-                _pzem.reset(new PZEM004T(_pin_rx, _pin_tx));
-            }
-
-            if(_addresses.size() == 1) {
-                _pzem->setAddress(_addresses[0]);
-            }
-
-            _ready = true;
-            _dirty = false;
-        }
-
-        // Descriptive name of the sensor
-        String description() {
-            char buffer[27];
-            if (_serial) {
-                snprintf(buffer, sizeof(buffer), "PZEM004T @ HwSerial");
-            } else {
-                snprintf(buffer, sizeof(buffer), "PZEM004T @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
-            }
-            return String(buffer);
-        }
-
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            auto dev = local(index);
-            char buffer[25];
-            snprintf(buffer, sizeof(buffer), "(%u/%s)", dev, getAddress(dev).c_str());
-            return description() + String(buffer);
+    static IPAddress defaultAddress(size_t device) {
+        const __FlashStringHelper* ptr {
+            (0 == device) ? F(PZEM004T_ADDRESS_1) :
+            (1 == device) ? F(PZEM004T_ADDRESS_2) :
+            (2 == device) ? F(PZEM004T_ADDRESS_3) :
+            (3 == device) ? F(PZEM004T_ADDRESS_4) :
+            nullptr
         };
 
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return _addresses[local(index)].toString();
+        IPAddress out;
+        if (ptr) {
+            out = settings::internal::convert<IPAddress>(String(ptr));
         }
 
-        // Convert slot # to a magnitude #
-        unsigned char local(unsigned char index) override {
-            return index / PZ_MAGNITUDE_COUNT;
-        }
+        return out;
+    }
 
-        // Type for slot # index
-        unsigned char type(unsigned char index) {
-            index = index - (local(index) * PZ_MAGNITUDE_COUNT);
-            if (index == PZ_MAGNITUDE_CURRENT_INDEX)      return MAGNITUDE_CURRENT;
-            if (index == PZ_MAGNITUDE_VOLTAGE_INDEX)      return MAGNITUDE_VOLTAGE;
-            if (index == PZ_MAGNITUDE_POWER_ACTIVE_INDEX) return MAGNITUDE_POWER_ACTIVE;
-            if (index == PZ_MAGNITUDE_ENERGY_INDEX)       return MAGNITUDE_ENERGY;
-            return MAGNITUDE_NONE;
-        }
+    // TODO: PZEM lib wants us to compose things this way. prefer Stream interface
+    // and port the existing code here so we don't have to pass software / hardware pointers,
+    // and configure everything ourselves on a global level
+    // TODO: also notice neither class returns pins in use... and these
+    // should go away when migrated to global serial config
+    struct SerialPort {
+        using PzemPtr = std::unique_ptr<PZEM004T>;
 
-        // Current value for slot # index
-        double value(unsigned char index) {
-            double response = 0.0;
+        virtual const char* tag() const = 0;
+        virtual void flush() = 0;
 
-            int dev = index / PZ_MAGNITUDE_COUNT;
-            index = index - (dev * PZ_MAGNITUDE_COUNT);
+        SerialPort() = delete;
+        SerialPort(PzemPtr pzem, unsigned char rx, unsigned char tx) :
+            _pzem(std::move(pzem)),
+            _rx(rx),
+            _tx(tx)
+        {}
 
-            switch (index) {
-                case PZ_MAGNITUDE_CURRENT_INDEX:
-                    response = _readings[dev].current;
-                    break;
-                case PZ_MAGNITUDE_VOLTAGE_INDEX:
-                    response = _readings[dev].voltage;
-                    break;
-                case PZ_MAGNITUDE_POWER_ACTIVE_INDEX:
-                    response = _readings[dev].power;
-                    break;
-                case PZ_MAGNITUDE_ENERGY_INDEX: {
-                    response = _readings[dev].energy;
-                    break;
-                }
-                default:
-                    break;
+        float read(const IPAddress& address, unsigned char magnitude) {
+            switch (magnitude) {
+            case MAGNITUDE_CURRENT:
+                return _pzem->current(address);
+            case MAGNITUDE_VOLTAGE:
+                return _pzem->voltage(address);
+            case MAGNITUDE_POWER_ACTIVE:
+                return _pzem->power(address);
+            case MAGNITUDE_ENERGY:
+                return _pzem->energy(address);
             }
 
-            if (response < 0.0) {
-                response = 0.0;
-            }
-
-            return response;
+            return ErrorValue;
         }
 
-        // Post-read hook (usually to reset things)
-        void post() {
-            _error = SENSOR_ERROR_OK;
-        }
-
-        // Loop-like method, call it in your main loop
-        void tick() {
-            static unsigned char dev = 0;
-            static unsigned char magnitude = 0;
-            static unsigned long last_millis = 0;
-
-            if (_busy || millis() - last_millis < PZEM004T_READ_INTERVAL) {
-                return;
+        bool read(Reading& reading, const IPAddress& address, unsigned char magnitude) {
+            if (_busy) {
+                return false;
             }
 
             _busy = true;
 
-            // Clear buffer in case of late response(Timeout)
-            if (_serial) {
-                while(_serial->available() > 0) _serial->read();
-            } else {
-                // This we cannot do it from outside the library
-            }
+            auto value = read(address, magnitude);
 
-            tickStoreReading(dev, magnitude);
-
-            if(++dev == _addresses.size()) {
-                dev = 0;
-                last_millis = millis();
-                if(++magnitude == PZ_MAGNITUDE_COUNT) {
-                    magnitude = 0;
-                }
+            switch (magnitude) {
+            case MAGNITUDE_CURRENT:
+                reading.current = value;
+                break;
+            case MAGNITUDE_VOLTAGE:
+                reading.voltage = value;
+                break;
+            case MAGNITUDE_POWER_ACTIVE:
+                reading.power = value;
+                break;
+            case MAGNITUDE_ENERGY:
+                reading.energy = value;
+                break;
             }
 
             _busy = false;
+            return (value != ErrorValue);
         }
 
-    protected:
-
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
-
-        void tickStoreReading(unsigned char dev, unsigned char magnitude) {
-            float read = PZEM_ERROR_VALUE;
-            float* readings_p = nullptr;
-
-            switch (magnitude) {
-                case PZ_MAGNITUDE_CURRENT_INDEX:
-                    read = _pzem->current(_addresses[dev]);
-                    readings_p = &_readings[dev].current;
-                    break;
-                case PZ_MAGNITUDE_VOLTAGE_INDEX:
-                    read = _pzem->voltage(_addresses[dev]);
-                    readings_p = &_readings[dev].voltage;
-                    break;
-                case PZ_MAGNITUDE_POWER_ACTIVE_INDEX:
-                    read = _pzem->power(_addresses[dev]);
-                    readings_p = &_readings[dev].power;
-                    break;
-                case PZ_MAGNITUDE_ENERGY_INDEX:
-                    read = _pzem->energy(_addresses[dev]);
-                    readings_p = &_readings[dev].energy;
-                    break;
-                default:
-                    _busy = false;
-                    return;
+        template <typename T>
+        bool read(Reading& reading, const IPAddress& address, T begin, T end) {
+            for (auto it = begin; it != end; ++it) {
+                if (!read(reading, address, *it)) {
+                    return false;
+                }
             }
 
-            if (read == PZEM_ERROR_VALUE) {
-                _error = SENSOR_ERROR_TIMEOUT;
-            } else {
-                *readings_p = read;
+            return true;
+        }
+
+        bool address(const IPAddress& address) {
+            return _pzem->setAddress(address);
+        }
+
+        unsigned char rx() const {
+            return _rx;
+        }
+
+        unsigned char tx() const {
+            return _tx;
+        }
+
+    private:
+        PzemPtr _pzem;
+        bool _busy { false };
+        unsigned char _rx;
+        unsigned char _tx;
+    };
+
+    struct SoftwareSerialPort : public SerialPort {
+        SoftwareSerialPort() = delete;
+        SoftwareSerialPort(unsigned char rx, unsigned char tx) :
+            SerialPort(std::make_unique<PZEM004T>(rx, tx), rx, tx)
+        {}
+
+        const char* tag() const override {
+            return "Sw";
+        }
+
+        void flush() override {
+        }
+    };
+
+    struct HardwareSerialPort : public SerialPort {
+        HardwareSerialPort() = delete;
+        HardwareSerialPort(HardwareSerial* serial, unsigned char rx, unsigned char tx) :
+            SerialPort(std::make_unique<PZEM004T>(serial), rx, tx),
+            _serial(serial)
+        {
+            if ((rx == 13) && (tx == 15)) {
+                _serial->flush();
+                _serial->swap();
             }
         }
 
+        const char* tag() const override {
+            return "Hw";
+        }
 
-        struct reading_t {
-            float voltage;
-            float current;
-            float power;
-            float energy;
-        };
+        void flush() override {
+            // Clear buffer in case of late response (Timeout)
+            // This we cannot do it from outside the library
+            while (_serial->available() > 0) {
+                _serial->read();
+            }
+        }
 
-        unsigned int _pin_rx = PZEM004T_RX_PIN;
-        unsigned int _pin_tx = PZEM004T_TX_PIN;
-        bool _busy = false;
+    private:
+        HardwareSerial* _serial;
+    };
 
-        std::vector<reading_t> _readings;
-        std::vector<IPAddress> _addresses;
+    using PortPtr = std::shared_ptr<SerialPort>;
 
-        HardwareSerial * _serial { nullptr };
-        std::unique_ptr<PZEM004T> _pzem;
-};
-
-#if TERMINAL_SUPPORT
-
-namespace {
-
-struct Pzem004DeviceRange {
-    size_t begin;
-    size_t end;
-};
-
-Pzem004DeviceRange pzem004tRange(PZEM004TSensor* instance) {
-    return {0, instance->countDevices()};
-}
-
-Pzem004DeviceRange pzem004tRange(const String& value) {
-    auto input = value.toInt();
-    if ((input > 0) && (input < 254)) {
-        size_t begin = static_cast<size_t>(input);
-        return {begin, begin + 1};
+    static PortPtr makeHardwarePort(HardwareSerial* port, unsigned char rx, unsigned char tx) {
+        auto ptr = std::make_shared<HardwareSerialPort>(port, rx, tx);
+        _ports.push_back(ptr);
+        return ptr;
     }
 
-    return {0, 0};
-}
+    static PortPtr makeSoftwarePort(unsigned char rx, unsigned char tx) {
+        auto ptr = std::make_shared<SoftwareSerialPort>(rx, tx);
+        _ports.push_back(ptr);
+        return ptr;
+    }
 
-void pzem004tInitCommands(PZEM004TSensor* ptr) {
-    static PZEM004TSensor* instance { ptr };
+private:
+    PZEM004TSensor(PortPtr port, IPAddress address) :
+        _port(port),
+        _address(address)
+    {
+        _sensor_id = SENSOR_PZEM004T_ID;
+        _count = std::size(Magnitudes);
+        findAndAddEnergy(Magnitudes);
+    }
 
+public:
+    PZEM004TSensor() = delete;
+
+    static PZEM004TSensor* make(PortPtr port, IPAddress address) {
+        size_t devices { 0 };
+
+        auto* prev = _head_instance;
+        auto* cursor = _head_instance;
+        while (cursor) {
+            prev = cursor;
+            cursor = cursor->_next_instance;
+            ++devices;
+        }
+
+        if (devices < DevicesMax) {
+            auto* target = (_head_instance)
+                ? &prev->_next_instance
+                : &_head_instance;
+
+            *target = new PZEM004TSensor(port, address);
+            _current_instance = *target;
+
+            return *target;
+        }
+
+        return nullptr;
+    }
+
+    static void registerTerminalCommands();
+
+    // ---------------------------------------------------------------------
+
+    // We can't modify PZEM values, make sure this can't be accessed externally
+    // (...but, in theory, it would be possible to *amend* these values with ours...)
+    void resetEnergy() override {
+    }
+
+    void resetEnergy(unsigned char index) override {
+    }
+
+    void resetEnergy(unsigned char index, sensor::Energy energy) override {
+    }
+
+    // ---------------------------------------------------------------------
+
+    // Set the devices physical addresses managed by this sensor
+    void setAddress(const IPAddress& address) {
+        _address = address;
+        _reading = Reading{};
+        _dirty = true;
+    }
+
+    void setAddress(const char* address) {
+        IPAddress ip;
+        if (!ip.fromString(address)) {
+            setAddress(ip);
+        }
+    }
+
+    void setAddress(const String& address) {
+        setAddress(address.c_str());
+    }
+
+    const IPAddress& getAddress() const {
+        return _address;
+    }
+
+    bool setDeviceAddress(const IPAddress& addr) {
+        return _port->address(addr);
+    }
+
+    // ---------------------------------------------------------------------
+    // Sensor API
+    // ---------------------------------------------------------------------
+
+    // Initialization method, must be idempotent
+    void begin() {
+        _dirty = false;
+        _ready = static_cast<bool>(_port);
+    }
+
+    // Descriptive name of the sensor
+    String description() {
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "PZEM004T @ %sSerial(%hhu,%hhu)",
+            _port->tag(), _port->rx(), _port->tx());
+        return String(buffer);
+    }
+
+    // Descriptive name of the slot # index
+    String description(unsigned char index) {
+        String out;
+        out.reserve(48);
+
+        out += description();
+        out += F(" @ ");
+        out += _address.toString();
+
+        return out;
+    }
+
+    // Address of the sensor (it could be the GPIO or I2C address)
+    String address(unsigned char) {
+        return _address.toString();
+    }
+
+    // Type for slot # index
+    unsigned char type(unsigned char index) {
+        if (index < std::size(Magnitudes)) {
+            return Magnitudes[index].type;
+        }
+
+        return MAGNITUDE_NONE;
+    }
+
+    // Current value for slot # index
+    double value(unsigned char index) {
+        double response { 0.0 };
+
+        if (index < std::size(Magnitudes)) {
+            switch (Magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                response = _reading.current;
+                break;
+            case MAGNITUDE_VOLTAGE:
+                response = _reading.voltage;
+                break;
+            case MAGNITUDE_POWER_ACTIVE:
+                response = _reading.power;
+                break;
+            case MAGNITUDE_ENERGY:
+                response = _reading.energy;
+                break;
+            }
+
+            if (std::signbit(response)) {
+                response = 0.0;
+            }
+        }
+
+        return response;
+    }
+
+    // Post-read hook (usually to reset things)
+    void post() {
+        _error = SENSOR_ERROR_OK;
+    }
+
+    // Loop-like method, call it in your main loop
+    void tick() {
+        static_assert(std::size(Magnitudes) > 0, "");
+        if (!_head_instance || (_current_instance != this)) {
+            return;
+        }
+
+        // Current approach is to spread our reads of mutliple instances,
+        // instead of doing them in the same time slot.
+        if (espurna::duration::millis() - _last_read < ReadInterval) {
+            return;
+        }
+
+        for (const auto& magnitude : Magnitudes) {
+            if (!_port->read(_reading, _address, magnitude.type)) {
+                _error = SENSOR_ERROR_TIMEOUT;
+                break;
+            }
+            yield();
+        }
+
+        _last_read = espurna::duration::millis();
+        _current_instance = (_current_instance->_next_instance)
+            ? _current_instance->_next_instance
+            : _head_instance;
+    }
+
+private:
+    PortPtr _port;
+    using PortWeakPtr = std::weak_ptr<PortPtr::element_type>;
+    using Ports = std::vector<PortWeakPtr>;
+    static Ports _ports;
+
+    IPAddress _address;
+    Reading _reading;
+};
+
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude PZEM004TSensor::Magnitudes[];
+#endif
+
+void PZEM004TSensor::registerTerminalCommands() {
+#if TERMINAL_SUPPORT
     terminalRegisterCommand(F("PZ.DEVICES"), [](const terminal::CommandContext& ctx) {
-        for (size_t device = 0; device < instance->countDevices(); ++device) {
-            ctx.output.printf("%u/%s\n", device, instance->getAddress(device).c_str());
+        foreach([&](const PZEM004TSensor& device) {
+            ctx.output.printf("%s\n", device._address.toString().c_str());
+        });
+        terminalOK(ctx);
+    });
+
+    terminalRegisterCommand(F("PZ.PORTS"), [](const terminal::CommandContext& ctx) {
+        auto it = _ports.begin();
+        auto end = _ports.end();
+
+        if (ctx.argc == 2) {
+            auto offset = settings::internal::convert<size_t>(ctx.argv[1]);
+            if (offset >= _ports.size()) {
+                terminalError(ctx, F("Invalid port ID"));
+                return;
+            }
+
+            while ((it != end) && offset) {
+                ++it;
+                --offset;
+            }
+
+            if (it == end) {
+                terminalError(ctx, F("Invalid port ID"));
+                return;
+            }
+
+            end = it + 1;
+        }
+
+        size_t index { 0 };
+        auto print = [&](const PortWeakPtr& ptr) {
+            auto port = PortPtr(ptr);
+            ctx.output.printf_P(PSTR("%u -> %sSerial (%hhu,%hhu)\n"),
+                index, port->tag(), port->rx(), port->tx());
+        };
+
+        while ((it != end) && (*it).use_count()) {
+            print(*it);
+            ++it;
+            ++index;
         }
 
         terminalOK(ctx);
     });
 
+    // Set the *currently connected* device address
+    // (ref. comment at the top, shouldn't do this when multiple devices are connected)
     terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
-            terminalError(ctx, F("PZ.ADDRESS <ADDRESS>"));
+        if (ctx.argc != 3) {
+            terminalError(ctx, F("PZ.ADDRESS <PORT> <ADDRESS>"));
             return;
         }
 
-        IPAddress addr;
-        if (!addr.fromString(ctx.argv[1])) {
+        auto id = settings::internal::convert<size_t>(ctx.argv[1]);
+        if (id >= _ports.size()) {
+            terminalError(ctx, F("Invalid port ID"));
+            return;
+        }
+
+        auto addr = settings::internal::convert<IPAddress>(ctx.argv[2]);
+        if (!addr.isSet()) {
             terminalError(ctx, F("Invalid address"));
             return;
         }
 
-        if (!instance->setDeviceAddress(addr)) {
+        auto port = PortPtr(_ports[id]);
+        if (!port->address(addr)) {
             terminalError(ctx, F("Failed to set the address"));
             return;
         }
 
         terminalOK(ctx);
     });
-
-    terminalRegisterCommand(F("PZ.RESET"), [](const terminal::CommandContext& ctx) {
-        auto range = (ctx.argc == 2)
-            ? pzem004tRange(ctx.argv[1])
-            : pzem004tRange(instance);
-
-        for (size_t device = range.begin; device < range.end; ++device) {
-            instance->resetEnergy(device);
-        }
-
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("PZ.VALUE"), [](const terminal::CommandContext& ctx) {
-        auto range = (ctx.argc == 2)
-            ? pzem004tRange(ctx.argv[1])
-            : pzem004tRange(instance);
-
-        for (size_t device = range.begin; device < range.end; ++device) {
-            ctx.output.printf("%u/%s - current %s voltage %s power %s energy %s\n",
-                device,
-                instance->getAddress(device).c_str(),
-                String(instance->value(device * PZ_MAGNITUDE_CURRENT_INDEX)).c_str(),
-                String(instance->value(device * PZ_MAGNITUDE_VOLTAGE_INDEX)).c_str(),
-                String(instance->value(device * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
-                String(instance->value(device * PZ_MAGNITUDE_ENERGY_INDEX)).c_str());
-        }
-
-        terminalOK(ctx);
-    });
+#endif
 }
 
-} // namespace
+PZEM004TSensor* PZEM004TSensor::_head_instance { nullptr };
+PZEM004TSensor* PZEM004TSensor::_current_instance { nullptr };
+espurna::duration::Milliseconds PZEM004TSensor::_last_read { espurna::duration::millis() - ReadInterval };
 
-#endif // TERMINAL_SUPPORT == 1
-
-#endif // SENSOR_SUPPORT && PZEM004T_SUPPORT
+PZEM004TSensor::Ports PZEM004TSensor::_ports{};

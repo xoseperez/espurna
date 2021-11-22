@@ -33,50 +33,15 @@ namespace {
 // - bound to 32bits, to seamlessly handle ccount conversion from the 'time source'
 // - explicitly check for the maximum number of milliseconds that may be represented with ccount
 
-// TODO: also implement a software source based on boot time in msec / usec?
-// Current NONOS esp8266 gcc + newlib do not implement clock_getttime for REALTIME and MONOTONIC types,
-// everything (system_clock, steady_clock, high_resolution_clock) goes through gettimeofday()
-// RTOS port *does* include monotonic clock through the systick counter, which seems to be implement'able
-// here as well through the use of os_timer delay and a certain fixed tick (e.g. default CONFIG_FREERTOS_HZ, set to 1000)
-
-// TODO: cpu frequency value might not always be true at build-time, detect at boot instead?
-// (also notice the discrepancy when OTA'ing between different values, as CPU *may* keep the old value)
-
 // TODO: full-width int for repeats instead of 8bit? right now, string parser will *force* [min:max] range,
 // but anything else is experiencing overflow mechanics
 
-namespace time {
-
-using Tick = uint32_t;
-
-using Milliseconds = std::chrono::duration<Tick, std::milli>;
-using ClockCycles = std::chrono::duration<Tick, std::ratio<1, F_CPU>>;
-
-constexpr auto ClockCyclesMax = ClockCycles(ClockCycles::max());
-constexpr auto MillisecondsMax = std::chrono::duration_cast<Milliseconds>(ClockCyclesMax);
-
-struct ClockCyclesSource {
-    using rep = Tick;
-    using duration = ClockCycles;
-    using period = duration::period;
-    using time_point = std::chrono::time_point<ClockCyclesSource, duration>;
-
-    static constexpr bool is_steady { true };
-
-    // `"rsr %0, ccount\n" : "=a" (out) :: "memory"` on xtensa
-    // or "soc_get_ccount()" with esp8266-idf
-    // or "cpu_hal_get_cycle_count()" with esp-idf
-    // (and notably, every one of them is 32bit as the Tick)
-    static time_point now() noexcept {
-        return time_point(duration(esp_get_cycle_count()));
-    }
-};
-
-} // namespace time
-
 struct Delay {
-    using Duration = time::ClockCycles;
-    using Source = time::ClockCyclesSource;
+    static constexpr auto ClockCyclesMax = espurna::duration::ClockCycles(espurna::duration::ClockCycles::max());
+    static constexpr auto MillisecondsMax = std::chrono::duration_cast<espurna::duration::Milliseconds>(ClockCyclesMax);
+
+    using Duration = espurna::duration::ClockCycles;
+    using Source = espurna::duration::ClockCyclesSource;
     using TimePoint = Source::time_point;
 
     using Repeats = unsigned char;
@@ -120,6 +85,9 @@ private:
     Duration _off;
     Repeats _repeats;
 };
+
+constexpr espurna::duration::ClockCycles Delay::ClockCyclesMax;
+constexpr espurna::duration::Milliseconds Delay::MillisecondsMax;
 
 struct Pattern {
     using Delays = std::vector<Delay>;
@@ -438,10 +406,8 @@ String serialize(LedMode mode) {
     return String(static_cast<int>(mode), 10);
 }
 
-// TODO: public timestamp & cputick types
-
 #if 0
-String serialize(time::ClockCycles value) {
+String serialize(espurna::duration::ClockCycles value) {
     String out;
     out.reserve(16);
 
@@ -601,13 +567,13 @@ void migrate(int version) {
 // For network-based modes, indefinitely cycle ON <-> OFF
 // (TODO: template params containing structs like duration need -std=c++2a)
 
-template <time::Tick On, time::Tick Off>
+template <espurna::duration::Type On, espurna::duration::Type Off>
 struct StaticDelay {
-    static constexpr auto MillisecondsOn = time::Milliseconds(On);
-    static constexpr auto MillisecondsOff = time::Milliseconds(Off);
+    static constexpr auto MillisecondsOn = espurna::duration::Milliseconds(On);
+    static constexpr auto MillisecondsOff = espurna::duration::Milliseconds(Off);
 
-    static_assert(MillisecondsOn <= time::MillisecondsMax, "");
-    static_assert(MillisecondsOff <= time::MillisecondsMax, "");
+    static_assert(MillisecondsOn <= Delay::MillisecondsMax, "");
+    static_assert(MillisecondsOff <= Delay::MillisecondsMax, "");
 
     static constexpr auto DurationOn = std::chrono::duration_cast<Delay::Duration>(MillisecondsOn);
     static constexpr auto DurationOff = std::chrono::duration_cast<Delay::Duration>(MillisecondsOff);
@@ -828,10 +794,10 @@ void pattern(Led& led, Pattern&& other) {
 }
 
 void run(Led& led, const Delay& delay) {
-    static auto clock_last = time::ClockCyclesSource::now();
+    static auto clock_last = espurna::duration::ClockCyclesSource::now();
     static auto delay_for = delay.on();
 
-    const auto clock_current = time::ClockCyclesSource::now();
+    const auto clock_current = espurna::duration::ClockCyclesSource::now();
     if (clock_current - clock_last >= delay_for) {
         delay_for = led.toggle() ? delay.on() : delay.off();
         clock_last = clock_current;

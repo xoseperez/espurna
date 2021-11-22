@@ -57,7 +57,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 using mqtt_callback_f = std::function<void(unsigned int type, const char* topic, char* payload)>;
 using mqtt_pid_callback_f = std::function<void()>;
 
-void mqttHeartbeat(heartbeat::Callback);
+void mqttHeartbeat(espurna::heartbeat::Callback);
 void mqttRegister(mqtt_callback_f callback);
 
 void mqttOnPublish(uint16_t pid, mqtt_pid_callback_f);

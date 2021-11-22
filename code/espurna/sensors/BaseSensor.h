@@ -13,6 +13,27 @@
 
 class BaseSensor {
 public:
+    struct Magnitude {
+        unsigned char type;
+#if __cplusplus <= 201103L
+        constexpr Magnitude(unsigned char type_) :
+            type(type_)
+        {}
+#endif
+    };
+
+    template <typename T, typename Callback>
+    static void findMagnitudes(const T& container, unsigned char type, Callback&& callback) {
+        auto begin = std::begin(container);
+        auto end = std::end(container);
+
+        for (auto it = begin; it != end; ++it) {
+            if ((*it).type == type) {
+                callback(std::distance(begin, it));
+            }
+        }
+    }
+
     // Must implement as virtual.
     // Allows inhereting class correctly call it's own destructor through the ~BaseSensor()
     virtual ~BaseSensor() {
@@ -35,12 +56,12 @@ public:
     }
 
     // Type of sensor
-    virtual unsigned char type() {
+    virtual unsigned char type() const {
         return sensor::type::Base;
     }
 
     // Number of decimals for a unit (or -1 for default)
-    virtual signed char decimals(sensor::Unit) {
+    virtual signed char decimals(sensor::Unit) const {
         return -1;
     }
 
@@ -71,11 +92,6 @@ public:
     // Number of available slots
     unsigned char count() {
         return _count;
-    }
-
-    // Convert slot # index to a magnitude # index
-    virtual unsigned char local(unsigned char slot) {
-        return 0;
     }
 
     // Specify units attached to magnitudes

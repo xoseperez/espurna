@@ -269,15 +269,14 @@ class DallasSensor : public BaseSensor {
         }
 
         // Number of decimals for a magnitude (or -1 for default)
-        signed char decimals(sensor::Unit unit) {
-            switch (unit) {
-                // Smallest increment is 0.0625 C, so 2 decimals
-                case sensor::Unit::Celcius:
-                    return 2;
-                // In case we have DS2406, there is no decimal places
-                default:
-                    return 0;
+        signed char decimals(sensor::Unit unit) const {
+            // Smallest increment is 0.0625 °C
+            if (unit == sensor::Unit::Celcius) {
+                return 2;
             }
+
+            // In case we have DS2406, there is no decimal places
+            return 0;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)

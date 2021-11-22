@@ -38,6 +38,10 @@
     }
 }
 
+.header strong {
+    font-weight: bold;
+}
+
 h2 {
     font-size: 1em;
 }
@@ -57,7 +61,7 @@ h2 {
 .hint {
     color: #9e9e9e;
     font-size: 80%;
-    margin: -10px 0 10px 0;
+    margin: -0.3em 0 0.3em 0;
 }
 
 .hint a {
@@ -65,10 +69,6 @@ h2 {
 }
 
 .module {
-    display: none;
-}
-
-.template {
     display: none;
 }
 
@@ -127,6 +127,23 @@ div.state {
     line-height: 100%;
     background-color: #000;
     color: #0F0;
+}
+
+/* -----------------------------------------------------------------------------
+    Sensors
+   -------------------------------------------------------------------------- */
+
+.pure-form-aligned
+.pure-control-group
+label {
+    text-align: left;
+}
+
+.emon-expected-pwrP,
+.emon-expected-volt,
+.emon-expected-curr,
+.emon-expected-ene {
+    display: none;
 }
 
 /* -----------------------------------------------------------------------------
@@ -206,12 +223,14 @@ div.state {
 .button-settings-restore,
 .button-garland-set-default,
 .button-dbgcmd,
-.button-apikey {
+.button-apikey,
+.button-emon-expected-calculate {
     background: rgb(0, 192, 0); /* green */
 }
 
 .button-wifi-scan,
 .button-more-parent,
+.button-simple-action,
 .button-rfb-send {
     background: rgb(255, 128, 0); /* orange */
 }
@@ -219,6 +238,8 @@ div.state {
 .button-curtain-open,
 .button-curtain-pause,
 .button-curtain-close,
+.button-emon-expected,
+.button-emon-expected-apply,
 .button-generate-password {
     background: rgb(66, 184, 221); /* blue */
 }
@@ -259,7 +280,7 @@ span.slider {
 
 .toggleWrapper {
     overflow: hidden;
-    width: auto;
+    width: max-content;
     height: 30px;
     margin: 0px 0px 10px 0px;
     padding: 0px;

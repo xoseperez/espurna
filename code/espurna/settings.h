@@ -169,7 +169,7 @@ using RetrieveDefault = String(*)(const String& key);
 
 } // namespace settings
 
-void settingsRegisterDefaults(const char* const prefix, settings::RetrieveDefault retrieve);
+void settingsRegisterDefaults(String prefix, settings::RetrieveDefault retrieve);
 String settingsQueryDefaults(const String& key);
 
 // --------------------------------------------------------------------------

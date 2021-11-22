@@ -126,6 +126,11 @@ constexpr size_t size(const T (&)[Size]) {
     return Size;
 }
 
+template <typename T>
+constexpr size_t size(const T& value) {
+    return value.size();
+}
+
 } // namespace std
 
 #endif

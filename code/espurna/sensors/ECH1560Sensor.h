@@ -18,9 +18,17 @@ class ECH1560Sensor : public BaseEmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        ECH1560Sensor(): _data() {
-            _count = 3;
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_CURRENT,
+            MAGNITUDE_VOLTAGE,
+            MAGNITUDE_POWER_APPARENT,
+            MAGNITUDE_ENERGY
+        };
+
+        ECH1560Sensor() {
             _sensor_id = SENSOR_ECH1560_ID;
+            _count = std::size(Magnitudes);
+            findAndAddEnergy(Magnitudes);
         }
 
         ~ECH1560Sensor() {
@@ -103,10 +111,10 @@ class ECH1560Sensor : public BaseEmonSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_APPARENT;
-            if (index == 3) return MAGNITUDE_ENERGY;
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
+
             return MAGNITUDE_NONE;
         }
 
@@ -115,7 +123,7 @@ class ECH1560Sensor : public BaseEmonSensor {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _apparent;
-            if (index == 3) return getEnergy();
+            if (index == 3) return _energy[0].asDouble();
             return 0;
         }
 
@@ -295,9 +303,13 @@ class ECH1560Sensor : public BaseEmonSensor {
         double _voltage = 0;
         double _current = 0;
 
-        unsigned char _data[24];
+        unsigned char _data[24] {0};
 
 };
+
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude ECH1560Sensor::Magnitudes[];
+#endif
 
 // -----------------------------------------------------------------------------
 // Interrupt helpers

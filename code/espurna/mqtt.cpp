@@ -108,9 +108,9 @@ MqttPidCallbacks _mqtt_subscribe_callbacks;
 
 #endif
 
-std::forward_list<heartbeat::Callback> _mqtt_heartbeat_callbacks;
-heartbeat::Mode _mqtt_heartbeat_mode;
-heartbeat::Seconds _mqtt_heartbeat_interval;
+std::forward_list<espurna::heartbeat::Callback> _mqtt_heartbeat_callbacks;
+espurna::heartbeat::Mode _mqtt_heartbeat_mode;
+espurna::duration::Seconds _mqtt_heartbeat_interval;
 
 String _mqtt_payload_online;
 String _mqtt_payload_offline;
@@ -289,12 +289,12 @@ String topicJson() {
     return getSetting("mqttJson", build::topicJson());
 }
 
-heartbeat::Mode heartbeatMode() {
-    return getSetting("mqttHbMode", heartbeat::currentMode());
+espurna::heartbeat::Mode heartbeatMode() {
+    return getSetting("mqttHbMode", espurna::heartbeat::currentMode());
 }
 
-heartbeat::Seconds heartbeatInterval() {
-    return getSetting("mqttHbIntvl", heartbeat::currentInterval());
+espurna::duration::Seconds heartbeatInterval() {
+    return getSetting("mqttHbIntvl", espurna::heartbeat::currentInterval());
 }
 
 unsigned long skipTime() {
@@ -837,7 +837,7 @@ void _mqttCallback(unsigned int type, const char* topic, char* payload) {
     }
 }
 
-bool _mqttHeartbeat(heartbeat::Mask mask) {
+bool _mqttHeartbeat(espurna::heartbeat::Mask mask) {
     // No point retrying, since we will be re-scheduled on connection
     if (!mqttConnected()) {
         return true;
@@ -847,7 +847,7 @@ bool _mqttHeartbeat(heartbeat::Mask mask) {
     // Backported from the older utils implementation.
     // Wait until the time is synced to avoid sending partial report *and*
     // as a result, wait until the next interval to actually send the datetime string.
-    if ((mask & heartbeat::Report::Datetime) && !ntpSynced()) {
+    if ((mask & espurna::heartbeat::Report::Datetime) && !ntpSynced()) {
         return false;
     }
 #endif
@@ -859,63 +859,63 @@ bool _mqttHeartbeat(heartbeat::Mask mask) {
     // TODO: per-module mask?
     // TODO: simply send static data with onConnected, and the rest from here?
 
-    if (mask & heartbeat::Report::Status)
+    if (mask & espurna::heartbeat::Report::Status)
         mqttSendStatus();
 
-    if (mask & heartbeat::Report::Interval)
+    if (mask & espurna::heartbeat::Report::Interval)
         mqttSend(MQTT_TOPIC_INTERVAL, String(_mqtt_heartbeat_interval.count()).c_str());
 
-    if (mask & heartbeat::Report::App)
+    if (mask & espurna::heartbeat::Report::App)
         mqttSend(MQTT_TOPIC_APP, getAppName());
 
-    if (mask & heartbeat::Report::Version)
+    if (mask & espurna::heartbeat::Report::Version)
         mqttSend(MQTT_TOPIC_VERSION, getVersion());
 
-    if (mask & heartbeat::Report::Board)
+    if (mask & espurna::heartbeat::Report::Board)
         mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
 
-    if (mask & heartbeat::Report::Hostname)
+    if (mask & espurna::heartbeat::Report::Hostname)
         mqttSend(MQTT_TOPIC_HOSTNAME, getHostname().c_str());
 
-    if (mask & heartbeat::Report::Description) {
+    if (mask & espurna::heartbeat::Report::Description) {
         auto desc = getDescription();
         if (desc.length()) {
             mqttSend(MQTT_TOPIC_DESCRIPTION, desc.c_str());
         }
     }
 
-    if (mask & heartbeat::Report::Ssid)
+    if (mask & espurna::heartbeat::Report::Ssid)
         mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
 
-    if (mask & heartbeat::Report::Bssid)
+    if (mask & espurna::heartbeat::Report::Bssid)
         mqttSend(MQTT_TOPIC_BSSID, WiFi.BSSIDstr().c_str());
 
-    if (mask & heartbeat::Report::Ip)
+    if (mask & espurna::heartbeat::Report::Ip)
         mqttSend(MQTT_TOPIC_IP, wifiStaIp().toString().c_str());
 
-    if (mask & heartbeat::Report::Mac)
+    if (mask & espurna::heartbeat::Report::Mac)
         mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
 
-    if (mask & heartbeat::Report::Rssi)
+    if (mask & espurna::heartbeat::Report::Rssi)
         mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
 
-    if (mask & heartbeat::Report::Uptime)
+    if (mask & espurna::heartbeat::Report::Uptime)
         mqttSend(MQTT_TOPIC_UPTIME, String(systemUptime()).c_str());
 
 #if NTP_SUPPORT
-    if (mask & heartbeat::Report::Datetime)
+    if (mask & espurna::heartbeat::Report::Datetime)
         mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
 #endif
 
-    if (mask & heartbeat::Report::Freeheap) {
+    if (mask & espurna::heartbeat::Report::Freeheap) {
         auto stats = systemHeapStats();
         mqttSend(MQTT_TOPIC_FREEHEAP, String(stats.available).c_str());
     }
 
-    if (mask & heartbeat::Report::Loadavg)
+    if (mask & espurna::heartbeat::Report::Loadavg)
         mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
 
-    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+    if ((mask & espurna::heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
         mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
 
     auto status = mqttConnected();
@@ -1471,7 +1471,7 @@ void mqttLoop() {
 #endif
 }
 
-void mqttHeartbeat(heartbeat::Callback callback) {
+void mqttHeartbeat(espurna::heartbeat::Callback callback) {
     _mqtt_heartbeat_callbacks.push_front(callback);
 }
 

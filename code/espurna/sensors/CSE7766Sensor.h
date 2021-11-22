@@ -21,13 +21,20 @@ class CSE7766Sensor : public BaseEmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        CSE7766Sensor(): _data() {
-            _count = 7;
-            _sensor_id = SENSOR_CSE7766_ID;
-        }
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_CURRENT,
+            MAGNITUDE_VOLTAGE,
+            MAGNITUDE_POWER_ACTIVE,
+            MAGNITUDE_POWER_REACTIVE,
+            MAGNITUDE_POWER_APPARENT,
+            MAGNITUDE_POWER_FACTOR,
+            MAGNITUDE_ENERGY
+        };
 
-        ~CSE7766Sensor() {
-            if (_serial) delete _serial;
+        CSE7766Sensor() {
+            _sensor_id = SENSOR_CSE7766_ID;
+            _count = std::size(Magnitudes);
+            findAndAddEnergy(Magnitudes);
         }
 
         // ---------------------------------------------------------------------
@@ -56,64 +63,33 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        void expectedCurrent(double expected) override {
-            if ((expected > 0) && (_current > 0)) {
-                _ratioC = _ratioC * (expected / _current);
+        double getRatio(unsigned char index) const override {
+            switch (index) {
+            case 0:
+                return _current_ratio;
+            case 1:
+                return _voltage_ratio;
+            case 2:
+                return _power_active_ratio;
             }
+
+            return BaseEmonSensor::getRatio(index);
         }
 
-        void expectedVoltage(unsigned int expected) override {
-            if ((expected > 0) && (_voltage > 0)) {
-                _ratioV = _ratioV * (expected / _voltage);
+        void setRatio(unsigned char index, double value) override {
+            if (value > 0.0) {
+                switch (index) {
+                case 0:
+                    _current_ratio = value;
+                    break;
+                case 1:
+                    _voltage_ratio = value;
+                    break;
+                case 2:
+                    _power_active_ratio = value;
+                    break;
+                }
             }
-        }
-
-        void expectedPower(unsigned int expected) override {
-            if ((expected > 0) && (_active > 0)) {
-                _ratioP = _ratioP * (expected / _active);
-            }
-        }
-
-        double defaultCurrentRatio() const override {
-            return 1.0;
-        }
-
-        double defaultVoltageRatio() const override {
-            return 1.0;
-        }
-
-        double defaultPowerRatio() const override {
-            return 1.0;
-        }
-
-        void setCurrentRatio(double value) override {
-            _ratioC = value;
-        };
-
-        void setVoltageRatio(double value) override {
-            _ratioV = value;
-        };
-
-        void setPowerRatio(double value) override {
-            _ratioP = value;
-        };
-
-        double getCurrentRatio() override {
-            return _ratioC;
-        };
-
-        double getVoltageRatio() override {
-            return _ratioV;
-        };
-
-        double getPowerRatio() override {
-            return _ratioP;
-        };
-
-        void resetRatios() override {
-            _ratioC = defaultCurrentRatio();
-            _ratioV = defaultVoltageRatio();
-            _ratioP = defaultPowerRatio();
         }
 
         // ---------------------------------------------------------------------
@@ -127,7 +103,9 @@ class CSE7766Sensor : public BaseEmonSensor {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
             if (3 == _pin_rx) {
                 Serial.begin(CSE7766_BAUDRATE);
@@ -136,7 +114,7 @@ class CSE7766Sensor : public BaseEmonSensor {
                 Serial.flush();
                 Serial.swap();
             } else {
-                _serial = new SoftwareSerial(_pin_rx, -1, _inverted);
+                _serial = std::make_unique<SoftwareSerial>(_pin_rx, -1, _inverted);
                 _serial->enableIntTx(false);
                 _serial->begin(CSE7766_BAUDRATE);
             }
@@ -174,13 +152,10 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
-            if (index == 4) return MAGNITUDE_POWER_APPARENT;
-            if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            if (index == 6) return MAGNITUDE_ENERGY;
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
+
             return MAGNITUDE_NONE;
         }
 
@@ -192,7 +167,7 @@ class CSE7766Sensor : public BaseEmonSensor {
             if (index == 3) return _reactive;
             if (index == 4) return _voltage * _current;
             if (index == 5) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
-            if (index == 6) return getEnergy();
+            if (index == 6) return _energy[0].asDouble();
             return 0;
         }
 
@@ -270,7 +245,7 @@ class CSE7766Sensor : public BaseEmonSensor {
             _voltage = 0;
             if ((adj & 0x40) == 0x40) {
                 unsigned long voltage_cycle = _data[5] << 16 | _data[6] << 8 | _data[7];        // 817
-                _voltage = _ratioV * _coefV / voltage_cycle / CSE7766_V2R;                      // 190700 / 817 = 233.41
+                _voltage = _voltage_ratio * _coefV / voltage_cycle / CSE7766_V2R;                      // 190700 / 817 = 233.41
             }
 
             // Calculate power
@@ -278,7 +253,7 @@ class CSE7766Sensor : public BaseEmonSensor {
             if ((adj & 0x10) == 0x10) {
                 if ((_data[0] & 0xF2) != 0xF2) {
                     unsigned long power_cycle = _data[17] << 16 | _data[18] << 8 | _data[19];   // 4709
-                    _active = _ratioP * _coefP / power_cycle / CSE7766_V1R / CSE7766_V2R;       // 5195000 / 4709 = 1103.20
+                    _active = _power_active_ratio * _coefP / power_cycle / CSE7766_V1R / CSE7766_V2R;       // 5195000 / 4709 = 1103.20
                 }
             }
 
@@ -287,7 +262,7 @@ class CSE7766Sensor : public BaseEmonSensor {
             if ((adj & 0x20) == 0x20) {
                 if (_active > 0) {
                     unsigned long current_cycle = _data[11] << 16 | _data[12] << 8 | _data[13]; // 3376
-                    _current = _ratioC * _coefC / current_cycle / CSE7766_V1R;                  // 16030 / 3376 = 4.75
+                    _current = _current_ratio * _coefC / current_cycle / CSE7766_V1R;                  // 16030 / 3376 = 4.75
                 }
             }
 
@@ -369,7 +344,7 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        bool _serial_is_hardware() {
+        bool _serial_is_hardware() const {
             return (3 == _pin_rx) || (13 == _pin_rx);
         }
 
@@ -401,19 +376,19 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         int _pin_rx = CSE7766_RX_PIN;
         bool _inverted = CSE7766_PIN_INVERSE;
-        SoftwareSerial * _serial = NULL;
+        std::unique_ptr<SoftwareSerial> _serial;
 
         double _active = 0;
         double _reactive = 0;
         double _voltage = 0;
         double _current = 0;
 
-        double _ratioV;
-        double _ratioC;
-        double _ratioP;
-
-        unsigned char _data[24];
+        unsigned char _data[24] {0};
 
 };
+
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude CSE7766Sensor::Magnitudes[];
+#endif
 
 #endif // SENSOR_SUPPORT && CSE7766_SUPPORT
