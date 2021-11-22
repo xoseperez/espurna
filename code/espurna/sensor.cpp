@@ -1852,7 +1852,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
     // XXX: inject 'null' in the output. need this for optional fields, since the current
     // version of serializer only does this for char ptr and even makes NaN serialized as
     // NaN, instead of more commonly used null (but, expect this to be fixed after switching to v6+)
-    static const char* null { nullptr };
+    static const char* const NullSymbol { nullptr };
 
     ::web::ws::EnumerableConfig config{root, F("magnitudes-settings")};
     config(F("values"), _magnitudes.size(), {
@@ -1861,7 +1861,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
             if (_magnitudeCorrectionSupported(magnitude.type)) {
                 out.add(magnitude.correction);
             } else {
-                out.add(null);
+                out.add(NullSymbol);
             }
         }},
         {F("Ratio"), [](JsonArray& out, size_t index) {
@@ -1869,7 +1869,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
             if (_magnitudeRatioSupported(magnitude.type)) {
                 out.add(static_cast<BaseEmonSensor*>(magnitude.sensor)->getRatio(magnitude.slot));
             } else {
-                out.add(null);
+                out.add(NullSymbol);
             }
         }},
         {F("ZeroThreshold"), [](JsonArray& out, size_t index) {
@@ -1877,7 +1877,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
             if (!std::isnan(threshold)) {
                 out.add(threshold);
             } else {
-                out.add(null);
+                out.add(NullSymbol);
             }
         }},
         {F("MinDelta"), [](JsonArray& out, size_t index) {
