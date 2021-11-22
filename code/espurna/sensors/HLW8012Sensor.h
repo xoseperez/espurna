@@ -39,31 +39,31 @@ constexpr double _hlw8012_default_current_multiplier() {
     return 1000000.0 * 512.0 * V_REF / _hlw8012_default_current_resistor() / 24.0 / F_OSC;
 }
 
-constexpr double _hlw8012_current_multiplier() {
-    return HLW8012_VOLTAGE_RATIO;
-}
-
 #define HLW8012_DEFAULT_CURRENT_RATIO _hlw8012_default_current_multiplier()
+
+constexpr double _hlw8012_current_multiplier() {
+    return HLW8012_CURRENT_RATIO;
+}
 
 constexpr double _hlw8012_default_voltage_multiplier() {
     return 1000000.0 * 512.0 * V_REF * _hlw8012_default_voltage_resistor() / 2.0 / F_OSC;
 }
 
+#define HLW8012_DEFAULT_VOLTAGE_RATIO _hlw8012_default_voltage_multiplier()
+
 constexpr double _hlw8012_voltage_multiplier() {
     return HLW8012_VOLTAGE_RATIO;
 }
-
-#define HLW8012_DEFAULT_VOLTAGE_RATIO _hlw8012_default_voltage_multiplier()
 
 constexpr double _hlw8012_default_power_multiplier() {
     return 1000000.0 * 128.0 * V_REF * V_REF * _hlw8012_default_voltage_resistor() / _hlw8012_default_current_resistor() / 48.0 / F_OSC;
 }
 
+#define HLW8012_DEFAULT_POWER_RATIO _hlw8012_default_power_multiplier()
+
 constexpr double _hlw8012_power_multiplier() {
     return HLW8012_POWER_RATIO;
 }
-
-#define HLW8012_DEFAULT_POWER_RATIO _hlw8012_default_power_multiplier()
 
 constexpr bool _hlw8012_use_interrupts() {
     return 1 == HLW8012_USE_INTERRUPTS;
