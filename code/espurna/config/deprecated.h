@@ -159,3 +159,9 @@
 #define IR_RX_PRESET IR_BUTTON_SET
 #warning "IR_BUTTON_SET was renamed to IR_RX_PRESET"
 #endif
+
+#if defined(TEMPERATURE_MIN_CHANGE) \
+    || defined(HUMIDITY_MIN_CHANGE) \
+    || defined(ENERGY_MAX_CHANGE)
+#warning "Global MIN / MAX CHANGE is replaced with per-magnitude settings, please use ${prefix}MinDelta / ${prefix}MaxDelta"
+#endif

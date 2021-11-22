@@ -49,18 +49,6 @@
 #define SENSOR_REAL_TIME_VALUES             0               // Show filtered/median values by default (0 => median, 1 => real time)
 #endif
 
-#ifndef TEMPERATURE_MIN_CHANGE
-#define TEMPERATURE_MIN_CHANGE              0.0             // Minimum temperature change to report
-#endif
-
-#ifndef HUMIDITY_MIN_CHANGE
-#define HUMIDITY_MIN_CHANGE                 0.0             // Minimum humidity change to report
-#endif
-
-#ifndef ENERGY_MAX_CHANGE
-#define ENERGY_MAX_CHANGE                   0.0             // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
-#endif
-
 #ifndef SENSOR_SAVE_EVERY
 #define SENSOR_SAVE_EVERY                   0               // Save accumulating values to EEPROM (atm only energy)
                                                             // A 0 means do not save and it's the default value

@@ -273,8 +273,8 @@ public:
 
     double last { _unset };     // Last raw value from sensor (unfiltered)
     double reported { _unset }; // Last reported value
-    double min_change { 0.0 };  // Minimum value change to report
-    double max_change { 0.0 };  // Maximum value change to report
+    double min_delta { 0.0 };   // Minimum value change to report
+    double max_delta { 0.0 };   // Maximum value change to report
     double correction { 0.0 };  // Value correction (applied when processing)
 
     double zero_threshold { _unset }; // Reset value to zero when below threshold (applied when reading)
@@ -400,7 +400,11 @@ void Energy::reset() {
     ws.value = 0;
 }
 
+namespace {
 namespace build {
+
+constexpr double DefaultMinDelta { 0.0 };
+constexpr double DefaultMaxDelta { 0.0 };
 
 constexpr espurna::duration::Seconds initInterval() {
     return espurna::duration::Seconds(SENSOR_INIT_INTERVAL);
@@ -456,6 +460,7 @@ bool realTimeValues() {
 }
 
 } // namespace settings
+} // namespace
 } // namespace sensor
 
 namespace settings {
@@ -1876,10 +1881,10 @@ void _sensorWebSocketSettings(JsonObject& root) {
             }
         }},
         {F("MinDelta"), [](JsonArray& out, size_t index) {
-            out.add(_magnitudes[index].min_change);
+            out.add(_magnitudes[index].min_delta);
         }},
         {F("MaxDelta"), [](JsonArray& out, size_t index) {
-            out.add(_magnitudes[index].max_change);
+            out.add(_magnitudes[index].max_delta);
         }}
     });
 
@@ -3070,11 +3075,6 @@ void _sensorConfigure() {
 
     _sensor_real_time = sensor::settings::realTimeValues();
 
-    // pre-load some settings that are controlled via old build flags
-    const auto tmp_min_delta = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE);
-    const auto hum_min_delta = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE);
-    const auto ene_max_delta = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE);
-
     // Update magnitude config, filter sizes and reset energy if needed
     {
         for (auto& magnitude : _magnitudes) {
@@ -3128,32 +3128,13 @@ void _sensorConfigure() {
             // - ${prefix}DeltaMax${index} will trigger report as soon as read value is greater than the specified delta
             //   (default is 0.0 as well, but this needs to be >0 to actually do something)
             {
-                // TODO: we inherited these as settings and build flags, settings migration
-                // needs to happen some time after init to detect all of available magnitudes
-                auto min_default = 0.0;
-                auto max_default = 0.0;
-
-                switch (magnitude.type) {
-                    case MAGNITUDE_TEMPERATURE:
-                        min_default = tmp_min_delta;
-                        break;
-                    case MAGNITUDE_HUMIDITY:
-                        min_default = hum_min_delta;
-                        break;
-                    case MAGNITUDE_ENERGY:
-                        max_default = ene_max_delta;
-                        break;
-                    default:
-                        break;
-                }
-
-                magnitude.min_change = getSetting(
+                magnitude.min_delta = getSetting(
                     {_magnitudeSettingsKey(magnitude, F("MinDelta")), magnitude.index_global},
-                    min_default
+                    sensor::build::DefaultMinDelta
                 );
-                magnitude.max_change = getSetting(
+                magnitude.max_delta = getSetting(
                     {_magnitudeSettingsKey(magnitude, F("MaxDelta")), magnitude.index_global},
-                    max_default
+                    sensor::build::DefaultMaxDelta
                 );
             }
 
@@ -3312,6 +3293,12 @@ void _sensorSettingsMigrate(int version) {
         moveSetting(F("snsHlw8012Cf1GPIO"), F("hlw8012CF1"));
     }
 #endif
+
+    if (version < 11) {
+        moveSetting(F("tmpMinDelta"), _magnitudeSettingsKey(MAGNITUDE_TEMPERATURE, F("MinDelta0")));
+        moveSetting(F("humMinDelta"), _magnitudeSettingsKey(MAGNITUDE_HUMIDITY, F("MinDelta0")));
+        moveSetting(F("eneMaxDelta"), _magnitudeSettingsKey(MAGNITUDE_ENERGY, F("MaxDelta0")));
+    }
 }
 
 } // namespace
@@ -3474,8 +3461,8 @@ void sensorLoop() {
 
             // In case magnitude was configured with ${name}MaxDelta, override report check
             // when the value change is greater than the delta
-            if (!std::isnan(magnitude.reported) && (magnitude.max_change > 0)) {
-                report = (std::abs(value.processed - magnitude.reported) >= magnitude.max_change);
+            if (!std::isnan(magnitude.reported) && (magnitude.max_delta > sensor::build::DefaultMaxDelta)) {
+                report = std::abs(value.processed - magnitude.reported) >= magnitude.max_delta;
             }
 
             // Special case for energy, save readings to RAM and EEPROM
@@ -3493,7 +3480,7 @@ void sensorLoop() {
                 }
 
                 // Check ${name}MinDelta if there is a minimum change threshold to report
-                if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_change)) {
+                if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_delta)) {
                     magnitude.reported = value.filtered;
                     _sensorReport(magnitude_index, magnitude);
                 }

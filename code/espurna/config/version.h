@@ -21,5 +21,5 @@
 #endif
 
 #ifndef CFG_VERSION
-#define CFG_VERSION             10
+#define CFG_VERSION             11
 #endif
