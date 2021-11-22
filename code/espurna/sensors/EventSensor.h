@@ -25,14 +25,10 @@ class EventSensor : public BaseSensor {
             _sensor_id = SENSOR_EVENTS_ID;
         }
 
-        ~EventSensor() {
-            _enableInterrupts(false);
-        }
-
         // ---------------------------------------------------------------------
 
-        void setGPIO(unsigned char gpio) {
-            _gpio = gpio;
+        void setGPIO(unsigned char pin) {
+            _pin = pin;
         }
 
         void setPinMode(unsigned char pin_mode) {
@@ -50,7 +46,7 @@ class EventSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         unsigned char getGPIO() {
-            return _gpio;
+            return _pin.pin();
         }
 
         unsigned char getPinMode() {
@@ -72,26 +68,26 @@ class EventSensor : public BaseSensor {
         // Initialization method, must be idempotent
         // Defined outside the class body
         void begin() {
-            pinMode(_gpio, _pin_mode);
-            _enableInterrupts(true);
+            pinMode(_pin.pin(), _pin_mode);
+            _enableInterrupts();
             _ready = true;
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "INTERRUPT @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "INTERRUPT @ GPIO%hhu", _pin.pin());
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
-        String description(unsigned char index) {
+        String description(unsigned char) {
             return description();
         };
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String(_gpio);
+        String address(unsigned char) {
+            return String(_pin);
         }
 
         // Type for slot # index
@@ -118,9 +114,23 @@ class EventSensor : public BaseSensor {
         }
 
         // Handle interrupt calls from isr[GPIO] functions
-        // Cannot be nested, since the esp8266/Arduino Core already masks all GPIO handlers before calling this function
+        // No need for any locks as it cannot be nested, esp8266/Arduino Core already masks all GPIO handlers before calling this function
 
-        void IRAM_ATTR handleDebouncedInterrupt() {
+        static void IRAM_ATTR handleDebouncedInterrupt(EventSensor* instance) {
+            instance->debouncedInterrupt();
+        }
+
+        static void IRAM_ATTR handleInterrupt(EventSensor* instance) {
+            ++(instance->_counter);
+        }
+
+    protected:
+
+        // ---------------------------------------------------------------------
+        // Interrupt management
+        // ---------------------------------------------------------------------
+
+        void IRAM_ATTR debouncedInterrupt() {
             // Debounce is based around ccount (32bit value), overflowing every:
             // ~53s when F_CPU is 80MHz
             // ~26s when F_CPU is 160MHz
@@ -138,25 +148,11 @@ class EventSensor : public BaseSensor {
             }
         }
 
-        void IRAM_ATTR handleInterrupt() {
-            ++_counter;
-        }
-
-    protected:
-
-        // ---------------------------------------------------------------------
-        // Interrupt management
-        // ---------------------------------------------------------------------
-
-        void _attach(unsigned char gpio, unsigned char mode);
-        void _detach(unsigned char gpio);
-
-        void _enableInterrupts(bool value) {
-            if (value) {
-                _detach(_gpio);
-                _attach(_gpio, _interrupt_mode);
+        void _enableInterrupts() {
+            if (_isr_debounce) {
+                _pin.attach(this, handleDebouncedInterrupt, _interrupt_mode);
             } else {
-                _detach(_gpio);
+                _pin.attach(this, handleInterrupt, _interrupt_mode);
             }
         }
 
@@ -172,70 +168,10 @@ class EventSensor : public BaseSensor {
         unsigned long _isr_last { 0ul };
         unsigned long _isr_debounce { microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000) };
 
-        int _gpio { GPIO_NONE };
-        int _pin_mode { INPUT };
+        InterruptablePin _pin{};
+        uint8_t _pin_mode { INPUT };
         int _interrupt_mode { RISING };
 
 };
-
-// -----------------------------------------------------------------------------
-// Interrupt helpers
-// -----------------------------------------------------------------------------
-
-EventSensor * _event_sensor_instance[EVENTS_SENSORS_MAX] = {nullptr};
-
-void IRAM_ATTR _event_sensor_isr(EventSensor* instance) {
-    if (instance->getDebounceTime()) {
-        instance->handleDebouncedInterrupt();
-    } else {
-        instance->handleInterrupt();
-    }
-}
-
-void IRAM_ATTR _event_sensor_isr_0() { _event_sensor_isr(_event_sensor_instance[0]); }
-void IRAM_ATTR _event_sensor_isr_1() { _event_sensor_isr(_event_sensor_instance[1]); }
-void IRAM_ATTR _event_sensor_isr_2() { _event_sensor_isr(_event_sensor_instance[2]); }
-void IRAM_ATTR _event_sensor_isr_3() { _event_sensor_isr(_event_sensor_instance[3]); }
-void IRAM_ATTR _event_sensor_isr_4() { _event_sensor_isr(_event_sensor_instance[4]); }
-void IRAM_ATTR _event_sensor_isr_5() { _event_sensor_isr(_event_sensor_instance[5]); }
-void IRAM_ATTR _event_sensor_isr_12() { _event_sensor_isr(_event_sensor_instance[6]); }
-void IRAM_ATTR _event_sensor_isr_13() { _event_sensor_isr(_event_sensor_instance[7]); }
-void IRAM_ATTR _event_sensor_isr_14() { _event_sensor_isr(_event_sensor_instance[8]); }
-void IRAM_ATTR _event_sensor_isr_15() { _event_sensor_isr(_event_sensor_instance[9]); }
-
-static void (*_event_sensor_isr_list[10])() = {
-    _event_sensor_isr_0, _event_sensor_isr_1, _event_sensor_isr_2,
-    _event_sensor_isr_3, _event_sensor_isr_4, _event_sensor_isr_5,
-    _event_sensor_isr_12, _event_sensor_isr_13, _event_sensor_isr_14,
-    _event_sensor_isr_15
-};
-
-void EventSensor::_attach(unsigned char gpio, unsigned char mode) {
-    if (!gpioValid(gpio)) return;
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-
-    if (_event_sensor_instance[index] == this) return;
-    if (_event_sensor_instance[index]) detachInterrupt(gpio);
-
-    _event_sensor_instance[index] = this;
-    attachInterrupt(gpio, _event_sensor_isr_list[index], mode);
-
-    #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, this->description().c_str());
-    #endif
-}
-
-void EventSensor::_detach(unsigned char gpio) {
-    if (!gpioValid(gpio)) return;
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_event_sensor_instance[index]) {
-        detachInterrupt(gpio);
-        _event_sensor_instance[index] = nullptr;
-
-        #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _event_sensor_instance[index]->description().c_str());
-        #endif
-    }
-}
 
 #endif // SENSOR_SUPPORT && EVENTS_SUPPORT

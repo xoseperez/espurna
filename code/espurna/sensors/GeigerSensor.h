@@ -23,14 +23,10 @@ GeigerSensor() : BaseSensor() {
         _sensor_id = SENSOR_GEIGER_ID;
 }
 
-~GeigerSensor() {
-        _enableInterrupts(false);
-}
-
 // ---------------------------------------------------------------------
 
-void setGPIO(unsigned char gpio) {
-        _gpio = gpio;
+void setGPIO(unsigned char pin) {
+        _pin = pin;
 }
 
 void setMode(unsigned char mode) {
@@ -52,7 +48,7 @@ void setCPM2SievertFactor(unsigned int cpm2sievert) {
 // ---------------------------------------------------------------------
 
 unsigned char getGPIO() {
-        return _gpio;
+        return _pin.pin();
 }
 
 unsigned char getMode() {
@@ -78,15 +74,15 @@ unsigned long getCPM2SievertFactor() {
 // Initialization method, must be idempotent
 // Defined outside the class body
 void begin() {
-        pinMode(_gpio, _mode);
-        _enableInterrupts(true);
+        pinMode(_pin.pin(), _mode);
+        _pin.attach(this, handleInterrupt, _interrupt_mode);
         _ready = true;
 }
 
 // Descriptive name of the sensor
 String description() {
         char buffer[20];
-        snprintf(buffer, sizeof(buffer), "µSv/h @ GPIO%d", _gpio);
+        snprintf(buffer, sizeof(buffer), "µSv/h @ GPIO%hhu", _pin.pin());
         return String(buffer);
 }
 
@@ -96,7 +92,7 @@ String description(unsigned char index) {
         unsigned char i=0;
             #if GEIGER_REPORT_CPM
         if (index == i++) {
-                snprintf(buffer, sizeof(buffer), "Counts per Minute @ GPIO%d", _gpio);
+                snprintf(buffer, sizeof(buffer), "Counts per Minute @ GPIO%hhu", _pin.pin());
                 return String(buffer);
         }
             #endif
@@ -106,13 +102,13 @@ String description(unsigned char index) {
                 return String(buffer);
         }
             #endif
-        snprintf(buffer, sizeof(buffer), "Events @ GPIO%d", _gpio);
+        snprintf(buffer, sizeof(buffer), "Events @ GPIO%hhu", _pin.pin());
         return String(buffer);
 };
 
 // Address of the sensor (it could be the GPIO or I2C address)
 String address(unsigned char index) {
-        return String(_gpio);
+        return String(_pin);
 }
 
 // Type for slot # index
@@ -164,40 +160,21 @@ double value(unsigned char index) {
         return 0;
 }
 
+static void IRAM_ATTR handleInterrupt(GeigerSensor* instance) {
+        instance->interrupt();
+}
 
-// Handle interrupt calls
-void handleInterrupt(unsigned char) {
-        static unsigned long last = 0;
-        if (millis() - last > _debounce) {
-                _events = _events + 1;
-                _ticks = _ticks + 1;
-                last = millis();
+private:
+
+void IRAM_ATTR interrupt() {
+        if (millis() - _last_interrupt > _debounce) {
+                _last_interrupt = millis();
+                ++_events;
+                ++_ticks;
         }
 }
 
 protected:
-
-// ---------------------------------------------------------------------
-// Interrupt management
-// ---------------------------------------------------------------------
-
-void _attach(GeigerSensor * instance, unsigned char gpio, unsigned char mode);
-void _detach(unsigned char gpio);
-
-void _enableInterrupts(bool value) {
-
-        static unsigned char _interrupt_gpio = GPIO_NONE;
-
-        if (value) {
-                if (_interrupt_gpio != GPIO_NONE) _detach(_interrupt_gpio);
-                _attach(this, _gpio, _interrupt_mode);
-                _interrupt_gpio = _gpio;
-        } else if (_interrupt_gpio != GPIO_NONE) {
-                _detach(_interrupt_gpio);
-                _interrupt_gpio = GPIO_NONE;
-        }
-
-}
 
 // ---------------------------------------------------------------------
 // Protected
@@ -205,10 +182,12 @@ void _enableInterrupts(bool value) {
 
 volatile unsigned long _events = 0;
 volatile unsigned long _ticks = 0;
+unsigned long _last_interrupt = 0;
 
 unsigned long _debounce = GEIGER_DEBOUNCE;
 unsigned int _cpm2sievert = GEIGER_CPM2SIEVERT;
-unsigned char _gpio;
+
+InterruptablePin _pin{};
 unsigned char _mode;
 unsigned char _interrupt_mode;
 
@@ -217,79 +196,5 @@ unsigned long _lastreport_cpm = millis();
 unsigned long _lastreport_sv = _lastreport_cpm;
 
 };
-
-// -----------------------------------------------------------------------------
-// Interrupt helpers
-// -----------------------------------------------------------------------------
-
-GeigerSensor * _geiger_sensor_instance[10] = {NULL};
-
-void IRAM_ATTR _geiger_sensor_isr(unsigned char gpio) {
-        unsigned char index = gpio > 5 ? gpio-6 : gpio;
-        if (_geiger_sensor_instance[index]) {
-                _geiger_sensor_instance[index]->handleInterrupt(gpio);
-        }
-}
-
-void IRAM_ATTR _geiger_sensor_isr_0() {
-        _geiger_sensor_isr(0);
-}
-void IRAM_ATTR _geiger_sensor_isr_1() {
-        _geiger_sensor_isr(1);
-}
-void IRAM_ATTR _geiger_sensor_isr_2() {
-        _geiger_sensor_isr(2);
-}
-void IRAM_ATTR _geiger_sensor_isr_3() {
-        _geiger_sensor_isr(3);
-}
-void IRAM_ATTR _geiger_sensor_isr_4() {
-        _geiger_sensor_isr(4);
-}
-void IRAM_ATTR _geiger_sensor_isr_5() {
-        _geiger_sensor_isr(5);
-}
-void IRAM_ATTR _geiger_sensor_isr_12() {
-        _geiger_sensor_isr(12);
-}
-void IRAM_ATTR _geiger_sensor_isr_13() {
-        _geiger_sensor_isr(13);
-}
-void IRAM_ATTR _geiger_sensor_isr_14() {
-        _geiger_sensor_isr(14);
-}
-void IRAM_ATTR _geiger_sensor_isr_15() {
-        _geiger_sensor_isr(15);
-}
-
-static void (*_geiger_sensor_isr_list[10])() = {
-        _geiger_sensor_isr_0, _geiger_sensor_isr_1, _geiger_sensor_isr_2,
-        _geiger_sensor_isr_3, _geiger_sensor_isr_4, _geiger_sensor_isr_5,
-        _geiger_sensor_isr_12, _geiger_sensor_isr_13, _geiger_sensor_isr_14,
-        _geiger_sensor_isr_15
-};
-
-void GeigerSensor::_attach(GeigerSensor * instance, unsigned char gpio, unsigned char mode) {
-        if (!gpioValid(gpio)) return;
-        _detach(gpio);
-        unsigned char index = gpio > 5 ? gpio-6 : gpio;
-        _geiger_sensor_instance[index] = instance;
-        attachInterrupt(gpio, _geiger_sensor_isr_list[index], mode);
-    #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[GEIGER] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
-    #endif
-}
-
-void GeigerSensor::_detach(unsigned char gpio) {
-        if (!gpioValid(gpio)) return;
-        unsigned char index = gpio > 5 ? gpio-6 : gpio;
-        if (_geiger_sensor_instance[index]) {
-                detachInterrupt(gpio);
-        #if SENSOR_DEBUG
-                DEBUG_MSG_P(PSTR("[GEIGER] GPIO%d interrupt detached from %s\n"), gpio, _geiger_sensor_instance[index]->description().c_str());
-        #endif
-                _geiger_sensor_instance[index] = NULL;
-        }
-}
 
 #endif // SENSOR_SUPPORT && GEIGER_SUPPORT

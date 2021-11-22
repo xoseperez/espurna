@@ -194,11 +194,11 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         unsigned char getCF() {
-            return _cf;
+            return _cf.pin();
         }
 
         unsigned char getCF1() {
-            return _cf1;
+            return _cf1.pin();
         }
 
         unsigned char getSELCurrent() {
@@ -219,7 +219,7 @@ class HLW8012Sensor : public BaseEmonSensor {
             // * currentWhen is the value in sel_pin to select current sampling
             // * set use_interrupts to true to use interrupts to monitor pulse widths
             // * leave pulse_timeout to the default value, recommended when using interrupts
-            _hlw8012.begin(_cf, _cf1, _sel, _sel_current,
+            _hlw8012.begin(_cf.pin(), _cf1.pin(), _sel, _sel_current,
                 _hlw8012_use_interrupts(), _hlw8012_pulse_timeout());
 
             // Note that HLW8012 does not initialize the multipliers (aka ratios) after begin(),
@@ -240,7 +240,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         String description() {
             char buffer[28];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("HLW8012 @ GPIO(%hhu,%hhu,%hhu)"), _sel, _cf, _cf1);
+                PSTR("HLW8012 @ GPIO(%hhu,%hhu,%hhu)"), _sel, _cf.pin(), _cf1.pin());
             return String(buffer);
         }
 
@@ -253,7 +253,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         String address(unsigned char) {
             char buffer[12];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("%hhu:%hhu:%hhu"), _sel, _cf, _cf1);
+                PSTR("%hhu:%hhu:%hhu"), _sel, _cf.pin(), _cf1.pin());
             return String(buffer);
         }
 
@@ -325,9 +325,12 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // Handle interrupt calls
-        void IRAM_ATTR handleInterrupt(unsigned char gpio) {
-            if (gpio == _cf) _hlw8012.cf_interrupt();
-            if (gpio == _cf1) _hlw8012.cf1_interrupt();
+        static void IRAM_ATTR handleCf(HLW8012Sensor* instance) {
+            instance->_hlw8012.cf_interrupt();
+        }
+
+        static void IRAM_ATTR handleCf1(HLW8012Sensor* instance) {
+            instance->_hlw8012.cf1_interrupt();
         }
 
     protected:
@@ -350,33 +353,14 @@ class HLW8012Sensor : public BaseEmonSensor {
         // Interrupt management
         // ---------------------------------------------------------------------
 
-        void _attach(HLW8012Sensor * instance, unsigned char gpio, unsigned char mode);
-        void _detach(unsigned char gpio);
-
         void _enableInterrupts() {
-            if (_interrupt_cf != _cf) {
-                if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
-                _attach(this, _cf, HLW8012_INTERRUPT_ON);
-                _interrupt_cf = _cf;
-            }
-
-            if (_interrupt_cf1 != _cf1) {
-                if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
-                _attach(this, _cf1, HLW8012_INTERRUPT_ON);
-                _interrupt_cf1 = _cf1;
-            }
+            _cf.attach(this, handleCf, HLW8012_INTERRUPT_ON);
+            _cf1.attach(this, handleCf1, HLW8012_INTERRUPT_ON);
         }
 
         void _disableInterrupts() {
-            if (GPIO_NONE != _interrupt_cf) {
-                _detach(_interrupt_cf);
-                _interrupt_cf = GPIO_NONE;
-            }
-
-            if (GPIO_NONE != _interrupt_cf1) {
-                _detach(_interrupt_cf1);
-                _interrupt_cf1 = GPIO_NONE;
-            }
+            _cf.detach();
+            _cf1.detach();
         }
 
         // ---------------------------------------------------------------------
@@ -391,71 +375,16 @@ class HLW8012Sensor : public BaseEmonSensor {
         uint32_t _energy_last { 0 };
 
         unsigned char _sel { GPIO_NONE };
-        unsigned char _cf { GPIO_NONE };
-        unsigned char _cf1 { GPIO_NONE };
         bool _sel_current { true };
 
-        unsigned char _interrupt_cf { GPIO_NONE };
-        unsigned char _interrupt_cf1 { GPIO_NONE };
+        InterruptablePin _cf{};
+        InterruptablePin _cf1{};
+
         HLW8012 _hlw8012{};
 };
 
 #if __cplusplus < 201703L
 constexpr BaseEmonSensor::Magnitude HLW8012Sensor::Magnitudes[];
 #endif
-
-// -----------------------------------------------------------------------------
-// Interrupt helpers
-// -----------------------------------------------------------------------------
-
-HLW8012Sensor * _hlw8012_sensor_instance[10] = {NULL};
-
-void IRAM_ATTR _hlw8012_sensor_isr(unsigned char gpio) {
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_hlw8012_sensor_instance[index]) {
-        _hlw8012_sensor_instance[index]->handleInterrupt(gpio);
-    }
-}
-
-void IRAM_ATTR _hlw8012_sensor_isr_0() { _hlw8012_sensor_isr(0); }
-void IRAM_ATTR _hlw8012_sensor_isr_1() { _hlw8012_sensor_isr(1); }
-void IRAM_ATTR _hlw8012_sensor_isr_2() { _hlw8012_sensor_isr(2); }
-void IRAM_ATTR _hlw8012_sensor_isr_3() { _hlw8012_sensor_isr(3); }
-void IRAM_ATTR _hlw8012_sensor_isr_4() { _hlw8012_sensor_isr(4); }
-void IRAM_ATTR _hlw8012_sensor_isr_5() { _hlw8012_sensor_isr(5); }
-void IRAM_ATTR _hlw8012_sensor_isr_12() { _hlw8012_sensor_isr(12); }
-void IRAM_ATTR _hlw8012_sensor_isr_13() { _hlw8012_sensor_isr(13); }
-void IRAM_ATTR _hlw8012_sensor_isr_14() { _hlw8012_sensor_isr(14); }
-void IRAM_ATTR _hlw8012_sensor_isr_15() { _hlw8012_sensor_isr(15); }
-
-static void (*_hlw8012_sensor_isr_list[10])() = {
-    _hlw8012_sensor_isr_0, _hlw8012_sensor_isr_1, _hlw8012_sensor_isr_2,
-    _hlw8012_sensor_isr_3, _hlw8012_sensor_isr_4, _hlw8012_sensor_isr_5,
-    _hlw8012_sensor_isr_12, _hlw8012_sensor_isr_13, _hlw8012_sensor_isr_14,
-    _hlw8012_sensor_isr_15
-};
-
-void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsigned char mode) {
-    if (!gpioValid(gpio)) return;
-    _detach(gpio);
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    _hlw8012_sensor_instance[index] = instance;
-    attachInterrupt(gpio, _hlw8012_sensor_isr_list[index], mode);
-    #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s\n"), gpio, instance->description().c_str());
-    #endif
-}
-
-void HLW8012Sensor::_detach(unsigned char gpio) {
-    if (!gpioValid(gpio)) return;
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_hlw8012_sensor_instance[index]) {
-        detachInterrupt(gpio);
-        #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s\n"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
-        #endif
-        _hlw8012_sensor_instance[index] = NULL;
-    }
-}
 
 #endif // SENSOR_SUPPORT && HLW8012_SUPPORT

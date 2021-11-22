@@ -29,15 +29,11 @@ class PulseMeterSensor : public BaseEmonSensor {
             findAndAddEnergy(Magnitudes);
         }
 
-        ~PulseMeterSensor() {
-            _enableInterrupts(false);
-        }
-
         // ---------------------------------------------------------------------
 
-        void setGPIO(unsigned char gpio) {
-            if (_gpio == gpio) return;
-            _gpio = gpio;
+        void setGPIO(unsigned char pin) {
+            if (_pin == pin) return;
+            _pin = pin;
             _dirty = true;
         }
 
@@ -46,13 +42,13 @@ class PulseMeterSensor : public BaseEmonSensor {
         }
 
         void setDebounceTime(unsigned long debounce) {
-            _debounce = debounce;
+            _interrupt_debounce = debounce;
         }
 
         // ---------------------------------------------------------------------
 
         unsigned char getGPIO() {
-            return _gpio;
+            return _pin.pin();
         }
 
         unsigned char getInterruptMode() {
@@ -60,7 +56,7 @@ class PulseMeterSensor : public BaseEmonSensor {
         }
 
         unsigned long getDebounceTime() {
-            return _debounce;
+            return _interrupt_debounce;
         }
 
         // ---------------------------------------------------------------------
@@ -70,16 +66,15 @@ class PulseMeterSensor : public BaseEmonSensor {
         // Initialization method, must be idempotent
         // Defined outside the class body
         void begin() {
-
-            _enableInterrupts(true);
+            _enableInterrupts();
             _ready = true;
-
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[24];
-            snprintf(buffer, sizeof(buffer), "PulseMeter @ GPIO(%u)", _gpio);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("PulseMeter @ GPIO(%hhu)"), _pin.pin());
             return String(buffer);
         }
 
@@ -90,15 +85,17 @@ class PulseMeterSensor : public BaseEmonSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            return String(_gpio);
+            return String(_pin);
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
             unsigned long lapse = millis() - _previous_time;
             _previous_time = millis();
-            unsigned long pulses = _pulses - _previous_pulses;
-            _previous_pulses = _pulses;
+
+            auto reading = *(reinterpret_cast<volatile unsigned long*>(&_pulses));
+            unsigned long pulses = reading - _previous_pulses;
+            _previous_pulses = reading;
 
             sensor::Ws delta = 1000.0 * 3600.0 * static_cast<double>(pulses) / _energy_ratio;
             _energy[0] += delta;
@@ -148,13 +145,15 @@ class PulseMeterSensor : public BaseEmonSensor {
         }
 
         // Handle interrupt calls
-        void IRAM_ATTR handleInterrupt(unsigned char gpio) {
-            static unsigned long last = 0;
-
-            if (millis() - last > _debounce) {
-                last = millis();
-                _pulses++;
+        void IRAM_ATTR interrupt() {
+            if (millis() - _interrupt_last > _interrupt_debounce) {
+                _interrupt_last = millis();
+                ++_pulses;
             }
+        }
+
+        static void IRAM_ATTR handleInterrupt(PulseMeterSensor* instance) {
+            instance->interrupt();
         }
 
     protected:
@@ -163,101 +162,30 @@ class PulseMeterSensor : public BaseEmonSensor {
         // Interrupt management
         // ---------------------------------------------------------------------
 
-        void _attach(PulseMeterSensor * instance, unsigned char gpio, unsigned char mode);
-        void _detach(unsigned char gpio);
+        void _enableInterrupts() {
+            _pin.attach(this, handleInterrupt, _interrupt_mode);
+        }
 
-        void _enableInterrupts(bool value) {
-
-            if (value) {
-
-                if (_gpio != _previous) {
-                    if (_previous != GPIO_NONE) _detach(_previous);
-                    _attach(this, _gpio, _interrupt_mode);
-                    _previous = _gpio;
-                }
-
-            } else {
-
-                _detach(_previous);
-                _previous = GPIO_NONE;
-
-            }
-
+        void _disableInterrupts() {
+            _pin.detach();
         }
 
         // ---------------------------------------------------------------------
 
-        unsigned char _previous = GPIO_NONE;
-        unsigned char _gpio = GPIO_NONE;
-        unsigned long _debounce = PULSEMETER_DEBOUNCE;
-
         double _active = 0;
 
-        volatile unsigned long _pulses = 0;
+        unsigned long _pulses = 0;
         unsigned long _previous_pulses = 0;
         unsigned long _previous_time = 0;
 
-        unsigned char _interrupt_mode = FALLING;
-
-
+        InterruptablePin _pin;
+        int _interrupt_mode = FALLING;
+        unsigned long _interrupt_last = 0;
+        unsigned long _interrupt_debounce = PULSEMETER_DEBOUNCE;
 };
 
 #if __cplusplus < 201703L
 constexpr BaseSensor::Magnitude PulseMeterSensor::Magnitudes[];
 #endif
-
-// -----------------------------------------------------------------------------
-// Interrupt helpers
-// -----------------------------------------------------------------------------
-
-PulseMeterSensor * _pulsemeter_sensor_instance[10] = {NULL};
-
-void IRAM_ATTR _pulsemeter_sensor_isr(unsigned char gpio) {
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_pulsemeter_sensor_instance[index]) {
-        _pulsemeter_sensor_instance[index]->handleInterrupt(gpio);
-    }
-}
-
-void IRAM_ATTR _pulsemeter_sensor_isr_0() { _pulsemeter_sensor_isr(0); }
-void IRAM_ATTR _pulsemeter_sensor_isr_1() { _pulsemeter_sensor_isr(1); }
-void IRAM_ATTR _pulsemeter_sensor_isr_2() { _pulsemeter_sensor_isr(2); }
-void IRAM_ATTR _pulsemeter_sensor_isr_3() { _pulsemeter_sensor_isr(3); }
-void IRAM_ATTR _pulsemeter_sensor_isr_4() { _pulsemeter_sensor_isr(4); }
-void IRAM_ATTR _pulsemeter_sensor_isr_5() { _pulsemeter_sensor_isr(5); }
-void IRAM_ATTR _pulsemeter_sensor_isr_12() { _pulsemeter_sensor_isr(12); }
-void IRAM_ATTR _pulsemeter_sensor_isr_13() { _pulsemeter_sensor_isr(13); }
-void IRAM_ATTR _pulsemeter_sensor_isr_14() { _pulsemeter_sensor_isr(14); }
-void IRAM_ATTR _pulsemeter_sensor_isr_15() { _pulsemeter_sensor_isr(15); }
-
-static void (*_pulsemeter_sensor_isr_list[10])() = {
-    _pulsemeter_sensor_isr_0, _pulsemeter_sensor_isr_1, _pulsemeter_sensor_isr_2,
-    _pulsemeter_sensor_isr_3, _pulsemeter_sensor_isr_4, _pulsemeter_sensor_isr_5,
-    _pulsemeter_sensor_isr_12, _pulsemeter_sensor_isr_13, _pulsemeter_sensor_isr_14,
-    _pulsemeter_sensor_isr_15
-};
-
-void PulseMeterSensor::_attach(PulseMeterSensor * instance, unsigned char gpio, unsigned char mode) {
-    if (!gpioValid(gpio)) return;
-    _detach(gpio);
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    _pulsemeter_sensor_instance[index] = instance;
-    attachInterrupt(gpio, _pulsemeter_sensor_isr_list[index], mode);
-    #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s\n"), gpio, instance->description().c_str());
-    #endif
-}
-
-void PulseMeterSensor::_detach(unsigned char gpio) {
-    if (!gpioValid(gpio)) return;
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_pulsemeter_sensor_instance[index]) {
-        detachInterrupt(gpio);
-        #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s\n"), gpio, _pulsemeter_sensor_instance[index]->description().c_str());
-        #endif
-        _pulsemeter_sensor_instance[index] = NULL;
-    }
-}
 
 #endif // SENSOR_SUPPORT && PULSEMETER_SUPPORT
