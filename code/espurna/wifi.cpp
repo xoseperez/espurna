@@ -2489,7 +2489,9 @@ void loop() {
     case State::Fallback:
         state = State::Idle;
         wifi::sta::connection::schedule_new();
-        wifi::action(wifi::Action::AccessPointFallback);
+        if (wifi::ApMode::Fallback == wifi::settings::softApMode()) {
+            wifi::action(wifi::Action::AccessPointFallback);
+        }
         publish(wifi::Event::StationReconnect);
         break;
 
