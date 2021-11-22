@@ -15,6 +15,7 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "telnet.h"
 #include "ws.h"
 
+#include <IPAddress.h>
 #include <AddrList.h>
 
 #if WIFI_AP_CAPTIVE_SUPPORT

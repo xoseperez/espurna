@@ -112,9 +112,7 @@ public:
         };
 
         IPAddress out;
-        if (ptr) {
-            out = settings::internal::convert<IPAddress>(String(ptr));
-        }
+        out.fromString(String(ptr));
 
         return out;
     }
@@ -528,7 +526,9 @@ void PZEM004TSensor::registerTerminalCommands() {
             return;
         }
 
-        auto addr = settings::internal::convert<IPAddress>(ctx.argv[2]);
+        IPAddress addr;
+        addr.fromString(ctx.argv[2]);
+
         if (!addr.isSet()) {
             terminalError(ctx, F("Invalid address"));
             return;
