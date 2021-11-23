@@ -165,3 +165,8 @@
     || defined(ENERGY_MAX_CHANGE)
 #warning "Global MIN / MAX CHANGE is replaced with per-magnitude settings, please use ${prefix}MinDelta / ${prefix}MaxDelta"
 #endif
+
+#ifdef API_REAL_TIME_VALUES
+#define SENSOR_REAL_TIME_VALUES API_REAL_TIME_VALUES
+#warning "API_REAL_TIME_VALUES is deprecated! Please use SENSOR_REAL_TIME_VALUES"
+#endif

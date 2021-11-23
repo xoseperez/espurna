@@ -128,6 +128,7 @@ struct ReadValue {
 struct Value {
     double get();
 
+    bool real_time;
     double last;
     double reported;
     unsigned char decimals;

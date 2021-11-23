@@ -3199,23 +3199,24 @@ String magnitudeTopic(unsigned char type) {
 }
 
 double sensor::Value::get() {
-    return _sensor_real_time ? last : reported;
+    return real_time ? last : reported;
 }
 
 sensor::Value magnitudeValue(unsigned char index) {
     sensor::Value result;
 
-    if (index >= _magnitudes.size()) {
+    if (index < _magnitudes.size()) {
+        const auto& magnitude = _magnitudes[index];
+        result.real_time = _sensor_real_time;
+        result.last = magnitude.last;
+        result.reported = magnitude.reported;
+        result.decimals = magnitude.decimals;
+    } else {
+        result.real_time = false;
         result.last = std::numeric_limits<double>::quiet_NaN(),
         result.reported = std::numeric_limits<double>::quiet_NaN(),
         result.decimals = 0u;
-        return result;
     }
-
-    auto& magnitude = _magnitudes[index];
-    result.last = magnitude.last;
-    result.reported = magnitude.reported;
-    result.decimals = magnitude.decimals;
 
     return result;
 }
@@ -3295,6 +3296,7 @@ void _sensorSettingsMigrate(int version) {
 #endif
 
     if (version < 11) {
+        moveSetting(F("apiRealTime"), F("snsRealTime"));
         moveSetting(F("tmpMinDelta"), _magnitudeSettingsKey(MAGNITUDE_TEMPERATURE, F("MinDelta0")));
         moveSetting(F("humMinDelta"), _magnitudeSettingsKey(MAGNITUDE_HUMIDITY, F("MinDelta0")));
         moveSetting(F("eneMaxDelta"), _magnitudeSettingsKey(MAGNITUDE_ENERGY, F("MaxDelta0")));
