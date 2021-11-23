@@ -456,7 +456,7 @@ void _systemHeartbeat() {
     using namespace espurna::heartbeat;
     using namespace espurna::duration;
 
-    constexpr Milliseconds BeatMin { 1000ul };
+    constexpr Milliseconds BeatMin { Seconds(1) };
     constexpr Milliseconds BeatMax { BeatMin * 10 };
 
     auto next = Milliseconds(currentInterval());
@@ -567,19 +567,24 @@ void _systemSetupSpecificHardware() {
 #endif
 }
 
-unsigned long systemUptime() {
-    static unsigned long last = 0;
-    static unsigned char overflows = 0;
+espurna::duration::Seconds systemUptime() {
+    static espurna::duration::Milliseconds last { espurna::duration::millis() };
+    static espurna::duration::Type overflows { 0 };
 
-    if (millis() < last) {
+    auto timestamp = espurna::duration::millis();
+    if (timestamp < last) {
         ++overflows;
     }
-    last = millis();
 
-    unsigned long seconds = static_cast<unsigned long>(overflows)
-        * (std::numeric_limits<unsigned long>::max() / 1000ul) + (last / 1000ul);
+    last = timestamp;
 
-    return seconds;
+    static constexpr espurna::duration::Milliseconds MillisecondsMax {
+        espurna::duration::Milliseconds::max() };
+    static constexpr espurna::duration::Seconds OverflowSeconds {
+        std::chrono::duration_cast<espurna::duration::Seconds>(MillisecondsMax) };
+
+    return (overflows * OverflowSeconds)
+        + std::chrono::duration_cast<espurna::duration::Seconds>(last);
 }
 
 void systemSetup() {

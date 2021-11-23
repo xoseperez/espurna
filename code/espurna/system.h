@@ -55,6 +55,10 @@ inline Seconds seconds() {
     return Seconds(std::chrono::duration_cast<Seconds>(millis()));
 }
 
+inline void delay(Milliseconds value) {
+    ::delay(value.count());
+}
+
 // TODO: also implement a software source based on boot time in msec / usec?
 // Current NONOS esp8266 gcc + newlib do not implement clock_getttime for REALTIME and MONOTONIC types,
 // everything (system_clock, steady_clock, high_resolution_clock) goes through gettimeofday()
@@ -194,6 +198,6 @@ void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode);
 void systemHeartbeat(espurna::heartbeat::Callback);
 bool systemHeartbeat();
 
-unsigned long systemUptime();
+espurna::duration::Seconds systemUptime();
 
 void systemSetup();

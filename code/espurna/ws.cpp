@@ -95,7 +95,7 @@ void _wsResetUpdateTimer() {
 
 void _wsUpdate(JsonObject& root) {
     root["heap"] = systemFreeHeap();
-    root["uptime"] = systemUptime();
+    root["uptime"] = systemUptime().count();
     root["rssi"] = WiFi.RSSI();
     root["loadaverage"] = systemLoadAverage();
     if (ADC_MODE_VALUE == ADC_VCC) {

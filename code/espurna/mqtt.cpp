@@ -900,7 +900,7 @@ bool _mqttHeartbeat(espurna::heartbeat::Mask mask) {
         mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
 
     if (mask & espurna::heartbeat::Report::Uptime)
-        mqttSend(MQTT_TOPIC_UPTIME, String(systemUptime()).c_str());
+        mqttSend(MQTT_TOPIC_UPTIME, String(systemUptime().count()).c_str());
 
 #if NTP_SUPPORT
     if (mask & espurna::heartbeat::Report::Datetime)

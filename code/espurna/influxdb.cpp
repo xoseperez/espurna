@@ -253,7 +253,7 @@ bool idbEnabled() {
 
 bool _idbHeartbeat(espurna::heartbeat::Mask mask) {
     if (mask & espurna::heartbeat::Report::Uptime)
-        idbSend(MQTT_TOPIC_UPTIME, String(systemUptime()).c_str());
+        idbSend(MQTT_TOPIC_UPTIME, String(systemUptime().count()).c_str());
 
     if (mask & espurna::heartbeat::Report::Freeheap) {
         auto stats = systemHeapStats();

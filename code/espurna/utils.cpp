@@ -142,15 +142,16 @@ String buildTime() {
 #if NTP_SUPPORT
 
 String getUptime() {
-    time_t uptime = systemUptime();
+    auto seconds = systemUptime();
+
+    time_t uptime = static_cast<time_t>(seconds.count());
     tm spec;
     gmtime_r(&uptime, &spec);
 
     char buffer[64];
     sprintf_P(buffer, PSTR("%02dy %02dd %02dh %02dm %02ds"),
         (spec.tm_year - 70), spec.tm_yday, spec.tm_hour,
-        spec.tm_min, spec.tm_sec
-    );
+        spec.tm_min, spec.tm_sec);
 
     return String(buffer);
 }
@@ -158,7 +159,7 @@ String getUptime() {
 #else
 
 String getUptime() {
-    return String(systemUptime(), 10);
+    return String(systemUptime().count(), 10);
 }
 
 #endif // NTP_SUPPORT

@@ -32,11 +32,11 @@ namespace {
 std::vector<LoopCallback> _loop_callbacks;
 std::vector<LoopCallback> _reload_callbacks;
 
-bool _reload_config = false;
-unsigned long _loop_delay = 0;
+bool _reload_config { false };
+espurna::duration::Milliseconds _loop_delay { 0 };
 
-constexpr unsigned long LoopDelayMin { 10ul };
-constexpr unsigned long LoopDelayMax { 300ul };
+constexpr espurna::duration::Milliseconds LoopDelayMin { 10 };
+constexpr espurna::duration::Milliseconds LoopDelayMax { 300 };
 
 } // namespace
 
@@ -52,18 +52,18 @@ void espurnaReload() {
     _reload_config = true;
 }
 
-unsigned long espurnaLoopDelay() {
+espurna::duration::Milliseconds espurnaLoopDelay() {
     return _loop_delay;
 }
 
-void espurnaLoopDelay(unsigned long loop_delay) {
-    _loop_delay = loop_delay;
+void espurnaLoopDelay(espurna::duration::Milliseconds value) {
+    _loop_delay = value;
 }
 
 namespace {
 
-constexpr unsigned long _loopDelay() {
-    return LOOP_DELAY_TIME;
+constexpr espurna::duration::Milliseconds _loopDelay() {
+    return espurna::duration::Milliseconds{LOOP_DELAY_TIME};
 }
 
 void _espurnaReload() {
@@ -286,13 +286,7 @@ void setup() {
 
     // Set up delay() after loop callbacks are finished
     // Note: should be after settingsSetup()
-    unsigned long loop_delay { getSetting("loopDelay", _loopDelay()) };
-    _loop_delay = ((LoopDelayMin < loop_delay) && (loop_delay <= LoopDelayMax))
-        ? loop_delay : LoopDelayMin;
-
-    if (_loop_delay != loop_delay) {
-        setSetting("loopDelay", _loop_delay);
-    }
+    _loop_delay = std::clamp(getSetting("loopDelay", _loopDelay()), LoopDelayMin, LoopDelayMax);
 
 }
 
@@ -307,7 +301,5 @@ void loop() {
         callback();
     }
 
-    if (_loop_delay) {
-        delay(_loop_delay);
-    }
+    espurna::duration::delay(_loop_delay);
 }
