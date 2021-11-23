@@ -63,6 +63,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Only change EventSensor counter from the ISR ([735e5c0e](https://github.com/xoseperez/espurna/commit/735e5c0ec22fabfdcfa55123b9bceaa3d8f917b8))
 - Fix a typo when getting local index for Nth magnitude ([6ba5f95e](https://github.com/xoseperez/espurna/commit/6ba5f95e875468f2b7a93c69b45fc6f6c62f390f))
 - SHT3X: add missing I2C address A (0x44) ([#2484](https://github.com/xoseperez/espurna/issues/2484), thanks to **[@drc38](https://github.com/drc38)**)
+- Deprecate ...\_MIN\_CHANGE build flags in favour of runtime settings [1ef22e16](https://github.com/xoseperez/espurna/commit/1ef22e16f10818d893a0a8912d55b1dbce88fcdb)
+- Reduce IRAM usage in sensors using attachInterrupt() [9db679f9](https://github.com/xoseperez/espurna/commit/9db679f93a61114dec8dad5f2953e59b7663c86a)
 #### Settings
 - Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System
@@ -161,6 +163,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add BME680 sensor support ([#2429](https://github.com/xoseperez/espurna/issues/2429), [#2361](https://github.com/xoseperez/espurna/issues/2361), [#2295](https://github.com/xoseperez/espurna/issues/2295), thanks to **[@ruimarinho](https://github.com/ruimarinho)**)
 - Add support for SmartMeasure SM300D2-VO2 air quality multi-sensor ([#2447](https://github.com/xoseperez/espurna/issues/2447), thanks to **[@xoseperez](https://github.com/xoseperez)**)
 - Shared ADS1X115 I2CPort, support common gain & data rate settings [c056c54d](https://github.com/xoseperez/espurna/commit/c056c54db4a528d038584fbfacb8fb410c7c7a2e)
+- Terminal commands to set expected ratio (`EXPECTED`) and total energy recorded by the sensor (`ENERGY`) [8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85)
 #### Settings
 - Led and button GPIO runtime settings ([#2117](https://github.com/xoseperez/espurna/issues/2117), [#2162](https://github.com/xoseperez/espurna/issues/2162), [#2170](https://github.com/xoseperez/espurna/issues/2170), [#2177](https://github.com/xoseperez/espurna/issues/2177))
 - Configure light dimmer pins from settings ([#2129](https://github.com/xoseperez/espurna/issues/2129))
@@ -237,6 +240,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Further EmonSensor fixes and refactoring ([b19905a3](https://github.com/xoseperez/espurna/commit/b19905a3065672412351c38d859fc3f6cd7ad5cd))
 - Rename generic pwr keys with a typed prefix ([1a36efb8](https://github.com/xoseperez/espurna/commit/1a36efb8f2032ac81c5aaa51623a71234b1c4287))
 - Tweak analogRead() frequency in Emon sensor ([c136678a](https://github.com/xoseperez/espurna/commit/c136678a4f02b7cae2e59fe843c3910a660f49d1))
+- Remove `PZ.RESET` and `PZ.VALUE` commands in favour of `EXPECTED`, `ENERGY` and `MAGNITUDES` [8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85)
 #### Settings
 - Refactor get/set/del/hasSetting ([#2048](https://github.com/xoseperez/espurna/issues/2048))
 - Update migrate configuration & conditions, allow each module to access the current & previous version ([#2176](https://github.com/xoseperez/espurna/issues/2176))
