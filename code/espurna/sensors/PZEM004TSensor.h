@@ -496,15 +496,19 @@ void PZEM004TSensor::registerTerminalCommands() {
             end = it + 1;
         }
 
-        size_t index { 0 };
-        auto print = [&](const PortWeakPtr& ptr) {
-            auto port = PortPtr(ptr);
-            ctx.output.printf_P(PSTR("%u -> %sSerial (%hhu,%hhu)\n"),
-                index, port->tag(), port->rx(), port->tx());
+        auto print = [&](const size_t index, const PortWeakPtr& ptr) {
+            auto port = ptr.lock();
+            if (port) {
+                ctx.output.printf_P(PSTR("%u -> %sSerial (%hhu,%hhu)\n"),
+                    index, port->tag(), port->rx(), port->tx());
+            } else {
+                ctx.output.print(F("%u -> (not configured)\n"));
+            }
         };
 
+        size_t index { 0 };
         while ((it != end) && (*it).use_count()) {
-            print(*it);
+            print(index, *it);
             ++it;
             ++index;
         }
@@ -526,6 +530,12 @@ void PZEM004TSensor::registerTerminalCommands() {
             return;
         }
 
+        auto port = _ports[id].lock();
+        if (!port) {
+            terminalError(ctx, F("Port not configured"));
+            return;
+        }
+
         IPAddress addr;
         addr.fromString(ctx.argv[2]);
 
@@ -534,7 +544,6 @@ void PZEM004TSensor::registerTerminalCommands() {
             return;
         }
 
-        auto port = PortPtr(_ports[id]);
         if (!port->address(addr)) {
             terminalError(ctx, F("Failed to set the address"));
             return;
