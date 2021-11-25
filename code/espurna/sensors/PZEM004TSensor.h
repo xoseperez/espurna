@@ -59,11 +59,12 @@ class PZEM004TSensor : public BaseEmonSensor {
 private:
     // Track instances returned by 'make()' in a singly linked list
     // Compared to stdlib's forward_list, head and tail are reversed
+    static PZEM004TSensor* _current_instance;
     static PZEM004TSensor* _head_instance;
     PZEM004TSensor* _next_instance;
 
-    static PZEM004TSensor* _current_instance;
-    static espurna::duration::Milliseconds _last_read;
+    using TimeSource = espurna::time::CoreClock;
+    static TimeSource::time_point _last_read;
 
     template <typename T>
     static void foreach(T&& callback) {
@@ -99,7 +100,7 @@ public:
         return 1 == PZEM004T_USE_SOFT;
     }
 
-    static constexpr espurna::duration::Milliseconds ReadInterval { PZEM004T_READ_INTERVAL };
+    static constexpr TimeSource::duration ReadInterval { PZEM004T_READ_INTERVAL };
     static constexpr size_t DevicesMax { PZEM004T_DEVICES_MAX };
 
     static IPAddress defaultAddress(size_t device) {
@@ -431,7 +432,7 @@ public:
 
         // Current approach is to spread our reads of mutliple instances,
         // instead of doing them in the same time slot.
-        if (espurna::duration::millis() - _last_read < ReadInterval) {
+        if (TimeSource::now() - _last_read < ReadInterval) {
             return;
         }
 
@@ -443,7 +444,7 @@ public:
             yield();
         }
 
-        _last_read = espurna::duration::millis();
+        _last_read = TimeSource::now();
         _current_instance = (_current_instance->_next_instance)
             ? _current_instance->_next_instance
             : _head_instance;
@@ -554,8 +555,9 @@ void PZEM004TSensor::registerTerminalCommands() {
 #endif
 }
 
-PZEM004TSensor* PZEM004TSensor::_head_instance { nullptr };
+PZEM004TSensor::TimeSource::time_point PZEM004TSensor::_last_read { PZEM004TSensor::TimeSource::now() - ReadInterval };
+
 PZEM004TSensor* PZEM004TSensor::_current_instance { nullptr };
-espurna::duration::Milliseconds PZEM004TSensor::_last_read { espurna::duration::millis() - ReadInterval };
+PZEM004TSensor* PZEM004TSensor::_head_instance { nullptr };
 
 PZEM004TSensor::Ports PZEM004TSensor::_ports{};

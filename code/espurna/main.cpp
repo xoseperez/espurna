@@ -27,56 +27,65 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace {
+namespace main {
+namespace build {
 
-std::vector<LoopCallback> _loop_callbacks;
-std::vector<LoopCallback> _reload_callbacks;
-
-bool _reload_config { false };
-espurna::duration::Milliseconds _loop_delay { 0 };
-
+// XXX: some SYS tasks require more time than yield(), as they won't
+//      be scheduled if user task is always doing something
+//      no particular need to delay too much though, besides attempting to reduce
+//      the power consuption of the board
 constexpr espurna::duration::Milliseconds LoopDelayMin { 10 };
 constexpr espurna::duration::Milliseconds LoopDelayMax { 300 };
 
-} // namespace
-
-void espurnaRegisterLoop(LoopCallback callback) {
-    _loop_callbacks.push_back(callback);
+constexpr espurna::duration::Milliseconds loopDelay() {
+    return espurna::duration::Milliseconds { LOOP_DELAY_TIME };
 }
 
-void espurnaRegisterReload(LoopCallback callback) {
-    _reload_callbacks.push_back(callback);
+} // namespace build
+
+namespace settings {
+
+espurna::duration::Milliseconds loopDelay() {
+    return std::clamp(getSetting("loopDelay", build::loopDelay()), build::LoopDelayMin, build::LoopDelayMax);
 }
 
-void espurnaReload() {
-    _reload_config = true;
+} // namespace settings
+
+namespace internal {
+
+std::vector<LoopCallback> loop_callbacks;
+espurna::duration::Milliseconds loop_delay { build::LoopDelayMin };
+
+std::vector<LoopCallback> reload_callbacks;
+bool reload_flag { false };
+
+} // namespace internal
+
+bool reload() {
+    if (internal::reload_flag) {
+        internal::reload_flag = false;
+        return true;
+    }
+
+    return false;
 }
 
-espurna::duration::Milliseconds espurnaLoopDelay() {
-    return _loop_delay;
-}
+void loop() {
+    // Reload config before running any callbacks
+    if (reload()) {
+        for (const auto& callback : internal::reload_callbacks) {
+            callback();
+        }
+    }
 
-void espurnaLoopDelay(espurna::duration::Milliseconds value) {
-    _loop_delay = value;
-}
-
-namespace {
-
-constexpr espurna::duration::Milliseconds _loopDelay() {
-    return espurna::duration::Milliseconds{LOOP_DELAY_TIME};
-}
-
-void _espurnaReload() {
-    for (const auto& callback : _reload_callbacks) {
+    for (const auto& callback : internal::loop_callbacks) {
         callback();
     }
+
+    espurna::time::delay(internal::loop_delay);
 }
-
-} // namespace
-
-// -----------------------------------------------------------------------------
-// BOOTING
-// -----------------------------------------------------------------------------
 
 void setup() {
     // -------------------------------------------------------------------------
@@ -285,21 +294,38 @@ void setup() {
     migrate();
 
     // Set up delay() after loop callbacks are finished
-    // Note: should be after settingsSetup()
-    _loop_delay = std::clamp(getSetting("loopDelay", _loopDelay()), LoopDelayMin, LoopDelayMax);
+    // Notice that this requires settings storage to be available and must be **after** settingsSetup()!
+    internal::loop_delay = settings::loopDelay();
+}
 
+} // namespace main
+} // namespace
+} // namespace espurna
+
+void espurnaRegisterLoop(LoopCallback callback) {
+    espurna::main::internal::loop_callbacks.push_back(callback);
+}
+
+void espurnaRegisterReload(LoopCallback callback) {
+    espurna::main::internal::reload_callbacks.push_back(callback);
+}
+
+void espurnaReload() {
+    espurna::main::internal::reload_flag = true;
+}
+
+espurna::duration::Milliseconds espurnaLoopDelay() {
+    return espurna::main::internal::loop_delay;
+}
+
+void espurnaLoopDelay(espurna::duration::Milliseconds value) {
+    espurna::main::internal::loop_delay = value;
+}
+
+void setup() {
+    espurna::main::setup();
 }
 
 void loop() {
-    // Reload config before running any callbacks
-    if (_reload_config) {
-        _espurnaReload();
-        _reload_config = false;
-    }
-
-    for (auto* callback : _loop_callbacks) {
-        callback();
-    }
-
-    espurna::duration::delay(_loop_delay);
+    espurna::main::loop();
 }

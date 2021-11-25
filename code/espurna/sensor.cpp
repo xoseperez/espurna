@@ -3363,10 +3363,11 @@ void sensorSetup() {
 
 void sensorLoop() {
 
-    // If there are still some un-initialized sensors after setup()
-    static espurna::duration::Seconds last_init { 0 };
+    // Continiously repeat initialization if there are still some un-initialized sensors after setup()
+    using TimeSource = espurna::time::CoreClock;
+    static TimeSource::time_point last_init { 0 };
 
-    auto timestamp = espurna::duration::seconds();
+    auto timestamp = TimeSource::now();
     if (!_sensors_ready && (timestamp - last_init > _sensor_init_interval)) {
         last_init = timestamp;
         _sensorInit();
@@ -3380,7 +3381,7 @@ void sensorLoop() {
     _sensorTick();
 
     // But, the actual reading needs to happen at the specified interval
-    static espurna::duration::Seconds last_update { 0 };
+    static TimeSource::time_point last_update { 0 };
     static int report_count { 0 };
 
     if (timestamp - last_update > _sensor_read_interval) {

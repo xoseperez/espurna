@@ -122,31 +122,10 @@ const char* getManufacturer() {
     return manufacturer;
 }
 
-String buildTime() {
-#if NTP_SUPPORT
-    constexpr const time_t ts = __UNIX_TIMESTAMP__;
-    tm timestruct;
-    gmtime_r(&ts, &timestruct);
-    return ntpDateTime(&timestruct);
-#else
-    char buffer[20];
-    snprintf_P(
-        buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        __TIME_YEAR__, __TIME_MONTH__, __TIME_DAY__,
-        __TIME_HOUR__, __TIME_MINUTE__, __TIME_SECOND__
-    );
-    return String(buffer);
-#endif
-}
-
-#if NTP_SUPPORT
-
-String getUptime() {
-    auto seconds = systemUptime();
-
-    time_t uptime = static_cast<time_t>(seconds.count());
+String prettyDuration(espurna::duration::Seconds seconds) {
+    time_t timestamp = static_cast<time_t>(seconds.count());
     tm spec;
-    gmtime_r(&uptime, &spec);
+    gmtime_r(&timestamp, &spec);
 
     char buffer[64];
     sprintf_P(buffer, PSTR("%02dy %02dd %02dh %02dm %02ds"),
@@ -156,13 +135,30 @@ String getUptime() {
     return String(buffer);
 }
 
-#else
-
 String getUptime() {
+#if NTP_SUPPORT
+    return prettyDuration(systemUptime());
+#else
     return String(systemUptime().count(), 10);
+#endif
 }
 
-#endif // NTP_SUPPORT
+String buildTime() {
+#if NTP_SUPPORT
+    constexpr const time_t ts = __UNIX_TIMESTAMP__;
+    tm timestruct;
+    gmtime_r(&ts, &timestruct);
+    return ntpDateTime(&timestruct);
+#else
+    char buffer[32];
+    snprintf_P(
+        buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
+        __TIME_YEAR__, __TIME_MONTH__, __TIME_DAY__,
+        __TIME_HOUR__, __TIME_MINUTE__, __TIME_SECOND__
+    );
+    return String(buffer);
+#endif
+}
 
 // -----------------------------------------------------------------------------
 // SSL

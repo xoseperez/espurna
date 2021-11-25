@@ -240,7 +240,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     }
 
     // Do not record crash data when doing a normal reboot or when crash trace was disabled
-    if (checkNeedsReset()) {
+    if (pendingDeferredReset()) {
         return;
     }
 
@@ -297,7 +297,7 @@ void crashDump(Print& print) {
 }
 
 void crashResetReason(Print& print) {
-    auto reason = customResetReason();
+    const auto reason = customResetReason();
     bool custom { CustomResetReason::None != reason };
     print.printf_P(PSTR("last reset reason: %s\n"), custom
         ? customResetReasonToPayload(reason).c_str()

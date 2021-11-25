@@ -229,7 +229,7 @@ void _ntpReport() {
         return;
     }
 
-    auto info = ntpInfo();
+    const auto info = ntpInfo();
     DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntp_server.c_str());
     DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), info.sync.c_str());
     DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), info.utc.c_str());

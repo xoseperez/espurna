@@ -37,12 +37,12 @@ namespace {
 // but anything else is experiencing overflow mechanics
 
 struct Delay {
-    static constexpr auto ClockCyclesMax = espurna::duration::ClockCycles(espurna::duration::ClockCycles::max());
-    static constexpr auto MillisecondsMax = std::chrono::duration_cast<espurna::duration::Milliseconds>(ClockCyclesMax);
-
-    using Duration = espurna::duration::ClockCycles;
-    using Source = espurna::duration::ClockCyclesSource;
+    using Source = espurna::time::CpuClock;
+    using Duration = Source::duration;
     using TimePoint = Source::time_point;
+
+    static constexpr auto ClockCyclesMax = Duration(Duration::max());
+    static constexpr auto MillisecondsMax = std::chrono::duration_cast<espurna::duration::Milliseconds>(ClockCyclesMax);
 
     using Repeats = unsigned char;
     static constexpr Repeats RepeatsMin { std::numeric_limits<Repeats>::min() };
@@ -567,24 +567,15 @@ void migrate(int version) {
 // For network-based modes, indefinitely cycle ON <-> OFF
 // (TODO: template params containing structs like duration need -std=c++2a)
 
-template <espurna::duration::Type On, espurna::duration::Type Off>
-struct StaticDelay {
-    static constexpr auto MillisecondsOn = espurna::duration::Milliseconds(On);
-    static constexpr auto MillisecondsOff = espurna::duration::Milliseconds(Off);
-
-    static_assert(MillisecondsOn <= Delay::MillisecondsMax, "");
-    static_assert(MillisecondsOff <= Delay::MillisecondsMax, "");
-
-    static constexpr auto DurationOn = std::chrono::duration_cast<Delay::Duration>(MillisecondsOn);
-    static constexpr auto DurationOff = std::chrono::duration_cast<Delay::Duration>(MillisecondsOff);
-
-    constexpr operator Delay() const {
-        return Delay{DurationOn, DurationOff, Delay::RepeatsMin};
-    }
-};
-
 #define LED_STATIC_DELAY(NAME, ON, OFF)\
-    constexpr Delay NAME = StaticDelay<ON, OFF>{}
+    static constexpr auto NAME ## MillisecondsOn = espurna::duration::Milliseconds(ON);\
+    static constexpr auto NAME ## MillisecondsOff = espurna::duration::Milliseconds(OFF);\
+    static_assert(NAME ## MillisecondsOn < Delay::MillisecondsMax, "");\
+    static_assert(NAME ## MillisecondsOff < Delay::MillisecondsMax, "");\
+    static constexpr Delay NAME = Delay {\
+        std::chrono::duration_cast<Delay::Duration>(NAME ## MillisecondsOn),\
+        std::chrono::duration_cast<Delay::Duration>(NAME ## MillisecondsOff),\
+        Delay::RepeatsMin }
 
 LED_STATIC_DELAY(NetworkConnected, 100, 4900);
 LED_STATIC_DELAY(NetworkConnectedInverse, 4900, 100);
@@ -794,10 +785,12 @@ void pattern(Led& led, Pattern&& other) {
 }
 
 void run(Led& led, const Delay& delay) {
-    static auto clock_last = espurna::duration::ClockCyclesSource::now();
+    using TimeSource = espurna::time::CpuClock;
+
+    static auto clock_last = TimeSource::now();
     static auto delay_for = delay.on();
 
-    const auto clock_current = espurna::duration::ClockCyclesSource::now();
+    const auto clock_current = TimeSource::now();
     if (clock_current - clock_last >= delay_for) {
         delay_for = led.toggle() ? delay.on() : delay.off();
         clock_last = clock_current;

@@ -13,11 +13,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <chrono>
 #include <cstdint>
 
-extern "C" {
-#include "user_interface.h"
-extern struct rst_info resetInfo;
-}
-
 struct HeapStats {
     uint32_t available;
     uint16_t usable;
@@ -41,51 +36,109 @@ enum class CustomResetReason : uint8_t {
 namespace espurna {
 namespace duration {
 
-using Type = uint32_t;
-
-using Seconds = std::chrono::duration<Type>;
-using Milliseconds = std::chrono::duration<Type, std::milli>;
-using ClockCycles = std::chrono::duration<Type, std::ratio<1, F_CPU>>;
-
-inline Milliseconds millis() {
-    return Milliseconds(::millis());
-}
-
-inline Seconds seconds() {
-    return Seconds(std::chrono::duration_cast<Seconds>(millis()));
-}
-
-inline void delay(Milliseconds value) {
-    ::delay(value.count());
-}
-
-// TODO: also implement a software source based on boot time in msec / usec?
-// Current NONOS esp8266 gcc + newlib do not implement clock_getttime for REALTIME and MONOTONIC types,
-// everything (system_clock, steady_clock, high_resolution_clock) goes through gettimeofday()
-// RTOS port *does* include monotonic clock through the systick counter, which seems to be implement'able
-// here as well through the use of os_timer delay and a certain fixed tick (e.g. default CONFIG_FREERTOS_HZ, set to 1000)
-
 // TODO: cpu frequency value might not always be true at build-time, detect at boot instead?
 // (also notice the discrepancy when OTA'ing between different values, as CPU *may* keep the old value)
+using ClockCycles = std::chrono::duration<uint32_t, std::ratio<1, F_CPU>>;
 
-struct ClockCyclesSource {
-    using rep = espurna::duration::Type;
+// Only micros are 64bit, millis stored as 32bit to match what is actually returned & used by Core functions
+using Microseconds = std::chrono::duration<uint64_t, std::micro>;
+using Milliseconds = std::chrono::duration<uint32_t, std::milli>;
+
+// Our own type, since a lot of things want this as a type of measurement
+// (and it can be seamlessly converted from millis)
+using Seconds = std::chrono::duration<uint32_t>;
+
+} // namespace duration
+
+namespace time {
+
+struct CpuClock {
     using duration = espurna::duration::ClockCycles;
+    using rep = duration::rep;
     using period = duration::period;
-    using time_point = std::chrono::time_point<ClockCyclesSource, duration>;
+    using time_point = std::chrono::time_point<CpuClock, duration>;
 
     static constexpr bool is_steady { true };
 
     // `"rsr %0, ccount\n" : "=a" (out) :: "memory"` on xtensa
     // or "soc_get_ccount()" with esp8266-idf
     // or "cpu_hal_get_cycle_count()" with esp-idf
-    // (and notably, every one of them is 32bit as the Tick)
+    // (and notably, every one of them is 32bit)
     static time_point now() noexcept {
-        return time_point(duration(esp_get_cycle_count()));
+        return time_point(duration(::esp_get_cycle_count()));
     }
 };
 
-} // namespace duration
+inline CpuClock::time_point ccount() {
+    return CpuClock::now();
+}
+
+// chrono's system_clock and steady_clock are implemented in the libstdc++
+// at the time of writing this, `steady_clock::now()` *is* `system_clock::now()`
+// (aka `std::time(nullptr)` aka `clock_gettime(CLOCK_REALTIME, ...)`)
+struct SystemClock {
+    using duration = espurna::duration::Microseconds;
+    using rep = duration::rep;
+    using period = duration::period;
+    using time_point = std::chrono::time_point<SystemClock, duration>;
+
+    static constexpr bool is_steady { true };
+
+    static time_point now() noexcept {
+        return time_point(duration(::micros64()));
+    }
+};
+
+// on esp8266 this is a sntp timeshift'ed timestamp plus `micros64()`
+// resulting value is available from either
+// - `_gettimeofday_r(nullptr, &timeval_struct, nullptr);`, as both seconds and microseconds
+// - `std::time(...)` just as seconds
+//
+// notice that on boot it should be equal to the build timestamp when NTP_SUPPORT=1
+// (also, only works correctly with Cores >= 3, otherwise there are two different sources)
+struct RealtimeClock {
+    using duration = std::chrono::duration<int64_t>;
+    using rep = duration::rep;
+    using period = duration::period;
+    using time_point = std::chrono::time_point<RealtimeClock, duration>;
+
+    static constexpr bool is_steady { false };
+
+    static time_point now() noexcept {
+        return time_point(duration(::std::time(nullptr)));
+    }
+};
+
+// common 'Arduino Core' clock, fallback to 32bit and `millis()` to utilize certain math quirks
+// ref.
+// - https://github.com/esp8266/Arduino/issues/3078
+// - https://github.com/esp8266/Arduino/pull/4264
+struct CoreClock {
+    using duration = espurna::duration::Milliseconds;
+    using rep = duration::rep;
+    using period = duration::period;
+    using time_point = std::chrono::time_point<CoreClock, duration>;
+
+    static constexpr bool is_steady { true };
+
+    static time_point now() noexcept {
+        return time_point(duration(::millis()));
+    }
+};
+
+inline SystemClock::time_point micros() {
+    return SystemClock::now();
+}
+
+inline CoreClock::time_point millis() {
+    return CoreClock::now();
+}
+
+inline void delay(CoreClock::duration value) {
+    ::delay(value.count());
+}
+
+} // namespace time
 
 namespace heartbeat {
 
@@ -172,6 +225,7 @@ unsigned long systemFreeHeap();
 unsigned long systemInitialFreeHeap();
 
 bool eraseSDKConfig();
+void forceEraseSDKConfig();
 void factoryReset();
 
 uint32_t systemResetReason();
@@ -180,14 +234,14 @@ void systemStabilityCounter(uint8_t count);
 
 bool systemCheck();
 
-void customResetReason(CustomResetReason reason);
+void customResetReason(CustomResetReason);
 CustomResetReason customResetReason();
-String customResetReasonToPayload(CustomResetReason reason);
+String customResetReasonToPayload(CustomResetReason);
 
 void deferredReset(unsigned long delay, CustomResetReason reason);
-bool checkNeedsReset();
+bool pendingDeferredReset();
 
-unsigned char systemLoadAverage();
+unsigned long systemLoadAverage();
 
 espurna::duration::Seconds systemHeartbeatInterval();
 void systemScheduleHeartbeat();

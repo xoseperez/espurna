@@ -12,9 +12,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 
-extern "C" uint32_t _SPIFFS_start;
-extern "C" uint32_t _SPIFFS_end;
-
 void setDefaultHostname();
 void setBoardName();
 
@@ -36,6 +33,7 @@ String getBoardName();
 String buildTime();
 bool haveRelaysOrSensors();
 
+String prettyDuration(espurna::duration::Seconds);
 String getUptime();
 
 void infoHeapStats(const char* name, const HeapStats& stats);

@@ -218,7 +218,7 @@
 #endif
 
 #ifndef SYSTEM_CHECK_TIME
-#define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
+#define SYSTEM_CHECK_TIME       60              // The system is considered stable after these many seconds
 #endif
 
 #ifndef SYSTEM_CHECK_MAX
@@ -375,7 +375,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef LOADAVG_INTERVAL
-#define LOADAVG_INTERVAL        30000           // Interval between calculating load average (in ms)
+#define LOADAVG_INTERVAL            30           // Interval between calculating load average (in seconds)
 #endif
 
 //------------------------------------------------------------------------------
