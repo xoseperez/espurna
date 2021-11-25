@@ -3365,7 +3365,7 @@ void sensorLoop() {
 
     // Continiously repeat initialization if there are still some un-initialized sensors after setup()
     using TimeSource = espurna::time::CoreClock;
-    static TimeSource::time_point last_init { 0 };
+    static auto last_init = TimeSource::now();
 
     auto timestamp = TimeSource::now();
     if (!_sensors_ready && (timestamp - last_init > _sensor_init_interval)) {
@@ -3381,7 +3381,7 @@ void sensorLoop() {
     _sensorTick();
 
     // But, the actual reading needs to happen at the specified interval
-    static TimeSource::time_point last_update { 0 };
+    static auto last_update = TimeSource::now();
     static int report_count { 0 };
 
     if (timestamp - last_update > _sensor_read_interval) {
