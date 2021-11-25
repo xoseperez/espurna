@@ -828,7 +828,7 @@
 #elif defined(YAGUSMART_TOUCH_HWMOD_1G)
     // Info
     #define MANUFACTURER        "YAGUSMART"
-    #define DEVICE              "1_GANG_SWITCH"
+    #define DEVICE              "TOUCH_HWMOD_1G"
 
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_PIN         3
@@ -853,7 +853,7 @@
 #elif defined(YAGUSMART_TOUCH_HWMOD_2G)
     // Info
     #define MANUFACTURER        "YAGUSMART"
-    #define DEVICE              "2_GANG_SWITCH"
+    #define DEVICE              "TOUCH_HWMOD_2G"
 
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_PIN         3
@@ -891,7 +891,7 @@
 #elif defined(YAGUSMART_TOUCH_HWMOD_3G)
     // Info
     #define MANUFACTURER        "YAGUSMART"
-    #define DEVICE              "3_GANG_SWITCH"
+    #define DEVICE              "TOUCH_HWMOD_3G"
 
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON1_PIN         12
