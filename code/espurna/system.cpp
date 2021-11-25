@@ -66,13 +66,13 @@ espurna::heartbeat::Mode convert(const String& value) {
 }
 
 template <>
-espurna::duration::Seconds convert(const String& value) {
-    return espurna::duration::Seconds(convert<espurna::duration::Seconds::rep>(value));
+espurna::duration::Milliseconds convert(const String& value) {
+    return espurna::duration::Milliseconds(convert<espurna::duration::Milliseconds::rep>(value));
 }
 
 template <>
-espurna::duration::Milliseconds convert(const String& value) {
-    return espurna::duration::Milliseconds(convert<espurna::duration::Milliseconds::rep>(value));
+espurna::duration::Seconds convert(const String& value) {
+    return espurna::duration::Seconds(convert<espurna::duration::Seconds::rep>(value));
 }
 
 } // namespace internal
@@ -246,7 +246,8 @@ namespace build {
 
 constexpr uint8_t ChecksMin { 0 };
 constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
-static_assert(ChecksMax > 0, "");
+static_assert(ChecksMax > 1, "");
+static_assert(ChecksMin < ChecksMax, "");
 
 constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
 static_assert(CheckTime > espurna::duration::Seconds::min(), "");
@@ -256,7 +257,7 @@ static_assert(CheckTime > espurna::duration::Seconds::min(), "");
 void init() {
     // on cold boot / rst, bumps count to 2 so we don't end up
     // spamming crash recorder in case something goes wrong
-    auto count = static_cast<bool>(internal::persistent_data)
+    const auto count = static_cast<bool>(internal::persistent_data)
         ? internal::persistent_data.counter() : 1u;
 
     internal::flag = (count < build::ChecksMax);
@@ -282,7 +283,7 @@ uint32_t system_reason() {
 }
 
 // prunes custom reason after accessing it once
-CustomResetReason custom_reason() {
+CustomResetReason customReason() {
     static const CustomResetReason reason = ([]() {
         const auto out = static_cast<bool>(internal::persistent_data)
             ? internal::persistent_data.reason()
@@ -294,7 +295,7 @@ CustomResetReason custom_reason() {
     return reason;
 }
 
-void custom_reason(CustomResetReason reason) {
+void customReason(CustomResetReason reason) {
     internal::persistent_data.reason(reason);
 }
 
@@ -314,10 +315,10 @@ static_assert(Interval <= espurna::duration::Seconds(90), "");
 
 } // namespace build
 
+using TimeSource = espurna::time::SystemClock;
 using Type = unsigned long;
 
 struct Counter {
-    using TimeSource = espurna::time::SystemClock;
     TimeSource::time_point last;
     Type count;
     Type value;
@@ -335,12 +336,11 @@ Type value() {
 }
 
 void loop() {
-    using TimeSource = Counter::TimeSource;
     static Counter counter {
-        .last = TimeSource::now(),
+        .last = (TimeSource::now() - build::Interval),
         .count = 0,
         .value = 0,
-        .max = 1
+        .max = 0
     };
 
     ++counter.count;
@@ -355,7 +355,9 @@ void loop() {
     counter.count = 0;
     counter.max = std::max(counter.max, counter.value);
 
-    internal::load_average = build::ValueMax - (build::ValueMax * counter.value / counter.max);
+    internal::load_average = counter.max
+        ? (build::ValueMax - (build::ValueMax * counter.value / counter.max))
+        : 0;
 }
 
 } // namespace load_average
@@ -444,8 +446,9 @@ Mask value() {
 
 } // namespace settings
 
+using TimeSource = espurna::time::CoreClock;
+
 struct CallbackRunner {
-    using TimeSource = espurna::time::CoreClock;
     Callback callback;
     Mode mode;
     TimeSource::duration interval;
@@ -479,12 +482,13 @@ void run() {
 
     auto next = duration::Milliseconds(settings::interval());
 
-    auto ts = CallbackRunner::TimeSource::now();
     if (internal::runners.size()) {
         auto mask = settings::value();
 
         auto it = internal::runners.begin();
         auto end = internal::runners.end();
+
+        auto ts = TimeSource::now();
         while (it != end) {
             auto diff = ts - (*it).last;
             if (diff > (*it).interval) {
@@ -534,7 +538,6 @@ void push(Callback callback, Mode mode, duration::Seconds interval) {
         return;
     }
 
-    using TimeSource = CallbackRunner::TimeSource;
     auto offset = TimeSource::now() - TimeSource::duration(1);
     internal::runners.push_back({
         callback, mode,
@@ -551,7 +554,6 @@ void pushOnce(Callback callback) {
 }
 
 duration::Seconds interval() {
-    using TimeSource = CallbackRunner::TimeSource;
     TimeSource::duration result { settings::interval() };
 
     for (auto& runner : internal::runners) {
@@ -564,7 +566,6 @@ duration::Seconds interval() {
 }
 
 void reschedule() {
-    using TimeSource = CallbackRunner::TimeSource;
     static constexpr TimeSource::duration Offset { 1 };
 
     const auto ts = TimeSource::now();
@@ -636,7 +637,7 @@ Ticker reset_timer;
 auto reset_reason = CustomResetReason::None;
 
 void reset(CustomResetReason reason) {
-    ::espurna::boot::custom_reason(reason);
+    ::espurna::boot::customReason(reason);
     reset_reason = reason;
 }
 
@@ -776,11 +777,11 @@ uint32_t systemResetReason() {
 }
 
 CustomResetReason customResetReason() {
-    return espurna::boot::custom_reason();
+    return espurna::boot::customReason();
 }
 
 void customResetReason(CustomResetReason reason) {
-    espurna::boot::custom_reason(reason);
+    espurna::boot::customReason(reason);
 }
 
 String customResetReasonToPayload(CustomResetReason reason) {
@@ -840,7 +841,7 @@ espurna::duration::Seconds systemUptime() {
 
 void systemSetup() {
     espurna::boot::hardware();
-    espurna::boot::custom_reason();
+    espurna::boot::customReason();
 
 #if SYSTEM_CHECK_ENABLED
     espurna::boot::stability::init();
