@@ -555,7 +555,9 @@ duration::Seconds interval() {
     TimeSource::duration result { settings::interval() };
 
     for (auto& runner : internal::runners) {
-        result = std::min(result, runner.interval);
+        if (runner.mode != Mode::Once) {
+            result = std::min(result, runner.interval);
+        }
     }
 
     return std::chrono::duration_cast<duration::Seconds>(result);
