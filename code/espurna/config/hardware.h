@@ -5013,6 +5013,128 @@
     // Light
     #define LIGHT_CH1_PIN       14       // WHITE
 
+// -----------------------------------------------------------------------------
+// https://www.amazon.co.uk/gp/product/B086MV5MC8
+//
+// These don't come with an esp8266 anymore, but can be trivially converted
+// as the new chip is pin compatible. Note, GPIO15 needs to be connected to
+// GND on 1 and 2 gang switches in order to enable the ESP to boot.
+//
+// Older versions and some US models may still ship with ESP8266.
+//
+// Caution, do NOT solder a serial port while the board is connected to the mains baseboard,
+// it will blow your fuse and your USB!
+// If you need to flash with a programmer, use a bench power supply on the logic board only!
+// -----------------------------------------------------------------------------
+
+#elif defined(YAGUSMART_TOUCH_HWMOD_1G)
+    #define MANUFACTURER        "YAGUSMART"
+    #define DEVICE              "TOUCH_HWMOD_1G"
+
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PIN         3
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          13
+
+    #define LED2_PIN                    14
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FOLLOW
+    #define LED2_RELAY                  1
+
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_WIFI
+
+    #define DEBUG_SERIAL_SUPPORT        0
+
+#elif defined(YAGUSMART_TOUCH_HWMOD_2G)
+    #define MANUFACTURER        "YAGUSMART"
+    #define DEVICE              "TOUCH_HWMOD_2G"
+
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PIN         3
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PIN         5
+    #define BUTTON2_RELAY       2
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          4
+
+    #define LED2_PIN                    14
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FOLLOW
+    #define LED2_RELAY                  1
+
+    #define LED3_PIN                    1
+    #define LED3_PIN_INVERSE            1
+    #define LED3_MODE                   LED_MODE_FOLLOW
+    #define LED3_RELAY                  2
+
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_WIFI
+
+    #define DEBUG_SERIAL_SUPPORT        0
+
+#elif defined(YAGUSMART_TOUCH_HWMOD_3G)
+    #define MANUFACTURER        "YAGUSMART"
+    #define DEVICE              "TOUCH_HWMOD_3G"
+
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_PIN         12
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_ACTION_NONE
+
+    #define BUTTON2_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_PIN         3
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_ACTION_NONE
+
+    #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON3_PIN         5
+    #define BUTTON3_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_ACTION_NONE
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          4
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_PIN          15
+
+    #define LED2_PIN                    16
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FOLLOW
+    #define LED2_RELAY                  1
+
+    #define LED3_PIN                    14
+    #define LED3_PIN_INVERSE            1
+    #define LED3_MODE                   LED_MODE_FOLLOW
+    #define LED3_RELAY                  2
+
+    #define LED4_PIN                    1
+    #define LED4_PIN_INVERSE            1
+    #define LED4_MODE                   LED_MODE_FOLLOW
+    #define LED4_RELAY                  3
+
+    #define LED1_PIN                    0
+    #define LED1_PIN_INVERSE            1
+    #define LED1_MODE                   LED_MODE_WIFI
+
+    #define DEBUG_SERIAL_SUPPORT        0
+
 #else
 
     #error "UNSUPPORTED HARDWARE!!"
