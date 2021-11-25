@@ -119,6 +119,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add support for Gosund P1 Power Strip ([#2391](https://github.com/xoseperez/espurna/issues/2391), thanks to **[@alextircovnicu](https://github.com/alextircovnicu)**)
 - Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439], [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
 - Refactor iFan into a separate module ([a40eca30](https://github.com/xoseperez/espurna/commit/a40eca30ad79315afdb67afa0b0743d4c0087e93))
+- Add support for Yagusmart switches ([#2488](https://github.com/xoseperez/espurna/pull/2488), thanks to **[@MelanieT](https://github.com/MelanieT)**)
 #### HomeAssistant
 - Advertise lights transition support in the discovery message ([4d157ccd5](https://github.com/xoseperez/espurna/commit/4d157ccd5bd5ffefa8b0bca79c4b2196c8a3e5dc))
 - Reworked discovery, implement retries and queueing using the MQTT broker ACKs ([59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f))
