@@ -253,7 +253,6 @@ String setter() {
 }
 
 String user() {
-    auto user = getSetting("mqttUser", build::user());
     return getSetting("mqttUser", build::user());
 }
 
