@@ -688,9 +688,8 @@ void forceEraseSDKConfig() {
 // Accumulates only when called, make sure to do so periodically
 // Even in 32bit range, seconds would take a lot of time to overflow
 duration::Seconds uptime() {
-    using TimeSource = espurna::time::SystemClock;
     return std::chrono::duration_cast<duration::Seconds>(
-        TimeSource::now().time_since_epoch());
+        time::SystemClock::now().time_since_epoch());
 }
 
 } // namespace

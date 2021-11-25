@@ -76,6 +76,9 @@ inline CpuClock::time_point ccount() {
 // chrono's system_clock and steady_clock are implemented in the libstdc++
 // at the time of writing this, `steady_clock::now()` *is* `system_clock::now()`
 // (aka `std::time(nullptr)` aka `clock_gettime(CLOCK_REALTIME, ...)`)
+//
+// notice that the `micros()` by itself relies on `system_get_time()` which uses 32bit
+// storage (...or slightly less that that) and will overflow at around 72 minute mark.
 struct SystemClock {
     using duration = espurna::duration::Microseconds;
     using rep = duration::rep;

@@ -247,6 +247,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Update migrate configuration & conditions, allow each module to access the current & previous version ([#2176](https://github.com/xoseperez/espurna/issues/2176))
 #### System
 - Use direct status update functions instead of broker ([78b4007f](https://github.com/xoseperez/espurna/commit/78b4007f01e8df9334d16e9550a03443527176f2))
+- Use 64bit microseconds time source for uptime, no need to count overflows manually [1ca98880](https://github.com/xoseperez/espurna/commit/1ca98880d64db0865d02f009002bc22e32ae5076)
+- Update load average and system stability check intervals to use seconds instead of milliseconds [1ca98880](https://github.com/xoseperez/espurna/commit/1ca98880d64db0865d02f009002bc22e32ae5076)
 #### Terminal
 - Rework boot info and terminal commands ([7ea73554](https://github.com/xoseperez/espurna/commit/7ea735548bcd41742fac32e8733b2084c4c334cd))
 #### WebUI
