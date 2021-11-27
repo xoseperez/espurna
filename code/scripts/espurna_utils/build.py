@@ -2,7 +2,6 @@ import atexit
 import os
 import shutil
 import tempfile
-import functools
 
 from .display import print_warning
 from .version import app_full_version_for_env

@@ -9,6 +9,7 @@
 
 # Run this script every time building an env AFTER platform-specific code is loaded
 
+import os
 from espurna_utils import (
     check_printsize,
     remove_float_support,
@@ -19,10 +20,11 @@ from espurna_utils import (
     app_add_target_build_and_copy,
 )
 
+from SCons.Script import Import
 
 Import("env", "projenv")
-
-import os
+env = globals()["env"]
+projenv = globals()["projenv"]
 
 CI = "true" == os.environ.get("CI")
 

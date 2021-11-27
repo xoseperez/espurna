@@ -9,18 +9,16 @@
 
 # Run this script every time building an env BEFORE platform-specific code is loaded
 
-from __future__ import print_function
-
-Import("env")
-
 import os
 import sys
 
-
-from SCons.Script import ARGUMENTS
+from SCons.Script import Import, ARGUMENTS
 
 from espurna_utils import check_env
 from espurna_utils.build import merge_cpp, app_add_target_build_re2c
+
+Import("env")
+env = globals()["env"]
 
 
 CI = check_env("CI", "false")
@@ -56,7 +54,7 @@ def get_shared_libdeps_dir(section, name):
 
     opt = CONFIG.get(section, name)
 
-    if not opt in env.GetProjectOption("lib_extra_dirs"):
+    if opt not in env.GetProjectOption("lib_extra_dirs"):
         raise ExtraScriptError(
             "lib_extra_dirs must contain {}.{}".format(section, name)
         )
@@ -115,6 +113,7 @@ if CI:
 if check_env("ESPURNA_PIO_SHARED_LIBRARIES", "0"):
     storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
     subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
+
 
 # tweak build system to ignore espurna.ino, but include user code
 # ref: platformio-core/platformio/tools/piomisc.py::ConvertInoToCpp()
