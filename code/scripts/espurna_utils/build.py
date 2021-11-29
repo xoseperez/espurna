@@ -50,17 +50,20 @@ def firmware_destination(env):
 def app_add_target_build_and_copy(env):
     from SCons.Script import Copy
 
-    copy_dest = firmware_destination(env)
-    copy = env.Command(
-        copy_dest, "${BUILD_DIR}/${PROGNAME}.bin", Copy("$TARGET", "$SOURCE")
-    )
+    target = firmware_destination(env)
+
     env.AddTarget(
         "build-and-copy",
-        copy_dest,
-        actions=None,  # command invocation already handles this
+        "${BUILD_DIR}/${PROGNAME}.bin",
+        env.Command(
+            target,
+            "${BUILD_DIR}/${PROGNAME}.bin",
+            Copy("$TARGET", "$SOURCE")
+        ),
         title="Build firmware.bin and store a copy",
         description="Build and store firmware.bin as $ESPURNA_BUILD_DESTINATION/espurna-<version>-$ESPURNA_BUILD_NAME.bin (default destination is $PROJECT_DIR)",
     )
+    env.Alias("build-and-copy", target)
 
 
 # TODO: *could* be a Builder object, just the same it will detect targets via src_suffix & suffix properties
