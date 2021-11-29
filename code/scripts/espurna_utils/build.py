@@ -37,7 +37,11 @@ def app_add_builder_single_source(env):
 
     project = env.Dir("${PROJECT_DIR}/espurna")
     env.AddBuildMiddleware(ignore_node, os.path.join(project.get_abspath(), "*.cpp"))
-    env.Command(source, env.Glob("${PROJECT_DIR}/espurna/*.cpp"), env.Action(merge_cpp))
+    env.Command(
+        source,
+        env.Glob("${PROJECT_DIR}/espurna/*.cpp"),
+        env.VerboseAction(merge_cpp, "Merging project sources into $TARGET"),
+    )
 
 
 def firmware_prefix(env):
@@ -65,11 +69,7 @@ def app_add_target_build_and_copy(env):
     env.AddTarget(
         "build-and-copy",
         "${BUILD_DIR}/${PROGNAME}.bin",
-        env.Command(
-            target,
-            "${BUILD_DIR}/${PROGNAME}.bin",
-            Copy("$TARGET", "$SOURCE")
-        ),
+        env.Command(target, "${BUILD_DIR}/${PROGNAME}.bin", Copy("$TARGET", "$SOURCE")),
         title="Build firmware.bin and store a copy",
         description="Build and store firmware.bin as $ESPURNA_BUILD_DESTINATION/espurna-<version>-$ESPURNA_BUILD_NAME.bin (default destination is $PROJECT_DIR)",
     )
