@@ -1,33 +1,43 @@
-import atexit
 import os
 import shutil
 import tempfile
 
-from .display import print_warning
 from .version import app_full_version_for_env
 
 
-def try_remove(path):
-    try:
-        os.remove(path)
-    except:  # pylint: disable=bare-except
-        print_warning("Please manually remove the file `{}`".format(path))
-
-
 # emulate .ino concatenation to speed up compilation times
-def merge_cpp(sources, output):
+def merge_cpp(target, source, env, encoding="utf-8"):
     with tempfile.TemporaryFile() as tmp:
         tmp.write(b"// !!! Automatically generated file; DO NOT EDIT !!! \n")
-        tmp.write(b'#include "espurna.h"\n')
-        for source in sources:
-            src_include = '#include "{}"\n'.format(source)
-            tmp.write(src_include.encode("utf-8"))
+        tmp.write(
+            '#include "{}"\n'.format(
+                env.File("${PROJECT_DIR}/espurna/espurna.h").get_abspath()
+            ).encode(encoding)
+        )
+        for src in source:
+            src_include = '#include "{}"\n'.format(src.get_abspath())
+            tmp.write(src_include.encode(encoding))
 
         tmp.seek(0)
 
-        with open(output, "wb") as fobj:
+        with open(target[0].get_abspath(), "wb") as fobj:
             shutil.copyfileobj(tmp, fobj)
-        atexit.register(try_remove, output)
+
+
+def app_add_builder_single_source(env):
+    # generate things in the $BUILD_DIR, so there's no need for any extra clean-up code
+    source = os.path.join("${BUILD_DIR}", "espurna_single_source", "src", "main.cpp")
+
+    # substitute a single node instead of building it somewhere else as a lib or extra source dir
+    # (...and since we can't seem to modify src_filter specifically for the project dir, only middleware works :/)
+    def ignore_node(node):
+        if node.name.endswith("main.cpp"):
+            return env.File(source)
+        return None
+
+    project = env.Dir("${PROJECT_DIR}/espurna")
+    env.AddBuildMiddleware(ignore_node, os.path.join(project.get_abspath(), "*.cpp"))
+    env.Command(source, env.Glob("${PROJECT_DIR}/espurna/*.cpp"), env.Action(merge_cpp))
 
 
 def firmware_prefix(env):

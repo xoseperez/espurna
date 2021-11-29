@@ -15,7 +15,7 @@ import sys
 from SCons.Script import Import, ARGUMENTS
 
 from espurna_utils import check_env
-from espurna_utils.build import merge_cpp, app_add_target_build_re2c
+from espurna_utils.build import app_add_builder_single_source, app_add_target_build_re2c
 
 Import("env")
 env = globals()["env"]
@@ -127,18 +127,7 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
 
 # merge every .cpp into a single file and **only** build that single file
 if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
-    cpp_files = []
-    for root, dirs, filenames in os.walk("espurna"):
-        for name in filenames:
-            if not name.endswith(".cpp"):
-                continue
-
-            abspath = os.path.join(os.path.abspath(root), name)
-            env.AddBuildMiddleware(lambda node: None, abspath)
-
-            relpath = os.path.relpath(abspath, "espurna")
-            cpp_files.append(relpath)
-    merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
+    app_add_builder_single_source(env)
 
 # handle explicit targets that have .re.cpp.inc, build them before falling into the next sconsfile
 app_add_target_build_re2c(env)
