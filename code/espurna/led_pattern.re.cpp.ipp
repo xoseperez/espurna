@@ -31,12 +31,12 @@ Pattern::Pattern(const char* begin, const char* end) {
     const char* YYMARKER;
 
 loop:
-#line 35 "espurna\\led_pattern.re.cpp.inc"
+#line 35 "espurna\\led_pattern.re.cpp.ipp"
 const char *yyt1;const char *yyt2;const char *yyt3;
 #line 32 "espurna\\led_pattern.re"
 
 
-#line 40 "espurna\\led_pattern.re.cpp.inc"
+#line 40 "espurna\\led_pattern.re.cpp.ipp"
 	{
 		char yych;
 		yych = (char)*YYCURSOR;
@@ -55,7 +55,7 @@ yy2:
 yy3:
 #line 46 "espurna\\led_pattern.re"
 		{ return; }
-#line 59 "espurna\\led_pattern.re.cpp.inc"
+#line 59 "espurna\\led_pattern.re.cpp.ipp"
 yy4:
 		yych = (char)*++YYCURSOR;
 		switch (yych) {
@@ -66,7 +66,7 @@ yy4:
 yy6:
 #line 48 "espurna\\led_pattern.re"
 		{ goto loop; }
-#line 70 "espurna\\led_pattern.re.cpp.inc"
+#line 70 "espurna\\led_pattern.re.cpp.ipp"
 yy7:
 		yych = (char)*(YYMARKER = ++YYCURSOR);
 		switch (yych) {
@@ -146,11 +146,11 @@ yy17:
                 goto loop;
             }
         }
-#line 150 "espurna\\led_pattern.re.cpp.inc"
+#line 150 "espurna\\led_pattern.re.cpp.ipp"
 yy18:
 #line 45 "espurna\\led_pattern.re"
 		{ return; }
-#line 154 "espurna\\led_pattern.re.cpp.inc"
+#line 154 "espurna\\led_pattern.re.cpp.ipp"
 	}
 #line 75 "espurna\\led_pattern.re"
 

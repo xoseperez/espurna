@@ -358,7 +358,7 @@ bool Led::toggle() {
     return status(!status());
 }
 
-#include "led_pattern.re.cpp.inc"
+#include "led_pattern.re.cpp.ipp"
 
 } // namespace
 } // namespace led

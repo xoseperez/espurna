@@ -25,7 +25,7 @@ ParseResult<Payload> parse(StringView view) {
     ParseResult<Payload> out;
 
     
-#line 29 "espurna\\ir_parse_state.re.cpp.inc"
+#line 29 "espurna\\ir_parse_state.re.cpp.ipp"
 const char *yyt1 { nullptr };
 const char *yyt2 { nullptr };
 const char *yyt3 { nullptr };
@@ -33,7 +33,7 @@ const char *yyt4 { nullptr };
 #line 25 "espurna\\ir_parse_state.re"
 
     
-#line 37 "espurna\\ir_parse_state.re.cpp.inc"
+#line 37 "espurna\\ir_parse_state.re.cpp.ipp"
 {
 	char yych;
 	unsigned int yyaccept = 0;
@@ -51,7 +51,7 @@ yy2:
 yy3:
 #line 49 "espurna\\ir_parse_state.re"
 	{ goto return_out; }
-#line 55 "espurna\\ir_parse_state.re.cpp.inc"
+#line 55 "espurna\\ir_parse_state.re.cpp.ipp"
 yy4:
 	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
@@ -104,7 +104,7 @@ yy11:
 	c1 = YYCURSOR;
 #line 38 "espurna\\ir_parse_state.re"
 	{ goto update_out; }
-#line 108 "espurna\\ir_parse_state.re.cpp.inc"
+#line 108 "espurna\\ir_parse_state.re.cpp.ipp"
 yy12:
 	yych = *++YYCURSOR;
 	switch (yych) {
@@ -130,7 +130,7 @@ yy15:
 	s1 = YYCURSOR;
 #line 42 "espurna\\ir_parse_state.re"
 	{ goto update_out; }
-#line 134 "espurna\\ir_parse_state.re.cpp.inc"
+#line 134 "espurna\\ir_parse_state.re.cpp.ipp"
 yy16:
 	yych = *++YYCURSOR;
 	switch (yych) {
@@ -156,11 +156,11 @@ yy19:
 	d1 = YYCURSOR;
 #line 47 "espurna\\ir_parse_state.re"
 	{ goto update_out; }
-#line 160 "espurna\\ir_parse_state.re.cpp.inc"
+#line 160 "espurna\\ir_parse_state.re.cpp.ipp"
 yy20:
 #line 50 "espurna\\ir_parse_state.re"
 	{ goto return_out; }
-#line 164 "espurna\\ir_parse_state.re.cpp.inc"
+#line 164 "espurna\\ir_parse_state.re.cpp.ipp"
 }
 #line 51 "espurna\\ir_parse_state.re"
 
