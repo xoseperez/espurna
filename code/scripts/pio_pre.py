@@ -129,5 +129,5 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
 if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
     app_add_builder_single_source(env)
 
-# handle explicit targets that have .re.cpp.inc, build them before falling into the next sconsfile
+# handle explicit targets that are used to build .re files, and before falling into the next sconsfile
 app_add_target_build_re2c(env)
