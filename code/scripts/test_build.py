@@ -59,7 +59,7 @@ def build_configurations(args, configurations):
             [
                 '-DMANUFACTURER=\\"TEST_BUILD\\"',
                 '-DDEVICE=\\"{}\\"'.format(cfg.stem.replace(" ", "_").upper()),
-                '\\"-include {}\\"'.format(cfg.resolve()),
+                '-include "{}"'.format(cfg.resolve().as_posix()),
             ]
         )
 
