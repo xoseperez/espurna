@@ -1260,6 +1260,7 @@ void _rfbSettingsMigrate(int version) {
 
 void rfbSetup() {
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+    Serial.begin(SERIAL_BAUDRATE);
     _rfb_parser.reserve(RfbParser::MessageSizeBasic);
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
