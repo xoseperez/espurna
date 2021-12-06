@@ -4,5 +4,5 @@
 *.h       text eol=lf
 *.cpp     text eol=lf
 *.re      text eol=lf
-*.cpp.ipp text eol=lf
+*.ipp     text eol=lf
 *.c       text eol=lf

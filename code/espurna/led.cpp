@@ -5,6 +5,12 @@ LED MODULE
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
+To (re)create the string -> pattern decoder .ipp files, add `re2c` to the $PATH and 'run' the environment:
+```
+$ pio run -e ... -t espurna/led_pattern.re.ipp
+```
+(see scripts/pio_pre.py and scripts/espurna_utils/build.py for more info)
+
 */
 
 #include "espurna.h"
@@ -358,7 +364,7 @@ bool Led::toggle() {
     return status(!status());
 }
 
-#include "led_pattern.re.cpp.ipp"
+#include "led_pattern.re.ipp"
 
 } // namespace
 } // namespace led
