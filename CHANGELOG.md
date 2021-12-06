@@ -206,7 +206,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Libraries
 - Bump RFM69 version ([#2148](https://github.com/xoseperez/espurna/issues/2148))
 - Pin arduino-mqtt version ([#2154](https://github.com/xoseperez/espurna/issues/2154))
-- Update IRremoteESP8266 to 2.7.20 ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- Update IRremoteESP8266 to 2.8.0 ([c33d9960](https://github.com/xoseperez/espurna/commit/c33d9960b4a7a04b8bce516be152d5df96ec9cc2))
 - Use [fork of fauxmoesp](https://github.com/vintlabs/fauxmoESP), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**
 - Use [fork of rc-switch](https://github.com/1technophile/rc-switch) ([7a24806a](https://github.com/xoseperez/espurna/commit/7a24806adb2c3e2357171e004b5b760daf3bdca4))
 #### Lights
