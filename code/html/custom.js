@@ -873,13 +873,12 @@ function addSimpleEnumerables(name, prettyName, count) {
 // Notice that <span> uses a custom data attribute data-key=..., instead of name=...
 
 function initGenericKeyValueElement(key, value) {
-    let span = document.querySelector(`span[data-key='${key}']`);
-    if (span) {
+    for (const span of document.querySelectorAll(`span[data-key='${key}']`)) {
         setSpanValue(span, value);
     }
 
-    let inputs = [];
-    for (let elem of document.querySelectorAll(`[name='${key}'`)) {
+    const inputs = [];
+    for (const elem of document.querySelectorAll(`[name='${key}'`)) {
         switch (elem.tagName) {
         case "INPUT":
             setInputValue(elem, value);
