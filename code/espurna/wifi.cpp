@@ -55,13 +55,13 @@ namespace build {
 constexpr size_t NetworksMax { WIFI_MAX_NETWORKS };
 
 // aka long interval
-constexpr unsigned long staReconnectionInterval() {
-    return WIFI_RECONNECT_INTERVAL;
+constexpr espurna::duration::Milliseconds staReconnectionInterval() {
+    return espurna::duration::Milliseconds(WIFI_RECONNECT_INTERVAL);
 }
 
 // aka short interval
-constexpr unsigned long staConnectionInterval() {
-    return WIFI_CONNECT_INTERVAL;
+constexpr espurna::duration::Milliseconds staConnectionInterval() {
+    return espurna::duration::Milliseconds(WIFI_CONNECT_INTERVAL);
 }
 
 constexpr int staConnectionRetries() {
@@ -85,7 +85,7 @@ constexpr uint8_t softApChannel() {
 }
 
 constexpr bool hasSoftApSsid() {
-    return strlen(WIFI_AP_SSID);
+    return __builtin_strlen(WIFI_AP_SSID);
 }
 
 const __FlashStringHelper* softApSsid() {
@@ -93,15 +93,15 @@ const __FlashStringHelper* softApSsid() {
 }
 
 constexpr bool hasSoftApPassphrase() {
-    return strlen(WIFI_AP_PASS);
+    return __builtin_strlen(WIFI_AP_PASS);
 }
 
 const __FlashStringHelper* softApPassphrase() {
     return F(WIFI_AP_PASS);
 }
 
-constexpr unsigned long softApFallbackTimeout() {
-    return WIFI_FALLBACK_TIMEOUT;
+constexpr espurna::duration::Milliseconds softApFallbackTimeout() {
+    return espurna::duration::Milliseconds(WIFI_FALLBACK_TIMEOUT);
 }
 
 constexpr bool scanNetworks() {
@@ -112,20 +112,20 @@ constexpr int8_t scanRssiThreshold() {
     return WIFI_SCAN_RSSI_THRESHOLD;
 }
 
-constexpr unsigned long scanRssiCheckInterval() {
-    return WIFI_SCAN_RSSI_CHECK_INTERVAL;
+constexpr espurna::duration::Milliseconds scanRssiCheckInterval() {
+    return espurna::duration::Milliseconds(WIFI_SCAN_RSSI_CHECK_INTERVAL);
 }
 
 constexpr int8_t scanRssiChecks() {
     return WIFI_SCAN_RSSI_CHECKS;
 }
 
-constexpr unsigned long garpIntervalMin() {
-    return WIFI_GRATUITOUS_ARP_INTERVAL_MIN;
+constexpr espurna::duration::Milliseconds garpIntervalMin() {
+    return espurna::duration::Milliseconds(WIFI_GRATUITOUS_ARP_INTERVAL_MIN);
 }
 
-constexpr unsigned long garpIntervalMax() {
-    return WIFI_GRATUITOUS_ARP_INTERVAL_MAX;
+constexpr espurna::duration::Milliseconds garpIntervalMax() {
+    return espurna::duration::Milliseconds(WIFI_GRATUITOUS_ARP_INTERVAL_MAX);
 }
 
 constexpr WiFiSleepType_t sleep() {
@@ -134,26 +134,6 @@ constexpr WiFiSleepType_t sleep() {
 
 constexpr float outputDbm() {
     return WIFI_OUTPUT_POWER_DBM;
-}
-
-constexpr bool hasSsid(size_t index) {
-    return (
-        (index == 0) ? (strlen(WIFI1_SSID) > 0) :
-        (index == 1) ? (strlen(WIFI2_SSID) > 0) :
-        (index == 2) ? (strlen(WIFI3_SSID) > 0) :
-        (index == 3) ? (strlen(WIFI4_SSID) > 0) :
-        (index == 4) ? (strlen(WIFI5_SSID) > 0) : false
-    );
-}
-
-constexpr bool hasIp(size_t index) {
-    return (
-        (index == 0) ? (strlen(WIFI1_IP) > 0) :
-        (index == 1) ? (strlen(WIFI2_IP) > 0) :
-        (index == 2) ? (strlen(WIFI3_IP) > 0) :
-        (index == 3) ? (strlen(WIFI4_IP) > 0) :
-        (index == 4) ? (strlen(WIFI5_IP) > 0) : false
-    );
 }
 
 const __FlashStringHelper* ssid(size_t index) {
@@ -586,8 +566,12 @@ void migrate(int version) {
     }
 }
 
-decltype(millis()) garpInterval() {
-    return getSetting("wifiGarpIntvl", secureRandom(wifi::build::garpIntervalMin(), wifi::build::garpIntervalMax()));
+espurna::duration::Milliseconds garpInterval() {
+    static const auto defaultInterval = espurna::duration::Milliseconds(
+        secureRandom(wifi::build::garpIntervalMin().count(),
+            wifi::build::garpIntervalMax().count()));
+
+    return getSetting("wifiGarpIntvl", defaultInterval);
 }
 
 float txPower() {
@@ -976,10 +960,10 @@ using Networks = std::list<Network>;
 
 namespace sta {
 
-constexpr auto ConnectionInterval = build::staConnectionInterval();
-constexpr auto ConnectionRetries = build::staConnectionRetries();
-constexpr auto RecoveryInterval = ConnectionInterval * ConnectionRetries;
-constexpr auto ReconnectionInterval = build::staReconnectionInterval();
+static constexpr auto ConnectionInterval = build::staConnectionInterval();
+static constexpr auto ConnectionRetries = build::staConnectionRetries();
+static constexpr auto RecoveryInterval = ConnectionInterval * ConnectionRetries;
+static constexpr auto ReconnectionInterval = build::staReconnectionInterval();
 
 uint8_t channel() {
     return wifi_get_channel();
@@ -1061,8 +1045,8 @@ void stop() {
     internal::timer.detach();
 }
 
-void start(decltype(millis()) ms) {
-    internal::timer.attach_ms(ms, []() {
+void start(espurna::duration::Milliseconds next) {
+    internal::timer.attach_ms(next.count(), []() {
         internal::wait = false;
     });
 }
@@ -1454,17 +1438,17 @@ bool start(String&& hostname) {
     return false;
 }
 
-void schedule(unsigned long ms, internal::ActionPtr ptr) {
-    internal::timer.once_ms(ms, ptr);
-    DEBUG_MSG_P(PSTR("[WIFI] Next connection attempt in %u ms\n"), ms);
+void schedule(espurna::duration::Milliseconds next, internal::ActionPtr ptr) {
+    internal::timer.once_ms(next.count(), ptr);
+    DEBUG_MSG_P(PSTR("[WIFI] Next connection attempt in %u (ms)\n"), next.count());
 }
 
 void schedule_next() {
     schedule(wifi::sta::ConnectionInterval, internal::action_next);
 }
 
-void schedule_new(unsigned long ms) {
-    schedule(ms, internal::action_new);
+void schedule_new(espurna::duration::Milliseconds next) {
+    schedule(next, internal::action_new);
 }
 
 void schedule_new() {
@@ -1589,8 +1573,8 @@ namespace scan {
 namespace periodic {
 namespace internal {
 
-constexpr int8_t Checks { wifi::build::scanRssiChecks() };
-constexpr decltype(millis()) CheckInterval { wifi::build::scanRssiCheckInterval() };
+static constexpr auto CheckInterval = wifi::build::scanRssiCheckInterval();
+static constexpr auto Checks = wifi::build::scanRssiChecks();
 
 int8_t threshold { wifi::build::scanRssiThreshold() };
 int8_t counter { Checks };
@@ -1618,7 +1602,7 @@ void task() {
 
 void start() {
     counter = Checks;
-    timer.attach_ms(CheckInterval, task);
+    timer.attach_ms(CheckInterval.count(), task);
 }
 
 void stop() {
@@ -1722,8 +1706,8 @@ static constexpr size_t SsidMax { sizeof(softap_config::ssid) };
 static constexpr size_t PassphraseMin { 8u };
 static constexpr size_t PassphraseMax { sizeof(softap_config::password) };
 
+static constexpr int Hidden { 0 };
 static constexpr uint8_t ConnectionsMax { 4u };
-static constexpr uint16_t BeaconInterval { 100u };
 
 namespace internal {
 
@@ -1748,7 +1732,9 @@ void start(String&& defaultSsid, String&& ssid, String&& passphrase, uint8_t cha
          && (passphrase.length() < PassphraseMax))
         ? passphrase.c_str() : nullptr };
 
-    WiFi.softAP(apSsid, apPass, channel);
+    // TODO: when using `softap_config`, can also tweak the beacon intvl
+    // static constexpr uint16_t BeaconInterval { 100u };
+    WiFi.softAP(apSsid, apPass, channel, Hidden, ConnectionsMax);
 }
 
 } // namespace internal
@@ -1838,8 +1824,8 @@ size_t stations() {
 namespace fallback {
 namespace internal {
 
+auto timeout = wifi::build::softApFallbackTimeout();
 bool enabled { false };
-decltype(millis()) timeout { wifi::build::softApFallbackTimeout() };
 Ticker timer;
 
 } // namespace internal
@@ -1863,7 +1849,7 @@ void remove() {
 void check();
 
 void schedule() {
-    internal::timer.once_ms(internal::timeout, check);
+    internal::timer.once_ms(internal::timeout.count(), check);
 }
 
 void check() {
@@ -1888,8 +1874,24 @@ void check() {
 
 namespace settings {
 
+size_t countNetworks() {
+    size_t networks { 0 };
+
+    for (size_t id = 0; id < wifi::build::NetworksMax; ++id) {
+        auto ssid = wifi::settings::staSsid(id);
+        if (!ssid.length()) {
+            break;
+        }
+
+        ++networks;
+    }
+
+    return networks;
+}
+
 wifi::Networks networks() {
     wifi::Networks out;
+
     for (size_t id = 0; id < wifi::build::NetworksMax; ++id) {
         auto ssid = wifi::settings::staSsid(id);
         if (!ssid.length()) {
@@ -1941,7 +1943,7 @@ void configure() {
 
 #if WIFI_GRATUITOUS_ARP_SUPPORT
     auto interval = wifi::settings::garpInterval();
-    if (interval) {
+    if (interval.count()) {
         wifi::sta::garp::start(interval);
     } else {
         wifi::sta::garp::stop();
@@ -2119,41 +2121,33 @@ void onConnected(JsonObject& root) {
     root["wifiApSsid"] = wifi::settings::softApSsid();
     root["wifiApPass"] = wifi::settings::softApPassphrase();
 
-    JsonObject& wifi = root.createNestedObject("wifiConfig");
-    wifi["max"] = wifi::build::NetworksMax;
+    ::web::ws::EnumerableConfig config{root, F("wifiConfig")};
 
-    {
-        static const char* const schema_keys[] PROGMEM = {
-            "ssid",
-            "pass",
-            "ip",
-            "gw",
-            "mask",
-            "dns"
-        };
+    // TODO: notice that with the current model, *deleting* from settings or webui
+    //       will restore factory defaults and on the next reload if the index was not replaced
+    config(F("networks"), wifi::settings::countNetworks(), {
+        {F("ssid"), [](JsonArray& out, size_t index) {
+            out.add(wifi::settings::staSsid(index));
+        }},
+        {F("pass"), [](JsonArray& out, size_t index) {
+            out.add(wifi::settings::staPassphrase(index));
+        }},
+        {F("ip"), [](JsonArray& out, size_t index) {
+            out.add(::settings::internal::serialize(wifi::settings::staIp(index)));
+        }},
+        {F("gw"), [](JsonArray& out, size_t index) {
+            out.add(::settings::internal::serialize(wifi::settings::staGateway(index)));
+        }},
+        {F("mask"), [](JsonArray& out, size_t index) {
+            out.add(::settings::internal::serialize(wifi::settings::staMask(index)));
+        }},
+        {F("dns"), [](JsonArray& out, size_t index) {
+            out.add(::settings::internal::serialize(wifi::settings::staDns(index)));
+        }},
+    });
 
-        JsonArray& schema = wifi.createNestedArray("schema");
-        schema.copyFrom(schema_keys, sizeof(schema_keys) / sizeof(*schema_keys));
-    }
-
-    JsonArray& networks = wifi.createNestedArray("networks");
-
-    // TODO: send build flags as 'original' replacements?
-    //       with the current model, removing network from the UI is
-    //       equivalent to the factory reset and will silently use the build default
-    auto entries = wifi::settings::networks();
-    for (auto& entry : entries) {
-        JsonArray& network = networks.createNestedArray();
-
-        network.add(entry.ssid());
-        network.add(entry.passphrase());
-
-        auto& ipsettings = entry.ipSettings();
-        network.add(::settings::internal::serialize(ipsettings.ip()));
-        network.add(::settings::internal::serialize(ipsettings.gateway()));
-        network.add(::settings::internal::serialize(ipsettings.netmask()));
-        network.add(::settings::internal::serialize(ipsettings.dns()));
-    }
+    auto& container = config.root();
+    container[F("max")] = wifi::build::NetworksMax;
 }
 
 void onScan(uint32_t client_id) {
