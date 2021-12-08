@@ -105,24 +105,24 @@ constexpr bool transition() {
     return 1 == LIGHT_USE_TRANSITIONS;
 }
 
-constexpr unsigned long transitionTime() {
-    return LIGHT_TRANSITION_TIME;
+constexpr espurna::duration::Milliseconds transitionTime() {
+    return espurna::duration::Milliseconds(LIGHT_TRANSITION_TIME);
 }
 
-constexpr unsigned long transitionStep() {
-    return LIGHT_TRANSITION_STEP;
+constexpr espurna::duration::Milliseconds transitionStep() {
+    return espurna::duration::Milliseconds(LIGHT_TRANSITION_STEP);
 }
 
 constexpr bool save() {
     return 1 == LIGHT_SAVE_ENABLED;
 }
 
-constexpr unsigned long saveDelay() {
-    return LIGHT_SAVE_DELAY;
+constexpr espurna::duration::Milliseconds saveDelay() {
+    return espurna::duration::Milliseconds(LIGHT_SAVE_DELAY);
 }
 
-constexpr unsigned long reportDelay() {
-    return LIGHT_REPORT_DELAY;
+constexpr espurna::duration::Milliseconds reportDelay() {
+    return espurna::duration::Milliseconds(LIGHT_REPORT_DELAY);
 }
 
 constexpr unsigned char enablePin() {
@@ -339,27 +339,27 @@ void transition(bool value) {
     setSetting("useTransitions", value);
 }
 
-unsigned long transitionTime() {
+espurna::duration::Milliseconds transitionTime() {
     return getSetting("ltTime", build::transitionTime());
 }
 
-void transitionTime(unsigned long value) {
-    setSetting("ltTime", value);
+void transitionTime(espurna::duration::Milliseconds value) {
+    setSetting("ltTime", value.count());
 }
 
-unsigned long transitionStep() {
+espurna::duration::Milliseconds transitionStep() {
     return getSetting("ltStep", build::transitionStep());
 }
 
-void transitionStep(unsigned long value) {
-    setSetting("ltStep", value);
+void transitionStep(espurna::duration::Milliseconds value) {
+    setSetting("ltStep", value.count());
 }
 
 bool save() {
     return getSetting("ltSave", build::save());
 }
 
-unsigned long saveDelay() {
+espurna::duration::Milliseconds saveDelay() {
     return getSetting("ltSaveDelay", build::saveDelay());
 }
 
@@ -628,11 +628,11 @@ void _lightUpdateMapping(T& channels) {
     }
 }
 
+auto _light_save_delay = Light::build::saveDelay();
 bool _light_save { Light::build::save() };
-unsigned long _light_save_delay { Light::build::saveDelay() };
 Ticker _light_save_ticker;
 
-unsigned long _light_report_delay { Light::build::reportDelay() };
+auto _light_report_delay = Light::build::reportDelay();
 Ticker _light_report_ticker;
 std::forward_list<LightReportListener> _light_report;
 
@@ -1471,7 +1471,7 @@ class LightTransitionHandler {
 public:
     // internal calculations are done in floats, so hard-limit target & step time to a certain value
     // that can be representend precisely when casting milliseconds times back and forth
-    static constexpr unsigned long TimeMax { 1ul << 24ul };
+    static constexpr espurna::duration::Milliseconds TimeMax { 1ul << 24ul };
 
     struct Transition {
         float& value;
@@ -1529,8 +1529,9 @@ public:
     }
 
     void reset() {
-        _step = 10;
-        _time = 10;
+        static constexpr espurna::duration::Milliseconds DefaultTime { 10 };
+        _step = DefaultTime;
+        _time = DefaultTime;
     }
 
     template <typename StateFunc, typename ValueFunc, typename UpdateFunc>
@@ -1576,11 +1577,11 @@ public:
         return _state;
     }
 
-    unsigned long time() const {
+    espurna::duration::Milliseconds time() const {
         return _time;
     }
 
-    unsigned long step() const {
+    espurna::duration::Milliseconds step() const {
         return _step;
     }
 
@@ -1595,8 +1596,8 @@ private:
     }
 
     void pushGradual(float& current, long target, float diff) {
-        const float TotalTime { static_cast<float>(_time) };
-        const float StepTime { static_cast<float>(_step) };
+        const float TotalTime { static_cast<float>(_time.count()) };
+        const float StepTime { static_cast<float>(_step.count()) };
 
         constexpr float BaseStep { 1.0f };
         const float Diff { std::abs(diff) };
@@ -1612,21 +1613,26 @@ private:
     }
 
     bool isImmediate(float diff) const {
-        return (!_time || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
+        return (!_time.count() || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
     }
 
     Transitions _transitions;
     bool _state_notified { false };
 
     bool _state;
-    unsigned long _time;
-    unsigned long _step;
+    espurna::duration::Milliseconds _time;
+    espurna::duration::Milliseconds _step;
 };
 
+constexpr espurna::duration::Milliseconds LightTransitionHandler::TimeMax;
+
 struct LightUpdate {
-    bool save { false };
-    LightTransition transition { 0, 0 };
+    LightTransition transition {
+        .time = espurna::duration::Milliseconds{0},
+        .step = espurna::duration::Milliseconds{0}
+    };
     int report { 0 };
+    bool save { false };
 };
 
 struct LightUpdateHandler {
@@ -1645,10 +1651,10 @@ struct LightUpdateHandler {
         return _run;
     }
 
-    void set(bool save, LightTransition transition, int report) {
-        _update.save = save;
+    void set(LightTransition transition, int report, bool save) {
         _update.transition = transition;
         _update.report = report;
+        _update.save = save;
         _run = true;
     }
 
@@ -1673,14 +1679,14 @@ private:
 LightUpdateHandler _light_update;
 bool _light_provider_update = false;
 
+Ticker _light_transition_ticker;
 std::unique_ptr<LightTransitionHandler> _light_transition;
 
-Ticker _light_transition_ticker;
+auto _light_transition_time = Light::build::transitionTime();
+auto _light_transition_step = Light::build::transitionStep();
 bool _light_use_transitions = false;
-unsigned long _light_transition_time { Light::build::transitionTime() };
-unsigned long _light_transition_step { Light::build::transitionStep() };
 
-void _lightProviderSchedule(unsigned long ms);
+void _lightProviderSchedule(espurna::duration::Milliseconds);
 
 #if (LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX)
 
@@ -1768,8 +1774,8 @@ void _lightProviderUpdate() {
     _light_provider_update = false;
 }
 
-void _lightProviderSchedule(unsigned long ms) {
-    _light_transition_ticker.once_ms(ms, []() {
+void _lightProviderSchedule(espurna::duration::Milliseconds next) {
+    _light_transition_ticker.once_ms(next.count(), []() {
         _light_provider_update = true;
     });
 }
@@ -1969,7 +1975,7 @@ int _lightMqttReportGroupMask() {
 }
 
 void _lightUpdateFromMqtt(LightTransition transition) {
-    lightUpdate(_light_save, transition, _lightMqttReportMask());
+    lightUpdate(transition, _lightMqttReportMask(), _light_save);
 }
 
 void _lightUpdateFromMqtt() {
@@ -1977,7 +1983,7 @@ void _lightUpdateFromMqtt() {
 }
 
 void _lightUpdateFromMqttGroup() {
-    lightUpdate(_light_save, lightTransition(), _lightMqttReportGroupMask());
+    lightUpdate(lightTransition(), _lightMqttReportGroupMask(), _light_save);
 }
 
 #if MQTT_SUPPORT
@@ -2067,7 +2073,15 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
 
         // Transition setting
         if (t.equals(MQTT_TOPIC_TRANSITION)) {
-            lightTransition(strtoul(payload, nullptr, 10), _light_transition_step);
+            char* endp { nullptr };
+            auto result = strtoul(payload, &endp, 10);
+            if (!endp || (endp == payload)) {
+                return;
+            }
+
+            lightTransition(
+                espurna::duration::Milliseconds(result),
+                _light_transition_step);
             return;
         }
 
@@ -2224,12 +2238,24 @@ void _lightApiSetup() {
 
     apiRegister(F(MQTT_TOPIC_TRANSITION),
         [](ApiRequest& request) {
-            request.send(String(lightTransitionTime()));
+            request.send(String(lightTransitionTime().count()));
             return true;
         },
         [](ApiRequest& request) {
             auto value = request.param(F("value"));
-            lightTransition(strtoul(value.c_str(), nullptr, 10), _light_transition_step);
+
+            const char* p { value.c_str() };
+            char* endp { nullptr };
+
+            auto result = strtoul(p, &endp, 10);
+            if (!endp || (endp == p)) {
+                return false;
+            }
+
+            lightTransition(
+                espurna::duration::Milliseconds(result),
+                _light_transition_step);
+
             return true;
         }
     );
@@ -2329,9 +2355,9 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["useTransitions"] = _light_use_transitions;
     root["useRGB"] = _light_use_rgb;
     root["ltSave"] = _light_save;
-    root["ltSaveDelay"] = _light_save_delay;
-    root["ltTime"] = _light_transition_time;
-    root["ltStep"] = _light_transition_step;
+    root["ltSaveDelay"] = _light_save_delay.count();
+    root["ltTime"] = _light_transition_time.count();
+    root["ltStep"] = _light_transition_step.count();
 #if RELAY_SUPPORT
     root["ltRelay"] = Light::settings::relay();
 #endif
@@ -2613,8 +2639,9 @@ void _lightReport(int report) {
 void _lightUpdateDebug(const LightTransitionHandler& handler) {
     const auto Time = handler.time();
     const auto Step = handler.step();
-    if (Time - Step) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"), Time, Step);
+    if (Time.count() - Step.count()) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Scheduled transition for %u (ms) every %u (ms)\n"),
+                Time.count(), Step.count());
     }
 
     for (auto& transition : handler.transitions()) {
@@ -2680,21 +2707,25 @@ void _lightUpdate() {
 
         // Send current state to all available 'report' targets
         // (make sure to delay the report, in case lightUpdate is called repeatedly)
-        _light_report_ticker.once_ms(_light_report_delay, [report]() {
-            _lightReport(report);
-        });
+        _light_report_ticker.once_ms(
+            _light_report_delay.count(),
+            [report]() {
+                _lightReport(report);
+            });
 
         // Always save to RTCMEM, optionally preserve the state in the settings storage
         _lightSaveRtcmem();
         if (save) {
-            _light_save_ticker.once_ms(_light_save_delay, _lightSaveSettings);
+            _light_save_ticker.once_ms(
+                _light_save_delay.count(),
+                _lightSaveSettings);
         }
     });
 }
 
 } // namespace
 
-void lightUpdate(bool save, LightTransition transition, int report) {
+void lightUpdate(LightTransition transition, int report, bool save) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
     if (!_light_provider) {
         return;
@@ -2705,19 +2736,19 @@ void lightUpdate(bool save, LightTransition transition, int report) {
         return;
     }
 
-    _light_update.set(save, transition, report);
+    _light_update.set(transition, report, save);
 }
 
-void lightUpdate(bool save, LightTransition transition, Light::Report report) {
-    lightUpdate(save, transition, static_cast<int>(report));
+void lightUpdate(LightTransition transition, Light::Report report, bool save) {
+    lightUpdate(transition, static_cast<int>(report), save);
 }
 
 void lightUpdate(LightTransition transition) {
-    lightUpdate(_light_save, transition, Light::DefaultReport);
+    lightUpdate(transition, Light::DefaultReport, _light_save);
 }
 
 void lightUpdate(bool save) {
-    lightUpdate(save, lightTransition(), Light::DefaultReport);
+    lightUpdate(lightTransition(), Light::DefaultReport, save);
 }
 
 void lightUpdate() {
@@ -2876,22 +2907,26 @@ void lightBrightnessStep(long steps) {
     lightBrightnessStep(steps, Light::ValueStep);
 }
 
-unsigned long lightTransitionTime() {
-    return _light_use_transitions ? _light_transition_time : 0;
+espurna::duration::Milliseconds lightTransitionTime() {
+    return _light_use_transitions
+        ? _light_transition_time
+        : espurna::duration::Milliseconds(0);
 }
 
-unsigned long lightTransitionStep() {
-    return _light_use_transitions ? _light_transition_step : 0;
+espurna::duration::Milliseconds lightTransitionStep() {
+    return _light_use_transitions
+        ? _light_transition_step
+        : espurna::duration::Milliseconds(0);
 }
 
 LightTransition lightTransition() {
     return {lightTransitionTime(), lightTransitionStep()};
 }
 
-void lightTransition(unsigned long time, unsigned long step) {
+void lightTransition(espurna::duration::Milliseconds time, espurna::duration::Milliseconds step) {
     bool save { false };
 
-    _light_use_transitions = (time && step);
+    _light_use_transitions = (time.count() > 0) && (step.count() > 0);
     if (_light_use_transitions) {
         save = true;
         _light_transition_time = time;

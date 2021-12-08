@@ -179,18 +179,18 @@ public:
 };
 
 struct LightTransition {
-    unsigned long time;
-    unsigned long step;
+    espurna::duration::Milliseconds time;
+    espurna::duration::Milliseconds step;
 };
 
 size_t lightChannels();
 
 LightTransition lightTransition();
 
-unsigned long lightTransitionTime();
-unsigned long lightTransitionStep();
+espurna::duration::Milliseconds lightTransitionTime();
+espurna::duration::Milliseconds lightTransitionStep();
 
-void lightTransition(unsigned long time, unsigned long step);
+void lightTransition(espurna::duration::Milliseconds time, espurna::duration::Milliseconds step);
 void lightTransition(LightTransition transition);
 
 void lightColor(const char* color, bool rgb);
@@ -251,8 +251,8 @@ void lightBrightnessStep(long steps, long multiplier);
 void lightChannelStep(size_t id, long steps);
 void lightChannelStep(size_t id, long steps, long multiplier);
 
-void lightUpdate(bool save, LightTransition transition, Light::Report report);
-void lightUpdate(bool save, LightTransition transition, int report);
+void lightUpdate(LightTransition transition, Light::Report report, bool save);
+void lightUpdate(LightTransition transition, int report, bool save);
 void lightUpdate(LightTransition transition);
 void lightUpdate(bool save);
 void lightUpdate();

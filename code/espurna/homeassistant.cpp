@@ -574,11 +574,14 @@ void receiveLightJson(char* payload) {
         return;
     }
 
-    unsigned long transition { lightTransitionTime() };
+    auto transition = lightTransitionTime();
     if (root.containsKey("transition")) {
-        auto seconds = root["transition"].as<float>();
-        if (seconds > 0) {
-            transition = static_cast<unsigned long>(seconds * 1000.0);
+        using LocalUnit = decltype(lightTransitionTime());
+        using RemoteUnit = std::chrono::duration<float>;
+        auto seconds = RemoteUnit(root["transition"].as<float>());
+
+        if (seconds.count() > 0.0f) {
+            transition = std::chrono::duration_cast<LocalUnit>(seconds);
         }
     }
 
@@ -721,9 +724,9 @@ public:
     using Entity = std::unique_ptr<Discovery>;
     using Entities = std::forward_list<Entity>;
 
+    static constexpr espurna::duration::Milliseconds WaitShort { 100 };
+    static constexpr espurna::duration::Milliseconds WaitLong { 1000 };
     static constexpr int Retries { 5 };
-    static constexpr unsigned long WaitShortMs { 100ul };
-    static constexpr unsigned long WaitLongMs { 1000ul };
 
     DiscoveryTask(bool enabled) :
         _enabled(enabled)
@@ -801,6 +804,9 @@ private:
     Entities _entities;
 };
 
+constexpr espurna::duration::Milliseconds DiscoveryTask::WaitShort;
+constexpr espurna::duration::Milliseconds DiscoveryTask::WaitLong;
+
 namespace internal {
 
 using TaskPtr = std::shared_ptr<DiscoveryTask>;
@@ -831,18 +837,20 @@ void stop(bool done) {
     }
 }
 
-void schedule(unsigned long wait, TaskPtr ptr, FlagPtr flag_ptr) {
-    internal::timer.once_ms_scheduled(wait, [ptr, flag_ptr]() {
-        send(ptr, flag_ptr);
-    });
+void schedule(espurna::duration::Milliseconds wait, TaskPtr ptr, FlagPtr flag_ptr) {
+    internal::timer.once_ms_scheduled(
+        wait.count(),
+        [ptr, flag_ptr]() {
+            send(ptr, flag_ptr);
+        });
 }
 
 void schedule(TaskPtr ptr, FlagPtr flag_ptr) {
-    schedule(DiscoveryTask::WaitShortMs, ptr, flag_ptr);
+    schedule(DiscoveryTask::WaitShort, ptr, flag_ptr);
 }
 
 void schedule(TaskPtr ptr) {
-    schedule(DiscoveryTask::WaitShortMs, ptr, std::make_shared<bool>(true));
+    schedule(DiscoveryTask::WaitShort, ptr, std::make_shared<bool>(true));
 }
 
 void send(TaskPtr ptr, FlagPtr flag_ptr) {
@@ -884,8 +892,8 @@ void send(TaskPtr ptr, FlagPtr flag_ptr) {
 #endif
 
     auto wait = res
-        ? DiscoveryTask::WaitShortMs
-        : DiscoveryTask::WaitLongMs;
+        ? DiscoveryTask::WaitShort
+        : DiscoveryTask::WaitLong;
 
     if (res || task.retry()) {
         schedule(wait, ptr, flag_ptr);
