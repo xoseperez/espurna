@@ -19,14 +19,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncWebServer.h>
 
 struct AsyncWebPrintConfig {
+    struct Backlog {
+        size_t count;
+        size_t size;
+        espurna::duration::Seconds timeout;
+    };
+
     const char* const mimeType;
-    size_t backlogCountMax;
-    size_t backlogSizeMax;
-    decltype(millis()) backlogTimeout;
+    Backlog backlog;
 };
 
-struct AsyncWebPrint : public Print {
-
+class AsyncWebPrint : public Print {
+public:
     enum class State {
         None,
         Sending,
@@ -35,12 +39,13 @@ struct AsyncWebPrint : public Print {
     };
 
     using BufferType = std::vector<uint8_t>;
+    using TimeSource = espurna::time::CoreClock;
 
     // To be able to safely output data right from the request callback,
     // we schedule a 'printer' task that will print into the request response buffer via AsyncChunkedResponse
     // Note: implementation must be included in the header
     template<typename CallbackType>
-    static void scheduleFromRequest(const AsyncWebPrintConfig& config, AsyncWebServerRequest*, CallbackType);
+    static void scheduleFromRequest(AsyncWebPrintConfig config, AsyncWebServerRequest*, CallbackType);
 
     template<typename CallbackType>
     static void scheduleFromRequest(AsyncWebServerRequest*, CallbackType);
@@ -58,23 +63,18 @@ struct AsyncWebPrint : public Print {
     size_t write(uint8_t) final override;
     size_t write(const uint8_t *buffer, size_t size) final override;
 
-    const char* const mimeType;
-    const size_t backlogCountMax;
-    const size_t backlogSizeMax;
-    const decltype(millis()) backlogTimeout;
-
-    protected:
+protected:
+    AsyncWebPrintConfig _config;
 
     std::list<BufferType> _buffers;
     AsyncWebServerRequest* const _request;
     State _state;
 
-    AsyncWebPrint(const AsyncWebPrintConfig&, AsyncWebServerRequest* req);
+    AsyncWebPrint(AsyncWebPrintConfig, AsyncWebServerRequest* req);
 
     bool _addBuffer();
     bool _exhaustBuffers();
     void _prepareRequest();
-
 };
 
 using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t* data, size_t len, size_t index, size_t total)>;

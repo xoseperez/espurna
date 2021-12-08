@@ -153,7 +153,7 @@ BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio) {
     BasePinPtr result;
 
     if (gpioLock(base, gpio)) {
-        result = std::move(base.pin(gpio));
+        result = base.pin(gpio);
     }
 
     return result;

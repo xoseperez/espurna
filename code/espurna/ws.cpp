@@ -75,7 +75,7 @@ void EnumerableConfig::operator()(const __FlashStringHelper* name, Iota iota, Ch
     }
 }
 
-const char EnumerableConfig::SchemaKey[] PROGMEM = "schema";
+alignas(4) const char EnumerableConfig::SchemaKey[] PROGMEM = "schema";
 static_assert(alignof(EnumerableConfig::SchemaKey) == 4, "");
 
 } // namespace ws

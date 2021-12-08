@@ -123,27 +123,23 @@ inline String serialize(uint16_t value, int base = 10) {
 String serialize(uint32_t value, int base = 10);
 
 inline String serialize(unsigned long value, int base = 10) {
-    static_assert(sizeof(unsigned long) == sizeof(uint32_t), "");
-    static_assert(sizeof(unsigned int) == sizeof(unsigned long), "");
-    return serialize(static_cast<unsigned int>(value), base);
+    return serialize(static_cast<uint32_t>(value), base);
 }
 
 inline String serialize(int16_t value, int base = 10) {
     return String(value, base);
 }
 
+inline String serialize(int32_t value, int base = 10) {
+    return String(value, base);
+}
+
 inline String serialize(int8_t value, int base = 10) {
-    return serialize(static_cast<int16_t>(value), base);
+    return serialize(static_cast<int32_t>(value), base);
 }
 
 inline String serialize(long value, int base = 10) {
     return String(value, base);
-}
-
-inline String serialize(int value, int base = 10) {
-    static_assert(sizeof(long) == sizeof(int32_t), "");
-    static_assert(sizeof(int) == sizeof(long), "");
-    return serialize(static_cast<long>(value), base);
 }
 
 inline String serialize(float value) {
@@ -179,9 +175,6 @@ void moveSetting(const String& from, const String& to, size_t index);
 void moveSettings(const String& from, const String& to);
 
 template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
-T getSetting(const SettingsKey& key, T defaultValue) __attribute__((noinline));
-
-template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
 T getSetting(const SettingsKey& key, T defaultValue) {
     auto result = settings::internal::get(key.value());
     if (result) {
@@ -208,7 +201,7 @@ bool setSetting(const SettingsKey& key, T&& value) {
 
 template<typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
 bool setSetting(const SettingsKey& key, T value) {
-    return setSetting(key, std::move(String(value)));
+    return setSetting(key, String(value));
 }
 
 bool delSetting(const char* key);

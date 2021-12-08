@@ -349,11 +349,11 @@ String getSetting(const SettingsKey& key) {
 }
 
 String getSetting(const SettingsKey& key, const char* defaultValue) {
-    return getSetting(key, std::move(String(defaultValue)));
+    return getSetting(key, String(defaultValue));
 }
 
 String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValue) {
-    return getSetting(key, std::move(String(defaultValue)));
+    return getSetting(key, String(defaultValue));
 }
 
 String getSetting(const SettingsKey& key, const String& defaultValue) {
@@ -506,7 +506,7 @@ void _settingsInitCommands() {
     terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
         auto keys = settingsKeys();
 
-        ctx.output.printf_P(PSTR("Current settings:"));
+        ctx.output.print(F("Current settings:"));
 
         String value;
         for (unsigned int i=0; i<keys.size(); i++) {

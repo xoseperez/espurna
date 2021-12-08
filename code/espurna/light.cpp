@@ -2408,7 +2408,7 @@ void _lightInitCommands() {
         }
 
         auto description = [&](size_t channel) {
-            ctx.output.printf("#%u (%s) input:%ld value:%ld target:%ld current:%s\n",
+            ctx.output.printf_P(PSTR("#%zu (%s) input:%ld value:%ld target:%ld current:%s\n"),
                     channel, _lightDesc(Channels, channel),
                     _light_channels[channel].inputValue,
                     _light_channels[channel].value,

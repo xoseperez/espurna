@@ -26,7 +26,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "libs/StreamAdapter.h"
 #include "libs/PrintString.h"
 
-#include "web_asyncwebprint_impl.h"
+#include "web_asyncwebprint.ipp"
 
 #include <algorithm>
 #include <utility>

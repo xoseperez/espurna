@@ -1144,7 +1144,7 @@ BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
             break;
         }
 
-        result = std::move(base->pin(pin));
+        result = base->pin(pin);
 #endif
         break;
     }

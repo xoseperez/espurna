@@ -28,7 +28,7 @@ using is_print_callable = is_detected<print_callable_t, T>;
 }
 
 template<typename CallbackType>
-void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintConfig& config, AsyncWebServerRequest* request, CallbackType callback) {
+void AsyncWebPrint::scheduleFromRequest(AsyncWebPrintConfig config, AsyncWebServerRequest* request, CallbackType callback) {
     static_assert(asyncwebprint::traits::is_print_callable<CallbackType>::value, "CallbackType needs to be a callable with void(Print&)");
 
     // because of async nature of the server, we need to make sure we outlive 'request' object
@@ -55,11 +55,13 @@ void AsyncWebPrint::scheduleFromRequest(const AsyncWebPrintConfig& config, Async
     });
 }
 
-constexpr AsyncWebPrintConfig AsyncWebPrintDefaults {
-    /*mimeType       =*/ "text/plain",
-    /*backlogCountMax=*/ 2,
-    /*backlogSizeMax= */ TCP_MSS,
-    /*backlogTimeout= */ 5000
+static constexpr AsyncWebPrintConfig AsyncWebPrintDefaults {
+    .mimeType = "text/plain",
+    .backlog = {
+        .count = 2,
+        .size = TCP_MSS,
+        .timeout = espurna::duration::Seconds(5)
+    }
 };
 
 template<typename CallbackType>

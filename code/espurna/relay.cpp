@@ -712,8 +712,7 @@ void relayOnStatusChange(RelayStatusCallback callback) {
 namespace {
 
 struct GpioProvider : public RelayProviderBase {
-    GpioProvider(size_t id, RelayType type, std::unique_ptr<BasePin>&& pin, std::unique_ptr<BasePin>&& reset_pin) :
-        _id(id),
+    GpioProvider(RelayType type, std::unique_ptr<BasePin>&& pin, std::unique_ptr<BasePin>&& reset_pin) :
         _type(type),
         _pin(std::move(pin)),
         _reset_pin(std::move(reset_pin))
@@ -772,7 +771,6 @@ struct GpioProvider : public RelayProviderBase {
     }
 
 private:
-    size_t _id { RelaysMax };
     RelayType _type { RelayType::Normal };
     std::unique_ptr<BasePin> _pin;
     std::unique_ptr<BasePin> _reset_pin;
@@ -1914,7 +1912,7 @@ void _relayMqttSubscribeCustomTopics() {
 
         if (key.startsWith(SubPrefix)) {
             if (_relayTryParseId(key.c_str() + strlen(SubPrefix), id)) {
-                topics[id] = std::move(kv.value.read());
+                topics[id] = kv.value.read();
             }
         } else if (key.startsWith(ModePrefix)) {
             if (_relayTryParseId(key.c_str() + strlen(ModePrefix), id)) {
@@ -2351,7 +2349,7 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
     if (main) {
         auto reset = gpioRegister(*cfg.base, cfg.reset);
         return std::make_unique<GpioProvider>(
-            index, type, std::move(main), std::move(reset));
+            type, std::move(main), std::move(reset));
     }
 
     return nullptr;
