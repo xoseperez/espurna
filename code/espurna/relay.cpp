@@ -47,6 +47,10 @@ constexpr int syncMode() {
     return RELAY_SYNC;
 }
 
+constexpr espurna::duration::Milliseconds latchingPulse() {
+    return espurna::duration::Milliseconds(RELAY_LATCHING_PULSE);
+}
+
 constexpr float floodWindow() {
     return RELAY_FLOOD_WINDOW;
 }
@@ -759,9 +763,11 @@ struct GpioProvider : public RelayProviderBase {
             } else {
                 _reset_pin->digitalWrite(pulse);
             }
-            nice_delay(RELAY_LATCHING_PULSE);
-            // TODO: note that we stall loop() execution
-            // need to ensure only relay task is active
+
+            // notice that this stalls loop() execution, since
+            // we need to ensure only relay task is active
+            espurna::time::blockingDelay(relay::build::latchingPulse());
+
             _pin->digitalWrite(!pulse);
             if (_reset_pin) {
                 _reset_pin->digitalWrite(!pulse);

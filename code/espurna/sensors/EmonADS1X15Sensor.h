@@ -165,7 +165,8 @@ public:
                 config(_channel, true, false);
                 config(_channel, false, false);
                 config(_channel, false, true);
-                nice_delay(10);
+                espurna::time::blockingDelay(
+                    espurna::duration::Milliseconds(10));
                 read();
             }
             config(_channel, true, true);

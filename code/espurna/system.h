@@ -129,6 +129,8 @@ struct CoreClock {
     }
 };
 
+// Simple 'proxies' for most common operations
+
 inline SystemClock::time_point micros() {
     return SystemClock::now();
 }
@@ -137,9 +139,18 @@ inline CoreClock::time_point millis() {
     return CoreClock::now();
 }
 
+// Attempt to sleep for N milliseconds, but this is allowed to be woken up at any point
+
 inline void delay(CoreClock::duration value) {
     ::delay(value.count());
 }
+
+// Local implementation of 'delay' that will make sure that we wait for the specified
+// time, even after being woken up. Allows to service Core tasks that are scheduled
+// in-between context switches, where the interval controls the minimum sleep time.
+
+void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval);
+void blockingDelay(CoreClock::duration timeout);
 
 } // namespace time
 

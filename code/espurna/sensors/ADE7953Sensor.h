@@ -300,8 +300,8 @@ private:
 
     void config(uint8_t address) {
         // Need at least 100mS to init ADE7953.
-        // TODO: add polling delay member instead of waiting right here?
-        nice_delay(100);
+        espurna::time::blockingDelay(
+            espurna::duration::Milliseconds(100));
 
         // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
         const Register Config { 0x102 };

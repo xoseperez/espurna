@@ -209,11 +209,6 @@ double roundTo(double num, unsigned char positions) {
     return round(num * multiplier) / multiplier;
 }
 
-void nice_delay(unsigned long ms) {
-    unsigned long start = millis();
-    while (millis() - start < ms) delay(1);
-}
-
 bool isNumber(const String& value) {
     if (value.length()) {
         const char* begin { value.c_str() };

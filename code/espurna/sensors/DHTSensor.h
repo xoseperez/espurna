@@ -188,12 +188,14 @@ class DHTSensor : public BaseSensor {
         	if (++_errors > DHT_MAX_ERRORS) {
                 _errors = 0;
                 digitalWrite(_gpio, HIGH);
-                nice_delay(250);
+                espurna::time::blockingDelay(
+                    espurna::duration::Milliseconds(250));
             }
             noInterrupts();
         	digitalWrite(_gpio, LOW);
             if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
-                nice_delay(20);
+                espurna::time::blockingDelay(
+                    espurna::duration::Milliseconds(20));
             } else if (_type == DHT_CHIP_SI7021) {
                 delayMicroseconds(500);
             } else {

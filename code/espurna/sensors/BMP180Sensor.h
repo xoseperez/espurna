@@ -107,7 +107,7 @@ class BMP180Sensor : public I2CSensor<> {
         void _init() {
 
             // Make sure sensor had enough time to turn on. BMP180 requires 2ms to start up
-            nice_delay(10);
+            espurna::time::blockingDelay(espurna::duration::Milliseconds(10));
 
             // I2C auto-discover
             _address = _begin_i2c(_address, sizeof(BMP180Sensor::addresses), BMP180Sensor::addresses);
@@ -167,7 +167,7 @@ class BMP180Sensor : public I2CSensor<> {
 
             // Read raw temperature
             i2c_write_uint8(_address, BMP180_REGISTER_CONTROL, BMP180_REGISTER_READTEMPCMD);
-            nice_delay(5);
+            espurna::time::blockingDelay(espurna::duration::Milliseconds(5));
             unsigned long t = i2c_read_uint16(_address, BMP180_REGISTER_TEMPDATA);
 
             // Compute B5 coeficient
@@ -178,7 +178,7 @@ class BMP180Sensor : public I2CSensor<> {
 
             // Read raw pressure
             i2c_write_uint8(_address, BMP180_REGISTER_CONTROL, BMP180_REGISTER_READPRESSURECMD + (_mode << 6));
-            nice_delay(26);
+            espurna::time::blockingDelay(espurna::duration::Milliseconds(26));
             unsigned long p1 = i2c_read_uint16(_address, BMP180_REGISTER_PRESSUREDATA);
             unsigned long p2 = i2c_read_uint8(_address, BMP180_REGISTER_PRESSUREDATA+2);
             long p = ((p1 << 8) + p2) >> (8 - _mode);

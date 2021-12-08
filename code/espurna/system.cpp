@@ -81,6 +81,21 @@ espurna::duration::Seconds convert(const String& value) {
 // -----------------------------------------------------------------------------
 
 namespace espurna {
+namespace time {
+
+void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
+    auto start = CoreClock::now();
+    while (CoreClock::now() - start < timeout) {
+        delay(interval);
+    }
+}
+
+void blockingDelay(CoreClock::duration timeout) {
+    blockingDelay(timeout, espurna::duration::Milliseconds(1));
+}
+
+} // namespace time
+
 namespace {
 namespace memory {
 

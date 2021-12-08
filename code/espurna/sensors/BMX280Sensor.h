@@ -161,7 +161,7 @@ class BMX280Sensor : public I2CSensor<> {
         void _init() {
 
             // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
-            nice_delay(10);
+            espurna::time::blockingDelay(espurna::duration::Milliseconds(10));
 
             // No chip ID by default
             _chip = 0;
@@ -244,7 +244,7 @@ class BMX280Sensor : public I2CSensor<> {
             _bmx280_calib.dig_H6 = (int8_t) i2c_read_uint8(_address, BMX280_REGISTER_DIG_H6);
         }
 
-        unsigned long _measurementTime() {
+        espurna::duration::Milliseconds _measurementTime() {
 
             // Measurement Time (as per BMX280 datasheet section 9.1)
             // T_max(ms) = 1.25
@@ -266,7 +266,7 @@ class BMX280Sensor : public I2CSensor<> {
                 t += (2.3 * BMX280_PRESSURE + 0.575);
             #endif
 
-            return round(t + 1); // round up
+            return espurna::duration::Milliseconds(std::lround(t + 1));
 
         }
 
@@ -278,7 +278,7 @@ class BMX280Sensor : public I2CSensor<> {
             value = (value & 0xFC) + 0x01;
             i2c_write_uint8(_address, BMX280_REGISTER_CONTROL, value);
 
-            nice_delay(_measurement_delay);
+            espurna::time::blockingDelay(_measurement_delay);
 
         }
 
@@ -372,8 +372,9 @@ class BMX280Sensor : public I2CSensor<> {
 
         // ---------------------------------------------------------------------
 
+        espurna::duration::Milliseconds _measurement_delay;
+
         unsigned char _chip;
-        unsigned long _measurement_delay;
         bool _run_init = false;
         double _temperature = 0;
         double _humidity = 0;

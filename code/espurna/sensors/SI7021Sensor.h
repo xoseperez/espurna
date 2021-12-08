@@ -144,7 +144,8 @@ class SI7021Sensor : public I2CSensor<> {
             // When not using clock stretching (*_NOHOLD commands) delay here
             // is needed to wait for the measurement.
             // According to datasheet the max. conversion time is ~22ms
-            nice_delay(50);
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds(50));
 
             // Clear the last to bits of LSB to 00.
             // According to datasheet LSB of RH is always xxxxxx10

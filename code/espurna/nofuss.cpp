@@ -155,7 +155,8 @@ void nofussSetup() {
             // Page reload will happen automatically, when WebUI will fail to receive the PING response.
             DEBUG_MSG_P(PSTR("[NoFUSS] Restarting...\n"));
             customResetReason(CustomResetReason::Ota);
-            nice_delay(100);
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds(100));
         }
 
         if (code == NOFUSS_END) {
