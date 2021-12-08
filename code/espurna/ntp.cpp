@@ -392,7 +392,7 @@ void _ntpTickSchedule(espurna::duration::Seconds offset) {
     static bool scheduled { false };
 
     // Never allow delays less than a second, or greater than a minute
-    // (ref. Non-OS 3.1.1 os_timer_arm, actual minimal value is 100ms)
+    // (ref. Non-OS 3.1.1 os_timer_arm, actual minimal value is 5ms)
     if (!scheduled) {
         scheduled = true;
         _ntp_tick.once_scheduled(

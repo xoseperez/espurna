@@ -66,6 +66,11 @@ espurna::heartbeat::Mode convert(const String& value) {
 }
 
 template <>
+std::chrono::duration<float> convert(const String& value) {
+    return std::chrono::duration<float>(convert<float>(value));
+}
+
+template <>
 espurna::duration::Milliseconds convert(const String& value) {
     return espurna::duration::Milliseconds(convert<espurna::duration::Milliseconds::rep>(value));
 }

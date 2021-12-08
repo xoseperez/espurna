@@ -33,10 +33,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 namespace relay {
 namespace {
+
+using FloodWindowDuration = std::chrono::duration<float>;
+using PulseDuration = std::chrono::duration<float>;
+
 namespace build {
 
-constexpr unsigned long saveDelay() {
-    return RELAY_SAVE_DELAY;
+constexpr espurna::duration::Milliseconds saveDelay() {
+    return espurna::duration::Milliseconds(RELAY_SAVE_DELAY);
 }
 
 constexpr size_t dummyCount() {
@@ -51,26 +55,26 @@ constexpr espurna::duration::Milliseconds latchingPulse() {
     return espurna::duration::Milliseconds(RELAY_LATCHING_PULSE);
 }
 
-constexpr float floodWindow() {
-    return RELAY_FLOOD_WINDOW;
+constexpr FloodWindowDuration floodWindow() {
+    return FloodWindowDuration(RELAY_FLOOD_WINDOW);
 }
 
-static_assert(floodWindow() >= 0.0f, "");
+static_assert(floodWindow().count() >= 0.0f, "");
 
-constexpr unsigned long floodWindowMs() {
-    return static_cast<unsigned long>(floodWindow() * 1000.0f);
+constexpr espurna::duration::Milliseconds floodWindowMs() {
+    return std::chrono::duration_cast<espurna::duration::Milliseconds>(floodWindow());
 }
 
 constexpr unsigned long floodChanges() {
     return RELAY_FLOOD_CHANGES;
 }
 
-constexpr unsigned long interlockDelay() {
-    return RELAY_DELAY_INTERLOCK;
+constexpr espurna::duration::Milliseconds interlockDelay() {
+    return espurna::duration::Milliseconds(RELAY_DELAY_INTERLOCK);
 }
 
-constexpr float pulseTime(size_t index) {
-    return (
+constexpr PulseDuration pulseTime(size_t index) {
+    return PulseDuration(
         (index == 0) ? RELAY1_PULSE_TIME :
         (index == 1) ? RELAY2_PULSE_TIME :
         (index == 2) ? RELAY3_PULSE_TIME :
@@ -82,14 +86,14 @@ constexpr float pulseTime(size_t index) {
     );
 }
 
-static_assert(pulseTime(0) >= 0.0f, "");
-static_assert(pulseTime(1) >= 0.0f, "");
-static_assert(pulseTime(2) >= 0.0f, "");
-static_assert(pulseTime(3) >= 0.0f, "");
-static_assert(pulseTime(4) >= 0.0f, "");
-static_assert(pulseTime(5) >= 0.0f, "");
-static_assert(pulseTime(6) >= 0.0f, "");
-static_assert(pulseTime(7) >= 0.0f, "");
+static_assert(pulseTime(0).count() >= 0.0f, "");
+static_assert(pulseTime(1).count() >= 0.0f, "");
+static_assert(pulseTime(2).count() >= 0.0f, "");
+static_assert(pulseTime(3).count() >= 0.0f, "");
+static_assert(pulseTime(4).count() >= 0.0f, "");
+static_assert(pulseTime(5).count() >= 0.0f, "");
+static_assert(pulseTime(6).count() >= 0.0f, "");
+static_assert(pulseTime(7).count() >= 0.0f, "");
 
 constexpr RelayPulse pulseMode(size_t index) {
     return (
@@ -104,8 +108,8 @@ constexpr RelayPulse pulseMode(size_t index) {
     );
 }
 
-constexpr unsigned long delayOn(size_t index) {
-    return (
+constexpr espurna::duration::Milliseconds delayOn(size_t index) {
+    return espurna::duration::Milliseconds(
         (index == 0) ? RELAY1_DELAY_ON :
         (index == 1) ? RELAY2_DELAY_ON :
         (index == 2) ? RELAY3_DELAY_ON :
@@ -117,8 +121,8 @@ constexpr unsigned long delayOn(size_t index) {
     );
 }
 
-constexpr unsigned long delayOff(size_t index) {
-    return (
+constexpr espurna::duration::Milliseconds delayOff(size_t index) {
+    return espurna::duration::Milliseconds(
         (index == 0) ? RELAY1_DELAY_OFF :
         (index == 1) ? RELAY2_DELAY_OFF :
         (index == 2) ? RELAY3_DELAY_OFF :
@@ -504,37 +508,37 @@ RelayPulse pulseMode(size_t index) {
     return getSetting({"relayPulse", index}, build::pulseMode(index));
 }
 
-// TODO: stronger type for time, time as ms, delays, etc.
+// TODO: clean-up duration & types, pulse should probably be an external entity
 
-float pulseTime(size_t index) {
+PulseDuration pulseTime(size_t index) {
     return getSetting({"relayTime", index}, build::pulseTime(index));
 }
 
-unsigned long pulseTimeMs(size_t index) {
-    return static_cast<unsigned long>(1000.0f * pulseTime(index));
+espurna::duration::Milliseconds pulseTimeMs(size_t index) {
+    return std::chrono::duration_cast<espurna::duration::Milliseconds>(pulseTime(index));
 }
 
-unsigned long delayOn(size_t index) {
+espurna::duration::Milliseconds delayOn(size_t index) {
     return getSetting({"relayDelayOn", index}, build::delayOn(index));
 }
 
-unsigned long delayOff(size_t index) {
+espurna::duration::Milliseconds delayOff(size_t index) {
     return getSetting({"relayDelayOff", index}, build::delayOff(index));
 }
 
-float floodWindow() {
+FloodWindowDuration floodWindow() {
     return getSetting("relayFloodTime", build::floodWindow());
 }
 
-unsigned long floodWindowMs() {
-    return 1000.0f * floodWindow();
+espurna::duration::Milliseconds floodWindowMs() {
+    return std::chrono::duration_cast<espurna::duration::Milliseconds>(floodWindow());
 }
 
 unsigned long floodChanges() {
     return getSetting("relayFloodChanges", build::floodChanges());
 }
 
-unsigned long interlockDelay() {
+espurna::duration::Milliseconds interlockDelay() {
     return getSetting("relayIlkDelay", build::interlockDelay());
 }
 
@@ -601,6 +605,10 @@ struct DummyProvider : public RelayProviderBase {
 
 class Relay {
 public:
+    using TimeSource = espurna::time::CoreClock;
+    using Delay = espurna::duration::Milliseconds;
+    using TimePoint = TimeSource::time_point;
+
     // Struct defaults to empty relay configuration, as we allow switches to exist without real GPIOs
     Relay() = default;
 
@@ -616,27 +624,27 @@ public:
     RelayProviderBase* provider { DummyProvider::sharedInstance() };
 
     // Timers
-    unsigned long delay_on { 0ul };                // Delay to turn relay ON
-    unsigned long delay_off { 0ul };               // Delay to turn relay OFF
+    Delay delay_on { 0ul };                 // Delay to turn relay ON
+    Delay delay_off { 0ul };                // Delay to turn relay OFF
 
-    RelayPulse pulse { RelayPulse::None };      // Sets up a timer for the opposite mode
-    unsigned long pulse_ms { 0ul };                // Pulse length in millis
-    Ticker* pulseTicker { nullptr };               // Holds the pulse back timer
+    RelayPulse pulse { RelayPulse::None };  // Sets up a timer for the opposite mode
+    Delay pulse_time { 0ul };               // Pulse length in millis
+    Ticker* pulseTicker { nullptr };        // Holds the pulse back timer
 
-    unsigned long fw_start { 0ul };                // Flood window start time
-    unsigned char fw_count { 0u };                 // Number of changes within the current flood window
+    TimePoint fw_start{};                   // Flood window start time
+    unsigned char fw_count { 0u };          // Number of changes within the current flood window
 
-    unsigned long change_start { 0ul };            // Time when relay was scheduled to change
-    unsigned long change_delay { 0ul };            // Delay until the next change
+    TimePoint change_start{};               // Time when relay was scheduled to change
+    Delay change_delay { 0ul };             // Delay until the next change
 
     // Status
-    bool current_status { false };                 // Holds the current (physical) status of the relay
-    bool target_status { false };                  // Holds the target status
-    RelayLock lock { RelayLock::None };        // Holds the value of target status that persists and cannot be changed from.
+    bool current_status { false };          // Holds the current (physical) status of the relay
+    bool target_status { false };           // Holds the target status
+    RelayLock lock { RelayLock::None };     // Holds the value of target status that persists and cannot be changed from.
 
     // MQTT
-    bool report { false };                         // Whether to report to own topic
-    bool group_report { false };                   // Whether to report to group topic
+    bool report { false };                  // Whether to report to own topic
+    bool group_report { false };            // Whether to report to group topic
 };
 
 namespace {
@@ -645,10 +653,10 @@ using Relays = std::vector<Relay>;
 Relays _relays;
 size_t _relayDummy { 0ul };
 
-unsigned long _relay_flood_window { relay::build::floodWindowMs() };
+espurna::duration::Milliseconds _relay_flood_window { relay::build::floodWindowMs() };
 unsigned long _relay_flood_changes { relay::build::floodChanges() };
 
-unsigned long _relay_delay_interlock;
+espurna::duration::Milliseconds _relay_delay_interlock;
 int _relay_sync_mode { RELAY_SYNC_ANY };
 bool _relay_sync_reent { false };
 bool _relay_sync_locked { false };
@@ -1006,20 +1014,23 @@ bool _relayHandlePayload(size_t id, const String& payload) {
 
 [[gnu::unused]]
 bool _relayHandlePulsePayload(size_t id, const char* payload) {
-    unsigned long pulse = 1000 * atof(payload);
-    if (!pulse) {
-        return false;
+    const auto pulse = relay::PulseDuration { atof(payload) };
+
+    if (std::isfinite(pulse.count()) && (pulse.count() > 0.0f)) {
+        if (RelayPulse::None != _relays[id].pulse) {
+            DEBUG_MSG_P(PSTR("[RELAY] Overriding relayID %u pulse settings\n"), id);
+        }
+
+        _relays[id].pulse_time = std::chrono::duration_cast<Relay::Delay>(pulse);
+        _relays[id].pulse = relayStatus(id)
+            ? RelayPulse::On
+            : RelayPulse::Off;
+        relayToggle(id, true, false);
+
+        return true;
     }
 
-    if (RelayPulse::None != _relays[id].pulse) {
-        DEBUG_MSG_P(PSTR("[RELAY] Overriding relayID %u pulse settings\n"), id);
-    }
-
-    _relays[id].pulse_ms = pulse;
-    _relays[id].pulse = relayStatus(id) ? RelayPulse::On : RelayPulse::Off;
-    relayToggle(id, true, false);
-
-    return true;
+    return false;
 }
 
 [[gnu::unused]]
@@ -1072,7 +1083,7 @@ bool _relayStatusLock(size_t id, bool status) {
         bool lock = _relays[id].lock == RelayLock::On;
         if ((lock != status) || (lock != _relays[id].target_status)) {
             _relays[id].target_status = lock;
-            _relays[id].change_delay = 0;
+            _relays[id].change_delay = Relay::Delay::zero();
             return false;
         }
     }
@@ -1112,7 +1123,7 @@ void _relaySyncUnlock() {
     };
 
     if (all_off) {
-        _relay_sync_timer.once_ms(_relay_delay_interlock, action);
+        _relay_sync_timer.once_ms(_relay_delay_interlock.count(), action);
     } else {
         action();
     }
@@ -1160,8 +1171,8 @@ void relayPulse(size_t id) {
         return;
     }
 
-    auto ms = relay.pulse_ms;
-    if (ms == 0) {
+    auto ms = relay.pulse_time;
+    if (!std::isfinite(ms.count() || (ms.count() <= 0.0f))) {
         return;
     }
 
@@ -1171,18 +1182,21 @@ void relayPulse(size_t id) {
 
     // limit is per https://www.espressif.com/sites/default/files/documentation/2c-esp8266_non_os_sdk_api_reference_en.pdf
     // > 3.1.1 os_timer_arm
-    // > the timer value allowed ranges from 5 to 0x68D7A3.
-    if ((ms < 5) || (ms >= 0x68D7A3)) {
-        DEBUG_MSG_P(PSTR("[RELAY] Unable to schedule the delay %lums (longer than 114 minutes)\n"), ms);
+    // > with `system_timer_reinit()`, the timer value allowed ranges from 100 to 0x0x689D0.
+    // > otherwise, the timer value allowed ranges from 5 to 0x68D7A3.
+    static constexpr espurna::duration::Milliseconds PulseDurationMin { 5 };
+    static constexpr espurna::duration::Milliseconds PulseDurationMax { 0x68D7A3 };
+    if ((ms < PulseDurationMin) || (ms >= PulseDurationMax)) {
+        DEBUG_MSG_P(PSTR("[RELAY] Unable to schedule the delay %lu (ms) (longer than 114 minutes)\n"), ms.count());
         return;
     }
 
+    // Notice that we reconfigure after dynamic pulse, next relay toggle will use the configuration values
     if ((mode == RelayPulse::On) != relay.current_status) {
-        relay.pulseTicker->once_ms(ms, relayToggle, id);
-        // Reconfigure after dynamic pulse
+        relay.pulseTicker->once_ms(ms.count(), relayToggle, id);
         relay.pulse = relay::settings::pulseMode(id);
-        relay.pulse_ms = relay::settings::pulseTimeMs(id);
-        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u back in %lums (pulse)\n"), id, ms);
+        relay.pulse_time = relay::settings::pulseTimeMs(id);
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%u pulse in %lu(ms)\n"), id, ms.count());
     }
 
 }
@@ -1211,7 +1225,7 @@ bool relayStatus(size_t id, bool status, bool report, bool group_report) {
             _relays[id].target_status = status;
             _relays[id].report = false;
             _relays[id].group_report = false;
-            _relays[id].change_delay = 0;
+            _relays[id].change_delay = Relay::Delay::zero();
             changed = true;
         }
 
@@ -1225,8 +1239,11 @@ bool relayStatus(size_t id, bool status, bool report, bool group_report) {
 
     } else {
 
-        unsigned long current_time = millis();
-        unsigned long change_delay = status ? _relays[id].delay_on : _relays[id].delay_off;
+        auto current_time = Relay::TimeSource::now();
+
+        auto change_delay = status
+            ? _relays[id].delay_on
+            : _relays[id].delay_off;
 
         _relays[id].fw_count++;
         _relays[id].change_start = current_time;
@@ -1258,9 +1275,8 @@ bool relayStatus(size_t id, bool status, bool report, bool group_report) {
 
         relaySync(id);
 
-        DEBUG_MSG_P(PSTR("[RELAY] #%u scheduled %s in %u ms\n"),
-            id, status ? "ON" : "OFF", _relays[id].change_delay
-        );
+        DEBUG_MSG_P(PSTR("[RELAY] #%u scheduled %s in %u (ms)\n"),
+            id, status ? "ON" : "OFF", _relays[id].change_delay.count());
 
         changed = true;
 
@@ -1493,7 +1509,7 @@ void _relayBoot(size_t index, const RelayMaskHelper& mask) {
     relay.target_status = status;
     relay.lock = lock;
 
-    relay.change_start = millis();
+    relay.change_start = Relay::TimeSource::now();
     relay.change_delay = status
         ? relay.delay_on
         : relay.delay_off;
@@ -1509,8 +1525,8 @@ void _relayBootAll() {
     bool log { false };
 
     static RelayMask done;
-    auto relays = relayCount();
-    for (decltype(relays) id = 0; id < relays; ++id) {
+    const auto relays = _relays.size();
+    for (size_t id = 0; id < relays; ++id) {
         if (!done[id]) {
             done.set(id, true);
             _relayBoot(id, mask);
@@ -1528,7 +1544,7 @@ void _relayConfigure() {
     auto relays = _relays.size();
     for (decltype(relays) id = 0; id < relays; ++id) {
         _relays[id].pulse = relay::settings::pulseMode(id);
-        _relays[id].pulse_ms = relay::settings::pulseTimeMs(id);
+        _relays[id].pulse_time = relay::settings::pulseTimeMs(id);
 
         _relays[id].delay_on = relay::settings::delayOn(id);
         _relays[id].delay_off = relay::settings::delayOff(id);
@@ -1562,86 +1578,76 @@ bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    JsonObject& state = root.createNestedObject("relayState");
+    ::web::ws::EnumerableConfig config{root, F("relayState")};
 
-    static const char* const keys[] PROGMEM {
-        "status", "lock"
-    };
-    JsonArray& schema = state.createNestedArray("schema");
-    schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-    // Byte instead of bool in case payload has lot of relays
-    JsonArray& relays = state.createNestedArray("states");
-
-    size_t Relays { relayCount() };
-    for (decltype(Relays) id = 0; id < Relays; ++id) {
-        JsonArray& relay = relays.createNestedArray();
-        relay.add(_relays[id].target_status ? 1 : 0);
-        relay.add(static_cast<uint8_t>(_relays[id].lock));
-    }
-}
-
-void _relayWebSocketRelayConfig(JsonArray& relay, size_t id) {
-    relay.add(_relays[id].provider->id());
-    relay.add(static_cast<uint8_t>(relay::settings::provider(id)));
-    relay.add(relay::settings::name(id));
-    relay.add(relay::settings::bootMode(id));
-
-#if MQTT_SUPPORT
-    relay.add(relay::settings::mqttTopicSub(id));
-    relay.add(relay::settings::mqttTopicPub(id));
-    relay.add(static_cast<uint8_t>(relay::settings::mqttTopicMode(id)));
-    relay.add(static_cast<uint8_t>(relay::settings::mqttDisconnectionStatus(id)));
-#endif
-
-    relay.add(static_cast<uint8_t>(_relays[id].pulse));
-    relay.add(_relays[id].pulse_ms / 1000.0);
+    config(F("states"), _relays.size(), {
+        {F("status"), [](JsonArray& out, size_t index) {
+            out.add(_relays[index].target_status ? 1 : 0);
+        }},
+        {F("lock"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<uint8_t>(_relays[index].lock));
+        }},
+    });
 }
 
 void _relayWebSocketSendRelays(JsonObject& root) {
-    if (!relayCount()) {
+    if (!_relays.size()) {
         return;
     }
 
-    JsonObject& config = root.createNestedObject("relayConfig");
+    ::web::ws::EnumerableConfig config{root, F("relayConfig")};
 
-    config["size"] = relayCount();
-    config["start"] = 0;
+    auto& container = config.root();
+    container["size"] = _relays.size();
+    container["start"] = 0;
 
-    {
-        static const char* const keys[] PROGMEM = {
-            "relayDesc",
-            "relayProv",
-            "relayName",
-            "relayBoot",
+    config(F("relays"), _relays.size(), {
+        {F("relayDesc"), [](JsonArray& out, size_t index) {
+            out.add(_relays[index].provider->id());
+        }},
+        {F("relayProv"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<uint8_t>(relay::settings::provider(index)));
+        }},
+        {F("relayName"), [](JsonArray& out, size_t index) {
+            out.add(relay::settings::name(index));
+        }},
+        {F("relayBoot"), [](JsonArray& out, size_t index) {
+            out.add(relay::settings::bootMode(index));
+        }},
 #if MQTT_SUPPORT
-            "relayTopicPub",
-            "relayTopicSub",
-            "relayTopicMode",
-            "relayMqttDisc",
+        {F("relayTopicPub"), [](JsonArray& out, size_t index) {
+            out.add(relay::settings::mqttTopicSub(index));
+        }},
+        {F("relayTopicSub"), [](JsonArray& out, size_t index) {
+            out.add(relay::settings::mqttTopicPub(index));
+        }},
+        {F("relayTopicMode"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<uint8_t>(relay::settings::mqttTopicMode(index)));
+        }},
+        {F("relayMqttDisc"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<uint8_t>(relay::settings::mqttDisconnectionStatus(index)));
+        }},
 #endif
-            "relayPulse",
-            "relayTime"
-        };
-
-        JsonArray& schema = config.createNestedArray("schema");
-        schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-    }
-
-    JsonArray& relays = config.createNestedArray("relays");
-    for (size_t id = 0; id < relayCount(); ++id) {
-        JsonArray& relay = relays.createNestedArray();
-        _relayWebSocketRelayConfig(relay, id);
-    }
+        {F("relayPulse"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<uint8_t>(_relays[index].pulse));
+        }},
+        {F("relayTime"), [](JsonArray& out, size_t index) {
+            out.add(std::chrono::duration_cast<relay::PulseDuration>(
+                _relays[index].pulse_time).count());
+        }},
+    });
 }
 
 void _relayWebSocketOnVisible(JsonObject& root) {
-    if (relayCount() == 0) return;
+    const auto relays = _relays.size();
+    if (!relays) {
+        return;
+    }
 
-    if (relayCount() > 1) {
+    if (relays > 1) {
         wsPayloadModule(root, "multirelay");
         root["relaySync"] = relay::settings::syncMode();
-        root["relayIlkDelay"] = relay::settings::interlockDelay();
+        root["relayIlkDelay"] = relay::settings::interlockDelay().count();
     }
 
     wsPayloadModule(root, "relay");
@@ -1697,15 +1703,15 @@ bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
 
 void relaySetupAPI() {
 
-    if (!relayCount()) {
+    if (!_relays.size()) {
         return;
     }
 
     apiRegister(F(MQTT_TOPIC_RELAY),
         [](ApiRequest&, JsonObject& root) {
-            JsonArray& relays = root.createNestedArray("relayStatus");
-            for (size_t id = 0; id < relayCount(); ++id) {
-                relays.add(_relays[id].target_status ? 1 : 0);
+            JsonArray& out = root.createNestedArray("relayStatus");
+            for (auto& relay : _relays) {
+                out.add(relay.target_status ? 1 : 0);
             }
             return true;
         },
@@ -1729,7 +1735,9 @@ void relaySetupAPI() {
     apiRegister(F(MQTT_TOPIC_PULSE "/+"),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](size_t id) {
-                request.send(String(static_cast<double>(_relays[id].pulse_ms) / 1000));
+                request.send(String(
+                    std::chrono::duration_cast<relay::PulseDuration>(
+                        _relays[id].pulse_time).count()));
                 return true;
             });
         },
@@ -1890,7 +1898,7 @@ private:
 std::forward_list<RelayCustomTopic> _relay_custom_topics;
 
 void _relayMqttSubscribeCustomTopics() {
-    const size_t relays { relayCount() };
+    const size_t relays { _relays.size() };
     if (!relays) {
         return;
     }
@@ -2051,7 +2059,7 @@ void relayMQTTCallback(unsigned int type, const char* topic, char* payload) {
 
     static bool connected { false };
 
-    if (!relayCount()) {
+    if (!_relays.size()) {
         return;
     }
 
@@ -2124,21 +2132,21 @@ void _relayInitCommands() {
                 auto& relay = _relays[index];
 
                 char pulse_info[64] = "";
-                if ((relay.pulse != RelayPulse::None) && (relay.pulse_ms)) {
-                    snprintf_P(pulse_info, sizeof(pulse_info), PSTR(" Pulse=%s Time=%u"),
-                        _relayPulseToPayload(relay.pulse), relay.pulse_ms);
+                if ((relay.pulse != RelayPulse::None) && (relay.pulse_time.count() > 0)) {
+                    snprintf_P(pulse_info, sizeof(pulse_info), PSTR(" Pulse=%s Time=%u(ms)"),
+                        _relayPulseToPayload(relay.pulse), relay.pulse_time);
                 }
 
                 char extended_info[64] = "";
                 if (full) {
                     int index = 0;
-                    if (index >= 0 && relay.delay_on) {
+                    if (index >= 0 && relay.delay_on.count()) {
                         index += snprintf_P(extended_info + index, sizeof(extended_info),
-                                PSTR(" DelayOn=%u"), relay.delay_on);
+                                PSTR(" DelayOn=%u(ms)"), relay.delay_on.count());
                     }
-                    if (index >= 0 && relay.delay_off) {
+                    if (index >= 0 && relay.delay_off.count()) {
                         index += snprintf_P(extended_info + index, sizeof(extended_info),
-                                PSTR(" DelayOff=%u"), relay.delay_off);
+                                PSTR(" DelayOff=%u(ms)"), relay.delay_off.count());
                     }
                     if (index >= 0 && relay.lock != RelayLock::None) {
                         index += snprintf_P(extended_info + index, sizeof(extended_info),
@@ -2224,9 +2232,11 @@ void _relayProcess(bool mode) {
 
         if ((target != _relays[id].current_status)
             && (target == mode)
-            && (!_relays[id].change_delay || (millis() - _relays[id].change_start > _relays[id].change_delay)))
+            && ((!_relays[id].change_delay.count())
+                || (Relay::TimeSource::now() - _relays[id].change_start > _relays[id].change_delay)))
         {
-            _relays[id].change_delay = 0; // will be reset back to the correct value via relayStatus
+            // delay will be reset back to the correct value via relayStatus
+            _relays[id].change_delay = Relay::Delay::zero();
             _relays[id].current_status = target;
             _relays[id].provider->change(target);
 
@@ -2235,7 +2245,8 @@ void _relayProcess(bool mode) {
 
             {
                 const auto boot_mode = relay::settings::bootMode(id);
-                _relay_save_timer.once_ms(relay::build::saveDelay(), relaySave,
+                _relay_save_timer.once_ms(
+                    relay::build::saveDelay().count(), relaySave,
                     (RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
             }
 
