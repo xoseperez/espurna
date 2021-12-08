@@ -87,11 +87,33 @@ static_assert(alignof(EnumerableConfig::SchemaKey) == 4, "");
 
 namespace {
 
-uint32_t _ws_last_update = 0;
+template <typename T>
+struct BaseTimeFormat {
+};
 
-void _wsResetUpdateTimer() {
-    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
-}
+template <>
+struct BaseTimeFormat<int> {
+    static constexpr size_t Size = sizeof(int);
+    static constexpr char Format[] = "%d";
+};
+
+constexpr char BaseTimeFormat<int>::Format[];
+
+template <>
+struct BaseTimeFormat<long> {
+    static constexpr size_t Size = sizeof(long);
+    static constexpr char Format[] = "%ld";
+};
+
+constexpr char BaseTimeFormat<long>::Format[];
+
+template <>
+struct BaseTimeFormat<long long> {
+    static constexpr size_t Size = sizeof(long long);
+    static constexpr char Format[] = "%lld";
+};
+
+constexpr char BaseTimeFormat<long long>::Format[];
 
 void _wsUpdate(JsonObject& root) {
     root["heap"] = systemFreeHeap();
@@ -104,17 +126,15 @@ void _wsUpdate(JsonObject& root) {
         root["vcc"] = "N/A (TOUT) ";
     }
 #if NTP_SUPPORT
-    // XXX: arduinojson default config stores:
-    // - double as float
-    // - int64_t as int32_t
-    // Simply send the string...
     if (ntpSynced()) {
         auto info = ntpInfo();
 
-        constexpr size_t TimeSize { sizeof(time_t) };
-        const char* const fmt = (TimeSize == 8) ? "%lld" : "%ld";
-        char buffer[TimeSize * 4];
-        sprintf(buffer, fmt, info.now);
+        // XXX: arduinojson default config will silently downcast
+        //      double to float and (u)int64_t to (u)int32_t.
+        //      convert to string instead, and assume the int is handled correctly
+        using SystemTimeFormat = BaseTimeFormat<time_t>;
+        char buffer[SystemTimeFormat::Size * 4];
+        sprintf(buffer, SystemTimeFormat::Format, info.now);
         root["now"] = String(buffer);
 
         root["nowString"] = info.utc;
