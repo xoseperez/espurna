@@ -73,7 +73,7 @@ void run(WiFiClient* client, const String& url) {
         break;
     case HTTP_UPDATE_OK:
         DEBUG_MSG_P(PSTR("[OTA] Done, restarting..."));
-        deferredReset(500, CustomResetReason::Ota);
+        prepareReset(CustomResetReason::Ota);
         return;
     }
 
