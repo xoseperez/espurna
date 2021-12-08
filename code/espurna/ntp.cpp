@@ -20,6 +20,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <Ticker.h>
 
 #include <ctime>
+#include <errno.h>
 #include <lwip/apps/sntp.h>
 #include <TZ.h>
 
@@ -37,21 +38,31 @@ static_assert(
 #include "ws.h"
 
 // Arduino/esp8266 lwip2 custom functions that can be redefined
-// Must return time in milliseconds, legacy settings are in seconds.
+// Must return time in milliseconds, settings are in seconds.
 
 namespace {
 
-uint32_t _ntp_startup_delay = (NTP_START_DELAY * 1000);
-uint32_t _ntp_update_delay = (NTP_UPDATE_INTERVAL * 1000);
+constexpr espurna::duration::Seconds NtpStartDelay { NTP_START_DELAY };
+constexpr espurna::duration::Seconds NtpUpdateInterval { NTP_UPDATE_INTERVAL };
+
+espurna::duration::Seconds _ntp_startup_delay { NtpStartDelay };
+espurna::duration::Seconds _ntp_update_delay { NtpUpdateInterval };
+
+espurna::duration::Seconds _ntpRandomizeDelay(espurna::duration::Seconds base) {
+    return espurna::duration::Seconds(
+        secureRandom(base.count(), (2 * base.count())));
+}
 
 } // namespace
 
 uint32_t sntp_startup_delay_MS_rfc_not_less_than_60000() {
-    return _ntp_startup_delay;
+    static_assert(sizeof(decltype(_ntp_startup_delay)::rep) <= sizeof(uint32_t), "");
+    return _ntp_startup_delay.count();
 }
 
 uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
-    return _ntp_update_delay;
+    static_assert(sizeof(decltype(_ntp_update_delay)::rep) <= sizeof(uint32_t), "");
+    return _ntp_update_delay.count();
 }
 
 // We also must shim TimeLib functions until everything else is ported.
@@ -223,6 +234,23 @@ namespace {
 
 String _ntp_server;
 
+#if TERMINAL_SUPPORT
+
+void _ntpReportTerminal(Print& out) {
+    const auto info = ntpInfo();
+    out.printf_P(PSTR("server: %s\nsync time: %s\nutc time: %s\n"),
+        _ntp_server.c_str(),
+        info.sync.c_str(),
+        info.utc.c_str());
+
+    if (info.tz.length()) {
+        out.printf_P(PSTR("local time: %s (%s)\n"),
+            info.local.c_str(), info.tz.c_str());
+    }
+}
+
+#endif
+
 void _ntpReport() {
     if (!ntpSynced()) {
         DEBUG_MSG_P(PSTR("[NTP] Not synced\n"));
@@ -230,12 +258,13 @@ void _ntpReport() {
     }
 
     const auto info = ntpInfo();
-    DEBUG_MSG_P(PSTR("[NTP] Server     : %s\n"), _ntp_server.c_str());
-    DEBUG_MSG_P(PSTR("[NTP] Sync Time  : %s (UTC)\n"), info.sync.c_str());
-    DEBUG_MSG_P(PSTR("[NTP] UTC Time   : %s\n"), info.utc.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Server     %s\n"), _ntp_server.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Sync Time  %s (UTC)\n"), info.sync.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] UTC Time   %s\n"), info.utc.c_str());
 
     if (info.tz.length()) {
-        DEBUG_MSG_P(PSTR("[NTP] Local Time : %s (%s)\n"), info.local.c_str(), info.tz.c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Local Time %s (%s)\n"),
+            info.local.c_str(), info.tz.c_str());
     }
 }
 
@@ -314,16 +343,19 @@ String ntpDateTime() {
 
 namespace {
 
+static constexpr espurna::duration::Seconds NtpTickOffsetMin { 1 };
+static constexpr espurna::duration::Seconds NtpTickOffsetMax { 60 };
+
 using NtpTickCallbacks = std::forward_list<NtpTickCallback>;
 NtpTickCallbacks _ntp_tick_callbacks;
 
 Ticker _ntp_tick;
 
-void _ntpTickSchedule(int offset);
+void _ntpTickSchedule(espurna::duration::Seconds offset);
 
 void _ntpTickCallback() {
     if (!ntpSynced()) {
-        _ntpTickSchedule(60);
+        _ntpTickSchedule(NtpTickOffsetMax);
         return;
     }
 
@@ -353,18 +385,22 @@ void _ntpTickCallback() {
     }
 
     // try to autocorrect each invocation
-    _ntpTickSchedule(60 - local_tm.tm_sec);
+    _ntpTickSchedule(NtpTickOffsetMax - espurna::duration::Seconds(local_tm.tm_sec));
 }
 
-// XXX: NONOS SDK docs for some reason mention 100 micros as minimum time. Schedule next second in case this is 0
-void _ntpTickSchedule(int offset) {
+void _ntpTickSchedule(espurna::duration::Seconds offset) {
     static bool scheduled { false };
+
+    // Never allow delays less than a second, or greater than a minute
+    // (ref. Non-OS 3.1.1 os_timer_arm, actual minimal value is 100ms)
     if (!scheduled) {
         scheduled = true;
-        _ntp_tick.once_scheduled(offset ? offset : 1, []() {
-            scheduled = false;
-            _ntpTickCallback();
-        });
+        _ntp_tick.once_scheduled(
+            std::clamp(offset, NtpTickOffsetMin, NtpTickOffsetMax).count(),
+            []() {
+                scheduled = false;
+                _ntpTickCallback();
+            });
     }
 }
 
@@ -382,10 +418,74 @@ void _ntpSetTimeOfDayCallback() {
     schedule_function(_ntpReport);
 }
 
-void _ntpSetTimestamp(time_t ts) {
-    timeval tv { ts, 0 };
-    timezone tz { 0, 0 };
-    settimeofday(&tv, &tz);
+bool _ntpSetTimestamp(time_t ts) {
+    const timeval tv {
+        .tv_sec = ts,
+        .tv_usec = 0
+    };
+
+    return EINVAL != settimeofday(&tv, nullptr);
+}
+
+struct NtpParseResult {
+    NtpParseResult() = default;
+    explicit NtpParseResult(time_t value) :
+        _result(true),
+        _timestamp(value)
+    {}
+
+    NtpParseResult& operator=(time_t value) {
+        _result = true;
+        _timestamp = value;
+        return *this;
+    }
+
+    explicit operator bool() const {
+        return _result;
+    }
+
+    time_t timestamp() const {
+        return _timestamp;
+    }
+
+private:
+    bool _result { false };
+    time_t _timestamp;
+};
+
+template <typename T>
+struct NtpParseImpl {
+};
+
+template <>
+struct NtpParseImpl<long> {
+    using Type = long(*)(const char*, char**, int);
+    static const Type Func;
+};
+
+const NtpParseImpl<long>::Type NtpParseImpl<long>::Func = strtol;
+
+template <>
+struct NtpParseImpl<long long> {
+    using Type = long long(*)(const char*, char**, int);
+    static const Type Func;
+};
+
+const NtpParseImpl<long long>::Type NtpParseImpl<long long>::Func = strtoll;
+
+NtpParseResult _ntpParseTimestamp(const String& value) {
+    NtpParseResult out;
+
+    const char* p { value.c_str() };
+    char* endp { nullptr };
+
+    auto result = NtpParseImpl<time_t>::Func(p, &endp, 10);
+    if (!endp || (endp == p)) {
+        return out;
+    }
+
+    out = result;
+    return out;
 }
 
 } // namespace
@@ -455,16 +555,13 @@ void ntpSetup() {
 
     // Randomized in time to avoid clogging the server with simultaneous requests from multiple devices
     // (for example, when multiple devices start up at the same time)
-    const uint32_t startup_delay = getSetting("ntpStartDelay", NTP_START_DELAY);
-    const uint32_t update_delay = getSetting("ntpUpdateIntvl", NTP_UPDATE_INTERVAL);
+    const auto startup_delay = getSetting("ntpStartDelay", NtpStartDelay);
+    const auto update_delay = getSetting("ntpUpdateIntvl", NtpUpdateInterval);
 
-    _ntp_startup_delay = secureRandom(startup_delay, startup_delay * 2);
-    _ntp_update_delay = secureRandom(update_delay, update_delay * 2);
+    _ntp_startup_delay = _ntpRandomizeDelay(startup_delay);
+    _ntp_update_delay = _ntpRandomizeDelay(update_delay);
     DEBUG_MSG_P(PSTR("[NTP] Startup delay: %u (s), Update delay: %u (s)\n"),
-        _ntp_startup_delay, _ntp_update_delay);
-
-    _ntp_startup_delay = _ntp_startup_delay * 1000;
-    _ntp_update_delay = _ntp_update_delay * 1000;
+        _ntp_startup_delay.count(), _ntp_update_delay.count());
 
     // start up with some reasonable timestamp already available
     _ntpSetTimestamp(__UNIX_TIMESTAMP__);
@@ -510,21 +607,70 @@ void ntpSetup() {
     #endif
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("NTP"), [](const terminal::CommandContext&) {
-            _ntpReport();
-            terminalOK();
+        terminalRegisterCommand(F("NTP"), [](const terminal::CommandContext& ctx) {
+            if (ntpSynced()) {
+                _ntpReportTerminal(ctx.output);
+                terminalOK(ctx);
+                return;
+            }
+
+            terminalError(ctx, F("NTP not synced"));
         });
 
+        terminalRegisterCommand(F("NTP.SYNC"), [](const terminal::CommandContext& ctx) {
+            if (_ntp_synced) {
+                sntp_stop();
+                sntp_init();
+                terminalOK(ctx);
+                return;
+            }
+
+            terminalError(ctx, F("NTP waiting for initial sync"));
+        });
+
+        // TODO: strptime & mktime is around ~3.7Kb
+#if 1
         terminalRegisterCommand(F("NTP.SETTIME"), [](const terminal::CommandContext& ctx) {
-            if (ctx.argc != 2) return;
-            _ntp_synced = true;
-            _ntpSetTimestamp(ctx.argv[1].toInt());
-            terminalOK();
-        });
+            if (ctx.argv.size() != 2) {
+                terminalError(ctx, F("NTP.SETTIME <TIME>"));
+                return;
+            }
 
-        // TODO:
-        // terminalRegisterCommand(F("NTP.SYNC"), [](const terminal::CommandContext&) { ... }
-        //
+            auto value = _ntpParseTimestamp(ctx.argv[1]);
+            if (value && _ntpSetTimestamp(value.timestamp())) {
+                _ntp_synced = true;
+                terminalOK(ctx);
+                return;
+            }
+
+            terminalError(ctx, F("Invalid timestamp"));
+        });
+#else
+        terminalRegisterCommand(F("NTP.SETTIME"), [](const terminal::CommandContext& ctx) {
+            if (ctx.argc != 2) {
+                terminalError(ctx, F("NTP.SETTIME <TIME>"));
+                return;
+            }
+
+            const char* const fmt = (ctx.argv[1].endsWith("Z"))
+                ? "%Y-%m-%dT%H:%M:%SZ" : "%s";
+
+            tm out{};
+            if (strptime(ctx.argv[1].c_str(), fmt, &out) != nullptr) {
+                terminalError(ctx, F("Invalid time"));
+                return;
+            }
+
+            ctx.output.printf_P(PSTR("Setting time to %s\n"),
+                ntpDateTime(&out).c_str());
+
+            _ntpSetTimestamp(mktime(&out));
+            _ntp_synced = true;
+
+            terminalOK(ctx);
+        });
+#endif
+
     #endif
 
 }

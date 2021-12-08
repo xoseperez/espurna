@@ -1422,7 +1422,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef NTP_SUPPORT
-#define NTP_SUPPORT                 1               // Build with NTP support by default (depends on Core version)
+#define NTP_SUPPORT                 1               // Build with NTP support by default
 #endif
 
 #ifndef NTP_SERVER
@@ -1441,11 +1441,11 @@
 #endif
 
 #ifndef NTP_UPDATE_INTERVAL
-#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
+#define NTP_UPDATE_INTERVAL         1800            // Interval (in seconds) for the periodic NTP update
 #endif
 
 #ifndef NTP_START_DELAY
-#define NTP_START_DELAY             3               // Delay NTP start for 3 seconds
+#define NTP_START_DELAY             3               // Time (in seconds) to delay the first NTP update
 #endif
 
 #ifndef NTP_WAIT_FOR_SYNC
