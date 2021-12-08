@@ -25,11 +25,11 @@
 #endif
 
 #ifndef LOOP_DELAY_TIME
-#define LOOP_DELAY_TIME         10              // Delay for the main loop, in millis [0-250]
-                                                // Recommended minimum is 10, see:
-                                                // https://github.com/xoseperez/espurna/issues/1541
-                                                // https://github.com/xoseperez/espurna/issues/1631
-                                                // https://github.com/esp8266/Arduino/issues/5825
+#define LOOP_DELAY_TIME         10              // Time (in milliseconds) to wait every application loop
+                                                // This value is clamped between 10 and 250 (ms), ref.
+                                                // - https://github.com/xoseperez/espurna/issues/1541
+                                                // - https://github.com/xoseperez/espurna/issues/1631
+                                                // - https://github.com/esp8266/Arduino/issues/5825
 #endif
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          300     // Interval between heartbeat messages
+#define HEARTBEAT_INTERVAL          300     // Default time (in seconds) for heartbeat messages
 #endif
 
 //------------------------------------------------------------------------------
@@ -375,7 +375,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef LOADAVG_INTERVAL
-#define LOADAVG_INTERVAL            30           // Interval between calculating load average (in seconds)
+#define LOADAVG_INTERVAL            30           // Time (in seconds) between load average calculations
 #endif
 
 //------------------------------------------------------------------------------
@@ -408,8 +408,8 @@
 #define RELAY_SYNC                  RELAY_SYNC_ANY
 #endif
 
-// 0 (ms) means EVERY relay switches as soon as possible
-// otherwise, wait up until this much time before changing the status
+// Time (in ms) to wait between relay state changes.
+// Setting to zero (default) will cause relay switches to change as soon as possible
 #ifndef RELAY_DELAY_INTERLOCK
 #define RELAY_DELAY_INTERLOCK       0
 #endif
@@ -419,27 +419,27 @@
 #define RELAY_PULSE_MODE            RELAY_PULSE_NONE
 #endif
 
-// Default pulse time in seconds
+// Default time (in seconds) for the pulse delay, when it is not specified in settings
 #ifndef RELAY_PULSE_TIME
 #define RELAY_PULSE_TIME            0.0
 #endif
 
-// Relay requests flood protection window - in seconds
+// Time (in seconds) for the relay flood protection window
 #ifndef RELAY_FLOOD_WINDOW
 #define RELAY_FLOOD_WINDOW          3.0
 #endif
 
-// Allowed actual relay changes inside requests flood protection window
+// Maximum amount of relay state changes allowed in the relay flood window
 #ifndef RELAY_FLOOD_CHANGES
 #define RELAY_FLOOD_CHANGES         5
 #endif
 
-// Pulse with in milliseconds for a latched relay
+// Time (in ms) for the latched relay pulse
 #ifndef RELAY_LATCHING_PULSE
 #define RELAY_LATCHING_PULSE        10
 #endif
 
-// Do not save relay state after these many milliseconds
+// Time (in ms) to wait until saving the relay(s) state
 #ifndef RELAY_SAVE_DELAY
 #define RELAY_SAVE_DELAY            1000
 #endif
@@ -575,7 +575,7 @@
 
 #ifndef WIFI_FALLBACK_TIMEOUT
 #define WIFI_FALLBACK_TIMEOUT       60000                  // When AP is in FALLBACK mode and STA is connected,
-                                                           // how long to wait until stopping the AP
+                                                           // how long to wait (in ms) until stopping the AP
 #endif
 
 #ifndef WIFI_AP_SSID
