@@ -800,7 +800,7 @@ void _mqttInitCommands() {
     });
 
     terminalRegisterCommand(F("MQTT.SEND"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 3) {
+        if (ctx.argv.size() == 3) {
             if (mqttSend(ctx.argv[1].c_str(), ctx.argv[2].c_str(), false, false)) {
                 terminalOK(ctx);
             } else {

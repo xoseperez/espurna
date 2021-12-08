@@ -357,7 +357,7 @@ void _terminalInitCommands() {
     });
 
     terminalRegisterCommand(F("ADC"), [](const terminal::CommandContext& ctx) {
-        const int pin = (ctx.argc == 2)
+        const int pin = (ctx.argv.size() == 2)
             ? ctx.argv[1].toInt()
             : A0;
 
@@ -366,7 +366,7 @@ void _terminalInitCommands() {
     });
 
     terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
-        const int pin = (ctx.argc >= 2)
+        const int pin = (ctx.argv.size() >= 2)
             ? ctx.argv[1].toInt()
             : -1;
 
@@ -378,7 +378,7 @@ void _terminalInitCommands() {
         int start = 0;
         int end = gpioPins();
 
-        switch (ctx.argc) {
+        switch (ctx.argv.size()) {
         case 3:
             pinMode(pin, OUTPUT);
             digitalWrite(pin, (1 == ctx.argv[2].toInt()));
@@ -478,7 +478,7 @@ void _terminalInitCommands() {
 
     terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
         auto count = 1;
-        if (ctx.argc == 2) {
+        if (ctx.argv.size() == 2) {
             count = ctx.argv[1].toInt();
             if (count < SYSTEM_CHECK_MAX) {
                 systemStabilityCounter(count);
@@ -496,7 +496,7 @@ void _terminalInitCommands() {
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
     terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 3) {
+        if (ctx.argv.size() != 3) {
             terminalError(ctx, F("<url> <value>"));
             return;
         }
@@ -517,7 +517,7 @@ void _terminalInitCommands() {
 #endif
 
     terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
+        if (ctx.argv.size() != 2) {
             terminalError(ctx, F("<hostname>"));
             return;
         }

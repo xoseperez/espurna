@@ -1030,7 +1030,7 @@ namespace terminal {
 
 void setup() {
     terminalRegisterCommand(F("LED"), [](const ::terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             size_t id;
             if (!tryParseId(ctx.argv[1].c_str(), ledCount, id)) {
                 terminalError(ctx, F("Invalid ledID"));
@@ -1038,7 +1038,7 @@ void setup() {
             }
 
             auto& led = internal::leds[id];
-            if (ctx.argc > 2) {
+            if (ctx.argv.size() > 2) {
                 led.mode(LedMode::Manual);
                 pattern(led, Pattern(ctx.argv[2]));
             } else {

@@ -79,7 +79,7 @@ Terminal::Result Terminal::processLine() {
             // parser should pick out at least one arg aka command
             auto cmdline = parsing::parse_commandline(_buffer.data());
             _buffer.clear();
-            if ((cmdline.argc >= 1) && (cmdline.argv[0].length())) {
+            if ((cmdline.argv.size() >= 1) && (cmdline.argv[0].length())) {
                 auto found = std::find_if(_commands.begin(), _commands.end(), [&cmdline](const Command& command) {
                     // note that `String::equalsIgnoreCase(const __FlashStringHelper*)` does not exist, and will create a temporary `String`
                     // both use read-1-byte-at-a-time for PROGMEM, however this variant saves around 200μs in time since there's no temporary object
@@ -90,7 +90,7 @@ Terminal::Result Terminal::processLine() {
                     return (cmdline.argv[0].length() == len) && (0 == strncasecmp_P(lhs, rhs, len));
                 });
                 if (found == _commands.end()) return Result::CommandNotFound;
-                (*found).second(CommandContext{std::move(cmdline.argv), cmdline.argc, _stream});
+                (*found).second(CommandContext{std::move(cmdline.argv), _stream});
                 return Result::Command;
             }
         }

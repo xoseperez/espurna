@@ -660,7 +660,7 @@ PZEM004TV30Sensor::PortPtr PZEM004TV30Sensor::_port{};
 void PZEM004TV30Sensor::registerTerminalCommands() {
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
+        if (ctx.argv.size() != 2) {
             terminalError(ctx.output, F("PZ.ADDRESS <ADDRESS>"));
             return;
         }

@@ -477,7 +477,7 @@ void PZEM004TSensor::registerTerminalCommands() {
         auto it = _ports.begin();
         auto end = _ports.end();
 
-        if (ctx.argc == 2) {
+        if (ctx.argv.size() == 2) {
             auto offset = settings::internal::convert<size_t>(ctx.argv[1]);
             if (offset >= _ports.size()) {
                 terminalError(ctx, F("Invalid port ID"));
@@ -520,7 +520,7 @@ void PZEM004TSensor::registerTerminalCommands() {
     // Set the *currently connected* device address
     // (ref. comment at the top, shouldn't do this when multiple devices are connected)
     terminalRegisterCommand(F("PZ.ADDRESS"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 3) {
+        if (ctx.argv.size() != 3) {
             terminalError(ctx, F("PZ.ADDRESS <PORT> <ADDRESS>"));
             return;
         }

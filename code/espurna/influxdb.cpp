@@ -306,7 +306,7 @@ void idbSetup() {
 
     #if TERMINAL_SUPPORT
         terminalRegisterCommand(F("IDB.SEND"), [](const terminal::CommandContext& ctx) {
-            if (ctx.argc != 4) {
+            if (ctx.argv.size() != 4) {
                 terminalError(F("idb.send <topic> <id> <value>"));
                 return;
             }

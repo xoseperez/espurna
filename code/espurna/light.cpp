@@ -2379,7 +2379,7 @@ namespace {
 void _lightInitCommands() {
 
     terminalRegisterCommand(F("LIGHT"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             if (!_lightParsePayload(ctx.argv[1].c_str())) {
                 terminalError(ctx, F("Invalid payload"));
                 return;
@@ -2392,7 +2392,7 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("BRIGHTNESS"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             _lightAdjustBrightness(ctx.argv[1]);
             lightUpdate();
         }
@@ -2416,7 +2416,7 @@ void _lightInitCommands() {
                     String(_light_channels[channel].current, 2).c_str());
         };
 
-        if (ctx.argc > 2) {
+        if (ctx.argv.size() > 2) {
             size_t id;
             if (!_lightTryParseChannel(ctx.argv[1].c_str(), id)) {
                 terminalError(ctx, F("Invalid channel ID"));
@@ -2436,7 +2436,7 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("RGB"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             _lightFromRgbPayload(ctx.argv[1].c_str());
             lightUpdate();
         }
@@ -2445,7 +2445,7 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("HSV"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             _lightFromHsvPayload(ctx.argv[1].c_str());
             lightUpdate();
         }
@@ -2454,7 +2454,7 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("KELVIN"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             _lightAdjustKelvin(ctx.argv[1]);
             lightUpdate();
         }
@@ -2463,7 +2463,7 @@ void _lightInitCommands() {
     });
 
     terminalRegisterCommand(F("MIRED"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc > 1) {
+        if (ctx.argv.size() > 1) {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();
         }

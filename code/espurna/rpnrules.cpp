@@ -299,7 +299,7 @@ void setup() {
     });
 
     terminalRegisterCommand(F("RPN.TEST"), [](const ::terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
+        if (ctx.argv.size() != 2) {
             terminalError(F("Wrong arguments"));
             return;
         }

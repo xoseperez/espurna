@@ -42,7 +42,7 @@ void test_hex_codes() {
     static bool abc_done = false;
 
     terminal::Terminal::addCommand(F("abc"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL(2, ctx.argc);
+        TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
         abc_done = true;
@@ -69,17 +69,17 @@ void test_multiple_commands() {
     static int command_calls = 0;
 
     terminal::Terminal::addCommand(F("test1"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
+        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         TEST_ASSERT_EQUAL(0, command_calls);
         command_calls = 1;
     });
     terminal::Terminal::addCommand(F("test2"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
+        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         TEST_ASSERT_EQUAL(1, command_calls);
         command_calls = 2;
     });
     terminal::Terminal::addCommand(F("test3"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
+        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         TEST_ASSERT_EQUAL(2, command_calls);
         command_calls = 3;
     });
@@ -114,7 +114,7 @@ void test_command() {
     static int counter = 0;
 
     terminal::Terminal::addCommand(F("test.command"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argc, "Command without args should have argc == 1");
+        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         ++counter;
     });
 
@@ -151,12 +151,12 @@ void test_command_args() {
     static bool waiting = false;
 
     terminal::Terminal::addCommand(F("test.command.arg1"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL(2, ctx.argc);
+        TEST_ASSERT_EQUAL(2, ctx.argv.size());
         waiting = false;
     });
 
     terminal::Terminal::addCommand(F("test.command.arg1_empty"), [](const terminal::CommandContext& ctx) {
-        TEST_ASSERT_EQUAL(2, ctx.argc);
+        TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT(!ctx.argv[1].length());
         waiting = false;
     });
@@ -236,7 +236,7 @@ void test_case_insensitive() {
 void test_output() {
 
     terminal::Terminal::addCommand(F("test.output"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) return;
+        if (ctx.argv.size() != 2) return;
         ctx.output.print(ctx.argv[1]);
     });
 

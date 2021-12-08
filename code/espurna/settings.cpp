@@ -523,7 +523,7 @@ void _settingsInitCommands() {
     });
 
     terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc < 2) {
+        if (ctx.argv.size() < 2) {
             terminalError(ctx, F("del <key> [<key>...]"));
             return;
         }
@@ -541,7 +541,7 @@ void _settingsInitCommands() {
     });
 
     terminalRegisterCommand(F("SET"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 3) {
+        if (ctx.argv.size() != 3) {
             terminalError(ctx, F("set <key> <value>"));
             return;
         }
@@ -555,7 +555,7 @@ void _settingsInitCommands() {
     });
 
     terminalRegisterCommand(F("GET"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc < 2) {
+        if (ctx.argv.size() < 2) {
             terminalError(ctx, F("get <key> [<key>...]"));
             return;
         }

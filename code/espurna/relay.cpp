@@ -2150,7 +2150,7 @@ void _relayInitCommands() {
             }
         };
 
-        if (ctx.argc == 1) {
+        if (ctx.argv.size() == 1) {
             showRelays(0, _relays.size());
             terminalOK(ctx);
             return;
@@ -2162,7 +2162,7 @@ void _relayInitCommands() {
             return;
         }
 
-        if (ctx.argc > 2) {
+        if (ctx.argv.size() > 2) {
             auto status = relayParsePayload(ctx.argv[2].c_str());
             if (PayloadStatus::Unknown == status) {
                 terminalError(ctx, F("Invalid status"));

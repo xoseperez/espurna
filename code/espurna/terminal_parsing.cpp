@@ -196,8 +196,7 @@ CommandLine parse_commandline(const char *line) {
 err:
     argv.clear();
 out:
-    size_t argc = argv.size();
-    return CommandLine{std::move(argv), argc};
+    return CommandLine{std::move(argv)};
 }
 
 // Fowler–Noll–Vo hash function to hash command strings that treats input as lowercase

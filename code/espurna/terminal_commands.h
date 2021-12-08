@@ -24,7 +24,6 @@ struct Terminal;
 // Like Embedis implementation, we only pass things that we actually use instead of complete obj instance
 struct CommandContext {
     std::vector<String> argv;
-    size_t argc;
     Print& output;
 };
 

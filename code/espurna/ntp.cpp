@@ -647,7 +647,7 @@ void ntpSetup() {
         });
 #else
         terminalRegisterCommand(F("NTP.SETTIME"), [](const terminal::CommandContext& ctx) {
-            if (ctx.argc != 2) {
+            if (ctx.argv.size() != 2) {
                 terminalError(ctx, F("NTP.SETTIME <TIME>"));
                 return;
             }

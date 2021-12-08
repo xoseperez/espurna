@@ -243,7 +243,7 @@ void clientFromUrl(const String& string) {
 
 void terminalCommands() {
     terminalRegisterCommand(F("OTA"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 2) {
+        if (ctx.argv.size() == 2) {
             clientFromUrl(ctx.argv[1]);
             terminalOK(ctx);
             return;
