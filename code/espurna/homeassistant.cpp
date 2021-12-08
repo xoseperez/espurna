@@ -337,16 +337,16 @@ public:
     const String& message() override {
         if (!_message.length()) {
             auto& json = root();
-            json["dev"] = _ctx.device();
-            json["avty_t"] = _relay.availability.c_str();
-            json["pl_avail"] = _relay.payload_available.c_str();
-            json["pl_not_avail"] = _relay.payload_not_available.c_str();
-            json["pl_on"] = _relay.payload_on.c_str();
-            json["pl_off"] = _relay.payload_off.c_str();
-            json["uniq_id"] = uniqueId();
-            json["name"] = _ctx.name() + ' ' + _index;
-            json["stat_t"] = mqttTopic(MQTT_TOPIC_RELAY, _index, false);
-            json["cmd_t"] = mqttTopic(MQTT_TOPIC_RELAY, _index, true);
+            json[F("dev")] = _ctx.device();
+            json[F("avty_t")] = _relay.availability.c_str();
+            json[F("pl_avail")] = _relay.payload_available.c_str();
+            json[F("pl_not_avail")] = _relay.payload_not_available.c_str();
+            json[F("pl_on")] = _relay.payload_on.c_str();
+            json[F("pl_off")] = _relay.payload_off.c_str();
+            json[F("uniq_id")] = uniqueId();
+            json[F("name")] = _ctx.name() + ' ' + _index;
+            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_RELAY, _index, false);
+            json[F("cmd_t")] = mqttTopic(MQTT_TOPIC_RELAY, _index, true);
             json.printTo(_message);
         }
         return _message;
@@ -451,22 +451,22 @@ public:
         if (!_message.length()) {
             auto& json = root();
 
-            json["schema"] = "json";
-            json["uniq_id"] = uniqueId();
+            json[F("schema")] = "json";
+            json[F("uniq_id")] = uniqueId();
 
-            json["name"] = _ctx.name() + ' ' + F("Light");
+            json[F("name")] = _ctx.name() + ' ' + F("Light");
 
-            json["stat_t"] = mqttTopic(MQTT_TOPIC_LIGHT_JSON, false);
-            json["cmd_t"] = mqttTopic(MQTT_TOPIC_LIGHT_JSON, true);
+            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_LIGHT_JSON, false);
+            json[F("cmd_t")] = mqttTopic(MQTT_TOPIC_LIGHT_JSON, true);
 
-            json["avty_t"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-            json["pl_avail"] = quote(mqttPayloadStatus(true));
-            json["pl_not_avail"] = quote(mqttPayloadStatus(false));
+            json[F("avty_t")] = mqttTopic(MQTT_TOPIC_STATUS, false);
+            json[F("pl_avail")] = quote(mqttPayloadStatus(true));
+            json[F("pl_not_avail")] = quote(mqttPayloadStatus(false));
 
             // send `true` for every payload we support sending / receiving
             // already enabled by default: "state", "transition"
 
-            json["brightness"] = true;
+            json[F("brightness")] = true;
 
             // Note that since we send back the values immediately, HS mode sliders
             // *will jump*, as calculations of input do not always match the output.
@@ -475,9 +475,9 @@ public:
 
             if (lightHasColor()) {
                 if (lightUseRGB()) {
-                    json["rgb"] = true;
+                    json[F("rgb")] = true;
                 } else {
-                    json["hs"] = true;
+                    json[F("hs")] = true;
                 }
             }
 
@@ -488,9 +488,9 @@ public:
 
             if (lightHasColor() || lightUseCCT()) {
                 auto range = lightMiredsRange();
-                json["min_mirs"] = range.cold();
-                json["max_mirs"] = range.warm();
-                json["color_temp"] = true;
+                json[F("min_mirs")] = range.cold();
+                json[F("max_mirs")] = range.warm();
+                json[F("color_temp")] = true;
             }
 
             json.printTo(_message);
@@ -652,12 +652,12 @@ public:
     const String& message() override {
         if (!_message.length()) {
             auto& json = root();
-            json["dev"] = _ctx.device();
-            json["uniq_id"] = uniqueId();
+            json[F("dev")] = _ctx.device();
+            json[F("uniq_id")] = uniqueId();
 
-            json["name"] = _ctx.name() + ' ' + name() + ' ' + localId();
-            json["stat_t"] = mqttTopic(magnitudeTopicIndex(_index), false);
-            json["unit_of_meas"] = magnitudeUnits(_index);
+            json[F("name")] = _ctx.name() + ' ' + name() + ' ' + localId();
+            json[F("stat_t")] = mqttTopic(magnitudeTopicIndex(_index), false);
+            json[F("unit_of_meas")] = magnitudeUnits(_index);
 
             json.printTo(_message);
         }
