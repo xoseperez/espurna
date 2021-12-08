@@ -15,13 +15,17 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <memory>
 #include <vector>
 
+#include "system.h"
+#include "ws.h"
+
 // -----------------------------------------------------------------------------
 // WS authentication
 // -----------------------------------------------------------------------------
 
 struct WsTicket {
+    using TimeSource = espurna::time::CoreClock;
     IPAddress ip;
-    unsigned long timestamp = 0;
+    TimeSource::time_point timestamp{};
 };
 
 // -----------------------------------------------------------------------------
@@ -32,9 +36,9 @@ struct WsTicket {
 // - constant 'callbacks' list as reference, which was registered via wsRegister()
 // - in-place callback / callbacks that will be moved inside this container
 
-struct WsPostponedCallbacks {
-
-    public:
+class WsPostponedCallbacks {
+public:
+    using TimeSource = espurna::time::CpuClock;
 
     enum class Mode {
         Sequence,
@@ -42,21 +46,21 @@ struct WsPostponedCallbacks {
     };
 
     WsPostponedCallbacks(uint32_t client_id, ws_on_send_callback_f&& cb) :
-        client_id(client_id),
-        timestamp(ESP.getCycleCount()),
+        _client_id(client_id),
+        _timestamp(TimeSource::now()),
+        _mode(Mode::All),
         _storage(new ws_on_send_callback_list_t {std::move(cb)}),
         _callbacks(*_storage.get()),
-        _current(_callbacks.begin()),
-        _mode(Mode::All)
+        _current(_callbacks.begin())
     {}
 
     WsPostponedCallbacks(uint32_t client_id, const ws_on_send_callback_f& cb) :
-        client_id(client_id),
-        timestamp(ESP.getCycleCount()),
+        _client_id(client_id),
+        _timestamp(TimeSource::now()),
+        _mode(Mode::All),
         _storage(new ws_on_send_callback_list_t {cb}),
         _callbacks(*_storage.get()),
-        _current(_callbacks.begin()),
-        _mode(Mode::All)
+        _current(_callbacks.begin())
     {}
 
     template <typename T>
@@ -64,21 +68,21 @@ struct WsPostponedCallbacks {
         WsPostponedCallbacks(0, std::forward<T>(cb))
     {}
 
-    WsPostponedCallbacks(const uint32_t client_id, const ws_on_send_callback_list_t& cbs, Mode mode = Mode::Sequence) :
-        client_id(client_id),
-        timestamp(ESP.getCycleCount()),
+    WsPostponedCallbacks(uint32_t client_id, const ws_on_send_callback_list_t& cbs, Mode mode = Mode::Sequence) :
+        _client_id(client_id),
+        _timestamp(TimeSource::now()),
+        _mode(mode),
         _callbacks(cbs),
-        _current(_callbacks.begin()),
-        _mode(mode)
+        _current(_callbacks.begin())
     {}
 
-    WsPostponedCallbacks(const uint32_t client_id, ws_on_send_callback_list_t&& cbs, Mode mode = Mode::All) :
-        client_id(client_id),
-        timestamp(ESP.getCycleCount()),
+    WsPostponedCallbacks(uint32_t client_id, ws_on_send_callback_list_t&& cbs, Mode mode = Mode::All) :
+        _client_id(client_id),
+        _timestamp(TimeSource::now()),
+        _mode(mode),
         _storage(new ws_on_send_callback_list_t(std::move(cbs))),
         _callbacks(*_storage.get()),
-        _current(_callbacks.begin()),
-        _mode(mode)
+        _current(_callbacks.begin())
     {}
 
     bool done() {
@@ -109,26 +113,31 @@ struct WsPostponedCallbacks {
         }
     }
 
-    const uint32_t client_id;
-    const decltype(ESP.getCycleCount()) timestamp;
+    uint32_t id() const {
+        return _client_id;
+    }
 
-    private:
+    TimeSource::time_point timestamp() const {
+        return _timestamp;
+    }
+
+private:
+    uint32_t _client_id;
+    TimeSource::time_point _timestamp;
+    Mode _mode;
 
     std::unique_ptr<ws_on_send_callback_list_t> _storage;
 
     const ws_on_send_callback_list_t& _callbacks;
     ws_on_send_callback_list_t::const_iterator _current;
-
-    const Mode _mode;
-
 };
 
 // -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
 
-struct WsDebug {
-
+class WsDebug {
+public:
     using Message = std::pair<String, String>;
     using MsgList = std::vector<Message>;
 
@@ -159,16 +168,14 @@ struct WsDebug {
     }
 
     void add(const char* prefix, const char* message) {
-        add(std::move(std::make_pair(prefix, message)));
+        add(std::make_pair(prefix, message));
     }
 
     void send(bool connected);
 
-    private:
-
+private:
     bool _flush;
     size_t _current;
     const size_t _capacity;
     MsgList _messages;
-
 };

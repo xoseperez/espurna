@@ -701,11 +701,11 @@
 #endif
 
 #ifndef WS_TIMEOUT
-#define WS_TIMEOUT                  1800000     // Timeout for secured websocket
+#define WS_TIMEOUT                  1800        // Time (in seconds) to persist the client session info
 #endif
 
 #ifndef WS_UPDATE_INTERVAL
-#define WS_UPDATE_INTERVAL          30000       // Update clients every 30 seconds
+#define WS_UPDATE_INTERVAL          30          // Time (in seconds) between periodic status updates sent out to every client
 #endif
 
 // -----------------------------------------------------------------------------
