@@ -19,7 +19,7 @@ bool rpcHandleAction(const String& action) {
     if (action.equals("reboot")) {
         result = true;
         schedule_function([]() {
-            deferredReset(100, CustomResetReason::Rpc);
+            prepareReset(CustomResetReason::Rpc);
         });
     } else if (action.equals("heartbeat")) {
         result = true;

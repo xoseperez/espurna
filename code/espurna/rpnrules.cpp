@@ -1083,7 +1083,7 @@ void init(rpn_context& context) {
 
     rpn_operator_set(context, "reset", 0, [](rpn_context& ctxt) -> rpn_error {
         static bool once = ([]() {
-            deferredReset(100, CustomResetReason::Rule);
+            prepareReset(CustomResetReason::Rule);
             return true;
         })();
 

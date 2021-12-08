@@ -666,6 +666,8 @@ void pending_reset_loop() {
     }
 }
 
+static constexpr espurna::duration::Milliseconds ShortDelayForReset { 500 };
+
 void deferredReset(duration::Milliseconds delay, CustomResetReason reason) {
     DEBUG_MSG_P(PSTR("[MAIN] Requested reset: %s\n"),
         espurna::boot::serialize(reason).c_str());
@@ -757,14 +759,19 @@ void forceEraseSDKConfig() {
     espurna::forceEraseSDKConfig();
 }
 
-void deferredReset(unsigned long delay, CustomResetReason reason) {
-    espurna::deferredReset(espurna::duration::Milliseconds(delay), reason);
+void factoryReset() {
+    resetSettings();
+    espurna::deferredReset(
+        espurna::ShortDelayForReset,
+        CustomResetReason::Factory);
 }
 
-void factoryReset() {
-    static constexpr espurna::duration::Milliseconds Time { 100 };
-    resetSettings();
-    espurna::deferredReset(Time, CustomResetReason::Factory);
+void deferredReset(espurna::duration::Milliseconds delay, CustomResetReason reason) {
+    espurna::deferredReset(delay, reason);
+}
+
+void prepareReset(CustomResetReason reason) {
+    espurna::deferredReset(espurna::ShortDelayForReset, reason);
 }
 
 bool pendingDeferredReset() {

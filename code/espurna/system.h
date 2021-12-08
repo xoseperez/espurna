@@ -241,7 +241,8 @@ void customResetReason(CustomResetReason);
 CustomResetReason customResetReason();
 String customResetReasonToPayload(CustomResetReason);
 
-void deferredReset(unsigned long delay, CustomResetReason reason);
+void deferredReset(espurna::duration::Milliseconds, CustomResetReason);
+void prepareReset(CustomResetReason);
 bool pendingDeferredReset();
 
 unsigned long systemLoadAverage();

@@ -521,7 +521,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "reboot") == 0) {
-            deferredReset(100, CustomResetReason::Web);
+            prepareReset(CustomResetReason::Web);
             return;
         }
 

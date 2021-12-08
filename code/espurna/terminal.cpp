@@ -486,7 +486,7 @@ void _terminalInitCommands() {
         }
 
         terminalOK(ctx);
-        deferredReset(100, CustomResetReason::Terminal);
+        prepareReset(CustomResetReason::Terminal);
     });
 
     terminalRegisterCommand(F("UPTIME"), [](::terminal::CommandContext&& ctx) {

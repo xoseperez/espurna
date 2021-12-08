@@ -27,7 +27,7 @@ void otaPrintError() {
 bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining) {
     if (Update.isRunning() && Update.end(evenIfRemaining)) {
         DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
-        deferredReset(500, reason);
+        prepareReset(reason);
         return true;
     }
 

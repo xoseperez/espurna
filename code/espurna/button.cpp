@@ -894,7 +894,7 @@ void buttonEvent(size_t id, ButtonEvent event) {
         break;
 
     case ButtonAction::Reset:
-        deferredReset(100, CustomResetReason::Button);
+        prepareReset(CustomResetReason::Button);
         break;
 
     case ButtonAction::FactoryReset:

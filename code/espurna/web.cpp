@@ -242,7 +242,7 @@ void _onReset(AsyncWebServerRequest *request) {
         return;
     }
 
-    deferredReset(100, CustomResetReason::Web);
+    prepareReset(CustomResetReason::Web);
     request->send(200);
 }
 
