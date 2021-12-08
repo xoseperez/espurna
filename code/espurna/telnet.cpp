@@ -183,14 +183,12 @@ void _telnetDisconnect(unsigned char clientId) {
 
 #elif TELNET_SERVER == TELNET_SERVER_ASYNC
 
-void _telnetCleanUp() {
-    schedule_function([] () {
-        for (unsigned char clientId=0; clientId < TELNET_MAX_CLIENTS; ++clientId) {
-            if (!_telnetClients[clientId]->connected()) {
-                _telnetClients[clientId] = nullptr;
-                DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
-                wifiApCheck();
-            }
+void _telnetCleanUp(unsigned char id) {
+    schedule_function([id] () {
+        if (_telnetClients[id] && !_telnetClients[id]->connected()) {
+            _telnetClients[id] = nullptr;
+            DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), id);
+            wifiApCheck();
         }
     });
 }
@@ -325,10 +323,12 @@ size_t _telnetWrite(unsigned char clientId, const char * message) {
 }
 
 void _telnetData(unsigned char clientId, char * data, size_t len) {
+    static constexpr unsigned char TelnetIac { 0xFF };
+    static constexpr unsigned char TelnetXeof { 0xEC };
 
-    if ((len >= 2) && (data[0] == TELNET_IAC)) {
+    if ((len >= 2) && (static_cast<unsigned char>(data[0]) == TelnetIac)) {
         // C-d is sent as two bytes (sometimes repeating)
-        if (data[1] == TELNET_XEOF) {
+        if (static_cast<unsigned char>(data[1]) == TelnetXeof) {
             _telnetDisconnect(clientId);
         }
         return; // Ignore telnet negotiation
@@ -451,7 +451,7 @@ void _telnetSetupClient(unsigned char i, AsyncClient *client) {
         _telnetData(i, reinterpret_cast<char*>(data), len);
     });
     client->onDisconnect([i](void*, AsyncClient*) {
-        _telnetCleanUp();
+        _telnetCleanUp(i);
     });
 
     // XXX: AsyncClient does not have copy ctor
@@ -526,7 +526,7 @@ bool telnetDebugSend(const char* prefix, const char* data) {
 #endif // DEBUG_TELNET_SUPPORT
 
 unsigned char telnetWrite(unsigned char ch) {
-    char data[1] = {ch};
+    const char data[1] { static_cast<char>(ch) };
     return _telnetWrite(data, 1);
 }
 
