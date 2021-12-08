@@ -299,12 +299,6 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     *out += "\n}";
 
     auto hostname = getHostname();
-    auto timestamp = String(millis());
-#if NTP_SUPPORT
-    if (ntpSynced()) {
-        timestamp = ntpDateTime();
-    }
-#endif
 
     AsyncWebServerResponse* response = request->beginChunkedResponse("application/json",
         [out](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
@@ -322,8 +316,19 @@ void _onGetConfig(AsyncWebServerRequest *request) {
             return have;
         });
 
+    auto get_timestamp = []() -> String {
+#if NTP_SUPPORT
+        if (ntpSynced()) {
+            return ntpDateTime();
+        }
+#endif
+        return String(espurna::time::millis().time_since_epoch().count(), 10);
+    };
+
     int written = snprintf_P(buffer, sizeof(buffer),
-        PSTR("attachment; filename=\"%s %s backup.json\""), hostname.c_str(), timestamp.c_str());
+        PSTR("attachment; filename=\"%s %s backup.json\""),
+        hostname.c_str(), get_timestamp().c_str());
+
     if (written > 0) {
         response->addHeader("Content-Disposition", buffer);
         response->addHeader("X-XSS-Protection", "1; mode=block");
