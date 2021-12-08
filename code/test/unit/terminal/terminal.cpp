@@ -41,7 +41,7 @@ void test_hex_codes() {
 
     static bool abc_done = false;
 
-    terminal::Terminal::addCommand(F("abc"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("abc"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
@@ -68,17 +68,17 @@ void test_multiple_commands() {
     // set up counter to be chained between commands
     static int command_calls = 0;
 
-    terminal::Terminal::addCommand(F("test1"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test1"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         TEST_ASSERT_EQUAL(0, command_calls);
         command_calls = 1;
     });
-    terminal::Terminal::addCommand(F("test2"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test2"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         TEST_ASSERT_EQUAL(1, command_calls);
         command_calls = 2;
     });
-    terminal::Terminal::addCommand(F("test3"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test3"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         TEST_ASSERT_EQUAL(2, command_calls);
         command_calls = 3;
@@ -113,7 +113,7 @@ void test_command() {
 
     static int counter = 0;
 
-    terminal::Terminal::addCommand(F("test.command"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test.command"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
         ++counter;
     });
@@ -150,12 +150,12 @@ void test_command_args() {
 
     static bool waiting = false;
 
-    terminal::Terminal::addCommand(F("test.command.arg1"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test.command.arg1"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         waiting = false;
     });
 
-    terminal::Terminal::addCommand(F("test.command.arg1_empty"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test.command.arg1_empty"), [](::terminal::CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT(!ctx.argv[1].length());
         waiting = false;
@@ -192,7 +192,7 @@ void test_buffer() {
 
 void test_quotes() {
 
-    terminal::Terminal::addCommand(F("test.quotes"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test.quotes"), [](::terminal::CommandContext&& ctx) {
         for (auto& arg : ctx.argv) {
             TEST_MESSAGE(arg.c_str());
         }
@@ -216,10 +216,10 @@ void test_quotes() {
 
 void test_case_insensitive() {
 
-    terminal::Terminal::addCommand(F("test.lowercase1"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test.lowercase1"), [](::terminal::CommandContext&& ctx) {
         TEST_FAIL_MESSAGE("`test.lowercase1` was registered first, but there's another function by the same name. This should not be called");
     });
-    terminal::Terminal::addCommand(F("TEST.LOWERCASE1"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("TEST.LOWERCASE1"), [](::terminal::CommandContext&& ctx) {
         __asm__ volatile ("nop");
     });
 
@@ -235,7 +235,7 @@ void test_case_insensitive() {
 
 void test_output() {
 
-    terminal::Terminal::addCommand(F("test.output"), [](const terminal::CommandContext& ctx) {
+    terminal::Terminal::addCommand(F("test.output"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() != 2) return;
         ctx.output.print(ctx.argv[1]);
     });

@@ -612,7 +612,7 @@ error:
 
         #if TERMINAL_SUPPORT
 
-            terminalRegisterCommand(F("TUYA.SHOW"), [](const terminal::CommandContext& ctx) {
+            terminalRegisterCommand(F("TUYA.SHOW"), [](::terminal::CommandContext&& ctx) {
                 ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
 
                 ctx.output.print(F("\nConfig:\n"));
@@ -634,7 +634,7 @@ error:
                 }
             });
 
-            terminalRegisterCommand(F("TUYA.SAVE"), [](const terminal::CommandContext&) {
+            terminalRegisterCommand(F("TUYA.SAVE"), [](::terminal::CommandContext&&) {
                 for (auto& kv : config) {
                     setSetting(kv.key, kv.value);
                 }

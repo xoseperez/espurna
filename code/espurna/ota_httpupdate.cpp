@@ -144,7 +144,7 @@ void clientFromUrl(const String& url) {
 #if TERMINAL_SUPPORT
 
 void terminalCommands() {
-    terminalRegisterCommand(F("OTA"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("OTA"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 2) {
             clientFromUrl(ctx.argv[1]);
             terminalOK(ctx);

@@ -561,14 +561,14 @@ void telnetSetup() {
         #endif
 
         #if TERMINAL_SUPPORT
-            terminalRegisterCommand(F("TELNET.REVERSE"), [](const terminal::CommandContext& ctx) {
+            terminalRegisterCommand(F("TELNET.REVERSE"), [](::terminal::CommandContext&& ctx) {
                 if (ctx.argv.size() < 3) {
-                    terminalError(F("Wrong arguments. Usage: TELNET.REVERSE <host> <port>"));
+                    terminalError(ctx, F("Wrong arguments. Usage: TELNET.REVERSE <host> <port>"));
                     return;
                 }
 
-                terminalOK();
                 _telnetReverse(ctx.argv[1].c_str(), ctx.argv[2].toInt());
+                terminalOK(ctx);
             });
         #endif
     #endif

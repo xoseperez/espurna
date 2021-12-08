@@ -94,7 +94,7 @@ void _nofussLoop() {
 #if TERMINAL_SUPPORT
 
 void _nofussInitCommands() {
-    terminalRegisterCommand(F("NOFUSS"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("NOFUSS"), [](::terminal::CommandContext&& ctx) {
         terminalOK(ctx);
         nofussRun();
     });

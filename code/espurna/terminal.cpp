@@ -159,7 +159,7 @@ unsigned char _serial_rx_pointer = 0;
 // Commands
 // -----------------------------------------------------------------------------
 
-void _terminalHelpCommand(const terminal::CommandContext& ctx) {
+void _terminalHelpCommand(::terminal::CommandContext&& ctx) {
     auto names = _terminal.names();
 
     // XXX: Core's ..._P funcs only allow 2nd pointer to be in PROGMEM,
@@ -350,13 +350,13 @@ void _terminalInitCommands() {
     terminalRegisterCommand(F("COMMANDS"), _terminalHelpCommand);
     terminalRegisterCommand(F("HELP"), _terminalHelpCommand);
 
-    terminalRegisterCommand(F("ERASE.CONFIG"), [](const terminal::CommandContext&) {
+    terminalRegisterCommand(F("ERASE.CONFIG"), [](::terminal::CommandContext&&) {
         terminalOK();
         customResetReason(CustomResetReason::Terminal);
         forceEraseSDKConfig();
     });
 
-    terminalRegisterCommand(F("ADC"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("ADC"), [](::terminal::CommandContext&& ctx) {
         const int pin = (ctx.argv.size() == 2)
             ? ctx.argv[1].toInt()
             : A0;
@@ -365,7 +365,7 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("GPIO"), [](::terminal::CommandContext&& ctx) {
         const int pin = (ctx.argv.size() >= 2)
             ? ctx.argv[1].toInt()
             : -1;
@@ -404,7 +404,7 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("HEAP"), [](::terminal::CommandContext&& ctx) {
         const auto stats = systemHeapStats();
         ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %hu\n"),
             systemInitialFreeHeap(), stats.available, stats.usable);
@@ -412,13 +412,13 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("STACK"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("continuation stack initial: %d, free: %u\n"),
             CONT_STACKSIZE, systemFreeStack());
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("INFO"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("%s %s built %s\n"), getAppName(), getVersion(), buildTime().c_str());
         ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"), getFullChipId().c_str(), system_get_cpu_freq());
         ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
@@ -438,7 +438,7 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("STORAGE"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("STORAGE"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
         ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
         ctx.output.printf_P(PSTR("mode: %s\n"), getFlashChipMode());
@@ -476,7 +476,7 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RESET"), [](::terminal::CommandContext&& ctx) {
         auto count = 1;
         if (ctx.argv.size() == 2) {
             count = ctx.argv[1].toInt();
@@ -489,19 +489,19 @@ void _terminalInitCommands() {
         deferredReset(100, CustomResetReason::Terminal);
     });
 
-    terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("UPTIME"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("uptime %s\n"), getUptime().c_str());
         terminalOK(ctx);
     });
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-    terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("MFLN.PROBE"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() != 3) {
             terminalError(ctx, F("<url> <value>"));
             return;
         }
 
-        URL _url(ctx.argv[1]);
+        URL _url(std::move(ctx.argv[1]));
         uint16_t requested_mfln = atol(ctx.argv[2].c_str());
 
         auto client = std::make_unique<BearSSL::WiFiClientSecure>();
@@ -516,13 +516,13 @@ void _terminalInitCommands() {
     });
 #endif
 
-    terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("HOST"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() != 2) {
             terminalError(ctx, F("<hostname>"));
             return;
         }
 
-        dns::start(String(ctx.argv[1]), [&](const char* name, const ip_addr_t* addr, void*) {
+        dns::start(std::move(ctx.argv[1]), [&](const char* name, const ip_addr_t* addr, void*) {
             if (!addr) {
                 ctx.output.printf_P(PSTR("%s not found\n"), name);
                 return;
@@ -537,7 +537,7 @@ void _terminalInitCommands() {
         }
     });
 
-    terminalRegisterCommand(F("NETSTAT"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("NETSTAT"), [](::terminal::CommandContext&& ctx) {
         auto print = [](Print& out, tcp_pcb* list) {
             for (tcp_pcb* pcb = list; pcb != nullptr; pcb = pcb->next) {
                 out.printf_P(PSTR("state %s local %s:%hu remote %s:%hu\n"),
@@ -787,11 +787,11 @@ void terminalError(Print& print, const String& error) {
     print.printf_P(PSTR("-ERROR: %s\n"), error.c_str());
 }
 
-void terminalOK(const terminal::CommandContext& ctx) {
+void terminalOK(const ::terminal::CommandContext& ctx) {
     terminalOK(ctx.output);
 }
 
-void terminalError(const terminal::CommandContext& ctx, const String& error) {
+void terminalError(const ::terminal::CommandContext& ctx, const String& error) {
     terminalError(ctx.output, error);
 }
 

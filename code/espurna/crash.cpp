@@ -324,7 +324,7 @@ void crashSetup() {
     }
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("CRASH"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("CRASH"), [](::terminal::CommandContext&& ctx) {
         debug::crash::forceDump(ctx.output);
         terminalOK(ctx);
     });

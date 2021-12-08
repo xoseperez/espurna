@@ -665,7 +665,7 @@ void debugSetup() {
 
 #if DEBUG_LOG_BUFFER_SUPPORT
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("DEBUG.BUFFER"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("DEBUG.BUFFER"), [](::terminal::CommandContext&& ctx) {
         debug::buffer::disable();
         if (!debug::buffer::size()) {
             terminalError(ctx, F("buffer is empty\n"));

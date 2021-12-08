@@ -1966,7 +1966,7 @@ namespace terminal {
 
 void init() {
 
-    terminalRegisterCommand(F("WIFI.STATIONS"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("WIFI.STATIONS"), [](::terminal::CommandContext&& ctx) {
         size_t stations { 0ul };
         for (auto* it = wifi_softap_get_station_info(); it; it = STAILQ_NEXT(it, next), ++stations) {
             ctx.output.printf_P(PSTR("%s %s\n"),
@@ -1984,7 +1984,7 @@ void init() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("NETWORK"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("NETWORK"), [](::terminal::CommandContext&& ctx) {
         for (auto& addr : addrList) {
             ctx.output.printf_P(PSTR("%s%d %4s %6s "),
                 addr.ifname().c_str(),
@@ -2021,7 +2021,7 @@ void init() {
         }
     });
 
-    terminalRegisterCommand(F("WIFI"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("WIFI"), [](::terminal::CommandContext&& ctx) {
         const auto mode = wifi::opmode();
         ctx.output.printf_P(PSTR("OPMODE: %s\n"), wifi::debug::opmode(mode).c_str());
 
@@ -2054,23 +2054,23 @@ void init() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("WIFI.RESET"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("WIFI.RESET"), [](::terminal::CommandContext&& ctx) {
         wifiDisconnect();
         wifi::settings::configure();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("WIFI.STA"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("WIFI.STA"), [](::terminal::CommandContext&& ctx) {
         wifi::sta::toggle();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("WIFI.AP"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("WIFI.AP"), [](::terminal::CommandContext&& ctx) {
         wifi::ap::toggle();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("WIFI.SCAN"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("WIFI.SCAN"), [](::terminal::CommandContext&& ctx) {
         wifi::sta::scan::wait(
             [&](bss_info* info) {
                 ctx.output.printf_P(PSTR("BSSID: %s AUTH: %11s RSSI: %3hhd CH: %2hhu SSID: %s\n"),

@@ -1007,7 +1007,7 @@ void haSetup() {
     mqttRegister(homeassistant::mqttCallback);
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("HA.SEND"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("HA.SEND"), [](::terminal::CommandContext&& ctx) {
         homeassistant::internal::state = homeassistant::internal::State::Pending;
         homeassistant::publishDiscovery();
         terminalOK(ctx);

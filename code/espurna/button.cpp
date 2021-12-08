@@ -1257,7 +1257,7 @@ void buttonSetup() {
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), count);
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("BUTTON"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("BUTTON"), [](::terminal::CommandContext&& ctx) {
         unsigned index { 0u };
         for (auto& button : _buttons) {
             ctx.output.printf_P(PSTR("%u - "), index++);

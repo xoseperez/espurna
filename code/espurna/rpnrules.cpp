@@ -263,7 +263,7 @@ void showStack(Print& output) {
 }
 
 void setup() {
-    terminalRegisterCommand(F("RPN.RUNNERS"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RPN.RUNNERS"), [](::terminal::CommandContext&& ctx) {
         if (internal::runners.empty()) {
             terminalError(ctx, F("No active runners"));
             return;
@@ -280,7 +280,7 @@ void setup() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.VARS"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RPN.VARS"), [](::terminal::CommandContext&& ctx) {
         rpn_variables_foreach(internal::context, [&ctx](const String& name, const rpn_value& value) {
             char buffer[256] = {0};
             snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s\n"), name.c_str(), valueToString(value).c_str());
@@ -289,7 +289,7 @@ void setup() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.OPS"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RPN.OPS"), [](::terminal::CommandContext&& ctx) {
         rpn_operators_foreach(internal::context, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)\n"), name.c_str(), argc);
@@ -298,9 +298,9 @@ void setup() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RPN.TEST"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RPN.TEST"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() != 2) {
-            terminalError(F("Wrong arguments"));
+            terminalError(ctx, F("Wrong arguments"));
             return;
         }
 
@@ -963,7 +963,7 @@ void init(rpn_context& context) {
     internal::stale_delay = getSetting("rfbStaleDelay", internal::StaleDelay);
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("RFB.CODES"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RFB.CODES"), [](::terminal::CommandContext&& ctx) {
         for (auto& code : internal::codes) {
             char buffer[128] = {0};
             snprintf_P(buffer, sizeof(buffer),

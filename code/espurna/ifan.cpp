@@ -346,7 +346,7 @@ void setup() {
 #endif
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("SPEED"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("SPEED"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 2) {
             updateSpeedFromPayload(ctx.argv[1]);
         }

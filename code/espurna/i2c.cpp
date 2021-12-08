@@ -231,7 +231,7 @@ void init() {
 #if TERMINAL_SUPPORT
 
 void initTerminalCommands() {
-    terminalRegisterCommand(F("I2C.SCAN"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("I2C.SCAN"), [](::terminal::CommandContext&& ctx) {
         unsigned char devices { 0 };
         i2c::scan([&](unsigned char address) {
             ++devices;
@@ -246,7 +246,7 @@ void initTerminalCommands() {
         terminalError(ctx, F("No devices found"));
     });
 
-    terminalRegisterCommand(F("I2C.CLEAR"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("I2C.CLEAR"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf("result: %d\n", i2c::clear());
         terminalOK(ctx);
     });

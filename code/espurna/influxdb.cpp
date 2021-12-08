@@ -305,9 +305,9 @@ void idbSetup() {
     espurnaRegisterLoop(_idbFlush);
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("IDB.SEND"), [](const terminal::CommandContext& ctx) {
+        terminalRegisterCommand(F("IDB.SEND"), [](::terminal::CommandContext&& ctx) {
             if (ctx.argv.size() != 4) {
-                terminalError(F("idb.send <topic> <id> <value>"));
+                terminalError(ctx, F("idb.send <topic> <id> <value>"));
                 return;
             }
 

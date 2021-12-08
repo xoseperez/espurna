@@ -788,18 +788,18 @@ namespace {
 #if TERMINAL_SUPPORT
 
 void _mqttInitCommands() {
-    terminalRegisterCommand(F("MQTT.RESET"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("MQTT.RESET"), [](::terminal::CommandContext&& ctx) {
         _mqttConfigure();
         mqttDisconnect();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("MQTT.INFO"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("MQTT.INFO"), [](::terminal::CommandContext&& ctx) {
         _mqttInfo();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("MQTT.SEND"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("MQTT.SEND"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 3) {
             if (mqttSend(ctx.argv[1].c_str(), ctx.argv[2].c_str(), false, false)) {
                 terminalOK(ctx);

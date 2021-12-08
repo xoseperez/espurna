@@ -74,7 +74,7 @@ void eepromBackup(uint32_t index){
 
 void _eepromInitCommands() {
 
-    terminalRegisterCommand(F("EEPROM"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("EEPROM"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("Sectors: %s, current: %lu\n"),
                 eepromSectors().c_str(), eepromCurrent());
         if (_eeprom_commit_count > 0) {
@@ -84,29 +84,29 @@ void _eepromInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("EEPROM.COMMIT"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("EEPROM.COMMIT"), [](::terminal::CommandContext&& ctx) {
         _eepromCommit();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("EEPROM.DUMP"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("EEPROM.DUMP"), [](::terminal::CommandContext&& ctx) {
         EEPROMr.dump(static_cast<Stream&>(ctx.output)); // XXX: only Print interface is used
-        terminalOK(ctx.output);
+        terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("FLASH.DUMP"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("FLASH.DUMP"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() < 2) {
-            terminalError(F("Wrong arguments"));
+            terminalError(ctx, F("Wrong arguments"));
             return;
         }
         uint32_t sector = ctx.argv[1].toInt();
         uint32_t max = ESP.getFlashChipSize() / SPI_FLASH_SEC_SIZE;
         if (sector >= max) {
-            terminalError(F("Sector out of range"));
+            terminalError(ctx, F("Sector out of range"));
             return;
         }
         EEPROMr.dump(static_cast<Stream&>(ctx.output), sector); // XXX: only Print interface is used
-        terminalOK(ctx.output);
+        terminalOK(ctx);
     });
 
 }

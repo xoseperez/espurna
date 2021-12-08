@@ -1029,7 +1029,7 @@ void onConnected(JsonObject& root) {
 namespace terminal {
 
 void setup() {
-    terminalRegisterCommand(F("LED"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("LED"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             size_t id;
             if (!tryParseId(ctx.argv[1].c_str(), ledCount, id)) {

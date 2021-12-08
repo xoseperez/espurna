@@ -607,7 +607,7 @@ void ntpSetup() {
     #endif
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("NTP"), [](const terminal::CommandContext& ctx) {
+        terminalRegisterCommand(F("NTP"), [](::terminal::CommandContext&& ctx) {
             if (ntpSynced()) {
                 _ntpReportTerminal(ctx.output);
                 terminalOK(ctx);
@@ -617,7 +617,7 @@ void ntpSetup() {
             terminalError(ctx, F("NTP not synced"));
         });
 
-        terminalRegisterCommand(F("NTP.SYNC"), [](const terminal::CommandContext& ctx) {
+        terminalRegisterCommand(F("NTP.SYNC"), [](::terminal::CommandContext&& ctx) {
             if (_ntp_synced) {
                 sntp_stop();
                 sntp_init();
@@ -630,7 +630,7 @@ void ntpSetup() {
 
         // TODO: strptime & mktime is around ~3.7Kb
 #if 1
-        terminalRegisterCommand(F("NTP.SETTIME"), [](const terminal::CommandContext& ctx) {
+        terminalRegisterCommand(F("NTP.SETTIME"), [](::terminal::CommandContext&& ctx) {
             if (ctx.argv.size() != 2) {
                 terminalError(ctx, F("NTP.SETTIME <TIME>"));
                 return;
@@ -646,7 +646,7 @@ void ntpSetup() {
             terminalError(ctx, F("Invalid timestamp"));
         });
 #else
-        terminalRegisterCommand(F("NTP.SETTIME"), [](const terminal::CommandContext& ctx) {
+        terminalRegisterCommand(F("NTP.SETTIME"), [](::terminal::CommandContext&& ctx) {
             if (ctx.argv.size() != 2) {
                 terminalError(ctx, F("NTP.SETTIME <TIME>"));
                 return;

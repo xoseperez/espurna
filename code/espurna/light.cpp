@@ -2378,7 +2378,7 @@ namespace {
 
 void _lightInitCommands() {
 
-    terminalRegisterCommand(F("LIGHT"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("LIGHT"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             if (!_lightParsePayload(ctx.argv[1].c_str())) {
                 terminalError(ctx, F("Invalid payload"));
@@ -2391,7 +2391,7 @@ void _lightInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("BRIGHTNESS"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("BRIGHTNESS"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             _lightAdjustBrightness(ctx.argv[1]);
             lightUpdate();
@@ -2400,7 +2400,7 @@ void _lightInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("CHANNEL"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("CHANNEL"), [](::terminal::CommandContext&& ctx) {
         const size_t Channels { _light_channels.size() };
         if (!Channels) {
             terminalError(ctx, F("No channels configured"));
@@ -2435,7 +2435,7 @@ void _lightInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RGB"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RGB"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             _lightFromRgbPayload(ctx.argv[1].c_str());
             lightUpdate();
@@ -2444,7 +2444,7 @@ void _lightInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("HSV"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("HSV"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             _lightFromHsvPayload(ctx.argv[1].c_str());
             lightUpdate();
@@ -2453,7 +2453,7 @@ void _lightInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("KELVIN"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("KELVIN"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             _lightAdjustKelvin(ctx.argv[1]);
             lightUpdate();
@@ -2462,7 +2462,7 @@ void _lightInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("MIRED"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("MIRED"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
             _lightAdjustMireds(ctx.argv[1]);
             lightUpdate();

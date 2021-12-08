@@ -92,8 +92,8 @@ static char hex_digit_to_int(char c) {
 CommandLine parse_commandline(const char *line) {
     const char *p = line;
 
-    Argv argv;
-    argv.reserve(4);
+    CommandLine out;
+    out.argv.reserve(4);
 
     String current;
 
@@ -136,11 +136,11 @@ CommandLine parse_commandline(const char *line) {
                     } else if (*p == '"') {
                         /* closing quote must be followed by a space or
                          * nothing at all. */
-                        if (*(p+1) && !isspace(*(p+1))) goto err;
+                        if (*(p+1) && !isspace(*(p+1))) goto on_error;
                         done=1;
                     } else if (!*p) {
                         /* unterminated quotes */
-                        goto err;
+                        goto on_error;
                     } else {
                         char buf[2] {*p, '\0'};
                         current += buf;
@@ -152,11 +152,11 @@ CommandLine parse_commandline(const char *line) {
                     } else if (*p == '\'') {
                         /* closing quote must be followed by a space or
                          * nothing at all. */
-                        if (*(p+1) && !isspace(*(p+1))) goto err;
+                        if (*(p+1) && !isspace(*(p+1))) goto on_error;
                         done=1;
                     } else if (!*p) {
                         /* unterminated quotes */
-                        goto err;
+                        goto on_error;
                     } else {
                         char buf[2] {*p, '\0'};
                         current += buf;
@@ -186,17 +186,18 @@ CommandLine parse_commandline(const char *line) {
                 if (*p) p++;
             }
             /* add the token to the vector */
-            argv.emplace_back(std::move(current));
+            out.argv.emplace_back(std::move(current));
         } else {
             /* Even on empty input string return something not NULL. */
-            goto out;
+            goto on_out;
         }
     }
 
-err:
-    argv.clear();
-out:
-    return CommandLine{std::move(argv)};
+on_error:
+    out.argv.clear();
+
+on_out:
+    return out;
 }
 
 // Fowler–Noll–Vo hash function to hash command strings that treats input as lowercase

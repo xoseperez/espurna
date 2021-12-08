@@ -494,7 +494,7 @@ void settingsGetJson(JsonObject& root) {
 namespace {
 
 void _settingsInitCommands() {
-    terminalRegisterCommand(F("CONFIG"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("CONFIG"), [](::terminal::CommandContext&& ctx) {
         // TODO: enough of a buffer?
         DynamicJsonBuffer jsonBuffer(1024);
         JsonObject& root = jsonBuffer.createObject();
@@ -503,7 +503,7 @@ void _settingsInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("KEYS"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("KEYS"), [](::terminal::CommandContext&& ctx) {
         auto keys = settingsKeys();
 
         ctx.output.print(F("Current settings:"));
@@ -522,7 +522,7 @@ void _settingsInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("DEL"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("DEL"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() < 2) {
             terminalError(ctx, F("del <key> [<key>...]"));
             return;
@@ -540,7 +540,7 @@ void _settingsInitCommands() {
         }
     });
 
-    terminalRegisterCommand(F("SET"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("SET"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() != 3) {
             terminalError(ctx, F("set <key> <value>"));
             return;
@@ -554,7 +554,7 @@ void _settingsInitCommands() {
         terminalError(ctx, F("could not set the key"));
     });
 
-    terminalRegisterCommand(F("GET"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("GET"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() < 2) {
             terminalError(ctx, F("get <key> [<key>...]"));
             return;
@@ -580,18 +580,18 @@ void _settingsInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("RELOAD"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RELOAD"), [](::terminal::CommandContext&& ctx) {
         espurnaReload();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("FACTORY.RESET"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("FACTORY.RESET"), [](::terminal::CommandContext&& ctx) {
         factoryReset();
         terminalOK(ctx);
     });
 
 #if not SETTINGS_AUTOSAVE
-    terminalRegisterCommand(F("SAVE"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("SAVE"), [](::terminal::CommandContext&& ctx) {
         eepromCommit();
         terminalOK(ctx);
     });

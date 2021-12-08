@@ -2112,7 +2112,7 @@ namespace {
 
 void _relayInitCommands() {
 
-    terminalRegisterCommand(F("RELAY"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RELAY"), [](::terminal::CommandContext&& ctx) {
         auto showRelays = [&](size_t start, size_t stop, bool full = true) {
             for (size_t index = start; index < stop; ++index) {
                 auto& relay = _relays[index];

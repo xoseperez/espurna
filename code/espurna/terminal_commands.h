@@ -38,7 +38,7 @@ public:
         NoInput          // We got nothing in the buffer and stream read() returns -1
     };
 
-    using CommandFunc = void(*)(const CommandContext&);
+    using CommandFunc = void(*)(CommandContext&&);
     using ProcessFunc = bool(*)(Result);
 
     using Names = std::vector<const __FlashStringHelper*>;

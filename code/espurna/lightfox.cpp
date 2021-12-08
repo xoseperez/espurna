@@ -159,12 +159,12 @@ void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObj
 
 void _lightfoxInitCommands() {
 
-    terminalRegisterCommand(F("LIGHTFOX.LEARN"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("LIGHTFOX.LEARN"), [](::terminal::CommandContext&& ctx) {
         lightfoxLearn();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("LIGHTFOX.CLEAR"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("LIGHTFOX.CLEAR"), [](::terminal::CommandContext&& ctx) {
         lightfoxClear();
         terminalOK(ctx);
     });

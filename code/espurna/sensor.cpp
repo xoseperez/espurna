@@ -2189,7 +2189,7 @@ void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
 namespace {
 
 void _sensorInitCommands() {
-    terminalRegisterCommand(F("MAGNITUDES"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("MAGNITUDES"), [](::terminal::CommandContext&& ctx) {
         char last[64];
         char reported[64];
         for (size_t index = 0; index < _magnitudes.size(); ++index) {
@@ -2203,7 +2203,7 @@ void _sensorInitCommands() {
         terminalOK();
     });
 
-    terminalRegisterCommand(F("EXPECTED"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("EXPECTED"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 3) {
             const auto id = settings::internal::convert<size_t>(ctx.argv[1]);
             if (id < _magnitudes.size()) {
@@ -2222,12 +2222,12 @@ void _sensorInitCommands() {
         terminalError(ctx, F("EXPECTED <ID> <VALUE>"));
     });
 
-    terminalRegisterCommand(F("RESET.RATIOS"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("RESET.RATIOS"), [](::terminal::CommandContext&& ctx) {
         _sensorApiEmonResetRatios();
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("ENERGY"), [](const terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("ENERGY"), [](::terminal::CommandContext&& ctx) {
         using IndexType = decltype(sensor_magnitude_t::index_global);
 
         if (ctx.argv.size() == 3) {

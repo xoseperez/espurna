@@ -1648,7 +1648,7 @@ void process(rx::DecodeResult& result) {
 }
 
 void setup() {
-    terminalRegisterCommand(F("IR.SEND"), [](const ::terminal::CommandContext& ctx) {
+    terminalRegisterCommand(F("IR.SEND"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 2) {
             auto view = StringView{ctx.argv[1]};
 
