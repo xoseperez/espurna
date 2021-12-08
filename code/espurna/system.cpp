@@ -682,7 +682,7 @@ bool eraseSDKConfig() {
 
 void forceEraseSDKConfig() {
     eraseSDKConfig();
-    *((int*) 0) = 0;
+    __builtin_trap();
 }
 
 // Accumulates only when called, make sure to do so periodically
