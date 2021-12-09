@@ -932,12 +932,12 @@ public:
     }
 
     void boot(bool) override {
-        // XXX: this was part of the legacy implementation
-        // "because of broken stm relay firmware"
-        _relays[_id].change_delay = 3000 + 1000 * _id;
+        // XXX: does this actually help with anything? remains as part of the
+        // original implementation, quoting "because of broken stm relay firmware"
+        _relays[_id].change_delay = espurna::duration::Seconds(3) + espurna::duration::Seconds(1) * _id;
     }
 
-    void change(bool status) {
+    void change(bool status) override {
         Serial.flush();
         Serial.write(0xA0);
         Serial.write(_id + 1);
