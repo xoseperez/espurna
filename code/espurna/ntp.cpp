@@ -57,12 +57,12 @@ espurna::duration::Seconds _ntpRandomizeDelay(espurna::duration::Seconds base) {
 
 uint32_t sntp_startup_delay_MS_rfc_not_less_than_60000() {
     static_assert(sizeof(decltype(_ntp_startup_delay)::rep) <= sizeof(uint32_t), "");
-    return _ntp_startup_delay.count();
+    return espurna::duration::Milliseconds(_ntp_startup_delay).count();
 }
 
 uint32_t sntp_update_delay_MS_rfc_not_less_than_15000() {
     static_assert(sizeof(decltype(_ntp_update_delay)::rep) <= sizeof(uint32_t), "");
-    return _ntp_update_delay.count();
+    return espurna::duration::Milliseconds(_ntp_update_delay).count();
 }
 
 // We also must shim TimeLib functions until everything else is ported.
