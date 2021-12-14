@@ -33,7 +33,7 @@ unsigned char _rfb_repeats = RFB_SEND_REPEATS;
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
 #include <RCSwitch.h>
-RCSwitch * _rfb_modem;
+std::unique_ptr<RCSwitch> _rfb_modem;
 bool _rfb_receive { false };
 bool _rfb_transmit { false };
 
@@ -734,28 +734,29 @@ size_t _rfb_bytes_for_bits(size_t bits) {
     return bytes;
 }
 
-// TODO: RCSwitch code type: long unsigned int != uint32_t, thus the specialization
-static_assert(sizeof(uint32_t) == sizeof(long unsigned int), "");
-
+// internally, library encodes the received data payload into an integer
+// as the result, we are capped to 8bytes to things larger than that are silently ignored
+// resulting type depends on the currently used rcswitch implementation
+// (also notice the use of `long unsigned int`, since we have strict type match)
 template <typename T>
-T _rfb_bswap(T value);
+inline T _rfb_bswap(T);
 
 template <>
-[[gnu::unused]] uint32_t _rfb_bswap(uint32_t value) {
+[[gnu::unused]] inline uint32_t _rfb_bswap(uint32_t value) {
     return __builtin_bswap32(value);
 }
 
 template <>
-[[gnu::unused]] long unsigned int _rfb_bswap(long unsigned int value) {
-    return __builtin_bswap32(value);
-}
-
-template <>
-[[gnu::unused]] uint64_t _rfb_bswap(uint64_t value) {
+[[gnu::unused]] inline uint64_t _rfb_bswap(uint64_t value) {
     return __builtin_bswap64(value);
 }
 
+template <>
+[[gnu::unused]] inline long unsigned int _rfb_bswap(long unsigned int value) {
+    return __builtin_bswap32(value);
 }
+
+} // namespace
 
 void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
@@ -1048,7 +1049,7 @@ void _rfbApiSetup() {
                     _rfb_learn->id, _rfb_learn->status ? 't' : 'f'
                 );
             } else {
-                snprintf_P(buffer, sizeof(buffer), PSTR("waiting"));
+                memcpy_P(buffer, PSTR("waiting"), sizeof("waiting"));
             }
             request.send(buffer);
             return true;
@@ -1277,7 +1278,7 @@ void rfbSetup() {
             return;
         }
 
-        _rfb_modem = new RCSwitch();
+        _rfb_modem.reset(new RCSwitch());
         if (gpioLock(rx)) {
             _rfb_receive = true;
             _rfb_modem->enableReceive(rx);
