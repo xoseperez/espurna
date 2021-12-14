@@ -52,168 +52,12 @@ using Mac = std::array<uint8_t, 6>;
 
 namespace build {
 
-constexpr size_t NetworksMax { WIFI_MAX_NETWORKS };
-
-// aka long interval
-constexpr espurna::duration::Milliseconds staReconnectionInterval() {
-    return espurna::duration::Milliseconds(WIFI_RECONNECT_INTERVAL);
-}
-
-// aka short interval
-constexpr espurna::duration::Milliseconds staConnectionInterval() {
-    return espurna::duration::Milliseconds(WIFI_CONNECT_INTERVAL);
-}
-
-constexpr int staConnectionRetries() {
-    return WIFI_CONNECT_RETRIES;
-}
-
-constexpr StaMode staMode() {
-    return WIFI_STA_MODE;
-}
-
-constexpr bool softApCaptive() {
-    return 1 == WIFI_AP_CAPTIVE_ENABLED;
-}
-
-constexpr ApMode softApMode() {
-    return WIFI_AP_MODE;
-}
-
-constexpr uint8_t softApChannel() {
-    return WIFI_AP_CHANNEL;
-}
-
-constexpr bool hasSoftApSsid() {
-    return __builtin_strlen(WIFI_AP_SSID);
-}
-
-const __FlashStringHelper* softApSsid() {
-    return F(WIFI_AP_SSID);
-}
-
-constexpr bool hasSoftApPassphrase() {
-    return __builtin_strlen(WIFI_AP_PASS);
-}
-
-const __FlashStringHelper* softApPassphrase() {
-    return F(WIFI_AP_PASS);
-}
-
-constexpr espurna::duration::Milliseconds softApFallbackTimeout() {
-    return espurna::duration::Milliseconds(WIFI_FALLBACK_TIMEOUT);
-}
-
-constexpr bool scanNetworks() {
-    return 1 == WIFI_SCAN_NETWORKS;
-}
-
-constexpr int8_t scanRssiThreshold() {
-    return WIFI_SCAN_RSSI_THRESHOLD;
-}
-
-constexpr espurna::duration::Milliseconds scanRssiCheckInterval() {
-    return espurna::duration::Milliseconds(WIFI_SCAN_RSSI_CHECK_INTERVAL);
-}
-
-constexpr int8_t scanRssiChecks() {
-    return WIFI_SCAN_RSSI_CHECKS;
-}
-
-constexpr espurna::duration::Milliseconds garpIntervalMin() {
-    return espurna::duration::Milliseconds(WIFI_GRATUITOUS_ARP_INTERVAL_MIN);
-}
-
-constexpr espurna::duration::Milliseconds garpIntervalMax() {
-    return espurna::duration::Milliseconds(WIFI_GRATUITOUS_ARP_INTERVAL_MAX);
-}
-
 constexpr WiFiSleepType_t sleep() {
     return WIFI_SLEEP_MODE;
 }
 
 constexpr float outputDbm() {
     return WIFI_OUTPUT_POWER_DBM;
-}
-
-const __FlashStringHelper* ssid(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_SSID) :
-        (index == 1) ? F(WIFI2_SSID) :
-        (index == 2) ? F(WIFI3_SSID) :
-        (index == 3) ? F(WIFI4_SSID) :
-        (index == 4) ? F(WIFI5_SSID) : nullptr
-    );
-}
-
-const __FlashStringHelper* passphrase(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_PASS) :
-        (index == 1) ? F(WIFI2_PASS) :
-        (index == 2) ? F(WIFI3_PASS) :
-        (index == 3) ? F(WIFI4_PASS) :
-        (index == 4) ? F(WIFI5_PASS) : nullptr
-    );
-}
-
-const __FlashStringHelper* ip(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_IP) :
-        (index == 1) ? F(WIFI2_IP) :
-        (index == 2) ? F(WIFI3_IP) :
-        (index == 3) ? F(WIFI4_IP) :
-        (index == 4) ? F(WIFI5_IP) : nullptr
-    );
-}
-
-const __FlashStringHelper* gateway(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_GW) :
-        (index == 1) ? F(WIFI2_GW) :
-        (index == 2) ? F(WIFI3_GW) :
-        (index == 3) ? F(WIFI4_GW) :
-        (index == 4) ? F(WIFI5_GW) : nullptr
-    );
-}
-
-const __FlashStringHelper* mask(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_MASK) :
-        (index == 1) ? F(WIFI2_MASK) :
-        (index == 2) ? F(WIFI3_MASK) :
-        (index == 3) ? F(WIFI4_MASK) :
-        (index == 4) ? F(WIFI5_MASK) : nullptr
-    );
-}
-
-const __FlashStringHelper* dns(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_DNS) :
-        (index == 1) ? F(WIFI2_DNS) :
-        (index == 2) ? F(WIFI3_DNS) :
-        (index == 3) ? F(WIFI4_DNS) :
-        (index == 4) ? F(WIFI5_DNS) : nullptr
-    );
-}
-
-const __FlashStringHelper* bssid(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_BSSID) :
-        (index == 1) ? F(WIFI2_BSSID) :
-        (index == 2) ? F(WIFI3_BSSID) :
-        (index == 3) ? F(WIFI4_BSSID) :
-        (index == 4) ? F(WIFI5_BSSID) : nullptr
-    );
-}
-
-constexpr uint8_t channel(size_t index) {
-    return (
-        (index == 0) ? WIFI1_CHANNEL :
-        (index == 1) ? WIFI2_CHANNEL :
-        (index == 2) ? WIFI3_CHANNEL :
-        (index == 3) ? WIFI4_CHANNEL :
-        (index == 4) ? WIFI5_CHANNEL : 0
-    );
 }
 
 } // namespace build
@@ -241,7 +85,7 @@ wifi::ApMode convert(const String& value) {
         return wifi::ApMode::Fallback;
     }
 
-    return wifi::build::softApMode();
+    return wifi::ApMode::Fallback;
 }
 
 template <>
@@ -269,8 +113,8 @@ template <>
 wifi::Mac convert(const String& value) {
     wifi::Mac out{};
 
-    constexpr size_t Min { 12 };
-    constexpr size_t Max { 17 };
+    static constexpr size_t Min { 12 };
+    static constexpr size_t Max { 17 };
 
     switch (value.length()) {
     // xxxxxxxxxx
@@ -315,10 +159,10 @@ namespace {
 // Use SDK constants directly. Provide a constexpr version of the Core enum, since the code never
 // actually uses `WiFi::mode(...)` directly, *but* opmode is retrieved using the SDK function.
 
-constexpr uint8_t OpmodeNull { NULL_MODE };
-constexpr uint8_t OpmodeSta { STATION_MODE };
-constexpr uint8_t OpmodeAp { SOFTAP_MODE };
-constexpr uint8_t OpmodeApSta { OpmodeSta | OpmodeAp };
+static constexpr uint8_t OpmodeNull { NULL_MODE };
+static constexpr uint8_t OpmodeSta { STATION_MODE };
+static constexpr uint8_t OpmodeAp { SOFTAP_MODE };
+static constexpr uint8_t OpmodeApSta { OpmodeSta | OpmodeAp };
 
 enum class ScanError {
     None,
@@ -566,97 +410,12 @@ void migrate(int version) {
     }
 }
 
-espurna::duration::Milliseconds garpInterval() {
-    static const auto defaultInterval = espurna::duration::Milliseconds(
-        secureRandom(wifi::build::garpIntervalMin().count(),
-            wifi::build::garpIntervalMax().count()));
-
-    return getSetting("wifiGarpIntvl", defaultInterval);
-}
-
 float txPower() {
     return getSetting("wifiTxPwr", wifi::build::outputDbm());
 }
 
 WiFiSleepType_t sleep() {
     return getSetting("wifiSleep", wifi::build::sleep());
-}
-
-bool scanNetworks() {
-    return getSetting("wifiScan", wifi::build::scanNetworks());
-}
-
-int8_t scanRssiThreshold() {
-    return getSetting("wifiScanRssi", wifi::build::scanRssiThreshold());
-}
-
-wifi::StaMode staMode() {
-    return getSetting("wifiStaMode", wifi::build::staMode());
-}
-
-IPAddress staIp(size_t index) {
-    return ::settings::internal::convert<IPAddress>(
-        getSetting({"ip", index}, wifi::build::ip(index)));
-}
-
-String staSsid(size_t index) {
-    return getSetting({"ssid", index}, wifi::build::ssid(index));
-}
-
-String staPassphrase(size_t index) {
-    return getSetting({"pass", index}, wifi::build::passphrase(index));
-}
-
-IPAddress staGateway(size_t index) {
-    return ::settings::internal::convert<IPAddress>(
-        getSetting({"gw", index}, wifi::build::gateway(index)));
-}
-
-IPAddress staMask(size_t index) {
-    return ::settings::internal::convert<IPAddress>(
-        getSetting({"mask", index}, wifi::build::mask(index)));
-}
-
-IPAddress staDns(size_t index) {
-    return ::settings::internal::convert<IPAddress>(
-        getSetting({"dns", index}, wifi::build::dns(index)));
-}
-
-wifi::Mac staBssid(size_t index) {
-    return ::settings::internal::convert<wifi::Mac>(
-        getSetting({"bssid", index}, wifi::build::bssid(index)));
-}
-
-int8_t staChannel(size_t index) {
-    return getSetting({"chan", index}, wifi::build::channel(index));
-}
-
-bool softApCaptive() {
-    return getSetting("wifiApCaptive", wifi::build::softApCaptive());
-}
-
-wifi::ApMode softApMode() {
-    return getSetting("wifiApMode", wifi::build::softApMode());
-}
-
-String softApDefaultSsid() {
-    return getIdentifier();
-}
-
-String softApSsid() {
-    return getSetting("wifiApSsid", wifi::build::hasSoftApSsid()
-        ? wifi::build::softApSsid()
-        : getHostname());
-}
-
-String softApPassphrase() {
-    return getSetting("wifiApPass", wifi::build::hasSoftApPassphrase()
-        ? wifi::build::softApPassphrase()
-        : getAdminPass());
-}
-
-uint8_t softApChannel() {
-    return getSetting("wifiApChannel", wifi::build::softApChannel());
 }
 
 } // namespace settings
@@ -959,11 +718,149 @@ using Networks = std::list<Network>;
 // -----------------------------------------------------------------------------
 
 namespace sta {
+namespace build {
 
-static constexpr auto ConnectionInterval = build::staConnectionInterval();
-static constexpr auto ConnectionRetries = build::staConnectionRetries();
+static constexpr size_t NetworksMax { WIFI_MAX_NETWORKS };
+
+// aka short interval
+static constexpr auto ConnectionInterval = espurna::duration::Milliseconds { WIFI_CONNECT_INTERVAL };
+
+// aka long interval
+static constexpr auto ReconnectionInterval = espurna::duration::Milliseconds { WIFI_RECONNECT_INTERVAL };
+
+static constexpr int ConnectionRetries { WIFI_CONNECT_RETRIES };
 static constexpr auto RecoveryInterval = ConnectionInterval * ConnectionRetries;
-static constexpr auto ReconnectionInterval = build::staReconnectionInterval();
+
+constexpr StaMode mode() {
+    return WIFI_STA_MODE;
+}
+
+const __FlashStringHelper* ssid(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_SSID) :
+        (index == 1) ? F(WIFI2_SSID) :
+        (index == 2) ? F(WIFI3_SSID) :
+        (index == 3) ? F(WIFI4_SSID) :
+        (index == 4) ? F(WIFI5_SSID) : nullptr
+    );
+}
+
+const __FlashStringHelper* passphrase(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_PASS) :
+        (index == 1) ? F(WIFI2_PASS) :
+        (index == 2) ? F(WIFI3_PASS) :
+        (index == 3) ? F(WIFI4_PASS) :
+        (index == 4) ? F(WIFI5_PASS) : nullptr
+    );
+}
+
+const __FlashStringHelper* ip(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_IP) :
+        (index == 1) ? F(WIFI2_IP) :
+        (index == 2) ? F(WIFI3_IP) :
+        (index == 3) ? F(WIFI4_IP) :
+        (index == 4) ? F(WIFI5_IP) : nullptr
+    );
+}
+
+const __FlashStringHelper* gateway(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_GW) :
+        (index == 1) ? F(WIFI2_GW) :
+        (index == 2) ? F(WIFI3_GW) :
+        (index == 3) ? F(WIFI4_GW) :
+        (index == 4) ? F(WIFI5_GW) : nullptr
+    );
+}
+
+const __FlashStringHelper* mask(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_MASK) :
+        (index == 1) ? F(WIFI2_MASK) :
+        (index == 2) ? F(WIFI3_MASK) :
+        (index == 3) ? F(WIFI4_MASK) :
+        (index == 4) ? F(WIFI5_MASK) : nullptr
+    );
+}
+
+const __FlashStringHelper* dns(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_DNS) :
+        (index == 1) ? F(WIFI2_DNS) :
+        (index == 2) ? F(WIFI3_DNS) :
+        (index == 3) ? F(WIFI4_DNS) :
+        (index == 4) ? F(WIFI5_DNS) : nullptr
+    );
+}
+
+const __FlashStringHelper* bssid(size_t index) {
+    return (
+        (index == 0) ? F(WIFI1_BSSID) :
+        (index == 1) ? F(WIFI2_BSSID) :
+        (index == 2) ? F(WIFI3_BSSID) :
+        (index == 3) ? F(WIFI4_BSSID) :
+        (index == 4) ? F(WIFI5_BSSID) : nullptr
+    );
+}
+
+constexpr uint8_t channel(size_t index) {
+    return (
+        (index == 0) ? WIFI1_CHANNEL :
+        (index == 1) ? WIFI2_CHANNEL :
+        (index == 2) ? WIFI3_CHANNEL :
+        (index == 3) ? WIFI4_CHANNEL :
+        (index == 4) ? WIFI5_CHANNEL : 0
+    );
+}
+
+} // namespace build
+
+namespace settings {
+
+wifi::StaMode mode() {
+    return getSetting("wifiStaMode", build::mode());
+}
+
+String ssid(size_t index) {
+    return getSetting({"ssid", index}, build::ssid(index));
+}
+
+String passphrase(size_t index) {
+    return getSetting({"pass", index}, build::passphrase(index));
+}
+
+IPAddress ip(size_t index) {
+    return ::settings::internal::convert<IPAddress>(
+        getSetting({"ip", index}, build::ip(index)));
+}
+
+IPAddress gateway(size_t index) {
+    return ::settings::internal::convert<IPAddress>(
+        getSetting({"gw", index}, build::gateway(index)));
+}
+
+IPAddress mask(size_t index) {
+    return ::settings::internal::convert<IPAddress>(
+        getSetting({"mask", index}, build::mask(index)));
+}
+
+IPAddress dns(size_t index) {
+    return ::settings::internal::convert<IPAddress>(
+        getSetting({"dns", index}, build::dns(index)));
+}
+
+wifi::Mac bssid(size_t index) {
+    return ::settings::internal::convert<wifi::Mac>(
+        getSetting({"bssid", index}, build::bssid(index)));
+}
+
+int8_t channel(size_t index) {
+    return getSetting({"chan", index}, build::channel(index));
+}
+
+} // namespace settings
 
 uint8_t channel() {
     return wifi_get_channel();
@@ -971,6 +868,53 @@ uint8_t channel() {
 
 int8_t rssi() {
     return wifi_station_get_rssi();
+}
+
+wifi::Networks networks() {
+    wifi::Networks out;
+
+    for (size_t id = 0; id < build::NetworksMax; ++id) {
+        auto ssid = settings::ssid(id);
+        if (!ssid.length()) {
+            break;
+        }
+
+        auto pass = settings::passphrase(id);
+
+        auto ip = settings::ip(id);
+        auto ipSettings = ip.isSet()
+            ? wifi::IpSettings{
+                std::move(ip),
+                settings::mask(id),
+                settings::gateway(id),
+                settings::dns(id)}
+            : wifi::IpSettings{};
+
+        Network network(std::move(ssid), settings::passphrase(id), std::move(ipSettings));
+        auto channel = settings::channel(id);
+        if (channel) {
+            out.emplace_back(std::move(network), settings::bssid(id), channel);
+        } else {
+            out.push_back(std::move(network));
+        }
+    }
+
+    return out;
+}
+
+size_t countNetworks() {
+    size_t networks { 0 };
+
+    for (size_t id = 0; id < build::NetworksMax; ++id) {
+        auto ssid = settings::ssid(id);
+        if (!ssid.length()) {
+            break;
+        }
+
+        ++networks;
+    }
+
+    return networks;
 }
 
 // Note that authmode field is a our threshold, not the one selected by an AP
@@ -1006,6 +950,34 @@ wifi::StaNetwork current() {
 
 #if WIFI_GRATUITOUS_ARP_SUPPORT
 namespace garp {
+namespace build {
+
+static constexpr auto IntervalMin = espurna::duration::Milliseconds { WIFI_GRATUITOUS_ARP_INTERVAL_MIN };
+static constexpr auto IntervalMax = espurna::duration::Milliseconds { WIFI_GRATUITOUS_ARP_INTERVAL_MAX };
+
+} // namespace build
+
+namespace settings {
+namespace internal {
+
+template <typename T>
+T randomInterval(T minimum, T maximum) {
+    return T(::randomNumber(minimum.count(), maximum.count()));
+}
+
+espurna::duration::Milliseconds randomInterval() {
+    return randomInterval(build::IntervalMin, build::IntervalMax);
+}
+
+} // namespace internal
+
+espurna::duration::Milliseconds interval() {
+    static const auto defaultInterval = internal::randomInterval();
+    return getSetting("wifiGarpIntvl", defaultInterval);
+}
+
+} // namespace settings
+
 namespace internal {
 
 Ticker timer;
@@ -1429,7 +1401,7 @@ bool start(String&& hostname) {
         internal::task = std::make_unique<internal::Task>(
             std::move(hostname),
             std::move(internal::preparedNetworks),
-            wifi::sta::ConnectionRetries);
+            build::ConnectionRetries);
         internal::timer.detach();
         return true;
     }
@@ -1444,7 +1416,7 @@ void schedule(espurna::duration::Milliseconds next, internal::ActionPtr ptr) {
 }
 
 void schedule_next() {
-    schedule(wifi::sta::ConnectionInterval, internal::action_next);
+    schedule(build::ConnectionInterval, internal::action_next);
 }
 
 void schedule_new(espurna::duration::Milliseconds next) {
@@ -1452,7 +1424,7 @@ void schedule_new(espurna::duration::Milliseconds next) {
 }
 
 void schedule_new() {
-    schedule_new(wifi::sta::ReconnectionInterval);
+    schedule_new(build::ReconnectionInterval);
 }
 
 bool next() {
@@ -1570,25 +1542,57 @@ void toggle() {
 }
 
 namespace scan {
+namespace build {
+
+constexpr bool enabled() {
+    return 1 == WIFI_SCAN_NETWORKS;
+}
+
+} // namespace build
+
+namespace settings {
+
+bool enabled() {
+    return getSetting("wifiScan", build::enabled());
+}
+
+} // namespace settings
+
 namespace periodic {
+namespace build {
+
+static constexpr auto Interval = espurna::duration::Milliseconds { WIFI_SCAN_RSSI_CHECK_INTERVAL };
+static constexpr int8_t Checks { WIFI_SCAN_RSSI_CHECKS };
+
+constexpr int8_t threshold() {
+    return WIFI_SCAN_RSSI_THRESHOLD;
+}
+
+} // namespace build
+
+namespace settings {
+
+int8_t threshold() {
+    return getSetting("wifiScanRssi", build::threshold());
+}
+
+} // namespace settings
+
 namespace internal {
 
-static constexpr auto CheckInterval = wifi::build::scanRssiCheckInterval();
-static constexpr auto Checks = wifi::build::scanRssiChecks();
-
-int8_t threshold { wifi::build::scanRssiThreshold() };
-int8_t counter { Checks };
+int8_t threshold { build::threshold() };
+int8_t counter { build::Checks };
 Ticker timer;
 
 void task() {
     if (!wifi::sta::connected()) {
-        counter = Checks;
+        counter = build::Checks;
         return;
     }
 
     auto rssi = wifi::sta::rssi();
     if (rssi > threshold) {
-        counter = Checks;
+        counter = build::Checks;
     } else if (rssi < threshold) {
         if (counter < 0) {
             return;
@@ -1601,12 +1605,12 @@ void task() {
 }
 
 void start() {
-    counter = Checks;
-    timer.attach_ms(CheckInterval.count(), task);
+    counter = build::Checks;
+    timer.attach_ms(build::Interval.count(), task);
 }
 
 void stop() {
-    counter = Checks;
+    counter = build::Checks;
     timer.detach();
 }
 
@@ -1626,7 +1630,7 @@ void start() {
 
 bool check() {
     if (internal::counter <= 0) {
-        internal::counter = internal::Checks;
+        internal::counter = build::Checks;
         return true;
     }
 
@@ -1693,6 +1697,27 @@ bool scanProcessResults() {
 }
 
 } // namespace connection
+
+void configure() {
+    auto enabled = (wifi::StaMode::Enabled == wifi::sta::settings::mode());
+    connection::persist(enabled);
+    wifi::action(enabled
+        ? wifi::Action::StationConnect
+        : wifi::Action::StationDisconnect);
+
+    scan::periodic::threshold(
+        scan::periodic::settings::threshold());
+
+#if WIFI_GRATUITOUS_ARP_SUPPORT
+    auto interval = garp::settings::interval();
+    if (interval.count()) {
+        garp::start(interval);
+    } else {
+        garp::stop();
+    }
+#endif
+}
+
 } // namespace sta
 
 // -----------------------------------------------------------------------------
@@ -1700,6 +1725,7 @@ bool scanProcessResults() {
 // -----------------------------------------------------------------------------
 
 namespace ap {
+namespace build {
 
 static constexpr size_t SsidMax { sizeof(softap_config::ssid) };
 
@@ -1709,10 +1735,73 @@ static constexpr size_t PassphraseMax { sizeof(softap_config::password) };
 static constexpr int Hidden { 0 };
 static constexpr uint8_t ConnectionsMax { 4u };
 
+constexpr bool hasSsid() {
+    return __builtin_strlen(WIFI_AP_SSID);
+}
+
+const __FlashStringHelper* ssid() {
+    return F(WIFI_AP_SSID);
+}
+
+constexpr bool hasPassphrase() {
+    return __builtin_strlen(WIFI_AP_PASS);
+}
+
+const __FlashStringHelper* passphrase() {
+    return F(WIFI_AP_PASS);
+}
+
+constexpr bool captive() {
+    return 1 == WIFI_AP_CAPTIVE_ENABLED;
+}
+
+constexpr ApMode mode() {
+    return WIFI_AP_MODE;
+}
+
+constexpr uint8_t channel() {
+    return WIFI_AP_CHANNEL;
+}
+
+} // namespace build
+
+namespace settings {
+
+String defaultSsid() {
+    return getIdentifier();
+}
+
+String ssid() {
+    return getSetting("wifiApSsid", build::hasSsid()
+        ? build::ssid()
+        : getHostname());
+}
+
+wifi::ApMode mode() {
+    return getSetting("wifiApMode", build::mode());
+}
+
+String passphrase() {
+    return getSetting("wifiApPass", build::hasPassphrase()
+        ? build::passphrase()
+        : getAdminPass());
+}
+
+uint8_t channel() {
+    return getSetting("wifiApChannel", build::channel());
+}
+
+
+bool captive() {
+    return getSetting("wifiApCaptive", build::captive());
+}
+
+} // namespace settings
+
 namespace internal {
 
 #if WIFI_AP_CAPTIVE_SUPPORT
-bool captive { wifi::build::softApCaptive() };
+bool captive { build::captive() };
 DNSServer dns;
 #endif
 
@@ -1723,18 +1812,18 @@ void start(String&& defaultSsid, String&& ssid, String&& passphrase, uint8_t cha
     // (plus, it makes it not compatible with the esp-idf stack anyway, since wifi_softap_dhcps_... calls don't do anything here)
 
     const char* apSsid {
-        (ssid.length() && (ssid.length() < SsidMax))
+        (ssid.length() && (ssid.length() < build::SsidMax))
         ? ssid.c_str() : defaultSsid.c_str() };
 
     const char* apPass {
         (passphrase.length() \
-         && (passphrase.length() >= PassphraseMin) \
-         && (passphrase.length() < PassphraseMax))
+         && (passphrase.length() >= build::PassphraseMin) \
+         && (passphrase.length() < build::PassphraseMax))
         ? passphrase.c_str() : nullptr };
 
     // TODO: when using `softap_config`, can also tweak the beacon intvl
     // static constexpr uint16_t BeaconInterval { 100u };
-    WiFi.softAP(apSsid, apPass, channel, Hidden, ConnectionsMax);
+    WiFi.softAP(apSsid, apPass, channel, build::Hidden, build::ConnectionsMax);
 }
 
 } // namespace internal
@@ -1822,9 +1911,15 @@ size_t stations() {
 }
 
 namespace fallback {
+namespace build {
+
+constexpr auto Timeout = espurna::duration::Milliseconds { WIFI_FALLBACK_TIMEOUT };
+
+} // namespace build
+
 namespace internal {
 
-auto timeout = wifi::build::softApFallbackTimeout();
+auto timeout = build::Timeout;
 bool enabled { false };
 Ticker timer;
 
@@ -1866,6 +1961,24 @@ void check() {
 }
 
 } // namespace fallback
+
+void configure() {
+    auto current = settings::mode();
+    if (wifi::ApMode::Fallback == current) {
+        fallback::enable();
+    } else {
+        fallback::disable();
+        fallback::remove();
+        wifi::action((wifi::ApMode::Enabled == current)
+                ? wifi::Action::AccessPointStart
+                : wifi::Action::AccessPointStop);
+    }
+
+#if WIFI_AP_CAPTIVE_SUPPORT
+    captive(settings::captive());
+#endif
+}
+
 } // namespace ap
 
 // -----------------------------------------------------------------------------
@@ -1874,81 +1987,9 @@ void check() {
 
 namespace settings {
 
-size_t countNetworks() {
-    size_t networks { 0 };
-
-    for (size_t id = 0; id < wifi::build::NetworksMax; ++id) {
-        auto ssid = wifi::settings::staSsid(id);
-        if (!ssid.length()) {
-            break;
-        }
-
-        ++networks;
-    }
-
-    return networks;
-}
-
-wifi::Networks networks() {
-    wifi::Networks out;
-
-    for (size_t id = 0; id < wifi::build::NetworksMax; ++id) {
-        auto ssid = wifi::settings::staSsid(id);
-        if (!ssid.length()) {
-            break;
-        }
-
-        auto pass = wifi::settings::staPassphrase(id);
-
-        auto ip = staIp(id);
-        auto ipSettings = ip.isSet()
-            ? wifi::IpSettings{std::move(ip), staMask(id), staGateway(id), staDns(id)}
-            : wifi::IpSettings{};
-
-        Network network(std::move(ssid), staPassphrase(id), std::move(ipSettings));
-        auto channel = staChannel(id);
-        if (channel) {
-            out.emplace_back(std::move(network), staBssid(id), channel);
-        } else {
-            out.push_back(std::move(network));
-        }
-    }
-
-    return out;
-}
-
 void configure() {
-    auto ap_mode = wifi::settings::softApMode();
-    if (wifi::ApMode::Fallback == ap_mode) {
-        wifi::ap::fallback::enable();
-    } else {
-        wifi::ap::fallback::disable();
-        wifi::ap::fallback::remove();
-        wifi::action((ap_mode == wifi::ApMode::Enabled)
-                ? wifi::Action::AccessPointStart
-                : wifi::Action::AccessPointStop);
-    }
-
-#if WIFI_AP_CAPTIVE_SUPPORT
-    wifi::ap::captive(wifi::settings::softApCaptive());
-#endif
-
-    auto sta_enabled = (wifi::StaMode::Enabled == wifi::settings::staMode());
-    wifi::sta::connection::persist(sta_enabled);
-    wifi::action(sta_enabled
-        ? wifi::Action::StationConnect
-        : wifi::Action::StationDisconnect);
-
-    wifi::sta::scan::periodic::threshold(wifi::settings::scanRssiThreshold());
-
-#if WIFI_GRATUITOUS_ARP_SUPPORT
-    auto interval = wifi::settings::garpInterval();
-    if (interval.count()) {
-        wifi::sta::garp::start(interval);
-    } else {
-        wifi::sta::garp::stop();
-    }
-#endif
+    wifi::ap::configure();
+    wifi::sta::configure();
 
     WiFi.setSleepMode(wifi::settings::sleep());
     WiFi.setOutputPower(wifi::settings::txPower());
@@ -2115,39 +2156,39 @@ bool onKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void onConnected(JsonObject& root) {
-    root["wifiScan"] = wifi::settings::scanNetworks();
-    root["wifiScanRssi"] = wifi::settings::scanRssiThreshold();
+    root["wifiScan"] = wifi::sta::scan::settings::enabled();
+    root["wifiScanRssi"] = wifi::sta::scan::periodic::settings::threshold();
 
-    root["wifiApSsid"] = wifi::settings::softApSsid();
-    root["wifiApPass"] = wifi::settings::softApPassphrase();
+    root["wifiApSsid"] = wifi::ap::settings::ssid();
+    root["wifiApPass"] = wifi::ap::settings::passphrase();
 
     ::web::ws::EnumerableConfig config{root, F("wifiConfig")};
 
     // TODO: notice that with the current model, *deleting* from settings or webui
     //       will restore factory defaults and on the next reload if the index was not replaced
-    config(F("networks"), wifi::settings::countNetworks(), {
+    config(F("networks"), wifi::sta::countNetworks(), {
         {F("ssid"), [](JsonArray& out, size_t index) {
-            out.add(wifi::settings::staSsid(index));
+            out.add(wifi::sta::settings::ssid(index));
         }},
         {F("pass"), [](JsonArray& out, size_t index) {
-            out.add(wifi::settings::staPassphrase(index));
+            out.add(wifi::sta::settings::passphrase(index));
         }},
         {F("ip"), [](JsonArray& out, size_t index) {
-            out.add(::settings::internal::serialize(wifi::settings::staIp(index)));
+            out.add(::settings::internal::serialize(wifi::sta::settings::ip(index)));
         }},
         {F("gw"), [](JsonArray& out, size_t index) {
-            out.add(::settings::internal::serialize(wifi::settings::staGateway(index)));
+            out.add(::settings::internal::serialize(wifi::sta::settings::gateway(index)));
         }},
         {F("mask"), [](JsonArray& out, size_t index) {
-            out.add(::settings::internal::serialize(wifi::settings::staMask(index)));
+            out.add(::settings::internal::serialize(wifi::sta::settings::mask(index)));
         }},
         {F("dns"), [](JsonArray& out, size_t index) {
-            out.add(::settings::internal::serialize(wifi::settings::staDns(index)));
+            out.add(::settings::internal::serialize(wifi::sta::settings::dns(index)));
         }},
     });
 
     auto& container = config.root();
-    container[F("max")] = wifi::build::NetworksMax;
+    container[F("max")] = wifi::sta::build::NetworksMax;
 }
 
 void onScan(uint32_t client_id) {
@@ -2357,10 +2398,10 @@ State handleAction(State& state, Action action) {
         if (!wifi::ap::enabled()) {
             wifi::ap::enable();
             wifi::ap::start(
-                wifi::settings::softApDefaultSsid(),
-                wifi::settings::softApSsid(),
-                wifi::settings::softApPassphrase(),
-                wifi::settings::softApChannel());
+                wifi::ap::settings::defaultSsid(),
+                wifi::ap::settings::ssid(),
+                wifi::ap::settings::passphrase(),
+                wifi::ap::settings::channel());
             publish(wifi::Event::Mode);
             if ((Action::AccessPointFallback == action)
                     && wifi::ap::fallback::enabled()) {
@@ -2417,7 +2458,7 @@ State handleAction(State& state, Action action) {
 
 bool prepareConnection() {
     if (wifi::sta::enabled()) {
-        wifi::sta::connection::prepare(wifi::settings::networks());
+        wifi::sta::connection::prepare(wifi::sta::networks());
         return wifi::sta::connection::prepared();
     }
 
@@ -2449,7 +2490,7 @@ void loop() {
         }
 
         wifi::sta::scan::periodic::stop();
-        if (wifi::settings::scanNetworks()) {
+        if (wifi::sta::scan::settings::enabled()) {
             if (wifi::sta::scanning()) {
                 break;
             }
@@ -2463,7 +2504,7 @@ void loop() {
     }
 
     case State::TryConnectBetter:
-        if (wifi::settings::scanNetworks()) {
+        if (wifi::sta::scan::settings::enabled()) {
             if (wifi::sta::scanning()) {
                 break;
             }
@@ -2484,7 +2525,7 @@ void loop() {
     case State::Fallback:
         state = State::Idle;
         wifi::sta::connection::schedule_new();
-        if (wifi::ApMode::Fallback == wifi::settings::softApMode()) {
+        if (wifi::ApMode::Fallback == wifi::ap::settings::mode()) {
             wifi::action(wifi::Action::AccessPointFallback);
         }
         publish(wifi::Event::StationReconnect);
@@ -2558,7 +2599,7 @@ void loop() {
 
     case State::Connected:
         wifi::sta::connection::stop();
-        if (wifi::settings::scanNetworks()) {
+        if (wifi::sta::scan::settings::enabled()) {
             wifi::sta::scan::periodic::start();
         }
         state = State::Idle;
@@ -2583,7 +2624,7 @@ void loop() {
     if (wifi::sta::connection::lost()) {
         wifi::sta::scan::periodic::stop();
         if (wifi::sta::connection::persist()) {
-            wifi::sta::connection::schedule_new(wifi::sta::RecoveryInterval);
+            wifi::sta::connection::schedule_new(wifi::sta::build::RecoveryInterval);
         }
         publish(wifi::Event::StationDisconnected);
     }
