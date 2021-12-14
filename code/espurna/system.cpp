@@ -35,6 +35,9 @@ int __get_adc_mode() {
     return (int) (ADC_MODE_VALUE);
 }
 
+// Exposed through libphy.a in the current NONOS, may be replaced with a direct call to `os_random()` / `esp_random()`
+extern "C" unsigned long adc_rand_noise;
+
 // -----------------------------------------------------------------------------
 
 namespace settings {
@@ -86,6 +89,24 @@ espurna::duration::Seconds convert(const String& value) {
 // -----------------------------------------------------------------------------
 
 namespace espurna {
+namespace system {
+
+uint32_t RandomDevice::operator()() const {
+    // Repeating SDK source, XORing some ADC-based noise and a HW register exposing the random generator
+    // - https://github.com/espressif/ESP8266_RTOS_SDK/blob/d45071563cebe9ca520cbed2537dc840b4d6a1e6/components/esp8266/source/hw_random.c
+    // - disassembled source of the `os_random` -> `r_rand` -> `phy_get_rand`
+    //   (and avoiding these two additional `call`s)
+
+    // aka WDEV_COUNT_REG, base address
+    static constexpr uintptr_t BaseAddress { 0x3ff20c00 };
+    // aka WDEV_RAND, the actual register address
+    static constexpr uintptr_t Address  { BaseAddress + 0x244 };
+
+    return adc_rand_noise ^ *(reinterpret_cast<volatile uint32_t*>(Address));
+}
+
+} // namespace system
+
 namespace time {
 
 void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {

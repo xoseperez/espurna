@@ -12,6 +12,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <chrono>
 #include <cstdint>
+#include <limits>
 
 struct HeapStats {
     uint32_t available;
@@ -34,6 +35,24 @@ enum class CustomResetReason : uint8_t {
 };
 
 namespace espurna {
+namespace system {
+
+struct RandomDevice {
+    using result_type = uint32_t;
+
+    static constexpr result_type min() {
+        return std::numeric_limits<result_type>::min();
+    }
+
+    static constexpr result_type max() {
+        return std::numeric_limits<result_type>::max();
+    }
+
+    uint32_t operator()() const;
+};
+
+} // namespace random
+
 namespace duration {
 
 // TODO: cpu frequency value might not always be true at build-time, detect at boot instead?
@@ -44,9 +63,12 @@ using ClockCycles = std::chrono::duration<uint32_t, std::ratio<1, F_CPU>>;
 using Microseconds = std::chrono::duration<uint64_t, std::micro>;
 using Milliseconds = std::chrono::duration<uint32_t, std::milli>;
 
-// Our own type, since a lot of things want this as a type of measurement
-// (and it can be seamlessly converted from millis)
+// Our own helper types, a lot of things are based off of the `millis()`
+// (and it can be seamlessly used with any Core functions accepting u32 millisecond inputs)
 using Seconds = std::chrono::duration<uint32_t>;
+using Minutes = std::chrono::duration<uint32_t, std::ratio<60>>;
+using Hours = std::chrono::duration<uint32_t, std::ratio<Minutes::period::num * 60>>;
+using Days = std::chrono::duration<uint32_t, std::ratio<Hours::period::num * 24>>;
 
 } // namespace duration
 

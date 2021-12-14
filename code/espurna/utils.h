@@ -47,6 +47,9 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination);
 char* strnstr(const char* buffer, const char* token, size_t n);
 bool isNumber(const String&);
 
+uint32_t randomNumber();
+uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
+
 double roundTo(double num, unsigned char positions);
 
 char* hexEncode(const uint8_t* in_begin, const uint8_t* in_end, char* out_begin, char* out_end);

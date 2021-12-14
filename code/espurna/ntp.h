@@ -9,6 +9,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #pragma once
 
+#include <Arduino.h>
 #include <ctime>
 
 enum class NtpTick {
@@ -28,11 +29,11 @@ struct NtpCalendarWeekday {
 };
 
 struct NtpInfo {
-    String local;
-    String utc;
     String sync;
-    String tz;
     time_t now;
+    String utc;
+    String local;
+    String tz;
 };
 
 void ntpOnTick(NtpTickCallback);

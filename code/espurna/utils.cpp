@@ -11,6 +11,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "board.h"
 #include "ntp.h"
 
+#include <random>
+
 bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
     static_assert(std::numeric_limits<size_t>::max() >= std::numeric_limits<unsigned long>::max(), "");
 
@@ -202,6 +204,23 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // -----------------------------------------------------------------------------
 // Helper functions
 // -----------------------------------------------------------------------------
+
+// using 'random device' as-is, s
+// TODO notice that something like std::mt19937 and RandomDevice() as seed would require ~2KiB
+// of space for it's internal `result_type state[std::mt19937::state_size]` (ref. sizeof())
+uint32_t randomNumber(uint32_t minimum, uint32_t maximum) {
+    using Device = espurna::system::RandomDevice;
+    using Type = Device::result_type;
+
+    static Device random;
+    auto distribution = std::uniform_int_distribution<Type>(minimum, maximum);
+
+    return distribution(random);
+}
+
+uint32_t randomNumber() {
+    return (espurna::system::RandomDevice{})();
+}
 
 double roundTo(double num, unsigned char positions) {
     double multiplier = 1;
