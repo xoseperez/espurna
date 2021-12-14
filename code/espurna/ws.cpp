@@ -115,6 +115,16 @@ struct BaseTimeFormat<long long> {
 
 constexpr char BaseTimeFormat<long long>::Format[];
 
+String _wsFormatTime(time_t timestamp) {
+    using SystemTimeFormat = BaseTimeFormat<time_t>;
+
+    char buffer[SystemTimeFormat::Size * 4];
+    snprintf(buffer, sizeof(buffer),
+        SystemTimeFormat::Format, timestamp);
+
+    return String(buffer);
+}
+
 void _wsUpdate(JsonObject& root) {
     root["heap"] = systemFreeHeap();
     root["uptime"] = systemUptime().count();
@@ -127,16 +137,12 @@ void _wsUpdate(JsonObject& root) {
     }
 #if NTP_SUPPORT
     if (ntpSynced()) {
-        auto info = ntpInfo();
-
         // XXX: arduinojson default config will silently downcast
         //      double to float and (u)int64_t to (u)int32_t.
         //      convert to string instead, and assume the int is handled correctly
-        using SystemTimeFormat = BaseTimeFormat<time_t>;
-        char buffer[SystemTimeFormat::Size * 4];
-        sprintf(buffer, SystemTimeFormat::Format, info.now);
-        root["now"] = String(buffer);
+        auto info = ntpInfo();
 
+        root["now"] = _wsFormatTime(info.now);
         root["nowString"] = info.utc;
         root["nowLocalString"] = info.local.length()
             ? info.local
