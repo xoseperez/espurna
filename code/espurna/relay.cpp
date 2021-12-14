@@ -2124,48 +2124,59 @@ void relaySetupMQTT() {
 
 namespace {
 
+using TerminalRelayPrintExtra = void(*)(const Relay&, char* out, size_t size);
+
+template <size_t Size>
+void _relayPrintExtra(const Relay& relay, char (&buffer)[Size]) {
+    int index = 0;
+    char* out { &buffer[0] };
+    if (index >= 0 && relay.delay_on.count()) {
+        index += snprintf_P(out + index, Size,
+                PSTR(" DelayOn=%u(ms)"), relay.delay_on.count());
+    }
+    if (index >= 0 && relay.delay_off.count()) {
+        index += snprintf_P(out + index, Size,
+                PSTR(" DelayOff=%u(ms)"), relay.delay_off.count());
+    }
+    if (index >= 0 && relay.lock != RelayLock::None) {
+        index += snprintf_P(out + index, Size,
+                PSTR(" Lock=%s"), _relayLockToPayload(relay.lock));
+    }
+}
+
+void _relayPrint(Print& out, size_t start, size_t stop, bool extra) {
+    for (size_t index = start; index < stop; ++index) {
+        auto& relay = _relays[index];
+
+        char pulse_info[64] = "";
+        if ((relay.pulse != RelayPulse::None) && (relay.pulse_time.count() > 0)) {
+            snprintf_P(pulse_info, sizeof(pulse_info), PSTR(" Pulse=%s Time=%u(ms)"),
+                _relayPulseToPayload(relay.pulse), relay.pulse_time);
+        }
+
+        char extended_info[64] = "";
+        if (extra) {
+            _relayPrintExtra(relay, extended_info);
+        }
+
+        out.printf_P(PSTR("relay%u {Prov=%s Current=%s Target=%s%s%s}\n"),
+            index, relay.provider->id(),
+            relay.current_status ? "ON" : "OFF",
+            relay.target_status ? "ON" : "OFF",
+            pulse_info,
+            extended_info
+        );
+    }
+}
+
+void _relayPrint(Print& out, size_t start, size_t stop) {
+    _relayPrint(out, start, stop, true);
+}
+
 void _relayInitCommands() {
-
     terminalRegisterCommand(F("RELAY"), [](::terminal::CommandContext&& ctx) {
-        auto showRelays = [&](size_t start, size_t stop, bool full = true) {
-            for (size_t index = start; index < stop; ++index) {
-                auto& relay = _relays[index];
-
-                char pulse_info[64] = "";
-                if ((relay.pulse != RelayPulse::None) && (relay.pulse_time.count() > 0)) {
-                    snprintf_P(pulse_info, sizeof(pulse_info), PSTR(" Pulse=%s Time=%u(ms)"),
-                        _relayPulseToPayload(relay.pulse), relay.pulse_time);
-                }
-
-                char extended_info[64] = "";
-                if (full) {
-                    int index = 0;
-                    if (index >= 0 && relay.delay_on.count()) {
-                        index += snprintf_P(extended_info + index, sizeof(extended_info),
-                                PSTR(" DelayOn=%u(ms)"), relay.delay_on.count());
-                    }
-                    if (index >= 0 && relay.delay_off.count()) {
-                        index += snprintf_P(extended_info + index, sizeof(extended_info),
-                                PSTR(" DelayOff=%u(ms)"), relay.delay_off.count());
-                    }
-                    if (index >= 0 && relay.lock != RelayLock::None) {
-                        index += snprintf_P(extended_info + index, sizeof(extended_info),
-                                PSTR(" Lock=%s"), _relayLockToPayload(relay.lock));
-                    }
-                }
-
-                ctx.output.printf_P(PSTR("relay%u {Prov=%s Current=%s Target=%s%s%s}\n"),
-                    index, relay.provider->id(),
-                    relay.current_status ? "ON" : "OFF",
-                    relay.target_status ? "ON" : "OFF",
-                    pulse_info,
-                    extended_info
-                );
-            }
-        };
-
         if (ctx.argv.size() == 1) {
-            showRelays(0, _relays.size());
+            _relayPrint(ctx.output, 0, _relays.size());
             terminalOK(ctx);
             return;
         }
@@ -2186,10 +2197,25 @@ void _relayInitCommands() {
             _relayHandleStatus(id, status);
         }
 
-        showRelays(id, id + 1, false);
+        _relayPrint(ctx.output, id, id + 1, false);
         terminalOK(ctx);
     });
 
+    terminalRegisterCommand(F("PULSE"), [](::terminal::CommandContext&& ctx) {
+        if (ctx.argv.size() != 3) {
+            terminalError(ctx, F("PULSE <ID> <TIME>"));
+            return;
+        }
+
+        size_t id;
+        if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
+            terminalError(ctx, F("Invalid relayID"));
+            return;
+        }
+
+        _relayHandlePulsePayload(id, ctx.argv[2]);
+        terminalOK(ctx);
+    });
 }
 
 } // namespace
