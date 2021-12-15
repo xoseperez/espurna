@@ -438,6 +438,7 @@ public:
                 if (!_put) {
                     return false;
                 }
+                // fallthrough!
             case HTTP_GET:
                 if (!_get) {
                     return false;

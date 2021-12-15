@@ -87,12 +87,12 @@ struct BasicSetting {
     using Get = String(*)();
 
     BasicSetting() = delete;
-    constexpr BasicSetting(const char* const key, Get get) :
+    constexpr BasicSetting(const char* key, Get get) :
         _key(key),
         _get(get)
     {}
 
-    constexpr const char* const key() const {
+    constexpr const char* key() const {
         return _key;
     }
 
@@ -109,12 +109,12 @@ struct IndexedSetting {
     using Get = String(*)(size_t);
 
     IndexedSetting() = delete;
-    constexpr IndexedSetting(const char* const prefix, Get get) :
+    constexpr IndexedSetting(const char* prefix, Get get) :
         _prefix(prefix),
         _get(get)
     {}
 
-    constexpr const char* const prefix() const {
+    constexpr const char* prefix() const {
         return _prefix;
     }
 
