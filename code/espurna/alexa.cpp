@@ -108,7 +108,7 @@ void _alexaWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, "alexa");
 }
 
-bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "alexa", 5) == 0);
 }
 
@@ -122,14 +122,26 @@ void _alexaConfigure() {
 }
 
 #if WEB_SUPPORT
-    bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), String((char *)data));
+bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    if (len != total) {
+        DEBUG_MSG_P(PSTR("[ALEXA] Ignoring incomplete %s %s from %s (%zu / %zu)\n"),
+                request->methodToString(),
+                request->url().c_str(),
+                IPAddress(request->client()->getRemoteAddress()).toString().c_str(),
+                len, index);
+        return false;
     }
 
-    bool _alexaRequestCallback(AsyncWebServerRequest *request) {
-        String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
-        return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
-    }
+    String payload;
+    payload.concat(reinterpret_cast<char*>(data), len);
+
+    return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), payload);
+}
+
+bool _alexaRequestCallback(AsyncWebServerRequest *request) {
+    String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
+    return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
+}
 #endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
