@@ -55,13 +55,13 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #define SAVE_CRASH_STACK_SIZE       0x22  // 2 bytes
 #define SAVE_CRASH_STACK_TRACE      0x24  // variable, 4 bytes per value
 
-constexpr int EepromCrashBegin = EepromReservedSize;
-constexpr int EepromCrashEnd = 256;
+static constexpr int EepromCrashBegin = EepromReservedSize;
+static constexpr int EepromCrashEnd = 256;
 
-constexpr size_t CrashReservedSize = EepromCrashEnd - EepromCrashBegin;
-constexpr size_t CrashTraceReservedSize = CrashReservedSize - SAVE_CRASH_STACK_TRACE;
+static constexpr size_t CrashReservedSize = EepromCrashEnd - EepromCrashBegin;
+static constexpr size_t CrashTraceReservedSize = CrashReservedSize - SAVE_CRASH_STACK_TRACE;
 
-constexpr uint32_t EmptyTimestamp { 0xffffffff };
+static constexpr uint32_t EmptyTimestamp { 0xffffffff };
 
 namespace debug {
 namespace {
@@ -171,15 +171,19 @@ void dump(Print& print, bool check) {
     eepromGet(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
     eepromGet(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
 
-    if ((0 == stack_size) || (0xffff == stack_size)) return;
-    stack_size = constrain(stack_size, 0, CrashTraceReservedSize);
+    if ((0 == stack_size) || (0xffff == stack_size)) {
+        return;
+    }
+
+    static constexpr uint16_t StackMin { 0 };
+    static constexpr uint16_t StackMax { CrashTraceReservedSize };
+    stack_size = std::clamp(stack_size, StackMin, StackMax);
 
     // offset is technically an unknown, Core's crash handler only gives us `stack_start` as `sp_dump + offset`
     // (...maybe we can hack Core / walk the stack / etc... but, that's not really portable between versions)
     snprintf_P(buffer, sizeof(buffer),
         PSTR("\n>>>stack>>>\n\nctx: todo\nsp: %08x end: %08x offset: 0000\n"),
-        stack_start, stack_end
-    );
+        stack_start, stack_end);
     print.print(buffer);
 
     constexpr auto step = sizeof(uint32_t);
@@ -205,7 +209,8 @@ void dump(Print& print, bool check) {
         offset += step;
     }
 
-    snprintf_P(buffer, sizeof(buffer), PSTR("<<<stack<<<\n"));
+    static const char Tail[] PROGMEM = "<<<stack<<<\n";
+    memcpy_P(buffer, Tail, sizeof(Tail));
     print.print(buffer);
 }
 
@@ -269,7 +274,9 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     // EEPROM size is limited, write as little as possible.
     // we definitely want to avoid big stack traces, e.g. like when stack_end == 0x3fffffb0 and we are in SYS context.
     // but still should get enough relevant info and it is possible to set needed size at build/runtime
-    const uint16_t stack_size = constrain((stack_end - stack_start), 0, CrashReservedSize);
+    static constexpr uint32_t StackMin { 0 };
+    static constexpr uint32_t StackMax { CrashTraceReservedSize };
+    const uint16_t stack_size = std::clamp((stack_end - stack_start), StackMin, StackMax);
     eepromPut(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
     eepromPut(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
     eepromPut(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
