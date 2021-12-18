@@ -97,9 +97,9 @@
 #define RELAY_SYNC_SAME             3
 #define RELAY_SYNC_FIRST            4
 
-#define RELAY_PULSE_NONE            RelayPulse::None
-#define RELAY_PULSE_OFF             RelayPulse::Off
-#define RELAY_PULSE_ON              RelayPulse::On
+#define RELAY_PULSE_NONE            Mode::None
+#define RELAY_PULSE_OFF             Mode::Off
+#define RELAY_PULSE_ON              Mode::On
 
 #define RELAY_PROVIDER_NONE         RelayProvider::None
 #define RELAY_PROVIDER_DUMMY        RelayProvider::Dummy
