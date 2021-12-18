@@ -1464,15 +1464,13 @@ const __FlashStringHelper* _magnitudeSettingsPrefix(unsigned char type) {
 
 template <typename T>
 String _magnitudeSettingsKey(unsigned char type, T&& suffix) {
-    return String(_magnitudeSettingsPrefix(type)) + suffix;
+    return String(_magnitudeSettingsPrefix(type)) + std::forward<T>(suffix);
 }
 
 template <typename T>
 String _magnitudeSettingsKey(sensor_magnitude_t& magnitude, T&& suffix) {
     return _magnitudeSettingsKey(magnitude.type, std::forward<T>(suffix));
 }
-
-const char RatioKey[] PROGMEM = "Ratio";
 
 bool _sensorMatchKeyPrefix(const char* key) {
     if (strncmp_P(key, PSTR("sns"), 3) == 0) {
@@ -1490,7 +1488,8 @@ bool _sensorMatchKeyPrefix(const char* key) {
 }
 
 SettingsKey _magnitudeSettingsRatioKey(unsigned char type, size_t index) {
-    return {_magnitudeSettingsKey(type, RatioKey), index};
+    static const char RatioKey[] PROGMEM { "Ratio" };
+    return {_magnitudeSettingsKey(type, FPSTR(RatioKey)), index};
 }
 
 SettingsKey _magnitudeSettingsRatioKey(const sensor_magnitude_t& magnitude) {
