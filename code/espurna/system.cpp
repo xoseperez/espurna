@@ -712,7 +712,9 @@ static constexpr espurna::duration::Milliseconds ShortDelayForReset { 500 };
 void deferredReset(duration::Milliseconds delay, CustomResetReason reason) {
     DEBUG_MSG_P(PSTR("[MAIN] Requested reset: %s\n"),
         espurna::boot::serialize(reason).c_str());
-    internal::reset_timer.once_ms(delay.count(), internal::reset, reason);
+    internal::reset_timer.once_ms(delay.count(), [reason]() {
+        internal::reset(reason);
+    });
 }
 
 // SDK reserves last 16KiB on the flash for it's own means
