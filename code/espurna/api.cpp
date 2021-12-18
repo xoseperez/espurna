@@ -252,28 +252,24 @@ bool _apiAccepts(AsyncWebServerRequest* request, const __FlashStringHelper* str)
 }
 
 bool _apiAcceptsText(AsyncWebServerRequest* request) {
-    return _apiAccepts(request, F("text/plain"));
+    return !request->getHeader(F("Accept")) || _apiAccepts(request, F("text/plain"));
 }
 
 bool _apiAcceptsJson(AsyncWebServerRequest* request) {
     return _apiAccepts(request, F("application/json"));
 }
 
-bool _apiMatchHeader(AsyncWebServerRequest* request, const __FlashStringHelper* key, const __FlashStringHelper* value) {
-    auto* header = request->getHeader(key);
-    if (header) {
-        return header->value().equals(value);
-    }
-
-    return false;
-}
-
-bool _apiIsJsonContent(AsyncWebServerRequest* request) {
-    return _apiMatchHeader(request, F("Content-Type"), F("application/json"));
+bool _apiIsContentType(AsyncWebServerRequest* request, const char* value) {
+    const auto& type = request->contentType();
+    return strncmp_P(type.c_str(), value, type.length()) == 0;
 }
 
 bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
-    return _apiMatchHeader(request, F("Content-Type"), F("application/x-www-form-urlencoded"));
+    return _apiIsContentType(request, PSTR("application/x-www-form-urlencoded"));
+}
+
+bool _apiIsJsonContent(AsyncWebServerRequest* request) {
+    return _apiIsContentType(request, PSTR("application/json"));
 }
 
 // Because the webserver request is split between multiple separate function invocations, we need to preserve some state.
