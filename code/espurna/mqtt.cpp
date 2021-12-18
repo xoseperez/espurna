@@ -742,7 +742,7 @@ namespace {
 
 #if WEB_SUPPORT
 
-bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "mqtt", 3) == 0);
 }
 
@@ -1007,7 +1007,7 @@ bool _mqttMaybeSkipRetained(char* topic) {
 //       In that case, there could be MQTT_MESSAGE_RAW_EVENT and this callback only trigger on small messages.
 // TODO: Current callback model does not allow to pass message length. Instead, implement a topic filter and record all subscriptions. That way we don't need to filter out events and could implement per-event callbacks.
 
-void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessageProperties, size_t len, size_t index, size_t total) {
     if (!len || (len > MQTT_BUFFER_MAX_SIZE) || (total > MQTT_BUFFER_MAX_SIZE)) return;
     if (_mqttMaybeSkipRetained(topic)) return;
 

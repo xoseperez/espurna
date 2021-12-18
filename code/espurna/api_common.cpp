@@ -20,7 +20,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 namespace {
 
-bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "api", 3) == 0);
 }
 

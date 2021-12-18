@@ -386,7 +386,7 @@ void _terminalInitCommands() {
         case 2:
             start = pin;
             end = pin + 1;
-            // fallthrough into print
+            // fallthrough!
         case 1:
             for (auto current = start; current < end; ++current) {
                 if (gpioValid(current)) {

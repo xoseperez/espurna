@@ -661,7 +661,7 @@ void onConnected(JsonObject& root) {
     root["hbMode"] = static_cast<int>(heartbeat::settings::mode());
 }
 
-bool onKeyCheck(const char * key, JsonVariant& value) {
+bool onKeyCheck(const char * key, JsonVariant&) {
     if (strncmp(key, "sys", 3) == 0) return true;
     if (strncmp(key, "hb", 2) == 0) return true;
     return false;

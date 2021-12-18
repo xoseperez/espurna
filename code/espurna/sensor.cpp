@@ -2164,6 +2164,7 @@ void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
                 _sensorApiResetEnergy(magnitude, static_cast<const char*>(payload));
                 break;
             }
+            break;
         }
         case MQTT_CONNECT_EVENT: {
             for (auto& magnitude : _magnitudes) {
@@ -2173,9 +2174,9 @@ void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
                     break;
                 }
             }
+            break;
         }
         case MQTT_DISCONNECT_EVENT:
-        default:
             break;
     }
 }

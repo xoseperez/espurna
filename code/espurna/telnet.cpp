@@ -101,7 +101,7 @@ void _telnetWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, "telnet");
 }
 
-bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "telnet", 6) == 0);
 }
 
@@ -221,7 +221,7 @@ void AsyncBufferedClient::_s_onAck(void* client_ptr, AsyncClient*, size_t, uint3
     _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
 }
 
-void AsyncBufferedClient::_s_onPoll(void* client_ptr, AsyncClient* client) {
+void AsyncBufferedClient::_s_onPoll(void* client_ptr, AsyncClient*) {
     _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
 }
 
@@ -444,7 +444,7 @@ void _telnetLoop() {
 
 void _telnetSetupClient(unsigned char i, AsyncClient *client) {
 
-    client->onError([i](void *s, AsyncClient *client, int8_t error) {
+    client->onError([i](void*, AsyncClient *client, int8_t error) {
         DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), client->errorToString(error), error, i);
     });
     client->onData([i](void*, AsyncClient*, void *data, size_t len){
@@ -470,7 +470,7 @@ void _telnetNewClient(AsyncClient* client) {
 
         if (!can_connect) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
-            client->onDisconnect([](void *s, AsyncClient *c) {
+            client->onDisconnect([](void*, AsyncClient *c) {
                 delete c;
             });
             client->close(true);
@@ -489,7 +489,7 @@ void _telnetNewClient(AsyncClient* client) {
     }
 
     DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections\n"));
-    client->onDisconnect([](void *s, AsyncClient *c) {
+    client->onDisconnect([](void*, AsyncClient *c) {
         delete c;
     });
     client->close(true);
@@ -542,7 +542,7 @@ void telnetSetup() {
         _telnetServer.begin();
         espurnaRegisterLoop(_telnetLoop);
     #else
-        _telnetServer.onClient([](void *s, AsyncClient* c) {
+        _telnetServer.onClient([](void*, AsyncClient* c) {
             _telnetNewClient(c);
         }, nullptr);
         _telnetServer.begin();

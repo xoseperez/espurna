@@ -379,7 +379,7 @@ time_t now() {
 #if WEB_SUPPORT
 namespace web {
 
-bool onKeyCheck(const char * key, JsonVariant& value) {
+bool onKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "ntp", 3) == 0);
 }
 

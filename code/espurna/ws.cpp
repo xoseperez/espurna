@@ -624,7 +624,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     }
 }
 
-bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
+bool _wsOnKeyCheck(const char * key, JsonVariant&) {
     if (strncmp(key, "ws", 2) == 0) return true;
     if (strncmp(key, "admin", 5) == 0) return true;
     if (strncmp(key, "hostname", 8) == 0) return true;

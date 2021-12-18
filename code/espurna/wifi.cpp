@@ -1520,7 +1520,7 @@ bool scanning() {
 // (or at all, for anything), it might be nice to have some safeguards.
 
 void init() {
-    static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
+    static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected&) {
         connection::internal::wait = false;
         connection::internal::connected = false;
     });
@@ -1791,7 +1791,7 @@ uint8_t channel() {
     return getSetting("wifiApChannel", build::channel());
 }
 
-
+[[gnu::unused]]
 bool captive() {
     return getSetting("wifiApCaptive", build::captive());
 }
@@ -2142,7 +2142,7 @@ namespace web {
 
 #if WEB_SUPPORT
 
-bool onKeyCheck(const char * key, JsonVariant& value) {
+bool onKeyCheck(const char * key, JsonVariant&) {
     if (strncmp(key, "wifi", 4) == 0) return true;
     if (strncmp(key, "ssid", 4) == 0) return true;
     if (strncmp(key, "pass", 4) == 0) return true;

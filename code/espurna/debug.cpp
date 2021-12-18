@@ -512,7 +512,7 @@ void send(const char* message, size_t len, Timestamp timestamp) {
 namespace web {
 
 #if TERMINAL_SUPPORT
-void onAction(uint32_t client_id, const char * action, JsonObject& data) {
+void onAction(uint32_t, const char * action, JsonObject& data) {
     if (strcmp(action, "dbgcmd") != 0) {
         return;
     }

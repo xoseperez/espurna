@@ -986,7 +986,7 @@ void callback(unsigned int type, const char* topic, char* payload) {
 #if WEB_SUPPORT
 namespace web {
 
-bool onKeyCheck(const char * key, JsonVariant& value) {
+bool onKeyCheck(const char * key, JsonVariant&) {
     return (strncmp(key, "led", 3) == 0);
 }
 
