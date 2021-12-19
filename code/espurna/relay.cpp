@@ -350,6 +350,9 @@ struct Timer {
     using TimeSource = espurna::time::CoreClock;
 
     Timer() = delete;
+    Timer(const Timer&) = delete;
+    Timer(Timer&&) = delete;
+
     Timer(Duration duration, size_t id, bool status) :
         _duration(duration),
         _id(id),
@@ -360,8 +363,24 @@ struct Timer {
         stop();
     }
 
+    Timer& operator=(const Timer&) = delete;
+    Timer& operator=(Timer&&) = delete;
+
     explicit operator bool() const {
         return _armed;
+    }
+
+    bool operator==(const Timer& other) const {
+        return (_duration == other._duration)
+            && (_id == other._id)
+            && (_status == other._status);
+    }
+
+    Timer& update(Duration duration, bool status) {
+        stop();
+        _duration = duration;
+        _status = status;
+        return *this;
     }
 
     size_t id() const {
@@ -452,10 +471,12 @@ void trigger(Duration duration, size_t id, bool target) {
         internal::timers.emplace_front(duration, id, target);
         it = internal::timers.begin();
         notify = "started";
-    } else if ((*it).duration() != duration) {
-        (*it) = Timer(duration, id, target);
+    } else {
+        (*it).update(duration, target);
         notify = "rescheduled";
     }
+
+    (*it).start();
 
     if (notify) {
         DEBUG_MSG_P(PSTR("[RELAY] #%u pulse %s %s in %lu (ms)\n"),
@@ -463,8 +484,6 @@ void trigger(Duration duration, size_t id, bool target) {
                 notify,
                 duration.count());
     }
-
-    (*it).start();
 }
 
 // Update the pulse counter when the relay is already in the opposite state (#454)
@@ -1390,9 +1409,9 @@ inline void _relayMaskRtcmem(const RelayMaskHelper& mask) {
 
 } // namespace
 
-void relayPulse(size_t id, espurna::duration::Milliseconds duration, bool initial) {
+void relayPulse(size_t id, espurna::duration::Milliseconds duration, bool normal) {
     if (id < _relays.size()) {
-        relayStatus(id, initial);
+        relayStatus(id, normal);
         espurna::relay::pulse::trigger(duration, id, !relayStatus(id));
     }
 }
@@ -2425,7 +2444,7 @@ void _relayInitCommands() {
 
     terminalRegisterCommand(F("PULSE"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() < 3) {
-            terminalError(ctx, F("PULSE <ID> <TIME> [<STATUS>]"));
+            terminalError(ctx, F("PULSE <ID> <TIME> [<NORMAL STATUS>]"));
             return;
         }
 
