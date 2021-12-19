@@ -1214,7 +1214,6 @@ bool _relayHandlePayload(size_t id, const char* payload) {
         return true;
     }
 
-    DEBUG_MSG_P(PSTR("[RELAY] Invalid API payload (%s)\n"), payload);
     return false;
 }
 
@@ -2424,14 +2423,19 @@ void _relayInitCommands() {
     });
 
     terminalRegisterCommand(F("PULSE"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 3) {
-            terminalError(ctx, F("PULSE <ID> <TIME>"));
+        if (ctx.argv.size() < 3) {
+            terminalError(ctx, F("PULSE <ID> <TIME> [<STATUS>]"));
             return;
         }
 
         size_t id;
         if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
             terminalError(ctx, F("Invalid relayID"));
+            return;
+        }
+
+        if ((ctx.argv.size() == 4) && !_relayHandlePayload(id, ctx.argv[3])) {
+            terminalError(ctx, F("Invalid relay status"));
             return;
         }
 
