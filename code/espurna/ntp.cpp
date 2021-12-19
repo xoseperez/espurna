@@ -85,7 +85,7 @@ constexpr bool dhcp() {
 } // namespace build
 
 namespace settings {
-namespace internal{ 
+namespace internal {
 
 template <typename T>
 T randomizeDuration(T base, T offset) {
@@ -468,8 +468,13 @@ namespace terminal {
 
 void report(Print& out) {
     const auto info = makeInfo();
-    out.printf_P(PSTR("server: %s\nlast synced: %sutc time: %s\n"),
+    out.printf_P(
+        PSTR("server: %s\n"
+             "update every: %u (s)\n"
+             "last synced: %s\n"
+             "utc time: %s\n"),
         internal::server.c_str(),
+        internal::update_interval.count(),
         info.sync.c_str(),
         info.utc.c_str());
 
@@ -645,7 +650,7 @@ void schedule(espurna::duration::Seconds offset) {
 }
 
 void init() {
-    static bool initialized { false }; 
+    static bool initialized { false };
     if (!initialized) {
         schedule_function(callback);
         initialized = true;
@@ -815,7 +820,7 @@ void setup() {
 #endif
 }
 
-} // namespace 
+} // namespace
 } // namespace ntp
 } // namespace espurna
 
