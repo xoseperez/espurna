@@ -1954,7 +1954,10 @@ void relaySetupAPI() {
     apiRegister(F(MQTT_TOPIC_PULSE "/+"),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](size_t id) {
-                request.send(String(espurna::relay::pulse::findDuration(id).count()));
+                using namespace espurna::relay::pulse;
+                const auto duration = findDuration(id);
+                const auto seconds = std::chrono::duration_cast<Seconds>(duration);
+                request.send(String(seconds.count(), 10));
                 return true;
             });
         },
