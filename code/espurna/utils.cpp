@@ -406,7 +406,7 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
 }
 
 const char* getFlashChipMode() {
-    const char* mode { nullptr };
+    static const char* mode { nullptr };
     if (!mode) {
         switch (ESP.getFlashChipMode()) {
         case FM_QIO:
