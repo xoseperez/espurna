@@ -205,9 +205,10 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // Helper functions
 // -----------------------------------------------------------------------------
 
-// using 'random device' as-is, s
-// TODO notice that something like std::mt19937 and RandomDevice() as seed would require ~2KiB
-// of space for it's internal `result_type state[std::mt19937::state_size]` (ref. sizeof())
+// using 'random device' as-is, while most common implementations
+// would've used it as a seed for some generator func
+// TODO notice that stdlib std::mt19937 struct needs ~2KiB for it's internal
+// `result_type state[std::mt19937::state_size]` (ref. sizeof())
 uint32_t randomNumber(uint32_t minimum, uint32_t maximum) {
     using Device = espurna::system::RandomDevice;
     using Type = Device::result_type;
