@@ -1,3 +1,12 @@
+/*
+
+Part of the RELAY MODULE
+
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+
+*/
+
 #pragma once
 
 #include <cstdint>
@@ -146,15 +155,15 @@ update_decimal:
         if (endp && (endp != token.c_str()) && endp[0] == '\0') {
             switch (type) {
             case Type::Hours: {
-                out += espurna::duration::Hours { value };
+                out += ::espurna::duration::Hours { value };
                 break;
             }
             case Type::Minutes: {
-                out += espurna::duration::Minutes { value };
+                out += ::espurna::duration::Minutes { value };
                 break;
             }
             case Type::Seconds: {
-                out += espurna::duration::Seconds { value };
+                out += ::espurna::duration::Seconds { value };
                 break;
             }
             case Type::Unknown:
@@ -272,4 +281,3 @@ void test() {
 } // namespace pulse
 } // namespace relay
 } // namespace espurna
-
