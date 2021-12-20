@@ -498,7 +498,7 @@ void expire() {
 }
 
 Seconds findDuration(size_t id) {
-    Seconds out;
+    Seconds out{};
 
     auto it = find(id);
     if (it != internal::timers.end()) {
@@ -574,7 +574,7 @@ private:
 };
 
 bool _relayPayloadToTristateCompare(const String& lhs, const char* rhs) {
-    return strncasecmp_P(lhs.c_str(), rhs, lhs.length());
+    return 0 == strncasecmp_P(lhs.c_str(), rhs, lhs.length());
 }
 
 template <typename T>
@@ -1384,13 +1384,20 @@ bool _relayHandlePayload(size_t id, const String& payload) {
 // Initialize pulse timers after ON or OFF event
 // TODO: integrate with scheduled ON or OFF?
 
-bool _relayPulseActive(const Relay& relay, bool status) {
+bool _relayPulseActive(size_t id, bool status) {
     using namespace espurna::relay::pulse;
-    if (isActive(relay.pulse)) {
-        return isNormalStatus(relay.pulse, status);
+    if (isActive(_relays[id].pulse)) {
+        return isNormalStatus(_relays[id].pulse, status);
     }
 
     return false;
+}
+
+void _relayProcessActivePulse(const Relay& relay, size_t id, bool status) {
+    using namespace espurna::relay::pulse;
+    if (isActive(relay.pulse) && !isNormalStatus(relay.pulse, status)) {
+        trigger(relay.pulse_time, id, !status);
+    }
 }
 
 // start pulse for the current status as 'target'
@@ -1399,7 +1406,6 @@ bool _relayPulseActive(const Relay& relay, bool status) {
 bool _relayHandlePulsePayload(size_t id, const char* payload) {
     const auto status = relayStatus(id);
     if (_relayPulseActive(id, status)) {
-        DEBUG_MSG_P(PSTR("[RELAY] #%u normal state conflict\n"), id);
         return false;
     }
 
@@ -2622,7 +2628,11 @@ void _relayInitCommands() {
             return;
         }
 
-        _relayHandlePulsePayload(id, ctx.argv[2]);
+        if (!_relayHandlePulsePayload(id, ctx.argv[2])) {
+            terminalError(ctx, F("Normal state conflict"));
+            return;
+        }
+
         terminalOK(ctx);
     });
 }
@@ -2683,9 +2693,7 @@ void _relayProcess(bool mode) {
             _relayReport(id, target);
 
             // try to immediately schedule 'normal' state
-            if (_relayPulseActive(id, target)) {
-                espurna::relay::pulse::trigger(_relays[id].pulse_time, id, !target);
-            }
+            _relayProcessActivePulse(_relays[id], id, target);
 
             // and make sure relay values are persisted in RAM and flash
             _relayScheduleSave(id);
