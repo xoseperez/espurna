@@ -933,7 +933,9 @@ struct RelaySaveTimer {
         if (_armed) {
             os_timer_disarm(&_timer);
             _timer = os_timer_t{};
+            _done = false;
             _armed = false;
+            _persist = false;
         }
     }
 
@@ -955,6 +957,7 @@ struct RelaySaveTimer {
 private:
     void done() {
         _done = true;
+        _armed = false;
     }
 
     static void timerCallback(void* arg) {
@@ -996,6 +999,7 @@ struct RelaySyncTimer {
         if (_armed) {
             os_timer_disarm(&_timer);
             _timer = os_timer_t{};
+            _done = false;
             _armed = false;
         }
     }
