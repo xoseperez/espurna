@@ -242,17 +242,16 @@ namespace {
 
 bool _apiAccepts(AsyncWebServerRequest* request, const __FlashStringHelper* str) {
     auto* header = request->getHeader(F("Accept"));
-    if (header) {
-        return
-            (header->value().indexOf(F("*/*")) >= 0)
-         || (header->value().indexOf(str) >= 0);
+    if (!header) {
+        return true;
     }
 
-    return false;
+    return (header->value().indexOf(F("*/*")) >= 0)
+        || (header->value().indexOf(str) >= 0);
 }
 
 bool _apiAcceptsText(AsyncWebServerRequest* request) {
-    return !request->getHeader(F("Accept")) || _apiAccepts(request, F("text/plain"));
+    return _apiAccepts(request, F("text/plain"));
 }
 
 bool _apiAcceptsJson(AsyncWebServerRequest* request) {
@@ -296,6 +295,7 @@ void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelper&& helper)
         request._tempObject = nullptr;
     });
     request.addInterestingHeader(F("Api-Key"));
+    request.addInterestingHeader(F("Accept"));
 }
 
 class ApiBaseWebHandler : public AsyncWebHandler {
@@ -418,10 +418,6 @@ public:
             return false;
         }
 
-        if (!_apiAcceptsJson(request)) {
-            return false;
-        }
-
         auto helper = ApiRequestHelper(*request, parts());
         if (helper.match() && apiAuthenticate(request)) {
             switch (request->method()) {
@@ -502,6 +498,11 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
+        if (!_apiAcceptsJson(request)) {
+            request->send(406, F("text/plain"), F("application/json"));
+            return;
+        }
+
         auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
 
         switch (request->method()) {
@@ -562,10 +563,6 @@ public:
             return false;
         }
 
-        if (!_apiAcceptsText(request)) {
-            return false;
-        }
-
         switch (request->method()) {
         case HTTP_HEAD:
         case HTTP_GET:
@@ -591,6 +588,11 @@ public:
     void handleRequest(AsyncWebServerRequest* request) override {
         if (!apiAuthenticate(request)) {
             request->send(403);
+            return;
+        }
+
+        if (!_apiAcceptsText(request)) {
+            request->send(406, F("text/plain"), F("text/plain"));
             return;
         }
 
