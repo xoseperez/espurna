@@ -18,6 +18,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 constexpr size_t RelaysMax { 32ul };
 
+enum class RelayBoot : int {
+    Off,
+    On,
+    Same,
+    Toggle,
+    LockedOff,
+    LockedOn
+};
+
 enum class RelayLock : uint8_t {
     None,
     Off,

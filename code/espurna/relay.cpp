@@ -11,14 +11,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #if RELAY_SUPPORT
 
-#include <Ticker.h>
-#include <ArduinoJson.h>
-
-#include <bitset>
-#include <cstring>
-#include <functional>
-#include <vector>
-
 #include "api.h"
 #include "mqtt.h"
 #include "relay.h"
@@ -29,6 +21,13 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "terminal.h"
 #include "utils.h"
 #include "ws.h"
+
+#include <ArduinoJson.h>
+
+#include <bitset>
+#include <cstring>
+#include <functional>
+#include <vector>
 
 // -----------------------------------------------------------------------------
 
@@ -168,7 +167,7 @@ constexpr unsigned char resetPin(size_t index) {
     );
 }
 
-constexpr int bootMode(size_t index) {
+constexpr RelayBoot bootMode(size_t index) {
     return (
         (index == 0) ? RELAY1_BOOT_MODE :
         (index == 1) ? RELAY2_BOOT_MODE :
@@ -461,12 +460,9 @@ auto find(size_t id) -> decltype(internal::timers.begin()) {
 }
 
 void trigger(Duration duration, size_t id, bool target) {
-    auto it = find(id);
-    if ((it != internal::timers.end()) && ((*it).status() != target)) {
-        (*it).stop();
-    }
-
     const char* notify { nullptr };
+
+    auto it = find(id);
     if (it == internal::timers.end()) {
         internal::timers.emplace_front(duration, id, target);
         it = internal::timers.begin();
@@ -512,14 +508,14 @@ Seconds findDuration(size_t id) {
     return out;
 }
 
-bool isInNormalState(Mode pulse, bool target) {
+bool isNormalStatus(Mode pulse, bool status) {
     switch (pulse) {
     case Mode::None:
         break;
     case Mode::On:
-        return target;
+        return status;
     case Mode::Off:
-        return !target;
+        return !status;
     }
 
     return false;
@@ -665,6 +661,33 @@ espurna::relay::pulse::Mode convert(const String& value) {
 }
 
 template <>
+RelayBoot convert(const String& value) {
+    if (value.length() == 1) {
+        using Type = std::underlying_type<RelayBoot>::type;
+        auto out = convert<Type>(value);
+        if ((static_cast<Type>(RelayBoot::Off) <= out) && (out <= static_cast<Type>(RelayBoot::LockedOn))) {
+            return static_cast<RelayBoot>(out);
+        }
+    } else if (value.length() > 1) {
+        if (value == F("off")) {
+            return RelayBoot::Off;
+        } else if (value == F("on")) {
+            return RelayBoot::On;
+        } else if (value == F("same")) {
+            return RelayBoot::Same;
+        } else if (value == F("toggle")) {
+            return RelayBoot::Toggle;
+        } else if (value == F("locked-off")) {
+            return RelayBoot::LockedOff;
+        } else if (value == F("locked-on")) {
+            return RelayBoot::LockedOn;
+        }
+    }
+
+    return RelayBoot::Off;
+}
+
+template <>
 RelayLock convert(const String& value) {
     return _relayPayloadToTristate<RelayLock>(value);
 }
@@ -744,7 +767,7 @@ unsigned char resetPin(size_t index) {
     return getSetting({"relayResetGpio", index}, build::resetPin(index));
 }
 
-int bootMode(size_t index) {
+RelayBoot bootMode(size_t index) {
     return getSetting({"relayBoot", index}, build::bootMode(index));
 }
 
@@ -883,6 +906,122 @@ public:
 
 namespace {
 
+struct RelaySaveTimer {
+    using Duration = espurna::duration::Milliseconds;
+
+    RelaySaveTimer() = default;
+
+    RelaySaveTimer(const RelaySaveTimer&) = delete;
+    RelaySaveTimer& operator=(const RelaySaveTimer&) = delete;
+
+    RelaySaveTimer(RelaySaveTimer&&) = delete;
+    RelaySaveTimer& operator=(RelaySaveTimer&&) = delete;
+
+    ~RelaySaveTimer() {
+        stop();
+    }
+
+    void schedule(Duration duration) {
+        stop();
+
+        os_timer_setfn(&_timer, timerCallback, this);
+        os_timer_arm(&_timer, duration.count(), 0);
+        _armed = true;
+    }
+
+    void stop() {
+        if (_armed) {
+            os_timer_disarm(&_timer);
+            _timer = os_timer_t{};
+            _armed = false;
+        }
+    }
+
+    template <typename T>
+    void process(T&& callback) {
+        if (_done) {
+            callback(_persist);
+            _persist = false;
+            _done = false;
+        }
+    }
+
+    void persist() {
+        if (!_persist) {
+            _persist = true;
+        }
+    }
+
+private:
+    void done() {
+        _done = true;
+    }
+
+    static void timerCallback(void* arg) {
+        reinterpret_cast<RelaySaveTimer*>(arg)->done();
+    }
+
+    bool _persist { false };
+    bool _done { false };
+    bool _armed { false };
+    os_timer_t _timer;
+};
+
+struct RelaySyncTimer {
+    using Duration = espurna::duration::Milliseconds;
+    using Callback = void(*)();
+
+    RelaySyncTimer() = default;
+
+    RelaySyncTimer(const RelaySyncTimer&) = delete;
+    RelaySyncTimer& operator=(const RelaySyncTimer&) = delete;
+
+    RelaySyncTimer(RelaySyncTimer&&) = delete;
+    RelaySyncTimer& operator=(RelaySyncTimer&&) = delete;
+
+    ~RelaySyncTimer() {
+        stop();
+    }
+
+    void schedule(Duration duration, Callback callback) {
+        stop();
+
+        os_timer_setfn(&_timer, timerCallback, this);
+        os_timer_arm(&_timer, duration.count(), 0);
+        _callback = callback;
+        _armed = true;
+    }
+
+    void stop() {
+        if (_armed) {
+            os_timer_disarm(&_timer);
+            _timer = os_timer_t{};
+            _armed = false;
+        }
+    }
+
+    void process() {
+        if (_done) {
+            _callback();
+            _done = false;
+        }
+    }
+
+private:
+    void done() {
+        _done = true;
+    }
+
+    static void timerCallback(void* arg) {
+        reinterpret_cast<RelaySyncTimer*>(arg)->done();
+    }
+
+    Callback _callback { nullptr };
+    bool _done { false };
+    bool _armed { false };
+    os_timer_t _timer;
+};
+
 using Relays = std::vector<Relay>;
 Relays _relays;
 size_t _relayDummy { 0ul };
@@ -895,17 +1034,17 @@ int _relay_sync_mode { RELAY_SYNC_ANY };
 bool _relay_sync_reent { false };
 bool _relay_sync_locked { false };
 
-Ticker _relay_save_timer;
-Ticker _relay_sync_timer;
+RelaySaveTimer _relay_save_timer;
+RelaySyncTimer _relay_sync_timer;
 
 std::forward_list<RelayStatusCallback> _relay_status_notify;
 std::forward_list<RelayStatusCallback> _relay_status_change;
 
 #if WEB_SUPPORT
 
-bool _relay_report_ws = false;
+bool _relay_report_ws { false };
 
-void _relayWsReport() {
+void _relayScheduleWsReport() {
     _relay_report_ws = true;
 }
 
@@ -1245,10 +1384,10 @@ bool _relayHandlePayload(size_t id, const String& payload) {
 // Initialize pulse timers after ON or OFF event
 // TODO: integrate with scheduled ON or OFF?
 
-bool _relayPulseActive(size_t id, bool target) {
+bool _relayPulseActive(const Relay& relay, bool status) {
     using namespace espurna::relay::pulse;
-    if (isActive(_relays[id].pulse)) {
-        return isInNormalState(_relays[id].pulse, target);
+    if (isActive(relay.pulse)) {
+        return isNormalStatus(relay.pulse, status);
     }
 
     return false;
@@ -1258,8 +1397,8 @@ bool _relayPulseActive(size_t id, bool target) {
 // TODO: special suffixes for minutes, hours and days
 [[gnu::unused]]
 bool _relayHandlePulsePayload(size_t id, const char* payload) {
-    const auto target = relayStatus(id);
-    if (_relayPulseActive(id, target)) {
+    const auto status = relayStatus(id);
+    if (_relayPulseActive(id, status)) {
         DEBUG_MSG_P(PSTR("[RELAY] #%u normal state conflict\n"), id);
         return false;
     }
@@ -1267,7 +1406,7 @@ bool _relayHandlePulsePayload(size_t id, const char* payload) {
     using namespace espurna::relay::pulse;
     const auto pulse = parse(payload);
     if (pulse) {
-        trigger(pulse.duration(), id, target);
+        trigger(pulse.duration(), id, status);
         relayToggle(id, true, false);
 
         return true;
@@ -1360,16 +1499,20 @@ void _relaySyncUnlock() {
         static const auto action = []() {
             _relayUnlockAll();
 #if WEB_SUPPORT
-            _relayWsReport();
+            _relayScheduleWsReport();
 #endif
         };
 
         if (all_off) {
-            _relay_sync_timer.once_ms(_relay_delay_interlock.count(), action);
+            _relay_sync_timer.schedule(_relay_delay_interlock, action);
         } else {
             action();
         }
     }
+}
+
+void _relaySync() {
+    _relay_sync_timer.process();
 }
 
 void _relaySyncTryUnlock() {
@@ -1615,13 +1758,26 @@ void _relaySave(bool persist) {
     }
 }
 
+void _relaySave() {
+    _relay_save_timer.process([](bool persist) {
+        _relaySave(persist);
+    });
+}
+
 void _relayScheduleSave(size_t id) {
-    const auto boot_mode = espurna::relay::settings::bootMode(id);
-    const auto persist = (RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode);
-    _relay_save_timer.once_ms(espurna::relay::build::saveDelay().count(),
-        [persist]() {
-            relaySave(persist);
-        });
+    switch (espurna::relay::settings::bootMode(id)) {
+    case RelayBoot::Same:
+    case RelayBoot::Toggle:
+        _relay_save_timer.persist();
+        break;
+    case RelayBoot::Off:
+    case RelayBoot::On:
+    case RelayBoot::LockedOff:
+    case RelayBoot::LockedOn:
+        break;
+    }
+
+    _relay_save_timer.schedule(espurna::relay::build::saveDelay());
 }
 
 } // namespace
@@ -1714,23 +1870,23 @@ void _relayBoot(size_t index, const RelayMaskHelper& mask) {
     auto lock = RelayLock::None;
 
     switch (espurna::relay::settings::bootMode(index)) {
-    case RELAY_BOOT_SAME:
+    case RelayBoot::Same:
         status = mask[index];
         break;
-    case RELAY_BOOT_TOGGLE:
+    case RelayBoot::Toggle:
         status = !mask[index];
         break;
-    case RELAY_BOOT_ON:
+    case RelayBoot::On:
         status = true;
         break;
-    case RELAY_BOOT_LOCKED_ON:
+    case RelayBoot::LockedOn:
         status = true;
         lock = RelayLock::On;
         break;
-    case RELAY_BOOT_OFF:
+    case RelayBoot::Off:
         status = false;
         break;
-    case RELAY_BOOT_LOCKED_OFF:
+    case RelayBoot::LockedOff:
         status = false;
         lock = RelayLock::Off;
         break;
@@ -1848,7 +2004,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
             out.add(espurna::relay::settings::name(index));
         }},
         {F("relayBoot"), [](JsonArray& out, size_t index) {
-            out.add(espurna::relay::settings::bootMode(index));
+            out.add(static_cast<int>(espurna::relay::settings::bootMode(index)));
         }},
 #if MQTT_SUPPORT
         {F("relayTopicPub"), [](JsonArray& out, size_t index) {
@@ -1902,6 +2058,13 @@ void _relayWebSocketOnAction(uint32_t, const char* action, JsonObject& data) {
         _relayHandlePayload(
             data["id"].as<size_t>(),
             data["status"].as<String>().c_str());
+    }
+}
+
+void _relayWsReport() {
+    if (_relay_report_ws) {
+        wsPost(_relayWebSocketUpdate);
+        _relay_report_ws = false;
     }
 }
 
@@ -2480,6 +2643,12 @@ void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]]) {
     _relayMqttReport(id);
 #endif
 #if WEB_SUPPORT
+    _relayScheduleWsReport();
+#endif
+}
+
+void _relayReport() {
+#if WEB_SUPPORT
     _relayWsReport();
 #endif
 }
@@ -2545,12 +2714,9 @@ namespace {
 void _relayLoop() {
     _relayProcess(false);
     _relayProcess(true);
-#if WEB_SUPPORT
-    if (_relay_report_ws) {
-        wsPost(_relayWebSocketUpdate);
-        _relay_report_ws = false;
-    }
-#endif
+    _relayReport();
+    _relaySync();
+    _relaySave();
 }
 
 } // namespace

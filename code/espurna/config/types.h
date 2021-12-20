@@ -79,12 +79,12 @@
 
 #define RELAY_NONE          0x99
 
-#define RELAY_BOOT_OFF              0
-#define RELAY_BOOT_ON               1
-#define RELAY_BOOT_SAME             2
-#define RELAY_BOOT_TOGGLE           3
-#define RELAY_BOOT_LOCKED_OFF       4
-#define RELAY_BOOT_LOCKED_ON        5
+#define RELAY_BOOT_OFF              RelayBoot::Off
+#define RELAY_BOOT_ON               RelayBoot::On
+#define RELAY_BOOT_SAME             RelayBoot::Same
+#define RELAY_BOOT_TOGGLE           RelayBoot::Toggle
+#define RELAY_BOOT_LOCKED_OFF       RelayBoot::LockedOff
+#define RELAY_BOOT_LOCKED_ON        RelayBoot::LockedOn
 
 #define RELAY_TYPE_NORMAL           RelayType::Normal
 #define RELAY_TYPE_INVERSE          RelayType::Inverse
