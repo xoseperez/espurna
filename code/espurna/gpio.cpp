@@ -23,16 +23,20 @@ namespace internal {
 
 template <>
 GpioType convert(const String& value) {
-    auto type = static_cast<GpioType>(value.toInt());
-    switch (type) {
-    case GpioType::Hardware:
-    case GpioType::Mcp23s08:
-        return type;
-    case GpioType::None:
-        break;
-    }
+    alignas(4) static constexpr char None[] PROGMEM = "none";
+    alignas(4) static constexpr char Hardware[] PROGMEM = "hardware";
 
-    return GpioType::None;
+    [[gnu::unused]] alignas(4) static constexpr char Mcp23s08[] PROGMEM = "mcp23s08";
+
+    constexpr static const EnumOption<GpioType> options[] PROGMEM {
+        {GpioType::Hardware, Hardware},
+#if MCP23S08_SUPPORT
+        {GpioType::Mcp23s08, Mcp23s08},
+#endif
+        {GpioType::None, None},
+    };
+
+    return convert(options, value, GpioType::None);
 }
 
 } // namespace internal

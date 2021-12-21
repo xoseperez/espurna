@@ -127,6 +127,73 @@ private:
     Get _get;
 };
 
+struct EnumOptionNumeric {
+    static bool check(const String& value);
+};
+
+template <typename Value>
+struct EnumOption {
+    static_assert(std::is_enum<Value>::value, "");
+
+    using ValueType = Value;
+    using UnderlyingType = typename std::underlying_type<Value>::type;
+    static_assert((alignof(UnderlyingType) % 4) == 0, "");
+
+    struct Numeric {
+        using Convert = UnderlyingType(*)(const String&);
+
+        bool check(const String& value, Convert convert) {
+            _checked = false;
+
+            if (EnumOptionNumeric::check(value)) {
+                _value = convert(value);
+                _checked = true;
+            }
+
+            return _checked;
+        }
+
+        explicit operator bool() const {
+            return _checked;
+        }
+
+        UnderlyingType value() const {
+            return _value;
+        }
+
+    private:
+        UnderlyingType _value{};
+        bool _checked { false };
+    };
+
+
+    EnumOption() = delete;
+    constexpr EnumOption(ValueType value, const char* string) noexcept :
+        _value(value),
+        _string(string)
+    {}
+
+    constexpr ValueType value() const {
+        return _value;
+    }
+
+    constexpr UnderlyingType numeric() const {
+        return static_cast<UnderlyingType>(_value);
+    }
+
+    constexpr const char* string() const {
+        return _string;
+    }
+
+    bool operator==(const String& string) const {
+        return strcmp_P(string.c_str(), _string) == 0;
+    }
+
+private:
+    ValueType _value;
+    const char* _string;
+};
+
 } // namespace internal
 
 // 'optional' type for byte range

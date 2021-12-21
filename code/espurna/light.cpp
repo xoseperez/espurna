@@ -691,22 +691,15 @@ namespace internal {
 
 template <>
 my92xx_model_t convert(const String& value) {
-    if (value.length() == 1) {
-        switch (*value.c_str()) {
-        case 0x01:
-            return MY92XX_MODEL_MY9291;
-        case 0x02:
-            return MY92XX_MODEL_MY9231;
-        }
-    } else {
-        if (value == "9291") {
-            return MY92XX_MODEL_MY9291;
-        } else if (value == "9231") {
-            return MY92XX_MODEL_MY9231;
-        }
-    }
+    alignas(4) static constexpr char MY9291[] PROGMEM = "9291";
+    alignas(4) static constexpr char MY9231[] PROGMEM = "9231";
 
-    return Light::build::my92xxModel();
+    constexpr static const std::array<EnumOption<my92xx_model_t>, 2> options {
+        {{MY92XX_MODEL_MY9291, MY9291},
+         {MY92XX_MODEL_MY9231, MY9231}}
+    };
+
+    return convert(options, value, Light::build::my92xxModel());
 }
 
 } // namespace internal

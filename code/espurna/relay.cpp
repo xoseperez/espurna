@@ -265,7 +265,7 @@ namespace pulse {
 using Duration = espurna::duration::Milliseconds;
 using Seconds = std::chrono::duration<float>;
 
-enum class Mode : uint8_t {
+enum class Mode {
     None,
     Off,
     On
@@ -573,152 +573,133 @@ private:
     RelayMask _mask { 0ul };
 };
 
-bool _relayPayloadToTristateCompare(const String& lhs, const char* rhs) {
-    return 0 == strncasecmp_P(lhs.c_str(), rhs, lhs.length());
-}
-
-template <typename T>
-T _relayPayloadToTristate(const String& payload) {
-    if (payload.length() == 1) {
-        switch (payload[0]) {
-        case '0':
-            return T::None;
-        case '1':
-            return T::Off;
-        case '2':
-            return T::On;
-        }
-    } else if (payload.length() > 1) {
-        if (_relayPayloadToTristateCompare(payload, PSTR("none"))) {
-            return T::None;
-        } else if (_relayPayloadToTristateCompare(payload, PSTR("off"))) {
-            return T::Off;
-        } else if (_relayPayloadToTristateCompare(payload, PSTR("on"))) {
-            return T::On;
-        }
-    }
-
-    return T::None;
-}
-
-template <typename T>
-const char* _relayTristateToPayload(T tristate) {
-    static_assert(std::is_enum<T>::value, "");
-    switch (tristate) {
-    case T::Off:
-        return "off";
-    case T::On:
-        return "on";
-    case T::None:
-        break;
-    }
-
-    return "none";
-}
-
-const char* _relayPulseToPayload(espurna::relay::pulse::Mode pulse) {
-    return _relayTristateToPayload(pulse);
-}
-
-const char* _relayLockToPayload(RelayLock lock) {
-    return _relayTristateToPayload(lock);
-}
-
 } // namespace
 
 namespace settings {
 namespace internal {
+namespace {
+
+alignas(4) static constexpr char TristateNone[] PROGMEM = "none";
+alignas(4) static constexpr char TristateOff[] PROGMEM = "off";
+alignas(4) static constexpr char TristateOn[] PROGMEM = "on";
+
+template <typename T>
+struct RelayTristateHelper {
+    constexpr static const std::array<EnumOption<T>, 3> Options PROGMEM {
+        {{T::None, TristateNone},
+         {T::Off, TristateOff},
+         {T::On, TristateOn}}
+    };
+
+    static T convert(const String& value) {
+        return ::settings::internal::convert(Options, value, T::None);
+    }
+
+    static String serialize(T value) {
+        return ::settings::internal::serialize(Options, value);
+    }
+};
+
+template <typename T>
+constexpr const std::array<EnumOption<T>, 3> RelayTristateHelper<T>::Options;
+
+} // namespace
 
 template <>
 PayloadStatus convert(const String& value) {
-    auto status = static_cast<PayloadStatus>(value.toInt());
-    switch (status) {
-    case PayloadStatus::Off:
-    case PayloadStatus::On:
-    case PayloadStatus::Toggle:
-    case PayloadStatus::Unknown:
-        return status;
-    }
+    alignas(4) static constexpr char Off[] PROGMEM = "off";
+    alignas(4) static constexpr char On[] PROGMEM = "on";
+    alignas(4) static constexpr char Toggle[] PROGMEM = "toggle";
+    alignas(4) static constexpr char Unknown[] PROGMEM = "unknown";
 
-    return PayloadStatus::Unknown;
+    constexpr static const std::array<EnumOption<PayloadStatus>, 4> options PROGMEM {
+        {{PayloadStatus::Off, Off},
+         {PayloadStatus::On, On},
+         {PayloadStatus::Toggle, Toggle},
+         {PayloadStatus::Unknown, Unknown}}
+    };
+
+    return convert(options, value, PayloadStatus::Unknown);
 }
 
 template <>
 RelayMqttTopicMode convert(const String& value) {
-    auto mode = static_cast<RelayMqttTopicMode>(value.toInt());
-    switch (mode) {
-    case RelayMqttTopicMode::Normal:
-    case RelayMqttTopicMode::Inverse:
-        return mode;
-    }
+    alignas(4) static constexpr char Normal[] PROGMEM = "normal";
+    alignas(4) static constexpr char Inverse[] PROGMEM = "inverse";
 
-    return RelayMqttTopicMode::Normal;
+    constexpr static const std::array<EnumOption<RelayMqttTopicMode>, 2> options PROGMEM {
+        {{RelayMqttTopicMode::Normal, Normal},
+         {RelayMqttTopicMode::Inverse, Inverse}}
+    };
+
+    return convert(options, value, RelayMqttTopicMode::Normal);
 }
 
 template <>
 espurna::relay::pulse::Mode convert(const String& value) {
-    return _relayPayloadToTristate<espurna::relay::pulse::Mode>(value);
+    return RelayTristateHelper<espurna::relay::pulse::Mode>::convert(value);
 }
 
 template <>
 RelayBoot convert(const String& value) {
-    if (value.length() == 1) {
-        using Type = std::underlying_type<RelayBoot>::type;
-        auto out = convert<Type>(value);
-        if ((static_cast<Type>(RelayBoot::Off) <= out) && (out <= static_cast<Type>(RelayBoot::LockedOn))) {
-            return static_cast<RelayBoot>(out);
-        }
-    } else if (value.length() > 1) {
-        if (value == F("off")) {
-            return RelayBoot::Off;
-        } else if (value == F("on")) {
-            return RelayBoot::On;
-        } else if (value == F("same")) {
-            return RelayBoot::Same;
-        } else if (value == F("toggle")) {
-            return RelayBoot::Toggle;
-        } else if (value == F("locked-off")) {
-            return RelayBoot::LockedOff;
-        } else if (value == F("locked-on")) {
-            return RelayBoot::LockedOn;
-        }
-    }
+    alignas(4) static constexpr char Off[] PROGMEM = "off";
+    alignas(4) static constexpr char On[] PROGMEM = "on";
+    alignas(4) static constexpr char Same[] PROGMEM = "same";
+    alignas(4) static constexpr char Toggle[] PROGMEM = "toggle";
+    alignas(4) static constexpr char LockedOff[] PROGMEM = "locked-off";
+    alignas(4) static constexpr char LockedOn[] PROGMEM = "locked-on";
 
-    return RelayBoot::Off;
+    constexpr static const std::array<EnumOption<RelayBoot>, 6> options PROGMEM {
+        {{RelayBoot::Off, Off},
+         {RelayBoot::On, On},
+         {RelayBoot::Same, Same},
+         {RelayBoot::Toggle, Toggle},
+         {RelayBoot::LockedOff, LockedOff},
+         {RelayBoot::LockedOn, LockedOn}}
+    };
+
+    return convert(options, value, RelayBoot::Off);
 }
 
 template <>
 RelayLock convert(const String& value) {
-    return _relayPayloadToTristate<RelayLock>(value);
+    return RelayTristateHelper<RelayLock>::convert(value);
 }
 
 template <>
 RelayProvider convert(const String& value) {
-    auto type = static_cast<RelayProvider>(value.toInt());
-    switch (type) {
-    case RelayProvider::None:
-    case RelayProvider::Dummy:
-    case RelayProvider::Gpio:
-    case RelayProvider::Dual:
-    case RelayProvider::Stm:
-        return type;
-    }
+    alignas(4) static constexpr char None[] PROGMEM = "none";
+    alignas(4) static constexpr char Dummy[] PROGMEM = "dummy";
+    alignas(4) static constexpr char Gpio[] PROGMEM = "gpio";
+    alignas(4) static constexpr char Dual[] PROGMEM = "dual";
+    alignas(4) static constexpr char Stm[] PROGMEM = "stm";
 
-    return RelayProvider::None;
+    constexpr static const std::array<EnumOption<RelayProvider>, 5> options PROGMEM {
+        {{RelayProvider::None, None},
+         {RelayProvider::Dummy, Dummy},
+         {RelayProvider::Gpio, Gpio},
+         {RelayProvider::Dual, Dual},
+         {RelayProvider::Stm, Stm}}
+    };
+
+    return convert(options, value, RelayProvider::None);
 }
 
 template <>
 RelayType convert(const String& value) {
-    auto type = static_cast<RelayType>(value.toInt());
-    switch (type) {
-    case RelayType::Normal:
-    case RelayType::Inverse:
-    case RelayType::Latched:
-    case RelayType::LatchedInverse:
-        return type;
-    }
+    alignas(4) static constexpr char Normal[] PROGMEM = "normal";
+    alignas(4) static constexpr char Inverse[] PROGMEM = "inverse";
+    alignas(4) static constexpr char Latched[] PROGMEM = "latched";
+    alignas(4) static constexpr char LatchedInverse[] PROGMEM = "latched-inverse";
 
-    return RelayType::Normal;
+    constexpr static const std::array<EnumOption<RelayType>, 4> options PROGMEM {
+        {{RelayType::Normal, Normal},
+         {RelayType::Inverse, Inverse},
+         {RelayType::Latched, Latched},
+         {RelayType::LatchedInverse, LatchedInverse}}
+    };
+
+    return convert(options, value, RelayType::Normal);
 }
 
 template <>
@@ -2540,6 +2521,11 @@ namespace {
 
 using TerminalRelayPrintExtra = void(*)(const Relay&, char* out, size_t size);
 
+template <typename T>
+String _relayTristateToPayload(T value) {
+    return ::settings::internal::RelayTristateHelper<T>::serialize(value);
+}
+
 template <size_t Size>
 void _relayPrintExtra(const Relay& relay, char (&buffer)[Size]) {
     int index = 0;
@@ -2554,7 +2540,7 @@ void _relayPrintExtra(const Relay& relay, char (&buffer)[Size]) {
     }
     if (index >= 0 && relay.lock != RelayLock::None) {
         index += snprintf_P(out + index, Size,
-                PSTR(" Lock=%s"), _relayLockToPayload(relay.lock));
+                PSTR(" Lock=%s"), _relayTristateToPayload(relay.lock).c_str());
     }
 }
 
@@ -2565,7 +2551,7 @@ void _relayPrint(Print& out, size_t start, size_t stop, bool extra) {
         char pulse_info[64] = "";
         if ((relay.pulse != espurna::relay::pulse::Mode::None) && (relay.pulse_time.count() > 0)) {
             snprintf_P(pulse_info, sizeof(pulse_info), PSTR(" Pulse=%s Time=%u(ms)"),
-                _relayPulseToPayload(relay.pulse), relay.pulse_time);
+                _relayTristateToPayload(relay.pulse).c_str(), relay.pulse_time);
         }
 
         char extended_info[64] = "";

@@ -45,27 +45,18 @@ namespace internal {
 
 template <>
 espurna::heartbeat::Mode convert(const String& value) {
-    auto len = value.length();
-    if (len == 1) {
-        switch (*value.c_str()) {
-        case '0':
-            return espurna::heartbeat::Mode::None;
-        case '1':
-            return espurna::heartbeat::Mode::Once;
-        case '2':
-            return espurna::heartbeat::Mode::Repeat;
-        }
-    } else if (len > 1) {
-        if (value == F("none")) {
-            return espurna::heartbeat::Mode::None;
-        } else if (value == F("once")) {
-            return espurna::heartbeat::Mode::Once;
-        } else if (value == F("repeat")) {
-            return espurna::heartbeat::Mode::Repeat;
-        }
-    }
+    alignas(4) static constexpr char None[] PROGMEM = "none";
+    alignas(4) static constexpr char Once[] PROGMEM = "once";
+    alignas(4) static constexpr char Repeat[] PROGMEM = "repeat";
 
-    return espurna::heartbeat::Mode::Repeat;
+    using namespace espurna::heartbeat;
+    constexpr static const EnumOption<Mode> options[] PROGMEM {
+        {Mode::None, None},
+        {Mode::Once, Once},
+        {Mode::Repeat, Repeat},
+    };
+
+    return convert(options, value, Mode::Repeat);
 }
 
 template <>

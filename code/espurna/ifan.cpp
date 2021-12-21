@@ -24,70 +24,46 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // TODO: in case there are more FANs, move externally
 
-namespace ifan02 {
-
-const char* speedToPayload(FanSpeed value) {
-    switch (value) {
-    case FanSpeed::Off:
-        return "off";
-    case FanSpeed::Low:
-        return "low";
-    case FanSpeed::Medium:
-        return "medium";
-    case FanSpeed::High:
-        return "high";
-    }
-
-    return "";
-}
-
-FanSpeed payloadToSpeed(const char* payload) {
-    auto len = strlen(payload);
-    if (len == 1) {
-        switch (payload[0]) {
-        case '0':
-            return FanSpeed::Off;
-        case '1':
-            return FanSpeed::Low;
-        case '2':
-            return FanSpeed::Medium;
-        case '3':
-            return FanSpeed::High;
-        }
-    } else if (len > 1) {
-        String cmp(payload);
-        if (cmp == "off") {
-            return FanSpeed::Off;
-        } else if (cmp == "low") {
-            return FanSpeed::Low;
-        } else if (cmp == "medium") {
-            return FanSpeed::Medium;
-        } else if (cmp == "high") {
-            return FanSpeed::High;
-        }
-    }
-
-    return FanSpeed::Off;
-}
-
-FanSpeed payloadToSpeed(const String& string) {
-    return payloadToSpeed(string.c_str());
-}
-
-} // namespace ifan02
-
 namespace settings {
 namespace internal {
+namespace {
+
+alignas(4) static constexpr char Off[] PROGMEM = "off";
+alignas(4) static constexpr char Low[] PROGMEM = "low";
+alignas(4) static constexpr char Medium[] PROGMEM = "medium";
+alignas(4) static constexpr char High[] PROGMEM = "high";
+
+static constexpr const std::array<EnumOption<FanSpeed>, 4> FanSpeedOptions PROGMEM {
+    {{FanSpeed::Off, Off},
+     {FanSpeed::Low, Low},
+     {FanSpeed::Medium, Medium},
+     {FanSpeed::High, High}}
+};
+
+} // namespace
 
 template <>
 FanSpeed convert(const String& value) {
-    return ifan02::payloadToSpeed(value);
+    return convert(FanSpeedOptions, value, FanSpeed::Off);
+}
+
+String serialize(FanSpeed speed) {
+    return serialize(FanSpeedOptions, speed);
 }
 
 } // namespace internal
 } // namespace settings
 
 namespace ifan02 {
+namespace {
+
+FanSpeed payloadToSpeed(const String& value) {
+    return ::settings::internal::convert<FanSpeed>(value);
+}
+
+String speedToPayload(FanSpeed speed) {
+    return ::settings::internal::serialize(speed);
+}
 
 constexpr unsigned long DefaultSaveDelay { 1000ul };
 
@@ -142,7 +118,7 @@ void configure() {
 
 void report(FanSpeed speed [[gnu::unused]]) {
 #if MQTT_SUPPORT
-    mqttSend(MQTT_TOPIC_SPEED, speedToPayload(speed));
+    mqttSend(MQTT_TOPIC_SPEED, speedToPayload(speed).c_str());
 #endif
 }
 
@@ -150,9 +126,9 @@ void save(FanSpeed speed) {
     static Ticker ticker;
     config.speed = speed;
     ticker.once_ms(config.save, []() {
-        const char* value = speedToPayload(config.speed);
+        auto value = speedToPayload(config.speed);
         setSetting("fanSpeed", value);
-        DEBUG_MSG_P(PSTR("[IFAN] Saved speed setting \"%s\"\n"), value);
+        DEBUG_MSG_P(PSTR("[IFAN] Saved speed setting \"%s\"\n"), value.c_str());
     });
 }
 
@@ -237,12 +213,8 @@ void updateSpeed(FanSpeed speed) {
     updateSpeed(config, speed);
 }
 
-void updateSpeedFromPayload(const char* payload) {
-    updateSpeed(payloadToSpeed(payload));
-}
-
 void updateSpeedFromPayload(const String& payload) {
-    updateSpeedFromPayload(payload.c_str());
+    updateSpeed(payloadToSpeed(payload));
 }
 
 #if MQTT_SUPPORT
@@ -353,13 +325,14 @@ void setup() {
 
         ctx.output.printf_P(PSTR("%s %s\n"),
             (config.speed != FanSpeed::Off) ? "speed" : "fan is",
-            speedToPayload(config.speed));
+            speedToPayload(config.speed).c_str());
         terminalOK(ctx);
     });
 #endif
 
 }
 
+} // namespace
 } // namespace ifan
 
 FanSpeed fanSpeed() {

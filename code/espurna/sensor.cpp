@@ -465,24 +465,76 @@ bool realTimeValues() {
 
 namespace settings {
 namespace internal {
+namespace {
+
+alignas(4) constexpr static const char Farenheit[] = ("°F");
+alignas(4) constexpr static const char Celcius[] = ("°C");
+alignas(4) constexpr static const char Kelvin[] = ("K");
+alignas(4) constexpr static const char Percentage[] = ("%");
+alignas(4) constexpr static const char Hectopascal[] = ("hPa");
+alignas(4) constexpr static const char Ampere[] = ("A");
+alignas(4) constexpr static const char Volt[] = ("V");
+alignas(4) constexpr static const char Watt[] = ("W");
+alignas(4) constexpr static const char Kilowatt[] = ("kW");
+alignas(4) constexpr static const char Voltampere[] = ("VA");
+alignas(4) constexpr static const char Kilovoltampere[] = ("kVA");
+alignas(4) constexpr static const char VoltampereReactive[] = ("VAR");
+alignas(4) constexpr static const char KilovoltampereReactive[] = ("kVAR");
+alignas(4) constexpr static const char Joule[] = ("J");
+alignas(4) constexpr static const char KilowattHour[] = ("kWh");
+alignas(4) constexpr static const char MicrogrammPerCubicMeter[] = ("µg/m³");
+alignas(4) constexpr static const char PartsPerMillion[] = ("ppm");
+alignas(4) constexpr static const char Lux[] = ("lux");
+alignas(4) constexpr static const char UltravioletIndex[] = ("UVindex");
+alignas(4) constexpr static const char Ohm[] = ("ohm");
+alignas(4) constexpr static const char MilligrammPerCubicMeter[] = ("mg/m³");
+alignas(4) constexpr static const char CountsPerMinute[] = ("cpm");
+alignas(4) constexpr static const char MicrosievertPerHour[] = ("µSv/h");
+alignas(4) constexpr static const char Meter[] = ("m");
+alignas(4) constexpr static const char Hertz[] = ("Hz");
+alignas(4) constexpr static const char Ph[] = ("pH");
+alignas(4) constexpr static const char None[] = ("none");
+
+constexpr static const EnumOption<sensor::Unit> SensorUnitOptions[] PROGMEM {
+    {sensor::Unit::Farenheit, Farenheit},
+    {sensor::Unit::Celcius, Celcius},
+    {sensor::Unit::Kelvin, Kelvin},
+    {sensor::Unit::Percentage, Percentage},
+    {sensor::Unit::Hectopascal, Hectopascal},
+    {sensor::Unit::Ampere, Ampere},
+    {sensor::Unit::Volt, Volt},
+    {sensor::Unit::Watt, Watt},
+    {sensor::Unit::Kilowatt, Kilowatt},
+    {sensor::Unit::Voltampere, Voltampere},
+    {sensor::Unit::Kilovoltampere, Kilovoltampere},
+    {sensor::Unit::VoltampereReactive, VoltampereReactive},
+    {sensor::Unit::KilovoltampereReactive, KilovoltampereReactive},
+    {sensor::Unit::Joule, Joule},
+    {sensor::Unit::WattSecond, Joule},
+    {sensor::Unit::KilowattHour, KilowattHour},
+    {sensor::Unit::MicrogrammPerCubicMeter, MicrogrammPerCubicMeter},
+    {sensor::Unit::PartsPerMillion, PartsPerMillion},
+    {sensor::Unit::Lux, Lux},
+    {sensor::Unit::UltravioletIndex, UltravioletIndex},
+    {sensor::Unit::Ohm, Ohm},
+    {sensor::Unit::MilligrammPerCubicMeter, MilligrammPerCubicMeter},
+    {sensor::Unit::CountsPerMinute, CountsPerMinute},
+    {sensor::Unit::MicrosievertPerHour, MicrosievertPerHour},
+    {sensor::Unit::Meter, Meter},
+    {sensor::Unit::Hertz, Hertz},
+    {sensor::Unit::Ph, Ph},
+    {sensor::Unit::None, None},
+};
+
+} // namespace
 
 template <>
 sensor::Unit convert(const String& value) {
-    auto len = value.length();
-    if (len && isNumber(value)) {
-        constexpr int Min { static_cast<int>(sensor::Unit::Min_) };
-        constexpr int Max { static_cast<int>(sensor::Unit::Max_) };
-        auto num = convert<int>(value);
-        if ((Min < num) && (num < Max)) {
-            return static_cast<sensor::Unit>(num);
-        }
-    }
-
-    return sensor::Unit::None;
+    return convert(SensorUnitOptions, value, sensor::Unit::None);
 }
 
 String serialize(sensor::Unit unit) {
-    return serialize(static_cast<int>(unit));
+    return serialize(SensorUnitOptions, unit);
 }
 
 } // namespace internal
@@ -984,94 +1036,7 @@ String _magnitudeTopic(unsigned char type) {
 }
 
 String _magnitudeUnits(sensor::Unit unit) {
-    const __FlashStringHelper* result { F("") };
-
-    switch (unit) {
-    case sensor::Unit::Farenheit:
-        result = F("°F");
-        break;
-    case sensor::Unit::Celcius:
-        result = F("°C");
-        break;
-    case sensor::Unit::Kelvin:
-        result = F("K");
-        break;
-    case sensor::Unit::Percentage:
-        result = F("%");
-        break;
-    case sensor::Unit::Hectopascal:
-        result = F("hPa");
-        break;
-    case sensor::Unit::Ampere:
-        result = F("A");
-        break;
-    case sensor::Unit::Volt:
-        result = F("V");
-        break;
-    case sensor::Unit::Watt:
-        result = F("W");
-        break;
-    case sensor::Unit::Kilowatt:
-        result = F("kW");
-        break;
-    case sensor::Unit::Voltampere:
-        result = F("VA");
-        break;
-    case sensor::Unit::Kilovoltampere:
-        result = F("kVA");
-        break;
-    case sensor::Unit::VoltampereReactive:
-        result = F("VAR");
-        break;
-    case sensor::Unit::KilovoltampereReactive:
-        result = F("kVAR");
-        break;
-    case sensor::Unit::Joule:
-    //aka case sensor::Unit::WattSecond:
-        result = F("J");
-        break;
-    case sensor::Unit::KilowattHour:
-        result = F("kWh");
-        break;
-    case sensor::Unit::MicrogrammPerCubicMeter:
-        result = F("µg/m³");
-        break;
-    case sensor::Unit::PartsPerMillion:
-        result = F("ppm");
-        break;
-    case sensor::Unit::Lux:
-        result = F("lux");
-        break;
-    case sensor::Unit::UltravioletIndex:
-        break;
-    case sensor::Unit::Ohm:
-        result = F("ohm");
-        break;
-    case sensor::Unit::MilligrammPerCubicMeter:
-        result = F("mg/m³");
-        break;
-    case sensor::Unit::CountsPerMinute:
-        result = F("cpm");
-        break;
-    case sensor::Unit::MicrosievertPerHour:
-        result = F("µSv/h");
-        break;
-    case sensor::Unit::Meter:
-        result = F("m");
-        break;
-    case sensor::Unit::Hertz:
-        result = F("Hz");
-        break;
-    case sensor::Unit::Ph:
-        result = F("pH");
-        break;
-    case sensor::Unit::Min_:
-    case sensor::Unit::Max_:
-    case sensor::Unit::None:
-        break;
-    }
-
-    return String(result);
+    return ::settings::internal::serialize(unit);
 }
 
 String _magnitudeUnits(const sensor_magnitude_t& magnitude) {

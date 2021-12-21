@@ -373,43 +373,49 @@ bool Led::toggle() {
 
 namespace settings {
 namespace internal {
+namespace {
+
+alignas(4) static constexpr char Manual[] PROGMEM = "manual";
+alignas(4) static constexpr char WiFi[] PROGMEM = "wifi";
+alignas(4) static constexpr char On[] PROGMEM = "on";
+alignas(4) static constexpr char Off[] PROGMEM = "off";
+
+#if RELAY_SUPPORT
+alignas(4) static constexpr char Follow[] PROGMEM = "follow";
+alignas(4) static constexpr char FollowInverse[] PROGMEM = "follow-inv";
+alignas(4) static constexpr char FindMe[] PROGMEM = "find-me";
+alignas(4) static constexpr char FindMeWiFi[] PROGMEM = "find-me+wifi";
+
+alignas(4) static constexpr char Relay[] PROGMEM = "relay";
+alignas(4) static constexpr char RelayWiFi[] PROGMEM = "relay+wifi";
+#endif
+
+static constexpr const EnumOption<LedMode> LedModeOptions[] PROGMEM {
+    {LedMode::Manual, Manual},
+    {LedMode::WiFi, WiFi},
+#if RELAY_SUPPORT
+    {LedMode::Follow, Follow},
+    {LedMode::FollowInverse, FollowInverse},
+    {LedMode::FindMe, FindMe},
+    {LedMode::FindMeWiFi, FindMeWiFi},
+#endif
+    {LedMode::On, On},
+    {LedMode::Off, Off},
+#if RELAY_SUPPORT
+    {LedMode::Relay, Relay},
+    {LedMode::RelayWiFi, RelayWiFi},
+#endif
+};
+
+} // namespace
 
 template <>
 LedMode convert(const String& value) {
-    if (value.length() == 1) {
-        switch (*value.c_str()) {
-        case '0':
-            return LedMode::Manual;
-        case '1':
-            return LedMode::WiFi;
-#if RELAY_SUPPORT
-        case '2':
-            return LedMode::Follow;
-        case '3':
-            return LedMode::FollowInverse;
-        case '4':
-            return LedMode::FindMe;
-        case '5':
-            return LedMode::FindMeWiFi;
-#endif
-        case '6':
-            return LedMode::On;
-        case '7':
-            return LedMode::Off;
-#if RELAY_SUPPORT
-        case '8':
-            return LedMode::Relay;
-        case '9':
-            return LedMode::RelayWiFi;
-#endif
-        }
-    }
-
-    return LedMode::Manual;
+    return convert(LedModeOptions, value, LedMode::Manual);
 }
 
 String serialize(LedMode mode) {
-    return String(static_cast<int>(mode), 10);
+    return serialize(LedModeOptions, mode);
 }
 
 #if 0

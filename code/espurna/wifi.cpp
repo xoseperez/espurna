@@ -76,30 +76,32 @@ wifi::StaMode convert(const String& value) {
 
 template<>
 wifi::ApMode convert(const String& value) {
-    switch (value.toInt()) {
-    case 0:
-        return wifi::ApMode::Disabled;
-    case 1:
-        return wifi::ApMode::Enabled;
-    case 2:
-        return wifi::ApMode::Fallback;
-    }
+    alignas(4) static constexpr char Disabled[] PROGMEM = "off";
+    alignas(4) static constexpr char Enabled[] PROGMEM = "on";
+    alignas(4) static constexpr char Fallback[] PROGMEM = "fallback";
 
-    return wifi::ApMode::Fallback;
+    constexpr static const EnumOption<wifi::ApMode> options[] PROGMEM {
+        {wifi::ApMode::Disabled, Disabled},
+        {wifi::ApMode::Enabled, Enabled},
+        {wifi::ApMode::Fallback, Fallback},
+    };
+
+    return convert(options, value, wifi::ApMode::Fallback);
 }
 
 template <>
 WiFiSleepType_t convert(const String& value) {
-    switch (value.toInt()) {
-    case 2:
-        return WIFI_MODEM_SLEEP;
-    case 1:
-        return WIFI_LIGHT_SLEEP;
-    case 0:
-        return WIFI_NONE_SLEEP;
-    }
+    alignas(4) static constexpr char None[] PROGMEM = "none";
+    alignas(4) static constexpr char Modem[] PROGMEM = "modem";
+    alignas(4) static constexpr char Light[] PROGMEM = "light";
 
-    return wifi::build::sleep();
+    constexpr static const EnumOption<WiFiSleepType_t> options[] PROGMEM {
+        {WIFI_NONE_SLEEP, None},
+        {WIFI_MODEM_SLEEP, Modem},
+        {WIFI_LIGHT_SLEEP, Light},
+    };
+
+    return convert(options, value, wifi::build::sleep());
 }
 
 template <>

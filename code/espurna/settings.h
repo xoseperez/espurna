@@ -151,7 +151,40 @@ inline String serialize(double value) {
 }
 
 inline String serialize(bool value) {
-    return value ? "true" : "false";
+    return value ? F("true") : F("false");
+}
+
+template <typename Container, typename T>
+T convert(const Container& options, const String& value, T defaultValue) {
+    if (value.length()) {
+        using UnderlyingType = typename EnumOption<T>::UnderlyingType;
+        typename EnumOption<T>::Numeric numeric;
+        numeric.check(value, convert<UnderlyingType>);
+
+        for (auto it = std::begin(options); it != std::end(options); ++it) {
+            if (numeric && ((*it).numeric() == numeric.value())) {
+                return static_cast<T>(numeric.value());
+            } else if (!numeric && ((*it) == value)) {
+                return (*it).value();
+            }
+        }
+    }
+
+    return defaultValue;
+}
+
+template <typename Container, typename T>
+String serialize(const Container& options, T value) {
+    String out;
+
+    for (auto it = std::begin(options); it != std::end(options); ++it) {
+        if ((*it).value() == value) {
+            out = FPSTR((*it).string());
+            break;
+        }
+    }
+
+    return out;
 }
 
 } // namespace internal

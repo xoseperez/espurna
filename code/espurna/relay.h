@@ -18,7 +18,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 constexpr size_t RelaysMax { 32ul };
 
-enum class RelayBoot : int {
+enum class RelayBoot {
     Off,
     On,
     Same,
@@ -27,25 +27,25 @@ enum class RelayBoot : int {
     LockedOn
 };
 
-enum class RelayLock : uint8_t {
+enum class RelayLock {
     None,
     Off,
     On
 };
 
-enum class RelayType : int {
+enum class RelayType {
     Normal,
     Inverse,
     Latched,
     LatchedInverse
 };
 
-enum class RelayMqttTopicMode : int {
+enum class RelayMqttTopicMode {
     Normal,
     Inverse
 };
 
-enum class RelayProvider: int {
+enum class RelayProvider {
     None,
     Dummy,
     Gpio,

@@ -14,6 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/DebounceEvent.h"
 
 #include <cstdint>
+#include <cstddef>
 #include <memory>
 
 constexpr size_t ButtonsActionMax { 255ul };
@@ -21,7 +22,7 @@ constexpr size_t ButtonsActionMax { 255ul };
 constexpr size_t ButtonsPresetMax { 8ul };
 constexpr size_t ButtonsMax { 32ul };
 
-enum class ButtonProvider : int {
+enum class ButtonProvider {
     None,
     Gpio,
     Analog
@@ -38,9 +39,7 @@ enum class ButtonEvent {
     TripleClick
 };
 
-// button actions, limited to 8-bit number (0b11111111 / 0xff / 255)
-
-enum class ButtonAction : uint8_t  {
+enum class ButtonAction {
     None,
     Toggle,
     On,

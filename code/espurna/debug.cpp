@@ -31,36 +31,27 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 namespace settings {
 namespace internal {
+namespace {
+
+alignas(4) static constexpr char Disabled[] PROGMEM = "off";
+alignas(4) static constexpr char Enabled[] PROGMEM = "on";
+alignas(4) static constexpr char SkipBoot[] PROGMEM = "skip-boot";
+
+static constexpr const EnumOption<DebugLogMode> DebugLogModeOptions[] PROGMEM {
+    {DebugLogMode::Disabled, Disabled},
+    {DebugLogMode::Enabled, Enabled},
+    {DebugLogMode::SkipBoot, SkipBoot},
+};
+
+} // namespace
 
 String serialize(DebugLogMode value) {
-    String result;
-    switch (value) {
-    case DebugLogMode::Disabled:
-        result = "0";
-        break;
-    case DebugLogMode::SkipBoot:
-        result = "2";
-        break;
-    case DebugLogMode::Enabled:
-        result = "1";
-        break;
-    }
-
-    return result;
+    return serialize(DebugLogModeOptions, value);
 }
 
 template<>
 DebugLogMode convert(const String& value) {
-    switch (value.toInt()) {
-    case 0:
-        return DebugLogMode::Disabled;
-    case 2:
-        return DebugLogMode::SkipBoot;
-    case 1:
-        break;
-    }
-
-    return DebugLogMode::Enabled;
+    return convert(DebugLogModeOptions, value, DebugLogMode::Enabled);
 }
 
 } // namespace internal

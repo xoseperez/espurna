@@ -32,132 +32,141 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 namespace settings {
 namespace internal {
+namespace {
+
+alignas(4) static constexpr char Switch[] PROGMEM = "switch";
+alignas(4) static constexpr char Pushbutton[] PROGMEM = "pushbutton";
+
+constexpr static const std::array<EnumOption<debounce_event::types::Mode>, 2> DebounceEventModeOptions PROGMEM {
+    {{debounce_event::types::Mode::Switch, Switch},
+     {debounce_event::types::Mode::Pushbutton, Pushbutton}}
+};
+
+} // namespace
 
 template<>
 debounce_event::types::Mode convert(const String& value) {
-    switch (value.toInt()) {
-        case 1:
-            return debounce_event::types::Mode::Switch;
-        case 0:
-        default:
-            return debounce_event::types::Mode::Pushbutton;
-    }
+    return convert(DebounceEventModeOptions, value, debounce_event::types::Mode::Pushbutton);
 }
 
 String serialize(debounce_event::types::Mode value) {
-    String result;
-    switch (value) {
-        case debounce_event::types::Mode::Switch:
-            result = "1";
-            break;
-        case debounce_event::types::Mode::Pushbutton:
-        default:
-            result = "0";
-            break;
-    }
-    return result;
+    return serialize(DebounceEventModeOptions, value);
 }
+
+namespace {
+
+alignas(4) static constexpr char Low[] PROGMEM = "low";
+alignas(4) static constexpr char High[] PROGMEM = "high";
+alignas(4) static constexpr char Initial[] PROGMEM = "initial";
+
+constexpr static const std::array<EnumOption<debounce_event::types::PinValue>, 3> DebounceEventPinValueOptions PROGMEM {
+    {{debounce_event::types::PinValue::Low, Low},
+     {debounce_event::types::PinValue::High, High},
+     {debounce_event::types::PinValue::Initial, Initial}}
+};
+
+} // namespace
 
 template<>
 debounce_event::types::PinValue convert(const String& value) {
-    switch (value.toInt()) {
-        case 1:
-            return debounce_event::types::PinValue::High;
-        case 2:
-            return debounce_event::types::PinValue::Initial;
-        default:
-        case 0:
-            return debounce_event::types::PinValue::Low;
-    }
+    return convert(DebounceEventPinValueOptions, value, debounce_event::types::PinValue::Low);
 }
 
 String serialize(debounce_event::types::PinValue value) {
-    String result;
-    switch (value) {
-        case debounce_event::types::PinValue::Low:
-            result = "0";
-            break;
-        case debounce_event::types::PinValue::High:
-            result = "1";
-            break;
-        case debounce_event::types::PinValue::Initial:
-            result = "2";
-            break;
-    }
-    return result;
+    return serialize(DebounceEventPinValueOptions, value);
 }
+
+namespace {
+
+alignas(4) static constexpr char Input[] PROGMEM = "default";
+alignas(4) static constexpr char InputPullup[] PROGMEM = "pull-up";
+alignas(4) static constexpr char InputPulldown[] PROGMEM = "pull-down";
+
+constexpr static const std::array<EnumOption<debounce_event::types::PinMode>, 3> DebounceEventPinModeOptions PROGMEM {
+    {{debounce_event::types::PinMode::Input, Input},
+     {debounce_event::types::PinMode::InputPullup, InputPullup},
+     {debounce_event::types::PinMode::InputPulldown, InputPulldown}}
+};
+
+} // namespace
 
 template<>
 debounce_event::types::PinMode convert(const String& value) {
-    switch (value.toInt()) {
-        case 1:
-            return debounce_event::types::PinMode::InputPullup;
-        case 2:
-            return debounce_event::types::PinMode::InputPulldown;
-        case 0:
-        default:
-            return debounce_event::types::PinMode::Input;
-    }
+    return convert(DebounceEventPinModeOptions, value, debounce_event::types::PinMode::Input);
 }
 
 String serialize(debounce_event::types::PinMode mode) {
-    String result;
-    switch (mode) {
-        case debounce_event::types::PinMode::InputPullup:
-            result = "1";
-            break;
-        case debounce_event::types::PinMode::InputPulldown:
-            result = "2";
-            break;
-        case debounce_event::types::PinMode::Input:
-        default:
-            result = "0";
-            break;
-    }
-    return result;
+    return serialize(DebounceEventPinModeOptions, mode);
 }
+
+namespace {
+
+} // namespace
 
 template <>
 ButtonProvider convert(const String& value) {
-    auto type = static_cast<ButtonProvider>(value.toInt());
-    switch (type) {
-    case ButtonProvider::None:
-    case ButtonProvider::Gpio:
-    case ButtonProvider::Analog:
-        return type;
-    }
+    alignas(4) static constexpr char None[] PROGMEM = "none";
+    alignas(4) static constexpr char Gpio[] PROGMEM = "gpio";
+    alignas(4) static constexpr char Analog[] PROGMEM = "analog";
 
-    return ButtonProvider::None;
+    constexpr static const std::array<EnumOption<ButtonProvider>, 3> options PROGMEM {
+        {{ButtonProvider::None, None},
+         {ButtonProvider::Gpio, Gpio},
+         {ButtonProvider::Analog, Analog}}
+    };
+
+    return convert(options, value, ButtonProvider::None);
 }
 
 template<>
 ButtonAction convert(const String& value) {
-    auto num = strtoul(value.c_str(), nullptr, 10);
-    if (num < ButtonsActionMax) {
-        auto action = static_cast<ButtonAction>(num);
-        switch (action) {
-        case ButtonAction::None:
-        case ButtonAction::Toggle:
-        case ButtonAction::On:
-        case ButtonAction::Off:
-        case ButtonAction::AccessPoint:
-        case ButtonAction::Reset:
-        case ButtonAction::Pulse:
-        case ButtonAction::FactoryReset:
-        case ButtonAction::Wps:
-        case ButtonAction::SmartConfig:
-        case ButtonAction::BrightnessIncrease:
-        case ButtonAction::BrightnessDecrease:
-        case ButtonAction::DisplayOn:
-        case ButtonAction::Custom:
-        case ButtonAction::FanLow:
-        case ButtonAction::FanMedium:
-        case ButtonAction::FanHigh:
-            return action;
-        }
-    }
+    alignas(4) static constexpr char None[] PROGMEM = "none";
 
-    return ButtonAction::None;
+    [[gnu::unused]] alignas(4) static constexpr char Toggle[] PROGMEM = "relay-toggle";
+    [[gnu::unused]] alignas(4) static constexpr char On[] PROGMEM = "relay-on";
+    [[gnu::unused]] alignas(4) static constexpr char Off[] PROGMEM = "relay-off";
+
+    alignas(4) static constexpr char AccessPoint[] PROGMEM = "wifi-ap";
+    alignas(4) static constexpr char Reset[] PROGMEM = "reset";
+    alignas(4) static constexpr char FactoryReset[] PROGMEM = "factory";
+
+    [[gnu::unused]] alignas(4) static constexpr char BrightnessIncrease[] PROGMEM = "bri-inc";
+    [[gnu::unused]] alignas(4) static constexpr char BrightnessDecrease[] PROGMEM = "bri-dec";
+
+    [[gnu::unused]] alignas(4) static constexpr char DisplayOn[] PROGMEM = "display-on";
+
+    alignas(4) static constexpr char Custom[] PROGMEM = "custom";
+
+    [[gnu::unused]] alignas(4) static constexpr char FanLow[] PROGMEM = "fan-low";
+    [[gnu::unused]] alignas(4) static constexpr char FanMedium[] PROGMEM = "fan-medium";
+    [[gnu::unused]] alignas(4) static constexpr char FanHigh[] PROGMEM = "fan-high";
+
+    constexpr static const EnumOption<ButtonAction> options[] PROGMEM {
+        {ButtonAction::None, None},
+#if RELAY_SUPPORT
+        {ButtonAction::Toggle, Toggle},
+        {ButtonAction::On, On},
+        {ButtonAction::Off, Off},
+#endif
+        {ButtonAction::AccessPoint, AccessPoint},
+        {ButtonAction::Reset, Reset},
+        {ButtonAction::FactoryReset, FactoryReset},
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        {ButtonAction::BrightnessIncrease, BrightnessIncrease},
+        {ButtonAction::BrightnessDecrease, BrightnessDecrease},
+#endif
+#if THERMOSTAT_DISPLAY_SUPPORT
+        {ButtonAction::DisplayOn, DisplayOn},
+#endif
+        {ButtonAction::Custom, Custom},
+#if FAN_SUPPORT
+        {ButtonAction::FanLow, FanLow},
+        {ButtonAction::FanMedium, FanMedium},
+        {ButtonAction::FanHigh, FanHigh},
+#endif
+    };
+
+    return convert(options, value, ButtonAction::None);
 }
 
 } // namespace internal
@@ -754,7 +763,9 @@ void _buttonRelayAction(size_t id, ButtonAction action) {
         break;
 
     case ButtonAction::Pulse:
-        // TODO
+        // TODO ???
+        //      needs 'normal' status and (parsed) time
+        //      why use this instead of relay{Time,Pulse}?
         break;
 
     default:

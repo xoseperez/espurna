@@ -221,6 +221,20 @@ String serialize(uint32_t value, int base) {
     return result;
 }
 
+bool EnumOptionNumeric::check(const String& value) {
+    if (value.length() && (*value.begin() != '0')) {
+        for (auto it = value.begin(); it != value.end(); ++it) {
+            if (((*it) < '0') || ('9' < (*it))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 template <>
 unsigned long convert(const String& value) {
     return convert<unsigned int>(value);
