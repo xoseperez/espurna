@@ -2431,21 +2431,10 @@ void _relayMqttHandleCustomTopic(const String& topic, const char* payload) {
 }
 
 void _relayMqttHandleDisconnect() {
-    settings::internal::foreach([](settings::kvs_type::KeyValueResult&& kv) {
-        const char* const prefix = "relayMqttDisc";
-        if (kv.key.length <= strlen(prefix)) {
-            return;
-        }
-
-        const auto key = kv.key.read();
-        if (key.startsWith(prefix)) {
-            size_t id;
-            if (_relayTryParseId(key.c_str() + strlen(prefix), id)) {
-                const auto value = kv.value.read();
-                _relayHandleStatus(id, relayParsePayload(value.c_str()));
-            }
-        }
-    });
+    using namespace espurna::relay::settings;
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        _relayHandleStatus(id, mqttDisconnectionStatus(id));
+    }
 }
 
 } // namespace
