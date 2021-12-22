@@ -1893,7 +1893,7 @@ void _sensorWebSocketOnAction(uint32_t client_id, const char* action, JsonObject
         auto id = data["id"].as<size_t>();
         if (id < _magnitudes.size()) {
             auto expected = data["expected"].as<float>();
-            wsPost([client_id, id, expected](JsonObject& root) {
+            wsPost(client_id, [id, expected](JsonObject& root) {
                 const auto& magnitude = _magnitudes[id];
 
                 String key { F("result:") };
