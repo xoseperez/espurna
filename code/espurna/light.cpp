@@ -55,7 +55,7 @@ static_assert(std::is_trivially_copyable<Light::MiredsRange>::value, "");
 namespace Light {
 
 // TODO: unless we are building with latest Core versions and -std=c++17, these need to be explicitly bound to at least one object file
-#if __cplusplus <= 201703L
+#if __cplusplus < 201703L
 constexpr long Rgb::Min;
 constexpr long Rgb::Max;
 
