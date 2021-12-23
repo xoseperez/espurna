@@ -42,7 +42,7 @@ namespace {
 // TODO: full-width int for repeats instead of 8bit? right now, string parser will *force* [min:max] range,
 // but anything else is experiencing overflow mechanics
 
-struct Delay {
+struct alignas(4) Delay {
     using Source = espurna::time::CpuClock;
     using Duration = Source::duration;
     using TimePoint = Source::time_point;
@@ -50,7 +50,7 @@ struct Delay {
     static constexpr auto ClockCyclesMax = Duration(Duration::max());
     static constexpr auto MillisecondsMax = std::chrono::duration_cast<espurna::duration::Milliseconds>(ClockCyclesMax);
 
-    using Repeats = unsigned char;
+    using Repeats = size_t;
     static constexpr Repeats RepeatsMin { std::numeric_limits<Repeats>::min() };
     static constexpr Repeats RepeatsMax { std::numeric_limits<Repeats>::max() };
 
@@ -544,25 +544,34 @@ constexpr bool inverse(size_t index) {
 } // namespace build
 
 namespace settings {
+namespace keys {
+
+alignas(4) static constexpr char Gpio[] PROGMEM = "ledGpio";
+alignas(4) static constexpr char Inverse[] PROGMEM = "ledInv";
+alignas(4) static constexpr char Mode[] PROGMEM = "ledMode";
+alignas(4) static constexpr char Relay[] PROGMEM = "ledRelay";
+alignas(4) static constexpr char Pattern[] PROGMEM = "ledPattern";
+
+} // namespace keys
 
 unsigned char pin(size_t id) {
-    return getSetting({"ledGpio", id}, build::pin(id));
-}
-
-LedMode mode(size_t id) {
-    return getSetting({"ledMode", id}, build::mode(id));
+    return getSetting({FPSTR(keys::Gpio), id}, build::pin(id));
 }
 
 bool inverse(size_t id) {
-    return getSetting({"ledInv", id}, build::inverse(id));
+    return getSetting({FPSTR(keys::Inverse), id}, build::inverse(id));
+}
+
+LedMode mode(size_t id) {
+    return getSetting({FPSTR(keys::Mode), id}, build::mode(id));
 }
 
 size_t relay(size_t id) {
-    return getSetting({"ledRelay", id}, build::relay(id));
+    return getSetting({FPSTR(keys::Relay), id}, build::relay(id));
 }
 
 Pattern pattern(size_t id) {
-    return Pattern(getSetting({"ledPattern", id}));
+    return Pattern(getSetting({FPSTR(keys::Pattern), id}));
 }
 
 void migrate(int version) {
@@ -581,11 +590,11 @@ void migrate(int version) {
 // (TODO: template params containing structs like duration need -std=c++2a)
 
 #define LED_STATIC_DELAY(NAME, ON, OFF)\
-    static constexpr auto NAME ## MillisecondsOn = espurna::duration::Milliseconds(ON);\
-    static constexpr auto NAME ## MillisecondsOff = espurna::duration::Milliseconds(OFF);\
+    static constexpr auto NAME ## MillisecondsOn PROGMEM = espurna::duration::Milliseconds(ON);\
+    static constexpr auto NAME ## MillisecondsOff PROGMEM = espurna::duration::Milliseconds(OFF);\
     static_assert(NAME ## MillisecondsOn < Delay::MillisecondsMax, "");\
     static_assert(NAME ## MillisecondsOff < Delay::MillisecondsMax, "");\
-    static constexpr Delay NAME = Delay {\
+    static constexpr Delay NAME PROGMEM = Delay {\
         std::chrono::duration_cast<Delay::Duration>(NAME ## MillisecondsOn),\
         std::chrono::duration_cast<Delay::Duration>(NAME ## MillisecondsOff),\
         Delay::RepeatsMin }
@@ -604,59 +613,35 @@ bool update { false };
 } // namespace internal
 
 namespace settings {
+namespace defaults {
 
-struct KeyDefault {
-    using SerializedFunc = String(*)(size_t);
-
-    KeyDefault() = delete;
-    explicit KeyDefault(String key, SerializedFunc func) :
-        _key(std::move(key)),
-        _func(func)
-    {}
-
-    bool match(const String& key, size_t id) const {
-        return SettingsKey(_key, id) == key;
-    }
-
-    String serialized(size_t id) const {
-        return _func(id);
-    }
-
-private:
-    String _key;
-    SerializedFunc _func;
-};
-
-#define KEY_DEFAULT_FUNC(X)\
-    [](size_t id) {\
-        return ::settings::internal::serialize(X(id));\
-    }
-
-using KeyDefaults = std::array<KeyDefault, 4>;
-KeyDefaults keyDefaults() {
-    return {
-        KeyDefault{"ledGpio", KEY_DEFAULT_FUNC(pin)},
-        KeyDefault{"ledInv", KEY_DEFAULT_FUNC(inverse)},
-        KeyDefault{"ledMode", KEY_DEFAULT_FUNC(mode)},
-        KeyDefault{"ledRelay", KEY_DEFAULT_FUNC(relay)}};
+#define ID_DEFAULT(NAME)\
+String NAME (size_t id) {\
+    return ::settings::internal::serialize(::led::settings::NAME(id));\
 }
 
-#undef KEY_DEFAULT_FUNC
+ID_DEFAULT(pin)
+ID_DEFAULT(inverse)
+ID_DEFAULT(mode)
+ID_DEFAULT(relay)
 
-String findKeyDefault(const KeyDefaults& defaults, const String& key) {
-    for (size_t id = 0; id < internal::leds.size(); ++id) {
-        for (auto& keyDefault : defaults) {
-            if (keyDefault.match(key, id)) {
-                return keyDefault.serialized(id);
-            }
-        }
-    }
+#undef ID_DEFAULT
 
-    return {};
-}
+} // namespace defaults
 
 String findKeyDefault(const String& key) {
-    return findKeyDefault(keyDefaults(), key);
+    using ::settings::KeyDefault;
+    using ::settings::Iota;
+
+    constexpr static const std::array<KeyDefault, 4> defaults PROGMEM {
+        {{keys::Gpio, defaults::pin},
+         {keys::Inverse, defaults::inverse},
+         {keys::Mode, defaults::mode},
+         {keys::Relay, defaults::relay}}
+    };
+
+    return KeyDefault::findKeyDefault(
+            Iota{internal::leds.size()}, defaults, key);
 }
 
 } // namespace settings

@@ -59,7 +59,7 @@ loop:
             memcpy(buffer, repeat1, repeat2 - repeat1);
             buffer[repeat2 - repeat1] = '\0';
 
-            using Repeats = unsigned long;
+            using Repeats = Delay::Repeats;
             Repeats repeats { strtoul(buffer, nullptr, 10) };
 
             constexpr Repeats RepeatsMax { Delay::RepeatsMax };

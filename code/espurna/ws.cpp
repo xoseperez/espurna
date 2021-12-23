@@ -53,7 +53,7 @@ EnumerableConfig::EnumerableConfig(JsonObject& root, const __FlashStringHelper* 
     _root(root.createNestedObject(name))
 {}
 
-void EnumerableConfig::operator()(const __FlashStringHelper* name, Iota iota, Check check, Pairs&& pairs)
+void EnumerableConfig::operator()(const __FlashStringHelper* name, settings::Iota iota, Check check, Pairs&& pairs)
 {
     if (!iota) {
         return;

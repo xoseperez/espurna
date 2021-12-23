@@ -40,6 +40,8 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include <ArduinoJson.h>
 
+#include "settings.h"
+
 namespace web {
 namespace ws {
 
@@ -48,53 +50,6 @@ namespace ws {
 // TODO: generic templated funcs instead of pointers? also, ROM...
 
 struct EnumerableConfig {
-    struct Iota {
-        Iota() = default;
-        constexpr explicit Iota(size_t end) :
-            _it(0),
-            _end(end)
-        {}
-
-        constexpr Iota(size_t begin, size_t end) :
-            _it(begin),
-            _end(end)
-        {}
-
-        constexpr Iota(size_t begin, size_t end, size_t step) :
-            _it(begin),
-            _end(end),
-            _step(step)
-        {}
-
-        Iota& operator++() {
-            if (_it != _end) {
-                _it = ((_it + _step) > _end)
-                    ? _end : (_it + _step);
-            }
-
-            return *this;
-        }
-
-        Iota operator++(int) {
-            Iota out(*this);
-            ++out;
-            return out;
-        }
-
-        constexpr explicit operator bool() const {
-            return _it != _end;
-        }
-
-        constexpr size_t operator*() const {
-            return _it;
-        }
-
-    private:
-        size_t _it { 0 };
-        size_t _end { 0 };
-        size_t _step { 1 };
-    };
-
     alignas(4)
     static const char SchemaKey[];
 
@@ -109,14 +64,14 @@ struct EnumerableConfig {
     using Pairs = std::initializer_list<Pair>;
 
     EnumerableConfig(JsonObject& root, const __FlashStringHelper* name);
-    void operator()(const __FlashStringHelper* name, Iota, Check, Pairs&&);
+    void operator()(const __FlashStringHelper* name, ::settings::Iota, Check, Pairs&&);
 
-    void operator()(const __FlashStringHelper* name, Iota iota, Pairs&& pairs) {
+    void operator()(const __FlashStringHelper* name, ::settings::Iota iota, Pairs&& pairs) {
         (*this)(name, iota, nullptr, std::move(pairs));
     }
 
     void operator()(const __FlashStringHelper* name, size_t end, Pairs&& pairs) {
-        (*this)(name, Iota{end}, nullptr, std::move(pairs));
+        (*this)(name, ::settings::Iota{end}, nullptr, std::move(pairs));
     }
 
     JsonObject& root() {

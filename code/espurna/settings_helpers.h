@@ -132,7 +132,7 @@ struct EnumOptionNumeric {
 };
 
 template <typename Value>
-struct EnumOption {
+struct alignas(4) EnumOption {
     static_assert(std::is_enum<Value>::value, "");
 
     using ValueType = Value;
@@ -195,6 +195,100 @@ private:
 };
 
 } // namespace internal
+
+// generic number range
+struct Iota {
+    Iota() = default;
+    constexpr explicit Iota(size_t end) :
+        _it(0),
+        _end(end)
+    {}
+
+    constexpr Iota(size_t begin, size_t end) :
+        _it(begin),
+        _end(end)
+    {}
+
+    constexpr Iota(size_t begin, size_t end, size_t step) :
+        _it(begin),
+        _end(end),
+        _step(step)
+    {}
+
+#if __cplusplus >= 201703L
+    constexpr
+#endif
+    Iota& operator++() {
+        if (_it != _end) {
+            _it = ((_it + _step) > _end)
+                ? _end : (_it + _step);
+        }
+
+        return *this;
+    }
+
+#if __cplusplus >= 201703L
+    constexpr
+#endif
+    Iota operator++(int) {
+        Iota out(*this);
+        ++out;
+        return out;
+    }
+
+    constexpr explicit operator bool() const {
+        return _it != _end;
+    }
+
+    constexpr size_t operator*() const {
+        return _it;
+    }
+
+private:
+    size_t _it { 0 };
+    size_t _end { 0 };
+    size_t _step { 1 };
+};
+
+// store and allow to query an array of key default values and their serialization functions
+struct alignas(4) KeyDefault {
+    using SerializedFunc = String(*)(size_t);
+
+    KeyDefault() = delete;
+    constexpr KeyDefault(const char* key, SerializedFunc func) noexcept :
+        _key(key),
+        _func(func)
+    {}
+
+    bool match(const String& key, size_t id) const {
+        return SettingsKey(FPSTR(_key), id) == key;
+    }
+
+    String serialized(size_t id) const {
+        return _func(id);
+    }
+
+    template <typename T>
+    static String findKeyDefault(Iota iota, const T& defaults, const String& key) {
+        String out;
+
+        while (iota) {
+            for (const auto& keyDefault : defaults) {
+                if (keyDefault.match(key, *iota)) {
+                    out = keyDefault.serialized(*iota);
+                    break;
+                }
+            }
+            ++iota;
+        }
+
+        return out;
+    }
+
+private:
+    const char* _key;
+    SerializedFunc _func;
+};
 
 // 'optional' type for byte range
 struct ValueResult {
