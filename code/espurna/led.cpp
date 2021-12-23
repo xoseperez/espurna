@@ -381,29 +381,30 @@ alignas(4) static constexpr char On[] PROGMEM = "on";
 alignas(4) static constexpr char Off[] PROGMEM = "off";
 
 #if RELAY_SUPPORT
-alignas(4) static constexpr char Follow[] PROGMEM = "follow";
-alignas(4) static constexpr char FollowInverse[] PROGMEM = "follow-inv";
-alignas(4) static constexpr char FindMe[] PROGMEM = "find-me";
-alignas(4) static constexpr char FindMeWiFi[] PROGMEM = "find-me+wifi";
-
 alignas(4) static constexpr char Relay[] PROGMEM = "relay";
-alignas(4) static constexpr char RelayWiFi[] PROGMEM = "relay+wifi";
+alignas(4) static constexpr char RelayInverse[] PROGMEM = "relay-inverse";
+
+alignas(4) static constexpr char FindMe[] PROGMEM = "findme";
+alignas(4) static constexpr char FindMeWiFi[] PROGMEM = "findme-wifi";
+
+alignas(4) static constexpr char Relays[] PROGMEM = "relays";
+alignas(4) static constexpr char RelaysWiFi[] PROGMEM = "relays-wifi";
 #endif
 
 static constexpr const EnumOption<LedMode> LedModeOptions[] PROGMEM {
     {LedMode::Manual, Manual},
     {LedMode::WiFi, WiFi},
 #if RELAY_SUPPORT
-    {LedMode::Follow, Follow},
-    {LedMode::FollowInverse, FollowInverse},
+    {LedMode::Relay, Relay},
+    {LedMode::RelayInverse, RelayInverse},
     {LedMode::FindMe, FindMe},
     {LedMode::FindMeWiFi, FindMeWiFi},
 #endif
     {LedMode::On, On},
     {LedMode::Off, Off},
 #if RELAY_SUPPORT
-    {LedMode::Relay, Relay},
-    {LedMode::RelayWiFi, RelayWiFi},
+    {LedMode::Relays, Relays},
+    {LedMode::RelaysWiFi, RelaysWiFi},
 #endif
 };
 
@@ -816,10 +817,8 @@ void configure() {
         led.pattern(settings::pattern(id));
 #if RELAY_SUPPORT
         switch (internal::leds[id].mode()) {
-        case LED_MODE_FINDME_WIFI:
-        case LED_MODE_RELAY_WIFI:
-        case LED_MODE_FOLLOW:
-        case LED_MODE_FOLLOW_INVERSE:
+        case LedMode::Relay:
+        case LedMode::RelayInverse:
             relay::link(led, settings::relay(id));
             break;
         default:
@@ -834,10 +833,10 @@ void configure() {
 void loop(Led& led) {
     switch (led.mode()) {
 
-    case LED_MODE_MANUAL:
+    case LedMode::Manual:
         break;
 
-    case LED_MODE_WIFI:
+    case LedMode::WiFi:
         if (wifiConnected()) {
             run(led, NetworkConnected);
         } else if (wifiConnectable()) {
@@ -847,16 +846,16 @@ void loop(Led& led) {
         }
         break;
 
-    case LED_MODE_FINDME_WIFI:
+    case LedMode::FindMeWiFi:
 #if RELAY_SUPPORT
         if (wifiConnected()) {
-            if (relay::status(led)) {
+            if (relay::areAnyOn()) {
                 run(led, NetworkConnected);
             } else {
                 run(led, NetworkConnectedInverse);
             }
         } else if (wifiConnectable()) {
-            if (relay::status(led)) {
+            if (relay::areAnyOn()) {
                 run(led, NetworkConfig);
             } else {
                 run(led, NetworkConfigInverse);
@@ -867,16 +866,16 @@ void loop(Led& led) {
 #endif
         break;
 
-    case LED_MODE_RELAY_WIFI:
+    case LedMode::RelaysWiFi:
 #if RELAY_SUPPORT
         if (wifiConnected()) {
-            if (relay::status(led)) {
+            if (!relay::areAnyOn()) {
                 run(led, NetworkConnected);
             } else {
                 run(led, NetworkConnectedInverse);
             }
         } else if (wifiConnectable()) {
-            if (relay::status(led)) {
+            if (!relay::areAnyOn()) {
                 run(led, NetworkConfig);
             } else {
                 run(led, NetworkConfigInverse);
@@ -887,7 +886,7 @@ void loop(Led& led) {
 #endif
         break;
 
-    case LED_MODE_FOLLOW:
+    case LedMode::Relay:
 #if RELAY_SUPPORT
         if (scheduled()) {
             status(led, relay::status(led));
@@ -895,7 +894,7 @@ void loop(Led& led) {
 #endif
         break;
 
-    case LED_MODE_FOLLOW_INVERSE:
+    case LedMode::RelayInverse:
 #if RELAY_SUPPORT
         if (scheduled()) {
             status(led, !relay::status(led));
@@ -903,7 +902,7 @@ void loop(Led& led) {
 #endif
         break;
 
-    case LED_MODE_FINDME:
+    case LedMode::FindMe:
 #if RELAY_SUPPORT
         if (scheduled()) {
             led::status(led, !relay::areAnyOn());
@@ -911,7 +910,7 @@ void loop(Led& led) {
 #endif
         break;
 
-    case LED_MODE_RELAY:
+    case LedMode::Relays:
 #if RELAY_SUPPORT
         if (scheduled()) {
             led::status(led, relay::areAnyOn());
@@ -919,13 +918,13 @@ void loop(Led& led) {
 #endif
         break;
 
-    case LED_MODE_ON:
+    case LedMode::On:
         if (scheduled()) {
             status(led, true);
         }
         break;
 
-    case LED_MODE_OFF:
+    case LedMode::Off:
         if (scheduled()) {
             status(led, false);
         }
@@ -966,7 +965,7 @@ void callback(unsigned int type, const char* topic, char* payload) {
         }
 
         auto& led = internal::leds[ledID];
-        if (led.mode() != LED_MODE_MANUAL) {
+        if (led.mode() != LedMode::Manual) {
             return;
         }
 

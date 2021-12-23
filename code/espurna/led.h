@@ -13,14 +13,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 enum class LedMode {
     Manual,
     WiFi,
-    Follow,
-    FollowInverse,
+    Relay,
+    RelayInverse,
     FindMe,
     FindMeWiFi,
     On,
     Off,
-    Relay,
-    RelayWiFi
+    Relays,
+    RelaysWiFi
 };
 
 size_t ledCount();
