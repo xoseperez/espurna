@@ -301,8 +301,8 @@ function groupSettingsHandleUpdate(event) {
 // (and avoid having one line's checkbox affecting some other one)
 
 function createCheckboxes(node) {
-    let checkboxes = node.querySelectorAll("input[type='checkbox']");
-    for (let checkbox of checkboxes) {
+    const checkboxes = node.querySelectorAll("input[type='checkbox']");
+    for (const checkbox of checkboxes) {
         checkbox.id = checkbox.name;
         checkbox.parentElement.classList.add("toggleWrapper");
 
@@ -456,7 +456,7 @@ function stringifySelectedValues(select) {
         return select.options[select.selectedIndex].value;
     }
 
-    return "";
+    return select.dataset["original"];
 }
 
 function elementSelectorListener(selector, event, listener) {
@@ -563,7 +563,7 @@ function setSpanValue(span, value) {
 }
 
 function setSelectValue(select, value) {
-    let values = select.multiple
+    const values = select.multiple
         ? bitsetToSelectedValues(value)
         : [value.toString()];
 
@@ -572,6 +572,8 @@ function setSelectValue(select, value) {
         .forEach((option) => {
             option.selected = true;
         });
+
+    select.dataset["original"] = values.join(",");
 }
 
 // TODO: <input type="radio"> is a special beast, since the actual value is one of 'checked' elements with the same name=... attribute.
