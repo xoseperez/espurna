@@ -42,23 +42,26 @@ EnumerableConfig::EnumerableConfig(JsonObject& root, Name name) :
 {}
 
 void EnumerableConfig::operator()(Name name, ::settings::Iota iota, Check check, Setting* begin, Setting* end) {
-    if (!_root.containsKey(FPSTR(internal::SchemaKey))) {
-        JsonArray& schema = _root.createNestedArray(FPSTR(internal::SchemaKey));
-        for (auto it = begin; it != end; ++it) {
-            schema.add(FPSTR((*it).prefix().c_str()));
+    JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
+
+    if (_root.containsKey(FPSTR(internal::SchemaKey))) {
+        return;
+    }
+
+    JsonArray& schema = _root.createNestedArray(FPSTR(internal::SchemaKey));
+    for (auto it = begin; it != end; ++it) {
+        schema.add(FPSTR((*it).prefix().c_str()));
+    }
+
+    while (iota) {
+        if (!check || check(*iota)) {
+            JsonArray& entry = entries.createNestedArray();
+            for (auto it = begin; it != end; ++it) {
+                entry.add((*it).value(*iota));
+            }
         }
 
-        JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
-        do {
-            if (!check || check(*iota)) {
-                JsonArray& entry = entries.createNestedArray();
-                for (auto it = begin; it != end; ++it) {
-                    entry.add((*it).value(*iota));
-                }
-            }
-
-            ++iota;
-        } while (iota);
+        ++iota;
     }
 }
 
@@ -67,26 +70,29 @@ EnumerablePayload::EnumerablePayload(JsonObject& root, Name name) :
 {}
 
 void EnumerablePayload::operator()(Name name, settings::Iota iota, Check check, Pairs&& pairs) {
-    if (!_root.containsKey(FPSTR(internal::SchemaKey))) {
-        JsonArray& schema = _root.createNestedArray(FPSTR(internal::SchemaKey));
+    JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
 
-        const auto begin = std::begin(pairs);
-        const auto end = std::end(pairs);
-        for (auto it = begin; it != end; ++it) {
-            schema.add(FPSTR((*it).name.c_str()));
+    if (_root.containsKey(FPSTR(internal::SchemaKey))) {
+        return;
+    }
+
+    JsonArray& schema = _root.createNestedArray(FPSTR(internal::SchemaKey));
+
+    const auto begin = std::begin(pairs);
+    const auto end = std::end(pairs);
+    for (auto it = begin; it != end; ++it) {
+        schema.add(FPSTR((*it).name.c_str()));
+    }
+
+    while (iota) {
+        if (!check || check(*iota)) {
+            JsonArray& entry = entries.createNestedArray();
+            for (auto it = begin; it != end; ++it) {
+                (*it).generate(entry, *iota);
+            }
         }
 
-        JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
-        do {
-            if (!check || check(*iota)) {
-                JsonArray& entry = entries.createNestedArray();
-                for (auto it = begin; it != end; ++it) {
-                    (*it).generate(entry, *iota);
-                }
-            }
-
-            ++iota;
-        } while (iota);
+        ++iota;
     }
 }
 
