@@ -413,6 +413,25 @@ void migrate(int version) {
     }
 }
 
+namespace query {
+
+bool checkSamePrefix(::settings::StringView key) {
+    alignas(4) static constexpr char Prefix[] PROGMEM = "sch";
+    return ::settings::query::samePrefix(key, Prefix);
+}
+
+String findIndexedValueFrom(::settings::StringView key) {
+    return ::settings::query::IndexedSetting::findValueFrom(count(), IndexedSettings, key);
+}
+
+void setup() {
+    settingsRegisterQueryHandler({
+        .check = checkSamePrefix,
+        .get = findIndexedValueFrom
+    });
+}
+
+} // namespace query
 } // namespace settings
 
 // -----------------------------------------------------------------------------
@@ -695,6 +714,7 @@ void check(time_t timestamp, const Schedules& schedules) {
 
 void schSetup() {
     migrateVersion(scheduler::settings::migrate);
+    scheduler::settings::query::setup();
 
     #if WEB_SUPPORT
         wsRegister()
