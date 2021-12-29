@@ -1629,7 +1629,7 @@ function createMagnitudeInfo(id, magnitude) {
     const input = info.querySelector("input");
     input.dataset["id"] = id;
     input.dataset["type"] = magnitude.type;
-    input.dataset["units"] = Magnitudes.units.names[magnitude.units];
+    input.dataset["units"] = Magnitudes.units.names[magnitude.units] || "";
 
     const description = info.querySelector(".magnitude-description");
     description.textContent = magnitude.description;
@@ -1658,9 +1658,11 @@ function createMagnitudeUnitSelector(id, magnitude) {
 
         initSelect(select, options);
         setSelectValue(select, magnitude.units);
-
         setOriginalsFromValuesForNode(line, [select]);
-        mergeTemplate(document.getElementById("magnitude-units"), line);
+
+        const container = document.getElementById("magnitude-units");
+        container.style.display = "block";
+        mergeTemplate(container, line);
     }
 }
 
@@ -1773,13 +1775,16 @@ function updateMagnitudes(data) {
         }
 
         const magnitude = fromSchema(cfg, data.schema);
-
         const input = document.querySelector(`input[name='magnitude'][data-id='${id}']`);
+
+        const value = magnitude.value;
+        const units = input.dataset.units || "";
+
         input.value = (0 !== magnitude.error)
             ? Magnitudes.errors[magnitude.error]
             : (("nan" === magnitude.value)
                 ? ""
-                : `${magnitude.value}${input.dataset.units}`);
+                : `${value}${units}`);
 
         if (magnitude.info.length) {
             const info = input.parentElement.parentElement.querySelector(".magnitude-info");
