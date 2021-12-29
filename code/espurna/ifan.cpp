@@ -24,8 +24,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // TODO: in case there are more FANs, move externally
 
+namespace ifan {
 namespace settings {
-namespace internal {
+namespace options {
 namespace {
 
 alignas(4) static constexpr char Off[] PROGMEM = "off";
@@ -33,12 +34,24 @@ alignas(4) static constexpr char Low[] PROGMEM = "low";
 alignas(4) static constexpr char Medium[] PROGMEM = "medium";
 alignas(4) static constexpr char High[] PROGMEM = "high";
 
-static constexpr const std::array<EnumOption<FanSpeed>, 4> FanSpeedOptions PROGMEM {
+using ::settings::options::Enumeration;
+static constexpr std::array<Enumeration<FanSpeed>, 4> FanSpeedOptions PROGMEM {
     {{FanSpeed::Off, Off},
      {FanSpeed::Low, Low},
      {FanSpeed::Medium, Medium},
      {FanSpeed::High, High}}
 };
+
+} // namespace
+} // namespace options
+} // namespace settings
+} // namespace ifan
+
+namespace settings {
+namespace internal {
+namespace {
+
+using ifan::settings::options::FanSpeedOptions;
 
 } // namespace
 

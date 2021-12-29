@@ -1531,7 +1531,7 @@ function initRelayToggle(id, cfg) {
     let name = line.querySelector("span[data-key='relayName']");
     name.textContent = cfg.relayName;
     name.dataset["id"] = id;
-    name.setAttribute("title", cfg.relayDesc);
+    name.setAttribute("title", cfg.relayProv);
 
     let realId = "relay".concat(id);
 
@@ -2446,7 +2446,7 @@ function processData(data) {
 
                 relays.push({
                     "id": id,
-                    "name": `${cfg.relayName} (${cfg.relayDesc})`
+                    "name": `${cfg.relayName} (${cfg.relayProv})`
                 });
 
                 initRelayToggle(id, cfg);

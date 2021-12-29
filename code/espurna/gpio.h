@@ -19,6 +19,14 @@ enum class GpioType : int {
     Mcp23s08
 };
 
+namespace settings {
+namespace internal {
+
+String serialize(GpioType);
+
+} // namespace internal
+} // namespace settings
+
 class GpioBase {
 public:
     virtual const char* id() const = 0;

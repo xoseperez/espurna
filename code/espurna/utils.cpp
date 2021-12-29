@@ -289,8 +289,75 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
 
 namespace {
 
-// From a byte array to an hexa char array ("A220EE...", double the size)
+uint32_t parseUnsignedImpl(const String& value, int base) {
+    const char* ptr { value.c_str() };
+    char* endp { nullptr };
 
+    // invalidate the whole string when invalid chars are detected
+    // while this does not return a 'result' type, we can't know
+    // whether 0 was the actual decoded number or not
+    const auto result = strtoul(ptr, &endp, base);
+    if (endp == ptr || endp[0] != '\0') {
+        return 0;
+    }
+
+    return result;
+}
+
+} // namespace
+
+uint32_t parseUnsigned(const String& value, int base) {
+    return parseUnsignedImpl(value, base);
+}
+
+uint32_t parseUnsigned(const String& value) {
+    if (!value.length()) {
+        return 0;
+    }
+
+    int base = 10;
+    if (value.length() > 2) {
+        auto* ptr = value.c_str();
+        if (*ptr == '0') {
+            switch (*(ptr + 1)) {
+            case 'b':
+                base = 2;
+                break;
+            case 'o':
+                base = 8;
+                break;
+            case 'x':
+                base = 16;
+                break;
+            }
+        }
+    }
+
+    return parseUnsignedImpl((base == 10) ? value : value.substring(2), base);
+}
+
+String formatUnsigned(uint32_t value, int base) {
+    constexpr size_t BufferSize { 8 * sizeof(decltype(value)) };
+
+    String result;
+    if (base == 2) {
+        result += "0b";
+    } else if (base == 8) {
+        result += "0o";
+    } else if (base == 16) {
+        result += "0x";
+    }
+
+    char buffer[BufferSize + 1] = {0};
+    ultoa(value, buffer, base);
+    result += buffer;
+
+    return result;
+}
+
+namespace {
+
+// From a byte array to an hexa char array ("A220EE...", double the size)
 template <typename T>
 const uint8_t* hexEncodeImpl(const uint8_t* in_begin, const uint8_t* in_end, T&& callback) {
     static const char base16[] = "0123456789ABCDEF";
@@ -354,7 +421,6 @@ size_t hexEncode(const uint8_t* in, size_t in_size, char* out, size_t out_size) 
 }
 
 // From an hexa char array ("A220EE...") to a byte array (half the size)
-
 uint8_t* hexDecode(const char* in_begin, const char* in_end, uint8_t* out_begin, uint8_t* out_end) {
     // We can only return small values (max 'z' aka 122)
     constexpr uint8_t InvalidByte { 255u };

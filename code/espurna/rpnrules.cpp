@@ -108,26 +108,52 @@ constexpr unsigned long delay() {
 } // namespace build
 
 namespace settings {
+namespace keys {
+
+alignas(4) static constexpr char Sticky[] PROGMEM = "rpnSticky";
+alignas(4) static constexpr char Delay[] PROGMEM = "rpnDelay";
+alignas(4) static constexpr char Rule[] PROGMEM = "rpnRule";
+
+alignas(4) static constexpr char Topic[] PROGMEM = "rpnTopic";
+alignas(4) static constexpr char Name[] PROGMEM = "rpnName";
+
+} // namespace keys
 
 bool sticky() {
-    return getSetting("rpnSticky", build::sticky());
+    return getSetting(keys::Sticky, build::sticky());
 }
 
 unsigned long delay() {
-    return getSetting("rpnDelay", build::delay());
+    return getSetting(keys::Delay, build::delay());
 }
 
 String rule(size_t index) {
-    return getSetting({"rpnRule", index});
+    return getSetting({keys::Rule, index});
 }
 
 String topic(size_t index) {
-    return getSetting({"rpnTopic", index});
+    return getSetting({keys::Topic, index});
 }
 
 String name(size_t index) {
-    return getSetting({"rpnName", index});
+    return getSetting({keys::Name, index});
 }
+
+#if MQTT_SUPPORT
+size_t countMqttNames() {
+    size_t index { 0 };
+    for (;;) {
+        auto name = SettingsKey{ keys::Name, index };
+        if (!::settings::internal::has(name.value())) {
+            break;
+        }
+
+        ++index;
+    }
+
+    return index;
+}
+#endif
 
 } // namespace settings
 
@@ -181,7 +207,7 @@ struct RunnersHandler {
     RunnersHandler& operator=(const RunnersHandler&) = delete;
 
     RunnersHandler(RunnersHandler&&) = default;
-    RunnersHandler& operator=(RunnersHandler&&) = default;
+    RunnersHandler& operator=(RunnersHandler&&) = delete;
 
     explicit RunnersHandler(internal::Runners& runners) :
         _runners(runners)
@@ -211,7 +237,6 @@ private:
 // -----------------------------------------------------------------------------
 
 #if TERMINAL_SUPPORT
-
 namespace terminal {
 
 String valueToString(const rpn_value& value) {
@@ -324,11 +349,9 @@ void setup() {
 }
 
 } // namespace terminal
-
 #endif // TERMINAL_SUPPORT
 
 #if WEB_SUPPORT
-
 namespace web {
 
 void onVisible(JsonObject& root) {
@@ -340,10 +363,10 @@ bool onKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void onConnected(JsonObject& root) {
-    root["rpnSticky"] = rpnrules::settings::sticky();
-    root["rpnDelay"] = rpnrules::settings::delay();
+    root[FPSTR(settings::keys::Sticky)] = rpnrules::settings::sticky();
+    root[FPSTR(settings::keys::Delay)] = rpnrules::settings::delay();
 
-    JsonArray& rules = root.createNestedArray("rpnRules");
+    JsonArray& rules = root.createNestedArray(F("rpnRules"));
 
     size_t index { 0 };
     String rule;
@@ -357,44 +380,20 @@ void onConnected(JsonObject& root) {
     }
 
 #if MQTT_SUPPORT
-    {
-        JsonObject& topicsConfig = root.createNestedObject("rpnTopics");
+    static constexpr std::array<::settings::query::IndexedSetting, 2> Settings {
+        {{settings::keys::Name, settings::name},
+         {settings::keys::Topic, settings::topic}}
+    };
 
-        static const char* const keys[] PROGMEM {
-            "rpnName", "rpnTopic"
-        };
-
-        JsonArray& schema = topicsConfig.createNestedArray("schema");
-        schema.copyFrom(keys, sizeof(keys) / sizeof(*keys));
-
-        JsonArray& topics = topicsConfig.createNestedArray("topics");
-
-        size_t index { 0 };
-        String name;
-        String topic;
-        for (;;) {
-            name = rpnrules::settings::name(index);
-            topic = rpnrules::settings::topic(index);
-            ++index;
-
-            if (!name.length() || !topic.length()) {
-                break;
-            }
-
-            JsonArray& entry = topics.createNestedArray();
-            entry.add(name);
-            entry.add(topic);
-        }
-    }
+    ::web::ws::EnumerableConfig config{ root, STRING_VIEW("rpnTopics") };
+    config(STRING_VIEW("topics"), settings::countMqttNames(), Settings);
 #endif
 }
 
 } // namespace web
-
 #endif // WEB_SUPPORT
 
 #if MQTT_SUPPORT
-
 namespace mqtt {
 
 struct Variable {
@@ -473,7 +472,6 @@ void init(rpn_context& context) {
 }
 
 } // namespace mqtt
-
 #endif // MQTT_SUPPORT
 
 namespace operators {
@@ -757,7 +755,6 @@ void init(rpn_context& context) {
 #endif // LIGHT_PROVIDER
 
 #if RFB_SUPPORT
-
 namespace rfbridge {
 
 struct Code {
@@ -772,6 +769,37 @@ struct Match {
     String raw;
 };
 
+namespace build {
+
+constexpr uint32_t RepeatWindow { 2000ul };
+constexpr uint32_t MatchWindow { 2000ul };
+constexpr uint32_t StaleDelay { 10000ul };
+
+} // namespace build
+
+namespace settings {
+namespace keys {
+
+alignas(4) static constexpr char RepeatWindow[] PROGMEM = "rfbRepeatWindow";
+alignas(4) static constexpr char MatchWindow[] PROGMEM = "rfbWatchWindow";
+alignas(4) static constexpr char StaleDelay[] PROGMEM = "rfbStaleDelay";
+
+} // namespace keys
+
+uint32_t repeatWindow() {
+    return getSetting(keys::RepeatWindow, build::RepeatWindow);
+}
+
+uint32_t matchWindow() {
+    return getSetting(keys::MatchWindow, build::MatchWindow);
+}
+
+uint32_t staleDelay() {
+    return getSetting(keys::StaleDelay, build::StaleDelay);
+}
+
+} // namespace settings
+
 namespace internal {
 
 // TODO: in theory, we could do with forward_list. however, this would require a more complicated removal process,
@@ -779,20 +807,15 @@ namespace internal {
 using Codes = std::list<Code>;
 Codes codes;
 
-constexpr uint32_t RepeatWindow { 2000ul };
-uint32_t repeat_window { RepeatWindow };
-
-constexpr uint32_t MatchWindow { 2000ul };
-uint32_t match_window ;
-
-constexpr uint32_t StaleDelay { 10000ul };
-uint32_t stale_delay { StaleDelay };
-
 Codes::iterator find(Codes& container, unsigned char protocol, const String& match) {
     return std::find_if(container.begin(), container.end(), [protocol, &match](const Code& code) {
         return (code.protocol == protocol) && (code.raw == match);
     });
 }
+
+uint32_t repeat_window { build::RepeatWindow };
+uint32_t match_window { build::MatchWindow };
+uint32_t stale_delay { build::StaleDelay };
 
 } // namespace internal
 
@@ -958,9 +981,9 @@ void init(rpn_context& context) {
     //   Code counter is reset to 0 when outside of the window.
     // - Stale delay allows the handler to remove really old codes.
     //   (TODO: can this happen in loop() cb instead?)
-    internal::repeat_window = getSetting("rfbRepeatWindow", internal::RepeatWindow);
-    internal::match_window = getSetting("rfbMatchWindow", internal::MatchWindow);
-    internal::stale_delay = getSetting("rfbStaleDelay", internal::StaleDelay);
+    internal::repeat_window = settings::repeatWindow();
+    internal::match_window = settings::matchWindow();
+    internal::stale_delay = settings::staleDelay();
 
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("RFB.CODES"), [](::terminal::CommandContext&& ctx) {
@@ -989,11 +1012,9 @@ void init(rpn_context& context) {
 }
 
 } // namespace rfbridge
-
 #endif // RFB_SUPPORT
 
 #if SENSOR_SUPPORT
-
 namespace sensor {
 
 void updateVariables(const String& topic, unsigned char index, double reading, const char*) {
@@ -1013,11 +1034,9 @@ void init(rpn_context&) {
 }
 
 } // namespace sensor
-
 #endif // SENSOR_SUPPORT
 
 #if TERMINAL_SUPPORT
-
 namespace terminal {
 
 void init(rpn_context& context) {
@@ -1028,11 +1047,9 @@ void init(rpn_context& context) {
 }
 
 } // namespace terminal
-
 #endif
 
 #if DEBUG_SUPPORT
-
 namespace debug {
 
 void init(rpn_context& context) {
@@ -1046,7 +1063,6 @@ void init(rpn_context& context) {
 }
 
 } // namespace debug
-
 #endif
 
 namespace system {

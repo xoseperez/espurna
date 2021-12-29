@@ -1,8 +1,9 @@
 /*
 
-MIGRATE MODULE
+Part of the SETTINGS MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -12,73 +13,84 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <utility>
 
-void delSettingPrefix(const std::initializer_list<const char*>& prefixes) {
+namespace espurna {
+namespace settings {
+namespace schema {
+namespace {
+
+// Configuration version for the internal key-value storage
+// Represented as a 32bit int, updates every time things change
+constexpr static int Version PROGMEM { CFG_VERSION };
+alignas(4) static constexpr char Key[] PROGMEM = "cfg";
+
+int version() {
+    return getSetting(Key, Version);
+}
+
+} // namespace
+} // namespace schema
+
+namespace migrate {
+namespace {
+
+void deletePrefixes(::settings::query::StringViewIterator prefixes) {
     std::vector<String> to_purge;
 
-    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
-        auto key = kv.key.read();
-        for (const auto* prefix : prefixes) {
-            if (key.startsWith(prefix)) {
+    ::settings::internal::foreach([&](::settings::kvs_type::KeyValueResult&& kv) {
+        const auto key = kv.key.read();
+        for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
+            if (::settings::query::samePrefix(::settings::StringView{key}, (*it))) {
                 to_purge.push_back(std::move(key));
                 return;
             }
         }
     });
 
-    for (auto& key : to_purge) {
+    for (const auto& key : to_purge) {
         delSetting(key);
     }
 }
 
-void delSettingPrefix(const char* prefix) {
-    delSettingPrefix({prefix});
-}
-
-void delSettingPrefix(const String& prefix) {
-    delSettingPrefix(prefix.c_str());
-}
-
-// Configuration versions
-//
-// 1: based on Embedis, no board definitions
-// 2: based on Embedis, with board definitions 1-based
-// 3: based on Embedis, with board definitions 0-based
-// 4: based on Embedis, no board definitions
-// 5: based on Embedis, updated rfb codes format
-
-int migrateVersion() {
-    const static auto version = getSetting("cfg", CFG_VERSION);
-    if (version != CFG_VERSION) {
-        return version;
+int currentVersion() {
+    const static auto current = schema::version();
+    if (current != schema::Version) {
+        return current;
     }
 
     return 0;
 }
 
+} // namespace
+} // namespace migrate
+} // namespace settings
+} // namespace espurna
+
+void delSettingPrefix(::settings::query::StringViewIterator prefixes) {
+    espurna::settings::migrate::deletePrefixes(std::move(prefixes));
+}
+
+int migrateVersion() {
+    return espurna::settings::migrate::currentVersion();
+}
+
 void migrateVersion(MigrateVersionCallback callback) {
-    int version = migrateVersion();
-    if (version) {
-        callback(version);
+    static const auto current = espurna::settings::migrate::currentVersion();
+    if (current) {
+        callback(current);
     }
 }
 
 void migrate() {
-    // We either get 0, when version did not change
-    // Or, the version we migrate from
-    const auto version = migrateVersion();
-    setSetting("cfg", CFG_VERSION);
+    using namespace espurna::settings::schema;
+    setSetting(FPSTR(Key), Version);
 
-    // get rid of old keys that were never used until now
-    // and some very old keys that were forced via migrate.ino
-    if (version) {
-        switch (version) {
-        case 2:
-        case 3:
-        case 4:
-            delSetting("board");
-            break;
-        }
-
+    using namespace espurna::settings::migrate;
+    switch (currentVersion()) {
+    case 2:
+    case 3:
+    case 4:
+        delSetting(F("board"));
         saveSettings();
+        break;
     }
 }

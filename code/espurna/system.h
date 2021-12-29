@@ -252,6 +252,15 @@ Mode currentMode();
 } // namespace heartbeat
 } // namespace espurna
 
+namespace settings {
+namespace internal {
+
+String serialize(espurna::duration::Milliseconds);
+String serialize(espurna::duration::ClockCycles);
+
+} // namespace internal
+} // namespace settings
+
 unsigned long systemFreeStack();
 
 HeapStats systemHeapStats();

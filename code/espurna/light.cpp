@@ -694,7 +694,8 @@ my92xx_model_t convert(const String& value) {
     alignas(4) static constexpr char MY9291[] PROGMEM = "9291";
     alignas(4) static constexpr char MY9231[] PROGMEM = "9231";
 
-    constexpr static const std::array<EnumOption<my92xx_model_t>, 2> options {
+    using Options = std::array<::settings::options::Enumeration<my92xx_model_t>, 2>;
+    static constexpr Options options {
         {{MY92XX_MODEL_MY9291, MY9291},
          {MY92XX_MODEL_MY9231, MY9231}}
     };

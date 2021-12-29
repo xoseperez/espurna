@@ -223,105 +223,141 @@ constexpr uint16_t mfln() {
 } // namespace build
 
 namespace settings {
+namespace keys {
+
+alignas(4) static constexpr char Server[] PROGMEM = "mqttServer";
+alignas(4) static constexpr char Port[] PROGMEM = "mqttPort";
+
+alignas(4) static constexpr char Enabled[] PROGMEM = "mqttEnabled";
+alignas(4) static constexpr char Autoconnect[] PROGMEM = "mqttAutoconnect";
+
+alignas(4) static constexpr char Topic[] PROGMEM = "mqttTopic";
+alignas(4) static constexpr char Getter[] PROGMEM = "mqttGetter";
+alignas(4) static constexpr char Setter[] PROGMEM = "mqttSetter";
+
+alignas(4) static constexpr char User[] PROGMEM = "mqttUser";
+alignas(4) static constexpr char Password[] PROGMEM = "mqttPassword";
+alignas(4) static constexpr char QoS[] PROGMEM = "mqttQoS";
+alignas(4) static constexpr char Retain[] PROGMEM = "mqttRetain";
+alignas(4) static constexpr char Keepalive[] PROGMEM = "mqttKeep";
+alignas(4) static constexpr char ClientId[] PROGMEM = "mqttClientID";
+alignas(4) static constexpr char TopicWill[] PROGMEM = "mqttWill";
+
+alignas(4) static constexpr char UseJson[] PROGMEM = "mqttUseJson";
+alignas(4) static constexpr char TopicJson[] PROGMEM = "mqttJson";
+
+alignas(4) static constexpr char HeartbeatMode[] PROGMEM = "mqttHbMode";
+alignas(4) static constexpr char HeartbeatInterval[] PROGMEM = "mqttHbIntvl";
+alignas(4) static constexpr char SkipTime[] PROGMEM = "mqttSkipTime";
+
+alignas(4) static constexpr char PayloadOnline[] PROGMEM = "mqttPayloadOnline";
+alignas(4) static constexpr char PayloadOffline[] PROGMEM = "mqttPayloadOffline";
+
+alignas(4) static constexpr char Secure[] PROGMEM = "mqttUseSSL";
+alignas(4) static constexpr char Fingerprint[] PROGMEM = "mqttFP";
+alignas(4) static constexpr char SecureClientCheck[] PROGMEM = "mqttScCheck";
+alignas(4) static constexpr char SecureClientMfln[] PROGMEM = "mqttScMFLN";
+
+} // namespace keys
 
 String server() {
-    return getSetting("mqttServer", build::server());
+    return getSetting(keys::Server, build::server());
 }
 
 uint16_t port() {
-    return getSetting("mqttPort", build::port());
+    return getSetting(keys::Port, build::port());
 }
 
 bool enabled() {
-    return getSetting("mqttEnabled", build::enabled());
+    return getSetting(keys::Enabled, build::enabled());
 }
 
 bool autoconnect() {
-    return getSetting("mqttAutoconnect", build::autoconnect());
+    return getSetting(keys::Autoconnect, build::autoconnect());
 }
 
 String topic() {
-    return getSetting("mqttTopic", build::topic());
+    return getSetting(keys::Topic, build::topic());
 }
 
 String getter() {
-    return getSetting("mqttGetter", build::getter());
+    return getSetting(keys::Getter, build::getter());
 }
 
 String setter() {
-    return getSetting("mqttSetter", build::setter());
+    return getSetting(keys::Setter, build::setter());
 }
 
 String user() {
-    return getSetting("mqttUser", build::user());
+    return getSetting(keys::User, build::user());
 }
 
 String password() {
-    return getSetting("mqttPassword", build::password());
+    return getSetting(keys::Password, build::password());
 }
 
 int qos() {
-    return getSetting("mqttQoS", build::qos());
+    return getSetting(keys::QoS, build::qos());
 }
 
 bool retain() {
-    return getSetting("mqttRetain", build::retain());
+    return getSetting(keys::Retain, build::retain());
 }
 
 uint16_t keepalive() {
-    return getSetting("mqttKeep", build::keepalive());
+    return getSetting(keys::Keepalive, build::keepalive());
 }
 
 String clientId() {
-    return getSetting("mqttClientID", getIdentifier());
+    return getSetting(keys::ClientId, getIdentifier());
 }
 
 String topicWill() {
-    return getSetting("mqttWill", build::topicWill());
+    return getSetting(keys::TopicWill, build::topicWill());
 }
 
 bool json() {
-    return getSetting("mqttUseJson", build::json());
+    return getSetting(keys::UseJson, build::json());
 }
 
 String topicJson() {
-    return getSetting("mqttJson", build::topicJson());
+    return getSetting(keys::TopicJson, build::topicJson());
 }
 
 espurna::heartbeat::Mode heartbeatMode() {
-    return getSetting("mqttHbMode", espurna::heartbeat::currentMode());
+    return getSetting(keys::HeartbeatMode, espurna::heartbeat::currentMode());
 }
 
 espurna::duration::Seconds heartbeatInterval() {
-    return getSetting("mqttHbIntvl", espurna::heartbeat::currentInterval());
+    return getSetting(keys::HeartbeatInterval, espurna::heartbeat::currentInterval());
 }
 
 unsigned long skipTime() {
-    return getSetting("mqttSkipTime", build::skipTime());
+    return getSetting(keys::SkipTime, build::skipTime());
 }
 
 String payloadOnline() {
-    return getSetting("mqttPayloadOnline", build::payloadOnline());
+    return getSetting(keys::PayloadOnline, build::payloadOnline());
 }
 
 String payloadOffline() {
-    return getSetting("mqttPayloadOffline", build::payloadOffline());
+    return getSetting(keys::PayloadOffline, build::payloadOffline());
 }
 
 bool secure() {
-    return getSetting("mqttUseSSL", build::secure());
+    return getSetting(keys::Secure, build::secure());
 }
 
 int secureClientCheck() {
-    return getSetting("mqttScCheck", build::secureClientCheck());
+    return getSetting(keys::SecureClientCheck, build::secureClientCheck());
 }
 
 String fingerprint() {
-    return getSetting("mqttFP", build::fingerprint());
+    return getSetting(keys::Fingerprint, build::fingerprint());
 }
 
 uint16_t mfln() {
-    return getSetting("mqttScMFLN", build::mfln());
+    return getSetting(keys::SecureClientMfln, build::mfln());
 }
 
 } // namespace settings

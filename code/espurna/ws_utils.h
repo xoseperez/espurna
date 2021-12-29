@@ -45,33 +45,61 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 namespace web {
 namespace ws {
 
-// TODO: use `const char*', but somehow force the arduinojson layer to *always* use flash funcs for reading them?
-// TODO: try to minimize the ROM by implementing things in .cpp
-// TODO: generic templated funcs instead of pointers? also, ROM...
-
-struct EnumerableConfig {
-    alignas(4)
-    static const char SchemaKey[];
-
+// generic way to set up iterable payload with a schema
+struct EnumerablePayload {
     using Check = bool(*)(size_t);
-    using Callback = void(*)(JsonArray&, size_t);
+    using Generator = void(*)(JsonArray&, size_t);
+    using Name = ::settings::StringView;
 
     struct Pair {
-        const __FlashStringHelper* key;
-        Callback callback;
+        Name name;
+        Generator generate;
     };
 
     using Pairs = std::initializer_list<Pair>;
 
-    EnumerableConfig(JsonObject& root, const __FlashStringHelper* name);
-    void operator()(const __FlashStringHelper* name, ::settings::Iota, Check, Pairs&&);
+    EnumerablePayload(JsonObject& root, Name name);
 
-    void operator()(const __FlashStringHelper* name, ::settings::Iota iota, Pairs&& pairs) {
-        (*this)(name, iota, nullptr, std::move(pairs));
+    void operator()(Name name, ::settings::Iota iota, Check, Pairs&&);
+    void operator()(Name name, size_t iota_end, Pairs&& pairs) {
+        (*this)(name, ::settings::Iota { iota_end }, nullptr, std::move(pairs));
     }
 
-    void operator()(const __FlashStringHelper* name, size_t end, Pairs&& pairs) {
-        (*this)(name, ::settings::Iota{end}, nullptr, std::move(pairs));
+    JsonObject& root() {
+        return _root;
+    }
+
+private:
+    JsonObject& _root;
+};
+
+// payload generator for IndexedSettings
+struct EnumerableConfig {
+    using Check = bool(*)(size_t);
+
+    using Name = ::settings::StringView;
+    using Setting = const ::settings::query::IndexedSetting;
+
+    EnumerableConfig(JsonObject& root, Name name);
+
+    void operator()(Name name, ::settings::Iota iota, Check check, Setting* begin, Setting* end);
+    void operator()(Name name, ::settings::Iota iota, Setting* begin, Setting* end) {
+        (*this)(name, iota, nullptr, begin, end);
+    }
+
+    template <typename T>
+    void operator()(Name name, ::settings::Iota iota, T&& settings) {
+        (*this)(name, iota, std::begin(settings), std::end(settings));
+    }
+
+    template <typename T>
+    void operator()(Name name, size_t iota_end, T&& settings) {
+        (*this)(name, ::settings::Iota{iota_end}, std::forward<T>(settings));
+    }
+
+    template <typename T>
+    void operator()(Name name, size_t iota_end, Check check, T&& settings) {
+        (*this)(name, ::settings::Iota{iota_end}, check, std::begin(settings), std::end(settings));
     }
 
     JsonObject& root() {

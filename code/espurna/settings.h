@@ -142,6 +142,10 @@ inline String serialize(long value, int base = 10) {
     return String(value, base);
 }
 
+inline String serialize(bool value) {
+    return value ? PSTR("true") : PSTR("false");
+}
+
 inline String serialize(float value) {
     return String(value, 3);
 }
@@ -150,15 +154,12 @@ inline String serialize(double value) {
     return String(value, 3);
 }
 
-inline String serialize(bool value) {
-    return value ? F("true") : F("false");
-}
-
 template <typename Container, typename T>
 T convert(const Container& options, const String& value, T defaultValue) {
     if (value.length()) {
-        using UnderlyingType = typename EnumOption<T>::UnderlyingType;
-        typename EnumOption<T>::Numeric numeric;
+        using ::settings::options::Enumeration;
+        using UnderlyingType = typename Enumeration<T>::UnderlyingType;
+        typename Enumeration<T>::Numeric numeric;
         numeric.check(value, convert<UnderlyingType>);
 
         for (auto it = std::begin(options); it != std::end(options); ++it) {
@@ -193,13 +194,21 @@ String serialize(const Container& options, T value) {
 // --------------------------------------------------------------------------
 
 namespace settings {
+namespace query {
 
-using RetrieveDefault = String(*)(const String& key);
+using Check = bool(*)(StringView key);
+using Get = String(*)(StringView key);
 
+struct Handler {
+    Check check;
+    Get get;
+};
+
+} // namespace query
 } // namespace settings
 
-void settingsRegisterDefaults(String prefix, settings::RetrieveDefault retrieve);
-String settingsQueryDefaults(const String& key);
+void settingsRegisterQueryHandler(settings::query::Handler);
+String settingsQuery(::settings::StringView key);
 
 // --------------------------------------------------------------------------
 
@@ -242,14 +251,24 @@ bool delSetting(const String& key);
 bool delSetting(const __FlashStringHelper* key);
 bool delSetting(const SettingsKey& key);
 
-void delSettingPrefix(const std::initializer_list<const char*>&);
-void delSettingPrefix(const char* prefix);
-void delSettingPrefix(const String& prefix);
+void delSettingPrefix(settings::query::StringViewIterator);
 
 bool hasSetting(const char* key);
 bool hasSetting(const String& key);
 bool hasSetting(const __FlashStringHelper* key);
 bool hasSetting(const SettingsKey& key);
+
+void settingsDump(const ::terminal::CommandContext&, const ::settings::query::Setting* begin, const ::settings::query::Setting* end);
+template <typename T>
+void settingsDump(const ::terminal::CommandContext& ctx, const T& settings) {
+    settingsDump(ctx, std::begin(settings), std::end(settings));
+}
+
+void settingsDump(const ::terminal::CommandContext&, const ::settings::query::IndexedSetting* begin, const ::settings::query::IndexedSetting* end, size_t index);
+template <typename T>
+void settingsDump(const ::terminal::CommandContext& ctx, const T& settings, size_t index) {
+    settingsDump(ctx, std::begin(settings), std::end(settings), index);
+}
 
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024);

@@ -29,23 +29,53 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiUdp.h>
 #endif
 
+namespace espurna {
+namespace debug {
 namespace settings {
-namespace internal {
+namespace options {
 namespace {
+
+using ::settings::options::Enumeration;
 
 alignas(4) static constexpr char Disabled[] PROGMEM = "off";
 alignas(4) static constexpr char Enabled[] PROGMEM = "on";
 alignas(4) static constexpr char SkipBoot[] PROGMEM = "skip-boot";
 
-static constexpr const EnumOption<DebugLogMode> DebugLogModeOptions[] PROGMEM {
+static constexpr Enumeration<DebugLogMode> DebugLogModeOptions[] PROGMEM {
     {DebugLogMode::Disabled, Disabled},
     {DebugLogMode::Enabled, Enabled},
     {DebugLogMode::SkipBoot, SkipBoot},
 };
 
 } // namespace
+} // namespace options
 
-String serialize(DebugLogMode value) {
+namespace keys {
+namespace {
+
+alignas(4) static constexpr char SdkDebug[] PROGMEM = "dbgSDK";
+alignas(4) static constexpr char Mode[] PROGMEM = "dbgLogMode";
+alignas(4) static constexpr char Buffer[] PROGMEM = "dbgLogBuf";
+alignas(4) static constexpr char BufferSize[] PROGMEM = "dbgLogBufSize";
+
+alignas(4) static constexpr char HeartbeatMode[] PROGMEM = "dbgHbMode";
+alignas(4) static constexpr char HeartbeatInterval[] PROGMEM = "dbgHbIntvl";
+
+} // namespace
+} // namespace keys
+} // namespace settings
+} // namespace debug
+} // namespace espurna
+
+namespace settings {
+namespace internal {
+namespace {
+
+using espurna::debug::settings::options::DebugLogModeOptions;
+
+} // namespace
+
+String serialize(::DebugLogMode value) {
     return serialize(DebugLogModeOptions, value);
 }
 
@@ -57,6 +87,7 @@ DebugLogMode convert(const String& value) {
 } // namespace internal
 } // namespace settings
 
+namespace espurna {
 namespace debug {
 namespace {
 
@@ -75,7 +106,10 @@ private:
     bool _value { false };
 };
 
+} // namespace
+
 namespace build {
+namespace {
 
 constexpr Timestamp AddTimestamp { 1 == DEBUG_ADD_TIMESTAMP };
 
@@ -103,41 +137,48 @@ constexpr size_t bufferSize() {
     return DEBUG_LOG_BUFFER_SIZE;
 }
 
+} // namespace
 } // namespace build
 
 namespace settings {
+namespace {
 
 bool sdkDebug() {
-    return getSetting("dbgSDK", build::sdkDebug());
+    return getSetting(keys::SdkDebug, build::sdkDebug());
 }
 
 DebugLogMode mode() {
-    return getSetting("dbgLogMode", build::mode());
+    return getSetting(keys::Mode, build::mode());
 }
 
 bool buffer() {
-    return getSetting("dbgLogBuf", build::buffer());
+    return getSetting(keys::Buffer, build::buffer());
 }
 
 size_t bufferSize() {
-    return getSetting("dbgLogBufSize", build::bufferSize());
+    return getSetting(keys::BufferSize, build::bufferSize());
 }
 
 espurna::heartbeat::Mode heartbeatMode() {
-    return getSetting("dbgHbMode", espurna::heartbeat::currentMode());
+    return getSetting(keys::HeartbeatMode, espurna::heartbeat::currentMode());
 }
 
 espurna::duration::Seconds heartbeatInterval() {
-    return getSetting("dbgHbIntvl", espurna::heartbeat::currentInterval());
+    return getSetting(keys::HeartbeatInterval, espurna::heartbeat::currentInterval());
 }
 
+} // namespace
 } // namespace settings
 
 namespace internal {
+namespace {
 
 bool enabled { false };
 
+} // namespace
 } // namespace internal
+
+namespace {
 
 bool enabled() {
     return internal::enabled;
@@ -610,35 +651,36 @@ void onBoot() {
 
 } // namespace
 } // namespace debug
+} // namespace espurna
 
 void debugSendBytes(const uint8_t* bytes, size_t size) {
-    debug::buffer::sendBytes(bytes, size);
+    espurna::debug::buffer::sendBytes(bytes, size);
 }
 
 #if DEBUG_LOG_BUFFER_SUPPORT
 bool debugLogBuffer() {
-    return debug::buffer::enabled();
+    return espurna::debug::buffer::enabled();
 }
 #endif
 
 void debugSend(const char* format, ...) {
-    if (debug::enabled()) {
+    if (espurna::debug::enabled()) {
         va_list args;
         va_start(args, format);
-        debug::formatAndSend(format, args);
+        espurna::debug::formatAndSend(format, args);
         va_end(args);
     }
 }
 
 void debugConfigureBoot() {
-    debug::onBoot();
+    espurna::debug::onBoot();
 }
 
 #if WEB_SUPPORT
 void debugWebSetup() {
     wsRegister()
-        .onVisible(debug::web::onVisible)
-        .onAction(debug::web::onAction);
+        .onVisible(espurna::debug::web::onVisible)
+        .onAction(espurna::debug::web::onAction);
 }
 #endif
 
@@ -648,24 +690,24 @@ void debugSetup() {
 #endif
 
 #if DEBUG_UDP_SUPPORT
-    if (debug::syslog::build::enabled()) {
-        debug::syslog::configure();
-        espurnaRegisterReload(debug::syslog::configure);
+    if (espurna::debug::syslog::build::enabled()) {
+        espurna::debug::syslog::configure();
+        espurnaRegisterReload(espurna::debug::syslog::configure);
     }
 #endif
 
 #if DEBUG_LOG_BUFFER_SUPPORT
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("DEBUG.BUFFER"), [](::terminal::CommandContext&& ctx) {
-        debug::buffer::disable();
-        if (!debug::buffer::size()) {
+        espurna::debug::buffer::disable();
+        if (!espurna::debug::buffer::size()) {
             terminalError(ctx, F("buffer is empty\n"));
             return;
         }
 
         ctx.output.printf_P(PSTR("buffer size: %u / %u bytes\n"),
-            debug::buffer::size(), debug::buffer::capacity());
-        debug::buffer::dump(ctx.output);
+            espurna::debug::buffer::size(), espurna::debug::buffer::capacity());
+        espurna::debug::buffer::dump(ctx.output);
         terminalOK(ctx);
     });
 #endif

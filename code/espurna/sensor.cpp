@@ -26,6 +26,7 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 
 #include <limits>
 #include <vector>
@@ -467,35 +468,35 @@ namespace settings {
 namespace internal {
 namespace {
 
-alignas(4) constexpr static const char Farenheit[] = ("°F");
-alignas(4) constexpr static const char Celcius[] = ("°C");
-alignas(4) constexpr static const char Kelvin[] = ("K");
-alignas(4) constexpr static const char Percentage[] = ("%");
-alignas(4) constexpr static const char Hectopascal[] = ("hPa");
-alignas(4) constexpr static const char Ampere[] = ("A");
-alignas(4) constexpr static const char Volt[] = ("V");
-alignas(4) constexpr static const char Watt[] = ("W");
-alignas(4) constexpr static const char Kilowatt[] = ("kW");
-alignas(4) constexpr static const char Voltampere[] = ("VA");
-alignas(4) constexpr static const char Kilovoltampere[] = ("kVA");
-alignas(4) constexpr static const char VoltampereReactive[] = ("VAR");
-alignas(4) constexpr static const char KilovoltampereReactive[] = ("kVAR");
-alignas(4) constexpr static const char Joule[] = ("J");
-alignas(4) constexpr static const char KilowattHour[] = ("kWh");
-alignas(4) constexpr static const char MicrogrammPerCubicMeter[] = ("µg/m³");
-alignas(4) constexpr static const char PartsPerMillion[] = ("ppm");
-alignas(4) constexpr static const char Lux[] = ("lux");
-alignas(4) constexpr static const char UltravioletIndex[] = ("UVindex");
-alignas(4) constexpr static const char Ohm[] = ("ohm");
-alignas(4) constexpr static const char MilligrammPerCubicMeter[] = ("mg/m³");
-alignas(4) constexpr static const char CountsPerMinute[] = ("cpm");
-alignas(4) constexpr static const char MicrosievertPerHour[] = ("µSv/h");
-alignas(4) constexpr static const char Meter[] = ("m");
-alignas(4) constexpr static const char Hertz[] = ("Hz");
-alignas(4) constexpr static const char Ph[] = ("pH");
-alignas(4) constexpr static const char None[] = ("none");
+alignas(4) static constexpr char Farenheit[] PROGMEM = "°F";
+alignas(4) static constexpr char Celcius[] PROGMEM = "°C";
+alignas(4) static constexpr char Kelvin[] PROGMEM = "K";
+alignas(4) static constexpr char Percentage[] PROGMEM = "%";
+alignas(4) static constexpr char Hectopascal[] PROGMEM = "hPa";
+alignas(4) static constexpr char Ampere[] PROGMEM = "A";
+alignas(4) static constexpr char Volt[] PROGMEM = "V";
+alignas(4) static constexpr char Watt[] PROGMEM = "W";
+alignas(4) static constexpr char Kilowatt[] PROGMEM = "kW";
+alignas(4) static constexpr char Voltampere[] PROGMEM = "VA";
+alignas(4) static constexpr char Kilovoltampere[] PROGMEM = "kVA";
+alignas(4) static constexpr char VoltampereReactive[] PROGMEM = "VAR";
+alignas(4) static constexpr char KilovoltampereReactive[] PROGMEM = "kVAR";
+alignas(4) static constexpr char Joule[] PROGMEM = "J";
+alignas(4) static constexpr char KilowattHour[] PROGMEM = "kWh";
+alignas(4) static constexpr char MicrogrammPerCubicMeter[] PROGMEM = "µg/m³";
+alignas(4) static constexpr char PartsPerMillion[] PROGMEM = "ppm";
+alignas(4) static constexpr char Lux[] PROGMEM = "lux";
+alignas(4) static constexpr char UltravioletIndex[] PROGMEM = "UVindex";
+alignas(4) static constexpr char Ohm[] PROGMEM = "ohm";
+alignas(4) static constexpr char MilligrammPerCubicMeter[] PROGMEM = "mg/m³";
+alignas(4) static constexpr char CountsPerMinute[] PROGMEM = "cpm";
+alignas(4) static constexpr char MicrosievertPerHour[] PROGMEM = "µSv/h";
+alignas(4) static constexpr char Meter[] PROGMEM = "m";
+alignas(4) static constexpr char Hertz[] PROGMEM = "Hz";
+alignas(4) static constexpr char Ph[] PROGMEM = "pH";
+alignas(4) static constexpr char None[] PROGMEM = "none";
 
-constexpr static const EnumOption<sensor::Unit> SensorUnitOptions[] PROGMEM {
+static constexpr ::settings::options::Enumeration<sensor::Unit> SensorUnitOptions[] PROGMEM {
     {sensor::Unit::Farenheit, Farenheit},
     {sensor::Unit::Celcius, Celcius},
     {sensor::Unit::Kelvin, Kelvin},
@@ -540,34 +541,6 @@ String serialize(sensor::Unit unit) {
 } // namespace internal
 } // namespace settings
 
-namespace {
-
-// -----------------------------------------------------------------------------
-// Configuration
-// -----------------------------------------------------------------------------
-
-constexpr double _magnitudeCorrection(unsigned char type) {
-    return (
-        (MAGNITUDE_TEMPERATURE == type) ? (SENSOR_TEMPERATURE_CORRECTION) :
-        (MAGNITUDE_HUMIDITY == type) ? (SENSOR_HUMIDITY_CORRECTION) :
-        (MAGNITUDE_LUX == type) ? (SENSOR_LUX_CORRECTION) :
-        (MAGNITUDE_PRESSURE == type) ? (SENSOR_PRESSURE_CORRECTION) :
-        0.0
-    );
-}
-
-constexpr bool _magnitudeCorrectionSupported(unsigned char type) {
-    return (
-        (MAGNITUDE_TEMPERATURE == type) ? (true) :
-        (MAGNITUDE_HUMIDITY == type) ? (true) :
-        (MAGNITUDE_LUX == type) ? (true) :
-        (MAGNITUDE_PRESSURE == type) ? (true) :
-        false
-    );
-}
-
-} // namespace
-
 // -----------------------------------------------------------------------------
 // Energy persistence
 // -----------------------------------------------------------------------------
@@ -575,7 +548,6 @@ constexpr bool _magnitudeCorrectionSupported(unsigned char type) {
 namespace {
 
 struct SensorEnergyTracker {
-    static constexpr int Every { SENSOR_SAVE_EVERY };
     using Magnitude = std::reference_wrapper<sensor_magnitude_t>;
 
     struct Counter {
@@ -1437,23 +1409,57 @@ String _magnitudeSettingsKey(sensor_magnitude_t& magnitude, T&& suffix) {
     return _magnitudeSettingsKey(magnitude.type, std::forward<T>(suffix));
 }
 
-bool _sensorMatchKeyPrefix(const char* key) {
-    if (strncmp_P(key, PSTR("sns"), 3) == 0) {
+constexpr double _magnitudeCorrection(unsigned char type) {
+    return (
+        (MAGNITUDE_TEMPERATURE == type) ? (SENSOR_TEMPERATURE_CORRECTION) :
+        (MAGNITUDE_HUMIDITY == type) ? (SENSOR_HUMIDITY_CORRECTION) :
+        (MAGNITUDE_LUX == type) ? (SENSOR_LUX_CORRECTION) :
+        (MAGNITUDE_PRESSURE == type) ? (SENSOR_PRESSURE_CORRECTION) :
+        0.0
+    );
+}
+
+constexpr bool _magnitudeCorrectionSupported(unsigned char type) {
+  return (MAGNITUDE_TEMPERATURE == type)
+      || (MAGNITUDE_HUMIDITY == type)
+      || (MAGNITUDE_LUX == type)
+      || (MAGNITUDE_PRESSURE == type);
+}
+
+SettingsKey _magnitudeSettingsCorrectionKey(unsigned char type, size_t index) {
+    static constexpr char Key[] PROGMEM { "Correction" };
+    return {_magnitudeSettingsKey(type, FPSTR(Key)), index};
+}
+
+SettingsKey _magnitudeSettingsCorrectionKey(const sensor_magnitude_t& magnitude) {
+    return _magnitudeSettingsCorrectionKey(magnitude.type, magnitude.index_global);
+}
+
+bool _sensorCheckKeyPrefix(::settings::StringView key) {
+    if (key.length() < 3) {
+        return false;
+    }
+
+    using settings::query::samePrefix;
+    using settings::StringView;
+
+    alignas(4) static constexpr char SensorPrefix[] PROGMEM = "sns";
+    if (samePrefix(key, SensorPrefix)) {
         return true;
     }
 
-    if (strncmp_P(key, PSTR("pwr"), 3) == 0) {
+    alignas(4) static constexpr char PowerPrefix[] PROGMEM = "pwr";
+    if (samePrefix(key, PowerPrefix)) {
         return true;
     }
 
-    const String _key(key);
     return _magnitudeForEachCountedCheck([&](unsigned char type) {
-        return _key.startsWith(_magnitudeSettingsPrefix(type));
+        return samePrefix(key, StringView{_magnitudeSettingsPrefix(type)});
     });
 }
 
 SettingsKey _magnitudeSettingsRatioKey(unsigned char type, size_t index) {
-    static const char RatioKey[] PROGMEM { "Ratio" };
+    static constexpr char RatioKey[] PROGMEM { "Ratio" };
     return {_magnitudeSettingsKey(type, FPSTR(RatioKey)), index};
 }
 
@@ -1472,38 +1478,26 @@ constexpr bool _magnitudeRatioSupported(unsigned char type) {
         || (type == MAGNITUDE_ENERGY);
 }
 
-String _sensorQueryDefault(const String& key) {
-    auto get_defaults = [](sensor_magnitude_t* magnitude) -> String {
-        if (magnitude && _sensorIsEmon(magnitude->sensor)) {
-            auto* sensor = static_cast<BaseEmonSensor*>(magnitude->sensor);
-            if (_magnitudeRatioSupported(magnitude->type)) {
-                return String(sensor->defaultRatio(magnitude->slot));
-            }
-        }
+String _sensorQueryHandler(::settings::StringView key) {
+    String out;
 
-        return String();
-    };
-
-    auto magnitude_key = [](const sensor_magnitude_t& magnitude) -> SettingsKey {
-        if (_magnitudeRatioSupported(magnitude.type)) {
-            return _magnitudeSettingsRatioKey(magnitude);
-        }
-
-        return "";
-    };
-
-    sensor_magnitude_t* target { nullptr };
     for (auto& magnitude : _magnitudes) {
         if (_magnitudeRatioSupported(magnitude.type)) {
-            auto ratioKey(magnitude_key(magnitude));
-            if (ratioKey == key) {
-                target = &magnitude;
+            auto expected = String(_magnitudeSettingsRatioKey(magnitude));
+            if (key == expected) {
+                out = String(reinterpret_cast<BaseEmonSensor*>(magnitude.sensor)->defaultRatio(magnitude.slot));
+                break;
+            }
+        } else if (_magnitudeCorrectionSupported(magnitude.type)) {
+            auto expected = String(_magnitudeSettingsCorrectionKey(magnitude));
+            if (key == expected) {
+                out = String(magnitude.correction);
                 break;
             }
         }
     }
 
-    return get_defaults(target);
+    return out;
 }
 
 } // namespace
@@ -1575,7 +1569,7 @@ double _sensorApiEmonExpectedValue(const sensor_magnitude_t& magnitude, double e
 namespace {
 
 bool _sensorWebSocketOnKeyCheck(const char* key, JsonVariant&) {
-    return _sensorMatchKeyPrefix(key);
+    return _sensorCheckKeyPrefix(key);
 }
 
 String _sensorError(unsigned char error) {
@@ -1749,40 +1743,40 @@ String _magnitudeName(unsigned char type) {
 // make sure these are properly ordered, as UI does not delay processing
 
 void _sensorWebSocketTypes(JsonObject& root) {
-    ::web::ws::EnumerableConfig config{root, F("types")};
-    config(F("values"), {MAGNITUDE_NONE + 1, MAGNITUDE_MAX},
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("types")};
+    payload(STRING_VIEW("values"), {MAGNITUDE_NONE + 1, MAGNITUDE_MAX},
         [](size_t type) {
             return sensor_magnitude_t::counts(type) > 0;
         },
         {
-            {F("type"), [](JsonArray& out, size_t index) {
+            {STRING_VIEW("type"), [](JsonArray& out, size_t index) {
                 out.add(index);
             }},
-            {F("prefix"), [](JsonArray& out, size_t index) {
+            {STRING_VIEW("prefix"), [](JsonArray& out, size_t index) {
                 out.add(_magnitudeSettingsPrefix(index));
             }},
-            {F("name"), [](JsonArray& out, size_t index) {
+            {STRING_VIEW("name"), [](JsonArray& out, size_t index) {
                 out.add(_magnitudeName(index));
             }}
         });
 }
 
 void _sensorWebSocketErrors(JsonObject& root) {
-    ::web::ws::EnumerableConfig config{root, F("errors")};
-    config(F("values"), SENSOR_ERROR_MAX, {
-        {F("type"), [](JsonArray& out, size_t index) {
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("errors")};
+    payload(STRING_VIEW("values"), SENSOR_ERROR_MAX, {
+        {STRING_VIEW("type"), [](JsonArray& out, size_t index) {
             out.add(index);
         }},
-        {F("name"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("name"), [](JsonArray& out, size_t index) {
             out.add(_sensorError(index));
         }}
     });
 }
 
 void _sensorWebSocketUnits(JsonObject& root) {
-    ::web::ws::EnumerableConfig config{root, F("units")};
-    config(F("values"), _magnitudes.size(), {
-        {F("supported"), [](JsonArray& out, size_t index) {
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("units")};
+    payload(STRING_VIEW("values"), _magnitudes.size(), {
+        {STRING_VIEW("supported"), [](JsonArray& out, size_t index) {
             JsonArray& units = out.createNestedArray();
             const auto range = _magnitudeUnitsRange(_magnitudes[index].type);
             for (auto it = range.begin(); it != range.end(); ++it) {
@@ -1795,18 +1789,18 @@ void _sensorWebSocketUnits(JsonObject& root) {
 }
 
 void _sensorWebSocketList(JsonObject& root) {
-    ::web::ws::EnumerableConfig config{root, F("magnitudes-list")};
-    config(F("values"), _magnitudes.size(), {
-        {F("index_global"), [](JsonArray& out, size_t index) {
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-list")};
+    payload(STRING_VIEW("values"), _magnitudes.size(), {
+        {STRING_VIEW("index_global"), [](JsonArray& out, size_t index) {
             out.add(_magnitudes[index].index_global);
         }},
-        {F("type"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("type"), [](JsonArray& out, size_t index) {
             out.add(_magnitudes[index].type);
         }},
-        {F("description"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("description"), [](JsonArray& out, size_t index) {
             out.add(_magnitudeDescription(_magnitudes[index]));
         }},
-        {F("units"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("units"), [](JsonArray& out, size_t index) {
             out.add(static_cast<int>(_magnitudes[index].units));
         }}
     });
@@ -1818,9 +1812,9 @@ void _sensorWebSocketSettings(JsonObject& root) {
     // NaN, instead of more commonly used null (but, expect this to be fixed after switching to v6+)
     static const char* const NullSymbol { nullptr };
 
-    ::web::ws::EnumerableConfig config{root, F("magnitudes-settings")};
-    config(F("values"), _magnitudes.size(), {
-        {F("Correction"), [](JsonArray& out, size_t index) {
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-settings")};
+    payload(STRING_VIEW("values"), _magnitudes.size(), {
+        {STRING_VIEW("Correction"), [](JsonArray& out, size_t index) {
             const auto& magnitude = _magnitudes[index];
             if (_magnitudeCorrectionSupported(magnitude.type)) {
                 out.add(magnitude.correction);
@@ -1828,7 +1822,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
                 out.add(NullSymbol);
             }
         }},
-        {F("Ratio"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("Ratio"), [](JsonArray& out, size_t index) {
             const auto& magnitude = _magnitudes[index];
             if (_magnitudeRatioSupported(magnitude.type)) {
                 out.add(static_cast<BaseEmonSensor*>(magnitude.sensor)->getRatio(magnitude.slot));
@@ -1836,7 +1830,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
                 out.add(NullSymbol);
             }
         }},
-        {F("ZeroThreshold"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("ZeroThreshold"), [](JsonArray& out, size_t index) {
             const auto threshold = _magnitudes[index].zero_threshold;
             if (!std::isnan(threshold)) {
                 out.add(threshold);
@@ -1844,10 +1838,10 @@ void _sensorWebSocketSettings(JsonObject& root) {
                 out.add(NullSymbol);
             }
         }},
-        {F("MinDelta"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("MinDelta"), [](JsonArray& out, size_t index) {
             out.add(_magnitudes[index].min_delta);
         }},
-        {F("MaxDelta"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("MaxDelta"), [](JsonArray& out, size_t index) {
             out.add(_magnitudes[index].max_delta);
         }}
     });
@@ -1860,32 +1854,34 @@ void _sensorWebSocketSettings(JsonObject& root) {
 }
 
 void _sensorWebSocketSendData(JsonObject& root) {
-    ::web::ws::EnumerableConfig config{root, F("magnitudes")};
-    config(F("values"), _magnitudes.size(), {
-        {F("value"), [](JsonArray& out, size_t index) {
-            char buffer[64];
-            dtostrf(_magnitudeProcess(
-                _magnitudes[index], _magnitudes[index].last),
-                1, _magnitudes[index].decimals, buffer);
-            out.add(buffer);
-        }},
-        {F("error"), [](JsonArray& out, size_t index) {
-            out.add(_magnitudes[index].sensor->error());
-        }},
-        {F("info"), [](JsonArray& out, size_t index) {
+    if (_magnitudes.size()) {
+        ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes")};
+        payload(STRING_VIEW("values"), _magnitudes.size(), {
+            {STRING_VIEW("value"), [](JsonArray& out, size_t index) {
+                char buffer[64];
+                dtostrf(_magnitudeProcess(
+                    _magnitudes[index], _magnitudes[index].last),
+                    1, _magnitudes[index].decimals, buffer);
+                out.add(buffer);
+            }},
+            {STRING_VIEW("error"), [](JsonArray& out, size_t index) {
+                out.add(_magnitudes[index].sensor->error());
+            }},
+            {STRING_VIEW("info"), [](JsonArray& out, size_t index) {
 #if NTP_SUPPORT
-            if ((_magnitudes[index].type == MAGNITUDE_ENERGY) && (_sensor_energy_tracker)) {
-                out.add(String(F("Last saved: "))
-                    + getSetting({"eneTime", _magnitudes[index].index_global},
-                        F("(unknown)")));
-            } else {
+                if ((_magnitudes[index].type == MAGNITUDE_ENERGY) && (_sensor_energy_tracker)) {
+                    out.add(String(F("Last saved: "))
+                        + getSetting({"eneTime", _magnitudes[index].index_global},
+                            F("(unknown)")));
+                } else {
 #endif
-                out.add("");
+                    out.add("");
 #if NTP_SUPPORT
-            }
+                }
 #endif
-        }}
-    });
+            }}
+        });
+    }
 }
 
 void _sensorWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
@@ -1994,19 +1990,19 @@ void _sensorWebSocketOnConnectedSettings(JsonObject& root) {
 // Prefix controls the UI templates, supplied callback should retrieve module-specific value Id
 
 void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback callback) {
-    ::web::ws::EnumerableConfig config{root, F("magnitudes-module")};
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-module")};
 
-    auto& container = config.root();
+    auto& container = payload.root();
     container[F("prefix")] = prefix;
 
-    config(F("values"), _magnitudes.size(), {
-        {F("type"), [](JsonArray& out, size_t index) {
+    payload(STRING_VIEW("values"), _magnitudes.size(), {
+        {STRING_VIEW("type"), [](JsonArray& out, size_t index) {
             out.add(_magnitudes[index].type);
         }},
-        {F("index_global"), [](JsonArray& out, size_t index) {
+        {STRING_VIEW("index_global"), [](JsonArray& out, size_t index) {
             out.add(_magnitudes[index].index_global);
         }},
-        {F("index_module"), callback}
+        {STRING_VIEW("index_module"), callback}
     });
 }
 
@@ -3073,8 +3069,9 @@ void _sensorConfigure() {
             // TODO: inject math or rpnlib expression?
             {
                 if (_magnitudeCorrectionSupported(magnitude.type)) {
-                    auto key = String(_magnitudeSettingsPrefix(magnitude.type)) + F("Correction");
-                    magnitude.correction = getSetting({key, magnitude.index_global}, getSetting(key, _magnitudeCorrection(magnitude.type)));
+                    magnitude.correction = getSetting(
+                        _magnitudeSettingsCorrectionKey(magnitude),
+                        _magnitudeCorrection(magnitude.type));
                 }
             }
 
@@ -3283,10 +3280,9 @@ void sensorSetup() {
     _sensorConfigure();
 
     // Allow us to query key default
-    _magnitudeForEachCounted([](unsigned char type) {
-        if (_magnitudeRatioSupported(type)) {
-            settingsRegisterDefaults(_magnitudeSettingsPrefix(type), _sensorQueryDefault);
-        }
+    settingsRegisterQueryHandler({
+        .check = _sensorCheckKeyPrefix,
+        .get = _sensorQueryHandler
     });
 
     // Websockets integration, send sensor readings and configuration

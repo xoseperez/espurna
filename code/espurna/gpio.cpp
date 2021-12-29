@@ -18,25 +18,48 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "ws.h"
 
+namespace espurna {
+namespace gpio {
+namespace settings {
+namespace options {
+namespace {
+
+using ::settings::options::Enumeration;
+
+alignas(4) static constexpr char None[] PROGMEM = "none";
+alignas(4) static constexpr char Hardware[] PROGMEM = "hardware";
+
+[[gnu::unused]] alignas(4) static constexpr char Mcp23s08[] PROGMEM = "mcp23s08";
+
+static constexpr Enumeration<GpioType> GpioTypeOptions[] PROGMEM {
+    {GpioType::Hardware, Hardware},
+#if MCP23S08_SUPPORT
+    {GpioType::Mcp23s08, Mcp23s08},
+#endif
+    {GpioType::None, None},
+};
+
+} // namespace
+} // namespace options
+} // namespace settings
+} // namespace gpio
+} // namespace espurna
+
 namespace settings {
 namespace internal {
+namespace {
+
+using espurna::gpio::settings::options::GpioTypeOptions;
+
+} // namespace
 
 template <>
 GpioType convert(const String& value) {
-    alignas(4) static constexpr char None[] PROGMEM = "none";
-    alignas(4) static constexpr char Hardware[] PROGMEM = "hardware";
+    return convert(GpioTypeOptions, value, GpioType::None);
+}
 
-    [[gnu::unused]] alignas(4) static constexpr char Mcp23s08[] PROGMEM = "mcp23s08";
-
-    constexpr static const EnumOption<GpioType> options[] PROGMEM {
-        {GpioType::Hardware, Hardware},
-#if MCP23S08_SUPPORT
-        {GpioType::Mcp23s08, Mcp23s08},
-#endif
-        {GpioType::None, None},
-    };
-
-    return convert(options, value, GpioType::None);
+String serialize(GpioType value) {
+    return serialize(GpioTypeOptions, value);
 }
 
 } // namespace internal
@@ -99,7 +122,7 @@ public:
         return false;
     }
 
-    BasePinPtr pin(unsigned char index) {
+    BasePinPtr pin(unsigned char index) override {
         return std::make_unique<GpioPin>(index);
     }
 

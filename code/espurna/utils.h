@@ -52,6 +52,10 @@ uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
 
 double roundTo(double num, unsigned char positions);
 
+uint32_t parseUnsigned(const String&, int base);
+uint32_t parseUnsigned(const String&);
+String formatUnsigned(uint32_t value, int base);
+
 char* hexEncode(const uint8_t* in_begin, const uint8_t* in_end, char* out_begin, char* out_end);
 size_t hexEncode(const uint8_t* in, size_t in_size, char* out, size_t out_size);
 String hexEncode(const uint8_t* begin, const uint8_t* end);

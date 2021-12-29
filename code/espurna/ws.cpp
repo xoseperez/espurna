@@ -32,42 +32,29 @@ namespace ws {
 namespace internal {
 namespace {
 
-template <typename T>
-void populateSchema(JsonArray& schema, const T& pairs) {
-    for (auto& pair : pairs) {
-        schema.add(pair.key);
-    }
-}
-
-template <typename T>
-void populateEntry(JsonArray& entry, const T& pairs, size_t index) {
-    for (auto& pair : pairs) {
-        pair.callback(entry, index);
-    }
-}
+alignas(4) static constexpr char SchemaKey[] PROGMEM = "schema";
 
 } // namespace
 } // namespace internal
 
-EnumerableConfig::EnumerableConfig(JsonObject& root, const __FlashStringHelper* name) :
-    _root(root.createNestedObject(name))
+EnumerableConfig::EnumerableConfig(JsonObject& root, Name name) :
+    _root(root.createNestedObject(FPSTR(name.c_str())))
 {}
 
-void EnumerableConfig::operator()(const __FlashStringHelper* name, settings::Iota iota, Check check, Pairs&& pairs)
-{
-    if (!iota) {
-        return;
-    }
+void EnumerableConfig::operator()(Name name, ::settings::Iota iota, Check check, Setting* begin, Setting* end) {
+    if (!_root.containsKey(FPSTR(internal::SchemaKey))) {
+        JsonArray& schema = _root.createNestedArray(FPSTR(internal::SchemaKey));
+        for (auto it = begin; it != end; ++it) {
+            schema.add(FPSTR((*it).prefix().c_str()));
+        }
 
-    if (!_root.containsKey(FPSTR(SchemaKey))) {
-        JsonArray& schema = _root.createNestedArray(FPSTR(SchemaKey));
-        internal::populateSchema(schema, pairs);
-
-        JsonArray& entries = _root.createNestedArray(name);
+        JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
         do {
             if (!check || check(*iota)) {
                 JsonArray& entry = entries.createNestedArray();
-                internal::populateEntry(entry, pairs, (*iota));
+                for (auto it = begin; it != end; ++it) {
+                    entry.add((*it).value(*iota));
+                }
             }
 
             ++iota;
@@ -75,8 +62,33 @@ void EnumerableConfig::operator()(const __FlashStringHelper* name, settings::Iot
     }
 }
 
-alignas(4) const char EnumerableConfig::SchemaKey[] PROGMEM = "schema";
-static_assert(alignof(EnumerableConfig::SchemaKey) == 4, "");
+EnumerablePayload::EnumerablePayload(JsonObject& root, Name name) :
+    _root(root.createNestedObject(FPSTR(name.c_str())))
+{}
+
+void EnumerablePayload::operator()(Name name, settings::Iota iota, Check check, Pairs&& pairs) {
+    if (!_root.containsKey(FPSTR(internal::SchemaKey))) {
+        JsonArray& schema = _root.createNestedArray(FPSTR(internal::SchemaKey));
+
+        const auto begin = std::begin(pairs);
+        const auto end = std::end(pairs);
+        for (auto it = begin; it != end; ++it) {
+            schema.add(FPSTR((*it).name.c_str()));
+        }
+
+        JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
+        do {
+            if (!check || check(*iota)) {
+                JsonArray& entry = entries.createNestedArray();
+                for (auto it = begin; it != end; ++it) {
+                    (*it).generate(entry, *iota);
+                }
+            }
+
+            ++iota;
+        } while (iota);
+    }
+}
 
 } // namespace ws
 } // namespace web

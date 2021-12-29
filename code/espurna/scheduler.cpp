@@ -190,85 +190,130 @@ void show(const Schedules& schedules) {
 } // namespace debug
 
 namespace settings {
+namespace keys {
 namespace {
 
-constexpr std::array<const char* const, 9> keys PROGMEM {
-    "schEnabled",
-    "schTarget",
-    "schType",
-    "schAction",
-    "schRestore",
-    "schUTC",
-    "schWDs",
-    "schHour",
-    "schMinute"
-};
-
-static_assert(keys[0] != nullptr, "");
-static_assert(keys[1] != nullptr, "");
-static_assert(keys[2] != nullptr, "");
-static_assert(keys[3] != nullptr, "");
-static_assert(keys[4] != nullptr, "");
-static_assert(keys[5] != nullptr, "");
-static_assert(keys[6] != nullptr, "");
-static_assert(keys[7] != nullptr, "");
-static_assert(keys[8] != nullptr, "");
+alignas(4) static constexpr char Enabled[] PROGMEM = "schEnabled";
+alignas(4) static constexpr char Target[] PROGMEM = "schTarget";
+alignas(4) static constexpr char Type[] PROGMEM = "schType";
+alignas(4) static constexpr char Action[] PROGMEM = "schAction";
+alignas(4) static constexpr char Restore[] PROGMEM = "schRestore";
+alignas(4) static constexpr char UseUTC[] PROGMEM = "schUTC";
+alignas(4) static constexpr char Weekdays[] PROGMEM = "schWDs";
+alignas(4) static constexpr char Hour[] PROGMEM = "schHour";
+alignas(4) static constexpr char Minute[] PROGMEM = "schMinute";
 
 } // namespace
+} // namespace keys
 
 bool enabled(size_t index) {
-    return getSetting({"schEnabled", index}, false);
+    return getSetting({keys::Enabled, index}, false);
 }
 
 size_t target(size_t index) {
-    return getSetting({"schTarget", index}, build::defaultTarget());
+    return getSetting({keys::Target, index}, build::defaultTarget());
 }
 
 int type(size_t index) {
-    return getSetting({"schType", index}, build::defaultType());
+    return getSetting({keys::Type, index}, build::defaultType());
 }
 
 int action(size_t index) {
-    return getSetting({"schAction", index}, build::action());
+    return getSetting({keys::Action, index}, build::action());
 }
 
 bool restore(size_t index) {
-    return getSetting({"schRestore", index}, build::restoreLast());
+    return getSetting({keys::Restore, index}, build::restoreLast());
 }
 
 Weekdays weekdays(size_t index) {
-    return Weekdays(getSetting({"schWDs", index}, build::weekdays()));
+    return Weekdays(getSetting({keys::Weekdays, index}, build::weekdays()));
 }
 
 bool utc(size_t index) {
-    return getSetting({"schUTC", index}, build::utc());
+    return getSetting({keys::UseUTC, index}, build::utc());
 }
 
 int hour(size_t index) {
-    return getSetting({"schHour", index}, build::hour());
+    return getSetting({keys::Hour, index}, build::hour());
 }
 
 int minute(size_t index) {
-    return getSetting({"schMinute", index}, build::minute());
+    return getSetting({keys::Minute, index}, build::minute());
+}
+
+namespace internal {
+
+#define ID_VALUE(NAME, FUNC)\
+String NAME (size_t id) {\
+    return ::settings::internal::serialize(FUNC(id));\
+}
+
+ID_VALUE(enabled, settings::enabled)
+ID_VALUE(target, settings::target)
+ID_VALUE(type, settings::type)
+ID_VALUE(action, settings::action)
+ID_VALUE(restore, settings::restore)
+ID_VALUE(utc, settings::utc)
+
+String weekdays(size_t index) {
+    return settings::weekdays(index).toString();
+}
+
+ID_VALUE(hour, settings::hour)
+ID_VALUE(minute, settings::minute)
+
+} // namespace internal
+
+static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
+    {keys::Enabled, internal::enabled},
+    {keys::Target, internal::target},
+    {keys::Type, internal::type},
+    {keys::Action, internal::action},
+    {keys::Restore, internal::restore},
+    {keys::UseUTC, internal::utc},
+    {keys::Weekdays, internal::weekdays},
+    {keys::Hour, internal::hour},
+    {keys::Minute, internal::minute}
+};
+
+Schedule schedule(size_t index, int type) {
+    return {
+        .enabled = enabled(index),
+        .target = target(index),
+        .type = type,
+        .action = action(index),
+        .restore = restore(index),
+        .utc = utc(index),
+        .weekdays = weekdays(index),
+        .hour = hour(index),
+        .minute = minute(index)
+    };
 }
 
 Schedule schedule(size_t index) {
-    return Schedule{
-        enabled(index),
-        target(index),
-        type(index),
-        action(index),
-        restore(index),
-        utc(index),
-        weekdays(index),
-        hour(index),
-        minute(index)};
+    return schedule(index, type(index));
+}
+
+size_t count() {
+    size_t out { 0 };
+
+    for (size_t index = 0; index < build::max(); ++index) {
+        auto type = settings::type(index);
+        if (type == SCHEDULER_TYPE_NONE) {
+            break;
+        }
+
+        ++out;
+    }
+
+    return out;
 }
 
 void gc(size_t total) {
-    for (size_t i = total; i < build::max(); ++i) {
-        for (auto* key : keys) {
-            delSetting({key, i});
+    for (size_t index = total; index < build::max(); ++index) {
+        for (auto setting : IndexedSettings) {
+            delSetting({setting.prefix().c_str(), index});
         }
     }
 }
@@ -277,12 +322,13 @@ Schedules schedules() {
     Schedules out;
     out.reserve(build::max());
 
-    for (size_t i = 0; i < build::max(); ++i) {
-        auto current = schedule(i);
-        if (current.type == SCHEDULER_TYPE_NONE) {
+    for (size_t index = 0; index < build::max(); ++index) {
+        auto type = settings::type(index);
+        if (type == SCHEDULER_TYPE_NONE) {
             break;
         }
-        out.push_back(std::move(current));
+
+        out.emplace_back(settings::schedule(index, type));
     }
 
     return out;
@@ -290,7 +336,7 @@ Schedules schedules() {
 
 void migrate(int version) {
     if (version < 6) {
-        moveSettings("schSwitch", "schTarget");
+        moveSettings(PSTR("schSwitch"), keys::Target);
     }
 }
 
@@ -298,25 +344,39 @@ void migrate(int version) {
 
 // -----------------------------------------------------------------------------
 
-namespace api {
 #if API_SUPPORT
+namespace api {
+namespace keys {
+
+alignas(4) static constexpr char Enabled[] PROGMEM = "enabled";
+alignas(4) static constexpr char Target[] PROGMEM = "enabled";
+alignas(4) static constexpr char Type[] PROGMEM = "type";
+alignas(4) static constexpr char Action[] PROGMEM = "action";
+alignas(4) static constexpr char Restore[] PROGMEM = "restore";
+alignas(4) static constexpr char UseUTC[] PROGMEM = "utc";
+alignas(4) static constexpr char Weekdays[] PROGMEM = "weekdays";
+alignas(4) static constexpr char Hour[] PROGMEM = "hour";
+alignas(4) static constexpr char Minute[] PROGMEM = "minute";
+
+} // namespace keys
 
 void print(JsonObject& root, const Schedule& schedule) {
-    root["enabled"] = schedule.enabled;
-    root["target"] = schedule.target;
-    root["type"] = schedule.type;
-    root["action"] = schedule.action;
-    root["restore"] = schedule.restore;
-    root["utc"] = schedule.utc;
-    root["weekdays"] = schedule.weekdays.toString();
-    root["hour"] = schedule.hour;
-    root["minute"] = schedule.minute;
+    root[FPSTR(keys::Enabled)] = schedule.enabled;
+    root[FPSTR(keys::Target)] = schedule.target;
+    root[FPSTR(keys::Type)] = schedule.type;
+    root[FPSTR(keys::Action)] = schedule.action;
+    root[FPSTR(keys::Restore)] = schedule.restore;
+    root[FPSTR(keys::UseUTC)] = schedule.utc;
+    root[FPSTR(keys::Weekdays)] = schedule.weekdays.toString();
+    root[FPSTR(keys::Hour)] = schedule.hour;
+    root[FPSTR(keys::Minute)] = schedule.minute;
 }
 
 template <typename T>
-bool setFromJsonIf(JsonObject& root, SettingsKey&& key, const char* const jsonKey) {
-    if (root.containsKey(jsonKey) && root.is<T>(jsonKey)) {
-        setSetting(key, ::settings::internal::serialize(root[jsonKey].as<T>()));
+bool setFromJsonIf(JsonObject& root, const char* key, size_t id, const char* jsonKey) {
+    const auto* jsonKeyFpstr = FPSTR(jsonKey);
+    if (root.containsKey(jsonKeyFpstr) && root.is<T>(jsonKeyFpstr)) {
+        setSetting({key, id}, ::settings::internal::serialize(root[jsonKeyFpstr].as<T>()));
         return true;
     }
 
@@ -324,9 +384,10 @@ bool setFromJsonIf(JsonObject& root, SettingsKey&& key, const char* const jsonKe
 }
 
 template <>
-bool setFromJsonIf<String>(JsonObject& root, SettingsKey&& key, const char* const jsonKey) {
-    if (root.containsKey(jsonKey) && root.is<String>(jsonKey)) {
-        setSetting(key, root[jsonKey].as<String>());
+bool setFromJsonIf<String>(JsonObject& root, const char* key, size_t id, const char* jsonKey) {
+    const auto* jsonKeyFpstr = FPSTR(jsonKey);
+    if (root.containsKey(jsonKeyFpstr) && root.is<String>(jsonKeyFpstr)) {
+        setSetting({key, id}, root[jsonKeyFpstr].as<String>());
         return true;
     }
 
@@ -334,23 +395,23 @@ bool setFromJsonIf<String>(JsonObject& root, SettingsKey&& key, const char* cons
 }
 
 bool set(JsonObject& root, const size_t id) {
-    if (setFromJsonIf<int>(root, {"schType", id}, "type")) {
-        setFromJsonIf<bool>(root, {"schEnabled", id}, "enabled");
-        setFromJsonIf<int>(root, {"schTarget", id}, "target");
-        setFromJsonIf<int>(root, {"schAction", id}, "action");
-        setFromJsonIf<bool>(root, {"schRestore", id}, "restore");
-        setFromJsonIf<bool>(root, {"schUTC", id}, "utc");
-        setFromJsonIf<String>(root, {"schWDs", id}, "weekdays");
-        setFromJsonIf<int>(root, {"schHour", id}, "hour");
-        setFromJsonIf<int>(root, {"schMinute", id}, "minute");
+    if (setFromJsonIf<int>(root, settings::keys::Type, id, keys::Type)) {
+        setFromJsonIf<bool>(root, settings::keys::Enabled, id, keys::Enabled);
+        setFromJsonIf<int>(root, settings::keys::Target, id, keys::Target);
+        setFromJsonIf<int>(root, settings::keys::Action, id, keys::Action);
+        setFromJsonIf<bool>(root, settings::keys::Restore, id, keys::Restore);
+        setFromJsonIf<bool>(root, settings::keys::UseUTC, id, keys::UseUTC);
+        setFromJsonIf<String>(root, settings::keys::Weekdays, id, keys::Weekdays);
+        setFromJsonIf<int>(root, settings::keys::Hour, id, keys::Hour);
+        setFromJsonIf<int>(root, settings::keys::Minute, id, keys::Minute);
         return true;
     }
 
     return false;
 }
 
-#endif  // API_SUPPORT
 } // namespace api
+#endif  // API_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -367,44 +428,14 @@ void onVisible(JsonObject& root) {
     }
 }
 
-void fillEntry(JsonArray& entry, const Schedule& schedule) {
-    entry.add(schedule.enabled);
-    entry.add(schedule.target);
-    entry.add(schedule.type);
-    entry.add(schedule.action);
-    entry.add(schedule.restore);
-    entry.add(schedule.utc);
-    entry.add(schedule.weekdays.toString());
-    entry.add(schedule.hour);
-    entry.add(schedule.minute);
-}
+void onConnected(JsonObject& root){
+    if (schedulable()) {
+        ::web::ws::EnumerableConfig config{ root, STRING_VIEW("schConfig") };
+        config(STRING_VIEW("schedules"), settings::count(), settings::IndexedSettings);
 
-void onConnected(JsonObject &root){
-    if (!schedulable()) return;
-
-    JsonObject& config = root.createNestedObject("schConfig");
-    config["max"] = build::max();
-
-    JsonArray& schema = config.createNestedArray("schema");
-    schema.copyFrom(settings::keys.data(), settings::keys.size());
-
-    uint8_t size = 0;
-
-    JsonArray& schedules = config.createNestedArray("schedules");
-
-    for (size_t id = 0; id < build::max(); ++id) {
-        auto schedule = settings::schedule(id);
-        if (schedule.type == SCHEDULER_TYPE_NONE) {
-            break;
-        }
-
-        JsonArray& entry = schedules.createNestedArray();
-        fillEntry(entry, schedule);
-        ++size;
+        auto& schedules = config.root();
+        schedules["max"] = build::max();
     }
-
-    config["size"] = size;
-    config["start"] = 0;
 }
 
 #endif

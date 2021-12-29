@@ -40,23 +40,48 @@ extern "C" unsigned long adc_rand_noise;
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
+namespace system {
+namespace settings {
+
+namespace options {
+namespace internal {
+namespace {
+
+alignas(4) static constexpr char None[] PROGMEM = "none";
+alignas(4) static constexpr char Once[] PROGMEM = "once";
+alignas(4) static constexpr char Repeat[] PROGMEM = "repeat";
+
+} // namespace
+} // namespace internal
+
+namespace {
+
+static constexpr ::settings::options::Enumeration<heartbeat::Mode> HeartbeatModeOptions[] PROGMEM {
+    {heartbeat::Mode::None, internal::None},
+    {heartbeat::Mode::Once, internal::Once},
+    {heartbeat::Mode::Repeat, internal::Repeat},
+};
+
+} // namespace
+} // namespace options
+} // namespace settings
+} // namespace system
+} // namespace espurna
+
+// -----------------------------------------------------------------------------
+
 namespace settings {
 namespace internal {
+namespace {
+
+using espurna::system::settings::options::HeartbeatModeOptions;
+
+} // namespace
 
 template <>
 espurna::heartbeat::Mode convert(const String& value) {
-    alignas(4) static constexpr char None[] PROGMEM = "none";
-    alignas(4) static constexpr char Once[] PROGMEM = "once";
-    alignas(4) static constexpr char Repeat[] PROGMEM = "repeat";
-
-    using namespace espurna::heartbeat;
-    constexpr static const EnumOption<Mode> options[] PROGMEM {
-        {Mode::None, None},
-        {Mode::Once, Once},
-        {Mode::Repeat, Repeat},
-    };
-
-    return convert(options, value, Mode::Repeat);
+    return convert(HeartbeatModeOptions, value, espurna::heartbeat::Mode::Repeat);
 }
 
 template <>
@@ -67,6 +92,14 @@ std::chrono::duration<float> convert(const String& value) {
 template <>
 espurna::duration::Milliseconds convert(const String& value) {
     return espurna::duration::Milliseconds(convert<espurna::duration::Milliseconds::rep>(value));
+}
+
+String serialize(espurna::duration::Milliseconds value) {
+    return serialize(value.count());
+}
+
+String serialize(espurna::duration::ClockCycles value) {
+    return serialize(value.count());
 }
 
 template <>
@@ -113,8 +146,8 @@ void blockingDelay(CoreClock::duration timeout) {
 
 } // namespace time
 
-namespace {
 namespace memory {
+namespace {
 
 // returns 'total stack size' minus 'un-painted area'
 // needs re-painting step, as this never decreases
@@ -144,9 +177,11 @@ decltype(freeHeap()) initialFreeHeap() {
     return value;
 }
 
+}
 } // namespace memory
 
 namespace boot {
+namespace {
 
 String serialize(CustomResetReason reason) {
     const __FlashStringHelper* ptr { nullptr };
@@ -271,10 +306,14 @@ Ticker timer;
 bool flag { true };
 
 } // namespace internal
+}
+
+namespace {
 
 #if SYSTEM_CHECK_ENABLED
 namespace stability {
 namespace build {
+namespace {
 
 constexpr uint8_t ChecksMin { 0 };
 constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
@@ -284,7 +323,10 @@ static_assert(ChecksMin < ChecksMax, "");
 constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
 static_assert(CheckTime > espurna::duration::Seconds::min(), "");
 
+} // namespace
 } // namespace build
+
+namespace {
 
 void init() {
     // on cold boot / rst, bumps count to 2 so we don't end up
@@ -306,6 +348,7 @@ bool check() {
     return internal::flag;
 }
 
+} // namespace
 } // namespace stability
 #endif
 
@@ -331,6 +374,7 @@ void customReason(CustomResetReason reason) {
     internal::persistent_data.reason(reason);
 }
 
+} // namespace
 } // namespace boot
 
 // -----------------------------------------------------------------------------
@@ -338,6 +382,7 @@ void customReason(CustomResetReason reason) {
 // Calculated load average of the loop() as a percentage (notice that this may not be accurate)
 namespace load_average {
 namespace build {
+namespace {
 
 constexpr size_t ValueMin { 0 };
 constexpr size_t ValueMax { 100 };
@@ -345,7 +390,10 @@ constexpr size_t ValueMax { 100 };
 static constexpr espurna::duration::Seconds Interval { LOADAVG_INTERVAL };
 static_assert(Interval <= espurna::duration::Seconds(90), "");
 
+} // namespace
 } // namespace build
+
+namespace {
 
 using TimeSource = espurna::time::SystemClock;
 using Type = unsigned long;
@@ -392,8 +440,8 @@ void loop() {
         : 0;
 }
 
-} // namespace load_average
 } // namespace
+} // namespace load_average
 
 // -----------------------------------------------------------------------------
 
@@ -454,13 +502,22 @@ constexpr Mask value() {
 } // namespace build
 
 namespace settings {
+namespace keys {
+namespace {
+
+alignas(4) static constexpr char Mode[] PROGMEM = "hbMode";
+alignas(4) static constexpr char Interval[] PROGMEM = "hbInterval";
+alignas(4) static constexpr char Report[] PROGMEM = "hbReport";
+
+} // namespace
+} // namespace keys
 
 Mode mode() {
-    return getSetting("hbMode", build::mode());
+    return getSetting(keys::Mode, build::mode());
 }
 
 espurna::duration::Seconds interval() {
-    return getSetting("hbInterval", build::interval());
+    return getSetting(keys::Interval, build::interval());
 }
 
 Mask value() {
@@ -468,7 +525,7 @@ Mask value() {
     // first bit as a flag to enable all of the messages
     static constexpr Mask MaskAll { 1 };
 
-    auto value = getSetting("hbReport", build::value());
+    auto value = getSetting(keys::Report, build::value());
     if (value == MaskAll) {
         value = std::numeric_limits<Mask>::max();
     }
@@ -641,10 +698,9 @@ void init() {
 } // namespace
 } // namespace heartbeat
 
-namespace {
-
 #if WEB_SUPPORT
 namespace web {
+namespace {
 
 void onConnected(JsonObject& root) {
     root["hbReport"] = heartbeat::settings::value();
@@ -658,12 +714,14 @@ bool onKeyCheck(const char * key, JsonVariant&) {
     return false;
 }
 
+} // namespace
 } // namespace web
 #endif
 
 // Allow to schedule a reset at the next loop
 // Store reset reason both here and in for the next boot
 namespace internal {
+namespace {
 
 Ticker reset_timer;
 auto reset_reason = CustomResetReason::None;
@@ -673,7 +731,10 @@ void reset(CustomResetReason reason) {
     reset_reason = reason;
 }
 
+} // namespace
 } // namespace internal
+
+namespace {
 
 // raw reboot call, effectively:
 // ```
