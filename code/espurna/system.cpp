@@ -707,9 +707,11 @@ namespace web {
 namespace {
 
 void onConnected(JsonObject& root) {
-    root[heartbeat::settings::keys::Report] = heartbeat::settings::value();
-    root[heartbeat::settings::keys::Interval] = heartbeat::settings::interval().count();
-    root[heartbeat::settings::keys::Mode] = ::settings::internal::serialize(heartbeat::settings::mode());
+  root[FPSTR(heartbeat::settings::keys::Report)] = heartbeat::settings::value();
+  root[FPSTR(heartbeat::settings::keys::Interval)] =
+      heartbeat::settings::interval().count();
+  root[FPSTR(heartbeat::settings::keys::Mode)] =
+      ::settings::internal::serialize(heartbeat::settings::mode());
 }
 
 bool onKeyCheck(const char* key, JsonVariant&) {
