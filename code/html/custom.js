@@ -1502,13 +1502,9 @@ function schAdd(cfg) {
 
     let line = loadConfigTemplate("schedule-config");
 
-    const type = (cfg.schType === 1) ? "relay" :
-        (cfg.schType === 2) ? "light" :
-        (cfg.schType === 3) ? "curtain" :
-        "none";
-    if (type !== "none") {
+    if (cfg.schType !== "none") {
         mergeTemplate(line.querySelector(".schedule-action"),
-            loadConfigTemplate("schedule-action-".concat(type)));
+            loadConfigTemplate("schedule-action-".concat(cfg.schType)));
     }
 
     fillTemplateLineFromCfg(line, id, cfg);
@@ -2841,12 +2837,8 @@ function main() {
     });
 
     groupSettingsOnAdd("schedules", () => {
-        const type = (event.detail.target === "switch") ? 1 :
-            (event.detail.target === "light") ? 2 :
-            (event.detail.target === "curtain") ? 3 : 0;
-
-        if (type !== 0) {
-            schAdd({schType: type});
+        if (event.detail.target) {
+            schAdd({schType: event.detail.target});
             return;
         }
     });

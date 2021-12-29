@@ -183,7 +183,7 @@
                         <!-- endRemoveIf(!sensor) -->
 
                         <li class="pure-menu-item module module-relay">
-                            <a href="#" class="pure-menu-link" data-panel="relay">SWITCHES</a>
+                            <a href="#" class="pure-menu-link" data-panel="relay">RELAYS</a>
                         </li>
 
                         <li class="pure-menu-item module module-tspk">
@@ -420,9 +420,9 @@
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Heartbeat messages</label>
                                     <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" >
-                                        <option value="0">Disabled</option>
-                                        <option value="1">Once per connection</option>
-                                        <option value="2">Repeat after defined interval</option>
+                                        <option value="no">Disabled</option>
+                                        <option value="once">Once per connection</option>
+                                        <option value="repeat">Repeat after defined interval</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                 </div>
@@ -489,14 +489,14 @@
 
                             <summary>Available modes</summary>
                             <ol class="pure-u-1 pure-u-lg-3-4 hint">
-                                <li><strong>WiFi status</strong> will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.</li>
-                                <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (you must define which switch to follow in the side field).</li>
-                                <li><strong>Inverse switch</strong> will force the LED to not-follow the status of a given switch (you must define which switch to follow in the side field).</li>
-                                <li><strong>Find me</strong> will turn the LED ON when all switches are OFF. This is meant to locate switches at night.</li>
-                                <li><strong>Find me &amp; WiFi</strong> will follow the WiFi status but will stay mostly on when switches are OFF, and mostly OFF when any of them is ON.</li>
-                                <li><strong>Switches status</strong> will turn the LED ON whenever any switch is ON, and OFF otherwise. This is global status notification.</li>
-                                <li><strong>Switches status &amp; WiFi</strong> will follow the WiFi status but will stay mostly off when switches are OFF, and mostly ON when any of them is ON.</li>
-                                <li><strong>Manually managed</strong> will let you manage the LED status via MQTT by sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).</li>
+                                <li><strong>WiFi status</strong> will blink at 1Hz when attempting to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode, or every second if the device is still in AP mode.</li>
+                                <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (defaults to the 1st switch, use the selector to change it).</li>
+                                <li><strong>Inverse switch</strong> is same as the above, but using the inverse status as status of the LED.</li>
+                                <li><strong>Find me</strong> will turn the LED ON when all relays are OFF. This is meant to locate the device at night.</li>
+                                <li><strong>Find me &amp; WiFi</strong> will also follow the WiFi status, and stay mostly ON when relays are OFF and mostly OFF when any of them are ON.</li>
+                                <li><strong>Relay status</strong> will turn the LED ON whenever any switch is ON, and OFF otherwise. This is global status notification.</li>
+                                <li><strong>Relay status &amp; WiFi</strong> will follow the WiFi status but will stay mostly OFF when relays are OFF, and mostly ON when any of them are ON.</li>
+                                <li><strong>Manually managed</strong> will let you manage the LED status through the API. For example, MQTT will subscribe to the "&lt;base_topic&gt;/led/0/set", sending a payload of 0, 1 or 2 (to toggle it) will change the LED status accordingly.</li>
                                 <li><strong>Always ON</strong> and <strong>Always OFF</strong> modes are self-explanatory.</li>
                             </ol>
 
@@ -514,8 +514,8 @@
                     <div class="panel" id="panel-relay">
 
                         <div class="header">
-                            <h1>SWITCHES</h1>
-                            <h2>Switch / relay configuration</h2>
+                            <h1>RELAYS</h1>
+                            <h2>Relay configuration</h2>
                         </div>
 
                         <div class="page">
@@ -527,14 +527,14 @@
                                 <div class="pure-g module module-multirelay">
                                     <label class="pure-u-1 pure-u-lg-1-4">Switch sync mode</label>
                                     <select name="relaySync" class="pure-u-1 pure-u-lg-3-4" >
-                                        <option value="0">No synchronisation</option>
-                                        <option value="1">Zero or one switches active</option>
-                                        <option value="2">One and just one switch active</option>
-                                        <option value="3">All synchronised</option>
-                                        <option value="4">Switch #0 controls other switches</option>
+                                        <option value="disabled">No synchronisation</option>
+                                        <option value="zero-or-one">Zero or just one relay should be ON</option>
+                                        <option value="just-one">Only one relay should be ON</option>
+                                        <option value="all">All relays are synchronised</option>
+                                        <option value="first">Switch #0 controls everything else</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Define how the different switches should be synchronized.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Define how the different relays should be synchronized.</div>
                                 </div>
 
                                 <div class="pure-g module module-multirelay">
@@ -919,7 +919,7 @@
                     <div class="panel" id="panel-schedule">
                         <div class="header">
                             <h1>SCHEDULE</h1>
-                            <h2>Turn switches ON and OFF based on the current time.</h2>
+                            <h2>Executes actions based on the current time.</h2>
                         </div>
 
                         <div class="page">
@@ -930,7 +930,7 @@
 
                             <fieldset>
                                 <legend>Add schedule</legend>
-                                <button type="button" class="pure-button button-add-settings-group module module-relay" data-settings-group="schedules" data-settings-group-detail-target="switch">Switch</button>
+                                <button type="button" class="pure-button button-add-settings-group module module-relay" data-settings-group="schedules" data-settings-group-detail-target="relay">Relay</button>
                                 <!-- removeIf(!light) -->
                                 <button type="button" class="pure-button button-add-settings-group module module-color" data-settings-group="schedules" data-settings-group-detail-target="light">Light</button>
                                 <!-- endRemoveIf(!light) -->
@@ -1815,7 +1815,7 @@
                                 </div>
                             </fieldset>
 
-                            <fieldset>
+                            <fieldset class="module">
                                 <legend>Units</legend>
                                 <div id="magnitude-units" class="pure-form settings-group">
                                 </div>
@@ -1932,18 +1932,24 @@
                         <select class="pure-input-2-3 enumerable enumerable-gpio-hardware" name="ledGpio" data-action="reboot"></select>
                     </div>
                     <div class="pure-control-group">
+                        <label>Inverse logic</label>
+                        <div class="pure-input-2-3">
+                            <input type="checkbox" name="ledInv">
+                        </div>
+                    </div>
+                    <div class="pure-control-group">
                         <label>Mode</label>
                         <select class="pure-input-2-3" name="ledMode">
-                            <option value="1">WiFi status</option>
-                            <option value="2">Follow switch #</option>
-                            <option value="3">Inverse switch #</option>
-                            <option value="4">Find me</option>
-                            <option value="5">Find me &amp; WiFi</option>
-                            <option value="8">Switch(es) status</option>
-                            <option value="9">Switch(es) &amp; WiFi</option>
-                            <option value="0">Manual</option>
-                            <option value="6">Always ON</option>
-                            <option value="7">Always OFF</option>
+                            <option value="wifi">WiFi status</option>
+                            <option value="relay">Follow switch</option>
+                            <option value="relay-inverse">Inverse switch</option>
+                            <option value="findme">Find me</option>
+                            <option value="findme-wifi">Find me &amp; WiFi</option>
+                            <option value="relays">Switch(es) status</option>
+                            <option value="relays-wifi">Switch(es) &amp; WiFi</option>
+                            <option value="manual">Manual</option>
+                            <option value="on">Always ON</option>
+                            <option value="off">Always OFF</option>
                         </select>
                     </div>
                     <div class="module-relay pure-control-group">
@@ -2063,7 +2069,7 @@
                 </select>
             </div>
             <select class="pure-u-1 pure-u-lg-1-4 enumerable enumerable-relay" name="schTarget" ></select>
-            <input type="hidden" name="schType" value="1">
+            <input type="hidden" name="schType" value="relay">
         </template>
 
         <!-- removeIf(!light) -->
@@ -2073,7 +2079,7 @@
                 <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="255" value="0">
             </div>
             <select class="pure-u-1 pure-u-lg-1-4 enumerable enumerable-channel" name="schTarget" ></select>
-            <input type="hidden" name="schType" value="2">
+            <input type="hidden" name="schType" value="light">
         </template>
         <!-- endRemoveIf(!light) -->
 
@@ -2084,7 +2090,7 @@
                 <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="100" value="0">
             </div>
             <select class="pure-u-1 pure-u-lg-1-4 enumerable enumerable-curtain" name="schTarget" ></select>
-            <input type="hidden" name="schType" value="3">
+            <input type="hidden" name="schType" value="curtain">
         </template>
         <!-- endRemoveIf(!curtain) -->
 
@@ -2096,53 +2102,57 @@
         </template>
 
         <template id="template-relay-config">
-            <legend><span data-key="relayName"></span> (<span data-key="relayDesc"></span>)</legend>
-            <div class="pure-g">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">
-                    <option value="0">Always OFF</option>
-                    <option value="1">Always ON</option>
-                    <option value="2">Same as before</option>
-                    <option value="3">Toggle before</option>
-                    <option value="4">Locked OFF</option>
-                    <option value="5">Locked ON</option>
-                </select>
-            </div>
-            <div class="pure-g">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse mode</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayPulse">
-                    <option value="0">Don't pulse</option>
-                    <option value="1">Normally OFF</option>
-                    <option value="2">Normally ON</option>
-                </select>
-            </div>
-            <div class="pure-g">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse time (s)</label></div>
-                <div class="pure-u-1 pure-u-lg-1-4"><input name="relayTime" class="pure-u-1" type="number" min="0" step="0.1" max="3600"></div>
-            </div>
-            <div class="pure-g module module-mqtt">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic subscription</label></div>
-                <div class="pure-u-1 pure-u-lg-3-4"><input name="relayTopicSub" type="text" class="pure-u-1" data-action="reconnect"></div>
-            </div>
-            <div class="pure-g module module-mqtt">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic publish</label></div>
-                <div class="pure-u-1 pure-u-lg-3-4"><input name="relayTopicPub" type="text" class="pure-u-1" data-action="reconnect"></div>
-            </div>
-            <div class="pure-g module module-mqtt">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic mode</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayTopicMode">
-                    <option value="0">Normal</option>
-                    <option value="1">Inverse</option>
-                </select>
-            </div>
-            <div class="pure-g module module-mqtt">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayMqttDisc">
-                    <option value="255">Do nothing</option>
-                    <option value="0">Turn OFF</option>
-                    <option value="1">Turn ON</option>
-                    <option value="2">Toggle</option>
-                </select>
+            <div class="pure-form pure-form-aligned">
+                <fieldset>
+                    <legend><span data-key="relayName"></span> (<span data-key="relayProv"></span>)</legend>
+                    <div class="pure-control-group">
+                        <label>Boot mode</label>
+                        <select class="pure-input-2-3" name="relayBoot">
+                            <option value="off">Always OFF</option>
+                            <option value="on">Always ON</option>
+                            <option value="same">Same as before</option>
+                            <option value="toggle">Toggle before</option>
+                            <option value="locked-off">Locked OFF</option>
+                            <option value="locked-on">Locked ON</option>
+                        </select>
+                    </div>
+                    <div class="pure-control-group">
+                        <label>Pulse mode</label>
+                        <select class="pure-input-2-3" name="relayPulse">
+                            <option value="none">Don't pulse</option>
+                            <option value="off">Normally OFF</option>
+                            <option value="on">Normally ON</option>
+                        </select>
+                    </div>
+                    <div class="pure-control-group">
+                        <label>Pulse time (s)</label>
+                        <input class="pure-input-2-3" name="relayTime" type="text">
+                    </div>
+                    <div class="pure-control-group module module-mqtt">
+                        <label>MQTT topic subscription</label>
+                        <input class="pure-input-2-3" name="relayTopicSub" type="text" data-action="reconnect">
+                    </div>
+                    <div class="pure-control-group module module-mqtt">
+                        <label>MQTT topic publish</label>
+                        <input class="pure-input-2-3" name="relayTopicPub" type="text" data-action="reconnect">
+                    </div>
+                    <div class="pure-control-group module module-mqtt">
+                        <label>MQTT topic mode</label>
+                        <select class="pure-input-2-3" name="relayTopicMode">
+                            <option value="normal">Normal</option>
+                            <option value="inverse">Inverse</option>
+                        </select>
+                    </div>
+                    <div class="pure-control-group module module-mqtt">
+                        <label>On MQTT disconnect</label>
+                        <select class="pure-input-2-3" name="relayMqttDisc">
+                            <option value="unknown">Do nothing</option>
+                            <option value="off">Turn OFF</option>
+                            <option value="on">Turn ON</option>
+                            <option value="toggle">Toggle</option>
+                        </select>
+                    </div>
+                </fieldset>
             </div>
         </template>
 

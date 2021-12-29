@@ -88,7 +88,7 @@ constexpr size_t dummyCount() {
     return DUMMY_RELAY_COUNT;
 }
 
-constexpr int syncMode() {
+constexpr RelaySync syncMode() {
     return RELAY_SYNC;
 }
 
@@ -645,6 +645,20 @@ static constexpr std::array<Enumeration<RelayType>, 4> RelayTypeOptions PROGMEM 
      {RelayType::LatchedInverse, RelayTypeLatchedInverse}}
 };
 
+alignas(4) constexpr static char None[] PROGMEM = "none";
+alignas(4) constexpr static char ZeroOrOne[] PROGMEM = "zero-or-one";
+alignas(4) constexpr static char JustOne[] PROGMEM = "just-one";
+alignas(4) constexpr static char All[] PROGMEM = "all";
+alignas(4) constexpr static char First[] PROGMEM = "first";
+
+static constexpr std::array<Enumeration<RelaySync>, 5> RelaySyncOptions PROGMEM {
+    {{RelaySync::None, None},
+     {RelaySync::ZeroOrOne, ZeroOrOne},
+     {RelaySync::JustOne, JustOne},
+     {RelaySync::All, All},
+     {RelaySync::First, First}}
+};
+
 } // namespace
 } // namespace options
 } // namespace settings
@@ -707,6 +721,7 @@ using espurna::relay::settings::options::RelayMqttTopicModeOptions;
 using espurna::relay::settings::options::RelayBootOptions;
 using espurna::relay::settings::options::RelayProviderOptions;
 using espurna::relay::settings::options::RelayTypeOptions;
+using espurna::relay::settings::options::RelaySyncOptions;
 
 } // namespace
 
@@ -776,6 +791,15 @@ RelayMaskHelper convert(const String& value) {
 
 String serialize(RelayMaskHelper mask) {
     return mask.toString();
+}
+
+template <>
+RelaySync convert(const String& value) {
+    return convert(RelaySyncOptions, value, RelaySync::None);
+}
+
+String serialize(RelaySync value) {
+    return serialize(RelaySyncOptions, value);
 }
 
 } // namespace internal
@@ -876,7 +900,7 @@ espurna::duration::Milliseconds interlockDelay() {
     return getSetting(keys::Interlock, build::interlockDelay());
 }
 
-int syncMode() {
+RelaySync syncMode() {
     return getSetting(keys::Sync, build::syncMode());
 }
 
@@ -1190,7 +1214,7 @@ espurna::duration::Milliseconds _relay_flood_window { espurna::relay::flood::bui
 unsigned long _relay_flood_changes { espurna::relay::flood::build::changes() };
 
 espurna::duration::Milliseconds _relay_delay_interlock;
-int _relay_sync_mode { RELAY_SYNC_ANY };
+RelaySync _relay_sync_mode { RelaySync::None };
 bool _relay_sync_reent { false };
 bool _relay_sync_locked { false };
 
@@ -1683,15 +1707,15 @@ void _relaySync() {
 
 void _relaySyncTryUnlock() {
     switch (_relay_sync_mode) {
-    case RELAY_SYNC_ONE:
-    case RELAY_SYNC_NONE_OR_ONE:
+    case RelaySync::JustOne:
+    case RelaySync::ZeroOrOne:
         if (_relay_sync_locked) {
             _relaySyncUnlock();
         }
         break;
-    case RELAY_SYNC_ANY:
-    case RELAY_SYNC_SAME:
-    case RELAY_SYNC_FIRST:
+    case RelaySync::None:
+    case RelaySync::All:
+    case RelaySync::First:
         break;
     }
 }
@@ -1853,44 +1877,49 @@ void relaySync(size_t target) {
 
     bool status = _relays[target].target_status;
 
-    // If RELAY_SYNC_SAME all relays should have the same state
-    if (_relay_sync_mode == RELAY_SYNC_SAME) {
+    switch (_relay_sync_mode) {
+    case RelaySync::None:
+        break;
+
+    // aka all relays should have the same state
+    case RelaySync::All:
         for (decltype(relays) id = 0; id < relays; ++id) {
             if (id != target) {
                 relayStatus(id, status);
             }
         }
+        break;
 
-    // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
-    } else if (_relay_sync_mode == RELAY_SYNC_FIRST) {
+    // all relays should have the same state as first if first changes
+    case RelaySync::First:
         if (target == 0) {
             for (decltype(relays) id = 1; id < relays; ++id) {
                 relayStatus(id, status);
             }
         }
+        break;
 
-    } else if ((_relay_sync_mode == RELAY_SYNC_NONE_OR_ONE) || (_relay_sync_mode == RELAY_SYNC_ONE)) {
-        // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
+    // If any of the 'One' modes and setting ON we should set OFF all the others
+    case RelaySync::ZeroOrOne:
+    case RelaySync::JustOne:
         if (status) {
-            if (_relay_sync_mode != RELAY_SYNC_ANY) {
-                for (decltype(relays) id = 0; id < relays; ++id) {
-                    if (id != target) {
-                        relayStatus(id, false);
-                        if (relayStatus(id)) {
-                            _relaySyncRelaysDelay(id, target);
-                        }
+            for (decltype(relays) id = 0; id < relays; ++id) {
+                if (id != target) {
+                    relayStatus(id, false);
+                    if (relayStatus(id)) {
+                        _relaySyncRelaysDelay(id, target);
                     }
                 }
             }
-        // If ONLY_ONE and setting OFF we should set ON the other one
-        } else {
-            if (_relay_sync_mode == RELAY_SYNC_ONE) {
-                auto id = (target + 1) % relays;
-                _relaySyncRelaysDelay(target, id);
-                relayStatus(id, true);
-            }
+        // If we only need a single one and setting OFF we should set ON the other one
+        } else if (_relay_sync_mode == RelaySync::JustOne) {
+            auto id = (target + 1) % relays;
+            _relaySyncRelaysDelay(target, id);
+            relayStatus(id, true);
         }
+
         _relayLockAll();
+        break;
     }
 
     _relay_sync_reent = false;
@@ -2171,8 +2200,10 @@ void _relayWebSocketOnVisible(JsonObject& root) {
 
     if (relays > 1) {
         wsPayloadModule(root, "multirelay");
-        root["relaySync"] = espurna::relay::settings::syncMode();
-        root["relayIlkDelay"] = espurna::relay::settings::interlockDelay().count();
+        root[FPSTR(espurna::relay::settings::keys::Sync)] =
+            ::settings::internal::serialize(espurna::relay::settings::syncMode());
+        root[FPSTR(espurna::relay::settings::keys::Interlock)] =
+            espurna::relay::settings::interlockDelay().count();
     }
 
     wsPayloadModule(root, "relay");

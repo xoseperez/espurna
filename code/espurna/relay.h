@@ -53,6 +53,14 @@ enum class RelayProvider {
     Stm
 };
 
+enum class RelaySync {
+    None,
+    ZeroOrOne,
+    JustOne,
+    All,
+    First
+};
+
 class RelayProviderBase {
 public:
     RelayProviderBase() = default;

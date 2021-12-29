@@ -91,11 +91,11 @@
 #define RELAY_TYPE_LATCHED          RelayType::Latched
 #define RELAY_TYPE_LATCHED_INVERSE  RelayType::LatchedInverse
 
-#define RELAY_SYNC_ANY              0
-#define RELAY_SYNC_NONE_OR_ONE      1
-#define RELAY_SYNC_ONE              2
-#define RELAY_SYNC_SAME             3
-#define RELAY_SYNC_FIRST            4
+#define RELAY_SYNC_ANY              RelaySync::None
+#define RELAY_SYNC_NONE_OR_ONE      RelaySync::ZeroOrOne
+#define RELAY_SYNC_ONE              RelaySync::JustOne
+#define RELAY_SYNC_SAME             RelaySync::All
+#define RELAY_SYNC_FIRST            RelaySync::First
 
 #define RELAY_PULSE_NONE            Mode::None
 #define RELAY_PULSE_OFF             Mode::Off
@@ -223,10 +223,10 @@
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
-#define SCHEDULER_TYPE_NONE         0
-#define SCHEDULER_TYPE_SWITCH       1
-#define SCHEDULER_TYPE_DIM          2
-#define SCHEDULER_TYPE_CURTAIN      3
+#define SCHEDULER_TYPE_NONE         scheduler::Type::None
+#define SCHEDULER_TYPE_RELAY        scheduler::Type::Relay
+#define SCHEDULER_TYPE_CHANNEL      scheduler::Type::Channel
+#define SCHEDULER_TYPE_CURTAIN      scheduler::Type::Curtain
 
 // -----------------------------------------------------------------------------
 // IR

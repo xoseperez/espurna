@@ -24,64 +24,15 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 namespace scheduler {
+
+enum class Type {
+    None,
+    Relay,
+    Channel,
+    Curtain
+};
+
 namespace {
-namespace build {
-
-constexpr size_t max() {
-    return SCHEDULER_MAX_SCHEDULES;
-}
-
-constexpr int restoreOffsetMax() {
-    return 2; // today and yesterday
-}
-
-constexpr size_t defaultTarget() {
-    return 0; // aka relay#0 or channel#0
-}
-
-constexpr int defaultType() {
-    return SCHEDULER_TYPE_NONE;
-}
-
-constexpr bool utc() {
-    return false; // use local time by default
-}
-
-constexpr int hour() {
-    return 0;
-}
-
-constexpr int minute() {
-    return 0;
-}
-
-constexpr int action() {
-    return 0;
-}
-
-const __FlashStringHelper* weekdays() {
-    return F(SCHEDULER_WEEKDAYS);
-}
-
-constexpr bool restoreLast() {
-    return 1 == SCHEDULER_RESTORE_LAST_SCHEDULE;
-}
-
-} // namespace build
-
-bool schedulable() {
-    return false
-#if RELAY_SUPPORT
-    || relayCount()
-#endif
-#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    || lightChannels()
-#endif
-#if CURTAIN_SUPPORT
-    || curtainCount()
-#endif
-    ;
-}
 
 struct Weekdays {
     Weekdays() = default;
@@ -142,7 +93,7 @@ private:
 struct Schedule {
     bool enabled;
     size_t target;
-    int type;
+    Type type;
     int action;
     bool restore;
     bool utc;
@@ -153,24 +104,146 @@ struct Schedule {
 
 using Schedules = std::vector<Schedule>;
 
-namespace debug {
+} // namespace
+} // namespace scheduler
 
-const char* type(int type) {
-    switch (type) {
-    case SCHEDULER_TYPE_NONE:
-        return "none";
-    case SCHEDULER_TYPE_SWITCH:
-        return "switch";
-    case SCHEDULER_TYPE_DIM:
-        return "channel";
-    case SCHEDULER_TYPE_CURTAIN:
-        return "curtain";
-    }
+namespace settings {
+namespace options {
+namespace {
 
-    return "unknown";
+using ::settings::options::Enumeration;
+
+alignas(4) static constexpr char None[] PROGMEM = "none";
+alignas(4) static constexpr char Relay[] PROGMEM = "relay";
+alignas(4) static constexpr char Channel[] PROGMEM = "channel";
+alignas(4) static constexpr char Curtain[] PROGMEM = "curtain";
+
+static constexpr std::array<Enumeration<scheduler::Type>, 4> SchedulerTypeOptions PROGMEM {
+    {{scheduler::Type::None, None},
+     {scheduler::Type::Relay, Relay},
+     {scheduler::Type::Channel, Channel},
+     {scheduler::Type::Curtain, Curtain}}
+};
+
+} // namespace
+} // namespace options
+
+namespace internal {
+namespace {
+
+using options::SchedulerTypeOptions;
+
+} // namespace
+
+template<>
+scheduler::Type convert(const String& value) {
+    return convert(SchedulerTypeOptions, value, scheduler::Type::None);
 }
 
-const char* type(const Schedule& schedule) {
+String serialize(scheduler::Type value) {
+    return serialize(SchedulerTypeOptions, value);
+}
+
+} // namespace internal
+} // namespace settings
+
+namespace scheduler {
+namespace {
+namespace build {
+
+constexpr size_t max() {
+    return SCHEDULER_MAX_SCHEDULES;
+}
+
+constexpr int restoreOffsetMax() {
+    return 2; // today and yesterday
+}
+
+constexpr size_t defaultTarget() {
+    return 0; // aka relay#0 or channel#0
+}
+
+constexpr Type defaultType() {
+    return Type::None;
+}
+
+constexpr bool utc() {
+    return false; // use local time by default
+}
+
+constexpr int hour() {
+    return 0;
+}
+
+constexpr int minute() {
+    return 0;
+}
+
+constexpr int action() {
+    return 0;
+}
+
+const __FlashStringHelper* weekdays() {
+    return F(SCHEDULER_WEEKDAYS);
+}
+
+constexpr bool restoreLast() {
+    return 1 == SCHEDULER_RESTORE_LAST_SCHEDULE;
+}
+
+} // namespace build
+
+bool supported(Type type) {
+    switch (type) {
+    case Type::None:
+        break;
+
+    case Type::Relay:
+#if RELAY_SUPPORT
+        return true;
+#else
+        return false;
+#endif
+
+    case Type::Channel:
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        return true;
+#else
+        return false;
+#endif
+
+    case Type::Curtain:
+#if CURTAIN_SUPPORT
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    return false;
+}
+
+bool schedulable() {
+    return false
+#if RELAY_SUPPORT
+    || relayCount()
+#endif
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    || lightChannels()
+#endif
+#if CURTAIN_SUPPORT
+    || curtainCount()
+#endif
+    ;
+}
+
+namespace debug {
+
+String type(Type type) {
+    return settings::internal::serialize(type);
+}
+
+String type(const Schedule& schedule) {
     return type(schedule.type);
 }
 
@@ -179,7 +252,7 @@ void show(const Schedules& schedules) {
     for (auto& schedule : schedules) {
         DEBUG_MSG_P(
             PSTR("[SCH] #%d: %s #%d => %d at %02d:%02d (%s) on %s%s\n"),
-            index++, scheduler::debug::type(schedule), schedule.target,
+            index++, scheduler::debug::type(schedule).c_str(), schedule.target,
             schedule.action, schedule.hour, schedule.minute,
             schedule.utc ? "UTC" : "local time",
             schedule.weekdays.toString().c_str(),
@@ -214,7 +287,7 @@ size_t target(size_t index) {
     return getSetting({keys::Target, index}, build::defaultTarget());
 }
 
-int type(size_t index) {
+Type type(size_t index) {
     return getSetting({keys::Type, index}, build::defaultType());
 }
 
@@ -277,7 +350,7 @@ static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Minute, internal::minute}
 };
 
-Schedule schedule(size_t index, int type) {
+Schedule schedule(size_t index, Type type) {
     return {
         .enabled = enabled(index),
         .target = target(index),
@@ -300,7 +373,7 @@ size_t count() {
 
     for (size_t index = 0; index < build::max(); ++index) {
         auto type = settings::type(index);
-        if (type == SCHEDULER_TYPE_NONE) {
+        if (!supported(type)) {
             break;
         }
 
@@ -324,7 +397,7 @@ Schedules schedules() {
 
     for (size_t index = 0; index < build::max(); ++index) {
         auto type = settings::type(index);
-        if (type == SCHEDULER_TYPE_NONE) {
+        if (!supported(type)) {
             break;
         }
 
@@ -363,7 +436,7 @@ alignas(4) static constexpr char Minute[] PROGMEM = "minute";
 void print(JsonObject& root, const Schedule& schedule) {
     root[FPSTR(keys::Enabled)] = schedule.enabled;
     root[FPSTR(keys::Target)] = schedule.target;
-    root[FPSTR(keys::Type)] = schedule.type;
+    root[FPSTR(keys::Type)] = ::settings::internal::serialize(schedule.type);
     root[FPSTR(keys::Action)] = schedule.action;
     root[FPSTR(keys::Restore)] = schedule.restore;
     root[FPSTR(keys::UseUTC)] = schedule.utc;
@@ -444,22 +517,31 @@ void onConnected(JsonObject& root){
 // TODO: consider providing action as a string, which could be parsed by the
 // respective module API (e.g. for lights, there could be + / - offsets)
 
-void action(int type, size_t target, int action) {
-    if (SCHEDULER_TYPE_SWITCH == type) {
+void action(scheduler::Type type, size_t target, int action) {
+    switch (type) {
+    case scheduler::Type::None:
+        break;
+
+    case scheduler::Type::Relay:
         if (action == 2) {
             relayToggle(target);
         } else {
             relayStatus(target, action);
         }
+        break;
+
+    case scheduler::Type::Channel:
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    } else if (SCHEDULER_TYPE_DIM == type) {
         lightChannel(target, action);
         lightUpdate();
 #endif
+        break;
+
+    case scheduler::Type::Curtain:
 #if CURTAIN_SUPPORT
-    } else if (SCHEDULER_TYPE_CURTAIN == type) {
         curtainSetPosition(target, action);
 #endif
+        break;
     }
 }
 
@@ -501,7 +583,7 @@ int minutesLeft(const Schedule& schedule, const tm& now) {
 
 struct RestoredAction {
     size_t target;
-    int type;
+    Type type;
     int action;
     int hour;
     int minute;
@@ -557,10 +639,11 @@ void restore(time_t timestamp, const Schedules& schedules) {
     }
 
     for (auto& v : restored) {
-        DEBUG_MSG_P(PSTR("[SCH] Restoring %s #%u => %u (scheduled at %02d:%02d %d day(s) ago)\n"),
-                scheduler::debug::type(v.type), v.target, v.action,
-                v.hour, v.minute, v.daysAgo);
-        action(v.type, v.target, v.action);
+      DEBUG_MSG_P(PSTR("[SCH] Restoring %s #%u => %u (scheduled at %02d:%02d "
+                       "%d day(s) ago)\n"),
+                  scheduler::debug::type(v.type).c_str(), v.target, v.action,
+                  v.hour, v.minute, v.daysAgo);
+      action(v.type, v.target, v.action);
     }
 }
 
@@ -589,11 +672,11 @@ void check(time_t timestamp, const Schedules& schedules) {
 
         auto left = minutesLeft(schedule, today);
         if (left == 0) {
-            DEBUG_MSG_P(PSTR("[SCH] Action at %02d:%02d (%s #%u => %u)\n"),
-                    schedule.hour, schedule.minute,
-                    scheduler::debug::type(schedule),
-                    schedule.target, schedule.action);
-            action(schedule);
+          DEBUG_MSG_P(PSTR("[SCH] Action at %02d:%02d (%s #%u => %u)\n"),
+                      schedule.hour, schedule.minute,
+                      scheduler::debug::type(schedule).c_str(), schedule.target,
+                      schedule.action);
+          action(schedule);
 #if DEBUG_SUPPORT
         } else if (left > 0) {
             if ((left % 15 == 0) || (left < 15)) {

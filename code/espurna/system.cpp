@@ -84,6 +84,10 @@ espurna::heartbeat::Mode convert(const String& value) {
     return convert(HeartbeatModeOptions, value, espurna::heartbeat::Mode::Repeat);
 }
 
+String serialize(espurna::heartbeat::Mode mode) {
+    return serialize(HeartbeatModeOptions, mode);
+}
+
 template <>
 std::chrono::duration<float> convert(const String& value) {
     return std::chrono::duration<float>(convert<float>(value));
@@ -703,15 +707,15 @@ namespace web {
 namespace {
 
 void onConnected(JsonObject& root) {
-    root["hbReport"] = heartbeat::settings::value();
-    root["hbInterval"] = heartbeat::settings::interval().count();
-    root["hbMode"] = static_cast<int>(heartbeat::settings::mode());
+    root[heartbeat::settings::keys::Report] = heartbeat::settings::value();
+    root[heartbeat::settings::keys::Interval] = heartbeat::settings::interval().count();
+    root[heartbeat::settings::keys::Mode] = ::settings::internal::serialize(heartbeat::settings::mode());
 }
 
-bool onKeyCheck(const char * key, JsonVariant&) {
-    if (strncmp(key, "sys", 3) == 0) return true;
-    if (strncmp(key, "hb", 2) == 0) return true;
-    return false;
+bool onKeyCheck(const char* key, JsonVariant&) {
+    const auto view = ::settings::StringView{ key };
+    return ::settings::query::samePrefix(view, STRING_VIEW("sys"))
+        || ::settings::query::samePrefix(view, STRING_VIEW("hb"));
 }
 
 } // namespace
