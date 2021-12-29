@@ -278,7 +278,9 @@ span.slider {
     Checkboxes
    -------------------------------------------------------------------------- */
 
-.toggleWrapper {
+.pure-form .toggleWrapper {
+    display: inline-block;
+    vertical-align: middle;
     overflow: hidden;
     width: max-content;
     height: 30px;
@@ -295,17 +297,18 @@ label[for].toggle {
     margin: 0px;
     padding: 0px;
 }
+.toggleWrapper label.toggle {
+    width: 130px;
+}
 .toggle {
     letter-spacing:normal;
     cursor: pointer;
     display: inline-block;
     position: relative;
-    width: 130px;
     height: 100%;
     background: #e9e9e9;
     color: #a9a9a9;
     border-radius: 4px;
-    -webkit-transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
     transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
 }
 .toggle:before,
@@ -314,7 +317,6 @@ label[for].toggle {
     line-height: 30px;
     font-size: .7em;
     z-index: 2;
-    -webkit-transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
     transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
 }
 .toggle:before {
@@ -349,9 +351,7 @@ input[name="thermostatMode"] + .toggle:after {
     border-bottom-right-radius: 0px;
     top: 0px;
     left: 0px;
-    -webkit-transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
     transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
-    -webkit-transform: translateX(0px);
     transform: translateX(0px);
 }
 input:checked + .toggle:after {
@@ -366,7 +366,6 @@ input + .toggle:before {
 input:checked + .toggle .toggle__handler {
     width: 50%;
     background: #00c000;
-    -webkit-transform: translateX(65px);
     transform: translateX(65px);
     border-color: #000;
     border-top-left-radius: 0px;
