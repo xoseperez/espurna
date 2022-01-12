@@ -200,7 +200,7 @@ void dump(Print& print, bool check) {
 
         snprintf_P(buffer, sizeof(buffer),
             PSTR("%08x:  %08x %08x %08x %08x \n"),
-            stack_start + offset,
+            stack_start + (offset * 4),
             addr1, addr2, addr3, addr4
         );
         print.print(buffer);
