@@ -44,7 +44,7 @@ void start() {
     DEBUG_MSG_P(PSTR("[OTA] Started...\n"));
 #if WEB_SUPPORT
     wsSend([](JsonObject& root) {
-        root["message"] = F("OTA update started.");
+        root[F("message")] = F("OTA update started.");
     });
 #endif
 }
