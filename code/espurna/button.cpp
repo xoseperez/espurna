@@ -288,14 +288,14 @@ constexpr int configBitmask(size_t index) {
 
 constexpr debounce_event::types::Config decode(int bitmask) {
     return {
-        ((bitmask & ButtonMask::Pushbutton)
+        .mode = ((bitmask & ButtonMask::Pushbutton)
             ? debounce_event::types::Mode::Pushbutton
             : debounce_event::types::Mode::Switch),
-        ((bitmask & ButtonMask::DefaultLow) ? debounce_event::types::PinValue::Low
+        .default_value = ((bitmask & ButtonMask::DefaultLow) ? debounce_event::types::PinValue::Low
          : (bitmask & ButtonMask::DefaultHigh) ? debounce_event::types::PinValue::High
          : (bitmask & ButtonMask::DefaultBoot) ? debounce_event::types::PinValue::Initial
             : debounce_event::types::PinValue::Low),
-        ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup
+        .pin_mode = ((bitmask & ButtonMask::SetPullup) ? debounce_event::types::PinMode::InputPullup
             : (bitmask & ButtonMask::SetPulldown) ? debounce_event::types::PinMode::InputPulldown
             : debounce_event::types::PinMode::Input)
     };
@@ -1334,14 +1334,13 @@ BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
 }
 
 ButtonActions _buttonActions(size_t index) {
-    return {
-        espurna::button::settings::press(index),
-        espurna::button::settings::release(index),
-        espurna::button::settings::click(index),
-        espurna::button::settings::doubleClick(index),
-        espurna::button::settings::longClick(index),
-        espurna::button::settings::longLongClick(index),
-        espurna::button::settings::tripleClick(index)};
+  return {.pressed = espurna::button::settings::press(index),
+          .released = espurna::button::settings::release(index),
+          .click = espurna::button::settings::click(index),
+          .dblclick = espurna::button::settings::doubleClick(index),
+          .lngclick = espurna::button::settings::longClick(index),
+          .lnglngclick = espurna::button::settings::longLongClick(index),
+          .trplclick = espurna::button::settings::tripleClick(index)};
 }
 
 // Note that we use settings without indexes as default values to preserve backwards compatibility
