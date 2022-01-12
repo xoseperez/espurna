@@ -2030,6 +2030,7 @@ void _relaySettingsMigrate(int version) {
         moveSetting("relayDelayInterlock", keys::Interlock);
 
         // groups use a new set of keys
+#if MQTT_SUPPORT
         for (size_t index = 0; index < RelaysMax; ++index) {
             auto group = getSetting({"mqttGroup", index});
             if (!group.length()) {
@@ -2047,6 +2048,7 @@ void _relaySettingsMigrate(int version) {
                 }
             }
         }
+#endif
 
         delSettingPrefix({
             STRING_VIEW("mqttGroup"),     // migrated to relayTopic
