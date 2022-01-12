@@ -520,10 +520,10 @@ summary {
     font-family: EmojiSymbols,Segoe UI Symbol;
     background: rgba(0,0,0,0);
     display: inline-block;
-    float: right;
+    float: auto;
     z-index: 50;
-    margin-top: 6px;
-    margin-left: -30px;
+    margin-top: -0.6em;
+    margin-left: -1.7em;
     vertical-align: middle;
     font-size: 1.2em;
     height: 100%;

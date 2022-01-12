@@ -277,19 +277,81 @@ function validateForms(forms) {
 // TODO: distinguish 'current' state to avoid sending keys when adding and immediatly removing the latest node?
 // TODO: previous implementation relied on defaultValue and / or jquery $(...).val(), but this does not really work where 'line' only has <select>
 
-function groupSettingsHandleUpdate(event) {
-    if (!event.target.children.length) {
-        return;
-    }
+function groupElementInfo(target) {
+    const out = [];
 
-    let last = event.target.children[event.target.children.length - 1];
-    for (let target of settingsTargets(event.target)) {
-        let elem = last.querySelector(`[name='${target}']`);
-        if (elem) {
-            setChangedElement(elem);
+    const inputs = target.querySelectorAll("input,select");
+    inputs.forEach((elem) => {
+        const name = elem.dataset.settingsRealName || elem.name;
+        if (name === undefined) {
+            return;
         }
-    }
+
+        out.push({
+            element: elem,
+            key: name,
+            value: elem.dataset["original"] || getDataForElement(elem)
+        });
+    });
+
+    return out;
 }
+
+const groupSettingsHandler = {
+    // to 'instantiate' a new element, we must explicitly set 'target' keys in kvs
+    // notice that the 'row' creation *should* be handled by the group-specific
+    // event listener, we already expect the dom element to exist at this point
+    add: function(event) {
+        const group = event.target;
+        const index = group.children.length - 1;
+        const last = group.children[index];
+        addGroupPending(group, index);
+
+        for (const target of settingsTargets(group)) {
+            const elem = last.querySelector(`[name='${target}']`);
+            if (elem) {
+                setChangedElement(elem);
+            }
+        }
+    },
+    // removing the element means we need to notify the kvs about the updated keys
+    // in case it's the last row, just remove those keys from the store
+    // in case we are in the middle, make sure to handle difference update
+    // in case change was 'ephemeral' (i.e. from the previous add that was not saved), do nothing
+    del: function(event) {
+        const group = event.currentTarget;
+
+        const elems = Array.from(group.children);
+        const shiftFrom = elems.indexOf(group);
+
+        const info = elems.map(groupElementInfo);
+        const out = [];
+        for (let index = -1; index < info.length; ++index) {
+            const prev = (index > 0)
+                ? info[index - 1]
+                : null;
+            const current = info[index];
+
+            if ((index > shiftFrom) && prev && (prev.length === current.length)) {
+                for (let inner = 0; inner < prev.length; ++inner) {
+                    const [lhs, rhs] = [prev[inner], current[inner]];
+                    if (lhs.value !== rhs.value) {
+                        setChangedElement(rhs.element);
+                    }
+                }
+            }
+        }
+
+        updateCheckboxes(group);
+        if (elems.length) {
+            popGroupPending(group, elems.length - 1);
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        event.target.remove();
+    }
+};
 
 // -----------------------------------------------------------------------------
 // Settings groups & templates
@@ -373,19 +435,20 @@ function addFromTemplate(container, template, cfg) {
     mergeTemplate(container, line);
 }
 
-// Group settings are special elements on the page that represent kv that are indexed in settings
-// Special 'add' element will trigger update on the specified '.settings-group' element id, which
+// 'settings-group' contain elements that represent kv list that is suffixed with an index in raw kvs
+// 'button-add-settings-group' will trigger update on the specified 'data-settings-group' element id, which
 // needs to have 'settings-group-add' event handler attached to it.
 
 function groupSettingsOnAdd(elementId, listener) {
     document.getElementById(elementId).addEventListener("settings-group-add", listener);
 }
 
+// handle addition to the group via the button
+// (notice that since we still use the dataset for the elements, hyphens are just capitalized)
 function groupSettingsAdd(event) {
     const prefix = "settingsGroupDetail";
     const elem = event.target;
 
-    // TODO: note that still has the dataset format, thus every hyphen capitalizes the next word
     let eventInit = {detail: null};
     for (let key of Object.keys(elem.dataset)) {
         if (!key.startsWith(prefix)) {
@@ -403,18 +466,6 @@ function groupSettingsAdd(event) {
     const group = document.getElementById(elem.dataset["settingsGroup"]);
     group.dispatchEvent(new CustomEvent("settings-group-add", eventInit));
 }
-
-var GroupSettingsObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        if (isChangedElement(mutation.target) || mutation.removedNodes.length) {
-            setChangedForNode(mutation.target);
-        }
-
-        if (mutation.removedNodes.length) {
-            updateCheckboxes(mutation.target);
-        }
-    });
-});
 
 // When receiving / returning data, <select multiple=true> <option> values are treated as bitset (u32) indexes (i.e. individual bits that are set)
 // For example 0b101 is translated to ["0", "2"], or 0b1111 is translated to ["0", "1", "2", "3"]
@@ -488,11 +539,44 @@ function resetChangedElement(elem) {
     elem.dataset["changed"] = "false";
 }
 
-function resetChangedGroups() {
+function resetGroupPending(elem) {
+    elem.dataset["settingsGroupPending"] = "";
+}
+
+function resetSettingsGroup() {
     const elems = document.getElementsByClassName("settings-group");
     for (let elem of elems) {
         resetChangedElement(elem);
+        resetGroupPending(elem);
     }
+}
+
+function getGroupPending(elem) {
+    const raw = elem.dataset["settingsGroupPending"] || "";
+    if (!raw.length) {
+        return [];
+    }
+
+    return raw.split(",");
+}
+
+function addGroupPending(elem, index) {
+    const pending = getGroupPending(elem);
+    pending.push(`set:${index}`);
+    elem.dataset["settingsGroupPending"] = pending.join(",");
+}
+
+function popGroupPending(elem, index) {
+    const pending = getGroupPending(elem);
+
+    const added = pending.indexOf(`set:${index}`);
+    if (added >= 0) {
+        pending.splice(added, 1);
+    } else {
+        pending.push(`del:${index}`);
+    }
+
+    elem.dataset["settingsGroupPending"] = pending.join(",");
 }
 
 function isGroupElement(elem) {
@@ -614,17 +698,23 @@ function getDataForElement(element) {
     return null;
 }
 
-function getData(forms, changed, cleanup) {
+function getData(forms, options) {
     // Populate two sets of data, ones that had been changed and ones that stayed the same
-    var data = {};
-    var changed_data = [];
-    if (cleanup === undefined) {
-        cleanup = true;
+    if (options === undefined) {
+        options = {};
     }
 
-    if (changed === undefined) {
-        changed = true;
+    const data = {};
+    const changed_data = [];
+    if (options.cleanup === undefined) {
+        options.cleanup = true;
     }
+
+    if (options.changed === undefined) {
+        options.changed = true;
+    }
+
+    const group_counter = {};
 
     // TODO: <input type="radio"> can be found as both individual elements and as a `RadioNodeList` view.
     // matching will extract the specific radio element, but will ignore the list b/c it has no tagName
@@ -644,45 +734,52 @@ function getData(forms, changed, cleanup) {
                 continue;
             }
 
+            const group_element = isGroupElement(elem);
+            const group_index = group_counter[name] || 0;
+            const group_name = `${name}${group_index}`;
+            if (group_element) {
+                group_counter[name] = group_index + 1;
+            }
+
             const value = getDataForElement(elem);
             if (null !== value) {
-                var indexed = changed_data.indexOf(name) >= 0;
-                if ((isChangedElement(elem) || !changed) && !indexed) {
-                    changed_data.push(name);
+                const elem_indexed = changed_data.indexOf(name) >= 0;
+                if ((isChangedElement(elem) || !options.changed) && !elem_indexed) {
+                    changed_data.push(group_element ? group_name : name);
                 }
 
-                // make sure to group keys from templates (or, manually flagged as such)
-                if (isGroupElement(elem)) {
-                    if (name in data) {
-                        data[name].push(value);
-                    } else {
-                        data[name] = [value];
-                    }
-                } else {
-                    data[name] = value;
-                }
+                data[group_element ? group_name : name] = value;
             }
         }
     }
 
-    // Finally, filter out only fields that had changed.
-    // Note: We need to preserve dynamic lists like schedules, wifi etc.
-    // so we don't accidentally break when user deletes entry in the middle
-    const resulting_data = {};
-    for (let value in data) {
-        if (changed_data.indexOf(value) >= 0) {
-            resulting_data[value] = data[value];
+    // Finally, filter out only fields that *must* be assigned.
+    const resulting_data = {
+        set: {
+        },
+        del: [
+        ]
+    };
+
+    for (const name in data) {
+        if (!options.changed || (changed_data.indexOf(name) >= 0)) {
+            resulting_data.set[name] = data[name];
         }
     }
 
-    // Hack: clean-up leftover arrays.
-    // When empty, the receiving side will prune all keys greater than the current one.
-    if (cleanup) {
-        for (let group of document.getElementsByClassName("settings-group")) {
-            if (isChangedElement(group) && !group.children.length) {
-                settingsTargets(group).forEach((target) => {
-                    resulting_data[target] = [];
-                });
+    // Make sure to remove dynamic group entries from the kvs
+    // Only group keys can be removed atm, so only process .settings-group
+    if (options.cleanup) {
+        for (let elem of document.getElementsByClassName("settings-group")) {
+            for (let pair of getGroupPending(elem)) {
+                const [action, index] = pair.split(":");
+                if (action === "del") {
+                    const keysRaw = elem.dataset["settingsSchema"] || elem.dataset["settingsTarget"];
+                    const keys = !keysRaw ? [] : keysRaw.split(" ");
+                    keys.forEach((key) => {
+                        resulting_data.del.push(`${key}${index}`);
+                    });
+                }
             }
         }
     }
@@ -755,7 +852,7 @@ function initSetupPassword(form) {
         event.preventDefault();
         const forms = [form];
         if (validateFormsPasswords(forms, true)) {
-            sendConfig(getData(forms, true, false));
+            applySettings(getData(forms, true, false));
         }
     });
     elementSelectorOnClick(".button-generate-password", (event) => {
@@ -935,7 +1032,8 @@ function fillTemplateLineFromCfg(line, id, cfg) {
 
 
 function delParent(event) {
-    event.target.parentElement.remove();
+    event.target.parentElement.dispatchEvent(
+        new CustomEvent("settings-group-del", {bubbles: true}));
 }
 
 function moreElem(container) {
@@ -1030,13 +1128,13 @@ function askAndCallAction(event) {
 
 // Settings kv as either {key: value} or {key: [value0, value1, ...etc...]}
 
-function sendConfig(config) {
-    send(JSON.stringify({config}));
+function applySettings(settings) {
+    send(JSON.stringify({settings}));
 }
 
 function resetOriginals() {
     setOriginalsFromValues();
-    resetChangedGroups();
+    resetSettingsGroup();
     Settings.resetCounters();
     Settings.saved = false;
 }
@@ -1173,11 +1271,11 @@ function waitForSaved(){
     }
 }
 
-function sendConfigFromAllForms() {
+function applySettingsFromAllForms() {
     // Since we have 2-page config, make sure we select the active one
     let forms = document.getElementsByClassName("form-settings");
     if (validateForms(forms)) {
-        sendConfig(getData(forms));
+        applySettings(getData(forms));
         Settings.counters.changed = 0;
         waitForSaved();
     }
@@ -2708,7 +2806,7 @@ function main() {
     elementSelectorOnClick(".pure-menu-link", showPanel);
     elementSelectorOnClick(".button-update", (event) => {
         event.preventDefault();
-        sendConfigFromAllForms();
+        applySettingsFromAllForms();
     });
     elementSelectorOnClick(".button-reconnect", askAndCallReconnect);
     elementSelectorOnClick(".button-reboot", askAndCallReboot);
@@ -2855,9 +2953,9 @@ function main() {
     // No group handler should be registered after this point, since we depend on the order
     // of registration to trigger 'after-add' handler and update group attributes *after*
     // module function finishes modifying the container
-    for (let group of document.querySelectorAll(".settings-group")) {
-        GroupSettingsObserver.observe(group, {childList: true});
-        group.addEventListener("settings-group-add", groupSettingsHandleUpdate, false);
+    for (const group of document.querySelectorAll(".settings-group")) {
+        group.addEventListener("settings-group-add", groupSettingsHandler.add, false);
+        group.addEventListener("settings-group-del", groupSettingsHandler.del, false);
     }
 
     // don't autoconnect when opening from filesystem

@@ -1109,8 +1109,6 @@
 #define SETTINGS_AUTOSAVE       1           // Autosave settings or force manual commit
 #endif
 
-#define SETTINGS_MAX_LIST_COUNT 16          // Maximum index for settings lists
-
 // -----------------------------------------------------------------------------
 // LIGHT
 // -----------------------------------------------------------------------------

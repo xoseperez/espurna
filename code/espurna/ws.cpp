@@ -424,72 +424,34 @@ bool wsDebugSend(const char* prefix, const char* message) {
 namespace {
 
 // Check the existing setting before saving it
-// TODO: this should know of the default values, somehow?
+// (we only care about the settings storage, don't mind the build values)
 bool _wsStore(const String& key, const String& value) {
-    if (!hasSetting(key) || value != getSetting(key)) {
-        return setSetting(key, value);
+    auto current = settings::internal::get(key);
+    if (!current || (current.ref() != value)) {
+        return settings::internal::set(key, value);
     }
 
     return false;
-}
-
-bool _wsStore(const String& prefix, JsonArray& values) {
-    bool changed { false };
-
-    size_t index { 0 };
-    for (auto& element : values) {
-        const auto value = element.as<String>();
-        const auto key = SettingsKey {prefix, index};
-
-        auto kv = settings::internal::get(key.value());
-        if (!kv || (value != kv.ref())) {
-            setSetting(key, value);
-            changed = true;
-        }
-        ++index;
-    }
-
-    // Remove every key with index greater than the array size
-    // TODO: should this be delegated to the modules, since they know better how much entities they could store?
-    constexpr size_t SettingsMaxListCount { SETTINGS_MAX_LIST_COUNT };
-    for (auto next_index = index; next_index < SettingsMaxListCount; ++next_index) {
-        if (!delSetting({prefix, next_index})) {
-            break;
-        }
-        changed = true;
-    }
-
-    return changed;
 }
 
 // TODO: generate "accepted" keys in the initial phase of the connection?
 // TODO: is value ever used... by anything?
 bool _wsCheckKey(const char* key, JsonVariant& value) {
+#if NTP_SUPPORT
+    if (strncmp_P(key, PSTR("ntpTZ"), strlen(key)) == 0) {
+        _wsResetUpdateTimer();
+        return true;
+    }
+#endif
+
+    if (strncmp_P(key, PSTR("adminPass"), strlen(key)) == 0) {
+        const auto pass = getAdminPass();
+        return !pass.equalsConstantTime(value.as<String>());
+    }
+
     for (auto& callback : _ws_callbacks.on_keycheck) {
         if (callback(key, value)) {
             return true;
-        }
-    }
-    return false;
-}
-
-bool _wsProcessAdminPass(JsonVariant& value) {
-    auto current = getAdminPass();
-    if (value.is<String>()) {
-        auto string = value.as<String>();
-        if (!current.equalsConstantTime(string)) {
-            setSetting("adminPass", string);
-            return true;
-        }
-    } else if (value.is<JsonArray&>()) {
-        JsonArray& values = value.as<JsonArray&>();
-        if (values.size() == 2) {
-            auto lhs = values[0].as<String>();
-            auto rhs = values[1].as<String>();
-            if ((lhs == rhs) && (!current.equalsConstantTime(lhs))) {
-                setSetting("adminPass", lhs);
-                return true;
-            }
         }
     }
 

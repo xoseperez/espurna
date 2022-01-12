@@ -27,46 +27,40 @@
 
             <div class="content">
 
-                <form id="form-setup-password" class="pure-form" autocomplete="off">
-
                     <div class="panel block" id="panel-password">
 
                         <div class="header">
                             <h1>SECURITY</h1>
-                            <h2>Before using this device you have to change the default password for the user <strong>admin</strong>. This password will be used for the <strong>AP mode hotspot</strong>, the <strong>web interface</strong> (where you are now) and the <strong>over-the-air updates</strong>.</h2>
+                            <h2>Before using this device you have to change the default password for the user <strong>admin</strong>. This password will be used for the <strong>AP mode hotspot</strong>, the <strong>web interface</strong> (where you are now) and the <strong>over-the-air updates</strong>.
+                            Password must be <strong>8…63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</h2>
                         </div>
 
                         <div class="page">
 
-                            <fieldset>
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">New Password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass0" data-settings-group-element="true" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" autocomplete="false" spellcheck="false" required>
-                                    <span class="no-select password-reveal"></span>
-                                </div>
+                            <form id="form-setup-password" class="pure-form pure-form-aligned">
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Repeat password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass1" data-settings-group-element="true" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" autocomplete="false" spellcheck="false" required>
-                                    <span class="no-select password-reveal"></span>
-                                </div>
-                            </fieldset>
+                                <fieldset>
+                                    <div class="pure-control-group">
+                                        <label>New Password</label>
+                                        <input class="pure-input-3-4" name="adminPass0" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" autocomplete="new-password" spellcheck="false" required>
+                                        <span class="no-select password-reveal"></span>
+                                    </div>
 
-                            <div class="pure-g">
-                                <div class="pure-u-1 pure-u-lg-1 hint">
-                                    Password must be <strong>8..63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
-                            </div>
+                                    <div class="pure-control-group">
+                                        <label>Repeat password</label>
+                                        <input class="pure-input-3-4" name="adminPass1" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" autocomplete="new-password" spellcheck="false" required>
+                                        <span class="no-select password-reveal"></span>
+                                    </div>
 
+                                    <button class="pure-input-1 pure-button button-generate-password" type="button" title="Generate password based on password policy">Generate</button>
+                                    <button class="pure-input-1 pure-button button-setup-password" type="button" title="Save new password">Save</button>
+                                </fieldset>
 
-                            <div class="pure-g">
-                                <button class="pure-u-11-24 pure-u-lg-1-4 pure-button button-generate-password" type="button" title="Generate password based on password policy">Generate</button>
-                                <div class="pure-u-2-24 pure-u-lg-1-2"></div>
-                                <button class="pure-u-11-24 pure-u-lg-1-4 pure-button button-setup-password" type="button" title="Save new password">Save</button>
-                            </div>
+                            </form>
 
                         </div>
+
                     </div>
-                </form>
 
             </div> <!-- content -->
 
@@ -503,7 +497,7 @@
                             </details>
 
                             <fieldset>
-                                <div id="leds" class="settings-group" data-settings-target="ledGpio"></div>
+                                <div id="leds" class="settings-group" data-settings-target="ledGpio" data-settings-schema="ledGpio ledInv ledMode ledRelay" ></div>
                                 <button type="button" class="pure-button button-add-settings-group" data-settings-group="leds">Add LED</button>
                             </fieldset>
                         </div>
@@ -733,10 +727,10 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass0" class="pure-u-1 pure-u-lg-3-4" placeholder="New password" data-settings-group-element="true" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" data-action="reboot" autocomplete="false" spellcheck="false">
+                                    <input name="adminPass0" class="pure-u-1 pure-u-lg-3-4" placeholder="New password" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" data-action="reboot" autocomplete="new-password" spellcheck="false">
                                     <span class="no-select password-reveal"></span>
                                     <div class="pure-u-1 pure-u-lg-1-4"></div>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-lg-3-4" placeholder="Repeat password" data-settings-group-element="true" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" data-action="reboot" autocomplete="false" spellcheck="false">
+                                    <input name="adminPass1" class="pure-u-1 pure-u-lg-3-4" placeholder="Repeat password" data-settings-real-name="adminPass" minlength="8" maxlength="63" type="password" data-action="reboot" autocomplete="new-password" spellcheck="false">
                                     <span class="no-select password-reveal"></span>
 
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -906,7 +900,7 @@
 
                             <fieldset>
                                 <legend>Networks</legend>
-                                <div id="networks" class="settings-group" data-settings-target="ssid pass">
+                                <div id="networks" class="settings-group" data-settings-target="ssid pass" data-settings-schema="ssid pass ip gw mask dns bssid chan" >
                                 </div>
                                 <button type="button" class="pure-button button-add-settings-group" data-settings-group="networks">Add network</button>
                             </fieldset>
@@ -925,7 +919,7 @@
                         <div class="page">
                             <fieldset>
                                 <legend>Schedules</legend>
-                                <div id="schedules" class="settings-group" data-settings-target="schTarget schType" ></div>
+                                <div id="schedules" class="settings-group" data-settings-target="schTarget schType" data-settings-schema="schTarget schType schHour schMinute schUTC schWDs schAction schRestore schEnabled"></div>
                             </fieldset>
 
                             <fieldset>
@@ -1427,10 +1421,10 @@
                                     <div class="pure-u-1 hint">Set IDX to 0 to disable notifications from that component.</div>
                                 </div>
 
-                                <div id="dczRelays" class="settings-group"></div>
+                                <div id="dczRelays" class="settings-group" data-settings-target="dczRelay" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="dczMagnitudes" class="settings-group"></div>
+                                <div id="dczMagnitudes" class="settings-group" data-settings-target="dczMagnitude" ></div>
                                 <!-- endRemoveIf(!sensor) -->
                             </fieldset>
                         </div>
@@ -1543,10 +1537,10 @@
                                     <div class="pure-u-1 hint">Enter the field number to send each data to, 0 disable notifications from that component.</div>
                                 </div>
 
-                                <div id="tspkRelays" class="settings-group"></div>
+                                <div id="tspkRelays" class="settings-group" data-settings-target="tspkRelay" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="tspkMagnitudes" class="settings-group"></div>
+                                <div id="tspkMagnitudes" class="settings-group" data-settings-target="tspkMagnitude" ></div>
                                 <!-- endRemoveIf(!sensor) -->
                             </fieldset>
                         </div>
@@ -1957,6 +1951,7 @@
                         <select class="pure-u-1 pure-u-lg-1-4 enumerable enumerable-relay" name="ledRelay" ></select>
                     </div>
                 </fieldset>
+                <button class="pure-button button-del-parent more" type="button">Delete LED</button>
             </div>
         </template>
 
