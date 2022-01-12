@@ -543,24 +543,6 @@ void send(const char* message, size_t len, Timestamp timestamp) {
 #if DEBUG_WEB_SUPPORT
 namespace web {
 
-#if TERMINAL_SUPPORT
-void onAction(uint32_t, const char * action, JsonObject& data) {
-    if (strcmp(action, "dbgcmd") != 0) {
-        return;
-    }
-
-    if (!data.containsKey("command") || !data["command"].is<const char*>()) {
-        return;
-    }
-
-    const char* command = data["command"];
-    auto len = command ? strlen(command) : 0ul;
-
-    terminalInject(command, len);
-    terminalInject('\n');
-}
-#endif
-
 void onVisible(JsonObject& root) {
     wsPayloadModule(root, "dbg");
 }
@@ -679,8 +661,7 @@ void debugConfigureBoot() {
 #if WEB_SUPPORT
 void debugWebSetup() {
     wsRegister()
-        .onVisible(espurna::debug::web::onVisible)
-        .onAction(espurna::debug::web::onAction);
+        .onVisible(espurna::debug::web::onVisible);
 }
 #endif
 

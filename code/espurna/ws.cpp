@@ -388,14 +388,14 @@ void WsDebug::send(bool connected) {
 
     if (!_flush) return;
     // ref: http://arduinojson.org/v5/assistant/
-    // {"weblog": {"msg":[...],"pre":[...]}}
+    // {"log": {"msg":[...],"pre":[...]}}
     DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(_messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
 
     JsonObject& root = jsonBuffer.createObject();
-    JsonObject& weblog = root.createNestedObject("weblog");
+    JsonObject& log = root.createNestedObject("log");
 
-    JsonArray& msg_array = weblog.createNestedArray("msg");
-    JsonArray& pre_array = weblog.createNestedArray("pre");
+    JsonArray& msg_array = log.createNestedArray("msg");
+    JsonArray& pre_array = log.createNestedArray("pre");
 
     for (auto& msg : _messages) {
         pre_array.add(msg.first.c_str());
@@ -608,8 +608,7 @@ void _wsOnConnected(JsonObject& root) {
     root[F("app_build")] = buildTime();
     root[F("device")] = getDevice();
     root[F("manufacturer")] = getManufacturer();
-    root[F("chipid")] = getChipId().c_str();
-    root[F("mac")] = getFullChipId().c_str();
+    root[F("chipid")] = getFullChipId().c_str();
     root[F("bssid")] = WiFi.BSSIDstr();
     root[F("channel")] = WiFi.channel();
     root[F("hostname")] = getHostname();

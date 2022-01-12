@@ -665,6 +665,25 @@ void _terminalWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, "cmd");
 }
 
+void _terminalWebSocketOnAction(uint32_t, const char* action, JsonObject& data) {
+    if (strcmp(action, "cmd") != 0) {
+        return;
+    }
+
+    alignas(4) static constexpr char key[] PROGMEM = "line";
+    if (!data.containsKey(FPSTR(key)) || !data[FPSTR(key)].is<String>()) {
+        return;
+    }
+
+    const auto command = data[FPSTR(key)].as<String>();
+    if (command.length()) {
+        _io.inject(command.c_str(), command.length());
+        if (command[command.length() - 1] != '\n') {
+            _io.inject('\n');
+        }
+    }
+}
+
 #endif
 
 } // namespace
@@ -808,7 +827,8 @@ void terminalSetup() {
     // Show DEBUG panel with input
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible(_terminalWebSocketOnVisible);
+            .onVisible(_terminalWebSocketOnVisible)
+            .onAction(_terminalWebSocketOnAction);
     #endif
 
     // Similar to the above, but we allow only very small and in-place outputs.

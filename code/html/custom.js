@@ -325,7 +325,6 @@ const groupSettingsHandler = {
         const shiftFrom = elems.indexOf(group);
 
         const info = elems.map(groupElementInfo);
-        const out = [];
         for (let index = -1; index < info.length; ++index) {
             const prev = (index > 0)
                 ? info[index - 1]
@@ -429,9 +428,8 @@ function mergeTemplate(target, template) {
 }
 
 function addFromTemplate(container, template, cfg) {
-    let line = loadConfigTemplate(template);
+    const line = loadConfigTemplate(template);
     fillTemplateLineFromCfg(line, container.childElementCount, cfg);
-
     mergeTemplate(container, line);
 }
 
@@ -526,13 +524,6 @@ function isChangedElement(elem) {
 
 function setChangedElement(elem) {
     elem.dataset["changed"] = "true";
-}
-
-function setChangedForNode(node) {
-    setChangedElement(node);
-    for (let elem of node.querySelectorAll("input,select")) {
-        setChangedElement(elem);
-    }
 }
 
 function resetChangedElement(elem) {
@@ -1332,15 +1323,18 @@ function toggleMenu(event) {
 
 function showPanelByName(name) {
     // only a single panel is shown on the 'layout'
+    const target = document.getElementById(`panel-${name}`);
+    if (!target) {
+        return;
+    }
+
     for (const panel of document.querySelectorAll(".panel")) {
         panel.style.display = "none";
     }
+    target.style.display = "inherit";
 
     const layout = document.getElementById("layout");
     layout.classList.remove("active");
-
-    const panel = document.getElementById(`panel-${name}`);
-    panel.style.display = "inherit";
 
     // TODO: sometimes, switching view causes us to scroll past
     // the header (e.g. emon ratios panel on small screen)
@@ -1395,7 +1389,7 @@ function initModuleMagnitudes(data) {
         let line = loadConfigTemplate("module-magnitude");
         line.querySelector("label").textContent =
             `${Magnitudes.types[entry.type]} #${entry.index_global}`;
-        line.querySelector("div.hint").textContent =
+        line.querySelector("span").textContent =
             Magnitudes.properties[entry.index_global].description;
 
         let input = line.querySelector("input");
@@ -1795,6 +1789,10 @@ function initMagnitudesExpected(id) {
     const [expected, result] = template.querySelectorAll("input");
 
     const info = emonRatioInfo(id);
+    const expectedClass = `emon-expected-${info.prefix}`;
+
+    const root = template.children[0];
+    root.classList.add(`show-${expectedClass}`);
 
     expected.name += `${info.key}`;
     expected.id = expected.name;
@@ -1808,13 +1806,13 @@ function initMagnitudesExpected(id) {
     label.htmlFor = expected.id;
 
     const container = document.getElementById("emon-expected")
-    mergeTemplate(container, template);
-
-    // only the first occurence of the hint get's displayed
-    const hint = container.querySelector(`.emon-expected-${info.prefix}`)
-    if (hint !== null) {
-        hint.style.display = "inline-block";
+    const hint_shown = container.querySelector(`.show-${expectedClass}`);
+    if (hint_shown === null) {
+        const hint = template.querySelector(`.${expectedClass}`);
+        hint.style.display = "block";
     }
+
+    mergeTemplate(container, template);
 }
 
 function emonCalculateRatios() {
@@ -2281,7 +2279,7 @@ function processData(data) {
     if ("app_name" in data) {
         let title = data.app_name;
         if ("app_version" in data) {
-            let span = document.querySelector("span[data-key='title']");
+            let span = document.querySelector("span[data-key='version']");
             span.textContent = data.app_version;
             title = title + " " + data.app_version;
         }
@@ -2610,13 +2608,13 @@ function processData(data) {
         }
 
         // TODO: squash into a single message, needs a reworked debug buffering
-        if ("weblog" === key) {
+        if ("log" === key) {
             send("{}");
 
             let msg = value["msg"];
             let pre = value["pre"];
 
-            let container = document.getElementById("weblog");
+            let container = document.getElementById("cmd-output");
             for (let i = 0; i < msg.length; ++i) {
                 if (pre[i]) {
                     container.appendChild(new Text(pre[i]));
@@ -2629,10 +2627,13 @@ function processData(data) {
         }
 
         if ("deviceip" === key) {
-            let span = document.querySelector(`span[data-key='${key}']`);
-            span.textContent = value;
-            span.parentElement.setAttribute("href", "//".concat(value));
-            span.parentElement.nextElementSibling.setAttribute("href", "telnet://".concat(value));
+            const deviceAddress = document.querySelector(`span[data-key='${key}']`);
+            deviceAddress.textContent = value;
+            deviceAddress.parentElement.setAttribute("href", "//".concat(value));
+
+            const telnetAddress = document.querySelector("span[data-key='telnetip']");
+            telnetAddress.textContent = value;
+            telnetAddress.parentElement.setAttribute("href", "telnet://".concat(value));
             return;
         }
 
@@ -2886,12 +2887,21 @@ function main() {
     // *NOTICE* that manual event cancellation should happen asap, any exceptions will stop the specific
     // handler function, but will not stop anything else left in the chain.
     for (let form of document.forms) {
-        if (form.id === "form-dbg") {
+        if (form.id === "form-cmd") {
             form.addEventListener("submit", (event) => {
                 event.preventDefault();
-                sendAction("dbgcmd", {command: event.target.elements.dbgcmd.value});
-                event.target.elements.dbgcmd.value = "";
-                followScroll(document.getElementById("weblog"), 0);
+
+                const line = event.target.elements.cmd.value;
+                event.target.elements.cmd.value = "";
+
+                const output = document.getElementById("cmd-output");
+                output.textContent += line;
+                if (!line.endsWith('\n')) {
+                    output.textContent += '\n';
+                }
+
+                followScroll(output, 0);
+                sendAction("cmd", {line});
             });
         } else {
             form.addEventListener("submit", (event) => {
@@ -2904,7 +2914,7 @@ function main() {
 
     elementSelectorOnClick(".button-dbg-clear", (event) => {
         event.preventDefault();
-        document.getElementById("weblog").textContent = "";
+        document.getElementById("cmd-output").textContent = "";
     });
 
     elementSelectorOnClick(".button-settings-backup", () => {

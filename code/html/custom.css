@@ -58,13 +58,14 @@ h2 {
     margin-top: 10px;
 }
 
-.hint {
+.pure-form-message,
+.pure-form-message-inline {
     color: #9e9e9e;
     font-size: 80%;
-    margin: -0.3em 0 0.3em 0;
 }
 
-.hint a {
+.pure-form-message a,
+.pure-form-message-inline a {
     color:inherit;
 }
 
@@ -101,32 +102,52 @@ div.center {
     margin: 0;
 }
 
-div.state {
+.state {
     border-top: 1px solid #eee;
     margin-top: 20px;
     padding-top: 30px;
+    font-size: 80%;
+    line-height: 28px;
 }
 
-.state div {
-    font-size: 80%;
+.state label {
+    width: 33%;
 }
 
 .state span {
-    font-size: 80%;
     font-weight: bold;
+    display: block;
 }
 
 .right {
     text-align: right;
 }
 
-.pure-g span.terminal,
-.pure-g textarea.terminal {
+.terminal {
     font-family: 'Courier New', monospace;
     font-size: 80%;
+    background-color: #121212;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#cmd-input,
+#cmd-output {
+    border-style: none;
+    border-color: #121212;
+    color: #0f0;
+    background-color: rgba(0, 0, 0, 0);
     line-height: 100%;
-    background-color: #000;
-    color: #0F0;
+}
+
+#cmd-output {
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+#cmd-input {
+    -webkit-box-shadow: inset 0 1px 1px #555;
+    box-shadow: inset 0 1px 1px #555;
 }
 
 /* -----------------------------------------------------------------------------
@@ -222,7 +243,7 @@ label {
 .button-settings-backup,
 .button-settings-restore,
 .button-garland-set-default,
-.button-dbgcmd,
+.button-cmd,
 .button-apikey,
 .button-emon-expected-calculate {
     background: rgb(0, 192, 0); /* green */
@@ -248,7 +269,6 @@ label {
 .button-clear-filters,
 .button-clear-messages,
 .button-clear-counts,
-.button-dbgcmd,
 .button-ha-add,
 .button-apikey,
 .button-upgrade {
@@ -508,9 +528,13 @@ summary {
     Logs
    -------------------------------------------------------------------------- */
 
-#weblog {
+#cmd-output {
     height: 400px;
     margin-bottom: 10px;
+}
+
+#cmd-input {
+    display: inline-block;
 }
 
 /* -----------------------------------------------------------------------------
@@ -519,14 +543,14 @@ summary {
 .password-reveal {
     font-family: EmojiSymbols,Segoe UI Symbol;
     background: rgba(0,0,0,0);
+    position: absolute;
     display: inline-block;
-    float: auto;
+    float: right;
     z-index: 50;
-    margin-top: -0.6em;
-    margin-left: -1.7em;
+    margin-top: 0.3em;
+    margin-left: -1.4em;
     vertical-align: middle;
     font-size: 1.2em;
-    height: 100%;
 }
 
 .password-reveal:after {
