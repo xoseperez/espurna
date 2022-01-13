@@ -432,23 +432,13 @@ bool checkSamePrefix(::settings::StringView key) {
     return ::settings::query::samePrefix(key, Prefix);
 }
 
-bool checkExact(::settings::StringView key) {
-    for (const auto& setting : Settings) {
-        if (setting.key().compareFlash(key)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 String findValueFrom(::settings::StringView key) {
     return ::settings::query::Setting::findValueFrom(Settings, key);
 }
 
 void setup() {
     ::settingsRegisterQueryHandler({
-        .check = checkExact,
+        .check = checkSamePrefix,
         .get = findValueFrom
     });
 }
@@ -919,7 +909,7 @@ namespace {
 #if WEB_SUPPORT
 
 bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "mqtt", 3) == 0);
+    return mqtt::settings::query::checkSamePrefix(key);
 }
 
 void _mqttWebSocketOnVisible(JsonObject& root) {
