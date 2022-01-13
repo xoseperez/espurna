@@ -10,5 +10,6 @@ custom.h
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .pio
+test/unit/cache
 libraries/
 espurna/espurna.ino.cpp
