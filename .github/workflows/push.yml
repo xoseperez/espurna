@@ -17,16 +17,11 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-    - name: Cache pip
+    - name: Cache CMake
       uses: actions/cache@v2
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('ci_install.sh') }}
-    - name: Cache PlatformIO
-      uses: actions/cache@v2
-      with:
-        path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('code/platformio.ini') }}
+        path: code/test/unit/cache
+        key: ${{ runner.os }}-${{ hashFiles('code/test/unit/CMakeLists.txt') }}
     - name: Host tests
       run: |
         ./ci_install.sh host

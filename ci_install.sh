@@ -14,14 +14,13 @@ pio_install() {
 }
 
 host_install() {
-    pio platform install native
+    sudo apt install cmake
 }
 
 cd code
 
 case "$1" in
 ("host")
-    pio_install
     host_install
     ;;
 ("webui")

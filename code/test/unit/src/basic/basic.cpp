@@ -9,8 +9,8 @@ void test_linkage() {
     pinMode(0, OUTPUT);
 }
 
-int main(int argc, char** argv) {
+int main(int, char**) {
     UNITY_BEGIN();
 	RUN_TEST(test_linkage);
-    UNITY_END();
+    return UNITY_END();
 }

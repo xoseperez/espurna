@@ -298,7 +298,7 @@ void test_dataframe_echo() {
     }
 }
 
-int main(int argc, char** argv) {
+int main(int, char**) {
 
     UNITY_BEGIN();
 

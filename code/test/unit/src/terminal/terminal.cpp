@@ -216,10 +216,10 @@ void test_quotes() {
 
 void test_case_insensitive() {
 
-    terminal::Terminal::addCommand(F("test.lowercase1"), [](::terminal::CommandContext&& ctx) {
+    terminal::Terminal::addCommand(F("test.lowercase1"), [](::terminal::CommandContext&&) {
         TEST_FAIL_MESSAGE("`test.lowercase1` was registered first, but there's another function by the same name. This should not be called");
     });
-    terminal::Terminal::addCommand(F("TEST.LOWERCASE1"), [](::terminal::CommandContext&& ctx) {
+    terminal::Terminal::addCommand(F("TEST.LOWERCASE1"), [](::terminal::CommandContext&&) {
         __asm__ volatile ("nop");
     });
 
@@ -252,7 +252,7 @@ void test_output() {
 
 // When adding test functions, don't forget to add RUN_TEST(...) in the main()
 
-int main(int argc, char** argv) {
+int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_command);
     RUN_TEST(test_command_args);
@@ -262,5 +262,5 @@ int main(int argc, char** argv) {
     RUN_TEST(test_quotes);
     RUN_TEST(test_case_insensitive);
     RUN_TEST(test_output);
-    UNITY_END();
+    return UNITY_END();
 }

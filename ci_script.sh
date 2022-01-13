@@ -6,10 +6,13 @@ cd code
 
 case "$1" in
 ("host")
-    # runs PIO unit tests, using the host compiler
-    # (see https://github.com/ThrowTheSwitch/Unity)
-    pushd test
-    pio test
+    # runs unit tests, using the host compiler and the esp8266 mock framework
+    # - https://github.com/esp8266/Arduino/blob/master/tests/host/Makefile
+    # - https://github.com/ThrowTheSwitch/Unity
+    pushd test/unit
+    cmake -B build
+    cmake --build build
+    cmake --build build --target test
     popd
     ;;
 ("webui")

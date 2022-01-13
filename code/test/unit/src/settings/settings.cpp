@@ -477,7 +477,7 @@ void test_keys_iterator() {
 
 }
 
-int main(int argc, char** argv) {
+int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_storage);
     RUN_TEST(test_keys_iterator);

@@ -10,12 +10,8 @@ void test_parse() {
     TEST_ASSERT_EQUAL(80, url.port);
 }
 
-int main(int argc, char** argv) {
-
+int main(int, char**) {
     UNITY_BEGIN();
-
     RUN_TEST(test_parse);
-
-    UNITY_END();
-
+    return UNITY_END();
 }
