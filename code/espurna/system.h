@@ -255,6 +255,8 @@ Mode currentMode();
 namespace settings {
 namespace internal {
 
+String serialize(espurna::heartbeat::Mode);
+String serialize(espurna::duration::Seconds);
 String serialize(espurna::duration::Milliseconds);
 String serialize(espurna::duration::ClockCycles);
 

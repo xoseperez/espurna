@@ -98,6 +98,10 @@ espurna::duration::Milliseconds convert(const String& value) {
     return espurna::duration::Milliseconds(convert<espurna::duration::Milliseconds::rep>(value));
 }
 
+String serialize(espurna::duration::Seconds value) {
+    return serialize(value.count());
+}
+
 String serialize(espurna::duration::Milliseconds value) {
     return serialize(value.count());
 }
