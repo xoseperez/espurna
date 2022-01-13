@@ -1316,7 +1316,7 @@ BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
             break;
         }
 
-        auto level = button::settings::analogLevel(index);
+        auto level = espurna::button::settings::analogLevel(index);
         if (!AnalogPin::checkExpectedLevel(level)) {
             break;
         }
