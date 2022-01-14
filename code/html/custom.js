@@ -58,11 +58,7 @@ class CmdOutputBase {
         this.lastScrollTop = elem.scrollTop;
         this.followScroll = true;
 
-        elem.addEventListener("scroll", (event) => {
-            if (event.target != this.elem) {
-                return;
-            }
-
+        elem.addEventListener("scroll", () => {
             // in case we adjust the scroll manually
             const current = this.elem.scrollHeight - this.elem.scrollTop;
             const last = this.lastScrollHeight - this.lastScrollTop;
@@ -102,7 +98,7 @@ class CmdOutputBase {
         this.elem.appendChild(new Text(`${line}\n`));
         this.followScroll = true
     }
-};
+}
 
 var CmdOutput = null;
 
