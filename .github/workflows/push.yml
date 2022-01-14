@@ -21,7 +21,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: code/test/unit/cache
-        key: ${{ runner.os }}-${{ hashFiles('code/test/unit/CMakeLists.txt') }}
+        key: ${{ runner.os }}-cmake-${{ hashFiles('code/test/unit/CMakeLists.txt') }}
     - name: Host tests
       run: |
         ./ci_install.sh host
@@ -38,7 +38,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-${{ hashFiles('code/package-lock.json', 'code/package.json') }}
+        key: ${{ runner.os }}-npm-${{ hashFiles('code/package-lock.json', 'code/package.json') }}
     - name: WebUI tests
       run: |
         ./ci_install.sh webui
