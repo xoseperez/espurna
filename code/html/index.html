@@ -262,20 +262,29 @@
 
                                 <div class="pure-g state">
                                     <div class="pure-u-1-2 pure-u-lg-1-4">
-                                        <label>Manufacturer</label>
-                                        <span data-key="manufacturer"></span>
+                                        <label>Network</label>
+                                        <span data-key="network"></span>
 
-                                        <label>Device</label>
-                                        <span data-key="device"></span>
+                                        <label>BSSID</label>
+                                        <span data-key="bssid"></span>
 
-                                        <label>Chip ID</label>
-                                        <span data-key="chipid"></span>
+                                        <label>Channel</label>
+                                        <span data-key="channel"></span>
 
-                                        <label>SDK version</label>
-                                        <span data-key="sdk"></span>
+                                        <label>RSSI</label>
+                                        <span data-key="rssi" post="dBm"></span>
 
-                                        <label>Core version</label>
-                                        <span data-key="core"></span>
+                                        <label>IP</label>
+                                        <a href="" aria-label="device ip address">
+                                            <span data-key="deviceip"></span>
+                                        </a>
+
+                                        <div class="pure-control-group module module-telnet">
+                                            <label>TELNET</label>
+                                            <a href="" aria-label="telnet address">
+                                                <span data-key="telnetip"></span>
+                                            </a>
+                                        </div>
                                     </div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">
@@ -301,29 +310,20 @@
                                     </div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">
-                                        <label>Network</label>
-                                        <span data-key="network"></span>
+                                        <label>Manufacturer</label>
+                                        <span data-key="manufacturer"></span>
 
-                                        <label>BSSID</label>
-                                        <span data-key="bssid"></span>
+                                        <label>Device</label>
+                                        <span data-key="device"></span>
 
-                                        <label>Channel</label>
-                                        <span data-key="channel"></span>
+                                        <label>Chip ID</label>
+                                        <span data-key="chipid"></span>
 
-                                        <label>RSSI</label>
-                                        <span data-key="rssi" post="dBm"></span>
+                                        <label>SDK version</label>
+                                        <span data-key="sdk"></span>
 
-                                        <label>IP</label>
-                                        <a href="" aria-label="device ip address">
-                                            <span data-key="deviceip"></span>
-                                        </a>
-
-                                        <div class="pure-control-group module module-telnet">
-                                            <label>TELNET</label>
-                                            <a href="" aria-label="telnet address">
-                                                <span data-key="telnetip"></span>
-                                            </a>
-                                        </div>
+                                        <label>Core version</label>
+                                        <span data-key="core"></span>
                                     </div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">
@@ -724,6 +724,16 @@
                         <div class="page">
 
                             <fieldset>
+                                <legend>Settings</legend>
+
+                                <div class="pure-control-group">
+                                    <button type="button" class="pure-button button-settings-backup pure-input-1">Backup user settings as .json</button>
+                                    <button type="button" class="pure-button button-settings-restore pure-input-1">Restore settings from .json backup</button>
+                                    <button type="button" class="pure-button button-settings-factory pure-input-1">Perform a factory reset</button>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
                                 <legend>Access</legend>
 
                                 <div class="pure-control-group">
@@ -747,7 +757,6 @@
                             </fieldset>
 
                             <fieldset>
-
                                 <legend>Web server</legend>
 
                                 <div class="pure-control-group">
@@ -763,11 +772,9 @@
                                     <label>WebSocket Authentication</label>
                                     <div><input type="checkbox" name="wsAuth"></div>
                                 </div>
-
                             </fieldset>
 
                             <fieldset class="module module-api">
-
                                 <legend>HTTP API</legend>
 
                                 <div class="pure-control-group">
@@ -796,11 +803,9 @@
                                         All API calls must either contain the <strong>Api-Key</strong> header or the <strong>apikey</strong> request parameter with the value above.
                                     </span>
                                 </div>
-
                             </fieldset>
 
                             <fieldset class="module module-telnet">
-
                                 <legend>TELNET</legend>
 
                                 <div class="pure-control-group">
@@ -818,22 +823,9 @@
                                         Ask for the device password when starting telnet session
                                     </span>
                                 </div>
-
-                            </fieldset>
-
-                            <fieldset>
-                                <legend>Settings</legend>
-
-                                <div class="pure-control-group">
-                                    <button type="button" class="pure-button button-settings-backup pure-input-1">Backup user settings as .json</button>
-                                    <button type="button" class="pure-button button-settings-restore pure-input-1">Restore settings from .json backup</button>
-                                    <button type="button" class="pure-button button-settings-factory pure-input-1">Perform a factory reset</button>
-                                </div>
-
                             </fieldset>
 
                             <fieldset class="module module-ota">
-
                                 <legend>OTA</legend>
 
                                 <div class="pure-control-group">
@@ -849,7 +841,6 @@
                                     <button type="button" class="pure-button button-upgrade">Upgrade</button>
                                     <input name="upgrade" type="file">
                                 </div>
-
                             </fieldset>
 
                         </div>
@@ -1730,6 +1721,10 @@
                                     <!-- endRemoveIf(!curtain) -->
                                 </div>
 
+                                <div class="pure-controls">
+                                    <button type="button" class="pure-button button-dbg-clear pure-input-1">Clear</button>
+                                </div>
+
                                 <div class="pure-control-group terminal">
                                     <textarea class="pure-input-1" id="cmd-output" name="log" wrap="soft" readonly></textarea>
                                     <input id="cmd-input" class="pure-input-1 module module-cmd" name="cmd" type="text" autocomplete="none" data-action="none">
@@ -1737,10 +1732,6 @@
 
                                 <div class="pure-controls module module-cmd">
                                     <button type="submit" class="pure-button button-cmd pure-input-1">Enter</button>
-                                </div>
-
-                                <div class="pure-controls">
-                                    <button type="button" class="pure-button button-dbg-clear pure-input-1">Clear</button>
                                 </div>
 
                             </fieldset>

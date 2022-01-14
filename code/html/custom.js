@@ -51,6 +51,61 @@ var FreeSize = 0;
 var Now = 0;
 var Ago = 0;
 
+class CmdOutputBase {
+    constructor(elem) {
+        this.elem = elem;
+        this.lastScrollHeight = elem.scrollHeight;
+        this.lastScrollTop = elem.scrollTop;
+        this.followScroll = true;
+
+        elem.addEventListener("scroll", (event) => {
+            if (event.target != this.elem) {
+                return;
+            }
+
+            // in case we adjust the scroll manually
+            const current = this.elem.scrollHeight - this.elem.scrollTop;
+            const last = this.lastScrollHeight - this.lastScrollTop;
+            if ((current - last) > 16) {
+                this.followScroll = false;
+            }
+
+            // ...and, in case we return to the bottom row
+            const offset = current - this.elem.offsetHeight;
+            if (offset < 16) {
+                this.followScroll = true;
+            }
+
+            this.lastScrollHeight = this.elem.scrollHeight;
+            this.lastScrollTop = this.elem.scrollTop;
+        });
+    }
+
+    follow() {
+        if (this.followScroll) {
+            this.elem.scrollTop = this.elem.scrollHeight;
+            this.lastScrollHeight = this.elem.scrollHeight;
+            this.lastScrollTop = this.elem.scrollTop;
+        }
+    }
+
+    clear() {
+        this.elem.textContent = "";
+        this.followScroll = true;
+    }
+
+    push(line) {
+        this.elem.appendChild(new Text(line));
+    }
+
+    pushAndFollow(line) {
+        this.elem.appendChild(new Text(`${line}\n`));
+        this.followScroll = true
+    }
+};
+
+var CmdOutput = null;
+
 //removeIf(!light)
 var ColorPicker;
 //endRemoveIf(!light)
@@ -125,17 +180,8 @@ function initExternalLinks() {
     }
 }
 
-function followScroll(elem, threshold) {
-    if (threshold === undefined) {
-        threshold = 90;
-    }
-
-    const offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
-    if (!threshold || (offset >= threshold)) {
-        elem.scrollTop = elem.scrollHeight;
-    }
-}
-
+// TODO: note that we also include kv schema as 'data-settings-schema' on the container.
+// produce a 'set' and compare instead of just matching length?
 function fromSchema(source, schema) {
     if (schema.length !== source.length) {
         throw `Schema mismatch! Expected length ${schema.length} vs. ${source.length}`;
@@ -2614,15 +2660,14 @@ function processData(data) {
             let msg = value["msg"];
             let pre = value["pre"];
 
-            let container = document.getElementById("cmd-output");
             for (let i = 0; i < msg.length; ++i) {
                 if (pre[i]) {
-                    container.appendChild(new Text(pre[i]));
+                    CmdOutput.push(pre[i]);
                 }
-                container.appendChild(new Text(msg[i]));
+                CmdOutput.push(msg[i]);
             }
 
-            followScroll(container);
+            CmdOutput.follow();
             return;
         }
 
@@ -2894,13 +2939,7 @@ function main() {
                 const line = event.target.elements.cmd.value;
                 event.target.elements.cmd.value = "";
 
-                const output = document.getElementById("cmd-output");
-                output.textContent += line;
-                if (!line.endsWith('\n')) {
-                    output.textContent += '\n';
-                }
-
-                followScroll(output, 0);
+                CmdOutput.pushAndFollow(line);
                 sendAction("cmd", {line});
             });
         } else {
@@ -2910,11 +2949,18 @@ function main() {
         }
     }
 
+    // we also need a special handler for the output scroll keep-up
+    // make sure we allow scrolling up to search through the log, but stick
+    // to the bottom either after stopping the scroll there or a cmd input
+    CmdOutput = new CmdOutputBase(document.getElementById("cmd-output"));
+
+    // -----------------------------------------------------------------------------
+
     elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
 
     elementSelectorOnClick(".button-dbg-clear", (event) => {
         event.preventDefault();
-        document.getElementById("cmd-output").textContent = "";
+        CmdOutput.clear();
     });
 
     elementSelectorOnClick(".button-settings-backup", () => {
