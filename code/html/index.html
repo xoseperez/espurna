@@ -370,11 +370,12 @@
                         <div class="page">
 
                             <fieldset>
+                                <legend>Device</legend>
 
                                 <div class="pure-control-group">
                                     <label>Hostname</label>
                                     <input name="hostname" class="pure-input-2-3" maxlength="32" type="text" data-action="reboot" pattern="^[A-za-z]([A-Za-z\d-]{1,30}[A-Za-z\d]|[A-Za-z\d]{0,31})$">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         This name will identify this device in your network (this name will be used as DHCP hostname, thus the device will be accessible as http://&lt;hostname&gt;). Notice that this value may contain only the <strong>ASCII letters 'a' through 'z'</strong> (in a case-insensitive manner), <strong>digits '0' through '9'</strong>, and <strong>the hyphen ('-')</strong>. The hostname can neither start or end with a hyphen.<br>
                                     For this setting to take effect only on initial connection to the network, make sure to <code>Reconnect</code> if the device is already connected.
                                     </span>
@@ -383,7 +384,7 @@
                                 <div class="pure-control-group">
                                     <label>Description</label>
                                     <input name="desc" class="pure-input-2-3" maxlength="64" type="text">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         Human-friendly name for this device. It will be displayed in the WebUI and reported with the heartbeat.<br>
                                         For example, it can be used to specify the device location or it's purpose.
                                     </span>
@@ -392,7 +393,7 @@
                                 <div class="pure-control-group module module-btn">
                                     <label>Click repeat delay</label>
                                     <input name="btnRepDel" type="number" data-action="reboot" min="0" step="100" max="1000">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         Delay in milliseconds to detect a double or triple click (from 0 to 1000ms).<br>
                                         The lower this number the faster the device will respond to button clicks but the harder it will be to get the expected event.
                                         Increase this number if you are having trouble triggering the event.
@@ -400,19 +401,32 @@
                                         You will have to <strong>reboot the device</strong> to apply this setting.
                                     </span>
                                 </div>
+                            </fieldset>
 
-                                <div class="pure-control-group module module-alexa">
-                                    <label>Alexa integration</label>
-                                    <div><input type="checkbox" name="alexaEnabled"></div>
-                                    <label>Alexa device name</label>
-                                    <input name="alexaName" maxlength="31" type="text" data-action="reboot">
-                                    <span class="pure-form-message-inline hint">
-                                        This name will be used in Alexa integration.
-                                    </span>
-                                </div>
+                            <fieldset class="module module-alexa">
+                                <legend>Alexa</legend>
+                                    <div class="pure-control-group">
+                                        <label>Enabled</label>
+                                        <div><input type="checkbox" name="alexaEnabled"></div>
+                                        <span class="pure-form-message">
+                                            Advertise on the network as an Alexa compatible device
+                                        </span>
+                                    </div>
+
+                                    <div class="pure-control-group">
+                                        <label>Name</label>
+                                        <input name="alexaName" maxlength="31" type="text" data-action="reboot">
+                                        <span class="pure-form-message">
+                                            Instead of the global hostname setting, use this string to identify the device
+                                        </span>
+                                    </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Heartbeat</legend>
 
                                 <div class="pure-control-group">
-                                    <label>Heartbeat messages</label>
+                                    <label>Mode</label>
                                     <select class="pure-input-2-3" name="hbMode" >
                                         <option value="no">Disabled</option>
                                         <option value="once">Once per connection</option>
@@ -421,16 +435,16 @@
                                 </div>
 
                                 <div class="pure-control-group">
-                                    <label>Heartbeat interval</label>
+                                    <label>Message interval</label>
                                     <input name="hbInterval" type="number" min="1">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         How often the heartbeat messages should be sent (number of <strong>seconds</strong>).
                                     </span>
                                 </div>
 
                                 <div class="pure-control-group">
-                                    <label>Heartbeat report</label>
-                                    <select multiple name="hbReport" >
+                                    <label>Message types</label>
+                                    <select multiple name="hbReport">
                                         <option value="1">Device status</option>
                                         <option value="2">SSID</option>
                                         <option value="21">BSSID</option>
@@ -441,8 +455,10 @@
                                         <option value="7">Datetime</option>
                                         <option value="8">Free heap</option>
                                         <option value="9">VCC</option>
-                                        <option value="10">Relays status</option>
-                                        <option value="11">Lights status</option>
+                                        <option value="10">Relay(s) status</option>
+                                        <!-- removeIf(!light) -->
+                                        <option value="11">Light(s) status</option>
+                                        <!-- endRemoveIf(!light) -->
                                         <option value="12">Hostname</option>
                                         <option value="13">App name</option>
                                         <option value="14">App version</option>
@@ -450,14 +466,15 @@
                                         <option value="16">Loadavg</option>
                                         <option value="17">Heartbeat interval</option>
                                         <option value="18">Device description</option>
+                                        <!-- removeIf(!thermostat) -->
                                         <option value="19">Temperature range</option>
                                         <option value="20">Remote temperature</option>
+                                        <!-- endRemoveIf(!thermostat) -->
                                     </select>
-                                    <span class="pure-form-message-inline hint">
-                                        Enable or disable specific heartbeat message types.
+                                    <span class="pure-form-message-inline">
+                                        Select which message types will be sent out with the periodic report.
                                     </span>
                                 </div>
-
                             </fieldset>
 
                         </div>
@@ -477,7 +494,7 @@
                             <details>
 
                             <summary>Available modes</summary>
-                            <ol class="pure-u-1 pure-u-lg-3-4 hint">
+                            <ol class="pure-u-1 pure-u-lg-3-4">
                                 <li><strong>WiFi status</strong> will blink at 1Hz when attempting to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode, or every second if the device is still in AP mode.</li>
                                 <li><strong>Follow switch</strong> will force the LED to follow the status of a given switch (defaults to the 1st switch, use the selector to change it).</li>
                                 <li><strong>Inverse switch</strong> is same as the above, but using the inverse status as status of the LED.</li>
@@ -1068,7 +1085,7 @@
                                 <div class="pure-control-group">
                                     <label>MQTT User</label>
                                     <input name="mqttUser" type="text" autocomplete="off">
-                                    <div class="pure-form-message-inline hint">
+                                    <div class="pure-form-message-inline">
                                         Leave blank when broker allows anonymous connections. You can also use the following placeholders: {hostname}, {mac}
                                     </div>
                                 </div>
@@ -1082,7 +1099,7 @@
                                 <div class="pure-control-group">
                                     <label>MQTT Client ID</label>
                                     <input name="mqttClientID" type="text">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         When left empty, the firmware will generate a client ID based on the MAC address of the chip. The following placeholders are also supported: {hostname}, {mac}
                                     </span>
                                 </div>
@@ -1111,7 +1128,7 @@
                                     <div><input type="checkbox" name="mqttUseSSL"></div>
                                     <label>SSL Fingerprint</label>
                                     <input name="mqttFP" type="text" maxlength="59">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         This is the fingerprint for the SSL certificate of the server.<br>
                                         You can get it using <a class="external" href="https://www.grc.com/fingerprints.htm">https://www.grc.com/fingerprints.htm</a> (if it is publically available)<br>
                                         or, using <a class="external" href="https://www.openssl.org/">openssl</a>. For example, on a Linux / macOS machine:<br>
@@ -1122,7 +1139,7 @@
                                 <div class="pure-control-group">
                                     <label>MQTT Root Topic</label>
                                     <input name="mqttTopic" type="text">
-                                    <span class="pure-form-message-inline hint">
+                                    <span class="pure-form-message-inline">
                                         This is the root topic for this device. The following placeholders can be used: {hostname} and {mac} to dynamically set the value to the device hostname and MAC address respectively.<br>
                                         - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br>
                                         <!-- removeIf(!curtain) -->
@@ -1911,11 +1928,11 @@
                                     <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24" name="rfbRepeat" type="number" min="1"></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Number of times to repeat transmission</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4">Number of times to repeat transmission</div>
                                 </div>
 
                                 <div class="pure-g module module-rfbdirect">
-                                    <div class="pure-u-1 pure-u-lg-1 hint">Pins used by the receiver (RX) and transmitter (TX). Set to <strong>NONE</strong> to disable</div>
+                                    <div class="pure-u-1 pure-u-lg-1">Pins used by the receiver (RX) and transmitter (TX). Set to <strong>NONE</strong> to disable</div>
 
                                     <label class="pure-u-1 pure-u-lg-1-4">RX Pin</label>
                                     <select class="pure-u-1 pure-u-lg-1-4 enumerable enumerable-gpio-hardware" name="rfbRX"></select>
@@ -2231,8 +2248,8 @@
                 <div class="pure-u-1 pure-u-lg-1-4">
                     <input readonly class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude">
                 </div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center magnitude-description"></div>
-                <div class="pure-u-1 pure-u-lg-1 hint magnitude-info">
+                <div class="pure-u-1 pure-u-lg-1-2 center magnitude-description"></div>
+                <div class="pure-u-1 pure-u-lg-1 magnitude-info">
                 </div>
             </div>
         </template>
@@ -2243,8 +2260,8 @@
                 <div class="pure-u-1 pure-u-lg-1-4">
                     <input readonly class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude">
                 </div>
-                <div class="pure-u-1 pure-u-lg-1-2 hint center magnitude-description"></div>
-                <div class="pure-u-1 pure-u-lg-1 hint magnitude-info">
+                <div class="pure-u-1 pure-u-lg-1-2 center magnitude-description"></div>
+                <div class="pure-u-1 pure-u-lg-1 magnitude-info">
                 </div>
             </div>
         </template>
