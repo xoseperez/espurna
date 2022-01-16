@@ -146,9 +146,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support multiple provider types (GPIO, virtual, IO expanders, etc.)
 - Separate MQTT group subscription and publish topics (per-relay `relayTopicSub#` and `relayTopicPub#` respectively)
 - Support MQTT wildcards (`#` and `+`) in group subscription topic ([dcc423ec](https://github.com/xoseperez/espurna/commit/dcc423ecaf556082ea7d358b886167f6ad179a21))
-- Remove internal pulse timer limit of 1 hour and 14 minutes, current limit should be around 47 days.
-- Support extended time string with a unit suffix 'h' for hours, 'm' for minutes and 's' for seconds; such as, '5h' for 5 hours, '3m' for 3 minutes and '15s' for 15 seconds. For example, '1h35m'. Note that units are interpretted from the largest to the smallest, time string such as '1h2h' will be rejected and treated as 0 seconds instead of 1 hours plus 2 hours.
-- Add `pulse <id> <time>` terminal command which accepts the same time string format or a floating point number of seconds (as in previous versions).
+- Remove internal pulse timer limit of 1 hour and 14 minutes, current limit should be around 47 days. ([#678](https://github.com/xoseperez/espurna/issues/678))
+- Support extended time string with a unit suffix 'h' for hours, 'm' for minutes and 's' for seconds; such as, '5h' for 5 hours, '3m' for 3 minutes and '15s' for 15 seconds. For example, '1h35m'. Note that units are interpretted from the largest to the smallest, time string such as '1h2h' will be rejected and treated as 0 seconds instead of 1 hours plus 2 hours. ([#2139](https://github.com/xoseperez/espurna/issues/2139))
+- Add `pulse <id> <time>` terminal command which accepts the same time string format or a floating point number of seconds. ([#2139](https://github.com/xoseperez/espurna/issues/2139))
 #### RFBridge
 - Keep serial disabled in the sonoff rfbridge hardware.h entry ([10519cc2](https://github.com/xoseperez/espurna/commit/10519cc276383b622222a457a19e55d7972d332f))
 - Allow to use `<code>,<times>` in rfbON\# / rfbOFF\# settings keys, just like with the API payload ([19947c12](https://github.com/xoseperez/espurna/commit/19947c1231c067301427303c77316565b9163bb4))
