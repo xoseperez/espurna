@@ -1752,7 +1752,7 @@ function initMagnitudesList(data, callbacks) {
 function createMagnitudeInfo(id, magnitude) {
     const container = document.getElementById("magnitudes");
 
-    const info = loadTemplate("magnitude-info-form");
+    const info = loadTemplate("magnitude-info");
     const label = info.querySelector("label");
     label.textContent = magnitude.name;
 
@@ -1997,15 +1997,15 @@ function initCurtain() {
         return;
     }
 
-    // simple position slider
-    document.getElementById("curtainSet").addEventListener("change", curtainSetHandler);
-
     // add and init curtain template, prepare multi switches
     let line = loadConfigTemplate("curtain-control");
     line.querySelector(".button-curtain-open").addEventListener("click", curtainButtonHandler);
     line.querySelector(".button-curtain-pause").addEventListener("click", curtainButtonHandler);
     line.querySelector(".button-curtain-close").addEventListener("click", curtainButtonHandler);
     mergeTemplate(container, line);
+
+    // simple position slider
+    document.getElementById("curtainSet").addEventListener("change", curtainSetHandler);
 
     addSimpleEnumerables("curtain", "Curtain", 1);
 }
