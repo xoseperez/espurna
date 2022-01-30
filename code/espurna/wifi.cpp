@@ -1732,6 +1732,14 @@ bool enabled() {
 }
 
 } // namespace
+
+namespace query {
+namespace {
+
+EXACT_VALUE(enabled, settings::enabled)
+
+} // namespace
+} // namespace query
 } // namespace settings
 
 namespace periodic {
@@ -1764,6 +1772,14 @@ int8_t threshold() {
 }
 
 } // namespace
+
+namespace query {
+namespace {
+
+EXACT_VALUE(threshold, settings::threshold)
+
+} // namespace
+} // namespace query
 } // namespace settings
 
 namespace internal {
@@ -2229,13 +2245,15 @@ namespace settings {
 namespace query {
 namespace {
 
-static constexpr std::array<::settings::query::Setting, 8> Settings PROGMEM {
+static constexpr std::array<::settings::query::Setting, 10> Settings PROGMEM {
     {{wifi::ap::settings::keys::Ssid, wifi::ap::settings::ssid},
      {wifi::ap::settings::keys::Passphrase, wifi::ap::settings::passphrase},
      {wifi::ap::settings::keys::Captive, wifi::ap::settings::query::internal::captive},
      {wifi::ap::settings::keys::Channel, wifi::ap::settings::query::internal::channel},
      {wifi::ap::settings::keys::Mode, wifi::ap::settings::query::internal::mode},
      {wifi::sta::settings::keys::Mode, wifi::sta::settings::query::internal::mode},
+     {wifi::sta::scan::settings::keys::Enabled, wifi::sta::scan::settings::query::enabled},
+     {wifi::sta::scan::periodic::settings::keys::Threshold, wifi::sta::scan::periodic::settings::query::threshold},
      {wifi::settings::keys::TxPower, ::wifi::settings::query::internal::txPower},
      {wifi::settings::keys::Sleep, ::wifi::settings::query::internal::sleep}}
 };
