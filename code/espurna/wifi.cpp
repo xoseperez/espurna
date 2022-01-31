@@ -2382,13 +2382,24 @@ void init() {
     });
 
     terminalRegisterCommand(F("WIFI"), [](::terminal::CommandContext&& ctx) {
+        if (ctx.argv.size() == 2) {
+            auto id = ::settings::internal::convert<size_t>(ctx.argv[1]);
+            if (id < wifi::sta::build::NetworksMax) {
+                settingsDump(ctx, wifi::sta::settings::query::Settings, id);
+                return;
+            }
+
+            terminalError(ctx, F("Network ID out of configurable range"));
+            return;
+        }
+
         const auto mode = wifi::opmode();
         ctx.output.printf_P(PSTR("OPMODE: %s\n"), wifi::debug::opmode(mode).c_str());
 
         if (mode & OpmodeAp) {
             auto current = wifi::ap::current();
 
-            ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s ssid \"%s\" passphrase \"%s\"\n"),
+            ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s\n"),
                 wifi::debug::mac(current.bssid).c_str(),
                 current.channel,
                 wifi::debug::authmode(current.authmode).c_str(),
@@ -2411,6 +2422,7 @@ void init() {
             }
         }
 
+        settingsDump(ctx, wifi::settings::query::Settings);
         terminalOK(ctx);
     });
 
@@ -2463,15 +2475,9 @@ namespace {
 #if WEB_SUPPORT
 
 void onConnected(JsonObject& root) {
-    root[FPSTR(sta::scan::settings::keys::Enabled)] =
-        wifi::sta::scan::settings::enabled();
-    root[FPSTR(wifi::sta::scan::periodic::settings::keys::Threshold)] =
-        wifi::sta::scan::periodic::settings::threshold();
-
-    root[FPSTR(wifi::ap::settings::keys::Ssid)] =
-        wifi::ap::settings::ssid();
-    root[FPSTR(wifi::ap::settings::keys::Passphrase)] =
-        wifi::ap::settings::passphrase();
+    for (const auto& setting : wifi::settings::query::Settings) {
+        root[FPSTR(setting.key().c_str())] = setting.value();
+    }
 
     ::web::ws::EnumerableConfig config{root, STRING_VIEW("wifiConfig")};
     config(STRING_VIEW("networks"), wifi::sta::countNetworks(), wifi::sta::settings::query::Settings);
