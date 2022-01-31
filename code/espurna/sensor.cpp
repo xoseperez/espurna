@@ -1245,6 +1245,13 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
     switch (magnitude.sensor->units(magnitude.slot)) {
+        case sensor::Unit::Kelvin:
+            if (magnitude.units == sensor::Unit::Farenheit) {
+                value = (value * (9.0/5.0)) + 32.0;
+            } else if (magnitude.units == sensor::Unit::Celcius) {
+                value = value - 273.15;
+            }
+            break;
         case sensor::Unit::Celcius:
             if (magnitude.units == sensor::Unit::Farenheit) {
                 value = (value * 1.8) + 32.0;
