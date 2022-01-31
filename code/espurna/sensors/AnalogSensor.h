@@ -1,54 +1,63 @@
 // -----------------------------------------------------------------------------
-// Analog Sensor (maps to an analogRead)
+// Analog Sensor
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
+//
+// Scaling support by Carlos Iván Conde Martín <ivan dot conde at gmail dot com>
+// (original sensor was just the analogRead output)
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && (ANALOG_SUPPORT || NTC_SUPPORT || LDR_SUPPORT)
-
 #pragma once
+
+#include <algorithm>
+
+#include "../espurna.h"
+#include "../sensor.h"
 
 #include "BaseSensor.h"
 #include "BaseAnalogSensor.h"
 
 class AnalogSensor : public BaseAnalogSensor {
-
     public:
 
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
 
+        using Delay = espurna::duration::critical::Microseconds;
+
         AnalogSensor() {
             _count = 1;
             _sensor_id = SENSOR_ANALOG_ID;
         }
 
-        void setSamples(unsigned int samples) {
-            if (_samples > 0) _samples = samples;
+        void setSamples(size_t samples) {
+            _samples = std::clamp(samples, SamplesMin, SamplesMax);
         }
 
-        void setDelay(unsigned long micros) {
-            _micros = micros;
+        void setDelay(Delay delay) {
+            _delay = std::clamp(delay, DelayMin, DelayMax);
+        }
+
+        void setDelay(uint16_t delay) {
+            setDelay(Delay{delay});
         }
 
         void setFactor(double factor) {
-            //DEBUG_MSG(("[ANALOG_SENSOR] Factor set to: %s \n"), String(factor,6).c_str());
             _factor = factor;
         }
 
         void setOffset(double offset) {
-          //DEBUG_MSG(("[ANALOG_SENSOR] Factor set to: %s \n"), String(offset,6).c_str());
             _offset = offset;
         }
 
         // ---------------------------------------------------------------------
 
-        unsigned int getSamples() {
+        size_t getSamples() {
             return _samples;
         }
 
-        unsigned long getDelay() {
-            return _micros;
+        espurna::duration::Microseconds getDelay() {
+            return _delay;
         }
 
         double getFactor() {
@@ -90,7 +99,6 @@ class AnalogSensor : public BaseAnalogSensor {
         }
 
         // Current value for slot # index
-        // Changed return type as moving to scaled value
         double value(unsigned char index) {
             if (index == 0) return _read();
             return 0;
@@ -98,41 +106,42 @@ class AnalogSensor : public BaseAnalogSensor {
 
     protected:
 
-        //CICM: this should be for raw values
-        // renaming protected function "_read" to "_rawRead"
-        unsigned int _rawRead() {
-            if (1 == _samples) return analogRead(0);
-            unsigned long sum = 0;
-            for (unsigned int i=0; i<_samples; i++) {
-                if (i>0) delayMicroseconds(_micros);
-                sum += analogRead(0);
+        static unsigned int _rawRead(size_t samples, Delay delay) {
+            unsigned int last { 0 };
+            unsigned int result { 0 };
+            for (size_t sample = 0; sample < samples; ++sample) {
+                const auto value = analogRead(0);
+                result = result + value - last;
+                last = value;
+                if (sample > 0) {
+                    espurna::time::critical::delay(delay);
+                    yield();
+                }
             }
-            return sum / _samples;
+
+            return result;
         }
 
-        //CICM: and proper read should be scalable and thus needs sign
-        //and decimal part
-        double _read() {
-          //Raw measure could also be a class variable with getter so that can
-          //be reported through MQTT, ...
-          unsigned int rawValue;
-          double scaledValue;
-          // Debugging doubles to string
-          //DEBUG_MSG(("[ANALOG_SENSOR] Started standard read, factor: %s , offset: %s, decimals: %d \n"), String(_factor).c_str(), String(_offset).c_str(), ANALOG_DECIMALS);
-          rawValue = _rawRead();
-          //DEBUG_MSG(("[ANALOG_SENSOR] Raw read received: %d \n"), rawValue);
-          scaledValue = _factor*rawValue  + _offset;
-          //DEBUG_MSG(("[ANALOG_SENSOR] Scaled value result: %s \n"), String(scaledValue).c_str());
-          return scaledValue;
+        unsigned int _rawRead() const {
+            return _rawRead(_samples, _delay);
         }
 
+        double _read() const {
+            return _withFactor(_rawRead());
+        }
 
-        unsigned int _samples = 1;
-        unsigned long _micros = 0;
-        //CICM: for scaling and offset, also with getters and setters
-        double _factor = 1.0;
-        double _offset = 0.0;
+        double _withFactor(double value) const {
+            return _factor * value + _offset;
+        }
 
+        static constexpr Delay DelayMin { 200 };
+        static constexpr Delay DelayMax { Delay::max() };
+        Delay _delay { DelayMin };
+
+        static constexpr size_t SamplesMin { 1 };
+        static constexpr size_t SamplesMax { 16 };
+        size_t _samples { SamplesMin };
+
+        double _factor { 1.0 };
+        double _offset { 0.0 };
 };
-
-#endif // SENSOR_SUPPORT && ANALOG_SUPPORT

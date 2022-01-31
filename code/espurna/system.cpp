@@ -142,7 +142,7 @@ uint32_t RandomDevice::operator()() const {
 namespace time {
 
 void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
-    auto start = CoreClock::now();
+    const auto start = CoreClock::now();
     while (CoreClock::now() - start < timeout) {
         delay(interval);
     }

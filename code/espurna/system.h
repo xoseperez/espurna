@@ -70,9 +70,24 @@ using Minutes = std::chrono::duration<uint32_t, std::ratio<60>>;
 using Hours = std::chrono::duration<uint32_t, std::ratio<Minutes::period::num * 60>>;
 using Days = std::chrono::duration<uint32_t, std::ratio<Hours::period::num * 24>>;
 
+namespace critical {
+
+using Microseconds = std::chrono::duration<uint16_t, std::micro>;
+
+} // namespace critical
 } // namespace duration
 
 namespace time {
+namespace critical {
+
+// Wait for the specified amount of time *without* using SDK or Core timers.
+// Supposedly, should be the same as a simple do-while loop.
+inline void delay(duration::critical::Microseconds) __attribute__((always_inline));
+inline void delay(duration::critical::Microseconds duration) {
+    ::ets_delay_us(duration.count());
+}
+
+} // namespace critical
 
 struct CpuClock {
     using duration = espurna::duration::ClockCycles;
@@ -161,8 +176,7 @@ inline CoreClock::time_point millis() {
     return CoreClock::now();
 }
 
-// Attempt to sleep for N milliseconds, but this is allowed to be woken up at any point
-
+// Attempt to sleep for N milliseconds, but this is allowed to be woken up at any point by the SDK
 inline void delay(CoreClock::duration value) {
     ::delay(value.count());
 }
@@ -170,7 +184,6 @@ inline void delay(CoreClock::duration value) {
 // Local implementation of 'delay' that will make sure that we wait for the specified
 // time, even after being woken up. Allows to service Core tasks that are scheduled
 // in-between context switches, where the interval controls the minimum sleep time.
-
 void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval);
 void blockingDelay(CoreClock::duration timeout);
 
