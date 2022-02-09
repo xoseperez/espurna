@@ -1076,7 +1076,7 @@ void scheduleSleep(uint64_t duration, RFMode mode) {
 }
 
 void sleep(uint64_t duration, RFMode mode) {
-    if (WiFi.getMode() != WIFI_OFF) {
+    if (wifi_get_opmode() != NULL_MODE) {
         wifiTurnOff();
         scheduleSleep(duration, mode);
         return;
@@ -1175,11 +1175,8 @@ namespace wifi {
 
 void init(rpn_context& context) {
     rpn_operator_set(context, "stations", 0, [](rpn_context& ctxt) -> rpn_error {
-        rpn_uint out = (WiFi.getMode() & WIFI_AP)
-            ? static_cast<rpn_uint>(WiFi.softAPgetStationNum())
-            : 0u;
-
-        rpn_stack_push(ctxt, rpn_value(out));
+        rpn_stack_push(ctxt, rpn_value {
+            static_cast<rpn_uint>(wifiApStations()) });
         return 0;
     });
 
@@ -1190,11 +1187,11 @@ void init(rpn_context& context) {
     });
 
     rpn_operator_set(context, "rssi", 0, [](rpn_context& ctxt) -> rpn_error {
-        if (wifiConnected()) {
-            rpn_stack_push(ctxt, rpn_value(static_cast<rpn_int>(WiFi.RSSI())));
-            return 0;
-        }
-        return rpn_operator_error::CannotContinue;
+        const rpn_int rssi = wifiConnected()
+            ? wifi_station_get_rssi()
+            : -127;
+        rpn_stack_push(ctxt, rpn_value { rssi });
+        return 0;
     });
 }
 
