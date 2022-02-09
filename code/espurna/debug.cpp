@@ -559,7 +559,7 @@ bool status(espurna::heartbeat::Mask mask) {
 
     if (mask & espurna::heartbeat::Report::Freeheap) {
         const auto stats = systemHeapStats();
-        debugSend(PSTR("[MAIN] Heap: initial %5lu available %5lu contiguous %5hu\n"),
+        debugSend(PSTR("[MAIN] Heap: initial %5lu available %5lu contiguous %5lu\n"),
             systemInitialFreeHeap(), stats.available, stats.usable);
     }
 

@@ -67,8 +67,7 @@ public:
     // and we can either stop (false) or continue (true) the function.
     void process(ProcessFunc = defaultProcessFunc);
 
-    private:
-
+private:
     static bool defaultProcessFunc(Result);
 
     // general input / output stream:

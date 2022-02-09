@@ -16,8 +16,8 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 struct HeapStats {
     uint32_t available;
-    uint16_t usable;
-    uint8_t frag_pct;
+    uint32_t usable;
+    uint8_t fragmentation;
 };
 
 enum class CustomResetReason : uint8_t {
@@ -279,10 +279,9 @@ String serialize(espurna::duration::ClockCycles);
 unsigned long systemFreeStack();
 
 HeapStats systemHeapStats();
-void systemHeapStats(HeapStats&);
 
-unsigned long systemFreeHeap();
-unsigned long systemInitialFreeHeap();
+size_t systemFreeHeap();
+size_t systemInitialFreeHeap();
 
 bool eraseSDKConfig();
 void forceEraseSDKConfig();

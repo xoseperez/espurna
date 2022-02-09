@@ -406,7 +406,7 @@ void _terminalInitCommands() {
 
     terminalRegisterCommand(F("HEAP"), [](::terminal::CommandContext&& ctx) {
         const auto stats = systemHeapStats();
-        ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %hu\n"),
+        ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %lu\n"),
             systemInitialFreeHeap(), stats.available, stats.usable);
 
         terminalOK(ctx);

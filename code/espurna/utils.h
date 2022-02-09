@@ -36,10 +36,6 @@ bool haveRelaysOrSensors();
 String prettyDuration(espurna::duration::Seconds);
 String getUptime();
 
-void infoHeapStats(const char* name, const HeapStats& stats);
-void infoHeapStats(bool show_frag_stats = false);
-void infoMemory(const char* name, unsigned int total_memory, unsigned int free_memory);
-
 bool sslCheckFingerPrint(const char * fingerprint);
 bool sslFingerPrintArray(const char * fingerprint, unsigned char * bytearray);
 bool sslFingerPrintChar(const char * fingerprint, char * destination);

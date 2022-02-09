@@ -159,33 +159,62 @@ namespace {
 
 // returns 'total stack size' minus 'un-painted area'
 // needs re-painting step, as this never decreases
-unsigned long freeStack() {
+size_t freeStack() {
     return ESP.getFreeContStack();
 }
 
-HeapStats heapStats() {
-    HeapStats stats;
-    ESP.getHeapStats(&stats.available, &stats.usable, &stats.frag_pct);
-    return stats;
-}
+// esp8266 normally only has a one single heap area, located in DRAM just 'before' the SYS stack
+// since Core 3.x.x, internal C-level allocator was extended to support multiple contexts
+// - external SPI RAM chip (but, this may not work with sizes above 65KiB on older Cores, check the actual version)
+// - part of the IRAM, which will be specifically excluded from the CACHE by using a preprocessed linker file
+//
+// API expects us to use the same C API as usual - malloc, realloc, calloc, etc.
+// Only now we are able to switch 'contexts' and receive different address range, currenty via `umm_{push,pop}_heap(ID)`
+// (e.g. UMM_HEAP_DRAM, UMM_HEAP_IRAM, ... which techically is an implementation detail, and ESP::... methods should be used)
+//
+// Meaning, what happens below is heavily dependant on the when and why these functions are called
 
-void heapStats(HeapStats& stats) {
-    stats = heapStats();
-}
-
-unsigned long freeHeap() {
-    return ESP.getFreeHeap();
+size_t freeHeap() {
+    return system_get_free_heap_size();
 }
 
 decltype(freeHeap()) initialFreeHeap() {
     static const auto value = ([]() {
-        return freeHeap();
+        return system_get_free_heap_size();
     })();
 
     return value;
 }
 
+// see https://github.com/esp8266/Arduino/pull/8440
+template <typename T>
+using HasHeapStatsFixBase = decltype(std::declval<T>().getHeapStats(
+    std::declval<uint32_t*>(), std::declval<uint32_t*>(), std::declval<uint8_t*>()));
+
+template <typename T>
+using HasHeapStatsFix = is_detected<HasHeapStatsFixBase, T>;
+
+template <typename T>
+HeapStats heapStats(T& instance, std::true_type) {
+    HeapStats out;
+    instance.getHeapStats(&out.available, &out.usable, &out.fragmentation);
+    return out;
 }
+
+template <typename T>
+HeapStats heapStats(T& instance, std::false_type) {
+    HeapStats out;
+    uint16_t usable{0};
+    instance.getHeapStats(&out.available, &usable, &out.fragmentation);
+    out.usable = usable;
+    return out;
+}
+
+HeapStats heapStats() {
+    return heapStats(ESP, HasHeapStatsFix<EspClass>{});
+}
+
+} // namespace
 } // namespace memory
 
 namespace boot {
@@ -392,8 +421,7 @@ namespace load_average {
 namespace build {
 namespace {
 
-constexpr size_t ValueMin { 0 };
-constexpr size_t ValueMax { 100 };
+static constexpr size_t ValueMax { 100 };
 
 static constexpr espurna::duration::Seconds Interval { LOADAVG_INTERVAL };
 static_assert(Interval <= espurna::duration::Seconds(90), "");
@@ -836,15 +864,11 @@ HeapStats systemHeapStats() {
     return espurna::memory::heapStats();
 }
 
-void systemHeapStats(HeapStats& stats) {
-    espurna::memory::heapStats(stats);
-}
-
-unsigned long systemFreeHeap() {
+size_t systemFreeHeap() {
     return espurna::memory::freeHeap();
 }
 
-unsigned long systemInitialFreeHeap() {
+size_t systemInitialFreeHeap() {
     return espurna::memory::initialFreeHeap();
 }
 
