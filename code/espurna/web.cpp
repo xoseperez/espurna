@@ -221,7 +221,7 @@ bool _webConfigSuccess = false;
 std::vector<web_request_callback_f> _web_request_callbacks;
 std::vector<web_body_callback_f> _web_body_callbacks;
 
-constexpr unsigned long WebConfigBufferMax { 4096ul };
+static constexpr size_t WebConfigBufferMax { 4096 };
 
 } // namespace
 
