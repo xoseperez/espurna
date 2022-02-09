@@ -581,7 +581,7 @@ struct RelayTristateHelper {
 };
 
 template <typename T>
-constexpr const std::array<Enumeration<T>, 3> RelayTristateHelper<T>::Options;
+constexpr std::array<Enumeration<T>, 3> RelayTristateHelper<T>::Options;
 
 alignas(4) static constexpr char PayloadStatusOff[] PROGMEM = "off";
 alignas(4) static constexpr char PayloadStatusOn[] PROGMEM = "on";
