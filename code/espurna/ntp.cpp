@@ -717,12 +717,12 @@ void convertLegacyOffsets() {
             }
         }
 
-        setSetting("ntpTZ", custom);
+        setSetting(F("ntpTZ"), custom);
     }
 
-    delSetting("ntpOffset");
-    delSetting("ntpDST");
-    delSetting("ntpRegion");
+    delSetting(F("ntpOffset"));
+    delSetting(F("ntpDST"));
+    delSetting(F("ntpRegion"));
 }
 
 } // namespace settings
