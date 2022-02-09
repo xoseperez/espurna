@@ -31,11 +31,24 @@ struct PathParts {
     using Parts = std::vector<PathPart>;
 
     PathParts() = delete;
-
-    PathParts(const PathParts&) = default;
-    PathParts(PathParts&&) noexcept = default;
+    PathParts(const PathParts&) = delete;
 
     explicit PathParts(const String& path);
+    PathParts(const String& path, Parts&& parts) :
+        _path(path),
+        _parts(std::move(parts)),
+        _ok(_parts.size())
+    {}
+
+    PathParts(PathParts&& other) noexcept :
+        PathParts(other._path, std::move(other._parts))
+    {}
+
+    PathParts(const String& path, PathParts&& other) noexcept :
+        _path(path),
+        _parts(std::move(other._parts)),
+        _ok(other._ok)
+    {}
 
     explicit operator bool() const {
         return _ok;
@@ -80,10 +93,17 @@ struct PathParts {
     }
 
 private:
-    PathPart& emplace_back(PathPart::Type type, size_t offset, size_t length) {
-        PathPart part { type, offset, length };
-        _parts.push_back(std::move(part));
+    PathPart& emplace_back(PathPart part) {
+        _parts.push_back(part);
         return _parts.back();
+    }
+
+    PathPart& emplace_back(PathPart::Type type, size_t offset, size_t length) {
+        return emplace_back(PathPart{
+            .type = type,
+            .offset = offset,
+            .length = length
+        });
     }
 
     const String& _path;

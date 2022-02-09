@@ -2364,67 +2364,24 @@ namespace {
 //
 // this is not really an intended use-case though, but it is techically possible...
 
-struct RelayCustomTopicBase {
-    RelayCustomTopicBase() = delete;
-    RelayCustomTopicBase(const RelayCustomTopicBase&) = delete;
-    RelayCustomTopicBase(RelayCustomTopicBase&& other) noexcept :
-        _value(std::move(other._value)),
+struct RelayCustomTopic {
+    using Mode = RelayMqttTopicMode;
+
+    RelayCustomTopic() = delete;
+    RelayCustomTopic(const RelayCustomTopic&) = delete;
+
+    RelayCustomTopic(RelayCustomTopic&& other) noexcept :
+        _id(other._id),
+        _topic(std::move(other._topic)),
+        _parts(_topic, std::move(other._parts)),
         _mode(other._mode)
     {}
 
-    template <typename T>
-    RelayCustomTopicBase(T&& value, RelayMqttTopicMode mode) :
-        _value(std::forward<T>(value)),
-        _mode(mode)
-    {}
-
-    RelayCustomTopicBase& operator=(const char* const value) {
-        _value = value;
-        return *this;
-    }
-
-    RelayCustomTopicBase& operator=(const String& value) {
-        _value = value;
-        return *this;
-    }
-
-    RelayCustomTopicBase& operator=(String&& value) noexcept {
-        _value = std::move(value);
-        return *this;
-    }
-
-    RelayCustomTopicBase& operator=(RelayMqttTopicMode mode) noexcept {
-        _mode = mode;
-        return *this;
-    }
-
-    String&& get() && {
-        return std::move(_value);
-    }
-
-    const String& value() const {
-        return _value;
-    }
-
-    RelayMqttTopicMode mode() const {
-        return _mode;
-    }
-
-private:
-    String _value;
-    RelayMqttTopicMode _mode;
-};
-
-struct RelayCustomTopic {
-    RelayCustomTopic() = delete;
-    RelayCustomTopic(const RelayCustomTopic&) = delete;
-    RelayCustomTopic(RelayCustomTopic&&) = delete;
-
-    RelayCustomTopic(size_t id, RelayCustomTopicBase&& base) :
+    RelayCustomTopic(size_t id, String topic, Mode mode) :
         _id(id),
-        _topic(std::move(base).get()),
+        _topic(std::move(topic)),
         _parts(_topic),
-        _mode(base.mode())
+        _mode(mode)
     {}
 
     size_t id() const {
@@ -2443,7 +2400,7 @@ struct RelayCustomTopic {
         return _parts;
     }
 
-    RelayMqttTopicMode mode() const {
+    Mode mode() const {
         return _mode;
     }
 
@@ -2471,56 +2428,33 @@ void _relayMqttSubscribeCustomTopics() {
         return;
     }
 
-    static std::vector<RelayCustomTopicBase> topics;
-    for (size_t id = 0; id < relays; ++id) {
-        topics.emplace_back(
-            espurna::relay::build::mqttTopicSub(id),
-            espurna::relay::build::mqttTopicMode(id));
-    }
-
-    settings::internal::foreach([&](settings::kvs_type::KeyValueResult&& kv) {
-        static constexpr settings::StringView SubPrefix { espurna::relay::settings::keys::TopicSub };
-        static constexpr settings::StringView ModePrefix { espurna::relay::settings::keys::TopicMode };
-        if ((kv.key.length <= SubPrefix.length())
-                && (kv.key.length <= ModePrefix.length())) {
-            return;
-        }
-
-        if (!kv.value.length) {
-            return;
-        }
-
-        const auto key = kv.key.read();
-        size_t id;
-
-        if (SubPrefix.compareFlash(key)) {
-            if (_relayTryParseId(key.c_str() + SubPrefix.length(), id)) {
-                topics[id] = kv.value.read();
-            }
-        } else if (ModePrefix.compareFlash(key)) {
-            if (_relayTryParseId(key.c_str() + ModePrefix.length(), id)) {
-                topics[id] = settings::internal::convert<RelayMqttTopicMode>(kv.value.read());
-            }
-        }
-    });
+    // TODO: previous version attempted to optimize the settings loop by creating a temporary
+    // mapping of {id, topic, mode} from build values and then do settings::foreach with
+    // matcher for topic & mode key prefixes. but, that also required parsing of the id,
+    // which could be either avoided by creating something like {{key, topic}, {key, mode}} instead,
+    // but the tradeoff would be searching that array for each key match. this one is *much* shorter
 
     _relay_custom_topics.clear();
     for (size_t id = 0; id < relays; ++id) {
-        RelayCustomTopicBase& topic = topics[id];
-        auto& value = topic.value();
-        if (!value.length()) {
+        auto subscription = espurna::relay::settings::mqttTopicSub(id);
+        if (!subscription.length()) {
             continue;
         }
 
-        mqttSubscribeRaw(value.c_str());
-        _relay_custom_topics.emplace_front(id, std::move(topic));
-    }
+        auto topic = RelayCustomTopic{
+            id, std::move(subscription),
+            espurna::relay::settings::mqttTopicMode(id)};
+        if (!topic.parts()) {
+            continue;
+        }
 
-    topics.clear();
+        mqttSubscribeRaw(topic.topic().c_str());
+        _relay_custom_topics.emplace_front(std::move(topic));
+    }
 }
 
 void _relayMqttPublishCustomTopic(size_t id) {
-    const String topic = espurna::relay::settings::mqttTopicPub(id);
+    const auto topic = espurna::relay::settings::mqttTopicPub(id);
     if (!topic.length()) {
         return;
     }
