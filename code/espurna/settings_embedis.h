@@ -119,6 +119,9 @@ class KeyValueStore {
 
         Cursor() = delete;
 
+        Cursor(const Cursor&) = default;
+        Cursor(Cursor&&) = default;
+
         void reset(uint16_t begin_, uint16_t end_) {
             position = 0;
             begin = begin_;
@@ -157,11 +160,11 @@ class KeyValueStore {
             return _storage.read(begin + position_);
         }
 
-        bool operator ==(const Cursor& other) const {
+        bool operator==(const Cursor& other) const {
             return (begin == other.begin) && (end == other.end);
         }
 
-        bool operator !=(const Cursor& other) const {
+        bool operator!=(const Cursor& other) const {
             return !(*this == other);
         }
 
@@ -203,32 +206,56 @@ class KeyValueStore {
     struct ReadResult {
         friend class KeyValueStore<RawStorageBase>;
 
-        explicit ReadResult(const Cursor& cursor_) :
-            length(0),
-            cursor(cursor_),
-            result(false)
-        {}
+        ReadResult() = delete;
+        ReadResult(const ReadResult&) = default;
+        ReadResult(ReadResult&&) = default;
 
         explicit ReadResult(RawStorageBase& storage) :
-            length(0),
-            cursor(storage),
-            result(false)
+            _cursor(storage)
         {}
 
+        ReadResult(RawStorageBase& storage, uint16_t begin, uint16_t end) :
+            _cursor(storage, begin, end),
+            _length((_cursor.size() > 2) ? _cursor.size() - 2 : 0),
+            _result(true)
+        {}
+
+        ReadResult& operator=(const ReadResult&) = default;
+        ReadResult& operator=(ReadResult&&) = default;
+
         explicit operator bool() const {
-            return result;
+            return _result;
         }
 
-        String read() {
+        uint16_t begin() const {
+            return _cursor.begin;
+        }
+
+        uint16_t end() const {
+            return _cursor.end;
+        }
+
+        uint16_t length() const {
+            return _length;
+        }
+
+        void reset(uint16_t begin, uint16_t end) {
+            _cursor.reset(begin, end);
+            _length = _cursor.size() > 2 ? _cursor.size() - 2 : 0;
+            _result = true;
+        }
+
+        String read() const {
             String out;
-            out.reserve(length);
-            if (!length) {
+
+            if (!_length) {
                 return out;
             }
 
-            decltype(length) index = 0;
-            cursor.resetBeginning();
-            while (index < length) {
+            auto cursor { _cursor };
+            out.reserve(_length);
+            decltype(_length) index = 0;
+            while (index < _length) {
                 out += static_cast<char>(cursor.read());
                 ++cursor;
                 ++index;
@@ -237,17 +264,16 @@ class KeyValueStore {
             return out;
         }
 
-        uint16_t length;
-
     private:
-        Cursor cursor;
-        bool result;
+        bool _result { false };
+        uint16_t _length { 0 };
+        Cursor _cursor;
     };
 
     // Internal storage consists of sequences of <byte-range><length>
     struct KeyValueResult {
         explicit operator bool() const {
-            return (key) && (value) && (key.length > 0);
+            return (key) && (value) && (key.length() > 0);
         }
 
         bool operator !() {
@@ -327,21 +353,21 @@ class KeyValueStore {
                 break;
             }
 
-            start_pos = kv.value.cursor.begin;
+            start_pos = kv.value.begin();
 
             // in the very special case we can match the existing key, we either
-            if ((kv.key.length == key_len) && (kv.key.read() == key)) {
-                if (kv.value.length == value.length()) {
+            if ((kv.key.length() == key_len) && (kv.key.read() == key)) {
+                if (kv.value.length() == value.length()) {
                     // - do nothing, as the value is already set
                     if (kv.value.read() == value) {
                         return true;
                     }
                     // - overwrite the space again, with the new kv of the same length
-                    start_pos = kv.key.cursor.end;
+                    start_pos = kv.key.end();
                     break;
                 }
                 // - or, erase the existing kv and place new kv at the end
-                to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
+                to_erase.reset(kv.value.begin(), kv.key.end());
                 need_erase = true;
             }
 
@@ -404,9 +430,9 @@ class KeyValueStore {
         auto to_erase = Cursor::fromEnd(_storage, _cursor.begin, _cursor.end);
 
         foreach([&](KeyValueResult&& kv) {
-            start_pos = kv.value.cursor.begin;
-            if (!to_erase && (kv.key.length == key_len) && (kv.key.read() == key)) {
-                to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
+            start_pos = kv.value.begin();
+            if (!to_erase && (kv.key.length() == key_len) && (kv.key.read() == key)) {
+                to_erase.reset(kv.value.begin(), kv.key.end());
             }
         });
 
@@ -433,8 +459,8 @@ class KeyValueStore {
     size_t available() {
         size_t result = _cursor.size();
         foreach([&result](KeyValueResult&& kv) {
-            result -= kv.key.cursor.size();
-            result -= kv.value.cursor.size();
+            result -= kv.key._cursor.size();
+            result -= kv.value._cursor.size();
         });
 
         return result;
@@ -465,7 +491,7 @@ class KeyValueStore {
 
             // no point in comparing keys when length does not match
             // (and we also don't want to allocate the string)
-            if (kv.key.length != len) {
+            if (kv.key.length() != len) {
                 continue;
             }
 
@@ -498,7 +524,7 @@ class KeyValueStore {
     // right now, just construct in place and assume that compiler will inline things
     KeyValueResult _read_kv() {
         auto key = _raw_read();
-        if (!key || !key.length) {
+        if (!key || !key.length()) {
             return {_storage};
         }
 
@@ -595,10 +621,7 @@ class KeyValueStore {
                 _cursor.position -= len;
                 auto value_start = (_cursor.begin + _cursor.position);
 
-                out.cursor.reset(value_start, value_start + len + 2);
-                out.length = len;
-                out.result = true;
-
+                out.reset(value_start, value_start + len + 2);
                 _state = State::Begin;
 
                 goto return_result;

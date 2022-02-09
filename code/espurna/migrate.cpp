@@ -36,15 +36,9 @@ namespace {
 void deletePrefixes(::settings::query::StringViewIterator prefixes) {
     std::vector<String> to_purge;
 
-    ::settings::internal::foreach([&](::settings::kvs_type::KeyValueResult&& kv) {
-        const auto key = kv.key.read();
-        for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
-            if (::settings::query::samePrefix(::settings::StringView{key}, (*it))) {
-                to_purge.push_back(std::move(key));
-                return;
-            }
-        }
-    });
+    ::settings::internal::foreach_prefix([&](::settings::StringView, String key, const ::settings::kvs_type::ReadResult&) {
+        to_purge.push_back(std::move(key));
+    }, prefixes);
 
     for (const auto& key : to_purge) {
         delSetting(key);

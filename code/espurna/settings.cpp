@@ -159,6 +159,17 @@ void foreach(KeyValueResultCallback&& callback) {
     kv_store.foreach(callback);
 }
 
+void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator prefixes) {
+    kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
+        auto key = kv.key.read();
+        for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
+            if (::settings::query::samePrefix(::settings::StringView{key}, (*it))) {
+                callback((*it), std::move(key), kv.value);
+            }
+        }
+    });
+}
+
 // --------------------------------------------------------------------------
 
 template <>
