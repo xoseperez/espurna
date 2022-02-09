@@ -21,7 +21,7 @@ void rfbStatus(size_t id, bool status);
 void rfbLearn(size_t id, bool status);
 
 String rfbRetrieve(size_t id, bool status);
-void rfbStore(size_t id, bool status, const char* code);
+void rfbStore(size_t id, bool status, String code);
 
 void rfbForget(size_t id, bool status);
 void rfbSetup();

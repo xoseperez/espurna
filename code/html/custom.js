@@ -2242,17 +2242,16 @@ function updateChannels(channels) {
 
 function rfbAction(event) {
     const prefix = "button-rfb-";
-    let [action] = Array.from(event.target.classList)
+    const [buttonRfbClass] = Array.from(event.target.classList)
         .filter(x => x.startsWith(prefix));
 
-    if (action) {
-        let container = event.target.parentElement.parentElement;
-        let input = container.querySelector("input");
+    if (buttonRfbClass) {
+        const container = event.target.parentElement.parentElement;
+        const input = container.querySelector("input");
 
-        action = action.replace(prefix, "");
-        sendAction(`rfb${action}`, {
-            id: input.dataset["id"],
-            status: input.dataset["status"]
+        sendAction(`rfb${buttonRfbClass.replace(prefix, "")}`, {
+            id: parseInt(input.dataset["id"], 10),
+            status: input.name === "rfbON"
         });
     }
 }
@@ -2261,32 +2260,35 @@ function rfbAdd() {
     let container = document.getElementById("rfbNodes");
 
     const id = container.childElementCount;
-    let line = loadTemplate("rfb-node");
+    const line = loadConfigTemplate("rfb-node");
     line.querySelector("span").textContent = id;
 
     for (let input of line.querySelectorAll("input")) {
         input.dataset["id"] = id;
+        input.setAttribute("id", `${input.name}${id}`);
     }
 
-    elementSelectorOnClick(".button-rfb-learn", rfbAction);
-    elementSelectorOnClick(".button-rfb-forget", rfbAction);
-    elementSelectorOnClick(".button-rfb-send", rfbAction);
+    for (let action of ["learn", "forget"]) {
+        for (let button of line.querySelectorAll(`.button-rfb-${action}`)) {
+            button.addEventListener("click", rfbAction);
+        }
+    }
 
     mergeTemplate(container, line);
-
-    return false;
-}
-
-function rfbSelector(id, status) {
-    return `input[name='rfbcode'][data-id='${id}'][data-status='${status}']`;
 }
 
 function rfbHandleCodes(value) {
     value.codes.forEach((codes, id) => {
-        let realId = id + value.start;
-        let [off, on] = codes;
-        document.querySelector(rfbSelector(realId, 0)).value = off;
-        document.querySelector(rfbSelector(realId, 1)).value = on;
+        const realId = id + value.start;
+        const [off, on] = codes;
+
+        const rfbOn = document.getElementById(`rfbON${realId}`);
+        setInputValue(rfbOn, on);
+
+        const rfbOff = document.getElementById(`rfbOFF${realId}`);
+        setInputValue(rfbOff, off);
+
+        setOriginalsFromValues([rfbOn, rfbOff]);
     });
 }
 

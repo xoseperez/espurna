@@ -1957,7 +1957,7 @@
 
                             <fieldset>
                                 <legend>RF Codes</legend>
-                                <div id="rfbNodes"></div>
+                                <div id="rfbNodes" class="settings-group pure-form-aligned" data-settings-schema="rfbON rfbOFF"></div>
                             </fieldset>
 
                             <fieldset>
@@ -2071,27 +2071,25 @@
 
         <!-- removeIf(!rfbridge) -->
         <template id="template-rfb-node" >
-            <div class="pure-control-group">
-                <fieldset>
-                    <legend>Switch #<span></span></legend>
-                    <div class="pure-control-group">
-                        <label>Switch <strong>ON</strong></label>
-                        <input class="pure-input-1" type="text" maxlength="116" name="rfbcode" data-status="1" data-settings-ignore="true">
-                        <button type="button" class="pure-input-1-4 pure-button button-rfb-learn">LEARN</button>
-                        <button type="button" class="pure-input-1-4 pure-button button-rfb-send">SAVE</button>
-                        <button type="button" class="pure-input-1-4 pure-button button-rfb-forget">FORGET</button>
-                    </div>
-                    <div class="pure-control-group">
-                        <div><label>Switch <strong>OFF</strong></label></div>
-                        <input class="pure-input-1" type="text" maxlength="116" name="rfbcode" data-status="0" data-settings-ignore="true">
-                    </div>
-                    <div class="pure-button-group">
-                        <button type="button" class="pure-input-1-4 pure-button button-rfb-learn">LEARN</button>
-                        <button type="button" class="pure-input-1-4 pure-button button-rfb-send">SAVE</button>
-                        <button type="button" class="pure-input-1-4 pure-button button-rfb-forget">FORGET</button>
-                    </div>
-                </fieldset>
-            </div>
+            <fieldset>
+                <legend>Switch #<span></span></legend>
+                <div class="pure-control-group">
+                    <label>ON</label>
+                    <input type="text" maxlength="116" name="rfbON">
+                    <span class="pure-button-group">
+                        <button type="button" class="pure-button button-rfb-learn">LEARN</button>
+                        <button type="button" class="pure-button button-rfb-forget">FORGET</button>
+                    </span>
+                </div>
+                <div class="pure-control-group">
+                    <label>OFF</label>
+                    <input type="text" maxlength="116" name="rfbOFF">
+                    <span class="pure-button-group">
+                        <button type="button" class="pure-button button-rfb-learn">LEARN</button>
+                        <button type="button" class="pure-button button-rfb-forget">FORGET</button>
+                    </span>
+                </div>
+            </fieldset>
         </template>
         <!-- endRemoveIf(!rfbridge) -->
 

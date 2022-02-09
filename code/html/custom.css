@@ -248,7 +248,7 @@ label {
 .button-wifi-scan,
 .button-more-parent,
 .button-simple-action,
-.button-rfb-send {
+.button-rfb-save {
     background: rgb(255, 128, 0); /* orange */
 }
 
@@ -397,6 +397,36 @@ input[disabled] + .toggle .toggle__handler {
 }
 
 /* -----------------------------------------------------------------------------
+    RF Bridge panel
+   -------------------------------------------------------------------------- */
+
+#rfbNodes label {
+    width: 2em;
+    margin: 0 0 0 0;
+}
+
+@media (min-width: 48em) {
+    #rfbNodes input {
+        width: 70%;
+        margin: 0 1em 10px 1em;
+    }
+
+    #rfbNodes .pure-button-group {
+        letter-spacing: 0.15em;
+    }
+}
+
+@media (max-width: 48em) {
+    #rfbNodes input {
+        width: 100%;
+    }
+
+    #rfbNodes button {
+        width: 50%;
+    }
+}
+
+/* -----------------------------------------------------------------------------
     Loading
    -------------------------------------------------------------------------- */
 
@@ -433,27 +463,6 @@ input[disabled] + .toggle .toggle__handler {
 #color {
     padding-bottom: 1em;
     padding-top: 1em;
-}
-
-/* -----------------------------------------------------------------------------
-    RF Bridge panel
-   -------------------------------------------------------------------------- */
-
-#panel-rfb fieldset {
-    margin: 10px 2px;
-    padding: 20px;
-}
-
-#panel-rfb input {
-    margin-right: 5px;
-}
-
-#panel-rfb label {
-    padding-top: 5px;
-}
-
-#panel-rfb input {
-    text-align: center;
 }
 
 /* -----------------------------------------------------------------------------
