@@ -1424,8 +1424,18 @@ void mqttFlush() {
     root[MQTT_TOPIC_MESSAGE_ID] = (Rtcmem->mqtt)++;
 #endif
 
+    // ref. https://github.com/xoseperez/espurna/issues/2503
+    // pretend that the message is already a valid json value
+    // when the string looks like a number
+    // ([0-9] with an optional decimal separator [.])
     for (auto& payload : _mqtt_json_payload) {
-        root[payload.topic().c_str()] = payload.message().c_str();
+        const char* const topic { payload.topic().c_str() };
+        const char* const message { payload.message().c_str() };
+        if (isNumber(payload.message())) {
+            root[topic] = RawJson(message);
+        } else {
+            root[topic] = message;
+        }
     }
 
     String output;

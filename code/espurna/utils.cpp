@@ -229,43 +229,41 @@ double roundTo(double num, unsigned char positions) {
     return round(num * multiplier) / multiplier;
 }
 
-bool isNumber(const String& value) {
-    if (value.length()) {
-        const char* begin { value.c_str() };
-        const char* end { value.c_str() + value.length() };
+bool isNumber(const char* begin, const char* end) {
+    bool dot { false };
+    bool digit { false };
 
-        bool dot { false };
-        bool digit { false };
-        const char* ptr { begin };
-
-        while (ptr != end) {
-            switch (*ptr) {
-            case '\0':
-                break;
-            case '-':
-            case '+':
-                if (ptr != begin) {
-                    return false;
-                }
-                break;
-            case '.':
-                if (dot) {
-                    return false;
-                }
-                dot = true;
-                break;
-            case '0' ... '9':
-                digit = true;
-                break;
-            case 'a' ... 'z':
-            case 'A' ... 'Z':
+    for (auto ptr = begin; ptr != end; ++ptr) {
+        switch (*ptr) {
+        case '\0':
+            break;
+        case '-':
+        case '+':
+            if (ptr != begin) {
                 return false;
             }
-
-            ++ptr;
+            break;
+        case '.':
+            if (dot) {
+                return false;
+            }
+            dot = true;
+            break;
+        case '0' ... '9':
+            digit = true;
+            break;
+        case 'a' ... 'z':
+        case 'A' ... 'Z':
+            return false;
         }
+    }
 
-        return digit;
+    return digit;
+}
+
+bool isNumber(const String& value) {
+    if (value.length()) {
+        return isNumber(value.begin(), value.end());
     }
 
     return false;

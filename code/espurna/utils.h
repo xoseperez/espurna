@@ -41,6 +41,7 @@ bool sslFingerPrintArray(const char * fingerprint, unsigned char * bytearray);
 bool sslFingerPrintChar(const char * fingerprint, char * destination);
 
 char* strnstr(const char* buffer, const char* token, size_t n);
+bool isNumber(const char* begin, const char* end);
 bool isNumber(const String&);
 
 uint32_t randomNumber();
