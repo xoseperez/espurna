@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <numeric>
 
+#include <cstdio>
+
 namespace settings {
 namespace embedis {
 
@@ -58,6 +60,23 @@ struct StorageHandler {
         kvs(std::move(storage_type{blob}), 0, Size)
     {
         blob.fill(0xff);
+    }
+
+    void dump() const {
+        size_t count { 0 };
+
+        char sep { ' ' };
+        for (const auto& c : blob) {
+            ++count;
+            if (count == 8) {
+                sep = '\n';
+            }
+            ::printf("%02X%c", c, sep);
+            if (count == 8) {
+                sep = ' ';
+                count = 0;
+            }
+        }
     }
 
     array_type blob;
