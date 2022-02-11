@@ -145,3 +145,6 @@ class AnalogSensor : public BaseAnalogSensor {
         double _factor { 1.0 };
         double _offset { 0.0 };
 };
+
+constexpr AnalogSensor::Delay AnalogSensor::DelayMin;
+constexpr AnalogSensor::Delay AnalogSensor::DelayMax;
