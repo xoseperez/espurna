@@ -99,13 +99,13 @@ struct ValueResult {
     ValueResult(ValueResult&&) = default;
 
     explicit ValueResult(const String& value) :
-        _result(true),
-        _value(value)
+        _value(value),
+        _result(true)
     {}
 
     explicit ValueResult(String&& value) :
-        _result(true),
-        _value(std::move(value))
+        _value(std::move(value)),
+        _result(true)
     {}
 
     template <typename T>
@@ -141,8 +141,8 @@ struct ValueResult {
     }
 
 private:
-    bool _result { false };
     String _value;
+    bool _result { false };
 };
 
 // generic number range
