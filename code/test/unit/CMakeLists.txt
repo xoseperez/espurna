@@ -161,6 +161,7 @@ target_compile_options(terminal PRIVATE
 
 # each case is built separately, we expect these to work like a normal executable
 include(CTest)
+list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 function(build_tests)
     foreach(ARG IN LISTS ARGN)
