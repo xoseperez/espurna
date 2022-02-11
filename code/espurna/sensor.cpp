@@ -401,6 +401,185 @@ void Energy::reset() {
     ws.value = 0;
 }
 
+namespace convert {
+namespace temperature {
+namespace {
+
+struct Base {
+    constexpr Base() = default;
+    constexpr explicit Base(double value) :
+        _value(value)
+    {}
+
+    constexpr double value() const {
+        return _value;
+    }
+
+    constexpr operator double() const {
+        return _value;
+    }
+
+private:
+    double _value { 0.0 };
+};
+
+struct Kelvin : public Base {
+    using Base::Base;
+};
+
+struct Farenheit : public Base {
+    using Base::Base;
+};
+
+struct Celcius : public Base {
+    using Base::Base;
+};
+
+static constexpr Celcius AbsoluteZero { -273.15 };
+
+namespace internal {
+
+template <typename To, typename From>
+struct Converter;
+
+static constexpr double celcius_to_kelvin(double celcius) {
+    return celcius - AbsoluteZero;
+}
+
+static constexpr double celcius_to_farenheit(double celcius) {
+    return (celcius * (9.0 / 5.0)) + 32.0;
+}
+
+static constexpr double farenheit_to_celcius(double farenheit) {
+    return (farenheit - 32.0) * (5.0 / 9.0);
+}
+
+static constexpr double farenheit_to_kelvin(double farenheit) {
+    return celcius_to_kelvin(farenheit_to_celcius(farenheit));
+}
+
+static constexpr double kelvin_to_celcius(double kelvin) {
+    return kelvin + AbsoluteZero;
+}
+
+static constexpr double kelvin_to_farenheit(double kelvin) {
+    return celcius_to_farenheit(kelvin_to_celcius(kelvin));
+}
+
+static_assert(celcius_to_kelvin(kelvin_to_celcius(0.0)) == 0.0, "");
+static_assert(celcius_to_farenheit(farenheit_to_celcius(0.0)) == 0.0, "");
+static_assert(farenheit_to_kelvin(kelvin_to_farenheit(0.0)) == 0.0, "");
+static_assert(farenheit_to_celcius(celcius_to_farenheit(0.0)) == 0.0, "");
+static_assert(kelvin_to_celcius(celcius_to_kelvin(0.0)) == 0.0, "");
+static_assert(std::numeric_limits<double>::epsilon() < kelvin_to_farenheit(farenheit_to_kelvin(0.0)), "");
+
+template <>
+struct Converter<Kelvin, Kelvin> {
+    static constexpr Kelvin convert(Kelvin kelvin) {
+        return kelvin;
+    }
+};
+
+template <>
+struct Converter<Celcius, Kelvin> {
+    static constexpr Celcius convert(Kelvin kelvin) {
+        return Celcius{ kelvin_to_celcius(kelvin.value()) };
+    }
+};
+
+template <>
+struct Converter<Farenheit, Kelvin> {
+    static constexpr Farenheit convert(Kelvin kelvin) {
+        return Farenheit{ kelvin_to_farenheit(kelvin.value()) };
+    }
+};
+
+template <>
+struct Converter<Celcius, Celcius> {
+    static constexpr Celcius convert(Celcius celcius) {
+        return celcius;
+    }
+};
+
+template <>
+struct Converter<Kelvin, Celcius> {
+    static constexpr Kelvin convert(Celcius celcius) {
+        return Kelvin{ celcius_to_kelvin(celcius.value()) };
+    }
+};
+
+template <>
+struct Converter<Farenheit, Celcius> {
+    static constexpr Farenheit convert(Celcius celcius) {
+        return Farenheit{ celcius_to_farenheit(celcius.value()) };
+    }
+};
+
+template <>
+struct Converter<Farenheit, Farenheit> {
+    static constexpr Farenheit convert(Farenheit farenheit) {
+        return farenheit;
+    }
+};
+
+template <>
+struct Converter<Kelvin, Farenheit> {
+    static constexpr Kelvin convert(Farenheit farenheit) {
+        return Kelvin{ farenheit_to_kelvin(farenheit.value()) };
+    }
+};
+
+template <>
+struct Converter<Celcius, Farenheit> {
+    static constexpr Celcius convert(Farenheit farenheit) {
+        return Celcius{ farenheit_to_celcius(farenheit.value()) };
+    }
+};
+
+// just some sanity checks. note that floating point will not always produce exact results
+// (and it might not be a good idea to actually have anything compare with the Farenheit one)
+
+static_assert(Converter<Kelvin, Kelvin>::convert(Kelvin{0.0}) == Kelvin{0.0}, "");
+static_assert(Converter<Celcius, Celcius>::convert(AbsoluteZero) == AbsoluteZero, "");
+
+} // namespace internal
+
+template <typename To, typename From>
+constexpr To unit_cast(From value) {
+    return internal::Converter<To, From>::convert(value);
+}
+
+static_assert(unit_cast<Kelvin>(AbsoluteZero).value() == 0.0, "");
+static_assert(unit_cast<Celcius>(AbsoluteZero).value() == AbsoluteZero.value(), "");
+
+// since the outside api only works with the enumeration, make sure to cast it to our types for conversion
+// notice that a table like {sensor::Unit(from), sensor::Unit(to), Converter(double(*)(double))} is ~500KiB larger in practice
+// although, there may be a way to make this cheaper in both compile-time and runtime
+
+// attempt to convert the input value from one unit to the other
+// will return the input value when units match or there's no known conversion
+static constexpr double convert(double value, sensor::Unit from, sensor::Unit to) {
+#define UNIT_CAST(FROM, TO) \
+    ((from == sensor::Unit::FROM) && (to == sensor::Unit::TO)) \
+        ? (unit_cast<TO>(FROM{value}))
+
+     return UNIT_CAST(Kelvin, Kelvin) :
+        UNIT_CAST(Kelvin, Celcius) :
+        UNIT_CAST(Kelvin, Farenheit) :
+        UNIT_CAST(Celcius, Celcius) :
+        UNIT_CAST(Celcius, Kelvin) :
+        UNIT_CAST(Celcius, Farenheit) :
+        UNIT_CAST(Farenheit, Farenheit) :
+        UNIT_CAST(Farenheit, Kelvin) :
+        UNIT_CAST(Farenheit, Celcius) : value;
+
+#undef UNIT_CAST
+}
+
+} // namespace
+} // namespace temperature
+} // namespace convert
+
 namespace {
 namespace build {
 
@@ -1244,41 +1423,34 @@ sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::U
 double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
-    switch (magnitude.sensor->units(magnitude.slot)) {
-        case sensor::Unit::Kelvin:
-            if (magnitude.units == sensor::Unit::Farenheit) {
-                value = (value * (9.0/5.0)) + 32.0;
-            } else if (magnitude.units == sensor::Unit::Celcius) {
-                value = value - 273.15;
-            }
-            break;
-        case sensor::Unit::Celcius:
-            if (magnitude.units == sensor::Unit::Farenheit) {
-                value = (value * 1.8) + 32.0;
-            } else if (magnitude.units == sensor::Unit::Kelvin) {
-                value = value + 273.15;
-            }
-            break;
-        case sensor::Unit::Percentage:
-            value = constrain(value, 0.0, 100.0);
-            break;
-        case sensor::Unit::Watt:
-        case sensor::Unit::Voltampere:
-        case sensor::Unit::VoltampereReactive:
-            if ((magnitude.units == sensor::Unit::Kilowatt)
-                || (magnitude.units == sensor::Unit::Kilovoltampere)
-                || (magnitude.units == sensor::Unit::KilovoltampereReactive)) {
-                value = value / 1.0e+3;
-            }
-            break;
-        case sensor::Unit::KilowattHour:
-            // TODO: we may end up with inf at some point?
-            if (magnitude.units == sensor::Unit::Joule) {
-                value = value * 3.6e+6;
-            }
-            break;
-        default:
-            break;
+    const auto source = magnitude.sensor->units(magnitude.slot);
+
+    switch (source) {
+    case sensor::Unit::Farenheit:
+    case sensor::Unit::Kelvin:
+    case sensor::Unit::Celcius:
+        value = sensor::convert::temperature::convert(value, source, magnitude.units);
+        break;
+    case sensor::Unit::Percentage:
+        value = std::clamp(value, 0.0, 100.0);
+        break;
+    case sensor::Unit::Watt:
+    case sensor::Unit::Voltampere:
+    case sensor::Unit::VoltampereReactive:
+        if ((magnitude.units == sensor::Unit::Kilowatt)
+            || (magnitude.units == sensor::Unit::Kilovoltampere)
+            || (magnitude.units == sensor::Unit::KilovoltampereReactive)) {
+            value = value / 1.0e+3;
+        }
+        break;
+    case sensor::Unit::KilowattHour:
+        // TODO: we may end up with inf at some point?
+        if (magnitude.units == sensor::Unit::Joule) {
+            value = value * 3.6e+6;
+        }
+        break;
+    default:
+        break;
     }
 
     value = value + magnitude.correction;
