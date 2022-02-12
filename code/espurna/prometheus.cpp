@@ -19,8 +19,27 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <cmath>
 
-void _prometheusRequestHandler(AsyncWebServerRequest* request) {
-    static_assert((RELAY_SUPPORT) || (SENSOR_SUPPORT), "");
+namespace espurna {
+namespace prometheus {
+namespace build {
+namespace {
+
+constexpr bool relaySupport() {
+    return RELAY_SUPPORT == 1;
+}
+
+constexpr bool sensorSupport() {
+    return SENSOR_SUPPORT == 1;
+}
+
+static_assert(relaySupport() || sensorSupport(), "");
+
+} // namespace
+} // namespace build
+
+namespace {
+
+void handler(AsyncWebServerRequest* request) {
 
     // TODO: Add more stuff?
     // Note: Response 'stream' backing buffer is customizable. Default is 1460 bytes (see ESPAsyncWebServer.h)
@@ -55,26 +74,20 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
     request->send(response);
 }
 
-
+void setup() {
 #if API_SUPPORT
-
-void prometheusSetup() {
     apiRegister(F("metrics"),
         [](ApiRequest& request) {
-            request.handle(_prometheusRequestHandler);
+            request.handle(handler);
             return true;
         },
         nullptr
     );
-}
-
-#else 
-
-void prometheusSetup() {
+#else
     webRequestRegister([](AsyncWebServerRequest* request) {
         if (request->url().equals(F(API_BASE_PATH "metrics"))) {
             if (apiAuthenticate(request)) {
-                _prometheusRequestHandler(request);
+                handler(request);
                 return true;
             }
             request->send(403);
@@ -83,8 +96,15 @@ void prometheusSetup() {
 
         return false;
     });
+#endif
 }
 
-#endif // API_SUPPORT
+} // namespace
+} // namespace prometheus
+} // namespace espurna
+
+void prometheusSetup() {
+    espurna::prometheus::setup();
+}
 
 #endif // PROMETHEUS_SUPPORT
