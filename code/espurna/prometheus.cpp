@@ -35,7 +35,6 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
     #endif
 
     #if SENSOR_SUPPORT
-        char buffer[64] { 0 };
         for (unsigned char index = 0; index < magnitudeCount(); ++index) {
             auto value = magnitudeValue(index);
             if (std::isnan(value.get()) || std::isinf(value.get())) {
@@ -45,8 +44,9 @@ void _prometheusRequestHandler(AsyncWebServerRequest* request) {
             String topic(magnitudeTopicIndex(index));
             topic.replace("/", "");
 
-            magnitudeFormat(value, buffer, sizeof(buffer));
-            response->printf("%s %s\n", topic.c_str(), buffer);
+            response->printf("%s %s\n",
+                topic.c_str(),
+                value.toString().c_str());
         }
     #endif
 

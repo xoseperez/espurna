@@ -132,12 +132,15 @@ struct ReadValue {
 };
 
 struct Value {
-    double get();
+    static constexpr double Unknown { std::numeric_limits<double>::quiet_NaN() };
 
-    bool real_time;
-    double last;
-    double reported;
-    unsigned char decimals;
+    double get() const;
+    String toString() const;
+
+    bool real_time { false };
+    double last { Unknown };
+    double reported { Unknown };
+    unsigned char decimals { 0 };
 };
 
 } // namespace sensor
@@ -158,7 +161,6 @@ String magnitudeTopicIndex(unsigned char index);
 unsigned char magnitudeCount();
 
 sensor::Value magnitudeValue(unsigned char index);
-void magnitudeFormat(const sensor::Value& value, char* output, size_t size);
 
 // XXX: without param name it is kind of vague what exactly unsigned char is
 //      consider adding stronger param type e.g. enum class

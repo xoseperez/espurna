@@ -413,14 +413,13 @@ double _getLocalValue(const char* description, unsigned char type) {
         if (magnitudeType(index) != type) continue;
         auto value = magnitudeValue(index);
 
-        char tmp_str[16];
-        magnitudeFormat(value, tmp_str, sizeof(tmp_str));
-        DEBUG_MSG_P(PSTR("[THERMOSTAT] %s: %s\n"), description, tmp_str);
+        DEBUG_MSG_P(PSTR("[THERMOSTAT] %s: %s\n"),
+            description, value.toString().c_str());
 
         return value.get();
     }
 #endif
-    return std::numeric_limits<double>::quiet_NaN();
+    return sensor::Value::Unknown;
 }
 
 String _getLocalUnit(unsigned char type) {

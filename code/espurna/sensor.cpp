@@ -228,7 +228,6 @@ namespace {
 
 class sensor_magnitude_t {
 private:
-    constexpr static double _unset = std::numeric_limits<double>::quiet_NaN();
     static unsigned char _counts[MAGNITUDE_MAX];
 
     sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
@@ -272,13 +271,13 @@ public:
     sensor::Unit units { sensor::Unit::None }; // Units of measurement
     unsigned char decimals { 0u }; // Number of decimals in textual representation
 
-    double last { _unset };     // Last raw value from sensor (unfiltered)
-    double reported { _unset }; // Last reported value
+    double last { sensor::Value::Unknown };     // Last raw value from sensor (unfiltered)
+    double reported { sensor::Value::Unknown }; // Last reported value
     double min_delta { 0.0 };   // Minimum value change to report
     double max_delta { 0.0 };   // Maximum value change to report
     double correction { 0.0 };  // Value correction (applied when processing)
 
-    double zero_threshold { _unset }; // Reset value to zero when below threshold (applied when reading)
+    double zero_threshold { sensor::Value::Unknown }; // Reset value to zero when below threshold (applied when reading)
 };
 
 static_assert(
@@ -471,7 +470,17 @@ static_assert(celcius_to_farenheit(farenheit_to_celcius(0.0)) == 0.0, "");
 static_assert(farenheit_to_kelvin(kelvin_to_farenheit(0.0)) == 0.0, "");
 static_assert(farenheit_to_celcius(celcius_to_farenheit(0.0)) == 0.0, "");
 static_assert(kelvin_to_celcius(celcius_to_kelvin(0.0)) == 0.0, "");
-static_assert(std::numeric_limits<double>::epsilon() < kelvin_to_farenheit(farenheit_to_kelvin(0.0)), "");
+
+// ref. https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+static constexpr bool almost_equal(double lhs, double rhs, int ulp) {
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return __builtin_fabs(lhs - rhs) <= std::numeric_limits<double>::epsilon() * __builtin_fabs(lhs + rhs) * ulp
+        // unless the result is subnormal
+        || __builtin_fabs(lhs - rhs) < std::numeric_limits<double>::min();
+}
+
+static_assert(almost_equal(10.0, kelvin_to_farenheit(farenheit_to_kelvin(10.0)), 3), "");
 
 template <>
 struct Converter<Kelvin, Kelvin> {
@@ -553,7 +562,9 @@ static_assert(unit_cast<Kelvin>(AbsoluteZero).value() == 0.0, "");
 static_assert(unit_cast<Celcius>(AbsoluteZero).value() == AbsoluteZero.value(), "");
 
 // since the outside api only works with the enumeration, make sure to cast it to our types for conversion
-// notice that a table like {sensor::Unit(from), sensor::Unit(to), Converter(double(*)(double))} is ~500KiB larger in practice
+// a table like this could've also worked
+// > {sensor::Unit(from), sensor::Unit(to), Converter(double(*)(double))}
+// but, it is ~0.6KiB vs. ~0.1KiB for this one. plus, some obstacles with c++11 implementation
 // although, there may be a way to make this cheaper in both compile-time and runtime
 
 // attempt to convert the input value from one unit to the other
@@ -3283,7 +3294,7 @@ void _sensorConfigure() {
             {
                 magnitude.zero_threshold = getSetting(
                     {_magnitudeSettingsKey(magnitude, F("ZeroThreshold")), magnitude.index_global},
-                    std::numeric_limits<double>::quiet_NaN()
+                    sensor::Value::Unknown
                 );
             }
 
@@ -3339,8 +3350,14 @@ String magnitudeTopic(unsigned char type) {
     return _magnitudeTopic(type);
 }
 
-double sensor::Value::get() {
+double sensor::Value::get() const {
     return real_time ? last : reported;
+}
+
+String sensor::Value::toString() const {
+    char buffer[64] { 0 };
+    dtostrf(real_time ? last : reported, 1, decimals, buffer);
+    return buffer;
 }
 
 sensor::Value magnitudeValue(unsigned char index) {
@@ -3352,24 +3369,9 @@ sensor::Value magnitudeValue(unsigned char index) {
         result.last = magnitude.last;
         result.reported = magnitude.reported;
         result.decimals = magnitude.decimals;
-    } else {
-        result.real_time = false;
-        result.last = std::numeric_limits<double>::quiet_NaN(),
-        result.reported = std::numeric_limits<double>::quiet_NaN(),
-        result.decimals = 0u;
     }
 
     return result;
-}
-
-void magnitudeFormat(const sensor::Value& value, char* out, size_t) {
-    // TODO: 'size' does not do anything, since dtostrf used here is expected to be 'sane', but
-    //       it does not allow any size arguments besides for digits after the decimal point
-    dtostrf(
-        _sensor_real_time ? value.last : value.reported,
-        1, value.decimals,
-        out
-    );
 }
 
 unsigned char magnitudeIndex(unsigned char index) {
