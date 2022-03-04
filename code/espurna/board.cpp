@@ -321,6 +321,9 @@ const char* getEspurnaSensors() {
 #if NTC_SUPPORT
     "NTC "
 #endif
+#if PM1006_SUPPORT
+    "PM1006 "
+#endif
 #if PMSX003_SUPPORT
     "PMSX003 "
 #endif

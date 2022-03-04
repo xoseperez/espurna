@@ -156,6 +156,10 @@ namespace {
     #include "sensors/SenseAirSensor.h"
 #endif
 
+#if PM1006_SUPPORT
+    #include "sensors/PM1006Sensor.h"
+#endif
+
 #if PMSX003_SUPPORT
     #include "sensors/PMSX003Sensor.h"
 #endif
@@ -2845,6 +2849,14 @@ void _sensorLoad() {
         sensor->setBeta(NTC_BETA);
         sensor->setR0(NTC_R0);
         sensor->setT0(NTC_T0);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PM1006_SUPPORT
+    {
+        PM1006Sensor * sensor = new PM1006Sensor();
+        sensor->setRX(PM1006_RX_PIN);
         _sensors.push_back(sensor);
     }
     #endif

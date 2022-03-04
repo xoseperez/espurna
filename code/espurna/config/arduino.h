@@ -254,6 +254,7 @@
 //#define MICS2710_SUPPORT       1
 //#define MICS5525_SUPPORT       1
 //#define NTC_SUPPORT            1
+//#define PM1006_SUPPORT         1
 //#define PMSX003_SUPPORT        1
 //#define PULSEMETER_SUPPORT     1
 //#define PZEM004T_SUPPORT       1
