@@ -49,8 +49,6 @@ jobs:
     strategy:
       matrix:
         env: [esp8266-4m-base, esp8266-4m-latest-base]
-    env:
-      ESPURNA_PIO_SHARED_LIBRARIES: "1"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
