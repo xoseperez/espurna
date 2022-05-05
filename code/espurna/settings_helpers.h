@@ -246,10 +246,6 @@ struct StringView {
             && (strncmp_P(other._ptr, _ptr, _len) == 0);
     }
 
-    bool operator==(const String& other) const {
-        return compareFlash(other);
-    }
-
     constexpr const char* c_str() const {
         return _ptr;
     }
@@ -268,6 +264,14 @@ private:
     const char* _ptr;
     size_t _len;
 };
+
+inline bool operator==(const StringView& lhs, const String& rhs) {
+    return lhs.compareFlash(rhs);
+}
+
+inline bool operator==(const StringView& lhs, const SettingsKey& rhs) {
+    return lhs.compareFlash(StringView{rhs.c_str(), rhs.length()});
+}
 
 #define STRING_VIEW(X) ({\
         alignas(4) static constexpr char __pstr__[] PROGMEM = (X);\

@@ -591,8 +591,8 @@ static constexpr double convert(double value, sensor::Unit from, sensor::Unit to
 } // namespace temperature
 } // namespace convert
 
-namespace {
 namespace build {
+namespace {
 
 constexpr double DefaultMinDelta { 0.0 };
 constexpr double DefaultMaxDelta { 0.0 };
@@ -623,35 +623,151 @@ constexpr bool realTimeValues() {
     return SENSOR_REAL_TIME_VALUES;
 }
 
+} // namespace
 } // namespace build
 
 namespace settings {
+namespace prefix {
+namespace {
+
+alignas(4) static constexpr char Sensor[] PROGMEM = "sns";
+alignas(4) static constexpr char Power[] PROGMEM = "pwr";
+
+alignas(4) static constexpr char Temperature[] = "tmp";
+alignas(4) static constexpr char Humidity[] = "hum";
+alignas(4) static constexpr char Pressure[] = "press";
+alignas(4) static constexpr char Current[] = "curr";
+alignas(4) static constexpr char Voltage[] = "volt";
+alignas(4) static constexpr char PowerActive[] = "pwrP";
+alignas(4) static constexpr char PowerApparent[] = "pwrQ";
+alignas(4) static constexpr char PowerReactive[] = "pwrModS";
+alignas(4) static constexpr char PowerFactor[] = "pwrPF";
+alignas(4) static constexpr char Energy[] = "ene";
+alignas(4) static constexpr char EnergyDelta[] = "eneDelta";
+alignas(4) static constexpr char Analog[] = "analog";
+alignas(4) static constexpr char Digital[] = "digital";
+alignas(4) static constexpr char Event[] = "event";
+alignas(4) static constexpr char Pm1Dot0[] = "pm1dot0";
+alignas(4) static constexpr char Pm2Dot5[] = "pm2dot5";
+alignas(4) static constexpr char Pm10[] = "pm10";
+alignas(4) static constexpr char Co2[] = "co2";
+alignas(4) static constexpr char Voc[] = "voc";
+alignas(4) static constexpr char Iaq[] = "iaq";
+alignas(4) static constexpr char IaqAccuracy[] = "iaqAccuracy";
+alignas(4) static constexpr char IaqStatic[] = "iaqStatic";
+alignas(4) static constexpr char Lux[] = "lux";
+alignas(4) static constexpr char Uva[] = "uva";
+alignas(4) static constexpr char Uvb[] = "uvb";
+alignas(4) static constexpr char Uvi[] = "uvi";
+alignas(4) static constexpr char Distance[] = "distance";
+alignas(4) static constexpr char Hcho[] = "hcho";
+alignas(4) static constexpr char GeigerCpm[] = "gcpm";
+alignas(4) static constexpr char GeigerSievert[] = "gsiev";
+alignas(4) static constexpr char Count[] = "count";
+alignas(4) static constexpr char No2[] = "no2";
+alignas(4) static constexpr char Co[] = "co";
+alignas(4) static constexpr char Resistance[] = "res";
+alignas(4) static constexpr char Ph[] = "ph";
+alignas(4) static constexpr char Frequency[] = "freq";
+alignas(4) static constexpr char Tvoc[] = "tvoc";
+alignas(4) static constexpr char Ch2o[] = "ch2o";
+
+alignas(4) static constexpr char Unknown[] = "unknown";
+
+constexpr ::settings::StringView get(unsigned char type) {
+    return (type == MAGNITUDE_TEMPERATURE) ? Temperature :
+        (type == MAGNITUDE_HUMIDITY) ? Humidity :
+        (type == MAGNITUDE_PRESSURE) ? Pressure :
+        (type == MAGNITUDE_CURRENT) ? Current :
+        (type == MAGNITUDE_VOLTAGE) ? Voltage :
+        (type == MAGNITUDE_POWER_ACTIVE) ? PowerActive :
+        (type == MAGNITUDE_POWER_APPARENT) ? PowerApparent :
+        (type == MAGNITUDE_POWER_REACTIVE) ? PowerReactive :
+        (type == MAGNITUDE_POWER_FACTOR) ? PowerFactor :
+        (type == MAGNITUDE_ENERGY) ? Energy :
+        (type == MAGNITUDE_ENERGY_DELTA) ? EnergyDelta :
+        (type == MAGNITUDE_ANALOG) ? Analog :
+        (type == MAGNITUDE_DIGITAL) ? Digital :
+        (type == MAGNITUDE_EVENT) ? Event :
+        (type == MAGNITUDE_PM1DOT0) ? Pm1Dot0 :
+        (type == MAGNITUDE_PM2DOT5) ? Pm2Dot5 :
+        (type == MAGNITUDE_PM10) ? Pm10 :
+        (type == MAGNITUDE_CO2) ? Co2 :
+        (type == MAGNITUDE_VOC) ? Voc :
+        (type == MAGNITUDE_IAQ) ? Iaq :
+        (type == MAGNITUDE_IAQ_ACCURACY) ? IaqAccuracy :
+        (type == MAGNITUDE_IAQ_STATIC) ? IaqStatic :
+        (type == MAGNITUDE_LUX) ? Lux :
+        (type == MAGNITUDE_UVA) ? Uva :
+        (type == MAGNITUDE_UVB) ? Uvb :
+        (type == MAGNITUDE_UVI) ? Uvi :
+        (type == MAGNITUDE_DISTANCE) ? Distance :
+        (type == MAGNITUDE_HCHO) ? Hcho :
+        (type == MAGNITUDE_GEIGER_CPM) ? GeigerCpm :
+        (type == MAGNITUDE_GEIGER_SIEVERT) ? GeigerSievert :
+        (type == MAGNITUDE_COUNT) ? Count :
+        (type == MAGNITUDE_NO2) ? No2 :
+        (type == MAGNITUDE_CO) ? Co :
+        (type == MAGNITUDE_RESISTANCE) ? Resistance :
+        (type == MAGNITUDE_PH) ? Ph :
+        (type == MAGNITUDE_FREQUENCY) ? Frequency :
+        (type == MAGNITUDE_TVOC) ? Tvoc :
+        (type == MAGNITUDE_CH2O) ? Ch2o :
+        Unknown;
+}
+
+} // namespace
+} // namespace prefix
+
+namespace suffix {
+namespace {
+
+alignas(4) static constexpr char Units[] PROGMEM = "Units";
+alignas(4) static constexpr char Ratio[] PROGMEM = "Ratio";
+alignas(4) static constexpr char Correction[] PROGMEM = "Correction";
+
+} // namespace
+} // namespace suffix
+
+namespace keys {
+namespace {
+
+alignas(4) static constexpr char ReadInterval[] PROGMEM = "snsRead";
+alignas(4) static constexpr char InitInterval[] PROGMEM = "snsInit";
+alignas(4) static constexpr char ReportEvery[] PROGMEM = "snsReport";
+alignas(4) static constexpr char SaveEvery[] PROGMEM = "snsSave";
+alignas(4) static constexpr char RealTimeValues[] PROGMEM = "snsRealTime";
+
+} // namespace
+} // namespace keys
+
+namespace {
 
 espurna::duration::Seconds readInterval() {
-    return std::clamp(getSetting("snsRead", build::readInterval()),
+    return std::clamp(getSetting(FPSTR(keys::ReadInterval), build::readInterval()),
             build::ReadIntervalMin, build::ReadIntervalMax);
 }
 
 espurna::duration::Seconds initInterval() {
-    return std::clamp(getSetting("snsInit", build::initInterval()),
+    return std::clamp(getSetting(FPSTR(keys::InitInterval), build::initInterval()),
             build::ReadIntervalMin, build::ReadIntervalMax);
 }
 
 int reportEvery() {
-    return std::clamp(getSetting("snsReport", build::reportEvery()),
+    return std::clamp(getSetting(FPSTR(keys::ReportEvery), build::reportEvery()),
             build::ReportEveryMin, build::ReportEveryMax);
 }
 
 int saveEvery() {
-    return getSetting("snsSave", build::saveEvery());
+    return getSetting(FPSTR(keys::SaveEvery), build::saveEvery());
 }
 
 bool realTimeValues() {
-    return getSetting("snsRealTime", build::realTimeValues());
+    return getSetting(FPSTR(keys::RealTimeValues), build::realTimeValues());
 }
 
-} // namespace settings
 } // namespace
+} // namespace settings
 } // namespace sensor
 
 namespace settings {
@@ -1115,10 +1231,10 @@ String _magnitudeTopic(unsigned char type) {
         case MAGNITUDE_EVENT:
             result = F("event");
             break;
-        case MAGNITUDE_PM1dot0:
+        case MAGNITUDE_PM1DOT0:
             result = F("pm1dot0");
             break;
-        case MAGNITUDE_PM2dot5:
+        case MAGNITUDE_PM2DOT5:
             result = F("pm2dot5");
             break;
         case MAGNITUDE_PM10:
@@ -1337,8 +1453,8 @@ MagnitudeUnitsRange _magnitudeUnitsRange(unsigned char type) {
         break;
     }
 
-    case MAGNITUDE_PM1dot0:
-    case MAGNITUDE_PM2dot5:
+    case MAGNITUDE_PM1DOT0:
+    case MAGNITUDE_PM2DOT5:
     case MAGNITUDE_PM10:
     case MAGNITUDE_TVOC:
     case MAGNITUDE_CH2O: {
@@ -1507,86 +1623,7 @@ void _sensorForEachError(T&& callback) {
 }
 
 const __FlashStringHelper* _magnitudeSettingsPrefix(unsigned char type) {
-    switch (type) {
-    case MAGNITUDE_TEMPERATURE:
-        return F("tmp");
-    case MAGNITUDE_HUMIDITY:
-        return F("hum");
-    case MAGNITUDE_PRESSURE:
-        return F("press");
-    case MAGNITUDE_CURRENT:
-        return F("curr");
-    case MAGNITUDE_VOLTAGE:
-        return F("volt");
-    case MAGNITUDE_POWER_ACTIVE:
-        return F("pwrP");
-    case MAGNITUDE_POWER_APPARENT:
-        return F("pwrQ");
-    case MAGNITUDE_POWER_REACTIVE:
-        return F("pwrModS");
-    case MAGNITUDE_POWER_FACTOR:
-        return F("pwrPF");
-    case MAGNITUDE_ENERGY:
-        return F("ene");
-    case MAGNITUDE_ENERGY_DELTA:
-        return F("eneDelta");
-    case MAGNITUDE_ANALOG:
-        return F("analog");
-    case MAGNITUDE_DIGITAL:
-        return F("digital");
-    case MAGNITUDE_EVENT:
-        return F("event");
-    case MAGNITUDE_PM1dot0:
-        return F("pm1dot0");
-    case MAGNITUDE_PM2dot5:
-        return F("pm1dot5");
-    case MAGNITUDE_PM10:
-        return F("pm10");
-    case MAGNITUDE_CO2:
-        return F("co2");
-    case MAGNITUDE_VOC:
-        return F("voc");
-    case MAGNITUDE_IAQ:
-        return F("iaq");
-    case MAGNITUDE_IAQ_ACCURACY:
-        return F("iaqAccuracy");
-    case MAGNITUDE_IAQ_STATIC:
-        return F("iaqStatic");
-    case MAGNITUDE_LUX:
-        return F("lux");
-    case MAGNITUDE_UVA:
-        return F("uva");
-    case MAGNITUDE_UVB:
-        return F("uvb");
-    case MAGNITUDE_UVI:
-        return F("uvi");
-    case MAGNITUDE_DISTANCE:
-        return F("distance");
-    case MAGNITUDE_HCHO:
-        return F("hcho");
-    case MAGNITUDE_GEIGER_CPM:
-        return F("gcpm");
-    case MAGNITUDE_GEIGER_SIEVERT:
-        return F("gsiev");
-    case MAGNITUDE_COUNT:
-        return F("count");
-    case MAGNITUDE_NO2:
-        return F("no2");
-    case MAGNITUDE_CO:
-        return F("co");
-    case MAGNITUDE_RESISTANCE:
-        return F("res");
-    case MAGNITUDE_PH:
-        return F("ph");
-    case MAGNITUDE_FREQUENCY:
-        return F("freq");
-    case MAGNITUDE_TVOC:
-        return F("tvoc");
-    case MAGNITUDE_CH2O:
-        return F("ch2o");
-    }
-
-    return nullptr;
+    return FPSTR(sensor::settings::prefix::get(type).c_str());
 }
 
 template <typename T>
@@ -1617,8 +1654,7 @@ constexpr bool _magnitudeCorrectionSupported(unsigned char type) {
 }
 
 SettingsKey _magnitudeSettingsCorrectionKey(unsigned char type, size_t index) {
-    static constexpr char Key[] PROGMEM { "Correction" };
-    return {_magnitudeSettingsKey(type, FPSTR(Key)), index};
+    return {_magnitudeSettingsKey(type, FPSTR(sensor::settings::suffix::Correction)), index};
 }
 
 SettingsKey _magnitudeSettingsCorrectionKey(const sensor_magnitude_t& magnitude) {
@@ -1633,13 +1669,11 @@ bool _sensorCheckKeyPrefix(::settings::StringView key) {
     using settings::query::samePrefix;
     using settings::StringView;
 
-    alignas(4) static constexpr char SensorPrefix[] PROGMEM = "sns";
-    if (samePrefix(key, SensorPrefix)) {
+    if (samePrefix(key, sensor::settings::prefix::Sensor)) {
         return true;
     }
 
-    alignas(4) static constexpr char PowerPrefix[] PROGMEM = "pwr";
-    if (samePrefix(key, PowerPrefix)) {
+    if (samePrefix(key, sensor::settings::prefix::Power)) {
         return true;
     }
 
@@ -1649,8 +1683,7 @@ bool _sensorCheckKeyPrefix(::settings::StringView key) {
 }
 
 SettingsKey _magnitudeSettingsRatioKey(unsigned char type, size_t index) {
-    static constexpr char RatioKey[] PROGMEM { "Ratio" };
-    return {_magnitudeSettingsKey(type, FPSTR(RatioKey)), index};
+    return {_magnitudeSettingsKey(type, FPSTR(sensor::settings::suffix::Ratio)), index};
 }
 
 SettingsKey _magnitudeSettingsRatioKey(const sensor_magnitude_t& magnitude) {
@@ -1668,22 +1701,38 @@ constexpr bool _magnitudeRatioSupported(unsigned char type) {
         || (type == MAGNITUDE_ENERGY);
 }
 
+SettingsKey _magnitudeSettingsUnitsKey(unsigned char type, size_t index) {
+    return {_magnitudeSettingsKey(type, FPSTR(sensor::settings::suffix::Units)), index};
+}
+
+SettingsKey _magnitudeSettingsUnitsKey(const sensor_magnitude_t& magnitude) {
+    return _magnitudeSettingsUnitsKey(magnitude.type, magnitude.index_global);
+}
+
 String _sensorQueryHandler(::settings::StringView key) {
     String out;
 
     for (auto& magnitude : _magnitudes) {
         if (_magnitudeRatioSupported(magnitude.type)) {
-            auto expected = String(_magnitudeSettingsRatioKey(magnitude));
+            auto expected = _magnitudeSettingsRatioKey(magnitude);
             if (key == expected) {
                 out = String(reinterpret_cast<BaseEmonSensor*>(magnitude.sensor)->defaultRatio(magnitude.slot));
                 break;
             }
-        } else if (_magnitudeCorrectionSupported(magnitude.type)) {
-            auto expected = String(_magnitudeSettingsCorrectionKey(magnitude));
+        }
+
+        if (_magnitudeCorrectionSupported(magnitude.type)) {
+            auto expected = _magnitudeSettingsCorrectionKey(magnitude);
             if (key == expected) {
                 out = String(magnitude.correction);
                 break;
             }
+        }
+
+        auto expected = _magnitudeSettingsUnitsKey(magnitude);
+        if (key == expected) {
+            out = ::settings::internal::serialize(magnitude.units);
+            break;
         }
     }
 
@@ -1851,10 +1900,10 @@ String _magnitudeName(unsigned char type) {
         case MAGNITUDE_EVENT:
             result = F("Event");
             break;
-        case MAGNITUDE_PM1dot0:
+        case MAGNITUDE_PM1DOT0:
             result = F("PM1.0");
             break;
-        case MAGNITUDE_PM2dot5:
+        case MAGNITUDE_PM2DOT5:
             result = F("PM2.5");
             break;
         case MAGNITUDE_PM10:
@@ -2347,9 +2396,10 @@ void _sensorInitCommands() {
             auto& magnitude = _magnitudes.at(index);
             dtostrf(magnitude.last, 1, magnitude.decimals, last);
             dtostrf(magnitude.reported, 1, magnitude.decimals, reported);
-            ctx.output.printf_P(PSTR("%u * %s/%u @ %s (last:%s, reported:%s)\n"),
+            ctx.output.printf_P(PSTR("%u * %s/%u @ %s (read:%s reported:%s units:%s)\n"),
                 index, _magnitudeTopic(magnitude.type).c_str(), magnitude.index_global,
-                _magnitudeDescription(magnitude).c_str(), last, reported);
+                _magnitudeDescription(magnitude).c_str(), last, reported,
+                _magnitudeUnits(magnitude).c_str());
         }
         terminalOK();
     });
@@ -3247,13 +3297,8 @@ void _sensorConfigure() {
             }
 
             // adjust units based on magnitude's type
-            {
-                const sensor::Unit default_unit { magnitude.sensor->units(magnitude.slot) };
-                const String key {
-                    String(_magnitudeSettingsPrefix(magnitude.type)) + F("Units") + String(magnitude.index_global, 10) };
-
-                magnitude.units = _magnitudeUnitFilter(magnitude, getSetting(key, default_unit));
-            }
+            magnitude.units = _magnitudeUnitFilter(magnitude,
+                getSetting(_magnitudeSettingsUnitsKey(magnitude), magnitude.sensor->units(magnitude.slot)));
 
             // adjust resulting value (simple plus or minus)
             // TODO: inject math or rpnlib expression?
