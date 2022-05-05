@@ -1649,8 +1649,8 @@ constexpr double _magnitudeCorrection(unsigned char type) {
 constexpr bool _magnitudeCorrectionSupported(unsigned char type) {
   return (MAGNITUDE_TEMPERATURE == type)
       || (MAGNITUDE_HUMIDITY == type)
-      || (MAGNITUDE_LUX == type)
-      || (MAGNITUDE_PRESSURE == type);
+      || (MAGNITUDE_PRESSURE == type)
+      || (MAGNITUDE_LUX == type);
 }
 
 SettingsKey _magnitudeSettingsCorrectionKey(unsigned char type, size_t index) {
