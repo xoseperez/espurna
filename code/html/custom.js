@@ -1909,12 +1909,12 @@ function initMagnitudesSettings(data) {
     data.values.forEach((cfg, id) => {
         const settings = fromSchema(cfg, data.schema);
 
-        if (settings.Ratio != null) {
+        if (settings.Ratio !== null) {
             initMagnitudesRatio(id, settings.Ratio);
             initMagnitudesExpected(id);
         }
 
-        if (settings.Correction != null) {
+        if (settings.Correction !== null) {
             initMagnitudesCorrection(id, settings.Correction);
         }
     });
