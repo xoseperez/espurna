@@ -2518,7 +2518,7 @@ void _sensorLoad() {
     #endif
 
     DHT2_PIN and DHT2_TYPE should be globally accessible:
-    - as `src_build_flags = -DDHT2_PIN=... -DDHT2_TYPE=...`
+    - as `build_src_flags = -DDHT2_PIN=... -DDHT2_TYPE=...`
     - in custom.h, as `#define ...`
 
     */

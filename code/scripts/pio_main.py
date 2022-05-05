@@ -54,7 +54,7 @@ if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
 app_inject_version(projenv)
 
 # handle ESPURNA_BOARD and ESPURNA_FLAGS here, since projenv is not available in pre-scripts
-# TODO: prefer PLATFORMIO_SRC_BUILD_FLAGS instead? both of these only allow -D...
+# TODO: prefer PLATFORMIO_BUILD_SRC_FLAGS instead? both of these only allow -D...
 app_inject_flags(projenv)
 
 # handle when CI does a tagged build or user explicitly asked to store the firmware.bin

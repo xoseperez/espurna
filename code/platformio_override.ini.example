@@ -15,7 +15,7 @@
 
 [env:my-sonoff-build-dht]
 extends = env:esp8266-1m-base
-src_build_flags = -DITEAD_SONOFF_BASIC -DDHT_SUPPORT=1 -DDHT_PIN=2
+build_src_flags = -DITEAD_SONOFF_BASIC -DDHT_SUPPORT=1 -DDHT_PIN=2
 
 
 # Example for an environment based on a 1M byte esp8266 board. E.G. Sonoff Basic R2 or R3.
@@ -27,11 +27,11 @@ src_build_flags = -DITEAD_SONOFF_BASIC -DDHT_SUPPORT=1 -DDHT_PIN=2
 
 [env:my-sonoff-build01]
 extends = env:esp8266-1m-latest-base
-src_build_flags = -DMY_SONOFF_BUILD01 -DUSE_CUSTOM_H
+build_src_flags = -DMY_SONOFF_BUILD01 -DUSE_CUSTOM_H
 
 
 # Example for an environment the same as 'my-sonoff-build01' but with a different 'custom.h' configuration.
 
 [env:my-sonoff-build02]
 extends = env:esp8266-1m-latest-base
-src_build_flags = -DMY_SONOFF_BUILD02 -DUSE_CUSTOM_H
+build_src_flags = -DMY_SONOFF_BUILD02 -DUSE_CUSTOM_H
