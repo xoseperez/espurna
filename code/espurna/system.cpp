@@ -141,11 +141,23 @@ uint32_t RandomDevice::operator()() const {
 
 namespace time {
 
-void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
-    const auto start = CoreClock::now();
-    while (CoreClock::now() - start < timeout) {
-        delay(interval);
+// c/p from the Core 3.1.0, allow an additional calculation, so we don't delay more than necessary
+// plus, another helper when there are no external blocking checker
+
+bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreClock::duration interval) {
+    auto expired = CoreClock::now() - start;
+    if (expired >= timeout) {
+        return true;
     }
+
+    delay(std::min((timeout - expired), interval));
+    return false;
+}
+
+void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
+    blockingDelay(timeout, interval, []() {
+        return false;
+    });
 }
 
 void blockingDelay(CoreClock::duration timeout) {
