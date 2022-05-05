@@ -265,6 +265,10 @@ private:
     size_t _len;
 };
 
+inline bool operator==(const StringView& lhs, const char* rhs) {
+    return lhs.compareFlash(rhs);
+}
+
 inline bool operator==(const StringView& lhs, const String& rhs) {
     return lhs.compareFlash(rhs);
 }
