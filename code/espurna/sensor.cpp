@@ -48,6 +48,10 @@ namespace {
 #include "sensors/BaseAnalogEmonSensor.h"
 #include "sensors/BaseAnalogSensor.h"
 
+#if DUMMY_SENSOR_SUPPORT
+    #include "sensors/DummySensor.h"
+#endif
+
 #if AM2320_SUPPORT
     #include "sensors/AM2320Sensor.h"
 #endif
@@ -2674,6 +2678,10 @@ void _sensorLoad() {
             _sensors.push_back(sensor);
         }
     }
+    #endif
+
+    #if DUMMY_SENSOR_SUPPORT
+        _sensors.push_back(new DummySensor());
     #endif
 
     #if ECH1560_SUPPORT

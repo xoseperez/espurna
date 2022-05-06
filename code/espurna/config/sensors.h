@@ -386,6 +386,15 @@
 #endif
 
 //------------------------------------------------------------------------------
+// Dummy sensor, implementing some of the magnitudes
+// Enable support by passing DUMMY_SENSOR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef DUMMY_SENSOR_SUPPORT
+#define DUMMY_SENSOR_SUPPORT            0
+#endif
+
+//------------------------------------------------------------------------------
 // ECH1560 based power sensor
 // Enable support by passing ECH1560_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1457,6 +1466,7 @@
     DALLAS_SUPPORT || \
     DHT_SUPPORT || \
     DIGITAL_SUPPORT || \
+    DUMMY_SENSOR_SUPPORT || \
     ECH1560_SUPPORT || \
     EMON_ADC121_SUPPORT || \
     EMON_ADS1X15_SUPPORT || \
