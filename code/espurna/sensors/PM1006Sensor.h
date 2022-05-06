@@ -203,7 +203,7 @@ class PM1006Sensor : public BaseSensor {
         
         double _pm25 = 0;
 
-        unsigned int _pin_rx;
+        unsigned char _pin_rx = PM1006_RX_PIN;
         SoftwareSerial * _serial = NULL;
 
 };

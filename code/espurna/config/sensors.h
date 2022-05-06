@@ -887,7 +887,7 @@
 #endif
 
 #ifndef PM1006_RX_PIN
-#define PM1006_RX_PIN                     2
+#define PM1006_RX_PIN                     3
 #endif
 
 #ifndef PM1006_BAUDRATE
