@@ -67,10 +67,23 @@ def install_libraries(specs, storage, verbose=False):
     lm = LibraryPackageManager(storage)
     lm.set_log_level(logging.DEBUG if verbose else logging.INFO)
 
+    known = set()
     for spec in specs:
         pkg = lm.get_package(spec)
         if not pkg:
-            lm.install(spec, skip_dependencies=True)
+            pkg = lm.install(spec, skip_dependencies=True)
+
+        if pkg:
+            known.add(pkg)
+
+    lm.memcache_reset()
+
+    installed = set(lm.get_installed())
+    for pkg in installed.difference(known):
+        try:
+            lm.uninstall(pkg)
+        except:
+            pass
 
 
 def ensure_platform_updated():
