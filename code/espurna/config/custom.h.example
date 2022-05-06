@@ -12,7 +12,7 @@
 
 // Example of a Sonoff Basic board with some options disabled to reduce firmware size.
 
-#if defined(MY_SONOFF_BUILD01)    // This section will be used when src_build_flags contains
+#if defined(MY_SONOFF_BUILD01)    // This section will be used when build_src_flags contains
                                   //  -DMY_SONOFF_BUILD01 in 'platformio_override.ini'
 
     #define MANUFACTURER               "ITEAD"
@@ -45,7 +45,7 @@
 // the 'DOUBLE CLICK, LONG CLICK OR LONG-LONG CLICK' trigger. A BMX280 environment
 // sensor is also connected using I2C on GPIO 1 and 3.
 
-#elif defined(MY_SONOFF_BUILD02)    // This section will be used when src_build_flags contains
+#elif defined(MY_SONOFF_BUILD02)    // This section will be used when build_src_flags contains
                                     //  -DMY_SONOFF_BUILD02 in 'platformio_override.ini
 
     // Info - Custom Basic with BMX280 I2C on GPIO 1 and 3

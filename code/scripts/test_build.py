@@ -55,7 +55,7 @@ def build_configurations(args, configurations):
         if not args.no_single_source:
             os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
-        os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = " ".join(
+        os_env["PLATFORMIO_BUILD_SRC_FLAGS"] = " ".join(
             [
                 '-DMANUFACTURER=\\"TEST_BUILD\\"',
                 '-DDEVICE=\\"{}\\"'.format(cfg.stem.replace(" ", "_").upper()),

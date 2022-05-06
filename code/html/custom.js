@@ -1396,20 +1396,21 @@ function showPanel(event) {
 // Relays & magnitudes mapping
 // -----------------------------------------------------------------------------
 
-function createRelayList(values, container, template_name) {
-    let target = document.getElementById(container);
+function createRelayList(containerId, values, keyPrefix) {
+    const target = document.getElementById(containerId);
     if (target.childElementCount > 0) {
         return;
     }
 
     // TODO: let schema set the settings key
-    let template = loadConfigTemplate(template_name);
+    const template = loadConfigTemplate("number-input");
     values.forEach((value, index) => {
-        let line = template.cloneNode(true);
+        const line = template.cloneNode(true);
         line.querySelector("label").textContent = (Enumerable.relay)
             ? Enumerable.relay[index].name : `Switch #${index}`;
 
-        let input = line.querySelector("input");
+        const input = line.querySelector("input");
+        input.name = keyPrefix;
         input.value = value;
         input.dataset["original"] = value;
 
@@ -1420,7 +1421,7 @@ function createRelayList(values, container, template_name) {
 //removeIf(!sensor)
 
 function initModuleMagnitudes(data) {
-    const targetId = `${data.prefix}Magnitudes`;
+    const targetId = `${data.prefix}-magnitudes`;
 
     let target = document.getElementById(targetId);
     if (target.childElementCount > 0) { return; }
@@ -1796,7 +1797,7 @@ function createMagnitudeUnitSelector(id, magnitude) {
     }
 }
 
-function emonRatioInfo(id) {
+function magnitudeSettingInfo(id, key) {
     const out = {
         id: id,
         name: Magnitudes.properties[id].name,
@@ -1804,25 +1805,33 @@ function emonRatioInfo(id) {
         index_global: `${Magnitudes.properties[id].index_global}`
     };
 
-    out.key = `${out.prefix}Ratio${out.index_global}`;
+    out.key = `${out.prefix}${key}${out.index_global}`;
     return out;
 }
 
-function initMagnitudesRatio(id, ratio) {
-    const template = loadTemplate("emon-ratios");
+function emonRatioInfo(id) {
+    return magnitudeSettingInfo(id, "Ratio");
+}
+
+function initMagnitudeTextSetting(containerId, id, keySuffix, value) {
+    const template = loadTemplate("text-input");
     const input = template.querySelector("input");
 
-    const info = emonRatioInfo(id);
+    const info = magnitudeSettingInfo(id, keySuffix);
     input.id = info.key;
     input.name = input.id;
-    input.value = ratio;
+    input.value = value;
     setOriginalsFromValuesForNode(template, [input]);
 
     const label = template.querySelector("label");
     label.textContent = info.name;
     label.htmlFor = input.id;
 
-    mergeTemplate(document.getElementById("emon-ratios"), template);
+    mergeTemplate(document.getElementById(containerId), template);
+}
+
+function initMagnitudesRatio(id, value) {
+    initMagnitudeTextSetting("emon-ratios", id, "Ratio", value);
 }
 
 function initMagnitudesExpected(id) {
@@ -1892,12 +1901,21 @@ function emonApplyRatios() {
     showPanelByName("sns");
 }
 
+function initMagnitudesCorrection(id, value) {
+    initMagnitudeTextSetting("magnitude-corrections", id, "Correction", value);
+}
+
 function initMagnitudesSettings(data) {
     data.values.forEach((cfg, id) => {
         const settings = fromSchema(cfg, data.schema);
-        if (settings.Ratio) {
+
+        if (settings.Ratio !== null) {
             initMagnitudesRatio(id, settings.Ratio);
             initMagnitudesExpected(id);
+        }
+
+        if (settings.Correction !== null) {
+            initMagnitudesCorrection(id, settings.Correction);
         }
     });
 }
@@ -2628,12 +2646,12 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("dczRelays" === key) {
-            createRelayList(value, "dczRelays", "dcz-relay");
+            createRelayList("dcz-relays", value, "dczRelayIdx");
             return;
         }
 
         if ("tspkRelays" === key) {
-            createRelayList(value, "tspkRelays", "tspk-relay");
+            createRelayList("tspk-relays", value, "tspkRelay");
             return;
         }
 

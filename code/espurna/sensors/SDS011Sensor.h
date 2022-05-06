@@ -95,7 +95,7 @@ class SDS011Sensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_PM2dot5;
+            if (index == 0) return MAGNITUDE_PM2DOT5;
             if (index == 1) return MAGNITUDE_PM10;
             return MAGNITUDE_NONE;
         }
