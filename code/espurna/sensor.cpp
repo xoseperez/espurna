@@ -3367,9 +3367,9 @@ void _sensorConfigure() {
 
 #if SENSOR_DEBUG
 void _sensorDebugSetup() {
-    _magnitude_read_handlers.push_back([](const String& topic, unsigned char index, double, const char* repr) {
+    _magnitude_read_handlers.push_front([](const String& topic, unsigned char index, double, const char* repr) {
         DEBUG_MSG_P(PSTR("[SENSOR] %s/%hhu -> %s (%s)\n"),
-            topic.c_str(), index, repr, _magnitudeUnits(_magnitudes[index]));
+            topic.c_str(), index, repr, _magnitudeUnits(_magnitudes[index]).c_str());
     });
 }
 #endif

@@ -78,26 +78,26 @@ class PM1006Sensor : public BaseSensor {
             if (_serial_is_hardware()) {
                 snprintf(buffer, sizeof(buffer), "PM1006 @ HwSerial");
             } else {
-                snprintf(buffer, sizeof(buffer), "PM1006 @ SwSerial(%u,NULL)", _pin_rx);
+                snprintf(buffer, sizeof(buffer), "PM1006 @ SwSerial(%hhu,NULL)", _pin_rx);
             }
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
-        String description(unsigned char index) {
+        String description(unsigned char) {
             return description();
-        };
+        }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u", _pin_rx);
+            char buffer[4];
+            snprintf(buffer, sizeof(buffer), "%hhu", _pin_rx);
             return String(buffer);
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_PM2dot5;
+            if (index == 0) return MAGNITUDE_PM2DOT5;
             return MAGNITUDE_NONE;
         }
 
@@ -118,11 +118,11 @@ class PM1006Sensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        bool _serial_is_hardware() {
+        bool _serial_is_hardware() const {
             return (3 == _pin_rx) || (13 == _pin_rx);
         }
 
-        bool _serial_available() {
+        bool _serial_available() const {
             if (_serial_is_hardware()) {
                 return Serial.available();
             } else {
@@ -149,19 +149,15 @@ class PM1006Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         void _parse() {
-
-            #if SENSOR_DEBUG
-            char hex[(sizeof(_buffer)*2)+1] = {0};
-            if (hexEncode(_buffer, sizeof(_buffer), hex, sizeof(hex))) {
-                DEBUG_MSG("[SENSOR] PM1006: %s\n", hex);
-            }
-            #endif
+#if SENSOR_DEBUG
+            DEBUG_MSG("[SENSOR] PM1006: %s\n", hexEncode(_buffer).c_str());
+#endif
 
             // check second header byte
             if ((_buffer[1] != 0x11) || (_buffer[2] != 0x0B)) {
-                #if SENSOR_DEBUG
-                    DEBUG_MSG("[SENSOR] PM1006: Wrong header\n");
-                #endif
+#if SENSOR_DEBUG
+                DEBUG_MSG("[SENSOR] PM1006: Wrong header\n");
+#endif
                 return;
             }
 
@@ -169,9 +165,9 @@ class PM1006Sensor : public BaseSensor {
             uint8_t crc = 0;
             for (unsigned char i=0; i<20; i++) crc += _buffer[i];
             if (crc != 0) {
-                #if SENSOR_DEBUG
-                    DEBUG_MSG("[SENSOR] PM1006: Wrong CRC\n");
-                #endif
+#if SENSOR_DEBUG
+                DEBUG_MSG("[SENSOR] PM1006: Wrong CRC\n");
+#endif
                 return;
             }
 
