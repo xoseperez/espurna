@@ -121,6 +121,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439], [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
 - Refactor iFan into a separate module ([a40eca30](https://github.com/xoseperez/espurna/commit/a40eca30ad79315afdb67afa0b0743d4c0087e93))
 - Add support for Yagusmart switches ([#2488](https://github.com/xoseperez/espurna/pull/2488), thanks to **[@MelanieT](https://github.com/MelanieT)**)
+- Add support for Itead Sonoff POW R3 ([#2506](https://github.com/xoseperez/espurna/issues/2506), thanks to **[@nixkj](https://github.com/nixkj)**)
 #### HomeAssistant
 - Advertise lights transition support in the discovery message ([4d157ccd5](https://github.com/xoseperez/espurna/commit/4d157ccd5bd5ffefa8b0bca79c4b2196c8a3e5dc))
 - Reworked discovery, implement retries and queueing using the MQTT broker ACKs ([59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f))
@@ -170,7 +171,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Shared ADS1X115 I2CPort, support common gain & data rate settings [c056c54d](https://github.com/xoseperez/espurna/commit/c056c54db4a528d038584fbfacb8fb410c7c7a2e)
 - Terminal commands to set expected ratio (`EXPECTED`) and total energy recorded by the sensor (`ENERGY`) [8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85)
 - Add PM1006 air quality sensor, found inside the IKEA VINDRIKTNING ([#2505](https://github.com/xoseperez/espurna/issues/2505), thanks to **[@xoseperez](https://github.com/xoseperez)**)
-- Add support for Itead Sonoff POW R3 ([#2506](https://github.com/xoseperez/espurna/issues/2506), thanks to **[@nixkj](https://github.com/nixkj)**)
 #### Settings
 - Led and button GPIO runtime settings ([#2117](https://github.com/xoseperez/espurna/issues/2117), [#2162](https://github.com/xoseperez/espurna/issues/2162), [#2170](https://github.com/xoseperez/espurna/issues/2170), [#2177](https://github.com/xoseperez/espurna/issues/2177))
 - Configure light dimmer pins from settings ([#2129](https://github.com/xoseperez/espurna/issues/2129))
