@@ -1792,7 +1792,7 @@ function createMagnitudeUnitSelector(id, magnitude) {
         setOriginalsFromValuesForNode(line, [select]);
 
         const container = document.getElementById("magnitude-units");
-        container.style.display = "block";
+        container.parentElement.classList.remove("maybe-hidden");
         mergeTemplate(container, line);
     }
 }
@@ -1827,7 +1827,9 @@ function initMagnitudeTextSetting(containerId, id, keySuffix, value) {
     label.textContent = info.name;
     label.htmlFor = input.id;
 
-    mergeTemplate(document.getElementById(containerId), template);
+    const container = document.getElementById(containerId);
+    container.parentElement.classList.remove("maybe-hidden");
+    mergeTemplate(container, template);
 }
 
 function initMagnitudesRatio(id, value) {
@@ -1917,6 +1919,23 @@ function initMagnitudesSettings(data) {
         if (settings.Correction !== null) {
             initMagnitudesCorrection(id, settings.Correction);
         }
+
+        let threshold = settings.ZeroThreshold;
+        if (threshold === null) {
+            threshold = NaN;
+        }
+
+        initMagnitudeTextSetting(
+            "magnitude-zero-thresholds", id,
+            "ZeroThreshold", threshold);
+
+        initMagnitudeTextSetting(
+            "magnitude-min-deltas", id,
+            "MinDelta", settings.MinDelta);
+
+        initMagnitudeTextSetting(
+            "magnitude-max-deltas", id,
+            "MaxDelta", settings.MaxDelta);
     });
 }
 

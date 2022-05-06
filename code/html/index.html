@@ -1900,12 +1900,6 @@
                                 </div>
                             </fieldset>
 
-                            <fieldset>
-                                <legend>Corrections</legend>
-                                <div id="magnitude-corrections" class="pure-form-aligned settings-group">
-                                </div>
-                            </fieldset>
-
                             <fieldset class="module module-emon">
                                 <legend>Ratios</legend>
                                 <div id="emon-ratios" class="pure-form-aligned settings-group">
@@ -1913,12 +1907,6 @@
 
                                 <div class="pure-controls">
                                     <button type="button" data-panel="emon-expected" class="pure-button pure-input-1-2 button-emon-expected">Calculate ratios from expected values</button>
-                                </div>
-                            </fieldset>
-
-                            <fieldset>
-                                <legend>Units</legend>
-                                <div id="magnitude-units" class="pure-form-aligned settings-group">
                                 </div>
                             </fieldset>
 
@@ -1933,6 +1921,39 @@
                                     <button type="button" name="emon-reset-energy" class="pure-button pure-input-1-2 button-simple-action">Set the energy count of all sensors to zero</button>
                                 </div>
 
+                            </fieldset>
+
+                            <fieldset class="maybe-hidden">
+                                <legend>Units</legend>
+                                <div id="magnitude-units" class="pure-form-aligned settings-group">
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="maybe-hidden">
+                                <legend>Corrections</legend>
+                                <div id="magnitude-corrections" class="pure-form-aligned settings-group">
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Zero threshold</legend>
+                                <span class="pure-form-message">Report only when the value is above this threshold. Set to <code>NaN</code> (default) to disable.</span>
+                                <div id="magnitude-zero-thresholds" class="pure-form-aligned settings-group">
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Report - minimum delta</legend>
+                                <span class="pure-form-message">Report only when the value changed at least this much (absolute difference)</span>
+                                <div id="magnitude-min-deltas" class="pure-form-aligned settings-group">
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Report - reading maximum delta</legend>
+                                <span class="pure-form-message">Try to report on every reading, when the value changes at least this much (absolute difference)</span>
+                                <div id="magnitude-max-deltas" class="pure-form-aligned settings-group">
+                                </div>
                             </fieldset>
 
                         </div>

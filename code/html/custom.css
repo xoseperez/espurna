@@ -73,6 +73,10 @@ h2 {
     display: none;
 }
 
+.maybe-hidden {
+    display: none;
+}
+
 input[name=upgrade] {
     display: none;
 }
