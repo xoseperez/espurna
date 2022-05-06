@@ -66,6 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - SHT3X: add missing I2C address A (0x44) ([#2484](https://github.com/xoseperez/espurna/issues/2484), thanks to **[@drc38](https://github.com/drc38)**)
 - Deprecate ...\_MIN\_CHANGE build flags in favour of runtime settings [1ef22e16](https://github.com/xoseperez/espurna/commit/1ef22e16f10818d893a0a8912d55b1dbce88fcdb)
 - Reduce IRAM usage in sensors using attachInterrupt() [9db679f9](https://github.com/xoseperez/espurna/commit/9db679f93a61114dec8dad5f2953e59b7663c86a)
+- Support for PM1006 sensor (found inside the IKEA VINDRIKTNING)
 #### Settings
 - Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System

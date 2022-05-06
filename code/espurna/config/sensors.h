@@ -878,6 +878,23 @@
 #endif
 
 //------------------------------------------------------------------------------
+// PM1006 sensor
+// Enable support by passing PM1006_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PM1006_SUPPORT
+#define PM1006_SUPPORT                    0
+#endif
+
+#ifndef PM1006_RX_PIN
+#define PM1006_RX_PIN                     3
+#endif
+
+#ifndef PM1006_BAUDRATE
+#define PM1006_BAUDRATE                   9600
+#endif
+
+//------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMS
 // Enable support by passing PMSX003_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -1455,6 +1472,7 @@
     MICS2710_SUPPORT || \
     MICS5525_SUPPORT || \
     NTC_SUPPORT || \
+    PM1006_SUPPORT || \
     PMSX003_SUPPORT || \
     PULSEMETER_SUPPORT || \
     PZEM004T_SUPPORT || \

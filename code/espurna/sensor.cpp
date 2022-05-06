@@ -156,6 +156,10 @@ namespace {
     #include "sensors/SenseAirSensor.h"
 #endif
 
+#if PM1006_SUPPORT
+    #include "sensors/PM1006Sensor.h"
+#endif
+
 #if PMSX003_SUPPORT
     #include "sensors/PMSX003Sensor.h"
 #endif
@@ -2899,6 +2903,14 @@ void _sensorLoad() {
     }
     #endif
 
+    #if PM1006_SUPPORT
+    {
+        PM1006Sensor * sensor = new PM1006Sensor();
+        sensor->setRX(PM1006_RX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
@@ -3355,9 +3367,9 @@ void _sensorConfigure() {
 
 #if SENSOR_DEBUG
 void _sensorDebugSetup() {
-    _magnitude_read_handlers.push_back([](const String& topic, unsigned char index, double, const char* repr) {
+    _magnitude_read_handlers.push_front([](const String& topic, unsigned char index, double, const char* repr) {
         DEBUG_MSG_P(PSTR("[SENSOR] %s/%hhu -> %s (%s)\n"),
-            topic.c_str(), index, repr, _magnitudeUnits(_magnitudes[index]));
+            topic.c_str(), index, repr, _magnitudeUnits(_magnitudes[index]).c_str());
     });
 }
 #endif
