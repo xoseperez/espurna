@@ -100,7 +100,7 @@ class SM300D2Sensor : public BaseSensor {
             if (index == 0) return MAGNITUDE_CO2;
             if (index == 1) return MAGNITUDE_CH2O;
             if (index == 2) return MAGNITUDE_TVOC;
-            if (index == 3) return MAGNITUDE_PM2dot5;
+            if (index == 3) return MAGNITUDE_PM2DOT5;
             if (index == 4) return MAGNITUDE_PM10;
             if (index == 5) return MAGNITUDE_TEMPERATURE;
             if (index == 6) return MAGNITUDE_HUMIDITY;

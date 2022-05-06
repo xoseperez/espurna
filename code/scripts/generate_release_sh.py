@@ -21,7 +21,7 @@ import shlex
 import configparser
 import collections
 
-Build = collections.namedtuple("Build", "env extends build_flags src_build_flags")
+Build = collections.namedtuple("Build", "env extends build_flags build_src_flags")
 
 
 def expand_variables(cfg, value):
@@ -47,7 +47,7 @@ def get_builds(cfg):
             continue
 
         build_flags = None
-        src_build_flags = None
+        build_src_flags = None
 
         try:
             build_flags = cfg.get(section, "build_flags")
@@ -59,9 +59,9 @@ def get_builds(cfg):
             pass
 
         try:
-            src_build_flags = cfg.get(section, "src_build_flags")
-            src_build_flags = RE_NEWLINE.sub(" ", src_build_flags).strip()
-            src_build_flags = expand_variables(cfg, src_build_flags)
+            build_src_flags = cfg.get(section, "build_src_flags")
+            build_src_flags = RE_NEWLINE.sub(" ", build_src_flags).strip()
+            build_src_flags = expand_variables(cfg, build_src_flags)
         except configparser.NoOptionError:
             pass
 
@@ -69,7 +69,7 @@ def get_builds(cfg):
             section.replace("env:", ""),
             cfg.get(section, "extends").replace("env:", ""),
             build_flags,
-            src_build_flags,
+            build_src_flags,
         )
 
 
@@ -92,8 +92,8 @@ def generate_lines(builds, ignore):
         flags = []
         if build.build_flags:
             flags.append('PLATFORMIO_BUILD_FLAGS="{}"'.format(build.build_flags))
-        if build.src_build_flags:
-            flags.append('ESPURNA_FLAGS="{}"'.format(build.src_build_flags))
+        if build.build_src_flags:
+            flags.append('ESPURNA_FLAGS="{}"'.format(build.build_src_flags))
         flags.append('ESPURNA_BUILD_NAME="{env}"'.format(env=build.env))
 
         cmd = ["env"]
@@ -104,7 +104,7 @@ def generate_lines(builds, ignore):
 
         # push core variants to the front as they definetly include global build_flags
         output = generic
-        if "ESPURNA_CORE" in build.src_build_flags:
+        if "ESPURNA_CORE" in build.build_src_flags:
             output = cores
 
         output.append(line)

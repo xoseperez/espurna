@@ -348,8 +348,8 @@
 #define MAGNITUDE_ANALOG            12
 #define MAGNITUDE_DIGITAL           13
 #define MAGNITUDE_EVENT             14
-#define MAGNITUDE_PM1dot0           15
-#define MAGNITUDE_PM2dot5           16
+#define MAGNITUDE_PM1DOT0           15
+#define MAGNITUDE_PM2DOT5           16
 #define MAGNITUDE_PM10              17
 #define MAGNITUDE_CO2               18
 #define MAGNITUDE_LUX               19

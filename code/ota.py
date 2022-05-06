@@ -301,7 +301,6 @@ def run(device, env):
     environ["ESPURNA_BOARD"] = device["board"]
     environ["ESPURNA_AUTH"] = device["auth"]
     environ["ESPURNA_FLAGS"] = device["flags"]
-    environ["ESPURNA_PIO_SHARED_LIBRARIES"] = "1"
 
     command = ("platformio", "run", "--silent", "--environment", env, "-t", "upload")
     subprocess.check_call(command, env=environ)

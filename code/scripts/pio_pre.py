@@ -9,13 +9,19 @@
 
 # Run this script every time building an env BEFORE platform-specific code is loaded
 
+import logging
 import os
+import shutil
 import sys
 
-from SCons.Script import Import, ARGUMENTS
+from SCons.Script import Delete, Move, Import, ARGUMENTS
 
 from espurna_utils import check_env
 from espurna_utils.build import app_add_builder_single_source, app_add_target_build_re2c
+
+from platformio.package.manager.library import LibraryPackageManager
+from platformio.package.meta import PackageSpec
+
 
 Import("env")
 env = globals()["env"]
@@ -36,30 +42,35 @@ def log(message, verbose=False, file=sys.stderr):
         print(message, file=file)
 
 
-# Most portable way, without depending on platformio internals
-def subprocess_libdeps(lib_deps, storage, verbose=False):
-    import subprocess
-
-    args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib", "-d", storage, "install"]
-    if not verbose:
-        args.append("-s")
-
-    args.extend(lib_deps)
-    subprocess.check_call(args)
+def get_shared_libdeps(config, section="common", name="shared_lib_deps"):
+    raw = config.getraw(section, name)
+    return config.parse_multi_values(raw)
 
 
-def get_shared_libdeps_dir(section, name):
-    if not CONFIG.has_option(section, name):
-        raise ExtraScriptError("{}.{} is required to be set".format(section, name))
+def get_shared_libdir(config, section="common", name="shared_lib_dir"):
+    return config.getraw(section, name)
 
-    opt = CONFIG.get(section, name)
 
-    if opt not in env.GetProjectOption("lib_extra_dirs"):
-        raise ExtraScriptError(
-            "lib_extra_dirs must contain {}.{}".format(section, name)
-        )
+def migrate_libraries(storage):
+    target = env.Dir(f"$PROJECT_DIR/{storage}")
+    if target.exists():
+        return
 
-    return os.path.join(env["PROJECT_DIR"], opt)
+    old_lib_deps = env.Dir("$PROJECT_LIBDEPS_DIR/$PIOENV")
+    if not old_lib_deps.exists() or old_lib_deps.islink():
+        return
+
+    env.Execute(env.VerboseAction(Move(target, old_lib_deps), "Migrating $TARGET"))
+
+
+def install_libraries(specs, storage, verbose=False):
+    lm = LibraryPackageManager(storage)
+    lm.set_log_level(logging.DEBUG if verbose else logging.INFO)
+
+    for spec in specs:
+        pkg = lm.get_package(spec)
+        if not pkg:
+            lm.install(spec, skip_dependencies=True)
 
 
 def ensure_platform_updated():
@@ -110,9 +121,11 @@ if CI:
             break
 
 # to speed-up build process, install libraries in a way they are shared between our envs
-if check_env("ESPURNA_PIO_SHARED_LIBRARIES", "0"):
-    storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
-    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
+# b/c lib_extra_dirs = ... was deprecated and global libs are not an option, just re-use the local custom lib storage
+# (...while it still works :/...)
+SHARED_LIBDIR = get_shared_libdir(CONFIG)
+migrate_libraries(SHARED_LIBDIR)
+install_libraries(get_shared_libdeps(CONFIG), SHARED_LIBDIR, verbose=VERBOSE)
 
 
 # tweak build system to ignore espurna.ino, but include user code

@@ -1520,10 +1520,10 @@
                                     Set IDX to 0 to disable notifications from that component.
                                 </span>
 
-                                <div id="dczRelays" class="settings-group" data-settings-target="dczRelay" ></div>
+                                <div id="dcz-relays" class="settings-group" data-settings-target="dczRelay" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="dczMagnitudes" class="settings-group" data-settings-target="dczMagnitude" ></div>
+                                <div id="dcz-magnitudes" class="settings-group" data-settings-target="dczMagnitude" ></div>
                                 <!-- endRemoveIf(!sensor) -->
                             </fieldset>
                         </div>
@@ -1630,10 +1630,10 @@
                                     Enter the field number to send each data to, 0 disable notifications from that component.
                                 </span>
 
-                                <div id="tspkRelays" class="settings-group" data-settings-target="tspkRelay" ></div>
+                                <div id="tspk-relays" class="settings-group" data-settings-target="tspkRelay" ></div>
 
                                 <!-- removeIf(!sensor) -->
-                                <div id="tspkMagnitudes" class="settings-group" data-settings-target="tspkMagnitude" ></div>
+                                <div id="tspk-magnitudes" class="settings-group" data-settings-target="tspkMagnitude" ></div>
                                 <!-- endRemoveIf(!sensor) -->
                             </fieldset>
                         </div>
@@ -1900,6 +1900,12 @@
                                 </div>
                             </fieldset>
 
+                            <fieldset>
+                                <legend>Corrections</legend>
+                                <div id="magnitude-corrections" class="pure-form-aligned settings-group">
+                                </div>
+                            </fieldset>
+
                             <fieldset class="module module-emon">
                                 <legend>Ratios</legend>
                                 <div id="emon-ratios" class="pure-form-aligned settings-group">
@@ -2030,6 +2036,20 @@
         </div> <!-- layout -->
 
         <!-- Templates -->
+
+        <template id="template-text-input">
+            <div class="pure-control-group">
+                <label></label>
+                <input type="text">
+            </div>
+        </template>
+
+        <template id="template-number-input">
+            <div class="pure-control-group">
+                <label></label>
+                <input type="number" min="0">
+            </div>
+        </template>
 
         <template id="template-led-config" >
             <div class="pure-form pure-form-aligned">
@@ -2331,27 +2351,7 @@
             </div>
         </template>
 
-        <template id="template-emon-ratios">
-            <div class="pure-control-group">
-                <label></label>
-                <input type="text">
-            </div>
-        </template>
         <!-- endRemoveIf(!sensor) -->
-
-        <template id="template-dcz-relay">
-            <div class="pure-control-group">
-                <label></label>
-                <input name="dczRelayIdx" type="number" min="0">
-            </div>
-        </template>
-
-        <template id="template-tspk-relay" class="template">
-            <div class="pure-control-group">
-                <label></label>
-                <input name="tspkRelay" type="number" min="0">
-            </div>
-        </template>
 
         <!-- removeIf(!light) -->
         <template id="template-channel-control">

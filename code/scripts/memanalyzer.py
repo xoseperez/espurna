@@ -99,9 +99,8 @@ def run(prefix, env, modules, debug):
     flags = " ".join("-D{}_SUPPORT={:d}".format(k, v) for k, v in modules.items())
 
     os_env = os.environ.copy()
-    os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = flags
+    os_env["PLATFORMIO_BUILD_SRC_FLAGS"] = flags
     os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
-    os_env["ESPURNA_PIO_SHARED_LIBRARIES"] = "y"
 
     command = [os.path.join(prefix, "platformio"), "run"]
     if not debug:

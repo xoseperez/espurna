@@ -178,8 +178,8 @@ public:
             return sensor::Unit::Joule;
         case MAGNITUDE_ENERGY:
             return sensor::Unit::KilowattHour;
-        case MAGNITUDE_PM1dot0:
-        case MAGNITUDE_PM2dot5:
+        case MAGNITUDE_PM1DOT0:
+        case MAGNITUDE_PM2DOT5:
         case MAGNITUDE_PM10:
         case MAGNITUDE_TVOC:
         case MAGNITUDE_CH2O:
