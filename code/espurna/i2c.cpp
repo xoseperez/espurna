@@ -58,6 +58,10 @@ constexpr unsigned char scl() {
     return I2C_SCL_PIN;
 }
 
+constexpr bool performScanOnBoot() {
+    return I2C_PERFORM_SCAN == 1;
+}
+
 #if I2C_USE_BRZO
 constexpr unsigned long cst() {
     return I2C_CLOCK_STRETCH_TIME;
@@ -112,6 +116,23 @@ void scan(Callback&& callback) {
         if (i2c::check(address) == 0) {
             callback(address);
         }
+    }
+}
+
+void bootScan() {
+    String addresses;
+    scan([&](unsigned char address) {
+        if (addresses.length()) {
+            addresses += F(", ");
+        }
+
+        addresses += String(address, 10);
+    });
+
+    if (addresses.length()) {
+        DEBUG_MSG_P(PSTR("[I2C] Found addresses: %s\n"), addresses.c_str());
+    } else {
+        DEBUG_MSG_P(PSTR("[I2C] No devices found\n"));
     }
 }
 
@@ -237,19 +258,20 @@ void initTerminalCommands() {
         unsigned char devices { 0 };
         i2c::scan([&](unsigned char address) {
             ++devices;
-            ctx.output.printf("found 0x%02X\n", address);
+            ctx.output.printf("0x%02X\n", address);
         });
 
         if (devices) {
+            ctx.output.printf("found %hhu device(s)\n", devices);
             terminalOK(ctx);
             return;
         }
 
-        terminalError(ctx, F("No devices found"));
+        terminalError(ctx, F("no devices found"));
     });
 
     terminalRegisterCommand(F("I2C.CLEAR"), [](::terminal::CommandContext&& ctx) {
-        ctx.output.printf("result: %d\n", i2c::clear());
+        ctx.output.printf("result %d\n", i2c::clear());
         terminalOK(ctx);
     });
 }
@@ -520,11 +542,9 @@ void i2cSetup() {
     i2c::initTerminalCommands();
 #endif
 
-#if I2C_PERFORM_SCAN
-    i2c::scan([](unsigned char address) {
-        DEBUG_MSG_P(PSTR("[I2C] Found 0x02X\n"), address);
-    });
-#endif
+    if (i2c::build::performScanOnBoot()) {
+        i2c::bootScan();
+    }
 }
 
 #endif
