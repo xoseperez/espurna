@@ -62,6 +62,11 @@ inline String hexEncode(const uint8_t (&buffer)[Size]) {
     return hexEncode(std::begin(buffer), std::end(buffer));
 }
 
+inline String hexEncode(uint8_t value) {
+    uint8_t buffer[1] { value };
+    return hexEncode(buffer);
+}
+
 uint8_t* hexDecode(const char* in_begin, const char* in_end, uint8_t* out_begin, uint8_t* out_end);
 size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size);
 

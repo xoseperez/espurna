@@ -126,11 +126,13 @@ void bootScan() {
             addresses += F(", ");
         }
 
-        addresses += String(address, 10);
+
+        addresses += F("0x");
+        addresses += hexEncode(address);
     });
 
     if (addresses.length()) {
-        DEBUG_MSG_P(PSTR("[I2C] Found addresses: %s\n"), addresses.c_str());
+        DEBUG_MSG_P(PSTR("[I2C] Found device(s): %s\n"), addresses.c_str());
     } else {
         DEBUG_MSG_P(PSTR("[I2C] No devices found\n"));
     }
@@ -494,7 +496,7 @@ bool i2cGetLock(unsigned char address) {
     unsigned char mask = 1 << (address % 8);
     if (!(i2c::internal::locked[index] & mask)) {
         i2c::internal::locked[index] = i2c::internal::locked[index] | mask;
-        DEBUG_MSG_P(PSTR("[I2C] Address 0x%02X locked\n"), address);
+        DEBUG_MSG_P(PSTR("[I2C] 0x%02X locked\n"), address);
         return true;
     }
     return false;
