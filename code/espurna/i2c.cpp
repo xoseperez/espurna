@@ -366,10 +366,8 @@ uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
 
 uint8_t i2c_read_uint8(uint8_t address) {
     uint8_t value;
-    Wire.beginTransmission((uint8_t) address);
     Wire.requestFrom((uint8_t) address, (uint8_t) 1);
     value = Wire.read();
-    Wire.endTransmission();
     return value;
 }
 
@@ -380,16 +378,13 @@ uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
     Wire.endTransmission();
     Wire.requestFrom((uint8_t) address, (uint8_t) 1);
     value = Wire.read();
-    Wire.endTransmission();
     return value;
 }
 
 uint16_t i2c_read_uint16(uint8_t address) {
     uint16_t value;
-    Wire.beginTransmission((uint8_t) address);
     Wire.requestFrom((uint8_t) address, (uint8_t) 2);
     value = (Wire.read() * 256) | Wire.read();
-    Wire.endTransmission();
     return value;
 }
 
@@ -400,15 +395,14 @@ uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
     Wire.endTransmission();
     Wire.requestFrom((uint8_t) address, (uint8_t) 2);
     value = (Wire.read() * 256) | Wire.read();
-    Wire.endTransmission();
     return value;
 }
 
-void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
-    Wire.beginTransmission((uint8_t) address);
+void i2c_read_buffer(uint8_t address, uint8_t* buffer, size_t len) {
     Wire.requestFrom(address, (uint8_t) len);
-    for (size_t i=0; i<len; i++) buffer[i] = Wire.read();
-    Wire.endTransmission();
+    for (size_t i=0; i<len; ++i) {
+        buffer[i] = Wire.read();
+    }
 }
 
 void i2c_write_uint(uint8_t address, uint16_t reg, uint32_t input, size_t size) {
@@ -512,29 +506,24 @@ bool i2cReleaseLock(unsigned char address) {
     return false;
 }
 
-unsigned char i2cFind(size_t size, unsigned char * addresses, unsigned char &start) {
-    for (unsigned char i=start; i<size; i++) {
-        if (i2c::check(addresses[i]) == 0) {
-            start = i;
-            return addresses[i];
+unsigned char i2cFind(I2CAddressRange addresses) {
+    for (auto it = addresses.begin; it != addresses.end; ++it) {
+        if (i2c::check(*it) == 0) {
+            return *it;
         }
     }
+
     return 0;
 }
 
-unsigned char i2cFind(size_t size, unsigned char * addresses) {
-    unsigned char start = 0;
-    return i2cFind(size, addresses, start);
-}
-
-unsigned char i2cFindAndLock(size_t size, unsigned char * addresses) {
-    unsigned char start = 0;
-    unsigned char address = 0;
-    while ((address = i2cFind(size, addresses, start))) {
-        if (i2cGetLock(address)) break;
-        start++;
+unsigned char i2cFindAndLock(I2CAddressRange addresses) {
+    for (auto it = addresses.begin; it != addresses.end; ++it) {
+        if (i2cGetLock(*it)) {
+            return *it;
+        }
     }
-    return address;
+
+    return 0;
 }
 
 void i2cSetup() {
