@@ -3,90 +3,70 @@
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
 #include "BaseFilter.h"
 
+#include <algorithm>
+#include <vector>
+
 class MedianFilter : public BaseFilter {
-
-    public:
-
-        ~MedianFilter() {
-            if (_data) delete _data;
+public:
+    void update(double value) override {
+        if (_values.size() < _values.capacity()) {
+            _values.push_back(value);
         }
+    }
 
-        void add(double value) {
-            if (_pointer <= _size) {
-                _data[_pointer] = value;
-                _pointer++;
-            }
+    size_t capacity() const override {
+        return _values.capacity();
+    }
+
+    void reset() override {
+        if (_values.size()) {
+            _values[0] = _values.back();
+            _values.resize(1);
+        } else {
+            _values.clear();
         }
+    }
 
-        unsigned char count() {
-            return _pointer;
-        }
+    double value() const override {
+        double sum { 0.0 };
 
-        void reset() {
-            if (_pointer > 0) {
-                _data[0] = _data[_pointer-1];
-                _pointer = 1;
-            } else {
-                _pointer = 0;
-            }
-        }
+        if (_values.size() > 2) {
+            // For each position,
+            // we find the median with the previous and next value
+            // and use that for the sum
+            auto calculate = [](double previous, double current, double next) {
+                if (previous > current) std::swap(previous, current);
+                if (current > next) std::swap(current, next);
+                if (previous > current) std::swap(previous, current);
 
-        double result() {
+                return current;
+            };
 
-            double sum = 0;
-
-            if (_pointer > 2) {
-
-                for (unsigned char i = 1; i <= _pointer - 2; i++) {
-
-                    // For each position,
-                    // we find the median with the previous and next value
-                    // and use that for the sum
-
-                    double previous = _data[i-1];
-                    double current = _data[i];
-                    double next = _data[i+1];
-
-                    if (previous > current) std::swap(previous, current);
-                    if (current > next) std::swap(current, next);
-                    if (previous > current) std::swap(previous, current);
-
-                    sum += current;
-
-                }
-
-                sum /= (_pointer - 2);
-
-            } else if (_pointer > 0) {
-
-                sum = _data[0];
-
+            for (auto prev = _values.begin(); prev != (_values.end() - 2); ++prev) {
+                const auto current = std::next(prev);
+                const auto next = std::next(current);
+                sum += calculate(*prev, *current, *next);
             }
 
-            return sum;
-
+            sum /= (_values.size() - 2);
+        } else if (_values.size() > 0) {
+            sum = _values.front();
         }
 
-        void resize(unsigned char size) {
-            if (_size == size) return;
-            _size = size;
-            if (_data) delete _data;
-            _data = new double[_size+1];
-            for (unsigned char i=0; i<=_size; i++) _data[i] = 0;
-            _pointer = 0;
+        return sum;
+    }
+
+    void resize(size_t capacity) override {
+        if (_values.capacity() != capacity) {
+            _values.clear();
+            _values.reserve(capacity);
         }
+    }
 
-    protected:
-
-        unsigned char _pointer = 0;
-        double * _data = NULL;
-
+private:
+    std::vector<double> _values;
 };
-
-#endif // SENSOR_SUPPORT

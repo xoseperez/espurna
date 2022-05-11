@@ -5,10 +5,8 @@
 
 #pragma once
 
-#include "../espurna.h"
-#include "../sensor.h"
-
 #include "AnalogSensor.h"
+
 extern "C" {
 #include "../libs/fs_math.h"
 }

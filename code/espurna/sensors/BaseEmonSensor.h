@@ -5,10 +5,15 @@
 
 #pragma once
 
-#include "../sensor.h"
 #include "BaseSensor.h"
 
 class BaseEmonSensor : public BaseSensor {
+public:
+    static const BaseSensor::ClassType Type;
+    BaseSensor::ClassType type() const override {
+        return Type;
+    }
+
 protected:
     struct EnergyMapping {
         unsigned char index;
@@ -90,10 +95,6 @@ protected:
     }
 
 public:
-    unsigned char type() const override {
-        return sensor::type::Emon;
-    }
-
     virtual void resetEnergy(unsigned char index, sensor::Energy energy) {
         _energy.update(index, [&](EnergyMapping& entry) {
             entry.energy = energy;
@@ -159,3 +160,5 @@ protected:
     double _energy_ratio { DefaultRatio };
     EnergyIndex _energy{};
 };
+
+const BaseSensor::ClassType BaseEmonSensor::Type;

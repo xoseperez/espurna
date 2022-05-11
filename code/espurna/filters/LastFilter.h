@@ -3,38 +3,29 @@
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
 #include "BaseFilter.h"
 
 class LastFilter : public BaseFilter {
+public:
+    void update(double value) override {
+        _value = value;
+    }
 
-    public:
+    size_t capacity() const override {
+        return 1;
+    }
 
-        void add(double value) {
-            _value = value;
-        }
+    void reset() override {
+        _value = 0;
+    }
 
-        unsigned char count() {
-            return 1;
-        }
+    double value() const override {
+        return _value;
+    }
 
-        void reset() {
-            _value = 0;
-        }
-
-        double result() {
-            return _value;
-        }
-
-        void resize(unsigned char size) {}
-
-    protected:
-
-        double _value = 0;
-
+private:
+    double _value = 0;
+    bool _status = false;
 };
-
-#endif // SENSOR_SUPPORT

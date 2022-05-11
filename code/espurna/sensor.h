@@ -17,14 +17,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <ArduinoJson.h>
 
 namespace sensor {
-namespace type {
-
-static constexpr unsigned char Base { 0 };
-static constexpr unsigned char Emon { 1 << 0 };
-static constexpr unsigned char AnalogEmon { 1 << 1 };
-static constexpr unsigned char Analog { 1 << 2 };
-
-} // namespace type
 
 enum class Unit : int {
     Min_,

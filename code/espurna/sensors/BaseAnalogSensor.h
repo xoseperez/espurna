@@ -8,26 +8,40 @@
 #include "BaseSensor.h"
 
 class BaseAnalogSensor : public BaseSensor {
+public:
+    static const BaseSensor::ClassType Type;
+    BaseSensor::ClassType type() const override {
+        return Type;
+    }
 
-    public:
+    virtual unsigned long getR0() {
+        return _R0;
+    }
 
-        virtual unsigned long getR0() { return _R0; }
-        virtual void setR0(unsigned long value) { _R0 = value; }
+    virtual void setR0(unsigned long value) {
+        _R0 = value;
+    }
 
-        virtual unsigned long getRL() { return _Rl; }
-        virtual void setRL(unsigned long value) { _Rl = value; }
+    virtual unsigned long getRL() {
+        return _Rl;
+    }
 
-        virtual unsigned long getRS() { return _Rs; }
-        virtual void setRS(unsigned long value) { _Rs = value; }
+    virtual void setRL(unsigned long value) {
+        _Rl = value;
+    }
 
-        virtual void calibrate() { }
+    virtual unsigned long getRS() {
+        return _Rs;
+    }
 
-        unsigned char type() { return sensor::type::Analog; }
+    virtual void setRS(unsigned long value) {
+        _Rs = value;
+    }
 
-    protected:
-
-        unsigned long _R0;            // R0, calibration value at 25º
-        unsigned long _Rl;            // RL, load resistance
-        unsigned long _Rs;            // cached resistance
-
+protected:
+    unsigned long _R0;            // R0, calibration value at 25º
+    unsigned long _Rl;            // RL, load resistance
+    unsigned long _Rs;            // cached resistance
 };
+
+const BaseSensor::ClassType BaseAnalogSensor::Type;

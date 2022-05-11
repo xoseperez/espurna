@@ -6,8 +6,6 @@
 // Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
 #include "BaseEmonSensor.h"
@@ -18,6 +16,11 @@ extern "C" {
 
 class BaseAnalogEmonSensor : public BaseEmonSensor {
 public:
+    static const BaseSensor::ClassType Type;
+    BaseSensor::ClassType type() const override {
+        return Type;
+    }
+
     static constexpr double IRef { EMON_CURRENT_RATIO };
 
     // TODO: mask common magnitudes (...voltage), when there are multiple channels?
@@ -45,10 +48,6 @@ public:
 
     virtual void updateCurrent(double) = 0;
     virtual double getCurrent() const = 0;
-
-    unsigned char type() const override {
-        return sensor::type::AnalogEmon;
-    }
 
     double defaultVoltage() const {
         return EMON_MAINS_VOLTAGE;
@@ -310,4 +309,4 @@ private:
     double _current { 0.0 };
 };
 
-#endif // SENSOR_SUPPORT
+const BaseSensor::ClassType BaseAnalogEmonSensor::Type;

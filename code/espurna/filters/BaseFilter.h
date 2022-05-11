@@ -3,27 +3,30 @@
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
+#include <cstddef>
+
 class BaseFilter {
+public:
+    virtual ~BaseFilter() = default;
 
-    public:
+    // Reset internal value to default and also erases internal storage
+    virtual void reset() {
+    }
 
-    virtual ~BaseFilter() {}
+    // Defaults to 0 aka no backing storage
+    virtual size_t capacity() const {
+        return 0;
+    }
 
-    virtual void add(double value) = 0;
-    virtual unsigned char count() = 0;
-    virtual void reset() = 0;
-    virtual double result() = 0;
-    virtual void resize(unsigned char size) = 0;
-    unsigned char size() { return _size; };
+    // Resize the backing storage (when it is available)
+    virtual void resize(size_t) {
+    }
 
-    protected:
+    // Store reading
+    virtual void update(double value) = 0;
 
-    unsigned char _size;
-
+    // Return filtered value
+    virtual double value() const = 0;
 };
-
-#endif // SENSOR_SUPPORT

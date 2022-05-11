@@ -234,47 +234,63 @@ namespace {
 
 namespace {
 
-class sensor_magnitude_t {
+class BaseSensorPtr {
+public:
+    BaseSensorPtr() = delete;
+
+    constexpr BaseSensorPtr(const BaseSensorPtr&) = default;
+    constexpr BaseSensorPtr& operator=(const BaseSensorPtr&) = default;
+
+    constexpr BaseSensorPtr(BaseSensorPtr&& other) noexcept = default;
+    constexpr BaseSensorPtr& operator=(BaseSensorPtr&& other) noexcept = default;
+
+    constexpr BaseSensorPtr(std::nullptr_t) = delete;
+    constexpr BaseSensorPtr& operator=(std::nullptr_t) = delete;
+
+    constexpr BaseSensorPtr(BaseSensor* ptr) :
+        _ptr(ptr)
+    {}
+
+    constexpr BaseSensor* get() const {
+        return _ptr;
+    }
+
+    constexpr BaseSensor* operator->() const {
+        return _ptr;
+    }
+
+private:
+    BaseSensor* _ptr;
+};
+
+using BaseFilterPtr = std::unique_ptr<BaseFilter>;
+
+class Magnitude {
 private:
     static unsigned char _counts[MAGNITUDE_MAX];
-
-    sensor_magnitude_t& operator=(const sensor_magnitude_t&) = default;
-
-    void move(sensor_magnitude_t&& other) noexcept {
-        *this = other;
-        other.filter = nullptr;
-    }
 
 public:
     static size_t counts(unsigned char type) {
         return _counts[type];
     }
 
-    sensor_magnitude_t() = delete;
-    sensor_magnitude_t(const sensor_magnitude_t&) = delete;
-    sensor_magnitude_t(sensor_magnitude_t&& other) noexcept {
-        *this = other;
-        other.filter = nullptr;
-    }
+    Magnitude() = delete;
 
-    sensor_magnitude_t& operator=(sensor_magnitude_t&& other) noexcept {
-        move(std::move(other));
-        return *this;
-    }
+    Magnitude(const Magnitude&) = delete;
+    Magnitude& operator=(const Magnitude&) = delete;
 
-    ~sensor_magnitude_t() noexcept {
-        delete filter;
-    }
+    Magnitude(Magnitude&& other) noexcept = default;
+    Magnitude& operator=(Magnitude&&) noexcept = default;
 
-    sensor_magnitude_t(unsigned char slot, unsigned char type, sensor::Unit units, BaseSensor* sensor);
+    Magnitude(BaseSensorPtr, BaseFilterPtr, unsigned char slot, unsigned char type);
 
-    BaseSensor * sensor { nullptr }; // Sensor object
-    BaseFilter * filter { nullptr }; // Filter object
+    BaseSensorPtr sensor; // Sensor object, *cannot be empty*
+    BaseFilterPtr filter; // Filter object, *could be empty*
 
-    unsigned char slot { 0u }; // Sensor slot # taken by the magnitude, used to access the measurement
-    unsigned char type { MAGNITUDE_NONE }; // Type of measurement, returned by the BaseSensor::type(slot)
+    unsigned char slot; // Sensor slot # taken by the magnitude, used to access the measurement
+    unsigned char type; // Type of measurement, returned by the BaseSensor::type(slot)
 
-    unsigned char index_global { 0u }; // N'th magnitude of it's type, across all of the active sensors
+    unsigned char index_global; // N'th magnitude of it's type, across all of the active sensors
 
     sensor::Unit units { sensor::Unit::None }; // Units of measurement
     unsigned char decimals { 0u }; // Number of decimals in textual representation
@@ -289,16 +305,16 @@ public:
 };
 
 static_assert(
-    std::is_nothrow_move_constructible<sensor_magnitude_t>::value,
-    "std::vector<sensor_magnitude_t> should be able to work with resize()"
+    std::is_nothrow_move_constructible<Magnitude>::value,
+    "std::vector<Magnitude> should be able to work with resize()"
 );
 
 static_assert(
-    !std::is_copy_constructible<sensor_magnitude_t>::value,
-    "std::vector<sensor_magnitude_t> should only use move ctor"
+    !std::is_copy_constructible<Magnitude>::value,
+    "std::vector<Magnitude> should only use move ctor"
 );
 
-unsigned char sensor_magnitude_t::_counts[MAGNITUDE_MAX] = {0};
+unsigned char Magnitude::_counts[MAGNITUDE_MAX] = {0};
 
 } // namespace
 
@@ -616,14 +632,14 @@ constexpr espurna::duration::Seconds readInterval() {
     return espurna::duration::Seconds(SENSOR_READ_INTERVAL);
 }
 
-constexpr int ReportEveryMin { SENSOR_REPORT_MIN_EVERY };
-constexpr int ReportEveryMax { SENSOR_REPORT_MAX_EVERY };
+constexpr size_t ReportEveryMin { SENSOR_REPORT_MIN_EVERY };
+constexpr size_t ReportEveryMax { SENSOR_REPORT_MAX_EVERY };
 
-constexpr int reportEvery() {
+constexpr size_t reportEvery() {
     return SENSOR_REPORT_EVERY;
 }
 
-constexpr int saveEvery() {
+constexpr size_t saveEvery() {
     return SENSOR_SAVE_EVERY;
 }
 
@@ -763,7 +779,7 @@ SettingsKey get(::settings::StringView prefix, ::settings::StringView suffix, si
     return SettingsKey(std::move(key), index);
 }
 
-SettingsKey get(const sensor_magnitude_t& magnitude, ::settings::StringView suffix) {
+SettingsKey get(const Magnitude& magnitude, ::settings::StringView suffix) {
     return get(prefix::get(magnitude.type), suffix, magnitude.index_global);
 }
 
@@ -883,7 +899,7 @@ String serialize(sensor::Unit unit) {
 namespace {
 
 struct SensorEnergyTracker {
-    using Reference = std::reference_wrapper<const sensor_magnitude_t>;
+    using Reference = std::reference_wrapper<const Magnitude>;
 
     struct Counter {
         Reference magnitude;
@@ -937,16 +953,17 @@ private:
 
 SensorEnergyTracker _sensor_energy_tracker;
 
-bool _sensorIsEmon(BaseSensor* sensor) {
-    return sensor->type() & (sensor::type::Emon | sensor::type::AnalogEmon);
+bool _sensorIsEmon(BaseSensorPtr sensor) {
+    return (sensor->type() == BaseEmonSensor::Type)
+        || (sensor->type() == BaseAnalogEmonSensor::Type);
 }
 
-bool _sensorIsAnalogEmon(BaseSensor* sensor) {
-    return sensor->type() & sensor::type::AnalogEmon;
+bool _sensorIsAnalogEmon(BaseSensorPtr sensor) {
+    return sensor->type() == BaseAnalogEmonSensor::Type;
 }
 
-bool _sensorIsAnalog(BaseSensor* sensor) {
-    return sensor->type() & sensor::type::Analog;
+bool _sensorIsAnalog(BaseSensorPtr sensor) {
+    return sensor->type() == BaseAnalogSensor::Type;
 }
 
 sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {
@@ -1024,7 +1041,7 @@ sensor::Energy _sensorSettingsLoadEnergy(unsigned char index) {
         keys::get(prefix::get(MAGNITUDE_ENERGY), suffix::Total, index))).value();
 }
 
-void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const String& payload) {
+void _sensorApiResetEnergy(const Magnitude& magnitude, const String& payload) {
     if (!payload.length()) {
         return;
     }
@@ -1034,11 +1051,11 @@ void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const String& pa
         return;
     }
 
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
     sensor->resetEnergy(magnitude.slot, energy.value());
 }
 
-void _sensorApiResetEnergy(const sensor_magnitude_t& magnitude, const char* payload) {
+void _sensorApiResetEnergy(const Magnitude& magnitude, const char* payload) {
     if (!payload) {
         return;
     }
@@ -1087,10 +1104,9 @@ private:
     sensor::Energy _energy;
 };
 
-void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
-    if (magnitude.type != MAGNITUDE_ENERGY) return;
+void _magnitudeSaveEnergyTotal(const Magnitude& magnitude, bool persistent) {
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
 
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
     const auto energy = sensor->totalEnergy(magnitude.slot);
 
     // Always save to RTCMEM
@@ -1105,10 +1121,9 @@ void _magnitudeSaveEnergyTotal(sensor_magnitude_t& magnitude, bool persistent) {
     }
 }
 
-void _sensorTrackEnergyTotal(sensor_magnitude_t& magnitude) {
-    const auto index_global = magnitude.index_global;
-    auto* ptr = static_cast<BaseEmonSensor*>(magnitude.sensor);
-    ptr->resetEnergy(magnitude.slot, _sensorEnergyTotal(index_global));
+void _sensorTrackEnergyTotal(const Magnitude& magnitude) {
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
+    sensor->resetEnergy(magnitude.slot, _sensorEnergyTotal(magnitude.index_global));
     _sensor_energy_tracker.add(magnitude);
 }
 
@@ -1125,56 +1140,56 @@ sensor::Energy sensorEnergyTotal() {
 namespace {
 
 bool _sensors_ready { false };
-std::vector<BaseSensor*> _sensors;
+std::vector<BaseSensorPtr> _sensors;
 
 bool _sensor_real_time { sensor::build::realTimeValues() };
-int _sensor_report_every { sensor::build::reportEvery() };
+size_t _sensor_report_every { sensor::build::reportEvery() };
 
 espurna::duration::Seconds _sensor_read_interval { sensor::build::readInterval() };
 espurna::duration::Seconds _sensor_init_interval { sensor::build::initInterval() };
 
-std::vector<sensor_magnitude_t> _magnitudes;
+std::vector<Magnitude> _magnitudes;
 
 using MagnitudeReadHandlers = std::forward_list<MagnitudeReadHandler>;
 MagnitudeReadHandlers _magnitude_read_handlers;
 MagnitudeReadHandlers _magnitude_report_handlers;
 
-BaseFilter* _magnitudeCreateFilter(unsigned char type, size_t size) {
-    BaseFilter* filter { nullptr };
+BaseFilterPtr _magnitudeCreateFilter(unsigned char type) {
+    BaseFilterPtr filter;
 
     switch (type) {
     case MAGNITUDE_IAQ:
     case MAGNITUDE_IAQ_STATIC:
     case MAGNITUDE_ENERGY:
-        filter = new LastFilter();
-        break;
-    case MAGNITUDE_COUNT:
-    case MAGNITUDE_GEIGER_CPM:
-    case MAGNITUDE_GEIGER_SIEVERT:
-    case MAGNITUDE_ENERGY_DELTA:
-        filter = new SumFilter();
+        filter = std::make_unique<LastFilter>();
         break;
     case MAGNITUDE_EVENT:
     case MAGNITUDE_DIGITAL:
-        filter = new MaxFilter();
+        filter = std::make_unique<MaxFilter>();
         break;
-    default:
-        filter = new MedianFilter();
+    case MAGNITUDE_COUNT:
+    case MAGNITUDE_ENERGY_DELTA:
+        filter = std::make_unique<SumFilter>();
+        break;
+    case MAGNITUDE_GEIGER_CPM:
+    case MAGNITUDE_GEIGER_SIEVERT:
+        filter = std::make_unique<MovingAverageFilter>();
         break;
     }
 
-    filter->resize(size);
+    if (!filter) {
+        filter = std::make_unique<MedianFilter>();
+    }
 
     return filter;
 }
 
-sensor_magnitude_t::sensor_magnitude_t(unsigned char slot_, unsigned char type_, sensor::Unit units_, BaseSensor* sensor_) :
-    sensor(sensor_),
-    filter(_magnitudeCreateFilter(type_, _sensor_report_every)),
-    slot(slot_),
-    type(type_),
-    index_global(_counts[type]),
-    units(units_)
+Magnitude::Magnitude(BaseSensorPtr sensor, BaseFilterPtr filter, unsigned char slot, unsigned char type) :
+    sensor(std::move(sensor)),
+    filter(std::move(filter)),
+    slot(slot),
+    type(type),
+    index_global(_counts[type])
 {
     ++_counts[type];
 }
@@ -1571,18 +1586,18 @@ MagnitudeUnitsRange _magnitudeUnitsRange(unsigned char type) {
     return out;
 }
 
-bool _magnitudeUnitSupported(const sensor_magnitude_t& magnitude, sensor::Unit unit) {
+bool _magnitudeUnitSupported(const Magnitude& magnitude, sensor::Unit unit) {
     const auto range = _magnitudeUnitsRange(magnitude.type);
     return std::any_of(range.begin(), range.end(), [&](sensor::Unit supported) {
         return (unit == supported);
     });
 }
 
-sensor::Unit _magnitudeUnitFilter(const sensor_magnitude_t& magnitude, sensor::Unit unit) {
+sensor::Unit _magnitudeUnitFilter(const Magnitude& magnitude, sensor::Unit unit) {
     return _magnitudeUnitSupported(magnitude, unit) ? unit : magnitude.units;
 }
 
-double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
+double _magnitudeProcess(const Magnitude& magnitude, double value) {
 
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
     const auto source = magnitude.sensor->units(magnitude.slot);
@@ -1621,7 +1636,7 @@ double _magnitudeProcess(const sensor_magnitude_t& magnitude, double value) {
 
 }
 
-String _magnitudeDescription(const sensor_magnitude_t& magnitude) {
+String _magnitudeDescription(const Magnitude& magnitude) {
     return magnitude.sensor->description(magnitude.slot);
 }
 
@@ -1631,7 +1646,7 @@ String _magnitudeDescription(const sensor_magnitude_t& magnitude) {
 template <typename T>
 void _magnitudeForEachCounted(T&& callback) {
     for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (sensor_magnitude_t::counts(type)) {
+        if (Magnitude::counts(type)) {
             callback(type);
         }
     }
@@ -1641,7 +1656,7 @@ void _magnitudeForEachCounted(T&& callback) {
 template <typename T>
 bool _magnitudeForEachCountedCheck(T&& callback) {
     for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (sensor_magnitude_t::counts(type) && callback(type)) {
+        if (Magnitude::counts(type) && callback(type)) {
             return true;
         }
     }
@@ -1711,7 +1726,7 @@ String _sensorQueryHandler(::settings::StringView key) {
         if (_magnitudeRatioSupported(magnitude.type)) {
             auto expected = keys::get(magnitude, suffix::Ratio);
             if (key == expected) {
-                out = String(reinterpret_cast<BaseEmonSensor*>(magnitude.sensor)->defaultRatio(magnitude.slot));
+                out = String(reinterpret_cast<BaseEmonSensor*>(magnitude.sensor.get())->defaultRatio(magnitude.slot));
                 break;
             }
         }
@@ -1749,11 +1764,11 @@ void _sensorAnalogInit(BaseAnalogSensor* sensor) {
 }
 
 void _sensorApiAnalogCalibrate() {
-    for (auto& ptr : _sensors) {
+    for (auto ptr : _sensors) {
         if (_sensorIsAnalog(ptr)) {
             DEBUG_MSG_P(PSTR("[ANALOG] Calibrating %s\n"), ptr->description().c_str());
 
-            auto* sensor = static_cast<BaseAnalogSensor*>(ptr);
+            auto* sensor = static_cast<BaseAnalogSensor*>(ptr.get());
             sensor->calibrate();
             setSetting("snsR0", sensor->getR0());
             break;
@@ -1772,25 +1787,25 @@ void _sensorApiEmonResetRatios() {
     using namespace ::sensor::settings;
 
     for (const auto& type : types) {
-        for (size_t index = 0; index < sensor_magnitude_t::counts(type); ++index) {
+        for (size_t index = 0; index < Magnitude::counts(type); ++index) {
             delSetting(keys::get(prefix::get(type), ::sensor::settings::suffix::Ratio, index));
         }
     }
 
-    for (auto& ptr : _sensors) {
+    for (auto ptr : _sensors) {
         if (_sensorIsEmon(ptr)) {
             DEBUG_MSG_P(PSTR("[EMON] Resetting %s\n"), ptr->description().c_str());
-            static_cast<BaseEmonSensor*>(ptr)->resetRatios();
+            static_cast<BaseEmonSensor*>(ptr.get())->resetRatios();
         }
     }
 }
 
-double _sensorApiEmonExpectedValue(const sensor_magnitude_t& magnitude, double expected) {
+double _sensorApiEmonExpectedValue(const Magnitude& magnitude, double expected) {
     if (!_sensorIsEmon(magnitude.sensor)) {
         return BaseEmonSensor::DefaultRatio;
     }
 
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
     return sensor->ratioFromValue(magnitude.slot, sensor->value(magnitude.slot), expected);
 }
 
@@ -1982,7 +1997,7 @@ void _sensorWebSocketTypes(JsonObject& root) {
     ::web::ws::EnumerablePayload payload{root, STRING_VIEW("types")};
     payload(STRING_VIEW("values"), {MAGNITUDE_NONE + 1, MAGNITUDE_MAX},
         [](size_t type) {
-            return sensor_magnitude_t::counts(type) > 0;
+            return Magnitude::counts(type) > 0;
         },
         {
             {STRING_VIEW("type"), [](JsonArray& out, size_t index) {
@@ -2061,7 +2076,7 @@ void _sensorWebSocketSettings(JsonObject& root) {
         {::sensor::settings::suffix::Ratio, [](JsonArray& out, size_t index) {
             const auto& magnitude = _magnitudes[index];
             if (_magnitudeRatioSupported(magnitude.type)) {
-                out.add(static_cast<BaseEmonSensor*>(magnitude.sensor)->getRatio(magnitude.slot));
+                out.add(static_cast<BaseEmonSensor*>(magnitude.sensor.get())->getRatio(magnitude.slot));
             } else {
                 out.add(NullSymbol);
             }
@@ -2144,12 +2159,12 @@ void _sensorWebSocketOnAction(uint32_t client_id, const char* action, JsonObject
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, "sns");
-    for (auto* sensor [[gnu::unused]] : _sensors) {
+    for (auto sensor : _sensors) {
         if (_sensorIsEmon(sensor)) {
             wsPayloadModule(root, "emon");
         }
 
-        switch (sensor->getID()) {
+        switch (sensor->id()) {
 #if HLW8012_SUPPORT
         case SENSOR_HLW8012_ID:
             wsPayloadModule(root, "hlw");
@@ -2203,7 +2218,7 @@ void _sensorWebSocketOnConnectedInitial(JsonObject& root) {
     _sensorWebSocketUnits(container);
 }
 
-// Entries specific to the sensor_magnitude_t; type, info, description
+// Entries specific to the Magnitude; type, info, description
 
 void _sensorWebSocketOnConnectedList(JsonObject& root) {
     if (!_magnitudes.size()) {
@@ -2249,9 +2264,9 @@ void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSo
 
 namespace {
 
-String _sensorApiMagnitudeName(sensor_magnitude_t& magnitude) {
+String _sensorApiMagnitudeName(Magnitude& magnitude) {
     String name = _magnitudeTopic(magnitude.type);
-    if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) name = name + "/" + String(magnitude.index_global);
+    if (SENSOR_USE_INDEX || (Magnitude::counts(magnitude.type) > 1)) name = name + "/" + String(magnitude.index_global);
 
     return name;
 }
@@ -2259,7 +2274,7 @@ String _sensorApiMagnitudeName(sensor_magnitude_t& magnitude) {
 bool _sensorApiTryParseMagnitudeIndex(const char* p, unsigned char type, unsigned char& magnitude_index) {
     char* endp { nullptr };
     const unsigned long result { strtoul(p, &endp, 10) };
-    if ((endp == p) || (*endp != '\0') || (result >= sensor_magnitude_t::counts(type))) {
+    if ((endp == p) || (*endp != '\0') || (result >= Magnitude::counts(type))) {
         DEBUG_MSG_P(PSTR("[SENSOR] Invalid magnitude ID (%s)\n"), p);
         return false;
     }
@@ -2305,13 +2320,13 @@ void _sensorApiSetup() {
 
     _magnitudeForEachCounted([](unsigned char type) {
         String pattern = _magnitudeTopic(type);
-        if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(type) > 1)) {
+        if (SENSOR_USE_INDEX || (Magnitude::counts(type) > 1)) {
             pattern += "/+";
         }
 
         ApiBasicHandler get {
             [type](ApiRequest& request) {
-                return _sensorApiTryHandle(request, type, [&](const sensor_magnitude_t& magnitude) {
+                return _sensorApiTryHandle(request, type, [&](const Magnitude& magnitude) {
                     char buffer[64] { 0 };
                     dtostrf(
                         _sensor_real_time ? magnitude.last : magnitude.reported,
@@ -2327,7 +2342,7 @@ void _sensorApiSetup() {
         ApiBasicHandler put { nullptr };
         if (type == MAGNITUDE_ENERGY) {
             put = [](ApiRequest& request) {
-                return _sensorApiTryHandle(request, MAGNITUDE_ENERGY, [&](const sensor_magnitude_t& magnitude) {
+                return _sensorApiTryHandle(request, MAGNITUDE_ENERGY, [&](const Magnitude& magnitude) {
                     _sensorApiResetEnergy(magnitude, request.param(F("value")));
                 });
             };
@@ -2353,7 +2368,7 @@ void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
             if (!t.startsWith(energy_topic)) break;
 
             unsigned int index = t.substring(energy_topic.length() + 1).toInt();
-            if (index >= sensor_magnitude_t::counts(MAGNITUDE_ENERGY)) break;
+            if (index >= Magnitude::counts(MAGNITUDE_ENERGY)) break;
 
             for (auto& magnitude : _magnitudes) {
                 if (MAGNITUDE_ENERGY != magnitude.type) continue;
@@ -2430,7 +2445,7 @@ void _sensorInitCommands() {
     });
 
     terminalRegisterCommand(F("ENERGY"), [](::terminal::CommandContext&& ctx) {
-        using IndexType = decltype(sensor_magnitude_t::index_global);
+        using IndexType = decltype(Magnitude::index_global);
 
         if (ctx.argv.size() == 3) {
             const auto selected = settings::internal::convert<IndexType>(ctx.argv[1]);
@@ -2443,7 +2458,7 @@ void _sensorInitCommands() {
 
             for (auto& magnitude : _magnitudes) {
                 if ((MAGNITUDE_ENERGY == magnitude.type) && (selected == magnitude.index_global) && _sensorIsEmon(magnitude.sensor)) {
-                    static_cast<BaseEmonSensor*>(magnitude.sensor)->resetEnergy(magnitude.slot, energy.value());
+                    static_cast<BaseEmonSensor*>(magnitude.sensor.get())->resetEnergy(magnitude.slot, energy.value());
                     terminalOK(ctx);
                     return;
                 }
@@ -2464,13 +2479,13 @@ void _sensorInitCommands() {
 namespace {
 
 void _sensorTick() {
-    for (auto* sensor : _sensors) {
+    for (auto sensor : _sensors) {
         sensor->tick();
     }
 }
 
 void _sensorPre() {
-    for (auto* sensor : _sensors) {
+    for (auto sensor : _sensors) {
         sensor->pre();
         if (!sensor->status()) {
             DEBUG_MSG_P(PSTR("[SENSOR] Error reading data from %s (error: %d)\n"),
@@ -2482,7 +2497,7 @@ void _sensorPre() {
 }
 
 void _sensorPost() {
-    for (auto* sensor : _sensors) {
+    for (auto sensor : _sensors) {
         sensor->post();
     }
 }
@@ -3158,11 +3173,11 @@ void _sensorLoad() {
 
 }
 
-String _magnitudeTopicIndex(const sensor_magnitude_t& magnitude) {
+String _magnitudeTopicIndex(const Magnitude& magnitude) {
     char buffer[32] = {0};
 
     String topic { _magnitudeTopic(magnitude.type) };
-    if (SENSOR_USE_INDEX || (sensor_magnitude_t::counts(magnitude.type) > 1)) {
+    if (SENSOR_USE_INDEX || (Magnitude::counts(magnitude.type) > 1)) {
         snprintf(buffer, sizeof(buffer), "%s/%u", topic.c_str(), magnitude.index_global);
     } else {
         snprintf(buffer, sizeof(buffer), "%s", topic.c_str());
@@ -3171,7 +3186,7 @@ String _magnitudeTopicIndex(const sensor_magnitude_t& magnitude) {
     return String(buffer);
 }
 
-void _sensorReport(unsigned char index, const sensor_magnitude_t& magnitude) {
+void _sensorReport(unsigned char index, const Magnitude& magnitude) {
 
     // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
     //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
@@ -3195,7 +3210,7 @@ void _sensorReport(unsigned char index, const sensor_magnitude_t& magnitude) {
         address_topic += '/';
         address_topic += topic;
 
-        mqttSend(address_topic.c_str(), magnitude.sensor->address(magnitude.slot).c_str());
+        mqttSend(address_topic.c_str(), magnitude.sensor.address(magnitude.slot).c_str());
 #endif // SENSOR_PUBLISH_ADDRESSES
 
     }
@@ -3217,7 +3232,7 @@ void _sensorReport(unsigned char index, const sensor_magnitude_t& magnitude) {
 void _sensorInit() {
     _sensors_ready = true;
 
-    for (auto& sensor : _sensors) {
+    for (auto sensor : _sensors) {
 
         // Do not process an already initialized sensor
         if (sensor->ready()) {
@@ -3239,18 +3254,19 @@ void _sensorInit() {
         // Initialize sensor magnitudes
         for (unsigned char magnitude_slot = 0; magnitude_slot < sensor->count(); ++magnitude_slot) {
             const auto magnitude_type = sensor->type(magnitude_slot);
+            auto filter = _magnitudeCreateFilter(magnitude_type);
             _magnitudes.emplace_back(
-                magnitude_slot,      // id of the magnitude, unique to the sensor
-                magnitude_type,      // cache type as well, no need to call type(slot) again
-                sensor::Unit::None,  // set by configuration, default for now
-                sensor               // bind the sensor to allow us to reference it later
+                sensor,            // every magnitude is bound to it's sensor
+                std::move(filter), // store, sum, average, etc. value for reporting
+                magnitude_slot,    // id of the magnitude, unique to the sensor
+                magnitude_type     // cache type as well, no need to call type(slot) again
             );
         }
 
         // Custom initializations for analog sensors
         // (but, notice that this is global across all sensors of this type!)
         if (_sensorIsAnalog(sensor)) {
-            _sensorAnalogInit(static_cast<BaseAnalogSensor*>(sensor));
+            _sensorAnalogInit(static_cast<BaseAnalogSensor*>(sensor.get()));
         }
     }
 
@@ -3292,9 +3308,14 @@ void _sensorConfigure() {
     // Update magnitude config, filter sizes and reset energy if needed
     {
         for (auto& magnitude : _magnitudes) {
+            // Some filters must be able store up to a certain amount of readings.
+            if (magnitude.filter->capacity() != _sensor_report_every) {
+                magnitude.filter->resize(_sensor_report_every);
+            }
+
             // process emon-specific settings first. ensure that settings use global index and we access sensor with the local one
             if (_sensorIsEmon(magnitude.sensor) && _magnitudeRatioSupported(magnitude.type)) {
-                auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor);
+                auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
                 sensor->setRatio(magnitude.slot, getSetting(
                     ::sensor::settings::keys::get(magnitude, ::sensor::settings::suffix::Ratio),
                     sensor->defaultRatio(magnitude.slot)));
@@ -3302,7 +3323,7 @@ void _sensorConfigure() {
 
             // analog variant of emon sensor has some additional settings
             if (_sensorIsAnalogEmon(magnitude.sensor) && (magnitude.type == MAGNITUDE_VOLTAGE)) {
-                auto* sensor = static_cast<BaseAnalogEmonSensor*>(magnitude.sensor);
+                auto* sensor = static_cast<BaseAnalogEmonSensor*>(magnitude.sensor.get());
                 sensor->setVoltage(getSetting(
                     ::sensor::settings::keys::get(magnitude, ::sensor::settings::suffix::Mains),
                     sensor->defaultVoltage()));
@@ -3583,7 +3604,7 @@ void sensorLoop() {
 
     // But, the actual reading needs to happen at the specified interval
     static auto last_update = TimeSource::now();
-    static int report_count { 0 };
+    static size_t report_count { 0 };
 
     if (timestamp - last_update > _sensor_read_interval) {
 
@@ -3604,12 +3625,12 @@ void sensorLoop() {
         const bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
 #endif
 
-        // Get readings
-        for (unsigned char magnitude_index = 0; magnitude_index < _magnitudes.size(); ++magnitude_index) {
-
+        for (size_t magnitude_index = 0; magnitude_index < _magnitudes.size(); ++magnitude_index) {
             auto& magnitude = _magnitudes[magnitude_index];
 
-            if (!magnitude.sensor->status()) continue;
+            if (!magnitude.sensor->status()) {
+                continue;
+            }
 
             // -------------------------------------------------------------
             // Instant value
@@ -3641,7 +3662,7 @@ void sensorLoop() {
             }
 
             magnitude.last = value.raw;
-            magnitude.filter->add(value.raw);
+            magnitude.filter->update(value.raw);
 
             // -------------------------------------------------------------
             // Procesing (units and decimals)
@@ -3675,13 +3696,11 @@ void sensorLoop() {
             }
 
             if (report) {
-                value.filtered = _magnitudeProcess(magnitude, magnitude.filter->result());
+                value.filtered = _magnitudeProcess(magnitude, magnitude.filter->value());
 
                 // Make sure that report value is calculated using every read value before it
                 magnitude.filter->reset();
-                if (magnitude.filter->size() != _sensor_report_every) {
-                    magnitude.filter->resize(_sensor_report_every);
-                }
+
 
                 // Check ${name}MinDelta if there is a minimum change threshold to report
                 if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_delta)) {

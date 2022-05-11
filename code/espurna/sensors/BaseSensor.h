@@ -5,14 +5,40 @@
 
 #pragma once
 
-#include <Arduino.h>
+#include "../sensor.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 
+// TODO: const'ify accessors. since these are virtuals, *every* implementing class would be affected
+// (...so, it would be time for a pretty big changeset...)
+
 class BaseSensor {
 public:
+    // Pin specific class type to the resulting object (poor man's rtti)
+    struct ClassType {
+        ClassType() :
+            _value(_last)
+        {
+            ++_last;
+        }
+
+        int value() const {
+            return _value;
+        }
+
+        bool operator==(const ClassType& other) const {
+            return _value == other._value;
+        }
+
+    private:
+        static int _last;
+        int _value;
+    };
+
+    static const ClassType Type;
+
     // Generic way to pass the sensor instance to the isr
     struct InterruptablePin {
         InterruptablePin() = default;
@@ -76,8 +102,8 @@ public:
     struct Magnitude {
         unsigned char type;
 #if __cplusplus <= 201103L
-        constexpr Magnitude(unsigned char type_) :
-            type(type_)
+        constexpr Magnitude(unsigned char type) :
+            type(type)
         {}
 #endif
     };
@@ -94,10 +120,16 @@ public:
         }
     }
 
-    // Must implement as virtual.
-    // Allows inhereting class correctly call it's own destructor through the ~BaseSensor()
-    virtual ~BaseSensor() {
-    }
+    // Make sure we are correctly implementing an abstract base class
+    BaseSensor() = default;
+    virtual ~BaseSensor() = default;
+
+    // Can't copy as base, should not happen
+    BaseSensor(const BaseSensor&) = delete;
+    BaseSensor(BaseSensor&&) = delete;
+
+    BaseSensor& operator=(const BaseSensor&) = delete;
+    BaseSensor& operator=(BaseSensor&&) = delete;
 
     // Initialization method, must be idempotent
     virtual void begin() {
@@ -115,11 +147,6 @@ public:
     virtual void post() {
     }
 
-    // Type of sensor
-    virtual unsigned char type() const {
-        return sensor::type::Base;
-    }
-
     // Number of decimals for a unit (or -1 for default)
     virtual signed char decimals(sensor::Unit) const {
         return -1;
@@ -127,30 +154,35 @@ public:
 
     // Generic calibration
     virtual void calibrate() {
-    };
+    }
+
+    // Type of sensor
+    virtual ClassType type() const {
+        return Type;
+    }
 
     // Sensor ID
-    virtual unsigned char getID() {
+    virtual unsigned char id() const {
         return _sensor_id;
-    };
+    }
 
     // Return status (true if no errors)
-    bool status() {
+    bool status() const {
         return 0 == _error;
     }
 
     // Return ready status (true for ready)
-    bool ready() {
+    bool ready() const {
         return _ready;
     }
 
     // Return sensor last internal error
-    int error() {
+    int error() const {
         return _error;
     }
 
     // Number of available slots
-    unsigned char count() {
+    unsigned char count() const {
         return _count;
     }
 
@@ -234,3 +266,6 @@ protected:
     unsigned char _count = 0;
     bool _ready = false;
 };
+
+int BaseSensor::ClassType::_last { 0 };
+const BaseSensor::ClassType BaseSensor::Type;
