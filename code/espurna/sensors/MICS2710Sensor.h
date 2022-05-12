@@ -13,38 +13,15 @@ extern "C" {
     #include "../libs/fs_math.h"
 }
 
-class MICS2710Sensor : public BaseAnalogSensor {
+class MICS2710Sensor : public AnalogSensor {
 
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        MICS2710Sensor() {
-            _count = 2;
-            _sensor_id = SENSOR_MICS2710_ID;
-        }
-
-        void calibrate() {
-            setR0(_getResistance());
-        }
-
-        // ---------------------------------------------------------------------
-
-        void setAnalogGPIO(unsigned char gpio) {
-            _noxGPIO = gpio;
-        }
-
-        unsigned char getAnalogGPIO() {
-            return _noxGPIO;
-        }
 
         void setPreHeatGPIO(unsigned char gpio) {
             _preGPIO = gpio;
         }
 
-        unsigned char getPreHeatGPIO() {
+        unsigned char getPreHeatGPIO() const {
             return _preGPIO;
         }
 
@@ -52,76 +29,70 @@ class MICS2710Sensor : public BaseAnalogSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_MICS2710_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
+        void calibrate() override {
+            setR0(_getResistance());
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
-
-            // Set NOX as analog input
-            pinMode(_noxGPIO, INPUT);
-
-            // Start pre-heating
+        void begin() override {
             pinMode(_preGPIO, OUTPUT);
             digitalWrite(_preGPIO, HIGH);
             _heating = true;
-            _start = millis();
+            _heating_start = TimeSource::now();
 
             _ready = true;
-
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
+            _error = SENSOR_ERROR_OK;
 
-            // Check pre-heat time
-            if (_heating && (millis() - _start > MICS2710_PREHEAT_TIME)) {
+            static constexpr auto PreheatTime = TimeSource::duration { MICS2710_PREHEAT_TIME };
+            if (_heating && (TimeSource::now() - _heating_start > PreheatTime)) {
                 digitalWrite(_preGPIO, LOW);
                 _heating = false;
             }
 
-            if (_ready) {
-                _Rs = _getResistance();
+            if (_heating) {
+                _error = SENSOR_ERROR_WARM_UP;
+                return;
             }
 
+            _Rs = _getResistance();
         }
 
         // Descriptive name of the sensor
-        String description() {
-            return String("MICS-2710 @ TOUT");
-        }
-
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String("0");
+        String description() const override {
+            return F("MICS-2710 @ TOUT");
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (0 == index) return MAGNITUDE_RESISTANCE;
             if (1 == index) return MAGNITUDE_NO2;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (0 == index) return _Rs;
             if (1 == index) return _getPPM();
             return 0;
         }
 
     private:
-
-        unsigned long _getReading() {
-            return analogRead(_noxGPIO);
-        }
-
-        double _getResistance() {
+        double _getResistance() const {
 
             // get voltage (1 == reference) from analog pin
-            double voltage = (float) _getReading() / 1024.0;
+            double voltage = AnalogSensor::analogRead() / 1024.0;
 
             // schematic: 3v3 - Rs - P - Rl - GND
             // V(P) = 3v3 * Rl / (Rs + Rl)
@@ -133,7 +104,7 @@ class MICS2710Sensor : public BaseAnalogSensor {
 
         }
 
-        double _getPPM() {
+        double _getPPM() const {
 
             // According to the datasheet (https://www.cdiweb.com/datasheets/e2v/mics-2710.pdf)
             // there is an almost linear relation between log(Rs/R0) and log(ppm).
@@ -155,8 +126,11 @@ class MICS2710Sensor : public BaseAnalogSensor {
 
         }
 
+        using TimeSource = espurna::time::CoreClock;
+
+        TimeSource::time_point _heating_start;
         bool _heating = false;
-        unsigned long _start = 0;                   // monitors the pre-heating time
+
         unsigned char _noxGPIO = MICS2710_PRE_PIN;
         unsigned char _preGPIO = MICS2710_NOX_PIN;
 

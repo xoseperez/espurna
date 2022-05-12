@@ -2875,7 +2875,6 @@ void _sensorLoad() {
     #if MICS2710_SUPPORT
     {
         MICS2710Sensor * sensor = new MICS2710Sensor();
-        sensor->setAnalogGPIO(MICS2710_NOX_PIN);
         sensor->setPreHeatGPIO(MICS2710_PRE_PIN);
         sensor->setR0(MICS2710_R0);
         sensor->setRL(MICS2710_RL);
@@ -2887,7 +2886,6 @@ void _sensorLoad() {
     #if MICS5525_SUPPORT
     {
         MICS5525Sensor * sensor = new MICS5525Sensor();
-        sensor->setAnalogGPIO(MICS5525_RED_PIN);
         sensor->setR0(MICS5525_R0);
         sensor->setRL(MICS5525_RL);
         sensor->setRS(0);

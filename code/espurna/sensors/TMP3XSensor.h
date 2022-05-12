@@ -14,26 +14,20 @@
 #define TMP3X_TMP36                 36
 #define TMP3X_TMP37                 37
 
-class TMP3XSensor : public BaseSensor {
+class TMP3XSensor : public AnalogSensor {
 
     public:
-
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
 
-        TMP3XSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_TMP3X_ID;
-        }
-
         void setType(unsigned char type) {
-            if (35 <= type && type <= 37) {
+            if (TMP3X_TMP35 <= type && type <= TMP3X_TMP37) {
               _type = type;
             }
         }
 
-        unsigned char getType() {
+        unsigned char getType() const {
             return _type;
         }
 
@@ -41,47 +35,56 @@ class TMP3XSensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_TMP3X_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
             _ready = true;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[14];
-            snprintf(buffer, sizeof(buffer), "TMP%d @ TOUT", _type);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("TMP%hhu @ TOUT"), _type);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String("A0");
+        String address(unsigned char index) const override {
+            return F("A0");
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             return MAGNITUDE_NONE;
         }
 
+        void pre() override {
+            const double mV = 3300.0 * AnalogSensor::value(0) / 1024.0;
+            _value = (_type == TMP3X_TMP35) ? (mV / 10.0) :
+                (_type == TMP3X_TMP36) ? (mV / 10.0 - 50.0) :
+                (_type == TMP3X_TMP37) ? (mV / 20.0) : 0.0;
+        }
+
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) {
-                double mV = 3300.0 * analogRead(0) / 1024.0;
-                if (_type == TMP3X_TMP35) return mV / 10.0;
-                if (_type == TMP3X_TMP36) return mV / 10.0 - 50.0;
-                if (_type == TMP3X_TMP37) return mV / 20.0;
+                return _value;
             }
             return 0;
         }
 
     private:
 
+        double _value = 0.0;
         unsigned char _type = TMP3X_TMP35;
 
 };

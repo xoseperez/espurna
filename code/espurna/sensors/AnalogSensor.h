@@ -25,9 +25,12 @@ class AnalogSensor : public BaseAnalogSensor {
 
         using Delay = espurna::duration::critical::Microseconds;
 
-        AnalogSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_ANALOG_ID;
+        unsigned char count() const override {
+            return 1;
+        }
+
+        unsigned char id() const override {
+            return SENSOR_ANALOG_ID;
         }
 
         void setSamples(size_t samples) {
@@ -52,19 +55,19 @@ class AnalogSensor : public BaseAnalogSensor {
 
         // ---------------------------------------------------------------------
 
-        size_t getSamples() {
+        size_t getSamples() const {
             return _samples;
         }
 
-        espurna::duration::Microseconds getDelay() {
+        espurna::duration::Microseconds getDelay() const {
             return _delay;
         }
 
-        double getFactor() {
+        double getFactor() const {
             return _factor;
         }
 
-        double getOffset() {
+        double getOffset() const {
             return _offset;
         }
 
@@ -73,44 +76,43 @@ class AnalogSensor : public BaseAnalogSensor {
         // ---------------------------------------------------------------------
 
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
             _ready = true;
         }
 
         // Descriptive name of the sensor
-        String description() {
-            return String("ANALOG @ TOUT");
+        String description() const override {
+            return F("ANALOG @ TOUT");
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String("0");
+        String address(unsigned char) const override {
+            return F("A0");
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_ANALOG;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
-            if (index == 0) return _read();
+        double value(unsigned char index) override {
+            if (index == 0) return this->analogRead();
             return 0;
+        }
+
+        double analogRead() const {
+            return _withFactor(_rawRead());
         }
 
     protected:
 
-        static unsigned int _rawRead(size_t samples, Delay delay) {
+        static unsigned int _rawRead(uint8_t pin, size_t samples, Delay delay) {
             unsigned int last { 0 };
             unsigned int result { 0 };
             for (size_t sample = 0; sample < samples; ++sample) {
-                const auto value = analogRead(0);
+                const auto value = ::analogRead(pin);
                 result = result + value - last;
                 last = value;
                 if (sample > 0) {
@@ -123,11 +125,7 @@ class AnalogSensor : public BaseAnalogSensor {
         }
 
         unsigned int _rawRead() const {
-            return _rawRead(_samples, _delay);
-        }
-
-        double _read() const {
-            return _withFactor(_rawRead());
+            return _rawRead(0, _samples, _delay);
         }
 
         double _withFactor(double value) const {

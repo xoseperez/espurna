@@ -19,11 +19,6 @@ class NTCSensor : public AnalogSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        NTCSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_NTC_ID;
-        }
-
         void setBeta(unsigned long beta) {
             if (beta > 0) _beta = beta;
         }
@@ -50,29 +45,32 @@ class NTCSensor : public AnalogSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
-        // Descriptive name of the sensor
-        String description() override {
-            return String("NTC @ TOUT");
+        unsigned char id() const override {
+            return SENSOR_NTC_ID;
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char) override {
-            return description();
+        unsigned char count() const override {
+            return 1;
+        }
+
+        // Descriptive name of the sensor
+        String description() const override {
+            return F("NTC @ TOUT");
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) override {
-            return String("0");
+        String address(unsigned char index) const override {
+            return F("0");
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) override {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             return MAGNITUDE_NONE;
         }
 
         // Always in kelvins, adjust to C or F later
-        sensor::Unit units(unsigned char index) override {
+        sensor::Unit units(unsigned char index) const override {
             if (index == 0) {
                 return sensor::Unit::Kelvin;
             }
