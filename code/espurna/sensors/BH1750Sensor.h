@@ -23,26 +23,13 @@ class BH1750Sensor : public I2CSensor<> {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        BH1750Sensor() {
-            _sensor_id = SENSOR_BH1750_ID;
-            _count = 1;
-        }
-
-        // ---------------------------------------------------------------------
-
         void setMode(unsigned char mode) {
             if (_mode == mode) return;
             _mode = mode;
             _dirty = true;
         }
 
-        // ---------------------------------------------------------------------
-
-        unsigned char getMode() {
+        unsigned char getMode() const {
             return _mode;
         }
 
@@ -50,15 +37,25 @@ class BH1750Sensor : public I2CSensor<> {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_BH1750_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
             // I2C auto-discover
-            unsigned char addresses[] = {0x23, 0x5C};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
+            static constexpr uint8_t addresses[] {0x23, 0x5C};
+            auto address = findAndLock(addresses);
+            if (address == 0) {
+                return;
+            }
 
             // Run configuration on next update
             _run_configure = true;
@@ -68,39 +65,39 @@ class BH1750Sensor : public I2CSensor<> {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "BH1750 @ I2C (0x%02X)", _address);
+            snprintf(buffer, sizeof(buffer), "BH1750 @ I2C (0x%02X)", getAddress());
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_LUX;
             return MAGNITUDE_NONE;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             _error = SENSOR_ERROR_OK;
-            _lux = _read();
+            _lux = _read(getAddress());
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _lux;
             return 0;
         }
 
     protected:
 
-        double _read() {
+        double _read(uint8_t address) {
 
             // For one-shot modes reconfigure sensor & wait for conversion
             if (_run_configure) {
 
                 // Configure mode
-                i2c_write_uint8(_address, _mode);
+                i2c_write_uint8(address, _mode);
 
                 // According to datasheet
                 // conversion time is ~16ms for low resolution
@@ -115,7 +112,7 @@ class BH1750Sensor : public I2CSensor<> {
 
             }
 
-            double level = (double) i2c_read_uint16(_address);
+            double level = (double) i2c_read_uint16(address);
             if (level == 0xFFFF) {
                 _error = SENSOR_ERROR_CRC;
                 _run_configure = true;

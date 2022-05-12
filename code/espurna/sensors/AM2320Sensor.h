@@ -30,58 +30,55 @@ class AM2320Sensor : public I2CSensor<> {
     public:
 
         // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        AM2320Sensor() {
-            _count = 2;
-            _sensor_id = SENSOR_AM2320_ID;
-        }
-
-        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_AM2320_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
             if (!_dirty) return;
 
             // I2C auto-discover
-            unsigned char addresses[] = {0x23, 0x5C, 0xB8};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
+            static constexpr uint8_t addresses[] {0x23, 0x5C, 0xB8};
+            auto address = findAndLock(addresses);
+            if (address == 0) {
+                return;
+            }
 
             _ready = true;
             _dirty = false;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "AM2320 @ I2C (0x%02X)", _address);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("AM2320 @ I2C (0x%02X)"), getAddress());
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             if (index == 1) return MAGNITUDE_HUMIDITY;
             return MAGNITUDE_NONE;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             _error = SENSOR_ERROR_OK;
-            _read();
+            _read(getAddress());
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
             return 0;
@@ -96,15 +93,15 @@ class AM2320Sensor : public I2CSensor<> {
 /*
         // Get device model, version, device_id
 
-        void _init() {
-            i2c_wakeup(_address);
+        void _init(uint8_t address) {
+            i2c_wakeup(address);
             delayMicroseconds(800);
 
             unsigned char _buffer[11];
 
             // 0x08 = read address
             //    7 = number of bytes to read
-            if (i2c_write_uint8(_address, AM2320_I2C_READ_REGISTER_DATA, 0x08, 7) != I2C_TRANS_SUCCESS) {
+            if (i2c_write_uint8(address, AM2320_I2C_READ_REGISTER_DATA, 0x08, 7) != I2C_TRANS_SUCCESS) {
                 _error = SENSOR_ERROR_TIMEOUT;
                 return false;
             }
@@ -115,16 +112,16 @@ class AM2320Sensor : public I2CSensor<> {
         }
 */
 
-        void _read() {
+        void _read(uint8_t address) {
 
-            i2c_wakeup(_address);
+            i2c_wakeup(address);
 
             // waiting time of at least 800 μs, the maximum 3000 μs
             delayMicroseconds(800); // just to be on safe side
 
             // 0x00 = read address
             //    4 = number of bytes to read
-            if (i2c_write_uint8(_address, AM2320_I2C_READ_REGISTER_DATA, 0x00, 4) != I2C_TRANS_SUCCESS) {
+            if (i2c_write_uint8(address, AM2320_I2C_READ_REGISTER_DATA, 0x00, 4) != I2C_TRANS_SUCCESS) {
                 _error = SENSOR_ERROR_TIMEOUT;
                 return;
             }
@@ -133,7 +130,7 @@ class AM2320Sensor : public I2CSensor<> {
 
             // waiting time of at least 800 μs, the maximum 3000 μs
             delayMicroseconds(800 + ((3000-800)/2) );
-            i2c_read_buffer(_address, _buffer, 8);
+            i2c_read_buffer(address, _buffer, 8);
 
             // Humidity   : 01F4 = (1×256)+(F×16)+4 = 500 => humidity = 500÷10 = 50.0 %
             //              0339 = (3×256)+(3×16)+9 = 825 => humidity = 825÷10 = 82.5 %
@@ -168,7 +165,7 @@ class AM2320Sensor : public I2CSensor<> {
             }
         }
 
-        unsigned int _CRC16(unsigned char buffer[]) {
+        static unsigned int _CRC16(unsigned char (&buffer)[8]) {
             unsigned int crc16 = 0xFFFF;
 
             for (unsigned int i = 0; i < 6; i++) {

@@ -16,59 +16,67 @@ class SHT3XI2CSensor : public I2CSensor<> {
     public:
 
         // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        SHT3XI2CSensor() {
-            _sensor_id = SENSOR_SHT3X_I2C_ID;
-            _count = 2;
-        }
-
-        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_SHT3X_I2C_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
             // I2C auto-discover
-            unsigned char addresses[] = {0x44,0x45};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
-            i2c_write_uint8(_address, 0x30, 0xA2); // Soft reset to ensure sensor in default state
+            static constexpr uint8_t addresses[] {0x44, 0x45};
+            const auto address = findAndLock(addresses);
+            if (address == 0) {
+                return;
+            }
+
+            // Soft reset, ensure sensor is in default state
+            i2c_write_uint8(address, 0x30, 0xA2);
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
+
             _ready = true;
             _dirty = false;
 
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "SHT3X @ I2C (0x%02X)", _address);
+            snprintf(buffer, sizeof(buffer), "SHT3X @ I2C (0x%02X)", getAddress());
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             if (index == 1) return MAGNITUDE_HUMIDITY;
             return MAGNITUDE_NONE;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
 
             _error = SENSOR_ERROR_OK;
 
-            unsigned char buffer[6];
-            i2c_write_uint8(_address, 0x2C, 0x06); // Measurement High Repeatability with Clock Stretch Enabled
+            const auto address = getAddress();
+
+            // Measurement High Repeatability with Clock Stretch Enabled
+            i2c_write_uint8(address, 0x2C, 0x06);
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
-            i2c_read_buffer(_address, buffer, 6);
+
+            unsigned char buffer[6];
+            i2c_read_buffer(address, buffer, std::size(buffer));
 
             // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
             _temperature = ((((buffer[0] * 256.0) + buffer[1]) * 175) / 65535.0) - 45;
@@ -77,7 +85,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
             return 0;

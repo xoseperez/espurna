@@ -38,44 +38,42 @@ class BMP180Sensor : public I2CSensor<> {
 
     public:
 
-        static unsigned char addresses[1];
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        BMP180Sensor() {
-            _sensor_id = SENSOR_BMP180_ID;
-            _count = 2;
-        }
-
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_BMP180_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
             if (!_dirty) return;
             _init();
             _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "BMP180 @ I2C (0x%02X)", _address);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("BMP180 @ I2C (0x%02X)"), getAddress());
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             if (index == 1) return MAGNITUDE_PRESSURE;
             return MAGNITUDE_NONE;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        virtual void pre() {
+        void pre() override {
 
             if (_run_init) {
                 i2cClearBus();
@@ -83,12 +81,12 @@ class BMP180Sensor : public I2CSensor<> {
             }
 
             if (_chip == 0) {
-                _error = SENSOR_ERROR_UNKNOWN_ID;
+                resetUnknown();
                 return;
             }
 
             _error = SENSOR_ERROR_OK;
-            _error = _read();
+            _error = _read(getAddress());
             if (_error != SENSOR_ERROR_OK) {
                 _run_init = true;
             }
@@ -96,7 +94,7 @@ class BMP180Sensor : public I2CSensor<> {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _temperature;
             if (index == 1) return _pressure / 100;
             return 0;
@@ -110,65 +108,60 @@ class BMP180Sensor : public I2CSensor<> {
             espurna::time::blockingDelay(espurna::duration::Milliseconds(10));
 
             // I2C auto-discover
-            _address = _begin_i2c(_address, sizeof(BMP180Sensor::addresses), BMP180Sensor::addresses);
-            if (_address == 0) return;
+            static constexpr uint8_t addresses[] {0x77};
+            auto address = findAndLock(addresses);
+            if (address == 0) {
+                return;
+            }
 
             // Check sensor correctly initialized
-            _chip = i2c_read_uint8(_address, BMP180_REGISTER_CHIPID);
+            _chip = i2c_read_uint8(address, BMP180_REGISTER_CHIPID);
             if (_chip != BMP180_CHIP_ID) {
-
                 _chip = 0;
-                _sensor_address.unlock();
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-
-                // Setting _address to 0 forces auto-discover
-                // This might be necessary at this stage if there is a
-                // different sensor in the hardcoded address
-                _address = 0;
-
+                resetUnknown();
                 return;
 
             }
 
-            _readCoefficients();
+            _readCoefficients(address);
 
             _run_init = false;
             _ready = true;
 
         }
 
-        void _readCoefficients() {
+        void _readCoefficients(uint8_t address) {
+            _bmp180_calib = bmp180_calib_t{
+                .ac1 = i2c_read_int16(address, BMP180_REGISTER_CAL_AC1),
+                .ac2 = i2c_read_int16(address, BMP180_REGISTER_CAL_AC2),
+                .ac3 = i2c_read_int16(address, BMP180_REGISTER_CAL_AC3),
 
-            _bmp180_calib.ac1 = i2c_read_int16(_address, BMP180_REGISTER_CAL_AC1);
-            _bmp180_calib.ac2 = i2c_read_int16(_address, BMP180_REGISTER_CAL_AC2);
-            _bmp180_calib.ac3 = i2c_read_int16(_address, BMP180_REGISTER_CAL_AC3);
+                .ac4 = i2c_read_uint16(address, BMP180_REGISTER_CAL_AC4),
+                .ac5 = i2c_read_uint16(address, BMP180_REGISTER_CAL_AC5),
+                .ac6 = i2c_read_uint16(address, BMP180_REGISTER_CAL_AC6),
 
-            _bmp180_calib.ac4 = i2c_read_uint16(_address, BMP180_REGISTER_CAL_AC4);
-            _bmp180_calib.ac5 = i2c_read_uint16(_address, BMP180_REGISTER_CAL_AC5);
-            _bmp180_calib.ac6 = i2c_read_uint16(_address, BMP180_REGISTER_CAL_AC6);
-
-            _bmp180_calib.b1 = i2c_read_int16(_address, BMP180_REGISTER_CAL_B1);
-            _bmp180_calib.b2 = i2c_read_int16(_address, BMP180_REGISTER_CAL_B2);
-            _bmp180_calib.mb = i2c_read_int16(_address, BMP180_REGISTER_CAL_MB);
-            _bmp180_calib.mc = i2c_read_int16(_address, BMP180_REGISTER_CAL_MC);
-            _bmp180_calib.md = i2c_read_int16(_address, BMP180_REGISTER_CAL_MD);
-
+                .b1 = i2c_read_int16(address, BMP180_REGISTER_CAL_B1),
+                .b2 = i2c_read_int16(address, BMP180_REGISTER_CAL_B2),
+                .mb = i2c_read_int16(address, BMP180_REGISTER_CAL_MB),
+                .mc = i2c_read_int16(address, BMP180_REGISTER_CAL_MC),
+                .md = i2c_read_int16(address, BMP180_REGISTER_CAL_MD),
+            };
         }
 
         // Compute B5 coefficient used in temperature & pressure calcs.
         // Based on Adafruit_BMP085_Unified library
         long _computeB5(unsigned long t) {
-            long X1 = (t - (long)_bmp180_calib.ac6) * ((long)_bmp180_calib.ac5) >> 15;
-            long X2 = ((long)_bmp180_calib.mc << 11) / (X1+(long)_bmp180_calib.md);
+            const long X1 = (t - (long)_bmp180_calib.ac6) * ((long)_bmp180_calib.ac5) >> 15;
+            const long X2 = ((long)_bmp180_calib.mc << 11) / (X1+(long)_bmp180_calib.md);
             return X1 + X2;
         }
 
-        unsigned char _read() {
+        unsigned char _read(uint8_t address) {
 
             // Read raw temperature
-            i2c_write_uint8(_address, BMP180_REGISTER_CONTROL, BMP180_REGISTER_READTEMPCMD);
+            i2c_write_uint8(address, BMP180_REGISTER_CONTROL, BMP180_REGISTER_READTEMPCMD);
             espurna::time::blockingDelay(espurna::duration::Milliseconds(5));
-            unsigned long t = i2c_read_uint16(_address, BMP180_REGISTER_TEMPDATA);
+            unsigned long t = i2c_read_uint16(address, BMP180_REGISTER_TEMPDATA);
 
             // Compute B5 coeficient
             long b5 = _computeB5(t);
@@ -177,10 +170,10 @@ class BMP180Sensor : public I2CSensor<> {
             _temperature = ((double) ((b5 + 8) >> 4)) / 10.0;
 
             // Read raw pressure
-            i2c_write_uint8(_address, BMP180_REGISTER_CONTROL, BMP180_REGISTER_READPRESSURECMD + (_mode << 6));
+            i2c_write_uint8(address, BMP180_REGISTER_CONTROL, BMP180_REGISTER_READPRESSURECMD + (_mode << 6));
             espurna::time::blockingDelay(espurna::duration::Milliseconds(26));
-            unsigned long p1 = i2c_read_uint16(_address, BMP180_REGISTER_PRESSUREDATA);
-            unsigned long p2 = i2c_read_uint8(_address, BMP180_REGISTER_PRESSUREDATA+2);
+            unsigned long p1 = i2c_read_uint16(address, BMP180_REGISTER_PRESSUREDATA);
+            unsigned long p2 = i2c_read_uint8(address, BMP180_REGISTER_PRESSUREDATA+2);
             long p = ((p1 << 8) + p2) >> (8 - _mode);
 
             // Pressure compensation
@@ -220,8 +213,7 @@ class BMP180Sensor : public I2CSensor<> {
         double _pressure = 0;
         unsigned int _mode = BMP180_MODE;
 
-        typedef struct {
-
+        struct bmp180_calib_t {
             int16_t  ac1;
             int16_t  ac2;
             int16_t  ac3;
@@ -235,15 +227,10 @@ class BMP180Sensor : public I2CSensor<> {
             int16_t  mb;
             int16_t  mc;
             int16_t  md;
-
-        } bmp180_calib_t;
+        };
 
         bmp180_calib_t _bmp180_calib;
 
 };
-
-// Static inizializations
-
-unsigned char BMP180Sensor::addresses[1] = {0x77};
 
 #endif // SENSOR_SUPPORT && BMP180_SUPPORT

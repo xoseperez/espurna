@@ -352,8 +352,16 @@ public:
         MAGNITUDE_ENERGY
     };
 
+    unsigned char id() const override {
+        return SENSOR_ADE7953_ID;
+    }
+
+    unsigned char count() const override {
+        return std::size(Magnitudes);
+    }
+
     // Initialization method, must be idempotent
-    void begin() {
+    void begin() override {
         if (!_dirty) {
             return;
         }
@@ -369,20 +377,15 @@ public:
     }
 
     // Descriptive name of the sensor
-    String description() {
+    String description() const override {
         char buffer[25];
-        snprintf(buffer, sizeof(buffer),
-            "ADE7953 @ I2C (0x%02X)", _port.address());
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("ADE7953 @ I2C (0x%02X)"), _port.address());
         return String(buffer);
     }
 
-    // Descriptive name of the slot # index
-    String description(unsigned char) {
-        return description();
-    }
-
     // Address of the sensor (it could be the GPIO or I2C address)
-    String address(unsigned char) override {
+    String address(unsigned char) const override {
         char buffer[5];
         snprintf_P(buffer, sizeof(buffer),
             PSTR("0x%02X"), _port.address());
@@ -390,22 +393,20 @@ public:
     }
 
     // Pre-read hook (usually to populate registers with up-to-date data)
-    void pre() {
+    void pre() override {
         _last_reading = read();
         _energy[0] += sensor::Ws(_last_reading.a.active_energy);
         _energy[1] += sensor::Ws(_last_reading.b.active_energy);
     }
 
-    // Sensor has a fixed number of channels
-    ADE7953Sensor() {
-        _sensor_id = SENSOR_ADE7953_ID;
-        _count = std::size(Magnitudes);
-        _dirty = true;
-        findAndAddEnergy(Magnitudes);
-    }
+    // Sensor has a fixed number of channels, so just use the static magnitudes list
+
+    ADE7953Sensor() :
+        BaseEmonSensor(Magnitudes)
+    {}
 
     // Current value for slot # index
-    double value(unsigned char index) {
+    double value(unsigned char index) override {
         switch (index) {
         case 0:
             return _last_reading.voltage;
@@ -441,7 +442,7 @@ public:
     }
 
     // Type for slot # index
-    unsigned char type(unsigned char index) {
+    unsigned char type(unsigned char index) const override {
         if (index < std::size(Magnitudes)) {
             return Magnitudes[index].type;
         }
@@ -521,7 +522,7 @@ private:
 };
 
 #if __cplusplus < 201703L
-constexpr BaseEmonSensor::Magnitude ADE7953Sensor::Magnitudes[];
+constexpr BaseSensor::Magnitude ADE7953Sensor::Magnitudes[];
 #endif
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT

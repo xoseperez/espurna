@@ -16,25 +16,27 @@ class SI1145Sensor : public I2CSensor<> {
 
      public:
 
-         SI1145Sensor() {
-             _count = 1;
-             _sensor_id = SENSOR_SI1145_ID;
-             _si1145 = new Adafruit_SI1145();
+         unsigned char id() const override {
+            return SENSOR_SI1145_ID;
          }
 
-         void begin() {
-             static unsigned char addresses[1] = { SI1145_ADDRESS };
-             _address = _begin_i2c(_address, sizeof(addresses), addresses);
-             if (_address == 0) return;
+         unsigned char count() const override {
+            return 1;
+         }
 
-             if (!_si1145->begin()) {
+         void begin() override {
+             const auto address = findAndLock();
+             if (address == 0) {
+                 return;
+             }
+
+             if (!_si1145.begin()) {
                  _ready = false;
                  return;
              }
 
              // Adafruit library never sets any errors
              _error = SENSOR_ERROR_OK;
-
              _ready = true;
          }
 
@@ -43,36 +45,36 @@ class SI1145Sensor : public I2CSensor<> {
          // ---------------------------------------------------------------------
 
          // Descriptive name of the sensor
-         String description() {
+         String description() const override {
              char buffer[25];
-             snprintf(buffer, sizeof(buffer), "SI1145 @ I2C (0x%02X)", _address);
+             snprintf(buffer, sizeof(buffer), "SI1145 @ I2C (0x%02X)", getAddress());
              return String(buffer);
          }
 
          // Descriptive name of the slot # index
-         String description(unsigned char index) {
+         String description(unsigned char index) const override {
              return description();
          };
 
          // Type for slot # index
-         unsigned char type(unsigned char index) {
+         unsigned char type(unsigned char index) const override {
              if (index == 0) return MAGNITUDE_UVI;
              return MAGNITUDE_NONE;
          }
 
          // Pre-read hook (usually to populate registers with up-to-date data)
-         void pre() {
-             _uvi = _si1145->readUV() / 100.0;
+         void pre() override {
+             _uvi = _si1145.readUV() / 100.0;
          }
 
          // Current value for slot # index
-         double value(unsigned char index) {
+         double value(unsigned char index) override {
              if (index == 0) return _uvi;
              return 0.0;
          }
 
-     protected:
-         Adafruit_SI1145 * _si1145 = nullptr;
+     private:
+         Adafruit_SI1145 _si1145;
          double _uvi = 0.0;
 };
 
