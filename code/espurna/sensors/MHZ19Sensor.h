@@ -14,8 +14,9 @@
 
 #include "BaseSensor.h"
 
-#define MHZ19_REQUEST_LEN       8
-#define MHZ19_RESPONSE_LEN      9
+#include <array>
+
+#define MHZ19_DATA_LEN          9
 #define MHZ19_TIMEOUT           1000
 #define MHZ19_GETPPM            0x8600
 #define MHZ19_ZEROCALIB         0x8700
@@ -25,22 +26,24 @@
 
 class MHZ19Sensor : public BaseSensor {
 
+    private:
+
+        using Data = std::array<uint8_t, MHZ19_DATA_LEN>;
+        struct ResponseData {
+            bool status { false };
+            Data data{};
+        };
+
+        static uint8_t _checksum(const Data& data) {
+            uint8_t sum = 0x00;
+            for (size_t i = 1; i < (data.size() - 1); ++i) {
+                sum += data[i];
+            }
+            sum = 0xFF - sum + 0x01;
+            return sum;
+        }
+
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        MHZ19Sensor() {
-            _count = 1;
-            _sensor_id = SENSOR_MHZ19_ID;
-        }
-
-        ~MHZ19Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
 
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
@@ -56,11 +59,11 @@ class MHZ19Sensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getRX() {
+        unsigned char getRX() const {
             return _pin_rx;
         }
 
-        unsigned char getTX() {
+        unsigned char getTX() const {
             return _pin_tx;
         }
 
@@ -68,14 +71,24 @@ class MHZ19Sensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_MHZ19_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
+            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx, false);
             _serial->enableIntTx(false);
             _serial->begin(9600);
             calibrateAuto(_calibrateAuto);
@@ -86,60 +99,57 @@ class MHZ19Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("MHZ19 @ SwSerial(%hhu,%hhu)"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
+        String address(unsigned char) const override {
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_CO2;
             return MAGNITUDE_NONE;
         }
 
-        void pre() {
+        void pre() override {
             _read();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _co2;
             return 0;
         }
 
-        void calibrateAuto(boolean state){
-        	_write(state ? MHZ19_AUTOCALIB_ON : MHZ19_AUTOCALIB_OFF);
+        void calibrateAuto(bool state){
+            _write(state ? MHZ19_AUTOCALIB_ON : MHZ19_AUTOCALIB_OFF);
         }
 
         void calibrateZero() {
-        	_write(MHZ19_ZEROCALIB);
+            _write(MHZ19_ZEROCALIB);
         }
 
         void calibrateSpan(unsigned int ppm) {
             if( ppm < 1000 ) return;
-            unsigned char buffer[MHZ19_REQUEST_LEN] = {0};
-            buffer[0] = 0xFF;
-            buffer[1] = 0x01;
-            buffer[2] = MHZ19_SPANCALIB >> 8;
-            buffer[3] = ppm >> 8;
-            buffer[4] = ppm & 0xFF;
-            _write(buffer);
+            Data data{};
+            data[0] = 0xFF;
+            data[1] = 0x01;
+            data[2] = MHZ19_SPANCALIB >> 8;
+            data[3] = ppm >> 8;
+            data[4] = ppm & 0xFF;
+            _write(data);
         }
 
-        void setCalibrateAuto(boolean value) {
+        void setCalibrateAuto(bool value) {
             _calibrateAuto = value;
             if (_ready) {
                 calibrateAuto(value);
@@ -152,50 +162,55 @@ class MHZ19Sensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        void _write(unsigned char * command) {
-            _serial->write(command, MHZ19_REQUEST_LEN);
-        	_serial->write(_checksum(command));
-        	_serial->flush();
-        }
-
-        void _write(unsigned int command, unsigned char * response) {
-
-            unsigned char buffer[MHZ19_REQUEST_LEN] = {0};
-            buffer[0] = 0xFF;
-            buffer[1] = 0x01;
-            buffer[2] = command >> 8;
-            buffer[3] = command & 0xFF;
-            _write(buffer);
-
-        	if (response != NULL) {
-        		unsigned long start = millis();
-                while (_serial->available() == 0) {
-                    if (millis() - start > MHZ19_TIMEOUT) {
-                        _error = SENSOR_ERROR_TIMEOUT;
-                        return;
-                    }
-                    yield();
-                }
-        		_serial->readBytes(response, MHZ19_RESPONSE_LEN);
-        	}
-
+        void _write(const Data& data) {
+            _serial->write(data.data(), data.size() - 1);
+            _serial->write(_checksum(data));
+            _serial->flush();
         }
 
         void _write(unsigned int command) {
-            _write(command, NULL);
+            Data data {0};
+            data[0] = 0xFF;
+            data[1] = 0x01;
+            data[2] = command >> 8;
+            data[3] = command & 0xFF;
+            _write(data);
+        }
+
+        ResponseData _request(unsigned int command) {
+            _write(command);
+
+            using TimeSource = espurna::time::CoreClock;
+            static constexpr auto Timeout = espurna::duration::Milliseconds { MHZ19_TIMEOUT };
+
+            ResponseData response{};
+
+            const auto start = TimeSource::now();
+            while (_serial->available() == 0) {
+                if (TimeSource::now() - start > Timeout) {
+                    _error = SENSOR_ERROR_TIMEOUT;
+                    return response;
+                }
+                delay(10);
+            }
+
+            _serial->readBytes(response.data.data(), response.data.size());
+            return response;
         }
 
         void _read() {
 
-            unsigned char buffer[MHZ19_RESPONSE_LEN] = {0};
-        	_write(MHZ19_GETPPM, buffer);
+            auto ppm = _request(MHZ19_GETPPM);
+            if (!ppm.status) {
+                return;
+            }
 
-        	// Check response
-        	if ((buffer[0] == 0xFF)
-                && (buffer[1] == 0x86)
-                && (_checksum(buffer) == buffer[MHZ19_RESPONSE_LEN-1])) {
+            // Check response
+            if ((ppm.data[0] == 0xFF)
+                && (ppm.data[1] == 0x86)
+                && (_checksum(ppm.data) == ppm.data.back())) {
 
-                unsigned int value = buffer[2] * 256 + buffer[3];
+                unsigned int value = ppm.data[2] * 256 + ppm.data[3];
                 if (0 <= value && value <= 5000) {
                     _co2 = value;
                     _error = SENSOR_ERROR_OK;
@@ -209,20 +224,11 @@ class MHZ19Sensor : public BaseSensor {
 
         }
 
-        uint8_t _checksum(uint8_t * command) {
-        	uint8_t sum = 0x00;
-        	for (unsigned char i = 1; i < MHZ19_REQUEST_LEN-1; i++) {
-        		sum += command[i];
-        	}
-        	sum = 0xFF - sum + 0x01;
-        	return sum;
-        }
-
         double _co2 = 0;
-        unsigned int _pin_rx;
-        unsigned int _pin_tx;
+        unsigned char _pin_rx;
+        unsigned char _pin_tx;
         bool _calibrateAuto = false;
-        SoftwareSerial * _serial = NULL;
+        std::unique_ptr<SoftwareSerial> _serial;
 
 };
 
