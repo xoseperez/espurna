@@ -18,19 +18,6 @@ class EZOPHSensor : public BaseSensor {
     public:
 
         // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        EZOPHSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_EZOPH_ID;
-        }
-
-        ~EZOPHSensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
 
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
@@ -58,13 +45,23 @@ class EZOPHSensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_EZOPH_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx);
+            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx);
             _serial->enableIntTx(false);
             _serial->begin(9600);
 
@@ -73,42 +70,37 @@ class EZOPHSensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "EZOPH @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("EZOPH @ SwSerial(%u,%u)"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
+        String address(unsigned char index) const override {
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_PH;
             return MAGNITUDE_NONE;
         }
 
-        void tick() {
+        void tick() override {
             _setup();
             _read();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _ph;
             return 0;
         }
-
-
 
     protected:
 
@@ -123,8 +115,8 @@ class EZOPHSensor : public BaseSensor {
 
           _error = SENSOR_ERROR_WARM_UP;
 
-          String sync_serial = "";
-          sync_serial.reserve(30);
+          String data;
+          data.reserve(30);
 
           if (!_sync_requested) {
               _serial->write(67); // C
@@ -136,25 +128,18 @@ class EZOPHSensor : public BaseSensor {
               _sync_requested = true;
           }
 
-          while ((_serial->available() > 0)) {
-              char sync_char = (char)_serial->read();
-              sync_serial += sync_char;
+          data += _serial->readStringUntil('\r');
+          if (data.startsWith("?C,")) {
+              auto interval = TimeSource::duration(
+                    data.substring(data.indexOf(",") + 1).toInt() * 1000);
 
-              if (sync_char == '\r') {
-                break;
-              }
-          }
-
-          if (sync_serial.startsWith("?C,")) {
-              _sync_interval = sync_serial.substring(sync_serial.indexOf(",") + 1).toInt() * 1000;
-
-              if (_sync_interval == 0) {
+              if (!interval.count()) {
                   _error = SENSOR_ERROR_OTHER;
                   return;
               }
-          }
 
-          if (sync_serial.startsWith("*OK")) {
+              _sync_interval = interval;
+          } else if (data.startsWith("*OK")) {
               _sync_responded = true;
           }
 
@@ -170,42 +155,39 @@ class EZOPHSensor : public BaseSensor {
               return;
             }
 
-            if (millis() - _ts <= _sync_interval) {
+            const auto now = TimeSource::now();
+            if (now - _timestamp < _sync_interval) {
               return;
             }
 
-            _ts = millis();
+            _timestamp = now;
 
-            String ph_serial = "";
-            ph_serial.reserve(30);
+            String data;
+            data.reserve(30);
 
-            while ((_serial->available() > 0)) {
-                char ph_char = (char)_serial->read();
-                ph_serial += ph_char;
+            data += _serial->readStringUntil('\r');
 
-                if (ph_char == '\r') {
-                  break;
-                }
-            }
-
-            if (ph_serial == "*ER") {
+            if (data == F("*ER")) {
               _error = SENSOR_ERROR_OTHER;
               return;
             }
 
-            _ph = ph_serial.toFloat();
-
             _error = SENSOR_ERROR_OK;
+            _ph = data.toFloat();
         }
 
         bool _sync_requested = false;
         bool _sync_responded = false;
-        unsigned long _sync_interval = 100000; // Maximum continuous reading interval allowed is 99000 milliseconds.
-        unsigned long _ts = 0;
+
+        // Maximum continuous reading interval allowed is 99000 milliseconds.
+        using TimeSource = espurna::time::CoreClock;
+        TimeSource::duration _sync_interval { espurna::duration::Milliseconds(100000) };
+        TimeSource::time_point _timestamp;
+
         double _ph = 0;
-        unsigned int _pin_rx;
-        unsigned int _pin_tx;
-        SoftwareSerial * _serial = NULL;
+        unsigned char _pin_rx;
+        unsigned char _pin_tx;
+        std::unique_ptr<SoftwareSerial> _serial;
 
 };
 
