@@ -15,15 +15,6 @@ class DigitalSensor : public BaseSensor {
     public:
 
         // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        DigitalSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_DIGITAL_ID;
-        }
-
-        // ---------------------------------------------------------------------
 
         void setGPIO(unsigned char gpio) {
             _gpio = gpio;
@@ -55,38 +46,48 @@ class DigitalSensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_DIGITAL_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
             pinMode(_gpio, _mode);
             _ready = true;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "DIGITAL @ GPIO%d", _gpio);
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
-        String description(unsigned char index) {
+        String description(unsigned char) const override {
             return description();
         };
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
+        String address(unsigned char) const override {
             return String(_gpio);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_DIGITAL;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return (digitalRead(_gpio) == _default) ? 0 : 1;
+            if (index == 0) {
+                return (digitalRead(_gpio) == _default) ? 0 : 1;
+            }
             return 0;
         }
 

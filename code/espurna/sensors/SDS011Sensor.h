@@ -19,15 +19,6 @@ class SDS011Sensor : public BaseSensor {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        SDS011Sensor() {
-            _count = 2;
-            _sensor_id = SENSOR_SDS011_ID;
-        }
-
         ~SDS011Sensor() {
             if (_serial) delete _serial;
         }
@@ -60,8 +51,16 @@ class SDS011Sensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_SDS011_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
@@ -75,37 +74,32 @@ class SDS011Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
             snprintf(buffer, sizeof(buffer), "SDS011 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
+        String address(unsigned char) const override {
             char buffer[6];
             snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_PM2DOT5;
             if (index == 1) return MAGNITUDE_PM10;
             return MAGNITUDE_NONE;
         }
 
-        void pre() {
+        void pre() override {
             _read();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _p2dot5;
             if (index == 1) return _p10;
             return 0;

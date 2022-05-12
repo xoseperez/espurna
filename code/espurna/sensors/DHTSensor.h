@@ -12,10 +12,10 @@
 #include "../utils.h"
 #include "BaseSensor.h"
 
-constexpr const double DHT_DUMMY_VALUE = -255;
-constexpr const size_t DHT_MAX_DATA = 5;
-constexpr const size_t DHT_MAX_ERRORS = 5;
-constexpr const uint32_t DHT_MIN_INTERVAL = 2000;
+static constexpr double DHT_DUMMY_VALUE = -255;
+static constexpr size_t DHT_MAX_DATA = 5;
+static constexpr size_t DHT_MAX_ERRORS = 5;
+static constexpr uint32_t DHT_MIN_INTERVAL = 2000;
 
 enum class DHTChipType {
     DHT11,
@@ -36,19 +36,19 @@ enum class DHTChipType {
 
 int dhtchip_to_number(DHTChipType chip) {
     switch (chip) {
-        case DHTChipType::DHT11:
-            return 11;
-        case DHTChipType::DHT12:
-            return 12;
-        case DHTChipType::DHT21:
-        case DHTChipType::AM2301:
-            return 21;
-        case DHTChipType::DHT22:
-        case DHTChipType::SI7021:
-            return 22;
-        default:
-            return -1;
+    case DHTChipType::DHT11:
+        return 11;
+    case DHTChipType::DHT12:
+        return 12;
+    case DHTChipType::DHT21:
+    case DHTChipType::AM2301:
+        return 21;
+    case DHTChipType::DHT22:
+    case DHTChipType::SI7021:
+        return 22;
     }
+
+    return -1;
 }
 
 class DHTSensor : public BaseSensor {
@@ -58,11 +58,6 @@ class DHTSensor : public BaseSensor {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
-
-        DHTSensor() {
-            _count = 2;
-            _sensor_id = SENSOR_DHTXX_ID;
-        }
 
         ~DHTSensor() {
             gpioUnlock(_gpio);
@@ -80,15 +75,15 @@ class DHTSensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() {
+        unsigned char getGPIO() const {
             return _gpio;
         }
 
-        int getType() {
+        int getType() const {
             return dhtchip_to_number(_type);
         }
 
-        DHTChipType getChipType() {
+        DHTChipType getChipType() const {
             return _type;
         }
 
@@ -96,10 +91,16 @@ class DHTSensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
-        // Initialization method, must be idempotent
-        void begin() {
+        unsigned char id() const override {
+            return SENSOR_DHTXX_ID;
+        }
 
-            _count = 0;
+        unsigned char count() const override {
+            return 2;
+        }
+
+        // Initialization method, must be idempotent
+        void begin() override {
 
             // Manage GPIO lock (note that this only handles the basic *hw* I/O)
             if (_previous != GPIO_NONE) {
@@ -115,44 +116,38 @@ class DHTSensor : public BaseSensor {
 
             // Set now to fail the check in _read at least once
             _last_ok = millis();
-
-            _count = 2;
             _ready = true;
 
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             _error = SENSOR_ERROR_OK;
             _read();
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", dhtchip_to_number(_type), _gpio);
+            snprintf_P(buffer, sizeof(buffer),
+                "DHT%d @ GPIO%hhu", dhtchip_to_number(_type), _gpio);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String(_gpio);
+        String address(unsigned char) const override {
+            return String(_gpio, 10);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             if (index == 1) return MAGNITUDE_HUMIDITY;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
             return 0;

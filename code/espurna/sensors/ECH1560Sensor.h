@@ -25,11 +25,9 @@ class ECH1560Sensor : public BaseEmonSensor {
             MAGNITUDE_ENERGY
         };
 
-        ECH1560Sensor() {
-            _sensor_id = SENSOR_ECH1560_ID;
-            _count = std::size(Magnitudes);
-            findAndAddEnergy(Magnitudes);
-        }
+        ECH1560Sensor() :
+            BaseEmonSensor(Magnitudes)
+        {}
 
         // ---------------------------------------------------------------------
 
@@ -51,15 +49,15 @@ class ECH1560Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getCLK() {
+        unsigned char getCLK() const {
             return _clk.pin();
         }
 
-        unsigned char getMISO() {
+        unsigned char getMISO() const {
             return _miso;
         }
 
-        bool getInverted() {
+        bool getInverted() const {
             return _inverted;
         }
 
@@ -67,8 +65,16 @@ class ECH1560Sensor : public BaseEmonSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_ECH1560_ID;
+        }
+
+        unsigned char count() const override {
+            return std::size(Magnitudes);
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
@@ -82,31 +88,30 @@ class ECH1560Sensor : public BaseEmonSensor {
         }
 
         // Loop-like method, call it in your main loop
-        void tick() {
-            if (_dosync) _sync();
+        void tick() override {
+            if (_dosync) {
+                _sync();
+            }
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[35];
-            snprintf(buffer, sizeof(buffer), "ECH1560 (CLK,SDO) @ GPIO(%hhu,%hhu)", _clk.pin(), _miso);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("ECH1560 (CLK,SDO) @ GPIO(%hhu,%hhu)"), _clk.pin(), _miso);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%hhu:%hhu", _clk.pin(), _miso);
+        String address(unsigned char) const override {
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _clk.pin(), _miso);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index < std::size(Magnitudes)) {
                 return Magnitudes[index].type;
             }
@@ -115,7 +120,7 @@ class ECH1560Sensor : public BaseEmonSensor {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _apparent;

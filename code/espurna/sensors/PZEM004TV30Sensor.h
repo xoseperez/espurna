@@ -555,12 +555,20 @@ public:
         MAGNITUDE_POWER_FACTOR
     };
 
+    unsigned char id() const override {
+        return SENSOR_PZEM004TV30_ID;
+    }
+
+    unsigned char count() const override {
+        return std::size(Magnitudes);
+    }
+
     void begin() override {
         _last_reading = millis() - _update_interval;
         _ready = true;
     }
 
-    String description() override {
+    String description() const override {
         static const String base(F("PZEM004T V3.0"));
         return base + " @ "
             + _port->tag()
@@ -568,15 +576,11 @@ public:
             + String(_address, 16);
     }
 
-    String description(unsigned char) override {
-        return description();
-    }
-
-    String address(unsigned char) override {
+    String address(unsigned char) const override {
         return String(_address, 16);
     }
 
-    unsigned char type(unsigned char index) override {
+    unsigned char type(unsigned char index) const override {
         if (index < std::size(Magnitudes)) {
             return Magnitudes[index].type;
         }
@@ -619,12 +623,9 @@ public:
     }
 
 private:
-    PZEM004TV30Sensor() {
-        _sensor_id = SENSOR_PZEM004TV30_ID;
-        _error = SENSOR_ERROR_OK;
-        _count = std::size(Magnitudes);
-        findAndAddEnergy(Magnitudes);
-    }
+    PZEM004TV30Sensor() :
+        BaseEmonSensor(Magnitudes)
+    {}
 
     static uint8_t _address;
     static unsigned long _read_timeout;

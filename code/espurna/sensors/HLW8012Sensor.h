@@ -98,15 +98,17 @@ class HLW8012Sensor : public BaseEmonSensor {
             MAGNITUDE_ENERGY
         };
 
+        unsigned char count() const override {
+            return std::size(Magnitudes);
+        }
+
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
 
-        HLW8012Sensor() {
-            _sensor_id = SENSOR_HLW8012_ID;
-            _count = std::size(Magnitudes);
-            findAndAddEnergy(Magnitudes);
-        }
+        HLW8012Sensor()
+            : BaseEmonSensor(Magnitudes)
+        {}
 
         ~HLW8012Sensor() {
             _disableInterrupts();
@@ -189,19 +191,19 @@ class HLW8012Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getSEL() {
+        unsigned char getSEL() const {
             return _sel;
         }
 
-        unsigned char getCF() {
+        unsigned char getCF() const {
             return _cf.pin();
         }
 
-        unsigned char getCF1() {
+        unsigned char getCF1() const {
             return _cf1.pin();
         }
 
-        unsigned char getSELCurrent() {
+        unsigned char getSELCurrent() const {
             return _sel_current;
         }
 
@@ -209,9 +211,12 @@ class HLW8012Sensor : public BaseEmonSensor {
         // Sensors API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_HLW8012_ID;
+        }
+
         // Initialization method, must be idempotent
-        // Defined outside the class body
-        void begin() {
+        void begin() override {
 
             // Initialize HLW8012
             // void begin(unsigned char cf_pin, unsigned char cf1_pin, unsigned char sel_pin, unsigned char currentWhen = HIGH, bool use_interrupts = false, unsigned long pulse_timeout = PULSE_TIMEOUT);
@@ -237,20 +242,15 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
             snprintf_P(buffer, sizeof(buffer),
                 PSTR("HLW8012 @ GPIO(%hhu,%hhu,%hhu)"), _sel, _cf.pin(), _cf1.pin());
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        }
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char) {
+        String address(unsigned char) const override {
             char buffer[12];
             snprintf_P(buffer, sizeof(buffer),
                 PSTR("%hhu:%hhu:%hhu"), _sel, _cf.pin(), _cf1.pin());
@@ -258,7 +258,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index < std::size(Magnitudes)) {
                 return Magnitudes[index].type;
             }
@@ -266,7 +266,7 @@ class HLW8012Sensor : public BaseEmonSensor {
             return MAGNITUDE_NONE;
         }
 
-        double getEnergyDelta() {
+        double getEnergyDelta() const {
             return _energy_last;
         }
 
@@ -295,7 +295,7 @@ class HLW8012Sensor : public BaseEmonSensor {
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             if (_hlw8012_use_interrupts() && _hlw8012_wait_for_wifi()) {
                 if (wifiConnected()) {
                     _enableInterrupts();

@@ -27,17 +27,6 @@ class T6613Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        T6613Sensor() {
-            _count = 1;
-            _sensor_id = SENSOR_T6613_ID;
-        }
-
-        ~T6613Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
-
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;
@@ -52,11 +41,11 @@ class T6613Sensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getRX() {
+        unsigned char getRX() const {
             return _pin_rx;
         }
 
-        unsigned char getTX() {
+        unsigned char getTX() const {
             return _pin_tx;
         }
 
@@ -64,14 +53,24 @@ class T6613Sensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_T6613_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
+            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx, false);
             _serial->enableIntTx(false);
             _serial->begin(19200);
 
@@ -81,36 +80,33 @@ class T6613Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "T6613 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer),
+                PSTR("T6613 @ SwSerial(%hhu,%hhu)"),
+                _pin_rx, _pin_tx);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
+        String address(unsigned char index) const override {
             char buffer[8];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "%hhu:%hhu", _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_CO2;
             return MAGNITUDE_NONE;
         }
 
-        void pre() {
+        void pre() override {
             _read();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _co2;
             return 0;
         }
@@ -179,9 +175,9 @@ class T6613Sensor : public BaseSensor {
         }
 
         double _co2 = 0;
-        unsigned int _pin_rx;
-        unsigned int _pin_tx;
-        SoftwareSerial * _serial = NULL;
+        unsigned char _pin_rx;
+        unsigned char _pin_tx;
+        std::unique_ptr<SoftwareSerial> _serial;
 
 };
 

@@ -36,9 +36,8 @@ private:
         {}
 
         bool lock(uint8_t address) {
-            static uint8_t addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
-
-            return _sensor_address.lock(address) || _sensor_address.findAndLock(sizeof(addresses), addresses);
+            static constexpr uint8_t addresses[] {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
+            return _sensor_address.lock(address) || _sensor_address.findAndLock(addresses);
         }
 
         bool lock() {
@@ -55,10 +54,6 @@ private:
     };
 
 public:
-    EmonADC121Sensor() {
-        _sensor_id = SENSOR_EMON_ADC121_ID;
-    }
-
     void setAddress(uint8_t address) {
         if (_address != address) {
             _address = address;
@@ -67,7 +62,7 @@ public:
     }
 
     unsigned int analogRead() override {
-        constexpr uint16_t Mask { 0x0fff };
+        static constexpr uint16_t Mask { 0x0fff };
         return i2c_read_uint16(_port.address(), ADC121_REG_RESULT) & Mask;
     }
 
@@ -75,8 +70,12 @@ public:
     // Sensor API
     // ---------------------------------------------------------------------
 
+    unsigned char id() const override {
+        return SENSOR_EMON_ADC121_ID;
+    }
+
     // Initialization method, must be idempotent
-    void begin() {
+    void begin() override {
         if (!_dirty) {
             return;
         }
@@ -98,7 +97,7 @@ public:
     }
 
     // Descriptive name of the sensor
-    String description() override {
+    String description() const override {
         char buffer[30];
         snprintf_P(buffer, sizeof(buffer),
             PSTR("EMON @ ADC121 A0 @ I2C (0x%02X)"),
@@ -106,11 +105,7 @@ public:
         return String(buffer);
     }
 
-    String description(unsigned char) override {
-        return description();
-    }
-
-    String address(unsigned char) override {
+    String address(unsigned char) const override {
         char buffer[10];
         snprintf(buffer, sizeof(buffer), "A0 @ 0x%02X", _port.address());
         return String(buffer);

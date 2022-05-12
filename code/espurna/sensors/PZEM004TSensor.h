@@ -267,15 +267,22 @@ public:
 
 private:
     PZEM004TSensor(PortPtr port, IPAddress address) :
+        BaseEmonSensor(Magnitudes),
         _port(port),
         _address(address)
-    {
-        _sensor_id = SENSOR_PZEM004T_ID;
-        _count = std::size(Magnitudes);
-        findAndAddEnergy(Magnitudes);
-    }
+    {}
 
 public:
+    using BaseEmonSensor::type;
+
+    unsigned char id() const override {
+        return SENSOR_PZEM004T_ID;
+    }
+
+    unsigned char count() const override {
+        return std::size(Magnitudes);
+    }
+
     PZEM004TSensor() = delete;
 
     static PZEM004TSensor* make(PortPtr port, IPAddress address) {
@@ -351,21 +358,22 @@ public:
     // ---------------------------------------------------------------------
 
     // Initialization method, must be idempotent
-    void begin() {
+    void begin() override {
         _dirty = false;
         _ready = static_cast<bool>(_port);
     }
 
     // Descriptive name of the sensor
-    String description() {
+    String description() const override {
         char buffer[32];
-        snprintf(buffer, sizeof(buffer), "PZEM004T @ %sSerial(%hhu,%hhu)",
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("PZEM004T @ %sSerial(%hhu,%hhu)"),
             _port->tag(), _port->rx(), _port->tx());
         return String(buffer);
     }
 
     // Descriptive name of the slot # index
-    String description(unsigned char index) {
+    String description(unsigned char) const override {
         String out;
         out.reserve(48);
 
@@ -377,12 +385,12 @@ public:
     }
 
     // Address of the sensor (it could be the GPIO or I2C address)
-    String address(unsigned char) {
+    String address(unsigned char) const override {
         return _address.toString();
     }
 
     // Type for slot # index
-    unsigned char type(unsigned char index) {
+    unsigned char type(unsigned char index) const override {
         if (index < std::size(Magnitudes)) {
             return Magnitudes[index].type;
         }
@@ -391,7 +399,7 @@ public:
     }
 
     // Current value for slot # index
-    double value(unsigned char index) {
+    double value(unsigned char index) override {
         double response { 0.0 };
 
         if (index < std::size(Magnitudes)) {
@@ -419,12 +427,12 @@ public:
     }
 
     // Post-read hook (usually to reset things)
-    void post() {
+    void post() override {
         _error = SENSOR_ERROR_OK;
     }
 
     // Loop-like method, call it in your main loop
-    void tick() {
+    void tick() override {
         static_assert(std::size(Magnitudes) > 0, "");
         if (!_head_instance || (_current_instance != this)) {
             return;

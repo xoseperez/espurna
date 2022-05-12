@@ -31,15 +31,6 @@ class GUVAS12SDSensor : public BaseSensor {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        GUVAS12SDSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_GUVAS12SD_ID;
-        }
-
         ~GUVAS12SDSensor() {
             gpioUnlock(_gpio);
         }
@@ -52,7 +43,7 @@ class GUVAS12SDSensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() {
+        unsigned char getGPIO() const {
             return _gpio;
         }
 
@@ -60,8 +51,16 @@ class GUVAS12SDSensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_GUVAS12SD_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             // Manage GPIO lock
             if (_previous != GPIO_NONE) {
@@ -80,40 +79,35 @@ class GUVAS12SDSensor : public BaseSensor {
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             _error = SENSOR_ERROR_OK;
             _read();
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[18];
-            snprintf(buffer, sizeof(buffer), "GUVAS12SD @ GPIO%hhu", _gpio);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("GUVAS12SD @ GPIO%hhu"), _gpio);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            return String(_gpio);
+        String address(unsigned char) const override {
+            return String(_gpio, 10);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_UVI;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _uvindex;
             return 0;
         }
-
 
     protected:
 

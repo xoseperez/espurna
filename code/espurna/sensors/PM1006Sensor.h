@@ -21,11 +21,6 @@ class PM1006Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        PM1006Sensor() {
-            _count = 1;
-            _sensor_id = SENSOR_PM1006_ID;
-        }
-
         ~PM1006Sensor() {
             if (_serial) delete _serial;
         }
@@ -48,8 +43,16 @@ class PM1006Sensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_PM1006_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
@@ -73,7 +76,7 @@ class PM1006Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
             if (_serial_is_hardware()) {
                 snprintf(buffer, sizeof(buffer), "PM1006 @ HwSerial");
@@ -83,32 +86,27 @@ class PM1006Sensor : public BaseSensor {
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char) {
-            return description();
-        }
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
+        String address(unsigned char index) const override {
             char buffer[4];
             snprintf(buffer, sizeof(buffer), "%hhu", _pin_rx);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_PM2DOT5;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _pm25;
             return 0;
         }
 
         // Process sensor UART
-        void tick() {
+        void tick() override {
             _read();
         }
 
@@ -150,13 +148,13 @@ class PM1006Sensor : public BaseSensor {
 
         void _parse() {
 #if SENSOR_DEBUG
-            DEBUG_MSG("[SENSOR] PM1006: %s\n", hexEncode(_buffer).c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] PM1006: %s\n"), hexEncode(_buffer).c_str());
 #endif
 
             // check second header byte
             if ((_buffer[1] != 0x11) || (_buffer[2] != 0x0B)) {
 #if SENSOR_DEBUG
-                DEBUG_MSG("[SENSOR] PM1006: Wrong header\n");
+                DEBUG_MSG_P(PSTR("[SENSOR] PM1006: Wrong header\n"));
 #endif
                 return;
             }
@@ -166,7 +164,7 @@ class PM1006Sensor : public BaseSensor {
             for (unsigned char i=0; i<20; i++) crc += _buffer[i];
             if (crc != 0) {
 #if SENSOR_DEBUG
-                DEBUG_MSG("[SENSOR] PM1006: Wrong CRC\n");
+                DEBUG_MSG_P(PSTR("[SENSOR] PM1006: Wrong CRC\n"));
 #endif
                 return;
             }
