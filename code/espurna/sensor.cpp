@@ -2583,11 +2583,11 @@ void _sensorLoad() {
 
         // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
         // otherwise choose the other unnamed sensor address
-        const auto first = getSetting("bmx280Address", BMX280_ADDRESS);
-        const auto second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
+        static constexpr uint8_t Address { BMX280_ADDRESS };
+        const decltype(Address) first = getSetting("bmx280Address", Address);
+        const decltype(Address) second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
 
-        const decltype(first) address_map[2] { first, second };
-
+        const decltype(Address) address_map[2] { first, second };
         for (unsigned char n=0; n < number; ++n) {
             BMX280Sensor * sensor = new BMX280Sensor();
             sensor->setAddress(address_map[n]);
