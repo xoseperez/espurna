@@ -30,24 +30,13 @@ void i2c_read_buffer(uint8_t address, uint8_t* buffer, size_t len);
 uint32_t i2c_read_uint(uint8_t address, uint16_t reg, size_t len, bool stop);
 void i2c_write_uint(uint8_t address, uint16_t reg, uint32_t input, size_t len);
 
+uint8_t i2cFind(uint8_t);
+
+bool i2cLock(uint8_t address);
+void i2cUnlock(uint8_t address);
+
+uint8_t i2cFind(const uint8_t* begin, const uint8_t* end);
+uint8_t i2cFindAndLock(const uint8_t* begin, const uint8_t* end);
+
 int i2cClearBus();
-bool i2cGetLock(unsigned char address);
-bool i2cReleaseLock(unsigned char address);
-
-struct I2CAddressRange {
-    I2CAddressRange() = default;
-
-    template <typename T>
-    I2CAddressRange(const T& range) :
-        begin(std::begin(range)),
-        end(std::end(range))
-    {}
-
-    const uint8_t* begin { nullptr };
-    const uint8_t* end { nullptr };
-};
-
-unsigned char i2cFindAndLock(I2CAddressRange);
-unsigned char i2cFind(I2CAddressRange);
-
 void i2cSetup();

@@ -10,41 +10,65 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if I2C_SUPPORT
 
-#include <Wire.h>
-
 #if I2C_USE_BRZO
 #include <brzo_i2c.h>
+#else
+#include <Wire.h>
 #endif
 
 #include "i2c.h"
 
 #include <cstring>
+#include <bitset>
 
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
 
-namespace {
+namespace espurna {
 namespace i2c {
+namespace {
 
 struct Bus {
     unsigned char sda { GPIO_NONE };
     unsigned char scl { GPIO_NONE };
+#if I2C_USE_BRZO
+    unsigned long frequency { 0 };
+#endif
 };
 
 namespace internal {
 
 Bus bus;
-unsigned int locked[16] = {0};
-#if I2C_USE_BRZO
-unsigned long sclFrequency = 0;
-#endif
 
-} // namespace
+} // namespace internal
+
+namespace lock {
+
+std::bitset<128> storage{};
+
+void reset(uint8_t address) {
+    storage.reset(address);
+}
+
+bool get(uint8_t address) {
+    return storage.test(address);
+}
+
+bool set(uint8_t address) {
+    if (!get(address)) {
+        storage.set(address);
+        return true;
+    }
+
+    return false;
+}
+
+} // namespace lock
 
 #if I2C_USE_BRZO
 void brzo_i2c_start_transaction(uint8_t address) {
-    ::brzo_i2c_start_transaction(address, internal::sclFrequency);
+    ::brzo_i2c_start_transaction(address, internal::bus.frequency);
 }
 #endif
 
@@ -96,32 +120,48 @@ unsigned long sclFrequency() {
 
 } // namespace settings
 
-bool check(unsigned char address) {
+// make note that both APIs return integer status codes
+// success is 0, everything else depends on the implementation
+// for example, for our Wire it is:
+// - 4 if line is busy
+// - 2 if NACK happened when writing address
+// - 3 if NACK happened when writing data
+bool check(uint8_t address) {
 #if I2C_USE_BRZO
     i2c::start_brzo_transaction(address);
     brzo_i2c_ACK_polling(1000);
-    return brzo_i2c_end_transaction();
+    return 0 == brzo_i2c_end_transaction();
 #else
     Wire.beginTransmission(address);
-    return Wire.endTransmission();
+    return 0 == Wire.endTransmission();
 #endif
 }
 
 template <typename Callback>
 void scan(Callback&& callback) {
-    constexpr unsigned char AddressMin { 1 };
-    constexpr unsigned char AddressMax { 127 };
+    static constexpr uint8_t AddressMin { 1 };
+    static constexpr uint8_t AddressMax { 127 };
 
-    for (unsigned char address = AddressMin; address < AddressMax; ++address) {
-        if (i2c::check(address) == 0) {
+    for (auto address = AddressMin; address < AddressMax; ++address) {
+        if (i2c::check(address)) {
             callback(address);
         }
     }
 }
 
+uint8_t check(const uint8_t* begin, const uint8_t* end) {
+    for (const auto* it = begin; it != end; ++it) {
+        if (check(*it)) {
+            return *it;
+        }
+    }
+
+    return 0;
+}
+
 void bootScan() {
     String addresses;
-    scan([&](unsigned char address) {
+    scan([&](uint8_t address) {
         if (addresses.length()) {
             addresses += F(", ");
         }
@@ -158,12 +198,12 @@ int clear(unsigned char sda, unsigned char scl) {
 
     // If it is held low the device cannot become the I2C master
     // I2C bus error. Could not clear SCL clock line held low
-    boolean scl_low = (digitalRead(scl) == LOW);
+    bool scl_low = (digitalRead(scl) == LOW);
     if (scl_low) {
         return 1;
     }
 
-    boolean sda_low = (digitalRead(sda) == LOW);
+    bool sda_low = (digitalRead(sda) == LOW);
     int clockCount = 20; // > 2x9 clock
 
     // While SDA is low for at most 20 cycles
@@ -238,14 +278,14 @@ void init() {
     internal::bus.sda = settings::sda();
     internal::bus.scl = settings::scl();
 
-    #if I2C_USE_BRZO
-        internal::sclFrequency = settings::sclFrequency();
-        brzo_i2c_setup(internal::bus.sda, internal::bus.scl, settings::cst());
-    #else
-        Wire.begin(internal::bus.sda, internal::bus.scl);
-    #endif
+#if I2C_USE_BRZO
+    internal::bus.frequency = settings::sclFrequency();
+    brzo_i2c_setup(internal::bus.sda, internal::bus.scl, settings::cst());
+#else
+    Wire.begin(internal::bus.sda, internal::bus.scl);
+#endif
 
-    DEBUG_MSG_P(PSTR("[I2C] Initialized with sda:GPIO%hhu scl:GPIO%hhu\n"),
+    DEBUG_MSG_P(PSTR("[I2C] Initialized SDA @ GPIO%hhu and SCL @ GPIO%hhu\n"),
             internal::bus.sda, internal::bus.scl);
 
 #if I2C_CLEAR_BUS
@@ -256,15 +296,25 @@ void init() {
 #if TERMINAL_SUPPORT
 
 void initTerminalCommands() {
+    terminalRegisterCommand(F("I2C.LOCKED"), [](::terminal::CommandContext&& ctx) {
+        for (size_t address = 0; address < lock::storage.size(); ++address) {
+            if (lock::storage.test(address)) {
+                ctx.output.printf_P(PSTR("0x%02X\n"), address);
+            }
+        }
+
+        terminalOK(ctx);
+    });
+
     terminalRegisterCommand(F("I2C.SCAN"), [](::terminal::CommandContext&& ctx) {
-        unsigned char devices { 0 };
-        i2c::scan([&](unsigned char address) {
+        size_t devices { 0 };
+        i2c::scan([&](uint8_t address) {
             ++devices;
-            ctx.output.printf("0x%02X\n", address);
+            ctx.output.printf_P(PSTR("0x%02X\n"), address);
         });
 
         if (devices) {
-            ctx.output.printf("found %hhu device(s)\n", devices);
+            ctx.output.printf_P(PSTR("found %zu device(s)\n"), devices);
             terminalOK(ctx);
             return;
         }
@@ -273,15 +323,16 @@ void initTerminalCommands() {
     });
 
     terminalRegisterCommand(F("I2C.CLEAR"), [](::terminal::CommandContext&& ctx) {
-        ctx.output.printf("result %d\n", i2c::clear());
+        ctx.output.printf_P(PSTR("result %d\n"), i2c::clear());
         terminalOK(ctx);
     });
 }
 
 #endif // TERMINAL_SUPPORT
 
-} // namespace i2c
 } // namespace
+} // namespace i2c
+} // namespace espurna
 
 // ---------------------------------------------------------------------
 // I2C API
@@ -482,59 +533,52 @@ int16_t i2c_read_int16_le(uint8_t address, uint8_t reg) {
 // -----------------------------------------------------------------------------
 
 int i2cClearBus() {
-    return i2c::clear();
+    return espurna::i2c::clear();
 }
 
-bool i2cGetLock(unsigned char address) {
-    unsigned char index = address / 8;
-    unsigned char mask = 1 << (address % 8);
-    if (!(i2c::internal::locked[index] & mask)) {
-        i2c::internal::locked[index] = i2c::internal::locked[index] | mask;
-        DEBUG_MSG_P(PSTR("[I2C] 0x%02X locked\n"), address);
-        return true;
-    }
-    return false;
+bool i2cLock(uint8_t address) {
+    return espurna::i2c::lock::set(address);
 }
 
-bool i2cReleaseLock(unsigned char address) {
-    unsigned char index = address / 8;
-    unsigned char mask = 1 << (address % 8);
-    if (i2c::internal::locked[index] & mask) {
-        i2c::internal::locked[index] = i2c::internal::locked[index] & ~mask;
-        return true;
-    }
-    return false;
+void i2cUnlock(uint8_t address) {
+    espurna::i2c::lock::reset(address);
 }
 
-unsigned char i2cFind(I2CAddressRange addresses) {
-    for (auto it = addresses.begin; it != addresses.end; ++it) {
-        if (i2c::check(*it) == 0) {
-            return *it;
-        }
+uint8_t i2cFind(uint8_t address) {
+    if (espurna::i2c::check(address)) {
+        return address;
     }
 
     return 0;
 }
 
-unsigned char i2cFindAndLock(I2CAddressRange addresses) {
-    for (auto it = addresses.begin; it != addresses.end; ++it) {
-        if (i2cGetLock(*it)) {
-            return *it;
-        }
+uint8_t i2cFind(const uint8_t* begin, const uint8_t* end) {
+    const auto address = espurna::i2c::check(begin, end);
+    if (address) {
+        return address;
+    }
+
+    return 0;
+}
+
+uint8_t i2cFindAndLock(const uint8_t* begin, const uint8_t* end) {
+    const auto address = i2cFind(begin, end);
+    if (address && espurna::i2c::lock::set(address)) {
+        return address;
     }
 
     return 0;
 }
 
 void i2cSetup() {
-    i2c::init();
+    espurna::i2c::init();
 
 #if TERMINAL_SUPPORT
-    i2c::initTerminalCommands();
+    espurna::i2c::initTerminalCommands();
 #endif
 
-    if (i2c::build::performScanOnBoot()) {
-        i2c::bootScan();
+    if (espurna::i2c::build::performScanOnBoot()) {
+        espurna::i2c::bootScan();
     }
 }
 
