@@ -16,14 +16,7 @@ class EventSensor : public BaseSensor {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        EventSensor() {
-            _count = 2;
-            _sensor_id = SENSOR_EVENTS_ID;
-        }
+        using TimeSource = espurna::time::CpuClock;
 
         // ---------------------------------------------------------------------
 
@@ -39,59 +32,63 @@ class EventSensor : public BaseSensor {
             _interrupt_mode = interrupt_mode;
         }
 
-        void setDebounceTime(unsigned long ms) {
-            _isr_debounce = microsecondsToClockCycles(ms * 1000);
+        template <typename T>
+        void setDebounceTime(T value) {
+            _interrupt_debounce = std::chrono::duration_cast<TimeSource::duration>(value);
         }
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() {
+        unsigned char getGPIO() const {
             return _pin.pin();
         }
 
-        unsigned char getPinMode() {
+        unsigned char getPinMode() const {
             return _pin_mode;
         }
 
-        unsigned char getInterruptMode() {
+        unsigned char getInterruptMode() const {
             return _interrupt_mode;
         }
 
-        unsigned long getDebounceTime() {
-            return _isr_debounce;
+        TimeSource::duration getDebounceTime() const {
+            return _interrupt_debounce;
         }
 
         // ---------------------------------------------------------------------
         // Sensors API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_EVENTS_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
         // Initialization method, must be idempotent
-        // Defined outside the class body
-        void begin() {
+        void begin() override {
             pinMode(_pin.pin(), _pin_mode);
             _enableInterrupts();
             _ready = true;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "INTERRUPT @ GPIO%hhu", _pin.pin());
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("INTERRUPT @ GPIO%hhu"), _pin.pin());
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char) {
-            return String(_pin);
+        String address(unsigned char) const override {
+            return String(_pin.pin(), 10);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_COUNT;
             if (index == 1) return MAGNITUDE_EVENT;
             return MAGNITUDE_NONE;
@@ -100,14 +97,15 @@ class EventSensor : public BaseSensor {
         void pre() override {
             _last = _current;
             _current = _counter;
+            _difference = _current - _last;
         }
 
         double value(unsigned char index) override {
             switch (index) {
             case 0:
-                return _current - _last;
+                return _difference;
             case 1:
-                return (_current - _last > 0) ? 1.0 : 0.0;
+                return (_difference > 0) ? 1.0 : 0.0;
             default:
                 return 0.0;
             }
@@ -141,15 +139,16 @@ class EventSensor : public BaseSensor {
             // - clockCyclesToMicroseconds(cycles)
             // Since the division operation on this chip is pretty slow,
             // avoid doing the conversion here and instead do that at initialization
-            auto cycles = ESP.getCycleCount();
-            if (cycles - _isr_last > _isr_debounce) {
-                _isr_last = cycles;
+            const auto now = TimeSource::now();
+            if (now - _interrupt_last > _interrupt_debounce) {
+                _interrupt_last = now;
                 ++_counter;
             }
         }
 
         void _enableInterrupts() {
-            if (_isr_debounce) {
+            if (_interrupt_debounce.count()) {
+                _interrupt_last = TimeSource::now();
                 _pin.attach(this, handleDebouncedInterrupt, _interrupt_mode);
             } else {
                 _pin.attach(this, handleInterrupt, _interrupt_mode);
@@ -164,9 +163,10 @@ class EventSensor : public BaseSensor {
 
         unsigned long _current { 0ul };
         unsigned long _last { 0ul };
+        unsigned long _difference { 0ul };
 
-        unsigned long _isr_last { 0ul };
-        unsigned long _isr_debounce { microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000) };
+        TimeSource::duration _interrupt_debounce;
+        TimeSource::time_point _interrupt_last;
 
         InterruptablePin _pin{};
         uint8_t _pin_mode { INPUT };

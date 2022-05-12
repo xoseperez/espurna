@@ -2746,60 +2746,49 @@ void _sensorLoad() {
 
     #if EVENTS_SUPPORT
     {
-        auto getPin = [](unsigned char index) -> int {
-            switch (index) {
-            case 0: return EVENTS1_PIN;
-            case 1: return EVENTS2_PIN;
-            case 2: return EVENTS3_PIN;
-            case 3: return EVENTS4_PIN;
-            case 4: return EVENTS5_PIN;
-            case 5: return EVENTS6_PIN;
-            case 6: return EVENTS7_PIN;
-            case 7: return EVENTS8_PIN;
-            default: return GPIO_NONE;
-            }
+        auto getPin = [](unsigned char index) -> unsigned char {
+            return (index == 0) ? EVENTS1_PIN :
+                (index == 1) ? EVENTS2_PIN :
+                (index == 2) ? EVENTS3_PIN :
+                (index == 3) ? EVENTS4_PIN :
+                (index == 4) ? EVENTS5_PIN :
+                (index == 5) ? EVENTS6_PIN :
+                (index == 6) ? EVENTS7_PIN :
+                (index == 7) ? EVENTS8_PIN : GPIO_NONE;
         };
 
         auto getMode = [](unsigned char index) -> int {
-            switch (index) {
-            case 0: return EVENTS1_PIN_MODE;
-            case 1: return EVENTS2_PIN_MODE;
-            case 2: return EVENTS3_PIN_MODE;
-            case 3: return EVENTS4_PIN_MODE;
-            case 4: return EVENTS5_PIN_MODE;
-            case 5: return EVENTS6_PIN_MODE;
-            case 6: return EVENTS7_PIN_MODE;
-            case 7: return EVENTS8_PIN_MODE;
-            default: return INPUT;
-            }
+            return (index == 0) ? EVENTS1_PIN_MODE :
+                (index == 1) ? EVENTS2_PIN_MODE :
+                (index == 2) ? EVENTS3_PIN_MODE :
+                (index == 3) ? EVENTS4_PIN_MODE :
+                (index == 4) ? EVENTS5_PIN_MODE :
+                (index == 5) ? EVENTS6_PIN_MODE :
+                (index == 6) ? EVENTS7_PIN_MODE :
+                (index == 7) ? EVENTS8_PIN_MODE : INPUT;
         };
 
-        auto getDebounce = [](unsigned char index) -> unsigned long {
-            switch (index) {
-            case 0: return EVENTS1_DEBOUNCE;
-            case 1: return EVENTS2_DEBOUNCE;
-            case 2: return EVENTS3_DEBOUNCE;
-            case 3: return EVENTS4_DEBOUNCE;
-            case 4: return EVENTS5_DEBOUNCE;
-            case 5: return EVENTS6_DEBOUNCE;
-            case 6: return EVENTS7_DEBOUNCE;
-            case 7: return EVENTS8_DEBOUNCE;
-            default: return 50;
-            }
+        auto getDebounce = [](unsigned char index) -> espurna::duration::Milliseconds {
+            return espurna::duration::Milliseconds(
+                (index == 0) ? EVENTS1_DEBOUNCE :
+                (index == 1) ? EVENTS2_DEBOUNCE :
+                (index == 2) ? EVENTS3_DEBOUNCE :
+                (index == 3) ? EVENTS4_DEBOUNCE :
+                (index == 4) ? EVENTS5_DEBOUNCE :
+                (index == 5) ? EVENTS6_DEBOUNCE :
+                (index == 6) ? EVENTS7_DEBOUNCE :
+                (index == 7) ? EVENTS8_DEBOUNCE : 50);
         };
 
         auto getIsrMode = [](unsigned char index) -> int {
-            switch (index) {
-            case 0: return EVENTS1_INTERRUPT_MODE;
-            case 1: return EVENTS2_INTERRUPT_MODE;
-            case 2: return EVENTS3_INTERRUPT_MODE;
-            case 3: return EVENTS4_INTERRUPT_MODE;
-            case 4: return EVENTS5_INTERRUPT_MODE;
-            case 5: return EVENTS6_INTERRUPT_MODE;
-            case 6: return EVENTS7_INTERRUPT_MODE;
-            case 7: return EVENTS8_INTERRUPT_MODE;
-            default: return RISING;
-            }
+            return (index == 0) ? EVENTS1_INTERRUPT_MODE :
+                (index == 1) ? EVENTS2_INTERRUPT_MODE :
+                (index == 2) ? EVENTS3_INTERRUPT_MODE :
+                (index == 3) ? EVENTS4_INTERRUPT_MODE :
+                (index == 4) ? EVENTS5_INTERRUPT_MODE :
+                (index == 5) ? EVENTS6_INTERRUPT_MODE :
+                (index == 6) ? EVENTS7_INTERRUPT_MODE :
+                (index == 7) ? EVENTS8_INTERRUPT_MODE : RISING;
         };
 
         auto pins = gpioPins();
