@@ -66,8 +66,9 @@ class BH1750Sensor : public I2CSensor<> {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[25];
-            snprintf(buffer, sizeof(buffer), "BH1750 @ I2C (0x%02X)", getAddress());
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("BH1750 @ I2C (0x%02X)"), getAddress());
             return String(buffer);
         }
 

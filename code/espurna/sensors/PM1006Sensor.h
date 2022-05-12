@@ -77,19 +77,20 @@ class PM1006Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
             if (_serial_is_hardware()) {
-                snprintf(buffer, sizeof(buffer), "PM1006 @ HwSerial");
-            } else {
-                snprintf(buffer, sizeof(buffer), "PM1006 @ SwSerial(%hhu,NULL)", _pin_rx);
+                return F("PM1006 @ HwSerial"));
             }
+
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("PM1006 @ SwSerial(%hhu,NULL)"), _pin_rx);
             return String(buffer);
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) const override {
             char buffer[4];
-            snprintf(buffer, sizeof(buffer), "%hhu", _pin_rx);
+            snprintf_P(buffer, sizeof(buffer), PSTR("%hhu"), _pin_rx);
             return String(buffer);
         }
 

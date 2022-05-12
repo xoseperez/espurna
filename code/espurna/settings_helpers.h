@@ -277,6 +277,11 @@ inline bool operator==(const StringView& lhs, const SettingsKey& rhs) {
     return lhs.compareFlash(StringView{rhs.c_str(), rhs.length()});
 }
 
+inline String operator+(String&& lhs, StringView rhs) {
+    lhs.concat(rhs.c_str(), rhs.length());
+    return lhs;
+}
+
 #define STRING_VIEW(X) ({\
         alignas(4) static constexpr char __pstr__[] PROGMEM = (X);\
         ::settings::StringView{__pstr__};\

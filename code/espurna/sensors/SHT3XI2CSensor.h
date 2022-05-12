@@ -51,8 +51,9 @@ class SHT3XI2CSensor : public I2CSensor<> {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[25];
-            snprintf(buffer, sizeof(buffer), "SHT3X @ I2C (0x%02X)", getAddress());
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("SHT3X @ I2C (0x%02X)"), getAddress());
             return String(buffer);
         }
 

@@ -98,7 +98,7 @@ public:
 
     // Descriptive name of the sensor
     String description() const override {
-        char buffer[30];
+        char buffer[32];
         snprintf_P(buffer, sizeof(buffer),
             PSTR("EMON @ ADC121 A0 @ I2C (0x%02X)"),
             _port.address());
@@ -106,8 +106,9 @@ public:
     }
 
     String address(unsigned char) const override {
-        char buffer[10];
-        snprintf(buffer, sizeof(buffer), "A0 @ 0x%02X", _port.address());
+        char buffer[16];
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("A0 @ 0x%02X"), _port.address());
         return String(buffer);
     }
 

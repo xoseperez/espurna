@@ -39,11 +39,11 @@ class SDS011Sensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getRX() {
+        unsigned char getRX() const {
             return _pin_rx;
         }
 
-        unsigned char getTX() {
+        unsigned char getTX() const {
             return _pin_tx;
         }
 
@@ -64,9 +64,11 @@ class SDS011Sensor : public BaseSensor {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx);
+            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx);
             _serial->begin(9600);
 
             _ready = true;
@@ -75,15 +77,17 @@ class SDS011Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
-            snprintf(buffer, sizeof(buffer), "SDS011 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("SDS011 @ SwSerial(%hhu,%hhu)"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
@@ -158,9 +162,9 @@ class SDS011Sensor : public BaseSensor {
 
         double _p2dot5 = 0;
         double _p10 = 0;
-        unsigned int _pin_rx;
-        unsigned int _pin_tx;
-        SoftwareSerial * _serial = NULL;
+        unsigned char _pin_rx;
+        unsigned char _pin_tx;
+        std::unique_ptr<SoftwareSerial> _serial;
 
 };
 

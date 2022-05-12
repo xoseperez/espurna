@@ -81,8 +81,8 @@ class T6613Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
-            snprintf(buffer, sizeof(buffer),
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
                 PSTR("T6613 @ SwSerial(%hhu,%hhu)"),
                 _pin_rx, _pin_tx);
             return String(buffer);
@@ -91,7 +91,8 @@ class T6613Sensor : public BaseSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) const override {
             char buffer[8];
-            snprintf(buffer, sizeof(buffer), "%hhu:%hhu", _pin_rx, _pin_tx);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 

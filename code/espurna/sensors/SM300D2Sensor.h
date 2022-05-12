@@ -77,19 +77,20 @@ class SM300D2Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
             if (_serial_is_hardware()) {
-                snprintf(buffer, sizeof(buffer), "SM300D2 @ HwSerial");
-            } else {
-                snprintf(buffer, sizeof(buffer), "SM300D2 @ SwSerial(%hhu,NULL)", _pin_rx);
+                return F("SM300D2 @ HwSerial");
             }
+
+            char buffer[28];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("SM300D2 @ SwSerial(%hhu,NULL)"), _pin_rx);
             return String(buffer);
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) const override {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%hhu", _pin_rx);
+            char buffer[4];
+            snprintf_P(buffer, sizeof(buffer), PSTR("%hhu"), _pin_rx);
             return String(buffer);
         }
 

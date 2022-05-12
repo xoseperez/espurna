@@ -42,19 +42,19 @@ class SonarSensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getEcho() {
+        unsigned char getEcho() const {
             return _echo;
         }
 
-        unsigned char getTrigger() {
+        unsigned char getTrigger() const {
             return _trigger;
         }
 
-        unsigned int getMaxDistance() {
+        unsigned int getMaxDistance() const {
             return _max_distance;
         }
 
-        unsigned int getIterations() {
+        unsigned int getIterations() const {
             return _iterations;
         }
 
@@ -83,8 +83,9 @@ class SonarSensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[23];
-            snprintf(buffer, sizeof(buffer), "Sonar @ GPIO(%u, %u)", _trigger, _echo);
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("Sonar @ GPIO(%hhu, %hhu)"), _trigger, _echo);
             return String(buffer);
         }
 

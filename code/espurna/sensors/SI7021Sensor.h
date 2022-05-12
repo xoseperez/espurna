@@ -56,8 +56,9 @@ class SI7021Sensor : public I2CSensor<> {
                     si7021_chip_htu21d_name,
                 sizeof(name)
             );
-            char buffer[25];
-            snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", name, getAddress());
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%s @ I2C (0x%02X)"), name, getAddress());
             return String(buffer);
         }
 

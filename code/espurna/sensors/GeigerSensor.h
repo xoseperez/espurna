@@ -93,7 +93,8 @@ void begin() override {
 // Descriptive name of the sensor
 String description() const override {
         char buffer[20];
-        snprintf(buffer, sizeof(buffer), "Geiger @ GPIO%hhu", _pin.pin());
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("Geiger @ GPIO%hhu"), _pin.pin());
         return String(buffer);
 }
 

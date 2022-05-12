@@ -258,7 +258,7 @@ class DallasSensor : public BaseSensor {
             char buffer[40];
             if (index < _devices.size()) {
                 const auto& address = _devices[index].address;
-                snprintf(buffer, sizeof(buffer),
+                snprintf_P(buffer, sizeof(buffer),
                     PSTR("%s (%02X%02X%02X%02X%02X%02X%02X%02X) @ GPIO%hhu"),
                     chipAsString(index).c_str(),
                     address[0], address[1], address[2], address[3],

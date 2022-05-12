@@ -274,8 +274,9 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) const override {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%hhu:%hhu", _pin_rx, _pin_tx);
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 

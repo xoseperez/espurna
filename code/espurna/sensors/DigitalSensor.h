@@ -62,8 +62,9 @@ class DigitalSensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[20];
-            snprintf(buffer, sizeof(buffer), "DIGITAL @ GPIO%d", _gpio);
+            char buffer[32];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("DIGITAL @ GPIO%hhu"), _gpio);
             return String(buffer);
         }
 
@@ -74,7 +75,7 @@ class DigitalSensor : public BaseSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            return String(_gpio);
+            return String(_gpio, 10);
         }
 
         // Type for slot # index

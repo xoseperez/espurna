@@ -112,9 +112,9 @@ class MAX6675Sensor : public BaseSensor {
         static constexpr auto ReadInterval = TimeSource::duration { 3000 };
         TimeSource::time_point _last_reading = TimeSource::now();
 
-        unsigned int _pin_cs = MAX6675_CS_PIN;
-        unsigned int _pin_so = MAX6675_SO_PIN;
-        unsigned int _pin_sck = MAX6675_SCK_PIN;
+        unsigned char _pin_cs = MAX6675_CS_PIN;
+        unsigned char _pin_so = MAX6675_SO_PIN;
+        unsigned char _pin_sck = MAX6675_SCK_PIN;
         bool _busy = false;
         double _value = 0;
         std::unique_ptr<MAX6675> _max;
