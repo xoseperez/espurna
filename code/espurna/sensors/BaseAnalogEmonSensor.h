@@ -16,9 +16,9 @@ extern "C" {
 
 class BaseAnalogEmonSensor : public BaseEmonSensor {
 public:
-    static const BaseSensor::ClassType Type;
-    BaseSensor::ClassType type() const override {
-        return Type;
+    static const BaseSensor::ClassKind Kind;
+    BaseSensor::ClassKind kind() const override {
+        return Kind;
     }
 
     static constexpr double IRef { EMON_CURRENT_RATIO };
@@ -31,8 +31,12 @@ public:
         MAGNITUDE_ENERGY
     };
 
-    BaseAnalogEmonSensor() {
-        _count = std::size(Magnitudes);
+    BaseAnalogEmonSensor() :
+        BaseEmonSensor(Magnitudes)
+    {}
+
+    unsigned char count() const override {
+        return std::size(Magnitudes);
     }
 
     virtual unsigned int analogRead() = 0;
@@ -73,7 +77,7 @@ public:
     // Sensor API
     // ---------------------------------------------------------------------
 
-    void begin() {
+    void begin() override {
         updateCurrent(0.0);
         setPivot(_adc_counts >> 1); // aka divide by 2
         calculateFactors();
@@ -108,7 +112,7 @@ public:
         _error = SENSOR_ERROR_OK;
     }
 
-    unsigned char type(unsigned char index) override {
+    unsigned char type(unsigned char index) const override {
         if (index < std::size(Magnitudes)) {
             return Magnitudes[index].type;
         }
@@ -223,7 +227,7 @@ private:
 };
 
 #if __cplusplus < 201703L
-constexpr BaseEmonSensor::Magnitude BaseAnalogEmonSensor::Magnitudes[];
+constexpr BaseSensor::Magnitude BaseAnalogEmonSensor::Magnitudes[];
 #endif
 
 // Provide EMON API helper where we don't care about specifics of how the values are stored
@@ -309,4 +313,4 @@ private:
     double _current { 0.0 };
 };
 
-const BaseSensor::ClassType BaseAnalogEmonSensor::Type;
+const BaseSensor::ClassKind BaseAnalogEmonSensor::Kind;

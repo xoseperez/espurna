@@ -16,9 +16,9 @@
 
 class BaseSensor {
 public:
-    // Pin specific class type to the resulting object (poor man's rtti)
-    struct ClassType {
-        ClassType() :
+    // Pin this to the resulting object (poor man's rtti) so we know what it can be static_cast'ed into
+    struct ClassKind {
+        ClassKind() :
             _value(_last)
         {
             ++_last;
@@ -28,7 +28,7 @@ public:
             return _value;
         }
 
-        bool operator==(const ClassType& other) const {
+        bool operator==(const ClassKind& other) const {
             return _value == other._value;
         }
 
@@ -37,7 +37,7 @@ public:
         int _value;
     };
 
-    static const ClassType Type;
+    static const ClassKind Kind;
 
     // Generic way to pass the sensor instance to the isr
     struct InterruptablePin {
@@ -147,47 +147,42 @@ public:
     virtual void post() {
     }
 
+    // Generic calibration
+    virtual void calibrate() {
+    }
+
+    // Kind of sensor
+    virtual ClassKind kind() const {
+        return Kind;
+    }
+
     // Number of decimals for a unit (or -1 for default)
     virtual signed char decimals(sensor::Unit) const {
         return -1;
     }
 
-    // Generic calibration
-    virtual void calibrate() {
+    // Sensor ID, must be unique
+    virtual unsigned char id() const = 0;
+
+    // Number of available value slots
+    virtual unsigned char count() const = 0;
+
+    // Descriptive name of the sensor
+    virtual String description() const = 0;
+
+    // Descriptive name of the slot # index
+    virtual String description(unsigned char) const {
+        return description();
     }
 
-    // Type of sensor
-    virtual ClassType type() const {
-        return Type;
-    }
+    // Address of the sensor (it could be the GPIO or I2C address)
+    virtual String address(unsigned char index) const = 0;
 
-    // Sensor ID
-    virtual unsigned char id() const {
-        return _sensor_id;
-    }
+    // Type for slot # index
+    virtual unsigned char type(unsigned char index) const = 0;
 
-    // Return status (true if no errors)
-    bool status() const {
-        return 0 == _error;
-    }
-
-    // Return ready status (true for ready)
-    bool ready() const {
-        return _ready;
-    }
-
-    // Return sensor last internal error
-    int error() const {
-        return _error;
-    }
-
-    // Number of available slots
-    unsigned char count() const {
-        return _count;
-    }
-
-    // Specify units attached to magnitudes
-    virtual sensor::Unit units(unsigned char index) {
+    // Unit of the slot # index
+    virtual sensor::Unit units(unsigned char index) const {
         switch (type(index)) {
         case MAGNITUDE_TEMPERATURE:
             return sensor::Unit::Celcius;
@@ -244,28 +239,29 @@ public:
         return sensor::Unit::None;
     }
 
-    // Descriptive name of the sensor
-    virtual String description() = 0;
-
-    // Descriptive name of the slot # index
-    virtual String description(unsigned char index) = 0;
-
-    // Address of the sensor (it could be the GPIO or I2C address)
-    virtual String address(unsigned char index) = 0;
-
-    // Type for slot # index
-    virtual unsigned char type(unsigned char index) = 0;
-
     // Current value for slot # index
     virtual double value(unsigned char index) = 0;
 
+    // Return status (true if no errors)
+    bool status() const {
+        return 0 == _error;
+    }
+
+    // Return ready status (true for ready)
+    bool ready() const {
+        return _ready;
+    }
+
+    // Return sensor last internal error
+    int error() const {
+        return _error;
+    }
+
 protected:
-    unsigned char _sensor_id = 0;
     int _error = 0;
     bool _dirty = true;
-    unsigned char _count = 0;
     bool _ready = false;
 };
 
-int BaseSensor::ClassType::_last { 0 };
-const BaseSensor::ClassType BaseSensor::Type;
+int BaseSensor::ClassKind::_last { 0 };
+const BaseSensor::ClassKind BaseSensor::Kind;

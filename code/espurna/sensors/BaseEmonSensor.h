@@ -9,9 +9,9 @@
 
 class BaseEmonSensor : public BaseSensor {
 public:
-    static const BaseSensor::ClassType Type;
-    BaseSensor::ClassType type() const override {
-        return Type;
+    static const BaseSensor::ClassKind Kind;
+    BaseSensor::ClassKind kind() const override {
+        return Kind;
     }
 
 protected:
@@ -87,8 +87,8 @@ protected:
     // - Another is to return begin and end as virtual methods... but, that is again a runtime access that should
     // be implemented by the child class
 
-    template <typename T>
-    void findAndAddEnergy(const T& container) {
+    template <size_t Size>
+    BaseEmonSensor(const Magnitude (&container)[Size]) {
         findMagnitudes(container, MAGNITUDE_ENERGY, [&](unsigned char index) {
             _energy.add(index);
         });
@@ -161,4 +161,4 @@ protected:
     EnergyIndex _energy{};
 };
 
-const BaseSensor::ClassType BaseEmonSensor::Type;
+const BaseSensor::ClassKind BaseEmonSensor::Kind;

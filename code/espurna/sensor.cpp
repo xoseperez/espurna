@@ -954,16 +954,16 @@ private:
 SensorEnergyTracker _sensor_energy_tracker;
 
 bool _sensorIsEmon(BaseSensorPtr sensor) {
-    return (sensor->type() == BaseEmonSensor::Type)
-        || (sensor->type() == BaseAnalogEmonSensor::Type);
+    return (sensor->kind() == BaseEmonSensor::Kind)
+        || (sensor->kind() == BaseAnalogEmonSensor::Kind);
 }
 
 bool _sensorIsAnalogEmon(BaseSensorPtr sensor) {
-    return sensor->type() == BaseAnalogEmonSensor::Type;
+    return sensor->kind() == BaseAnalogEmonSensor::Kind;
 }
 
 bool _sensorIsAnalog(BaseSensorPtr sensor) {
-    return sensor->type() == BaseAnalogSensor::Type;
+    return sensor->kind() == BaseAnalogSensor::Kind;
 }
 
 sensor::Energy _sensorRtcmemLoadEnergy(unsigned char index) {

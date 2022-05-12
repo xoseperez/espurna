@@ -9,9 +9,9 @@
 
 class BaseAnalogSensor : public BaseSensor {
 public:
-    static const BaseSensor::ClassType Type;
-    BaseSensor::ClassType type() const override {
-        return Type;
+    static const BaseSensor::ClassKind Kind;
+    BaseSensor::ClassKind kind() const override {
+        return Kind;
     }
 
     virtual unsigned long getR0() {
@@ -44,4 +44,4 @@ protected:
     unsigned long _Rs;            // cached resistance
 };
 
-const BaseSensor::ClassType BaseAnalogSensor::Type;
+const BaseSensor::ClassKind BaseAnalogSensor::Kind;
