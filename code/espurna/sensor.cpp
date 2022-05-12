@@ -2935,7 +2935,8 @@ void _sensorLoad() {
         PulseMeterSensor * sensor = new PulseMeterSensor();
         sensor->setGPIO(PULSEMETER_PIN);
         sensor->setInterruptMode(PULSEMETER_INTERRUPT_ON);
-        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
+        sensor->setDebounceTime(
+            PulseMeterSensor::TimeSource::duration{PULSEMETER_DEBOUNCE});
         _sensors.push_back(sensor);
     }
     #endif

@@ -14,6 +14,8 @@ class PulseMeterSensor : public BaseEmonSensor {
 
     public:
 
+        using TimeSource = espurna::time::CpuClock;
+
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
@@ -23,11 +25,9 @@ class PulseMeterSensor : public BaseEmonSensor {
             MAGNITUDE_ENERGY
         };
 
-        PulseMeterSensor() {
-            _sensor_id = SENSOR_PULSEMETER_ID;
-            _count = std::size(Magnitudes);
-            findAndAddEnergy(Magnitudes);
-        }
+        PulseMeterSensor() :
+            BaseEmonSensor(Magnitudes)
+        {}
 
         // ---------------------------------------------------------------------
 
@@ -41,21 +41,22 @@ class PulseMeterSensor : public BaseEmonSensor {
             _interrupt_mode = interrupt_mode;
         }
 
-        void setDebounceTime(unsigned long debounce) {
-            _interrupt_debounce = debounce;
+        template <typename T>
+        void setDebounceTime(T debounce) {
+            _interrupt_debounce = std::chrono::duration_cast<TimeSource::duration>(debounce);
         }
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() {
+        unsigned char getGPIO() const {
             return _pin.pin();
         }
 
-        unsigned char getInterruptMode() {
+        unsigned char getInterruptMode() const {
             return _interrupt_mode;
         }
 
-        unsigned long getDebounceTime() {
+        TimeSource::duration getDebounceTime() const {
             return _interrupt_debounce;
         }
 
@@ -63,45 +64,50 @@ class PulseMeterSensor : public BaseEmonSensor {
         // Sensors API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_PULSEMETER_ID;
+        }
+
+        unsigned char count() const override {
+            return std::size(Magnitudes);
+        }
+
         // Initialization method, must be idempotent
-        // Defined outside the class body
-        void begin() {
+        void begin() override {
+            _previous_time = TimeSource::now();
             _enableInterrupts();
             _ready = true;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[24];
             snprintf_P(buffer, sizeof(buffer),
                 PSTR("PulseMeter @ GPIO(%hhu)"), _pin.pin());
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
+        String address(unsigned char) const override {
             return String(_pin);
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
-            unsigned long lapse = millis() - _previous_time;
-            _previous_time = millis();
+        void pre() override {
+            const auto now = TimeSource::now();
+            const auto elapsed = now - _previous_time;
+            _previous_time = now;
 
-            auto reading = *(reinterpret_cast<volatile unsigned long*>(&_pulses));
+            const auto reading = *(reinterpret_cast<volatile unsigned long*>(&_pulses));
             unsigned long pulses = reading - _previous_pulses;
             _previous_pulses = reading;
 
             sensor::Ws delta = 1000.0 * 3600.0 * static_cast<double>(pulses) / _energy_ratio;
             _energy[0] += delta;
 
-            if (lapse > 0) {
-                _active = 1000.0 * delta.value / lapse;
+            if (elapsed.count()) {
+                const auto milliseconds = std::chrono::duration_cast<espurna::duration::Milliseconds>(elapsed).count();
+                _active = 1000.0 * delta.value / milliseconds;
             }
 
         }
@@ -129,7 +135,7 @@ class PulseMeterSensor : public BaseEmonSensor {
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index < std::size(Magnitudes)) {
                 return Magnitudes[index].type;
             }
@@ -138,7 +144,7 @@ class PulseMeterSensor : public BaseEmonSensor {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _active;
             if (index == 1) return _energy[0].asDouble();
             return 0;
@@ -146,8 +152,9 @@ class PulseMeterSensor : public BaseEmonSensor {
 
         // Handle interrupt calls
         void IRAM_ATTR interrupt() {
-            if (millis() - _interrupt_last > _interrupt_debounce) {
-                _interrupt_last = millis();
+            const auto now = TimeSource::now();
+            if (now - _interrupt_last > _interrupt_debounce) {
+                _interrupt_last = now;
                 ++_pulses;
             }
         }
@@ -156,13 +163,14 @@ class PulseMeterSensor : public BaseEmonSensor {
             instance->interrupt();
         }
 
-    protected:
+    private:
 
         // ---------------------------------------------------------------------
         // Interrupt management
         // ---------------------------------------------------------------------
 
         void _enableInterrupts() {
+            _interrupt_last = TimeSource::now();
             _pin.attach(this, handleInterrupt, _interrupt_mode);
         }
 
@@ -176,12 +184,14 @@ class PulseMeterSensor : public BaseEmonSensor {
 
         unsigned long _pulses = 0;
         unsigned long _previous_pulses = 0;
-        unsigned long _previous_time = 0;
+
+        TimeSource::time_point _interrupt_last;
+        TimeSource::duration _interrupt_debounce;
+
+        TimeSource::time_point _previous_time;
 
         InterruptablePin _pin;
         int _interrupt_mode = FALLING;
-        unsigned long _interrupt_last = 0;
-        unsigned long _interrupt_debounce = PULSEMETER_DEBOUNCE;
 };
 
 #if __cplusplus < 201703L
