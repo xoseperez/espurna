@@ -671,13 +671,23 @@
 #define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
-#define GEIGER_DEBOUNCE                 25      // Do not register events within less than 25 millis.
-                                                // Value derived here: Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+#ifndef GEIGER_DEBOUNCE
+#define GEIGER_DEBOUNCE                 25      // (milliseconds) Do not register events within less than 25 millis.
+#endif
+                                                // See https://github.com/Trickx/espurna/wiki/Geiger-counter
 
+#ifndef GEIGER_CPM2SIEVERT
 #define GEIGER_CPM2SIEVERT              240     // CPM to µSievert per hour conversion factor
+#endif
                                                 // Typically the literature uses the invers, but I find an integer type more convienient.
+
+#ifndef GEIGER_REPORT_SIEVERTS
 #define GEIGER_REPORT_SIEVERTS          1       // Enabler for local dose rate reports in µSv/h
+#endif
+
+#ifndef GEIGER_REPORT_CPM
 #define GEIGER_REPORT_CPM               1       // Enabler for local dose rate reports in counts per minute
+#endif
 
 //------------------------------------------------------------------------------
 // GUVAS12SD UV Sensor (analog)

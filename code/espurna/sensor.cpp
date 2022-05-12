@@ -2808,12 +2808,13 @@ void _sensorLoad() {
 
     #if GEIGER_SUPPORT
     {
-        GeigerSensor * sensor = new GeigerSensor();        // Create instance of thr Geiger module.
-        sensor->setGPIO(GEIGER_PIN);                       // Interrupt pin of the attached geiger counter board.
-        sensor->setMode(GEIGER_PIN_MODE);                  // This pin is an input.
-        sensor->setDebounceTime(GEIGER_DEBOUNCE);          // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
-        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);   // Interrupt triggering: edge detection rising.
-        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);  // Conversion factor from counts per minute to µSv/h
+        GeigerSensor * sensor = new GeigerSensor();
+        sensor->setGPIO(GEIGER_PIN);
+        sensor->setMode(GEIGER_PIN_MODE);
+        sensor->setDebounceTime(
+            GeigerSensor::TimeSource::duration { GEIGER_DEBOUNCE });
+        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);
+        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);
         _sensors.push_back(sensor);
     }
     #endif
