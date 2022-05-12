@@ -32,33 +32,29 @@ class I2CSensorAddress {
 public:
     I2CSensorAddress() = default;
 
-    bool lock(uint8_t address) {
+    uint8_t findAndLock(uint8_t address) {
         // If we have already locked this address for this sensor, do nothing
         if ((address > 0) && (address == _address)) {
-            return true;
+            return address;
         }
 
         // Check if we should release a previously locked address
         if ((_address > 0) && (_address != address)) {
-            i2cReleaseLock(_address);
+            i2cUnlock(_address);
             _address = 0;
         }
 
         // If requesting a specific address, try to ger a lock to it
-        if ((address > 0) && i2cGetLock(address)) {
+        if ((address > 0) && i2cFind(address) && i2cLock(address)) {
             _address = address;
-            return true;
+            return address;
         }
 
-        return false;
+        return 0;
     }
 
-    bool locked() const {
-        return _address != 0;
-    }
-
-    bool findAndLock(size_t size, uint8_t* addresses) {
-        auto address = i2cFindAndLock(size, addresses);
+    bool findAndLock(const uint8_t* begin, const uint8_t* end) {
+        const auto address = i2cFindAndLock(begin, end);
         if (address) {
             _address = address;
             return true;
@@ -69,9 +65,13 @@ public:
 
     void unlock() {
         if (_address) {
-            i2cReleaseLock(_address);
+            i2cUnlock(_address);
             _address = 0;
         }
+    }
+
+    bool locked() const {
+        return _address != 0;
     }
 
     uint8_t address() const {
@@ -89,41 +89,82 @@ private:
 template <typename T = BaseSensor>
 class I2CSensor : public T {
 public:
-    void setAddress(unsigned char address) {
+
+    // Descriptive name of the slot # index
+    String description(unsigned char) const override {
+        return static_cast<const T*>(this)->description();
+    };
+
+    // Address of the sensor (it could be the GPIO or I2C address)
+    String address(unsigned char) const override {
+        char buffer[5];
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("0x%02X"), _sensor_address.address());
+        return String(buffer);
+    }
+
+    void setAddress(uint8_t address) {
         if (_address != address) {
             _address = address;
             T::_dirty = true;
         }
     }
 
-    unsigned char getAddress() {
+    uint8_t getAddress() const {
+        return _address;
+    }
+
+    uint8_t locked() const {
         return _sensor_address.address();
     }
 
-    // Descriptive name of the slot # index
-    String description(unsigned char) {
-        return static_cast<T*>(this)->description();
-    };
-
-    // Address of the sensor (it could be the GPIO or I2C address)
-    String address(unsigned char) {
-        char buffer[5];
-        snprintf(buffer, sizeof(buffer), "0x%02X", _sensor_address.address());
-        return String(buffer);
+    uint8_t lock() {
+        return _sensor_address.findAndLock(_address);
     }
 
-protected:
-    unsigned char _begin_i2c(unsigned char address, size_t size, unsigned char * addresses) {
-        if (_sensor_address.lock(address) || _sensor_address.findAndLock(size, addresses)) {
+    void unlock() {
+        _sensor_address.unlock();
+    }
+
+    void resetUnknown() {
+        _sensor_address.unlock();
+        T::_error = SENSOR_ERROR_UNKNOWN_ID;
+    }
+
+    uint8_t findAndLock(uint8_t address) {
+        if (_sensor_address.findAndLock(address)) {
             return _sensor_address.address();
         }
 
+        return _setError();
+    }
+
+    uint8_t findAndLock(const uint8_t* begin, const uint8_t* end) {
+        if (_address) {
+            return findAndLock(_address);
+        }
+
+
+        if (_sensor_address.findAndLock(begin, end))
+            return _sensor_address.address();
+        }
+
+        return _setError();
+    }
+
+    template <size_t Size>
+    uint8_t findAndLock(const uint8_t (&addresses)[Size]) {
+        return findAndLock(_address, std::begin(addresses), std::end(addresses));
+    }
+
+private:
+    uint8_t _setError() {
         T::_error = SENSOR_ERROR_I2C;
-        return 0x00;
+        return 0;
     }
 
     I2CSensorAddress _sensor_address;
-    unsigned char _address { 0x00 };
+    uint8_t _address { 0x00 };
 };
 
 #endif // SENSOR_SUPPORT && I2C_SUPPORT
