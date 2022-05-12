@@ -89,30 +89,42 @@ class BME680Sensor : public I2CSensor<> {
     public:
 
         // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        BME680Sensor() {
-            _error = SENSOR_ERROR_OK;
-            _sensor_id = SENSOR_BME680_ID;
-            _count = 9;
-        }
-
-        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
-        void begin() {
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_TEMPERATURE,
+            MAGNITUDE_HUMIDITY,
+            MAGNITUDE_PRESSURE,
+            MAGNITUDE_RESISTANCE,
+            MAGNITUDE_IAQ_ACCURACY,
+            MAGNITUDE_IAQ,
+            MAGNITUDE_IAQ_STATIC,
+            MAGNITUDE_CO2,
+            MAGNITUDE_VOC,
+        };
+
+        unsigned char id() const override {
+            return SENSOR_BME680_ID;
+        }
+
+        unsigned char count() const override {
+            return std::size(Magnitudes);
+        }
+
+        void begin() override {
             if (!_dirty) {
               return;
             }
 
             // I2C auto-discover
-            unsigned char addresses[] = {BME680_I2C_ADDR_PRIMARY, BME680_I2C_ADDR_SECONDARY};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
+            static constexpr uint8_t addresses[] {BME680_I2C_ADDR_PRIMARY, BME680_I2C_ADDR_SECONDARY};
+            auto address = findAndLock(addresses);
+            if (address == 0) {
+              return;
+            }
 
-            iaqSensor.begin(_address, Wire);
+            iaqSensor.begin(address, Wire);
 
             DEBUG_MSG_P(PSTR("[BME680] BSEC library version v%u.%u.%u.%u\n"),
                 iaqSensor.version.major,
@@ -130,20 +142,19 @@ class BME680Sensor : public I2CSensor<> {
             iaqSensor.setConfig(bsec_config_iaq);
 
             _loadState();
-
-            float sampleRate;
+            _last_state = TimeSource::now();
 
             // BSEC configuration with 300s allows for the sensor to sleep for 300s
             // on the ULP mode in order to minimize power consumption.
-            if (BME680_BSEC_CONFIG == BME680_BSEC_CONFIG_GENERIC_18V_300S_4D ||
-              BME680_BSEC_CONFIG == BME680_BSEC_CONFIG_GENERIC_18V_300S_4D ||
-              BME680_BSEC_CONFIG == BME680_BSEC_CONFIG_GENERIC_18V_300S_4D) {
-              sampleRate = BSEC_SAMPLE_RATE_ULP;
-            } else {
-              sampleRate = BSEC_SAMPLE_RATE_LP;
-            }
+            const float sampleRate =
+                ((BME680_BSEC_CONFIG == BME680_BSEC_CONFIG_GENERIC_18V_300S_4D)
+                 || (BME680_BSEC_CONFIG == BME680_BSEC_CONFIG_GENERIC_18V_300S_4D)
+                 || (BME680_BSEC_CONFIG == BME680_BSEC_CONFIG_GENERIC_18V_300S_4D))
+                ? BSEC_SAMPLE_RATE_ULP
+                : BSEC_SAMPLE_RATE_LP;
 
-            iaqSensor.updateSubscription(sensorList, 12, sampleRate);
+            iaqSensor.updateSubscription(
+                SensorList, std::size(SensorList), sampleRate);
 
             if (!_isOk()) {
               _showSensorErrors();
@@ -157,30 +168,25 @@ class BME680Sensor : public I2CSensor<> {
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[21];
-            snprintf(buffer, sizeof(buffer), "BME680 @ I2C (0x%02X)", _address);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("BME680 @ I2C (0x%02X)"), getAddress());
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_TEMPERATURE;
-            if (index == 1) return MAGNITUDE_HUMIDITY;
-            if (index == 2) return MAGNITUDE_PRESSURE;
-            if (index == 3) return MAGNITUDE_RESISTANCE;
-            if (index == 4) return MAGNITUDE_IAQ_ACCURACY;
-            if (index == 5) return MAGNITUDE_IAQ;
-            if (index == 6) return MAGNITUDE_IAQ_STATIC;
-            if (index == 7) return MAGNITUDE_CO2;
-            if (index == 8) return MAGNITUDE_VOC;
+        unsigned char type(unsigned char index) const override {
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
 
             return MAGNITUDE_NONE;
         }
 
         // The maximum allowed time between two `bsec_sensor_control` calls depends on
         // configuration profile `bsec_config_iaq` below.
-        void tick() {
+        void tick() override {
             if (iaqSensor.run()) {
               _rawTemperature = iaqSensor.rawTemperature;
               _rawHumidity = iaqSensor.rawHumidity;
@@ -202,20 +208,33 @@ class BME680Sensor : public I2CSensor<> {
 
         // Ensure we show any possible issues with the sensor, post() is called regardless of sensor status() / error() codes
         void post() override {
-            _showSensorErrors();
+          _showSensorErrors();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
-            if (index == 0) return _temperature;
-            if (index == 1) return _humidity;
-            if (index == 2) return _pressure;
-            if (index == 3) return _gasResistance;
-            if (index == 4) return _iaqAccuracy;
-            if (index == 5) return _iaq;
-            if (index == 6) return _iaqStatic;
-            if (index == 7) return _co2Equivalent;
-            if (index == 8) return _breathVocEquivalent;
+        double value(unsigned char index) override {
+            if (index < std::size(Magnitudes)) {
+              switch (Magnitudes[index].type) {
+              case MAGNITUDE_TEMPERATURE:
+                return _temperature;
+              case MAGNITUDE_HUMIDITY:
+                return _humidity;
+              case MAGNITUDE_PRESSURE:
+                return _pressure;
+              case MAGNITUDE_RESISTANCE:
+                return _gasResistance;
+              case MAGNITUDE_IAQ_ACCURACY:
+                return _iaqAccuracy;
+              case MAGNITUDE_IAQ:
+                return _iaq;
+              case MAGNITUDE_IAQ_STATIC:
+                return _iaqStatic;
+              case MAGNITUDE_CO2:
+                return _co2Equivalent;
+              case MAGNITUDE_VOC:
+                return _breathVocEquivalent;
+              }
+            }
 
             return 0;
         }
@@ -223,46 +242,50 @@ class BME680Sensor : public I2CSensor<> {
     protected:
 
         void _loadState() {
-            String storedState = getSetting("bsecState");
+            auto storedState = getSetting("bsecState");
             if (!storedState.length()) {
               return;
             }
 
-            DEBUG_MSG_P(PSTR("[BME680] Restoring previous state\n"));
+            if (hexDecode(storedState.c_str(), storedState.length(), _state, sizeof(_state))) {
+              DEBUG_MSG_P(PSTR("[BME680] Restoring saved state...\n"));
 
-            hexDecode(storedState.c_str(), storedState.length(), _bsecState, sizeof(_bsecState));
-
-            iaqSensor.setState(_bsecState);
-            _showSensorErrors();
+              iaqSensor.setState(_state);
+              _showSensorErrors();
+            }
         }
 
         void _saveState() {
-            if (!BME680_STATE_SAVE_INTERVAL) return;
-
-            static unsigned long last_millis = 0;
-            if (_iaqAccuracy < 3 || (millis() - last_millis < BME680_STATE_SAVE_INTERVAL)) {
+            if (!SaveInterval.count()) {
               return;
             }
 
-            iaqSensor.getState(_bsecState);
+            if (_iaqAccuracy < 3) {
+              return;
+            }
 
-            char storedState[BSEC_MAX_STATE_BLOB_SIZE * 2 + 1] = {0};
-            hexEncode(_bsecState, BSEC_MAX_STATE_BLOB_SIZE, storedState, sizeof(storedState));
+            const auto now = TimeSource::now();
+            if (now - _last_state < SaveInterval) {
+              return;
+            }
 
-            setSetting("bsecState", storedState);
+            iaqSensor.getState(_state);
+            setSetting("bsecState", hexEncode(_state));
 
-            last_millis = millis();
+            _last_state = now;
         }
 
-        bool _isError() {
-            return (iaqSensor.status < BSEC_OK) || (iaqSensor.bme680Status < BME680_OK);
+        bool _isError() const {
+            return (iaqSensor.status < BSEC_OK)
+                || (iaqSensor.bme680Status < BME680_OK);
         }
 
-        bool _isOk() {
-            return (iaqSensor.status == BSEC_OK) && (iaqSensor.bme680Status == BME680_OK);
+        bool _isOk() const {
+            return (iaqSensor.status == BSEC_OK)
+                && (iaqSensor.bme680Status == BME680_OK);
         }
 
-        void _showSensorErrors() {
+        void _showSensorErrors() const {
             // see `enum { ... } bsec_library_return_t` values & description at:
             // BSEC Software Library/src/inc/bsec_datatypes.h
             if (iaqSensor.status != BSEC_OK) {
@@ -297,7 +320,7 @@ class BME680Sensor : public I2CSensor<> {
             }
         }
 
-        bsec_virtual_sensor_t sensorList[12] = {
+        bsec_virtual_sensor_t SensorList[12] = {
             BSEC_OUTPUT_RAW_TEMPERATURE,                      // Unscaled (raw) temperature (ºC).
 
             BSEC_OUTPUT_RAW_PRESSURE,                         // Unscaled (raw) pressure (Pa).
@@ -331,21 +354,34 @@ class BME680Sensor : public I2CSensor<> {
                                                               // ongoing (0) or finished (1).
         };
 
-        float _breathVocEquivalent = 0.0f;
-        float _co2Equivalent = 0.0f;
-        float _gasResistance = 0.0f;
-        float _humidity = 0.0f;
-        float _iaq = 0.0f;
-        float _pressure = 0.0f;
-        float _rawHumidity = 0.0f;
-        float _rawTemperature = 0.0f;
         float _temperature = 0.0f;
-        uint8_t _bsecState[BSEC_MAX_STATE_BLOB_SIZE] = {0};
+        float _rawTemperature = 0.0f;
+
+        float _rawHumidity = 0.0f;
+        float _humidity = 0.0f;
+
+        float _pressure = 0.0f;
+        float _gasResistance = 0.0f;
+
         uint8_t _iaqAccuracy = 0;
+        float _iaq = 0.0f;
         float _iaqStatic = 0;
+
+        float _breathVocEquivalent = 0.0f;
+
+        float _co2Equivalent = 0.0f;
+
+        using TimeSource = espurna::time::CoreClock;
+        static constexpr auto SaveInterval = TimeSource::duration { BME680_STATE_SAVE_INTERVAL };
+        TimeSource::time_point _last_state;
+        uint8_t _state[BSEC_MAX_STATE_BLOB_SIZE] = {0};
 
         Bsec iaqSensor;
 
 };
+
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude BME680Sensor::Magnitudes[];
+#endif
 
 #endif // SENSOR_SUPPORT && BME680_SUPPORT
