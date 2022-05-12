@@ -13,120 +13,119 @@
 #include "BaseSensor.h"
 
 
-// SenseAir sensor utils
-class SenseAir
-{
-protected:
-    SoftwareSerial *_serial; // Should initialized by child class
-
+// SenseAir sensor utils. Notice that we only read a single register.
+// 0xFE is the address aka "Any sensor"
+class SenseAir {
 public:
-    int sendCommand(byte command[]) {
-        byte recv_buf[7] = {0xff};
-        byte data_buf[2] = {0xff};
-        long value       = -1;
+    struct ValueResult {
+        int16_t value { 0 };
+        uint8_t error { 0 };
+        bool status { false };
+    };
 
-        _serial->write(command, 8); //Send the byte array
-        delay(50);
-
-        // Read answer from sensor
-        int ByteCounter = 0;
-        while(_serial->available()) {
-            recv_buf[ByteCounter] = _serial->read();
-            ByteCounter++;
-        }
-
-        data_buf[0] = recv_buf[3];
-        data_buf[1] = recv_buf[4];
-        value = (data_buf[0] << 8) | (data_buf[1]);
-
-        return value;
-    }
-
-    int readCo2(void) {
-        int co2 = 0;
-        byte frame[8] = {0};
-        buildFrame(0xFE, 0x04, 0x03, 1, frame);
-        co2 = sendCommand(frame);
-        return co2;
+    static ValueResult readCo2(Stream& stream) {
+        return sendFrame(stream, buildFrame(0xFE, 0x04, 0x03, 1));
     }
 
 private:
-    // Compute the MODBUS RTU CRC
-    static unsigned int modRTU_CRC(byte buf[], int len, byte checkSum[2]) {
-        unsigned int crc = 0xFFFF;
+    using Frame = std::array<uint8_t, 8>;
 
-        for (int pos = 0; pos < len; pos++) {
-            crc ^= (unsigned int)buf[pos];          // XOR byte into least sig. byte of crc
+    static uint16_t modRTU_CRC(const uint8_t* begin, const uint8_t* end) {
+        uint16_t crc = 0xFFFF;
 
-            for (int i = 8; i != 0; i--) {    // Loop over each bit
-            if ((crc & 0x0001) != 0) {      // If the LSB is set
-                crc >>= 1;                    // Shift right and XOR 0xA001
-                crc ^= 0xA001;
-            }
-            else                            // Else LSB is not set
-                crc >>= 1;                    // Just shift right
+        for (auto it = begin; it != end; ++it) {
+            crc ^= (uint16_t)(*it);              // XOR byte into least sig. byte of crc
+
+            for (size_t i = 8; i != 0; i--) {    // Loop over each bit
+                if ((crc & 0x0001) != 0) {       // If the LSB is set
+                    crc >>= 1;                   // Shift right and XOR 0xA001
+                    crc ^= 0xA001;
+                } else {                         // Else LSB is not set
+                    crc >>= 1;                   // Just shift right
+                }
             }
         }
-        // Note, this number has low and high bytes swapped, so use it accordingly (or swap bytes)
-        checkSum[1] = (byte)((crc >> 8) & 0xFF);
-        checkSum[0] = (byte)(crc & 0xFF);
+
         return crc;
     }
 
-    static int getBitOfInt(int reg, int pos) {
-        // Create a mask
-        int mask = 0x01 << pos;
+    static Frame buildFrame(
+        uint8_t slaveAddress,
+        uint8_t  functionCode,
+        uint16_t startAddress,
+        uint16_t numberOfRegisters)
+    {
+        Frame out;
 
-        // Mask the status register
-        int masked_register = mask & reg;
+        out[0] = slaveAddress;
+        out[1] = functionCode;
+        out[2] = (uint8_t)(startAddress >> 8);
+        out[3] = (uint8_t)(startAddress);
+        out[4] = (uint8_t)(numberOfRegisters >> 8);
+        out[5] = (uint8_t)(numberOfRegisters);
 
-        // Shift the result of masked register back to position 0
-        int result = masked_register >> pos;
+        // Note, this number has low and high bytes swapped, so use it accordingly (or swap bytes)
+        uint16_t crc = modRTU_CRC(&out[0], &out[6]);
+        out[6] = (uint8_t)(crc & 0xFF);
+        out[7] = (uint8_t)((crc >> 8) & 0xFF);
 
-        return result;
+        return out;
     }
 
+    static void discardData(Stream& stream) {
+        while (stream.available() > 0) {
+            stream.read();
+        }
+    }
 
-    static void buildFrame(byte slaveAddress,
-                byte  functionCode,
-                short startAddress,
-                short numberOfRegisters,
-                byte frame[8]) {
-        frame[0] = slaveAddress;
-        frame[1] = functionCode;
-        frame[2] = (byte)(startAddress >> 8);
-        frame[3] = (byte)(startAddress);
-        frame[4] = (byte)(numberOfRegisters >> 8);
-        frame[5] = (byte)(numberOfRegisters);
-        // CRC-calculation
-        byte checkSum[2] = {0};
-        modRTU_CRC(frame, 6, checkSum);
-        frame[6] = checkSum[0];
-        frame[7] = checkSum[1];
+    // Since we only care about the CO2 value, frame size is known in advance
+    // Only exceptional things are:
+    // - read timeout, read values would be 0 (zero-init'ed)
+    // - error code, reported through the result object
+    // - unexpected value length, in case address / register numbers change
+    // - invalid crc due to faulty transmission
+
+    static ValueResult sendFrame(Stream& stream, const Frame& frame) {
+        stream.write(frame.data(), frame.size());
+        delay(50);
+
+        ValueResult out;
+
+        uint8_t buffer[7] = {0};
+        stream.readBytes(buffer, 3);
+        if (buffer[0] != 0xFE) {
+            discardData(stream);
+            return out;
+        }
+
+        if (buffer[1] & 0x80) {
+            out.error = buffer[2];
+            discardData(stream);
+            return out;
+        }
+
+        if (buffer[2] != 2) {
+            discardData(stream);
+            return out;
+        }
+
+        stream.readBytes(&buffer[3], 4);
+
+        const uint16_t received = (buffer[6] << 8) | buffer[5];
+        const uint16_t calculated = modRTU_CRC(std::begin(buffer), std::end(buffer) - 2);
+        if (received != calculated) {
+            return out;
+        }
+
+        out.value = (buffer[4] << 8) | (buffer[3]);
+        out.status = true;
+
+        return out;
     }
 };
 
-//
 class SenseAirSensor : public BaseSensor, SenseAir {
-
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        SenseAirSensor() {
-            _count = 1;
-            _co2 = 0;
-            _lastCo2 = 0;
-            _serial = NULL;
-            _sensor_id = SENSOR_SENSEAIR_ID;
-        }
-
-        ~SenseAirSensor() {
-            if (_serial) delete _serial;
-            _serial = NULL;
-        }
 
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
@@ -142,11 +141,11 @@ class SenseAirSensor : public BaseSensor, SenseAir {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getRX() {
+        unsigned char getRX() const {
             return _pin_rx;
         }
 
-        unsigned char getTX() {
+        unsigned char getTX() const {
             return _pin_tx;
         }
 
@@ -154,55 +153,80 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_SENSEAIR_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
+            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx, false);
             _serial->enableIntTx(false);
             _serial->begin(9600);
             _serial->enableRx(true);
+            _serial->setTimeout(200);
 
-            _startTime = 0;
+            _startTime = TimeSource::now();
+            _warmedUp = false;
+
             _ready = true;
             _dirty = false;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "SenseAir S8 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("SenseAir S8 @ SwSerial(%hhu,%hhu)"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        }
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
+        String address(unsigned char) const override {
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
-            return MAGNITUDE_CO2;
+        unsigned char type(unsigned char index) const override {
+            if (index == 0) {
+                return MAGNITUDE_CO2;
+            }
+
+            return MAGNITUDE_NONE;
         }
 
-        void pre() {
-
-            if (millis() - _startTime < 20000) {
+        void pre() override {
+            static constexpr auto WarmupDuration = espurna::duration::Seconds(20);
+            if (!_warmedUp && (TimeSource::now() - _startTime < WarmupDuration)) {
                 _error = SENSOR_ERROR_WARM_UP;
                 return;
             }
 
-            unsigned int co2 = readCo2();
+            _warmedUp = true;
+
+            const auto result = readCo2(*_serial);
+            if (!result.status) {
+                if (result.error) {
+                    DEBUG_MSG_P(PSTR("[SENSEAIR] Modbus error: 0x%02X\n"), result.error);
+                }
+                _error = SENSOR_ERROR_OTHER;
+                return;
+            }
+
+            const auto co2 = result.value;
             if (co2 >= 5000 || co2 < 100)
             {
                 _co2 = _lastCo2;
@@ -217,16 +241,26 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
-            return _co2;
+        double value(unsigned char index) override {
+            if (index == 0) {
+                return _co2;
+            }
+            return 0.0;
         }
 
-    protected:
-        unsigned int _pin_rx;
-        unsigned int _pin_tx;
-        unsigned long _startTime;
-        unsigned int _co2;
-        unsigned int _lastCo2;
+    private:
+
+        std::unique_ptr<SoftwareSerial> _serial;
+
+        using TimeSource = espurna::time::CoreClock;
+        TimeSource::time_point _startTime;
+        bool _warmedUp = false;
+
+        unsigned char _pin_rx;
+        unsigned char _pin_tx;
+
+        int16_t _co2 = 0;
+        int16_t _lastCo2 = 0;
 };
 
 
