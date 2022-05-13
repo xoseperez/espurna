@@ -49,7 +49,7 @@ class HDC1080Sensor : public I2CSensor<> {
         String description() const override {
             char buffer[25];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("HDC1080 @ I2C (0x%02X)"), getAddress());
+                PSTR("HDC1080 @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
@@ -68,18 +68,22 @@ class HDC1080Sensor : public I2CSensor<> {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() override {
             _error = SENSOR_ERROR_OK;
-            const auto address = getAddress();
 
-            double value;
+            const auto address = lockedAddress();
+            double value = _read(address, HDC1080_CMD_TMP);
+            if (_error != SENSOR_ERROR_OK) {
+                return;
+            }
 
-            value = _read(address, HDC1080_CMD_TMP);
-            if (_error != SENSOR_ERROR_OK) return;
             _temperature = (165 * value / 65536) - 40;
 
             value = _read(address, HDC1080_CMD_HUM);
-            if (_error != SENSOR_ERROR_OK) return;
-            value = (value / 65536)*100;
-            _humidity = constrain(value, 0, 100);
+            if (_error != SENSOR_ERROR_OK) {
+                return;
+            }
+
+            value = (value / 65536) * 100;
+            _humidity = std::clamp(value, 0, 100);
         }
 
         // Current value for slot # index

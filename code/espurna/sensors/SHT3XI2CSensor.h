@@ -53,7 +53,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
         String description() const override {
             char buffer[32];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("SHT3X @ I2C (0x%02X)"), getAddress());
+                PSTR("SHT3X @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
@@ -69,7 +69,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
 
             _error = SENSOR_ERROR_OK;
 
-            const auto address = getAddress();
+            const auto address = lockedAddress();
 
             // Measurement High Repeatability with Clock Stretch Enabled
             i2c_write_uint8(address, 0x2C, 0x06);

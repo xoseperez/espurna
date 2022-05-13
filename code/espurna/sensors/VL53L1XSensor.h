@@ -74,7 +74,7 @@ class VL53L1XSensor : public I2CSensor<> {
         String description() const override {
             char buffer[21];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("VL53L1X @ I2C (0x%02X)"), getAddress());
+                PSTR("VL53L1X @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 

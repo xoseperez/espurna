@@ -12,11 +12,6 @@
 #include "../utils.h"
 #include "BaseSensor.h"
 
-static constexpr double DHT_DUMMY_VALUE = -255;
-static constexpr size_t DHT_MAX_DATA = 5;
-static constexpr size_t DHT_MAX_ERRORS = 5;
-static constexpr uint32_t DHT_MIN_INTERVAL = 2000;
-
 enum class DHTChipType {
     DHT11,
     DHT12,
@@ -58,6 +53,14 @@ class DHTSensor : public BaseSensor {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
+
+        static constexpr double DummyValue = -255.0;
+        static constexpr size_t MaxErrors = 5;
+
+        using Data = std::array<uint8_t, 5>;
+
+        using TimeSource = espurna::time::CoreClock;
+        static constexpr auto MinInterval = espurna::duration::Milliseconds { 2000 };
 
         ~DHTSensor() {
             gpioUnlock(_gpio);
@@ -115,7 +118,7 @@ class DHTSensor : public BaseSensor {
             _previous = _gpio;
 
             // Set now to fail the check in _read at least once
-            _last_ok = millis();
+            _last_ok = TimeSource::now();
             _ready = true;
 
         }
@@ -161,8 +164,8 @@ class DHTSensor : public BaseSensor {
 
         void _read() {
 
-            if ((_last_ok > 0) && (millis() - _last_ok < DHT_MIN_INTERVAL)) {
-                if ((_temperature == DHT_DUMMY_VALUE) && (_humidity == DHT_DUMMY_VALUE)) {
+            if (TimeSource::now() - _last_ok < MinInterval) {
+                if ((_temperature == DummyValue) && (_humidity == DummyValue)) {
                     _error = SENSOR_ERROR_WARM_UP;
                 } else {
                     _error = SENSOR_ERROR_OK;
@@ -173,46 +176,53 @@ class DHTSensor : public BaseSensor {
             unsigned long low = 0;
             unsigned long high = 0;
 
-            unsigned char dhtData[DHT_MAX_DATA] = {0};
+            Data dhtData{};
+
             unsigned char byteInx = 0;
             unsigned char bitInx = 7;
 
             pinMode(_gpio, OUTPUT);
 
-        	// Send start signal to DHT sensor
-        	if (++_errors > DHT_MAX_ERRORS) {
+            // Send start signal to DHT sensor
+            if (++_errors > MaxErrors) {
                 _errors = 0;
                 digitalWrite(_gpio, HIGH);
                 espurna::time::blockingDelay(
                     espurna::duration::Milliseconds(250));
             }
+
             noInterrupts();
-        	digitalWrite(_gpio, LOW);
+            digitalWrite(_gpio, LOW);
+
             if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
                 espurna::time::blockingDelay(
                     espurna::duration::Milliseconds(20));
             } else if (_type == DHT_CHIP_SI7021) {
-                delayMicroseconds(500);
+                espurna::time::critical::delay(
+                    espurna::duration::critical::Microseconds(500));
             } else {
-                delayMicroseconds(1100);
+                espurna::time::critical::delay(
+                    espurna::duration::critical::Microseconds(1100));
             }
             digitalWrite(_gpio, HIGH);
-            delayMicroseconds(40);
+            espurna::time::critical::delay(
+                espurna::duration::critical::Microseconds(40));
             pinMode(_gpio, INPUT_PULLUP);
-            delayMicroseconds(10);
+            espurna::time::critical::delay(
+                espurna::duration::critical::Microseconds(10));
 
-        	// No errors, read the 40 data bits
-        	for( int k = 0; k < 41; k++ ) {
+            // No errors, read the 40 data bits
+            for( int k = 0; k < 41; k++ ) {
 
-        		// Starts new data transmission with >50us low signal
-        		low = _signal(100, LOW);
-        		if (low == 0) {
+                // Starts new data transmission with >50us low signal
+                low = _signal(100, LOW);
+                if (low == 0) {
                     _error = SENSOR_ERROR_TIMEOUT;
                     return;
                 }
 
-        		// Check to see if after >70us rx data is a 0 or a 1
-        		high = _signal(100, HIGH);
+                // Check to see if after >70us rx data is a 0 or a 1
+                high = _signal(100, HIGH);
                 if (high == 0) {
                     _error = SENSOR_ERROR_TIMEOUT;
                     return;
@@ -221,20 +231,22 @@ class DHTSensor : public BaseSensor {
                 // Skip the first bit
                 if (k == 0) continue;
 
-        		// add the current read to the output data
-        		// since all dhtData array where set to 0 at the start,
-        		// only look for "1" (>28us us)
-        		if (high > low) dhtData[byteInx] |= (1 << bitInx);
+                // add the current read to the output data
+                // since all dhtData array where set to 0 at the start,
+                // only look for "1" (>28us us)
+                if (high > low) {
+                    dhtData[byteInx] |= (1 << bitInx);
+                }
 
-        		// index to next byte
-        		if (bitInx == 0) {
+                // index to next byte
+                if (bitInx == 0) {
                     bitInx = 7;
                     ++byteInx;
                 } else {
-            		--bitInx;
+                    --bitInx;
                 }
 
-        	}
+            }
 
             interrupts();
 
@@ -244,43 +256,51 @@ class DHTSensor : public BaseSensor {
                 return;
             }
 
-        	// Get humidity from Data[0] and Data[1]
+            // Get humidity from Data[0] and Data[1]
             if (_type == DHT_CHIP_DHT11) {
                 _humidity = dhtData[0];
             } else if (_type == DHT_CHIP_DHT12) {
                 _humidity = dhtData[0];
-				_humidity += dhtData[1] * 0.1;
+                _humidity += dhtData[1] * 0.1;
             } else {
-        	    _humidity = dhtData[0] * 256 + dhtData[1];
-        	    _humidity /= 10;
+                _humidity = dhtData[0] * 256 + dhtData[1];
+                _humidity /= 10;
             }
 
-        	// Get temp from Data[2] and Data[3]
+            // Get temp from Data[2] and Data[3]
             if (_type == DHT_CHIP_DHT11) {
                 _temperature = dhtData[2];
-			} else if (_type == DHT_CHIP_DHT12) {
-				_temperature = (dhtData[2] & 0x7F);
-				_temperature += dhtData[3] * 0.1;
-				if (dhtData[2] & 0x80) _temperature *= -1;
+            } else if (_type == DHT_CHIP_DHT12) {
+                _temperature = (dhtData[2] & 0x7F);
+                _temperature += dhtData[3] * 0.1;
+                if (dhtData[2] & 0x80) {
+                    _temperature *= -1;
+                }
             } else {
                 _temperature = (dhtData[2] & 0x7F) * 256 + dhtData[3];
                 _temperature /= 10;
-                if (dhtData[2] & 0x80) _temperature *= -1;
+                if (dhtData[2] & 0x80) {
+                    _temperature *= -1;
+                }
             }
 
-            _last_ok = millis();
+            _last_ok = TimeSource::now();
+
             _errors = 0;
             _error = SENSOR_ERROR_OK;
 
         }
 
-        unsigned long _signal(unsigned long usTimeOut, bool state) {
-        	unsigned long uSec = 1;
-        	while (digitalRead(_gpio) == state) {
-                if (++uSec > usTimeOut) return 0;
-                delayMicroseconds(1);
-        	}
-        	return uSec;
+        unsigned long _signal(unsigned long maximum, bool state) {
+            unsigned long ticks = 1;
+
+            while (digitalRead(_gpio) == state) {
+                if (++ticks > maximum) return 0;
+                espurna::time::critical::delay(
+                    espurna::duration::critical::Microseconds(1));
+            }
+
+            return ticks;
         }
 
         DHTChipType _type = DHT_CHIP_DHT22;
@@ -288,11 +308,12 @@ class DHTSensor : public BaseSensor {
         unsigned char _gpio = GPIO_NONE;
         unsigned char _previous = GPIO_NONE;
 
-        unsigned long _last_ok = 0;
-        unsigned char _errors = 0;
+        TimeSource::time_point _last_ok;
+        size_t _errors = 0;
 
-        double _temperature = DHT_DUMMY_VALUE;
-        double _humidity = DHT_DUMMY_VALUE;
+        bool _warmup = false;
+        double _temperature = DummyValue;
+        double _humidity = 0.0;
 
 };
 

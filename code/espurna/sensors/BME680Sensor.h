@@ -171,7 +171,7 @@ class BME680Sensor : public I2CSensor<> {
         String description() const override {
             char buffer[21];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("BME680 @ I2C (0x%02X)"), getAddress());
+                PSTR("BME680 @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 

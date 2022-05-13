@@ -209,7 +209,7 @@ private:
         {}
 
         bool lock(uint8_t address) {
-            return _sensor_address.lock(address);
+            return _sensor_address.findAndLock(address);
         }
 
         bool lock() {

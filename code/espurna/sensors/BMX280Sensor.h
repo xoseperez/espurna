@@ -93,7 +93,7 @@ class BMX280Sensor : public I2CSensor<> {
             snprintf_P(buffer, sizeof(buffer), PSTR("%s @ I2C (0x%02X)"),
                 (_chip == BMX280_CHIP_BME280) ? PSTR("BME280") :
                 (_chip == BMX280_CHIP_BMP280) ? PSTR("BMP280") :
-                PSTR("BMX280"), getAddress());
+                PSTR("BMX280"), lockedAddress());
             return String(buffer);
         }
 
@@ -152,7 +152,7 @@ class BMX280Sensor : public I2CSensor<> {
             }
             _error = SENSOR_ERROR_OK;
 
-            const auto address = getAddress();
+            const auto address = lockedAddress();
 
 #if BMX280_MODE == 1
             _forceRead(address);

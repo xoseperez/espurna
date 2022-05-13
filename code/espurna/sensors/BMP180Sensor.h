@@ -61,7 +61,7 @@ class BMP180Sensor : public I2CSensor<> {
         String description() const override {
             char buffer[20];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("BMP180 @ I2C (0x%02X)"), getAddress());
+                PSTR("BMP180 @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
@@ -86,7 +86,7 @@ class BMP180Sensor : public I2CSensor<> {
             }
 
             _error = SENSOR_ERROR_OK;
-            _error = _read(getAddress());
+            _error = _read(lockedAddress());
             if (_error != SENSOR_ERROR_OK) {
                 _run_init = true;
             }

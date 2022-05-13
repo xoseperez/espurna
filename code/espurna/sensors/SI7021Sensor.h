@@ -58,7 +58,7 @@ class SI7021Sensor : public I2CSensor<> {
             );
             char buffer[32];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("%s @ I2C (0x%02X)"), name, getAddress());
+                PSTR("%s @ I2C (0x%02X)"), name, lockedAddress());
             return String(buffer);
         }
 
@@ -86,7 +86,7 @@ class SI7021Sensor : public I2CSensor<> {
 
             double value;
 
-            const auto address = getAddress();
+            const auto address = lockedAddress();
 
             value = _read(address, SI7021_CMD_TMP_NOHOLD);
             if (_error != SENSOR_ERROR_OK) return;

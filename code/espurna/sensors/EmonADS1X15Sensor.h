@@ -114,7 +114,8 @@ public:
 
         bool lock(uint8_t address) {
             static constexpr uint8_t addresses[] {0x48, 0x49, 0x4A, 0x4B};
-            return _sensor_address.lock(address) || _sensor_address.findAndLock(addresses);
+            return _sensor_address.findAndLock(address)
+                || _sensor_address.findAndLock(std::begin(addresses), std::end(addresses));
         }
 
         bool lock() {

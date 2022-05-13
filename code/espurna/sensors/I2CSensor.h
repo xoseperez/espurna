@@ -110,11 +110,11 @@ public:
         }
     }
 
-    uint8_t getAddress() const {
+    uint8_t configuredAddress() const {
         return _address;
     }
 
-    uint8_t locked() const {
+    uint8_t lockedAddress() const {
         return _sensor_address.address();
     }
 
@@ -128,7 +128,7 @@ public:
 
     void resetUnknown() {
         _sensor_address.unlock();
-        T::_error = SENSOR_ERROR_UNKNOWN_ID;
+        _unknownAddress();
     }
 
     uint8_t findAndLock(uint8_t address) {
@@ -136,7 +136,11 @@ public:
             return _sensor_address.address();
         }
 
-        return _setError();
+        return _unknownAddress();
+    }
+
+    uint8_t findAndLock() {
+        return findAndLock(_address);
     }
 
     uint8_t findAndLock(const uint8_t* begin, const uint8_t* end) {
@@ -145,21 +149,21 @@ public:
         }
 
 
-        if (_sensor_address.findAndLock(begin, end))
+        if (_sensor_address.findAndLock(begin, end)) {
             return _sensor_address.address();
         }
 
-        return _setError();
+        return _unknownAddress();
     }
 
     template <size_t Size>
     uint8_t findAndLock(const uint8_t (&addresses)[Size]) {
-        return findAndLock(_address, std::begin(addresses), std::end(addresses));
+        return findAndLock(std::begin(addresses), std::end(addresses));
     }
 
 private:
-    uint8_t _setError() {
-        T::_error = SENSOR_ERROR_I2C;
+    uint8_t _unknownAddress() {
+        T::_error = SENSOR_ERROR_UNKNOWN_ID;
         return 0;
     }
 

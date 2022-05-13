@@ -17,25 +17,13 @@ class SM300D2Sensor : public BaseSensor {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        ~SM300D2Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
-
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;
             _dirty = true;
         }
 
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() {
+        unsigned char getRX() const {
             return _pin_rx;
         }
 
@@ -56,7 +44,9 @@ class SM300D2Sensor : public BaseSensor {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
             if (3 == _pin_rx) {
                 Serial.begin(SM300D2_BAUDRATE);
@@ -65,7 +55,7 @@ class SM300D2Sensor : public BaseSensor {
                 Serial.flush();
                 Serial.swap();
             } else {
-                _serial = new SoftwareSerial(_pin_rx, -1, false);
+                _serial = std::make_unique<SoftwareSerial>(_pin_rx, -1, false);
                 _serial->enableIntTx(false);
                 _serial->begin(SM300D2_BAUDRATE);
             }
@@ -242,7 +232,7 @@ class SM300D2Sensor : public BaseSensor {
         double _humidity = 0;
 
         unsigned char _pin_rx = SM300D2_RX_PIN;
-        SoftwareSerial * _serial = NULL;
+        std::unique_ptr<SoftwareSerial> _serial;
 
 };
 

@@ -30,6 +30,8 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 class PZEM004TV30Sensor : public BaseEmonSensor {
 public:
+    using TimeSource = espurna::time::CoreClock;
+
     static constexpr unsigned char RxPin { PZEM004TV30_RX_PIN };
     static constexpr unsigned char TxPin { PZEM004TV30_RX_PIN };
 
@@ -133,11 +135,11 @@ public:
     // - some external tool. For example, using USB2TTL adapter and a PC app
     // - `pzem.address` with **only** one device on the line
     //    (because we would change all 0xf8-addressed devices at the same time)
-    static PZEM004TV30Sensor* make(PortPtr port, uint8_t address, unsigned long read_timeout) {
+    static PZEM004TV30Sensor* make(PortPtr port, uint8_t address, TimeSource::duration read_timeout) {
         if (!_instance) {
             _port = std::move(port);
             _port->begin(Baudrate);
-            (*_port)->setTimeout(read_timeout);
+            (*_port)->setTimeout(read_timeout.count());
 
             _address = address;
             _read_timeout = read_timeout;
@@ -164,8 +166,8 @@ public:
     static constexpr uint8_t DefaultAddress = 0xf8;
 
     // XXX: pzem manual does not specify anything, these are arbitrary values (ms)
-    static constexpr unsigned long DefaultReadTimeout = 200u;
-    static constexpr unsigned long DefaultUpdateInterval = 200u;
+    static constexpr auto DefaultReadTimeout = TimeSource::duration { 200 };
+    static constexpr auto DefaultUpdateInterval = TimeSource::duration { 200 };
     static constexpr bool DefaultDebug { 1 == PZEM004TV30_DEBUG };
 
     // Device uses Modbus-RTU protocol and implements the following function codes:
@@ -323,8 +325,8 @@ public:
         // based on the idea that we never receive replies from unknown addresses i.e. we never NOT read responses fully
         // and leave something in the serial buffers.
         // TODO: testing is much easier, b/c we can just grab any modbus simulator and set up multiple devices
-        auto ts = millis();
-        while ((bytes < expect) && (millis() - ts <= _read_timeout)) {
+        const auto ts = TimeSource::now();
+        while ((bytes < expect) && (TimeSource::now() - ts < _read_timeout)) {
             int c = (*_port)->read();
             if (c < 0) {
                 continue;
@@ -538,7 +540,7 @@ public:
         _debug = debug;
     }
 
-    void setUpdateInterval(unsigned long value) {
+    void setUpdateInterval(TimeSource::duration value) {
         _update_interval = value;
     }
 
@@ -564,7 +566,7 @@ public:
     }
 
     void begin() override {
-        _last_reading = millis() - _update_interval;
+        _last_reading = TimeSource::now() - _update_interval;
         _ready = true;
     }
 
@@ -616,9 +618,10 @@ public:
             _reset_energy = false;
             flush();
         }
-        if (millis() - _last_reading >= _update_interval) {
+
+        if (TimeSource::now() - _last_reading > _update_interval) {
             modbusReadValues();
-            _last_reading = millis();
+            _last_reading = TimeSource::now();
         }
     }
 
@@ -627,8 +630,9 @@ private:
         BaseEmonSensor(Magnitudes)
     {}
 
+    static TimeSource::duration _read_timeout;
+
     static uint8_t _address;
-    static unsigned long _read_timeout;
     static PortPtr _port;
     static Instance _instance;
 
@@ -637,8 +641,8 @@ private:
 
     bool _reset_energy { false };
 
-    unsigned long _update_interval { DefaultUpdateInterval };
-    unsigned long _last_reading { 0 };
+    TimeSource::duration _update_interval { DefaultUpdateInterval };
+    TimeSource::time_point _last_reading;
     bool _alarm { false };
 
     double _voltage { 0.0 };
@@ -654,7 +658,8 @@ constexpr BaseEmonSensor::Magnitude PZEM004TV30Sensor::Magnitudes[];
 #endif
 
 uint8_t PZEM004TV30Sensor::_address { PZEM004TV30Sensor::DefaultAddress };
-unsigned long PZEM004TV30Sensor::_read_timeout { PZEM004TV30Sensor::DefaultReadTimeout };
+PZEM004TV30Sensor::TimeSource::duration PZEM004TV30Sensor::_read_timeout { PZEM004TV30Sensor::DefaultReadTimeout };
+
 PZEM004TV30Sensor::Instance PZEM004TV30Sensor::_instance{};
 PZEM004TV30Sensor::PortPtr PZEM004TV30Sensor::_port{};
 

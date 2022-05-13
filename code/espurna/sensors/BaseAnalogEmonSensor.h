@@ -21,6 +21,9 @@ public:
         return Kind;
     }
 
+    using TimeSource = espurna::time::CoreClock;
+    static constexpr auto MaxTime = TimeSource::duration { EMON_MAX_TIME };
+
     static constexpr double IRef { EMON_CURRENT_RATIO };
 
     // TODO: mask common magnitudes (...voltage), when there are multiple channels?
@@ -100,15 +103,15 @@ public:
     void pre() override {
         updateCurrent(sampleCurrent());
 
-        if (_initial) {
-            _initial = false;
-        } else {
+        if (!_initial) {
+            const auto elapsed = (TimeSource::now() - _last_reading).count();
             _energy[0] += sensor::Ws {
-                static_cast<uint32_t>(getCurrent() * getVoltage() * (millis() - _last_reading) / 1000)
+                static_cast<uint32_t>(getCurrent() * getVoltage() * elapsed / 1000)
             };
         }
 
-        _last_reading = millis();
+        _initial = false;
+        _last_reading = TimeSource::now();
         _error = SENSOR_ERROR_OK;
     }
 
@@ -142,8 +145,8 @@ public:
 
         auto pivot = getPivot();
 
-        unsigned long time_span = millis();
-        for (unsigned long i=0; i<_samples; i++) {
+        const auto time_span = TimeSource::now();
+        for (size_t i = 0; i < _samples; i++) {
             int sample;
             double filtered;
 
@@ -159,7 +162,7 @@ public:
             sum += (filtered * filtered);
         }
 
-        time_span = millis() - time_span;
+        const auto elapsed = TimeSource::now() - time_span;
 
         // Quick fix
         if (pivot < min || max < pivot) {
@@ -179,8 +182,8 @@ public:
 
 #if SENSOR_DEBUG
         DEBUG_MSG_P(PSTR("[EMON] Total samples: %d\n"), _samples);
-        DEBUG_MSG_P(PSTR("[EMON] Total time (ms): %d\n"), time_span);
-        DEBUG_MSG_P(PSTR("[EMON] Sample frequency (Hz): %d\n"), int(1000 * _samples / time_span));
+        DEBUG_MSG_P(PSTR("[EMON] Total time (ms): %u\n"), elapsed.count());
+        DEBUG_MSG_P(PSTR("[EMON] Sample frequency (Hz): %d\n"), int(1000 * _samples / elapsed.count()));
         DEBUG_MSG_P(PSTR("[EMON] Max value: %d\n"), max);
         DEBUG_MSG_P(PSTR("[EMON] Min value: %d\n"), min);
         DEBUG_MSG_P(PSTR("[EMON] Midpoint value: %d\n"), int(getPivot()));
@@ -188,10 +191,10 @@ public:
         DEBUG_MSG_P(PSTR("[EMON] Current (mA): %d\n"), int(1000 * current));
 #endif
 
-        // Check timing
-        if ((time_span > EMON_MAX_TIME)
-            || ((time_span < EMON_MAX_TIME) && (_samples < _samples_max))) {
-            _samples = (_samples * EMON_MAX_TIME) / time_span;
+        if ((elapsed > MaxTime)
+            || ((elapsed < MaxTime) && (_samples < _samples_max)))
+        {
+            _samples = (_samples * MaxTime.count()) / elapsed.count();
         }
 
         return current;
@@ -213,8 +216,8 @@ public:
     }
 
 private:
+    TimeSource::time_point _last_reading;
     bool _initial { true };
-    unsigned long _last_reading { millis() };
 
     double _current_factor { 1.0 };                 // Calculated, reads (RMS) to current
     unsigned int _multiplier { 1 };                 // Calculated, error

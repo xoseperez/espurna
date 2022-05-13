@@ -68,7 +68,7 @@ class BH1750Sensor : public I2CSensor<> {
         String description() const override {
             char buffer[32];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("BH1750 @ I2C (0x%02X)"), getAddress());
+                PSTR("BH1750 @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
@@ -81,7 +81,7 @@ class BH1750Sensor : public I2CSensor<> {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() override {
             _error = SENSOR_ERROR_OK;
-            _lux = _read(getAddress());
+            _lux = _read(lockedAddress());
         }
 
         // Current value for slot # index
@@ -104,22 +104,22 @@ class BH1750Sensor : public I2CSensor<> {
                 // conversion time is ~16ms for low resolution
                 // and ~120 for high resolution
                 // but more time is needed
-                unsigned long wait = (_mode & 0x02) ? 24 : 180;
-                unsigned long start = millis();
-                while (millis() - start < wait) delay(1);
+                espurna::time::blockingDelay(
+                    espurna::duration::Milliseconds { (_mode & 0x02) ? 24 : 180 });
 
                 // Keep on running configure each time if one-shot mode
                 _run_configure = _mode & 0x20;
 
             }
 
-            double level = (double) i2c_read_uint16(address);
+            uint16_t level = i2c_read_uint16(address);
             if (level == 0xFFFF) {
                 _error = SENSOR_ERROR_CRC;
                 _run_configure = true;
                 return 0;
             }
-            return level / 1.2;
+
+            return ((double) level) / 1.2;
 
         }
 

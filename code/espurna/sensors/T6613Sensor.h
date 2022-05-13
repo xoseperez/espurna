@@ -14,11 +14,6 @@
 #include "BaseSensor.h"
 
 
-#define T6613_REQUEST_LEN       5
-#define T6613_RESPONSE_LEN      5
-#define T6613_TIMEOUT           1000
-#define T6613_GETPPM            0x020203
-
 class T6613Sensor : public BaseSensor {
 
     public:
@@ -26,6 +21,19 @@ class T6613Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
+
+        static constexpr uint32_t GetPpm { 0x020203 };
+
+        using Request = std::array<uint8_t, 5>;
+        using Response = std::array<uint8_t, 5>;
+
+        struct ResponseResult {
+            Response data{};
+            uint8_t error { SENSOR_ERROR_OK };
+        };
+
+        using TimeSource = espurna::time::CoreClock;
+        static constexpr auto Timeout = espurna::duration::Milliseconds(1000);
 
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
@@ -89,7 +97,7 @@ class T6613Sensor : public BaseSensor {
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) const override {
+        String address(unsigned char) const override {
             char buffer[8];
             snprintf_P(buffer, sizeof(buffer),
                 PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
@@ -108,71 +116,78 @@ class T6613Sensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) override {
-            if (index == 0) return _co2;
+            if (index == 0) {
+                return _co2;
+            }
+
             return 0;
         }
 
     protected:
 
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
+        // Protocol looks something like MODBUS, but without the checksum
 
-        void _write(unsigned char * command) {
-            _serial->write(command, T6613_REQUEST_LEN);
-        	_serial->flush();
+        void _write(const Request& buffer) {
+            _serial->write(buffer.data(), buffer.size());
+            _serial->flush();
         }
 
-        void _write(unsigned int command, unsigned char * response) {
+        void _write(uint32_t command) {
+            Request buffer{};
 
-            unsigned char buffer[T6613_REQUEST_LEN] = {0};
             buffer[0] = 0xFF;
             buffer[1] = 0xFE;
             buffer[2] = command >> 16;
             buffer[3] = (command >> 8) & 0xFF;
             buffer[4] = command & 0xFF;
+
             _write(buffer);
-
-        	if (response != NULL) {
-        		unsigned long start = millis();
-                while (_serial->available() == 0) {
-                    if (millis() - start > T6613_TIMEOUT) {
-                        _error = SENSOR_ERROR_TIMEOUT;
-                        return;
-                    }
-                    yield();
-                }
-        		_serial->readBytes(response, T6613_RESPONSE_LEN);
-        	}
-
         }
 
-        void _write(unsigned int command) {
-            _write(command, NULL);
+        ResponseResult _writeAndReceive(uint32_t command) {
+            _write(command);
+
+            ResponseResult result{};
+
+            const auto start = TimeSource::now();
+            while (_serial->available() == 0) {
+                if (TimeSource::now() - start > Timeout) {
+                    result.error = SENSOR_ERROR_TIMEOUT;
+                    return result;
+                }
+                yield();
+            }
+
+            _serial->setTimeout(Timeout.count());
+            _serial->readBytes(result.data.data(), result.data.size());
+
+            return result;
         }
 
         void _read() {
+            const auto result = _writeAndReceive(GetPpm);
 
-            unsigned char buffer[T6613_RESPONSE_LEN] = {0};
-        	_write(T6613_GETPPM, buffer);
+            if (result.error != SENSOR_ERROR_OK) {
+                _error = result.error;
+                return;
+            }
 
-        	// Check response
-        	if ((buffer[0] == 0xFF)
-                && (buffer[1] == 0xFA)
-                && (buffer[2] == 0x02)) {
+            const auto& data = result.data;
 
-                unsigned int value = buffer[3] * 256 + buffer[4];
+            if ((data[0] == 0xFF)
+                && (data[1] == 0xFA)
+                && (data[2] == 0x02)) {
+
+                uint16_t value = (data[3] << 8) | data[4];
                 if (0 <= value && value <= 5000) {
                     _co2 = value;
                     _error = SENSOR_ERROR_OK;
                 } else {
                     _error = SENSOR_ERROR_OUT_OF_RANGE;
                 }
-
             } else {
                 _error = SENSOR_ERROR_CRC;
             }
-
         }
 
         double _co2 = 0;

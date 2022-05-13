@@ -21,6 +21,10 @@ class CSE7766Sensor : public BaseEmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
+        using TimeSource = espurna::time::CoreClock;
+
+        static constexpr auto SyncInterval = espurna::duration::Milliseconds { CSE7766_SYNC_INTERVAL };
+
         static constexpr Magnitude Magnitudes[] {
             MAGNITUDE_CURRENT,
             MAGNITUDE_VOLTAGE,
@@ -124,6 +128,8 @@ class CSE7766Sensor : public BaseEmonSensor {
                 _serial->enableIntTx(false);
                 _serial->begin(CSE7766_BAUDRATE);
             }
+
+            _last_index_reset = TimeSource::now();
 
             _ready = true;
             _dirty = false;
@@ -300,34 +306,34 @@ class CSE7766Sensor : public BaseEmonSensor {
 
             _error = SENSOR_ERROR_OK;
 
-            static unsigned char index = 0;
-            static unsigned long last = millis();
-
             while (_serial_available()) {
 
                 // A 24 bytes message takes ~55ms to go through at 4800 bps
                 // Reset counter if more than 1000ms have passed since last byte.
-                if (millis() - last > CSE7766_SYNC_INTERVAL) index = 0;
-                last = millis();
+                if (TimeSource::now() - _last_index_reset > SyncInterval) {
+                    _data_index = 0;
+                }
+
+                _last_index_reset = TimeSource::now();
 
                 uint8_t byte = _serial_read();
 
                 // first byte must be 0x55 or 0xF?
-                if (0 == index) {
+                if (0 == _data_index) {
                     if ((0x55 != byte) && (byte < 0xF0)) {
                         continue;
                     }
 
                 // second byte must be 0x5A
-                } else if (1 == index) {
+                } else if (1 == _data_index) {
                     if (0x5A != byte) {
-                        index = 0;
+                        _data_index = 0;
                         continue;
                     }
                 }
 
-                _data[index++] = byte;
-                if (index > 23) {
+                _data[_data_index++] = byte;
+                if (_data_index > 23) {
                     _serial_flush();
                     break;
                 }
@@ -335,9 +341,9 @@ class CSE7766Sensor : public BaseEmonSensor {
             }
 
             // Process packet
-            if (24 == index) {
+            if (24 == _data_index) {
                 _process();
-                index = 0;
+                _data_index = 0;
             }
 
         }
@@ -383,12 +389,14 @@ class CSE7766Sensor : public BaseEmonSensor {
         double _voltage = 0;
         double _current = 0;
 
+        TimeSource::time_point _last_index_reset;
         unsigned char _data[24] {0};
+        size_t _data_index = 0;
 
 };
 
 #if __cplusplus < 201703L
-constexpr BaseEmonSensor::Magnitude CSE7766Sensor::Magnitudes[];
+constexpr BaseSensor::Magnitude CSE7766Sensor::Magnitudes[];
 #endif
 
 #endif // SENSOR_SUPPORT && CSE7766_SUPPORT

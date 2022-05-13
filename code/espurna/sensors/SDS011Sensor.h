@@ -19,12 +19,6 @@ class SDS011Sensor : public BaseSensor {
 
     public:
 
-        ~SDS011Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
-
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;

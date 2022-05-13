@@ -60,7 +60,7 @@ class AM2320Sensor : public I2CSensor<> {
         String description() const override {
             char buffer[25];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("AM2320 @ I2C (0x%02X)"), getAddress());
+                PSTR("AM2320 @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
@@ -74,7 +74,7 @@ class AM2320Sensor : public I2CSensor<> {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() override {
             _error = SENSOR_ERROR_OK;
-            _read(getAddress());
+            _read(lockedAddress());
         }
 
         // Current value for slot # index

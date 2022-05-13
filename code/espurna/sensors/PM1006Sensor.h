@@ -17,25 +17,13 @@ class PM1006Sensor : public BaseSensor {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        ~PM1006Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
-
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;
             _dirty = true;
         }
 
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() {
+        unsigned char getRX() const {
             return _pin_rx;
         }
 
@@ -56,7 +44,9 @@ class PM1006Sensor : public BaseSensor {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_serial) {
+                _serial.reset(nullptr);
+            }
 
             if (3 == _pin_rx) {
                 Serial.begin(PM1006_BAUDRATE);
@@ -65,7 +55,7 @@ class PM1006Sensor : public BaseSensor {
                 Serial.flush();
                 Serial.swap();
             } else {
-                _serial = new SoftwareSerial(_pin_rx, -1, false);
+                _serial = std::make_unique<SoftwareSerial>(_pin_rx, -1, false);
                 _serial->enableIntTx(false);
                 _serial->begin(PM1006_BAUDRATE);
             }
@@ -78,7 +68,7 @@ class PM1006Sensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() const override {
             if (_serial_is_hardware()) {
-                return F("PM1006 @ HwSerial"));
+                return F("PM1006 @ HwSerial");
             }
 
             char buffer[32];
@@ -203,7 +193,7 @@ class PM1006Sensor : public BaseSensor {
         double _pm25 = 0;
 
         unsigned char _pin_rx = PM1006_RX_PIN;
-        SoftwareSerial * _serial = NULL;
+        std::unique_ptr<SoftwareSerial> _serial;
 
 };
 

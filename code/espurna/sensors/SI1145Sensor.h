@@ -48,7 +48,7 @@ class SI1145Sensor : public I2CSensor<> {
          String description() const override {
              char buffer[32];
              snprintf_P(buffer, sizeof(buffer),
-                PSTR("SI1145 @ I2C (0x%02X)"), getAddress());
+                PSTR("SI1145 @ I2C (0x%02X)"), lockedAddress());
              return String(buffer);
          }
 

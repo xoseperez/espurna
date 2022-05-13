@@ -46,7 +46,7 @@ class VEML6075Sensor : public I2CSensor<> {
         String description() const override {
             char buffer[25];
             snprintf_P(buffer, sizeof(buffer),
-                PSTR("VEML6075 @ I2C (0x%02X)"), getAddress());
+                PSTR("VEML6075 @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
