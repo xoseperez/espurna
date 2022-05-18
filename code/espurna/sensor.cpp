@@ -128,6 +128,10 @@ namespace {
     #include "sensors/HLW8012Sensor.h"
 #endif
 
+#if INA219_SUPPORT
+    #include "sensors/INA219Sensor.h"
+#endif
+
 #if LDR_SUPPORT
     #include "sensors/LDRSensor.h"
 #endif
@@ -2854,6 +2858,19 @@ void _sensorLoad() {
         sensor->setCF(getSetting(F("hlw8012CF"), HLW8012_CF_PIN));
         sensor->setCF1(getSetting(F("hlw8012CF1"), HLW8012_CF1_PIN));
         sensor->setSELCurrent(HLW8012_SEL_CURRENT);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if INA219_SUPPORT
+    {
+        auto* sensor = new INA219Sensor();
+        sensor->setAddress(INA219_ADDRESS);
+        sensor->setOperatingMode(INA219Sensor::INA219_OPERATING_MODE);
+        sensor->setShuntMode(INA219Sensor::INA219_SHUNT_MODE);
+        sensor->setBusMode(INA219Sensor::INA219_BUS_MODE);
+        sensor->setBusRange(INA219Sensor::INA219_BUS_RANGE);
+        sensor->setGain(INA219Sensor::INA219_GAIN);
         _sensors.push_back(sensor);
     }
     #endif

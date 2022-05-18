@@ -89,6 +89,8 @@ private:
 template <typename T = BaseSensor>
 class I2CSensor : public T {
 public:
+    // Make sure to export base constructor, we don't have any
+    using T::T;
 
     // Descriptive name of the slot # index
     String description(unsigned char) const override {

@@ -1382,6 +1382,39 @@
                                                                                            // 360 * 60 * 1000 milliseconds. By default, this is disabled.
 
 // -----------------------------------------------------------------------------
+// INA219
+// Enable support by passing INA219_SUPPORT=1 build flag
+// -----------------------------------------------------------------------------
+
+#ifndef INA219_SUPPORT
+#define INA219_SUPPORT                              0
+#endif
+
+#ifndef INA219_ADDRESS
+#define INA219_ADDRESS                              0x00 // 0x00 means auto
+#endif
+
+#ifndef INA219_OPERATING_MODE
+#define INA219_OPERATING_MODE                       SHUNT_AND_BUS_CONTINUOUS
+#endif
+
+#ifndef INA219_SHUNT_MODE
+#define INA219_SHUNT_MODE                           BIT_MODE_12
+#endif
+
+#ifndef INA219_BUS_MODE
+#define INA219_BUS_MODE                             BIT_MODE_12
+#endif
+
+#ifndef INA219_BUS_RANGE
+#define INA219_BUS_RANGE                            BRNG_32
+#endif
+
+#ifndef INA219_GAIN
+#define INA219_GAIN                                 PG_320
+#endif
+
+// -----------------------------------------------------------------------------
 // ADC
 // -----------------------------------------------------------------------------
 
@@ -1432,11 +1465,12 @@
 #if ( ADE7953_SUPPORT || \
     AM2320_SUPPORT || \
     BH1750_SUPPORT || \
+    BME680_SUPPORT || \
     BMP180_SUPPORT || \
     BMX280_SUPPORT || \
-    BME680_SUPPORT || \
     EMON_ADC121_SUPPORT || \
     EMON_ADS1X15_SUPPORT || \
+    INA219_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI1145_SUPPORT || \
     SI7021_SUPPORT || \
@@ -1469,8 +1503,8 @@
     AM2320_SUPPORT || \
     ANALOG_SUPPORT || \
     BH1750_SUPPORT || \
-    BMP180_SUPPORT || \
     BME680_SUPPORT || \
+    BMP180_SUPPORT || \
     BMX280_SUPPORT || \
     CSE7766_SUPPORT || \
     DALLAS_SUPPORT || \
@@ -1485,7 +1519,9 @@
     EZOPH_SUPPORT || \
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
+    HDC1080_SUPPORT || \
     HLW8012_SUPPORT || \
+    INA219_SUPPORT || \
     LDR_SUPPORT || \
     MAX6675_SUPPORT || \
     MHZ19_SUPPORT || \
@@ -1495,6 +1531,7 @@
     PM1006_SUPPORT || \
     PMSX003_SUPPORT || \
     PULSEMETER_SUPPORT || \
+    PZEM004TV30_SUPPORT || \
     PZEM004T_SUPPORT || \
     SDS011_SUPPORT || \
     SENSEAIR_SUPPORT || \
@@ -1508,9 +1545,7 @@
     TMP3X_SUPPORT || \
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
-    VL53L1X_SUPPORT || \
-    HDC1080_SUPPORT || \
-    PZEM004TV30_SUPPORT \
+    VL53L1X_SUPPORT \
 )
 #endif
 

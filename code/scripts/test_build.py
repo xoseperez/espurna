@@ -37,6 +37,13 @@ def format_configurations(configurations):
     return "\n".join(str(cfg) for cfg in configurations)
 
 
+def pluralize(string, length):
+    if length > 1:
+        return f'{string}s'
+
+    return string
+
+
 def build_configurations(args, configurations):
     cmd = ["platformio", "run"]
     if not args.no_silent:
@@ -71,8 +78,9 @@ def build_configurations(args, configurations):
             log.exception(e)
             if configurations:
                 log.info(
-                    "%s configurations left\n%s",
+                    "%s %s left\n%s",
                     bold(len(configurations)),
+                    pluralize("configuration", len(configurations)),
                     format_configurations(configurations),
                 )
             raise
@@ -113,8 +121,9 @@ def main(args):
         return
 
     log.info(
-        "Found %s configurations\n%s",
+        "Found %s %s\n%s",
         bold(len(configurations)),
+        pluralize("configuration", len(configurations)),
         format_configurations(configurations),
     )
 
