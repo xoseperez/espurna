@@ -135,16 +135,10 @@ public:
     // - some external tool. For example, using USB2TTL adapter and a PC app
     // - `pzem.address` with **only** one device on the line
     //    (because we would change all 0xf8-addressed devices at the same time)
-    static PZEM004TV30Sensor* make(PortPtr port, uint8_t address, TimeSource::duration read_timeout) {
+    static PZEM004TV30Sensor* make(PortPtr port, uint8_t address, TimeSource::duration timeout) {
+        static_assert(std::is_same<TimeSource::duration, espurna::duration::Milliseconds>::value, "");
         if (!_instance) {
-            _port = std::move(port);
-            _port->begin(Baudrate);
-            (*_port)->setTimeout(read_timeout.count());
-
-            _address = address;
-            _read_timeout = read_timeout;
-
-            _instance.reset(new PZEM004TV30Sensor());
+            _instance.reset(new PZEM004TV30Sensor(std::move(port), address, timeout));
             return _instance.get();
         }
 
@@ -166,8 +160,8 @@ public:
     static constexpr uint8_t DefaultAddress = 0xf8;
 
     // XXX: pzem manual does not specify anything, these are arbitrary values (ms)
-    static constexpr auto DefaultReadTimeout = TimeSource::duration { 200 };
-    static constexpr auto DefaultUpdateInterval = TimeSource::duration { 200 };
+    static constexpr auto DefaultReadTimeout = espurna::duration::Milliseconds { 200 };
+    static constexpr auto DefaultUpdateInterval = espurna::duration::Milliseconds { 200 };
     static constexpr bool DefaultDebug { 1 == PZEM004TV30_DEBUG };
 
     // Device uses Modbus-RTU protocol and implements the following function codes:
@@ -626,15 +620,19 @@ public:
     }
 
 private:
-    PZEM004TV30Sensor() :
-        BaseEmonSensor(Magnitudes)
+    PZEM004TV30Sensor() = delete;
+    PZEM004TV30Sensor(PortPtr port, uint8_t address, TimeSource::duration timeout) :
+        BaseEmonSensor(Magnitudes),
+        _port(std::move(port)),
+        _address(address),
+        _read_timeout(timeout)
     {}
 
-    static TimeSource::duration _read_timeout;
-
-    static uint8_t _address;
-    static PortPtr _port;
     static Instance _instance;
+
+    PortPtr _port;
+    uint8_t _address { DefaultAddress };
+    TimeSource::duration _read_timeout { DefaultReadTimeout };
 
     bool _debug { false };
     char _debug_buffer[(BufferSize * 2) + 1];
@@ -657,11 +655,10 @@ private:
 constexpr BaseEmonSensor::Magnitude PZEM004TV30Sensor::Magnitudes[];
 #endif
 
-uint8_t PZEM004TV30Sensor::_address { PZEM004TV30Sensor::DefaultAddress };
-PZEM004TV30Sensor::TimeSource::duration PZEM004TV30Sensor::_read_timeout { PZEM004TV30Sensor::DefaultReadTimeout };
+constexpr espurna::duration::Milliseconds PZEM004TV30Sensor::DefaultReadTimeout;
+constexpr espurna::duration::Milliseconds PZEM004TV30Sensor::DefaultUpdateInterval;
 
 PZEM004TV30Sensor::Instance PZEM004TV30Sensor::_instance{};
-PZEM004TV30Sensor::PortPtr PZEM004TV30Sensor::_port{};
 
 void PZEM004TV30Sensor::registerTerminalCommands() {
 #if TERMINAL_SUPPORT
