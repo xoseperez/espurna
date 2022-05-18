@@ -83,7 +83,7 @@ class HDC1080Sensor : public I2CSensor<> {
             }
 
             value = (value / 65536) * 100;
-            _humidity = std::clamp(value, 0, 100);
+            _humidity = std::clamp(value, 0.0, 100.0);
         }
 
         // Current value for slot # index

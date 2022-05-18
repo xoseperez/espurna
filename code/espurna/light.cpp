@@ -1091,11 +1091,11 @@ void _lightFromHsvPayload(const char* hsv) {
 // https://github.com/stelgenhof/AiLight
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
 long _toKelvin(long mireds) {
-    return constrain(static_cast<long>(1000000L / mireds), _light_warm_kelvin, _light_cold_kelvin);
+    return std::clamp(static_cast<long>(1000000L / mireds), _light_warm_kelvin, _light_cold_kelvin);
 }
 
 long _toMireds(long kelvin) {
-    return constrain(static_cast<long>(lround(1000000L / kelvin)), _light_cold_mireds, _light_warm_mireds);
+    return std::clamp(static_cast<long>(lround(1000000L / kelvin)), _light_cold_mireds, _light_warm_mireds);
 }
 
 void _lightMireds(long kelvin) {

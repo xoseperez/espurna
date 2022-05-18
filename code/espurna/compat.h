@@ -133,6 +133,9 @@ constexpr size_t size(const T& value) {
 
 } // namespace std
 
+// Same as min and max, force same type arguments
+#undef constrain
+
 #endif
 
 // -----------------------------------------------------------------------------

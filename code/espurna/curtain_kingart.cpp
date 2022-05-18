@@ -496,7 +496,7 @@ void kingartCurtainSetup() {
 //------------------------------------------------------------------------------
 void curtainSetPosition(unsigned char id, long value) {
     if (id > 1) return;
-    _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, constrain(value, 0, 100));
+    _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, std::clamp(value, 0, 100));
 }
 
 unsigned char curtainCount() {

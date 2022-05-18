@@ -2596,8 +2596,9 @@ void _sensorLoad() {
 
     #if BMX280_SUPPORT
     {
+        // TODO: bmx280AddressN, do some migrate code based on number?
         // Support up to two sensors with full auto-discovery.
-        const unsigned char number = constrain(getSetting("bmx280Number", BMX280_NUMBER), 1, 2);
+        const auto number = std::clamp(getSetting("bmx280Number", BMX280_NUMBER), 1, 2);
 
         // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
         // otherwise choose the other unnamed sensor address
