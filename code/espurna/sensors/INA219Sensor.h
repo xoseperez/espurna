@@ -515,3 +515,7 @@ public:
         return 0;
     }
 };
+
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude INA219Sensor::Magnitudes[];
+#endif
