@@ -406,4 +406,8 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
 };
 
+#if __cplusplus < 201703L
+constexpr PMSX003Sensor::Spec PMSX003Sensor::Specs[];
+#endif
+
 #endif // SENSOR_SUPPORT && PMSX003_SUPPORT

@@ -243,10 +243,15 @@ public:
     BaseSensorPtr() = delete;
 
     constexpr BaseSensorPtr(const BaseSensorPtr&) = default;
-    constexpr BaseSensorPtr& operator=(const BaseSensorPtr&) = default;
+    constexpr BaseSensorPtr(BaseSensorPtr&&) noexcept = default;
 
-    constexpr BaseSensorPtr(BaseSensorPtr&& other) noexcept = default;
-    constexpr BaseSensorPtr& operator=(BaseSensorPtr&& other) noexcept = default;
+#if __cplusplus > 201103L
+    constexpr BaseSensorPtr& operator=(const BaseSensorPtr&) = default;
+    constexpr BaseSensorPtr& operator=(BaseSensorPtr&&) noexcept = default;
+#else
+    BaseSensorPtr& operator=(const BaseSensorPtr&) = default;
+    BaseSensorPtr& operator=(BaseSensorPtr&&) noexcept = default;
+#endif
 
     constexpr BaseSensorPtr(std::nullptr_t) = delete;
     constexpr BaseSensorPtr& operator=(std::nullptr_t) = delete;

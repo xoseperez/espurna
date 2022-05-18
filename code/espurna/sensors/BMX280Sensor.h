@@ -441,4 +441,9 @@ class BMX280Sensor : public I2CSensor<> {
 
 };
 
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude BMX280Sensor::Bmp280Magnitudes[];
+constexpr BaseSensor::Magnitude BMX280Sensor::Bme280Magnitudes[];
+#endif
+
 #endif // SENSOR_SUPPORT && BMX280_SUPPORT
