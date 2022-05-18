@@ -375,6 +375,9 @@
 
 #define MAGNITUDE_MAX               39
 
+// TODO: backwards compatible sensor integer values. should probably allow custom messsages
+// (even with the increased flash arequirements)
+
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
@@ -384,9 +387,13 @@
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
 #define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
+#define SENSOR_ERROR_OVERFLOW       9       // Value overflow
+#define SENSOR_ERROR_NOT_READY      10      // Device is not ready / available / disconnected
+#define SENSOR_ERROR_CONFIG         11      // Configuration values were invalid
+#define SENSOR_ERROR_SUPPORT        12      // Not supported
 #define SENSOR_ERROR_OTHER          99      // Any other error
 
-#define SENSOR_ERROR_MAX            9
+#define SENSOR_ERROR_MAX            13
 
 //------------------------------------------------------------------------------
 // Telnet server

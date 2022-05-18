@@ -1824,41 +1824,52 @@ bool _sensorWebSocketOnKeyCheck(const char* key, JsonVariant&) {
 }
 
 String _sensorError(unsigned char error) {
-
-    const __FlashStringHelper* result = nullptr;
+    const char* result { nullptr };
 
     switch (error) {
-        case SENSOR_ERROR_OK:
-            result = F("OK");
-            break;
-        case SENSOR_ERROR_OUT_OF_RANGE:
-            result = F("Out of Range");
-            break;
-        case SENSOR_ERROR_WARM_UP:
-            result = F("Warming Up");
-            break;
-        case SENSOR_ERROR_TIMEOUT:
-            result = F("Timeout");
-            break;
-        case SENSOR_ERROR_UNKNOWN_ID:
-            result = F("Unknown ID");
-            break;
-        case SENSOR_ERROR_CRC:
-            result = F("CRC / Data Error");
-            break;
-        case SENSOR_ERROR_I2C:
-            result = F("I2C Error");
-            break;
-        case SENSOR_ERROR_GPIO_USED:
-            result = F("GPIO Already Used");
-            break;
-        case SENSOR_ERROR_CALIBRATION:
-            result = F("Calibration Error");
-            break;
-        default:
-        case SENSOR_ERROR_OTHER:
-            result = F("Other / Unknown Error");
-            break;
+    case SENSOR_ERROR_OK:
+        result = PSTR("OK");
+        break;
+    case SENSOR_ERROR_OUT_OF_RANGE:
+        result = PSTR("Out of Range");
+        break;
+    case SENSOR_ERROR_WARM_UP:
+        result = PSTR("Warming Up");
+        break;
+    case SENSOR_ERROR_TIMEOUT:
+        result = PSTR("Timeout");
+        break;
+    case SENSOR_ERROR_UNKNOWN_ID:
+        result = PSTR("Unknown ID");
+        break;
+    case SENSOR_ERROR_CRC:
+        result = PSTR("CRC / Data Error");
+        break;
+    case SENSOR_ERROR_I2C:
+        result = PSTR("I2C Error");
+        break;
+    case SENSOR_ERROR_GPIO_USED:
+        result = PSTR("GPIO Already Used");
+        break;
+    case SENSOR_ERROR_CALIBRATION:
+        result = PSTR("Calibration Error");
+        break;
+    case SENSOR_ERROR_OVERFLOW:
+        result = PSTR("Value Overflow");
+        break;
+    case SENSOR_ERROR_NOT_READY:
+        result = PSTR("Not Ready");
+        break;
+    case SENSOR_ERROR_CONFIG:
+        result = PSTR("Invalid Configuration");
+        break;
+    case SENSOR_ERROR_SUPPORT:
+        result = PSTR("Not Supported");
+        break;
+    default:
+    case SENSOR_ERROR_OTHER:
+        result = PSTR("Other / Unknown Error");
+        break;
     }
 
     return result;
@@ -2488,10 +2499,8 @@ void _sensorPre() {
     for (auto sensor : _sensors) {
         sensor->pre();
         if (!sensor->status()) {
-            DEBUG_MSG_P(PSTR("[SENSOR] Error reading data from %s (error: %d)\n"),
-                sensor->description().c_str(),
-                sensor->error()
-            );
+            DEBUG_MSG_P(PSTR("[SENSOR] Could not read from %s (%s)\n"),
+                sensor->description().c_str(), _sensorError(sensor->error()).c_str());
         }
     }
 }
@@ -3235,8 +3244,10 @@ void _sensorInit() {
         sensor->begin();
 
         if (!sensor->ready()) {
-            if (0 != sensor->error()) {
-                DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), sensor->error());
+            const auto error = sensor->error();
+            if (error != SENSOR_ERROR_OK) {
+                DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %s (%hhu)\n"),
+                    _sensorError(error).c_str(), error);
             }
             _sensors_ready = false;
             break;
