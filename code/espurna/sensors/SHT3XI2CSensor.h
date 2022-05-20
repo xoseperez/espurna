@@ -91,7 +91,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
         }
         
         // Read the status register and output to Debug log
-        void status_register() {
+        void status_register() override {
             unsigned char buffer[3];
             bool crc, cmd, htr;
             // Read status register
