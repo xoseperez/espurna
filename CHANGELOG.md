@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Constrain pressure to 0...100 ([#2230](https://github.com/xoseperez/espurna/issues/2230))
 - Fix idx truncation when reading from settings ([#2316](https://github.com/xoseperez/espurna/issues/2316), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**)
 - Allow dimmer device to control the brightness ([#2317](https://github.com/xoseperez/espurna/issues/2317), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**)
-- Send co2 ppm as nvalue [d04b85ac](https://github.com/xoseperez/espurna/commit/d04b85ac974f73a68e4e57bce494cda4ac5d6b87)
+- Send co2 ppm as nvalue ([d04b85ac](https://github.com/xoseperez/espurna/commit/d04b85ac974f73a68e4e57bce494cda4ac5d6b87))
 #### Hardware
 - Fix GPIO16 support ([#2110](https://github.com/xoseperez/espurna/issues/2110), thanks to **[@foxman69](https://github.com/foxman69)**)
 - Fix for button long click ([#2172](https://github.com/xoseperez/espurna/issues/2172), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix nofuss.cpp typo ([#2251](https://github.com/xoseperez/espurna/issues/2251), thanks to **[@CmPi](https://github.com/CmPi)**)
 - Bump to 0.4.0 (fork) to support the latest Core version ([0422d61c](https://github.com/xoseperez/espurna/commit/0422d61c6969be9963e83850e10b7b217b6e9190))
 #### PlatformIO
-- Check the return code of the git process and fail early, when trying to generate the version string [bdd821db](https://github.com/xoseperez/espurna/commit/bdd821db8609277fef827ce533570818a7614f55)
+- Check the return code of the git process and fail early, when trying to generate the version string ([bdd821db](https://github.com/xoseperez/espurna/commit/bdd821db8609277fef827ce533570818a7614f55))
 #### Relay
 - Fix sync reentrancy lock ([94169dcb](https://github.com/xoseperez/espurna/commit/94169dcbb19b8b83118aaf6c18daf6064cbfa76f))
 - Stable configuration IDs ([04569c6a](https://github.com/xoseperez/espurna/commit/04569c6a10afe2a662a22c77c7977746f72ea7e1))
@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - rpn $relayX variables were not populated on boot ([#2246](https://github.com/xoseperez/espurna/issues/2246), thanks to **[@pezinek](https://github.com/pezinek)**)
 - add missing lights #include for rpn rules ([#2367](https://github.com/xoseperez/espurna/issues/2367), thanks to **[@ngilles](https://github.com/ngilles)**)
 #### Scheduler
-- Schedule restore no longer depends on relays [c945c239](https://github.com/xoseperez/espurna/commit/c945c239ea806f8926aefe6262a52177bd089aa5), [e22f67e5](https://github.com/xoseperez/espurna/commit/e22f67e5d61ce8c3c1eb1f9a50f2d6261b8b8d57)
+- Schedule restore no longer depends on relays ([c945c239](https://github.com/xoseperez/espurna/commit/c945c239ea806f8926aefe6262a52177bd089aa5), [e22f67e5](https://github.com/xoseperez/espurna/commit/e22f67e5d61ce8c3c1eb1f9a50f2d6261b8b8d57))
 #### Sensor
 - Apparent, reactive power measurement unit corrections ([#2161](https://github.com/xoseperez/espurna/issues/2161), thanks to **[@irmishappy](https://github.com/irmishappy)**)
 - Fixes and updates for thermostat and display ([#2173](https://github.com/xoseperez/espurna/issues/2173), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
@@ -64,8 +64,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Only change EventSensor counter from the ISR ([735e5c0e](https://github.com/xoseperez/espurna/commit/735e5c0ec22fabfdcfa55123b9bceaa3d8f917b8))
 - Fix a typo when getting local index for Nth magnitude ([6ba5f95e](https://github.com/xoseperez/espurna/commit/6ba5f95e875468f2b7a93c69b45fc6f6c62f390f))
 - SHT3X: add missing I2C address A (0x44) ([#2484](https://github.com/xoseperez/espurna/issues/2484), thanks to **[@drc38](https://github.com/drc38)**)
-- Deprecate ...\_MIN\_CHANGE build flags in favour of runtime settings ([1ef22e16](https://github.com/xoseperez/espurna/commit/1ef22e16f10818d893a0a8912d55b1dbce88fcdb))
+- Deprecate `..._MIN_CHANGE` and `..._MAX_CHANGE` build flags in favour of per-magnitude runtime settings ([1ef22e16](https://github.com/xoseperez/espurna/commit/1ef22e16f10818d893a0a8912d55b1dbce88fcdb))
 - Reduce IRAM usage in sensors using attachInterrupt() ([9db679f9](https://github.com/xoseperez/espurna/commit/9db679f93a61114dec8dad5f2953e59b7663c86a))
+- Show all of correction / offset settings in the WebUI ([#2491](https://github.com/xoseperez/espurna/issues/2491), [62b2edad](https://github.com/xoseperez/espurna/commit/62b2edadc4649d1e3810c6dd27261e8a45739664))
 #### Settings
 - Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System
@@ -91,8 +92,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Garland
 - New module for digital LED strips ([#2408](https://github.com/xoseperez/espurna/issues/2408), [c4d817c4](https://github.com/xoseperez/espurna/commit/c4d817c4fba05d70808b234eef3ac5d1ec2bf8c0), [46daa929](https://github.com/xoseperez/espurna/commit/46daa929f5e284877e105208c4e78f7844ae1b64), [d11f82d0](https://github.com/xoseperez/espurna/commit/d11f82d098a69a4a127a8db3218c5643f9831371), [4923377e](https://github.com/xoseperez/espurna/commit/4923377eacc5158896e8fd9ddbc993d1bb2653be), [6508f6bd](https://github.com/xoseperez/espurna/commit/6508f6bda8da2acef555fd2b909b7e2983b97e83), [24550a5b](https://github.com/xoseperez/espurna/commit/24550a5b80e1a626a7d8090746c0cfda2bfb4b23), [4efc417a](https://github.com/xoseperez/espurna/commit/4efc417a39220638079bdf060b0fc204d777f942), [f640cd8e](https://github.com/xoseperez/espurna/commit/f640cd8ecb3d170e9082d60461b89e29454bbbd4), [518d56b4](https://github.com/xoseperez/espurna/commit/518d56b442dda92c267fdb71e6b51b8a27638c0f), [0f73df7c](https://github.com/xoseperez/espurna/commit/0f73df7c36f940040c6a6416c15d39c7eee213be), [3fe68748](https://github.com/xoseperez/espurna/commit/3fe68748637099f08008fa5afc3650e09551285f), [dad8878c](https://github.com/xoseperez/espurna/commit/dad8878ccfcef68f616fed7296b0f07983d855c3), [660ae138](https://github.com/xoseperez/espurna/commit/660ae138d4a40bd3c48058f46d086d396fb217e0), thanks to **[@ElderJoy](https://github.com/ElderJoy)**)
 #### Debug
-- Optionally store boot log ([#2109](https://github.com/xoseperez/espurna/issues/2109))
-- Log mode, allow to skip boot messages ([#2116](https://github.com/xoseperez/espurna/issues/2116))
+- Optionally preserve boot log in RAM ([#2109](https://github.com/xoseperez/espurna/issues/2109))
+- Log modes, allow to disable debug messages on boot ([#2116](https://github.com/xoseperez/espurna/issues/2116))
 #### Hardware
 - KingArt WiFi Curtain Switch ([#2063](https://github.com/xoseperez/espurna/issues/2063), thanks to **[@AlbertWeterings](https://github.com/AlbertWeterings)**)
 - Add support for Kogan Smarter Home Plug With Energy Meter ([#2086](https://github.com/xoseperez/espurna/issues/2086), thanks to **[@aureq](https://github.com/aureq)**)
@@ -118,7 +119,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add support for LSC E27 10W white bulb ([#2375](https://github.com/xoseperez/espurna/issues/2375), thanks to **[@tom-kaltofen](https://github.com/tom-kaltofen)**)
 - Add support for Benexmart GU5.3 RGBWW light ([#2381](https://github.com/xoseperez/espurna/issues/2381), thanks to **[@ngilles](https://github.com/ngilles)**)
 - Add support for Gosund P1 Power Strip ([#2391](https://github.com/xoseperez/espurna/issues/2391), thanks to **[@alextircovnicu](https://github.com/alextircovnicu)**)
-- Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439], [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
+- Add support for Mirabella Genio White A60 globe ([#2439](https://github.com/xoseperez/espurna/issues/2439), [2fc559fa](https://github.com/xoseperez/espurna/commit/2fc559fa5596c6ae3f3cc906177e287c38c6333e), thanks to **[@andrewleech](https://github.com/andrewleech)**)
 - Refactor iFan into a separate module ([a40eca30](https://github.com/xoseperez/espurna/commit/a40eca30ad79315afdb67afa0b0743d4c0087e93))
 - Add support for Yagusmart switches ([#2488](https://github.com/xoseperez/espurna/pull/2488), thanks to **[@MelanieT](https://github.com/MelanieT)**)
 - Add support for Itead Sonoff POW R3 ([#2506](https://github.com/xoseperez/espurna/issues/2506), thanks to **[@nixkj](https://github.com/nixkj)**)
@@ -126,7 +127,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Advertise lights transition support in the discovery message ([4d157ccd5](https://github.com/xoseperez/espurna/commit/4d157ccd5bd5ffefa8b0bca79c4b2196c8a3e5dc))
 - Reworked discovery, implement retries and queueing using the MQTT broker ACKs ([59269789](https://github.com/xoseperez/espurna/commit/59269789dc80308e9afc1e4b3051d9d33e13bf8f))
 #### HTTP API
-- Handle received data as terminal command [#2247](https://github.com/xoseperez/espurna/issues/2247))
+- Handle received data as terminal command ([#2247](https://github.com/xoseperez/espurna/issues/2247))
 - [Prometheus](https://prometheus.io/) metrics support ([#2332](https://github.com/xoseperez/espurna/issues/2332))
 - Scheduler API ([#2431](https://github.com/xoseperez/espurna/issues/2431), thanks to **[@profawk](https://github.com/profawk)**)
 #### IR
@@ -165,19 +166,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add HDC1080 sensor ([#2227](https://github.com/xoseperez/espurna/issues/2227), thanks to **[@vtochq](https://github.com/vtochq)**)
 - HLW8012: energy\_delta ([#2230](https://github.com/xoseperez/espurna/issues/2230))
 - Load ratios after boot + show pwr defaults with `get` ([#2241](https://github.com/xoseperez/espurna/issues/2241))
-- Default Emon ratios at compile time [12ae9d15](https://github.com/xoseperez/espurna/commit/12ae9d15be3f282c30bd5f6b39680d4de1e0ca85)
+- Default Emon ratios at compile time ([12ae9d15](https://github.com/xoseperez/espurna/commit/12ae9d15be3f282c30bd5f6b39680d4de1e0ca85))
 - Add BME680 sensor support ([#2429](https://github.com/xoseperez/espurna/issues/2429), [#2361](https://github.com/xoseperez/espurna/issues/2361), [#2295](https://github.com/xoseperez/espurna/issues/2295), thanks to **[@ruimarinho](https://github.com/ruimarinho)**)
 - Add support for SmartMeasure SM300D2-VO2 air quality multi-sensor ([#2447](https://github.com/xoseperez/espurna/issues/2447), thanks to **[@xoseperez](https://github.com/xoseperez)**)
-- Shared ADS1X115 I2CPort, support common gain & data rate settings [c056c54d](https://github.com/xoseperez/espurna/commit/c056c54db4a528d038584fbfacb8fb410c7c7a2e)
+- Shared ADS1X115 I2CPort, support common gain & data rate settings ([c056c54d](https://github.com/xoseperez/espurna/commit/c056c54db4a528d038584fbfacb8fb410c7c7a2e))
 - Terminal commands to set expected ratio (`EXPECTED`) and total energy recorded by the sensor (`ENERGY`) [8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85)
 - Add PM1006 air quality sensor, found inside the IKEA VINDRIKTNING ([#2505](https://github.com/xoseperez/espurna/issues/2505), thanks to **[@xoseperez](https://github.com/xoseperez)**)
+- Add support for INA219 current and power monitor sensor ([#2510](https://github.com/xoseperez/espurna/issues/2501), [660d8c33](https://github.com/xoseperez/espurna/commit/660d8c339b8bee32575c216cfc78d7b7138c285d), thanks to **[@hamed-ta](https://github.com/hamed-ta)**)
 #### Settings
 - Led and button GPIO runtime settings ([#2117](https://github.com/xoseperez/espurna/issues/2117), [#2162](https://github.com/xoseperez/espurna/issues/2162), [#2170](https://github.com/xoseperez/espurna/issues/2170), [#2177](https://github.com/xoseperez/espurna/issues/2177))
 - Configure light dimmer pins from settings ([#2129](https://github.com/xoseperez/espurna/issues/2129))
 #### System
 - Detect Tasmota magic numbers when booting, and do a preventive factory reset ([#2370](https://github.com/xoseperez/espurna/issues/2370))
 #### Terminal
-- Show pretty uptime with NTP\_SUPPORT ([#2137](https://github.com/xoseperez/espurna/issues/2137))
+- Show pretty uptime string with `NTP_SUPPORT=1` ([#2137](https://github.com/xoseperez/espurna/issues/2137))
 - Change command-line parser ([#2245](https://github.com/xoseperez/espurna/issues/2245), [#2247](https://github.com/xoseperez/espurna/issues/2247))
 #### Thingspeak
 - Configure Thingspeak URL at runtime ([#2124](https://github.com/xoseperez/espurna/issues/2124), thanks to **[@sametflo](https://github.com/sametflo)**)
@@ -208,13 +210,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Rework plain and JSON implementations ([#2405](https://github.com/xoseperez/espurna/issues/2405))
 #### IR
 - Simple and RAW text protocols reworked ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
-- IR\_BUTTON\_SET >=0 depends on TERMINAL\_SUPPORT ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
+- `IR_BUTTON_SET` ≥0 now depends on `TERMINAL_SUPPORT` ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 #### Libraries
 - Bump RFM69 version ([#2148](https://github.com/xoseperez/espurna/issues/2148))
 - Pin arduino-mqtt version ([#2154](https://github.com/xoseperez/espurna/issues/2154))
-- Update IRremoteESP8266 to 2.8.0 ([c33d9960](https://github.com/xoseperez/espurna/commit/c33d9960b4a7a04b8bce516be152d5df96ec9cc2))
+- Update IRremoteESP8266 to 2.8.2 ([6b1a2de0](https://github.com/xoseperez/espurna/commit/6b1a2de06d0f0b8224f7cb4781bf8ebaafc233c1))
 - Use [fork of fauxmoesp](https://github.com/vintlabs/fauxmoESP), thanks to **[@m-kozlowski](https://github.com/m-kozlowski)**
 - Use [fork of rc-switch](https://github.com/1technophile/rc-switch) ([7a24806a](https://github.com/xoseperez/espurna/commit/7a24806adb2c3e2357171e004b5b760daf3bdca4))
+- Updated most of dependencies to use [PlatformIO Registry](https://registry.platformio.org) ([2b50620f](https://github.com/xoseperez/espurna/commit/2b50620f926190712f32a334db6dcc4a5f40e730))
 #### Lights
 - Controlling global state no longer requires `RELAY_SUPPORT` or specifying a virtual relay in the configuration. Updated modules and APIs to use light controls directly ([2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2))
 - Do not call the provider or run any transitions when channel values remain unchanged ([2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2))
@@ -232,12 +235,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### PlatformIO
 - Update latest Arduino Core platform to 3.0.2 ([1ca8d5e7](https://github.com/xoseperez/espurna/commit/1ca8d5e7a0130c2c23e958208b176bb8e8312d7c))
 - Use SoftwareSerial library from the Core ([23da0b74](https://github.com/xoseperez/espurna/commit/23da0b74d403cebc27b6ae0ca520da3218bf7a47))
-- Remove -ota envs, handle OTA condition in extra script ([#2099](https://github.com/xoseperez/espurna/issues/2099))
+- Deprecate -ota envs, handle OTA condition in extra script ([#2099](https://github.com/xoseperez/espurna/issues/2099))
 - platformio.ini refactoring ([#2212](https://github.com/xoseperez/espurna/issues/2212))
 - Rename generic environments ([#2214](https://github.com/xoseperez/espurna/issues/2214))
     - esp8266-\<flavour\>-\<size\>-base to esp8266-\<size\>-\<flavour\>-base
     - espurna-base to espurna-core-webui
-- Consistent shared libs location with CI and local install, prefer $repo/code/libraries ([f18f128e](https://github.com/xoseperez/espurna/commit/f18f128e4bb718f448ca460cdb0e39545187d7fe))
+- Consistent shared libs location with CI and local install, prefer $repo/code/libraries ([f18f128e](https://github.com/xoseperez/espurna/commit/f18f128e4bb718f448ca460cdb0e39545187d7fe), [5ccc70e4](https://github.com/xoseperez/espurna/commit/5ccc70e42e2a3f7410b629d433b301275a149296))
 - Pin libraries versions as \<owner\>/\<name\> to fix possible issues with Trusted Package Registry ([a9220ec2b](https://github.com/xoseperez/espurna/commit/a9220ec2b27224b2da79880945f6f58450ba53e8))
 - Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
 #### RPN Rules
@@ -261,7 +264,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### WebUI
 - Remove jquery dependencies and clean-up websocket API ([fa3deeff](https://github.com/xoseperez/espurna/commit/fa3deeffbfa622ecd1869af2563940fb3143e94e), [84a7f633](https://github.com/xoseperez/espurna/commit/84a7f6337f72b011512b3e95efe36f2d661e5065), [8e5ab5c9](https://github.com/xoseperez/espurna/commit/8e5ab5c902a23dfd774dd9e768963856d4f26bd3))
 - Use [iro.js](https://github.com/jaames/iro.js) as color picker ([808981ca](https://github.com/xoseperez/espurna/commit/808981ca3938d11d4ddd87005e2881433cc7707b))
-- Use [terser](https://github.com/terser/terser) as js minifier, webui is no longer limited to ES5 feature set ([cfd6e36d](https://github.com/xoseperez/espurna/commit/cfd6e36dbe94ee0e8098351357f903c060fd5dc9))
+- Use [terser](https://github.com/terser/terser) as js minifier, WebUI is no longer limited to ES5 feature set ([cfd6e36d](https://github.com/xoseperez/espurna/commit/cfd6e36dbe94ee0e8098351357f903c060fd5dc9))
 
 ## [1.14.1] 2019-12-31
 
