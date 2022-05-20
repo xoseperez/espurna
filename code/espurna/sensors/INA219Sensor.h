@@ -265,7 +265,7 @@ private:
         void calibration(uint16_t calibration) const {
             writeRegister(INA219_CAL_REG, calibration);
         }
-
+          
         int16_t shuntVoltage() const {
             return readRegister(INA219_SHUNT_REG);
         }
@@ -350,6 +350,10 @@ private:
     double _voltage = 0.0;
     double _current = 0.0;
     double _power = 0.0;
+    double _shunt_Factor = 1.0;
+
+    uint16_t corr_calibration = 0;
+
 
 public:
     void setOperatingMode(OperatingMode mode) {
@@ -375,6 +379,15 @@ public:
     void setGain(Gain gain) {
         _params.gain = gain;
         _dirty = true;
+    }
+
+    void setShuntRes(float shunt) {
+        _shunt_Factor = shunt / 0.1;
+        _dirty = true;
+    }
+
+    void setCorrectionFactor(float corr){
+        corr_calibration = _params.calibration * corr;
     }
 
     static constexpr Magnitude Magnitudes[] {
@@ -431,7 +444,10 @@ public:
             .bus_range = _bus_range,
         });
 
-        _port.calibration(_params.calibration);
+         corr_calibration = corr_calibration ? corr_calibration * _params.calibration : _params.calibration; 
+        _port.calibration(corr_calibration);
+
+        
 
         espurna::time::blockingDelay(
             espurna::duration::Milliseconds(100));
@@ -478,6 +494,7 @@ public:
         _error = SENSOR_ERROR_OK;
 
         const auto voltage = _port.busVoltage();
+        
         if (!voltage.ready) {
             _error = SENSOR_ERROR_NOT_READY;
             return;
@@ -488,10 +505,10 @@ public:
             return;
         }
 
-        _voltage = voltage.value;
+        _voltage = voltage.value / 1000.0;
 
-        _current = _port.current() * _params.current_lsb;
-        _power = _port.power() * _params.power_lsb;
+        _current = (_port.current() * (_params.current_lsb / _shunt_Factor)) / 1000.0;
+        _power = (_port.power() * (_params.power_lsb / _shunt_Factor)) / 1000.0;
 
         if (_energy_ready) {
             const auto now = TimeSource::now();
