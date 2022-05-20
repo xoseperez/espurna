@@ -126,7 +126,7 @@ unsigned long sclFrequency() {
 // - 4 if line is busy
 // - 2 if NACK happened when writing address
 // - 3 if NACK happened when writing data
-bool check(uint8_t address) {
+bool find(uint8_t address) {
 #if I2C_USE_BRZO
     i2c::start_brzo_transaction(address);
     brzo_i2c_ACK_polling(1000);
@@ -137,26 +137,44 @@ bool check(uint8_t address) {
 #endif
 }
 
-template <typename Callback>
-void scan(Callback&& callback) {
-    static constexpr uint8_t AddressMin { 1 };
-    static constexpr uint8_t AddressMax { 127 };
-
-    for (auto address = AddressMin; address < AddressMax; ++address) {
-        if (i2c::check(address)) {
-            callback(address);
-        }
-    }
-}
-
-uint8_t check(const uint8_t* begin, const uint8_t* end) {
+template <typename T>
+uint8_t find(const uint8_t* begin, const uint8_t* end, T&& filter) {
     for (const auto* it = begin; it != end; ++it) {
-        if (check(*it)) {
+        if (filter(*it) && find(*it)) {
             return *it;
         }
     }
 
     return 0;
+}
+
+uint8_t find(const uint8_t* begin, const uint8_t* end) {
+    return find(begin, end, [](uint8_t) {
+        return true;
+    });
+}
+
+uint8_t findAndLock(const uint8_t* begin, const uint8_t* end) {
+    const auto address = find(begin, end, [](uint8_t address) {
+        return !lock::get(address);
+    });
+
+    if (address != 0) {
+        lock::set(address);
+    }
+
+    return address;
+}
+
+template <typename T>
+void scan(T&& callback) {
+    static constexpr uint8_t AddressMin { 1 };
+    static constexpr uint8_t AddressMax { 127 };
+    for (auto address = AddressMin; address < AddressMax; ++address) {
+        if (find(address)) {
+            callback(address);
+        }
+    }
 }
 
 void bootScan() {
@@ -545,29 +563,15 @@ void i2cUnlock(uint8_t address) {
 }
 
 uint8_t i2cFind(uint8_t address) {
-    if (espurna::i2c::check(address)) {
-        return address;
-    }
-
-    return 0;
+    return espurna::i2c::find(address);
 }
 
 uint8_t i2cFind(const uint8_t* begin, const uint8_t* end) {
-    const auto address = espurna::i2c::check(begin, end);
-    if (address) {
-        return address;
-    }
-
-    return 0;
+    return espurna::i2c::find(begin, end);
 }
 
 uint8_t i2cFindAndLock(const uint8_t* begin, const uint8_t* end) {
-    const auto address = i2cFind(begin, end);
-    if (address && espurna::i2c::lock::set(address)) {
-        return address;
-    }
-
-    return 0;
+    return espurna::i2c::findAndLock(begin, end);
 }
 
 void i2cSetup() {
