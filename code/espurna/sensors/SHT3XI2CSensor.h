@@ -75,7 +75,9 @@ class SHT3XI2CSensor : public I2CSensor<> {
             i2c_write_uint8(address, 0x2C, 0x06);
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
+            unsigned char buffer[6];
             i2c_read_buffer(_address, buffer, std::size(buffer));
+            
             if ((CRC8(buffer[0],buffer[1],buffer[2])) && (CRC8(buffer[3],buffer[4],buffer[5]))) {
                 // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
                 _temperature = ((((buffer[0] * 256.0) + buffer[1]) * 175) / 65535.0) - 45;
@@ -89,7 +91,6 @@ class SHT3XI2CSensor : public I2CSensor<> {
         
         // Read the status register and output to Debug log
         void status_register() {
-
             unsigned char buffer[3];
             bool crc, cmd, htr;
             i2c_write_uint8(_address, 0xF3, 0x2D); // Read status register
