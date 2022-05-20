@@ -2877,6 +2877,7 @@ void _sensorLoad() {
         sensor->setBusMode(INA219Sensor::INA219_BUS_MODE);
         sensor->setBusRange(INA219Sensor::INA219_BUS_RANGE);
         sensor->setGain(INA219Sensor::INA219_GAIN);
+	sensor->setShuntRes(INA219_SHUNT_RES_OHM);
         _sensors.push_back(sensor);
     }
     #endif
