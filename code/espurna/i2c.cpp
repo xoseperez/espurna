@@ -168,9 +168,9 @@ uint8_t findAndLock(const uint8_t* begin, const uint8_t* end) {
 
 template <typename T>
 void scan(T&& callback) {
-    static constexpr uint8_t AddressMin { 1 };
-    static constexpr uint8_t AddressMax { 127 };
-    for (auto address = AddressMin; address < AddressMax; ++address) {
+    static constexpr uint8_t Min { 0x8 };
+    static constexpr uint8_t Max { 0x78 };
+    for (auto address = Min; address < Max; ++address) {
         if (find(address)) {
             callback(address);
         }
