@@ -94,7 +94,8 @@ class SHT3XI2CSensor : public I2CSensor<> {
         void status_register() {
             unsigned char buffer[3];
             bool crc, cmd, htr;
-            i2c_write_uint8(address, 0xF3, 0x2D); // Read status register
+            // Read status register
+            i2c_write_uint8(address, 0xF3, 0x2D);
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
             i2c_read_buffer(address, buffer, std::size(buffer));
@@ -108,8 +109,8 @@ class SHT3XI2CSensor : public I2CSensor<> {
             else {
                 DEBUG_MSG_P(PSTR("[SHT3X] Checksum error\n"));
             }
-            
-            i2c_write_uint8(address, 0x30, 0x41); // Clear status register
+            // Clear status register
+            i2c_write_uint8(address, 0x30, 0x41);
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
         }
