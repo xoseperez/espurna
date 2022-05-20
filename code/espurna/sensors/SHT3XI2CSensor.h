@@ -77,7 +77,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
                 espurna::duration::Milliseconds(500));
 
             unsigned char buffer[6];
-            i2c_read_buffer(_address, buffer, std::size(buffer));
+            i2c_read_buffer(address, buffer, std::size(buffer));
             
             if ((CRC8(buffer[0],buffer[1],buffer[2])) && (CRC8(buffer[3],buffer[4],buffer[5]))) {
                 // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
@@ -94,10 +94,10 @@ class SHT3XI2CSensor : public I2CSensor<> {
         void status_register() {
             unsigned char buffer[3];
             bool crc, cmd, htr;
-            i2c_write_uint8(_address, 0xF3, 0x2D); // Read status register
+            i2c_write_uint8(address, 0xF3, 0x2D); // Read status register
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
-            i2c_read_buffer(_address, buffer, std::size(buffer));
+            i2c_read_buffer(address, buffer, std::size(buffer));
             if (CRC8(buffer[0],buffer[1],buffer[2])) {
                 // see https://sensirion.com/resource/datasheet/sht3x-d
                 crc = buffer[1] & 0b00000001;
@@ -109,7 +109,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
                 DEBUG_MSG_P(PSTR("[SHT3X] Checksum error\n"));
             }
             
-            i2c_write_uint8(_address, 0x30, 0x41); // Clear status register
+            i2c_write_uint8(address, 0x30, 0x41); // Clear status register
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
         }
