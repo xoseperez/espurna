@@ -75,7 +75,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
             i2c_write_uint8(address, 0x2C, 0x06);
             espurna::time::blockingDelay(
                 espurna::duration::Milliseconds(500));
-            
+
             unsigned char buffer[6];
             i2c_read_buffer(_address, buffer, std::size(buffer));
             
