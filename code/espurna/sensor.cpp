@@ -783,7 +783,7 @@ SettingsKey get(::settings::StringView prefix, ::settings::StringView suffix, si
     String key;
     key.reserve(prefix.length() + suffix.length() + 4);
     key.concat(prefix.c_str(), prefix.length());
-    key.concat(suffix.c_str(), prefix.length());
+    key.concat(suffix.c_str(), suffix.length());
 
     return SettingsKey(std::move(key), index);
 }
