@@ -23,7 +23,7 @@ public:
     }
 
     void reset() override {
-        if (_values.size()) {
+        if (_values.size() && _values.capacity() != 1) {
             _values[0] = _values.back();
             _values.resize(1);
         } else {
