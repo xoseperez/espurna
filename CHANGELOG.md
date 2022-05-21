@@ -245,6 +245,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
 #### RPN Rules
 - Set MQTT variables just before running the rules ([32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509))
+- Magnitude variables may not end in number when there's only one of that type ([5fcac5d2](https://github.com/xoseperez/espurna/commit/5fcac5d27f713ca4a84da3dc8f0b4d10c25c3050))
 #### Sensors
 - Emon refactoring ([#2213](https://github.com/xoseperez/espurna/issues/2213))
 - Further EmonSensor fixes and refactoring ([b19905a3](https://github.com/xoseperez/espurna/commit/b19905a3065672412351c38d859fc3f6cd7ad5cd))
