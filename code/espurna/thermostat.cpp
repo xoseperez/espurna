@@ -410,13 +410,12 @@ void updateCounters() {
 double _getLocalValue(const char* description, unsigned char type) {
 #if SENSOR_SUPPORT
     for (unsigned char index = 0; index < magnitudeCount(); ++index) {
-        if (magnitudeType(index) != type) continue;
-        auto value = magnitudeValue(index);
-
-        DEBUG_MSG_P(PSTR("[THERMOSTAT] %s: %s\n"),
-            description, value.toString().c_str());
-
-        return value.get();
+        if (magnitudeType(index) == type) {
+            const auto value = magnitudeValue(index);
+            DEBUG_MSG_P(PSTR("[THERMOSTAT] %s: %s\n"),
+                    description, value.repr.c_str());
+            return value.value;
+        }
     }
 #endif
     return sensor::Value::Unknown;
