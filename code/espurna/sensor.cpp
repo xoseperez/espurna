@@ -653,7 +653,11 @@ constexpr size_t saveEvery() {
 }
 
 constexpr bool realTimeValues() {
-    return SENSOR_REAL_TIME_VALUES;
+    return SENSOR_REAL_TIME_VALUES == 1;
+}
+
+constexpr bool useIndex() {
+    return SENSOR_USE_INDEX == 1;
 }
 
 } // namespace
@@ -1374,6 +1378,15 @@ String _magnitudeTopic(unsigned char type) {
 
     return String(result);
 
+}
+
+String _magnitudeTopicIndex(const Magnitude& magnitude) {
+    auto topic = _magnitudeTopic(magnitude.type);
+    if (sensor::build::useIndex() || (Magnitude::counts(magnitude.type) > 1)) {
+        topic += '/' + String(magnitude.index_global, 10);
+    }
+
+    return topic;
 }
 
 String _magnitudeUnits(sensor::Unit unit) {
@@ -2284,13 +2297,6 @@ void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSo
 
 namespace {
 
-String _sensorApiMagnitudeName(Magnitude& magnitude) {
-    String name = _magnitudeTopic(magnitude.type);
-    if (SENSOR_USE_INDEX || (Magnitude::counts(magnitude.type) > 1)) name = name + "/" + String(magnitude.index_global);
-
-    return name;
-}
-
 bool _sensorApiTryParseMagnitudeIndex(const char* p, unsigned char type, unsigned char& magnitude_index) {
     char* endp { nullptr };
     const unsigned long result { strtoul(p, &endp, 10) };
@@ -2329,7 +2335,7 @@ void _sensorApiSetup() {
             JsonArray& magnitudes = root.createNestedArray("magnitudes");
             for (auto& magnitude : _magnitudes) {
                 JsonArray& data = magnitudes.createNestedArray();
-                data.add(_sensorApiMagnitudeName(magnitude));
+                data.add(_magnitudeTopicIndex(magnitude));
                 data.add(magnitude.last);
                 data.add(magnitude.reported);
             }
@@ -2339,8 +2345,8 @@ void _sensorApiSetup() {
     );
 
     _magnitudeForEachCounted([](unsigned char type) {
-        String pattern = _magnitudeTopic(type);
-        if (SENSOR_USE_INDEX || (Magnitude::counts(type) > 1)) {
+        auto pattern = _magnitudeTopic(type);
+        if (sensor::build::useIndex() || (Magnitude::counts(type) > 1)) {
             pattern += "/+";
         }
 
@@ -2423,18 +2429,25 @@ namespace {
 
 void _sensorInitCommands() {
     terminalRegisterCommand(F("MAGNITUDES"), [](::terminal::CommandContext&& ctx) {
+        if (!_magnitudes.size()) {
+            terminalError(ctx, F("No magnitudes"));
+            return;
+        }
+
         char last[64];
         char reported[64];
-        for (size_t index = 0; index < _magnitudes.size(); ++index) {
-            auto& magnitude = _magnitudes.at(index);
+
+        size_t index = 0;
+        for (const auto& magnitude : _magnitudes) {
             dtostrf(magnitude.last, 1, magnitude.decimals, last);
             dtostrf(magnitude.reported, 1, magnitude.decimals, reported);
-            ctx.output.printf_P(PSTR("%u * %s/%u @ %s (read:%s reported:%s units:%s)\n"),
-                index, _magnitudeTopic(magnitude.type).c_str(), magnitude.index_global,
+            ctx.output.printf_P(PSTR("%2zu * %s @ %s (read:%s reported:%s units:%s)\n"),
+                index++, _magnitudeTopicIndex(magnitude).c_str(),
                 _magnitudeDescription(magnitude).c_str(), last, reported,
                 _magnitudeUnits(magnitude.units).c_str());
         }
-        terminalOK();
+
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("EXPECTED"), [](::terminal::CommandContext&& ctx) {
@@ -3196,19 +3209,6 @@ void _sensorLoad() {
 
 }
 
-String _magnitudeTopicIndex(const Magnitude& magnitude) {
-    char buffer[32] = {0};
-
-    String topic { _magnitudeTopic(magnitude.type) };
-    if (SENSOR_USE_INDEX || (Magnitude::counts(magnitude.type) > 1)) {
-        snprintf(buffer, sizeof(buffer), "%s/%u", topic.c_str(), magnitude.index_global);
-    } else {
-        snprintf(buffer, sizeof(buffer), "%s", topic.c_str());
-    }
-
-    return String(buffer);
-}
-
 sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
     // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
     //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
@@ -3730,7 +3730,6 @@ void sensorLoop() {
 
                 // Make sure that report value is calculated using every read value before it
                 magnitude.filter->reset();
-
 
                 // Check ${name}MinDelta if there is a minimum change threshold to report
                 if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_delta)) {
