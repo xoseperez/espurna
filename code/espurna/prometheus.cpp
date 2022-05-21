@@ -56,16 +56,12 @@ void handler(AsyncWebServerRequest* request) {
     #if SENSOR_SUPPORT
         for (unsigned char index = 0; index < magnitudeCount(); ++index) {
             auto value = magnitudeValue(index);
-            if (std::isnan(value.get()) || std::isinf(value.get())) {
-                continue;
+            if (value) {
+                value.topic.remove('/');
+                response->printf("%s %s\n",
+                    value.topic.c_str(),
+                    value.repr.c_str());
             }
-
-            String topic(magnitudeTopicIndex(index));
-            topic.replace("/", "");
-
-            response->printf("%s %s\n",
-                topic.c_str(),
-                value.toString().c_str());
         }
     #endif
 

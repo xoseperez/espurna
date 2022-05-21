@@ -3209,21 +3209,33 @@ String _magnitudeTopicIndex(const Magnitude& magnitude) {
     return String(buffer);
 }
 
-void _sensorReport(unsigned char index, const Magnitude& magnitude) {
-
+sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
     // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
     //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
     char buffer[64];
-    dtostrf(magnitude.reported, 1, magnitude.decimals, buffer);
+    dtostrf(value, 1, magnitude.decimals, buffer);
+
+    return sensor::Value {
+        .type = magnitude.type,
+        .index = magnitude.index_global,
+        .units = magnitude.units,
+        .decimals = magnitude.decimals,
+        .value = magnitude.reported,
+        .topic = _magnitudeTopicIndex(magnitude),
+        .repr = buffer,
+    };
+}
+
+void _sensorReport(unsigned char index, const Magnitude& magnitude) {
+    const auto value = _magnitudeValue(magnitude, magnitude.reported);
 
     for (auto& handler : _magnitude_report_handlers) {
-        handler(_magnitudeTopic(magnitude.type), magnitude.index_global, magnitude.reported, buffer);
+        handler(value);
     }
 
 #if MQTT_SUPPORT
     {
-        const String topic(_magnitudeTopicIndex(magnitude));
-        mqttSend(topic.c_str(), buffer);
+        mqttSend(value.topic.c_str(), value.repr.c_str());
 
 #if SENSOR_PUBLISH_ADDRESSES
         String address_topic;
@@ -3243,11 +3255,11 @@ void _sensorReport(unsigned char index, const Magnitude& magnitude) {
     //       so, we still need to pass / know the 'global' index inside of _magnitudes[]
 
 #if THINGSPEAK_SUPPORT
-    tspkEnqueueMeasurement(index, buffer);
+    tspkEnqueueMeasurement(index, value.repr.c_str());
 #endif // THINGSPEAK_SUPPORT
 
 #if DOMOTICZ_SUPPORT
-    domoticzSendMagnitude(magnitude.type, index, magnitude.reported, buffer);
+    domoticzSendMagnitude(magnitude.type, index, value.value, value.repr.c_str());
 #endif // DOMOTICZ_SUPPORT
 
 }
@@ -3409,9 +3421,10 @@ void _sensorConfigure() {
 
 #if SENSOR_DEBUG
 void _sensorDebugSetup() {
-    _magnitude_read_handlers.push_front([](const String& topic, unsigned char index, double, const char* repr) {
-        DEBUG_MSG_P(PSTR("[SENSOR] %s/%hhu -> %s (%s)\n"),
-            topic.c_str(), index, repr, _magnitudeUnits(_magnitudes[index].units).c_str());
+    _magnitude_read_handlers.push_front([](const sensor::Value& value) {
+        DEBUG_MSG_P(PSTR("[SENSOR] %s -> %s%s\n"),
+            value.topic.c_str(), value.repr.c_str(),
+            (value.units != sensor::Unit::None) ? _magnitudeUnits(value.units).c_str() : "");
     });
 }
 #endif
@@ -3449,28 +3462,21 @@ String magnitudeTopic(unsigned char type) {
     return _magnitudeTopic(type);
 }
 
-double sensor::Value::get() const {
-    return real_time ? last : reported;
-}
-
-String sensor::Value::toString() const {
-    char buffer[64] { 0 };
-    dtostrf(real_time ? last : reported, 1, decimals, buffer);
-    return buffer;
+sensor::Value::operator bool() const {
+    return !std::isinf(value) && !std::isnan(value);
 }
 
 sensor::Value magnitudeValue(unsigned char index) {
-    sensor::Value result;
+    sensor::Value out;
+    out.value = sensor::Value::Unknown;
 
     if (index < _magnitudes.size()) {
         const auto& magnitude = _magnitudes[index];
-        result.real_time = _sensor_real_time;
-        result.last = magnitude.last;
-        result.reported = magnitude.reported;
-        result.decimals = magnitude.decimals;
+        out = _magnitudeValue(magnitude,
+            _sensor_real_time ? magnitude.last : magnitude.reported);
     }
 
-    return result;
+    return out;
 }
 
 unsigned char magnitudeIndex(unsigned char index) {
@@ -3695,10 +3701,9 @@ void sensorLoop() {
 
             value.processed = _magnitudeProcess(magnitude, value.raw);
             {
-                char buffer[64];
-                dtostrf(value.processed, 1, magnitude.decimals, buffer);
+                const auto out = _magnitudeValue(magnitude, value.processed);
                 for (auto& handler : _magnitude_read_handlers) {
-                    handler(_magnitudeTopic(magnitude.type), magnitude.index_global, value.processed, buffer);
+                    handler(out);
                 }
             }
 
