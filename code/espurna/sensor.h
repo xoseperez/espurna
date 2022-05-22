@@ -126,20 +126,25 @@ struct ReadValue {
 struct Value {
     static constexpr double Unknown { std::numeric_limits<double>::quiet_NaN() };
 
-    double get() const;
-    String toString() const;
+    unsigned char type;
+    unsigned char index;
 
-    bool real_time { false };
-    double last { Unknown };
-    double reported { Unknown };
-    unsigned char decimals { 0 };
+    Unit units;
+    unsigned char decimals;
+
+    double value;
+
+    String topic;
+    String repr;
+
+    explicit operator bool() const;
 };
 
 } // namespace sensor
 
 //--------------------------------------------------------------------------------
 
-using MagnitudeReadHandler = void(*)(const String&, unsigned char, double, const char*);
+using MagnitudeReadHandler = void(*)(const sensor::Value&);
 void sensorOnMagnitudeRead(MagnitudeReadHandler handler);
 void sensorOnMagnitudeReport(MagnitudeReadHandler handler);
 

@@ -158,8 +158,8 @@ void _idbConfigure() {
     if (_idb_enabled && !_idb_client) _idbInitClient();
 }
 
-void _idbSendSensor(const String& topic, unsigned char id, double, const char* value) {
-    idbSend(topic.c_str(), id, value);
+void _idbSendSensor(const sensor::Value& value) {
+    idbSend(magnitudeTopic(value.type).c_str(), value.index, value.repr.c_str());
 }
 
 void _idbSendStatus(size_t id, bool status) {

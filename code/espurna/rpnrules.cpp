@@ -666,7 +666,7 @@ namespace relay {
 
 void updateVariables(size_t id, bool status) {
     char name[32] = {0};
-    snprintf(name, sizeof(name), "relay%u", id);
+    snprintf(name, sizeof(name), "relay%zu", id);
 
     rpn_variable_set(internal::context, name, rpn_value(status));
     schedule();
@@ -1017,16 +1017,14 @@ void init(rpn_context& context) {
 #if SENSOR_SUPPORT
 namespace sensor {
 
-void updateVariables(const String& topic, unsigned char index, double reading, const char*) {
-    static_assert(sizeof(double) == sizeof(rpn_float), "");
+void updateVariables(const ::sensor::Value& value) {
+    static_assert(sizeof(decltype(value.value)) == sizeof(rpn_float), "");
 
-    String name;
-    name.reserve(topic.length() + 3);
+    auto topic = value.topic;
+    topic.remove('/');
 
-    name += topic;
-    name += index;
-
-    rpn_variable_set(internal::context, name, rpn_value(static_cast<rpn_float>(reading)));
+    rpn_variable_set(internal::context,
+            topic, rpn_value(static_cast<rpn_float>(value.value)));
 }
 
 void init(rpn_context&) {

@@ -653,7 +653,11 @@ constexpr size_t saveEvery() {
 }
 
 constexpr bool realTimeValues() {
-    return SENSOR_REAL_TIME_VALUES;
+    return SENSOR_REAL_TIME_VALUES == 1;
+}
+
+constexpr bool useIndex() {
+    return SENSOR_USE_INDEX == 1;
 }
 
 } // namespace
@@ -783,7 +787,7 @@ SettingsKey get(::settings::StringView prefix, ::settings::StringView suffix, si
     String key;
     key.reserve(prefix.length() + suffix.length() + 4);
     key.concat(prefix.c_str(), prefix.length());
-    key.concat(suffix.c_str(), prefix.length());
+    key.concat(suffix.c_str(), suffix.length());
 
     return SettingsKey(std::move(key), index);
 }
@@ -1374,6 +1378,15 @@ String _magnitudeTopic(unsigned char type) {
 
     return String(result);
 
+}
+
+String _magnitudeTopicIndex(const Magnitude& magnitude) {
+    auto topic = _magnitudeTopic(magnitude.type);
+    if (sensor::build::useIndex() || (Magnitude::counts(magnitude.type) > 1)) {
+        topic += '/' + String(magnitude.index_global, 10);
+    }
+
+    return topic;
 }
 
 String _magnitudeUnits(sensor::Unit unit) {
@@ -2284,13 +2297,6 @@ void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSo
 
 namespace {
 
-String _sensorApiMagnitudeName(Magnitude& magnitude) {
-    String name = _magnitudeTopic(magnitude.type);
-    if (SENSOR_USE_INDEX || (Magnitude::counts(magnitude.type) > 1)) name = name + "/" + String(magnitude.index_global);
-
-    return name;
-}
-
 bool _sensorApiTryParseMagnitudeIndex(const char* p, unsigned char type, unsigned char& magnitude_index) {
     char* endp { nullptr };
     const unsigned long result { strtoul(p, &endp, 10) };
@@ -2329,7 +2335,7 @@ void _sensorApiSetup() {
             JsonArray& magnitudes = root.createNestedArray("magnitudes");
             for (auto& magnitude : _magnitudes) {
                 JsonArray& data = magnitudes.createNestedArray();
-                data.add(_sensorApiMagnitudeName(magnitude));
+                data.add(_magnitudeTopicIndex(magnitude));
                 data.add(magnitude.last);
                 data.add(magnitude.reported);
             }
@@ -2339,8 +2345,8 @@ void _sensorApiSetup() {
     );
 
     _magnitudeForEachCounted([](unsigned char type) {
-        String pattern = _magnitudeTopic(type);
-        if (SENSOR_USE_INDEX || (Magnitude::counts(type) > 1)) {
+        auto pattern = _magnitudeTopic(type);
+        if (sensor::build::useIndex() || (Magnitude::counts(type) > 1)) {
             pattern += "/+";
         }
 
@@ -2423,18 +2429,25 @@ namespace {
 
 void _sensorInitCommands() {
     terminalRegisterCommand(F("MAGNITUDES"), [](::terminal::CommandContext&& ctx) {
+        if (!_magnitudes.size()) {
+            terminalError(ctx, F("No magnitudes"));
+            return;
+        }
+
         char last[64];
         char reported[64];
-        for (size_t index = 0; index < _magnitudes.size(); ++index) {
-            auto& magnitude = _magnitudes.at(index);
+
+        size_t index = 0;
+        for (const auto& magnitude : _magnitudes) {
             dtostrf(magnitude.last, 1, magnitude.decimals, last);
             dtostrf(magnitude.reported, 1, magnitude.decimals, reported);
-            ctx.output.printf_P(PSTR("%u * %s/%u @ %s (read:%s reported:%s units:%s)\n"),
-                index, _magnitudeTopic(magnitude.type).c_str(), magnitude.index_global,
+            ctx.output.printf_P(PSTR("%2zu * %s @ %s (read:%s reported:%s units:%s)\n"),
+                index++, _magnitudeTopicIndex(magnitude).c_str(),
                 _magnitudeDescription(magnitude).c_str(), last, reported,
                 _magnitudeUnits(magnitude.units).c_str());
         }
-        terminalOK();
+
+        terminalOK(ctx);
     });
 
     terminalRegisterCommand(F("EXPECTED"), [](::terminal::CommandContext&& ctx) {
@@ -3196,34 +3209,33 @@ void _sensorLoad() {
 
 }
 
-String _magnitudeTopicIndex(const Magnitude& magnitude) {
-    char buffer[32] = {0};
-
-    String topic { _magnitudeTopic(magnitude.type) };
-    if (SENSOR_USE_INDEX || (Magnitude::counts(magnitude.type) > 1)) {
-        snprintf(buffer, sizeof(buffer), "%s/%u", topic.c_str(), magnitude.index_global);
-    } else {
-        snprintf(buffer, sizeof(buffer), "%s", topic.c_str());
-    }
-
-    return String(buffer);
-}
-
-void _sensorReport(unsigned char index, const Magnitude& magnitude) {
-
+sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
     // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
     //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
     char buffer[64];
-    dtostrf(magnitude.reported, 1, magnitude.decimals, buffer);
+    dtostrf(value, 1, magnitude.decimals, buffer);
+
+    return sensor::Value {
+        .type = magnitude.type,
+        .index = magnitude.index_global,
+        .units = magnitude.units,
+        .decimals = magnitude.decimals,
+        .value = magnitude.reported,
+        .topic = _magnitudeTopicIndex(magnitude),
+        .repr = buffer,
+    };
+}
+
+void _sensorReport(unsigned char index, const Magnitude& magnitude) {
+    const auto value = _magnitudeValue(magnitude, magnitude.reported);
 
     for (auto& handler : _magnitude_report_handlers) {
-        handler(_magnitudeTopic(magnitude.type), magnitude.index_global, magnitude.reported, buffer);
+        handler(value);
     }
 
 #if MQTT_SUPPORT
     {
-        const String topic(_magnitudeTopicIndex(magnitude));
-        mqttSend(topic.c_str(), buffer);
+        mqttSend(value.topic.c_str(), value.repr.c_str());
 
 #if SENSOR_PUBLISH_ADDRESSES
         String address_topic;
@@ -3243,11 +3255,11 @@ void _sensorReport(unsigned char index, const Magnitude& magnitude) {
     //       so, we still need to pass / know the 'global' index inside of _magnitudes[]
 
 #if THINGSPEAK_SUPPORT
-    tspkEnqueueMeasurement(index, buffer);
+    tspkEnqueueMeasurement(index, value.repr.c_str());
 #endif // THINGSPEAK_SUPPORT
 
 #if DOMOTICZ_SUPPORT
-    domoticzSendMagnitude(magnitude.type, index, magnitude.reported, buffer);
+    domoticzSendMagnitude(magnitude.type, index, value.value, value.repr.c_str());
 #endif // DOMOTICZ_SUPPORT
 
 }
@@ -3409,9 +3421,10 @@ void _sensorConfigure() {
 
 #if SENSOR_DEBUG
 void _sensorDebugSetup() {
-    _magnitude_read_handlers.push_front([](const String& topic, unsigned char index, double, const char* repr) {
-        DEBUG_MSG_P(PSTR("[SENSOR] %s/%hhu -> %s (%s)\n"),
-            topic.c_str(), index, repr, _magnitudeUnits(_magnitudes[index].units).c_str());
+    _magnitude_read_handlers.push_front([](const sensor::Value& value) {
+        DEBUG_MSG_P(PSTR("[SENSOR] %s -> %s%s\n"),
+            value.topic.c_str(), value.repr.c_str(),
+            (value.units != sensor::Unit::None) ? _magnitudeUnits(value.units).c_str() : "");
     });
 }
 #endif
@@ -3449,28 +3462,21 @@ String magnitudeTopic(unsigned char type) {
     return _magnitudeTopic(type);
 }
 
-double sensor::Value::get() const {
-    return real_time ? last : reported;
-}
-
-String sensor::Value::toString() const {
-    char buffer[64] { 0 };
-    dtostrf(real_time ? last : reported, 1, decimals, buffer);
-    return buffer;
+sensor::Value::operator bool() const {
+    return !std::isinf(value) && !std::isnan(value);
 }
 
 sensor::Value magnitudeValue(unsigned char index) {
-    sensor::Value result;
+    sensor::Value out;
+    out.value = sensor::Value::Unknown;
 
     if (index < _magnitudes.size()) {
         const auto& magnitude = _magnitudes[index];
-        result.real_time = _sensor_real_time;
-        result.last = magnitude.last;
-        result.reported = magnitude.reported;
-        result.decimals = magnitude.decimals;
+        out = _magnitudeValue(magnitude,
+            _sensor_real_time ? magnitude.last : magnitude.reported);
     }
 
-    return result;
+    return out;
 }
 
 unsigned char magnitudeIndex(unsigned char index) {
@@ -3695,10 +3701,9 @@ void sensorLoop() {
 
             value.processed = _magnitudeProcess(magnitude, value.raw);
             {
-                char buffer[64];
-                dtostrf(value.processed, 1, magnitude.decimals, buffer);
+                const auto out = _magnitudeValue(magnitude, value.processed);
                 for (auto& handler : _magnitude_read_handlers) {
-                    handler(_magnitudeTopic(magnitude.type), magnitude.index_global, value.processed, buffer);
+                    handler(out);
                 }
             }
 
@@ -3725,7 +3730,6 @@ void sensorLoop() {
 
                 // Make sure that report value is calculated using every read value before it
                 magnitude.filter->reset();
-
 
                 // Check ${name}MinDelta if there is a minimum change threshold to report
                 if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_delta)) {
