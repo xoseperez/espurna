@@ -18,12 +18,8 @@ public:
         }
     }
 
-    size_t capacity() const override {
-        return _values.capacity();
-    }
-
     void reset() override {
-        if (_values.size() && _values.capacity() != 1) {
+        if (_values.size() > 2) {
             _values[0] = _values.back();
             _values.resize(1);
         } else {
@@ -35,21 +31,26 @@ public:
         double sum { 0.0 };
 
         if (_values.size() > 2) {
-            // For each position,
-            // we find the median with the previous and next value
-            // and use that for the sum
-            auto calculate = [](double previous, double current, double next) {
-                if (previous > current) std::swap(previous, current);
-                if (current > next) std::swap(current, next);
-                if (previous > current) std::swap(previous, current);
+            auto median = [](double previous, double current, double next) {
+                if (previous < current) {
+                    if (current < next) {
+                        return current;
+                    } else if (previous < next) {
+                        return next;
+                    } else {
+                        return previous;
+                    }
+                } else if (previous < next) {
+                    return previous;
+                } else if (current < next) {
+                    return next;
+                }
 
                 return current;
             };
 
             for (auto prev = _values.begin(); prev != (_values.end() - 2); ++prev) {
-                const auto current = std::next(prev);
-                const auto next = std::next(current);
-                sum += calculate(*prev, *current, *next);
+                sum += median(*prev, *std::next(prev, 1), *std::next(prev, 2));
             }
 
             sum /= (_values.size() - 2);
@@ -60,13 +61,19 @@ public:
         return sum;
     }
 
+    size_t capacity() const override {
+        return _capacity;
+    }
+
     void resize(size_t capacity) override {
-        if (_values.capacity() != capacity) {
+        if (_capacity != capacity) {
+            _capacity = capacity;
             _values.clear();
-            _values.reserve(capacity);
+            _values.reserve(_capacity + 1);
         }
     }
 
 private:
     std::vector<double> _values;
+    size_t _capacity = 0;
 };
