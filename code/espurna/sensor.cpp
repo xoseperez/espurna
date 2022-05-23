@@ -3266,9 +3266,8 @@ void _sensorReport(const Magnitude& magnitude, unsigned char index, double value
 #endif // THINGSPEAK_SUPPORT
 
 #if DOMOTICZ_SUPPORT
-    domoticzSendMagnitude(magnitude.type, index, value.value, value.repr.c_str());
+    domoticzSendMagnitude(index, report);
 #endif // DOMOTICZ_SUPPORT
-
 }
 
 void _sensorInit() {

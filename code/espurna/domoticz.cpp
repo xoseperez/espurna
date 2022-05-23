@@ -329,7 +329,7 @@ void send() {
 #if SENSOR_SUPPORT
 namespace sensor {
 
-void send(unsigned char type, unsigned char index, double value, const char* buffer) {
+void send(unsigned char index, const ::sensor::Value& value) {
     if (!enabled()) {
         return;
     }
@@ -345,34 +345,31 @@ void send(unsigned char type, unsigned char index, double value, const char* buf
     // TODO: Must send 'forecast' data. Default is last 3 hours:
     // https://github.com/domoticz/domoticz/blob/6027b1d9e3b6588a901de42d82f3a6baf1374cd1/hardware/I2C.cpp#L1092-L1193
     // For now, just send invalid value. Consider simplifying sampling function and adding it here, with custom sampling time (3 hours, 6 hours, 12 hours etc.)
-    if (MAGNITUDE_PRESSURE == type) {
-        String svalue = buffer;
-        svalue += ";-1";
-        mqtt::send(idx, 0, svalue.c_str());
+    if (MAGNITUDE_PRESSURE == value.type) {
+        mqtt::send(idx, 0, (value.repr + F(";-1")).c_str());
     // Special case to allow us to use it with switches directly
-    } else if (MAGNITUDE_DIGITAL == type) {
-        int nvalue = (buffer[0] >= 48) ? (buffer[0] - 48) : 0;
-        mqtt::send(idx, nvalue, buffer);
+    } else if (MAGNITUDE_DIGITAL == value.type) {
+        mqtt::send(idx, (*value.repr.c_str() == '1') ? 1 : 0, value.repr.c_str());
     // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Humidity
     // nvalue contains HUM (relative humidity)
     // svalue contains HUM_STAT, one of consts below
-    } else if (MAGNITUDE_HUMIDITY == type) {
+    } else if (MAGNITUDE_HUMIDITY == value.type) {
         const char status = 48 + (
-            (value > 70) ? HUMIDITY_WET :
-            (value > 45) ? HUMIDITY_COMFORTABLE :
-            (value > 30) ? HUMIDITY_NORMAL :
+            (value.value > 70) ? HUMIDITY_WET :
+            (value.value > 45) ? HUMIDITY_COMFORTABLE :
+            (value.value > 30) ? HUMIDITY_NORMAL :
             HUMIDITY_DRY
         );
-        char svalue[2] = {status, '\0'};
-        mqtt::send(idx, static_cast<int>(value), svalue);
+        const char svalue[2] = {status, '\0'};
+        mqtt::send(idx, static_cast<int>(value.value), svalue);
     // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Air_quality
     // nvalue contains the ppm
     // svalue is not used (?)
-    } else if (MAGNITUDE_CO2 == type) {
-        mqtt::send(idx, static_cast<int>(value));
+    } else if (MAGNITUDE_CO2 == value.type) {
+        mqtt::send(idx, static_cast<int>(value.value));
     // Otherwise, send char string aka formatted float (nvalue is only for integers)
     } else {
-        mqtt::send(idx, 0, buffer);
+        mqtt::send(idx, 0, value.repr.c_str());
     }
 }
 
@@ -460,8 +457,8 @@ void migrate(int version) {
 
 #if SENSOR_SUPPORT
 
-void domoticzSendMagnitude(unsigned char type, unsigned char index, double value, const char* buffer) {
-    domoticz::sensor::send(type, index, value, buffer);
+void domoticzSendMagnitude(unsigned char index, const sensor::Value& value) {
+    domoticz::sensor::send(index, value);
 }
 
 #endif
