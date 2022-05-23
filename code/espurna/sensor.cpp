@@ -3224,7 +3224,7 @@ sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
         .index = magnitude.index_global,
         .units = magnitude.units,
         .decimals = magnitude.decimals,
-        .value = magnitude.reported,
+        .value = value,
         .topic = _magnitudeTopicIndex(magnitude),
         .repr = _magnitudeFormat(magnitude, value),
     };
