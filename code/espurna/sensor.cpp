@@ -3230,9 +3230,7 @@ sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
     };
 }
 
-void _sensorReport(const Magnitude& magnitude, unsigned char index, double value) {
-    const auto report = _magnitudeValue(magnitude, value);
-
+void _sensorReport(const ::sensor::Value& report) {
     for (auto& handler : _magnitude_report_handlers) {
         handler(report);
     }
@@ -3257,17 +3255,6 @@ void _sensorReport(const Magnitude& magnitude, unsigned char index, double value
 
     }
 #endif // MQTT_SUPPORT
-
-    // TODO: both integrations depend on the absolute index instead of specific type
-    //       so, we still need to pass / know the 'global' index inside of _magnitudes[]
-
-#if THINGSPEAK_SUPPORT
-    tspkEnqueueMeasurement(index, report.repr.c_str());
-#endif // THINGSPEAK_SUPPORT
-
-#if DOMOTICZ_SUPPORT
-    domoticzSendMagnitude(index, report);
-#endif // DOMOTICZ_SUPPORT
 }
 
 void _sensorInit() {
@@ -3725,7 +3712,15 @@ void sensorLoop() {
 
                 // Check ${name}MinDelta if there is a minimum change threshold to report
                 if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_delta)) {
-                    _sensorReport(magnitude, magnitude_index, value.filtered);
+                    const auto report = _magnitudeValue(magnitude, value.filtered);
+                    _sensorReport(report);
+#if THINGSPEAK_SUPPORT
+                    tspkEnqueueMeasurement(magnitude_index, report);
+#endif
+
+#if DOMOTICZ_SUPPORT
+                    domoticzSendMagnitude(magnitude_index, report);
+#endif
                     magnitude.reported = value.filtered;
                 }
 

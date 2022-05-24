@@ -136,8 +136,8 @@ void _tspkConfigure() {
 void _tspkClearFields() {
     _tspk_tries = THINGSPEAK_TRIES;
     if (_tspk_clear) {
-        for (size_t id = 0; id < THINGSPEAK_FIELDS; ++id) {
-            _tspk_fields[id] = "";
+        for (auto& field : _tspk_fields) {
+            field = "";
         }
     }
 }
@@ -379,9 +379,9 @@ void _tspkPost(const String& address) {
 
 #endif // THINGSPEAK_USE_ASYNC
 
-void _tspkEnqueue(size_t index, const char* payload) {
-    if (index > 0) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%hhu with value %s\n"), index, payload);
+template <typename T>
+void _tspkEnqueue(size_t index, const T& payload) {
+    if ((index > 0) && (index <= std::size(_tspk_fields))) {
         _tspk_fields[--index] = payload;
     }
 }
@@ -399,12 +399,16 @@ void _tspkFlush() {
     _tspk_flush = false;
     _tspk_data.reserve(tspkDataBufferSize);
 
-    // Walk the fields, numbered 1...THINGSPEAK_FIELDS
-    for (size_t id = 0; id<THINGSPEAK_FIELDS; id++) {
+    // Walk the fields, external id is always ours plus one
+    for (size_t id = 0; id < std::size(_tspk_fields); ++id) {
         if (_tspk_fields[id].length()) {
-            if (_tspk_data.length() > 0) _tspk_data.concat("&");
+            if (_tspk_data.length() > 0) {
+                _tspk_data.concat("&");
+            }
+
             char buf[32] = {0};
-            snprintf_P(buf, sizeof(buf), PSTR("field%u=%s"), (id + 1), _tspk_fields[id].c_str());
+            snprintf_P(buf, sizeof(buf), PSTR("field%u=%s"),
+                (id + 1), _tspk_fields[id].c_str());
             _tspk_data.concat(buf);
         }
     }
@@ -425,22 +429,23 @@ bool tspkEnqueueRelay(size_t index, bool status) {
     if (_tspk_enabled) {
         unsigned char id = getSetting({"tspkRelay", index}, 0);
         if (id > 0) {
-            _tspkEnqueue(id, status ? "1" : "0");
+            _tspkEnqueue(id, status ? '1' : '0');
             return true;
         }
-        return false;
     }
 
-    return true;
+    return false;
 }
 
-bool tspkEnqueueMeasurement(unsigned char index, const char * payload) {
-    if (!_tspk_enabled) return true;
-    const auto id = getSetting({"tspkMagnitude", index}, 0);
-    if (id > 0) {
-        _tspkEnqueue(id, payload);
-        return true;
+bool tspkEnqueueMeasurement(unsigned char index, const ::sensor::Value& value) {
+    if (_tspk_enabled) {
+        const auto id = getSetting({"tspkMagnitude", index}, 0);
+        if (id > 0) {
+            _tspkEnqueue(id, value.repr);
+            return true;
+        }
     }
+
     return false;
 }
 
