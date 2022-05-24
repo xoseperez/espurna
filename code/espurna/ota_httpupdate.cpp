@@ -103,21 +103,21 @@ void clientFromHttps(const String& url, SecureClientConfig& config) {
     run(&client->get(), url);
 }
 
-SecureClientConfig defaultSecureClientConfig {
-    "OTA",
-    []() -> int {
+static SecureClientConfig defaultSecureClientConfig {
+    .tag = "OTA",
+    .on_check = []() -> int {
         return getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK);
     },
-    []() -> PGM_P {
+    .on_certificate = []() -> PGM_P {
         return _ota_client_trusted_root_ca;
     },
-    []() -> String {
+    .on_fingerprint = []() -> String {
         return getSetting("otaFP", OTA_FINGERPRINT);
     },
-    []() -> uint16_t {
+    .on_mfln = []() -> uint16_t {
         return getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN);
     },
-    true
+    .debug = true,
 };
 
 void clientFromHttps(const String& url) {

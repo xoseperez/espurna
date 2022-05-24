@@ -1372,7 +1372,7 @@
 #endif
 
 #ifndef THINGSPEAK_MIN_INTERVAL
-#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (ms)
+#define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (milliseconds)
 #endif
 
 #ifndef THINGSPEAK_FIELDS

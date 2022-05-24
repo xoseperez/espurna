@@ -546,28 +546,25 @@ Ticker _mqtt_json_payload_flush;
 
 namespace {
 
-#if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
 SecureClientConfig _mqtt_sc_config {
-    "MQTT",
-    []() -> String {
+    .tag = "MQTT",
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+    .on_host = []() -> String {
         return _mqtt_server;
     },
-    mqtt::settings::secureClientCheck,
-    mqtt::settings::fingerprint,
-    true
-};
 #endif
-
+    .on_check = mqtt::settings::secureClientCheck,
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-SecureClientConfig _mqtt_sc_config {
-    "MQTT",
-    mqtt::settings::secureClientCheck,
-    []() -> PGM_P {
+    .on_certificate = []() -> const char* {
         return _mqtt_client_trusted_root_ca;
     },
-    mqtt::settings::fingerprint,
-    mqtt::settings::mfln,
-    true
+#endif
+    .on_fingerprint = mqtt::settings::fingerprint,
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+    .on_mfln = mqtt::settings::mfln,
+#endif
+    .debug = true,
 };
 #endif
 

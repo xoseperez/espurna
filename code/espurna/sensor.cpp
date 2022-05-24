@@ -329,7 +329,14 @@ unsigned char Magnitude::_counts[MAGNITUDE_MAX] = {0};
 
 namespace sensor {
 
+struct ReadValue {
+    double raw;
+    double processed;
+    double filtered;
+};
+
 // Base units
+// TODO: attach ratio to the class instead of hard-coded scaling rules?
 // TODO: implement through a single class and allow direct access to the ::value
 
 KWh::KWh() :
@@ -2278,7 +2285,7 @@ void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSo
     ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-module")};
 
     auto& container = payload.root();
-    container[F("prefix")] = prefix;
+    container[F("prefix")] = FPSTR(prefix);
 
     payload(STRING_VIEW("values"), _magnitudes.size(), {
         {STRING_VIEW("type"), [](JsonArray& out, size_t index) {
@@ -3715,7 +3722,7 @@ void sensorLoop() {
                     const auto report = _magnitudeValue(magnitude, value.filtered);
                     _sensorReport(report);
 #if THINGSPEAK_SUPPORT
-                    tspkEnqueueMeasurement(magnitude_index, report);
+                    tspkEnqueueMagnitude(magnitude_index, report.repr);
 #endif
 
 #if DOMOTICZ_SUPPORT
@@ -3750,13 +3757,9 @@ void sensorLoop() {
         // Post-read hook, called every reading
         _sensorPost();
 
-        // And report data to modules that don't specifically track them
+        // And send data to modules that didn't register read / report callbacks
 #if WEB_SUPPORT
         wsPost(_sensorWebSocketSendData);
-#endif
-
-#if THINGSPEAK_SUPPORT
-        if (report_count == 0) tspkFlush();
 #endif
 
     }

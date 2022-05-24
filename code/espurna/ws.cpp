@@ -771,12 +771,12 @@ bool wsConnected(uint32_t client_id) {
     return _ws.hasClient(client_id);
 }
 
-void wsPayloadModule(JsonObject& root, const char* const name) {
-    const char* const key { "modulesVisible" };
-    JsonArray& modules = root.containsKey(key)
-        ? root[key]
-        : root.createNestedArray(key);
-    modules.add(name);
+void wsPayloadModule(JsonObject& root, const char* name) {
+    alignas(4) static constexpr char Key[] PROGMEM = "modulesVisible";
+    JsonArray& modules = root.containsKey(FPSTR(Key))
+        ? root[Key]
+        : root.createNestedArray(Key);
+    modules.add(FPSTR(name));
 }
 
 ws_callbacks_t& wsRegister() {

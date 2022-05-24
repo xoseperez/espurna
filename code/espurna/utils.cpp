@@ -271,15 +271,16 @@ bool isNumber(const String& value) {
 
 // ref: lwip2 lwip_strnstr with strnlen
 char* strnstr(const char* buffer, const char* token, size_t n) {
-  size_t token_len = strnlen(token, n);
-  if (token_len == 0) {
-    return const_cast<char*>(buffer);
+  const auto token_len = strnlen_P(token, n);
+  if (!token_len) {
+      return const_cast<char*>(buffer);
   }
 
+  const auto first = pgm_read_byte(token);
   for (const char* p = buffer; *p && (p + token_len <= buffer + n); p++) {
-    if ((*p == *token) && (strncmp(p, token, token_len) == 0)) {
-      return const_cast<char*>(p);
-    }
+      if ((*p == first) && (strncmp_P(p, token, token_len) == 0)) {
+          return const_cast<char*>(p);
+      }
   }
 
   return nullptr;

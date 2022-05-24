@@ -117,12 +117,6 @@ struct Energy {
     Ws ws;
 };
 
-struct ReadValue {
-    double raw;
-    double processed;
-    double filtered;
-};
-
 struct Value {
     static constexpr double Unknown { std::numeric_limits<double>::quiet_NaN() };
 
