@@ -3745,8 +3745,8 @@ void sensorLoop() {
 
                 DEBUG_MSG_P(PSTR("[SENSOR] %s -> raw %s processed %s filtered %s\n"),
                     _magnitudeTopic(magnitude.type).c_str(),
-                    withUnits(value.processed, magnitude.units).c_str(),
                     withUnits(value.raw, magnitude.sensor->units(magnitude.slot)).c_str(),
+                    withUnits(value.processed, magnitude.units).c_str(),
                     withUnits(value.filtered, magnitude.units).c_str());
             }
 #endif
