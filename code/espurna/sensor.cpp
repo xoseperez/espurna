@@ -3231,7 +3231,7 @@ sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
 }
 
 void _sensorReport(const Magnitude& magnitude, unsigned char index, double value) {
-    const auto report = _magnitudeValue(magnitude, magnitude.reported);
+    const auto report = _magnitudeValue(magnitude, value);
 
     for (auto& handler : _magnitude_report_handlers) {
         handler(report);
