@@ -97,12 +97,12 @@ bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
 
 #if WEB_SUPPORT
 
-void _telnetWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "telnet");
+bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant&) {
+    return strncmp_P(key, PSTR("telnet"), 6) == 0;
 }
 
-bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "telnet", 6) == 0);
+void _telnetWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, PSTR("telnet"));
 }
 
 void _telnetWebSocketOnConnected(JsonObject& root) {

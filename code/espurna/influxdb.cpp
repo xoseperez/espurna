@@ -133,11 +133,11 @@ void _idbInitClient() {
 // -----------------------------------------------------------------------------
 
 bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "idb", 3) == 0);
+    return (strncmp_P(key, PSTR("idb"), 3) == 0);
 }
 
 void _idbWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "idb");
+    wsPayloadModule(root, PSTR("idb"));
 }
 
 void _idbWebSocketOnConnected(JsonObject& root) {

@@ -910,9 +910,9 @@ bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant&) {
 }
 
 void _mqttWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "mqtt");
+    wsPayloadModule(root, PSTR("mqtt"));
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
-    wsPayloadModule(root, "mqttssl");
+    wsPayloadModule(root, PSTR("mqttssl"));
 #endif
 }
 

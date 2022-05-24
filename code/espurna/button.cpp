@@ -934,7 +934,7 @@ void _buttonRelayAction(size_t id, ButtonAction action) {
 namespace {
 
 void _buttonWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "btn");
+    wsPayloadModule(root, PSTR("btn"));
 }
 
 void _buttonWebSocketOnConnected(JsonObject& root) {
@@ -944,7 +944,7 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
 }
 
 bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "btn", 3) == 0);
+    return (strncmp_P(key, PSTR("btn"), 3) == 0);
 }
 
 } // namespace

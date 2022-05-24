@@ -209,7 +209,7 @@ void setDefault() {
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _garlandWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "garland");
+    wsPayloadModule(root, PSTR("garland"));
 }
 
 void _garlandWebSocketOnConnected(JsonObject& root) {

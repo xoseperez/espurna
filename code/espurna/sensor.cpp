@@ -2198,38 +2198,38 @@ void _sensorWebSocketOnAction(uint32_t client_id, const char* action, JsonObject
 }
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "sns");
+    wsPayloadModule(root, PSTR("sns"));
     for (auto sensor : _sensors) {
         if (_sensorIsEmon(sensor)) {
-            wsPayloadModule(root, "emon");
+            wsPayloadModule(root, PSTR("emon"));
         }
 
         switch (sensor->id()) {
 #if HLW8012_SUPPORT
         case SENSOR_HLW8012_ID:
-            wsPayloadModule(root, "hlw");
+            wsPayloadModule(root, PSTR("hlw"));
             break;
 #endif
 #if CSE7766_SUPPORT
         case SENSOR_CSE7766_ID:
-            wsPayloadModule(root, "cse");
+            wsPayloadModule(root, PSTR("cse"));
             break;
 #endif
 #if PZEM004T_SUPPORT || PZEM004TV30_SUPPORT
         case SENSOR_PZEM004T_ID:
         case SENSOR_PZEM004TV30_ID:
-            wsPayloadModule(root, "pzem");
+            wsPayloadModule(root, PSTR("pzem"));
             break;
 #endif
 #if PULSEMETER_SUPPORT
         case SENSOR_PULSEMETER_ID:
-            wsPayloadModule(root, "pm");
+            wsPayloadModule(root, PSTR("pm"));
             break;
 #endif
 #if MICS2710_SUPPORT || MICS5525_SUPPORT
         case SENSOR_MICS2710_ID:
         case SENSOR_MICS5525_ID:
-            wsPayloadModule(root, "mics");
+            wsPayloadModule(root, PSTR("mics"));
             break;
 #endif
         }

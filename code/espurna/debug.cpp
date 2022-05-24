@@ -544,7 +544,7 @@ void send(const char* message, size_t len, Timestamp timestamp) {
 namespace web {
 
 void onVisible(JsonObject& root) {
-    wsPayloadModule(root, "dbg");
+    wsPayloadModule(root, PSTR("dbg"));
 }
 
 } // namespace web

@@ -380,11 +380,11 @@ time_t now() {
 namespace web {
 
 bool onKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "ntp", 3) == 0);
+    return (strncmp_P(key, PSTR("ntp"), 3) == 0);
 }
 
 void onVisible(JsonObject& root) {
-    wsPayloadModule(root, "ntp");
+    wsPayloadModule(root, PSTR("ntp"));
 }
 
 void onData(JsonObject& root) {

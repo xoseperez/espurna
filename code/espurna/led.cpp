@@ -1004,7 +1004,7 @@ bool onKeyCheck(const char* key, JsonVariant&) {
 }
 
 void onVisible(JsonObject& root) {
-    wsPayloadModule(root, "led");
+    wsPayloadModule(root, PSTR("led"));
 }
 
 void onConnected(JsonObject& root) {

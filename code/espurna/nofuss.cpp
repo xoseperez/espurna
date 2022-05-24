@@ -29,11 +29,11 @@ bool _nofussEnabled = false;
 #if WEB_SUPPORT
 
 bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "nofuss", 6) == 0);
+    return (strncmp_P(key, PSTR("nofuss"), 6) == 0);
 }
 
 void _nofussWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "nofuss");
+    wsPayloadModule(root, PSTR("nofuss"));
 }
 
 void _nofussWebSocketOnConnected(JsonObject& root) {

@@ -779,7 +779,7 @@ void displayLoop() {
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _thermostatWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "thermostat");
+    wsPayloadModule(root, PSTR("thermostat"));
 }
 
 void _thermostatWebSocketOnConnected(JsonObject& root) {

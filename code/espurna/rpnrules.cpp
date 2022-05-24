@@ -354,12 +354,12 @@ void setup() {
 #if WEB_SUPPORT
 namespace web {
 
-void onVisible(JsonObject& root) {
-    wsPayloadModule(root, "rpn");
+bool onKeyCheck(const char * key, JsonVariant& value) {
+    return strncmp_P(key, PSTR("rpn"), 3) == 0;
 }
 
-bool onKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "rpn", 3) == 0);
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, PSTR("rpn"));
 }
 
 void onConnected(JsonObject& root) {

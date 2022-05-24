@@ -2338,7 +2338,7 @@ void _lightWebSocketStatus(JsonObject& root) {
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "light");
+    wsPayloadModule(root, PSTR("light"));
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {

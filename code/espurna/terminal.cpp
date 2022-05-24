@@ -661,27 +661,27 @@ void _terminalMqttSetup() {
 
 #if WEB_SUPPORT
 
-void _terminalWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "cmd");
-}
-
 void _terminalWebSocketOnAction(uint32_t, const char* action, JsonObject& data) {
-    if (strcmp(action, "cmd") != 0) {
+    if (strncmp_P(action, PSTR("cmd"), 3) != 0) {
         return;
     }
 
-    alignas(4) static constexpr char key[] PROGMEM = "line";
-    if (!data.containsKey(FPSTR(key)) || !data[FPSTR(key)].is<String>()) {
+    alignas(4) static constexpr char Key[] PROGMEM = "line";
+    if (!data.containsKey(FPSTR(Key)) || !data[FPSTR(Key)].is<String>()) {
         return;
     }
 
-    const auto command = data[FPSTR(key)].as<String>();
+    const auto command = data[FPSTR(Key)].as<String>();
     if (command.length()) {
         _io.inject(command.c_str(), command.length());
         if (command[command.length() - 1] != '\n') {
             _io.inject('\n');
         }
     }
+}
+
+void _terminalWebSocketOnVisible(JsonObject& root) {
+    wsPayloadModule(root, PSTR("cmd"));
 }
 
 #endif

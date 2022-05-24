@@ -105,11 +105,11 @@ void _alexaSettingsMigrate(int version) {
 // -----------------------------------------------------------------------------
 
 void _alexaWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "alexa");
+    wsPayloadModule(root, PSTR("alexa"));
 }
 
 bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "alexa", 5) == 0);
+    return (strncmp_P(key, PSTR("alexa"), 5) == 0);
 }
 
 void _alexaWebSocketOnConnected(JsonObject& root) {

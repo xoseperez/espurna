@@ -110,8 +110,7 @@ bool wsConnected(uint32_t client_id);
 
 // Append module's name that webui can make it's widgets visible
 // (for the payload in `on_send` callback(s))
-
-void wsPayloadModule(JsonObject& root, const char* const name);
+void wsPayloadModule(JsonObject& root, const char* name);
 
 // Access to our module-specific lifetime callbacks.
 // Expected usage is through the on() methods

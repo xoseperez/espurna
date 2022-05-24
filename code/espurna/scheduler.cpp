@@ -511,12 +511,12 @@ namespace web {
 #if WEB_SUPPORT
 
 bool onKey(const char* key, JsonVariant&) {
-    return (strncmp(key, "sch", 3) == 0);
+    return strncmp_P(key, PSTR("sch"), 3) == 0;
 }
 
 void onVisible(JsonObject& root) {
     if (schedulable()) {
-        wsPayloadModule(root, "sch");
+        wsPayloadModule(root, PSTR("sch"));
     }
 }
 

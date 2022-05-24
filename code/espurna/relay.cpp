@@ -2201,14 +2201,14 @@ void _relayWebSocketOnVisible(JsonObject& root) {
     }
 
     if (relays > 1) {
-        wsPayloadModule(root, "multirelay");
+        wsPayloadModule(root, PSTR("multirelay"));
         root[FPSTR(espurna::relay::settings::keys::Sync)] =
             ::settings::internal::serialize(espurna::relay::settings::syncMode());
         root[FPSTR(espurna::relay::settings::keys::Interlock)] =
             espurna::relay::settings::interlockDelay().count();
     }
 
-    wsPayloadModule(root, "relay");
+    wsPayloadModule(root, PSTR("relay"));
 }
 
 void _relayWebSocketOnConnected(JsonObject& root) {

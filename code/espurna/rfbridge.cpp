@@ -392,9 +392,9 @@ String _rfbRetrieve(size_t id, bool status) {
 #if WEB_SUPPORT
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "rfb");
+    wsPayloadModule(root, PSTR("rfb"));
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-    wsPayloadModule(root, "rfbdirect");
+    wsPayloadModule(root, PSTR("rfbdirect"));
 #endif
 }
 

@@ -395,7 +395,7 @@ void _curtainWebSocketOnConnected(JsonObject& root) {
 
 //------------------------------------------------------------------------------
 bool _curtainWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, "curtain", strlen("curtain")) == 0) return true;
+    if (strncmp_P(key, PSTR("curtain"), __builtin_strlen("curtain")) == 0) return true;
     return false;
 }
 
@@ -432,7 +432,7 @@ void _curtainWebSocketOnAction(uint32_t client_id, const char * action, JsonObje
 }
 
 void _curtainWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, "curtain");
+    wsPayloadModule(root, PSTR("curtain"));
 }
 
 #endif //WEB_SUPPORT
