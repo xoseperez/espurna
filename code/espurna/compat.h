@@ -133,10 +133,13 @@ constexpr size_t size(const T& value) {
 
 } // namespace std
 
+#endif
+
 // Same as min and max, force same type arguments
 #undef constrain
 
-#endif
+// Hijacks useful name
+#undef bit
 
 // -----------------------------------------------------------------------------
 // Make sure all INPUT modes are available to the source
