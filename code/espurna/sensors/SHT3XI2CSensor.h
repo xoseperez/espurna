@@ -74,7 +74,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
             // Measurement High Repeatability with Clock Stretch Enabled
             i2c_write_uint8(address, 0x2C, 0x06);
             espurna::time::blockingDelay(
-                espurna::duration::Milliseconds(500));
+                espurna::duration::Milliseconds(20));
 
             unsigned char buffer[6];
             i2c_read_buffer(address, buffer, std::size(buffer));
@@ -87,7 +87,9 @@ class SHT3XI2CSensor : public I2CSensor<> {
             else {
                 _error = SENSOR_ERROR_CRC;
             }
+            #if SENSOR_DEBUG
             status_register();
+            #endif
         }
         
         // Read the status register and output to Debug log
@@ -99,7 +101,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
             // Read status register
             i2c_write_uint8(address, 0xF3, 0x2D);
             espurna::time::blockingDelay(
-                espurna::duration::Milliseconds(500));
+                espurna::duration::Milliseconds(20));
             i2c_read_buffer(address, buffer, std::size(buffer));
             if (CRC8(buffer[0],buffer[1],buffer[2])) {
                 // see https://sensirion.com/resource/datasheet/sht3x-d
@@ -113,8 +115,6 @@ class SHT3XI2CSensor : public I2CSensor<> {
             }
             // Clear status register
             i2c_write_uint8(address, 0x30, 0x41);
-            espurna::time::blockingDelay(
-                espurna::duration::Milliseconds(500));
         }
 
         // Current value for slot # index
