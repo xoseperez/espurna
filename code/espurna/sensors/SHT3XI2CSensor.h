@@ -74,15 +74,47 @@ class SHT3XI2CSensor : public I2CSensor<> {
             // Measurement High Repeatability with Clock Stretch Enabled
             i2c_write_uint8(address, 0x2C, 0x06);
             espurna::time::blockingDelay(
-                espurna::duration::Milliseconds(500));
+                espurna::duration::Milliseconds(20));
 
             unsigned char buffer[6];
             i2c_read_buffer(address, buffer, std::size(buffer));
-
-            // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
-            _temperature = ((((buffer[0] * 256.0) + buffer[1]) * 175) / 65535.0) - 45;
-            _humidity = ((((buffer[3] * 256.0) + buffer[4]) * 100) / 65535.0);
-
+            
+            if ((CRC8(buffer[0],buffer[1],buffer[2])) && (CRC8(buffer[3],buffer[4],buffer[5]))) {
+                // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
+                _temperature = ((((buffer[0] * 256.0) + buffer[1]) * 175) / 65535.0) - 45;
+                _humidity = ((((buffer[3] * 256.0) + buffer[4]) * 100) / 65535.0);
+            }
+            else {
+                _error = SENSOR_ERROR_CRC;
+            }
+            #if SENSOR_DEBUG
+            status_register();
+            #endif
+        }
+        
+        // Read the status register and output to Debug log
+        void status_register() {
+            const auto address = lockedAddress();
+            
+            unsigned char buffer[3];
+            bool crc, cmd, htr;
+            // Read status register
+            i2c_write_uint8(address, 0xF3, 0x2D);
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds(20));
+            i2c_read_buffer(address, buffer, std::size(buffer));
+            if (CRC8(buffer[0],buffer[1],buffer[2])) {
+                // see https://sensirion.com/resource/datasheet/sht3x-d
+                crc = buffer[1] & 0b00000001;
+                cmd = buffer[1] & 0b00000010;
+                htr = buffer[0] & 0b00100000;
+                DEBUG_MSG_P(PSTR("[SHT3X] Status %02X%02X crc:%u cmd:%u htr:%u\n"), buffer[0], buffer[1], crc, cmd, htr);
+            }
+            else {
+                DEBUG_MSG_P(PSTR("[SHT3X] Checksum error\n"));
+            }
+            // Clear status register
+            i2c_write_uint8(address, 0x30, 0x41);
         }
 
         // Current value for slot # index
@@ -96,6 +128,31 @@ class SHT3XI2CSensor : public I2CSensor<> {
 
         double _temperature = 0;
         unsigned char _humidity = 0;
+        
+        bool 	CRC8(uint8_t MSB, uint8_t LSB, uint8_t CRC) {
+            /*
+            * adapted from https://github.com/Risele/SHT3x/blob/master/SHT3x.cpp
+            *	Name  : CRC-8
+            *	Poly  : 0x31	x^8 + x^5 + x^4 + 1
+            *	Init  : 0xFF
+            *	Revert: false
+            *	XorOut: 0x00
+            *	Check : for 0xBE,0xEF CRC is 0x92
+            */
+            uint8_t crc = 0xFF;
+            uint8_t i;
+            crc ^= MSB;
+
+            for (i = 0; i < 8; i++)
+          	crc = crc & 0x80 ? (crc << 1) ^ 0x31 : crc << 1;
+
+            crc ^= LSB;
+            for (i = 0; i < 8; i++)
+          	crc = crc & 0x80 ? (crc << 1) ^ 0x31 : crc << 1;
+
+            if (crc == CRC) return true;
+            return false;
+        }
 
 };
 
