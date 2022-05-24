@@ -108,7 +108,7 @@ class SHT3XI2CSensor : public I2CSensor<> {
                 crc = buffer[1] & 0b00000001;
                 cmd = buffer[1] & 0b00000010;
                 htr = buffer[0] & 0b00100000;
-                DEBUG_MSG_P(PSTR("[SHT3X] Status crc:%u cmd:%u htr:%u\n"), crc, cmd, htr);
+                DEBUG_MSG_P(PSTR("[SHT3X] Status %02X%02X crc:%u cmd:%u htr:%u\n"), buffer[0], buffer[1], crc, cmd, htr);
             }
             else {
                 DEBUG_MSG_P(PSTR("[SHT3X] Checksum error\n"));
