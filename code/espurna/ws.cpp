@@ -774,8 +774,8 @@ bool wsConnected(uint32_t client_id) {
 void wsPayloadModule(JsonObject& root, const char* name) {
     alignas(4) static constexpr char Key[] PROGMEM = "modulesVisible";
     JsonArray& modules = root.containsKey(FPSTR(Key))
-        ? root[Key]
-        : root.createNestedArray(Key);
+        ? root[FPSTR(Key)]
+        : root.createNestedArray(FPSTR(Key));
     modules.add(FPSTR(name));
 }
 
