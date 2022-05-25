@@ -2359,30 +2359,30 @@ void _lightWebSocketOnConnected(JsonObject& root) {
 
 void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
     if (_light_has_color) {
-        if (strcmp(action, "color") == 0) {
-            if (data.containsKey("rgb")) {
-                _lightFromRgbPayload(data["rgb"].as<const char*>());
+        if (STRING_VIEW("color") == action) {
+            if (data.containsKey(F("rgb"))) {
+                _lightFromRgbPayload(data[F("rgb")].as<const char*>());
                 lightUpdate();
             } else if (data.containsKey("hsv")) {
-                _lightFromHsvPayload(data["hsv"].as<const char*>());
+                _lightFromHsvPayload(data[F("hsv")].as<const char*>());
                 lightUpdate();
             }
         }
     }
 
-    if (strcmp(action, "mireds") == 0) {
-        if (data.containsKey("mireds")) {
-            _fromMireds(data["mireds"].as<long>());
+    if (STRING_VIEW("mireds") == action) {
+        if (data.containsKey(F("mireds"))) {
+            _fromMireds(data[F("mireds")].as<long>());
             lightUpdate();
         }
-    } else if (strcmp(action, "channel") == 0) {
-        if (data.containsKey("id") && data.containsKey("value")) {
-            lightChannel(data["id"].as<size_t>(), data["value"].as<long>());
+    } else if (STRING_VIEW("channel") == action) {
+        if (data.containsKey(F("id")) && data.containsKey(F("value"))) {
+            lightChannel(data[F("id")].as<size_t>(), data[F("value")].as<long>());
             lightUpdate();
         }
-    } else if (strcmp(action, "brightness") == 0) {
-        if (data.containsKey("value")) {
-            lightBrightness(data["value"].as<long>());
+    } else if (STRING_VIEW("brightness") == action) {
+        if (data.containsKey(F("value"))) {
+            lightBrightness(data[F("value")].as<long>());
             lightUpdate();
         }
     }

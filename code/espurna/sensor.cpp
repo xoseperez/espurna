@@ -2176,7 +2176,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
 }
 
 void _sensorWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
-    if (strcmp(action, "emon-expected") == 0) {
+    if (STRING_VIEW("emon-expected") == action) {
         auto id = data["id"].as<size_t>();
         if (id < _magnitudes.size()) {
             auto expected = data["expected"].as<float>();
@@ -2190,10 +2190,17 @@ void _sensorWebSocketOnAction(uint32_t client_id, const char* action, JsonObject
                 root[key] = _sensorApiEmonExpectedValue(magnitude, expected);
             });
         }
-    } else if (strcmp(action, "emon-reset-ratios") == 0) {
+        return;
+    }
+
+    if (STRING_VIEW("emon-reset-ratios") == action) {
         _sensorApiEmonResetRatios();
-    } else if (strcmp(action, "analog-calibrate") == 0) {
+        return;
+    }
+
+    if (STRING_VIEW("analog-calibrate") == action) {
         _sensorApiAnalogCalibrate();
+        return;
     }
 }
 

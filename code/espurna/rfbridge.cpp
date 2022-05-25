@@ -432,7 +432,7 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
 
 void _rfbWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
 #if RELAY_SUPPORT
-    if (strncmp(action, "rfb", 3) != 0) {
+    if (STRING_VIEW("rfb") == action) {
         return;
     }
 
@@ -458,7 +458,7 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& d
 }
 
 bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "rfb", 3) == 0);
+    return strncmp_P(key, PSTR("rfb"), 3) == 0;
 }
 
 #endif // WEB_SUPPORT

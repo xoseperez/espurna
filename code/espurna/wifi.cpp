@@ -2519,7 +2519,7 @@ void onScan(uint32_t client_id) {
 }
 
 void onAction(uint32_t client_id, const char* action, JsonObject&) {
-    if (strcmp(action, "scan") == 0) {
+    if (STRING_VIEW("scan") == action) {
         onScan(client_id);
     }
 }

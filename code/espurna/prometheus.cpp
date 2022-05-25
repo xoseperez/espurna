@@ -25,11 +25,11 @@ namespace build {
 namespace {
 
 constexpr bool relaySupport() {
-    return RELAY_SUPPORT == 1;
+    return 1 == RELAY_SUPPORT;
 }
 
 constexpr bool sensorSupport() {
-    return SENSOR_SUPPORT == 1;
+    return 1 == SENSOR_SUPPORT;
 }
 
 static_assert(relaySupport() || sensorSupport(), "");
@@ -45,25 +45,24 @@ void handler(AsyncWebServerRequest* request) {
     // Note: Response 'stream' backing buffer is customizable. Default is 1460 bytes (see ESPAsyncWebServer.h)
     //       In case printf overflows, memory of CurrentSize+N{overflow} will be allocated to replace
     //       the existing buffer. Previous buffer will be copied into the new and destroyed after that.
-    AsyncResponseStream *response = request->beginResponseStream("text/plain");
+    auto *response = request->beginResponseStream("text/plain");
 
-    #if RELAY_SUPPORT
-        for (unsigned char index = 0; index < relayCount(); ++index) {
-            response->printf("relay%u %d\n", index, static_cast<int>(relayStatus(index)));
+    if (build::relaySupport()) {
+        for (size_t index = 0; index < relayCount(); ++index) {
+            response->printf_P(PSTR("relay%u %d\n"), index, relayStatus(index) ? 1 : 0);
         }
-    #endif
+    }
 
-    #if SENSOR_SUPPORT
-        for (unsigned char index = 0; index < magnitudeCount(); ++index) {
+    if (build::sensorSupport()) {
+        for (size_t index = 0; index < magnitudeCount(); ++index) {
             auto value = magnitudeValue(index);
             if (value) {
                 value.topic.remove('/');
-                response->printf("%s %s\n",
-                    value.topic.c_str(),
-                    value.repr.c_str());
+                response->printf_P(PSTR("%s %s\n"),
+                    value.topic.c_str(), value.repr.c_str());
             }
         }
-    #endif
+    }
 
     response->write('\n');
 

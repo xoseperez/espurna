@@ -2163,8 +2163,8 @@ void _relayConfigure() {
 
 namespace {
 
-bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp(key, "relay", 5) == 0);
+bool _relayWebSocketOnKeyCheck(const char* key, JsonVariant&) {
+    return strncmp_P(key, PSTR("relay"), 5) == 0;
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
@@ -2187,8 +2187,8 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     ::web::ws::EnumerableConfig config{root, STRING_VIEW("relayConfig")};
 
     auto& container = config.root();
-    container["size"] = _relays.size();
-    container["start"] = 0;
+    container[F("size")] = _relays.size();
+    container[F("start")] = 0;
 
     config(STRING_VIEW("relays"), _relays.size(),
         espurna::relay::settings::query::IndexedSettings);
@@ -2216,14 +2216,14 @@ void _relayWebSocketOnConnected(JsonObject& root) {
 }
 
 void _relayWebSocketOnAction(uint32_t, const char* action, JsonObject& data) {
-    if (strcmp(action, "relay") == 0) {
-        if (!data.is<size_t>("id") || !data.is<String>("status")) {
+    if (strncmp_P(action, PSTR("relay"), 5) == 0) {
+        if (!data.is<size_t>(F("id")) || !data.is<String>(F("status"))) {
             return;
         }
 
         _relayHandlePayload(
-            data["id"].as<size_t>(),
-            data["status"].as<String>().c_str());
+            data[F("id")].as<size_t>(),
+            data[F("status")].as<String>().c_str());
     }
 }
 

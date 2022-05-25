@@ -702,7 +702,7 @@ void terminalWebApiSetup() {
     apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
         [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
-                AsyncResponseStream *response = request->beginResponseStream("text/plain");
+                AsyncResponseStream *response = request->beginResponseStream(F("text/plain"));
                 for (auto* name : _terminal.names()) {
                     response->print(name);
                     response->print("\r\n");
