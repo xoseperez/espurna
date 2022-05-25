@@ -3209,43 +3209,50 @@ void _sensorLoad() {
 
 }
 
-sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
+String _magnitudeFormat(const Magnitude& magnitude, double value) {
     // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
     //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
     char buffer[64];
     dtostrf(value, 1, magnitude.decimals, buffer);
 
+    return buffer;
+}
+
+sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
     return sensor::Value {
         .type = magnitude.type,
         .index = magnitude.index_global,
         .units = magnitude.units,
         .decimals = magnitude.decimals,
-        .value = magnitude.reported,
+        .value = value,
         .topic = _magnitudeTopicIndex(magnitude),
-        .repr = buffer,
+        .repr = _magnitudeFormat(magnitude, value),
     };
 }
 
-void _sensorReport(unsigned char index, const Magnitude& magnitude) {
-    const auto value = _magnitudeValue(magnitude, magnitude.reported);
+void _sensorReport(const Magnitude& magnitude, unsigned char index, double value) {
+    const auto report = _magnitudeValue(magnitude, value);
 
     for (auto& handler : _magnitude_report_handlers) {
-        handler(value);
+        handler(report);
     }
 
 #if MQTT_SUPPORT
     {
-        mqttSend(value.topic.c_str(), value.repr.c_str());
+        mqttSend(report.topic.c_str(), report.repr.c_str());
 
 #if SENSOR_PUBLISH_ADDRESSES
-        String address_topic;
-        address_topic.reserve(topic.length() + 1 + strlen(SENSOR_ADDRESS_TOPIC));
+        {
+            static constexpr auto AddressTopic = STRING_VIEW(SENSOR_ADDRESS_TOPIC);
 
-        address_topic += F(SENSOR_ADDRESS_TOPIC);
-        address_topic += '/';
-        address_topic += topic;
+            String address_topic;
+            address_topic.reserve(report.topic.length() + AddressTopic.length());
+            address_topic.concat(AddressTopic.c_str(), AddressTopic.length());
+            address_topic += '/';
+            address_topic += report.topic;
 
-        mqttSend(address_topic.c_str(), magnitude.sensor.address(magnitude.slot).c_str());
+            mqttSend(address_topic.c_str(), magnitude.sensor->address(magnitude.slot).c_str());
+        }
 #endif // SENSOR_PUBLISH_ADDRESSES
 
     }
@@ -3255,13 +3262,12 @@ void _sensorReport(unsigned char index, const Magnitude& magnitude) {
     //       so, we still need to pass / know the 'global' index inside of _magnitudes[]
 
 #if THINGSPEAK_SUPPORT
-    tspkEnqueueMeasurement(index, value.repr.c_str());
+    tspkEnqueueMeasurement(index, report.repr.c_str());
 #endif // THINGSPEAK_SUPPORT
 
 #if DOMOTICZ_SUPPORT
-    domoticzSendMagnitude(magnitude.type, index, value.value, value.repr.c_str());
+    domoticzSendMagnitude(index, report);
 #endif // DOMOTICZ_SUPPORT
-
 }
 
 void _sensorInit() {
@@ -3418,16 +3424,6 @@ void _sensorConfigure() {
     }
 
 }
-
-#if SENSOR_DEBUG
-void _sensorDebugSetup() {
-    _magnitude_read_handlers.push_front([](const sensor::Value& value) {
-        DEBUG_MSG_P(PSTR("[SENSOR] %s -> %s%s\n"),
-            value.topic.c_str(), value.repr.c_str(),
-            (value.units != sensor::Unit::None) ? _magnitudeUnits(value.units).c_str() : "");
-    });
-}
-#endif
 
 } // namespace
 
@@ -3604,10 +3600,6 @@ void sensorSetup() {
         _sensorInitCommands();
     #endif
 
-    #if SENSOR_DEBUG
-        _sensorDebugSetup();
-    #endif
-
     // Main callbacks
     espurnaRegisterLoop(sensorLoop);
     espurnaRegisterReload(_sensorConfigure);
@@ -3733,12 +3725,31 @@ void sensorLoop() {
 
                 // Check ${name}MinDelta if there is a minimum change threshold to report
                 if (std::isnan(magnitude.reported) || (std::abs(value.filtered - magnitude.reported) >= magnitude.min_delta)) {
+                    _sensorReport(magnitude, magnitude_index, value.filtered);
                     magnitude.reported = value.filtered;
-                    _sensorReport(magnitude_index, magnitude);
                 }
 
             }
 
+#if SENSOR_DEBUG
+            {
+                auto withUnits = [&](double value, sensor::Unit units) {
+                    String out;
+                    out += _magnitudeFormat(magnitude, value);
+                    if (units != sensor::Unit::None) {
+                        out += _magnitudeUnits(units);
+                    }
+
+                    return out;
+                };
+
+                DEBUG_MSG_P(PSTR("[SENSOR] %s -> raw %s processed %s filtered %s\n"),
+                    _magnitudeTopic(magnitude.type).c_str(),
+                    withUnits(value.raw, magnitude.sensor->units(magnitude.slot)).c_str(),
+                    withUnits(value.processed, magnitude.units).c_str(),
+                    withUnits(value.filtered, magnitude.units).c_str());
+            }
+#endif
         }
 
         // Post-read hook, called every reading
