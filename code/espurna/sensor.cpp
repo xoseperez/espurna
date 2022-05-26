@@ -1193,7 +1193,9 @@ BaseFilterPtr _magnitudeCreateFilter(unsigned char type) {
     if (!filter) {
         filter = std::make_unique<MedianFilter>();
     }
-
+    if (sensor::settings::realTimeValues()) {
+        filter = std::make_unique<LastFilter>();
+    }
     return filter;
 }
 
