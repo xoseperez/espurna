@@ -312,12 +312,11 @@ constexpr espurna::duration::Seconds WsTimeout { WS_TIMEOUT };
 WsTicket _ws_tickets[WsMaxClients];
 
 void _onAuth(AsyncWebServerRequest* request) {
-    webLog(request);
-    if (!webAuthenticate(request)) {
+    if (!webApModeRequest(request) && !webAuthenticate(request)) {
         return request->requestAuthentication();
     }
 
-    IPAddress ip = request->client()->remoteIP();
+    auto ip = request->client()->remoteIP();
     auto now = WsTicket::TimeSource::now();
 
     auto it = std::begin(_ws_tickets);

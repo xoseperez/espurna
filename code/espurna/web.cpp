@@ -130,7 +130,7 @@ void AsyncWebPrint::_prepareRequest() {
         return written;
     });
 
-    response->addHeader("Connection", "close");
+    response->addHeader(F("Connection"), F("close"));
     _request->send(response);
 }
 
@@ -213,8 +213,9 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
 
 namespace {
 
+static constexpr char _last_modified[] PROGMEM = __DATE__ " " __TIME__ "GMT";
+
 AsyncWebServer* _server;
-char _last_modified[50];
 std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;
 
@@ -231,13 +232,47 @@ static constexpr size_t WebConfigBufferMax { 4096 };
 
 namespace {
 
+bool _authenticateRequest(AsyncWebServerRequest* request) {
+#if USE_PASSWORD
+    return request->authenticate(WEB_USERNAME, getAdminPass().c_str());
+#else
+    return true;
+#endif
+}
+
+// Whether the request is for this hostname or IP
+bool _isAPModeRequest(AsyncWebServerRequest* request) {
+    const String domain = getHostname() + ".";
+    const String host = request->header("Host");
+    const String ip = WiFi.softAPIP().toString();
+
+    return host.equals(ip) || host.startsWith(domain);
+}
+
+// Allow only requests that use our hostname or IP
+bool _onAPModeRequest(AsyncWebServerRequest* request) {
+    if (wifiConnectable()) {
+        if (_isAPModeRequest(request)) {
+            return true;
+        }
+
+        // Immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+        // Not doing so will cause memory exhaustion, because the connection will linger
+        request->send(404);
+        request->client()->close();
+
+        return false;
+    }
+
+    return true;
+}
+
 void _webRequestAuth(AsyncWebServerRequest* request) {
     request->requestAuthentication(getHostname().c_str(), true);
 }
 
 void _onReset(AsyncWebServerRequest *request) {
-    webLog(request);
-    if (!webAuthenticate(request)) {
+    if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
     }
@@ -247,9 +282,6 @@ void _onReset(AsyncWebServerRequest *request) {
 }
 
 void _onDiscover(AsyncWebServerRequest *request) {
-
-    webLog(request);
-
     const String device = getBoardName();
     const String hostname = getHostname();
 
@@ -260,15 +292,14 @@ void _onDiscover(AsyncWebServerRequest *request) {
     root["device"] = device;
     root["hostname"] = hostname.c_str();
 
-    AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
+    auto* response = request->beginResponseStream(F("application/json"), root.measureLength() + 1);
     root.printTo(*response);
 
     request->send(response);
-
 }
 
 void _onGetConfig(AsyncWebServerRequest *request) {
-    if (!webAuthenticate(request)) {
+    if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
     }
@@ -330,10 +361,10 @@ void _onGetConfig(AsyncWebServerRequest *request) {
         hostname.c_str(), get_timestamp().c_str());
 
     if (written > 0) {
-        response->addHeader("Content-Disposition", buffer);
-        response->addHeader("X-XSS-Protection", "1; mode=block");
-        response->addHeader("X-Content-Type-Options", "nosniff");
-        response->addHeader("X-Frame-Options", "deny");
+        response->addHeader(F("Content-Disposition"), buffer);
+        response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
+        response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
+        response->addHeader(F("X-Frame-Options"), F("deny"));
         request->send(response);
         return;
     }
@@ -342,8 +373,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 }
 
 void _onPostConfig(AsyncWebServerRequest *request) {
-    webLog(request);
-    if (!webAuthenticate(request)) {
+    if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
     }
@@ -352,7 +382,7 @@ void _onPostConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uint8_t *data, size_t len, bool final) {
 
-    if (!webAuthenticate(request)) {
+    if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
     }
@@ -395,59 +425,63 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uin
 
 }
 
-#if WEB_EMBEDDED
-void _onHome(AsyncWebServerRequest *request) {
+#if WIFI_AP_CAPTIVE_SUPPORT
+void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
+    if (wifiConnectable()) {
+        auto* response = request->beginResponse(302);
+        response->addHeader(F("Location"), String(F("http://")) + WiFi.softAPIP().toString());
+        response->addHeader(F("Connection"), F("close"));
+        request->send(response);
+        return;
+    }
 
-    webLog(request);
-    if (!webAuthenticate(request)) {
+    request->send(404);
+}
+#endif
+
+#if WEB_EMBEDDED
+alignas(4) static constexpr char IfModifiedSince[] PROGMEM = "If-Modified-Since";
+
+void _onHome(AsyncWebServerRequest *request) {
+    if (!_isAPModeRequest(request) && !_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
     }
 
-    if (request->header("If-Modified-Since").equals(_last_modified)) {
-
-        request->send(304);
-
-    } else {
-
-        #if WEB_SSL_ENABLED
-
-            // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
-            // This is necessary when a TLS connection is open since it sucks too much memory
-            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), systemFreeHeap());
-            size_t max = (systemFreeHeap() / 3) & 0xFFE0;
-
-            AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-
-                // Get the chunk based on the index and maxLen
-                size_t len = webui_image_len - index;
-                if (len > maxLen) len = maxLen;
-                if (len > max) len = max;
-                if (len > 0) memcpy_P(buffer, webui_image + index, len);
-
-                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
-                if (len == 0) DEBUG_MSG_P(PSTR("\n"));
-
-                // Return the actual length of the chunk (0 for end of file)
-                return len;
-
-            });
-
-        #else
-
-            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", webui_image, webui_image_len);
-
-        #endif
-
-        response->addHeader("Content-Encoding", "gzip");
-        response->addHeader("Last-Modified", _last_modified);
-        response->addHeader("X-XSS-Protection", "1; mode=block");
-        response->addHeader("X-Content-Type-Options", "nosniff");
-        response->addHeader("X-Frame-Options", "deny");
-        request->send(response);
-
+    if (request->hasHeader(FPSTR(IfModifiedSince))) {
+        const auto value = request->header(FPSTR(IfModifiedSince));
+        if (strncmp_P(value.c_str(), _last_modified, value.length()) == 0) {
+            request->send(304);
+            return;
+        }
     }
 
+#if WEB_SSL_ENABLED
+    // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
+    // This is necessary when a TLS connection is open since it sucks too much memory
+    const size_t max = (systemFreeHeap() / 3) & 0xFFE0;
+    auto* response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        // Get the chunk based on the index and maxLen
+        size_t len = webui_image_len - index;
+        len = std::min({len, maxLen, max});
+        if (len > 0) {
+            memcpy_P(buffer, webui_image + index, len);
+        }
+
+        // Return the actual length of the chunk (0 for end of file)
+        return len;
+    });
+#else
+    auto* response = request->beginResponse_P(200, F("text/html"), webui_image, webui_image_len);
+#endif
+
+    response->addHeader(F("Content-Encoding"), F("gzip"));
+    response->addHeader(F("Last-Modified"), _last_modified);
+    response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
+    response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
+    response->addHeader(F("X-Frame-Options"), F("deny"));
+
+    request->send(response);
 }
 #endif
 
@@ -502,29 +536,6 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
 #endif // WEB_SSL_ENABLED
 
-bool _onAPModeRequest(AsyncWebServerRequest *request) {
-
-    if ((WiFi.getMode() & WIFI_AP) > 0) {
-        const String domain = getHostname() + ".";
-        const String host = request->header("Host");
-        const String ip = WiFi.softAPIP().toString();
-
-        // Only allow requests that use our hostname or ip
-        if (host.equals(ip)) return true;
-        if (host.startsWith(domain)) return true;
-
-        // Immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
-        // Not doing so will cause memory exhaustion, because the connection will linger
-        request->send(404);
-        request->client()->close();
-
-        return false;
-    }
-
-    return true;
-
-}
-
 void _onRequest(AsyncWebServerRequest *request){
 
     if (!_onAPModeRequest(request)) return;
@@ -563,17 +574,13 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 } // namespace
 
-// -----------------------------------------------------------------------------
-
-bool webAuthenticate(AsyncWebServerRequest *request) {
-    #if USE_PASSWORD
-        return request->authenticate(WEB_USERNAME, getAdminPass().c_str());
-    #else
-        return true;
-    #endif
+bool webApModeRequest(AsyncWebServerRequest* request) {
+    return _isAPModeRequest(request);
 }
 
-// -----------------------------------------------------------------------------
+bool webAuthenticate(AsyncWebServerRequest *request) {
+    return _authenticateRequest(request);
+}
 
 AsyncWebServer& webServer() {
     return *_server;
@@ -596,8 +603,16 @@ uint16_t webPort() {
     #endif
 }
 
-void webLog(AsyncWebServerRequest *request) {
-    DEBUG_MSG_P(PSTR("[WEBSERVER] %s %s\n"), request->methodToString(), request->url().c_str());
+void webLog(AsyncWebServerRequest* request) {
+    const auto client = request->client();
+    String from = client
+        ? client->remoteIP().toString()
+        : F("(unknown)");
+
+    DEBUG_MSG_P(PSTR("[WEBSERVER] %s - %s %s\n"),
+        from.c_str(),
+        request->methodToString(),
+        request->url().c_str());
 }
 
 class WebAccessLogHandler : public AsyncWebHandler {
@@ -608,10 +623,6 @@ class WebAccessLogHandler : public AsyncWebHandler {
 };
 
 void webSetup() {
-
-    // Cache the Last-Modifier header value
-    snprintf_P(_last_modified, sizeof(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
-
     // Create server and install global URL debug handler
     // (since we don't want to forcibly add it to each instance)
     unsigned int port = webPort();
@@ -648,8 +659,8 @@ void webSetup() {
     _server->on("/discover", HTTP_GET, _onDiscover);
 
 #if WIFI_AP_CAPTIVE_SUPPORT
-    _server->on("/generate_204", _onHome);
-    _server->on("/fwlink", _onHome);
+    _server->on("/generate_204", _onAPCaptiveRequest);
+    _server->on("/fwlink", _onAPCaptiveRequest);
 #endif
 
     // Handle every other request, including 404

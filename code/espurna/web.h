@@ -82,8 +82,10 @@ using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
 
 AsyncWebServer& webServer();
 
-bool webAuthenticate(AsyncWebServerRequest *request);
-void webLog(AsyncWebServerRequest *request);
+bool webApModeRequest(AsyncWebServerRequest*);
+
+bool webAuthenticate(AsyncWebServerRequest*);
+void webLog(AsyncWebServerRequest*);
 
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
