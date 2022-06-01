@@ -213,16 +213,19 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
 
 namespace {
 
-static constexpr char _last_modified[] PROGMEM = __DATE__ " " __TIME__ "GMT";
+alignas(4) static constexpr char LastModified[] PROGMEM = __DATE__ " " __TIME__ " GMT";
+static constexpr size_t WebConfigBufferMax { 4096 };
 
+// server instance can't (yet) be static, port is the ctor argument :/
 AsyncWebServer* _server;
-std::vector<uint8_t> * _webConfigBuffer;
+
+// XXX shared between requests!
+std::vector<uint8_t>* _webConfigBuffer;
 bool _webConfigSuccess = false;
 
+// TODO server may not cache the full body
 std::vector<web_request_callback_f> _web_request_callbacks;
 std::vector<web_body_callback_f> _web_body_callbacks;
-
-static constexpr size_t WebConfigBufferMax { 4096 };
 
 } // namespace
 
@@ -450,7 +453,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
     if (request->hasHeader(FPSTR(IfModifiedSince))) {
         const auto value = request->header(FPSTR(IfModifiedSince));
-        if (strncmp_P(value.c_str(), _last_modified, value.length()) == 0) {
+        if (strncmp_P(value.c_str(), LastModified, value.length()) == 0) {
             request->send(304);
             return;
         }
@@ -462,7 +465,7 @@ void _onHome(AsyncWebServerRequest *request) {
     const size_t max = (systemFreeHeap() / 3) & 0xFFE0;
     auto* response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
         // Get the chunk based on the index and maxLen
-        size_t len = webui_image_len - index;
+        size_t len = std::size(webui_image) - index;
         len = std::min({len, maxLen, max});
         if (len > 0) {
             memcpy_P(buffer, webui_image + index, len);
@@ -472,11 +475,11 @@ void _onHome(AsyncWebServerRequest *request) {
         return len;
     });
 #else
-    auto* response = request->beginResponse_P(200, F("text/html"), webui_image, webui_image_len);
+    auto* response = request->beginResponse_P(200, F("text/html"), webui_image, std::size(webui_image));
 #endif
 
     response->addHeader(F("Content-Encoding"), F("gzip"));
-    response->addHeader(F("Last-Modified"), _last_modified);
+    response->addHeader(F("Last-Modified"), FPSTR(LastModified));
     response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
     response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
     response->addHeader(F("X-Frame-Options"), F("deny"));
