@@ -6,13 +6,10 @@ OTA MODULE COMMON FUNCTIONS
 
 #include "espurna.h"
 #include "ota.h"
-#include "rtcmem.h"
 #include "system.h"
 #include "terminal.h"
 #include "utils.h"
 #include "ws.h"
-
-#include <atomic>
 
 void otaPrintError() {
     if (Update.hasError()) {
@@ -93,38 +90,6 @@ void otaProgress(size_t bytes) {
 }
 
 void otaSetup() {
-    // Some magic to allow seamless Tasmota OTA upgrades
-    // - inject dummy data sequence that is expected to hold current version info
-    // - purge settings, since we don't want accidentaly reading something as a kv
-    // - sometimes we cannot boot b/c of certain SDK params, purge last 16KiB
-    {
-        // ref. `SetOption78 1` in Tasmota
-        // - https://tasmota.github.io/docs/Commands/#setoptions (> SetOption78   Version check on Tasmota upgrade)
-        // - https://github.com/esphome/esphome/blob/0e59243b83913fc724d0229514a84b6ea14717cc/esphome/core/esphal.cpp#L275-L287 (the original idea from esphome)
-        // - https://github.com/arendst/Tasmota/blob/217addc2bb2cf46e7633c93e87954b245cb96556/tasmota/settings.ino#L218-L262 (specific checks, which succeed when finding 0xffffffff as version)
-        // - https://github.com/arendst/Tasmota/blob/0dfa38df89c8f2a1e582d53d79243881645be0b8/tasmota/i18n.h#L780-L782 (constants)
-        volatile uint32_t magic[] __attribute__((unused)) {
-            0x5aa55aa5,
-            0xffffffff,
-            0xa55aa55a,
-        };
-
-        // ref. https://github.com/arendst/Tasmota/blob/217addc2bb2cf46e7633c93e87954b245cb96556/tasmota/settings.ino#L24
-        // We will certainly find these when rebooting from Tasmota. Purge SDK as well, since we may experience WDT after starting up the softAP
-        auto* rtcmem = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
-        if ((0xA55A == rtcmem[64]) && (0xA55A == rtcmem[68])) {
-            DEBUG_MSG_P(PSTR("[OTA] Detected TASMOTA OTA, resetting the device...\n"));
-            rtcmem[64] = rtcmem[68] = 0;
-            customResetReason(CustomResetReason::Factory);
-            resetSettings();
-            eraseSDKConfig();
-            __builtin_trap();
-            // can't return!
-        }
-
-        // TODO: also check for things throughout the flash sector, somehow?
-    }
-
 #if OTA_ARDUINOOTA_SUPPORT
     otaArduinoSetup();
 #endif
