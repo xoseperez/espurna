@@ -14,6 +14,5 @@ const String& getIdentifier();
 
 const char* getEspurnaModules();
 const char* getEspurnaSensors();
-const char* getEspurnaWebUI();
 
 void boardSetup();

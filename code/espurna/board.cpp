@@ -205,48 +205,31 @@ const char* getEspurnaModules() {
     "UART_MQTT "
 #endif
 #if WEB_SUPPORT
-    "WEB "
+#if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
+    "WEB_SMALL "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
+    "WEB_LIGHT "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
+    "WEB_SENSOR "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
+    "WEB_RFBRIDGE "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
+    "WEB_RFM69 "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
+    "WEB_LIGHTFOX "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_GARLAND
+    "WEB_GARLAND "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
+    "WEB_THERMOSTAT "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN
+    "WEB_CURTAIN "
+#elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
+    "WEB_FULL "
+#endif
 #endif
     "";
 
     return modules;
-}
-
-const char* getEspurnaWebUI() {
-    static const char webui[] PROGMEM =
-#if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
-    "SMALL"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
-    "LIGHT"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
-    "SENSOR"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
-    "RFBRIDGE"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_RFM69
-    "RFM69"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
-    "LIGHTFOX"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_GARLAND
-    "GARLAND"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
-    "THERMOSTAT"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN
-    "CURTAIN"
-#endif
-#if WEBUI_IMAGE == WEBUI_IMAGE_FULL
-    "FULL"
-#endif
-    "";
-
-    return webui;
 }
 
 #if SENSOR_SUPPORT

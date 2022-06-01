@@ -843,10 +843,10 @@ void wsSetup() {
     webServer().addHandler(&_ws);
 
     // CORS
-    const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", webDomain);
+    const String webDomain = getSetting(F("webDomain"), F(WEB_REMOTE_DOMAIN));
+    DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Origin"), webDomain);
     if (!webDomain.equals("*")) {
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
+        DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Credentials"), F("true"));
     }
 
     webServer().on("/auth", HTTP_GET, _onAuth);
