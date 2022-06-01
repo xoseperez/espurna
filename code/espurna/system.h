@@ -65,7 +65,7 @@ using Milliseconds = std::chrono::duration<uint32_t, std::milli>;
 
 // Our own helper types, a lot of things are based off of the `millis()`
 // (and it can be seamlessly used with any Core functions accepting u32 millisecond inputs)
-using Seconds = std::chrono::duration<uint32_t>;
+using Seconds = std::chrono::duration<uint32_t, std::ratio<1>>;
 using Minutes = std::chrono::duration<uint32_t, std::ratio<60>>;
 using Hours = std::chrono::duration<uint32_t, std::ratio<Minutes::period::num * 60>>;
 using Days = std::chrono::duration<uint32_t, std::ratio<Hours::period::num * 24>>;
