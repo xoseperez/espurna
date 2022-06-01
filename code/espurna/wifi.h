@@ -77,9 +77,10 @@ enum class ApMode {
 // esp8266 implementation specifically uses lwip, ref. `netif_list`)
 bool wifiConnected();
 
-// Whether the AP is up and running
+// When AP is up and running
 bool wifiConnectable();
 size_t wifiApStations();
+IPAddress wifiApIp();
 
 // Current STA connection
 String wifiStaSsid();
@@ -89,7 +90,6 @@ IPAddress wifiStaIp();
 // Current state persists until reset or configuration reload
 void wifiStartAp();
 void wifiToggleAp();
-
 void wifiToggleSta();
 
 // Disconnects STA intefrace

@@ -1027,6 +1027,13 @@ static constexpr std::array<::settings::query::IndexedSetting, 8> Settings PROGM
 
 namespace {
 
+IPAddress ip() {
+    ip_info info;
+    wifi_get_ip_info(STATION_IF, &info);
+
+    return info.ip;
+}
+
 uint8_t channel() {
     return wifi_get_channel();
 }
@@ -1439,17 +1446,16 @@ struct Task {
 
                 wifi_station_dhcpc_stop();
 
-                ip_info current;
-                wifi_get_ip_info(STATION_IF, &current);
+                auto current = ip();
 
-                ip_info info = ipsettings.toIpInfo();
+                auto info = ipsettings.toIpInfo();
                 if (!wifi_set_ip_info(STATION_IF, &info)) {
                     return false;
                 }
 
                 dns_setserver(0, ipsettings.dns());
 
-                if ((current.ip.addr != 0) && (current.ip.addr != info.ip.addr)) {
+                if (current.isSet() && (current != info.ip)) {
 #undef netif_set_addr
                     netif_set_addr(eagle_lwip_getif(STATION_IF), &info.ip, &info.netmask, &info.gw);
                 }
@@ -3017,7 +3023,7 @@ bool wifiConnected() {
 
 IPAddress wifiStaIp() {
     if (wifi::opmode() & wifi::OpmodeSta) {
-        return WiFi.localIP();
+        return wifi::sta::ip();
     }
 
     return {};
@@ -3066,6 +3072,10 @@ size_t wifiApStations() {
     }
 
     return 0;
+}
+
+IPAddress wifiApIp() {
+    return wifi::ap::ip();
 }
 
 void wifiSetup() {

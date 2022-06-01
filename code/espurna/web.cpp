@@ -245,11 +245,19 @@ bool _authenticateRequest(AsyncWebServerRequest* request) {
 
 // Whether the request is for this hostname or IP
 bool _isAPModeRequest(AsyncWebServerRequest* request) {
-    const String domain = getHostname() + ".";
-    const String host = request->header("Host");
-    const String ip = WiFi.softAPIP().toString();
+    if (wifiConnectable()) {
+        auto header = request->getHeader(F("Host"));
+        if (header) {
+            auto host = header->toString();
 
-    return host.equals(ip) || host.startsWith(domain);
+            const auto domain = getHostname() + '.';
+            const auto ip = wifiApIp().toString();
+
+            return host.equals(ip) || host.startsWith(domain);
+        }
+    }
+
+    return false;
 }
 
 // Allow only requests that use our hostname or IP
@@ -432,7 +440,7 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uin
 void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
     if (wifiConnectable()) {
         auto* response = request->beginResponse(302);
-        response->addHeader(F("Location"), String(F("http://")) + WiFi.softAPIP().toString());
+        response->addHeader(F("Location"), String(F("http://")) + wifiApIp().toString());
         response->addHeader(F("Connection"), F("close"));
         request->send(response);
         return;
