@@ -118,8 +118,8 @@ void otaSetup() {
             customResetReason(CustomResetReason::Factory);
             resetSettings();
             eraseSDKConfig();
-            *((int*) 0) = 0;
-            // noreturn, we simply reboot after writing into 0
+            __builtin_trap();
+            // can't return!
         }
 
         // TODO: also check for things throughout the flash sector, somehow?
