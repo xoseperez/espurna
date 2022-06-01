@@ -647,6 +647,11 @@ void webSetup() {
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 
+#if WIFI_AP_CAPTIVE_SUPPORT
+    _server->on("/generate_204", _onHome);
+    _server->on("/fwlink", _onHome);
+#endif
+
     // Handle every other request, including 404
     _server->onRequestBody(_onBody);
     _server->onNotFound(_onRequest);
