@@ -282,6 +282,28 @@ uint8_t opmode() {
     return wifi_get_opmode();
 }
 
+void ensure_opmode(uint8_t mode) {
+    auto is_set = [&]() {
+        return (opmode() == mode);
+    };
+
+    // `std::abort()` calls are the to ensure the mode actually changes, but it should be extremely rare
+    // it may be also wise to add these for when the mode is already the expected one,
+    // since we should enforce mode changes to happen *only* through the configuration loop
+
+    if (!is_set()) {
+        wifi_set_opmode_current(mode);
+        espurna::time::blockingDelay(
+                espurna::duration::Seconds(1),
+                espurna::duration::Milliseconds(10),
+                is_set);
+
+        if (!is_set()) {
+            abort();
+        }
+    }
+}
+
 bool enabled() {
     return internal::enabled;
 }
@@ -1327,27 +1349,22 @@ void disconnect() {
 // since *all* STA & AP start-up methods will implicitly change the mode (`WiFi.begin()`, `WiFi.softAP()`, `WiFi.config()`)
 
 void enable() {
-    if (WiFi.enableSTA(true)) {
-        disconnect();
-        if (wifi_station_get_reconnect_policy()) {
-            wifi_station_set_reconnect_policy(false);
-        }
-        if (wifi_station_get_auto_connect()) {
-            wifi_station_set_auto_connect(false);
-        }
-        return;
+    ensure_opmode(opmode() | OpmodeSta);
+
+    wifi_station_disconnect();
+    delay(10);
+
+    if (wifi_station_get_reconnect_policy()) {
+        wifi_station_set_reconnect_policy(false);
     }
 
-    // `std::abort()` calls are the to ensure the mode actually changes, but it should be extremely rare
-    // it may be also wise to add these for when the mode is already the expected one,
-    // since we should enforce mode changes to happen *only* through the configuration loop
-    abort();
+    if (wifi_station_get_auto_connect()) {
+        wifi_station_set_auto_connect(false);
+    }
 }
 
 void disable() {
-    if (!WiFi.enableSTA(false)) {
-        abort();
-    }
+    ensure_opmode(opmode() & ~OpmodeSta);
 }
 
 } // namespace
@@ -2093,20 +2110,23 @@ void dnsLoop() {
 
 #endif
 
+IPAddress ip() {
+    ip_info info;
+    wifi_get_ip_info(SOFTAP_IF, &info);
+
+    return info.ip;
+}
+
 void enable() {
-    if (!WiFi.enableAP(true)) {
-        abort();
-    }
+    ensure_opmode(opmode() | OpmodeAp);
 }
 
 void disable() {
-    if (!WiFi.enableAP(false)) {
-        abort();
-    }
+    ensure_opmode(opmode() & ~OpmodeAp);
 }
 
 bool enabled() {
-    return wifi::opmode() & WIFI_AP;
+    return wifi::opmode() & OpmodeAp;
 }
 
 void toggle() {
@@ -2129,7 +2149,7 @@ void start(String&& defaultSsid, String&& ssid, String&& passphrase, uint8_t cha
 #if WIFI_AP_CAPTIVE_SUPPORT
     if (internal::captive) {
         internal::dns.setErrorReplyCode(DNSReplyCode::NoError);
-        internal::dns.start(53, "*", WiFi.softAPIP());
+        internal::dns.start(53, "*", ip());
     } else {
         internal::dns.stop();
     }
