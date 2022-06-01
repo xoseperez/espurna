@@ -21,7 +21,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "system.h"
 #include "ws.h"
 
-#include "gpio_pin.h"
 #include "mcp23s08_pin.h"
 
 #include <bitset>

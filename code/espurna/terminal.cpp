@@ -365,45 +365,6 @@ void _terminalInitCommands() {
         terminalOK(ctx);
     });
 
-    terminalRegisterCommand(F("GPIO"), [](::terminal::CommandContext&& ctx) {
-        const int pin = (ctx.argv.size() >= 2)
-            ? ctx.argv[1].toInt()
-            : -1;
-
-        if ((pin >= 0) && !gpioValid(pin)) {
-            terminalError(ctx, F("Invalid pin number"));
-            return;
-        }
-
-        int start = 0;
-        int end = gpioPins();
-
-        switch (ctx.argv.size()) {
-        case 3:
-            pinMode(pin, OUTPUT);
-            digitalWrite(pin, (1 == ctx.argv[2].toInt()));
-            break;
-        case 2:
-            start = pin;
-            end = pin + 1;
-            // fallthrough!
-        case 1:
-            for (auto current = start; current < end; ++current) {
-                if (gpioValid(current)) {
-                    ctx.output.printf_P(PSTR("%c %s @ GPIO%02d (%s)\n"),
-                        gpioLocked(current) ? '*' : ' ',
-                        GPEP(current) ? "OUTPUT" : "INPUT ",
-                        current,
-                        (HIGH == digitalRead(current)) ? "HIGH" : "LOW"
-                    );
-                }
-            }
-            break;
-        }
-
-        terminalOK(ctx);
-    });
-
     terminalRegisterCommand(F("HEAP"), [](::terminal::CommandContext&& ctx) {
         const auto stats = systemHeapStats();
         ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %lu\n"),
