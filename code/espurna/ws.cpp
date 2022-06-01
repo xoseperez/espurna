@@ -326,6 +326,7 @@ void _onAuth(AsyncWebServerRequest* request) {
             || (now - (*it).timestamp > WsTimeout)) {
             break;
         }
+        ++it;
     }
 
     if (it != std::end(_ws_tickets)) {
