@@ -1402,6 +1402,10 @@
 #define INA219_SHUNT_MODE                           BIT_MODE_12
 #endif
 
+#ifndef INA219_SHUNT_RESISTANCE
+#define INA219_SHUNT_RESISTANCE                     0.1 // Ohms
+#endif
+
 #ifndef INA219_BUS_MODE
 #define INA219_BUS_MODE                             BIT_MODE_12
 #endif
@@ -1412,6 +1416,10 @@
 
 #ifndef INA219_GAIN
 #define INA219_GAIN                                 PG_320
+#endif
+
+#ifndef INA219_MAX_EXPECTED_CURRENT
+#define INA219_MAX_EXPECTED_CURRENT                 2.0 // A
 #endif
 
 // -----------------------------------------------------------------------------

@@ -47,6 +47,10 @@ static constexpr uint8_t INA219_CAL_REG { 0x05 };     // Calibration Register
 static constexpr uint16_t INA219_RST { 0x8000 };
 
 class INA219Sensor : public I2CSensor<BaseEmonSensor> {
+protected:
+    using BaseEmonSensor::_current_ratio;
+    using BaseEmonSensor::_power_active_ratio;
+
 private:
     // CONF register bits [0...2] are operating mode
     static constexpr uint16_t OperatingModeMask { 0b111 };
@@ -114,8 +118,11 @@ private:
     // ref. 8.5.1, calibration is calculated using special LSB value:
     // - calibration = truncated(0.04096 / (current LSB * shunt R))
     //   (0.04096 is a fixed value, set by the device)
-    // - current LSB = (maximum expected current) / 32768
+    // - current LSB = is a value between
+    //   (maximum expected current) / 32767
+    //   (maximum expected current) / 4096
     //   we specify it in A, calculation is in mA
+    //   determines how much A per bit can be encoded, limited to u16 size
     // - power LSB = 20 * current LSB
     //   we specify it in W, calculation is in mW
     // - shunt voltage LSB = 0.01 (mV) (device converts this)
@@ -136,58 +143,56 @@ private:
     // - power 0x1766 (5990); LSB 20 mW, reading means 119.8 W
     //   (matching with current multiplied by bus reading)
 
-    struct Parameters {
-        bool ready;
-        uint16_t gain;
-        uint16_t calibration;
-        float current_lsb;
-        float power_lsb;
+    struct Calibration {
+        double current_lsb;
+        double power_lsb;
+        uint16_t value;
     };
 
-    static Parameters fromGain(Gain gain) {
-        Parameters out;
-        out.ready = false;
+    struct Lsb {
+        double min;
+        double max;
+    };
 
-        switch (gain) {
-        case PG_40:
-            out = {
-                .ready = true,
-                .gain = gain,
-                .calibration = 0x5000,
-                .current_lsb = 0.02,
-                .power_lsb = 0.4,
-            };
-            break;
-        case PG_80:
-            out = {
-                .ready = true,
-                .gain = gain,
-                .calibration = 0x2800,
-                .current_lsb = 0.04,
-                .power_lsb = 0.8,
-            };
-            break;
-        case PG_160:
-            out = {
-                .ready = true,
-                .gain = gain,
-                .calibration = 0x2000,
-                .current_lsb = 0.05,
-                .power_lsb = 1.0,
-            };
-            break;
-        case PG_320:
-            out = {
-                .ready = true,
-                .gain = gain,
-                .calibration = 0x1000,
-                .current_lsb = 0.1,
-                .power_lsb = 2.0,
-            };
-            break;
-        }
+    static constexpr double maxShuntVoltage(Gain gain) {
+        return (gain == PG_40) ? 0.04 :
+            (gain == PG_80) ? 0.08 :
+            (gain == PG_160) ? 0.016 :
+            (gain == PG_320) ? 0.032 :
+            0.0;
+    }
 
-        return out;
+    static constexpr double maxPossibleCurrent(Gain gain, double shunt_resistance) {
+        return (maxShuntVoltage(gain) > 0.0)
+            ? (maxShuntVoltage(gain) / shunt_resistance)
+            : 0.0;
+    }
+
+    static constexpr Lsb currentLsbRange(double max_expected_current) {
+        return {
+            .min = (max_expected_current / 32767.0), // amperes per bit, 15bit resolution
+            .max = (max_expected_current / 4096.0),  // same but 12bit
+        };
+    }
+
+    static constexpr double currentLsb(double value, double max_expected_current) {
+        return std::clamp(value,
+            currentLsbRange(max_expected_current).min,
+            currentLsbRange(max_expected_current).max);
+    }
+
+    static constexpr double powerLsb(double current_lsb) {
+        return 20.0 * current_lsb;
+    }
+
+    static
+#if __cplusplus > 201703L
+    constexpr
+#endif
+    uint16_t calibration(double current_lsb, double shunt_resistance) {
+        constexpr double Min = std::numeric_limits<uint16_t>::min();
+        constexpr double Max = std::numeric_limits<uint16_t>::max();
+        return std::clamp(std::trunc(0.04096 / (current_lsb * shunt_resistance)), Min, Max);
     }
 
     struct I2CPort {
@@ -339,13 +344,18 @@ private:
     bool _energy_ready = false;
 
     I2CPort _port;
-    Parameters _params;
 
     OperatingMode _operating_mode;
     AdcMode _bus_mode;
     AdcMode _shunt_mode;
     BusRange _bus_range;
     Gain _gain;
+
+    Calibration _calibration;
+    double _shunt_resistance;
+
+    double _max_expected_current;
+    Lsb _current_lsb_range;
 
     double _voltage = 0.0;
     double _current = 0.0;
@@ -354,27 +364,33 @@ private:
 public:
     void setOperatingMode(OperatingMode mode) {
         _operating_mode = mode;
-        _dirty = true;
     }
 
     void setBusMode(AdcMode mode) {
         _bus_mode = mode;
-        _dirty = true;
     }
 
     void setShuntMode(AdcMode mode) {
         _shunt_mode = mode;
-        _dirty = true;
     }
 
     void setBusRange(BusRange range) {
         _bus_range = range;
-        _dirty = true;
     }
 
     void setGain(Gain gain) {
-        _params.gain = gain;
-        _dirty = true;
+        _gain = gain;
+    }
+
+    void setShuntResistance(double value) {
+        _shunt_resistance = value;
+    }
+
+    void setMaxExpectedCurrent(double current) {
+        _max_expected_current = current;
+        _current_lsb_range = currentLsbRange(current);
+        _current_ratio = currentLsb(_current_lsb_range.min, current);
+        _power_active_ratio = powerLsb(_current_ratio);
     }
 
     static constexpr Magnitude Magnitudes[] {
@@ -401,13 +417,9 @@ public:
     }
 
     void begin() override {
-        if (!_dirty) {
-            return;
-        }
-
-        _params = fromGain(_gain);
-        if (!_params.ready) {
-           _error = SENSOR_ERROR_CONFIG;
+        auto max_possible_current = maxPossibleCurrent(_gain, _shunt_resistance);
+        if (max_possible_current < _max_expected_current) {
+            _error = SENSOR_ERROR_OVERFLOW;
             return;
         }
 
@@ -431,8 +443,25 @@ public:
             .bus_range = _bus_range,
         });
 
-        _port.calibration(_params.calibration);
+        _calibration = Calibration{
+            .current_lsb = _current_ratio,
+            .power_lsb = _power_active_ratio,
+            .value = calibration(_current_ratio, _shunt_resistance),
+        };
 
+#if SENSOR_DEBUG
+        DEBUG_MSG(PSTR("[INA219] Current LSB %s\n"),
+            String(_calibration.current_lsb, 6).c_str());
+        DEBUG_MSG(PSTR("[INA219] Power LSB %s\n"),
+            String(_calibration.power_lsb, 6).c_str());
+
+        uint8_t buf[2];
+        std::memcpy(&buf, _calibration.value, sizeof(buf));
+        DEBUG_MSG(PSTR("[INA219] Calibration 0x%s\n"),
+            hexEncode(std::begin(buf), std::end(buf)).c_str());
+#endif
+
+        _port.calibration(_calibration.value);
         espurna::time::blockingDelay(
             espurna::duration::Milliseconds(100));
 
@@ -440,7 +469,6 @@ public:
         _error = SENSOR_ERROR_OK;
 
         _ready = true;
-        _dirty = false;
     }
 
     String address(unsigned char index) const override {
@@ -490,8 +518,8 @@ public:
 
         _voltage = voltage.value;
 
-        _current = _port.current() * _params.current_lsb;
-        _power = _port.power() * _params.power_lsb;
+        _current = _port.current() * _calibration.current_lsb;
+        _power = _port.power() * _calibration.power_lsb;
 
         if (_energy_ready) {
             const auto now = TimeSource::now();
@@ -504,15 +532,57 @@ public:
     }
 
     double value(unsigned char index) override {
-        if (index == 0) {
-            return _voltage;
-        } else if (index == 1) {
-            return _current;
-        } else if (index == 2) {
-            return _power;
+        if (index < std::size(Magnitudes)) {
+            switch (Magnitudes[index].type) {
+            case MAGNITUDE_VOLTAGE:
+                return _voltage;
+            case MAGNITUDE_CURRENT:
+                return _current;
+            case MAGNITUDE_POWER_ACTIVE:
+                return _power;
+            }
         }
 
         return 0;
+    }
+
+    void setRatio(unsigned char index, double value) override {
+        if (index < std::size(Magnitudes)) {
+            switch (Magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                _current_ratio = value;
+                break;
+            case MAGNITUDE_POWER_ACTIVE:
+                _power_active_ratio = value;
+                break;
+            }
+        }
+    }
+
+    double getRatio(unsigned char index) const override {
+        if (index < std::size(Magnitudes)) {
+            switch (Magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                return _current_ratio;
+            case MAGNITUDE_POWER_ACTIVE:
+                return _power_active_ratio;
+            }
+        }
+
+        return defaultRatio(index);
+    }
+
+    double defaultRatio(unsigned char index) const override {
+        if (index < std::size(Magnitudes)) {
+            switch (Magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                return _current_lsb_range.min;
+            case MAGNITUDE_POWER_ACTIVE:
+                return powerLsb(_current_lsb_range.min);
+            }
+        }
+
+        return BaseEmonSensor::defaultRatio(index);
     }
 };
 
