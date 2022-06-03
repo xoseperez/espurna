@@ -482,18 +482,6 @@ public:
         return String(buffer);
     }
 
-    String description(unsigned char index) const override {
-        if (index == 0) {
-            return F("Battery voltage");
-        } else if (index == 1) {
-            return F("Current");
-        } else if (index == 2) {
-            return F("Power");
-        }
-
-        return description();
-    }
-
     unsigned char type(unsigned char index) const override {
         if (index < std::size(Magnitudes)) {
             return Magnitudes[index].type;
