@@ -419,7 +419,7 @@ public:
     void begin() override {
         auto max_possible_current = maxPossibleCurrent(_gain, _shunt_resistance);
         if (max_possible_current < _max_expected_current) {
-            _error = SENSOR_ERROR_OVERFLOW;
+            _error = SENSOR_ERROR_CONFIG;
             return;
         }
 
