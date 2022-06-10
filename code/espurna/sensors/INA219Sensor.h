@@ -154,11 +154,14 @@ private:
         double max;
     };
 
+    // RAW bus voltage is in mV, fixed value LSB is 4mV
+    static constexpr double BusVoltageLsb { 0.004 };
+
     static constexpr double maxShuntVoltage(Gain gain) {
         return (gain == PG_40) ? 0.04 :
             (gain == PG_80) ? 0.08 :
-            (gain == PG_160) ? 0.016 :
-            (gain == PG_320) ? 0.032 :
+            (gain == PG_160) ? 0.16 :
+            (gain == PG_320) ? 0.32 :
             0.0;
     }
 
@@ -504,7 +507,7 @@ public:
             return;
         }
 
-        _voltage = voltage.value;
+        _voltage = voltage.value * BusVoltageLsb;
 
         _current = _port.current() * _calibration.current_lsb;
         _power = _port.power() * _calibration.power_lsb;
@@ -528,6 +531,8 @@ public:
                 return _current;
             case MAGNITUDE_POWER_ACTIVE:
                 return _power;
+            case MAGNITUDE_ENERGY:
+                return _energy[0].asDouble();
             }
         }
 
