@@ -18,23 +18,19 @@
 
 class AnalogSensor : public BaseAnalogSensor {
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
         using Delay = espurna::duration::critical::Microseconds;
 
-        unsigned char count() const override {
-            return 1;
-        }
+        static constexpr int RawBits { 10 };
+
+        static constexpr double RawMax { (1 << RawBits) - 1 };
+        static constexpr double RawMin { 0.0 };
 
         unsigned char id() const override {
             return SENSOR_ANALOG_ID;
         }
 
-        void setSamples(size_t samples) {
-            _samples = std::clamp(samples, SamplesMin, SamplesMax);
+        unsigned char count() const override {
+            return 1;
         }
 
         void setDelay(Delay delay) {
@@ -43,6 +39,10 @@ class AnalogSensor : public BaseAnalogSensor {
 
         void setDelay(uint16_t delay) {
             setDelay(Delay{delay});
+        }
+
+        void setSamples(size_t samples) {
+            _samples = std::clamp(samples, SamplesMin, SamplesMax);
         }
 
         void setFactor(double factor) {
@@ -132,6 +132,14 @@ class AnalogSensor : public BaseAnalogSensor {
             return _factor * value + _offset;
         }
 
+        double _minWithFactor() const {
+            return _withFactor(RawMin);
+        }
+
+        double _maxWithFactor() const {
+            return _withFactor(RawMax);
+        }
+
         static constexpr Delay DelayMin { 200 };
         static constexpr Delay DelayMax { Delay::max() };
         Delay _delay { DelayMin };
@@ -143,6 +151,9 @@ class AnalogSensor : public BaseAnalogSensor {
         double _factor { 1.0 };
         double _offset { 0.0 };
 };
+
+constexpr double AnalogSensor::RawMin;
+constexpr double AnalogSensor::RawMax;
 
 constexpr AnalogSensor::Delay AnalogSensor::DelayMin;
 constexpr AnalogSensor::Delay AnalogSensor::DelayMax;

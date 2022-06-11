@@ -88,9 +88,7 @@ class NTCSensor : public AnalogSensor {
         double value(unsigned char index) override {
             if (index == 0) {
                 // Ru = (AnalogMax/c - 1) * Rd
-                static constexpr double AnalogMin { 0.0 };
-                static constexpr double AnalogMax { 1023.0 };
-                const double alpha { (AnalogMax / std::clamp(_last, AnalogMin, AnalogMax)) - 1.0 };
+                const double alpha { (AnalogSensor::RawMax / std::clamp(_last, AnalogSensor::RawMin, AnalogSensor::RawMax)) - 1.0 };
 
                 const double resistance = (_resistance_down > 0)
                     ? (_resistance_down * alpha)
