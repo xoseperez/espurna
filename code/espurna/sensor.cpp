@@ -236,6 +236,24 @@ namespace {
 
 //--------------------------------------------------------------------------------
 
+namespace sensor {
+
+enum class Filter : int {
+    Last,
+    Max,
+    Median,
+    MovingAverage,
+    Sum,
+};
+
+struct ReadValue {
+    double raw;
+    double processed;
+    double filtered;
+};
+
+} // namespace sensor
+
 namespace {
 
 class BaseSensorPtr {
@@ -291,18 +309,19 @@ public:
     Magnitude(Magnitude&& other) noexcept = default;
     Magnitude& operator=(Magnitude&&) noexcept = default;
 
-    Magnitude(BaseSensorPtr, BaseFilterPtr, unsigned char slot, unsigned char type);
+    Magnitude(BaseSensorPtr, unsigned char slot, unsigned char type);
 
     BaseSensorPtr sensor; // Sensor object, *cannot be empty*
-    BaseFilterPtr filter; // Filter object, *could be empty*
-
-    unsigned char slot; // Sensor slot # taken by the magnitude, used to access the measurement
-    unsigned char type; // Type of measurement, returned by the BaseSensor::type(slot)
+    unsigned char slot;   // Sensor slot # taken by the magnitude, used to access the measurement
+    unsigned char type;   // Type of measurement, returned by the BaseSensor::type(slot)
 
     unsigned char index_global; // N'th magnitude of it's type, across all of the active sensors
 
     sensor::Unit units { sensor::Unit::None }; // Units of measurement
     unsigned char decimals { 0u }; // Number of decimals in textual representation
+
+    sensor::Filter filter_type { sensor::Filter::Median }; // Instead of using raw value, filter it through a filter object
+    BaseFilterPtr filter; // *cannot be empty*
 
     double last { sensor::Value::Unknown };     // Last raw value from sensor (unfiltered)
     double reported { sensor::Value::Unknown }; // Last reported value
@@ -328,12 +347,6 @@ unsigned char Magnitude::_counts[MAGNITUDE_MAX] = {0};
 } // namespace
 
 namespace sensor {
-
-struct ReadValue {
-    double raw;
-    double processed;
-    double filtered;
-};
 
 // Base units
 // TODO: attach ratio to the class instead of hard-coded scaling rules?
@@ -778,6 +791,8 @@ alignas(4) static constexpr char Reference[] PROGMEM = "Reference";
 
 alignas(4) static constexpr char Total[] PROGMEM = "Total";
 
+alignas(4) static constexpr char Filter[] PROGMEM = "Filter";
+
 } // namespace
 } // namespace suffix
 
@@ -898,6 +913,20 @@ static constexpr ::settings::options::Enumeration<sensor::Unit> SensorUnitOption
     {sensor::Unit::None, None},
 };
 
+alignas(4) static constexpr char Last[] PROGMEM = "last";
+alignas(4) static constexpr char Max[] PROGMEM = "max";
+alignas(4) static constexpr char Median[] PROGMEM = "median";
+alignas(4) static constexpr char MovingAverage[] PROGMEM = "moving-average";
+alignas(4) static constexpr char Sum[] PROGMEM = "sum";
+
+static constexpr ::settings::options::Enumeration<sensor::Filter> SensorFilterOptions[] PROGMEM {
+    {sensor::Filter::Last, Last},
+    {sensor::Filter::Max, Max},
+    {sensor::Filter::Median, Median},
+    {sensor::Filter::MovingAverage, MovingAverage},
+    {sensor::Filter::Sum, Sum},
+};
+
 } // namespace
 
 template <>
@@ -907,6 +936,15 @@ sensor::Unit convert(const String& value) {
 
 String serialize(sensor::Unit unit) {
     return serialize(SensorUnitOptions, unit);
+}
+
+template <>
+sensor::Filter convert(const String& value) {
+    return convert(SensorFilterOptions, value, sensor::Filter::Median);
+}
+
+String serialize(sensor::Filter filter) {
+    return serialize(SensorFilterOptions, filter);
 }
 
 } // namespace internal
@@ -1174,39 +1212,55 @@ using MagnitudeReadHandlers = std::forward_list<MagnitudeReadHandler>;
 MagnitudeReadHandlers _magnitude_read_handlers;
 MagnitudeReadHandlers _magnitude_report_handlers;
 
-BaseFilterPtr _magnitudeCreateFilter(unsigned char type) {
-    BaseFilterPtr filter;
-
+sensor::Filter _magnitudeDefaultFilter(unsigned char type) {
     switch (type) {
     case MAGNITUDE_IAQ:
     case MAGNITUDE_IAQ_STATIC:
     case MAGNITUDE_ENERGY:
-        filter = std::make_unique<LastFilter>();
-        break;
+        return sensor::Filter::Last;
     case MAGNITUDE_EVENT:
     case MAGNITUDE_DIGITAL:
-        filter = std::make_unique<MaxFilter>();
-        break;
+        return sensor::Filter::Max;
     case MAGNITUDE_COUNT:
     case MAGNITUDE_ENERGY_DELTA:
-        filter = std::make_unique<SumFilter>();
-        break;
+        return sensor::Filter::Sum;
     case MAGNITUDE_GEIGER_CPM:
     case MAGNITUDE_GEIGER_SIEVERT:
-        filter = std::make_unique<MovingAverageFilter>();
+        return sensor::Filter::MovingAverage;
+    }
+
+    return sensor::Filter::Median;
+}
+
+BaseFilterPtr _magnitudeFilter(sensor::Filter filter) {
+    BaseFilterPtr out;
+
+    switch (filter) {
+    case sensor::Filter::Last:
+        out = std::make_unique<LastFilter>();
+        break;
+    case sensor::Filter::Max:
+        out = std::make_unique<MaxFilter>();
+        break;
+    case sensor::Filter::Sum:
+        out = std::make_unique<SumFilter>();
+        break;
+    case sensor::Filter::MovingAverage:
+        out = std::make_unique<MovingAverageFilter>();
+        break;
+    case sensor::Filter::Median:
         break;
     }
 
-    if (!filter) {
-        filter = std::make_unique<MedianFilter>();
+    if (!out) {
+        out = std::make_unique<MedianFilter>();
     }
 
-    return filter;
+    return out;
 }
 
-Magnitude::Magnitude(BaseSensorPtr sensor, BaseFilterPtr filter, unsigned char slot, unsigned char type) :
+Magnitude::Magnitude(BaseSensorPtr sensor, unsigned char slot, unsigned char type) :
     sensor(std::move(sensor)),
-    filter(std::move(filter)),
     slot(slot),
     type(type),
     index_global(_counts[type])
@@ -1768,10 +1822,20 @@ String _sensorQueryHandler(::settings::StringView key) {
             }
         }
 
-        auto expected = keys::get(magnitude, suffix::Units);
-        if (key == expected) {
-            out = ::settings::internal::serialize(magnitude.units);
-            break;
+        {
+            auto expected = keys::get(magnitude, suffix::Filter);
+            if (key == expected) {
+                out = ::settings::internal::serialize(magnitude.filter_type);
+                break;
+            }
+        }
+
+        {
+            auto expected = keys::get(magnitude, suffix::Units);
+            if (key == expected) {
+                out = ::settings::internal::serialize(magnitude.units);
+                break;
+            }
         }
     }
 
@@ -3300,10 +3364,8 @@ void _sensorInit() {
         // Initialize sensor magnitudes
         for (unsigned char magnitude_slot = 0; magnitude_slot < sensor->count(); ++magnitude_slot) {
             const auto magnitude_type = sensor->type(magnitude_slot);
-            auto filter = _magnitudeCreateFilter(magnitude_type);
             _magnitudes.emplace_back(
                 sensor,            // every magnitude is bound to it's sensor
-                std::move(filter), // store, sum, average, etc. value for reporting
                 magnitude_slot,    // id of the magnitude, unique to the sensor
                 magnitude_type     // cache type as well, no need to call type(slot) again
             );
@@ -3352,8 +3414,17 @@ void _sensorConfigure() {
     _sensor_real_time = sensor::settings::realTimeValues();
 
     // Update magnitude config, filter sizes and reset energy if needed
+    // TODO: namespace and various helpers need some naming tweaks...
     {
         for (auto& magnitude : _magnitudes) {
+            // Only initialized once, notify about reset requirement?
+            if (!magnitude.filter) {
+                magnitude.filter_type = getSetting(
+                    ::sensor::settings::keys::get(magnitude, ::sensor::settings::suffix::Filter),
+                    _magnitudeDefaultFilter(magnitude.type));
+                magnitude.filter = _magnitudeFilter(magnitude.filter_type);
+            }
+
             // Some filters must be able store up to a certain amount of readings.
             if (magnitude.filter->capacity() != _sensor_report_every) {
                 magnitude.filter->resize(_sensor_report_every);
