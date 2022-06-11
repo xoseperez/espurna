@@ -403,6 +403,18 @@ public:
         MAGNITUDE_ENERGY,
     };
 
+    // We only allow to adjust values associated with LSB
+    // In case voltage and energy ratios change something,
+    // use `Magnitudes` in the methods below
+    static constexpr Magnitude RatioSupport[] {
+        MAGNITUDE_NONE,
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_POWER_ACTIVE,
+        MAGNITUDE_NONE,
+    };
+
+    static_assert(std::size(Magnitudes) == std::size(RatioSupport), "");
+
     INA219Sensor() :
         I2CSensor<BaseEmonSensor>(Magnitudes)
     {}
@@ -453,13 +465,17 @@ public:
         };
 
 #if SENSOR_DEBUG
-        DEBUG_MSG(PSTR("[INA219] Current LSB %s\n"),
-            String(_calibration.current_lsb, 6).c_str());
+        DEBUG_MSG(PSTR("[INA219] Maximum possible current %sA\n"),
+            String(max_possible_current, 3).c_str());
+        DEBUG_MSG(PSTR("[INA219] Current LSB %s (min %s max %s)\n"),
+            String(_calibration.current_lsb, 6).c_str(),
+            String(_current_lsb_range.min, 6).c_str(),
+            String(_current_lsb_range.max, 6).c_str());
         DEBUG_MSG(PSTR("[INA219] Power LSB %s\n"),
             String(_calibration.power_lsb, 6).c_str());
 
         uint8_t buf[2];
-        std::memcpy(&buf, _calibration.value, sizeof(buf));
+        std::memcpy(std::begin(buf), &_calibration.value, sizeof(buf));
         DEBUG_MSG(PSTR("[INA219] Calibration 0x%s\n"),
             hexEncode(std::begin(buf), std::end(buf)).c_str());
 #endif
@@ -539,30 +555,16 @@ public:
         return 0;
     }
 
+    using BaseEmonSensor::simpleSetRatio;
+
     void setRatio(unsigned char index, double value) override {
-        if (index < std::size(Magnitudes)) {
-            switch (Magnitudes[index].type) {
-            case MAGNITUDE_CURRENT:
-                _current_ratio = value;
-                break;
-            case MAGNITUDE_POWER_ACTIVE:
-                _power_active_ratio = value;
-                break;
-            }
-        }
+        simpleSetRatio(RatioSupport, index, value);
     }
 
-    double getRatio(unsigned char index) const override {
-        if (index < std::size(Magnitudes)) {
-            switch (Magnitudes[index].type) {
-            case MAGNITUDE_CURRENT:
-                return _current_ratio;
-            case MAGNITUDE_POWER_ACTIVE:
-                return _power_active_ratio;
-            }
-        }
+    using BaseEmonSensor::simpleGetRatio;
 
-        return defaultRatio(index);
+    double getRatio(unsigned char index) const override {
+        return simpleGetRatio(RatioSupport, index);
     }
 
     double defaultRatio(unsigned char index) const override {
@@ -581,4 +583,5 @@ public:
 
 #if __cplusplus < 201703L
 constexpr BaseSensor::Magnitude INA219Sensor::Magnitudes[];
+constexpr BaseSensor::Magnitude INA219Sensor::RatioSupport[];
 #endif

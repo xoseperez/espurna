@@ -132,7 +132,52 @@ public:
         return defaultRatio(index);
     }
 
+    template <size_t Size>
+    double simpleGetRatio(const Magnitude (&magnitudes)[Size] , unsigned char index) const {
+        if (index < Size) {
+            switch (magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                return _current_ratio;
+            case MAGNITUDE_VOLTAGE:
+                return _voltage_ratio;
+            case MAGNITUDE_POWER_ACTIVE:
+                return _power_active_ratio;
+            case MAGNITUDE_POWER_REACTIVE:
+                return _power_reactive_ratio;
+            case MAGNITUDE_ENERGY:
+                return _energy_ratio;
+            }
+        }
+
+        return defaultRatio(index);
+    }
+
     virtual void setRatio(unsigned char index, double value) {
+        // pass by default, no point updating ratios when they
+        // are not supported (or cannot be supported)
+    }
+
+    template <size_t Size>
+    void simpleSetRatio(const Magnitude (&magnitudes)[Size] , unsigned char index, double value) {
+        if (index < Size) {
+            switch (magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                _current_ratio = value;
+                break;
+            case MAGNITUDE_VOLTAGE:
+                _voltage_ratio = value;
+                break;
+            case MAGNITUDE_POWER_ACTIVE:
+                _power_active_ratio = value;
+                break;
+            case MAGNITUDE_POWER_REACTIVE:
+                _power_reactive_ratio = value;
+                break;
+            case MAGNITUDE_ENERGY:
+                _power_reactive_ratio = value;
+                break;
+            }
+        }
     }
 
     virtual void resetRatios() {
