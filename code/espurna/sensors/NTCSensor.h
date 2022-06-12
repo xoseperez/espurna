@@ -20,7 +20,9 @@ class NTCSensor : public AnalogSensor {
         // ---------------------------------------------------------------------
 
         void setBeta(unsigned long beta) {
-            if (beta > 0) _beta = beta;
+            if (beta > 0) {
+                _beta = beta;
+            }
         }
 
         void setUpstreamResistor(unsigned long resistance) {
@@ -32,14 +34,16 @@ class NTCSensor : public AnalogSensor {
         }
 
         void setR0(unsigned long resistance) override {
-            if (resistance > 0) _R0 = resistance;
+            if (resistance > 0) {
+                _R0 = resistance;
+            }
         }
 
         void setT0(double temperature) {
-            if (temperature > 0) _T0 = temperature;
+            if (temperature > 0) {
+                _T0 = temperature;
+            }
         }
-
-        // ---------------------------------------------------------------------
 
         // ---------------------------------------------------------------------
         // Sensor API
@@ -58,14 +62,12 @@ class NTCSensor : public AnalogSensor {
             return F("NTC @ TOUT");
         }
 
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) const override {
-            return F("0");
-        }
-
         // Type for slot # index
         unsigned char type(unsigned char index) const override {
-            if (index == 0) return MAGNITUDE_TEMPERATURE;
+            if (index == 0) {
+                return MAGNITUDE_TEMPERATURE;
+            }
+
             return MAGNITUDE_NONE;
         }
 
@@ -75,7 +77,7 @@ class NTCSensor : public AnalogSensor {
                 return sensor::Unit::Kelvin;
             }
 
-            return BaseSensor::units(index);
+            return sensor::Unit::None;
         }
 
         // Previous version happened to use AnalogSensor readings with factor and offset applied
@@ -101,6 +103,7 @@ class NTCSensor : public AnalogSensor {
         // Current value for slot # index
         double value(unsigned char index) override {
             if (index == 0) {
+                return _value;
             }
 
             return 0.0;

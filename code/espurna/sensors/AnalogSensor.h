@@ -18,12 +18,18 @@
 
 class AnalogSensor : public BaseAnalogSensor {
     public:
-        using Delay = espurna::duration::critical::Microseconds;
-
         static constexpr int RawBits { 10 };
 
         static constexpr double RawMax { (1 << RawBits) - 1 };
         static constexpr double RawMin { 0.0 };
+
+        static constexpr size_t SamplesMin { 1 };
+        static constexpr size_t SamplesMax { 16 };
+
+        using Delay = espurna::duration::critical::Microseconds;
+
+        static constexpr auto DelayMin = Delay{ 200 };
+        static constexpr auto DelayMax = Delay::max();
 
         unsigned char id() const override {
             return SENSOR_ANALOG_ID;
@@ -92,13 +98,19 @@ class AnalogSensor : public BaseAnalogSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) const override {
-            if (index == 0) return MAGNITUDE_ANALOG;
+            if (index == 0) {
+                return MAGNITUDE_ANALOG;
+            }
+
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) override {
-            if (index == 0) return this->analogRead();
+            if (index == 0) {
+                return this->analogRead();
+            }
+
             return 0;
         }
 
@@ -141,12 +153,7 @@ class AnalogSensor : public BaseAnalogSensor {
             return _withFactor(RawMax);
         }
 
-        static constexpr Delay DelayMin { 200 };
-        static constexpr Delay DelayMax { Delay::max() };
         Delay _delay { DelayMin };
-
-        static constexpr size_t SamplesMin { 1 };
-        static constexpr size_t SamplesMax { 16 };
         size_t _samples { SamplesMin };
 
         double _factor { 1.0 };
