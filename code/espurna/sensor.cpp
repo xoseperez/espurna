@@ -491,8 +491,16 @@ static constexpr Celcius AbsoluteZero { -273.15 };
 
 namespace internal {
 
+template <typename To, typename From, typename Same = void>
+struct Converter {
+};
+
 template <typename To, typename From>
-struct Converter;
+struct Converter<To, From, typename std::enable_if<std::is_same<To, From>::value>::type> {
+    static constexpr To convert(To value) {
+        return value;
+    }
+};
 
 static constexpr double celcius_to_kelvin(double celcius) {
     return celcius - AbsoluteZero;
@@ -536,13 +544,6 @@ static constexpr bool almost_equal(double lhs, double rhs, int ulp) {
 static_assert(almost_equal(10.0, kelvin_to_farenheit(farenheit_to_kelvin(10.0)), 3), "");
 
 template <>
-struct Converter<Kelvin, Kelvin> {
-    static constexpr Kelvin convert(Kelvin kelvin) {
-        return kelvin;
-    }
-};
-
-template <>
 struct Converter<Celcius, Kelvin> {
     static constexpr Celcius convert(Kelvin kelvin) {
         return Celcius{ kelvin_to_celcius(kelvin.value()) };
@@ -557,13 +558,6 @@ struct Converter<Farenheit, Kelvin> {
 };
 
 template <>
-struct Converter<Celcius, Celcius> {
-    static constexpr Celcius convert(Celcius celcius) {
-        return celcius;
-    }
-};
-
-template <>
 struct Converter<Kelvin, Celcius> {
     static constexpr Kelvin convert(Celcius celcius) {
         return Kelvin{ celcius_to_kelvin(celcius.value()) };
@@ -574,13 +568,6 @@ template <>
 struct Converter<Farenheit, Celcius> {
     static constexpr Farenheit convert(Celcius celcius) {
         return Farenheit{ celcius_to_farenheit(celcius.value()) };
-    }
-};
-
-template <>
-struct Converter<Farenheit, Farenheit> {
-    static constexpr Farenheit convert(Farenheit farenheit) {
-        return farenheit;
     }
 };
 
@@ -602,7 +589,9 @@ struct Converter<Celcius, Farenheit> {
 // (and it might not be a good idea to actually have anything compare with the Farenheit one)
 
 static_assert(Converter<Kelvin, Kelvin>::convert(Kelvin{0.0}) == Kelvin{0.0}, "");
+static_assert(Converter<Kelvin, Celcius>::convert(AbsoluteZero) == Kelvin{0.0}, "");
 static_assert(Converter<Celcius, Celcius>::convert(AbsoluteZero) == AbsoluteZero, "");
+static_assert(Converter<Celcius, Kelvin>::convert(Kelvin{0.0}) == AbsoluteZero, "");
 
 } // namespace internal
 
@@ -622,20 +611,16 @@ static_assert(unit_cast<Celcius>(AbsoluteZero).value() == AbsoluteZero.value(), 
 
 // attempt to convert the input value from one unit to the other
 // will return the input value when units match or there's no known conversion
-static constexpr double convert(double value, sensor::Unit from, sensor::Unit to) {
-#define UNIT_CAST(FROM, TO) \
-    ((from == sensor::Unit::FROM) && (to == sensor::Unit::TO)) \
-        ? (unit_cast<TO>(FROM{value}))
+constexpr double convert(double value, sensor::Unit from, sensor::Unit to) {
+#define UNIT_CAST(LHS, RHS) \
+    ((from == sensor::Unit::LHS) && (to == sensor::Unit::RHS)) \
+        ? (unit_cast<RHS, LHS>(LHS{value})) : \
+    ((from == sensor::Unit::RHS) && (to == sensor::Unit::LHS)) \
+        ? (unit_cast<LHS, RHS>(RHS{value}))
 
-     return UNIT_CAST(Kelvin, Kelvin) :
-        UNIT_CAST(Kelvin, Celcius) :
+     return UNIT_CAST(Kelvin, Celcius) :
         UNIT_CAST(Kelvin, Farenheit) :
-        UNIT_CAST(Celcius, Celcius) :
-        UNIT_CAST(Celcius, Kelvin) :
-        UNIT_CAST(Celcius, Farenheit) :
-        UNIT_CAST(Farenheit, Farenheit) :
-        UNIT_CAST(Farenheit, Kelvin) :
-        UNIT_CAST(Farenheit, Celcius) : value;
+        UNIT_CAST(Celcius, Farenheit) : value;
 
 #undef UNIT_CAST
 }
