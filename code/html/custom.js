@@ -1760,7 +1760,6 @@ function createMagnitudeInfo(id, magnitude) {
     const input = info.querySelector("input");
     input.dataset["id"] = id;
     input.dataset["type"] = magnitude.type;
-    input.dataset["units"] = Magnitudes.units.names[magnitude.units] || "";
 
     const description = info.querySelector(".magnitude-description");
     description.textContent = magnitude.description;
@@ -1939,6 +1938,10 @@ function initMagnitudesSettings(data) {
     });
 }
 
+function magnitudeValueContainer(id) {
+    return document.querySelector(`input[name='magnitude'][data-id='${id}']`);
+}
+
 function updateMagnitudes(data) {
     data.values.forEach((cfg, id) => {
         if (!Magnitudes.properties[id]) {
@@ -1946,21 +1949,32 @@ function updateMagnitudes(data) {
         }
 
         const magnitude = fromSchema(cfg, data.schema);
-        const input = document.querySelector(`input[name='magnitude'][data-id='${id}']`);
+        const properties = Magnitudes.properties[id];
+        properties.units = magnitude.units;
 
-        const value = magnitude.value;
-        const units = input.dataset.units || "";
-
+        const units = Magnitudes.units.names[properties.units] || "";
+        const input = magnitudeValueContainer(id);
         input.value = (0 !== magnitude.error)
             ? Magnitudes.errors[magnitude.error]
             : (("nan" === magnitude.value)
                 ? ""
-                : `${value}${units}`);
+                : `${magnitude.value}${units}`);
+    });
+}
 
-        if (magnitude.info.length) {
-            const info = input.parentElement.parentElement.querySelector(".magnitude-info");
+function updateEnergy(data) {
+    data.values.forEach((cfg) => {
+        const energy = fromSchema(cfg, data.schema);
+        if (!Magnitudes.properties[energy.id]) {
+            return;
+        }
+
+        if (energy.saved.length) {
+            const input = magnitudeValueContainer(energy.id);
+            const info = input.parentElement.parentElement
+                .querySelector(".magnitude-info");
             info.style.display = "inherit";
-            info.textContent = magnitude.info;
+            info.textContent = energy.saved;
         }
     });
 }
@@ -2568,6 +2582,11 @@ function processData(data) {
 
         if ("magnitudes" === key) {
             updateMagnitudes(value);
+            return;
+        }
+
+        if ("energy" === key) {
+            updateEnergy(value);
             return;
         }
 

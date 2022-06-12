@@ -2368,32 +2368,51 @@ void _sensorWebSocketSettings(JsonObject& root) {
     root[FPSTR(::sensor::settings::keys::RealTimeValues)] = _sensor_real_time;
 }
 
+void _sensorWebSocketNotifyEnergy(JsonObject& root) {
+#if NTP_SUPPORT
+    if (!_sensor_energy_tracker || !_sensor_energy_tracker.size()) {
+        return;
+    }
+
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("energy")};
+    payload(STRING_VIEW("values"), ::settings::Iota(_magnitudes.size()),
+        [](size_t index) {
+            return _magnitudes[index].type == MAGNITUDE_ENERGY;
+        },
+        {{STRING_VIEW("id"), [](JsonArray& out, size_t index) {
+            out.add(index);
+        }},
+        {STRING_VIEW("saved"), [](JsonArray& out, size_t index) {
+            if (_sensor_energy_tracker) {
+                out.add(getSetting({F("eneTime"), _magnitudes[index].index_global}, F("(unknown)")));
+            } else {
+                out.add("");
+            }
+        }}});
+#endif
+}
+
+void _sensorWebSocketNotifyMagnitudes(JsonObject& root) {
+    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes")};
+    payload(STRING_VIEW("values"), _magnitudes.size(), {
+        {STRING_VIEW("value"), [](JsonArray& out, size_t index) {
+            const auto& magnitude = _magnitudes[index];
+            out.add(::sensor::magnitude::format(magnitude,
+                _magnitudeProcess(magnitude, magnitude.last)));
+        }},
+        {STRING_VIEW("units"), [](JsonArray& out, size_t index) {
+            out.add(static_cast<int>(_magnitudes[index].units));
+        }},
+        {STRING_VIEW("error"), [](JsonArray& out, size_t index) {
+            out.add(_magnitudes[index].sensor->error());
+        }},
+    });
+}
+
 void _sensorWebSocketSendData(JsonObject& root) {
     if (_magnitudes.size()) {
-        ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes")};
-        payload(STRING_VIEW("values"), _magnitudes.size(), {
-            {STRING_VIEW("value"), [](JsonArray& out, size_t index) {
-                const auto& magnitude = _magnitudes[index];
-                out.add(::sensor::magnitude::format(magnitude,
-                    _magnitudeProcess(magnitude, magnitude.last)));
-            }},
-            {STRING_VIEW("error"), [](JsonArray& out, size_t index) {
-                out.add(_magnitudes[index].sensor->error());
-            }},
-            {STRING_VIEW("info"), [](JsonArray& out, size_t index) {
-#if NTP_SUPPORT
-                if ((_magnitudes[index].type == MAGNITUDE_ENERGY) && (_sensor_energy_tracker)) {
-                    out.add(String(F("Last saved: "))
-                        + getSetting({F("eneTime"), _magnitudes[index].index_global},
-                            F("(unknown)")));
-                } else {
-#endif
-                    out.add("");
-#if NTP_SUPPORT
-                }
-#endif
-            }}
-        });
+        _sensorWebSocketNotifyMagnitudes(root);
+        _sensorWebSocketNotifyEnergy(root);
     }
 }
 
