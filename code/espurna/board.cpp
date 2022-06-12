@@ -415,8 +415,8 @@ void boardSetup() {
         // TODO: also check the next sector? both look like dupes
         const uint32_t Sector { (ESP.getFlashChipSize() / FLASH_SECTOR_SIZE) - 3 };
 
-        alignas(alignof(uint32_t)) uint8_t page[256];
-        static constexpr size_t Size { sizeof(page) / sizeof(uint32_t) };
+        static constexpr size_t Size { FLASH_PAGE_SIZE };
+        alignas(alignof(uint32_t)) uint8_t page[Size];
 
         if (ESP.flashRead(Sector, reinterpret_cast<uint32_t*>(&page), Size)) {
             constexpr uint32_t ConfigOffset { 0xb0 };
