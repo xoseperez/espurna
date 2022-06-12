@@ -107,8 +107,9 @@ class AnalogSensor : public BaseAnalogSensor {
         }
 
     protected:
-
         static unsigned int _rawRead(uint8_t pin, size_t samples, Delay delay) {
+            // TODO: system_adc_read_fast()? current implementation is using system_adc_read()
+            // (which is even more sampling on top of ours)
             unsigned int last { 0 };
             unsigned int result { 0 };
             for (size_t sample = 0; sample < samples; ++sample) {

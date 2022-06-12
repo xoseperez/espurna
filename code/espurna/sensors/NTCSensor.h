@@ -81,30 +81,33 @@ class NTCSensor : public AnalogSensor {
         // Previous version happened to use AnalogSensor readings with factor and offset applied
         // In case it was useful, this should also support the scaling in calculations for T
         void pre() override {
-            _last = _rawRead();
+            // Ru = (AnalogMax/c - 1) * Rd
+            const auto reading = _rawRead();
+            const double alpha {
+                (reading != 0)
+                    ? ((AnalogSensor::RawMax / reading) - 1.0)
+                    : 1.0 };
+
+            const double resistance = (_resistance_down > 0)
+                ? (_resistance_down * alpha)
+                : ((_resistance_up > 0) && (alpha > 0.0))
+                    ? (_resistance_up / alpha)
+                    : (_R0);
+
+            // 1/T = 1/T0 + 1/B * ln(R/R0)
+            _value = 1.0 / ((1.0 / _T0) + (fs_log(resistance / _R0) / _beta));
         }
 
         // Current value for slot # index
         double value(unsigned char index) override {
             if (index == 0) {
-                // Ru = (AnalogMax/c - 1) * Rd
-                const double alpha { (AnalogSensor::RawMax / std::clamp(_last, AnalogSensor::RawMin, AnalogSensor::RawMax)) - 1.0 };
-
-                const double resistance = (_resistance_down > 0)
-                    ? (_resistance_down * alpha)
-                    : ((_resistance_up > 0) && (alpha > 0.0))
-                        ? (_resistance_up / alpha)
-                        : (_R0);
-
-                // 1/T = 1/T0 + 1/B * ln(R/R0)
-                return 1.0 / ((1.0 / _T0) + (fs_log(resistance / _R0) / _beta));
             }
 
             return 0.0;
         }
 
     protected:
-        double _last = 0;
+        double _value = 0;
 
         unsigned long _beta = NTC_BETA;
         unsigned long _resistance_up = NTC_R_UP;
