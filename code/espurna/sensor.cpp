@@ -603,6 +603,12 @@ constexpr To unit_cast(From value) {
 static_assert(unit_cast<Kelvin>(AbsoluteZero).value() == 0.0, "");
 static_assert(unit_cast<Celcius>(AbsoluteZero).value() == AbsoluteZero.value(), "");
 
+constexpr bool supported(sensor::Unit unit) {
+    return (unit == sensor::Unit::Celcius)
+        || (unit == sensor::Unit::Kelvin)
+        || (unit == sensor::Unit::Farenheit);
+}
+
 // since the outside api only works with the enumeration, make sure to cast it to our types for conversion
 // a table like this could've also worked
 // > {sensor::Unit(from), sensor::Unit(to), Converter(double(*)(double))}
@@ -627,6 +633,151 @@ constexpr double convert(double value, sensor::Unit from, sensor::Unit to) {
 
 } // namespace
 } // namespace temperature
+
+// right now, limited to plain and kilo values
+// (since we mostly care about a fairly small values)
+// type conversion should only work for related types
+namespace metric {
+namespace {
+
+template <typename __Ratio>
+struct Base {
+    using Type = double;
+    using Ratio = __Ratio;
+
+    constexpr Base() = default;
+    constexpr explicit Base(Type value) :
+        _value(value)
+    {}
+
+    constexpr Type value() const {
+        return _value;
+    }
+
+    constexpr operator Type() const {
+        return _value;
+    }
+
+private:
+    Type _value { 0.0 };
+};
+
+template <typename To, typename From>
+struct convertible_base : std::false_type {
+};
+
+template <typename To, typename From>
+constexpr bool is_convertible_base() {
+    return std::is_same<To, From>::value
+        || std::is_base_of<std::true_type, convertible_base<To, From>>::value
+        || std::is_base_of<std::true_type, convertible_base<From, To>>::value;
+}
+
+template <typename To, typename From>
+using is_convertible = std::enable_if<is_convertible_base<To, From>()>;
+
+template <typename To, typename From,
+          typename Divide = std::ratio_divide<typename From::Ratio, typename To::Ratio>,
+          typename = typename is_convertible<To, From>::type>
+constexpr To unit_cast(From value) {
+    return To(value.value()
+            * static_cast<typename To::Type>(Divide::num)
+            / static_cast<typename To::Type>(Divide::den));
+}
+
+struct Watt : public Base<std::ratio<1, 1>> {
+    using Base::Base;
+};
+
+struct Kilowatt : public Base<std::ratio<1000, 1>> {
+    using Base::Base;
+};
+
+template <>
+struct convertible_base<Watt, Kilowatt> : std::true_type {
+};
+
+struct Voltampere : public Base<std::ratio<1, 1>> {
+    using Base::Base;
+};
+
+struct Kilovoltampere : public Base<std::ratio<1000, 1>> {
+    using Base::Base;
+};
+
+template <>
+struct convertible_base<Voltampere, Kilovoltampere> : std::true_type {
+};
+
+struct VoltampereReactive : public Base<std::ratio<1, 1>> {
+    using Base::Base;
+};
+
+struct KilovoltampereReactive : public Base<std::ratio<1000, 1>> {
+    using Base::Base;
+};
+
+template <>
+struct convertible_base<VoltampereReactive, KilovoltampereReactive> : std::true_type {
+};
+
+struct WattSecond : public Base<std::ratio<1, 1>> {
+    using Base::Base;
+};
+
+using Joule = WattSecond;
+
+struct KilowattHour : public Base<std::ratio<3600000, 1>> {
+    using Base::Base;
+};
+
+template <>
+struct convertible_base<WattSecond, KilowattHour> : std::true_type {
+};
+
+static_assert(is_convertible_base<Voltampere, Kilovoltampere>(), "");
+static_assert(is_convertible_base<Kilovoltampere, Voltampere>(), "");
+
+static_assert(!is_convertible_base<KilovoltampereReactive, Voltampere>(), "");
+static_assert(is_convertible_base<Joule, WattSecond>(), "");
+
+static_assert(unit_cast<Joule>(KilowattHour{0.02}) == 72000.0, "");
+static_assert(unit_cast<VoltampereReactive>(KilovoltampereReactive{1234.0}) == 1234000.0, "");
+
+constexpr bool supported(sensor::Unit unit) {
+    return (unit == sensor::Unit::Voltampere)
+        || (unit == sensor::Unit::Kilovoltampere)
+        || (unit == sensor::Unit::VoltampereReactive)
+        || (unit == sensor::Unit::KilovoltampereReactive)
+        || (unit == sensor::Unit::Watt)
+        || (unit == sensor::Unit::Kilowatt)
+        || (unit == sensor::Unit::Joule)
+        || (unit == sensor::Unit::WattSecond)
+        || (unit == sensor::Unit::KilowattHour);
+}
+
+// Here we only care about the direct counterparts
+// Plus, we still don't enforce supported() at compile time,
+// only safeguard is unit_cast<> failing for 'incompatible' base types
+
+constexpr double convert(double value, sensor::Unit from, sensor::Unit to) {
+#define UNIT_CAST(LHS, RHS) \
+    ((from == sensor::Unit::LHS) && (to == sensor::Unit::RHS)) \
+        ? (unit_cast<RHS, LHS>(LHS{value})) : \
+    ((from == sensor::Unit::RHS) && (to == sensor::Unit::LHS)) \
+        ? (unit_cast<LHS, RHS>(RHS{value}))
+
+    return UNIT_CAST(Watt, Kilowatt) :
+        UNIT_CAST(Voltampere, Kilovoltampere) :
+        UNIT_CAST(VoltampereReactive, KilovoltampereReactive) :
+        UNIT_CAST(Joule, KilowattHour) :
+        UNIT_CAST(WattSecond, KilowattHour) : value;
+
+#undef UNIT_CAST
+}
+
+} // namespace
+} // namespace metric
 } // namespace convert
 
 namespace build {
@@ -1668,38 +1819,21 @@ sensor::Unit _magnitudeUnitFilter(const Magnitude& magnitude, sensor::Unit unit)
 double _magnitudeProcess(const Magnitude& magnitude, double value) {
 
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
-    const auto source = magnitude.sensor->units(magnitude.slot);
-
-    switch (source) {
-    case sensor::Unit::Farenheit:
-    case sensor::Unit::Kelvin:
-    case sensor::Unit::Celcius:
-        value = sensor::convert::temperature::convert(value, source, magnitude.units);
-        break;
-    case sensor::Unit::Percentage:
-        value = std::clamp(value, 0.0, 100.0);
-        break;
-    case sensor::Unit::Watt:
-    case sensor::Unit::Voltampere:
-    case sensor::Unit::VoltampereReactive:
-        if ((magnitude.units == sensor::Unit::Kilowatt)
-            || (magnitude.units == sensor::Unit::Kilovoltampere)
-            || (magnitude.units == sensor::Unit::KilovoltampereReactive)) {
-            value = value / 1.0e+3;
+    const auto sensor_units = magnitude.sensor->units(magnitude.slot);
+    if (sensor_units != magnitude.units) {
+        using namespace sensor::convert;
+        if (temperature::supported(sensor_units) && temperature::supported(magnitude.units)) {
+            value = temperature::convert(value, sensor_units, magnitude.units);
+        } else if (metric::supported(sensor_units) && metric::supported(magnitude.units)) {
+            value = metric::convert(value, sensor_units, magnitude.units);
         }
-        break;
-    case sensor::Unit::KilowattHour:
-        // TODO: we may end up with inf at some point?
-        if (magnitude.units == sensor::Unit::Joule) {
-            value = value * 3.6e+6;
-        }
-        break;
-    default:
-        break;
     }
 
+    // Right now, correction is a simple offset.
+    // TODO: math expression?
     value = value + magnitude.correction;
 
+    // RAW value might have more decimal points than necessary.
     return roundTo(value, magnitude.decimals);
 
 }
