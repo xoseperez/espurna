@@ -415,7 +415,10 @@ void boardSetup() {
         // TODO: also check the next sector? both look like dupes
         const uint32_t Sector { (ESP.getFlashChipSize() / FLASH_SECTOR_SIZE) - 3 };
 
-        static constexpr size_t Size { FLASH_PAGE_SIZE };
+        static constexpr size_t Size { 256 };
+#ifdef FLASH_PAGE_SIZE
+        static_assert(FLASH_PAGE_SIZE == Size, "");
+#endif
         alignas(alignof(uint32_t)) uint8_t page[Size];
 
         if (ESP.flashRead(Sector, reinterpret_cast<uint32_t*>(&page), Size)) {
