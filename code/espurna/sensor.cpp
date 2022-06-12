@@ -1086,6 +1086,586 @@ String serialize(sensor::Filter filter) {
 } // namespace internal
 } // namespace settings
 
+namespace sensor {
+namespace magnitude {
+namespace {
+
+String format(const Magnitude& magnitude, double value) {
+    // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
+    //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
+    char buffer[64];
+    dtostrf(value, 1, magnitude.decimals, buffer);
+
+    return buffer;
+}
+
+String name(unsigned char type) {
+    const char* result = nullptr;
+
+    switch (type) {
+    case MAGNITUDE_TEMPERATURE:
+        result = PSTR("Temperature");
+        break;
+    case MAGNITUDE_HUMIDITY:
+        result = PSTR("Humidity");
+        break;
+    case MAGNITUDE_PRESSURE:
+        result = PSTR("Pressure");
+        break;
+    case MAGNITUDE_CURRENT:
+        result = PSTR("Current");
+        break;
+    case MAGNITUDE_VOLTAGE:
+        result = PSTR("Voltage");
+        break;
+    case MAGNITUDE_POWER_ACTIVE:
+        result = PSTR("Active Power");
+        break;
+    case MAGNITUDE_POWER_APPARENT:
+        result = PSTR("Apparent Power");
+        break;
+    case MAGNITUDE_POWER_REACTIVE:
+        result = PSTR("Reactive Power");
+        break;
+    case MAGNITUDE_POWER_FACTOR:
+        result = PSTR("Power Factor");
+        break;
+    case MAGNITUDE_ENERGY:
+        result = PSTR("Energy");
+        break;
+    case MAGNITUDE_ENERGY_DELTA:
+        result = PSTR("Energy (delta)");
+        break;
+    case MAGNITUDE_ANALOG:
+        result = PSTR("Analog");
+        break;
+    case MAGNITUDE_DIGITAL:
+        result = PSTR("Digital");
+        break;
+    case MAGNITUDE_EVENT:
+        result = PSTR("Event");
+        break;
+    case MAGNITUDE_PM1DOT0:
+        result = PSTR("PM1.0");
+        break;
+    case MAGNITUDE_PM2DOT5:
+        result = PSTR("PM2.5");
+        break;
+    case MAGNITUDE_PM10:
+        result = PSTR("PM10");
+        break;
+    case MAGNITUDE_CO2:
+        result = PSTR("CO2");
+        break;
+    case MAGNITUDE_VOC:
+        result = PSTR("VOC");
+        break;
+    case MAGNITUDE_IAQ_STATIC:
+        result = PSTR("IAQ (Static)");
+        break;
+    case MAGNITUDE_IAQ:
+        result = PSTR("IAQ");
+        break;
+    case MAGNITUDE_IAQ_ACCURACY:
+        result = PSTR("IAQ Accuracy");
+        break;
+    case MAGNITUDE_LUX:
+        result = PSTR("Lux");
+        break;
+    case MAGNITUDE_UVA:
+        result = PSTR("UVA");
+        break;
+    case MAGNITUDE_UVB:
+        result = PSTR("UVB");
+        break;
+    case MAGNITUDE_UVI:
+        result = PSTR("UVI");
+        break;
+    case MAGNITUDE_DISTANCE:
+        result = PSTR("Distance");
+        break;
+    case MAGNITUDE_HCHO:
+        result = PSTR("HCHO");
+        break;
+    case MAGNITUDE_GEIGER_CPM:
+    case MAGNITUDE_GEIGER_SIEVERT:
+        result = PSTR("Local Dose Rate");
+        break;
+    case MAGNITUDE_COUNT:
+        result = PSTR("Count");
+        break;
+    case MAGNITUDE_NO2:
+        result = PSTR("NO2");
+        break;
+    case MAGNITUDE_CO:
+        result = PSTR("CO");
+        break;
+    case MAGNITUDE_RESISTANCE:
+        result = PSTR("Resistance");
+        break;
+    case MAGNITUDE_PH:
+        result = PSTR("pH");
+        break;
+    case MAGNITUDE_FREQUENCY:
+        result = PSTR("Frequency");
+        break;
+    case MAGNITUDE_TVOC:
+        result = PSTR("TVOC");
+        break;
+    case MAGNITUDE_CH2O:
+        result = PSTR("CH2O");
+        break;
+    case MAGNITUDE_NONE:
+    default:
+        break;
+    }
+
+    return String(result);
+}
+
+String topic(unsigned char type) {
+    const char* result = PSTR("unknown");
+
+    switch (type) {
+    case MAGNITUDE_TEMPERATURE:
+        result = PSTR("temperature");
+        break;
+    case MAGNITUDE_HUMIDITY:
+        result = PSTR("humidity");
+        break;
+    case MAGNITUDE_PRESSURE:
+        result = PSTR("pressure");
+        break;
+    case MAGNITUDE_CURRENT:
+        result = PSTR("current");
+        break;
+    case MAGNITUDE_VOLTAGE:
+        result = PSTR("voltage");
+        break;
+    case MAGNITUDE_POWER_ACTIVE:
+        result = PSTR("power");
+        break;
+    case MAGNITUDE_POWER_APPARENT:
+        result = PSTR("apparent");
+        break;
+    case MAGNITUDE_POWER_REACTIVE:
+        result = PSTR("reactive");
+        break;
+    case MAGNITUDE_POWER_FACTOR:
+        result = PSTR("factor");
+        break;
+    case MAGNITUDE_ENERGY:
+        result = PSTR("energy");
+        break;
+    case MAGNITUDE_ENERGY_DELTA:
+        result = PSTR("energy_delta");
+        break;
+    case MAGNITUDE_ANALOG:
+        result = PSTR("analog");
+        break;
+    case MAGNITUDE_DIGITAL:
+        result = PSTR("digital");
+        break;
+    case MAGNITUDE_EVENT:
+        result = PSTR("event");
+        break;
+    case MAGNITUDE_PM1DOT0:
+        result = PSTR("pm1dot0");
+        break;
+    case MAGNITUDE_PM2DOT5:
+        result = PSTR("pm2dot5");
+        break;
+    case MAGNITUDE_PM10:
+        result = PSTR("pm10");
+        break;
+    case MAGNITUDE_CO2:
+        result = PSTR("co2");
+        break;
+    case MAGNITUDE_VOC:
+        result = PSTR("voc");
+        break;
+    case MAGNITUDE_IAQ:
+        result = PSTR("iaq");
+        break;
+    case MAGNITUDE_IAQ_ACCURACY:
+        result = PSTR("iaq_accuracy");
+        break;
+    case MAGNITUDE_IAQ_STATIC:
+        result = PSTR("iaq_static");
+        break;
+    case MAGNITUDE_LUX:
+        result = PSTR("lux");
+        break;
+    case MAGNITUDE_UVA:
+        result = PSTR("uva");
+        break;
+    case MAGNITUDE_UVB:
+        result = PSTR("uvb");
+        break;
+    case MAGNITUDE_UVI:
+        result = PSTR("uvi");
+        break;
+    case MAGNITUDE_DISTANCE:
+        result = PSTR("distance");
+        break;
+    case MAGNITUDE_HCHO:
+        result = PSTR("hcho");
+        break;
+    case MAGNITUDE_GEIGER_CPM:
+        result = PSTR("ldr_cpm"); // local dose rate [Counts per minute]
+        break;
+    case MAGNITUDE_GEIGER_SIEVERT:
+        result = PSTR("ldr_uSvh"); // local dose rate [µSievert per hour]
+        break;
+    case MAGNITUDE_COUNT:
+        result = PSTR("count");
+        break;
+    case MAGNITUDE_NO2:
+        result = PSTR("no2");
+        break;
+    case MAGNITUDE_CO:
+        result = PSTR("co");
+        break;
+    case MAGNITUDE_RESISTANCE:
+        result = PSTR("resistance");
+        break;
+    case MAGNITUDE_PH:
+        result = PSTR("ph");
+        break;
+    case MAGNITUDE_FREQUENCY:
+        result = PSTR("frequency");
+        break;
+    case MAGNITUDE_TVOC:
+        result = PSTR("tvoc");
+        break;
+    case MAGNITUDE_CH2O:
+        result = PSTR("ch2o");
+        break;
+    case MAGNITUDE_NONE:
+    default:
+        break;
+    }
+
+    return String(result);
+}
+
+String topic(const Magnitude& magnitude) {
+    return topic(magnitude.type);
+}
+
+String topicWithIndex(const Magnitude& magnitude) {
+    auto out = topic(magnitude);
+    if (sensor::build::useIndex() || (Magnitude::counts(magnitude.type) > 1)) {
+        out += '/' + String(magnitude.index_global, 10);
+    }
+
+    return out;
+}
+
+String description(const Magnitude& magnitude) {
+    return magnitude.sensor->description(magnitude.slot);
+}
+
+sensor::Filter defaultFilter(unsigned char type) {
+    switch (type) {
+    case MAGNITUDE_IAQ:
+    case MAGNITUDE_IAQ_STATIC:
+    case MAGNITUDE_ENERGY:
+        return sensor::Filter::Last;
+    case MAGNITUDE_EVENT:
+    case MAGNITUDE_DIGITAL:
+        return sensor::Filter::Max;
+    case MAGNITUDE_COUNT:
+    case MAGNITUDE_ENERGY_DELTA:
+        return sensor::Filter::Sum;
+    case MAGNITUDE_GEIGER_CPM:
+    case MAGNITUDE_GEIGER_SIEVERT:
+        return sensor::Filter::MovingAverage;
+    }
+
+    return sensor::Filter::Median;
+}
+
+sensor::Filter defaultFilter(const Magnitude& magnitude) {
+    return defaultFilter(magnitude.type);
+}
+
+String units(sensor::Unit unit) {
+    return ::settings::internal::serialize(unit);
+}
+
+String units(const Magnitude& magnitude) {
+    return units(magnitude.units);
+}
+
+// Hardcoded decimals for each magnitude
+unsigned char decimals(sensor::Unit unit) {
+    switch (unit) {
+    case sensor::Unit::Celcius:
+    case sensor::Unit::Farenheit:
+        return 1;
+    case sensor::Unit::Percentage:
+        return 0;
+    case sensor::Unit::Hectopascal:
+        return 2;
+    case sensor::Unit::Ampere:
+        return 3;
+    case sensor::Unit::Volt:
+        return 0;
+    case sensor::Unit::Watt:
+    case sensor::Unit::Voltampere:
+    case sensor::Unit::VoltampereReactive:
+        return 0;
+    case sensor::Unit::Kilowatt:
+    case sensor::Unit::Kilovoltampere:
+    case sensor::Unit::KilovoltampereReactive:
+        return 3;
+    case sensor::Unit::KilowattHour:
+        return 3;
+    case sensor::Unit::WattSecond:
+        return 0;
+    case sensor::Unit::CountsPerMinute:
+    case sensor::Unit::MicrosievertPerHour:
+        return 4;
+    case sensor::Unit::Meter:
+        return 3;
+    case sensor::Unit::Hertz:
+        return 1;
+    case sensor::Unit::UltravioletIndex:
+        return 3;
+    case sensor::Unit::Ph:
+        return 3;
+    case sensor::Unit::None:
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+} // namespace
+} // namespace magnitude
+
+namespace units {
+namespace {
+
+struct Range {
+    Range() = default;
+
+    template <size_t Size>
+    explicit Range(const sensor::Unit (&units)[Size]) :
+        _begin(std::begin(units)),
+        _end(std::end(units))
+    {}
+
+    template <size_t Size>
+    Range& operator=(const sensor::Unit (&units)[Size]) {
+        _begin = std::begin(units);
+        _end = std::end(units);
+        return *this;
+    }
+
+    const sensor::Unit* begin() const {
+        return _begin;
+    }
+
+    const sensor::Unit* end() const {
+        return _end;
+    }
+
+private:
+    const sensor::Unit* _begin { nullptr };
+    const sensor::Unit* _end { nullptr };
+};
+
+Range range(unsigned char type) {
+#define MAGNITUDE_UNITS_RANGE(...)\
+    static const Unit units[] PROGMEM {\
+        __VA_ARGS__\
+    };\
+\
+    out = units
+
+    Range out;
+
+    switch (type) {
+
+    case MAGNITUDE_TEMPERATURE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Celcius,
+            Unit::Farenheit,
+            Unit::Kelvin
+        );
+        break;
+    }
+
+    case MAGNITUDE_HUMIDITY:
+    case MAGNITUDE_POWER_FACTOR: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Percentage
+        );
+        break;
+    }
+
+    case MAGNITUDE_PRESSURE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Hectopascal
+        );
+        break;
+    }
+
+    case MAGNITUDE_CURRENT: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Ampere
+        );
+        break;
+    }
+
+    case MAGNITUDE_VOLTAGE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Volt
+        );
+        break;
+    }
+
+    case MAGNITUDE_POWER_ACTIVE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Watt,
+            Unit::Kilowatt
+        );
+        break;
+    }
+
+    case MAGNITUDE_POWER_APPARENT: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Voltampere,
+            Unit::Kilovoltampere
+        );
+        break;
+    }
+
+    case MAGNITUDE_POWER_REACTIVE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::VoltampereReactive,
+            Unit::KilovoltampereReactive
+        );
+        break;
+    }
+
+    case MAGNITUDE_ENERGY_DELTA: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Joule
+        );
+        break;
+    }
+
+    case MAGNITUDE_ENERGY: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Joule,
+            Unit::KilowattHour
+        );
+        break;
+    }
+
+    case MAGNITUDE_PM1DOT0:
+    case MAGNITUDE_PM2DOT5:
+    case MAGNITUDE_PM10:
+    case MAGNITUDE_TVOC:
+    case MAGNITUDE_CH2O: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::MicrogrammPerCubicMeter,
+            Unit::MilligrammPerCubicMeter
+        );
+        break;
+    }
+
+    case MAGNITUDE_CO:
+    case MAGNITUDE_CO2:
+    case MAGNITUDE_NO2:
+    case MAGNITUDE_VOC: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::PartsPerMillion
+        );
+        break;
+    }
+
+    case MAGNITUDE_LUX: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Lux
+        );
+        break;
+    }
+
+    case MAGNITUDE_RESISTANCE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Ohm
+        );
+        break;
+    }
+
+    case MAGNITUDE_HCHO: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::MilligrammPerCubicMeter
+        );
+        break;
+    }
+
+    case MAGNITUDE_GEIGER_CPM: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::CountsPerMinute
+        );
+        break;
+    }
+
+    case MAGNITUDE_GEIGER_SIEVERT: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::MicrosievertPerHour
+        );
+        break;
+    }
+
+    case MAGNITUDE_DISTANCE: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Meter
+        );
+        break;
+    }
+
+    case MAGNITUDE_FREQUENCY: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Hertz
+        );
+        break;
+    }
+
+    case MAGNITUDE_PH: {
+        MAGNITUDE_UNITS_RANGE(
+            Unit::Ph
+        );
+        break;
+    }
+
+    }
+
+#undef MAGNITUDE_UNITS_RANGE
+    return out;
+}
+
+bool supported(const Magnitude& magnitude, Unit unit) {
+    const auto range = units::range(magnitude.type);
+    return std::any_of(range.begin(), range.end(), [&](sensor::Unit supported) {
+        return (unit == supported);
+    });
+}
+
+sensor::Unit filter(const Magnitude& magnitude, Unit unit) {
+    return supported(magnitude, unit) ? unit : magnitude.units;
+}
+
+} // namespace
+} // namespace units
+} // namespace sensor
+
 // -----------------------------------------------------------------------------
 // Energy persistence
 // -----------------------------------------------------------------------------
@@ -1299,8 +1879,11 @@ private:
 };
 
 void _magnitudeSaveEnergyTotal(const Magnitude& magnitude, bool persistent) {
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
+    if (!_sensorIsEmon(magnitude.sensor)) {
+        return;
+    }
 
+    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
     const auto energy = sensor->totalEnergy(magnitude.slot);
 
     // Always save to RTCMEM
@@ -1316,9 +1899,18 @@ void _magnitudeSaveEnergyTotal(const Magnitude& magnitude, bool persistent) {
 }
 
 void _sensorTrackEnergyTotal(const Magnitude& magnitude) {
+    if (!_sensorIsEmon(magnitude.sensor)) {
+        return;
+    }
+
     auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
     sensor->resetEnergy(magnitude.slot, _sensorEnergyTotal(magnitude.index_global));
     _sensor_energy_tracker.add(magnitude);
+
+    DEBUG_MSG_P(PSTR("[ENERGY] Tracking %s/%u for %s\n"),
+            sensor::magnitude::topic(magnitude).c_str(),
+            magnitude.index_global,
+            magnitude.sensor->description().c_str());
 }
 
 } // namespace
@@ -1347,26 +1939,6 @@ std::vector<Magnitude> _magnitudes;
 using MagnitudeReadHandlers = std::forward_list<MagnitudeReadHandler>;
 MagnitudeReadHandlers _magnitude_read_handlers;
 MagnitudeReadHandlers _magnitude_report_handlers;
-
-sensor::Filter _magnitudeDefaultFilter(unsigned char type) {
-    switch (type) {
-    case MAGNITUDE_IAQ:
-    case MAGNITUDE_IAQ_STATIC:
-    case MAGNITUDE_ENERGY:
-        return sensor::Filter::Last;
-    case MAGNITUDE_EVENT:
-    case MAGNITUDE_DIGITAL:
-        return sensor::Filter::Max;
-    case MAGNITUDE_COUNT:
-    case MAGNITUDE_ENERGY_DELTA:
-        return sensor::Filter::Sum;
-    case MAGNITUDE_GEIGER_CPM:
-    case MAGNITUDE_GEIGER_SIEVERT:
-        return sensor::Filter::MovingAverage;
-    }
-
-    return sensor::Filter::Median;
-}
 
 BaseFilterPtr _magnitudeFilter(sensor::Filter filter) {
     BaseFilterPtr out;
@@ -1404,197 +1976,11 @@ Magnitude::Magnitude(BaseSensorPtr sensor, unsigned char slot, unsigned char typ
     ++_counts[type];
 }
 
-// Hardcoded decimals for each magnitude
-
-unsigned char _sensorUnitDecimals(sensor::Unit unit) {
-    switch (unit) {
-        case sensor::Unit::Celcius:
-        case sensor::Unit::Farenheit:
-            return 1;
-        case sensor::Unit::Percentage:
-            return 0;
-        case sensor::Unit::Hectopascal:
-            return 2;
-        case sensor::Unit::Ampere:
-            return 3;
-        case sensor::Unit::Volt:
-            return 0;
-        case sensor::Unit::Watt:
-        case sensor::Unit::Voltampere:
-        case sensor::Unit::VoltampereReactive:
-            return 0;
-        case sensor::Unit::Kilowatt:
-        case sensor::Unit::Kilovoltampere:
-        case sensor::Unit::KilovoltampereReactive:
-            return 3;
-        case sensor::Unit::KilowattHour:
-            return 3;
-        case sensor::Unit::WattSecond:
-            return 0;
-        case sensor::Unit::CountsPerMinute:
-        case sensor::Unit::MicrosievertPerHour:
-            return 4;
-        case sensor::Unit::Meter:
-            return 3;
-        case sensor::Unit::Hertz:
-            return 1;
-        case sensor::Unit::UltravioletIndex:
-            return 3;
-        case sensor::Unit::Ph:
-            return 3;
-        case sensor::Unit::None:
-        default:
-            return 0;
-    }
-}
-
-String _magnitudeTopic(unsigned char type) {
-
-    const __FlashStringHelper* result = nullptr;
-
-    switch (type) {
-        case MAGNITUDE_TEMPERATURE:
-            result = F("temperature");
-            break;
-        case MAGNITUDE_HUMIDITY:
-            result = F("humidity");
-            break;
-        case MAGNITUDE_PRESSURE:
-            result = F("pressure");
-            break;
-        case MAGNITUDE_CURRENT:
-            result = F("current");
-            break;
-        case MAGNITUDE_VOLTAGE:
-            result = F("voltage");
-            break;
-        case MAGNITUDE_POWER_ACTIVE:
-            result = F("power");
-            break;
-        case MAGNITUDE_POWER_APPARENT:
-            result = F("apparent");
-            break;
-        case MAGNITUDE_POWER_REACTIVE:
-            result = F("reactive");
-            break;
-        case MAGNITUDE_POWER_FACTOR:
-            result = F("factor");
-            break;
-        case MAGNITUDE_ENERGY:
-            result = F("energy");
-            break;
-        case MAGNITUDE_ENERGY_DELTA:
-            result = F("energy_delta");
-            break;
-        case MAGNITUDE_ANALOG:
-            result = F("analog");
-            break;
-        case MAGNITUDE_DIGITAL:
-            result = F("digital");
-            break;
-        case MAGNITUDE_EVENT:
-            result = F("event");
-            break;
-        case MAGNITUDE_PM1DOT0:
-            result = F("pm1dot0");
-            break;
-        case MAGNITUDE_PM2DOT5:
-            result = F("pm2dot5");
-            break;
-        case MAGNITUDE_PM10:
-            result = F("pm10");
-            break;
-        case MAGNITUDE_CO2:
-            result = F("co2");
-            break;
-        case MAGNITUDE_VOC:
-            result = F("voc");
-            break;
-        case MAGNITUDE_IAQ:
-            result = F("iaq");
-            break;
-        case MAGNITUDE_IAQ_ACCURACY:
-            result = F("iaq_accuracy");
-            break;
-        case MAGNITUDE_IAQ_STATIC:
-            result = F("iaq_static");
-            break;
-        case MAGNITUDE_LUX:
-            result = F("lux");
-            break;
-        case MAGNITUDE_UVA:
-            result = F("uva");
-            break;
-        case MAGNITUDE_UVB:
-            result = F("uvb");
-            break;
-        case MAGNITUDE_UVI:
-            result = F("uvi");
-            break;
-        case MAGNITUDE_DISTANCE:
-            result = F("distance");
-            break;
-        case MAGNITUDE_HCHO:
-            result = F("hcho");
-            break;
-        case MAGNITUDE_GEIGER_CPM:
-            result = F("ldr_cpm"); // local dose rate [Counts per minute]
-            break;
-        case MAGNITUDE_GEIGER_SIEVERT:
-            result = F("ldr_uSvh"); // local dose rate [µSievert per hour]
-            break;
-        case MAGNITUDE_COUNT:
-            result = F("count");
-            break;
-        case MAGNITUDE_NO2:
-            result = F("no2");
-            break;
-        case MAGNITUDE_CO:
-            result = F("co");
-            break;
-        case MAGNITUDE_RESISTANCE:
-            result = F("resistance");
-            break;
-        case MAGNITUDE_PH:
-            result = F("ph");
-            break;
-        case MAGNITUDE_FREQUENCY:
-            result = F("frequency");
-            break;
-        case MAGNITUDE_TVOC:
-            result = F("tvoc");
-            break;
-        case MAGNITUDE_CH2O:
-            result = F("ch2o");
-            break;
-        case MAGNITUDE_NONE:
-        default:
-            result = F("unknown");
-            break;
-    }
-
-    return String(result);
-
-}
-
-String _magnitudeTopicIndex(const Magnitude& magnitude) {
-    auto topic = _magnitudeTopic(magnitude.type);
-    if (sensor::build::useIndex() || (Magnitude::counts(magnitude.type) > 1)) {
-        topic += '/' + String(magnitude.index_global, 10);
-    }
-
-    return topic;
-}
-
-String _magnitudeUnits(sensor::Unit unit) {
-    return ::settings::internal::serialize(unit);
-}
-
 } // namespace
 
 String magnitudeUnits(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return _magnitudeUnits(_magnitudes[index].units);
+        return sensor::magnitude::units(_magnitudes[index]);
     }
 
     return String();
@@ -1602,222 +1988,7 @@ String magnitudeUnits(unsigned char index) {
 
 namespace {
 
-// Choose unit based on type of magnitude we use
-
-struct MagnitudeUnitsRange {
-    MagnitudeUnitsRange() = default;
-
-    template <size_t Size>
-    explicit MagnitudeUnitsRange(const sensor::Unit (&units)[Size]) :
-        _begin(std::begin(units)),
-        _end(std::end(units))
-    {}
-
-    template <size_t Size>
-    MagnitudeUnitsRange& operator=(const sensor::Unit (&units)[Size]) {
-        _begin = std::begin(units);
-        _end = std::end(units);
-        return *this;
-    }
-
-    const sensor::Unit* begin() const {
-        return _begin;
-    }
-
-    const sensor::Unit* end() const {
-        return _end;
-    }
-
-private:
-    const sensor::Unit* _begin { nullptr };
-    const sensor::Unit* _end { nullptr };
-};
-
-#define MAGNITUDE_UNITS_RANGE(...)\
-    static const sensor::Unit units[] PROGMEM {\
-        __VA_ARGS__\
-    };\
-\
-    out = units
-
-MagnitudeUnitsRange _magnitudeUnitsRange(unsigned char type) {
-    MagnitudeUnitsRange out;
-
-    switch (type) {
-
-    case MAGNITUDE_TEMPERATURE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Celcius,
-            sensor::Unit::Farenheit,
-            sensor::Unit::Kelvin
-        );
-        break;
-    }
-
-    case MAGNITUDE_HUMIDITY:
-    case MAGNITUDE_POWER_FACTOR: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Percentage
-        );
-        break;
-    }
-
-    case MAGNITUDE_PRESSURE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Hectopascal
-        );
-        break;
-    }
-
-    case MAGNITUDE_CURRENT: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Ampere
-        );
-        break;
-    }
-
-    case MAGNITUDE_VOLTAGE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Volt
-        );
-        break;
-    }
-
-    case MAGNITUDE_POWER_ACTIVE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Watt,
-            sensor::Unit::Kilowatt
-        );
-        break;
-    }
-
-    case MAGNITUDE_POWER_APPARENT: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Voltampere,
-            sensor::Unit::Kilovoltampere
-        );
-        break;
-    }
-
-    case MAGNITUDE_POWER_REACTIVE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::VoltampereReactive,
-            sensor::Unit::KilovoltampereReactive
-        );
-        break;
-    }
-
-    case MAGNITUDE_ENERGY_DELTA: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Joule
-        );
-        break;
-    }
-
-    case MAGNITUDE_ENERGY: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Joule,
-            sensor::Unit::KilowattHour
-        );
-        break;
-    }
-
-    case MAGNITUDE_PM1DOT0:
-    case MAGNITUDE_PM2DOT5:
-    case MAGNITUDE_PM10:
-    case MAGNITUDE_TVOC:
-    case MAGNITUDE_CH2O: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::MicrogrammPerCubicMeter,
-            sensor::Unit::MilligrammPerCubicMeter
-        );
-        break;
-    }
-
-    case MAGNITUDE_CO:
-    case MAGNITUDE_CO2:
-    case MAGNITUDE_NO2:
-    case MAGNITUDE_VOC: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::PartsPerMillion
-        );
-        break;
-    }
-
-    case MAGNITUDE_LUX: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Lux
-        );
-        break;
-    }
-
-    case MAGNITUDE_RESISTANCE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Ohm
-        );
-        break;
-    }
-
-    case MAGNITUDE_HCHO: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::MilligrammPerCubicMeter
-        );
-        break;
-    }
-
-    case MAGNITUDE_GEIGER_CPM: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::CountsPerMinute
-        );
-        break;
-    }
-
-    case MAGNITUDE_GEIGER_SIEVERT: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::MicrosievertPerHour
-        );
-        break;
-    }
-
-    case MAGNITUDE_DISTANCE: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Meter
-        );
-        break;
-    }
-
-    case MAGNITUDE_FREQUENCY: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Hertz
-        );
-        break;
-    }
-
-    case MAGNITUDE_PH: {
-        MAGNITUDE_UNITS_RANGE(
-            sensor::Unit::Ph
-        );
-        break;
-    }
-
-    }
-
-    return out;
-}
-
-bool _magnitudeUnitSupported(const Magnitude& magnitude, sensor::Unit unit) {
-    const auto range = _magnitudeUnitsRange(magnitude.type);
-    return std::any_of(range.begin(), range.end(), [&](sensor::Unit supported) {
-        return (unit == supported);
-    });
-}
-
-sensor::Unit _magnitudeUnitFilter(const Magnitude& magnitude, sensor::Unit unit) {
-    return _magnitudeUnitSupported(magnitude, unit) ? unit : magnitude.units;
-}
-
 double _magnitudeProcess(const Magnitude& magnitude, double value) {
-
     // Process input (sensor) units and convert to the ones that magnitude specifies as output
     const auto sensor_units = magnitude.sensor->units(magnitude.slot);
     if (sensor_units != magnitude.units) {
@@ -1835,11 +2006,6 @@ double _magnitudeProcess(const Magnitude& magnitude, double value) {
 
     // RAW value might have more decimal points than necessary.
     return roundTo(value, magnitude.decimals);
-
-}
-
-String _magnitudeDescription(const Magnitude& magnitude) {
-    return magnitude.sensor->description(magnitude.slot);
 }
 
 // -----------------------------------------------------------------------------
@@ -2088,131 +2254,6 @@ String _sensorError(unsigned char error) {
 
 }
 
-String _magnitudeName(unsigned char type) {
-
-    const __FlashStringHelper* result = nullptr;
-
-    switch (type) {
-        case MAGNITUDE_TEMPERATURE:
-            result = F("Temperature");
-            break;
-        case MAGNITUDE_HUMIDITY:
-            result = F("Humidity");
-            break;
-        case MAGNITUDE_PRESSURE:
-            result = F("Pressure");
-            break;
-        case MAGNITUDE_CURRENT:
-            result = F("Current");
-            break;
-        case MAGNITUDE_VOLTAGE:
-            result = F("Voltage");
-            break;
-        case MAGNITUDE_POWER_ACTIVE:
-            result = F("Active Power");
-            break;
-        case MAGNITUDE_POWER_APPARENT:
-            result = F("Apparent Power");
-            break;
-        case MAGNITUDE_POWER_REACTIVE:
-            result = F("Reactive Power");
-            break;
-        case MAGNITUDE_POWER_FACTOR:
-            result = F("Power Factor");
-            break;
-        case MAGNITUDE_ENERGY:
-            result = F("Energy");
-            break;
-        case MAGNITUDE_ENERGY_DELTA:
-            result = F("Energy (delta)");
-            break;
-        case MAGNITUDE_ANALOG:
-            result = F("Analog");
-            break;
-        case MAGNITUDE_DIGITAL:
-            result = F("Digital");
-            break;
-        case MAGNITUDE_EVENT:
-            result = F("Event");
-            break;
-        case MAGNITUDE_PM1DOT0:
-            result = F("PM1.0");
-            break;
-        case MAGNITUDE_PM2DOT5:
-            result = F("PM2.5");
-            break;
-        case MAGNITUDE_PM10:
-            result = F("PM10");
-            break;
-        case MAGNITUDE_CO2:
-            result = F("CO2");
-            break;
-        case MAGNITUDE_VOC:
-            result = F("VOC");
-            break;
-        case MAGNITUDE_IAQ_STATIC:
-            result = F("IAQ (Static)");
-            break;
-        case MAGNITUDE_IAQ:
-            result = F("IAQ");
-            break;
-        case MAGNITUDE_IAQ_ACCURACY:
-            result = F("IAQ Accuracy");
-            break;
-        case MAGNITUDE_LUX:
-            result = F("Lux");
-            break;
-        case MAGNITUDE_UVA:
-            result = F("UVA");
-            break;
-        case MAGNITUDE_UVB:
-            result = F("UVB");
-            break;
-        case MAGNITUDE_UVI:
-            result = F("UVI");
-            break;
-        case MAGNITUDE_DISTANCE:
-            result = F("Distance");
-            break;
-        case MAGNITUDE_HCHO:
-            result = F("HCHO");
-            break;
-        case MAGNITUDE_GEIGER_CPM:
-        case MAGNITUDE_GEIGER_SIEVERT:
-            result = F("Local Dose Rate");
-            break;
-        case MAGNITUDE_COUNT:
-            result = F("Count");
-            break;
-        case MAGNITUDE_NO2:
-            result = F("NO2");
-            break;
-        case MAGNITUDE_CO:
-            result = F("CO");
-            break;
-        case MAGNITUDE_RESISTANCE:
-            result = F("Resistance");
-            break;
-        case MAGNITUDE_PH:
-            result = F("pH");
-            break;
-        case MAGNITUDE_FREQUENCY:
-            result = F("Frequency");
-            break;
-        case MAGNITUDE_TVOC:
-            result = F("TVOC");
-            break;
-        case MAGNITUDE_CH2O:
-            result = F("CH2O");
-            break;
-        case MAGNITUDE_NONE:
-        default:
-            break;
-    }
-
-    return String(result);
-}
-
 // prepare available types and magnitudes config
 // make sure these are properly ordered, as UI does not delay processing
 
@@ -2230,7 +2271,7 @@ void _sensorWebSocketTypes(JsonObject& root) {
                 out.add(FPSTR(::sensor::settings::prefix::get(index).c_str()));
             }},
             {STRING_VIEW("name"), [](JsonArray& out, size_t index) {
-                out.add(_magnitudeName(index));
+                out.add(sensor::magnitude::name(index));
             }}
         });
 }
@@ -2252,11 +2293,11 @@ void _sensorWebSocketUnits(JsonObject& root) {
     payload(STRING_VIEW("values"), _magnitudes.size(), {
         {STRING_VIEW("supported"), [](JsonArray& out, size_t index) {
             JsonArray& units = out.createNestedArray();
-            const auto range = _magnitudeUnitsRange(_magnitudes[index].type);
+            const auto range = sensor::units::range(_magnitudes[index].type);
             for (auto it = range.begin(); it != range.end(); ++it) {
                 JsonArray& unit = units.createNestedArray();
                 unit.add(static_cast<int>(*it)); // raw id
-                unit.add(_magnitudeUnits(*it));  // as string
+                unit.add(sensor::magnitude::units(*it));  // as string
             }
         }}
     });
@@ -2272,7 +2313,7 @@ void _sensorWebSocketList(JsonObject& root) {
             out.add(_magnitudes[index].type);
         }},
         {STRING_VIEW("description"), [](JsonArray& out, size_t index) {
-            out.add(_magnitudeDescription(_magnitudes[index]));
+            out.add(sensor::magnitude::description(_magnitudes[index]));
         }},
         {STRING_VIEW("units"), [](JsonArray& out, size_t index) {
             out.add(static_cast<int>(_magnitudes[index].units));
@@ -2332,11 +2373,9 @@ void _sensorWebSocketSendData(JsonObject& root) {
         ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes")};
         payload(STRING_VIEW("values"), _magnitudes.size(), {
             {STRING_VIEW("value"), [](JsonArray& out, size_t index) {
-                char buffer[64];
-                dtostrf(_magnitudeProcess(
-                    _magnitudes[index], _magnitudes[index].last),
-                    1, _magnitudes[index].decimals, buffer);
-                out.add(buffer);
+                const auto& magnitude = _magnitudes[index];
+                out.add(::sensor::magnitude::format(magnitude,
+                    _magnitudeProcess(magnitude, magnitude.last)));
             }},
             {STRING_VIEW("error"), [](JsonArray& out, size_t index) {
                 out.add(_magnitudes[index].sensor->error());
@@ -2532,7 +2571,7 @@ void _sensorApiSetup() {
             JsonArray& magnitudes = root.createNestedArray("magnitudes");
             for (auto& magnitude : _magnitudes) {
                 JsonArray& data = magnitudes.createNestedArray();
-                data.add(_magnitudeTopicIndex(magnitude));
+                data.add(sensor::magnitude::topicWithIndex(magnitude));
                 data.add(magnitude.last);
                 data.add(magnitude.reported);
             }
@@ -2542,7 +2581,7 @@ void _sensorApiSetup() {
     );
 
     _magnitudeForEachCounted([](unsigned char type) {
-        auto pattern = _magnitudeTopic(type);
+        auto pattern = sensor::magnitude::topic(type);
         if (sensor::build::useIndex() || (Magnitude::counts(type) > 1)) {
             pattern += "/+";
         }
@@ -2584,7 +2623,7 @@ void _sensorApiSetup() {
 namespace {
 
 void _sensorMqttCallback(unsigned int type, const char* topic, char* payload) {
-    static const auto energy_topic = _magnitudeTopic(MAGNITUDE_ENERGY);
+    static const auto energy_topic = sensor::magnitude::topic(MAGNITUDE_ENERGY);
     switch (type) {
         case MQTT_MESSAGE_EVENT: {
             String t = mqttMagnitude(topic);
@@ -2639,9 +2678,9 @@ void _sensorInitCommands() {
             dtostrf(magnitude.last, 1, magnitude.decimals, last);
             dtostrf(magnitude.reported, 1, magnitude.decimals, reported);
             ctx.output.printf_P(PSTR("%2zu * %s @ %s (read:%s reported:%s units:%s)\n"),
-                index++, _magnitudeTopicIndex(magnitude).c_str(),
-                _magnitudeDescription(magnitude).c_str(), last, reported,
-                _magnitudeUnits(magnitude.units).c_str());
+                index++, sensor::magnitude::topicWithIndex(magnitude).c_str(),
+                sensor::magnitude::description(magnitude).c_str(), last, reported,
+                sensor::magnitude::units(magnitude).c_str());
         }
 
         terminalOK(ctx);
@@ -2687,7 +2726,7 @@ void _sensorInitCommands() {
             }
 
             for (auto& magnitude : _magnitudes) {
-                if ((MAGNITUDE_ENERGY == magnitude.type) && (selected == magnitude.index_global) && _sensorIsEmon(magnitude.sensor)) {
+                if (_sensorIsEmon(magnitude.sensor) && (MAGNITUDE_ENERGY == magnitude.type) && (selected == magnitude.index_global)) {
                     static_cast<BaseEmonSensor*>(magnitude.sensor.get())->resetEnergy(magnitude.slot, energy.value());
                     terminalOK(ctx);
                     return;
@@ -3408,15 +3447,6 @@ void _sensorLoad() {
 
 }
 
-String _magnitudeFormat(const Magnitude& magnitude, double value) {
-    // XXX: dtostrf only handles basic floating point values and will never produce scientific notation
-    //      ensure decimals is within some sane limit and the actual value never goes above this buffer size
-    char buffer[64];
-    dtostrf(value, 1, magnitude.decimals, buffer);
-
-    return buffer;
-}
-
 sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
     return sensor::Value {
         .type = magnitude.type,
@@ -3424,8 +3454,8 @@ sensor::Value _magnitudeValue(const Magnitude& magnitude, double value) {
         .units = magnitude.units,
         .decimals = magnitude.decimals,
         .value = value,
-        .topic = _magnitudeTopicIndex(magnitude),
-        .repr = _magnitudeFormat(magnitude, value),
+        .topic = sensor::magnitude::topicWithIndex(magnitude),
+        .repr = sensor::magnitude::format(magnitude, value),
     };
 }
 
@@ -3500,12 +3530,8 @@ void _sensorInit() {
     // Energy tracking is implemented by looking at the specific magnitude & it's index at read time
     // TODO: shuffle some functions around so that debug can be in the init func instead and still be inline?
     for (auto& magnitude : _magnitudes) {
-        if (_sensorIsEmon(magnitude.sensor) && (MAGNITUDE_ENERGY == magnitude.type)) {
+        if (MAGNITUDE_ENERGY == magnitude.type) {
             _sensorTrackEnergyTotal(magnitude);
-            DEBUG_MSG_P(PSTR("[ENERGY] Tracking %s/%u for %s\n"),
-                    _magnitudeTopic(magnitude.type).c_str(),
-                    magnitude.index_global,
-                    magnitude.sensor->description().c_str());
         }
     }
 
@@ -3540,7 +3566,7 @@ void _sensorConfigure() {
             if (!magnitude.filter) {
                 magnitude.filter_type = getSetting(
                     ::sensor::settings::keys::get(magnitude, ::sensor::settings::suffix::Filter),
-                    _magnitudeDefaultFilter(magnitude.type));
+                    ::sensor::magnitude::defaultFilter(magnitude));
                 magnitude.filter = _magnitudeFilter(magnitude.filter_type);
             }
 
@@ -3569,7 +3595,7 @@ void _sensorConfigure() {
             }
 
             // adjust units based on magnitude's type
-            magnitude.units = _magnitudeUnitFilter(magnitude,
+            magnitude.units = sensor::units::filter(magnitude,
                 getSetting(
                     ::sensor::settings::keys::get(magnitude, ::sensor::settings::suffix::Units),
                     magnitude.sensor->units(magnitude.slot)));
@@ -3588,7 +3614,7 @@ void _sensorConfigure() {
                 signed char decimals = magnitude.sensor->decimals(magnitude.units);
                 magnitude.decimals = (decimals >= 0)
                     ? static_cast<unsigned char>(decimals)
-                    : _sensorUnitDecimals(magnitude.units);
+                    : sensor::magnitude::decimals(magnitude.units);
             }
 
             // Per-magnitude min & max delta settings for reporting the value
@@ -3609,7 +3635,7 @@ void _sensorConfigure() {
                 sensor::Value::Unknown);
 
             // in case we don't save energy periodically, purge existing value in ram & settings
-            if ((MAGNITUDE_ENERGY == magnitude.type) && (0 == _sensor_energy_tracker.every())) {
+            if (_sensorIsEmon(magnitude.sensor) && (MAGNITUDE_ENERGY == magnitude.type) && (0 == _sensor_energy_tracker.every())) {
                 _sensorResetEnergyTotal(magnitude.index_global);
             }
 
@@ -3648,7 +3674,7 @@ unsigned char magnitudeType(unsigned char index) {
 }
 
 String magnitudeTopic(unsigned char type) {
-    return _magnitudeTopic(type);
+    return sensor::magnitude::topic(type);
 }
 
 sensor::Value::operator bool() const {
@@ -3677,14 +3703,14 @@ unsigned char magnitudeIndex(unsigned char index) {
 
 String magnitudeDescription(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return _magnitudeDescription(_magnitudes[index]);
+        return sensor::magnitude::description(_magnitudes[index]);
     }
     return String();
 }
 
 String magnitudeTopicIndex(unsigned char index) {
     if (index < _magnitudes.size()) {
-        return _magnitudeTopicIndex(_magnitudes[index]);
+        return sensor::magnitude::topicWithIndex(_magnitudes[index]);
     }
     return String();
 }
@@ -3936,16 +3962,16 @@ void sensorLoop() {
             {
                 auto withUnits = [&](double value, sensor::Unit units) {
                     String out;
-                    out += _magnitudeFormat(magnitude, value);
+                    out += sensor::magnitude::format(magnitude, value);
                     if (units != sensor::Unit::None) {
-                        out += _magnitudeUnits(units);
+                        out += sensor::magnitude::units(units);
                     }
 
                     return out;
                 };
 
                 DEBUG_MSG_P(PSTR("[SENSOR] %s -> raw %s processed %s filtered %s\n"),
-                    _magnitudeTopic(magnitude.type).c_str(),
+                    sensor::magnitude::topic(magnitude).c_str(),
                     withUnits(value.raw, magnitude.sensor->units(magnitude.slot)).c_str(),
                     withUnits(value.processed, magnitude.units).c_str(),
                     withUnits(value.filtered, magnitude.units).c_str());
