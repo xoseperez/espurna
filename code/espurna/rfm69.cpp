@@ -257,14 +257,14 @@ void _rfm69CleanNodes(size_t max) {
     size_t id { 0 };
     rfm69::settings::foreachMapping([&](rfm69::Mapping&&) {
         if (id < max) {
-            return false;
+            ++id;
+            return true;
         }
 
-        ++id;
-        return true;
+        return false;
     });
 
-    while (id < rfm69::build::maxTopics()) {
+    while (id < max) {
         delSetting({"rfm69Node", id});
         delSetting({"rfm69Key", id});
         delSetting({"rfm69Topic", id});
