@@ -45,6 +45,10 @@ class NTCSensor : public AnalogSensor {
             }
         }
 
+        void setVIN(double vin) {
+            if (vin > 0) _vin = vin;
+        }        
+
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
@@ -85,16 +89,15 @@ class NTCSensor : public AnalogSensor {
         void pre() override {
             // Ru = (AnalogMax/c - 1) * Rd
             const auto reading = _rawRead();
-            const double alpha {
-                (reading != 0)
-                    ? ((AnalogSensor::RawMax / reading) - 1.0)
-                    : 1.0 };
+
+            const double vOut  { reading / AnalogSensor::RawMax};
+            const double alpha { _vin - vOut };
 
             const double resistance = (_resistance_down > 0)
-                ? (_resistance_down * alpha)
-                : ((_resistance_up > 0) && (alpha > 0.0))
-                    ? (_resistance_up / alpha)
-                    : (_R0);
+                    ? (alpha / vOut) * _resistance_down
+                    : ((_resistance_up > 0) && (alpha > 0.0))
+                        ? (vOut / alpha) * _resistance_up
+                        : (_R0);
 
             // 1/T = 1/T0 + 1/B * ln(R/R0)
             _value = 1.0 / ((1.0 / _T0) + (fs_log(resistance / _R0) / _beta));
@@ -117,5 +120,6 @@ class NTCSensor : public AnalogSensor {
         unsigned long _resistance_down = NTC_R_DOWN;
         unsigned long _R0 = NTC_R0;
         double _T0 = NTC_T0;
+        double _vin = NTC_VIN; 
 
 };

@@ -888,6 +888,10 @@
 #define NTC_T0                          298.15  // 25 Celsius
 #endif
 
+#ifndef NTC_VIN
+#define NTC_VIN                         3.3  // Vcc
+#endif
+
 #ifndef NTC_R0
 #define NTC_R0                          10000   // Resistance at T0
 #endif
