@@ -281,7 +281,7 @@ private:
         BusVoltage busVoltage() const {
             const int16_t value = readRegister(INA219_BUS_REG);
             return {
-                .value = static_cast<int16_t>((value & ~(0b11)) >> 1),
+                .value = static_cast<int16_t>(value >> 3),
                 .ready = (value & 0b10) != 0,
                 .overflow = (value & 0b1) != 0,
             };
