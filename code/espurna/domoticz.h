@@ -11,6 +11,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "sensor.h"
 
-void domoticzSendMagnitude(unsigned char, const sensor::Value&);
+void domoticzSendMagnitude(unsigned char, const espurna::sensor::Value&);
 void domoticzSetup();
 bool domoticzEnabled();

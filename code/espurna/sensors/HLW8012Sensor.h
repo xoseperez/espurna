@@ -305,7 +305,7 @@ class HLW8012Sensor : public BaseEmonSensor {
             }
 
             _energy_last = _hlw8012.getEnergy();
-            _energy[0] += sensor::Ws { _energy_last };
+            _energy[0] += espurna::sensor::WattSeconds(_energy_last);
             _hlw8012.resetEnergy();
 
             _current = _hlw8012.getCurrent();

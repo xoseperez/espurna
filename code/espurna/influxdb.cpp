@@ -158,7 +158,7 @@ void _idbConfigure() {
     if (_idb_enabled && !_idb_client) _idbInitClient();
 }
 
-void _idbSendSensor(const sensor::Value& value) {
+void _idbSendSensor(const espurna::sensor::Value& value) {
     idbSend(magnitudeTopic(value.type).c_str(), value.index, value.repr.c_str());
 }
 

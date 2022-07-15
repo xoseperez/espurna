@@ -17,7 +17,7 @@ public:
 protected:
     struct EnergyMapping {
         unsigned char index;
-        sensor::Energy energy;
+        espurna::sensor::Energy energy;
     };
 
     struct EnergyIndex {
@@ -33,7 +33,7 @@ protected:
             process(_entries, index, std::forward<T>(callback));
         }
 
-        sensor::Energy& operator[](size_t index) {
+        espurna::sensor::Energy& operator[](size_t index) {
             return _entries[index].energy;
         }
 
@@ -47,7 +47,7 @@ protected:
             }
         }
 
-        sensor::Energy frontTotal() const {
+        espurna::sensor::Energy frontTotal() const {
             if (_entries.size()) {
                 return _entries.front().energy;
             }
@@ -95,7 +95,7 @@ protected:
     }
 
 public:
-    virtual void resetEnergy(unsigned char index, sensor::Energy energy) {
+    virtual void resetEnergy(unsigned char index, espurna::sensor::Energy energy) {
         _energy.update(index, [&](EnergyMapping& entry) {
             entry.energy = energy;
         });
@@ -111,8 +111,8 @@ public:
         _energy.reset();
     }
 
-    virtual sensor::Energy totalEnergy(unsigned char index) const {
-        sensor::Energy out{};
+    virtual espurna::sensor::Energy totalEnergy(unsigned char index) const {
+        espurna::sensor::Energy out{};
         _energy.find(index, [&](const EnergyMapping& mapping) {
             out = mapping.energy;
         });

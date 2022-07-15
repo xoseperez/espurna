@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <Arduino.h>
+#include "../espurna.h"
 #include "../sensor.h"
 
 #include <cstddef>
@@ -157,7 +159,7 @@ public:
     }
 
     // Number of decimals for a unit (or -1 for default)
-    virtual signed char decimals(sensor::Unit) const {
+    virtual signed char decimals(espurna::sensor::Unit) const {
         return -1;
     }
 
@@ -182,61 +184,63 @@ public:
     virtual unsigned char type(unsigned char index) const = 0;
 
     // Unit of the slot # index
-    virtual sensor::Unit units(unsigned char index) const {
+    virtual espurna::sensor::Unit units(unsigned char index) const {
+        using namespace espurna::sensor;
+
         switch (type(index)) {
         case MAGNITUDE_TEMPERATURE:
-            return sensor::Unit::Celcius;
+            return Unit::Celcius;
         case MAGNITUDE_HUMIDITY:
         case MAGNITUDE_POWER_FACTOR:
-            return sensor::Unit::Percentage;
+            return Unit::Percentage;
         case MAGNITUDE_PRESSURE:
-            return sensor::Unit::Hectopascal;
+            return Unit::Hectopascal;
         case MAGNITUDE_CURRENT:
-            return sensor::Unit::Ampere;
+            return Unit::Ampere;
         case MAGNITUDE_VOLTAGE:
-            return sensor::Unit::Volt;
+            return Unit::Volt;
         case MAGNITUDE_POWER_ACTIVE:
-            return sensor::Unit::Watt;
+            return Unit::Watt;
         case MAGNITUDE_POWER_APPARENT:
-            return sensor::Unit::Voltampere;
+            return Unit::Voltampere;
         case MAGNITUDE_POWER_REACTIVE:
-            return sensor::Unit::VoltampereReactive;
+            return Unit::VoltampereReactive;
         case MAGNITUDE_ENERGY_DELTA:
-            return sensor::Unit::Joule;
+            return Unit::Joule;
         case MAGNITUDE_ENERGY:
-            return sensor::Unit::KilowattHour;
+            return Unit::KilowattHour;
         case MAGNITUDE_PM1DOT0:
         case MAGNITUDE_PM2DOT5:
         case MAGNITUDE_PM10:
         case MAGNITUDE_TVOC:
         case MAGNITUDE_CH2O:
-            return sensor::Unit::MicrogrammPerCubicMeter;
+            return Unit::MicrogrammPerCubicMeter;
         case MAGNITUDE_CO:
         case MAGNITUDE_CO2:
         case MAGNITUDE_NO2:
         case MAGNITUDE_VOC:
-            return sensor::Unit::PartsPerMillion;
+            return Unit::PartsPerMillion;
         case MAGNITUDE_LUX:
-            return sensor::Unit::Lux;
+            return Unit::Lux;
         case MAGNITUDE_RESISTANCE:
-            return sensor::Unit::Ohm;
+            return Unit::Ohm;
         case MAGNITUDE_HCHO:
-            return sensor::Unit::MilligrammPerCubicMeter;
+            return Unit::MilligrammPerCubicMeter;
         case MAGNITUDE_GEIGER_CPM:
-            return sensor::Unit::CountsPerMinute;
+            return Unit::CountsPerMinute;
         case MAGNITUDE_GEIGER_SIEVERT:
-            return sensor::Unit::MicrosievertPerHour;
+            return Unit::MicrosievertPerHour;
         case MAGNITUDE_DISTANCE:
-            return sensor::Unit::Meter;
+            return Unit::Meter;
         case MAGNITUDE_FREQUENCY:
-            return sensor::Unit::Hertz;
+            return Unit::Hertz;
         case MAGNITUDE_PH:
-            return sensor::Unit::Ph;
+            return Unit::Ph;
         default:
             break;
         }
 
-        return sensor::Unit::None;
+        return Unit::None;
     }
 
     // Current value for slot # index

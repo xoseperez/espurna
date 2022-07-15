@@ -31,8 +31,7 @@ class PulseMeterSensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        void setGPIO(unsigned char pin) {
-            if (_pin == pin) return;
+        void setPin(unsigned char pin) {
             _pin = pin;
             _dirty = true;
         }
@@ -48,7 +47,7 @@ class PulseMeterSensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() const {
+        unsigned char getPin() const {
             return _pin.pin();
         }
 
@@ -95,21 +94,22 @@ class PulseMeterSensor : public BaseEmonSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() override {
             const auto now = TimeSource::now();
-            const auto elapsed = now - _previous_time;
             _previous_time = now;
 
             const auto reading = *(reinterpret_cast<volatile unsigned long*>(&_pulses));
             unsigned long pulses = reading - _previous_pulses;
             _previous_pulses = reading;
 
-            sensor::Ws delta = 1000.0 * 3600.0 * static_cast<double>(pulses) / _energy_ratio;
+            using namespace espurna::sensor;
+            const auto delta = WattSeconds(
+                static_cast<double>(KilowattHours::Ratio::num)
+                    * static_cast<double>(pulses) / _energy_ratio);
             _energy[0] += delta;
 
+            const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _previous_time);
             if (elapsed.count()) {
-                const auto milliseconds = std::chrono::duration_cast<espurna::duration::Milliseconds>(elapsed).count();
-                _active = 1000.0 * delta.value / milliseconds;
+                _active = delta.value / elapsed.count();
             }
-
         }
 
         double defaultRatio(unsigned char index) const override {

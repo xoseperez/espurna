@@ -11,11 +11,16 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <Arduino.h>
 
-#include <cstdint>
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
+#include <ratio>
 
 #include <ArduinoJson.h>
 
+#include "system.h"
+
+namespace espurna {
 namespace sensor {
 
 enum class Unit : int {
@@ -51,70 +56,145 @@ enum class Unit : int {
     Ph
 };
 
-// Base units are 32 bit since we are the fastest with them.
-
-struct Ws {
-    Ws();
-    Ws(uint32_t);
-    uint32_t value;
+struct Watts {
+    using Type = double;
+    using Ratio = std::ratio<1>;
+    Type value;
 };
 
-struct Wh {
-    Wh();
-    Wh(Ws);
-    Wh(uint32_t);
-    uint32_t value;
+struct WattSeconds {
+    using Type = uint32_t;
+    using Ratio = std::ratio_multiply<
+        Watts::Ratio,
+        espurna::duration::Seconds::period>;
+    Type value { 0 };
+
+    WattSeconds() = default;
+
+    explicit WattSeconds(Type value) :
+        value(value)
+    {}
+
+    explicit WattSeconds(float value) :
+        value(static_cast<Type>(value))
+    {}
+
+    explicit WattSeconds(double value) :
+        value(static_cast<Type>(value))
+    {}
+
+    WattSeconds(Watts watts, espurna::duration::Seconds seconds) :
+        value(static_cast<Type>(watts.value * seconds.count()))
+    {}
 };
 
-struct KWh {
-    KWh();
-    KWh(Ws);
-    KWh(Wh);
-    KWh(uint32_t);
-    uint32_t value;
+struct WattHours {
+    using Type = uint32_t;
+    using Ratio = std::ratio_multiply<
+        Watts::Ratio,
+        espurna::duration::Hours::period>;
+    Type value { 0 };
+
+    WattHours() = default;
+    explicit WattHours(Type value) :
+        value(value)
+    {}
+
+    WattHours(Watts watts, espurna::duration::Hours hours) :
+        value(static_cast<Type>(watts.value * hours.count()))
+    {}
+};
+
+struct Kilowatts {
+    using Type = double;
+    using Ratio = std::ratio<1000>;
+    Type value;
+};
+
+struct KilowattHours {
+    using Type = uint32_t;
+    using Ratio = std::ratio_multiply<
+        Kilowatts::Ratio,
+        espurna::duration::Hours::period>;
+    Type value { 0 };
+
+    KilowattHours() = default;
+    explicit KilowattHours(Type value) :
+        value(value)
+    {}
+
+    KilowattHours(Kilowatts kilowatts, espurna::duration::Hours hours) :
+        value(static_cast<Type>(kilowatts.value * hours.count()))
+    {}
+};
+
+template <typename To, typename From,
+          typename Divide = std::ratio_divide<typename From::Ratio, typename To::Ratio>>
+struct Convert {
+    static To from(From from) {
+        return To(from.value
+                * static_cast<typename To::Type>(Divide::num)
+                / static_cast<typename To::Type>(Divide::den));
+    }
 };
 
 struct Energy {
-    constexpr static uint32_t KwhMultiplier = 3600000ul;
-    constexpr static uint32_t KwhLimit = ((1ul << 31ul) / KwhMultiplier);
+    struct Pair {
+        KilowattHours kwh;
+        WattSeconds ws;
+    };
+
+    constexpr static auto KwhMultiplier = KilowattHours::Ratio::num;
+    constexpr static auto KwhLimit = (std::numeric_limits<KilowattHours::Type>::max() / KwhMultiplier);
 
     Energy() = default;
 
-    // TODO: while we accept ws >= the kwh conversion limit,
-    // should this be dealt with on the unit level?
-    explicit Energy(double);
-    explicit Energy(KWh, Ws);
-    explicit Energy(KWh);
-    explicit Energy(Wh);
-    explicit Energy(Ws);
+    explicit Energy(Pair);
+    explicit Energy(WattSeconds);
+    explicit Energy(WattHours);
 
-    // Sets internal counters to zero
+    explicit Energy(KilowattHours kwh) :
+        _kwh(kwh)
+    {}
+
+    // another case where decimal part means kwh instead of ws
+    explicit Energy(double);
+
+    // sets internal counters to zero
     void reset();
 
-    // Check whether we have *any* energy recorded. Can be zero:
+    // check whether we have *any* energy recorded. Can be zero:
     // - on cold boot
     // - on overflow
     // - when we call `reset()`
     explicit operator bool() const;
 
-    // Generic conversion as-is
+    // generic conversion as-is
     double asDouble() const;
     String asString() const;
 
-    // Convert back to input unit, with overflow mechanics when kwh values goes over 32 bit
-    Ws asWs() const;
+    // convert back to input unit, with overflow mechanics when kwh values goes over 32 bit
+    WattSeconds asWattSeconds() const;
 
-    // Generic sensors output energy in joules / watt-second
-    Energy& operator +=(Ws);
-    Energy operator +(Ws);
+    // generic sensors output energy in joules / watt-second
+    Energy& operator+=(WattSeconds);
+    Energy operator+(WattSeconds);
 
-    // But sometimes we want to accept asDouble() value back
-    Energy& operator =(double);
+    // but sometimes we want to accept asDouble() value back
+    Energy& operator=(double);
 
-    // We are storing a kind-of integral and fractional parts
-    // Using watt-second to avoid loosing precision, we don't expect these to be accessed directly
-    KWh kwh;
-    Ws ws;
+    // we are storing a kind-of integral and fractional parts
+    // using watt-second to avoid loosing precision, we don't expect these to be accessed directly
+    Pair pair() const {
+        return Pair {
+            .kwh = _kwh,
+            .ws = _ws,
+        };
+    }
+
+private:
+    KilowattHours _kwh;
+    WattSeconds _ws;
 };
 
 struct Value {
@@ -134,35 +214,47 @@ struct Value {
     explicit operator bool() const;
 };
 
+struct Info {
+    unsigned char type;
+    unsigned char index;
+
+    Unit units;
+    unsigned char decimals;
+
+    String topic;
+    String description;
+};
+
 } // namespace sensor
+} // namespace espurna
 
 //--------------------------------------------------------------------------------
 
-using MagnitudeReadHandler = void(*)(const sensor::Value&);
+String magnitudeTypeTopic(unsigned char type);
+
+using MagnitudeReadHandler = void(*)(const espurna::sensor::Value&);
 void sensorOnMagnitudeRead(MagnitudeReadHandler handler);
 void sensorOnMagnitudeReport(MagnitudeReadHandler handler);
 
+size_t sensorCount();
+size_t magnitudeCount();
+
+// Base magnitude info. Will contain `.type = MAGNITUDE_NONE` when index is out of bounds
+espurna::sensor::Info magnitudeInfo(unsigned char index);
+String magnitudeUnits(espurna::sensor::Unit);
+
+unsigned char magnitudeType(unsigned char index);
+unsigned char magnitudeIndex(unsigned char index);
+
+String magnitudeTopic(unsigned char index);
 String magnitudeUnits(unsigned char index);
 String magnitudeDescription(unsigned char index);
-unsigned char magnitudeType(unsigned char index);
 
-unsigned char magnitudeIndex(unsigned char index);
-String magnitudeTopicIndex(unsigned char index);
-
-unsigned char magnitudeCount();
-
-sensor::Value magnitudeValue(unsigned char index);
-
-// XXX: without param name it is kind of vague what exactly unsigned char is
-//      consider adding stronger param type e.g. enum class
-String magnitudeTopic(unsigned char type);
-String magnitudeName(unsigned char type);
-
-String sensorError(unsigned char error);
+// Retrieves magnitude value. Depends on the internal 'real time' setting,
+// whether the value is the latest read or the last reported.
+espurna::sensor::Value magnitudeValue(unsigned char index);
 
 using SensorWebSocketMagnitudesCallback = void(*)(JsonArray&, size_t);
 void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback);
 
-unsigned char sensorCount();
 void sensorSetup();
-void sensorLoop();

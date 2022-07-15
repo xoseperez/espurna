@@ -282,9 +282,9 @@ class DallasSensor : public BaseSensor {
         }
 
         // Number of decimals for a magnitude (or -1 for default)
-        signed char decimals(sensor::Unit unit) const override {
+        signed char decimals(espurna::sensor::Unit unit) const override {
             // Smallest increment is 0.0625 °C
-            if (unit == sensor::Unit::Celcius) {
+            if (unit == espurna::sensor::Unit::Celcius) {
                 return 2;
             }
 

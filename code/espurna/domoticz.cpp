@@ -380,7 +380,7 @@ void send() {
 namespace sensor {
 namespace {
 
-void send(unsigned char index, const ::sensor::Value& value) {
+void send(unsigned char index, const espurna::sensor::Value& value) {
     if (!enabled()) {
         return;
     }
@@ -541,7 +541,7 @@ void setup() {
 } // namespace espurna
 
 #if SENSOR_SUPPORT
-void domoticzSendMagnitude(unsigned char index, const sensor::Value& value) {
+void domoticzSendMagnitude(unsigned char index, const espurna::sensor::Value& value) {
     espurna::domoticz::sensor::send(index, value);
 }
 #endif

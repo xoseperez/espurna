@@ -9,18 +9,61 @@
 
 #include "BaseSensor.h"
 
-// we are bound by usable GPIOs
-#define EVENTS_SENSORS_MAX 10
-
 class EventSensor : public BaseSensor {
 
     public:
 
+        static constexpr size_t SensorsMax = 8;
         using TimeSource = espurna::time::CpuClock;
+
+        static constexpr unsigned char defaultPin(unsigned char index) {
+            return (index == 0) ? EVENTS1_PIN :
+                (index == 1) ? EVENTS2_PIN :
+                (index == 2) ? EVENTS3_PIN :
+                (index == 3) ? EVENTS4_PIN :
+                (index == 4) ? EVENTS5_PIN :
+                (index == 5) ? EVENTS6_PIN :
+                (index == 6) ? EVENTS7_PIN :
+                (index == 7) ? EVENTS8_PIN : GPIO_NONE;
+        }
+
+        static constexpr uint8_t defaultPinMode(unsigned char index) {
+            return (index == 0) ? EVENTS1_PIN_MODE :
+                (index == 1) ? EVENTS2_PIN_MODE :
+                (index == 2) ? EVENTS3_PIN_MODE :
+                (index == 3) ? EVENTS4_PIN_MODE :
+                (index == 4) ? EVENTS5_PIN_MODE :
+                (index == 5) ? EVENTS6_PIN_MODE :
+                (index == 6) ? EVENTS7_PIN_MODE :
+                (index == 7) ? EVENTS8_PIN_MODE : INPUT;
+        }
+
+        static constexpr espurna::duration::Milliseconds defaultDebounceTime(unsigned char index) {
+            return espurna::duration::Milliseconds(
+                    (index == 0) ? EVENTS1_DEBOUNCE :
+                    (index == 1) ? EVENTS2_DEBOUNCE :
+                    (index == 2) ? EVENTS3_DEBOUNCE :
+                    (index == 3) ? EVENTS4_DEBOUNCE :
+                    (index == 4) ? EVENTS5_DEBOUNCE :
+                    (index == 5) ? EVENTS6_DEBOUNCE :
+                    (index == 6) ? EVENTS7_DEBOUNCE :
+                    (index == 7) ? EVENTS8_DEBOUNCE : 50);
+        }
+
+        static constexpr int defaultInterruptMode(unsigned char index) {
+            return (index == 0) ? EVENTS1_INTERRUPT_MODE :
+                (index == 1) ? EVENTS2_INTERRUPT_MODE :
+                (index == 2) ? EVENTS3_INTERRUPT_MODE :
+                (index == 3) ? EVENTS4_INTERRUPT_MODE :
+                (index == 4) ? EVENTS5_INTERRUPT_MODE :
+                (index == 5) ? EVENTS6_INTERRUPT_MODE :
+                (index == 6) ? EVENTS7_INTERRUPT_MODE :
+                (index == 7) ? EVENTS8_INTERRUPT_MODE : RISING;
+        }
 
         // ---------------------------------------------------------------------
 
-        void setGPIO(unsigned char pin) {
+        void setPin(unsigned char pin) {
             _pin = pin;
         }
 
@@ -39,7 +82,7 @@ class EventSensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() const {
+        unsigned char getPin() const {
             return _pin.pin();
         }
 

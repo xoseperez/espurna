@@ -656,7 +656,7 @@ public:
             json[F("uniq_id")] = uniqueId();
 
             json[F("name")] = _ctx.name() + ' ' + name() + ' ' + localId();
-            json[F("stat_t")] = mqttTopic(magnitudeTopicIndex(_index), false);
+            json[F("stat_t")] = mqttTopic(magnitudeTopic(_index), false);
             json[F("unit_of_meas")] = magnitudeUnits(_index);
 
             json.printTo(_message);
@@ -667,7 +667,7 @@ public:
 
     const String& name() {
         if (!_name.length()) {
-            _name = magnitudeTopic(magnitudeType(_index));
+            _name = magnitudeTypeTopic(magnitudeType(_index));
         }
 
         return _name;

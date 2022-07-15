@@ -298,7 +298,7 @@
 #endif
 
 #ifndef DIGITAL1_DEFAULT_STATE
-#define DIGITAL1_DEFAULT_STATE           1
+#define DIGITAL1_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL2_PIN
@@ -310,7 +310,7 @@
 #endif
 
 #ifndef DIGITAL2_DEFAULT_STATE
-#define DIGITAL2_DEFAULT_STATE           1
+#define DIGITAL2_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL3_PIN
@@ -322,7 +322,7 @@
 #endif
 
 #ifndef DIGITAL3_DEFAULT_STATE
-#define DIGITAL3_DEFAULT_STATE           1
+#define DIGITAL3_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL4_PIN
@@ -334,7 +334,7 @@
 #endif
 
 #ifndef DIGITAL4_DEFAULT_STATE
-#define DIGITAL4_DEFAULT_STATE           1
+#define DIGITAL4_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL5_PIN
@@ -346,7 +346,7 @@
 #endif
 
 #ifndef DIGITAL5_DEFAULT_STATE
-#define DIGITAL5_DEFAULT_STATE           1
+#define DIGITAL5_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL6_PIN
@@ -358,7 +358,7 @@
 #endif
 
 #ifndef DIGITAL6_DEFAULT_STATE
-#define DIGITAL6_DEFAULT_STATE           1
+#define DIGITAL6_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL7_PIN
@@ -370,7 +370,7 @@
 #endif
 
 #ifndef DIGITAL7_DEFAULT_STATE
-#define DIGITAL7_DEFAULT_STATE           1
+#define DIGITAL7_DEFAULT_STATE           HIGH
 #endif
 
 #ifndef DIGITAL8_PIN
@@ -382,7 +382,7 @@
 #endif
 
 #ifndef DIGITAL8_DEFAULT_STATE
-#define DIGITAL8_DEFAULT_STATE           1
+#define DIGITAL8_DEFAULT_STATE           HIGH
 #endif
 
 //------------------------------------------------------------------------------

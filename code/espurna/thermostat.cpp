@@ -418,14 +418,15 @@ double _getLocalValue(const char* description, unsigned char type) {
         }
     }
 #endif
-    return sensor::Value::Unknown;
+    return espurna::sensor::Value::Unknown;
 }
 
 String _getLocalUnit(unsigned char type) {
 #if SENSOR_SUPPORT
     for (unsigned char index = 0; index < magnitudeCount(); ++index) {
-        if (magnitudeType(index) == type) {
-            return magnitudeUnits(index);
+        const auto info = magnitudeInfo(index);
+        if (info.type == type) {
+            return magnitudeUnits(info.units);
         }
     }
 #endif

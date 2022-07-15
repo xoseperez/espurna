@@ -1017,8 +1017,8 @@ void init(rpn_context& context) {
 #if SENSOR_SUPPORT
 namespace sensor {
 
-void updateVariables(const ::sensor::Value& value) {
-    static_assert(sizeof(decltype(value.value)) == sizeof(rpn_float), "");
+void updateVariables(const espurna::sensor::Value& value) {
+    static_assert(std::is_same<decltype(value.value), rpn_float>::value, "");
 
     auto topic = value.topic;
     topic.remove('/');

@@ -103,15 +103,15 @@ public:
     void pre() override {
         updateCurrent(sampleCurrent());
 
+        const auto now = TimeSource::now();
         if (!_initial) {
-            const auto elapsed = (TimeSource::now() - _last_reading).count();
-            _energy[0] += sensor::Ws {
-                static_cast<uint32_t>(getCurrent() * getVoltage() * elapsed / 1000)
-            };
+            using namespace espurna::sensor;
+            const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _last_reading);
+            _energy[0] += WattSeconds(Watts{getCurrent() * getVoltage()}, elapsed);
         }
 
         _initial = false;
-        _last_reading = TimeSource::now();
+        _last_reading = now;
         _error = SENSOR_ERROR_OK;
     }
 

@@ -82,6 +82,7 @@ class ECH1560Sensor : public BaseEmonSensor {
             pinMode(_miso, INPUT);
             _clk.attach(this, handleInterrupt, RISING);
 
+            _energy_ready = false;
             _dirty = false;
             _ready = true;
 
@@ -243,14 +244,15 @@ class ECH1560Sensor : public BaseEmonSensor {
                 _apparent = ( (float) byte1 * 255 + (float) byte2 + (float) byte3 / 255.0) / 2;
                 _current = _apparent / _voltage;
 
-                static unsigned long last = 0;
-                if (last > 0) {
-                    _energy[0] += sensor::Ws {
-                        static_cast<uint32_t>(_apparent * (millis() - last) / 1000)
-                    };
+                const auto now = TimeSource::now();
+                if (_energy_ready) {
+                    using namespace espurna::sensor;
+                    const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _energy_last);
+                    _energy[0] += WattSeconds(Watts(_apparent), elapsed);
                 }
-                last = millis();
 
+                _energy_ready = true;
+                _energy_last = now;
                 _dosync = false;
 
             }
@@ -279,8 +281,11 @@ class ECH1560Sensor : public BaseEmonSensor {
         double _voltage = 0;
         double _current = 0;
 
-        unsigned char _data[24] {0};
+        using TimeSource = espurna::time::CoreClock;
+        TimeSource::time_point _energy_last;
+        bool _energy_ready { false };
 
+        unsigned char _data[24] {0};
 };
 
 #if __cplusplus < 201703L

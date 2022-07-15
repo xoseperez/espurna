@@ -108,13 +108,15 @@ class BMX280Sensor : public I2CSensor<> {
 
         // Number of decimals for a magnitude (or -1 for default)
         // These numbers of decimals correspond to maximum sensor resolution settings
-        signed char decimals(sensor::Unit unit) const override {
+        signed char decimals(espurna::sensor::Unit unit) const override {
+            using namespace espurna::sensor;
+
             switch (unit) {
-            case sensor::Unit::Celcius:
+            case Unit::Celcius:
                 return 3;
-            case sensor::Unit::Percentage:
+            case Unit::Percentage:
                 return 2;
-            case sensor::Unit::Hectopascal:
+            case Unit::Hectopascal:
                 return 4;
             default:
                 break;
@@ -124,19 +126,21 @@ class BMX280Sensor : public I2CSensor<> {
         }
 
         // Specify (default) unit for the slot
-        sensor::Unit units(unsigned char index) const override {
+        espurna::sensor::Unit units(unsigned char index) const override {
+            using namespace espurna::sensor;
+
             if (index < _count) {
                 switch (_magnitudes[index].type) {
                 case MAGNITUDE_TEMPERATURE:
-                    return sensor::Unit::Celcius;
+                    return Unit::Celcius;
                 case MAGNITUDE_HUMIDITY:
-                    return sensor::Unit::Percentage;
+                    return Unit::Percentage;
                 case MAGNITUDE_PRESSURE:
-                    return sensor::Unit::Hectopascal;
+                    return Unit::Hectopascal;
                 }
             }
 
-            return sensor::Unit::None;
+            return Unit::None;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)

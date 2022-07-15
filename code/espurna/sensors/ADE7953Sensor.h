@@ -395,8 +395,8 @@ public:
     // Pre-read hook (usually to populate registers with up-to-date data)
     void pre() override {
         _last_reading = read();
-        _energy[0] += sensor::Ws(_last_reading.a.active_energy);
-        _energy[1] += sensor::Ws(_last_reading.b.active_energy);
+        _energy[0] += espurna::sensor::WattSeconds(_last_reading.a.active_energy);
+        _energy[1] += espurna::sensor::WattSeconds(_last_reading.b.active_energy);
     }
 
     // Sensor has a fixed number of channels, so just use the static magnitudes list

@@ -528,13 +528,14 @@ public:
         _current = _port.current() * _calibration.current_lsb;
         _power = _port.power() * _calibration.power_lsb;
 
+        const auto now = TimeSource::now();
         if (_energy_ready) {
-            const auto now = TimeSource::now();
-            _energy[0] += sensor::Ws(_power * (now - _energy_last).count());
-            _energy_last = now;
+            using namespace espurna::sensor;
+            const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _energy_last);
+            _energy[0] += WattSeconds(Watt(_power), elapsed);
         }
 
-        _energy_last = TimeSource::now();
+        _energy_last = now;
         _energy_ready = true;
     }
 

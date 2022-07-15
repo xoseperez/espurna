@@ -264,9 +264,9 @@ class V9261FSensor : public BaseEmonSensor {
 
                     const auto now = TimeSource::now();
                     if (_reading) {
-                        _energy[0] += sensor::Ws {
-                            static_cast<uint32_t>(_active * (now - _last_reading).count() / 1000ul)
-                        };
+                        using namespace espurna::sensor;
+                        const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _last_reading);
+                        _energy[0] += WattSeconds(Watt(_active), elapsed);
                     }
 
                     _reading = true;

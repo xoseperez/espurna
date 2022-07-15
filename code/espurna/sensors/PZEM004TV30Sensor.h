@@ -19,6 +19,9 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 #include <array>
 
+// TODO: keep this until we have external API giving us swserial stream objects
+#include <SoftwareSerial.h>
+
 #if DEBUG_SUPPORT
 #define PZEM_DEBUG_MSG_P(...) \
     ([&](){ \

@@ -72,12 +72,12 @@ class NTCSensor : public AnalogSensor {
         }
 
         // Always in kelvins, adjust to C or F later
-        sensor::Unit units(unsigned char index) const override {
+        espurna::sensor::Unit units(unsigned char index) const override {
             if (index == 0) {
-                return sensor::Unit::Kelvin;
+                return espurna::sensor::Unit::Kelvin;
             }
 
-            return sensor::Unit::None;
+            return espurna::sensor::Unit::None;
         }
 
         // Previous version happened to use AnalogSensor readings with factor and offset applied
