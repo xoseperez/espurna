@@ -876,12 +876,20 @@
 #define NTC_DELAY                       0       // Delay between samples in micros
 #endif
 
-#ifndef NTC_R_UP
-#define NTC_R_UP                        0       // Resistor upstream, set to 0 if none
+#ifndef NTC_INPUT_VOLTAGE
+#define NTC_INPUT_VOLTAGE               3.3     // Actual voltage that is connected to the ADC
 #endif
 
 #ifndef NTC_R_DOWN
-#define NTC_R_DOWN                      10000   // Resistor downstream, set to 0 if none
+#define NTC_R_DOWN                      10000   // (Ohm) Resistor DOWN, NTC is connected to the voltage
+                                                // [V]─NTC─┬─R_DOWN─[GND]
+                                                //       [ADC]
+#endif
+
+#ifndef NTC_R_UP
+#define NTC_R_UP                        0       // (Ohm) Resistor UP, NTC is connected to the ground
+                                                // [V]─R_UP─┬─NTC─[GND]
+                                                //        [ADC]
 #endif
 
 #ifndef NTC_T0

@@ -3792,9 +3792,9 @@
      #define NTC_SUPPORT        1
      #define SENSOR_SUPPORT     1
      #define NTC_BETA           3350
-     #define NTC_R_UP           10000
+     #define NTC_R_UP           32000
      #define NTC_R_DOWN         0
-     #define NTC_R0             8000
+     #define NTC_R0             10000
 
 #elif defined(ALLTERCO_SHELLY25)
     // Info

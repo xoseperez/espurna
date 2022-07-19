@@ -2125,6 +2125,7 @@ void load() {
         sensor->setDelay(NTC_DELAY);
         sensor->setUpstreamResistor(NTC_R_UP);
         sensor->setDownstreamResistor(NTC_R_DOWN);
+        sensor->setInputVoltage(NTC_INPUT_VOLTAGE);
         sensor->setBeta(NTC_BETA);
         sensor->setR0(NTC_R0);
         sensor->setT0(NTC_T0);
