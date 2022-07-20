@@ -5,51 +5,60 @@
 name: Release
 
 on:
-  push:
-    branches-ignore: '**'
-    tags: '**'
+  workflow_dispatch:
 
 jobs:
-  prepare:
-    runs-on: ubuntu-20.04
+  variables:
+    runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.result.outputs.version }}
+      master: ${{ steps.result.outputs.master }}
+      dev: ${{ steps.result.outputs.dev }}
+      date: ${{ steps.result.outputs.date }}
     steps:
-      - name: Prepare release workflow
+      - name: Prepare version variables
         id: result
+        shell: bash
         run: |
-          version=${GITHUB_REF/refs\/tags\//}
-          echo "::set-output name=version::"$version
+          revision() {
+            git ls-remote --exit-code --heads https://github.com/xoseperez/espurna.git refs/heads/$1 | cut -d$'\t' -f1
+          }
+
+          dev=$(revision dev)
+          echo "::set-output name=dev::"$dev
+
+          master=$(revision master)
+          echo "::set-output name=master::"$master
+
+          date=$(date +'%Y%m%d')
+          echo "::set-output name=date::"$date
 
   build:
-    needs: prepare
-    runs-on: ubuntu-20.04
-    env:
-      ESPURNA_PIO_SHARED_LIBRARIES: "1"
+    needs: variables
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         thread: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: espurna
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
           node-version: '14'
 
       - name: Cache Node
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('espurna/code/package-lock.json', 'espurna/code/package.json') }}
 
       - name: Cache PlatformIO
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.platformio
           key: ${{ runner.os }}-platformio-${{ hashFiles('espurna/code/platformio.ini') }}
@@ -72,7 +81,7 @@ jobs:
               --destination ${GITHUB_WORKSPACE}/binaries \
               --builder-thread ${{ matrix.thread }} \
               --builder-total-threads 4 \
-              --full-version ${{ needs.prepare.outputs.version }} \
+              --suffix github${{ needs.variables.outputs.date }} \
               >> release.sh
           bash release.sh
           popd
@@ -83,29 +92,40 @@ jobs:
           zip -j -q -r ../Binaries_${{ matrix.thread }}.zip ./
           popd
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Binaries
           path: Binaries_${{ matrix.thread }}.zip
 
   upload:
-    needs: [prepare, build]
-    runs-on: ubuntu-20.04
+    needs: [variables, build]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           path: artifacts/
 
       - name: Unpack
         run: unzip -d binaries "artifacts/Binaries/*.zip"
 
+      - name: Prepare release body
+        run: |
+          echo "- [Changelog for the current binary release](https://github.com/xoseperez/espurna/blob/"${{ needs.variables.outputs.dev }}"/CHANGELOG.md)" \
+            > release.md
+          echo "- [All changes since the latest release](https://github.com/xoseperez/espurna/compare/"${{ needs.variables.outputs.master }}"..."${{ needs.variables.outputs.dev }}")" \
+                                                                                                                                                                                        >> release.md
+
       - uses: ncipollo/release-action@v1
         with:
+          tag: github${{ needs.variables.outputs.date }}
+          commit: ${{ needs.variables.outputs.dev }}
+          name: Snapshot build (github${{ needs.variables.outputs.date }})
+          bodyFile: release.md
           artifacts: "binaries/*.bin"
           token: ${{ secrets.GITHUB_TOKEN }}
-          body: https://github.com/xoseperez/espurna/blob/${{ needs.prepare.outputs.version }}/CHANGELOG.md
+          prerelease: true
           draft: true
