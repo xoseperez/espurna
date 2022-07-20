@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Deprecate `..._MIN_CHANGE` and `..._MAX_CHANGE` build flags in favour of per-magnitude runtime settings ([1ef22e16](https://github.com/xoseperez/espurna/commit/1ef22e16f10818d893a0a8912d55b1dbce88fcdb))
 - Reduce IRAM usage in sensors using attachInterrupt() ([9db679f9](https://github.com/xoseperez/espurna/commit/9db679f93a61114dec8dad5f2953e59b7663c86a))
 - Show all of correction / offset settings in the WebUI ([#2491](https://github.com/xoseperez/espurna/issues/2491), [62b2edad](https://github.com/xoseperez/espurna/commit/62b2edadc4649d1e3810c6dd27261e8a45739664))
+- Correctly scale NTC value based on input voltage ([#2500](https://github.com/xoseperez/espurna/issues/2500), [1b49326e](https://github.com/xoseperez/espurna/commit/1b49326e12676112163ad5d10aa1574f727b85e7))
 #### Settings
 - Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System
@@ -173,6 +174,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Terminal commands to set expected ratio (`EXPECTED`) and total energy recorded by the sensor (`ENERGY`) [8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85)
 - Add PM1006 air quality sensor, found inside the IKEA VINDRIKTNING ([#2505](https://github.com/xoseperez/espurna/issues/2505), thanks to **[@xoseperez](https://github.com/xoseperez)**)
 - Add support for INA219 current and power monitor sensor ([#2510](https://github.com/xoseperez/espurna/issues/2501), [660d8c33](https://github.com/xoseperez/espurna/commit/660d8c339b8bee32575c216cfc78d7b7138c285d), thanks to **[@hamed-ta](https://github.com/hamed-ta)**)
+- Generic conversion for metric units, in both directions ([b366d77a](https://github.com/xoseperez/espurna/commit/b366d77a5e34c520337727bec1b3fa51fe8764b3))
 #### Settings
 - Led and button GPIO runtime settings ([#2117](https://github.com/xoseperez/espurna/issues/2117), [#2162](https://github.com/xoseperez/espurna/issues/2162), [#2170](https://github.com/xoseperez/espurna/issues/2170), [#2177](https://github.com/xoseperez/espurna/issues/2177))
 - Configure light dimmer pins from settings ([#2129](https://github.com/xoseperez/espurna/issues/2129))
