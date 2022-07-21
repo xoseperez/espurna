@@ -427,7 +427,7 @@ public:
         return std::size(Magnitudes);
     }
 
-    signed char decimals(sensor::Unit) const override {
+    signed char decimals(espurna::sensor::Unit) const override {
         return 2;
     }
 
@@ -532,7 +532,7 @@ public:
         if (_energy_ready) {
             using namespace espurna::sensor;
             const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _energy_last);
-            _energy[0] += WattSeconds(Watt(_power), elapsed);
+            _energy[0] += WattSeconds(Watts{_power}, elapsed);
         }
 
         _energy_last = now;

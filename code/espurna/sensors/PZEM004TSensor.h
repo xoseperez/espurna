@@ -322,7 +322,7 @@ public:
     void resetEnergy(unsigned char index) override {
     }
 
-    void resetEnergy(unsigned char index, sensor::Energy energy) override {
+    void resetEnergy(unsigned char index, espurna::sensor::Energy energy) override {
     }
 
     // ---------------------------------------------------------------------

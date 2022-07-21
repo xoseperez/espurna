@@ -248,7 +248,7 @@ class ECH1560Sensor : public BaseEmonSensor {
                 if (_energy_ready) {
                     using namespace espurna::sensor;
                     const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _energy_last);
-                    _energy[0] += WattSeconds(Watts(_apparent), elapsed);
+                    _energy[0] += WattSeconds(Watts{_apparent}, elapsed);
                 }
 
                 _energy_ready = true;

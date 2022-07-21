@@ -181,14 +181,14 @@ public:
 
     // We **can** reset PZEM energy, unlike the original PZEM004T
     // However, we can't set it to a specific value, we can only start from 0
-    void resetEnergy(unsigned char index, sensor::Energy) override {
+    void resetEnergy(unsigned char index, espurna::sensor::Energy) override {
         if (index == 3) {
             _reset_energy = true;
         }
     }
 
-    sensor::Energy totalEnergy(unsigned char index) const override {
-        sensor::Energy out;
+    espurna::sensor::Energy totalEnergy(unsigned char index) const override {
+        espurna::sensor::Energy out;
         if (index == 3) {
             out = _energy;
         }
