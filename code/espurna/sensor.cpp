@@ -338,7 +338,7 @@ Energy& Energy::operator+=(WattSeconds other) {
         ++_kwh.value;
     }
 
-    _ws.value += _ws.value;
+    _ws.value += other.value;
     while (_ws.value >= KwhMultiplier) {
         _ws.value -= KwhMultiplier;
         ++_kwh.value;
