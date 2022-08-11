@@ -2375,17 +2375,17 @@ void load() {
                     PZEM004TV30Sensor::defaultHardwarePort(), rx, tx);
         }
 
-        if (!port) {
-            return;
+        if (port) {
+            port->begin(PZEM004TV30Sensor::Baudrate);
+
+            auto* sensor = PZEM004TV30Sensor::make(std::move(port),
+                getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress),
+                getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
+            sensor->setDebug(
+                getSetting("pzemv30Debug", PZEM004TV30Sensor::DefaultDebug));
+
+            add(sensor);
         }
-
-        auto* sensor = PZEM004TV30Sensor::make(std::move(port),
-            getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress),
-            getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
-        sensor->setDebug(
-            getSetting("pzemv30Debug", PZEM004TV30Sensor::DefaultDebug));
-
-        add(sensor);
     }
 #endif
 }
