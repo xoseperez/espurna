@@ -11,6 +11,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "board.h"
 #include "ntp.h"
 
+#include <limits>
 #include <random>
 
 bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
@@ -227,6 +228,19 @@ double roundTo(double num, unsigned char positions) {
     double multiplier = 1;
     while (positions-- > 0) multiplier *= 10;
     return round(num * multiplier) / multiplier;
+}
+
+// ref. https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+// the machine epsilon has to be scaled to the magnitude of the values used
+// and multiplied by the desired precision in ULPs (units in the last place)
+// unless the result is subnormal
+bool almostEqual(double lhs, double rhs, int ulp) {
+    return __builtin_fabs(lhs - rhs) <= std::numeric_limits<double>::epsilon() * __builtin_fabs(lhs + rhs) * ulp
+        || __builtin_fabs(lhs - rhs) < std::numeric_limits<double>::min();
+}
+
+bool almostEqual(double lhs, double rhs) {
+    return almostEqual(lhs, rhs, 3);
 }
 
 bool isNumber(const char* begin, const char* end) {

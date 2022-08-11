@@ -124,71 +124,34 @@ public:
 
     // Generic ratio configuration, default is a no-op and must be implemented by the sensor class
     static constexpr double DefaultRatio { 1.0 };
+
+    // Default ratio value for the magnitude slot
     virtual double defaultRatio(unsigned char index) const {
         return DefaultRatio;
     }
 
+    // Current ratio value for the magnitude slot
     virtual double getRatio(unsigned char index) const {
         return defaultRatio(index);
     }
 
-    template <size_t Size>
-    double simpleGetRatio(const Magnitude (&magnitudes)[Size] , unsigned char index) const {
-        if (index < Size) {
-            switch (magnitudes[index].type) {
-            case MAGNITUDE_CURRENT:
-                return _current_ratio;
-            case MAGNITUDE_VOLTAGE:
-                return _voltage_ratio;
-            case MAGNITUDE_POWER_ACTIVE:
-                return _power_active_ratio;
-            case MAGNITUDE_POWER_REACTIVE:
-                return _power_reactive_ratio;
-            case MAGNITUDE_ENERGY:
-                return _energy_ratio;
-            }
-        }
-
-        return defaultRatio(index);
-    }
-
+    // Update ratio value for the magnitude slot
     virtual void setRatio(unsigned char index, double value) {
         // pass by default, no point updating ratios when they
         // are not supported (or cannot be supported)
     }
 
-    template <size_t Size>
-    void simpleSetRatio(const Magnitude (&magnitudes)[Size] , unsigned char index, double value) {
-        if (index < Size) {
-            switch (magnitudes[index].type) {
-            case MAGNITUDE_CURRENT:
-                _current_ratio = value;
-                break;
-            case MAGNITUDE_VOLTAGE:
-                _voltage_ratio = value;
-                break;
-            case MAGNITUDE_POWER_ACTIVE:
-                _power_active_ratio = value;
-                break;
-            case MAGNITUDE_POWER_REACTIVE:
-                _power_reactive_ratio = value;
-                break;
-            case MAGNITUDE_ENERGY:
-                _power_reactive_ratio = value;
-                break;
-            }
-        }
-    }
-
+    // Reset *all* magnitude ratios to sensor defaults
     virtual void resetRatios() {
         _current_ratio = DefaultRatio;
         _voltage_ratio = DefaultRatio;
         _power_active_ratio = DefaultRatio;
         _power_reactive_ratio = DefaultRatio;
         _energy_ratio = DefaultRatio;
+        _ratios_changed = true;
     }
 
-    // sometimes we allow ratio calculation from specific value
+    // Return ratio value for the slot, that would make the current value closer to the expected one
     virtual double ratioFromValue(unsigned char index, double value, double expected) const {
         if ((value > 0.0) && (expected > 0.0)) {
             return getRatio(index) * (expected / value);
@@ -197,12 +160,70 @@ public:
         return getRatio(index);
     }
 
+    // helper methods to either get or set our internal ratio values
+    // notice that only a single magnitude-index <-> ratio is supported
+
+    template <size_t Size>
+    double simpleGetRatio(const Magnitude (&magnitudes)[Size] , unsigned char index) const {
+        const auto* ratio = magnitudeRatio(magnitudes, index);
+        if (ratio) {
+            return *ratio;
+        }
+
+        return defaultRatio(index);
+    }
+
+    template <size_t Size>
+    void simpleSetRatio(const Magnitude (&magnitudes)[Size], unsigned char index, double value) {
+       auto* ratio = magnitudeRatio(magnitudes, index);
+       if (ratio) {
+           if (!almostEqual(*ratio, value)) {
+               _ratios_changed = true;
+           }
+           *ratio = value;
+       }
+    }
+
+private:
+    template <size_t Size>
+    const double* magnitudeRatio(const Magnitude (&magnitudes)[Size], unsigned char index) const {
+        return magnitudeRatioImpl<const double*>(*this, magnitudes, index);
+    }
+
+    template <size_t Size>
+    double* magnitudeRatio(const Magnitude (&magnitudes)[Size], unsigned char index) {
+        return magnitudeRatioImpl<double*>(*this, magnitudes, index);
+    }
+
+    template <typename Result, typename T, size_t Size>
+    static Result magnitudeRatioImpl(T& instance, const Magnitude (&magnitudes)[Size], unsigned char index) {
+        if (index < Size) {
+            switch (magnitudes[index].type) {
+            case MAGNITUDE_CURRENT:
+                return &(instance._current_ratio);
+            case MAGNITUDE_VOLTAGE:
+                return &(instance._voltage_ratio);
+            case MAGNITUDE_POWER_ACTIVE:
+                return &(instance._power_active_ratio);
+            case MAGNITUDE_POWER_REACTIVE:
+                return &(instance._power_reactive_ratio);
+            case MAGNITUDE_ENERGY:
+                return &(instance._energy_ratio);
+            }
+        }
+
+        return nullptr;
+    }
+
 protected:
+    bool _ratios_changed = false;
+
     double _current_ratio { DefaultRatio };
     double _voltage_ratio { DefaultRatio };
     double _power_active_ratio { DefaultRatio };
     double _power_reactive_ratio { DefaultRatio };
     double _energy_ratio { DefaultRatio };
+
     EnergyIndex _energy{};
 };
 

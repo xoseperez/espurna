@@ -458,35 +458,17 @@ public:
             .bus_range = _bus_range,
         });
 
-        _calibration = Calibration{
-            .current_lsb = _current_ratio,
-            .power_lsb = _power_active_ratio,
-            .value = calibration(_current_ratio, _shunt_resistance),
-        };
-
 #if SENSOR_DEBUG
         DEBUG_MSG(PSTR("[INA219] Maximum possible current %sA\n"),
-            String(max_possible_current, 3).c_str());
-        DEBUG_MSG(PSTR("[INA219] Current LSB %s (min %s max %s)\n"),
-            String(_calibration.current_lsb, 6).c_str(),
-            String(_current_lsb_range.min, 6).c_str(),
-            String(_current_lsb_range.max, 6).c_str());
-        DEBUG_MSG(PSTR("[INA219] Power LSB %s\n"),
-            String(_calibration.power_lsb, 6).c_str());
-
-        uint8_t buf[2];
-        std::memcpy(std::begin(buf), &_calibration.value, sizeof(buf));
-        DEBUG_MSG(PSTR("[INA219] Calibration 0x%s\n"),
-            hexEncode(std::begin(buf), std::end(buf)).c_str());
+                String(max_possible_current, 3).c_str());
+        DEBUG_MSG(PSTR("[INA219] Current LSB Range %s...%s\n"),
+                String(_current_lsb_range.min, 6).c_str(),
+                String(_current_lsb_range.max, 6).c_str());
 #endif
 
-        _port.calibration(_calibration.value);
-        espurna::time::blockingDelay(
-            espurna::duration::Milliseconds(100));
-
+        _ratios_changed = true;
         _energy_ready = false;
         _error = SENSOR_ERROR_OK;
-
         _ready = true;
     }
 
@@ -507,6 +489,34 @@ public:
         }
 
         return MAGNITUDE_NONE;
+    }
+
+    void tick() override {
+        if (_ratios_changed) {
+            _calibration = Calibration{
+                .current_lsb = _current_ratio,
+                .power_lsb = _power_active_ratio,
+                .value = calibration(_current_ratio, _shunt_resistance),
+            };
+
+#if SENSOR_DEBUG
+            DEBUG_MSG(PSTR("[INA219] Current LSB %s\n"),
+                    String(_calibration.current_lsb, 6).c_str());
+            DEBUG_MSG(PSTR("[INA219] Power LSB %s\n"),
+                    String(_calibration.power_lsb, 6).c_str());
+
+            uint8_t buf[2];
+            std::memcpy(std::begin(buf), &_calibration.value, sizeof(buf));
+            DEBUG_MSG(PSTR("[INA219] Calibration 0x%s\n"),
+                    hexEncode(std::begin(buf), std::end(buf)).c_str());
+#endif
+
+            _port.calibration(_calibration.value);
+            espurna::time::blockingDelay(
+                    espurna::duration::Milliseconds(100));
+
+            _ratios_changed = false;
+        }
     }
 
     void pre() override {
@@ -556,16 +566,16 @@ public:
         return 0;
     }
 
-    using BaseEmonSensor::simpleSetRatio;
-
-    void setRatio(unsigned char index, double value) override {
-        simpleSetRatio(RatioSupport, index, value);
-    }
-
     using BaseEmonSensor::simpleGetRatio;
 
     double getRatio(unsigned char index) const override {
         return simpleGetRatio(RatioSupport, index);
+    }
+
+    using BaseEmonSensor::simpleSetRatio;
+
+    void setRatio(unsigned char index, double value) override {
+        simpleSetRatio(RatioSupport, index, value);
     }
 
     double defaultRatio(unsigned char index) const override {

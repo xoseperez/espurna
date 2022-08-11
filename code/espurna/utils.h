@@ -48,6 +48,8 @@ uint32_t randomNumber();
 uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
 
 double roundTo(double num, unsigned char positions);
+bool almostEqual(double lhs, double rhs, int ulp);
+bool almostEqual(double lhs, double rhs);
 
 uint32_t parseUnsigned(const String&, int base);
 uint32_t parseUnsigned(const String&);
