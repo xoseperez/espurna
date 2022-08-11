@@ -36,7 +36,7 @@ public:
     using TimeSource = espurna::time::CoreClock;
 
     static constexpr unsigned char RxPin { PZEM004TV30_RX_PIN };
-    static constexpr unsigned char TxPin { PZEM004TV30_RX_PIN };
+    static constexpr unsigned char TxPin { PZEM004TV30_TX_PIN };
 
     static constexpr bool useSoftwareSerial() {
         return 1 == PZEM004TV30_USE_SOFT;
