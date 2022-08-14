@@ -6,10 +6,7 @@
 #pragma once
 
 #include "AnalogSensor.h"
-
-extern "C" {
 #include "../libs/fs_math.h"
-}
 
 class NTCSensor : public AnalogSensor {
 

@@ -10,9 +10,7 @@
 
 #include "BaseEmonSensor.h"
 
-extern "C" {
 #include "../libs/fs_math.h"
-}
 
 class BaseAnalogEmonSensor : public BaseEmonSensor {
 public:

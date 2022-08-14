@@ -9,9 +9,7 @@
 
 
 #include "AnalogSensor.h"
-extern "C" {
-	#include "../libs/fs_math.h"
-}
+#include "../libs/fs_math.h"
 
 #define LDR_GL5516		1
 #define LDR_GL5528		2

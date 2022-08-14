@@ -8,10 +8,7 @@
 #pragma once
 
 #include "BaseAnalogSensor.h"
-
-extern "C" {
 #include "../libs/fs_math.h"
-}
 
 class MICS5525Sensor : public AnalogSensor {
 

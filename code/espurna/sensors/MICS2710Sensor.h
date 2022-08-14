@@ -9,9 +9,7 @@
 
 
 #include "BaseAnalogSensor.h"
-extern "C" {
-    #include "../libs/fs_math.h"
-}
+#include "../libs/fs_math.h"
 
 class MICS2710Sensor : public AnalogSensor {
 

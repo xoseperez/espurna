@@ -10,9 +10,7 @@
 #include <SoftwareSerial.h>
 
 #include "BaseEmonSensor.h"
-extern "C" {
-    #include "../libs/fs_math.h"
-}
+#include "../libs/fs_math.h"
 
 class V9261FSensor : public BaseEmonSensor {
 
