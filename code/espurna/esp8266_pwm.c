@@ -1,4 +1,5 @@
 /*
+ * https://github.com/StefanBruens/ESP8266_new_pwm
  * Copyright (C) 2016 Stefan Brüns <stefan.bruens@rwth-aachen.de>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -15,6 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
+
+// Should include our own prototypes, since the original code does not provide them
+#include "libs/esp8266_pwm.h"
 
 /* Set the following three defines to your needs */
 
@@ -47,7 +51,6 @@
 #include <c_types.h>
 #include <eagle_soc.h>
 #include <ets_sys.h>
-#include "libs/pwm.h"
 
 // from SDK hw_timer.c
 #define TIMER1_DIVIDE_BY_16         0x0004
@@ -79,9 +82,6 @@ static uint32_t pwm_period_ticks;
 static uint32_t pwm_duty[PWM_MAX_CHANNELS];
 static uint16_t gpio_mask[PWM_MAX_CHANNELS];
 static uint8_t pwm_channels;
-
-// 3-tuples of MUX_REGISTER, MUX_VALUE and GPIO number
-typedef uint32_t (pin_info_type)[3];
 
 struct gpio_regs {
 	uint32_t out;         /* 0x60000300 */
@@ -159,7 +159,7 @@ pwm_intr_handler(void)
  */
 void ICACHE_FLASH_ATTR
 pwm_init(uint32_t period, uint32_t *duty, uint32_t pwm_channel_num,
-              uint32_t (*pin_info_list)[3])
+              struct pwm_pin_info *pin_info_list)
 {
 	int i, j, n;
 
@@ -180,10 +180,10 @@ pwm_init(uint32_t period, uint32_t *duty, uint32_t pwm_channel_num,
 	uint32_t all = 0;
 	// PIN info: MUX-Register, Mux-Setting, PIN-Nr
 	for (n = 0; n < pwm_channels; n++) {
-		pin_info_type* pin_info = &pin_info_list[n];
-		PIN_FUNC_SELECT((*pin_info)[0], (*pin_info)[1]);
-		gpio_mask[n] = 1 << (*pin_info)[2];
-		all |= 1 << (*pin_info)[2];
+		struct pwm_pin_info* pin_info = &pin_info_list[n];
+		PIN_FUNC_SELECT(pin_info->addr, pin_info->func);
+		gpio_mask[n] = 1 << pin_info->pin;
+		all |= 1 << pin_info->pin;
 		if (duty)
 			pwm_set_duty(duty[n], n);
 	}

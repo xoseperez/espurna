@@ -16,30 +16,32 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef __PWM_H__
-#define __PWM_H__
+#pragma once
 
-/*SUPPORT UP TO 8 PWM CHANNEL*/
-#ifndef PWM_CHANNEL_NUM_MAX
-#define PWM_CHANNEL_NUM_MAX 8
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-struct pwm_param {
-    uint32 period;
-    uint32 freq;
-    uint32  duty[PWM_CHANNEL_NUM_MAX];  //PWM_CHANNEL<=8
+struct pwm_pin_info {
+    uint32_t addr;
+    uint32_t func;
+    uint32_t pin;
 };
 
 /* pwm_init should be called only once, for now  */
-void pwm_init(uint32 period, uint32 *duty,uint32 pwm_channel_num,uint32 (*pin_info_list)[3]);
+void pwm_init(uint32_t period, uint32_t *duty, uint32_t pwm_channel_num, struct pwm_pin_info *pin_info_list);
 void pwm_start(void);
 
-void pwm_set_duty(uint32 duty, uint8 channel);
-uint32 pwm_get_duty(uint8 channel);
-void pwm_set_period(uint32 period);
-uint32 pwm_get_period(void);
+void pwm_set_duty(uint32_t duty, uint8_t channel);
+uint32_t pwm_get_duty(uint8_t channel);
+void pwm_set_period(uint32_t period);
+uint32_t pwm_get_period(void);
 
-uint32 get_pwm_version(void);
-void set_pwm_debug_en(uint8 print_en);
+uint32_t get_pwm_version(void);
+void set_pwm_debug_en(uint8_t print_en);
 
+#ifdef __cplusplus
+}
 #endif

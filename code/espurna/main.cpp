@@ -186,6 +186,11 @@ void setup() {
         MCP23S08Setup();
     #endif
 
+    // PWM driver
+    #if PWM_SUPPORT
+        pwmSetup();
+    #endif
+
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();

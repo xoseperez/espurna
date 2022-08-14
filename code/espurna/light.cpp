@@ -26,22 +26,14 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <cstring>
 #include <vector>
 
+#include "libs/fs_math.h"
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 #endif
 
-extern "C" {
-#include "libs/fs_math.h"
-}
-
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-
-// default is 8, we only need up to 5
-#define PWM_CHANNEL_NUM_MAX Light::ChannelsMax
-extern "C" {
-#include "libs/pwm.h"
-}
-
+#include "pwm.h"
 #endif
 
 // -----------------------------------------------------------------------------
@@ -426,20 +418,10 @@ long _lightChainedValue(long input, const T& process, Args&&... args) {
 struct LightChannel {
     LightChannel() = default;
 
-    // TODO: set & store pin in the provider, only hold the channel values
-    LightChannel(unsigned char pin_, bool inverse_, bool gamma_) :
-        pin(pin_),
-        inverse(inverse_),
-        gamma(gamma_)
-    {
-        pinMode(pin, OUTPUT);
-    }
-
-    explicit LightChannel(unsigned char pin_) :
-        pin(pin_)
-    {
-        pinMode(pin, OUTPUT);
-    }
+    LightChannel(bool inverse, bool gamma) :
+        inverse(inverse),
+        gamma(gamma)
+    {}
 
     LightChannel& operator=(long input) {
         inputValue = std::clamp(input, Light::ValueMin, Light::ValueMax);
@@ -462,7 +444,6 @@ struct LightChannel {
             Light::ValueMin, Light::ValueMax);
     }
 
-    unsigned char pin { GPIO_NONE };       // real GPIO pin
     bool inverse { false };                // re-map the value from [ValueMin:ValueMax] to [ValueMax:ValueMin]
     bool gamma { false };                  // apply gamma correction to the target value
 
@@ -1682,50 +1663,72 @@ bool _light_use_transitions = false;
 
 void _lightProviderSchedule(espurna::duration::Milliseconds);
 
-#if (LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX)
+static_assert((Light::ValueMax - Light::ValueMin) != 0, "");
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-unsigned char _light_my92xx_channel_map[Light::ChannelsMax] = {};
-#endif
-
-// there is no PWM stop, but my92xx has some internal state control that will send 0 as values when OFF
-void _lightProviderHandleState(bool state [[gnu::unused]]) {
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setState(state);
-#endif
+template <typename T>
+constexpr T _lightValueMap(long value, T min, T max) {
+    return (value - Light::ValueMin) * (max - min) / (Light::ValueMax - Light::ValueMin) + min;
 }
-
-// See cores/esp8266/WMath.cpp::map
-inline bool _lightPwmMap(long value, long& result) {
-    constexpr auto Divisor = (Light::ValueMax - Light::ValueMin);
-    if (Divisor != 0l){
-        result = (value - Light::ValueMin) * (Light::PwmLimit - Light::PwmMin) / Divisor + Light::PwmMin;
-        return true;
-    }
-
-    return false;
-}
-
-// both require original values to be scaled into a PWM frequency
-void _lightProviderHandleValue(size_t channel, float value) {
-    long pwm;
-    if (!_lightPwmMap(std::lround(value), pwm)) {
-        return;
-    }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-    pwm_set_duty(pwm, channel);
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    _my92xx->setChannel(_light_my92xx_channel_map[channel], pwm);
-#endif
+
+uint32_t _light_pwm_min;
+uint32_t _light_pwm_max;
+
+// since we expect 0 duty on OFF state, no need to do anything else from here
+void _lightProviderHandleState(bool) {
+}
+
+// Automatically scale from our value to the internal one used by the PWM
+// Currently, both u32 and float variants are almost the same precision
+// Slight difference would be the amount of generated code; one variant
+// needs to call float division, the other one is to simply truncate it
+// using two external values which are then used in integer divison
+// TODO: actually check call speed?
+// TODO: any difference between __fixsfsi and lround?
+void _lightProviderHandleValue(size_t channel, float value) {
+    pwmDuty(channel, _lightValueMap(value, _light_pwm_min, _light_pwm_max));
 }
 
 void _lightProviderHandleUpdate() {
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-    pwm_start();
+    pwmUpdate();
+}
+
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+
+constexpr unsigned int _lightMy92xxValueShift(my92xx_cmd_bit_width_t width) {
+    return (width == MY92XX_CMD_BIT_WIDTH_16) ? 16 :
+        (width == MY92XX_CMD_BIT_WIDTH_14) ? 14 :
+        (width == MY92XX_CMD_BIT_WIDTH_12) ? 12 :
+        (width == MY92XX_CMD_BIT_WIDTH_8) ? 8 : 8;
+}
+
+constexpr unsigned int _lightMy92xxValueMax(my92xx_cmd_bit_width_t width) {
+    return (1 << _lightMy92xxValueShift(width)) - 1;
+}
+
+constexpr unsigned int _lightMy92xxValueMax(my92xx_cmd_t command) {
+    return _lightMy92xxValueMax(command.bit_width);
+}
+
+unsigned char _light_my92xx_channel_map[Light::ChannelsMax] = {};
+
+constexpr unsigned int _my92xx_value_min = 0;
+constexpr unsigned int _my92xx_value_max =
+        _lightMy92xxValueMax(Light::build::my92xxCommand());
+
+void _lightProviderHandleValue(size_t channel, float value) {
+    _my92xx->setChannel(
+        _light_my92xx_channel_map[channel],
+        _lightValueMap(value, _my92xx_value_min, _my92xx_value_max));
+}
+
+void _lightProviderHandleUpdate() {
     _my92xx->update();
-#endif
+}
+
+void _lightProviderHandleState(bool state) {
+    _my92xx->setState(state);
 }
 
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
@@ -2946,27 +2949,6 @@ void lightTransition(LightTransition transition) {
 
 namespace {
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-const unsigned long _light_iomux[] PROGMEM = {
-    PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_U0RXD_U,
-    PERIPHS_IO_MUX_GPIO4_U, PERIPHS_IO_MUX_GPIO5_U, PERIPHS_IO_MUX_SD_CLK_U, PERIPHS_IO_MUX_SD_DATA0_U,
-    PERIPHS_IO_MUX_SD_DATA1_U, PERIPHS_IO_MUX_SD_DATA2_U, PERIPHS_IO_MUX_SD_DATA3_U, PERIPHS_IO_MUX_SD_CMD_U,
-    PERIPHS_IO_MUX_MTDI_U, PERIPHS_IO_MUX_MTCK_U, PERIPHS_IO_MUX_MTMS_U, PERIPHS_IO_MUX_MTDO_U
-};
-
-const unsigned long _light_iofunc[] PROGMEM = {
-    FUNC_GPIO0, FUNC_GPIO1, FUNC_GPIO2, FUNC_GPIO3,
-    FUNC_GPIO4, FUNC_GPIO5, FUNC_GPIO6, FUNC_GPIO7,
-    FUNC_GPIO8, FUNC_GPIO9, FUNC_GPIO10, FUNC_GPIO11,
-    FUNC_GPIO12, FUNC_GPIO13, FUNC_GPIO14, FUNC_GPIO15
-};
-
-bool _lightIoMuxPin(unsigned char pin) {
-    return (pin < std::size(_light_iofunc)) && (pin < std::size(_light_iomux));
-}
-
-#endif
-
 inline bool _lightUseGamma(size_t channels, size_t index) {
     switch (_lightTag(channels, index)) {
     case 'R':
@@ -3104,7 +3086,7 @@ bool lightAdd() {
     }
 
     if (_light_channels.size() < Light::ChannelsMax) {
-        _light_channels.emplace_back(GPIO_NONE);
+        _light_channels.emplace_back(LightChannel());
         if (State::Scheduled != state) {
             state = State::Scheduled;
             schedule_function([]() {
@@ -3190,39 +3172,31 @@ void lightSetup() {
                     Light::settings::my92xxDiPin(),
                     Light::settings::my92xxDckiPin(),
                     Light::build::my92xxCommand());
-            for (size_t index = 0; index < channels; ++index) {
-                _light_channels.emplace_back(GPIO_NONE);
-            }
+            _light_channels.resize(channels);
         }
     }
 #elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
     {
-        // Initial duty value (will be passed to pwm_set_duty(...), OFF in this case)
-        uint32_t pwm_duty_init[Light::ChannelsMax] = {0};
-
-        // 3-tuples of MUX_REGISTER, MUX_VALUE and GPIO number
-        uint32_t io_info[Light::ChannelsMax][3];
+        // Load up until first invalid pin. Allow settings to override, but not remove values
+        std::vector<uint8_t> pins;
+        pins.reserve(Light::ChannelsMax);
 
         for (size_t index = 0; index < Light::ChannelsMax; ++index) {
-
-            // Load up until first GPIO_NONE. Allow settings to override, but not remove values
             const auto pin = Light::settings::channelPin(index);
-            if (!gpioValid(pin) || !_lightIoMuxPin(pin)) {
+            if (!gpioValid(pin)) {
                 break;
             }
 
-            _light_channels.emplace_back(pin);
-
-            io_info[index][0] = _light_iomux[pin];
-            io_info[index][1] = _light_iofunc[pin];
-            io_info[index][2] = pin;
-            pinMode(pin, OUTPUT);
-
+            pins.push_back(pin);
         }
 
-        // with 0 channels this should not do anything at all and provider will never call pwm_set_duty(...)
-        pwm_init(Light::PwmMax, pwm_duty_init, _light_channels.size(), io_info);
-        pwm_start();
+        // The rest is handled by the PWM driver, continue *only* when it actually agrees on selected pins
+        if (pwmInitPins(pins)) {
+            const auto range = pwmRange();
+            _light_pwm_min = range.min;
+            _light_pwm_max = range.max;
+            _light_channels.resize(pins.size());
+        }
     }
 #endif
 

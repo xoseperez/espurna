@@ -1139,26 +1139,6 @@
 #define LIGHT_SAVE_DELAY        5000       // Persist channel & brightness values after the specified number of ms
 #endif
 
-#ifndef LIGHT_MIN_PWM
-#define LIGHT_MIN_PWM           0
-#endif
-
-#ifndef LIGHT_MAX_PWM
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-#define LIGHT_MAX_PWM           255
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
-#else
-#define LIGHT_MAX_PWM           0
-#endif
-
-#endif // LIGHT_MAX_PWM
-
-#ifndef LIGHT_LIMIT_PWM
-#define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
-#endif
-
 #ifndef LIGHT_MIN_VALUE
 #define LIGHT_MIN_VALUE         0           // Minimum light value
 #endif
@@ -1749,6 +1729,35 @@
 
 #ifndef IFAN_SUPPORT
 #define IFAN_SUPPORT                0
+#endif
+
+//--------------------------------------------------------------------------------
+// PWM driver support
+//--------------------------------------------------------------------------------
+
+#ifndef PWM_SUPPORT
+#define PWM_SUPPORT                 0
+#endif
+
+#ifndef PWM_PROVIDER
+#define PWM_PROVIDER                PWM_PROVIDER_GENERIC // Currently, two software PWM providers are supported
+                                                         // - PWM_PROVIDER_GENERIC (default)
+                                                         // - PWM_PROVIDER_ARDUINO
+#endif
+
+#ifndef PWM_FREQUENCY
+#define PWM_FREQUENCY               2000 // (Hz)
+#endif
+
+#ifndef PWM_RESOLUTION
+#define PWM_RESOLUTION              10   // (bits)
+                                         // Range of raw values accepted by the driver
+                                         // 0...1023 by default
+#endif
+
+#ifndef PWM_DUTY_LIMIT
+#define PWM_DUTY_LIMIT              100  // (percentage)
+                                         // Clamp duty value, prevent 100% power
 #endif
 
 // =============================================================================

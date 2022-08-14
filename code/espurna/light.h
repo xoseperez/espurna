@@ -26,6 +26,9 @@ constexpr size_t ChannelsMax { 5 };
 
 constexpr long ValueStep { LIGHT_STEP };
 
+// TODO: separate internal and external scaling?
+// TODO: allow wider value range than just 8bit?
+
 constexpr long ValueMin { LIGHT_MIN_VALUE };
 constexpr long ValueMax { LIGHT_MAX_VALUE };
 
@@ -34,10 +37,6 @@ constexpr long BrightnessMax { LIGHT_MAX_BRIGHTNESS };
 
 constexpr long MiredsCold { LIGHT_COLDWHITE_MIRED };
 constexpr long MiredsWarm { LIGHT_WARMWHITE_MIRED };
-
-constexpr long PwmMin { LIGHT_MIN_PWM };
-constexpr long PwmMax { LIGHT_MAX_PWM };
-constexpr long PwmLimit { LIGHT_LIMIT_PWM };
 
 enum class Report {
     None = 0,

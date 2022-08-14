@@ -8,8 +8,12 @@
 /*
 ** Portable freestanding code.
 */
-#ifndef H_FS_MATH_H
-#define H_FS_MATH_H
+
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 double fs_sqrt(double x);
 double fs_log(double x);
@@ -34,6 +38,8 @@ long double fs_expl(long double x);
 long double fs_cosl(long double x);
 long double fs_fmodl(long double x, long double y);
 
+#ifdef __cplusplus
+}
 #endif
 
 /* END fs_math.h */

@@ -99,7 +99,12 @@
 
 #if IFAN_SUPPORT
 #undef RELAY_SUPPORT
-#define RELAY_SUPPORT               1            // Need relays to manage general state
+#define RELAY_SUPPORT               1           // Need relays to manage general state
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#undef PWM_SUPPORT
+#define PWM_SUPPORT                 1           // Need PWM to update channel values
 #endif
 
 //------------------------------------------------------------------------------
