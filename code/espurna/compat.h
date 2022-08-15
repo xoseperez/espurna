@@ -131,6 +131,16 @@ constexpr size_t size(const T& value) {
     return value.size();
 }
 
+template <typename T>
+constexpr auto cbegin(const T& value) -> decltype(std::begin(value)) {
+    return std::begin(value);
+}
+
+template <typename T>
+constexpr auto cend(const T& value) -> decltype(std::end(value)) {
+    return std::end(value);
+}
+
 } // namespace std
 
 #endif

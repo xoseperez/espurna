@@ -10,6 +10,8 @@ BOARD MODULE
 #include "sensor.h"
 #include "utils.h"
 
+#include <cstring>
+
 //--------------------------------------------------------------------------------
 
 #include <cstring>

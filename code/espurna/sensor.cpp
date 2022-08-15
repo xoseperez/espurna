@@ -1619,6 +1619,23 @@ void add(BaseSensorPtr sensor, unsigned char slot, unsigned char type) {
     internal::magnitudes.emplace_back(sensor, slot, type);
 }
 
+const Magnitude* find(unsigned char type, unsigned char index) {
+    const Magnitude* out { nullptr };
+
+    const auto result = std::find_if(
+        std::cbegin(internal::magnitudes),
+        std::cend(internal::magnitudes),
+        [&](const Magnitude& magnitude) {
+            return (magnitude.type == type) && (magnitude.index_global == index);
+        });
+
+    if (result != internal::magnitudes.end()) {
+        out = std::addressof(*result);
+    }
+
+    return out;
+}
+
 Magnitude& get(size_t index) {
     return internal::magnitudes[index];
 }
@@ -2792,6 +2809,13 @@ Energy get_settings(unsigned char index) {
     return convert(current).value();
 }
 
+void set(const Magnitude& magnitude, const Energy& energy) {
+    if (isEmon(magnitude.sensor)) {
+        auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
+        sensor->resetEnergy(magnitude.slot, energy);
+    }
+}
+
 void set(const Magnitude& magnitude, const String& payload) {
     if (!payload.length()) {
         return;
@@ -2802,8 +2826,7 @@ void set(const Magnitude& magnitude, const String& payload) {
         return;
     }
 
-    auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
-    sensor->resetEnergy(magnitude.slot, energy.value());
+    set(magnitude, energy.value());
 }
 
 void set(const Magnitude& magnitude, const char* payload) {
@@ -2811,7 +2834,7 @@ void set(const Magnitude& magnitude, const char* payload) {
         return;
     }
 
-    set(magnitude, payload);
+    set(magnitude, String(payload));
 }
 
 Energy get(unsigned char index) {
@@ -3352,11 +3375,10 @@ bool tryHandle(ApiRequest& request, unsigned char type, T&& callback) {
         }
     }
 
-    for (auto& magnitude : magnitude::internal::magnitudes) {
-        if ((type == magnitude.type) && (index == magnitude.index_global)) {
-            callback(magnitude);
-            return true;
-        }
+    const auto* magnitude = magnitude::find(type, index);
+    if (magnitude) {
+        callback(*magnitude);
+        return true;
     }
 
     return false;
@@ -3441,8 +3463,13 @@ void callback(unsigned int type, const char* topic, char* payload) {
             }
 
             unsigned char index;
-            if (tryParseIndex(ptr, MAGNITUDE_ENERGY, index)) {
-                energy::set(magnitude::get(index), static_cast<const char*>(payload));
+            if (!tryParseIndex(ptr, MAGNITUDE_ENERGY, index)) {
+                break;
+            }
+
+            const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
+            if (magnitude) {
+                energy::set(*magnitude, static_cast<const char*>(payload));
             }
         }
 
@@ -3520,28 +3547,37 @@ void setup() {
     terminalRegisterCommand(F("ENERGY"), [](::terminal::CommandContext&& ctx) {
         using IndexType = decltype(Magnitude::index_global);
 
-        if (ctx.argv.size() == 3) {
-            const auto selected = ::settings::internal::convert<IndexType>(ctx.argv[1]);
+        if (ctx.argv.size() < 2) {
+            terminalError(ctx, F("ENERGY <ID> [<VALUE>]"));
+            return;
+        }
 
+        const auto index = ::settings::internal::convert<IndexType>(ctx.argv[1]);
+
+        const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
+        if (!magnitude) {
+            terminalError(ctx, F("Invalid magnitude ID"));
+            return;
+        }
+
+        if (ctx.argv.size() == 2) {
+            ctx.output.printf_P(PSTR("%s => %s (%s)\n"),
+                magnitude::topicWithIndex(*magnitude).c_str(),
+                magnitude::format(*magnitude, magnitude->last).c_str(),
+                magnitude::units(*magnitude).c_str());
+            terminalOK(ctx);
+            return;
+        }
+
+        if (ctx.argv.size() == 3) {
             const auto energy = energy::convert(ctx.argv[2]);
             if (!energy) {
                 terminalError(ctx, F("Invalid energy string"));
                 return;
             }
 
-            for (auto& magnitude : magnitude::internal::magnitudes) {
-                if (isEmon(magnitude.sensor) && (MAGNITUDE_ENERGY == magnitude.type) && (selected == magnitude.index_global)) {
-                    static_cast<BaseEmonSensor*>(magnitude.sensor.get())->resetEnergy(magnitude.slot, energy.value());
-                    terminalOK(ctx);
-                    return;
-                }
-            }
-
-            terminalError(ctx, F("Magnitude not found"));
-            return;
+            energy::set(*magnitude, energy.value());
         }
-
-        terminalError(ctx, F("ENERGY <ID> <VALUE>"));
     });
 }
 
