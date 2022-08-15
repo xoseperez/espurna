@@ -12,6 +12,8 @@ BOARD MODULE
 
 //--------------------------------------------------------------------------------
 
+#include <cstring>
+
 const String& getChipId() {
     static String value;
     if (!value.length()) {
@@ -408,12 +410,15 @@ void boardSetup() {
         // TODO: also check for things throughout the flash sector, somehow?
     }
 
-    // Workaround for SDK changes between 1.5.3 and 2.2.x
-    // (plus, possible SDK config corruption happening to the 'default' sector)
+    // Workaround for SDK changes between 1.5.3 and 2.2.x or possible
+    // flash corruption happening to the 'default' WiFi config
 #if SYSTEM_CHECK_ENABLED
     if (!systemCheck()) {
         // TODO: also check the next sector? both look like dupes
-        const uint32_t Sector { (ESP.getFlashChipSize() / FLASH_SECTOR_SIZE) - 3 };
+        const uint32_t Address { ESP.getFlashChipSize() - (FLASH_SECTOR_SIZE * 3) };
+
+        // 0x00B0:  0A 00 00 00 45 53 50 2D XX XX XX XX XX XX 00 00     ESP-XXXXXX
+        const uint8_t Reference[] { 0xa0, 0, 0, 0, 0x45, 0x53, 0x50, 0x2d };
 
         static constexpr size_t Size { 256 };
 #ifdef FLASH_PAGE_SIZE
@@ -421,10 +426,10 @@ void boardSetup() {
 #endif
         alignas(alignof(uint32_t)) uint8_t page[Size];
 
-        if (ESP.flashRead(Sector, reinterpret_cast<uint32_t*>(&page), Size)) {
+        if (ESP.flashRead(Address, reinterpret_cast<uint32_t*>(&page), Size)) {
             constexpr uint32_t ConfigOffset { 0xb0 };
-            if (page[ConfigOffset] != 10) {
-                DEBUG_MSG_P(PSTR("[BOARD] Invalid SDK config, resetting...\n"));
+            if (std::memcmp(&page[ConfigOffset], &Reference[0], std::size(Reference)) != 0) {
+                DEBUG_MSG_P(PSTR("[BOARD] Invalid SDK config at 0x%08X, resetting...\n"), Address + ConfigOffset);
                 customResetReason(CustomResetReason::Factory);
                 eraseSDKConfig();
                 __builtin_trap();
