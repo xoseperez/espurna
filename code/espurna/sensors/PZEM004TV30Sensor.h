@@ -23,10 +23,9 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <SoftwareSerial.h>
 
 #if DEBUG_SUPPORT
-#define PZEM_DEBUG_MSG_P(...) \
-    ([&](){ \
-        DEBUG_MSG_P(__VA_ARGS__);\
-    })
+#define PZEM_DEBUG_MSG_P(...) do { if (_debug) {\
+    DEBUG_MSG_P(__VA_ARGS__); }\
+} while (0)
 #else
 #define PZEM_DEBUG_MSG_P(...)
 #endif
