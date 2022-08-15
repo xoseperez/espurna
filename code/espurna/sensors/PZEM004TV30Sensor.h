@@ -182,14 +182,14 @@ public:
     // We **can** reset PZEM energy, unlike the original PZEM004T
     // However, we can't set it to a specific value, we can only start from 0
     void resetEnergy(unsigned char index, espurna::sensor::Energy) override {
-        if (index == 3) {
+        if (index == 4) {
             _reset_energy = true;
         }
     }
 
     espurna::sensor::Energy totalEnergy(unsigned char index) const override {
         espurna::sensor::Energy out;
-        if (index == 3) {
+        if (index == 4) {
             out = _energy;
         }
 
@@ -608,10 +608,11 @@ public:
 
     void pre() override {
         flush();
+
         if (_reset_energy) {
-            if (!modbusResetEnergy()) {
-                PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Energy reset failed\n"));
-            }
+            const auto result = modbusResetEnergy();
+            PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Energy reset - %s\n"),
+                result ? PSTR("OK") : PSTR("FAIL"));
             _reset_energy = false;
             flush();
         }
