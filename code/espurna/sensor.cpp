@@ -319,8 +319,8 @@ Energy::Energy(Energy::Pair pair) :
 
 Energy::Energy(WattSeconds ws) {
     _ws.value = ws.value;
-    while (_ws.value >= KwhMultiplier) {
-        _ws.value -= KwhMultiplier;
+    while (_ws.value >= WattSecondsMax) {
+        _ws.value -= WattSecondsMax;
         ++_kwh.value;
     }
 }
@@ -361,13 +361,19 @@ Energy::operator bool() const {
 }
 
 WattSeconds Energy::asWattSeconds() const {
+    using Type = WattSeconds::Type;
+
+    static constexpr auto TypeMax = std::numeric_limits<Type>::max();
+    static constexpr Type KwhMax { TypeMax / WattSecondsMax };
+
     auto kwh = _kwh.value;
-    while (kwh >= KwhLimit) {
-        kwh -= KwhLimit;
+    while (kwh >= KwhMax) {
+        kwh -= KwhMax;
     }
 
     WattSeconds out;
-    out.value = (kwh * static_cast<uint32_t>(KwhMultiplier)) + _ws.value;
+    out.value += _ws.value;
+    out.value += kwh * WattSecondsMax;
 
     return out;
 }
@@ -375,7 +381,7 @@ WattSeconds Energy::asWattSeconds() const {
 double Energy::asDouble() const {
     return static_cast<double>(_kwh.value)
         + static_cast<double>(_ws.value)
-        / static_cast<double>(KwhMultiplier);
+        / static_cast<double>(WattSecondsMax);
 }
 
 String Energy::asString() const {

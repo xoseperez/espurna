@@ -71,19 +71,19 @@ struct WattSeconds {
 
     WattSeconds() = default;
 
-    explicit WattSeconds(Type value) :
+    constexpr explicit WattSeconds(Type value) :
         value(value)
     {}
 
-    explicit WattSeconds(float value) :
+    constexpr explicit WattSeconds(float value) :
         value(static_cast<Type>(value))
     {}
 
-    explicit WattSeconds(double value) :
+    constexpr explicit WattSeconds(double value) :
         value(static_cast<Type>(value))
     {}
 
-    WattSeconds(Watts watts, espurna::duration::Seconds seconds) :
+    constexpr WattSeconds(Watts watts, espurna::duration::Seconds seconds) :
         value(static_cast<Type>(watts.value * seconds.count()))
     {}
 };
@@ -144,8 +144,8 @@ struct Energy {
         WattSeconds ws;
     };
 
-    static constexpr auto KwhMultiplier = KilowattHours::Ratio::num;
-    static constexpr auto KwhLimit = (std::numeric_limits<KilowattHours::Type>::max() / KwhMultiplier);
+    static constexpr auto WattSecondsMax =
+        WattSeconds::Type(KilowattHours::Ratio::num);
 
     Energy() = default;
     Energy(const Energy&) = default;
@@ -189,9 +189,10 @@ struct Energy {
     // API representation as `<kWh>+<Ws>`
     String asString() const;
 
-    // convert back to input unit, with overflow mechanics when kwh values goes over 32 bit
+    // represent internal value as watt seconds / joules
+    // **will rollover** when exceeding WattSeconds::Type capacity
+    // (when kWh value is greater or equal to `maximum of Type / Ws per kWh`)
     WattSeconds asWattSeconds() const;
-
 
     // we are storing a kind-of integral and fractional parts
     // using watt-second to avoid loosing precision, we don't expect these to be accessed directly
