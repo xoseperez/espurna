@@ -2916,7 +2916,7 @@ void setup(const Magnitude& magnitude) {
     }
 
     auto* sensor = static_cast<BaseEmonSensor*>(magnitude.sensor.get());
-    sensor->resetEnergy(magnitude.slot, get(magnitude.index_global));
+    sensor->initialEnergy(magnitude.slot, get(magnitude.index_global));
     internal::tracker.add(magnitude);
 
     DEBUG_MSG_P(PSTR("[ENERGY] Tracking %s/%u for %s\n"),

@@ -95,22 +95,34 @@ protected:
     }
 
 public:
+    // Forcibly set energy value at the specified magnitude index
     virtual void resetEnergy(unsigned char index, espurna::sensor::Energy energy) {
         _energy.update(index, [&](EnergyMapping& entry) {
             entry.energy = energy;
         });
     }
 
+    // Initial energy value, should **only** be called once
+    // In case sensor does not want to implement resets
+    virtual void initialEnergy(unsigned char index, espurna::sensor::Energy energy) {
+        resetEnergy(index, energy);
+    }
+
+    // Forcibly set energy value to 0 at the specified magnitude index
     virtual void resetEnergy(unsigned char index) {
         _energy.update(index, [](EnergyMapping& entry) {
             entry.energy.reset();
         });
     };
 
+    // Forciby set energy value to 0 for **all** energy magnitudes
+    // (**only** if initialized by the sensor class)
     virtual void resetEnergy() {
         _energy.reset();
     }
 
+    // Retrieve energy value at the specified magnitude index
+    // Usually, this value is accumulated for the duration of the sensors lifetime
     virtual espurna::sensor::Energy totalEnergy(unsigned char index) const {
         espurna::sensor::Energy out{};
         _energy.find(index, [&](const EnergyMapping& mapping) {
@@ -120,7 +132,7 @@ public:
         return out;
     }
 
-    // when sensor implements scalable magnitudes
+    // ------------------------------------------------------------------------
 
     // Generic ratio configuration, default is a no-op and must be implemented by the sensor class
     static constexpr double DefaultRatio { 1.0 };

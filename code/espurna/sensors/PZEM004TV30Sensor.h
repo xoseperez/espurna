@@ -189,7 +189,7 @@ public:
     espurna::sensor::Energy totalEnergy(unsigned char index) const override {
         espurna::sensor::Energy out;
         if (index == 4) {
-            out = _energy;
+            out = _last_reading.energy_active;
         }
 
         return out;
@@ -447,10 +447,23 @@ public:
     // 4. Active energy   0~9999.99kWh  1Wh       0.5%
     // 5. Frequency       45~65Hz       0.1Hz     0.5%
     // 6. Power factor    0.00~1.00     0.01      1%
-    void parseMeasurements(buffer_type&& buffer, size_t size) {
+    struct Reading {
+        double voltage;
+        double current;
+        double power_active;
+        double energy_active;
+        double frequency;
+        double power_factor;
+        bool alarm;
+        bool ok;
+    };
+
+    static Reading parseReading(buffer_type&& buffer, size_t size) {
+        Reading out;
+        out.ok = false;
+
         if (25 != size) {
-            PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Expected measurements ADU size to be at least 25 bytes, but got only %u\n"), size);
-            return;
+            return out;
         }
 
         auto it = buffer.begin() + 3;
@@ -479,33 +492,37 @@ public:
             return value;
         };
 
+        out.ok = true;
+
         // - Voltage: 2 bytes, in 0.1V (we return V)
-        _voltage = take_2();
-        _voltage /= 10.0;
+        out.voltage = take_2();
+        out.voltage /= 10.0;
 
         // - Current: 4 bytes, in 0.001A (we return A)
-        _current = take_4();
-        _current /= 1000.0;
+        out.current = take_4();
+        out.current /= 1000.0;
 
         // - Power: 4 bytes, in 0.1W (we return W)
-        _power_active = take_4();
-        _power_active /= 10.0;
+        out.power_active = take_4();
+        out.power_active /= 10.0;
 
         // - Energy: 4 bytes, in Wh (we return kWh)
-        _energy = take_4();
-        _energy /= 1000.0;
+        out.energy_active = take_4();
+        out.energy_active /= 1000.0;
 
         // - Frequency: 2 bytes, in 0.1Hz (we return Hz)
-        _frequency = take_2();
-        _frequency /= 10.0;
+        out.frequency = take_2();
+        out.frequency /= 10.0;
 
         // - Power Factor: 2 bytes in 0.01 (we return %)
-        _power_factor = take_2();
+        out.power_factor = take_2();
 
         // - Alarms: 2 bytes, (NOT IMPLEMENTED)
         // XXX: it seems it can only be either 0xffff or 0 for ON and OFF respectively
         // XXX: what this does, exactly?
-        _alarm = (0xff == *it) && (0xff == *(it + 1));
+        out.alarm = (0xff == *it) && (0xff == *(it + 1));
+
+        return out;
     }
 
     // Reading measurements is a standard modbus function:
@@ -520,9 +537,16 @@ public:
             .add(static_cast<uint16_t>(0))
             .add(static_cast<uint16_t>(10))
             .end();
-        modbusProcess(request, [this](buffer_type&& buffer, size_t size) {
-            parseMeasurements(std::move(buffer), size);
-        });
+
+        modbusProcess(request,
+            [&](buffer_type&& buffer, size_t size) {
+                const auto reading = parseReading(std::move(buffer), size);
+                if (reading.ok) {
+                    _last_reading = reading;
+                } else {
+                    PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Could not parse latest reading\n"));
+                }
+            });
     }
 
     void flush() {
@@ -562,7 +586,7 @@ public:
     }
 
     void begin() override {
-        _last_reading = TimeSource::now() - _update_interval;
+        _last_update = TimeSource::now() - _update_interval;
         _ready = true;
     }
 
@@ -589,17 +613,17 @@ public:
     double value(unsigned char index) override {
         switch (index) {
         case 0:
-            return _voltage;
+            return _last_reading.voltage;
         case 1:
-            return _frequency;
+            return _last_reading.frequency;
         case 2:
-            return _current;
+            return _last_reading.current;
         case 3:
-            return _power_active;
+            return _last_reading.power_active;
         case 4:
-            return _energy;
+            return _last_reading.energy_active;
         case 5:
-            return _power_factor;
+            return _last_reading.power_factor;
         }
 
         return 0.0;
@@ -609,16 +633,16 @@ public:
         flush();
 
         if (_reset_energy) {
-            const auto result = modbusResetEnergy();
+            const auto result [[gnu::unused]] = modbusResetEnergy();
             PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Energy reset - %s\n"),
                 result ? PSTR("OK") : PSTR("FAIL"));
             _reset_energy = false;
             flush();
         }
 
-        if (TimeSource::now() - _last_reading > _update_interval) {
+        if (TimeSource::now() - _last_update > _update_interval) {
             modbusReadValues();
-            _last_reading = TimeSource::now();
+            _last_update = TimeSource::now();
         }
     }
 
@@ -643,15 +667,9 @@ private:
     bool _reset_energy { false };
 
     TimeSource::duration _update_interval { DefaultUpdateInterval };
-    TimeSource::time_point _last_reading;
-    bool _alarm { false };
+    TimeSource::time_point _last_update;
 
-    double _voltage { 0.0 };
-    double _current { 0.0 };
-    double _power_active { 0.0 };
-    double _energy { 0.0 };
-    double _frequency { 0.0 };
-    double _power_factor { 0.0 };
+    Reading _last_reading;
 };
 
 #if __cplusplus < 201703L
