@@ -531,13 +531,15 @@ public:
     }
 
     // TODO: sensor impl and base sensor need watthour unit?
-    static espurna::sensor::Energy energyDelta(double last, double current) {
+    static espurna::sensor::WattSeconds energyDelta(double last, double current) {
         static constexpr double EnergyMax { 10000.0 };
 
-        return espurna::sensor::Energy(
+        const auto energy = espurna::sensor::Energy(
             (last > current)
                 ? (current + (EnergyMax - last))
                 : (current - last));
+
+        return energy.asWattSeconds();
     }
 
     // Reading measurements is a standard modbus function:
@@ -562,8 +564,9 @@ public:
                 }
 
                 if (_last_reading.ok && reading.ok) {
-                    _energy_delta = energyDelta(
+                    const auto delta = energyDelta(
                         _last_reading.energy_active, reading.energy_active);
+                    _energy_delta = delta.value;
                 }
 
                 _last_reading = reading;
@@ -645,7 +648,7 @@ public:
         case 4:
             return _last_reading.power_factor;
         case 5:
-            return _energy_delta.asWattSeconds().value;
+            return _energy_delta;
         case 6:
             return _last_reading.energy_active;
         }
@@ -693,7 +696,7 @@ private:
     TimeSource::duration _update_interval { DefaultUpdateInterval };
     TimeSource::time_point _last_update;
 
-    espurna::sensor::Energy _energy_delta;
+    double _energy_delta;
     Reading _last_reading;
 };
 
