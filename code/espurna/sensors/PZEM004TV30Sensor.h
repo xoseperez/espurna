@@ -186,6 +186,10 @@ public:
         }
     }
 
+    // Simply ignore energy reset request on boot
+    void initialEnergy(unsigned char index, espurna::sensor::Energy) override {
+    }
+
     espurna::sensor::Energy totalEnergy(unsigned char index) const override {
         using namespace espurna::sensor;
 
