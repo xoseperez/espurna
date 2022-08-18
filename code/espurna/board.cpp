@@ -321,6 +321,9 @@ const char* getEspurnaSensors() {
 #if PZEM004T_SUPPORT
     "PZEM004T "
 #endif
+#if PZEM004TV30_SUPPORT
+    "PZEM004TV30 "
+#endif
 #if SDS011_SUPPORT
     "SDS011 "
 #endif
