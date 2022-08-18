@@ -181,15 +181,17 @@ public:
     // We **can** reset PZEM energy, unlike the original PZEM004T
     // However, we can't set it to a specific value, we can only start from 0
     void resetEnergy(unsigned char index, espurna::sensor::Energy) override {
-        if (index == 4) {
+        if (index == 6) {
             _reset_energy = true;
         }
     }
 
     espurna::sensor::Energy totalEnergy(unsigned char index) const override {
-        espurna::sensor::Energy out;
-        if (index == 4) {
-            out = _last_reading.energy_active;
+        using namespace espurna::sensor;
+
+        Energy out;
+        if (index == 6) {
+            out = Energy(_last_reading.energy_active);
         }
 
         return out;
@@ -373,7 +375,7 @@ public:
 
     // Energy reset is a 'custom' function, and it does not take any function params
     bool modbusResetEnergy() {
-        auto request = adu_builder(_address, ResetEnergyCode)
+        const auto request = adu_builder(_address, ResetEnergyCode)
             .end();
 
         // quoting pzem user manual: "Set up correctly, the slave return to the data which is sent from the master.",
@@ -392,7 +394,7 @@ public:
             return true;
         }
 
-        auto request = adu_builder(_address, WriteCode)
+        const auto request = adu_builder(_address, WriteCode)
             .add(static_cast<uint16_t>(2))
             .add(static_cast<uint16_t>(to))
             .end();
@@ -455,12 +457,11 @@ public:
         double frequency;
         double power_factor;
         bool alarm;
-        bool ok;
+        bool ok { false };
     };
 
     static Reading parseReading(buffer_type&& buffer, size_t size) {
         Reading out;
-        out.ok = false;
 
         if (25 != size) {
             return out;
@@ -525,6 +526,16 @@ public:
         return out;
     }
 
+    // TODO: sensor impl and base sensor need watthour unit?
+    static espurna::sensor::Energy energyDelta(double last, double current) {
+        static constexpr double EnergyMax { 10000.0 };
+
+        return espurna::sensor::Energy(
+            (last > current)
+                ? (current + (EnergyMax - last))
+                : (current - last));
+    }
+
     // Reading measurements is a standard modbus function:
     // - addr, 0x04, rhigh, rlow, rnumhigh, rnumlow, crchigh, crclow
     // ReadInput reply can be one of:
@@ -533,7 +544,7 @@ public:
     void modbusReadValues() {
         _error = SENSOR_ERROR_OK;
 
-        auto request = adu_builder(_address, ReadInputCode)
+        const auto request = adu_builder(_address, ReadInputCode)
             .add(static_cast<uint16_t>(0))
             .add(static_cast<uint16_t>(10))
             .end();
@@ -541,11 +552,17 @@ public:
         modbusProcess(request,
             [&](buffer_type&& buffer, size_t size) {
                 const auto reading = parseReading(std::move(buffer), size);
-                if (reading.ok) {
-                    _last_reading = reading;
-                } else {
+                if (!reading.ok) {
                     PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Could not parse latest reading\n"));
+                    return;
                 }
+
+                if (_last_reading.ok && reading.ok) {
+                    _energy_delta = energyDelta(
+                        _last_reading.energy_active, reading.energy_active);
+                }
+
+                _last_reading = reading;
             });
     }
 
@@ -573,8 +590,9 @@ public:
         MAGNITUDE_FREQUENCY,
         MAGNITUDE_CURRENT,
         MAGNITUDE_POWER_ACTIVE,
+        MAGNITUDE_POWER_FACTOR,
+        MAGNITUDE_ENERGY_DELTA,
         MAGNITUDE_ENERGY,
-        MAGNITUDE_POWER_FACTOR
     };
 
     unsigned char id() const override {
@@ -621,9 +639,11 @@ public:
         case 3:
             return _last_reading.power_active;
         case 4:
-            return _last_reading.energy_active;
-        case 5:
             return _last_reading.power_factor;
+        case 5:
+            return _energy_delta.asWattSeconds().value;
+        case 6:
+            return _last_reading.energy_active;
         }
 
         return 0.0;
@@ -669,6 +689,7 @@ private:
     TimeSource::duration _update_interval { DefaultUpdateInterval };
     TimeSource::time_point _last_update;
 
+    espurna::sensor::Energy _energy_delta;
     Reading _last_reading;
 };
 

@@ -318,39 +318,42 @@ Energy::Energy(Energy::Pair pair) :
 {}
 
 Energy::Energy(WattSeconds ws) {
-    *this += ws;
-}
-
-Energy::Energy(double other) {
-    *this = other;
-}
-
-Energy& Energy::operator=(double other) {
-    double wh;
-    _kwh.value = fs_modf(other, &wh);
-    _ws.value = wh * static_cast<double>(WattHours::Ratio::num);
-    return *this;
-}
-
-Energy& Energy::operator+=(WattSeconds other) {
-    while (other.value >= KwhMultiplier) {
-        other.value -= KwhMultiplier;
-        ++_kwh.value;
-    }
-
-    _ws.value += other.value;
+    _ws.value = ws.value;
     while (_ws.value >= KwhMultiplier) {
         _ws.value -= KwhMultiplier;
         ++_kwh.value;
     }
+}
 
+Energy::Energy(WattHours other) :
+    Energy(static_cast<double>(other.value) / 1000.0)
+{}
+
+Energy::Energy(double kwh) {
+    double lhs;
+    double rhs = fs_modf(kwh, &lhs);
+
+    _kwh.value = lhs;
+    _ws.value = rhs * static_cast<double>(KilowattHours::Ratio::num);
+}
+
+Energy& Energy::operator+=(WattSeconds other) {
+    *this += Energy(other);
     return *this;
 }
 
 Energy Energy::operator+(WattSeconds other) {
     Energy result(*this);
     result += other;
+
     return result;
+}
+
+Energy& Energy::operator+=(const Energy& other) {
+    _kwh.value += other._kwh.value;
+    *this += other._ws;
+
+    return *this;
 }
 
 Energy::operator bool() const {
@@ -375,16 +378,15 @@ double Energy::asDouble() const {
         / static_cast<double>(KwhMultiplier);
 }
 
-// Format is `<kwh>+<ws>`
-// Value without `+` is treated as `<ws>`
-// (internally, we *can* overflow ws that is converted into kwh)
 String Energy::asString() const {
     String out;
-    out.reserve(32);
 
-    out += _kwh.value;
-    out += '+';
-    out += _ws.value;
+    // Value without `+` is treated as just `<kWh>`
+    out += String(_kwh.value, 10);
+    if (_ws.value) {
+        out += '+';
+        out += String(_ws.value, 10);
+    }
 
     return out;
 }

@@ -144,21 +144,28 @@ struct Energy {
         WattSeconds ws;
     };
 
-    constexpr static auto KwhMultiplier = KilowattHours::Ratio::num;
-    constexpr static auto KwhLimit = (std::numeric_limits<KilowattHours::Type>::max() / KwhMultiplier);
+    static constexpr auto KwhMultiplier = KilowattHours::Ratio::num;
+    static constexpr auto KwhLimit = (std::numeric_limits<KilowattHours::Type>::max() / KwhMultiplier);
 
     Energy() = default;
+    Energy(const Energy&) = default;
+    Energy(Energy&&) = default;
 
+    // energy always consists of kwh + ws pair
     explicit Energy(Pair);
+
+    // prefer integral types
     explicit Energy(WattSeconds);
     explicit Energy(WattHours);
-
     explicit Energy(KilowattHours kwh) :
         _kwh(kwh)
     {}
 
-    // another case where decimal part means kwh instead of ws
+    // special case for kwh input
     explicit Energy(double);
+
+    Energy& operator=(const Energy&) = default;
+    Energy& operator=(Energy&&) = default;
 
     // sets internal counters to zero
     void reset();
@@ -169,19 +176,22 @@ struct Energy {
     // - when we call `reset()`
     explicit operator bool() const;
 
-    // generic conversion as-is
+    // allow generic math operation when dealing with energy delta
+    Energy& operator+=(const Energy&);
+
+    // most sensor implementations handle energy in joules / watt-second
+    Energy& operator+=(WattSeconds);
+    Energy operator+(WattSeconds);
+
+    // numeric representation as kWh
     double asDouble() const;
+
+    // API representation as `<kWh>+<Ws>`
     String asString() const;
 
     // convert back to input unit, with overflow mechanics when kwh values goes over 32 bit
     WattSeconds asWattSeconds() const;
 
-    // generic sensors output energy in joules / watt-second
-    Energy& operator+=(WattSeconds);
-    Energy operator+(WattSeconds);
-
-    // but sometimes we want to accept asDouble() value back
-    Energy& operator=(double);
 
     // we are storing a kind-of integral and fractional parts
     // using watt-second to avoid loosing precision, we don't expect these to be accessed directly
