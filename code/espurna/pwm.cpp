@@ -17,7 +17,7 @@ Copyright (C) 2019-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #endif
 
 #if defined(ESP8266) and (PWM_PROVIDER == PWM_PROVIDER_ARDUINO)
-extern "C" bool _stopPWM(uint8_t pin);
+extern "C" bool stopWaveform(uint8_t pin);
 #endif
 
 namespace espurna {
@@ -161,7 +161,7 @@ void update() {
     for (auto channel : internal::channels) {
         ::analogWrite(channel.pin, channel.duty);
         if (!channel.duty) {
-            _stopPWM(channel.pin);
+            stopWaveform(channel.pin);
         }
     }
 }
