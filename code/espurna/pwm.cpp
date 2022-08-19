@@ -170,7 +170,7 @@ bool init(const uint8_t* begin, const uint8_t* end) {
             });
         }
 
-        for (auto channel : channels) {
+        for (auto channel : internal::channels) {
             gpioLock(channel.pin);
         }
 
