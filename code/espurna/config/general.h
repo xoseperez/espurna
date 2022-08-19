@@ -1746,7 +1746,7 @@
 #endif
 
 #ifndef PWM_FREQUENCY
-#define PWM_FREQUENCY               2000 // (Hz)
+#define PWM_FREQUENCY               1000 // (Hz)
 #endif
 
 #ifndef PWM_RESOLUTION
