@@ -809,7 +809,7 @@ void digitalWrite(uint8_t pin, uint8_t val) {
 void pinMode(uint8_t pin, uint8_t mode) {
     using namespace espurna::peripherals;
     if (pin == 16) {
-        rtc::gpio16_mode(INPUT);
+        rtc::gpio16_mode(mode);
     } else {
         pin::mode(pin, mode);
     }
