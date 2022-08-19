@@ -606,7 +606,7 @@ void setup() {
 namespace terminal {
 namespace {
 
-void command(::terminal::CommandContext&& ctx) {
+void gpio_read_write(::terminal::CommandContext&& ctx) {
     const int pin = (ctx.argv.size() >= 2)
         ? ::settings::internal::convert<int>(ctx.argv[1])
         : -1;
@@ -680,8 +680,41 @@ void command(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+void reg_read(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        const auto convert = ::settings::internal::convert<uint32_t>;
+        const auto address = convert(ctx.argv[1]);
+
+        ctx.output.printf_P(PSTR("0x%08X -> 0x%08X\n"),
+            address, peripherals::reg_read(address));
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("REG.READ <ADDRESS>"));
+}
+
+void reg_write(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        const auto convert = ::settings::internal::convert<uint32_t>;
+
+        const auto address = convert(ctx.argv[1]);
+        const auto value = convert(ctx.argv[2]);
+
+        ctx.output.printf_P(PSTR("0x%08X -> 0x%08X\n"), address, value);
+        peripherals::reg_write(address, value);
+
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("REG.WRITE <ADDRESS> <VALUE>"));
+}
+
 void setup() {
-    terminalRegisterCommand(F("GPIO"), command);
+    terminalRegisterCommand(F("GPIO"), gpio_read_write);
+    terminalRegisterCommand(F("REG.READ"), reg_read);
+    terminalRegisterCommand(F("REG.WRITE"), reg_write);
 }
 
 }
