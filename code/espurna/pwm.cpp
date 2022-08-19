@@ -12,12 +12,18 @@ Copyright (C) 2019-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "pwm.h"
 
+// Generic PWM driver for ESP8266, using new-pwm library
 #if PWM_PROVIDER == PWM_PROVIDER_GENERIC
 #include "libs/esp8266_pwm.h"
 #endif
 
+// In case of Core implementation for ESP8266, we need to explicitly
+// perform a 'stop' for the PIN, otherwise it will stay on the minimal duty value
 #if defined(ESP8266) and (PWM_PROVIDER == PWM_PROVIDER_ARDUINO)
-extern "C" bool _stopPWM(uint8_t pin);
+// This is only available in Core 3.x.x
+extern "C" bool _stopPWM(uint8_t pin) __attribute__((weak));
+// This is available in both versions, but we prefer the above
+extern "C" int stopWaveform(uint8_t pin);
 #endif
 
 namespace espurna {
@@ -110,9 +116,25 @@ constexpr uint32_t duty(float value, uint32_t resolution) {
 
 } // namespace scale
 
+using StopPwmFunc = void(*)(uint8_t);
+
+namespace detail {
+
+void stop_waveform(uint8_t pin) {
+    stopWaveform(pin);
+}
+
+void stop_pwm(uint8_t pin) {
+    _stopPWM(pin);
+}
+
+} // namespace detail
+
 namespace internal {
 
-uint32_t resolution { build::resolution() };
+StopPwmFunc stop;
+uint32_t duty_limit;
+uint32_t resolution;
 std::vector<Channel> channels;
 
 } // namespace internal
@@ -120,7 +142,7 @@ std::vector<Channel> channels;
 PwmRange range() {
     return PwmRange{
         .min = 0,
-        .max = scale::max(internal::resolution),
+        .max = arduino::internal::duty_limit,
     };
 }
 
@@ -129,7 +151,8 @@ size_t channels() {
     return internal::channels.size();
 }
 
-// Scaling is controlled internally, just update driver values
+// Everything related to PINs is handled in pin init function
+// Here, only set up the driver and api range
 void setup() {
     const auto resolution = settings::resolution();
     internal::resolution = resolution;
@@ -140,15 +163,24 @@ void setup() {
     const auto frequency = settings::frequency();
     ::analogWriteFreq(frequency);
 
-    DEBUG_MSG_P(PSTR("[PWM] Arduino - Frequency %u (Hz), resolution %u (bits)\n"),
-        frequency, resolution);
+    // Handle 2.7.4 -> 3.x.x migration
+    internal::stop =
+        (_stopPWM)
+            ? detail::stop_pwm
+            : detail::stop_waveform;
 
+    // stop() above needs to check for the internal value
+    internal::duty_limit = max_duty;
+
+    // however, driver api will work with the global one
     const auto limit = settings::limit();
     driver::pwm::internal::duty_limit =
         (limit < 100.f)
             ? (static_cast<float>(max_duty) / 100.f) * limit
             : max_duty;
 
+    DEBUG_MSG_P(PSTR("[PWM] Arduino - Frequency %u (Hz), resolution %u (bits)\n"),
+        frequency, resolution);
     if (max_duty != driver::pwm::internal::duty_limit) {
         DEBUG_MSG_P(PSTR("[PWM] Duty limit %u (%s%%)\n"),
             driver::pwm::internal::duty_limit, String(limit, 3).c_str());
@@ -158,10 +190,17 @@ void setup() {
 void update() {
     // Arduino Core updates pins immediately, forcing delayed update
     // b/c of a weird dependency on ::digitalWrite implementation, explicitly stop PWM
+    // before writing either zero or maximum duty and simply set pin to LOW or HIGH
     for (auto channel : internal::channels) {
-        ::analogWrite(channel.pin, channel.duty);
-        if (!channel.duty) {
-            _stopPWM(channel.pin);
+        const auto duty_range = range();
+        if (channel.duty == duty_range.min) {
+            internal::stop(channel.pin);
+            digitalWrite(channel.pin, LOW);
+        } else if (channel.duty == duty_range.max) {
+            internal::stop(channel.pin);
+            digitalWrite(channel.pin, HIGH);
+        } else {
+            ::analogWrite(channel.pin, channel.duty);
         }
     }
 }
