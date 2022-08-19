@@ -264,7 +264,7 @@ static constexpr std::array<uint32_t, 16> addr PROGMEM {
     PERIPHS_IO_MUX_SD_DATA2_U, // GPIO9
     PERIPHS_IO_MUX_SD_DATA3_U, // GPIO10
     PERIPHS_IO_MUX_SD_CMD_U,   // GPIO11 **UNUSED**
-    PERIPHS_IO_MUX_MTDI_U,     // GPIO12 **UNUSED**
+    PERIPHS_IO_MUX_MTDI_U,     // GPIO12
     PERIPHS_IO_MUX_MTCK_U,     // GPIO13
     PERIPHS_IO_MUX_MTMS_U,     // GPIO14
     PERIPHS_IO_MUX_MTDO_U,     // GPIO15
@@ -316,15 +316,13 @@ constexpr uint32_t duty(float value, uint32_t period) {
 
 namespace internal {
 
-size_t channels { 0 };
-uint32_t period { scale::period(build::frequency()) };
+size_t channels;
+uint32_t period;
 
 } // namespace internal
 
 constexpr size_t ChannelsMax { 8 };
-
 using Channels = std::vector<pwm_pin_info>;
-using Duty = std::array<uint32_t, ChannelsMax>;
 
 PwmRange range() {
     return PwmRange{
@@ -335,11 +333,6 @@ PwmRange range() {
 
 size_t channels() {
     return internal::channels;
-}
-
-Duty initial_duty() {
-    Duty out = {0};
-    return out;
 }
 
 pwm_pin_info from_pin(uint8_t pin) {
@@ -374,6 +367,15 @@ void update() {
     ::pwm_start();
 }
 
+void duty(uint32_t channel, uint32_t value) {
+    ::pwm_set_duty(
+        std::min(driver::pwm::internal::duty_limit, value), channel);
+}
+
+void duty(uint32_t channel, float value) {
+    duty(channel, scale::duty(value, internal::period));
+}
+
 void setup() {
     const auto frequency = settings::frequency();
     internal::period = scale::period(frequency);
@@ -399,12 +401,18 @@ bool init(const uint8_t* begin, const uint8_t* end) {
         }
 
         for (auto channel : channels) {
+            pinMode(channel.pin, OUTPUT);
             gpioLock(channel.pin);
         }
 
-        auto duty = initial_duty();
-        ::pwm_init(internal::period, duty.data(),
+        ::pwm_init(internal::period, nullptr,
             channels.size(), channels.data());
+
+        constexpr uint32_t Initial = 0;
+        for (uint32_t channel = 0; channel < channels.size(); ++channel) {
+            duty(channel, Initial);
+        }
+
         update();
 
         internal::channels = channels.size();
@@ -413,15 +421,6 @@ bool init(const uint8_t* begin, const uint8_t* end) {
     }
 
     return false;
-}
-
-void duty(uint32_t channel, uint32_t value) {
-    ::pwm_set_duty(
-        std::min(driver::pwm::internal::duty_limit, value), channel);
-}
-
-void duty(uint32_t channel, float value) {
-    duty(channel, scale::duty(value, internal::period));
 }
 
 } // namespace generic
@@ -433,6 +432,38 @@ void duty(uint32_t channel, float value) {
 using namespace arduino;
 #elif PWM_PROVIDER == PWM_PROVIDER_GENERIC
 using namespace generic;
+#endif
+
+#if TERMINAL_SUPPORT
+namespace terminal {
+
+void setup() {
+    terminalRegisterCommand(F("PWM.WRITE"), [](::terminal::CommandContext&& ctx) {
+        if (ctx.argv.size() == 3) {
+            const auto convert_channel = ::settings::internal::convert<uint32_t>;
+            const auto channel = convert_channel(ctx.argv[1]);
+            if (channel >= channels()) {
+                terminalError(ctx, F("Invalid channel ID"));
+                return;
+            }
+
+            const auto convert_duty = ::settings::internal::convert<float>;
+            const auto value = std::clamp(convert_duty(ctx.argv[2]), 0.f, 100.f);
+            ctx.output.printf("PWM channel %u duty %s\n",
+                channel, String(value, 3).c_str());
+
+            duty(channel, value);
+            update();
+
+            terminalOK(ctx);
+            return;
+        }
+
+        terminalError(ctx, F("PWM.WRITE <CHANNEL> <DUTY>"));
+    });
+}
+
+} // namespace terminal
 #endif
 
 } // namespace pwm
@@ -465,6 +496,9 @@ void pwmUpdate() {
 
 void pwmSetup() {
     espurna::driver::pwm::setup();
+#if TERMINAL_SUPPORT
+    espurna::driver::pwm::terminal::setup();
+#endif
 }
 
 #endif
