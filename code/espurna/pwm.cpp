@@ -140,7 +140,10 @@ void setup() {
         frequency, resolution);
 
     const auto limit = settings::limit();
-    driver::pwm::internal::duty_limit = (max_duty / 100.f) * limit;
+    driver::pwm::internal::duty_limit =
+        (limit < 100.f)
+            ? (static_cast<float>(max_duty) / 100.f) * limit
+            : max_duty;
 
     if (max_duty != driver::pwm::internal::duty_limit) {
         DEBUG_MSG_P(PSTR("[PWM] Duty limit %u (%s%%)\n"),
@@ -330,7 +333,10 @@ void setup() {
     DEBUG_MSG_P(PSTR("[PWM] Generic - Frequency %u (Hz), period %u (ns)\n"), frequency, internal::period);
 
     const auto limit = settings::limit();
-    driver::pwm::internal::duty_limit = (internal::period / 100.f) * limit;
+    driver::pwm::internal::duty_limit =
+        (limit < 100.f)
+            ? (static_cast<float>(internal::period) / 100.f) * limit
+            : internal::period;
 
     if (internal::period != driver::pwm::internal::duty_limit) {
         DEBUG_MSG_P(PSTR("[PWM] Duty limit %u (%s%%)\n"),
