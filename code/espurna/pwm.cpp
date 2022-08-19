@@ -16,6 +16,10 @@ Copyright (C) 2019-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "libs/esp8266_pwm.h"
 #endif
 
+#if defined(ESP8266) and (PWM_PROVIDER == PWM_PROVIDER_ARDUINO)
+extern "C" bool _stopPWM(uint8_t pin);
+#endif
+
 namespace espurna {
 namespace driver {
 namespace pwm {
@@ -153,8 +157,12 @@ void setup() {
 
 void update() {
     // Arduino Core updates pins immediately, forcing delayed update
+    // b/c of a weird dependency on ::digitalWrite implementation, explicitly stop PWM
     for (auto channel : internal::channels) {
         ::analogWrite(channel.pin, channel.duty);
+        if (!channel.duty) {
+            _stopPWM(channel.pin);
+        }
     }
 }
 
