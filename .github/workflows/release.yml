@@ -112,19 +112,12 @@ jobs:
       - name: Unpack
         run: unzip -d binaries "artifacts/Binaries/*.zip"
 
-      - name: Prepare release body
-        run: |
-          echo "- [Changelog for the current binary release](https://github.com/xoseperez/espurna/blob/"${{ needs.variables.outputs.dev }}"/CHANGELOG.md)" \
-            > release.md
-          echo "- [All changes since the latest release](https://github.com/xoseperez/espurna/compare/"${{ needs.variables.outputs.master }}"..."${{ needs.variables.outputs.dev }}")" \
-                                                                                                                                                                                        >> release.md
-
       - uses: ncipollo/release-action@v1
         with:
           tag: github${{ needs.variables.outputs.date }}
           commit: ${{ needs.variables.outputs.dev }}
           name: Snapshot build (github${{ needs.variables.outputs.date }})
-          bodyFile: release.md
+          bodyFile: ".github/release_template.md"
           artifacts: "binaries/*.bin"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
