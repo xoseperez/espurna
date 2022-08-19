@@ -29,7 +29,7 @@ jobs:
           master=$(revision master)
           echo "::set-output name=master::"$master
 
-          date=$(date +'%Y%m%d')
+          date=$(date +'%y%m%d')
           echo "::set-output name=date::"$date
 
   build:
