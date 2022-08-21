@@ -246,15 +246,26 @@ bool _authenticateRequest(AsyncWebServerRequest* request) {
 // Whether the request is for this hostname or IP
 bool _isAPModeRequest(AsyncWebServerRequest* request) {
     if (wifiConnectable()) {
-        auto header = request->getHeader(F("Host"));
-        if (header) {
-            auto host = header->toString();
-
-            const auto domain = getHostname() + '.';
-            const auto ip = wifiApIp().toString();
-
-            return host.equals(ip) || host.startsWith(domain);
+        const auto direct = request->client()->localIP() == wifiApIp();
+        if (!direct) {
+            return false;
         }
+
+        const auto header = request->getHeader(F("Host"));
+        if (!header) {
+            return false;
+        }
+
+        const auto host = header->value();
+
+        const auto domain = getHostname() + '.';
+        const auto ip = wifiApIp().toString();
+
+        if (!host.equals(ip) && !host.startsWith(domain)) {
+            return false;
+        }
+
+        return true;
     }
 
     return false;
