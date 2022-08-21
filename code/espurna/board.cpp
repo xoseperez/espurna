@@ -240,6 +240,9 @@ const char* getEspurnaModules() {
 
 const char* getEspurnaSensors() {
     static const char sensors[] PROGMEM =
+#if ADE7953_SUPPORT
+    "ADE7953 "
+#endif
 #if AM2320_SUPPORT
     "AM2320_I2C "
 #endif
@@ -291,11 +294,20 @@ const char* getEspurnaSensors() {
 #if GUVAS12SD_SUPPORT
     "GUVAS12SD "
 #endif
+#if HDC1080_SUPPORT
+    "HDC1080 "
+#endif
 #if HLW8012_SUPPORT
     "HLW8012 "
 #endif
+#if INA219_SUPPORT
+    "INA219 "
+#endif
 #if LDR_SUPPORT
     "LDR "
+#endif
+#if MAX6675_SUPPORT
+    "MAX6675 "
 #endif
 #if MHZ19_SUPPORT
     "MHZ19 "
@@ -360,8 +372,8 @@ const char* getEspurnaSensors() {
 #if EZOPH_SUPPORT
     "EZOPH "
 #endif
-#if ADE7953_SUPPORT
-    "ADE7953 "
+#if DUMMY_SENSOR_SUPPORT
+    "DUMMY "
 #endif
 #if SI1145_SUPPORT
     "SI1145 "
