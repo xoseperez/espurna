@@ -66,7 +66,7 @@ static bool is_hex_digit(char c) {
          ||(c >= 'A' && c <= 'F');
 }
 
-static char hex_digit_to_int(char c) {
+static int hex_digit_to_int(char c) {
     switch (c) {
         case '0': return 0;
         case '1': return 1;
@@ -86,6 +86,10 @@ static char hex_digit_to_int(char c) {
         case 'f': case 'F': return 15;
         default: return 0;
     }
+}
+
+static char hex_digit_to_value(char lhs, char rhs) {
+    return (hex_digit_to_int(lhs) << 8) | hex_digit_to_int(rhs);
 }
 
 // Our port of `sdssplitargs`
@@ -112,13 +116,8 @@ CommandLine parse_commandline(const char *line) {
                                              is_hex_digit(*(p+2)) &&
                                              is_hex_digit(*(p+3)))
                     {
-                        // XXX: make sure that we append `char` or `char[]`,
-                        // even with -funsigned-char this can accidentally append itoa conversion
-                        unsigned char byte = 
-                            (hex_digit_to_int(*(p+2))*16)+
-                            hex_digit_to_int(*(p+3));
-                        char buf[2] { static_cast<char>(byte), 0x00 };
-                        current += buf;
+                        const char value = hex_digit_to_value(*(p+2), *(p+3));
+                        current.concat(&value, 1);
                         p += 3;
                     } else if (*p == '\\' && *(p+1)) {
                         char c;
@@ -136,11 +135,11 @@ CommandLine parse_commandline(const char *line) {
                     } else if (*p == '"') {
                         /* closing quote must be followed by a space or
                          * nothing at all. */
-                        if (*(p+1) && !isspace(*(p+1))) goto on_error;
+                        if (*(p+1) && !isspace(*(p+1))) goto err;
                         done=1;
                     } else if (!*p) {
                         /* unterminated quotes */
-                        goto on_error;
+                        goto err;
                     } else {
                         char buf[2] {*p, '\0'};
                         current += buf;
@@ -152,11 +151,11 @@ CommandLine parse_commandline(const char *line) {
                     } else if (*p == '\'') {
                         /* closing quote must be followed by a space or
                          * nothing at all. */
-                        if (*(p+1) && !isspace(*(p+1))) goto on_error;
+                        if (*(p+1) && !isspace(*(p+1))) goto err;
                         done=1;
                     } else if (!*p) {
                         /* unterminated quotes */
-                        goto on_error;
+                        goto err;
                     } else {
                         char buf[2] {*p, '\0'};
                         current += buf;
@@ -189,14 +188,14 @@ CommandLine parse_commandline(const char *line) {
             out.argv.emplace_back(std::move(current));
         } else {
             /* Even on empty input string return something not NULL. */
-            goto on_out;
+            goto output;
         }
     }
 
-on_error:
+err:
     out.argv.clear();
 
-on_out:
+output:
     return out;
 }
 
