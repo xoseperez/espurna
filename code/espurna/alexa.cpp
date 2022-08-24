@@ -243,10 +243,13 @@ void alexaSetup() {
     #endif
 
     // Register wifi callback
-    wifiRegister([](wifi::Event event) {
-        if ((event == wifi::Event::StationConnected)
-            || (event == wifi::Event::StationDisconnected)) {
+    wifiRegister([](espurna::wifi::Event event) {
+        switch (event) {
+        case espurna::wifi::Event::StationConnected:
+        case espurna::wifi::Event::StationDisconnected:
             _alexaConfigure();
+        default:
+            break;
         }
     });
 

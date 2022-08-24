@@ -20,6 +20,7 @@ Reimplementation of the Embedis storage format:
 #include "settings_helpers.h"
 #include "libs/TypeChecks.h"
 
+namespace espurna {
 namespace settings {
 namespace embedis {
 
@@ -657,3 +658,4 @@ return_result:
 
 } // namespace embedis
 } // namespace settings
+} // namespace espurna

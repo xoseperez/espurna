@@ -272,18 +272,18 @@ Mask currentValue();
 Mode currentMode();
 
 } // namespace heartbeat
-} // namespace espurna
 
 namespace settings {
 namespace internal {
 
-String serialize(espurna::heartbeat::Mode);
-String serialize(espurna::duration::Seconds);
-String serialize(espurna::duration::Milliseconds);
-String serialize(espurna::duration::ClockCycles);
+String serialize(heartbeat::Mode);
+String serialize(duration::Seconds);
+String serialize(duration::Milliseconds);
+String serialize(duration::ClockCycles);
 
 } // namespace internal
 } // namespace settings
+} // namespace espurna
 
 unsigned long systemFreeStack();
 

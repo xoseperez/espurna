@@ -19,6 +19,7 @@ enum class GpioType : int {
     Mcp23s08
 };
 
+namespace espurna {
 namespace settings {
 namespace internal {
 
@@ -26,6 +27,7 @@ String serialize(GpioType);
 
 } // namespace internal
 } // namespace settings
+} // namespace espurna
 
 class GpioBase {
 public:

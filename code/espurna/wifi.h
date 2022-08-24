@@ -40,6 +40,7 @@ extern "C" {
 #define TCP_MSS (1460)
 #endif
 
+namespace espurna {
 namespace wifi {
 
 enum class Event {
@@ -68,6 +69,7 @@ enum class ApMode {
 };
 
 } // namespace wifi
+} // namespace espurna
 
 // Note that 'connected' status is *only* for the WiFi STA.
 // Overall connectivity depends on low-level network stack and it may be
@@ -103,5 +105,5 @@ void wifiTurnOn();
 // Trigger fallback check for the AP
 void wifiApCheck();
 
-void wifiRegister(wifi::EventCallback);
+void wifiRegister(espurna::wifi::EventCallback);
 void wifiSetup();

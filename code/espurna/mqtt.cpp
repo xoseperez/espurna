@@ -104,6 +104,7 @@ namespace mqtt {
 using KeepAlive = std::chrono::duration<uint16_t>;
 } // namespace mqtt
 
+namespace espurna {
 namespace settings {
 namespace internal {
 
@@ -118,6 +119,7 @@ String serialize(mqtt::KeepAlive value) {
 
 } // namespace internal
 } // namespace settings
+} // namespace espurna
 
 namespace mqtt {
 namespace build {
@@ -385,7 +387,7 @@ namespace internal {
 
 #define EXACT_VALUE(NAME, FUNC)\
 String NAME () {\
-    return ::settings::internal::serialize(FUNC());\
+    return espurna::settings::internal::serialize(FUNC());\
 }
 
 EXACT_VALUE(port, settings::port)
@@ -403,7 +405,7 @@ EXACT_VALUE(skipTime, settings::skipTime)
 
 } // namespace internal
 
-static constexpr ::settings::query::Setting Settings[] PROGMEM {
+static constexpr espurna::settings::query::Setting Settings[] PROGMEM {
     {keys::Server, settings::server},
     {keys::Port, internal::port},
     {keys::Enabled, internal::enabled},
@@ -427,13 +429,13 @@ static constexpr ::settings::query::Setting Settings[] PROGMEM {
     {keys::PayloadOffline, settings::payloadOffline},
 };
 
-bool checkSamePrefix(::settings::StringView key) {
+bool checkSamePrefix(espurna::StringView key) {
     alignas(4) static constexpr char Prefix[] PROGMEM = "mqtt";
-    return ::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
-String findValueFrom(::settings::StringView key) {
-    return ::settings::query::Setting::findValueFrom(Settings, key);
+String findValueFrom(espurna::StringView key) {
+    return espurna::settings::query::Setting::findValueFrom(Settings, key);
 }
 
 void setup() {
@@ -443,8 +445,8 @@ void setup() {
     });
 }
 
-} // namespace query
 } // namespace
+} // namespace query
 } // namespace settings
 } // namespace mqtt
 

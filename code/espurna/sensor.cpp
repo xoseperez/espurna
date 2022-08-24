@@ -891,7 +891,7 @@ alignas(4) static constexpr char Median[] PROGMEM = "median";
 alignas(4) static constexpr char MovingAverage[] PROGMEM = "moving-average";
 alignas(4) static constexpr char Sum[] PROGMEM = "sum";
 
-static constexpr ::settings::options::Enumeration<Filter> Options[] PROGMEM {
+static constexpr espurna::settings::options::Enumeration<Filter> Options[] PROGMEM {
     {Filter::Last, Last},
     {Filter::Max, Max},
     {Filter::Median, Median},
@@ -933,7 +933,7 @@ alignas(4) static constexpr char Hertz[] PROGMEM = "Hz";
 alignas(4) static constexpr char Ph[] PROGMEM = "pH";
 alignas(4) static constexpr char None[] PROGMEM = "none";
 
-static constexpr ::settings::options::Enumeration<Unit> Options[] PROGMEM {
+static constexpr espurna::settings::options::Enumeration<Unit> Options[] PROGMEM {
     {Unit::Farenheit, Farenheit},
     {Unit::Celcius, Celcius},
     {Unit::Kelvin, Kelvin},
@@ -1014,7 +1014,7 @@ alignas(4) static constexpr char Ch2o[] PROGMEM = "ch2o";
 
 alignas(4) static constexpr char Unknown[] PROGMEM = "unknown";
 
-constexpr ::settings::StringView get(unsigned char type) {
+constexpr StringView get(unsigned char type) {
     return (type == MAGNITUDE_TEMPERATURE) ? Temperature :
         (type == MAGNITUDE_HUMIDITY) ? Humidity :
         (type == MAGNITUDE_PRESSURE) ? Pressure :
@@ -1088,16 +1088,16 @@ alignas(4) static constexpr char ReportEvery[] PROGMEM = "snsReport";
 alignas(4) static constexpr char SaveEvery[] PROGMEM = "snsSave";
 alignas(4) static constexpr char RealTimeValues[] PROGMEM = "snsRealTime";
 
-SettingsKey get(::settings::StringView prefix, ::settings::StringView suffix, size_t index) {
+espurna::settings::Key get(espurna::StringView prefix, espurna::StringView suffix, size_t index) {
     String key;
     key.reserve(prefix.length() + suffix.length() + 4);
     key.concat(prefix.c_str(), prefix.length());
     key.concat(suffix.c_str(), suffix.length());
 
-    return SettingsKey(std::move(key), index);
+    return espurna::settings::Key(std::move(key), index);
 }
 
-SettingsKey get(const Magnitude& magnitude, ::settings::StringView suffix) {
+espurna::settings::Key get(const Magnitude& magnitude, espurna::StringView suffix) {
     return get(prefix::get(magnitude.type), suffix, magnitude.index_global);
 }
 
@@ -1132,7 +1132,6 @@ bool realTimeValues() {
 } // namespace
 } // namespace settings
 } // namespace sensor
-} // namespace espurna
 
 namespace settings {
 namespace internal {
@@ -1160,7 +1159,6 @@ String serialize(espurna::sensor::Filter filter) {
 } // namespace internal
 } // namespace settings
 
-namespace espurna {
 namespace sensor {
 namespace magnitude {
 namespace traits {
@@ -1529,7 +1527,7 @@ BaseFilterPtr makeFilter(Filter filter) {
 }
 
 String units(Unit unit) {
-    return ::settings::internal::serialize(unit);
+    return espurna::settings::internal::serialize(unit);
 }
 
 String units(const Magnitude& magnitude) {
@@ -2756,7 +2754,7 @@ void set_rtcmem(unsigned char index, const Energy& source) {
 }
 
 
-ParseResult convert(::settings::StringView value) {
+ParseResult convert(StringView value) {
     ParseResult out;
     if (!value.length()) {
         return out;
@@ -2940,14 +2938,12 @@ namespace settings {
 namespace query {
 namespace {
 
-bool check(::settings::StringView key) {
+bool check(StringView key) {
     if (key.length() < 3) {
         return false;
     }
 
-    using ::settings::query::samePrefix;
-    using ::settings::StringView;
-
+    using espurna::settings::query::samePrefix;
     if (samePrefix(key, settings::prefix::Sensor)) {
         return true;
     }
@@ -2961,38 +2957,38 @@ bool check(::settings::StringView key) {
     });
 }
 
-String get(::settings::StringView key) {
+String get(StringView key) {
     String out;
 
     for (auto& magnitude : magnitude::internal::magnitudes) {
         if (magnitude::traits::ratio_supported(magnitude.type)) {
-            auto expected = keys::get(magnitude, suffix::Ratio);
-            if (key == expected) {
+            const auto expected = keys::get(magnitude, suffix::Ratio);
+            if (key == expected.value()) {
                 out = String(reinterpret_cast<BaseEmonSensor*>(magnitude.sensor.get())->defaultRatio(magnitude.slot));
                 break;
             }
         }
 
         if (magnitude::traits::correction_supported(magnitude.type)) {
-            auto expected = keys::get(magnitude, suffix::Correction);
-            if (key == expected) {
+            const auto expected = keys::get(magnitude, suffix::Correction);
+            if (key == expected.value()) {
                 out = String(magnitude.correction);
                 break;
             }
         }
 
         {
-            auto expected = keys::get(magnitude, suffix::Filter);
-            if (key == expected) {
-                out = ::settings::internal::serialize(magnitude.filter_type);
+            const auto expected = keys::get(magnitude, suffix::Filter);
+            if (key == expected.value()) {
+                out = espurna::settings::internal::serialize(magnitude.filter_type);
                 break;
             }
         }
 
         {
-            auto expected = keys::get(magnitude, suffix::Units);
-            if (key == expected) {
-                out = ::settings::internal::serialize(magnitude.units);
+            const auto expected = keys::get(magnitude, suffix::Units);
+            if (key == expected.value()) {
+                out = espurna::settings::internal::serialize(magnitude.units);
                 break;
             }
         }
@@ -3012,7 +3008,7 @@ void setup() {
 } // namespace query
 
 void migrate(int version) {
-    auto firstKey = [](unsigned char type, ::settings::StringView suffix) {
+    auto firstKey = [](unsigned char type, StringView suffix)  {
         return keys::get(prefix::get(type), suffix, 0).value();
     };
 
@@ -3085,7 +3081,7 @@ bool onKeyCheck(const char* key, JsonVariant&) {
 // but, notice that the sensor will probably be used to 'get' certain properties, to generate certain keys list
 
 void types(JsonObject& root) {
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("types")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("types")};
     payload(STRING_VIEW("values"), {MAGNITUDE_NONE + 1, MAGNITUDE_MAX},
         [](size_t type) {
             return Magnitude::counts(type) > 0;
@@ -3103,7 +3099,7 @@ void types(JsonObject& root) {
 }
 
 void errors(JsonObject& root) {
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("errors")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("errors")};
     payload(STRING_VIEW("values"), SENSOR_ERROR_MAX,
         {{STRING_VIEW("type"), [](JsonArray& out, size_t index) {
             out.add(index);
@@ -3115,7 +3111,7 @@ void errors(JsonObject& root) {
 }
 
 void units(JsonObject& root) {
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("units")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("units")};
     payload(STRING_VIEW("values"), magnitude::internal::magnitudes.size(),
         {{STRING_VIEW("supported"), [](JsonArray& out, size_t index) {
             JsonArray& units = out.createNestedArray();
@@ -3145,7 +3141,7 @@ void list(JsonObject& root) {
         return;
     }
 
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-list")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-list")};
     payload(STRING_VIEW("values"), magnitude::count(),
         {{STRING_VIEW("index_global"), [](JsonArray& out, size_t index) {
             out.add(magnitude::get(index).index_global);
@@ -3172,7 +3168,7 @@ void settings(JsonObject& root) {
     // NaN, instead of more commonly used null (but, expect this to be fixed after switching to v6+)
     static const char* const NullSymbol { nullptr };
 
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-settings")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-settings")};
     payload(STRING_VIEW("values"), magnitude::count(),
         {{settings::suffix::Correction, [](JsonArray& out, size_t index) {
             const auto& magnitude = magnitude::get(index);
@@ -3221,8 +3217,8 @@ void energy(JsonObject& root) {
         return;
     }
 
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("energy")};
-    payload(STRING_VIEW("values"), ::settings::Iota(magnitude::count()),
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("energy")};
+    payload(STRING_VIEW("values"), espurna::settings::Iota(magnitude::count()),
         [](size_t index) {
             return magnitude::get(index).type == MAGNITUDE_ENERGY;
         },
@@ -3241,7 +3237,7 @@ void energy(JsonObject& root) {
 }
 
 void magnitudes(JsonObject& root) {
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes")};
     payload(STRING_VIEW("values"), magnitude::count(), {
         {STRING_VIEW("value"), [](JsonArray& out, size_t index) {
             const auto& magnitude = magnitude::get(index);
@@ -3326,7 +3322,7 @@ void onVisible(JsonObject& root) {
 }
 
 void module(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback callback) {
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-module")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("magnitudes-module")};
 
     auto& container = payload.root();
     container[F("prefix")] = FPSTR(prefix);
@@ -3527,12 +3523,12 @@ void setup() {
 
     terminalRegisterCommand(F("EXPECTED"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 3) {
-            const auto id = ::settings::internal::convert<size_t>(ctx.argv[1]);
+            const auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
             if (id < magnitude::count()) {
                 const auto& magnitude = magnitude::get(id);
 
                 const auto result = energy::ratioFromValue(
-                    magnitude, ::settings::internal::convert<double>(ctx.argv[2]));
+                    magnitude, espurna::settings::internal::convert<double>(ctx.argv[2]));
                 const auto key = settings::keys::get(
                     magnitude, settings::suffix::Ratio);
                 ctx.output.printf("%s => %s\n", key.c_str(), String(result).c_str());
@@ -3560,7 +3556,7 @@ void setup() {
             return;
         }
 
-        const auto index = ::settings::internal::convert<IndexType>(ctx.argv[1]);
+        const auto index = espurna::settings::internal::convert<IndexType>(ctx.argv[1]);
 
         const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
         if (!magnitude) {

@@ -24,7 +24,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // TODO: in case there are more FANs, move externally
 
-namespace ifan {
+namespace espurna {
 namespace settings {
 namespace options {
 namespace {
@@ -34,8 +34,7 @@ alignas(4) static constexpr char Low[] PROGMEM = "low";
 alignas(4) static constexpr char Medium[] PROGMEM = "medium";
 alignas(4) static constexpr char High[] PROGMEM = "high";
 
-using ::settings::options::Enumeration;
-static constexpr std::array<Enumeration<FanSpeed>, 4> FanSpeedOptions PROGMEM {
+static constexpr std::array<espurna::settings::options::Enumeration<FanSpeed>, 4> FanSpeedOptions PROGMEM {
     {{FanSpeed::Off, Off},
      {FanSpeed::Low, Low},
      {FanSpeed::Medium, Medium},
@@ -44,24 +43,16 @@ static constexpr std::array<Enumeration<FanSpeed>, 4> FanSpeedOptions PROGMEM {
 
 } // namespace
 } // namespace options
-} // namespace settings
-} // namespace ifan
 
-namespace settings {
 namespace internal {
-namespace {
-
-using ifan::settings::options::FanSpeedOptions;
-
-} // namespace
 
 template <>
 FanSpeed convert(const String& value) {
-    return convert(FanSpeedOptions, value, FanSpeed::Off);
+    return convert(options::FanSpeedOptions, value, FanSpeed::Off);
 }
 
 String serialize(FanSpeed speed) {
-    return serialize(FanSpeedOptions, speed);
+    return serialize(options::FanSpeedOptions, speed);
 }
 
 } // namespace internal
@@ -71,11 +62,11 @@ namespace ifan02 {
 namespace {
 
 FanSpeed payloadToSpeed(const String& value) {
-    return ::settings::internal::convert<FanSpeed>(value);
+    return espurna::settings::internal::convert<FanSpeed>(value);
 }
 
 String speedToPayload(FanSpeed speed) {
-    return ::settings::internal::serialize(speed);
+    return espurna::settings::internal::serialize(speed);
 }
 
 constexpr unsigned long DefaultSaveDelay { 1000ul };
@@ -346,18 +337,19 @@ void setup() {
 }
 
 } // namespace
-} // namespace ifan
+} // namespace ifan02
+} // namespace espurna
 
 FanSpeed fanSpeed() {
-    return ifan02::config.speed;
+    return espurna::ifan02::config.speed;
 }
 
 void fanSpeed(FanSpeed speed) {
-    ifan02::updateSpeed(FanSpeed::Low);
+    espurna::ifan02::updateSpeed(FanSpeed::Low);
 }
 
 void fanSetup() {
-    ifan02::setup();
+    espurna::ifan02::setup();
 }
 
 #endif // IFAN_SUPPORT

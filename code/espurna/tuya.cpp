@@ -577,7 +577,7 @@ error:
 
     void setupChannels() {
         bool done { false };
-        for (size_t id = 0; id < Light::ChannelsMax; ++id) {
+        for (size_t id = 0; id < espurna::light::ChannelsMax; ++id) {
             auto dp = getSetting({"tuyaChannel", id}, build::channelDpId(id));
             if (!dp) {
                 break;
@@ -652,9 +652,13 @@ error:
         TUYA_SERIAL.begin(SerialSpeed);
 
         ::espurnaRegisterLoop(loop);
-        ::wifiRegister([](wifi::Event event) {
-            if ((event == wifi::Event::StationConnected) || (event == wifi::Event::StationDisconnected)) {
+        ::wifiRegister([](espurna::wifi::Event event) {
+            switch (event) {
+            case espurna::wifi::Event::StationConnected:
+            case espurna::wifi::Event::StationDisconnected:
                 sendWiFiStatus();
+            default:
+                break;
             }
         });
     }

@@ -23,6 +23,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace scheduler {
 
 enum class Type {
@@ -111,8 +112,6 @@ namespace settings {
 namespace options {
 namespace {
 
-using ::settings::options::Enumeration;
-
 alignas(4) static constexpr char None[] PROGMEM = "none";
 alignas(4) static constexpr char Relay[] PROGMEM = "relay";
 alignas(4) static constexpr char Channel[] PROGMEM = "channel";
@@ -129,19 +128,15 @@ static constexpr std::array<Enumeration<scheduler::Type>, 4> SchedulerTypeOption
 } // namespace options
 
 namespace internal {
-namespace {
-
-using options::SchedulerTypeOptions;
-
-} // namespace
 
 template<>
-scheduler::Type convert(const String& value) {
-    return convert(SchedulerTypeOptions, value, scheduler::Type::None);
+espurna::scheduler::Type convert(const String& value) {
+    return convert(options::SchedulerTypeOptions, value,
+        espurna::scheduler::Type::None);
 }
 
 String serialize(scheduler::Type value) {
-    return serialize(SchedulerTypeOptions, value);
+    return serialize(options::SchedulerTypeOptions, value);
 }
 
 } // namespace internal
@@ -149,6 +144,7 @@ String serialize(scheduler::Type value) {
 
 namespace scheduler {
 namespace {
+
 namespace build {
 
 constexpr size_t max() {
@@ -240,7 +236,7 @@ bool schedulable() {
 namespace debug {
 
 String type(Type type) {
-    return settings::internal::serialize(type);
+    return espurna::settings::internal::serialize(type);
 }
 
 String type(const Schedule& schedule) {
@@ -319,7 +315,7 @@ namespace internal {
 
 #define ID_VALUE(NAME, FUNC)\
 String NAME (size_t id) {\
-    return ::settings::internal::serialize(FUNC(id));\
+    return espurna::settings::internal::serialize(FUNC(id));\
 }
 
 ID_VALUE(enabled, settings::enabled)
@@ -338,7 +334,7 @@ ID_VALUE(minute, settings::minute)
 
 } // namespace internal
 
-static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
+static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Enabled, internal::enabled},
     {keys::Target, internal::target},
     {keys::Type, internal::type},
@@ -415,13 +411,13 @@ void migrate(int version) {
 
 namespace query {
 
-bool checkSamePrefix(::settings::StringView key) {
+bool checkSamePrefix(StringView key) {
     alignas(4) static constexpr char Prefix[] PROGMEM = "sch";
-    return ::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
-String findIndexedValueFrom(::settings::StringView key) {
-    return ::settings::query::IndexedSetting::findValueFrom(count(), IndexedSettings, key);
+String findIndexedValueFrom(StringView key) {
+    return espurna::settings::query::IndexedSetting::findValueFrom(count(), IndexedSettings, key);
 }
 
 void setup() {
@@ -455,7 +451,7 @@ alignas(4) static constexpr char Minute[] PROGMEM = "minute";
 void print(JsonObject& root, const Schedule& schedule) {
     root[FPSTR(keys::Enabled)] = schedule.enabled;
     root[FPSTR(keys::Target)] = schedule.target;
-    root[FPSTR(keys::Type)] = ::settings::internal::serialize(schedule.type);
+    root[FPSTR(keys::Type)] = espurna::settings::internal::serialize(schedule.type);
     root[FPSTR(keys::Action)] = schedule.action;
     root[FPSTR(keys::Restore)] = schedule.restore;
     root[FPSTR(keys::UseUTC)] = schedule.utc;
@@ -468,7 +464,7 @@ template <typename T>
 bool setFromJsonIf(JsonObject& root, const char* key, size_t id, const char* jsonKey) {
     const auto* jsonKeyFpstr = FPSTR(jsonKey);
     if (root.containsKey(jsonKeyFpstr) && root.is<T>(jsonKeyFpstr)) {
-        setSetting({key, id}, ::settings::internal::serialize(root[jsonKeyFpstr].as<T>()));
+        setSetting({key, id}, espurna::settings::internal::serialize(root[jsonKeyFpstr].as<T>()));
         return true;
     }
 
@@ -502,13 +498,70 @@ bool set(JsonObject& root, const size_t id) {
     return false;
 }
 
+namespace schedules {
+
+bool get(ApiRequest&, JsonObject& root) {
+    JsonArray& out = root.createNestedArray("schedules");
+
+    auto schedules = settings::schedules();
+    for (auto& schedule : schedules) {
+        auto& root = out.createNestedObject();
+        print(root, schedule);
+    }
+
+    return true;
+}
+
+bool set(ApiRequest&, JsonObject& root) {
+    size_t id = 0;
+    while (hasSetting({settings::keys::Type, id})) {
+        ++id;
+    }
+
+    if (id < build::max()) {
+        return api::set(root, id);
+    }
+
+    return false;
+}
+
+} // namespace schedules
+
+namespace schedule {
+
+bool get(ApiRequest& req, JsonObject& root) {
+    size_t id;
+    if (tryParseId(req.wildcard(0).c_str(), build::max, id)) {
+        print(root, settings::schedule(id));
+        return true;
+    }
+
+    return false;
+}
+
+bool set(ApiRequest& req, JsonObject& root) {
+    size_t id;
+    if (tryParseId(req.wildcard(0).c_str(), build::max, id)) {
+        return api::set(root, id);
+    }
+
+    return false;
+}
+
+} // namespace schedule
+
+void setup() {
+    apiRegister(F(MQTT_TOPIC_SCHEDULE), schedules::get, schedules::set);
+    apiRegister(F(MQTT_TOPIC_SCHEDULE "/+"), schedule::get, schedule::set);
+}
+
 } // namespace api
 #endif  // API_SUPPORT
 
 // -----------------------------------------------------------------------------
 
-namespace web {
 #if WEB_SUPPORT
+namespace web {
 
 bool onKey(const char* key, JsonVariant&) {
     return strncmp_P(key, PSTR("sch"), 3) == 0;
@@ -522,7 +575,7 @@ void onVisible(JsonObject& root) {
 
 void onConnected(JsonObject& root){
     if (schedulable()) {
-        ::web::ws::EnumerableConfig config{ root, STRING_VIEW("schConfig") };
+        espurna::web::ws::EnumerableConfig config{ root, STRING_VIEW("schConfig") };
         config(STRING_VIEW("schedules"), settings::count(), settings::IndexedSettings);
 
         auto& schedules = config.root();
@@ -530,8 +583,15 @@ void onConnected(JsonObject& root){
     }
 }
 
-#endif
+void setup() {
+    wsRegister()
+        .onVisible(onVisible)
+        .onConnected(onConnected)
+        .onKeyCheck(onKey);
+}
+
 } // namespace web
+#endif
 
 // TODO: consider providing action as a string, which could be parsed by the
 // respective module API (e.g. for lights, there could be + / - offsets)
@@ -707,86 +767,49 @@ void check(time_t timestamp, const Schedules& schedules) {
     }
 }
 
+void ntp_tick(NtpTick tick) {
+    static bool initial { true };
+    if (tick != NtpTick::EveryMinute) {
+        return;
+    }
+
+    auto timestamp = now();
+    auto schedules = settings::schedules();
+    if (initial) {
+        initial = false;
+        settings::gc(schedules.size());
+#if DEBUG_SUPPORT
+        debug::show(schedules);
+#endif
+        restore(timestamp, schedules);
+    }
+
+    check(timestamp, schedules);
+}
+
+void setup() {
+    migrateVersion(scheduler::settings::migrate);
+    settings::query::setup();
+
+#if WEB_SUPPORT
+    web::setup();
+#endif
+
+#if API_SUPPORT
+    api::setup();
+#endif
+
+    ntpOnTick(ntp_tick);
+}
+
 } // namespace
 } // namespace scheduler
+} // namespace espurna 
 
 // -----------------------------------------------------------------------------
 
 void schSetup() {
-    migrateVersion(scheduler::settings::migrate);
-    scheduler::settings::query::setup();
-
-    #if WEB_SUPPORT
-        wsRegister()
-            .onVisible(scheduler::web::onVisible)
-            .onConnected(scheduler::web::onConnected)
-            .onKeyCheck(scheduler::web::onKey);
-    #endif
-
-    #if API_SUPPORT
-        apiRegister(
-            F(MQTT_TOPIC_SCHEDULE),
-            [](ApiRequest&, JsonObject& root) {
-                JsonArray& out = root.createNestedArray("schedules");
-
-                auto schedules = scheduler::settings::schedules();
-                for (auto& schedule : schedules) {
-                    auto& root = out.createNestedObject();
-                    scheduler::api::print(root, schedule);
-                }
-
-                return true;
-            },
-            [](ApiRequest&, JsonObject& root) {
-                size_t id = 0;
-                while (hasSetting({"schType", id})) {
-                    ++id;
-                }
-
-                if (id < scheduler::build::max()) {
-                    return scheduler::api::set(root, id);
-                }
-
-                return false;
-            });
-
-        apiRegister(
-            F(MQTT_TOPIC_SCHEDULE "/+"),
-            [](ApiRequest& req, JsonObject& root) {
-                size_t id;
-                if (tryParseId(req.wildcard(0).c_str(), scheduler::build::max, id)) {
-                    scheduler::api::print(root, scheduler::settings::schedule(id));
-                    return true;
-                }
-                return false;
-            },
-            [](ApiRequest& req, JsonObject& root) {
-                size_t id;
-                if (tryParseId(req.wildcard(0).c_str(), scheduler::build::max, id)) {
-                    return scheduler::api::set(root, id);
-                }
-                return false;
-            });
-    #endif
-
-    static bool initial { true };
-    ntpOnTick([](NtpTick tick) {
-        if (tick != NtpTick::EveryMinute) {
-            return;
-        }
-
-        auto timestamp = now();
-        auto schedules = scheduler::settings::schedules();
-        if (initial) {
-            initial = false;
-            scheduler::settings::gc(schedules.size());
-#if DEBUG_SUPPORT
-            scheduler::debug::show(schedules);
-#endif
-            scheduler::restore(timestamp, schedules);
-        }
-        scheduler::check(timestamp, schedules);
-    });
+    espurna::scheduler::setup();
 }
 
 #endif // SCHEDULER_SUPPORT

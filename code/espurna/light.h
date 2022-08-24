@@ -19,8 +19,8 @@
 #define MQTT_TOPIC_KELVIN           "kelvin"
 #define MQTT_TOPIC_TRANSITION       "transition"
 
-// TODO: lowercase
-namespace Light {
+namespace espurna {
+namespace light {
 
 constexpr size_t ChannelsMax { 5 };
 
@@ -165,7 +165,8 @@ private:
     long _warm { MiredsWarm };
 };
 
-} // namespace Light
+} // namespace light
+} // namespace espurna
 
 using LightStateListener = std::function<void(bool)>;
 using LightReportListener = void(*)();
@@ -205,15 +206,15 @@ String lightColor();
 bool lightSave();
 void lightSave(bool save);
 
-Light::Rgb lightRgb();
-void lightRgb(Light::Rgb);
+espurna::light::Rgb lightRgb();
+void lightRgb(espurna::light::Rgb);
 
-Light::Hsv lightHsv();
+espurna::light::Hsv lightHsv();
 void lightHs(long hue, long saturation);
-void lightHsv(Light::Hsv);
+void lightHsv(espurna::light::Hsv);
 
 void lightMireds(long mireds);
-Light::MiredsRange lightMiredsRange();
+espurna::light::MiredsRange lightMiredsRange();
 
 void lightRed(long value);
 long lightRed();
@@ -250,7 +251,7 @@ void lightBrightnessStep(long steps, long multiplier);
 void lightChannelStep(size_t id, long steps);
 void lightChannelStep(size_t id, long steps, long multiplier);
 
-void lightUpdate(LightTransition transition, Light::Report report, bool save);
+void lightUpdate(LightTransition transition, espurna::light::Report report, bool save);
 void lightUpdate(LightTransition transition, int report, bool save);
 void lightUpdate(LightTransition transition);
 void lightUpdate(bool save);

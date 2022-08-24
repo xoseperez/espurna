@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace espurna {
 namespace {
+
 namespace main {
 namespace build {
 
@@ -304,6 +305,7 @@ void setup() {
 }
 
 } // namespace main
+
 } // namespace
 } // namespace espurna
 

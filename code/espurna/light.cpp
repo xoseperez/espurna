@@ -39,12 +39,13 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 // -----------------------------------------------------------------------------
 
 #if __GNUC__ > 4
-static_assert(std::is_trivially_copyable<Light::Rgb>::value, "");
-static_assert(std::is_trivially_copyable<Light::Hsv>::value, "");
-static_assert(std::is_trivially_copyable<Light::MiredsRange>::value, "");
+static_assert(std::is_trivially_copyable<espurna::light::Rgb>::value, "");
+static_assert(std::is_trivially_copyable<espurna::light::Hsv>::value, "");
+static_assert(std::is_trivially_copyable<espurna::light::MiredsRange>::value, "");
 #endif
 
-namespace Light {
+namespace espurna {
+namespace light {
 
 // TODO: unless we are building with latest Core versions and -std=c++17, these need to be explicitly bound to at least one object file
 #if __cplusplus < 201703L
@@ -197,7 +198,7 @@ constexpr unsigned char my92xxChannel(size_t channel) {
         (channel == 1) ? MY92XX_CH2 :
         (channel == 2) ? MY92XX_CH3 :
         (channel == 3) ? MY92XX_CH4 :
-        (channel == 4) ? MY92XX_CH5 : Light::ChannelsMax;
+        (channel == 4) ? MY92XX_CH5 : espurna::light::ChannelsMax;
 }
 
 #endif
@@ -209,7 +210,7 @@ constexpr unsigned char my92xxChannel(size_t channel) {
 namespace settings {
 
 unsigned char enablePin() {
-    return getSetting("ltEnableGPIO", Light::build::enablePin());
+    return getSetting("ltEnableGPIO", espurna::light::build::enablePin());
 }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
@@ -251,8 +252,8 @@ unsigned char my92xxChannel(size_t channel) {
 // TODO: avoid clamping here in favour of handlers themselves always making sure values are in range?
 
 long value(size_t channel) {
-    const long defaultValue { (channel == 0) ? Light::ValueMax : Light::ValueMin };
-    return std::clamp(getSetting({"ch", channel}, defaultValue), Light::ValueMin, Light::ValueMax);
+    const long defaultValue { (channel == 0) ? espurna::light::ValueMax : espurna::light::ValueMin };
+    return std::clamp(getSetting({"ch", channel}, defaultValue), espurna::light::ValueMin, espurna::light::ValueMax);
 }
 
 void value(size_t channel, long input) {
@@ -260,15 +261,15 @@ void value(size_t channel, long input) {
 }
 
 long mireds() {
-    return std::clamp(getSetting("mireds", Light::MiredsDefault), Light::MiredsCold, Light::MiredsWarm);
+    return std::clamp(getSetting("mireds", espurna::light::MiredsDefault), espurna::light::MiredsCold, espurna::light::MiredsWarm);
 }
 
 long miredsCold() {
-    return std::clamp(getSetting("ltColdMired", Light::MiredsCold), Light::MiredsCold, Light::MiredsWarm);
+    return std::clamp(getSetting("ltColdMired", espurna::light::MiredsCold), espurna::light::MiredsCold, espurna::light::MiredsWarm);
 }
 
 long miredsWarm() {
-    return std::clamp(getSetting("ltWarmMired", Light::MiredsWarm), Light::MiredsCold, Light::MiredsWarm);
+    return std::clamp(getSetting("ltWarmMired", espurna::light::MiredsWarm), espurna::light::MiredsCold, espurna::light::MiredsWarm);
 }
 
 void mireds(long input) {
@@ -276,7 +277,7 @@ void mireds(long input) {
 }
 
 long brightness() {
-    return std::clamp(getSetting("brightness", Light::BrightnessMax), Light::BrightnessMin, Light::BrightnessMax);
+    return std::clamp(getSetting("brightness", espurna::light::BrightnessMax), espurna::light::BrightnessMin, espurna::light::BrightnessMax);
 }
 
 void brightness(long input) {
@@ -357,7 +358,8 @@ espurna::duration::Milliseconds saveDelay() {
 
 } // namespace settings
 } // namespace
-} // namespace Light
+} // namespace light
+} // namespace espurna
 
 // -----------------------------------------------------------------------------
 
@@ -424,7 +426,7 @@ struct LightChannel {
     {}
 
     LightChannel& operator=(long input) {
-        inputValue = std::clamp(input, Light::ValueMin, Light::ValueMax);
+        inputValue = std::clamp(input, espurna::light::ValueMin, espurna::light::ValueMax);
         return *this;
     }
 
@@ -434,14 +436,14 @@ struct LightChannel {
 
     template <typename T>
     void apply(const T& process) {
-        value = std::clamp(process(inputValue), Light::ValueMin, Light::ValueMax);
+        value = std::clamp(process(inputValue), espurna::light::ValueMin, espurna::light::ValueMax);
     }
 
     template <typename T, typename... Args>
     void apply(const T& process, Args&&... args) {
         value = std::clamp(
             _lightChainedValue(process(inputValue), std::forward<Args>(args)...),
-            Light::ValueMin, Light::ValueMax);
+            espurna::light::ValueMin, espurna::light::ValueMax);
     }
 
     bool inverse { false };                // re-map the value from [ValueMin:ValueMax] to [ValueMax:ValueMin]
@@ -450,17 +452,18 @@ struct LightChannel {
     // TODO: remove in favour of global control, since relays are no longer bound to a single channel?
     bool state { true };                   // is the channel ON
 
-    long inputValue { Light::ValueMin };   // raw, without the brightness
-    long value { Light::ValueMin };        // normalized, including brightness
-    long target { Light::ValueMin };       // resulting value that will be given to the provider
+    long inputValue { espurna::light::ValueMin };   // raw, without the brightness
+    long value { espurna::light::ValueMin };        // normalized, including brightness
+    long target { espurna::light::ValueMin };       // resulting value that will be given to the provider
 
-    float current { Light::ValueMin };     // interim between input and target, used by the transition handler
+    float current { espurna::light::ValueMin };     // interim between input and target, used by the transition handler
 };
 
 using LightChannels = std::vector<LightChannel>;
 LightChannels _light_channels;
 
-namespace Light {
+namespace espurna {
+namespace light {
 namespace {
 
 struct Pointers {
@@ -567,7 +570,7 @@ private:
             return ptr->target;
         }
 
-        return Light::ValueMin;
+        return espurna::light::ValueMin;
     }
 
     static void set(LightChannel* ptr, long value) {
@@ -580,11 +583,12 @@ private:
 };
 
 } // namespace
-} // namespace Light
+} // namespace light
+} // namespace espurna
 
 namespace {
 
-Light::Mapping _light_mapping;
+espurna::light::Mapping _light_mapping;
 
 template <typename T>
 void _lightUpdateMapping(T& channels) {
@@ -609,11 +613,11 @@ void _lightUpdateMapping(T& channels) {
     }
 }
 
-auto _light_save_delay = Light::build::saveDelay();
-bool _light_save { Light::build::save() };
+auto _light_save_delay = espurna::light::build::saveDelay();
+bool _light_save { espurna::light::build::save() };
 Ticker _light_save_ticker;
 
-auto _light_report_delay = Light::build::reportDelay();
+auto _light_report_delay = espurna::light::build::reportDelay();
 Ticker _light_report_ticker;
 std::forward_list<LightReportListener> _light_report;
 
@@ -625,7 +629,7 @@ bool _light_use_cct = false;
 bool _light_use_gamma = false;
 
 bool _light_state = false;
-long _light_brightness = Light::BrightnessMax;
+long _light_brightness = espurna::light::BrightnessMax;
 
 // Default to the Philips Hue value that HA also use.
 // https://developers.meethue.com/documentation/core-concepts
@@ -635,13 +639,13 @@ long _light_brightness = Light::BrightnessMax;
 // - by brightness function in R G B CW and R G B CW WW as a factor for CW and WW channels
 // - by setter in CW and CW WW modes
 
-long _light_cold_mireds = Light::MiredsCold;
-long _light_warm_mireds = Light::MiredsWarm;
+long _light_cold_mireds = espurna::light::MiredsCold;
+long _light_warm_mireds = espurna::light::MiredsWarm;
 
 long _light_cold_kelvin = (1000000L / _light_cold_mireds);
 long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
-long _light_mireds { Light::MiredsDefault };
+long _light_mireds { espurna::light::MiredsDefault };
 
 // In case we somehow forgot to initialize the brightness func, nullptr is expected to trigger an exception
 
@@ -675,13 +679,13 @@ my92xx_model_t convert(const String& value) {
     alignas(4) static constexpr char MY9291[] PROGMEM = "9291";
     alignas(4) static constexpr char MY9231[] PROGMEM = "9231";
 
-    using Options = std::array<::settings::options::Enumeration<my92xx_model_t>, 2>;
+    using Options = std::array<espurna::settings::options::Enumeration<my92xx_model_t>, 2>;
     static constexpr Options options {
         {{MY92XX_MODEL_MY9291, MY9291},
          {MY92XX_MODEL_MY9231, MY9231}}
     };
 
-    return convert(options, value, Light::build::my92xxModel());
+    return convert(options, value, espurna::light::build::my92xxModel());
 }
 
 } // namespace internal
@@ -699,11 +703,11 @@ namespace {
 struct LightBrightness {
     LightBrightness() = delete;
     explicit LightBrightness(long brightness) :
-        _brightness(std::clamp(brightness, Light::BrightnessMin, Light::BrightnessMax))
+        _brightness(std::clamp(brightness, espurna::light::BrightnessMin, espurna::light::BrightnessMax))
     {}
 
     long operator()(long input) const {
-        return (input * _brightness) / Light::BrightnessMax;
+        return (input * _brightness) / espurna::light::BrightnessMax;
     }
 
 private:
@@ -757,7 +761,7 @@ double _lightMiredFactor() {
     return 0.0;
 }
 
-Light::MiredsRange _lightCctRange(long value) {
+espurna::light::MiredsRange _lightCctRange(long value) {
     const double Factor { _lightMiredFactor() };
     return {
         std::lround(Factor * value),
@@ -837,7 +841,7 @@ struct LightScaledWhite {
     {}
 
     long operator()(long input) const {
-        return std::lround(static_cast<float>(input) * _factor * Light::build::WhiteFactor);
+        return std::lround(static_cast<float>(input) * _factor * espurna::light::build::WhiteFactor);
     }
 
 private:
@@ -1086,7 +1090,7 @@ void _lightMireds(long kelvin) {
 void _lightMiredsCCT(long kelvin) {
     _lightMireds(kelvin);
 
-    const auto Range = _lightCctRange(Light::ValueMax);
+    const auto Range = _lightCctRange(espurna::light::ValueMax);
     _light_mapping.warm(Range.warm());
     _light_mapping.cold(Range.cold());
 }
@@ -1100,7 +1104,7 @@ long _lightCCTMireds() {
     auto cold = static_cast<double>(_light_cold_mireds);
     auto warm = static_cast<double>(_light_warm_mireds);
 
-    auto factor = (static_cast<double>(lightColdWhite()) / Light::ValueMax);
+    auto factor = (static_cast<double>(lightColdWhite()) / espurna::light::ValueMax);
 
     return cold + (factor * (warm - cold));
 }
@@ -1116,9 +1120,9 @@ void _fromKelvin(long kelvin) {
         if (_light_use_white) {
             _lightMireds(kelvin);
         } else {
-            _light_mapping.red(Light::ValueMax);
-            _light_mapping.green(Light::ValueMax);
-            _light_mapping.blue(Light::ValueMax);
+            _light_mapping.red(espurna::light::ValueMax);
+            _light_mapping.green(espurna::light::ValueMax);
+            _light_mapping.blue(espurna::light::ValueMax);
         }
         return;
     }
@@ -1131,15 +1135,15 @@ void _fromKelvin(long kelvin) {
     // otherwise, only apply approximated color values
     kelvin /= 100;
     _light_mapping.red((kelvin <= 66)
-        ? Light::ValueMax
+        ? espurna::light::ValueMax
         : std::lround(329.698727446 * fs_pow(static_cast<double>(kelvin - 60), -0.1332047592)));
     _light_mapping.green((kelvin <= 66)
         ? std::lround(99.4708025861 * fs_log(kelvin) - 161.1195681661)
         : std::lround(288.1221695283 * fs_pow(static_cast<double>(kelvin), -0.0755148492)));
     _light_mapping.blue((kelvin >= 66)
-        ? Light::ValueMax
+        ? espurna::light::ValueMax
         : ((kelvin <= 19)
-            ? Light::ValueMin
+            ? espurna::light::ValueMin
             : std::lround(138.5177312231 * fs_log(static_cast<double>(kelvin - 10)) - 305.0447927307)));
     _lightMireds(kelvin);
 }
@@ -1156,14 +1160,14 @@ void _fromMireds(long mireds) {
 
 namespace {
 
-Light::Rgb _lightToTargetRgb() {
+espurna::light::Rgb _lightToTargetRgb() {
     return {
         _light_mapping.red(),
         _light_mapping.green(),
         _light_mapping.blue()};
 }
 
-Light::Rgb _lightToInputRgb() {
+espurna::light::Rgb _lightToInputRgb() {
     const auto& ptr = _light_mapping.pointers();
 
     long values[] {0, 0, 0};
@@ -1176,9 +1180,9 @@ Light::Rgb _lightToInputRgb() {
     return {values[0], values[1], values[2]};
 }
 
-String _lightRgbHexPayload(Light::Rgb rgb) {
-    static_assert(Light::Rgb::Min == 0, "");
-    static_assert(Light::Rgb::Max == 255, "");
+String _lightRgbHexPayload(espurna::light::Rgb rgb) {
+    static_assert(espurna::light::Rgb::Min == 0, "");
+    static_assert(espurna::light::Rgb::Max == 255, "");
 
     uint8_t values[] {
         static_cast<uint8_t>(rgb.red()),
@@ -1197,7 +1201,7 @@ String _lightRgbHexPayload(Light::Rgb rgb) {
     return out;
 }
 
-String _lightRgbPayload(Light::Rgb rgb) {
+String _lightRgbPayload(espurna::light::Rgb rgb) {
     String out;
     out.reserve(12);
 
@@ -1246,10 +1250,10 @@ void _lightFromGroupPayload(const char* payload) {
     }
 }
 
-Light::Hsv _lightHsv(Light::Rgb rgb) {
-    auto r = static_cast<double>(rgb.red()) / Light::ValueMax;
-    auto g = static_cast<double>(rgb.green()) / Light::ValueMax;
-    auto b = static_cast<double>(rgb.blue()) / Light::ValueMax;
+espurna::light::Hsv _lightHsv(espurna::light::Rgb rgb) {
+    auto r = static_cast<double>(rgb.red()) / espurna::light::ValueMax;
+    auto g = static_cast<double>(rgb.green()) / espurna::light::ValueMax;
+    auto b = static_cast<double>(rgb.blue()) / espurna::light::ValueMax;
 
     auto max = std::max({r, g, b});
     auto min = std::min({r, g, b});
@@ -1278,17 +1282,17 @@ Light::Hsv _lightHsv(Light::Rgb rgb) {
             h = 1.0 + h;
         }
 
-        return Light::Hsv(
+        return espurna::light::Hsv(
             std::lround(h * 360.0),
             std::lround(s * 100.0),
             std::lround(v * 100.0));
     }
 
-    return Light::Hsv(Light::Hsv::HueMin, Light::Hsv::SaturationMin, v);
+    return espurna::light::Hsv(espurna::light::Hsv::HueMin, espurna::light::Hsv::SaturationMin, v);
 
 }
 
-String _lightHsvPayload(Light::Rgb rgb) {
+String _lightHsvPayload(espurna::light::Rgb rgb) {
     String out;
     out.reserve(12);
 
@@ -1429,17 +1433,17 @@ long _lightGammaMap(size_t index) {
 }
 
 long _lightGammaMap(long value) {
-    static_assert(Light::ValueMin >= 0, "");
-    static_assert(Light::ValueMax >= 0, "");
+    static_assert(espurna::light::ValueMin >= 0, "");
+    static_assert(espurna::light::ValueMax >= 0, "");
 
-    constexpr auto Divisor = (Light::ValueMax - Light::ValueMin);
+    constexpr auto Divisor = (espurna::light::ValueMax - espurna::light::ValueMin);
     if (Divisor != 0l) {
         const long Scaled {
-            (value - Light::ValueMin) * (LightGammaMax - LightGammaMin) / Divisor + LightGammaMin };
+            (value - espurna::light::ValueMin) * (LightGammaMax - LightGammaMin) / Divisor + LightGammaMin };
         return _lightGammaMap(static_cast<size_t>(Scaled));
     }
 
-    return Light::ValueMin;
+    return espurna::light::ValueMin;
 }
 
 class LightTransitionHandler {
@@ -1481,7 +1485,7 @@ public:
     bool prepare(LightChannel& channel, bool state) {
         long target = (state && channel.state)
             ? channel.value
-            : Light::ValueMin;
+            : espurna::light::ValueMin;
 
         channel.target = target;
         if (channel.gamma) {
@@ -1489,7 +1493,7 @@ public:
         }
 
         if (channel.inverse) {
-            target = Light::ValueMax - target;
+            target = espurna::light::ValueMax - target;
         }
 
         // TODO: implement different functions when there are multiple steps?
@@ -1657,17 +1661,17 @@ bool _light_provider_update = false;
 Ticker _light_transition_ticker;
 std::unique_ptr<LightTransitionHandler> _light_transition;
 
-auto _light_transition_time = Light::build::transitionTime();
-auto _light_transition_step = Light::build::transitionStep();
+auto _light_transition_time = espurna::light::build::transitionTime();
+auto _light_transition_step = espurna::light::build::transitionStep();
 bool _light_use_transitions = false;
 
 void _lightProviderSchedule(espurna::duration::Milliseconds);
 
-static_assert((Light::ValueMax - Light::ValueMin) != 0, "");
+static_assert((espurna::light::ValueMax - espurna::light::ValueMin) != 0, "");
 
 template <typename T>
 constexpr T _lightValueMap(long value, T min, T max) {
-    return (value - Light::ValueMin) * (max - min) / (Light::ValueMax - Light::ValueMin) + min;
+    return (value - espurna::light::ValueMin) * (max - min) / (espurna::light::ValueMax - espurna::light::ValueMin) + min;
 }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
@@ -1711,11 +1715,11 @@ constexpr unsigned int _lightMy92xxValueMax(my92xx_cmd_t command) {
     return _lightMy92xxValueMax(command.bit_width);
 }
 
-unsigned char _light_my92xx_channel_map[Light::ChannelsMax] = {};
+unsigned char _light_my92xx_channel_map[espurna::light::ChannelsMax] = {};
 
 constexpr unsigned int _my92xx_value_min = 0;
 constexpr unsigned int _my92xx_value_max =
-        _lightMy92xxValueMax(Light::build::my92xxCommand());
+        _lightMy92xxValueMax(espurna::light::build::my92xxCommand());
 
 void _lightProviderHandleValue(size_t channel, float value) {
     _my92xx->setChannel(
@@ -1787,7 +1791,7 @@ void _lightProviderSchedule(espurna::duration::Milliseconds next) {
 //
 // union light_rtcmem_t {
 //     struct {
-//         uint8_t channels[Light::ChannelsMax];
+//         uint8_t channels[espurna::light::ChannelsMax];
 //         uint8_t brightness;
 //         uint16_t mired;
 //     } __attribute__((packed)) packed;
@@ -1813,11 +1817,11 @@ struct LightRtcmem {
     //
     // Prefer to use u64 value for {de,se}rialization instead of a struct.
 
-    static_assert(Light::ChannelsMax == 5, "");
-    static_assert(Light::ValueMin >= 0, "");
-    static_assert(Light::ValueMax <= 255, "");
+    static_assert(espurna::light::ChannelsMax == 5, "");
+    static_assert(espurna::light::ValueMin >= 0, "");
+    static_assert(espurna::light::ValueMax <= 255, "");
 
-    using Values = std::array<long, Light::ChannelsMax>;
+    using Values = std::array<long, espurna::light::ChannelsMax>;
 
     LightRtcmem() = default;
 
@@ -1850,7 +1854,7 @@ struct LightRtcmem {
 
     static Values defaultValues() {
         Values out;
-        out.fill(Light::ValueMin);
+        out.fill(espurna::light::ValueMin);
         return out;
     }
 
@@ -1868,8 +1872,8 @@ struct LightRtcmem {
 
 private:
     Values _values = defaultValues();
-    long _brightness { Light::BrightnessMax };
-    long _mireds { Light::MiredsDefault };
+    long _brightness { espurna::light::BrightnessMax };
+    long _mireds { espurna::light::MiredsDefault };
 };
 
 bool lightSave() {
@@ -1911,22 +1915,22 @@ void _lightSaveSettings() {
     }
 
     for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
-        Light::settings::value(channel, _light_channels[channel].inputValue);
+        espurna::light::settings::value(channel, _light_channels[channel].inputValue);
     }
 
-    Light::settings::brightness(_light_brightness);
-    Light::settings::mireds(_light_mireds);
+    espurna::light::settings::brightness(_light_brightness);
+    espurna::light::settings::mireds(_light_mireds);
 
     saveSettings();
 }
 
 void _lightRestoreSettings() {
     for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
-        _light_channels[channel] = Light::settings::value(channel);
+        _light_channels[channel] = espurna::light::settings::value(channel);
     }
 
-    _light_mireds = Light::settings::mireds();
-    lightBrightness(Light::settings::brightness());
+    _light_mireds = espurna::light::settings::mireds();
+    lightBrightness(espurna::light::settings::brightness());
 }
 
 bool _lightParsePayload(const char* payload) {
@@ -1964,11 +1968,11 @@ bool _lightTryParseChannel(const char* p, size_t& id) {
 namespace {
 
 int _lightMqttReportMask() {
-    return Light::DefaultReport & ~(static_cast<int>(mqttForward() ? Light::Report::None : Light::Report::Mqtt));
+    return espurna::light::DefaultReport & ~(static_cast<int>(mqttForward() ? espurna::light::Report::None : espurna::light::Report::Mqtt));
 }
 
 int _lightMqttReportGroupMask() {
-    return _lightMqttReportMask() & ~static_cast<int>(Light::Report::MqttGroup);
+    return _lightMqttReportMask() & ~static_cast<int>(espurna::light::Report::MqttGroup);
 }
 
 void _lightUpdateFromMqtt(LightTransition transition) {
@@ -1996,7 +2000,7 @@ bool _lightMqttHeartbeat(espurna::heartbeat::Mask mask) {
 }
 
 void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
-    String mqtt_group_color = Light::settings::mqttGroup();
+    String mqtt_group_color = espurna::light::settings::mqttGroup();
 
     if (type == MQTT_CONNECT_EVENT) {
 
@@ -2142,7 +2146,7 @@ void lightMQTT() {
 }
 
 void lightMQTTGroup() {
-    const String mqtt_group_color = Light::settings::mqttGroup();
+    const String mqtt_group_color = espurna::light::settings::mqttGroup();
     if (mqtt_group_color.length()) {
         mqttSendRaw(mqtt_group_color.c_str(), _lightGroupPayload().c_str());
     }
@@ -2345,7 +2349,7 @@ void _lightWebSocketOnVisible(JsonObject& root) {
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {
-    root["mqttGroupColor"] = Light::settings::mqttGroup();
+    root["mqttGroupColor"] = espurna::light::settings::mqttGroup();
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
@@ -2356,7 +2360,7 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["ltTime"] = _light_transition_time.count();
     root["ltStep"] = _light_transition_step.count();
 #if RELAY_SUPPORT
-    root["ltRelay"] = Light::settings::relay();
+    root["ltRelay"] = espurna::light::settings::relay();
 #endif
 }
 
@@ -2517,11 +2521,11 @@ bool lightUseRGB() {
 
 // -----------------------------------------------------------------------------
 
-Light::Rgb lightRgb() {
+espurna::light::Rgb lightRgb() {
     return _lightToTargetRgb();
 }
 
-void lightRgb(Light::Rgb rgb) {
+void lightRgb(espurna::light::Rgb rgb) {
     _light_mapping.red(rgb.red());
     _light_mapping.green(rgb.green());
     _light_mapping.blue(rgb.blue());
@@ -2533,13 +2537,13 @@ void lightRgb(Light::Rgb rgb) {
 // IS: [145,0,0]
 // SHOULD: [255,0,0]
 
-void lightHsv(Light::Hsv hsv) {
+void lightHsv(espurna::light::Hsv hsv) {
     double r { 0.0 };
     double g { 0.0 };
     double b { 0.0 };
 
     auto v = static_cast<double>(hsv.value()) / 100.0;
-    long brightness { std::lround(v * static_cast<double>(Light::BrightnessMax)) };
+    long brightness { std::lround(v * static_cast<double>(espurna::light::BrightnessMax)) };
 
     if (hsv.saturation()) {
         auto h = hsv.hue();
@@ -2594,10 +2598,10 @@ void lightHsv(Light::Hsv hsv) {
 }
 
 void lightHs(long hue, long saturation) {
-    lightHsv({hue, saturation, Light::Hsv::ValueMax});
+    lightHsv({hue, saturation, espurna::light::Hsv::ValueMax});
 }
 
-Light::Hsv lightHsv() {
+espurna::light::Hsv lightHsv() {
     return _lightHsv(_lightToTargetRgb());
 }
 
@@ -2611,17 +2615,17 @@ namespace {
 
 void _lightReport(int report) {
 #if MQTT_SUPPORT
-    if (report & Light::Report::Mqtt) {
+    if (report & espurna::light::Report::Mqtt) {
         lightMQTT();
     }
 
-    if (report & Light::Report::MqttGroup) {
+    if (report & espurna::light::Report::MqttGroup) {
         lightMQTTGroup();
     }
 #endif
 
 #if WEB_SUPPORT
-    if (report & Light::Report::Web) {
+    if (report & espurna::light::Report::Web) {
         wsPost(_lightWebSocketStatus);
     }
 #endif
@@ -2736,16 +2740,16 @@ void lightUpdate(LightTransition transition, int report, bool save) {
     _light_update.set(transition, report, save);
 }
 
-void lightUpdate(LightTransition transition, Light::Report report, bool save) {
+void lightUpdate(LightTransition transition, espurna::light::Report report, bool save) {
     lightUpdate(transition, static_cast<int>(report), save);
 }
 
 void lightUpdate(LightTransition transition) {
-    lightUpdate(transition, Light::DefaultReport, _light_save);
+    lightUpdate(transition, espurna::light::DefaultReport, _light_save);
 }
 
 void lightUpdate(bool save) {
-    lightUpdate(lightTransition(), Light::DefaultReport, save);
+    lightUpdate(lightTransition(), espurna::light::DefaultReport, save);
 }
 
 void lightUpdate() {
@@ -2858,7 +2862,7 @@ void lightMireds(long mireds) {
     _fromMireds(mireds);
 }
 
-Light::MiredsRange lightMiredsRange() {
+espurna::light::MiredsRange lightMiredsRange() {
     return { _light_cold_mireds, _light_warm_mireds };
 }
 
@@ -2881,7 +2885,7 @@ void lightChannelStep(size_t id, long steps, long multiplier) {
 }
 
 void lightChannelStep(size_t id, long steps) {
-    lightChannelStep(id, steps, Light::ValueStep);
+    lightChannelStep(id, steps, espurna::light::ValueStep);
 }
 
 long lightBrightness() {
@@ -2889,11 +2893,11 @@ long lightBrightness() {
 }
 
 void lightBrightnessPercent(long percent) {
-    lightBrightness((percent / 100l) * Light::BrightnessMax);
+    lightBrightness((percent / 100l) * espurna::light::BrightnessMax);
 }
 
 void lightBrightness(long brightness) {
-    _light_brightness = std::clamp(brightness, Light::BrightnessMin, Light::BrightnessMax);
+    _light_brightness = std::clamp(brightness, espurna::light::BrightnessMin, espurna::light::BrightnessMax);
 }
 
 void lightBrightnessStep(long steps, long multiplier) {
@@ -2901,7 +2905,7 @@ void lightBrightnessStep(long steps, long multiplier) {
 }
 
 void lightBrightnessStep(long steps) {
-    lightBrightnessStep(steps, Light::ValueStep);
+    lightBrightnessStep(steps, espurna::light::ValueStep);
 }
 
 espurna::duration::Milliseconds lightTransitionTime() {
@@ -2930,10 +2934,10 @@ void lightTransition(espurna::duration::Milliseconds time, espurna::duration::Mi
         _light_transition_step = step;
     }
 
-    Light::settings::transition(_light_use_transitions);
+    espurna::light::settings::transition(_light_use_transitions);
     if (save) {
-        Light::settings::transitionTime(_light_transition_time);
-        Light::settings::transitionStep(_light_transition_step);
+        espurna::light::settings::transitionTime(_light_transition_time);
+        espurna::light::settings::transitionStep(_light_transition_step);
     }
 
     saveSettings();
@@ -2968,22 +2972,22 @@ void _lightConfigure() {
     const size_t Channels { _light_channels.size() };
 
     // TODO: just bounce off invalid input, so there's no need for setting values back?
-    _light_has_color = Light::settings::color();
+    _light_has_color = espurna::light::settings::color();
     if (_light_has_color && (Channels < 3)) {
         _light_has_color = false;
-        Light::settings::color(false);
+        espurna::light::settings::color(false);
     }
 
-    _light_use_white = Light::settings::white();
+    _light_use_white = espurna::light::settings::white();
     if (_light_use_white && (Channels < 4) && (Channels != 2)) {
         _light_use_white = false;
-        Light::settings::white(false);
+        espurna::light::settings::white(false);
     }
 
-    _light_use_cct = Light::settings::cct();
+    _light_use_cct = espurna::light::settings::cct();
     if (_light_use_cct && (((Channels < 5) && (Channels != 2)) || !_light_use_white)) {
         _light_use_cct = false;
-        Light::settings::cct(false);
+        espurna::light::settings::cct(false);
     }
 
     // TODO: cct and white can't be enabled at the same time
@@ -2995,27 +2999,27 @@ void _lightConfigure() {
             _lightValuesWithBrightnessExceptWhite) :
         _lightValuesWithBrightness;
 
-    _light_use_rgb = Light::settings::rgb();
+    _light_use_rgb = espurna::light::settings::rgb();
 
     // TODO: provide single entrypoint for colortemp
-    _light_cold_mireds = Light::settings::miredsCold();
-    _light_warm_mireds = Light::settings::miredsWarm();
+    _light_cold_mireds = espurna::light::settings::miredsCold();
+    _light_warm_mireds = espurna::light::settings::miredsWarm();
     _light_cold_kelvin = (1000000L / _light_cold_mireds);
     _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
-    _light_use_transitions = Light::settings::transition();
-    _light_transition_time = Light::settings::transitionTime();
-    _light_transition_step = Light::settings::transitionStep();
+    _light_use_transitions = espurna::light::settings::transition();
+    _light_transition_time = espurna::light::settings::transitionTime();
+    _light_transition_step = espurna::light::settings::transitionStep();
 
-    _light_save = Light::settings::save();
-    _light_save_delay = Light::settings::saveDelay();
+    _light_save = espurna::light::settings::save();
+    _light_save_delay = espurna::light::settings::saveDelay();
 
-    _light_use_gamma = Light::settings::gamma();
+    _light_use_gamma = espurna::light::settings::gamma();
     for (size_t index = 0; index < Channels; ++index) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-        _light_my92xx_channel_map[index] = Light::settings::my92xxChannel(index);
+        _light_my92xx_channel_map[index] = espurna::light::settings::my92xxChannel(index);
 #endif
-        _light_channels[index].inverse = Light::settings::inverse(index);
+        _light_channels[index].inverse = espurna::light::settings::inverse(index);
         _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(Channels, index);
     }
 
@@ -3085,7 +3089,7 @@ bool lightAdd() {
         return false;
     }
 
-    if (_light_channels.size() < Light::ChannelsMax) {
+    if (_light_channels.size() < espurna::light::ChannelsMax) {
         _light_channels.emplace_back(LightChannel());
         if (State::Scheduled != state) {
             state = State::Scheduled;
@@ -3150,13 +3154,13 @@ void _lightSettingsMigrate(int version) {
 void lightSetup() {
     migrateVersion(_lightSettingsMigrate);
 
-    const auto enable_pin = Light::settings::enablePin();
+    const auto enable_pin = espurna::light::settings::enablePin();
     if (enable_pin != GPIO_NONE) {
         pinMode(enable_pin, OUTPUT);
         digitalWrite(enable_pin, HIGH);
     }
 
-    _light_channels.reserve(Light::ChannelsMax);
+    _light_channels.reserve(espurna::light::ChannelsMax);
     _lightProviderDebug();
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -3164,14 +3168,14 @@ void lightSetup() {
         // TODO: library API specifies some hard-coded amount of channels, based off of the model and chips
         // we always map channel index 1-to-1, to simplify hw config, but most of the time there are less active channels
         // than the value generated by the lib (ref. `my92xx::getChannels()`)
-        auto channels = Light::settings::my92xxChannels();
+        auto channels = espurna::light::settings::my92xxChannels();
         if (channels) {
             _my92xx = new my92xx(
-                    Light::settings::my92xxModel(),
-                    Light::settings::my92xxChips(),
-                    Light::settings::my92xxDiPin(),
-                    Light::settings::my92xxDckiPin(),
-                    Light::build::my92xxCommand());
+                    espurna::light::settings::my92xxModel(),
+                    espurna::light::settings::my92xxChips(),
+                    espurna::light::settings::my92xxDiPin(),
+                    espurna::light::settings::my92xxDckiPin(),
+                    espurna::light::build::my92xxCommand());
             _light_channels.resize(channels);
         }
     }
@@ -3179,10 +3183,10 @@ void lightSetup() {
     {
         // Load up until first invalid pin. Allow settings to override, but not remove values
         std::vector<uint8_t> pins;
-        pins.reserve(Light::ChannelsMax);
+        pins.reserve(espurna::light::ChannelsMax);
 
-        for (size_t index = 0; index < Light::ChannelsMax; ++index) {
-            const auto pin = Light::settings::channelPin(index);
+        for (size_t index = 0; index < espurna::light::ChannelsMax; ++index) {
+            const auto pin = espurna::light::settings::channelPin(index);
             if (!gpioValid(pin)) {
                 break;
             }
@@ -3203,7 +3207,7 @@ void lightSetup() {
     _lightBoot();
 
 #if RELAY_SUPPORT
-    if (Light::settings::relay()) {
+    if (espurna::light::settings::relay()) {
         _lightRelayBoot();
     }
 #endif

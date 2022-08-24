@@ -30,6 +30,7 @@ void resetSettings();
 void saveSettings();
 void autosaveSettings();
 
+namespace espurna {
 namespace settings {
 
 class EepromStorage {
@@ -74,7 +75,7 @@ size_t size();
 using KeyValueResultCallback = std::function<void(settings::kvs_type::KeyValueResult&&)>;
 void foreach(KeyValueResultCallback&&);
 
-using PrefixResultCallback = std::function<void(settings::StringView prefix, String key, const kvs_type::ReadResult& value)>;
+using PrefixResultCallback = std::function<void(StringView prefix, String key, const kvs_type::ReadResult& value)>;
 void foreach_prefix(PrefixResultCallback&&, settings::query::StringViewIterator);
 
 // --------------------------------------------------------------------------
@@ -160,7 +161,7 @@ inline String serialize(double value) {
 template <typename Container, typename T>
 T convert(const Container& options, const String& value, T defaultValue) {
     if (value.length()) {
-        using ::settings::options::Enumeration;
+        using espurna::settings::options::Enumeration;
         using UnderlyingType = typename Enumeration<T>::UnderlyingType;
         typename Enumeration<T>::Numeric numeric;
         numeric.check(value, convert<UnderlyingType>);
@@ -192,11 +193,7 @@ String serialize(const Container& options, T value) {
 }
 
 } // namespace internal
-} // namespace settings
 
-// --------------------------------------------------------------------------
-
-namespace settings {
 namespace query {
 
 using Check = bool(*)(StringView key);
@@ -209,9 +206,10 @@ struct Handler {
 
 } // namespace query
 } // namespace settings
+} // namespace espurna
 
-void settingsRegisterQueryHandler(settings::query::Handler);
-String settingsQuery(::settings::StringView key);
+void settingsRegisterQueryHandler(espurna::settings::query::Handler);
+String settingsQuery(espurna::StringView key);
 
 // --------------------------------------------------------------------------
 
@@ -219,55 +217,62 @@ void moveSetting(const String& from, const String& to);
 void moveSetting(const String& from, const String& to, size_t index);
 void moveSettings(const String& from, const String& to);
 
-template <typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
-T getSetting(const SettingsKey& key, T defaultValue) {
-    auto result = settings::internal::get(key.value());
-    if (result) {
-        return settings::internal::convert<T>(result.ref());
-    }
-    return defaultValue;
-}
-
 String getSetting(const char* key);
 String getSetting(const String& key);
 String getSetting(const __FlashStringHelper* key);
 
-String getSetting(const SettingsKey& key);
-String getSetting(const SettingsKey& key, const char* defaultValue);
-String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValue);
-String getSetting(const SettingsKey& key, const String& defaultValue);
-String getSetting(const SettingsKey& key, const String& defaultValue);
-String getSetting(const SettingsKey& key, String&& defaultValue);
+String getSetting(const espurna::settings::Key& key);
+String getSetting(const espurna::settings::Key& key, const char* defaultValue);
+String getSetting(const espurna::settings::Key& key, const __FlashStringHelper* defaultValue);
+String getSetting(const espurna::settings::Key& key, const String& defaultValue);
+String getSetting(const espurna::settings::Key& key, const String& defaultValue);
+String getSetting(const espurna::settings::Key& key, String&& defaultValue);
 
-template<typename T, typename = typename settings::internal::enable_if_arduino_string<T>::type>
-bool setSetting(const SettingsKey& key, T&& value) {
-    return settings::internal::set(key.value(), value);
+template <typename T, typename = typename espurna::settings::internal::enable_if_not_arduino_string<T>::type>
+T getSetting(const espurna::settings::Key& key, T defaultValue) {
+    using namespace espurna::settings::internal;
+    auto result = get(key.value());
+    if (result) {
+        return convert<T>(result.ref());
+    }
+    return defaultValue;
 }
 
-template<typename T, typename = typename settings::internal::enable_if_not_arduino_string<T>::type>
-bool setSetting(const SettingsKey& key, T value) {
+template<typename T, typename = typename espurna::settings::internal::enable_if_arduino_string<T>::type>
+bool setSetting(const espurna::settings::Key& key, T&& value) {
+    return espurna::settings::internal::set(key.value(), value);
+}
+
+template<typename T, typename = typename espurna::settings::internal::enable_if_not_arduino_string<T>::type>
+bool setSetting(const espurna::settings::Key& key, T value) {
     return setSetting(key, String(value));
 }
 
 bool delSetting(const char* key);
 bool delSetting(const String& key);
 bool delSetting(const __FlashStringHelper* key);
-bool delSetting(const SettingsKey& key);
+bool delSetting(const espurna::settings::Key& key);
 
-void delSettingPrefix(settings::query::StringViewIterator);
+void delSettingPrefix(espurna::settings::query::StringViewIterator);
 
 bool hasSetting(const char* key);
 bool hasSetting(const String& key);
 bool hasSetting(const __FlashStringHelper* key);
-bool hasSetting(const SettingsKey& key);
+bool hasSetting(const espurna::settings::Key& key);
 
-void settingsDump(const ::terminal::CommandContext&, const ::settings::query::Setting* begin, const ::settings::query::Setting* end);
+void settingsDump(const ::terminal::CommandContext&,
+    const espurna::settings::query::Setting* begin,
+    const espurna::settings::query::Setting* end);
+
 template <typename T>
 void settingsDump(const ::terminal::CommandContext& ctx, const T& settings) {
     settingsDump(ctx, std::begin(settings), std::end(settings));
 }
 
-void settingsDump(const ::terminal::CommandContext&, const ::settings::query::IndexedSetting* begin, const ::settings::query::IndexedSetting* end, size_t index);
+void settingsDump(const ::terminal::CommandContext&,
+    const espurna::settings::query::IndexedSetting* begin,
+    const espurna::settings::query::IndexedSetting* end, size_t index);
+
 template <typename T>
 void settingsDump(const ::terminal::CommandContext& ctx, const T& settings, size_t index) {
     settingsDump(ctx, std::begin(settings), std::end(settings), index);

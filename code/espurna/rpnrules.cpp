@@ -143,8 +143,8 @@ String name(size_t index) {
 size_t countMqttNames() {
     size_t index { 0 };
     for (;;) {
-        auto name = SettingsKey{ keys::Name, index };
-        if (!::settings::internal::has(name.value())) {
+        auto name = espurna::settings::Key(keys::Name, index);
+        if (!espurna::settings::internal::has(name.value())) {
             break;
         }
 
@@ -380,12 +380,12 @@ void onConnected(JsonObject& root) {
     }
 
 #if MQTT_SUPPORT
-    static constexpr std::array<::settings::query::IndexedSetting, 2> Settings {
+    static constexpr std::array<espurna::settings::query::IndexedSetting, 2> Settings {
         {{settings::keys::Name, settings::name},
          {settings::keys::Topic, settings::topic}}
     };
 
-    ::web::ws::EnumerableConfig config{ root, STRING_VIEW("rpnTopics") };
+    espurna::web::ws::EnumerableConfig config{ root, STRING_VIEW("rpnTopics") };
     config(STRING_VIEW("topics"), settings::countMqttNames(), Settings);
 #endif
 }

@@ -27,10 +27,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // Helpers / utility functions
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace web {
 namespace ws {
-namespace build {
 namespace {
+
+namespace internal {
+
+alignas(4) static constexpr char SchemaKey[] PROGMEM = "schema";
+
+} // namespace internal
+
+namespace build {
 
 constexpr uint16_t port() {
     return WEB_PORT;
@@ -40,22 +48,15 @@ constexpr bool authentication() {
     return 1 == WS_AUTHENTICATION;
 }
 
-} // namespace
 } // namespace build
 
-namespace internal {
-namespace {
-
-alignas(4) static constexpr char SchemaKey[] PROGMEM = "schema";
-
 } // namespace
-} // namespace internal
 
-EnumerableConfig::EnumerableConfig(JsonObject& root, Name name) :
+EnumerableConfig::EnumerableConfig(JsonObject& root, StringView name) :
     _root(root.createNestedObject(FPSTR(name.c_str())))
 {}
 
-void EnumerableConfig::operator()(Name name, ::settings::Iota iota, Check check, Setting* begin, Setting* end) {
+void EnumerableConfig::operator()(StringView name, espurna::settings::Iota iota, Check check, Setting* begin, Setting* end) {
     JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
 
     if (_root.containsKey(FPSTR(internal::SchemaKey))) {
@@ -79,11 +80,11 @@ void EnumerableConfig::operator()(Name name, ::settings::Iota iota, Check check,
     }
 }
 
-EnumerablePayload::EnumerablePayload(JsonObject& root, Name name) :
+EnumerablePayload::EnumerablePayload(JsonObject& root, StringView name) :
     _root(root.createNestedObject(FPSTR(name.c_str())))
 {}
 
-void EnumerablePayload::operator()(Name name, settings::Iota iota, Check check, Pairs&& pairs) {
+void EnumerablePayload::operator()(StringView name, settings::Iota iota, Check check, Pairs&& pairs) {
     JsonArray& entries = _root.createNestedArray(FPSTR(name.c_str()));
 
     if (_root.containsKey(FPSTR(internal::SchemaKey))) {
@@ -112,6 +113,7 @@ void EnumerablePayload::operator()(Name name, settings::Iota iota, Check check, 
 
 } // namespace ws
 } // namespace web
+} // namespace espurna
 
 // -----------------------------------------------------------------------------
 // Periodic updates
@@ -426,9 +428,9 @@ namespace {
 // Check the existing setting before saving it
 // (we only care about the settings storage, don't mind the build values)
 bool _wsStore(const String& key, const String& value) {
-    auto current = settings::internal::get(key);
+    auto current = espurna::settings::internal::get(key);
     if (!current || (current.ref() != value)) {
-        return settings::internal::set(key, value);
+        return espurna::settings::internal::set(key, value);
     }
 
     return false;
@@ -620,8 +622,8 @@ void _wsOnConnected(JsonObject& root) {
     root[F("sdk")] = ESP.getSdkVersion();
     root[F("core")] = getCoreVersion();
 
-    root[F("webPort")] = getSetting(F("webPort"), web::ws::build::port());
-    root[F("wsAuth")] = getSetting(F("wsAuth"), web::ws::build::authentication());
+    root[F("webPort")] = getSetting(F("webPort"), espurna::web::ws::build::port());
+    root[F("wsAuth")] = getSetting(F("wsAuth"), espurna::web::ws::build::authentication());
 }
 
 void _wsConnected(uint32_t client_id) {

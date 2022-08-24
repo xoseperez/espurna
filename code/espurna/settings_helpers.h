@@ -11,52 +11,56 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include <Arduino.h>
 
+#include <memory>
 #include <utility>
 
-// --------------------------------------------------------------------------
+#include "types.h"
 
-class SettingsKey {
+namespace espurna {
+namespace settings {
+
+class Key {
 public:
-    SettingsKey() = default;
-    SettingsKey(const SettingsKey&) = default;
-    SettingsKey(SettingsKey&&) = default;
+    Key() = default;
+    Key(const Key&) = default;
+    Key(Key&&) = default;
 
-    SettingsKey(const char* key) :
+    Key(const char* key) :
         _key(key)
     {}
 
-    SettingsKey(const __FlashStringHelper* key) :
+    Key(const __FlashStringHelper* key) :
         _key(key)
     {}
 
-    SettingsKey(const String& key) :
+    Key(const String& key) :
         _key(key)
     {}
 
-    SettingsKey(String&& key) :
+    Key(String&& key) :
         _key(std::move(key))
     {}
 
-    SettingsKey(const String& prefix, size_t index) :
+    Key(const String& prefix, size_t index) :
         _key(prefix)
     {
         _key += index;
     }
 
-    SettingsKey(String&& prefix, size_t index) :
+    Key(String&& prefix, size_t index) :
         _key(std::move(prefix))
     {
         _key += index;
     }
 
-    SettingsKey(const char* prefix, size_t index) :
+    Key(const char* prefix, size_t index) :
         _key(prefix)
     {
         _key += index;
     }
 
-    SettingsKey(const __FlashStringHelper* prefix, size_t index) :
-        SettingsKey(reinterpret_cast<const char*>(prefix), index)
+    Key(const __FlashStringHelper* prefix, size_t index) :
+        Key(reinterpret_cast<const char*>(prefix), index)
     {}
 
     const char* c_str() const {
@@ -84,13 +88,13 @@ public:
         return std::move(_key);
     }
 
+    explicit operator StringView() {
+        return StringView(_key.c_str(), _key.length());
+    }
+
 private:
     String _key;
 };
-
-// --------------------------------------------------------------------------
-
-namespace settings {
 
 // 'optional' type for a byte range (...from the settings storage)
 struct ValueResult {
@@ -202,90 +206,6 @@ private:
     size_t _end { 0 };
     size_t _step { 1 };
 };
-
-struct StringView {
-    StringView() = delete;
-
-    template <size_t Size>
-    constexpr StringView(const char (&string)[Size]) noexcept :
-        _ptr(&string[0]),
-        _len(Size - 1)
-    {}
-
-    constexpr StringView(const char* ptr, size_t len) noexcept :
-        _ptr(ptr),
-        _len(len)
-    {}
-
-    explicit StringView(const __FlashStringHelper* ptr) noexcept :
-        _ptr(reinterpret_cast<const char*>(ptr)),
-        _len(strlen_P(_ptr))
-    {}
-
-    explicit StringView(const SettingsKey& key) noexcept :
-        _ptr(key.c_str()),
-        _len(key.length())
-    {}
-
-    StringView(const String&&) = delete;
-    StringView(const String& string) noexcept :
-        StringView(string.c_str(), string.length())
-    {}
-
-    constexpr StringView(const char* ptr) noexcept :
-        StringView(ptr, __builtin_strlen(ptr))
-    {}
-
-    bool compareRam(const StringView& other) const {
-        return (other._len == _len)
-            && (strncmp(other._ptr, _ptr, _len) == 0);
-    }
-
-    bool compareFlash(const StringView& other) const {
-        return (other._len == _len)
-            && (strncmp_P(other._ptr, _ptr, _len) == 0);
-    }
-
-    constexpr const char* c_str() const {
-        return _ptr;
-    }
-
-    constexpr size_t length() const {
-        return _len;
-    }
-
-    String toString() const {
-        String out;
-        out.concat(_ptr, _len);
-        return out;
-    }
-
-private:
-    const char* _ptr;
-    size_t _len;
-};
-
-inline bool operator==(const StringView& lhs, const char* rhs) {
-    return lhs.compareFlash(rhs);
-}
-
-inline bool operator==(const StringView& lhs, const String& rhs) {
-    return lhs.compareFlash(rhs);
-}
-
-inline bool operator==(const StringView& lhs, const SettingsKey& rhs) {
-    return lhs.compareFlash(StringView{rhs.c_str(), rhs.length()});
-}
-
-inline String operator+(String&& lhs, StringView rhs) {
-    lhs.concat(rhs.c_str(), rhs.length());
-    return lhs;
-}
-
-#define STRING_VIEW(X) ({\
-        alignas(4) static constexpr char __pstr__[] PROGMEM = (X);\
-        ::settings::StringView{__pstr__};\
-    })
 
 namespace options {
 
@@ -511,3 +431,4 @@ private:
 
 } // namespace query
 } // namespace settings
+} // namespace espurna

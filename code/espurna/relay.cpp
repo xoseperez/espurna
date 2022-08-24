@@ -345,9 +345,9 @@ alignas(4) static constexpr char Mode[] PROGMEM = "relayPulse";
 namespace {
 
 Result time(size_t index) {
-    auto time = ::settings::internal::get(SettingsKey{keys::Time, index}.value());
+    auto time = espurna::settings::internal::get(espurna::settings::Key{keys::Time, index}.value());
     if (!time) {
-        return Result { std::chrono::duration_cast<Duration>(build::time(index)) };
+        return Result(std::chrono::duration_cast<Duration>(build::time(index)));
     }
 
     return parse(time.ref());
@@ -557,7 +557,7 @@ namespace settings {
 namespace options {
 namespace {
 
-using ::settings::options::Enumeration;
+using espurna::settings::options::Enumeration;
 
 alignas(4) static constexpr char TristateNone[] PROGMEM = "none";
 alignas(4) static constexpr char TristateOff[] PROGMEM = "off";
@@ -572,11 +572,11 @@ struct RelayTristateHelper {
     };
 
     static T convert(const String& value) {
-        return ::settings::internal::convert(Options, value, T::None);
+        return espurna::settings::internal::convert(Options, value, T::None);
     }
 
     static String serialize(T value) {
-        return ::settings::internal::serialize(Options, value);
+        return espurna::settings::internal::serialize(Options, value);
     }
 };
 
@@ -711,17 +711,18 @@ private:
     RelayMask _mask {};
 };
 
+namespace espurna {
 namespace settings {
 namespace internal {
 namespace {
 
-using espurna::relay::settings::options::RelayTristateHelper;
-using espurna::relay::settings::options::PayloadStatusOptions;
-using espurna::relay::settings::options::RelayMqttTopicModeOptions;
-using espurna::relay::settings::options::RelayBootOptions;
-using espurna::relay::settings::options::RelayProviderOptions;
-using espurna::relay::settings::options::RelayTypeOptions;
-using espurna::relay::settings::options::RelaySyncOptions;
+using relay::settings::options::RelayTristateHelper;
+using relay::settings::options::PayloadStatusOptions;
+using relay::settings::options::RelayMqttTopicModeOptions;
+using relay::settings::options::RelayBootOptions;
+using relay::settings::options::RelayProviderOptions;
+using relay::settings::options::RelayTypeOptions;
+using relay::settings::options::RelaySyncOptions;
 
 } // namespace
 
@@ -805,7 +806,6 @@ String serialize(RelaySync value) {
 } // namespace internal
 } // namespace settings
 
-namespace espurna {
 namespace relay {
 namespace settings {
 namespace keys {
@@ -944,12 +944,12 @@ namespace {
 
 #define EXACT_VALUE(NAME, FUNC)\
 String NAME () {\
-    return ::settings::internal::serialize(FUNC());\
+    return espurna::settings::internal::serialize(FUNC());\
 }
 
 #define ID_VALUE(NAME, FUNC)\
 String NAME (size_t id) {\
-    return ::settings::internal::serialize(FUNC(id));\
+    return espurna::settings::internal::serialize(FUNC(id));\
 }
 
 namespace internal {
@@ -972,7 +972,7 @@ ID_VALUE(pulseMode, pulse::settings::mode)
 String pulseTime(size_t index) {
     const auto result = pulse::settings::time(index);
     const auto as_seconds = std::chrono::duration_cast<pulse::Seconds>(result.duration());
-    return ::settings::internal::serialize(as_seconds.count());
+    return espurna::settings::internal::serialize(as_seconds.count());
 }
 
 #if MQTT_SUPPORT
@@ -985,14 +985,14 @@ ID_VALUE(mqttTopicMode, settings::mqttTopicMode)
 
 } // namespace internal
 
-static constexpr ::settings::query::Setting Settings[] PROGMEM {
+static constexpr espurna::settings::query::Setting Settings[] PROGMEM {
     {keys::Dummy, internal::dummyCount},
     {keys::BootMask, internal::bootMask},
     {keys::Interlock, internal::interlockDelay},
     {keys::Sync, internal::syncMode}
 };
 
-static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
+static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Name, settings::name},
     {keys::Provider, internal::provider},
     {keys::Type, internal::type},
@@ -2037,7 +2037,7 @@ void _relaySettingsMigrate(int version) {
                 break;
             }
 
-            auto syncKey = SettingsKey("mqttGroupSync", index);
+            auto syncKey = espurna::settings::Key(F("mqttGroupSync"), index);
             auto sync = getSetting(syncKey);
 
             setSetting({keys::TopicSub, index}, group);
@@ -2168,7 +2168,7 @@ bool _relayWebSocketOnKeyCheck(const char* key, JsonVariant&) {
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    ::web::ws::EnumerablePayload payload{root, STRING_VIEW("relayState")};
+    espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("relayState")};
     payload(STRING_VIEW("states"), _relays.size(), {
         {STRING_VIEW("status"), [](JsonArray& out, size_t index) {
             out.add(_relays[index].target_status ? 1 : 0);
@@ -2184,7 +2184,7 @@ void _relayWebSocketSendRelays(JsonObject& root) {
         return;
     }
 
-    ::web::ws::EnumerableConfig config{root, STRING_VIEW("relayConfig")};
+    espurna::web::ws::EnumerableConfig config{root, STRING_VIEW("relayConfig")};
 
     auto& container = config.root();
     container[F("size")] = _relays.size();
@@ -2203,7 +2203,7 @@ void _relayWebSocketOnVisible(JsonObject& root) {
     if (relays > 1) {
         wsPayloadModule(root, PSTR("multirelay"));
         root[FPSTR(espurna::relay::settings::keys::Sync)] =
-            ::settings::internal::serialize(espurna::relay::settings::syncMode());
+            espurna::settings::internal::serialize(espurna::relay::settings::syncMode());
         root[FPSTR(espurna::relay::settings::keys::Interlock)] =
             espurna::relay::settings::interlockDelay().count();
     }
@@ -2620,7 +2620,7 @@ using TerminalRelayPrintExtra = void(*)(const Relay&, char* out, size_t size);
 
 template <typename T>
 String _relayTristateToPayload(T value) {
-    return ::settings::internal::RelayTristateHelper<T>::serialize(value);
+    return espurna::settings::internal::RelayTristateHelper<T>::serialize(value);
 }
 
 void _relayPrint(Print& out, const Relay& relay, size_t index) {
@@ -2922,16 +2922,16 @@ namespace settings {
 namespace query {
 namespace {
 
-bool checkSamePrefix(::settings::StringView key) {
+bool checkSamePrefix(StringView key) {
     alignas(4) static constexpr char Prefix[] PROGMEM = "relay";
-    return ::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
-String findIndexedValueFrom(::settings::StringView key) {
-    return ::settings::query::IndexedSetting::findValueFrom(_relays.size(), IndexedSettings, key);
+String findIndexedValueFrom(StringView key) {
+    return espurna::settings::query::IndexedSetting::findValueFrom(_relays.size(), IndexedSettings, key);
 }
 
-bool checkExact(::settings::StringView key) {
+bool checkExact(StringView key) {
     for (const auto& setting : Settings) {
         if (setting.key().compareFlash(key)) {
             return true;
@@ -2941,8 +2941,8 @@ bool checkExact(::settings::StringView key) {
     return false;
 }
 
-String findValueFrom(::settings::StringView key) {
-    return ::settings::query::Setting::findValueFrom(Settings, key);
+String findValueFrom(StringView key) {
+    return espurna::settings::query::Setting::findValueFrom(Settings, key);
 }
 
 void setup() {

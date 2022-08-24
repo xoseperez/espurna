@@ -385,7 +385,7 @@ alignas(4) static constexpr char Pattern[] PROGMEM = "ledPattern";
 namespace options {
 namespace {
 
-using ::settings::options::Enumeration;
+using espurna::settings::options::Enumeration;
 
 alignas(4) static constexpr char Manual[] PROGMEM = "manual";
 alignas(4) static constexpr char WiFi[] PROGMEM = "wifi";
@@ -424,7 +424,6 @@ static constexpr Enumeration<LedMode> LedModeOptions[] PROGMEM {
 } // namespace options
 } // namespace settings
 } // namespace led
-} // namespace espurna
 
 // -----------------------------------------------------------------------------
 
@@ -432,7 +431,7 @@ namespace settings {
 namespace internal {
 namespace {
 
-using espurna::led::settings::options::LedModeOptions;
+using led::settings::options::LedModeOptions;
 
 } // namespace
 
@@ -450,7 +449,6 @@ String serialize(LedMode mode) {
 
 // -----------------------------------------------------------------------------
 
-namespace espurna {
 namespace led {
 namespace build {
 namespace {
@@ -612,7 +610,8 @@ namespace {
 
 #define ID_VALUE(NAME)\
 String NAME (size_t id) {\
-    return ::settings::internal::serialize(::espurna::led::settings::NAME(id));\
+    return espurna::settings::internal::serialize(\
+        ::espurna::led::settings::NAME(id));\
 }
 
 ID_VALUE(pin)
@@ -627,7 +626,7 @@ ID_VALUE(relay)
 
 namespace {
 
-static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
+static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Gpio, internal::pin},
     {keys::Inverse, internal::inverse},
     {keys::Mode, internal::mode},
@@ -636,13 +635,13 @@ static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
 #endif
 };
 
-bool checkSamePrefix(::settings::StringView key) {
+bool checkSamePrefix(StringView key) {
     static constexpr char Prefix[] PROGMEM = "led";
-    return ::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
-String findValueFrom(::settings::StringView key) {
-    return ::settings::query::IndexedSetting::findValueFrom(
+String findValueFrom(StringView key) {
+    return espurna::settings::query::IndexedSetting::findValueFrom(
         ::espurna::led::internal::leds.size(), IndexedSettings, key);
 }
 
@@ -1009,7 +1008,7 @@ void onVisible(JsonObject& root) {
 
 void onConnected(JsonObject& root) {
     if (count()) {
-        ::web::ws::EnumerableConfig config{root, STRING_VIEW("ledConfig")};
+        espurna::web::ws::EnumerableConfig config{root, STRING_VIEW("ledConfig")};
         config(STRING_VIEW("leds"), ::espurna::led::count(), settings::query::IndexedSettings);
     }
 }
@@ -1049,7 +1048,7 @@ void setup() {
         for (const auto& led : internal::leds) {
             ctx.output.printf_P(
                 PSTR("led%u {Gpio=%hhu Mode=%s}\n"), id++, led.pin(),
-                ::settings::internal::serialize(led.mode()).c_str());
+                espurna::settings::internal::serialize(led.mode()).c_str());
         }
     });
 }
@@ -1077,7 +1076,7 @@ void setup() {
     const auto leds = internal::leds.size();
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %u\n"), leds);
     if (leds) {
-        led::settings::query::setup();
+        espurna::led::settings::query::setup();
 #if MQTT_SUPPORT
         ::mqttRegister(mqtt::callback);
 #endif

@@ -50,6 +50,7 @@ $ pio run -e ... \
 // One solution is to patch upstream to have an optional `namespace irremoteesp8266 { ... }` wrapping everything related to the lib through a build flag, possibly versioned as well
 // And, getting rid of accidentally exported C stuff in favour of C++ alternatives.
 
+namespace espurna {
 namespace ir {
 namespace {
 namespace tx {
@@ -83,7 +84,7 @@ struct NoopSender {
     }
 };
 
-#define IRsend ::ir::tx::NoopSender
+#define IRsend espurna::ir::tx::NoopSender
 #endif
 
 struct PayloadSenderBase {
@@ -208,7 +209,7 @@ struct NoopReceiver {
     }
 };
 
-#define IRrecv ::ir::rx::NoopReceiver
+#define IRrecv espurna::ir::rx::NoopReceiver
 #endif
 
 namespace build {
@@ -297,92 +298,10 @@ std::unique_ptr<IRrecv> instance;
 } // namespace internal
 } // namespace rx
 
-// TODO: some -std=c++11 things. *almost* direct ports of std::string_view and std::optional
-//       (may be aliased via `using` and depend on the __cplusplus? string view is not 1-to-1 though)
-//       obviously, missing most of constexpr init and std::optional optimization related to trivial ctors & dtors
-//
 // TODO: since the exceptions are disabled, and parsing failure is not really an 'exceptional' result anyway...
 //       result struct may be in need of an additional struct describing the error, instead of just a boolean true or false
 //       (something like std::expected - http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0323r8.html)
 //       current implementation may be adjusted, but not the using DecodeResult = std::optional<T> mentioned above
-
-struct StringView {
-    StringView() = delete;
-    ~StringView() = default;
-
-    constexpr StringView(const StringView&) noexcept = default;
-    constexpr StringView(StringView&&) noexcept = default;
-
-#if __cplusplus > 201103L
-    constexpr StringView& operator=(const StringView&) noexcept = default;
-    constexpr StringView& operator=(StringView&&) noexcept = default;
-#else
-    StringView& operator=(const StringView&) noexcept = default;
-    StringView& operator=(StringView&&) noexcept = default;
-#endif
-
-    constexpr StringView(std::nullptr_t) noexcept :
-        _begin(nullptr),
-        _length(0)
-    {}
-
-    constexpr StringView(const char* begin, size_t length) noexcept :
-        _begin(begin),
-        _length(length)
-    {}
-
-    constexpr StringView(const char* begin, const char* end) noexcept :
-        StringView(begin, end - begin)
-    {}
-
-    template <size_t Size>
-    constexpr StringView(const char (&string)[Size]) noexcept :
-        StringView(&string[0], Size - 1)
-    {}
-
-    StringView& operator=(const String& string) noexcept {
-        _begin = string.c_str();
-        _length = string.length();
-        return *this;
-    }
-
-    explicit StringView(const String& string) noexcept :
-        StringView(string.c_str(), string.length())
-    {}
-
-    template <size_t Size>
-    constexpr StringView& operator=(const char (&string)[Size]) noexcept {
-        _begin = &string[0];
-        _length = Size - 1;
-        return *this;
-    }
-
-    const char* begin() const noexcept {
-        return _begin;
-    }
-
-    const char* end() const noexcept {
-        return _begin + _length;
-    }
-
-    constexpr size_t length() const noexcept {
-        return _length;
-    }
-
-    explicit operator bool() const {
-        return _begin && _length;
-    }
-
-    explicit operator String() const {
-        String out;
-        out.concat(_begin, _length);
-        return out;
-    }
-
-private:
-    const char* _begin;
-    size_t _length;
-};
 
 template <typename T>
 struct ParseResult {
@@ -651,7 +570,7 @@ decode_type_t type(StringView view) {
 }
 
 uint64_t value(StringView view) {
-    return ::ir::simple::value::decode(view);
+    return espurna::ir::simple::value::decode(view);
 }
 
 uint16_t bits(StringView value) {
@@ -694,19 +613,19 @@ Payload prepare(StringView type, StringView value, StringView bits, StringView r
     result.value = payload::value(value);
     result.bits = payload::bits(bits);
 
-    if (repeats) {
+    if (repeats.length()) {
         result.repeats = payload::repeats(repeats);
     } else {
         result.repeats = tx::internal::repeats;
     }
 
-    if (series) {
+    if (series.length()) {
         result.series = payload::series(series);
     } else {
         result.series = tx::internal::series;
     }
 
-    if (delay) {
+    if (delay.length()) {
         result.delay = payload::delay(delay);
     } else {
         result.delay = tx::internal::delay;
@@ -934,16 +853,16 @@ String encode(T& result) {
 
 Payload prepare(StringView type, StringView value, StringView series, StringView delay) {
     Payload result;
-    result.type = ::ir::simple::payload::type(type);
+    result.type = espurna::ir::simple::payload::type(type);
     result.value = value::decode(value);
 
-    if (series) {
+    if (series.length()) {
         result.series = simple::payload::series(series);
     } else {
         result.series = tx::internal::series;
     }
 
-    if (delay) {
+    if (delay.length()) {
         result.delay = simple::payload::delay(delay);
     } else {
         result.delay = tx::internal::delay;
@@ -1375,13 +1294,13 @@ void callback(unsigned int type, const char* topic, char* payload) {
 
 void process(rx::DecodeResult& result) {
     if (internal::publish_state && result && (result.bytes() > 8)) {
-        ::mqttSend(build::topicRxState(), ::ir::state::payload::encode(result).c_str());
+        ::mqttSend(build::topicRxState(), espurna::ir::state::payload::encode(result).c_str());
     } else if (internal::publish_simple) {
-        ::mqttSend(build::topicRxSimple(), ::ir::simple::payload::encode(result).c_str());
+        ::mqttSend(build::topicRxSimple(), espurna::ir::simple::payload::encode(result).c_str());
     }
 
     if (internal::publish_raw) {
-        ::mqttSend(build::topicRxRaw(), ::ir::raw::payload::encode(result).c_str());
+        ::mqttSend(build::topicRxRaw(), espurna::ir::raw::payload::encode(result).c_str());
     }
 }
 
@@ -1641,7 +1560,7 @@ void process(rx::DecodeResult& result) {
     key += F("irCmd");
     key += value;
 
-    auto cmd = ::settings::internal::get(key);
+    auto cmd = espurna::settings::internal::get(key);
     if (cmd) {
         internal::inject(cmd.ref());
     }
@@ -1851,16 +1770,18 @@ void setup() {
 
 } // namespace
 } // namespace ir
+} // namespace espurna
 
 #if IR_TEST_SUPPORT
+namespace espurna {
 namespace ir {
-namespace {
 namespace test {
+namespace {
 
 // TODO: may be useful if struct and values comparison error dump happens. but, not really nice looking for structs b/c of the length and no field highlight
 
 #if 0
-String serialize(const ::ir::simple::Payload& payload) {
+String serialize(const espurna::ir::simple::Payload& payload) {
     String out;
     out.reserve(128);
 
@@ -1869,7 +1790,7 @@ String serialize(const ::ir::simple::Payload& payload) {
     out += F(", ");
 
     out += F(".value=");
-    out += ::ir::simple::value::encode(payload.value);
+    out += espurna::ir::simple::value::encode(payload.value);
     out += F(", ");
 
     out += F(".bits=");
@@ -1891,7 +1812,7 @@ String serialize(const ::ir::simple::Payload& payload) {
     return out;
 }
 
-String serialize(const ::ir::raw::Payload& payload) {
+String serialize(const espurna::ir::raw::Payload& payload) {
     String out;
     out.reserve(128);
 
@@ -2045,40 +1966,40 @@ private:
 void setup() {
     IR_TEST_SETUP_BEGIN() {
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse(""));
+            IR_TEST(!simple::parse(""));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse(","));
+            IR_TEST(!simple::parse(","));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse("999::"));
+            IR_TEST(!simple::parse("999::"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse("-5:doesntmatter"));
+            IR_TEST(!simple::parse("-5:doesntmatter"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse("2:0:31"));
+            IR_TEST(!simple::parse("2:0:31"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse("2:012:31"));
+            IR_TEST(!simple::parse("2:012:31"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::simple::parse("2:112233445566778899AA:31"));
+            IR_TEST(!simple::parse("2:112233445566778899AA:31"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(::ir::simple::value::encode(0xffaabbccddee) == F("FFAABBCCDDEE"));
+            IR_TEST(simple::value::encode(0xffaabbccddee) == F("FFAABBCCDDEE"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(::ir::simple::value::encode(0xfaabbccddee) == F("0FAABBCCDDEE"));
+            IR_TEST(simple::value::encode(0xfaabbccddee) == F("0FAABBCCDDEE"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(::ir::simple::value::encode(0xee) == F("EE"));
+            IR_TEST(simple::value::encode(0xee) == F("EE"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(::ir::simple::value::encode(0) == F("00"));
+            IR_TEST(simple::value::encode(0) == F("00"));
         },
         IR_TEST_RUNNER() {
-            auto result = ir::simple::parse("2:7FAABBCC:31");
+            auto result = simple::parse("2:7FAABBCC:31");
             IR_TEST(result.has_value());
 
             auto& payload = result.value();
@@ -2087,7 +2008,7 @@ void setup() {
             IR_TEST(payload.bits == 31);
         },
         IR_TEST_RUNNER() {
-            auto result = ir::simple::parse("15:AABBCCDD:25:3");
+            auto result = simple::parse("15:AABBCCDD:25:3");
             IR_TEST(result.has_value());
 
             auto& payload = result.value();
@@ -2097,7 +2018,7 @@ void setup() {
             IR_TEST(payload.repeats == 3);
         },
         IR_TEST_RUNNER() {
-            auto result = ir::simple::parse("10:0FEFEFEF:21:2:5:500");
+            auto result = simple::parse("10:0FEFEFEF:21:2:5:500");
             IR_TEST(result.has_value());
 
             auto& payload = result.value();
@@ -2109,7 +2030,7 @@ void setup() {
             IR_TEST(payload.delay == 500);
         },
         IR_TEST_RUNNER() {
-            auto result = ir::simple::parse("20:1122AABBCCDDEEFF:64:2:3:1000");
+            auto result = simple::parse("20:1122AABBCCDDEEFF:64:2:3:1000");
             IR_TEST(result.has_value());
 
             auto ptr = std::make_unique<NoopPayloadSender>(
@@ -2127,25 +2048,25 @@ void setup() {
             IR_TEST(!ptr->reschedule());
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::state::parse(""));
+            IR_TEST(!state::parse(""));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::state::parse(":"));
+            IR_TEST(!state::parse(":"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::state::parse("-1100,100,150"));
+            IR_TEST(!state::parse("-1100,100,150"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::state::parse("25:"));
+            IR_TEST(!state::parse("25:"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::state::parse("30:C"));
+            IR_TEST(!state::parse("30:C"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(ir::state::parse("45:CD"));
+            IR_TEST(state::parse("45:CD"));
         },
         IR_TEST_RUNNER() {
-            auto result = ir::state::parse("20:C7B7966A9B29CD3C5F2AC03B91B0B221");
+            auto result = state::parse("20:C7B7966A9B29CD3C5F2AC03B91B0B221");
             IR_TEST(result.has_value());
 
             auto& payload = result.value();
@@ -2162,10 +2083,10 @@ void setup() {
                         std::begin(raw)));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(!ir::raw::parse("-1:1:500:,200,150,250,50,100,100,150"));
+            IR_TEST(!raw::parse("-1:1:500:,200,150,250,50,100,100,150"));
         },
         IR_TEST_RUNNER() {
-            auto result = ir::raw::parse("38:1:500:100,200,150,250,50,100,100,150");
+            auto result = raw::parse("38:1:500:100,200,150,250,50,100,100,150");
             IR_TEST(result.has_value());
 
             auto& payload = result.value();
@@ -2173,28 +2094,29 @@ void setup() {
             IR_TEST(payload.series == 1);
             IR_TEST(payload.delay == 500);
 
-            decltype(ir::raw::Payload::time) expected_time {
+            decltype(raw::Payload::time) expected_time {
                 100, 200, 150, 250, 50, 100, 100, 150};
             IR_TEST(expected_time == payload.time);
         },
         IR_TEST_RUNNER() {
             const uint16_t raw[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-            IR_TEST(::ir::raw::time::encode(std::begin(raw), std::end(raw)) == F("2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32"));
+            IR_TEST(raw::time::encode(std::begin(raw), std::end(raw)) == F("2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32"));
         }
     }
     IR_TEST_SETUP_END();
 }
 
-} // namespace test
 } // namespace
+} // namespace test
 } // namespace ir
+} // namespace espurna
 #endif
 
 void irSetup() {
 #if IR_TEST_SUPPORT
-    ir::test::setup();
+    espurna::ir::test::setup();
 #endif
-    ir::setup();
+    espurna::ir::setup();
 }
 
 #endif

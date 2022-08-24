@@ -68,7 +68,7 @@ alignas(4) static constexpr char MqttRetain[] PROGMEM = "btnMqttRetain";
 namespace options {
 namespace {
 
-using ::settings::options::Enumeration;
+using espurna::settings::options::Enumeration;
 
 alignas(4) static constexpr char Switch[] PROGMEM = "switch";
 alignas(4) static constexpr char Pushbutton[] PROGMEM = "pushbutton";
@@ -156,7 +156,6 @@ static constexpr Enumeration<ButtonAction> ButtonActionOptions[] PROGMEM {
 } // namespace query
 } // namespace settings
 } // namespace button
-} // namespace espurna
 
 namespace settings {
 namespace internal {
@@ -220,7 +219,6 @@ String serialize(::ButtonAction value) {
 
 // -----------------------------------------------------------------------------
 
-namespace espurna {
 namespace button {
 namespace internal {
 namespace {
@@ -567,16 +565,16 @@ namespace {
 
 template <typename T>
 T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
-    const auto key = SettingsKey{prefix, index};
+    const auto key = espurna::settings::Key{prefix, index};
 
-    auto indexed = ::settings::internal::get(key.value());
+    auto indexed = espurna::settings::internal::get(key.value());
     if (indexed) {
-        return ::settings::internal::convert<T>(indexed.ref());
+        return espurna::settings::internal::convert<T>(indexed.ref());
     }
 
-    auto global = ::settings::internal::get(prefix);
+    auto global = espurna::settings::internal::get(prefix);
     if (global) {
-        return ::settings::internal::convert<T>(indexed.ref());
+        return espurna::settings::internal::convert<T>(indexed.ref());
     }
 
     return defaultValue;
@@ -688,7 +686,7 @@ namespace {
 
 #define ID_VALUE(NAME, FUNC)\
 String NAME (size_t id) {\
-    return ::settings::internal::serialize(FUNC(id));\
+    return espurna::settings::internal::serialize(FUNC(id));\
 }
 
 ID_VALUE(pin, settings::pin)
@@ -724,7 +722,7 @@ ID_VALUE(mqttRetain, settings::mqttRetain)
 
 namespace {
 
-static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
+static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Gpio, internal::pin},
     {keys::GpioType, internal::pinType},
     {keys::Provider, internal::provider},
@@ -750,13 +748,13 @@ static constexpr ::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
 #endif
 };
 
-bool checkSamePrefix(::settings::StringView key) {
+bool checkSamePrefix(StringView key) {
     alignas(4) static constexpr char Prefix[] PROGMEM = "btn";
-    return ::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
-String findValueFrom(::settings::StringView key) {
-    return ::settings::query::IndexedSetting::findValueFrom(
+String findValueFrom(StringView key) {
+    return espurna::settings::query::IndexedSetting::findValueFrom(
         button::internal::buttons.size(), IndexedSettings, key);
 }
 

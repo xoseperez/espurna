@@ -20,6 +20,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace settings {
 namespace {
 
@@ -37,11 +38,7 @@ static kvs_type kv_store(
 );
 
 } // namespace
-} // namespace settings
 
-// --------------------------------------------------------------------------
-
-namespace settings {
 namespace query {
 
 String Setting::findValueFrom(const Setting* begin, const Setting* end, StringView key) {
@@ -72,7 +69,7 @@ String IndexedSetting::findValueFrom(Iota iota, const IndexedSetting* begin, con
 
     while (iota) {
         for (auto it = begin; it != end; ++it) {
-            const auto expected = SettingsKey(
+            const auto expected = Key(
                 (*it).prefix().toString(), *iota);
             if (key == expected.value()) {
                 out = (*it).value(*iota);
@@ -93,6 +90,20 @@ std::forward_list<Handler> handlers;
 
 } // namespace
 } // namespace internal
+
+String find(StringView key) {
+    String out;
+
+    for (const auto& handler : internal::handlers) {
+        if (handler.check(key)) {
+            out = handler.get(key);
+            break;
+        }
+    }
+
+    return out;
+}
+
 } // namespace query
 
 namespace options {
@@ -163,7 +174,7 @@ void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator p
     kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();
         for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
-            if (::settings::query::samePrefix(::settings::StringView{key}, (*it))) {
+            if (query::samePrefix(StringView{key}, (*it))) {
                 callback((*it), std::move(key), kv.value);
             }
         }
@@ -248,19 +259,10 @@ unsigned char convert(const String& value) {
 }
 
 } // namespace internal
-} // namespace settings
-
-// -----------------------------------------------------------------------------
-// Key-value API
-// -----------------------------------------------------------------------------
-
-size_t settingsSize() {
-    return settings::internal::size() - settings::internal::available();
-}
 
 // TODO: UI needs this to avoid showing keys in storage order
-std::vector<String> settingsKeys() {
-    auto keys = settings::internal::keys();
+std::vector<String> keys() {
+    auto keys = internal::keys();
     std::sort(keys.begin(), keys.end(), [](const String& rhs, const String& lhs) -> bool {
         return lhs.compareTo(rhs) > 0;
     });
@@ -268,37 +270,183 @@ std::vector<String> settingsKeys() {
     return keys;
 }
 
-void settingsRegisterQueryHandler(settings::query::Handler handler) {
-    settings::query::internal::handlers.push_front(handler);
+#if TERMINAL_SUPPORT
+namespace terminal {
+namespace {
+
+void dump(const ::terminal::CommandContext& ctx, const query::Setting* begin, const query::Setting* end) {
+    for (auto it = begin; it != end; ++it) {
+        ctx.output.printf_P(PSTR("> %s => %s\n"),
+            (*it).key().c_str(), (*it).value().c_str());
+    }
 }
 
-String settingsQuery(::settings::StringView key) {
-    String out;
+void dump(const ::terminal::CommandContext& ctx, const query::IndexedSetting* begin, const query::IndexedSetting* end, size_t index) {
+    for (auto it = begin; it != end; ++it) {
+        ctx.output.printf_P(PSTR("> %s%u => %s\n"),
+            (*it).prefix().c_str(), index,
+            (*it).value(index).c_str());
+    }
+}
 
-    for (const auto& handler : settings::query::internal::handlers) {
-        if (handler.check(key)) {
-            out = handler.get(key);
-            break;
-        }
+namespace commands {
+
+void config(::terminal::CommandContext&& ctx) {
+    DynamicJsonBuffer jsonBuffer(1024);
+    JsonObject& root = jsonBuffer.createObject();
+    settingsGetJson(root);
+    root.prettyPrintTo(ctx.output);
+    terminalOK(ctx);
+}
+
+void keys(::terminal::CommandContext&& ctx) {
+    auto keys = settingsKeys();
+
+    String value;
+    for (unsigned int i=0; i<keys.size(); i++) {
+        value = getSetting(keys[i]);
+        ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
     }
 
-    return out;
+    auto available [[gnu::unused]] = internal::available();
+    ctx.output.printf_P(PSTR("Number of keys: %u\n"), keys.size());
+    ctx.output.printf_P(PSTR("Available: %u bytes (%u%%)\n"),
+            available, (100 * available) / internal::size());
+
+    terminalOK(ctx);
+}
+
+void del(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, F("del <key> [<key>...]"));
+        return;
+    }
+
+    int result = 0;
+    for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
+        result += settings::internal::del(*it);
+    }
+
+    if (result) {
+        terminalOK(ctx);
+    } else {
+        terminalError(ctx, F("no keys were removed"));
+    }
+}
+
+void set(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 3) {
+        terminalError(ctx, F("set <key> <value>"));
+        return;
+    }
+
+    if (espurna::settings::internal::set(ctx.argv[1], ctx.argv[2])) {
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("could not set the key"));
+}
+
+void get(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, F("get <key> [<key>...]"));
+        return;
+    }
+
+    for (auto it = (ctx.argv.cbegin() + 1); it != ctx.argv.cend(); ++it) {
+        auto result = internal::get(*it);
+        if (!result) {
+            const auto maybeValue = query::find(*it);
+            if (maybeValue.length()) {
+                ctx.output.printf_P(PSTR("> %s => %s (default)\n"),
+                    (*it).c_str(), maybeValue.c_str());
+            } else {
+                ctx.output.printf_P(PSTR("> %s =>\n"), (*it).c_str());
+            }
+            continue;
+        }
+
+        ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), (*it).c_str(), result.c_str());
+    }
+
+    terminalOK(ctx);
+}
+
+void reload(::terminal::CommandContext&& ctx) {
+    espurnaReload();
+    terminalOK(ctx);
+}
+
+void factory_reset(::terminal::CommandContext&& ctx) {
+    factoryReset();
+    terminalOK(ctx);
+}
+
+void save(::terminal::CommandContext&& ctx) {
+    eepromCommit();
+    terminalOK(ctx);
+}
+
+} // namespace commands
+
+void setup() {
+    terminalRegisterCommand(F("CONFIG"), commands::config);
+    terminalRegisterCommand(F("KEYS"), commands::keys);
+
+    terminalRegisterCommand(F("DEL"), commands::del);
+    terminalRegisterCommand(F("SET"), commands::set);
+    terminalRegisterCommand(F("GET"), commands::get);
+
+    terminalRegisterCommand(F("RELOAD"), commands::reload);
+    terminalRegisterCommand(F("FACTORY.RESET"), commands::factory_reset);
+
+#if not SETTINGS_AUTOSAVE
+    terminalRegisterCommand(F("SAVE"), commands::save);
+#endif
+}
+
+} // namespace
+} // namespace terminal
+#endif
+
+} // namespace settings
+} // namespace espurna
+
+// -----------------------------------------------------------------------------
+// Key-value API
+// -----------------------------------------------------------------------------
+
+size_t settingsSize() {
+    return espurna::settings::internal::size() - espurna::settings::internal::available();
+}
+
+std::vector<String> settingsKeys() {
+    return espurna::settings::keys();
+}
+
+void settingsRegisterQueryHandler(espurna::settings::query::Handler handler) {
+    espurna::settings::query::internal::handlers.push_front(handler);
+}
+
+String settingsQuery(espurna::StringView key) {
+    return espurna::settings::query::find(key);
 }
 
 void moveSetting(const String& from, const String& to) {
-    auto result = settings::internal::get(from);
+    auto result = espurna::settings::internal::get(from);
     if (result) {
         setSetting(to, result.ref());
     }
     delSetting(from);
 }
 
-using SettingsKeyPair = std::pair<SettingsKey, SettingsKey>;
+using SettingsKeyPair = std::pair<espurna::settings::Key, espurna::settings::Key>;
 
 void moveSetting(const String& from, const String& to, size_t index) {
     const SettingsKeyPair keys = {{from, index}, {to, index}};
 
-    auto result = settings::internal::get(keys.first.value());
+    auto result = espurna::settings::internal::get(keys.first.value());
     if (result) {
         setSetting(keys.second, result.ref());
     }
@@ -309,7 +457,7 @@ void moveSetting(const String& from, const String& to, size_t index) {
 void moveSettings(const String& from, const String& to) {
     for (size_t index = 0; index < 100; ++index) {
         const SettingsKeyPair keys = {{from, index}, {to, index}};
-        auto result = settings::internal::get(keys.first.value());
+        auto result = espurna::settings::internal::get(keys.first.value());
         if (!result) {
             break;
         }
@@ -320,34 +468,34 @@ void moveSettings(const String& from, const String& to) {
 }
 
 template
-bool getSetting(const SettingsKey& key, bool defaultValue);
+bool getSetting(const espurna::settings::Key& key, bool defaultValue);
 
 template
-int getSetting(const SettingsKey& key, int defaultValue);
+int getSetting(const espurna::settings::Key& key, int defaultValue);
 
 template
-long getSetting(const SettingsKey& key, long defaultValue);
+long getSetting(const espurna::settings::Key& key, long defaultValue);
 
 template
-unsigned char getSetting(const SettingsKey& key, unsigned char defaultValue);
+unsigned char getSetting(const espurna::settings::Key& key, unsigned char defaultValue);
 
 template
-unsigned short getSetting(const SettingsKey& key, unsigned short defaultValue);
+unsigned short getSetting(const espurna::settings::Key& key, unsigned short defaultValue);
 
 template
-unsigned int getSetting(const SettingsKey& key, unsigned int defaultValue);
+unsigned int getSetting(const espurna::settings::Key& key, unsigned int defaultValue);
 
 template
-unsigned long getSetting(const SettingsKey& key, unsigned long defaultValue);
+unsigned long getSetting(const espurna::settings::Key& key, unsigned long defaultValue);
 
 template
-float getSetting(const SettingsKey& key, float defaultValue);
+float getSetting(const espurna::settings::Key& key, float defaultValue);
 
 template
-double getSetting(const SettingsKey& key, double defaultValue);
+double getSetting(const espurna::settings::Key& key, double defaultValue);
 
 String getSetting(const String& key) {
-    return std::move(settings::internal::get(key)).get();
+    return std::move(espurna::settings::internal::get(key)).get();
 }
 
 String getSetting(const __FlashStringHelper* key) {
@@ -358,21 +506,21 @@ String getSetting(const char* key) {
     return getSetting(String(key));
 }
 
-String getSetting(const SettingsKey& key) {
+String getSetting(const espurna::settings::Key& key) {
     static const String defaultValue("");
     return getSetting(key, defaultValue);
 }
 
-String getSetting(const SettingsKey& key, const char* defaultValue) {
+String getSetting(const espurna::settings::Key& key, const char* defaultValue) {
     return getSetting(key, String(defaultValue));
 }
 
-String getSetting(const SettingsKey& key, const __FlashStringHelper* defaultValue) {
+String getSetting(const espurna::settings::Key& key, const __FlashStringHelper* defaultValue) {
     return getSetting(key, String(defaultValue));
 }
 
-String getSetting(const SettingsKey& key, const String& defaultValue) {
-    auto result = settings::internal::get(key.value());
+String getSetting(const espurna::settings::Key& key, const String& defaultValue) {
+    auto result = espurna::settings::internal::get(key.value());
     if (result) {
         return std::move(result).get();
     }
@@ -380,8 +528,8 @@ String getSetting(const SettingsKey& key, const String& defaultValue) {
     return defaultValue;
 }
 
-String getSetting(const SettingsKey& key, String&& defaultValue) {
-    auto result = settings::internal::get(key.value());
+String getSetting(const espurna::settings::Key& key, String&& defaultValue) {
+    auto result = espurna::settings::internal::get(key.value());
     if (result) {
         return std::move(result).get();
     }
@@ -390,10 +538,10 @@ String getSetting(const SettingsKey& key, String&& defaultValue) {
 }
 
 bool delSetting(const String& key) {
-    return settings::internal::del(key);
+    return espurna::settings::internal::del(key);
 }
 
-bool delSetting(const SettingsKey& key) {
+bool delSetting(const espurna::settings::Key& key) {
     return delSetting(key.value());
 }
 
@@ -406,10 +554,10 @@ bool delSetting(const __FlashStringHelper* key) {
 }
 
 bool hasSetting(const String& key) {
-    return settings::internal::has(key);
+    return espurna::settings::internal::has(key);
 }
 
-bool hasSetting(const SettingsKey& key) {
+bool hasSetting(const espurna::settings::Key& key) {
     return hasSetting(key.value());
 }
 
@@ -506,131 +654,28 @@ void settingsGetJson(JsonObject& root) {
 
 #if TERMINAL_SUPPORT
 
-void settingsDump(const ::terminal::CommandContext& ctx, const ::settings::query::Setting* begin, const ::settings::query::Setting* end) {
-    for (auto it = begin; it != end; ++it) {
-        ctx.output.printf_P(PSTR("> %s => %s\n"),
-            (*it).key().c_str(), (*it).value().c_str());
-    }
+void settingsDump(const ::terminal::CommandContext& ctx,
+        const espurna::settings::query::Setting* begin,
+        const espurna::settings::query::Setting* end)
+{
+    espurna::settings::terminal::dump(ctx, begin, end);
 }
 
-void settingsDump(const ::terminal::CommandContext& ctx, const ::settings::query::IndexedSetting* begin, const ::settings::query::IndexedSetting* end, size_t index) {
-    for (auto it = begin; it != end; ++it) {
-        ctx.output.printf_P(PSTR("> %s%u => %s\n"),
-            (*it).prefix().c_str(), index,
-            (*it).value(index).c_str());
-    }
+void settingsDump(const ::terminal::CommandContext& ctx,
+        const espurna::settings::query::IndexedSetting* begin,
+        const espurna::settings::query::IndexedSetting* end, size_t index)
+{
+    espurna::settings::terminal::dump(ctx, begin, end, index);
 }
 
 namespace {
 
-void _settingsInitCommands() {
-    terminalRegisterCommand(F("CONFIG"), [](::terminal::CommandContext&& ctx) {
-        // TODO: enough of a buffer?
-        DynamicJsonBuffer jsonBuffer(1024);
-        JsonObject& root = jsonBuffer.createObject();
-        settingsGetJson(root);
-        root.prettyPrintTo(ctx.output);
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("KEYS"), [](::terminal::CommandContext&& ctx) {
-        auto keys = settingsKeys();
-
-        String value;
-        for (unsigned int i=0; i<keys.size(); i++) {
-            value = getSetting(keys[i]);
-            ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
-        }
-
-        auto available [[gnu::unused]] = settings::internal::available();
-        ctx.output.printf_P(PSTR("Number of keys: %u\n"), keys.size());
-        ctx.output.printf_P(PSTR("Available: %u bytes (%u%%)\n"),
-                available, (100 * available) / settings::internal::size());
-
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("DEL"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() < 2) {
-            terminalError(ctx, F("del <key> [<key>...]"));
-            return;
-        }
-
-        int result = 0;
-        for (auto it = (ctx.argv.begin() + 1); it != ctx.argv.end(); ++it) {
-            result += settings::internal::del(*it);
-        }
-
-        if (result) {
-            terminalOK(ctx);
-        } else {
-            terminalError(ctx, F("no keys were removed"));
-        }
-    });
-
-    terminalRegisterCommand(F("SET"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 3) {
-            terminalError(ctx, F("set <key> <value>"));
-            return;
-        }
-
-        if (settings::internal::set(ctx.argv[1], ctx.argv[2])) {
-            terminalOK(ctx);
-            return;
-        }
-
-        terminalError(ctx, F("could not set the key"));
-    });
-
-    terminalRegisterCommand(F("GET"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() < 2) {
-            terminalError(ctx, F("get <key> [<key>...]"));
-            return;
-        }
-
-        for (auto it = (ctx.argv.cbegin() + 1); it != ctx.argv.cend(); ++it) {
-            auto key = ::settings::StringView { *it };
-
-            auto result = settings::internal::get(key.toString());
-            if (!result) {
-                const auto maybeValue = settingsQuery(key);
-                if (maybeValue.length()) {
-                    ctx.output.printf_P(PSTR("> %s => %s (default)\n"), key.c_str(), maybeValue.c_str());
-                } else {
-                    ctx.output.printf_P(PSTR("> %s =>\n"), key.c_str());
-                }
-                continue;
-            }
-
-            ctx.output.printf_P(PSTR("> %s => \"%s\"\n"), key.c_str(), result.c_str());
-        }
-
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("RELOAD"), [](::terminal::CommandContext&& ctx) {
-        espurnaReload();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("FACTORY.RESET"), [](::terminal::CommandContext&& ctx) {
-        factoryReset();
-        terminalOK(ctx);
-    });
-
-#if not SETTINGS_AUTOSAVE
-    terminalRegisterCommand(F("SAVE"), [](::terminal::CommandContext&& ctx) {
-        eepromCommit();
-        terminalOK(ctx);
-    });
-#endif
-}
 
 } // namespace
 #endif
 
 void settingsSetup() {
 #if TERMINAL_SUPPORT
-    _settingsInitCommands();
+    espurna::settings::terminal::setup();
 #endif
 }

@@ -440,14 +440,14 @@ namespace terminal {
 void setup() {
     terminalRegisterCommand(F("PWM.WRITE"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 3) {
-            const auto convert_channel = ::settings::internal::convert<uint32_t>;
+            const auto convert_channel = espurna::settings::internal::convert<uint32_t>;
             const auto channel = convert_channel(ctx.argv[1]);
             if (channel >= channels()) {
                 terminalError(ctx, F("Invalid channel ID"));
                 return;
             }
 
-            const auto convert_duty = ::settings::internal::convert<float>;
+            const auto convert_duty = espurna::settings::internal::convert<float>;
             const auto value = std::clamp(convert_duty(ctx.argv[2]), 0.f, 100.f);
             ctx.output.printf("PWM channel %u duty %s\n",
                 channel, String(value, 3).c_str());

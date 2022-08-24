@@ -43,49 +43,34 @@ extern "C" unsigned long adc_rand_noise;
 namespace espurna {
 namespace system {
 namespace settings {
-
 namespace options {
-namespace internal {
 namespace {
 
 alignas(4) static constexpr char None[] PROGMEM = "none";
 alignas(4) static constexpr char Once[] PROGMEM = "once";
 alignas(4) static constexpr char Repeat[] PROGMEM = "repeat";
 
-} // namespace
-} // namespace internal
-
-namespace {
-
-static constexpr ::settings::options::Enumeration<heartbeat::Mode> HeartbeatModeOptions[] PROGMEM {
-    {heartbeat::Mode::None, internal::None},
-    {heartbeat::Mode::Once, internal::Once},
-    {heartbeat::Mode::Repeat, internal::Repeat},
+static constexpr espurna::settings::options::Enumeration<heartbeat::Mode> HeartbeatModeOptions[] PROGMEM {
+    {heartbeat::Mode::None, None},
+    {heartbeat::Mode::Once, Once},
+    {heartbeat::Mode::Repeat, Repeat},
 };
 
 } // namespace
 } // namespace options
 } // namespace settings
-} // namespace system
-} // namespace espurna
-
-// -----------------------------------------------------------------------------
+} // namespace
 
 namespace settings {
 namespace internal {
-namespace {
-
-using espurna::system::settings::options::HeartbeatModeOptions;
-
-} // namespace
 
 template <>
 espurna::heartbeat::Mode convert(const String& value) {
-    return convert(HeartbeatModeOptions, value, espurna::heartbeat::Mode::Repeat);
+    return convert(system::settings::options::HeartbeatModeOptions, value, espurna::heartbeat::Mode::Repeat);
 }
 
 String serialize(espurna::heartbeat::Mode mode) {
-    return serialize(HeartbeatModeOptions, mode);
+    return serialize(system::settings::options::HeartbeatModeOptions, mode);
 }
 
 template <>
@@ -120,7 +105,6 @@ espurna::duration::Seconds convert(const String& value) {
 
 // -----------------------------------------------------------------------------
 
-namespace espurna {
 namespace system {
 
 uint32_t RandomDevice::operator()() const {
@@ -166,8 +150,9 @@ void blockingDelay(CoreClock::duration timeout) {
 
 } // namespace time
 
-namespace memory {
 namespace {
+
+namespace memory {
 
 // returns 'total stack size' minus 'un-painted area'
 // needs re-painting step, as this never decreases
@@ -226,11 +211,9 @@ HeapStats heapStats() {
     return heapStats(ESP, HasHeapStatsFix<EspClass>{});
 }
 
-} // namespace
 } // namespace memory
 
 namespace boot {
-namespace {
 
 String serialize(CustomResetReason reason) {
     const __FlashStringHelper* ptr { nullptr };
@@ -355,27 +338,21 @@ Ticker timer;
 bool flag { true };
 
 } // namespace internal
-}
-
-namespace {
 
 #if SYSTEM_CHECK_ENABLED
 namespace stability {
 namespace build {
-namespace {
 
-constexpr uint8_t ChecksMin { 0 };
-constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
+static constexpr uint8_t ChecksMin { 0 };
+static constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
+
 static_assert(ChecksMax > 1, "");
 static_assert(ChecksMin < ChecksMax, "");
 
 constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
 static_assert(CheckTime > espurna::duration::Seconds::min(), "");
 
-} // namespace
 } // namespace build
-
-namespace {
 
 void init() {
     // on cold boot / rst, bumps count to 2 so we don't end up
@@ -397,7 +374,6 @@ bool check() {
     return internal::flag;
 }
 
-} // namespace
 } // namespace stability
 #endif
 
@@ -423,7 +399,6 @@ void customReason(CustomResetReason reason) {
     internal::persistent_data.reason(reason);
 }
 
-} // namespace
 } // namespace boot
 
 // -----------------------------------------------------------------------------
@@ -431,17 +406,13 @@ void customReason(CustomResetReason reason) {
 // Calculated load average of the loop() as a percentage (notice that this may not be accurate)
 namespace load_average {
 namespace build {
-namespace {
 
 static constexpr size_t ValueMax { 100 };
 
 static constexpr espurna::duration::Seconds Interval { LOADAVG_INTERVAL };
 static_assert(Interval <= espurna::duration::Seconds(90), "");
 
-} // namespace
 } // namespace build
-
-namespace {
 
 using TimeSource = espurna::time::SystemClock;
 using Type = unsigned long;
@@ -488,30 +459,13 @@ void loop() {
         : 0;
 }
 
-} // namespace
 } // namespace load_average
+} // namespace
 
 // -----------------------------------------------------------------------------
 
 namespace heartbeat {
 namespace {
-
-String serialize(espurna::heartbeat::Mode mode) {
-    const __FlashStringHelper* ptr { nullptr };
-    switch (mode) {
-    case Mode::None:
-        ptr = F("none");
-        break;
-    case Mode::Once:
-        ptr = F("once");
-        break;
-    case Mode::Repeat:
-        ptr = F("repeat");
-        break;
-    }
-
-    return String(ptr);
-}
 
 namespace build {
 
@@ -551,13 +505,11 @@ constexpr Mask value() {
 
 namespace settings {
 namespace keys {
-namespace {
 
 alignas(4) static constexpr char Mode[] PROGMEM = "hbMode";
 alignas(4) static constexpr char Interval[] PROGMEM = "hbInterval";
 alignas(4) static constexpr char Report[] PROGMEM = "hbReport";
 
-} // namespace
 } // namespace keys
 
 Mode mode() {
@@ -725,7 +677,8 @@ void init() {
         const auto mode = settings::mode();
         if (mode != Mode::None) {
             DEBUG_MSG_P(PSTR("[MAIN] Heartbeat \"%s\", every %u (seconds)\n"),
-                serialize(mode).c_str(), settings::interval().count());
+                espurna::settings::internal::serialize(mode).c_str(),
+                settings::interval().count());
         } else {
             DEBUG_MSG_P(PSTR("[MAIN] Heartbeat disabled\n"));
         }
@@ -744,34 +697,58 @@ void init() {
 }
 
 } // namespace
+
+// system defaults, r/n this is used when providing module-specific settings
+
+espurna::duration::Milliseconds currentIntervalMs() {
+    return settings::interval();
+}
+
+espurna::duration::Seconds currentInterval() {
+    return settings::interval();
+}
+
+Mask currentValue() {
+    return settings::value();
+}
+
+Mode currentMode() {
+    return settings::mode();
+}
+
 } // namespace heartbeat
+
+namespace {
 
 #if WEB_SUPPORT
 namespace web {
-namespace {
 
 void onConnected(JsonObject& root) {
   root[FPSTR(heartbeat::settings::keys::Report)] = heartbeat::settings::value();
   root[FPSTR(heartbeat::settings::keys::Interval)] =
       heartbeat::settings::interval().count();
   root[FPSTR(heartbeat::settings::keys::Mode)] =
-      ::settings::internal::serialize(heartbeat::settings::mode());
+      espurna::settings::internal::serialize(heartbeat::settings::mode());
 }
 
 bool onKeyCheck(const char* key, JsonVariant&) {
-    const auto view = ::settings::StringView{ key };
-    return ::settings::query::samePrefix(view, STRING_VIEW("sys"))
-        || ::settings::query::samePrefix(view, STRING_VIEW("hb"));
+    const auto view = StringView(key);
+    return espurna::settings::query::samePrefix(view, STRING_VIEW("sys"))
+        || espurna::settings::query::samePrefix(view, STRING_VIEW("hb"));
 }
 
-} // namespace
+void init() {
+    wsRegister()
+        .onConnected(onConnected)
+        .onKeyCheck(onKeyCheck);
+}
+
 } // namespace web
 #endif
 
 // Allow to schedule a reset at the next loop
 // Store reset reason both here and in for the next boot
 namespace internal {
-namespace {
 
 Ticker reset_timer;
 auto reset_reason = CustomResetReason::None;
@@ -781,10 +758,7 @@ void reset(CustomResetReason reason) {
     reset_reason = reason;
 }
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 // raw reboot call, effectively:
 // ```
@@ -839,34 +813,32 @@ duration::Seconds uptime() {
         time::SystemClock::now().time_since_epoch());
 }
 
+void loop() {
+    pending_reset_loop();
+    load_average::loop();
+    heartbeat::loop();
+}
+
+void setup() {
+    boot::hardware();
+    boot::customReason();
+
+#if SYSTEM_CHECK_ENABLED
+    boot::stability::init();
+#endif
+
+#if WEB_SUPPORT
+    web::init();
+#endif
+
+    espurnaRegisterLoop(loop);
+    heartbeat::init();
+}
+
 } // namespace
 } // namespace espurna
 
 // -----------------------------------------------------------------------------
-
-namespace espurna {
-namespace heartbeat {
-
-// system defaults, r/n used when providing module-specific settings
-
-espurna::duration::Milliseconds currentIntervalMs() {
-    return espurna::heartbeat::settings::interval();
-}
-
-espurna::duration::Seconds currentInterval() {
-    return espurna::heartbeat::settings::interval();
-}
-
-Mask currentValue() {
-    return espurna::heartbeat::settings::value();
-}
-
-Mode currentMode() {
-    return espurna::heartbeat::settings::mode();
-}
-
-} // namespace heartbeat
-} // namespace espurna
 
 unsigned long systemFreeStack() {
     return espurna::memory::freeStack();
@@ -976,30 +948,10 @@ void systemScheduleHeartbeat() {
     espurna::heartbeat::reschedule();
 }
 
-void systemLoop() {
-    espurna::pending_reset_loop();
-    espurna::load_average::loop();
-    espurna::heartbeat::loop();
-}
-
 espurna::duration::Seconds systemUptime() {
     return espurna::uptime();
 }
 
 void systemSetup() {
-    espurna::boot::hardware();
-    espurna::boot::customReason();
-
-#if SYSTEM_CHECK_ENABLED
-    espurna::boot::stability::init();
-#endif
-
-#if WEB_SUPPORT
-    wsRegister()
-        .onConnected(espurna::web::onConnected)
-        .onKeyCheck(espurna::web::onKeyCheck);
-#endif
-
-    espurnaRegisterLoop(systemLoop);
-    espurna::heartbeat::init();
+    espurna::setup();
 }

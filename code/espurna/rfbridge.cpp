@@ -351,7 +351,7 @@ String on(size_t id) {
 }
 
 void store(const __FlashStringHelper* prefix, size_t id, const String& value) {
-    SettingsKey key { prefix, id };
+    const espurna::settings::Key key(prefix, id);
     setSetting(key, value);
     DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.c_str(), value.c_str());
 }
@@ -500,12 +500,12 @@ RfbRelayMatch _rfbMatch(const char* code) {
         return matched;
     }
 
-    ::settings::StringView codeView { code };
+    const espurna::StringView codeView(code);
 
     // we gather all available options, as the kv store might be defined in any order
     // scan kvs only once, since we want both ON and OFF options and don't want to depend on the relayCount()
-    settings::internal::foreach_prefix(
-        [codeView, &matched](settings::StringView prefix, String key, const settings::kvs_type::ReadResult& value) {
+    espurna::settings::internal::foreach_prefix(
+        [codeView, &matched](espurna::StringView prefix, String key, const espurna::settings::kvs_type::ReadResult& value) {
             if (codeView.length() != value.length()) {
                 return;
             }
@@ -1312,14 +1312,14 @@ void _rfbSettingsMigrate(int version) {
 
         auto relays = relayCount();
         for (decltype(relays) id = 0; id < relays; ++id) {
-            SettingsKey on_key {F("rfbON"), id};
-            if (_rfbSettingsMigrateCode(buffer, getSetting(on_key))) {
-                setSetting(on_key, buffer);
+            const espurna::settings::Key on(F("rfbON"), id);
+            if (_rfbSettingsMigrateCode(buffer, getSetting(on))) {
+                setSetting(on, buffer);
             }
 
-            SettingsKey off_key {F("rfbOFF"), id};
-            if (_rfbSettingsMigrateCode(buffer, getSetting(off_key))) {
-                setSetting(off_key, buffer);
+            const espurna::settings::Key off(F("rfbOFF"), id);
+            if (_rfbSettingsMigrateCode(buffer, getSetting(off))) {
+                setSetting(off, buffer);
             }
         }
     }

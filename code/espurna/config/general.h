@@ -1158,7 +1158,7 @@
 // Default mireds & kelvin to the Philips Hue limits
 // https://developers.meethue.com/documentation/core-concepts
 //
-// Home Assistant also uses these, see Light::min_mireds, Light::max_mireds
+// Home Assistant also uses these, see espurna::light::{min,max}_mireds
 // https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/light/__init__.py
 
 // Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)

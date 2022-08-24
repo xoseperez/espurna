@@ -416,7 +416,7 @@ namespace settings {
 namespace options {
 namespace {
 
-using ::settings::options::Enumeration;
+using espurna::settings::options::Enumeration;
 
 alignas(4) static constexpr char None[] PROGMEM = "none";
 alignas(4) static constexpr char Hardware[] PROGMEM = "hardware";
@@ -608,7 +608,7 @@ namespace {
 
 void gpio_read_write(::terminal::CommandContext&& ctx) {
     const int pin = (ctx.argv.size() >= 2)
-        ? ::settings::internal::convert<int>(ctx.argv[1])
+        ? espurna::settings::internal::convert<int>(ctx.argv[1])
         : -1;
 
     if ((pin >= 0) && !gpioValid(pin)) {
@@ -632,7 +632,7 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
     {
         // even in INPUT mode, we are still techically allowed to set output register
         // (like it is used in software I2C implementation with INPUT_PULLUP)
-        const bool status = ::settings::internal::convert<bool>(ctx.argv[2]);
+        const bool status = espurna::settings::internal::convert<bool>(ctx.argv[2]);
         if (pin == 16) {
             rtc::gpio16_set(status);
         } else {
@@ -682,7 +682,7 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
 
 void reg_read(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
-        const auto convert = ::settings::internal::convert<uint32_t>;
+        const auto convert = espurna::settings::internal::convert<uint32_t>;
         const auto address = convert(ctx.argv[1]);
 
         ctx.output.printf_P(PSTR("0x%08X -> 0x%08X\n"),
@@ -696,7 +696,7 @@ void reg_read(::terminal::CommandContext&& ctx) {
 
 void reg_write(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 3) {
-        const auto convert = ::settings::internal::convert<uint32_t>;
+        const auto convert = espurna::settings::internal::convert<uint32_t>;
 
         const auto address = convert(ctx.argv[1]);
         const auto value = convert(ctx.argv[2]);
@@ -722,13 +722,12 @@ void setup() {
 #endif
 
 } // namespace gpio
-} // namespace espurna
 
 namespace settings {
 namespace internal {
 namespace {
 
-using espurna::gpio::settings::options::GpioTypeOptions;
+using gpio::settings::options::GpioTypeOptions;
 
 } // namespace
 
@@ -743,6 +742,7 @@ String serialize(GpioType value) {
 
 } // namespace internal
 } // namespace settings
+} // namespace espurna
 
 // --------------------------------------------------------------------------
 

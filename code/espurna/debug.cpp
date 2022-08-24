@@ -35,7 +35,7 @@ namespace settings {
 namespace options {
 namespace {
 
-using ::settings::options::Enumeration;
+using espurna::settings::options::Enumeration;
 
 alignas(4) static constexpr char Disabled[] PROGMEM = "off";
 alignas(4) static constexpr char Enabled[] PROGMEM = "on";
@@ -65,7 +65,6 @@ alignas(4) static constexpr char HeartbeatInterval[] PROGMEM = "dbgHbIntvl";
 } // namespace keys
 } // namespace settings
 } // namespace debug
-} // namespace espurna
 
 namespace settings {
 namespace internal {
@@ -87,7 +86,6 @@ DebugLogMode convert(const String& value) {
 } // namespace internal
 } // namespace settings
 
-namespace espurna {
 namespace debug {
 namespace {
 

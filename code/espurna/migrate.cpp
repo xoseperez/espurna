@@ -33,10 +33,10 @@ int version() {
 namespace migrate {
 namespace {
 
-void deletePrefixes(::settings::query::StringViewIterator prefixes) {
+void deletePrefixes(query::StringViewIterator prefixes) {
     std::vector<String> to_purge;
 
-    ::settings::internal::foreach_prefix([&](::settings::StringView, String key, const ::settings::kvs_type::ReadResult&) {
+    internal::foreach_prefix([&](StringView, String key, const kvs_type::ReadResult&) {
         to_purge.push_back(std::move(key));
     }, prefixes);
 
@@ -59,7 +59,7 @@ int currentVersion() {
 } // namespace settings
 } // namespace espurna
 
-void delSettingPrefix(::settings::query::StringViewIterator prefixes) {
+void delSettingPrefix(espurna::settings::query::StringViewIterator prefixes) {
     espurna::settings::migrate::deletePrefixes(std::move(prefixes));
 }
 

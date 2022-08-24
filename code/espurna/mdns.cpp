@@ -112,8 +112,8 @@ void mdnsServerSetup() {
     || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
     || defined(ARDUINO_ESP8266_RELEASE_2_7_4)
 
-    wifiRegister([](wifi::Event event) {
-        if ((event == wifi::Event::StationConnected) && !MDNS.isRunning()) {
+    wifiRegister([](espurna::wifi::Event event) {
+        if ((event == espurna::wifi::Event::StationConnected) && !MDNS.isRunning()) {
             mdns::start();
         }
     });
