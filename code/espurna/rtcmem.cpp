@@ -35,7 +35,6 @@ bool _rtcmemStatus() {
 
     switch (systemResetReason()) {
         case REASON_EXT_SYS_RST:
-        case REASON_WDT_RST:
         case REASON_DEFAULT_RST:
             readable = false;
             break;
