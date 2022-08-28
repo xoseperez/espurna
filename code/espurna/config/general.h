@@ -222,7 +222,7 @@
 #endif
 
 #ifndef SYSTEM_CHECK_MAX
-#define SYSTEM_CHECK_MAX        5               // After this many crashes on boot
+#define SYSTEM_CHECK_MAX        3               // After this many crashes on boot
                                                 // the system is flagged as unstable
 #endif
 

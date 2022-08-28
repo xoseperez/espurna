@@ -22,16 +22,17 @@ struct HeapStats {
 
 enum class CustomResetReason : uint8_t {
     None,
-    Button,
-    Factory,
-    Hardware,
+    Button,    // button event action
+    Factory,   // requested factory reset
+    Hardware,  // driver event
     Mqtt,
-    Ota,
-    Rpc,
-    Rule,
-    Scheduler,
-    Terminal,
-    Web
+    Ota,       // successful ota
+    Rpc,       // rpc (api) calls
+    Rule,      // rpn rule operator action
+    Scheduler, // scheduled reset
+    Terminal,  // terminal command action
+    Web,       // webui action
+    Stability, // stable counter action
 };
 
 namespace espurna {
@@ -300,6 +301,8 @@ uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
 void systemStabilityCounter(uint8_t count);
 
+void systemForceStable();
+void systemForceUnstable();
 bool systemCheck();
 
 void customResetReason(CustomResetReason);

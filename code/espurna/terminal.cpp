@@ -438,17 +438,25 @@ void _terminalInitCommands() {
     });
 
     terminalRegisterCommand(F("RESET"), [](::terminal::CommandContext&& ctx) {
-        auto count = 1;
-        if (ctx.argv.size() == 2) {
-            count = ctx.argv[1].toInt();
-            if (count < SYSTEM_CHECK_MAX) {
-                systemStabilityCounter(count);
-            }
-        }
-
         terminalOK(ctx);
         prepareReset(CustomResetReason::Terminal);
     });
+
+#if SYSTEM_CHECK_ENABLED
+    terminalRegisterCommand(F("STABLE"), [](::terminal::CommandContext&& ctx) {
+        systemForceStable();
+        prepareReset(CustomResetReason::Stability);
+    });
+
+    terminalRegisterCommand(F("TRAP"), [](::terminal::CommandContext&& ctx) {
+        __builtin_trap();
+    });
+
+    terminalRegisterCommand(F("UNSTABLE"), [](::terminal::CommandContext&& ctx) {
+        systemForceUnstable();
+        prepareReset(CustomResetReason::Stability);
+    });
+#endif
 
     terminalRegisterCommand(F("UPTIME"), [](::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("uptime %s\n"), getUptime().c_str());

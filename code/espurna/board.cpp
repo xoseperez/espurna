@@ -454,8 +454,8 @@ void boardSetup() {
             if (std::memcmp(&page[ConfigOffset], &Reference[0], Reference.size()) != 0) {
                 DEBUG_MSG_P(PSTR("[BOARD] Invalid SDK config at 0x%08X, resetting...\n"), Address + ConfigOffset);
                 customResetReason(CustomResetReason::Factory);
-                eraseSDKConfig();
-                __builtin_trap();
+                systemForceStable();
+                forceEraseSDKConfig();
                 // can't return!
             }
         }

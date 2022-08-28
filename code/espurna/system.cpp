@@ -251,6 +251,9 @@ String serialize(CustomResetReason reason) {
     case CustomResetReason::Web:
         ptr = F("Reboot from web interface");
         break;
+    case CustomResetReason::Stability:
+        ptr = F("Reboot after changing stability counter");
+        break;
     }
 
     return String(ptr);
@@ -339,44 +342,6 @@ bool flag { true };
 
 } // namespace internal
 
-#if SYSTEM_CHECK_ENABLED
-namespace stability {
-namespace build {
-
-static constexpr uint8_t ChecksMin { 0 };
-static constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
-
-static_assert(ChecksMax > 1, "");
-static_assert(ChecksMin < ChecksMax, "");
-
-constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
-static_assert(CheckTime > espurna::duration::Seconds::min(), "");
-
-} // namespace build
-
-void init() {
-    // on cold boot / rst, bumps count to 2 so we don't end up
-    // spamming crash recorder in case something goes wrong
-    const auto count = static_cast<bool>(internal::persistent_data)
-        ? internal::persistent_data.counter() : 1u;
-
-    internal::flag = (count < build::ChecksMax);
-    internal::timer.once_scheduled(build::CheckTime.count(), []() {
-        DEBUG_MSG_P(PSTR("[MAIN] Resetting stability counter\n"));
-        internal::persistent_data.counter(build::ChecksMin);
-    });
-
-    const auto next = count + 1u;
-    internal::persistent_data.counter((next > build::ChecksMax) ? count : next);
-}
-
-bool check() {
-    return internal::flag;
-}
-
-} // namespace stability
-#endif
-
 // system_get_rst_info() result is cached by the Core init for internal use
 uint32_t system_reason() {
     return resetInfo.reason;
@@ -398,6 +363,83 @@ CustomResetReason customReason() {
 void customReason(CustomResetReason reason) {
     internal::persistent_data.reason(reason);
 }
+
+#if SYSTEM_CHECK_ENABLED
+namespace stability {
+namespace build {
+
+static constexpr uint8_t ChecksMin { 1 };
+static constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
+
+static constexpr uint8_t ChecksIncrement { 1 };
+
+static_assert(ChecksMax > 1, "");
+static_assert(ChecksMin < ChecksMax, "");
+
+constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
+static_assert(CheckTime > espurna::duration::Seconds::min(), "");
+
+} // namespace build
+
+void force_stable() {
+    internal::persistent_data.counter(build::ChecksMin);
+    internal::flag = true;
+}
+
+void force_unstable() {
+    internal::persistent_data.counter(build::ChecksMax);
+    internal::flag = false;
+}
+
+uint8_t counter() {
+    return static_cast<bool>(internal::persistent_data)
+        ? internal::persistent_data.counter()
+        : build::ChecksMin;
+}
+
+void init() {
+    const auto count = counter();
+
+    switch (system_reason()) {
+    // initial boot and rst are probably just fine
+    case REASON_DEFAULT_RST:
+    case REASON_EXT_SYS_RST:
+        force_stable();
+        return;
+    // no point stalling, we are probably stuck somewhere
+    case REASON_WDT_RST:
+        force_unstable();
+        return;
+    // when counter gets changed manually
+    case REASON_SOFT_RESTART:
+        if (customReason() == CustomResetReason::Stability) {
+            internal::flag = (count < build::ChecksMax);
+            return;
+        }
+        break;
+    }
+
+    // bump counter value and persist. if we re-enter with maximum
+    // once more, system is flagged as unstable.
+    // so, we simply wait for the timer to reset back to minimum
+    // and start the cycle again
+    const auto next = std::min(build::ChecksMax,
+        static_cast<uint8_t>(count + build::ChecksIncrement));
+    internal::persistent_data.counter(next);
+    internal::flag = (count < build::ChecksMax);
+
+    internal::timer.once_scheduled(build::CheckTime.count(), []() {
+        DEBUG_MSG_P(PSTR("[MAIN] Resetting stability counter\n"));
+        internal::persistent_data.counter(build::ChecksMin);
+    });
+}
+
+bool check() {
+    return internal::flag;
+}
+
+} // namespace stability
+#endif
 
 } // namespace boot
 
@@ -688,6 +730,8 @@ void init() {
     pushOnce([](Mask) {
         if (!espurna::boot::stability::check()) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
+        } else if (espurna::boot::internal::timer.active()) {
+            DEBUG_MSG_P(PSTR("[MAIN] Pending stability counter reset...\n"));
         }
         return true;
     });
@@ -767,12 +811,9 @@ void reset(CustomResetReason reason) {
 // ```
 // triggered in SYS, might not always result in a clean reboot b/c of expected suspend
 // triggered in CONT *should* end up never returning back and loop might now be needed
-// (but, try to force swdt reboot in case it somehow happens)
 [[noreturn]] void reset() {
     ESP.restart();
-    for (;;) {
-        delay(100);
-    }
+    __builtin_trap();
 }
 
 // 'simple' reboot call with software controlled time
@@ -914,6 +955,14 @@ uint8_t systemStabilityCounter() {
 
 void systemStabilityCounter(uint8_t count) {
     espurna::boot::internal::persistent_data.counter(count);
+}
+
+void systemForceUnstable() {
+    espurna::boot::stability::force_unstable();
+}
+
+void systemForceStable() {
+    espurna::boot::stability::force_stable();
 }
 
 bool systemCheck() {
