@@ -431,21 +431,27 @@ void boardSetup() {
     // flash corruption happening to the 'default' WiFi config
 #if SYSTEM_CHECK_ENABLED
     if (!systemCheck()) {
-        // TODO: also check the next sector? both look like dupes
         const uint32_t Address { ESP.getFlashChipSize() - (FLASH_SECTOR_SIZE * 3) };
 
-        // 0x00B0:  0A 00 00 00 45 53 50 2D XX XX XX XX XX XX 00 00     ESP-XXXXXX
-        const uint8_t Reference[] { 0xa0, 0, 0, 0, 0x45, 0x53, 0x50, 0x2d };
-
-        static constexpr size_t Size { 256 };
+        static constexpr size_t PageSize { 256 };
 #ifdef FLASH_PAGE_SIZE
-        static_assert(FLASH_PAGE_SIZE == Size, "");
+        static_assert(FLASH_PAGE_SIZE == PageSize, "");
 #endif
-        alignas(alignof(uint32_t)) uint8_t page[Size];
+        static constexpr auto Alignment = alignof(uint32_t);
+        alignas(Alignment) std::array<uint8_t, PageSize> page;
 
-        if (ESP.flashRead(Address, reinterpret_cast<uint32_t*>(&page), Size)) {
+        if (ESP.flashRead(Address, reinterpret_cast<uint32_t*>(page.data()), page.size())) {
             constexpr uint32_t ConfigOffset { 0xb0 };
-            if (std::memcmp(&page[ConfigOffset], &Reference[0], std::size(Reference)) != 0) {
+
+            // In case flash was already erased at some point, but we are still here
+            alignas(Alignment) const std::array<uint8_t, 8> Empty { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+            if (std::memcpy(&page[ConfigOffset], &Empty[0], Empty.size()) != 0) {
+                return;
+            }
+
+            // 0x00B0:  0A 00 00 00 45 53 50 2D XX XX XX XX XX XX 00 00     ESP-XXXXXX
+            alignas(Alignment) const std::array<uint8_t, 8> Reference { 0xa0, 0x00, 0x00, 0x00, 0x45, 0x53, 0x50, 0x2d };
+            if (std::memcmp(&page[ConfigOffset], &Reference[0], Reference.size()) != 0) {
                 DEBUG_MSG_P(PSTR("[BOARD] Invalid SDK config at 0x%08X, resetting...\n"), Address + ConfigOffset);
                 customResetReason(CustomResetReason::Factory);
                 eraseSDKConfig();
