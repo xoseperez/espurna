@@ -338,8 +338,7 @@ Energy::Energy(double kwh) {
 }
 
 Energy& Energy::operator+=(WattSeconds other) {
-    *this += Energy(other);
-    return *this;
+    return *this += Energy(other);
 }
 
 Energy Energy::operator+(WattSeconds other) {
@@ -351,7 +350,14 @@ Energy Energy::operator+(WattSeconds other) {
 
 Energy& Energy::operator+=(const Energy& other) {
     _kwh.value += other._kwh.value;
-    *this += other._ws;
+
+    const auto left = WattSecondsMax - _ws.value;
+    if (other._ws.value >= left) {
+        _kwh.value += 1;
+        _ws.value += (other._ws.value - left);
+    } else {
+        _ws.value += other._ws.value;
+    }
 
     return *this;
 }
