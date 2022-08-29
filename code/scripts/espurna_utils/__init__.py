@@ -27,7 +27,7 @@ from .build import (
 )
 from .checks import check_env, check_cppcheck, check_printsize
 from .flags import app_inject_flags
-from .hooks import remove_float_support, dummy_ets_printf
+from .hooks import remove_float_support, disable_postmortem_output
 from .ldscripts import ldscripts_inject_libpath
 from .version import app_inject_version, app_full_version_for_env
 
@@ -42,7 +42,7 @@ __all__ = [
     "check_cppcheck",
     "check_env",
     "check_printsize",
-    "dummy_ets_printf",
+    "disable_postmortem_output",
     "firmware_destination",
     "ldscripts_inject_libpath",
     "remove_float_support",

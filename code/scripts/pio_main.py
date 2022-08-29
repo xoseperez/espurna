@@ -10,12 +10,14 @@
 # Run this script every time building an env AFTER platform-specific code is loaded
 
 import os
+import itertools
+
 from espurna_utils import (
     app_add_target_build_and_copy,
     app_inject_flags,
     app_inject_version,
     check_printsize,
-    dummy_ets_printf,
+    disable_postmortem_output,
     ldscripts_inject_libpath,
     remove_float_support,
 )
@@ -43,13 +45,11 @@ ldscripts_inject_libpath(env)
 
 # two-step update hint when using 1MB boards
 if not CI:
-    env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_printsize)
+    env.AddPostAction("checkprogsize", check_printsize)
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
-if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
-    env.AddPostAction(
-        "$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf
-    )
+if "DISABLE_POSTMORTEM_STACKDUMP" in itertools.chain(env["CPPFLAGS"], projenv["CPPFLAGS"]):
+    disable_postmortem_output(env)
 
 # override static version flag from the espurna/config/version.h
 # either completely, or change the version / revision / suffix part separately
