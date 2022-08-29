@@ -83,6 +83,11 @@ String serialize(espurna::duration::Seconds value) {
 }
 
 template <>
+std::chrono::duration<float> convert(const String& value) {
+    return std::chrono::duration<float>(convert<float>(value));
+}
+
+template <>
 duration::Milliseconds convert(const String& value) {
     return duration::Milliseconds(convert<duration::Milliseconds::rep>(value));
 }

@@ -8,7 +8,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include <Arduino.h>
+#include "settings.h"
 
 #include <chrono>
 #include <cstdint>
@@ -284,9 +284,7 @@ template <>
 duration::Milliseconds convert(const String&);
 
 template <>
-std::chrono::duration<float> convert(const String& value) {
-    return std::chrono::duration<float>(convert<float>(value));
-}
+std::chrono::duration<float> convert(const String&);
 
 String serialize(heartbeat::Mode);
 String serialize(duration::Seconds);
