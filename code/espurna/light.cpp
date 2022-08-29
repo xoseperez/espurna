@@ -584,6 +584,29 @@ private:
 
 } // namespace
 } // namespace light
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+namespace settings {
+namespace internal {
+
+template <>
+my92xx_model_t convert(const String& value) {
+    alignas(4) static constexpr char MY9291[] PROGMEM = "9291";
+    alignas(4) static constexpr char MY9231[] PROGMEM = "9231";
+
+    using Options = std::array<espurna::settings::options::Enumeration<my92xx_model_t>, 2>;
+    static constexpr Options options {
+        {{MY92XX_MODEL_MY9291, MY9291},
+         {MY92XX_MODEL_MY9231, MY9231}}
+    };
+
+    return convert(options, value, espurna::light::build::my92xxModel());
+}
+
+} // namespace internal
+} // namespace settings
+#endif
+
 } // namespace espurna
 
 namespace {
@@ -647,13 +670,14 @@ long _light_warm_kelvin = (1000000L / _light_warm_mireds);
 
 long _light_mireds { espurna::light::MiredsDefault };
 
-// In case we somehow forgot to initialize the brightness func, nullptr is expected to trigger an exception
-
-using LightProcessInputValues = void(*)(LightChannels&, long brightness);
-LightProcessInputValues _light_process_input_values { nullptr };
-
 bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
+
+void _lightProcessInputValuesNoop(LightChannels&, long) {
+}
+
+using LightProcessInputValues = void (*)(LightChannels&, long brightness);
+LightProcessInputValues _light_process_input_values { _lightProcessInputValuesNoop };
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 my92xx* _my92xx { nullptr };
@@ -668,30 +692,6 @@ std::unique_ptr<LightProvider> _light_provider;
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
-namespace settings {
-namespace internal {
-
-template <>
-my92xx_model_t convert(const String& value) {
-    alignas(4) static constexpr char MY9291[] PROGMEM = "9291";
-    alignas(4) static constexpr char MY9231[] PROGMEM = "9231";
-
-    using Options = std::array<espurna::settings::options::Enumeration<my92xx_model_t>, 2>;
-    static constexpr Options options {
-        {{MY92XX_MODEL_MY9291, MY9291},
-         {MY92XX_MODEL_MY9231, MY9231}}
-    };
-
-    return convert(options, value, espurna::light::build::my92xxModel());
-}
-
-} // namespace internal
-} // namespace settings
-
-#endif
 
 namespace {
 
@@ -1450,6 +1450,7 @@ class LightTransitionHandler {
 public:
     // internal calculations are done in floats, so hard-limit target & step time to a certain value
     // that can be representend precisely when casting milliseconds times back and forth
+    static constexpr espurna::duration::Milliseconds TimeMin { 10 };
     static constexpr espurna::duration::Milliseconds TimeMax { 1ul << 24ul };
 
     struct Transition {
@@ -1461,56 +1462,13 @@ public:
 
     using Transitions = std::vector<Transition>;
 
-    LightTransitionHandler(LightChannels& channels, bool state, LightTransition transition) :
-        _state(state),
-        _time(std::min(transition.time, TimeMax)),
-        _step(std::min(transition.step, TimeMax))
+    LightTransitionHandler() = delete;
+
+    LightTransitionHandler(LightChannels& channels, LightTransition transition, bool state) :
+        _transition(clamp(transition)),
+        _state(state)
     {
-        // generate a single transitions list for all the channels that had changed
-        // after that, provider loop will run() the list and assign intermediate target value(s)
-        bool delayed { false };
-        for (auto& channel : channels) {
-            if (prepare(channel, state)) {
-                delayed = true;
-            }
-        }
-
-        // target values are already assigned, next provider loop will apply them
-        if (!delayed) {
-            reset();
-            return;
-        }
-    }
-
-    bool prepare(LightChannel& channel, bool state) {
-        long target = (state && channel.state)
-            ? channel.value
-            : espurna::light::ValueMin;
-
-        channel.target = target;
-        if (channel.gamma) {
-            target = _lightGammaMap(target);
-        }
-
-        if (channel.inverse) {
-            target = espurna::light::ValueMax - target;
-        }
-
-        // TODO: implement different functions when there are multiple steps?
-        const float Diff { static_cast<float>(target) - channel.current };
-        if (!isImmediate(Diff)) {
-            pushGradual(channel.current, target, Diff);
-            return true;
-        }
-
-        pushImmediate(channel.current, target, Diff);
-        return false;
-    }
-
-    void reset() {
-        static constexpr espurna::duration::Milliseconds DefaultTime { 10 };
-        _step = DefaultTime;
-        _time = DefaultTime;
+        prepare(channels, transition, state);
     }
 
     template <typename StateFunc, typename ValueFunc, typename UpdateFunc>
@@ -1522,8 +1480,8 @@ public:
             state(_state);
         }
 
-        for (size_t index = 0; index < _transitions.size(); ++index) {
-            auto& transition = _transitions[index];
+        for (size_t index = 0; index < _prepared.size(); ++index) {
+            auto& transition = _prepared[index];
             if (!transition.count) {
                 continue;
             }
@@ -1548,8 +1506,8 @@ public:
         return next;
     }
 
-    const Transitions& transitions() const {
-        return _transitions;
+    const Transitions& prepared() const {
+        return _prepared;
     }
 
     bool state() const {
@@ -1557,26 +1515,76 @@ public:
     }
 
     espurna::duration::Milliseconds time() const {
-        return _time;
+        return _transition.time;
     }
 
     espurna::duration::Milliseconds step() const {
-        return _step;
+        return _transition.step;
     }
 
 private:
+    void minimalTime() {
+        _transition.time = TimeMin;
+        _transition.step = TimeMin;
+    }
+
+    void prepare(LightChannels& channels, LightTransition transition, bool state) {
+        // generate a single transitions list for all the channels that had changed
+        // after that, provider loop will run() the list and assign intermediate target value(s)
+        bool delayed { false };
+        for (auto& channel : channels) {
+            if (prepare(channel, transition, state)) {
+                delayed = true;
+            }
+        }
+
+        // target values are already assigned, next provider loop will apply them
+        if (!delayed) {
+            minimalTime();
+        }
+    }
+
+    bool prepare(LightChannel& channel, const LightTransition& transition, bool state) {
+        long target = (state && channel.state)
+            ? channel.value
+            : espurna::light::ValueMin;
+
+        channel.target = target;
+        if (channel.gamma) {
+            target = _lightGammaMap(target);
+        }
+
+        if (channel.inverse) {
+            target = espurna::light::ValueMax - target;
+        }
+
+        const float Diff { static_cast<float>(target) - channel.current };
+        if (!isImmediate(transition, Diff)) {
+            pushGradual(transition, channel.current, target, Diff);
+            return true;
+        }
+
+        pushImmediate(channel.current, target, Diff);
+        return false;
+    }
+
     void push(float& current, long target, float diff, size_t count) {
-        Transition transition{current, target, diff, count};
-        _transitions.push_back(std::move(transition));
+        _prepared.push_back(
+            Transition{
+                .value = current,
+                .target = target,
+                .step = diff,
+                .count = count,
+            });
     }
 
     void pushImmediate(float& current, long target, float diff) {
         push(current, target, diff, 1);
     }
 
-    void pushGradual(float& current, long target, float diff) {
-        const float TotalTime { static_cast<float>(_time.count()) };
-        const float StepTime { static_cast<float>(_step.count()) };
+    void pushGradual(const LightTransition& transition, float& current, long target, float diff) {
+        const auto TotalTime = static_cast<float>(transition.time.count());
+        const auto StepTime = static_cast<float>(transition.step.count());
 
         constexpr float BaseStep { 1.0f };
         const float Diff { std::abs(diff) };
@@ -1591,25 +1599,31 @@ private:
         push(current, target, step, static_cast<size_t>(Count));
     }
 
-    bool isImmediate(float diff) const {
-        return (!_time.count() || (_step >= _time) || (std::abs(diff) <= std::numeric_limits<float>::epsilon()));
+    static bool isImmediate(const LightTransition& transition, float diff) {
+        return !transition.time.count()
+            || (transition.step >= transition.time)
+            || (std::abs(diff) <= std::numeric_limits<float>::epsilon());
     }
 
-    Transitions _transitions;
+    static LightTransition clamp(LightTransition value) {
+        LightTransition out;
+        out.time = std::min(value.time, TimeMax);
+        out.step = std::min(value.step, TimeMax);
+        return out;
+    }
+
+    Transitions _prepared;
     bool _state_notified { false };
 
+    LightTransition _transition;
     bool _state;
-    espurna::duration::Milliseconds _time;
-    espurna::duration::Milliseconds _step;
 };
 
+constexpr espurna::duration::Milliseconds LightTransitionHandler::TimeMin;
 constexpr espurna::duration::Milliseconds LightTransitionHandler::TimeMax;
 
 struct LightUpdate {
-    LightTransition transition {
-        .time = espurna::duration::Milliseconds{0},
-        .step = espurna::duration::Milliseconds{0}
-    };
+    LightTransition transition;
     int report { 0 };
     bool save { false };
 };
@@ -1646,7 +1660,7 @@ struct LightUpdateHandler {
         if (_run) {
             _run = false;
             LightUpdate update{_update};
-            callback(update.save, update.transition, update.report);
+            callback(update.transition, update.report, update.save);
         }
     }
 
@@ -1655,8 +1669,37 @@ private:
     bool _run { false };
 };
 
+struct LightSequenceHandler {
+    LightSequenceHandler& operator=(const LightSequenceCallbacks& callbacks) {
+        _callbacks = callbacks;
+        return *this;
+    }
+
+    LightSequenceHandler& operator=(LightSequenceCallbacks&& callbacks) {
+        _callbacks = std::move(callbacks);
+        return *this;
+    }
+
+    void run() {
+        if (!_callbacks.empty()) {
+            auto callback = std::move(_callbacks.front());
+            _callbacks.pop_front();
+            callback();
+        }
+    }
+
+    void clear() {
+        _callbacks.clear();
+    }
+
+private:
+    LightSequenceCallbacks _callbacks;
+};
+
 LightUpdateHandler _light_update;
 bool _light_provider_update = false;
+
+LightSequenceHandler _light_sequence;
 
 Ticker _light_transition_ticker;
 std::unique_ptr<LightTransitionHandler> _light_transition;
@@ -1798,6 +1841,8 @@ void _lightProviderSchedule(espurna::duration::Milliseconds next) {
 //     uint64_t value;
 // };
 
+using LightValues = std::array<long, espurna::light::ChannelsMax>;
+
 struct LightRtcmem {
     //   1 2 3 4 5 6 7 8
     // [ m m b c c c c c ]
@@ -1821,8 +1866,6 @@ struct LightRtcmem {
     static_assert(espurna::light::ValueMin >= 0, "");
     static_assert(espurna::light::ValueMax <= 255, "");
 
-    using Values = std::array<long, espurna::light::ChannelsMax>;
-
     LightRtcmem() = default;
 
     explicit LightRtcmem(uint64_t value) {
@@ -1836,7 +1879,7 @@ struct LightRtcmem {
         _values[0] = ((value & 0xffull));
     }
 
-    LightRtcmem(const Values& values, long brightness, long mireds) :
+    LightRtcmem(const LightValues& values, long brightness, long mireds) :
         _values(values),
         _brightness(brightness),
         _mireds(mireds)
@@ -1852,13 +1895,13 @@ struct LightRtcmem {
             | (static_cast<uint64_t>(_values[0] & 0xffl));
     }
 
-    static Values defaultValues() {
-        Values out;
+    static LightValues defaultValues() {
+        LightValues out;
         out.fill(espurna::light::ValueMin);
         return out;
     }
 
-    const Values& values() const {
+    const LightValues& values() const {
         return _values;
     }
 
@@ -1871,7 +1914,7 @@ struct LightRtcmem {
     }
 
 private:
-    Values _values = defaultValues();
+    LightValues _values = defaultValues();
     long _brightness { espurna::light::BrightnessMax };
     long _mireds { espurna::light::MiredsDefault };
 };
@@ -2403,7 +2446,118 @@ void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
 
 namespace {
 
+// Special persistance case were we take a snapshot of the boolean
+// state, brightness and of current input and converted values
+
+struct LightValuesState {
+    LightValues inputs;
+    long brightness;
+    bool state;
+};
+
+LightValuesState _lightValuesState() {
+    LightValuesState out{};
+
+    std::transform(
+        _light_channels.begin(), _light_channels.end(),
+        out.inputs.begin(),
+        [](const LightChannel& channel) {
+            return channel.inputValue;
+        });
+
+    out.brightness = _light_brightness;
+    out.state = _light_state;
+
+    return out;
+}
+
+void _lightNotificationRestore(const LightValuesState& state) {
+    for (size_t index = 0; index < _light_channels.size(); ++index) {
+        lightChannel(index, state.inputs[index]);
+    }
+
+    lightBrightness(state.brightness);
+    lightState(state.state);
+}
+
+void _lightNotificationInit(size_t channel) {
+    for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
+        lightChannel(channel, espurna::light::ValueMin);
+    }
+
+    lightChannel(channel, espurna::light::ValueMax);
+    lightBrightness(espurna::light::BrightnessMax);
+    lightState(true);
+}
+
 void _lightInitCommands() {
+
+    terminalRegisterCommand(F("NOTIFY"), [](::terminal::CommandContext&& ctx) {
+        static constexpr auto NotifyTransition = LightTransition{
+            .time = espurna::duration::Seconds(1),
+            .step = espurna::duration::Milliseconds(50),
+        };
+
+        if ((ctx.argv.size() < 2) || (ctx.argv.size() > 5)) {
+            terminalError(ctx, F("NOTIFY <CHANNEL> [<REPEATS>] [<TIME>] [<STEP>]")); 
+            return;
+        }
+
+        size_t channel;
+        if (!_lightTryParseChannel(ctx.argv[1].c_str(), channel)) {
+            terminalError(ctx, F("Invalid channel ID"));
+            return;
+        }
+
+        using Duration = espurna::duration::Milliseconds;
+        const auto time_convert = espurna::settings::internal::convert<Duration>;
+
+        constexpr auto DefaultNotification = LightTransition {
+            .time = Duration(500),
+            .step = Duration(25),
+        };
+
+        const auto notification = (ctx.argv.size() >= 4)
+            ? LightTransition{
+                .time = time_convert(ctx.argv[2]),
+                .step = time_convert(ctx.argv[3])}
+            : DefaultNotification;
+
+        constexpr size_t DefaultRepeats { 3 };
+
+        const auto repeats_convert = espurna::settings::internal::convert<size_t>;
+        const auto repeats = (ctx.argv.size() >= 5)
+            ? repeats_convert(ctx.argv[4])
+            : DefaultRepeats;
+
+        auto state = std::make_shared<LightValuesState>(_lightValuesState());
+        auto restore = [state]() {
+            _lightNotificationRestore(*state);
+            lightUpdate(NotifyTransition, 0, false);
+        };
+
+        auto on = [channel, notification]() {
+            lightChannel(channel, espurna::light::ValueMax);
+            lightUpdateSequence(notification);
+        };
+
+        auto off = [channel, notification]() {
+            lightChannel(channel, espurna::light::ValueMin);
+            lightUpdateSequence(notification);
+        };
+
+        _lightNotificationInit(channel);
+        lightUpdate(NotifyTransition);
+
+        LightSequenceCallbacks callbacks;
+        callbacks.push_front(restore);
+        for (size_t n = 0; n < repeats; ++n) {
+            callbacks.push_front(off);
+            callbacks.push_front(on);
+        }
+
+        lightSequence(std::move(callbacks));
+    });
 
     terminalRegisterCommand(F("LIGHT"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() > 1) {
@@ -2645,7 +2799,7 @@ void _lightUpdateDebug(const LightTransitionHandler& handler) {
                 Time.count(), Step.count());
     }
 
-    for (auto& transition : handler.transitions()) {
+    for (auto& transition : handler.prepared()) {
         if (transition.count > 1) {
             DEBUG_MSG_P(PSTR("[LIGHT] Transition from %s to %ld (step %s, %u times)\n"),
                     String(transition.value, 2).c_str(), transition.target,
@@ -2655,35 +2809,42 @@ void _lightUpdateDebug(const LightTransitionHandler& handler) {
 }
 
 struct LightValuesObserver {
-    using Values = std::vector<long>;
-
     LightValuesObserver() = delete;
     explicit LightValuesObserver(const LightChannels& channels) :
-        _channels(channels)
-    {
-        save(_last);
-    }
+        _channels(channels),
+        _last_values(values(_channels)),
+        _last_size(_channels.size())
+    {}
 
     bool changed() const {
-        static Values current;
-        save(current);
-        return current != _last;
+        return (_last_size != _channels.size())
+            || (_last_values != values(_channels));
     }
 
 private:
-    void save(Values& output) const {
-        output.clear();
-        output.reserve(_channels.size());
-        for (auto& channel : _channels) {
-            output.push_back(channel.value);
-        }
+    static LightValues values(const LightChannels& channels) {
+        LightValues out{};
+
+        std::transform(
+            channels.begin(), channels.end(), out.begin(),
+            [](const LightChannel& channel) {
+                return channel.value;
+            });
+
+        return out;
     }
 
-    static Values _last;
     const LightChannels& _channels;
+
+    LightValues _last_values{};
+    size_t _last_size { 0 };
 };
 
-LightValuesObserver::Values LightValuesObserver::_last;
+void _lightSequenceCheck() {
+    if (!_light_update && !_light_transition) {
+        _light_sequence.run();
+    }
+}
 
 void _lightUpdate() {
     if (!_light_update) {
@@ -2699,10 +2860,10 @@ void _lightUpdate() {
     }
 
     _light_state_changed = false;
-    _light_update.run([](bool save, LightTransition transition, int report) {
+    _light_update.run([](LightTransition transition, int report, bool save) {
         // Channel output values will be set by the handler class and the specified provider
         // We either set the values immediately or schedule an ongoing transition
-        _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, _light_state, transition);
+        _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, transition, _light_state);
         _lightProviderSchedule(_light_transition->step());
         _lightUpdateDebug(*_light_transition);
 
@@ -2724,9 +2885,7 @@ void _lightUpdate() {
     });
 }
 
-} // namespace
-
-void lightUpdate(LightTransition transition, int report, bool save) {
+void _lightUpdate(LightTransition transition, int report, bool save, bool sequence) {
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
     if (!_light_provider) {
         return;
@@ -2738,22 +2897,55 @@ void lightUpdate(LightTransition transition, int report, bool save) {
     }
 
     _light_update.set(transition, report, save);
+    if (!sequence) {
+        _light_sequence.clear();
+    }
+}
+
+void _lightUpdate(LightTransition transition, int report, bool save) {
+    _lightUpdate(transition, report, save, false);
+}
+
+void _lightUpdate(LightTransition transition, espurna::light::Report report, bool save) {
+    _lightUpdate(transition, static_cast<int>(report), save, false);
+}
+
+void _lightUpdate(LightTransition transition) {
+    _lightUpdate(transition, espurna::light::DefaultReport, _light_save, false);
+}
+
+void _lightUpdate(bool save) {
+    _lightUpdate(lightTransition(), espurna::light::DefaultReport, save, false);
+}
+
+} // namespace
+
+void lightSequence(LightSequenceCallbacks callbacks) {
+    _light_sequence = std::move(callbacks);
+}
+
+void lightUpdateSequence(LightTransition transition) {
+    _lightUpdate(transition, 0, false, true);
+}
+
+void lightUpdate(LightTransition transition, int report, bool save) {
+    _lightUpdate(transition, report, save);
 }
 
 void lightUpdate(LightTransition transition, espurna::light::Report report, bool save) {
-    lightUpdate(transition, static_cast<int>(report), save);
+    _lightUpdate(transition, report, save);
 }
 
 void lightUpdate(LightTransition transition) {
-    lightUpdate(transition, espurna::light::DefaultReport, _light_save);
+    _lightUpdate(transition);
 }
 
 void lightUpdate(bool save) {
-    lightUpdate(lightTransition(), espurna::light::DefaultReport, save);
+    _lightUpdate(save);
 }
 
 void lightUpdate() {
-    lightUpdate(lightTransition());
+    _lightUpdate(lightTransition());
 }
 
 void lightState(size_t id, bool state) {
@@ -3235,6 +3427,7 @@ void lightSetup() {
 
     espurnaRegisterReload(_lightConfigure);
     espurnaRegisterLoop([]() {
+        _lightSequenceCheck();
         _lightUpdate();
         _lightProviderUpdate();
     });

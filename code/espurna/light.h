@@ -190,8 +190,18 @@ LightTransition lightTransition();
 espurna::duration::Milliseconds lightTransitionTime();
 espurna::duration::Milliseconds lightTransitionStep();
 
+// Transition from current state to the previously prepared one
+// (using any of functions declared down below which modify global state, channel values or their state)
 void lightTransition(espurna::duration::Milliseconds time, espurna::duration::Milliseconds step);
-void lightTransition(LightTransition transition);
+void lightTransition(LightTransition);
+
+// Light internals are forced to be sequential. In case some actions need to happen
+// right after transition / channel state / state changes, it will call these functions
+using LightSequenceCallback = std::function<void()>;
+using LightSequenceCallbacks = std::forward_list<LightSequenceCallback>;
+
+void lightSequence(LightSequenceCallbacks);
+void lightUpdateSequence(LightTransition);
 
 void lightColor(const char* color, bool rgb);
 void lightColor(const String& color, bool rgb);
