@@ -33,6 +33,10 @@ void autosaveSettings();
 namespace espurna {
 namespace settings {
 
+// TODO: multi-byte access
+// {blob} read(size_t)
+// void write(size_t, {blob})
+
 class EepromStorage {
 public:
     uint8_t read(size_t pos) const {
@@ -62,6 +66,10 @@ template<typename T>
 using enable_if_not_arduino_string = std::enable_if<!is_arduino_string<T>::value>;
 
 } // namespace types
+
+// TODO: allow StringView as key and value
+// does not work right now because embedis api only works on things with char access
+// (won't work on our flash strings, since those can only be accessed via aligned reads)
 
 ValueResult get(const String& key);
 bool set(const String& key, const String& value);
