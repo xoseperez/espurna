@@ -3573,7 +3573,7 @@ void setup() {
         if (ctx.argv.size() == 2) {
             ctx.output.printf_P(PSTR("%s => %s (%s)\n"),
                 magnitude::topicWithIndex(*magnitude).c_str(),
-                magnitude::format(*magnitude, magnitude->last).c_str(),
+                magnitude::format(*magnitude, magnitude->reported).c_str(),
                 magnitude::units(*magnitude).c_str());
             terminalOK(ctx);
             return;
