@@ -15,6 +15,7 @@
 
 #include <cstdio>
 
+namespace espurna {
 namespace settings {
 namespace embedis {
 
@@ -49,12 +50,17 @@ struct StaticArrayStorage {
 
 } // namespace embedis
 } // namespace settings
+} // namespace espurna
+
+using espurna::settings::embedis::StaticArrayStorage;
+using espurna::settings::embedis::KeyValueStore;
 
 template <size_t Size>
 struct StorageHandler {
+
     using array_type = std::array<uint8_t, Size>;
-    using storage_type = settings::embedis::StaticArrayStorage<array_type>;
-    using kvs_type = settings::embedis::KeyValueStore<storage_type>;
+    using storage_type = StaticArrayStorage<array_type>;
+    using kvs_type = KeyValueStore<storage_type>;
 
     StorageHandler() :
         kvs(std::move(storage_type{blob}), 0, Size)
@@ -171,12 +177,14 @@ void test_sizes() {
         StorageHandler<16> instance;
         TEST_ASSERT_EQUAL(0, instance.kvs.count());
         TEST_ASSERT_EQUAL(16, instance.kvs.available());
-        TEST_ASSERT_EQUAL(0, settings::embedis::estimate("", "123456"));
-        TEST_ASSERT_EQUAL(16, settings::embedis::estimate("123456", "123456"));
-        TEST_ASSERT_EQUAL(10, settings::embedis::estimate("123", "123"));
-        TEST_ASSERT_EQUAL(7, settings::embedis::estimate("345", ""));
-        TEST_ASSERT_EQUAL(0, settings::embedis::estimate("", ""));
-        TEST_ASSERT_EQUAL(5, settings::embedis::estimate("1", ""));
+
+        using namespace espurna::settings::embedis;
+        TEST_ASSERT_EQUAL(0, estimate("", "123456"));
+        TEST_ASSERT_EQUAL(16,estimate("123456", "123456"));
+        TEST_ASSERT_EQUAL(10, estimate("123", "123"));
+        TEST_ASSERT_EQUAL(7, estimate("345", ""));
+        TEST_ASSERT_EQUAL(0, estimate("", ""));
+        TEST_ASSERT_EQUAL(5, estimate("1", ""));
     }
 
 }
@@ -402,7 +410,7 @@ void test_storage() {
     TEST_ASSERT(instance.kvs.set("key2", "value2"));
     TEST_ASSERT_EQUAL(2, instance.kvs.count());
 
-    auto kvsize = settings::embedis::estimate("key1", "value1");
+    auto kvsize = espurna::settings::embedis::estimate("key1", "value1");
     TEST_ASSERT_EQUAL((Size - (2 * kvsize)), instance.kvs.available());
 
     // checking keys one by one by using a separate kvs object,
