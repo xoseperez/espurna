@@ -66,7 +66,7 @@ namespace internal {
 
 template <>
 espurna::heartbeat::Mode convert(const String& value) {
-    return convert(system::settings::options::HeartbeatModeOptions, value, espurna::heartbeat::Mode::Repeat);
+    return convert(system::settings::options::HeartbeatModeOptions, value, heartbeat::Mode::Repeat);
 }
 
 String serialize(espurna::heartbeat::Mode mode) {
@@ -74,17 +74,17 @@ String serialize(espurna::heartbeat::Mode mode) {
 }
 
 template <>
-std::chrono::duration<float> convert(const String& value) {
-    return std::chrono::duration<float>(convert<float>(value));
-}
-
-template <>
-espurna::duration::Milliseconds convert(const String& value) {
-    return espurna::duration::Milliseconds(convert<espurna::duration::Milliseconds::rep>(value));
+duration::Seconds convert(const String& value) {
+    return duration::Seconds(convert<duration::Seconds::rep>(value));
 }
 
 String serialize(espurna::duration::Seconds value) {
     return serialize(value.count());
+}
+
+template <>
+duration::Milliseconds convert(const String& value) {
+    return duration::Milliseconds(convert<duration::Milliseconds::rep>(value));
 }
 
 String serialize(espurna::duration::Milliseconds value) {
@@ -93,11 +93,6 @@ String serialize(espurna::duration::Milliseconds value) {
 
 String serialize(espurna::duration::ClockCycles value) {
     return serialize(value.count());
-}
-
-template <>
-espurna::duration::Seconds convert(const String& value) {
-    return espurna::duration::Seconds(convert<espurna::duration::Seconds::rep>(value));
 }
 
 } // namespace internal

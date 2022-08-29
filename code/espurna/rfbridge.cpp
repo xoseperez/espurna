@@ -504,7 +504,7 @@ RfbRelayMatch _rfbMatch(const char* code) {
 
     // we gather all available options, as the kv store might be defined in any order
     // scan kvs only once, since we want both ON and OFF options and don't want to depend on the relayCount()
-    espurna::settings::internal::foreach_prefix(
+    espurna::settings::foreach_prefix(
         [codeView, &matched](espurna::StringView prefix, String key, const espurna::settings::kvs_type::ReadResult& value) {
             if (codeView.length() != value.length()) {
                 return;

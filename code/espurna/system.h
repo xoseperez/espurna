@@ -277,6 +277,17 @@ Mode currentMode();
 namespace settings {
 namespace internal {
 
+template <>
+heartbeat::Mode convert(const String&);
+
+template <>
+duration::Milliseconds convert(const String&);
+
+template <>
+std::chrono::duration<float> convert(const String& value) {
+    return std::chrono::duration<float>(convert<float>(value));
+}
+
 String serialize(heartbeat::Mode);
 String serialize(duration::Seconds);
 String serialize(duration::Milliseconds);

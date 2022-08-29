@@ -56,7 +56,6 @@ private:
 
 } // namespace
 } // namespace domoticz
-} // namespace espurna
 
 namespace settings {
 namespace internal {
@@ -69,7 +68,6 @@ espurna::domoticz::Idx convert(const String& value) {
 } // namespace internal
 } // namespace settings
 
-namespace espurna {
 namespace domoticz {
 namespace internal {
 namespace {
@@ -434,7 +432,7 @@ namespace {
 
 alignas(4) static constexpr char Prefix[] PROGMEM = "dcz";
 
-bool onKeyCheck(const char* key, const JsonVariant& value) {
+bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
     return espurna::settings::query::samePrefix(key, Prefix);
 }
 

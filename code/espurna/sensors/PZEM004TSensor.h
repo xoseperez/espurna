@@ -489,7 +489,7 @@ void PZEM004TSensor::registerTerminalCommands() {
         auto end = _ports.end();
 
         if (ctx.argv.size() == 2) {
-            auto offset = settings::internal::convert<size_t>(ctx.argv[1]);
+            auto offset = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
             if (offset >= _ports.size()) {
                 terminalError(ctx, F("Invalid port ID"));
                 return;
@@ -536,7 +536,7 @@ void PZEM004TSensor::registerTerminalCommands() {
             return;
         }
 
-        auto id = settings::internal::convert<size_t>(ctx.argv[1]);
+        auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
         if (id >= _ports.size()) {
             terminalError(ctx, F("Invalid port ID"));
             return;

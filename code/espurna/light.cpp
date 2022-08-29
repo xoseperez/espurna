@@ -2446,6 +2446,10 @@ void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
 
 namespace {
 
+// TODO: at this point we have 3 different state save / restoration
+// routines that do *almost* the same thing
+// (key point is, almost)
+
 // Special persistance case were we take a snapshot of the boolean
 // state, brightness and of current input and converted values
 

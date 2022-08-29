@@ -144,7 +144,7 @@ size_t countMqttNames() {
     size_t index { 0 };
     for (;;) {
         auto name = espurna::settings::Key(keys::Name, index);
-        if (!espurna::settings::internal::has(name.value())) {
+        if (!espurna::settings::has(name.value())) {
             break;
         }
 

@@ -717,7 +717,7 @@ void PZEM004TV30Sensor::registerTerminalCommands() {
             return;
         }
 
-        uint8_t updated = settings::internal::convert<uint8_t>(ctx.argv[1]);
+        uint8_t updated = espurna::settings::internal::convert<uint8_t>(ctx.argv[1]);
 
         _instance->flush();
         if (_instance->modbusChangeAddress(updated)) {
