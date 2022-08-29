@@ -345,7 +345,7 @@ alignas(4) static constexpr char Mode[] PROGMEM = "relayPulse";
 namespace {
 
 Result time(size_t index) {
-    auto time = espurna::settings::internal::get(espurna::settings::Key{keys::Time, index}.value());
+    const auto time = espurna::settings::get(espurna::settings::Key{keys::Time, index}.value());
     if (!time) {
         return Result(std::chrono::duration_cast<Duration>(build::time(index)));
     }
@@ -2163,8 +2163,8 @@ void _relayConfigure() {
 
 namespace {
 
-bool _relayWebSocketOnKeyCheck(const char* key, JsonVariant&) {
-    return strncmp_P(key, PSTR("relay"), 5) == 0;
+bool _relayWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("relay"));
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
@@ -2933,7 +2933,7 @@ String findIndexedValueFrom(StringView key) {
 
 bool checkExact(StringView key) {
     for (const auto& setting : Settings) {
-        if (setting.key().compareFlash(key)) {
+        if (key == setting.key()) {
             return true;
         }
     }

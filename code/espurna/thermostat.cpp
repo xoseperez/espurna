@@ -813,18 +813,18 @@ void _thermostatWebSocketOnConnected(JsonObject& root) {
 }
 
 //------------------------------------------------------------------------------
-bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
-    if (strncmp(key, NAME_THERMOSTAT_MODE,      strlen(NAME_THERMOSTAT_MODE))      == 0) return true;
-    if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
-    if (strncmp(key, NAME_TEMP_RANGE_MAX,       strlen(NAME_TEMP_RANGE_MAX))       == 0) return true;
-    if (strncmp(key, NAME_REMOTE_SENSOR_NAME,   strlen(NAME_REMOTE_SENSOR_NAME))   == 0) return true;
-    if (strncmp(key, NAME_REMOTE_TEMP_MAX_WAIT, strlen(NAME_REMOTE_TEMP_MAX_WAIT)) == 0) return true;
-    if (strncmp(key, NAME_MAX_ON_TIME,          strlen(NAME_MAX_ON_TIME))          == 0) return true;
-    if (strncmp(key, NAME_MIN_OFF_TIME,         strlen(NAME_MIN_OFF_TIME))         == 0) return true;
-    if (strncmp(key, NAME_ALONE_ON_TIME,        strlen(NAME_ALONE_ON_TIME))        == 0) return true;
-    if (strncmp(key, NAME_ALONE_OFF_TIME,       strlen(NAME_ALONE_OFF_TIME))       == 0) return true;
-    return false;
+bool _thermostatWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return key == NAME_THERMOSTAT_ENABLED
+        || key == NAME_THERMOSTAT_ENABLED
+        || key == NAME_THERMOSTAT_MODE
+        || key == NAME_TEMP_RANGE_MIN
+        || key == NAME_TEMP_RANGE_MAX
+        || key == NAME_REMOTE_SENSOR_NAME
+        || key == NAME_REMOTE_TEMP_MAX_WAIT
+        || key == NAME_MAX_ON_TIME
+        || key == NAME_MIN_OFF_TIME
+        || key == NAME_ALONE_ON_TIME
+        || key == NAME_ALONE_OFF_TIME;
 }
 
 //------------------------------------------------------------------------------

@@ -430,8 +430,7 @@ static constexpr espurna::settings::query::Setting Settings[] PROGMEM {
 };
 
 bool checkSamePrefix(espurna::StringView key) {
-    alignas(4) static constexpr char Prefix[] PROGMEM = "mqtt";
-    return espurna::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("mqtt"));
 }
 
 String findValueFrom(espurna::StringView key) {
@@ -907,7 +906,7 @@ namespace {
 
 #if WEB_SUPPORT
 
-bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant&) {
+bool _mqttWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
     return mqtt::settings::query::checkSamePrefix(key);
 }
 

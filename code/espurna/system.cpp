@@ -775,10 +775,9 @@ void onConnected(JsonObject& root) {
       espurna::settings::internal::serialize(heartbeat::settings::mode());
 }
 
-bool onKeyCheck(const char* key, JsonVariant&) {
-    const auto view = StringView(key);
-    return espurna::settings::query::samePrefix(view, STRING_VIEW("sys"))
-        || espurna::settings::query::samePrefix(view, STRING_VIEW("hb"));
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("sys"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("hb"));
 }
 
 void init() {

@@ -2312,10 +2312,10 @@ void _lightApiSetup() {
 
 namespace {
 
-bool _lightWebSocketOnKeyCheck(const char* key, JsonVariant&) {
-    return (strncmp(key, "light", 5) == 0)
-        || (strncmp(key, "use", 3) == 0)
-        || (strncmp(key, "lt", 2) == 0);
+bool _lightWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("light"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("use"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("lt"));
 }
 
 void _lightWebSocketStatus(JsonObject& root) {

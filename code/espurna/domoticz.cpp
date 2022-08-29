@@ -434,8 +434,8 @@ namespace {
 
 alignas(4) static constexpr char Prefix[] PROGMEM = "dcz";
 
-bool onKeyCheck(const char* key, JsonVariant& value) {
-    return (strncmp_P(key, Prefix, 3) == 0);
+bool onKeyCheck(const char* key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
 void onVisible(JsonObject& root) {

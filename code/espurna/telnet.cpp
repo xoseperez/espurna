@@ -97,8 +97,8 @@ bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
 
 #if WEB_SUPPORT
 
-bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return strncmp_P(key, PSTR("telnet"), 6) == 0;
+bool _telnetWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("telnet"));
 }
 
 void _telnetWebSocketOnVisible(JsonObject& root) {

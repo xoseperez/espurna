@@ -50,16 +50,18 @@ public:
 
 using kvs_type = embedis::KeyValueStore<EepromStorage>;
 
-namespace internal {
+namespace traits {
 
-template <typename T>
+template<typename T>
 using is_arduino_string = std::is_same<String, typename std::decay<T>::type>;
 
-template <typename T>
+template<typename T>
 using enable_if_arduino_string = std::enable_if<is_arduino_string<T>::value>;
 
-template <typename T>
+template<typename T>
 using enable_if_not_arduino_string = std::enable_if<!is_arduino_string<T>::value>;
+
+} // namespace types
 
 ValueResult get(const String& key);
 bool set(const String& key, const String& value);
@@ -79,6 +81,8 @@ using PrefixResultCallback = std::function<void(StringView prefix, String key, c
 void foreach_prefix(PrefixResultCallback&&, settings::query::StringViewIterator);
 
 // --------------------------------------------------------------------------
+
+namespace internal {
 
 template <typename T>
 T convert(const String& value);
@@ -228,22 +232,21 @@ String getSetting(const espurna::settings::Key& key, const String& defaultValue)
 String getSetting(const espurna::settings::Key& key, const String& defaultValue);
 String getSetting(const espurna::settings::Key& key, String&& defaultValue);
 
-template <typename T, typename = typename espurna::settings::internal::enable_if_not_arduino_string<T>::type>
+template <typename T, typename = typename espurna::settings::traits::enable_if_not_arduino_string<T>::type>
 T getSetting(const espurna::settings::Key& key, T defaultValue) {
-    using namespace espurna::settings::internal;
-    auto result = get(key.value());
+    auto result = espurna::settings::get(key.value());
     if (result) {
-        return convert<T>(result.ref());
+        return espurna::settings::internal::convert<T>(result.ref());
     }
     return defaultValue;
 }
 
-template<typename T, typename = typename espurna::settings::internal::enable_if_arduino_string<T>::type>
+template <typename T, typename = typename espurna::settings::traits::enable_if_arduino_string<T>::type>
 bool setSetting(const espurna::settings::Key& key, T&& value) {
-    return espurna::settings::internal::set(key.value(), value);
+    return espurna::settings::set(key.value(), value);
 }
 
-template<typename T, typename = typename espurna::settings::internal::enable_if_not_arduino_string<T>::type>
+template <typename T, typename = typename espurna::settings::traits::enable_if_not_arduino_string<T>::type>
 bool setSetting(const espurna::settings::Key& key, T value) {
     return setSetting(key, String(value));
 }
@@ -283,7 +286,7 @@ bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024);
 bool settingsRestoreJson(JsonObject& data);
 
 size_t settingsKeyCount();
-std::vector<String> settingsKeys();
+espurna::settings::Keys settingsKeys();
 
 size_t settingsSize();
 
@@ -303,7 +306,7 @@ void migrate();
 // Deprecated implementation
 // -----------------------------------------------------------------------------
 
-template <typename T>
+template<typename T>
 String getSetting(const String& key, unsigned char index, T defaultValue)
 __attribute__((deprecated("getSetting({key, index}, default) should be used instead")));
 

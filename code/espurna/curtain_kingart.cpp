@@ -394,9 +394,8 @@ void _curtainWebSocketOnConnected(JsonObject& root) {
 }
 
 //------------------------------------------------------------------------------
-bool _curtainWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    if (strncmp_P(key, PSTR("curtain"), __builtin_strlen("curtain")) == 0) return true;
-    return false;
+bool _curtainWebSocketOnKeyCheck(const char * key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("curtain"));
 }
 
 //------------------------------------------------------------------------------

@@ -132,8 +132,8 @@ void _idbInitClient() {
 
 // -----------------------------------------------------------------------------
 
-bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp_P(key, PSTR("idb"), 3) == 0);
+bool _idbWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("idb"));
 }
 
 void _idbWebSocketOnVisible(JsonObject& root) {

@@ -8,6 +8,10 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #pragma once
 
 #include <Arduino.h>
+#include <sys/pgmspace.h>
+
+// missing in our original header
+extern "C" int memcmp_P(const void*, const void*, size_t);
 
 namespace espurna {
 
@@ -88,16 +92,6 @@ struct StringView {
         return _len;
     }
 
-    bool compareRam(const StringView& other) const {
-        return (other._len == _len)
-            && (strncmp(other._ptr, _ptr, _len) == 0);
-    }
-
-    bool compareFlash(const StringView& other) const {
-        return (other._len == _len)
-            && (strncmp_P(other._ptr, _ptr, _len) == 0);
-    }
-
     String toString() const {
         String out;
         out.concat(_ptr, _len);
@@ -108,17 +102,23 @@ struct StringView {
         return toString();
     }
 
+    bool compare(StringView other) const;
+
 private:
+    static bool inFlash(const char* ptr) {
+        // common comparison would use >=0x40000000
+        // instead, slightly reduce the footprint by
+        // checking *only* for numbers below it
+        static constexpr uintptr_t Mask { 1 << 30 };
+        return (reinterpret_cast<uintptr_t>(ptr) & Mask) > 0;
+    }
+
     const char* _ptr;
     size_t _len;
 };
 
-inline bool operator==(const StringView& lhs, const char* rhs) {
-    return lhs.compareFlash(rhs);
-}
-
-inline bool operator==(const StringView& lhs, const String& rhs) {
-    return lhs.compareFlash(rhs);
+inline bool operator==(StringView lhs, StringView rhs) {
+    return lhs.compare(rhs);
 }
 
 inline String operator+(String&& lhs, StringView rhs) {

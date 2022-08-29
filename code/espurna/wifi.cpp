@@ -2388,10 +2388,9 @@ void onConnected(JsonObject& root) {
     container[F("max")] = wifi::sta::build::NetworksMax;
 }
 
-bool onKeyCheck(const char* key, JsonVariant&) {
-    const auto key_view = StringView(key);
-    return wifi::settings::query::checkExactPrefix(key_view)
-        || wifi::settings::query::checkIndexedPrefix(key_view);
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return wifi::settings::query::checkExactPrefix(key)
+        || wifi::settings::query::checkIndexedPrefix(key);
 }
 
 void onScan(uint32_t client_id) {

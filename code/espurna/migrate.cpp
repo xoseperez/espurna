@@ -36,7 +36,7 @@ namespace {
 void deletePrefixes(query::StringViewIterator prefixes) {
     std::vector<String> to_purge;
 
-    internal::foreach_prefix([&](StringView, String key, const kvs_type::ReadResult&) {
+    foreach_prefix([&](StringView, String key, const kvs_type::ReadResult&) {
         to_purge.push_back(std::move(key));
     }, prefixes);
 

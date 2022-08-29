@@ -3074,7 +3074,7 @@ void migrate(int version) {
 namespace web {
 namespace {
 
-bool onKeyCheck(const char* key, JsonVariant&) {
+bool onKeyCheck(StringView key, const JsonVariant&) {
     return settings::query::check(key);
 }
 

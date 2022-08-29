@@ -676,8 +676,8 @@ void loop() {
 namespace web {
 namespace {
 
-bool onKeyCheck(const char* key, JsonVariant& value) {
-    return (strncmp_P(key, PSTR("tspk"), 4) == 0);
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("tspk"));
 }
 
 void onVisible(JsonObject& root) {

@@ -32,8 +32,8 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // - on_keycheck will be used to determine if we can handle specific settings keys
 
 using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
-using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;
-using ws_on_keycheck_callback_f = std::function<bool(const char * key, JsonVariant& value)>;
+using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char* action, JsonObject& data)>;
+using ws_on_keycheck_callback_f = std::function<bool(espurna::StringView key, const JsonVariant& value)>;
 
 // TODO: use iterators as inputs for Post(), avoid depending on vector / any specific container
 using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
@@ -49,7 +49,7 @@ struct ws_callbacks_t {
     using on_action_f = void(*)(uint32_t, const char*, JsonObject&);
     ws_callbacks_t& onAction(on_action_f);
 
-    using on_keycheck_f = bool(*)(const char*, JsonVariant&);
+    using on_keycheck_f = bool(*)(espurna::StringView, const JsonVariant&);
     ws_callbacks_t& onKeyCheck(on_keycheck_f);
 
     ws_on_send_callback_list_t on_visible;

@@ -1560,7 +1560,7 @@ void process(rx::DecodeResult& result) {
     key += F("irCmd");
     key += value;
 
-    auto cmd = espurna::settings::internal::get(key);
+    const auto cmd = espurna::settings::get(key);
     if (cmd) {
         internal::inject(cmd.ref());
     }

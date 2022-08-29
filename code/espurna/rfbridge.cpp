@@ -457,8 +457,8 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& d
 #endif
 }
 
-bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return strncmp_P(key, PSTR("rfb"), 3) == 0;
+bool _rfbWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("rfb"));
 }
 
 #endif // WEB_SUPPORT

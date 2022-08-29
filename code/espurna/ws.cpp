@@ -427,10 +427,10 @@ namespace {
 
 // Check the existing setting before saving it
 // (we only care about the settings storage, don't mind the build values)
-bool _wsStore(const String& key, const String& value) {
-    auto current = espurna::settings::internal::get(key);
+bool _wsStore(String key, const String& value) {
+    const auto current = espurna::settings::get(key);
     if (!current || (current.ref() != value)) {
-        return espurna::settings::internal::set(key, value);
+        return espurna::settings::set(key, value);
     }
 
     return false;
@@ -438,15 +438,15 @@ bool _wsStore(const String& key, const String& value) {
 
 // TODO: generate "accepted" keys in the initial phase of the connection?
 // TODO: is value ever used... by anything?
-bool _wsCheckKey(const char* key, JsonVariant& value) {
+bool _wsCheckKey(const String& key, const JsonVariant& value) {
 #if NTP_SUPPORT
-    if (strncmp_P(key, PSTR("ntpTZ"), strlen(key)) == 0) {
+    if (key == STRING_VIEW("ntpTZ")) {
         _wsResetUpdateTimer();
         return true;
     }
 #endif
 
-    if (strncmp_P(key, PSTR("adminPass"), strlen(key)) == 0) {
+    if (key == STRING_VIEW("adminPass")) {
         const auto pass = getAdminPass();
         return !pass.equalsConstantTime(value.as<String>());
     }
@@ -579,27 +579,23 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     // TODO: pass key as string, we always attempt to use it as such
     JsonObject& toAssign = settings["set"];
     for (auto& kv : toAssign) {
-        String key = kv.key;
-        JsonVariant& value = kv.value;
-        if (!_wsCheckKey(key.c_str(), value)) {
-            continue;
-        }
-
-        if (_wsStore(key, value.as<String>())) {
-            save = true;
+        const String key = kv.key;
+        if (_wsCheckKey(key, kv.value)) {
+            if (_wsStore(key, kv.value.as<String>())) {
+                save = true;
+            }
         }
     }
 
     _wsPostParse(client_id, save, reload);
 }
 
-bool _wsOnKeyCheck(const char* key, JsonVariant&) {
-    const auto keylen = strlen(key);
-    return (strncmp_P(key, PSTR("ws"), 2) == 0)
-        || (strncmp_P(key, PSTR("adminPass"), keylen) == 0)
-        || (strncmp_P(key, PSTR("hostname"), keylen) == 0)
-        || (strncmp_P(key, PSTR("desc"), keylen) == 0)
-        || (strncmp_P(key, PSTR("webPort"), keylen) == 0);
+bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("ws"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("adminPass"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("hostname"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("desc"))
+        || espurna::settings::query::samePrefix(key, STRING_VIEW("webPort"));
 }
 
 void _wsOnConnected(JsonObject& root) {

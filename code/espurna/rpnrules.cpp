@@ -354,8 +354,8 @@ void setup() {
 #if WEB_SUPPORT
 namespace web {
 
-bool onKeyCheck(const char * key, JsonVariant& value) {
-    return strncmp_P(key, PSTR("rpn"), 3) == 0;
+bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("rpn"));
 }
 
 void onVisible(JsonObject& root) {

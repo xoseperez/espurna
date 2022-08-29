@@ -241,8 +241,8 @@ void _rfm69WebSocketOnConnected(JsonObject& root) {
     }
 }
 
-bool _rfm69WebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "rfm69", 5) == 0);
+bool _rfm69WebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("rfm69"));
 }
 
 void _rfm69WebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {

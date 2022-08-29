@@ -984,8 +984,8 @@ void onConnected(JsonObject& root) {
     root["haRetain"] = settings::retain();
 }
 
-bool onKeyCheck(const char* key, JsonVariant& value) {
-    return (strncmp(key, "ha", 2) == 0);
+bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("ha"));
 }
 
 #endif

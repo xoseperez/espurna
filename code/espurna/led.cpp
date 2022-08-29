@@ -636,8 +636,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
 };
 
 bool checkSamePrefix(StringView key) {
-    static constexpr char Prefix[] PROGMEM = "led";
-    return espurna::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("led"));
 }
 
 String findValueFrom(StringView key) {
@@ -998,7 +997,7 @@ void callback(unsigned int type, const char* topic, char* payload) {
 namespace web {
 namespace {
 
-bool onKeyCheck(const char* key, JsonVariant&) {
+bool onKeyCheck(StringView key, const JsonVariant&) {
     return settings::query::checkSamePrefix(key);
 }
 

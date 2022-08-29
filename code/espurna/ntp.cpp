@@ -386,8 +386,8 @@ time_t now() {
 #if WEB_SUPPORT
 namespace web {
 
-bool onKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp_P(key, PSTR("ntp"), 3) == 0);
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("ntp"));
 }
 
 void onVisible(JsonObject& root) {
@@ -399,8 +399,8 @@ void onData(JsonObject& root) {
 }
 
 void onConnected(JsonObject& root) {
-    root["ntpServer"] = ::espurna::ntp::settings::server();
-    root["ntpTZ"] = ::espurna::ntp::settings::tz();
+    root["ntpServer"] = settings::server();
+    root["ntpTZ"] = settings::tz();
 }
 
 } // namespace web
@@ -704,7 +704,7 @@ void convertLegacyOffsets() {
     bool dst { true };
     int offset { 60 };
 
-    espurna::settings::internal::foreach(
+    espurna::settings::foreach(
         [&](espurna::settings::kvs_type::KeyValueResult&& kv) {
             using namespace espurna::settings::internal;
             const auto key = kv.key.read();

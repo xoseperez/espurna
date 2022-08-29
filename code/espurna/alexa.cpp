@@ -108,8 +108,8 @@ void _alexaWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, PSTR("alexa"));
 }
 
-bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp_P(key, PSTR("alexa"), 5) == 0);
+bool _alexaWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("alexa"));
 }
 
 void _alexaWebSocketOnConnected(JsonObject& root) {

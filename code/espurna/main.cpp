@@ -307,6 +307,21 @@ void setup() {
 } // namespace main
 
 } // namespace
+
+bool StringView::compare(StringView other) const {
+    if (other._len == _len) {
+        if (inFlash(_ptr)) {
+            return memcmp_P(other._ptr, _ptr, _len) == 0;
+        } else if (inFlash(other._ptr)) {
+            return memcmp_P(_ptr, other._ptr, _len) == 0;
+        }
+
+        return __builtin_memcmp(_ptr, other._ptr, _len);
+    }
+
+    return false;
+}
+
 } // namespace espurna
 
 void espurnaRegisterLoop(LoopCallback callback) {

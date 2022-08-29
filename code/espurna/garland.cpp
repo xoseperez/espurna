@@ -65,29 +65,29 @@ namespace {
 #include "garland/palette.h"
 #include "garland/scene.h"
 
-const char* const NAME_GARLAND_ENABLED        = "garlandEnabled";
-const char* const NAME_GARLAND_BRIGHTNESS     = "garlandBrightness";
-const char* const NAME_GARLAND_SPEED          = "garlandSpeed";
+alignas(4) static constexpr char NAME_GARLAND_ENABLED[] = "garlandEnabled";
+alignas(4) static constexpr char NAME_GARLAND_BRIGHTNESS[] = "garlandBrightness";
+alignas(4) static constexpr char NAME_GARLAND_SPEED[] = "garlandSpeed";
 
-const char* const NAME_GARLAND_SWITCH         = "garland_switch";
-const char* const NAME_GARLAND_SET_BRIGHTNESS = "garland_set_brightness";
-const char* const NAME_GARLAND_SET_SPEED      = "garland_set_speed";
-const char* const NAME_GARLAND_SET_DEFAULT    = "garland_set_default";
+alignas(4) static constexpr char NAME_GARLAND_SWITCH[] = "garland_switch";
+alignas(4) static constexpr char NAME_GARLAND_SET_BRIGHTNESS[] = "garland_set_brightness";
+alignas(4) static constexpr char NAME_GARLAND_SET_SPEED[] = "garland_set_speed";
+alignas(4) static constexpr char NAME_GARLAND_SET_DEFAULT[] = "garland_set_default";
 
-const char* const MQTT_TOPIC_GARLAND          = "garland";
+alignas(4) static constexpr char MQTT_TOPIC_GARLAND[] = "garland";
 
-const char* const MQTT_PAYLOAD_COMMAND        = "command";
-const char* const MQTT_PAYLOAD_ENABLE         = "enable";
-const char* const MQTT_PAYLOAD_BRIGHTNESS     = "brightness";
-const char* const MQTT_PAYLOAD_ANIM_SPEED     = "speed";
-const char* const MQTT_PAYLOAD_ANIMATION      = "animation";
-const char* const MQTT_PAYLOAD_PALETTE        = "palette";
-const char* const MQTT_PAYLOAD_DURATION       = "duration";
+alignas(4) static constexpr char MQTT_PAYLOAD_COMMAND[] = "command";
+alignas(4) static constexpr char MQTT_PAYLOAD_ENABLE[] = "enable";
+alignas(4) static constexpr char MQTT_PAYLOAD_BRIGHTNESS[] = "brightness";
+alignas(4) static constexpr char MQTT_PAYLOAD_ANIM_SPEED[] = "speed";
+alignas(4) static constexpr char MQTT_PAYLOAD_ANIMATION[] = "animation";
+alignas(4) static constexpr char MQTT_PAYLOAD_PALETTE[] = "palette";
+alignas(4) static constexpr char MQTT_PAYLOAD_DURATION[] = "duration";
 
-const char* const MQTT_COMMAND_IMMEDIATE      = "immediate";
-const char* const MQTT_COMMAND_RESET          = "reset"; // reset queue
-const char* const MQTT_COMMAND_QUEUE          = "queue"; // enqueue command payload
-const char* const MQTT_COMMAND_SEQUENCE       = "sequence"; // place command to sequence
+alignas(4) static constexpr char MQTT_COMMAND_IMMEDIATE[] = "immediate";
+alignas(4) static constexpr char MQTT_COMMAND_RESET[] = "reset"; // reset queue
+alignas(4) static constexpr char MQTT_COMMAND_QUEUE[] = "queue"; // enqueue command payload
+alignas(4) static constexpr char MQTT_COMMAND_SEQUENCE[] = "sequence"; // place command to sequence
 
 #define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
 #define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
@@ -219,11 +219,10 @@ void _garlandWebSocketOnConnected(JsonObject& root) {
 }
 
 //------------------------------------------------------------------------------
-bool _garlandWebSocketOnKeyCheck(const char* key, JsonVariant& value) {
-    if (strncmp(key, NAME_GARLAND_ENABLED, strlen(NAME_GARLAND_ENABLED)) == 0) return true;
-    if (strncmp(key, NAME_GARLAND_BRIGHTNESS, strlen(NAME_GARLAND_BRIGHTNESS)) == 0) return true;
-    if (strncmp(key, NAME_GARLAND_SPEED, strlen(NAME_GARLAND_SPEED)) == 0) return true;
-    return false;
+bool _garlandWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, NAME_GARLAND_ENABLED)
+        || espurna::settings::query::samePrefix(key, NAME_GARLAND_BRIGHTNESS)
+        || espurna::settings::query::samePrefix(key, NAME_GARLAND_SPEED);
 }
 
 //------------------------------------------------------------------------------

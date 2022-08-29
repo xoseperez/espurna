@@ -567,12 +567,12 @@ template <typename T>
 T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
     const auto key = espurna::settings::Key{prefix, index};
 
-    auto indexed = espurna::settings::internal::get(key.value());
+    const auto indexed = espurna::settings::get(key.value());
     if (indexed) {
         return espurna::settings::internal::convert<T>(indexed.ref());
     }
 
-    auto global = espurna::settings::internal::get(prefix);
+    const auto global = espurna::settings::get(prefix);
     if (global) {
         return espurna::settings::internal::convert<T>(indexed.ref());
     }
@@ -749,8 +749,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
 };
 
 bool checkSamePrefix(StringView key) {
-    alignas(4) static constexpr char Prefix[] PROGMEM = "btn";
-    return espurna::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("btn"));
 }
 
 String findValueFrom(StringView key) {
@@ -940,8 +939,8 @@ void _buttonWebSocketOnConnected(JsonObject& root) {
     }
 }
 
-bool _buttonWebSocketOnKeyCheck(const char * key, JsonVariant&) {
-    return (strncmp_P(key, PSTR("btn"), 3) == 0);
+bool _buttonWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::button::settings::query::checkSamePrefix(key);
 }
 
 } // namespace

@@ -28,8 +28,8 @@ bool _nofussEnabled = false;
 
 #if WEB_SUPPORT
 
-bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp_P(key, PSTR("nofuss"), 6) == 0);
+bool _nofussWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("nofuss"));
 }
 
 void _nofussWebSocketOnVisible(JsonObject& root) {

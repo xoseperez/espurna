@@ -365,8 +365,8 @@ struct alignas(8) Setting {
         return _key == key;
     }
 
-    bool operator==(const StringView& key) const {
-        return _key.compareFlash(key);
+    bool operator==(StringView key) const {
+        return _key == key;
     }
 
     static String findValueFrom(const Setting* begin, const Setting* end, StringView key);
