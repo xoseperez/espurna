@@ -78,24 +78,27 @@ jobs:
           # numbers are hard-coded above (...until there's a better idea for doing this)
           ./scripts/generate_release_sh.py \
               --ignore secure-client \
-              --destination ${GITHUB_WORKSPACE}/binaries \
+              --destination ${GITHUB_WORKSPACE}/build \
               --builder-thread ${{ matrix.thread }} \
               --builder-total-threads 4 \
               --suffix github${{ needs.variables.outputs.date }} \
-              >> release.sh
+              > release.sh
           bash release.sh
           popd
 
       - name: Archive
         run: |
-          pushd binaries
-          zip -j -q -r ../Binaries_${{ matrix.thread }}.zip ./
+          pushd build
+          zip \
+            --quiet \
+            --recurse-paths \
+            ../Build_${{ matrix.thread }}.zip ./
           popd
 
       - uses: actions/upload-artifact@v3
         with:
-          name: Binaries
-          path: Binaries_${{ matrix.thread }}.zip
+          name: Build
+          path: Build_${{ matrix.thread }}.zip
 
   upload:
     needs: [variables, build]
@@ -110,7 +113,15 @@ jobs:
           path: artifacts/
 
       - name: Unpack
-        run: unzip -d binaries "artifacts/Binaries/*.zip"
+        run: unzip -d build "artifacts/Build/*.zip"
+
+      - name: Prepare debug info
+        run: |
+          zip \
+            --quiet \
+            --junk-paths \
+            --recurse-patterns \
+            Debug.zip "build/debug/*"
 
       - name: Fetch release template
         run: |
@@ -126,7 +137,7 @@ jobs:
           commit: ${{ needs.variables.outputs.dev }}
           name: Snapshot build (github${{ needs.variables.outputs.date }})
           bodyFile: "release_template.md"
-          artifacts: "binaries/*.bin"
+          artifacts: "Debug.zip,build/*.bin"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
           draft: true

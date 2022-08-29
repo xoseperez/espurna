@@ -5,6 +5,24 @@ import tempfile
 from .version import app_full_version_for_env
 
 
+# to avoid distributing the original .elf, just extract the debug symbols
+# which then can be used /w addr2line (since it would still be an .elf format)
+def app_add_extract_debug_symbols(env):
+    def builder_generator(target, source, env, for_signature):
+        return env.VerboseAction(
+            "$OBJCOPY --only-keep-debug $SOURCE $TARGET",
+            "Extracting debug symbols from $SOURCE",
+        )
+
+    env.Append(
+        BUILDERS={
+            "ExtractDebugSymbols": env.Builder(
+                generator=builder_generator, suffix=".debug", src_suffix=".elf"
+            )
+        }
+    )
+
+
 # emulate .ino concatenation to speed up compilation times
 def merge_cpp(target, source, env, encoding="utf-8"):
     with tempfile.TemporaryFile() as tmp:
@@ -44,36 +62,55 @@ def app_add_builder_single_source(env):
     )
 
 
+# common name for all our output files (.bin, .elf, .map, etc.)
+
+
 def firmware_prefix(env):
-    return "espurna-{}".format(app_full_version_for_env(env))
+    return f"espurna-{app_full_version_for_env(env)}"
 
 
-# generate an common name for the current build
 def firmware_filename(env):
-    suffix = "{}.bin".format(env["ESPURNA_BUILD_NAME"] or env["PIOENV"])
-    return "-".join([firmware_prefix(env), suffix])
+    return "-".join(
+        [firmware_prefix(env), env.get("ESPURNA_BUILD_NAME", env["PIOENV"])]
+    )
 
 
 def firmware_destination(env):
-    destdir = env["ESPURNA_BUILD_DESTINATION"] or env["PROJECT_DIR"]
-    subdir = os.path.join(destdir, firmware_prefix(env))
+    dest = env.get("ESPURNA_BUILD_DESTINATION")
 
-    return os.path.join(subdir, firmware_filename(env))
+    # implicit default to a local directory
+    if not dest:
+        dest = "${PROJECT_DIR}/build"
+    # its a SCons var
+    elif dest.startswith("$"):
+        pass
+    # due to runtime (?) quirks, we will end up in scripts/
+    # without specifying this as relative to the projdir
+    elif not dest.startswith("/"):
+        dest = f"${{PROJECT_DIR}}/{dest}"
+
+    return env.Dir(dest)
 
 
 def app_add_target_build_and_copy(env):
-    from SCons.Script import Copy
+    env.Replace(ESPURNA_BUILD_DESTINATION=firmware_destination(env))
+    env.Replace(ESPURNA_BUILD_FILENAME=firmware_filename(env))
 
-    target = firmware_destination(env)
+    app_add_extract_debug_symbols(env)
+    env.ExtractDebugSymbols("$BUILD_DIR/${PROGNAME}")
 
-    env.AddTarget(
-        "build-and-copy",
-        "${BUILD_DIR}/${PROGNAME}.bin",
-        env.Command(target, "${BUILD_DIR}/${PROGNAME}.bin", Copy("$TARGET", "$SOURCE")),
-        title="Build firmware.bin and store a copy",
-        description="Build and store firmware.bin as $ESPURNA_BUILD_DESTINATION/espurna-<version>-$ESPURNA_BUILD_NAME.bin (default destination is $PROJECT_DIR)",
+    env.InstallAs(
+        "${ESPURNA_BUILD_DESTINATION}/${ESPURNA_BUILD_FILENAME}.bin",
+        "$BUILD_DIR/${PROGNAME}.bin",
     )
-    env.Alias("build-and-copy", target)
+    for suffix in ("map", "elf.debug"):
+        env.InstallAs(
+            f"${{ESPURNA_BUILD_DESTINATION}}/debug/${{ESPURNA_BUILD_FILENAME}}.{suffix}",
+            f"$BUILD_DIR/${{PROGNAME}}.{suffix}",
+        )
+
+    env.Alias("install", "$ESPURNA_BUILD_DESTINATION")
+    env.Alias("build-and-copy", ["$BUILD_DIR/${PROGNAME}.bin", "install"])
 
 
 # NOTICE that .re <-> .re.ipp dependency is tricky, b/c we want these to exist *before* any source is built

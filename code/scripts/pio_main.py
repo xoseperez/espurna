@@ -11,13 +11,13 @@
 
 import os
 from espurna_utils import (
-    check_printsize,
-    remove_float_support,
-    ldscripts_inject_libpath,
-    app_inject_version,
-    dummy_ets_printf,
-    app_inject_flags,
     app_add_target_build_and_copy,
+    app_inject_flags,
+    app_inject_version,
+    check_printsize,
+    dummy_ets_printf,
+    ldscripts_inject_libpath,
+    remove_float_support,
 )
 
 from SCons.Script import Import
@@ -29,7 +29,9 @@ projenv = globals()["projenv"]
 CI = "true" == os.environ.get("CI")
 
 # See what happens in-between linking .cpp.o + .a into the resulting .elf
-env.ProcessFlags('-Wl,-Map -Wl,\\"${BUILD_DIR}/${PROGNAME}.map\\"')
+env.Append(ESPURNA_BUILD_FIRMWARE_MAP="${BUILD_DIR}/${PROGNAME}.map")
+env.Append(LINKFLAGS='-Wl,-Map -Wl,$ESPURNA_BUILD_FIRMWARE_MAP -Wl,--cref')
+env.SideEffect(env["ESPURNA_BUILD_FIRMWARE_MAP"], "${BUILD_DIR}/${PROGNAME}.elf")
 
 # Always show warnings for project code
 projenv.ProcessUnFlags("-w")

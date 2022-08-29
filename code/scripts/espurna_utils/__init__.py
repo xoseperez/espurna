@@ -27,9 +27,8 @@ from .build import (
 )
 from .checks import check_env, check_cppcheck, check_printsize
 from .flags import app_inject_flags
-from .float_support import remove_float_support
+from .hooks import remove_float_support, dummy_ets_printf
 from .ldscripts import ldscripts_inject_libpath
-from .postmortem import dummy_ets_printf
 from .version import app_inject_version, app_full_version_for_env
 
 __all__ = [
