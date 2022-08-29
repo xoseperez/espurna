@@ -322,9 +322,7 @@ class Analyser:
         elf_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="elf")
         bin_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="bin")
 
-        values = analyse_memory(
-            size_binary_path(self._toolchain_prefix), elf_path
-        )
+        values = analyse_memory(size_binary_path(self._toolchain_prefix), elf_path)
 
         free = 80 * 1024 - values[".data"] - values[".rodata"] - values[".bss"]
         free = free + (16 - free % 16)

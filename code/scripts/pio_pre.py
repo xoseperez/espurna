@@ -28,17 +28,17 @@ env = globals()["env"]
 
 # handle `-t build-and-copy` parameters
 for name in [
-        # what is the name suffix of the .bin
-        "ESPURNA_BUILD_NAME",
-        # where to copy the resulting .bin
-        "ESPURNA_BUILD_DESTINATION",
-        # set the full string for the build, no need to change individual parts
-        "ESPURNA_BUILD_FULL_VERSION",
-        # **or**, replace parts of the version string that would've been auto-detected
-        "ESPURNA_BUILD_VERSION",
-        "ESPURNA_BUILD_REVISION",
-        "ESPURNA_BUILD_VERSION_SUFFIX"
-    ]:
+    # what is the name suffix of the .bin
+    "ESPURNA_BUILD_NAME",
+    # where to copy the resulting .bin
+    "ESPURNA_BUILD_DESTINATION",
+    # set the full string for the build, no need to change individual parts
+    "ESPURNA_BUILD_FULL_VERSION",
+    # **or**, replace parts of the version string that would've been auto-detected
+    "ESPURNA_BUILD_VERSION",
+    "ESPURNA_BUILD_REVISION",
+    "ESPURNA_BUILD_VERSION_SUFFIX",
+]:
     value = os.environ.get(name)
     if value:
         env.Append(**{name: value})
@@ -48,6 +48,7 @@ CI = check_env("CI", "false")
 PIO_PLATFORM = env.PioPlatform()
 CONFIG = env.GetProjectConfig()
 VERBOSE = "1" == ARGUMENTS.get("PIOVERBOSE", "0")
+
 
 class ExtraScriptError(Exception):
     pass

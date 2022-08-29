@@ -179,11 +179,12 @@ if __name__ == "__main__":
         ["ESPURNA_BUILD_FULL_VERSION", args.full_version],
         ["ESPURNA_BUILD_VERSION", args.version],
         ["ESPURNA_BUILD_REVISION", args.revision],
-        ["ESPURNA_BUILD_VERSION_SUFFIX", args.suffix]]
+        ["ESPURNA_BUILD_VERSION_SUFFIX", args.suffix],
+    ]
 
     for var, value in variables:
         if value or not value is None:
-            print("export {}=\"{}\"".format(var, value))
+            print('export {}="{}"'.format(var, value))
 
     print('trap "ls -R ${ESPURNA_BUILD_DESTINATION}" EXIT')
     print(

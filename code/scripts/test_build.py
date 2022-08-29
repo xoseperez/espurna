@@ -39,7 +39,7 @@ def format_configurations(configurations):
 
 def pluralize(string, length):
     if length > 1:
-        return f'{string}s'
+        return f"{string}s"
 
     return string
 
@@ -93,7 +93,7 @@ def build_configurations(args, configurations):
 
         log.info(
             "%s finished in %s, %s is %s bytes",
-            *(bold(x) for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size))
+            *(bold(x) for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size)),
         )
 
         build_time += diff

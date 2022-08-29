@@ -11,6 +11,7 @@ MEGABYTES = 1024 * 1024
 def Bytes(size):
     return int(size)
 
+
 def Kilobytes(size):
     """Represent N kilobytes as bytes
     >>> Kilobytes(1)
@@ -20,6 +21,7 @@ def Kilobytes(size):
     """
     return int(KILOBYTES * size)
 
+
 def Megabytes(size):
     """Represent N megabytes as bytes
     >>> Megabytes(1)
@@ -28,6 +30,7 @@ def Megabytes(size):
     1073741824
     """
     return int(MEGABYTES * size)
+
 
 def humanize(size, *, decimal=False, convert=None):
     """Print something intelligible instead of just the value as-is.
@@ -71,6 +74,7 @@ def humanize(size, *, decimal=False, convert=None):
 
     return ""
 
+
 def check_env(name, default):
     return os.environ.get(name, default) in ("1", "y", "yes", "true")
 
@@ -94,7 +98,7 @@ def check_printsize(target, source, env):
     if size >= half_size:
         print_filler("*", color=Color.LIGHT_YELLOW, err=True)
         print_warning(
-            f"File is too large for OTA! Here you can find instructions on how to flash it:"
+            "File is too large for OTA! Here you can find instructions on how to flash it:"
         )
         print_warning(
             "https://github.com/xoseperez/espurna/wiki/TwoStepUpdates",

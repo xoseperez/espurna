@@ -32,7 +32,7 @@ CI = "true" == os.environ.get("CI")
 
 # See what happens in-between linking .cpp.o + .a into the resulting .elf
 env.Append(ESPURNA_BUILD_FIRMWARE_MAP="${BUILD_DIR}/${PROGNAME}.map")
-env.Append(LINKFLAGS='-Wl,-Map -Wl,$ESPURNA_BUILD_FIRMWARE_MAP -Wl,--cref')
+env.Append(LINKFLAGS="-Wl,-Map -Wl,$ESPURNA_BUILD_FIRMWARE_MAP -Wl,--cref")
 env.SideEffect(env["ESPURNA_BUILD_FIRMWARE_MAP"], "${BUILD_DIR}/${PROGNAME}.elf")
 
 # Always show warnings for project code
@@ -48,7 +48,9 @@ if not CI:
     env.AddPostAction("checkprogsize", check_printsize)
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
-if "DISABLE_POSTMORTEM_STACKDUMP" in itertools.chain(env["CPPFLAGS"], projenv["CPPFLAGS"]):
+if "DISABLE_POSTMORTEM_STACKDUMP" in itertools.chain(
+    env["CPPFLAGS"], projenv["CPPFLAGS"]
+):
     disable_postmortem_output(env)
 
 # override static version flag from the espurna/config/version.h
