@@ -112,12 +112,20 @@ jobs:
       - name: Unpack
         run: unzip -d binaries "artifacts/Binaries/*.zip"
 
+      - name: Fetch release template
+        run: |
+           curl \
+             -H "Authentication: ${{ secrets.GITUB_TOKEN }}" \
+             -H "Accept: application/vnd.github.VERSION.raw" \
+             -o release_template.md \
+             https://api.github.com/repos/xoseperez/espurna/contents/.github/release_template.md
+
       - uses: ncipollo/release-action@v1
         with:
           tag: github${{ needs.variables.outputs.date }}
           commit: ${{ needs.variables.outputs.dev }}
           name: Snapshot build (github${{ needs.variables.outputs.date }})
-          bodyFile: ".github/release_template.md"
+          bodyFile: "release_template.md"
           artifacts: "binaries/*.bin"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
