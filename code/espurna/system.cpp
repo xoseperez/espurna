@@ -401,11 +401,7 @@ void init() {
     case REASON_EXT_SYS_RST:
         force_stable();
         return;
-    // no point stalling, we are probably stuck somewhere
-    case REASON_WDT_RST:
-        force_unstable();
-        return;
-    // when counter gets changed manually
+    // no need to run the timer when counter gets changed manually
     case REASON_SOFT_RESTART:
         if (customReason() == CustomResetReason::Stability) {
             internal::flag = (count < build::ChecksMax);
