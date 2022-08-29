@@ -10,16 +10,22 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // - #include "sensors/DummySensor.h"
 // - add `_sensors.push_back(new DummySensor());` at the end of _sensorLoad();
 
-#include "BaseSensor.h"
+#include "BaseEmonSensor.h"
 
-struct DummySensor : public BaseSensor {
+struct DummySensor : public BaseEmonSensor {
 
     static constexpr Magnitude Magnitudes[] {
         MAGNITUDE_TEMPERATURE,
         MAGNITUDE_HUMIDITY,
         MAGNITUDE_PRESSURE,
         MAGNITUDE_LUX,
+        MAGNITUDE_ENERGY_DELTA,
+        MAGNITUDE_ENERGY,
     };
+
+    DummySensor() :
+        BaseEmonSensor(Magnitudes)
+    {}
 
     unsigned char id() const override {
         return 0;
@@ -61,6 +67,10 @@ struct DummySensor : public BaseSensor {
                 return _pressure;
             case MAGNITUDE_LUX:
                 return _lux;
+            case MAGNITUDE_ENERGY_DELTA:
+                return _delta;
+            case MAGNITUDE_ENERGY:
+                return _energy[0].asDouble();
             }
         }
 
@@ -88,6 +98,14 @@ struct DummySensor : public BaseSensor {
         if (_lux >= 100.0) {
             _lux = 0.0;
         }
+
+        _delta += 10.0;
+        if (_delta >= 50.0) {
+            _delta = 0.0;
+        }
+
+        _energy[0] += espurna::sensor::Energy(
+            espurna::sensor::WattSeconds(_delta));
     }
 
 private:
@@ -95,6 +113,7 @@ private:
     double _humidity { 50.0 };
     double _pressure { 1000.0 };
     double _lux { 0.0 };
+    double _delta { 0.0 };
 };
 
 #if __cplusplus < 201703L
