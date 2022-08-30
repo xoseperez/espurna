@@ -121,7 +121,9 @@ jobs:
             --quiet \
             --junk-paths \
             --recurse-patterns \
-            Debug.zip "build/debug/*"
+            Debug.zip \
+            'build/debug/*.map' \
+            'build/debug/*.elf.debug'
 
       - name: Fetch release template
         run: |
