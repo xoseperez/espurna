@@ -1,6 +1,7 @@
 name: Questions or troubleshooting
 description: When it is neither a bug or a feature request
 labels: ["question"]
+body:
   - type: markdown
     attributes:
       value: |

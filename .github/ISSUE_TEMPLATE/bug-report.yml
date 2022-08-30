@@ -1,6 +1,7 @@
 name: Bug report
 description: Report any problem here
 labels: ["bug"]
+body:
   - type: markdown
     attributes:
       value: |
