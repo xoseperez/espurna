@@ -122,8 +122,3 @@ def check_binsize(target, source, env):
 
     if aligned_size >= half_size:
         print_size_warning()
-
-def check_cppcheck(target, source, env):
-    print_warning("Started cppcheck...\n")
-    call(["cppcheck", os.getcwd() + "/espurna", "--force", "--enable=all"])
-    print_warning("Finished cppcheck...\n")

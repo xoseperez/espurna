@@ -26,7 +26,7 @@ from .build import (
     app_add_gzip_file,
     app_add_target_build_re2c,
 )
-from .checks import check_env, check_cppcheck, check_binsize
+from .checks import check_env, check_binsize
 from .flags import app_inject_flags
 from .hooks import remove_float_support, disable_postmortem_output
 from .ldscripts import ldscripts_inject_libpath
@@ -41,7 +41,6 @@ __all__ = [
     "app_inject_flags",
     "app_inject_version",
     "app_version",
-    "check_cppcheck",
     "check_env",
     "check_binsize",
     "disable_postmortem_output",
