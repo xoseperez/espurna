@@ -93,6 +93,7 @@ def print_size_warning():
 
 FLASH_BLOCK = Kilobytes(4)
 
+
 def block_aligned_flash_size(size):
     return size + (FLASH_BLOCK - (size % FLASH_BLOCK))
 

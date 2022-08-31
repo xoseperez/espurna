@@ -46,8 +46,10 @@ ldscripts_inject_libpath(env)
 
 # two-step update hint when using 1MB boards
 if not CI:
-    env.AddPostAction("${BUILD_DIR}/${PROGNAME}.bin",
-        env.VerboseAction(check_binsize, "Checking maximum upload size $TARGET"))
+    env.AddPostAction(
+        "${BUILD_DIR}/${PROGNAME}.bin",
+        env.VerboseAction(check_binsize, "Checking maximum upload size $TARGET"),
+    )
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
 if "DISABLE_POSTMORTEM_STACKDUMP" in itertools.chain(

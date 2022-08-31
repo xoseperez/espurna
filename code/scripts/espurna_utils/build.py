@@ -28,6 +28,7 @@ def app_add_gzip_file(env):
     def gzip_target(target, source, env):
         import gzip
         import shutil
+
         with open(str(source[0]), "rb") as input:
             with gzip.open(str(target[0]), "wb") as output:
                 shutil.copyfileobj(input, output)
