@@ -23,6 +23,29 @@ def app_add_extract_debug_symbols(env):
     )
 
 
+# extra builder code to compress our output
+def app_add_gzip_file(env):
+    def gzip_target(target, source, env):
+        import gzip
+        import shutil
+        with open(str(source[0]), "rb") as input:
+            with gzip.open(str(target[0]), "wb") as output:
+                shutil.copyfileobj(input, output)
+
+    def builder_generator(target, source, env, for_signature):
+        return env.VerboseAction(gzip_target, "Compressing $SOURCE")
+
+    env.Append(
+        BUILDERS={
+            "GzipFile": env.Builder(
+                generator=builder_generator, suffix=".gz", src_suffix=".bin"
+            )
+        }
+    )
+
+    env.GzipFile("$BUILD_DIR/${PROGNAME}.bin")
+
+
 # emulate .ino concatenation to speed up compilation times
 def merge_cpp(target, source, env, encoding="utf-8"):
     with tempfile.TemporaryFile() as tmp:

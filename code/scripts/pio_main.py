@@ -16,6 +16,7 @@ from espurna_utils import (
     app_add_target_build_and_copy,
     app_inject_flags,
     app_inject_version,
+    app_add_gzip_file,
     check_binsize,
     disable_postmortem_output,
     ldscripts_inject_libpath,
@@ -64,3 +65,6 @@ app_inject_flags(projenv)
 
 # handle when CI does a tagged build or user explicitly asked to store the firmware.bin
 app_add_target_build_and_copy(projenv)
+
+# handle special GzipFile builder
+app_add_gzip_file(projenv)

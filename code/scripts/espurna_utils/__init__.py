@@ -23,6 +23,7 @@ from .build import (
     firmware_destination,
     app_add_builder_single_source,
     app_add_target_build_and_copy,
+    app_add_gzip_file,
     app_add_target_build_re2c,
 )
 from .checks import check_env, check_cppcheck, check_binsize
@@ -35,6 +36,7 @@ __all__ = [
     "app_add_builder_single_source",
     "app_add_target_build_and_copy",
     "app_add_target_build_re2c",
+    "app_add_gzip_file",
     "app_full_version_for_env",
     "app_inject_flags",
     "app_inject_version",
