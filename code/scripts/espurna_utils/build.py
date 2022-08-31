@@ -10,7 +10,7 @@ from .version import app_full_version_for_env
 def app_add_extract_debug_symbols(env):
     def builder_generator(target, source, env, for_signature):
         return env.VerboseAction(
-            "$OBJCOPY --only-keep-debug $SOURCE $TARGET",
+            "$OBJCOPY --only-keep-debug --compress-debug-sections $SOURCE $TARGET",
             "Extracting debug symbols from $SOURCE",
         )
 

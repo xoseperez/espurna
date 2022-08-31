@@ -118,6 +118,7 @@ jobs:
       - name: Prepare debug info
         run: |
           zip \
+            -9 \
             --quiet \
             --junk-paths \
             --recurse-patterns \
