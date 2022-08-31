@@ -79,33 +79,49 @@ def check_env(name, default):
     return os.environ.get(name, default) in ("1", "y", "yes", "true")
 
 
-def check_printsize(target, source, env):
-    firmware = env.File("${BUILD_DIR}/${PROGNAME}.bin")
+def print_size_warning():
+    print_filler("*", color=Color.LIGHT_YELLOW, err=True)
+    print_warning(
+        "File is too large for OTA! Here you can find instructions on how to flash it:"
+    )
+    print_warning(
+        "https://github.com/xoseperez/espurna/wiki/TwoStepUpdates",
+        color=Color.LIGHT_CYAN,
+    )
+    print_filler("*", color=Color.LIGHT_YELLOW, err=True)
 
-    path = firmware.get_abspath()
-    size = os.stat(path).st_size
 
-    # common report only handles the .elf sizing, which does not
-    # include any extra space from the actual .bin
-    print(f"Total binary size: {humanize(size)} ({size} bytes)")
+FLASH_BLOCK = Kilobytes(4)
+
+def block_aligned_flash_size(size):
+    return size + (FLASH_BLOCK - (size % FLASH_BLOCK))
+
+
+def check_binsize(target, source, env):
+    # common report only handles the .elf sizing, which
+    # does not include extra space from the actual .bin
+    # - bootloader sector at the start
+    # - a couple of bytes of extra space after bootloader
+    # - optional signature blob at the end
+    file_path = target[0].get_abspath()
+    file_size = os.stat(file_path).st_size
+
+    print(f"Total binary size: {humanize(file_size)} ({file_size} bytes)")
 
     flash_size = int(env.BoardConfig().get("upload.maximum_size", 0))
     if not flash_size:
         return
 
+    # RFCAL, SDK and WiFi driver storage space at the end
+    flash_size -= 4 * FLASH_BLOCK
+
+    # updater will round our write target up to the block space
+    # TODO: use zlib right here? both platform versions already support it
+    aligned_size = block_aligned_flash_size(file_size)
     half_size = int(flash_size / 2)
 
-    if size >= half_size:
-        print_filler("*", color=Color.LIGHT_YELLOW, err=True)
-        print_warning(
-            "File is too large for OTA! Here you can find instructions on how to flash it:"
-        )
-        print_warning(
-            "https://github.com/xoseperez/espurna/wiki/TwoStepUpdates",
-            color=Color.LIGHT_CYAN,
-        )
-        print_filler("*", color=Color.LIGHT_YELLOW, err=True)
-
+    if aligned_size >= half_size:
+        print_size_warning()
 
 def check_cppcheck(target, source, env):
     print_warning("Started cppcheck...\n")

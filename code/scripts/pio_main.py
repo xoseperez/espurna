@@ -16,7 +16,7 @@ from espurna_utils import (
     app_add_target_build_and_copy,
     app_inject_flags,
     app_inject_version,
-    check_printsize,
+    check_binsize,
     disable_postmortem_output,
     ldscripts_inject_libpath,
     remove_float_support,
@@ -45,7 +45,8 @@ ldscripts_inject_libpath(env)
 
 # two-step update hint when using 1MB boards
 if not CI:
-    env.AddPostAction("checkprogsize", check_printsize)
+    env.AddPostAction("${BUILD_DIR}/${PROGNAME}.bin",
+        env.VerboseAction(check_binsize, "Checking maximum upload size $TARGET"))
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
 if "DISABLE_POSTMORTEM_STACKDUMP" in itertools.chain(
