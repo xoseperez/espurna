@@ -341,9 +341,12 @@
     #define BUTTON1_PIN         0
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
+
     #define BUTTON2_PIN         14
-    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_BOOT
     #define BUTTON2_RELAY       1
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_RELEASE     BUTTON_ACTION_TOGGLE
 
     // Relays
     #define RELAY1_PIN          12
@@ -363,9 +366,12 @@
     #define BUTTON1_PIN         0
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
+
     #define BUTTON2_PIN         14
-    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_BOOT
     #define BUTTON2_RELAY       1
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_RELEASE     BUTTON_ACTION_TOGGLE
 
     // Relays
     #define RELAY1_PIN          12
@@ -629,19 +635,26 @@
 
     // Buttons
     #define BUTTON1_PIN         0       // Button 0 on header
-    #define BUTTON2_PIN         9       // Button 1 on header
-    #define BUTTON3_PIN         10      // Physical button
-    #define BUTTON1_RELAY       1
-    #define BUTTON2_RELAY       2
-    #define BUTTON3_RELAY       1
     #define BUTTON1_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON1_RELEASE     BUTTON_ACTION_TOGGLE
+
+    #define BUTTON2_PIN         9       // Button 1 on header
     #define BUTTON2_CONFIG      BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_RELAY       2
+    #define BUTTON2_PRESS       BUTTON_ACTION_TOGGLE
+    #define BUTTON2_RELEASE     BUTTON_ACTION_TOGGLE
+
+    #define BUTTON3_PIN         10      // Physical button
     #define BUTTON3_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_RELAY       1
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY2_PIN          5
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
@@ -3759,7 +3772,6 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_CONFIG      BUTTON_SWITCH | BUTTON_DEFAULT_BOOT
     #define BUTTON1_RELAY       1
-
     #define BUTTON1_PRESS       BUTTON_ACTION_TOGGLE
     #define BUTTON1_RELEASE     BUTTON_ACTION_TOGGLE
 
