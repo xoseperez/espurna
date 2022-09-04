@@ -280,7 +280,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![Itead Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![Itead Sonoff Dual/Dual R2](images/devices/itead-sonoff-dual.jpg)|![Itead Sonoff TH10/TH16](images/devices/itead-sonoff-th.jpg)|
 |**Itead Sonoff Basic (including R2 and R3)**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
 |![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)||
-|**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
+|**Electrodragon WiFi IOT**|**[OpenEnergyMonitor WiFi MQTT Relay / Thermostat](https://shop.openvenergymonitor.com/wifi-mqtt-relay-thermostat/)**||
 |![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||
 |**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**||
 |![Allterco Shelly 1 / 1PM](images/devices/allterco-shelly1.jpg)|![Allterco Shelly 2 / 2.5](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
