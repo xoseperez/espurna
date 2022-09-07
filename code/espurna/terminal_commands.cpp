@@ -11,110 +11,142 @@ Heavily inspired by the Embedis design:
 
 #include <Arduino.h>
 
+#include "terminal_parsing.h"
 #include "terminal_commands.h"
 
 #include <algorithm>
 #include <memory>
 
+namespace espurna {
 namespace terminal {
+namespace {
 
-Terminal::Commands Terminal::_commands;
+// TODO: register commands throught static object, and operate on lists
+// instead of individual command addition through the add()
 
-// TODO: `name` is never checked for uniqueness, unlike the previous implementation with the `unordered_map`
-// (and note that the map used hash IDs instead of direct string comparison)
-//
-// One possible workaround is to delegate command matching to a callback function of a module:
-//
-// > addCommandMatcher([](const String& argv0) -> Callback {
-// >     if (argv0.equalsIgnoreCase(F("one")) {
-// >         return cmd_one;
-// >     } else if (argv0.equalsIgnoreCase(F("two")) {
-// >         return cmd_two;
-// >     }
-// >     return nullptr;
-// > });
-// 
-// Or, using a PROGMEM static array of `{progmem_name, callback_ptr}` pairs.
-// There would be a lot of PROGMEM boilerplate, though, since PROGMEM strings cannot be
-// written inline with the array itself, and must be declared with a symbol name beforehand.
-// (unless, progmem_name is a fixed-size char[], but then it must have a special limit for command length)
+namespace internal {
 
-void Terminal::addCommand(const __FlashStringHelper* name, CommandFunc func) {
-    if (func) {
-        _commands.emplace_front(std::make_pair(name, func));
-    }
+using Commands = std::forward_list<Command>;
+Commands commands;
+
+} // namespace internal
+} // namespace
+
+size_t size() {
+    return std::distance(internal::commands.begin(), internal::commands.end());
 }
 
-size_t Terminal::commands() {
-    return std::distance(_commands.begin(), _commands.end());
-}
+CommandNames names() {
+    CommandNames out;
+    out.reserve(size());
 
-Terminal::Names Terminal::names() {
-    Terminal::Names out;
-    out.reserve(commands());
-    for (auto& command : _commands) {
-        out.push_back(command.first);
+    for (auto& command : internal::commands) {
+        out.push_back(command.name);
     }
+
     return out;
 }
 
-Terminal::Result Terminal::processLine() {
+void add(Command command) {
+    if (command.func) {
+        internal::commands.emplace_front(std::move(command));
+    }
+}
 
-    // Arduino stream API returns either `char` >= 0 or -1 on error
-    int c { -1 };
-    while ((c = _stream.read()) >= 0) {
-        if (_buffer.size() >= (_buffer_size - 1)) {
-            _buffer.clear();
-            return Result::BufferOverflow;
+void add(const __FlashStringHelper* name, CommandFunc func) {
+    add(Command{
+        .name = name,
+        .func = func });
+}
+
+const Command* find(StringView name) {
+    auto found = std::find_if(
+        internal::commands.begin(),
+        internal::commands.end(),
+        // TODO: StringView comparison
+        // note that `String::equalsIgnoreCase(const __FlashStringHelper*)` does not exist, and will create a temporary `String`
+        // both use read-1-byte-at-a-time for PROGMEM, however this variant saves around 200μs in time since there's no temporary object
+        [&](const Command& command) {
+            const auto* lhs = name.c_str();
+            const auto* rhs = reinterpret_cast<const char*>(command.name);
+            const auto len = strlen_P(rhs);
+
+            return (name.length() == len)
+                && (0 == strncasecmp_P(lhs, rhs, len));
+        });
+
+    if (found == internal::commands.end()) {
+        return nullptr;
+    }
+
+    return &(*found);
+}
+
+void ok(Print& out) {
+    out.print(F("+OK\n"));
+}
+
+void ok(const espurna::terminal::CommandContext& ctx) {
+    ok(ctx.output);
+}
+
+void error(Print& print, const String& message) {
+    print.printf_P(PSTR("-ERROR: %s\n"), message.c_str());
+}
+
+void error(const espurna::terminal::CommandContext& ctx, const String& message) {
+    error(ctx.output, message);
+}
+
+bool find_and_call(CommandLine cmd, Print& out) {
+    const auto* command = find(cmd.argv[0]);
+    if (command) {
+        (*command).func(CommandContext{
+            .argv = std::move(cmd.argv),
+            .output = out });
+        return true;
+    }
+
+    error(out, F("Command not found"));
+    return false;
+}
+
+bool find_and_call(StringView cmd, Print& out) {
+    auto result = parse_line(cmd);
+    if (result.error != parser::Error::Ok) {
+        String message;
+        message += PSTR("TERMINAL: ");
+        message += parser::error(result.error);
+        error(out, message);
+        return false;
+    }
+
+    if (!result.argv.size()) {
+        return false;
+    }
+
+    return find_and_call(std::move(result), out);
+}
+
+bool api_find_and_call(StringView cmd, Print& out) {
+    bool result { true };
+
+    LineView lines(cmd);
+    while (lines) {
+        const auto line = lines.line();
+        if (!line.length()) {
+            break;
         }
-        _buffer.push_back(c);
-        if (c == '\n') {
-            // in case we see \r\n, offset minus one and overwrite \r
-            auto end = _buffer.end() - 1;
-            if (*(end - 1) == '\r') {
-                --end;
-            }
-            *end = '\0';
 
-            // parser should pick out at least one arg aka command
-            auto cmdline = parsing::parse_commandline(_buffer.data());
-            _buffer.clear();
-            if ((cmdline.argv.size() >= 1) && (cmdline.argv[0].length())) {
-                auto found = std::find_if(_commands.begin(), _commands.end(), [&cmdline](const Command& command) {
-                    // note that `String::equalsIgnoreCase(const __FlashStringHelper*)` does not exist, and will create a temporary `String`
-                    // both use read-1-byte-at-a-time for PROGMEM, however this variant saves around 200μs in time since there's no temporary object
-                    auto* lhs = cmdline.argv[0].c_str();
-                    auto* rhs = reinterpret_cast<const char*>(command.first);
-                    auto len = strlen_P(rhs);
-
-                    return (cmdline.argv[0].length() == len) && (0 == strncasecmp_P(lhs, rhs, len));
-                });
-                if (found == _commands.end()) return Result::CommandNotFound;
-                (*found).second(CommandContext{std::move(cmdline.argv), _stream});
-                return Result::Command;
-            }
+        // prefer to break early when commands are missing
+        if (!find_and_call(line, out)) {
+            result = false;
+            break;
         }
     }
 
-    // we need to notify about the fixable things
-    if (_buffer.size() && (c < 0)) {
-        return Result::Pending;
-    } else if (!_buffer.size() && (c < 0)) {
-        return Result::NoInput;
-    // ... and some unexpected conditions
-    } else {
-        return Result::Error;
-    }
-
-}
-
-bool Terminal::defaultProcessFunc(Result result) {
-    return (result != Result::Error) && (result != Result::NoInput);
-}
-
-void Terminal::process(ProcessFunc func) {
-    while (func(processLine())) {
-    }    
+    return result;
 }
 
 } // namespace terminal
+} // namespace espurna

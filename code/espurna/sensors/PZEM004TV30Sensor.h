@@ -713,7 +713,7 @@ void PZEM004TV30Sensor::registerTerminalCommands() {
 #if TERMINAL_SUPPORT
     terminalRegisterCommand(F("PZ.ADDRESS"), [](::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() != 2) {
-            terminalError(ctx.output, F("PZ.ADDRESS <ADDRESS>"));
+            terminalError(ctx, F("PZ.ADDRESS <ADDRESS>"));
             return;
         }
 
@@ -723,11 +723,11 @@ void PZEM004TV30Sensor::registerTerminalCommands() {
         if (_instance->modbusChangeAddress(updated)) {
             _instance->_address = updated;
             setSetting("pzemv30Addr", updated);
-            terminalOK(ctx.output);
+            terminalOK(ctx);
             return;
         }
 
-        terminalError(ctx.output, F("Could not change the address"));
+        terminalError(ctx, F("Could not change the address"));
     });
 #endif
 }

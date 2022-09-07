@@ -30,11 +30,6 @@ struct StringView {
     StringView& operator=(StringView&&) noexcept = default;
 #endif
 
-    constexpr StringView(std::nullptr_t) noexcept :
-        _ptr(nullptr),
-        _len(0)
-    {}
-
     constexpr StringView(const char* ptr, size_t len) noexcept :
         _ptr(ptr),
         _len(len)
@@ -56,6 +51,11 @@ struct StringView {
     explicit StringView(const __FlashStringHelper* ptr) noexcept :
         _ptr(reinterpret_cast<const char*>(ptr)),
         _len(strlen_P(_ptr))
+    {}
+
+    explicit constexpr StringView(std::nullptr_t) noexcept :
+        _ptr(nullptr),
+        _len(0)
     {}
 
     StringView(const String&&) = delete;

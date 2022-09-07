@@ -11,14 +11,16 @@ OTA MODULE COMMON FUNCTIONS
 #include "utils.h"
 #include "ws.h"
 
+#include "libs/PrintString.h"
+
 void otaPrintError() {
+#if DEBUG_SUPPORT
     if (Update.hasError()) {
-        #if TERMINAL_SUPPORT
-            Update.printError(terminalDefaultStream());
-        #elif DEBUG_SERIAL_SUPPORT && defined(DEBUG_PORT)
-            Update.printError(DEBUG_PORT);
-        #endif
+        PrintString out(64);
+        Update.printError(out);
+        DEBUG_MSG_P(PSTR("[OTA] %s\n"), out.c_str());
     }
+#endif
 }
 
 bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining) {
