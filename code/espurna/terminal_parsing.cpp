@@ -224,19 +224,44 @@ private:
         bool& _handle;
     };
 
-    // intermediate storage for ARGV, text value and escaped characters
-    // (stores the LHS of \x##, because we don't use look-ahead)
+    // intermediate storage for
+    // - ARGV resulting list
+    // - text buffer or intermediate span range
+    // - escaped character (since we don't look ahead when iterating)
     struct Values {
         Argv argv;
         String chunk;
+        const char* span_begin { nullptr };
+        const char* span_end { nullptr };
         char byte_lhs { 0 };
     };
 
+    static void append_span(Values& values, const char* ptr) {
+        if (!values.span_begin) {
+            values.span_begin = ptr;
+        }
+
+        values.span_end = !values.span_end
+            ? std::next(values.span_begin)
+            : std::next(ptr);
+    }
+
+    static void push_span(Values& values) {
+        if (values.span_begin && values.span_end) {
+            StringView span(values.span_begin, values.span_end);
+            values.chunk.concat(span.c_str(), span.length());
+            values.span_begin = nullptr;
+            values.span_end = nullptr;
+        }
+    }
+
     static void append_chunk(Values& values, char c) {
+        push_span(values);
         values.chunk.concat(&c, 1);
     }
 
     static void push_chunk(Values& values) {
+        push_span(values);
         values.argv.push_back(values.chunk);
         values.chunk = "";
     }
@@ -301,7 +326,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    append_chunk(values, *it);
+                    append_span(values, it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -390,7 +415,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    append_chunk(values, *it);
+                    append_span(values, it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -445,7 +470,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    append_chunk(values, *it);
+                    append_span(values, it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
