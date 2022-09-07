@@ -1531,10 +1531,24 @@ Preset preset() {
 
 namespace internal {
 
+struct EphemeralPrint : public Print {
+    size_t write(uint8_t) override {
+        return 0;
+    }
+
+    size_t write(const uint8_t*, size_t) override {
+        return 0;
+    }
+};
+
 void inject(String command) {
-    terminalInject(command.c_str(), command.length());
     if (!command.endsWith("\r\n") && !command.endsWith("\n")) {
-        terminalInject('\n');
+        command.concat('\n');
+    }
+
+    static EphemeralPrint output;
+    if (!espurna::terminal::api_find_and_call(command, output)) {
+        DEBUG_MSG_P(PSTR("[IR] Failed to execute command: \"%s\"\n"), command.c_str());
     }
 }
 

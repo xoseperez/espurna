@@ -32,26 +32,39 @@ BlackHole DefaultOutput;
 
 // We need to make sure that our changes to split_args actually worked
 void test_hex_codes() {
-    static bool abc_done = false;
+    {
+        const char input[] = "abc \"\\x";
+        const auto result = parse_line(input);
+        TEST_ASSERT_EQUAL_STRING("InvalidEscape", parser::error(result.error).c_str());
+    }
 
-    add(F("abc"), [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL(2, ctx.argv.size());
-        TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
-        TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
-        abc_done = true;
-    });
+    {
+        const char input[] = "abc \"\\x5";
+        const auto result = parse_line(input);
+        TEST_ASSERT_EQUAL_STRING("InvalidEscape", parser::error(result.error).c_str());
+    }
 
-    const char input[] = "abc \"\x61\x62\x63\"\r\n";
+    {
+        static bool abc_done = false;
 
-    const auto result = parse_line(input);
-    TEST_ASSERT_EQUAL(parser::Error::Ok, result.error);
-    TEST_ASSERT_EQUAL(2, result.argv.size());
-    TEST_ASSERT_EQUAL_STRING("abc", result.argv[0].c_str());
-    TEST_ASSERT_EQUAL_STRING("abc", result.argv[1].c_str());
+        add(F("abc"), [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL(2, ctx.argv.size());
+            TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
+            TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
+            abc_done = true;
+        });
 
-    const auto call = find_and_call(result, DefaultOutput);
-    TEST_ASSERT(call);
-    TEST_ASSERT(abc_done);
+        const char input[] = "abc \"\\x61\\x62\\x63\"\r\n";
+
+        const auto result = parse_line(input);
+        TEST_ASSERT_EQUAL(2, result.argv.size());
+        TEST_ASSERT_EQUAL_STRING("Ok", parser::error(result.error).c_str());
+        TEST_ASSERT_EQUAL_STRING("abc", result.argv[0].c_str());
+        TEST_ASSERT_EQUAL_STRING("abc", result.argv[1].c_str());
+
+        TEST_ASSERT(find_and_call(result, DefaultOutput));
+        TEST_ASSERT(abc_done);
+    }
 }
 
 // Ensure parsing function does not cause nearby strings to be included

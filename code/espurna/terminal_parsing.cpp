@@ -54,8 +54,9 @@ namespace {
 // Original code is part of the SDSLib 2.0 -- A C dynamic strings library
 // - https://github.com/antirez/sds/blob/master/sds.c
 // - https://github.com/antirez/redis/blob/unstable/src/networking.c
-// To avoid random look-ahead issues in the code, make sure we **never**
-// go out of bounds of the given view.
+// Replaced with a stateful parser to avoid random look-ahead issues in the code,
+// and really make sure we **never** go out of bounds of the given view.
+// (e.g. when we want to parse only a part of a larger string)
 
 // Helper functions to handle \xHH codes that could encode
 // non-printable characters for commands or arguments
@@ -70,7 +71,7 @@ bool is_hex_digit(char c) {
     return false;
 }
 
-int hex_digit_to_int(char c) {
+char hex_digit_to_byte(char c) {
     switch (c) {
     case '0'...'9':
         return c - '0';
@@ -98,9 +99,10 @@ int hex_digit_to_int(char c) {
 }
 
 char hex_digit_to_value(char lhs, char rhs) {
-    return (hex_digit_to_int(lhs) << 8) | hex_digit_to_int(rhs);
+    return (hex_digit_to_byte(lhs) << 4) | hex_digit_to_byte(rhs);
 }
 
+// printable ASCII character set
 bool is_printable(char c) {
     switch (c) {
     case ' '...'~':
@@ -110,6 +112,7 @@ bool is_printable(char c) {
     return false;
 }
 
+// allowed 'special' input characters
 char unescape_char(char c) {
     switch (c) {
     case 'n':
@@ -146,14 +149,6 @@ struct Result {
         return _error == Error::Ok;
     }
 
-    Error error() const {
-        return _error;
-    }
-
-    size_t argc() const {
-        return _argv.size();
-    }
-
     CommandLine commandLine() {
         auto out = CommandLine{
             .argv = std::move(_argv),
@@ -173,6 +168,24 @@ struct Parser {
     Result operator()(StringView);
 
 private:
+    // only tracked within our `operator()(<LINE>)`
+    enum class State {
+        Done,
+        Initial,
+        Text,
+        CarriageReturn,
+        CarriageReturnAfterText,
+        SkipUntilNewLine,
+        EscapedText,
+        EscapedByteLhs,
+        EscapedByteRhs,
+        SingleQuote,
+        EscapedQuote,
+        DoubleQuote,
+        AfterQuote,
+    };
+
+    // disallow re-entry with a custom lock handler
     struct Lock {
         Lock() = delete;
 
@@ -211,79 +224,21 @@ private:
         bool& _handle;
     };
 
+    // intermediate storage for ARGV, text value and escaped characters
+    // (stores the LHS of \x##, because we don't use look-ahead)
     struct Values {
         Argv argv;
         String chunk;
         char byte_lhs { 0 };
     };
 
+    static void append_chunk(Values& values, char c) {
+        values.chunk.concat(&c, 1);
+    }
+
     static void push_chunk(Values& values) {
         values.argv.push_back(values.chunk);
         values.chunk = "";
-    }
-
-    enum class State {
-        Done,
-        Initial,
-        Text,
-        CarriageReturn,
-        CarriageReturnAfterText,
-        SkipUntilNewLine,
-        EscapedText,
-        EscapedByteLhs,
-        EscapedByteRhs,
-        SingleQuote,
-        EscapedQuote,
-        DoubleQuote,
-        AfterQuote,
-    };
-
-    static String state(State value) {
-        String out;
-
-        switch (value) {
-        case State::Done:
-            out = "Done";
-            break;
-        case State::Initial:
-            out = "Initial";
-            break;
-        case State::Text:
-            out = "Text";
-            break;
-        case State::CarriageReturn:
-            out = "CarriageReturn";
-            break;
-        case State::CarriageReturnAfterText:
-            out = "CarriageReturnAfterText";
-            break;
-        case State::SkipUntilNewLine:
-            out = "SkipUntilNewLine";
-            break;
-        case State::EscapedText:
-            out = "EscapedText";
-            break;
-        case State::EscapedByteLhs:
-            out = "EscapedByteLhs";
-            break;
-        case State::EscapedByteRhs:
-            out = "EscapedByteRhs";
-            break;
-        case State::SingleQuote:
-            out = "SingleQuote";
-            break;
-        case State::EscapedQuote:
-            out = "EscapedQuote";
-            break;
-        case State::DoubleQuote:
-            out = "DoubleQuote";
-            break;
-        case State::AfterQuote:
-            out = "AfterQuote";
-            break;
-        }
-
-        return out;
     }
 
     bool _parsing { false };
@@ -346,7 +301,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    values.chunk.concat(*it);
+                    append_chunk(values, *it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -395,7 +350,7 @@ text:
                 state = State::EscapedByteLhs;
                 break;
             default:
-                values.chunk.concat(unescape_char(*it));
+                append_chunk(values, unescape_char(*it));
                 break;
             }
             break;
@@ -413,8 +368,7 @@ text:
 
         case State::EscapedByteRhs:
             if (is_hex_digit(*it)) {
-                const char value = hex_digit_to_value(values.byte_lhs, *it);
-                values.chunk.concat(&value, 1);
+                append_chunk(values, hex_digit_to_value(values.byte_lhs, *it));
                 state = State::DoubleQuote;
             } else {
                 result = Error::InvalidEscape;
@@ -436,7 +390,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    values.chunk.concat(*it);
+                    append_chunk(values, *it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -491,7 +445,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    values.chunk.concat(*it);
+                    append_chunk(values, *it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -504,32 +458,37 @@ text:
     }
 
 out:
-    switch (state) {
-    case State::Done:
+    if (state == State::Done) {
         result = std::move(values.argv);
-        break;
+    }
+
     // whenever line ends before we are done parsing, make sure
     // result contains a valid error condition (same as in the switch above)
-    case State::CarriageReturn:
-    case State::CarriageReturnAfterText:
-    case State::Text:
-    case State::Initial:
-    case State::SkipUntilNewLine:
-        result = Error::UnexpectedLineEnd;
-        break;
-    case State::EscapedByteLhs:
-    case State::EscapedByteRhs:
-    case State::EscapedText:
-    case State::EscapedQuote:
-        result = Error::InvalidEscape;
-        break;
-    case State::SingleQuote:
-    case State::DoubleQuote:
-        result = Error::UnterminatedQuote;
-        break;
-    case State::AfterQuote:
-        result = Error::NoSpaceAfterQuote;
-        break;
+    if (!result) {
+        switch (state) {
+        case State::Done:
+            break;
+        case State::CarriageReturn:
+        case State::CarriageReturnAfterText:
+        case State::Text:
+        case State::Initial:
+        case State::SkipUntilNewLine:
+            result = Error::UnexpectedLineEnd;
+            break;
+        case State::EscapedByteLhs:
+        case State::EscapedByteRhs:
+        case State::EscapedText:
+        case State::EscapedQuote:
+            result = Error::InvalidEscape;
+            break;
+        case State::SingleQuote:
+        case State::DoubleQuote:
+            result = Error::UnterminatedQuote;
+            break;
+        case State::AfterQuote:
+            result = Error::NoSpaceAfterQuote;
+            break;
+        }
     }
 
     return result;
