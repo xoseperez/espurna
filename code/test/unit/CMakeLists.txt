@@ -56,7 +56,7 @@ target_compile_options(unity BEFORE PRIVATE
     -DUNITY_OUTPUT_COLOR
 )
 
-set(esp8266_version 9fcf14f81fa9be589530e9596b7c5a264dc81ee8)
+set(esp8266_version 313b3c07ecccbe6fee24aa9fa447c4aed16ca499)
 
 FetchContent_Declare(
     esp8266git
